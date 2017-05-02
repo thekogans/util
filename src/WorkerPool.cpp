@@ -1,0 +1,169 @@
+// Copyright 2011 Boris Kogan (boris@thekogans.net)
+//
+// This file is part of libthekogans_util.
+//
+// libthekogans_util is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// libthekogans_util is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with libthekogans_util. If not, see <http://www.gnu.org/licenses/>.
+
+#include <cassert>
+#include "thekogans/util/Config.h"
+#include "thekogans/util/LockGuard.h"
+#include "thekogans/util/SpinLock.h"
+#include "thekogans/util/StringUtils.h"
+#include "thekogans/util/WorkerPool.h"
+
+namespace thekogans {
+    namespace util {
+
+        THEKOGANS_UTIL_IMPLEMENT_HEAP_WITH_LOCK_EX (WorkerPool::Worker, SpinLock, 5)
+        THEKOGANS_UTIL_IMPLEMENT_HEAP_WITH_LOCK_EX (WorkerPool::WorkerPtr, SpinLock, 5)
+
+        WorkerPool::WorkerPool (
+                const std::string &name_,
+                ui32 minWorkers_,
+                ui32 maxWorkers_,
+                i32 workerPriority_,
+                ui32 workerAffinity_,
+                ui32 workerMaxPendingJobs_) :
+                name (name_),
+                minWorkers (minWorkers_),
+                maxWorkers (maxWorkers_),
+                workerPriority (workerPriority_),
+                workerAffinity (workerAffinity_),
+                workerMaxPendingJobs (workerMaxPendingJobs_),
+                workerCount (0) {
+            assert (minWorkers > 0);
+            assert (maxWorkers >= minWorkers);
+            for (ui32 i = 0; i < minWorkers; ++i) {
+                std::string workerName;
+                if (!name.empty ()) {
+                    workerName = FormatString ("%s-%u", name.c_str (), i);
+                }
+                workers.push_back (
+                    new Worker (
+                        workerName,
+                        workerPriority,
+                        workerAffinity,
+                        workerMaxPendingJobs));
+                ++workerCount;
+            }
+        }
+
+        WorkerPool::~WorkerPool () {
+            struct Callback : public WorkerList::Callback {
+                typedef WorkerList::Callback::result_type result_type;
+                typedef WorkerList::Callback::argument_type argument_type;
+                virtual result_type operator () (argument_type worker) {
+                    delete worker;
+                    return true;
+                }
+            } callback;
+            workers.clear (callback);
+        }
+
+        WorkerPool::WorkerPtr::WorkerPtr (
+                WorkerPool &workerPool_,
+                ui32 retries,
+                const TimeSpec &timeSpec) :
+                workerPool (workerPool_),
+                worker (workerPool.GetWorker ()) {
+            while (worker == 0 && retries-- != 0) {
+                Sleep (timeSpec);
+                worker = workerPool.GetWorker ();
+            }
+        }
+
+        WorkerPool::WorkerPtr::~WorkerPtr () {
+            if (worker != 0) {
+                workerPool.ReleaseWorker (worker);
+            }
+        }
+
+        WorkerPool::Worker *WorkerPool::GetWorker () {
+            Worker *worker = 0;
+            {
+                LockGuard<SpinLock> guard (spinLock);
+                if (!workers.empty ()) {
+                    // Borrow a worker from the front of the queue.
+                    // This combined with ReleaseWorker putting
+                    // returned workers at the front should guarantee
+                    // the best cache utilization.
+                    worker = workers.pop_front ();
+                }
+                else if (workerCount < maxWorkers) {
+                    std::string workerName;
+                    if (!name.empty ()) {
+                        workerName = FormatString ("%s-%u", name.c_str (), workerCount);
+                    }
+                    worker = new Worker (
+                        workerName,
+                        workerPriority,
+                        workerAffinity,
+                        workerMaxPendingJobs);
+                    ++workerCount;
+                }
+            }
+            return worker;
+        }
+
+        void WorkerPool::ReleaseWorker (Worker *worker) {
+            if (worker != 0) {
+                LockGuard<SpinLock> guard (spinLock);
+                if (workerCount > minWorkers) {
+                    delete worker;
+                    --workerCount;
+                }
+                else {
+                    // Put the recently used worker at the front of
+                    // the queue. With any luck the next time a worker
+                    // is borrowed from this pool, it will be the last
+                    // one used, and it's cache will be nice and warm.
+                    workers.push_front (worker);
+                }
+            }
+        }
+
+        std::string GlobalWorkerPoolCreateInstance::name = std::string ();
+        ui32 GlobalWorkerPoolCreateInstance::minWorkers = SystemInfo::Instance ().GetCPUCount ();
+        ui32 GlobalWorkerPoolCreateInstance::maxWorkers = SystemInfo::Instance ().GetCPUCount () * 2;
+        i32 GlobalWorkerPoolCreateInstance::workerPriority = THEKOGANS_UTIL_NORMAL_THREAD_PRIORITY;
+        ui32 GlobalWorkerPoolCreateInstance::workerAffinity = UI32_MAX;
+        ui32 GlobalWorkerPoolCreateInstance::workerMaxPendingJobs = UI32_MAX;
+
+        void GlobalWorkerPoolCreateInstance::Parameterize (
+                const std::string &name_,
+                ui32 minWorkers_,
+                ui32 maxWorkers_,
+                i32 workerPriority_,
+                ui32 workerAffinity_,
+                ui32 workerMaxPendingJobs_) {
+            name = name_;
+            minWorkers = minWorkers_;
+            maxWorkers = maxWorkers_;
+            workerPriority = workerPriority_;
+            workerAffinity = workerAffinity_;
+            workerMaxPendingJobs = workerMaxPendingJobs_;
+        }
+
+        WorkerPool *GlobalWorkerPoolCreateInstance::operator () () {
+            return new WorkerPool (
+                name,
+                minWorkers,
+                maxWorkers,
+                workerPriority,
+                workerAffinity,
+                workerMaxPendingJobs);
+        }
+
+    } // namespace util
+} // namespace thekogans

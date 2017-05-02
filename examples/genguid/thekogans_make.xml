@@ -1,0 +1,16 @@
+<thekogans_make organization = "thekogans"
+                project = "genguid"
+                project_type = "program"
+                major_version = "0"
+                minor_version = "1"
+                patch_version = "0"
+                guid = "9905d3c24e647530b00727f32b154aac"
+                schema_version = "2">
+  <dependencies>
+    <project organization = "thekogans"
+             name = "util"/>
+  </dependencies>
+  <cpp_sources prefix = "src">
+    <cpp_source>main.cpp</cpp_source>
+  </cpp_sources>
+</thekogans_make>

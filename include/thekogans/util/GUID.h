@@ -1,0 +1,164 @@
+// Copyright 2011 Boris Kogan (boris@thekogans.net)
+//
+// This file is part of libthekogans_util.
+//
+// libthekogans_util is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// libthekogans_util is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with libthekogans_util. If not, see <http://www.gnu.org/licenses/>.
+
+#if !defined (__thekogans_util_GUID_h)
+#define __thekogans_util_GUID_h
+
+#include <memory.h>
+#include <iostream>
+#include <string>
+#include "thekogans/util/Config.h"
+#include "thekogans/util/Types.h"
+
+namespace thekogans {
+    namespace util {
+
+        /// \struct GUID GUID.h thekogans/util/GUID.h
+        ///
+        /// \brief
+        /// A nice 128 bit globally unique id class. GUIDs can be
+        /// created from file/buffer contents, and even randomly
+        /// generated. GUID::FromRandom uses the \sse{RandomSource}
+        /// to gather platform specific entropy.
+
+        struct _LIB_THEKOGANS_UTIL_DECL GUID {
+            enum {
+                /// \brief
+                /// GUID length.
+                LENGTH = 16
+            };
+            /// \brief
+            /// GUID data.
+            ui8 data[LENGTH];
+
+            /// \brief
+            /// Default ctor.
+            GUID () {}
+            /// \brief
+            /// ctor. Initialize to a given value.
+            /// \param[in] data_ Value to initialize to.
+            explicit GUID (const ui8 data_[LENGTH]) {
+                memcpy (data, data_, LENGTH);
+            }
+            /// \brief
+            /// ctor. Parse the GUID out of a string representation.
+            /// NOTE: The guid must only contain hexadecimal (0 - 9, a - f) digits.
+            /// \param[in] guid String representation of a guid to parse.
+            /// \param[in] windowsGUID true = guid is in Windows GUID format (4-2-2-2-6),
+            /// false = guid is a string of LENGTH * 2 hexadecimal digits.
+            explicit GUID (
+                const std::string &guid,
+                bool windowsGUID = false);
+
+            /// \brief
+            /// Convert the guid to a string representation.
+            /// \return String representation of the guid.
+            std::string ToString (bool upperCase = false) const;
+
+            /// \brief
+            /// Convert the guid to a string representation
+            /// useful when you need a Windows formated GUID.
+            /// \return Windows formated GUID string.
+            std::string ToWindowsGUIDString (bool upperCase = false) const;
+
+            /// \brief
+            /// Empty guid.
+            static const GUID Empty;
+
+            /// \brief
+            /// Create a guid for a given file.
+            /// \param[in] path file to create a guid from (MD5 hash).
+            /// \return MD5 hash of the file.
+            static GUID FromFile (const std::string &path);
+            /// \brief
+            /// Create a guid for a given buffer.
+            /// \param[in] buffer Pointer to the beginning of the buffer.
+            /// \param[in] length Length of the buffer.
+            /// \return MD5 hash of the buffer.
+            static GUID FromBuffer (
+                const void *buffer,
+                std::size_t length);
+            /// \brief
+            /// Create a random guid. Uses \see{RandomSource} to generate random bytes.
+            /// \return MD5 hash of the random bytes.
+            static GUID FromRandom ();
+        };
+
+        /// \brief
+        /// GUID size.
+        const std::size_t GUID_SIZE = sizeof (GUID);
+
+        /// \brief
+        /// Compare two guids for order.
+        /// \param[in] guid1 GUID to test for less than.
+        /// \param[in] guid2 GUID to test for against.
+        /// \return true = guid1 < guid2, false guid1 >= guid2
+        inline bool operator < (
+                const GUID &guid1,
+                const GUID &guid2) {
+            return memcmp (guid1.data, guid2.data, GUID::LENGTH) < 0;
+        }
+
+        /// \brief
+        /// Compare two guids for order.
+        /// \param[in] guid1 GUID to test for greater than.
+        /// \param[in] guid2 GUID to test for against.
+        /// \return true = guid1 > guid2, false guid1 <= guid2
+        inline bool operator > (
+                const GUID &guid1,
+                const GUID &guid2) {
+            return memcmp (guid1.data, guid2.data, GUID::LENGTH) > 0;
+        }
+
+        /// \brief
+        /// Compare two guids for equality.
+        /// \param[in] guid1 First GUID to compare.
+        /// \param[in] guid2 Second GUID to compare.
+        /// \return true = guid1 == guid2, false guid1 != guid2
+        inline bool operator == (
+                const GUID &guid1,
+                const GUID &guid2) {
+            return memcmp (guid1.data, guid2.data, GUID::LENGTH) == 0;
+        }
+
+        /// \brief
+        /// Compare two guids for inequality.
+        /// \param[in] guid1 First GUID to compare.
+        /// \param[in] guid2 Second GUID to compare.
+        /// \return true = guid1 != guid2, false guid1 == guid2
+        inline bool operator != (
+                const GUID &guid1,
+                const GUID &guid2) {
+            return memcmp (guid1.data, guid2.data, GUID::LENGTH) != 0;
+        }
+
+        /// \brief
+        /// Dump guid to stream.
+        /// \param[in] stream Stream to dump to.
+        /// \param[in] guid GIUD to dump.
+        /// \return stream
+        inline std::ostream &operator << (
+                std::ostream &stream,
+                const GUID &guid) {
+            stream << guid.ToString ();
+            return stream;
+        }
+
+    } // namespace util
+} // namespace thekogans
+
+#endif // !defined (__thekogans_util_GUID_h)
