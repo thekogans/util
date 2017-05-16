@@ -130,7 +130,7 @@ namespace thekogans {
         #else // defined (TOOLCHAIN_OS_Windows)
             /// \brief
             /// POSIX child process id.
-            pid_t pid;
+            THEKOGANS_UTIL_PROCESS_ID pid;
             /// \brief
             /// Return code for a process that ended normally.
             i32 returnCode;
@@ -240,8 +240,8 @@ namespace thekogans {
 
             /// \brief
             /// Async child process spawn.
-            /// \return PID.
-            int Spawn ();
+            /// \return Process id.
+            THEKOGANS_UTIL_PROCESS_ID Spawn ();
             /// \enum
             /// Child process return status.
             enum ChildStatus {
@@ -264,8 +264,9 @@ namespace thekogans {
             ChildStatus Wait (const TimeSpec &timeSpec = TimeSpec::Infinite);
             /// \brief
             /// Convenience api. Calls Spawn followed by Wait (synchronous).
+            /// \param[in] timeSpec How long to wait for the child to exit.
             /// \return Child exit status.
-            ChildStatus Exec ();
+            ChildStatus Exec (const TimeSpec &timeSpec = TimeSpec::Infinite);
             /// \brief
             /// Send a signal to the child.
         #if defined (TOOLCHAIN_OS_Windows)
@@ -276,14 +277,16 @@ namespace thekogans {
             void Kill (int sig = SIGTERM);
         #endif // defined (TOOLCHAIN_OS_Windows)
 
-        #if !defined (TOOLCHAIN_OS_Windows)
             /// \brief
-            /// Return the pid.
-            /// \return pid.
-            inline pid_t GetPid () const {
+            /// Return the process id.
+            /// \return Process id.
+            inline THEKOGANS_UTIL_PROCESS_ID GetProcessId () const {
+            #if defined (TOOLCHAIN_OS_Windows)
+                return processInformation.dwProcessId;
+            #else // defined (TOOLCHAIN_OS_Windows)
                 return pid;
+            #endif // defined (TOOLCHAIN_OS_Windows)
             }
-        #endif // !defined (TOOLCHAIN_OS_Windows)
             /// \brief
             /// Return a process exit code.
             /// \return Process exit code.
@@ -313,8 +316,8 @@ namespace thekogans {
             ///
             /// util::ChildProcess lsProcess ("ls");
             /// util::MainRunLoop::Instance ().Enq (lsProcess.CreateSpawnJob (), true);
-            /// if (lsProcess.GetPid () > 0) {
-            ///     util::Buffer::UniquePtr lsOutlup = ls.CollectOutput (ls.GetOutPipe ());
+            /// if (lsProcess.GetProcessId () != THEKOGANS_UTIL_INVALID_PROCESS_ID_VALUE) {
+            ///     util::Buffer::UniquePtr lsOutput = ls.CollectOutput (ls.GetOutPipe ());
             /// }
             /// else {
             ///     // Unable to spawn ls. Handle error.

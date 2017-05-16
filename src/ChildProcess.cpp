@@ -41,18 +41,14 @@ namespace thekogans {
                 inPipe[1] = THEKOGANS_UTIL_INVALID_HANDLE_VALUE;
                 if (Flags32 (hookStdIO).Test (ChildProcess::HOOK_STDIN)) {
                     if (pipe (inPipe) < 0) {
-                        THEKOGANS_UTIL_LOG_SUBSYSTEM_ERROR (
-                            THEKOGANS_UTIL,
-                            "pipe (inPipe) failed (%s).\n",
-                            Exception::FromErrorCode ().c_str ());
+                        THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                            THEKOGANS_UTIL_OS_ERROR_CODE);
                     }
                 #if defined (TOOLCHAIN_OS_Windows)
                     if (!SetHandleInformation (inPipe[1],
                             HANDLE_FLAG_INHERIT, HANDLE_FLAG_INHERIT)) {
-                        THEKOGANS_UTIL_LOG_SUBSYSTEM_ERROR (
-                            THEKOGANS_UTIL,
-                            "SetHandleInformation (inPipe) failed (%s).\n",
-                            Exception::FromErrorCode ().c_str ());
+                        THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                            THEKOGANS_UTIL_OS_ERROR_CODE);
                     }
                 #endif // defined (TOOLCHAIN_OS_Windows)
                 }
@@ -62,18 +58,14 @@ namespace thekogans {
                 outPipe[1] = THEKOGANS_UTIL_INVALID_HANDLE_VALUE;
                 if (Flags32 (hookStdIO).Test (ChildProcess::HOOK_STDOUT)) {
                     if (pipe (outPipe) < 0) {
-                        THEKOGANS_UTIL_LOG_SUBSYSTEM_ERROR (
-                            THEKOGANS_UTIL,
-                            "pipe (outPipe) failed (%s).\n",
-                            Exception::FromErrorCode ().c_str ());
+                        THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                            THEKOGANS_UTIL_OS_ERROR_CODE);
                     }
                 #if defined (TOOLCHAIN_OS_Windows)
                     if (!SetHandleInformation (outPipe[0],
                             HANDLE_FLAG_INHERIT, HANDLE_FLAG_INHERIT)) {
-                        THEKOGANS_UTIL_LOG_SUBSYSTEM_ERROR (
-                            THEKOGANS_UTIL,
-                            "SetHandleInformation (outPipe) failed (%s).\n",
-                            Exception::FromErrorCode ().c_str ());
+                        THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                            THEKOGANS_UTIL_OS_ERROR_CODE);
                     }
                 #endif // defined (TOOLCHAIN_OS_Windows)
                 }
@@ -83,18 +75,14 @@ namespace thekogans {
                 errPipe[1] = THEKOGANS_UTIL_INVALID_HANDLE_VALUE;
                 if (Flags32 (hookStdIO).Test (ChildProcess::HOOK_STDERR)) {
                     if (pipe (errPipe) < 0) {
-                        THEKOGANS_UTIL_LOG_SUBSYSTEM_ERROR (
-                            THEKOGANS_UTIL,
-                            "pipe (errPipe) failed (%s).\n",
-                            Exception::FromErrorCode ().c_str ());
+                        THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                            THEKOGANS_UTIL_OS_ERROR_CODE);
                     }
                 #if defined (TOOLCHAIN_OS_Windows)
                     if (!SetHandleInformation (errPipe[0],
                             HANDLE_FLAG_INHERIT, HANDLE_FLAG_INHERIT)) {
-                        THEKOGANS_UTIL_LOG_SUBSYSTEM_ERROR (
-                            THEKOGANS_UTIL,
-                            "SetHandleInformation (errPipe) failed (%s).\n",
-                            Exception::FromErrorCode ().c_str ());
+                        THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                            THEKOGANS_UTIL_OS_ERROR_CODE);
                     }
                 #endif // defined (TOOLCHAIN_OS_Windows)
                 }
@@ -150,10 +138,8 @@ namespace thekogans {
                 {
                     assert (inPipe[0] != THEKOGANS_UTIL_INVALID_HANDLE_VALUE);
                     if (dup2 (inPipe[0], STDIN_FILENO) < 0) {
-                        THEKOGANS_UTIL_LOG_SUBSYSTEM_ERROR (
-                            THEKOGANS_UTIL,
-                            "dup2 failed (%s).\n",
-                            Exception::FromErrorCode ().c_str ());
+                        THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                            THEKOGANS_UTIL_OS_ERROR_CODE);
                     }
                     inPipe[0] = THEKOGANS_UTIL_INVALID_HANDLE_VALUE;
                 }
@@ -175,10 +161,8 @@ namespace thekogans {
                 {
                     assert (outPipe[1] != THEKOGANS_UTIL_INVALID_HANDLE_VALUE);
                     if (dup2 (outPipe[1], STDOUT_FILENO) < 0) {
-                        THEKOGANS_UTIL_LOG_SUBSYSTEM_ERROR (
-                            THEKOGANS_UTIL,
-                            "dup2 failed (%s).\n",
-                            Exception::FromErrorCode ().c_str ());
+                        THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                            THEKOGANS_UTIL_OS_ERROR_CODE);
                     }
                     outPipe[1] = THEKOGANS_UTIL_INVALID_HANDLE_VALUE;
                 }
@@ -194,10 +178,8 @@ namespace thekogans {
                 {
                     assert (errPipe[1] != THEKOGANS_UTIL_INVALID_HANDLE_VALUE);
                     if (dup2 (errPipe[1], STDERR_FILENO) < 0) {
-                        THEKOGANS_UTIL_LOG_SUBSYSTEM_ERROR (
-                            THEKOGANS_UTIL,
-                            "dup2 failed (%s).\n",
-                            Exception::FromErrorCode ().c_str ());
+                        THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                            THEKOGANS_UTIL_OS_ERROR_CODE);
                     }
                     errPipe[1] = THEKOGANS_UTIL_INVALID_HANDLE_VALUE;
                 }
@@ -261,18 +243,34 @@ namespace thekogans {
 
         ///////////////////////////////////////////////////////////////////////////////////
 
+        namespace {
+        #if defined (TOOLCHAIN_OS_Windows)
+            void ClearProcessInformation (PROCESS_INFORMATION &processInformation) {
+                ZeroMemory (&processInformation, sizeof (PROCESS_INFORMATION));
+                processInformation.hProcess = THEKOGANS_UTIL_INVALID_HANDLE_VALUE;
+                processInformation.hThread = THEKOGANS_UTIL_INVALID_HANDLE_VALUE;
+                processInformation.dwProcessId = THEKOGANS_UTIL_INVALID_PROCESS_ID_VALUE;
+                processInformation.dwThreadId = THEKOGANS_UTIL_INVALID_PROCESS_ID_VALUE;
+            }
+        #else // defined (TOOLCHAIN_OS_Windows)
+            void ClearProcessInformation (
+                    pid_t &pid,
+                    i32 &returnCode) {
+                pid = THEKOGANS_UTIL_INVALID_PROCESS_ID_VALUE;
+                returnCode = -1;
+            }
+        #endif // defined (TOOLCHAIN_OS_Windows)
+        }
+
         ChildProcess::ChildProcess (
                 const std::string &path_,
                 ui32 hookStdIO_) :
                 path (path_),
                 hookStdIO (hookStdIO_) {
         #if defined (TOOLCHAIN_OS_Windows)
-            ZeroMemory (&processInformation, sizeof (PROCESS_INFORMATION));
-            processInformation.hProcess = THEKOGANS_UTIL_INVALID_HANDLE_VALUE;
-            processInformation.hThread = THEKOGANS_UTIL_INVALID_HANDLE_VALUE;
+            ClearProcessInformation (processInformation);
         #else // defined (TOOLCHAIN_OS_Windows)
-            pid = -1;
-            returnCode = -1;
+            ClearProcessInformation (pid, returnCode);
         #endif // defined (TOOLCHAIN_OS_Windows)
         }
 
@@ -310,10 +308,10 @@ namespace thekogans {
             return commandLine;
         }
 
-        int ChildProcess::Spawn () {
+        THEKOGANS_UTIL_PROCESS_ID ChildProcess::Spawn () {
         #if defined (TOOLCHAIN_OS_Windows)
             if (path.empty ()) {
-                return -1;
+                return THEKOGANS_UTIL_INVALID_PROCESS_ID_VALUE;
             }
             commandLine = "\"" + path + "\"";
             for (std::list<std::string>::const_iterator it = arguments.begin (),
@@ -339,9 +337,14 @@ namespace thekogans {
                 startInfo.hStdOutput = stdIO->outPipe[1];
                 startInfo.hStdError = stdIO->errPipe[1];
             }
-            return CreateProcess (0, &commandLine[0], 0, 0, TRUE, 0,
-                !environment.empty () ? (LPVOID)&environment[0] : 0,
-                0, &startInfo, &processInformation) ? 1 : -1;
+            ClearProcessInformation (processInformation);
+            if (!CreateProcess (0, &commandLine[0], 0, 0, TRUE, 0,
+                    !environment.empty () ? (LPVOID)&environment[0] : 0,
+                    0, &startInfo, &processInformation)) {
+                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                    THEKOGANS_UTIL_OS_ERROR_CODE);
+            }
+            return processInformation.dwProcessId;
         #else // defined (TOOLCHAIN_OS_Windows)
             if (hookStdIO != HOOK_NONE) {
                 stdIO.reset (new StdIO (hookStdIO));
@@ -364,13 +367,12 @@ namespace thekogans {
                 }
                 envp.push_back (0);
             }
+            ClearProcessInformation (pid, returnCode);
             // We can't use dup with vfork.
             pid = hookStdIO != HOOK_NONE ? fork () : vfork ();
             if (pid < 0) {
-                THEKOGANS_UTIL_LOG_SUBSYSTEM_ERROR (
-                    THEKOGANS_UTIL,
-                    "fork failed (%s).\n",
-                    Exception::FromErrorCode ().c_str ());
+                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                    THEKOGANS_UTIL_OS_ERROR_CODE);
             }
             if (pid > 0) {
                 // parent process
@@ -401,12 +403,8 @@ namespace thekogans {
                 else {
                     execvp (path.c_str (), (char * const *)&argv[0]);
                 }
-                THEKOGANS_UTIL_LOG_SUBSYSTEM_ERROR (
-                    THEKOGANS_UTIL,
-                    "Unable to exec child process: '%s' (%s).\n",
-                    path.c_str (),
-                    Exception::FromErrorCode ().c_str ());
-                _exit (errno);
+                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                    THEKOGANS_UTIL_OS_ERROR_CODE);
             }
             return pid;
         #endif // defined (TOOLCHAIN_OS_Windows)
@@ -418,19 +416,19 @@ namespace thekogans {
                 processInformation.hProcess,
                 (DWORD)timeSpec.ToMilliseconds ()) == WAIT_OBJECT_0 ? Finished : Failed;
         #else // defined (TOOLCHAIN_OS_Windows)
-            if (pid != THEKOGANS_UTIL_INVALID_HANDLE_VALUE) {
+            if (pid != THEKOGANS_UTIL_INVALID_PROCESS_ID_VALUE) {
                 int status;
                 pid_t wpid = waitpid (pid, &status, WUNTRACED);
-                if (wpid == THEKOGANS_UTIL_INVALID_HANDLE_VALUE) {
+                if (wpid == THEKOGANS_UTIL_INVALID_PROCESS_ID_VALUE) {
                     return Failed;
                 }
                 if (WIFEXITED (status)) {
-                    pid = THEKOGANS_UTIL_INVALID_HANDLE_VALUE;
+                    pid = THEKOGANS_UTIL_INVALID_PROCESS_ID_VALUE;
                     returnCode = WEXITSTATUS (status);
                     return Finished;
                 }
                 if (WIFSIGNALED (status)) {
-                    pid = THEKOGANS_UTIL_INVALID_HANDLE_VALUE;
+                    pid = THEKOGANS_UTIL_INVALID_PROCESS_ID_VALUE;
                     return Killed;
                 }
             }
@@ -438,35 +436,27 @@ namespace thekogans {
         #endif // defined (TOOLCHAIN_OS_Windows)
         }
 
-        ChildProcess::ChildStatus ChildProcess::Exec () {
-            return Spawn () > 0 ? Wait () : Failed;
+        ChildProcess::ChildStatus ChildProcess::Exec (const TimeSpec &timeSpec) {
+            return Spawn () != THEKOGANS_UTIL_INVALID_PROCESS_ID_VALUE ? Wait (timeSpec) : Failed;
         }
 
         void ChildProcess::Kill (int sig) {
         #if defined (TOOLCHAIN_OS_Windows)
             if (!TerminateProcess (processInformation.hProcess, 0)) {
-                THEKOGANS_UTIL_LOG_SUBSYSTEM_ERROR (
-                    THEKOGANS_UTIL,
-                    "TerminateProcess (%x, 0)) failed (%s).\n",
-                    processInformation.hProcess,
-                    Exception::FromErrorCode ().c_str ());
-            }
         #else // defined (TOOLCHAIN_OS_Windows)
-            if (pid != THEKOGANS_UTIL_INVALID_HANDLE_VALUE) {
-                kill (pid, sig);
-            }
+            if (kill (pid, sig) < 0) {
         #endif // defined (TOOLCHAIN_OS_Windows)
+                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                    THEKOGANS_UTIL_OS_ERROR_CODE);
+            }
         }
 
         i32 ChildProcess::GetReturnCode () const {
         #if defined (TOOLCHAIN_OS_Windows)
             DWORD exitCode = 0;
             if (!GetExitCodeProcess (processInformation.hProcess, &exitCode)) {
-                THEKOGANS_UTIL_LOG_SUBSYSTEM_ERROR (
-                    THEKOGANS_UTIL,
-                    "GetExitCodeProcess (%x, &exitCode)) failed (%s).\n",
-                    processInformation.hProcess,
-                    Exception::FromErrorCode ().c_str ());
+                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                    THEKOGANS_UTIL_OS_ERROR_CODE);
             }
             return (i32)exitCode;
         #else // defined (TOOLCHAIN_OS_Windows)

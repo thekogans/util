@@ -29,6 +29,7 @@
 #include "thekogans/util/SpinLock.h"
 #include "thekogans/util/LockGuard.h"
 #include "thekogans/util/Exception.h"
+#include "thekogans/util/XMLUtils.h"
 #include "thekogans/util/StringUtils.h"
 
 namespace thekogans {
@@ -320,7 +321,7 @@ namespace thekogans {
 
         _LIB_THEKOGANS_UTIL_DECL std::string _LIB_THEKOGANS_UTIL_API boolTostring (
                 bool value) {
-            return value ? "true" : "false";
+            return value ? XML_TRUE : XML_FALSE;
         }
 
         _LIB_THEKOGANS_UTIL_DECL std::string _LIB_THEKOGANS_UTIL_API i32Tostring (

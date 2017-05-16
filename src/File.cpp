@@ -78,7 +78,7 @@ namespace thekogans {
             Close ();
         #if defined (TOOLCHAIN_OS_Windows)
             handle = CreateFile (path_.c_str (), dwDesiredAccess, dwShareMode,
-                0, dwCreationDisposition, dwFlagsAndAttributes | FILE_FLAG_OVERLAPPED, 0);
+                0, dwCreationDisposition, dwFlagsAndAttributes, 0);
         #else // defined (TOOLCHAIN_OS_Windows)
             handle =  open (path_.c_str (), flags, mode);
         #endif // defined (TOOLCHAIN_OS_Windows)

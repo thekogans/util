@@ -116,6 +116,12 @@ namespace thekogans {
         /// Invalid handle value.
         #define THEKOGANS_UTIL_INVALID_HANDLE_VALUE INVALID_HANDLE_VALUE
         /// \brief
+        /// Process id type.
+        #define THEKOGANS_UTIL_PROCESS_ID DWORD
+        /// \brief
+        /// Invalid process id value.
+        #define THEKOGANS_UTIL_INVALID_PROCESS_ID_VALUE 0xffffffff
+        /// \brief
         /// For compatibility only.
         #if defined (TOOLCHAIN_ARCH_i386)
             typedef long ssize_t;
@@ -137,6 +143,12 @@ namespace thekogans {
         /// \brief
         /// Invalid handle value.
         #define THEKOGANS_UTIL_INVALID_HANDLE_VALUE THEKOGANS_UTIL_POSIX_INVALID_HANDLE_VALUE
+        /// \brief
+        /// Process id type.
+        #define THEKOGANS_UTIL_PROCESS_ID pid_t
+        /// \brief
+        /// Invalid process id value.
+        #define THEKOGANS_UTIL_INVALID_PROCESS_ID_VALUE -1
     #endif // defined (TOOLCHAIN_OS_Windows)
 
         /// \brief
