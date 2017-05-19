@@ -57,7 +57,7 @@ namespace thekogans {
             ///
             /// \brief
             /// Represents a plugin found in the xml file.
-            struct _LIB_THEKOGANS_UTIL_DECL Plugin : public util::ThreadSafeRefCounted {
+            struct _LIB_THEKOGANS_UTIL_DECL Plugin : public ThreadSafeRefCounted {
                 /// \brief
                 /// Plugin has a private heap to help with memory
                 /// management, performance, and global heap fragmentation.
@@ -75,7 +75,7 @@ namespace thekogans {
                 std::string version;
                 /// \brief
                 /// Plugin signature used for integrity checks.
-                std::string sha2_256;
+                std::string SHA2_256;
                 /// \brief
                 /// Convenient typedef for std::set<std::string>.
                 typedef std::set<std::string> Dependencies;
@@ -129,16 +129,16 @@ namespace thekogans {
                 /// ctor.
                 /// \param[in] path_ Plugin path relative to the xml file.
                 /// \param[in] version_ Expected plugin version.
-                /// \param[in] sha2_256_ Plugin signature used for integrity checks.
+                /// \param[in] SHA2_256_ Plugin signature used for integrity checks.
                 /// \param[in] dependencies_ Plugin dependencies.
                 Plugin (
                     const std::string &path_,
                     const std::string &version_,
-                    const std::string &sha2_256_,
+                    const std::string &SHA2_256_,
                     const Dependencies &dependencies_ = Dependencies ()) :
                     path (path_),
                     version (version_),
-                    sha2_256 (sha2_256_),
+                    SHA2_256 (SHA2_256_),
                     dependencies (dependencies_) {}
 
                 /// \brief
@@ -183,7 +183,7 @@ namespace thekogans {
             /// and throw if bigger then maxPluginsFileSize.
             Plugins (
                 const std::string &path_,
-                util::ui64 maxPluginsFileSize = DEFAULT_MAX_PLUGINS_FILE_SIZE);
+                ui64 maxPluginsFileSize = DEFAULT_MAX_PLUGINS_FILE_SIZE);
 
             /// \brief
             /// Return plugin map.
@@ -198,15 +198,15 @@ namespace thekogans {
             Plugin::Ptr GetPlugin (const std::string &path) const;
             /// \brief
             /// Add a plugin to the map. If a plugin containing the path already
-            /// exists, update version and sha2_256 if different.
+            /// exists, update version and SHA2_256 if different.
             /// \param[in] path Plugin path relative to the xml file.
             /// \param[in] version Expected plugin version.
-            /// \param[in] sha2_256 Plugin signature used for integrity checks.
+            /// \param[in] SHA2_256 Plugin signature used for integrity checks.
             /// \param[in] dependencies Plugin dependencies.
             void AddPlugin (
                 const std::string &path,
                 const std::string &version,
-                const std::string &sha2_256,
+                const std::string &SHA2_256,
                 const Plugin::Dependencies &dependencies = Plugin::Dependencies ());
             /// \brief
             /// Delete the plugin identified by the given path.

@@ -35,7 +35,7 @@ namespace thekogans {
             Hash::Digest digest;
             SHA2 hasher;
             hasher.FromFile (pluginPath, SHA2::DIGEST_SIZE_256, digest);
-            if (Hash::DigestToString (digest) == sha2_256) {
+            if (Hash::DigestToString (digest) == SHA2_256) {
                 dynamicLibrary.Load (pluginPath);
                 GetPluginInterfaceProc GetPluginInterface =
                     (GetPluginInterfaceProc)dynamicLibrary.GetProc ("GetPluginInterface");
@@ -86,7 +86,7 @@ namespace thekogans {
             const char * const TAG_PLUGIN = "plugin";
             const char * const ATTR_PATH = "path";
             const char * const ATTR_VERSION = "version";
-            const char * const ATTR_SHA_256 = "SHA2-256";
+            const char * const ATTR_SHA2_256 = "SHA2-256";
 
             const char * const TAG_DEPENDENCIES = "dependencies";
             const char * const TAG_DEPENDENCY = "dependency";
@@ -146,19 +146,19 @@ namespace thekogans {
         void Plugins::AddPlugin (
                 const std::string &path,
                 const std::string &version,
-                const std::string &sha2_256,
+                const std::string &SHA2_256,
                 const Plugin::Dependencies &dependencies) {
             Plugin::Ptr plugin = GetPlugin (path);
             if (plugin.Get () == 0) {
-                plugin.Reset (new Plugin (path, version, sha2_256, dependencies));
+                plugin.Reset (new Plugin (path, version, SHA2_256, dependencies));
                 plugins.insert (PluginMap::value_type (path, plugin));
                 modified = true;
             }
             else if (plugin->version != version ||
-                    plugin->sha2_256 != sha2_256 ||
+                    plugin->SHA2_256 != SHA2_256 ||
                     plugin->dependencies != dependencies) {
                 plugin->version = version;
-                plugin->sha2_256 = sha2_256;
+                plugin->SHA2_256 = SHA2_256;
                 plugin->dependencies = dependencies;
                 modified = true;
             }
@@ -194,7 +194,7 @@ namespace thekogans {
                         Attributes attributes;
                         attributes.push_back (Attribute (ATTR_PATH, EncodeXMLCharEntities (it->second->path)));
                         attributes.push_back (Attribute (ATTR_VERSION, it->second->version));
-                        attributes.push_back (Attribute (ATTR_SHA_256, it->second->sha2_256));
+                        attributes.push_back (Attribute (ATTR_SHA2_256, it->second->SHA2_256));
                         if (it->second->dependencies.empty ()) {
                             pluginsFile << OpenTag (1, TAG_PLUGIN, attributes, true, true);
                         }
@@ -258,9 +258,9 @@ namespace thekogans {
             if (!path.empty ()) {
                 std::string version = node.attribute (ATTR_VERSION).value ();
                 if (!version.empty ()) {
-                    std::string sha2_256 = node.attribute (ATTR_SHA_256).value ();
-                    if (!sha2_256.empty ()) {
-                        Plugin::Ptr plugin (new Plugin (path, version, sha2_256));
+                    std::string SHA2_256 = node.attribute (ATTR_SHA2_256).value ();
+                    if (!SHA2_256.empty ()) {
+                        Plugin::Ptr plugin (new Plugin (path, version, SHA2_256));
                         for (pugi::xml_node child = node.first_child ();
                                 !child.empty (); child = child.next_sibling ()) {
                             if (child.type () == pugi::node_element) {
@@ -274,7 +274,7 @@ namespace thekogans {
                     }
                     else {
                         THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                            "Empty sha2_256 attribute for plugin %s.",
+                            "Empty SHA2_256 attribute for plugin %s.",
                             path.c_str ());
                     }
                 }

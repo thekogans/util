@@ -120,6 +120,12 @@ namespace thekogans {
                     typedef WorkerList::Callback::result_type result_type;
                     typedef WorkerList::Callback::argument_type argument_type;
                     virtual result_type operator () (argument_type worker) {
+                        // All workers have hit the barrier but their
+                        // respective threads might not have exited
+                        // yet. Join the worker thread before deleting
+                        // it to let it's thread function finish it's
+                        // tear down.
+                        worker->Wait ();
                         delete worker;
                         return true;
                     }

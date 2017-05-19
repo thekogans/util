@@ -288,7 +288,7 @@ namespace thekogans {
             #endif // defined (TOOLCHAIN_OS_Windows)
             }
             /// \brief
-            /// Return a process exit code.
+            /// Return the process exit code.
             /// \return Process exit code.
             i32 GetReturnCode () const;
 

@@ -81,7 +81,7 @@ namespace thekogans {
         ///         return vertices.size ();
         ///     }
         /// } job (result, vertices, xform);
-        /// vectorizer::Instance ().Execute (job);
+        /// GlobalVectorizer::Instance ().Execute (job);
         /// \endcode
 
         struct _LIB_THEKOGANS_UTIL_DECL Vectorizer {
@@ -112,7 +112,7 @@ namespace thekogans {
                 /// Use it to initialize the space where partial
                 /// results will be stored by each stage.
                 /// \param[in] chunks Number of chunks this job will be broken up in to.
-                virtual void Prolog (std::size_t chunks) throw () {}
+                virtual void Prolog (std::size_t /*chunks*/) throw () {}
                 /// \brief
                 /// Called by each worker with appropriate chunk range.
                 /// \param[in] startIndex Vector index where execution begins.
@@ -141,6 +141,9 @@ namespace thekogans {
             Vectorizer (
                 ui32 workerCount_ = SystemInfo::Instance ().GetCPUCount (),
                 i32 workerPriority = THEKOGANS_UTIL_NORMAL_THREAD_PRIORITY);
+            /// \brief
+            /// dtor.
+            ~Vectorizer ();
 
             /// \brief
             /// In order to provide fine grained control over job
@@ -156,6 +159,9 @@ namespace thekogans {
                 std::size_t chunkSize_ = SIZE_T_MAX);
 
         private:
+            /// \brief
+            /// Flag to signal the worker thread.
+            volatile bool done;
             /// \brief
             /// Synchronization lock.
             SpinLock spinLock;

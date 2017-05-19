@@ -27,6 +27,7 @@ namespace thekogans {
         Vectorizer::Vectorizer (
                 ui32 workerCount_,
                 i32 workerPriority) :
+                done (false),
                 barrier (workerCount_),
                 job (0),
                 workerCount (0),
@@ -46,6 +47,26 @@ namespace thekogans {
                     workers.push_back (worker.get ());
                     worker.release ();
                 }
+            }
+        }
+
+        Vectorizer::~Vectorizer () {
+            done = true;
+            struct DoneJob : public Job {
+                std::size_t workerCount;
+                explicit DoneJob (std::size_t workerCount_) :
+                    workerCount (workerCount_) {}
+                virtual void Execute (
+                    std::size_t /*startIndex*/,
+                    std::size_t /*endIndex*/,
+                    std::size_t /*rank*/) throw () {}
+                virtual std::size_t Size () const throw () {
+                    return workerCount;
+                }
+            } doneJob (workers.size ());
+            Execute (doneJob, 1);
+            for (std::size_t i = 0, count = workers.size (); i < count; ++i) {
+                workers[i]->Wait ();
             }
         }
 
@@ -121,7 +142,7 @@ namespace thekogans {
             // (and which leaves the job in an incomplete state).
             // It's better to just crash loudly, and let the engineer
             // fix his/her own code.
-            while (1) {
+            while (!vectorizer.done) {
                 // Wait until Execute releases us.
                 vectorizer.barrier.Wait ();
                 if (vectorizer.job != 0 && rank < vectorizer.workerCount) {
