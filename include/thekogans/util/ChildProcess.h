@@ -308,7 +308,7 @@ namespace thekogans {
             };
 
             /// \brief
-            /// Use in conjunction with CreateSpawnJob above for convenient child
+            /// Used in conjunction with CreateSpawnJob above for convenient child
             /// process launching and StdIO collection. Here's an example using ls:
             ///
             /// \code

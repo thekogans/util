@@ -45,6 +45,7 @@ namespace thekogans {
         /// \endcode
         ///
         /// Traditional loop:
+        ///
         /// \code{.cpp}
         /// for (std::size_t i = 0, count = vertices.size (); i < count; ++i) {
         ///     result[i] = vertices[i] * xform;
@@ -52,6 +53,7 @@ namespace thekogans {
         /// \endcode
         ///
         /// Vectorized loop:
+        ///
         /// \code{.cpp}
         /// struct XformVerticesJob : public thekogans::util::Vectorizer::Job {
         /// private:

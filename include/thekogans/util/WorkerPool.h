@@ -202,6 +202,7 @@ namespace thekogans {
                 /// \param[in] workerPool_ WorkerPool from which to acquire a worker.
                 /// \param[in] retries Number of times to retry if a worker is not immediately available.
                 /// \param[in] timeSpec How long to wait between retries.
+                /// IMPORTANT: timeSpec is a relative value.
                 WorkerPtr (
                     WorkerPool &workerPool_,
                     ui32 retries = 1,

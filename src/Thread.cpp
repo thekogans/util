@@ -342,39 +342,50 @@ namespace thekogans {
     #endif // defined (TOOLCHAIN_OS_Windows)
             assert (data != 0);
             Thread *thread = static_cast<Thread *> (data);
-        #if defined (TOOLCHAIN_OS_Windows)
-            // This code came from: https://msdn.microsoft.com/en-us/library/xcb2z8hs.aspx
-            const DWORD MS_VC_EXCEPTION = 0x406D1388;
-        #pragma pack (push, 8)
-            typedef struct tagTHREADNAME_INFO {
-                DWORD dwType; // Must be 0x1000.
-                LPCSTR szName; // Pointer to name (in user addr space).
-                DWORD dwThreadID; // Thread ID (-1=caller thread).
-                DWORD dwFlags; // Reserved for future use, must be zero.
-            } THREADNAME_INFO;
-        #pragma pack (pop)
-            THREADNAME_INFO info;
-            info.dwType = 0x1000;
-            info.szName = thread->name.c_str ();
-            info.dwThreadID = GetThreadId (thread->thread);
-            info.dwFlags = 0;
-        #pragma warning (push)
-        #pragma warning (disable: 6320 6322)
-            __try {
-                RaiseException (
-                    MS_VC_EXCEPTION,
-                    0,
-                    sizeof (info) / sizeof (ULONG_PTR),
-                    (ULONG_PTR *)&info);
+            if (!thread->name.empty ()) {
+            #if defined (TOOLCHAIN_OS_Windows)
+                // This code came from: https://msdn.microsoft.com/en-us/library/xcb2z8hs.aspx
+                const DWORD MS_VC_EXCEPTION = 0x406D1388;
+            #pragma pack (push, 8)
+                struct THREADNAME_INFO {
+                    DWORD dwType; // Must be 0x1000.
+                    LPCSTR szName; // Pointer to name (in user addr space).
+                    DWORD dwThreadID; // Thread ID (-1 = caller thread).
+                    DWORD dwFlags; // Reserved for future use, must be zero.
+
+                    THREADNAME_INFO (
+                        const std::string &name,
+                        THEKOGANS_UTIL_THREAD_HANDLE thread) :
+                        dwType (0x1000),
+                        szName (name.c_str ()),
+                        dwThreadID (GetThreadId (thread)),
+                        dwFlags (0) {}
+                } info (thread->name, thread->thread);
+            #pragma pack (pop)
+            #pragma warning (push)
+            #pragma warning (disable: 6320 6322)
+                __try {
+                    RaiseException (
+                        MS_VC_EXCEPTION,
+                        0,
+                        sizeof (info) / sizeof (ULONG_PTR),
+                        (ULONG_PTR *)&info);
+                }
+                __except (EXCEPTION_EXECUTE_HANDLER) {
+                }
+            #pragma warning (pop)
+            #elif defined (TOOLCHAIN_OS_OSX)
+                pthread_setname_np (thread->name.c_str ());
+            #else // defined (TOOLCHAIN_OS_OSX)
+                const std::size_t LINUX_MAX_THREAD_NAME = 15;
+                char name[LINUX_MAX_THREAD_NAME + 1];
+                std::size_t length =
+                    std::min (thread->name.size (), LINUX_MAX_THREAD_NAME);
+                strncpy (name, thread->name.c_str (), length);
+                name[length] = '\0';
+                pthread_setname_np (thread->thread, name);
+            #endif // defined (TOOLCHAIN_OS_Windows)
             }
-            __except (EXCEPTION_EXECUTE_HANDLER) {
-            }
-        #pragma warning (pop)
-        #elif defined (TOOLCHAIN_OS_OSX)
-            pthread_setname_np (thread->name.c_str ());
-        #else // defined (TOOLCHAIN_OS_OSX)
-            pthread_setname_np (thread->thread, thread->name.c_str ());
-        #endif // defined (TOOLCHAIN_OS_Windows)
         #if !defined (TOOLCHAIN_OS_Windows)
             thread->joined = false;
         #endif // !defined (TOOLCHAIN_OS_Windows)

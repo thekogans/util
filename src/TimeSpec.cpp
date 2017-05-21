@@ -211,8 +211,15 @@ namespace thekogans {
             #if defined (TOOLCHAIN_OS_Windows)
                 ::Sleep ((DWORD)timeSpec.ToMilliseconds ());
             #else // defined (TOOLCHAIN_OS_Windows)
+                TimeSpec required = timeSpec;
                 TimeSpec remainder;
-                nanosleep (&timeSpec, &remainder);
+                while (nanosleep (&required, &remainder) != 0) {
+                    THEKOGANS_UTIL_ERROR_CODE errorCode = THEKOGANS_UTIL_OS_ERROR_CODE;
+                    if (errorCode != EINTR) {
+                        THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (errorCode);
+                    }
+                    required = remainder;
+                }
             #endif // defined (TOOLCHAIN_OS_Windows)
             }
             else {

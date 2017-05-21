@@ -282,6 +282,7 @@ namespace thekogans {
         /// \brief
         /// Put the calling thread to sleep.
         /// \param[in] timeSpec How long to sleep for.
+        /// IMPORTANT: timeSpec is a relative value.
         _LIB_THEKOGANS_UTIL_DECL void _LIB_THEKOGANS_UTIL_API Sleep (const TimeSpec &timeSpec);
 
     } // namespace util

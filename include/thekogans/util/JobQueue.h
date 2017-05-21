@@ -91,6 +91,8 @@ namespace thekogans {
                 /// flag in Execute () to respond to cancellation
                 /// requests.
                 volatile bool cancelled;
+                /// \brief
+                /// Flag used internally to wait for synchronous jobs.
                 volatile bool *finished;
 
                 /// \brief
@@ -472,12 +474,12 @@ namespace thekogans {
         /// A global job queue instance. The JobQueue is designed to be
         /// as flexible as possible. To be useful in different situations
         /// the job queue's worker count needs to be parametrized as we
-        /// might need different queues running different counts at
+        /// might need different queues running different worker counts at
         /// different thread priorities. That said, the most basic (and
         /// the most useful) use case will have a single job queue using
         /// the defaults. This typedef exists to aid in that. If all you
-        /// need is a global job queue then GlobalJobQueue::Instance ()
-        /// will do the trick.
+        /// need is a background thread where you can schedule jobs, then
+        /// GlobalJobQueue::Instance () will do the trick.
         typedef Singleton<JobQueue, SpinLock, GlobalJobQueueCreateInstance> GlobalJobQueue;
 
     } // namespace util

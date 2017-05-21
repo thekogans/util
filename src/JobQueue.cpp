@@ -133,7 +133,7 @@ namespace thekogans {
                 workers.clear (callback);
                 stats.jobCount = 0;
                 state = Idle;
-                idle.Signal ();
+                idle.SignalAll ();
             }
         }
 
@@ -243,7 +243,7 @@ namespace thekogans {
             LockGuard<Mutex> guard (jobsMutex);
             if (jobs.empty ()) {
                 state = Idle;
-                idle.Signal ();
+                idle.SignalAll ();
             }
             stats.Update (start, end);
             jobFinished.SignalAll ();

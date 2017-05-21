@@ -111,8 +111,11 @@ namespace thekogans {
             void Wait ();
 
             /// \brief
-            /// Wait a specified amount of time for the
-            /// event to become signaled.
+            /// Wait a specified amount of time for the event to become signaled.
+            /// IMPORTANT: timeSpec is a relative value.
+            /// On POSIX (pthreads) systems it will add
+            /// the current time to the value provided
+            /// before calling pthread_cond_timedwait.
             /// \param[in] timeSpec Amount of time to wait before returning TimedOut.
             /// \return true = succeeded, false = timed out.
             bool Wait (const TimeSpec &timeSpec);

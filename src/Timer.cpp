@@ -98,20 +98,22 @@ namespace thekogans {
                     Timer &timer,
                     const TimeSpec &timeSpec,
                     bool periodic) {
-                ui64 id = timer.id == NIDX64 ? idPool++ : timer.id;
-                uint16_t flags = EV_ADD;
-                if (!periodic) {
-                    flags |= EV_ONESHOT;
+                if (timer.id == NIDX64) {
+                    ui64 id = idPool++;
+                    uint16_t flags = EV_ADD;
+                    if (!periodic) {
+                        flags |= EV_ONESHOT;
+                    }
+                    keventStruct event;
+                    keventSet (&event, id, EVFILT_TIMER, flags, 0,
+                        timeSpec.ToMilliseconds (), &timer);
+                    if (keventFunc (handle, &event, 1, 0, 0, 0) != 0) {
+                        THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                            THEKOGANS_UTIL_OS_ERROR_CODE);
+                    }
+                    timer.id = id;
+                    timer.periodic = periodic;
                 }
-                keventStruct event;
-                keventSet (&event, id, EVFILT_TIMER, flags, 0,
-                    timeSpec.ToMilliseconds (), &timer);
-                if (keventFunc (handle, &event, 1, 0, 0, 0) != 0) {
-                    THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                        THEKOGANS_UTIL_OS_ERROR_CODE);
-                }
-                timer.id = id;
-                timer.periodic = periodic;
             }
 
             void StopTimer (Timer &timer) {
@@ -168,7 +170,6 @@ namespace thekogans {
 
         Timer::~Timer () {
             Stop ();
-            WaitForThreadpoolTimerCallbacks (timer, TRUE);
             CloseThreadpoolTimer (timer);
         }
     #elif defined (TOOLCHAIN_OS_Linux)
@@ -184,13 +185,17 @@ namespace thekogans {
             sigEvent.sigev_notify = SIGEV_THREAD;
             sigEvent.sigev_value.sival_ptr = this;
             sigEvent.sigev_notify_function = TimerCallback;
-            if (timer_create (CLOCK_REALTIME, &sigEvent, &timer) != 0) {
-                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                    THEKOGANS_UTIL_OS_ERROR_CODE);
+            while (timer_create (CLOCK_REALTIME, &sigEvent, &timer) != 0) {
+                THEKOGANS_UTIL_ERROR_CODE errorCode = THEKOGANS_UTIL_OS_ERROR_CODE;
+                if (errorCode != EAGAIN) {
+                    THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (errorCode);
+                }
+                Sleep (TimeSpec::FromMilliseconds (50));
             }
         }
 
         Timer::~Timer () {
+            Stop ();
             timer_delete (timer);
         }
     #elif defined (TOOLCHAIN_OS_OSX)
@@ -203,7 +208,7 @@ namespace thekogans {
             periodic (false) {}
 
         Timer::~Timer () {
-            TimerQueue::Instance ().StopTimer (*this);
+            Stop ();
         }
     #endif // defined (TOOLCHAIN_OS_Windows)
 

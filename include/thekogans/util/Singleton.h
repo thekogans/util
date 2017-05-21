@@ -40,32 +40,44 @@ namespace thekogans {
         ///
         /// \code{.cpp}
         /// struct GlobalJobQueueCreateInstance {
+        ///     static std::string name;
         ///     static JobQueue::Type type;
         ///     static ui32 workerCount;
         ///     static i32 workerPriority;
+        ///     static ui32 workerAffinity;
         ///     static ui32 maxPendingJobsl
         ///
         ///     static void Parameterize (
+        ///             const std::string &name_ = std::string (),
         ///             JobQueue::Type type_ = JobQueue::TYPE_FIFO,
         ///             ui32 workerCount_ = 1,
         ///             i32 workerPriority_ = THEKOGANS_UTIL_NORMAL_THREAD_PRIORITY,
+        ///             ui32 workerAffinity_ = UI32_MAX,
         ///             ui32 maxPendingJobs_ = UI32_MAX) {
+        ///         name = name_;
         ///         type = type_;
         ///         workerCount = workerCount_;
         ///         workerPriority = workerPriority_;
+        ///         workerAffinity = workerAffinity_;
         ///         maxPendingJobs = maxPendingJobs_;
         ///     }
         ///
         ///     JobQueue *operator () () {
-        ///         return JobQueue (type, workerCount, workerPriority, maxPendingJobs);
+        ///         return JobQueue (
+        ///             name,
+        ///             type,
+        ///             workerCount,
+        ///             workerPriority,
+        ///             workerAffinity,
+        ///             maxPendingJobs);
         ///     }
         /// };
         ///
         /// typedef Singleton<JobQueue, SpinLock, GlobalJobQueueCreateInstance> GlobalJobQueue;
         ///
         /// // Call GlobalJobQueueCreateInstance::Parameterize (...); before calling
-        /// // GlobalJobQueue::Instance () and GlobalJobQueue instance will be created
-        /// // with your custom arguments.
+        /// // GlobalJobQueue::Instance () and the GlobalJobQueue instance will be
+        /// // created with your custom arguments.
         /// \endcode
 
         template<typename T>
@@ -123,7 +135,7 @@ namespace thekogans {
         /// NOTE: That thekogans::util::SpinLock used as the second template
         /// parameter means that foo's creation will be thread safe (not
         /// that foo itself is thread safe). If you don't care about thread
-        /// safety, use thekogans::util::NullLock (default).
+        /// safety when creating the singleton, use thekogans::util::NullLock (default).
 
         template<
             typename T,
