@@ -64,8 +64,8 @@ namespace thekogans {
             /// \brief
             /// Call before the first use of Console::Instance.
             /// \param[in] threadSafePrintString_ true == Serialize access to std::cout and std::cerr.
-            /// \param[in] hookCtrlBreak true == Hook CTRL-C to call StopRunLoop.
-            /// \param[in] coreDump Linux only. true == Turn on core dump.
+            /// \param[in] hookCtrlBreak_ true == Hook CTRL-C to call StopRunLoop.
+            /// \param[in] coreDump_ Linux only. true == Turn on core dump.
             static void Parameterize (
                 bool threadSafePrintString_ = true,
                 bool hookCtrlBreak_ = true,

@@ -101,9 +101,9 @@ namespace thekogans {
 
             /// \brief
             /// Parse command line options, calling appropriate Do...
-            /// \param[in] args Count of values in argv.
+            /// \param[in] argc Count of values in argv.
             /// \param[in] argv Array of command line options.
-            /// \param[in] option List of one letter options that we support.
+            /// \param[in] options List of one letter options that we support.
             void Parse (
                 int argc,
                 const char *argv[],

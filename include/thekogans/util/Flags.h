@@ -54,7 +54,7 @@ namespace thekogans {
             }
             /// \brief
             /// Test if any of the given flags are set.
-            /// \param[in] flags Flags to test.
+            /// \param[in] flags_ Flags to test.
             /// \return true = one or more set, false = none are set
             inline bool TestAny (T flags_) const {
                 return (flags & flags_) != 0;

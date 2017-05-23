@@ -70,7 +70,7 @@ namespace thekogans {
         /// \brief
         /// Format an XML open tag (i.e. <tag>).
         /// \param[in] indentationLevel Level at which to indent the tag.
-        /// \param[in] tag Tag name to format.
+        /// \param[in] tagName Tag name to format.
         /// \param[in] attributes Optional list of attributes and their values.
         /// \param[in] close Optional close the tag (i.e. '/>' instead of '>').
         /// \param[in] endl Optional append a '\n'.
@@ -85,7 +85,7 @@ namespace thekogans {
         /// \brief
         /// Format an XML close tag (i.e. </tag>).
         /// \param[in] indentationLevel Level at which to indent the tag.
-        /// \param[in] tag Tag name to format.
+        /// \param[in] tagName Tag name to format.
         /// \param[in] endl Optional append a '\n'.
         /// \return Formated close tag.
         _LIB_THEKOGANS_UTIL_DECL std::string _LIB_THEKOGANS_UTIL_API

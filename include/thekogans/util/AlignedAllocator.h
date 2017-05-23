@@ -93,7 +93,6 @@ namespace thekogans {
             /// Use Allocator to allocate a block, and align it to the
             /// requested boundary.
             /// \param[in] size Block size to allocate.\n
-            /// \param[in] alignment Power of 2 alignment boundry.
             /// \return Pointer to the aligned block.
             virtual void *Alloc (std::size_t size) {
                 return AllocHelper (size, false);

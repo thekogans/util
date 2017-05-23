@@ -86,7 +86,7 @@ namespace thekogans {
         /// By passing util::WorkerPool::WorkerPtr::SharedPtr in to the
         /// Job's ctor we guarantee that the worker will be released as
         /// soon as the Job goes out of scope (as it will be the last
-        /// reference on shared_ptr).
+        /// reference on the shared_ptr).
 
         struct _LIB_THEKOGANS_UTIL_DECL WorkerPool {
         private:

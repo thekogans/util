@@ -846,7 +846,7 @@ namespace thekogans {
             /// count of items per page, only the minimum.
             /// \param[in] name_ Heap name.
             /// \param[in] minItemsInPage_ Heap minimum items in page.
-            /// \param[in] allocator Page allocator.
+            /// \param[in] allocator_ Page allocator.
             Heap (const std::string &name_,
                     std::size_t minItemsInPage_ =
                         THEKOGANS_UTIL_HEAP_DEFAULT_MIN_ITEMS_IN_PAGE,

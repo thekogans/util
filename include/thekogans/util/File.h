@@ -301,7 +301,7 @@ namespace thekogans {
         private:
             /// \brief
             /// Open the file.
-            /// \param[in] path Path to file to open.
+            /// \param[in] path_ Path to file to open.
             /// \param[in] flags Most useful POSIX open flags.
             void OpenHelper (
                 const std::string &path_,

@@ -388,7 +388,7 @@ namespace thekogans {
         /// \brief
         /// Return true if variant1 < variant2.
         /// \param[in] variant1 First variant to compare.
-        /// \param[in] variant1 Second variant to compare.
+        /// \param[in] variant2 Second variant to compare.
         /// \return true = variant1 < variant2, false = variant1 >= variant2
         _LIB_THEKOGANS_UTIL_DECL bool _LIB_THEKOGANS_UTIL_API operator < (
             const Variant &variant1,
@@ -396,7 +396,7 @@ namespace thekogans {
         /// \brief
         /// Return true if variant1 > variant2.
         /// \param[in] variant1 First variant to compare.
-        /// \param[in] variant1 Second variant to compare.
+        /// \param[in] variant2 Second variant to compare.
         /// \return true = variant1 > variant2, false = variant1 <= variant2
         _LIB_THEKOGANS_UTIL_DECL bool _LIB_THEKOGANS_UTIL_API operator > (
             const Variant &variant1,
@@ -405,7 +405,7 @@ namespace thekogans {
         /// \brief
         /// Return true if variant1 == variant2.
         /// \param[in] variant1 First variant to compare.
-        /// \param[in] variant1 Second variant to compare.
+        /// \param[in] variant2 Second variant to compare.
         /// \return true = variant1 == variant2, false = variant1 != variant2
         _LIB_THEKOGANS_UTIL_DECL bool _LIB_THEKOGANS_UTIL_API operator == (
             const Variant &variant1,
@@ -413,7 +413,7 @@ namespace thekogans {
         /// \brief
         /// Return true if variant1 != variant2.
         /// \param[in] variant1 First variant to compare.
-        /// \param[in] variant1 Second variant to compare.
+        /// \param[in] variant2 Second variant to compare.
         /// \return true = variant1 != variant2, false = variant1 == variant2
         _LIB_THEKOGANS_UTIL_DECL bool _LIB_THEKOGANS_UTIL_API operator != (
             const Variant &variant1,

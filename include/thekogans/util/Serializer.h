@@ -487,7 +487,7 @@ namespace thekogans {
 
             /// \brief
             /// Serialize a BufferHeader.
-            /// \param[in] value Value to serialize.
+            /// \param[in] bufferHeader Value to serialize.
             /// \return *this.
             inline Serializer &operator << (
                     const BufferHeader &bufferHeader) {
@@ -501,7 +501,7 @@ namespace thekogans {
 
             /// \brief
             /// Extract a BufferHeader.
-            /// \param[out] value Where to place the extracted value.
+            /// \param[out] bufferHeader Where to place the extracted value.
             /// \return *this.
             inline Serializer &operator >> (
                     BufferHeader &bufferHeader) {
@@ -515,6 +515,7 @@ namespace thekogans {
 
             /// \brief
             /// Return serialized size of const Buffer &.
+            /// \param[in] value Value whose size to return.
             /// \return Serialized size of const Buffer &.
             static ui32 Size (const Buffer &value);
 
@@ -574,7 +575,7 @@ namespace thekogans {
 
             /// \brief
             /// Serialize a FixedBufferHeader.
-            /// \param[in] value Value to serialize.
+            /// \param[in] fixedBufferHeader Value whose size to return.
             /// \return *this.
             inline Serializer &operator << (
                     const FixedBufferHeader &fixedBufferHeader) {
@@ -586,8 +587,8 @@ namespace thekogans {
             }
 
             /// \brief
-            /// Extract a FixedbufferHeader.
-            /// \param[out] value Where to place the extracted value.
+            /// Extract a \see{FixedBufferHeader}.
+            /// \param[out] fixedBufferHeader Where to place the extracted value.
             /// \return *this.
             inline Serializer &operator >> (
                     FixedBufferHeader &fixedBufferHeader) {
@@ -600,6 +601,7 @@ namespace thekogans {
 
             /// \brief
             /// Return serialized size of const FixedBuffer &.
+            /// \param[in] value Value to serialize.
             /// \return Serialized size of const FixedBuffer &.
             template<ui32 length>
             static ui32 Size (const FixedBuffer<length> & /*value*/) {

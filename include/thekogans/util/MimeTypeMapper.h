@@ -70,16 +70,16 @@ namespace thekogans {
 
             /// \brief
             /// Look up a given mime type, and return a list of
-            /// extentions associated with it (forward mapping).
+            /// extensions associated with it (forward mapping).
             /// \param[in] mimeType Mime type to look up.
-            /// \return List of extentions associated with a given mime type.
+            /// \return List of extensions associated with a given mime type.
             const ExtensionList &MimeTypeToExtensions (
                 const std::string &mimeType) const;
             /// \brief
-            /// Look up a given extention, and return a the
+            /// Look up a given extension, and return a the
             /// mime type associated with it (erverse mapping).
-            /// \param[in] extention Extention to look up.
-            /// \return The mime type associated with the given extention.
+            /// \param[in] extension Extension to look up.
+            /// \return The mime type associated with the given extension.
             std::string ExtensionToMimeType (const std::string &extension) const;
 
             /// \brief

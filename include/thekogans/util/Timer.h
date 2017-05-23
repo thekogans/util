@@ -76,7 +76,7 @@ namespace thekogans {
         ///     util::JobQueue jobQueue;
         ///
         ///     // Timer::Callback
-        ///     virtual void Alarm (util::Timer & /*timer*/) {
+        ///     virtual void Alarm (util::Timer & /*timer*/) throw () {
         ///         // queue idle jobs.
         ///         jobQueue.Enq (...);
         ///     }

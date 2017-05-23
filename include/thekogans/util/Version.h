@@ -84,9 +84,9 @@ namespace thekogans {
 
             /// \brief
             /// ctor.
-            /// \param[in] majorVersion Project major version.
-            /// \param[in] minorVersion Project minor version.
-            /// \param[in] patchVersion Project patch version.
+            /// \param[in] majorVersion_ Project major version.
+            /// \param[in] minorVersion_ Project minor version.
+            /// \param[in] patchVersion_ Project patch version.
             Version (
                 ui32 majorVersion_,
                 ui32 minorVersion_,

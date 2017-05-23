@@ -134,7 +134,8 @@ namespace thekogans {
             /// Create a digest from a given buffer.
             /// \param[in] buffer Beginning of buffer.
             /// \param[in] size Size of buffer in bytes.
-            /// \param[out] output Where to store the generated digest.
+            /// \param[in] digestSize Size of difest in bytes.
+            /// \param[out] digest Where to store the generated digest.
             void FromBuffer (
                 const void *buffer,
                 std::size_t size,
@@ -143,7 +144,8 @@ namespace thekogans {
             /// \brief
             /// Create a digest from a given file.
             /// \param[in] path File from which to generate the digest.
-            /// \param[out] output Where to store the generated digest.
+            /// \param[in] digestSize Size of difest in bytes.
+            /// \param[out] digest Where to store the generated digest.
             void FromFile (
                 const std::string &path,
                 ui32 digestSize,

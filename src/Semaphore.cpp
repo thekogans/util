@@ -25,13 +25,13 @@ namespace thekogans {
         Semaphore::Semaphore (
                 ui32 maxCount_,
                 ui32 initialCount) :
-        #if defined (TOOLCHAIN_OS_Windows)
+            #if defined (TOOLCHAIN_OS_Windows)
                 handle (CreateSemaphore (0, initialCount, maxCount_, 0)) {
-        #else // defined (TOOLCHAIN_OS_Windows)
+            #else // defined (TOOLCHAIN_OS_Windows)
                 maxCount (maxCount_),
                 count (0),
                 condition (mutex) {
-        #endif // defined (TOOLCHAIN_OS_Windows)
+            #endif // defined (TOOLCHAIN_OS_Windows)
             if (maxCount_ < initialCount) {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
                     THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);

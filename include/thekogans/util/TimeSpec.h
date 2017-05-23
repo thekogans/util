@@ -132,7 +132,7 @@ namespace thekogans {
             }
             /// \brief
             /// Create a TimeSpec from timeval.
-            /// \param[in] timeval Value to use to initialize the TimeSpec.
+            /// \param[in] timeVal Value to use to initialize the TimeSpec.
             /// \return TimeSpec initialized to given value.
             static TimeSpec Fromtimeval (const timeval &timeVal) {
                 if (timeVal.tv_sec < 0 || timeVal.tv_usec < 0) {
