@@ -114,6 +114,7 @@
     <cpp_header>$(organization)/$(project_directory)/Heap.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/IntrusiveList.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/JobQueue.h</cpp_header>
+    <cpp_header>$(organization)/$(project_directory)/JobQueueScheduler.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/LockGuard.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/Logger.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/LoggerMgr.h</cpp_header>
@@ -608,6 +609,7 @@
     <cpp_source>HRTimer.cpp</cpp_source>
     <cpp_source>HRTimerMgr.cpp</cpp_source>
     <cpp_source>JobQueue.cpp</cpp_source>
+    <cpp_source>JobQueueScheduler.cpp</cpp_source>
     <cpp_source>LoggerMgr.cpp</cpp_source>
     <cpp_source>MD5.cpp</cpp_source>
     <cpp_source>MainRunLoop.cpp</cpp_source>
