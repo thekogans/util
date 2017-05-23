@@ -53,7 +53,7 @@ namespace thekogans {
             /// Enqueue a job to be performed on the run loop thread.
             /// \param[in] job Job to enqueue.
             /// \param[in] wait Wait for job to finish. Used for synchronous job execution.
-            /// NOTE: Same constraint applies to Enq as stop. Namely, you can't call Enq
+            /// NOTE: Same constraint applies to Enq as Stop. Namely, you can't call Enq
             /// from the same thread that called Start.
             virtual void Enq (
                 JobQueue::Job::UniquePtr job,

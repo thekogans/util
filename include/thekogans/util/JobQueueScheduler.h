@@ -26,6 +26,7 @@
 #include "thekogans/util/Timer.h"
 #include "thekogans/util/TimeSpec.h"
 #include "thekogans/util/JobQueue.h"
+#include "thekogans/util/RunLoop.h"
 #include "thekogans/util/SpinLock.h"
 
 namespace thekogans {
@@ -48,20 +49,12 @@ namespace thekogans {
             /// \struct JobQueueScheduler::JobInfo JobQueueScheduler.h thekogans/util/JobQueueScheduler.h
             ///
             /// \brief
-            /// Holds information about future jobs.
+            /// Abstract base for \see{JobQueue}/\see{RunLoop} jobs.
             struct JobInfo {
                 /// \brief
                 /// Convenient typedef for std::shared_ptr<JobInfo>.
                 typedef std::shared_ptr<JobInfo> SharedPtr;
 
-                /// \brief
-                /// JobInfo has a private heap to help with memory
-                /// management, performance, and global heap fragmentation.
-                THEKOGANS_UTIL_DECLARE_HEAP_WITH_LOCK (JobInfo, SpinLock)
-
-                /// \brief
-                /// \see{JobQueue} the job will be scheduled on.
-                JobQueue &jobQueue;
                 /// \brief
                 /// \see{JobQueue::Job} that will be scheduled.
                 JobQueue::Job::UniquePtr job;
@@ -75,12 +68,13 @@ namespace thekogans {
                 /// \param[in] job_ \see{JobQueue::Job} that will be scheduled.
                 /// \param[in] deadline_ Absolute time when the job will be scheduled.
                 JobInfo (
-                    JobQueue &jobQueue_,
                     JobQueue::Job::UniquePtr job_,
                     const TimeSpec &deadline_) :
-                    jobQueue (jobQueue_),
                     job (std::move (job_)),
                     deadline (deadline_) {}
+                /// \brief
+                /// dtor.
+                virtual ~JobInfo () {}
 
                 /// \struct JobQueueScheduler::JobInfo::Compare JobQueueScheduler.h thekogans/util/JobQueueScheduler.h
                 ///
@@ -100,8 +94,79 @@ namespace thekogans {
                 } static compare;
 
                 /// \brief
-                /// JobInfo is neither copy constructable, nor assignable.
-                THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (JobInfo)
+                /// Enqueue the job on the specified job queue.
+                virtual void EnqJob () = 0;
+            };
+            /// \struct JobQueueScheduler::JobInfo JobQueueScheduler.h thekogans/util/JobQueueScheduler.h
+            ///
+            /// \brief
+            /// Holds information about a future job to be scheduled on the given \see{JobQueue}.
+            struct JobQueueJobInfo : public JobInfo {
+                /// \brief
+                /// JobQueueJobInfo has a private heap to help with memory
+                /// management, performance, and global heap fragmentation.
+                THEKOGANS_UTIL_DECLARE_HEAP_WITH_LOCK (JobQueueJobInfo, SpinLock)
+
+                /// \brief
+                /// \see{JobQueue} the job will be scheduled on.
+                JobQueue &jobQueue;
+
+                /// \brief
+                /// ctor.
+                /// \param[in] jobQueue_ \see{JobQueue} the job will be scheduled on.
+                /// \param[in] job \see{JobQueue::Job} that will be scheduled.
+                /// \param[in] deadline Absolute time when the job will be scheduled.
+                JobQueueJobInfo (
+                    JobQueue &jobQueue_,
+                    JobQueue::Job::UniquePtr job,
+                    const TimeSpec &deadline) :
+                    JobInfo (std::move (job), deadline),
+                    jobQueue (jobQueue_) {}
+
+                /// \brief
+                /// Enqueue the job on the specified job queue.
+                virtual void EnqJob () {
+                    jobQueue.Enq (std::move (job));
+                }
+
+                /// \brief
+                /// JobQueueJobInfo is neither copy constructable, nor assignable.
+                THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (JobQueueJobInfo)
+            };
+            /// \struct JobQueueScheduler::RunLoopJobInfo JobQueueScheduler.h thekogans/util/JobQueueScheduler.h
+            ///
+            /// \brief
+            /// Holds information about a future job to be scheduled on the given \see{RunLoop}.
+            struct RunLoopJobInfo : public JobInfo {
+                /// \brief
+                /// RunLoopJobInfo has a private heap to help with memory
+                /// management, performance, and global heap fragmentation.
+                THEKOGANS_UTIL_DECLARE_HEAP_WITH_LOCK (RunLoopJobInfo, SpinLock)
+
+                /// \brief
+                /// \see{RunLoop} the job will be scheduled on.
+                RunLoop &runLoop;
+
+                /// \brief
+                /// ctor.
+                /// \param[in] runLoop_ \see{RunLoop} the job will be scheduled on.
+                /// \param[in] job \see{JobQueue::Job} that will be scheduled.
+                /// \param[in] deadline Absolute time when the job will be scheduled.
+                RunLoopJobInfo (
+                    RunLoop &runLoop_,
+                    JobQueue::Job::UniquePtr job,
+                    const TimeSpec &deadline) :
+                    JobInfo (std::move (job), deadline),
+                    runLoop (runLoop_) {}
+
+                /// \brief
+                /// Enqueue the job on the specified run loop.
+                virtual void EnqJob () {
+                    runLoop.Enq (std::move (job));
+                }
+
+                /// RunLoopJobInfo is neither copy constructable, nor assignable.
+                THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (RunLoopJobInfo)
             };
             /// \brief
             /// Priority queue used for job scheduling.
@@ -123,10 +188,37 @@ namespace thekogans {
             /// \param[in] job \see{JobQueue::Job} to execute.
             /// \param[in] timeSpec When in the future to execute the given job.
             /// IMPORTANT: timeSpec is a relative value.
-            void Schedule (
-                JobQueue &jobQueue,
-                JobQueue::Job::UniquePtr job,
-                const TimeSpec &timeSpec);
+            inline void Schedule (
+                    JobQueue &jobQueue,
+                    JobQueue::Job::UniquePtr job,
+                    const TimeSpec &timeSpec) {
+                ScheduleJobInfo (
+                    JobInfo::SharedPtr (
+                        new JobQueueJobInfo (
+                            jobQueue,
+                            std::move (job),
+                            GetCurrentTime () + timeSpec)),
+                    timeSpec);
+            }
+
+            /// \brief
+            /// Schedule a job to be performed in the future.
+            /// \param[in] runLoop \see{RunLoop} that will execute the job.
+            /// \param[in] job \see{JobQueue::Job} to execute.
+            /// \param[in] timeSpec When in the future to execute the given job.
+            /// IMPORTANT: timeSpec is a relative value.
+            inline void Schedule (
+                    RunLoop &runLoop,
+                    JobQueue::Job::UniquePtr job,
+                    const TimeSpec &timeSpec) {
+                ScheduleJobInfo (
+                    JobInfo::SharedPtr (
+                        new RunLoopJobInfo (
+                            runLoop,
+                            std::move (job),
+                            GetCurrentTime () + timeSpec)),
+                    timeSpec);
+            }
 
         private:
             // Timer::Callback
@@ -134,6 +226,15 @@ namespace thekogans {
             /// Called every time the timer fires.
             /// \param[in] timer Timer that fired.
             virtual void Alarm (Timer & /*timer*/) throw ();
+
+            /// \brief
+            /// Schedule helper.
+            /// \param[in] jobInfo JobInfo containing \see{JobQueue::Job} particulars.
+            /// \param[in] timeSpec When in the future to execute the given job.
+            /// IMPORTANT: timeSpec is a relative value.
+            void ScheduleJobInfo (
+                JobInfo::SharedPtr jobInfo,
+                const TimeSpec &timeSpec);
 
             /// \brief
             /// JobQueueScheduler is neither copy constructable, nor assignable.

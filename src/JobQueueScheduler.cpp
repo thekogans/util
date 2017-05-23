@@ -21,14 +21,26 @@
 namespace thekogans {
     namespace util {
 
-        void JobQueueScheduler::Schedule (
-                JobQueue &jobQueue,
-                JobQueue::Job::UniquePtr job,
+        THEKOGANS_UTIL_IMPLEMENT_HEAP_WITH_LOCK (JobQueueScheduler::JobQueueJobInfo, SpinLock)
+        THEKOGANS_UTIL_IMPLEMENT_HEAP_WITH_LOCK (JobQueueScheduler::RunLoopJobInfo, SpinLock)
+
+        void JobQueueScheduler::Alarm (Timer & /*timer*/) throw () {
+            LockGuard<SpinLock> guard (spinLock);
+            TimeSpec now = GetCurrentTime ();
+            while (!queue.empty () && queue.top ()->deadline >= now) {
+                queue.top ()->EnqJob ();
+                queue.pop ();
+            }
+            if (!queue.empty ()) {
+                timer.Start (queue.top ()->deadline - now);
+            }
+        }
+
+        void JobQueueScheduler::ScheduleJobInfo (
+                JobInfo::SharedPtr jobInfo,
                 const TimeSpec &timeSpec) {
             LockGuard<SpinLock> guard (spinLock);
             bool startTimer = false;
-            TimeSpec now = GetCurrentTime ();
-            JobInfo::SharedPtr jobInfo (new JobInfo (jobQueue, std::move (job), now + timeSpec));
             if (queue.empty () || queue.top ()->deadline > jobInfo->deadline) {
                 timer.Stop ();
                 startTimer = true;
@@ -36,18 +48,6 @@ namespace thekogans {
             queue.push (jobInfo);
             if (startTimer) {
                 timer.Start (timeSpec);
-            }
-        }
-
-        void JobQueueScheduler::Alarm (Timer & /*timer*/) throw () {
-            LockGuard<SpinLock> guard (spinLock);
-            TimeSpec now = GetCurrentTime ();
-            while (!queue.empty () && queue.top ()->deadline >= now) {
-                queue.top ()->jobQueue.Enq (std::move (queue.top ()->job));
-                queue.pop ();
-            }
-            if (!queue.empty ()) {
-                timer.Start (queue.top ()->deadline - now);
             }
         }
 
