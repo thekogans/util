@@ -97,7 +97,7 @@ namespace thekogans {
                 /// Enqueue the job on the specified job queue.
                 virtual void EnqJob () = 0;
             };
-            /// \struct JobQueueScheduler::JobInfo JobQueueScheduler.h thekogans/util/JobQueueScheduler.h
+            /// \struct JobQueueScheduler::JobQueueJobInfo JobQueueScheduler.h thekogans/util/JobQueueScheduler.h
             ///
             /// \brief
             /// Holds information about a future job to be scheduled on the given \see{JobQueue}.
@@ -169,8 +169,15 @@ namespace thekogans {
                 THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (RunLoopJobInfo)
             };
             /// \brief
+            /// Convenient typedef for
+            /// std::priority_queue<JobInfo::SharedPtr, std::vector<JobInfo::SharedPtr>, JobInfo::Compare>.
+            typedef std::priority_queue<
+                JobInfo::SharedPtr,
+                std::vector<JobInfo::SharedPtr>,
+                JobInfo::Compare> Queue;
+            /// \brief
             /// Priority queue used for job scheduling.
-            std::priority_queue<JobInfo::SharedPtr, std::vector<JobInfo::SharedPtr>, JobInfo::Compare> queue;
+            Queue queue;
             /// \brief
             /// Synchronization spin lock.
             SpinLock spinLock;
