@@ -59,10 +59,6 @@ namespace thekogans {
                 typedef std::shared_ptr<JobInfo> SharedPtr;
 
                 /// \brief
-                /// Convenient typedef for std::string.
-                typedef std::string Id;
-
-                /// \brief
                 /// \see{JobQueue::Job} that will be scheduled.
                 JobQueue::Job::UniquePtr job;
                 /// \brief
@@ -70,7 +66,7 @@ namespace thekogans {
                 TimeSpec deadline;
                 /// \brief
                 /// Id which can be used in a call to JobQueueScheduler::Cancel.
-                const Id id;
+                const JobQueue::Job::Id id;
 
                 /// \brief
                 /// ctor.
@@ -207,7 +203,7 @@ namespace thekogans {
                 /// \brief
                 /// Cancel the job associated with the given job id.
                 /// \param[in] id JobInfo id to cancel.
-                void Cancel (const JobInfo::Id &id);
+                void Cancel (const JobQueue::Job::Id &id);
             } queue;
             /// \brief
             /// Synchronization spin lock.
@@ -230,7 +226,7 @@ namespace thekogans {
             /// \param[in] job \see{JobQueue::Job} to execute.
             /// \param[in] timeSpec When in the future to execute the given job.
             /// IMPORTANT: timeSpec is a relative value.
-            inline JobInfo::Id Schedule (
+            inline JobQueue::Job::Id Schedule (
                     JobQueue::Job::UniquePtr job,
                     const TimeSpec &timeSpec,
                     JobQueue &jobQueue = GlobalJobQueue::Instance ()) {
@@ -249,7 +245,7 @@ namespace thekogans {
             /// \param[in] job \see{JobQueue::Job} to execute.
             /// \param[in] timeSpec When in the future to execute the given job.
             /// IMPORTANT: timeSpec is a relative value.
-            inline JobInfo::Id Schedule (
+            inline JobQueue::Job::Id Schedule (
                     JobQueue::Job::UniquePtr job,
                     const TimeSpec &timeSpec,
                     RunLoop &runLoop = MainRunLoop::Instance ()) {
@@ -279,7 +275,7 @@ namespace thekogans {
             /// \brief
             /// Cancel the job associated with the given job id.
             /// \param[in] id JobInfo id to cancel.
-            void Cancel (const JobInfo::Id &id);
+            void Cancel (const JobQueue::Job::Id &id);
 
             /// \brief
             /// Remove all pendig jobs.
@@ -298,7 +294,7 @@ namespace thekogans {
             /// \param[in] timeSpec When in the future to execute the given job.
             /// IMPORTANT: timeSpec is a relative value.
             /// \return JobInfo::Id which can be used in a call to Cancel.
-            JobInfo::Id ScheduleJobInfo (
+            JobQueue::Job::Id ScheduleJobInfo (
                 JobInfo::SharedPtr jobInfo,
                 const TimeSpec &timeSpec);
 

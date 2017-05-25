@@ -44,7 +44,7 @@ namespace thekogans {
             }
         }
 
-        void JobQueueScheduler::Queue::Cancel (const JobInfo::Id &id) {
+        void JobQueueScheduler::Queue::Cancel (const JobQueue::Job::Id &id) {
             for (std::size_t i = c.size (); i-- > 0;) {
                 if (c[i]->id == id) {
                     c.erase (c.begin () + i);
@@ -75,7 +75,7 @@ namespace thekogans {
             }
         }
 
-        void JobQueueScheduler::Cancel (const JobInfo::Id &id) {
+        void JobQueueScheduler::Cancel (const JobQueue::Job::Id &id) {
             LockGuard<SpinLock> guard (spinLock);
             if (!queue.empty ()) {
                 TimeSpec deadline = queue.top ()->deadline;
@@ -105,7 +105,7 @@ namespace thekogans {
             }
         }
 
-        JobQueueScheduler::JobInfo::Id JobQueueScheduler::ScheduleJobInfo (
+        JobQueue::Job::Id JobQueueScheduler::ScheduleJobInfo (
                 JobInfo::SharedPtr jobInfo,
                 const TimeSpec &timeSpec) {
             LockGuard<SpinLock> guard (spinLock);

@@ -98,22 +98,24 @@ namespace thekogans {
                     Timer &timer,
                     const TimeSpec &timeSpec,
                     bool periodic) {
-                if (timer.id == NIDX64) {
-                    ui64 id = idPool++;
-                    uint16_t flags = EV_ADD;
-                    if (!periodic) {
-                        flags |= EV_ONESHOT;
-                    }
-                    keventStruct event;
-                    keventSet (&event, id, EVFILT_TIMER, flags, 0,
-                        timeSpec.ToMilliseconds (), &timer);
-                    if (keventFunc (handle, &event, 1, 0, 0, 0) != 0) {
-                        THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                            THEKOGANS_UTIL_OS_ERROR_CODE);
-                    }
-                    timer.id = id;
-                    timer.periodic = periodic;
+                // StartTimer can be called repeatedly without calling StopTimer.
+                // This behavior is desirable when adjusting an already existing
+                // timer. In this case, reuse the existing timer id and EV_ADD will
+                // modify the existing kqueue entry.
+                ui64 id = timer.id == NIDX64 ? idPool++ : timer.id;
+                uint16_t flags = EV_ADD;
+                if (!periodic) {
+                    flags |= EV_ONESHOT;
                 }
+                keventStruct event;
+                keventSet (&event, id, EVFILT_TIMER, flags, 0,
+                    timeSpec.ToMilliseconds (), &timer);
+                if (keventFunc (handle, &event, 1, 0, 0, 0) != 0) {
+                    THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                        THEKOGANS_UTIL_OS_ERROR_CODE);
+                }
+                timer.id = id;
+                timer.periodic = periodic;
             }
 
             void StopTimer (Timer &timer) {
