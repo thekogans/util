@@ -113,11 +113,15 @@ namespace thekogans {
                 }
 
                 /// \brief
+                /// Convenient typedef for std::string.
+                typedef std::string Id;
+
+                /// \brief
                 /// Return a unique identifier for this
                 /// job. Used to cancel a pending job.
                 /// \return unique id for the job.
-                virtual std::string GetId () const throw () {
-                    return std::string ();
+                virtual Id GetId () const throw () {
+                    return Id ();
                 }
                 // See VERY IMPORTANT comment in Stop below.
                 /// \brief
@@ -374,7 +378,7 @@ namespace thekogans {
             /// in the queue (in flight), it is not canceled.
             /// \param[in] jobId Id of job to cancel.
             /// \return true if the job was cancelled. false if in flight.
-            bool Cancel (const std::string &jobId);
+            bool Cancel (const Job::Id &jobId);
             /// \brief
             /// Cancel all queued jobs. Jobs in flight are unaffected.
             void CancelAll ();
@@ -410,7 +414,7 @@ namespace thekogans {
             /// \param[in] start Completed job start time.
             /// \param[in] end Completed job end time.
             void FinishedJob (
-                const std::string &jobId,
+                const Job::Id &jobId,
                 ui64 start,
                 ui64 end);
 

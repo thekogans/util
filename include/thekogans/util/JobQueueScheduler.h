@@ -27,7 +27,9 @@
 #include "thekogans/util/TimeSpec.h"
 #include "thekogans/util/JobQueue.h"
 #include "thekogans/util/RunLoop.h"
+#include "thekogans/util/MainRunLoop.h"
 #include "thekogans/util/SpinLock.h"
+#include "thekogans/util/GUID.h"
 
 namespace thekogans {
     namespace util {
@@ -35,7 +37,8 @@ namespace thekogans {
         /// \struct JobQueueScheduler JobQueueScheduler.h thekogans/util/JobQueueScheduler.h
         ///
         /// \brief
-        /// A JobQueueScheduler is an adoptor class used to schedule \see{JobQueue::Job}s.
+        /// A JobQueueScheduler allows you to schedule \see{JobQueue::Job}s to be executed
+        /// in the future. Both \see{JobQueue} and \see{RunLoop} are supported.
 
         struct _LIB_THEKOGANS_UTIL_DECL JobQueueScheduler : public Timer::Callback {
             /// \brief
@@ -56,11 +59,18 @@ namespace thekogans {
                 typedef std::shared_ptr<JobInfo> SharedPtr;
 
                 /// \brief
+                /// Convenient typedef for std::string.
+                typedef std::string Id;
+
+                /// \brief
                 /// \see{JobQueue::Job} that will be scheduled.
                 JobQueue::Job::UniquePtr job;
                 /// \brief
                 /// Absolute time when the job will be scheduled.
                 TimeSpec deadline;
+                /// \brief
+                /// Id which can be used in a call to JobQueueScheduler::Cancel.
+                const Id id;
 
                 /// \brief
                 /// ctor.
@@ -71,7 +81,8 @@ namespace thekogans {
                     JobQueue::Job::UniquePtr job_,
                     const TimeSpec &deadline_) :
                     job (std::move (job_)),
-                    deadline (deadline_) {}
+                    deadline (deadline_),
+                    id (GUID::FromRandom ().ToString ()) {}
                 /// \brief
                 /// dtor.
                 virtual ~JobInfo () {}
@@ -117,9 +128,9 @@ namespace thekogans {
                 /// \param[in] job \see{JobQueue::Job} that will be scheduled.
                 /// \param[in] deadline Absolute time when the job will be scheduled.
                 JobQueueJobInfo (
-                    JobQueue &jobQueue_,
                     JobQueue::Job::UniquePtr job,
-                    const TimeSpec &deadline) :
+                    const TimeSpec &deadline,
+                    JobQueue &jobQueue_) :
                     JobInfo (std::move (job), deadline),
                     jobQueue (jobQueue_) {}
 
@@ -153,9 +164,9 @@ namespace thekogans {
                 /// \param[in] job \see{JobQueue::Job} that will be scheduled.
                 /// \param[in] deadline Absolute time when the job will be scheduled.
                 RunLoopJobInfo (
-                    RunLoop &runLoop_,
                     JobQueue::Job::UniquePtr job,
-                    const TimeSpec &deadline) :
+                    const TimeSpec &deadline,
+                    RunLoop &runLoop_) :
                     JobInfo (std::move (job), deadline),
                     runLoop (runLoop_) {}
 
@@ -174,10 +185,30 @@ namespace thekogans {
             typedef std::priority_queue<
                 JobInfo::SharedPtr,
                 std::vector<JobInfo::SharedPtr>,
-                JobInfo::Compare> Queue;
+                JobInfo::Compare> QueueType;
+            /// \struct JobQueueScheduler::Queue JobQueueScheduler.h thekogans/util/JobQueueScheduler.h
+            ///
             /// \brief
             /// Priority queue used for job scheduling.
-            Queue queue;
+            struct Queue : public QueueType {
+                /// \brief
+                /// ctor.
+                Queue () :
+                    QueueType (JobInfo::compare) {}
+
+                /// \brief
+                /// Cancel all pending jobs associated with the given \see{JobQueue}.
+                /// \param[in] jobQueue \see{JobQueue} whose jobs to cancel.
+                void Cancel (const JobQueue &jobQueue);
+                /// \brief
+                /// Cancel all pending jobs associated with the given \see{RunLoop}.
+                /// \param[in] runLoop \see{RunLoop} whose jobs to cancel.
+                void Cancel (const RunLoop &runLoop);
+                /// \brief
+                /// Cancel the job associated with the given job id.
+                /// \param[in] id JobInfo id to cancel.
+                void Cancel (const JobInfo::Id &id);
+            } queue;
             /// \brief
             /// Synchronization spin lock.
             SpinLock spinLock;
@@ -186,8 +217,12 @@ namespace thekogans {
             /// \brief
             /// ctor.
             JobQueueScheduler () :
-                timer (*this),
-                queue (JobInfo::compare) {}
+                timer (*this) {}
+            /// \brief
+            /// dtor.
+            ~JobQueueScheduler () {
+                Clear ();
+            }
 
             /// \brief
             /// Schedule a job to be performed in the future.
@@ -195,16 +230,16 @@ namespace thekogans {
             /// \param[in] job \see{JobQueue::Job} to execute.
             /// \param[in] timeSpec When in the future to execute the given job.
             /// IMPORTANT: timeSpec is a relative value.
-            inline void Schedule (
-                    JobQueue &jobQueue,
+            inline JobInfo::Id Schedule (
                     JobQueue::Job::UniquePtr job,
-                    const TimeSpec &timeSpec) {
-                ScheduleJobInfo (
+                    const TimeSpec &timeSpec,
+                    JobQueue &jobQueue = GlobalJobQueue::Instance ()) {
+                return ScheduleJobInfo (
                     JobInfo::SharedPtr (
                         new JobQueueJobInfo (
-                            jobQueue,
                             std::move (job),
-                            GetCurrentTime () + timeSpec)),
+                            GetCurrentTime () + timeSpec,
+                            jobQueue)),
                     timeSpec);
             }
 
@@ -214,18 +249,41 @@ namespace thekogans {
             /// \param[in] job \see{JobQueue::Job} to execute.
             /// \param[in] timeSpec When in the future to execute the given job.
             /// IMPORTANT: timeSpec is a relative value.
-            inline void Schedule (
-                    RunLoop &runLoop,
+            inline JobInfo::Id Schedule (
                     JobQueue::Job::UniquePtr job,
-                    const TimeSpec &timeSpec) {
-                ScheduleJobInfo (
+                    const TimeSpec &timeSpec,
+                    RunLoop &runLoop = MainRunLoop::Instance ()) {
+                return ScheduleJobInfo (
                     JobInfo::SharedPtr (
                         new RunLoopJobInfo (
-                            runLoop,
                             std::move (job),
-                            GetCurrentTime () + timeSpec)),
+                            GetCurrentTime () + timeSpec,
+                            runLoop)),
                     timeSpec);
             }
+
+            /// \brief
+            /// Cancel all pending jobs associated with the given \see{JobQueue}.
+            /// IMPORTANT: JobQueueJobInfo holds on to the \see{JobQueue} reference.
+            /// Use this member to cancel all \see{JobQueue} jobs before that
+            /// \see{JobQueue} goes out of scope.
+            /// \param[in] jobQueue \see{JobQueue} whose jobs to cancel.
+            void Cancel (const JobQueue &jobQueue);
+            /// \brief
+            /// Cancel all pending jobs associated with the given \see{RunLoop}.
+            /// IMPORTANT: RunLoopJobInfo holds on to the \see{RunLoop} reference.
+            /// Use this member to cancel all \see{RunLoop} jobs before that
+            /// \see{RunLoop} goes out of scope.
+            /// \param[in] runLoop \see{RunLoop} whose jobs to cancel.
+            void Cancel (const RunLoop &runLoop);
+            /// \brief
+            /// Cancel the job associated with the given job id.
+            /// \param[in] id JobInfo id to cancel.
+            void Cancel (const JobInfo::Id &id);
+
+            /// \brief
+            /// Remove all pendig jobs.
+            void Clear ();
 
         private:
             // Timer::Callback
@@ -239,7 +297,8 @@ namespace thekogans {
             /// \param[in] jobInfo JobInfo containing \see{JobQueue::Job} particulars.
             /// \param[in] timeSpec When in the future to execute the given job.
             /// IMPORTANT: timeSpec is a relative value.
-            void ScheduleJobInfo (
+            /// \return JobInfo::Id which can be used in a call to Cancel.
+            JobInfo::Id ScheduleJobInfo (
                 JobInfo::SharedPtr jobInfo,
                 const TimeSpec &timeSpec);
 

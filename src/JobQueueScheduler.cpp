@@ -24,6 +24,75 @@ namespace thekogans {
         THEKOGANS_UTIL_IMPLEMENT_HEAP_WITH_LOCK (JobQueueScheduler::JobQueueJobInfo, SpinLock)
         THEKOGANS_UTIL_IMPLEMENT_HEAP_WITH_LOCK (JobQueueScheduler::RunLoopJobInfo, SpinLock)
 
+        void JobQueueScheduler::Queue::Cancel (const JobQueue &jobQueue) {
+            for (std::size_t i = c.size (); i-- > 0;) {
+                JobQueueJobInfo *jobQueueJobInfo =
+                    dynamic_cast<JobQueueJobInfo *> (c[i].get ());
+                if (jobQueueJobInfo != 0 && &jobQueueJobInfo->jobQueue == &jobQueue) {
+                    c.erase (c.begin () + i);
+                }
+            }
+        }
+
+        void JobQueueScheduler::Queue::Cancel (const RunLoop &runLoop) {
+            for (std::size_t i = c.size (); i-- > 0;) {
+                RunLoopJobInfo *runLoopJobInfo =
+                    dynamic_cast<RunLoopJobInfo *> (c[i].get ());
+                if (runLoopJobInfo != 0 && &runLoopJobInfo->runLoop == &runLoop) {
+                    c.erase (c.begin () + i);
+                }
+            }
+        }
+
+        void JobQueueScheduler::Queue::Cancel (const JobInfo::Id &id) {
+            for (std::size_t i = c.size (); i-- > 0;) {
+                if (c[i]->id == id) {
+                    c.erase (c.begin () + i);
+                    break;
+                }
+            }
+        }
+
+        void JobQueueScheduler::Cancel (const JobQueue &jobQueue) {
+            LockGuard<SpinLock> guard (spinLock);
+            if (!queue.empty ()) {
+                TimeSpec deadline = queue.top ()->deadline;
+                queue.Cancel (jobQueue);
+                if (!queue.empty () && queue.top ()->deadline != deadline) {
+                    timer.Start (queue.top ()->deadline - GetCurrentTime ());
+                }
+            }
+        }
+
+        void JobQueueScheduler::Cancel (const RunLoop &runLoop) {
+            LockGuard<SpinLock> guard (spinLock);
+            if (!queue.empty ()) {
+                TimeSpec deadline = queue.top ()->deadline;
+                queue.Cancel (runLoop);
+                if (!queue.empty () && queue.top ()->deadline != deadline) {
+                    timer.Start (queue.top ()->deadline - GetCurrentTime ());
+                }
+            }
+        }
+
+        void JobQueueScheduler::Cancel (const JobInfo::Id &id) {
+            LockGuard<SpinLock> guard (spinLock);
+            if (!queue.empty ()) {
+                TimeSpec deadline = queue.top ()->deadline;
+                queue.Cancel (id);
+                if (!queue.empty () && queue.top ()->deadline != deadline) {
+                    timer.Start (queue.top ()->deadline - GetCurrentTime ());
+                }
+            }
+        }
+
+        void JobQueueScheduler::Clear () {
+            LockGuard<SpinLock> guard (spinLock);
+            timer.Stop ();
+            Queue empty;
+            queue.swap (empty);
+        }
+
         void JobQueueScheduler::Alarm (Timer & /*timer*/) throw () {
             LockGuard<SpinLock> guard (spinLock);
             TimeSpec now = GetCurrentTime ();
@@ -36,7 +105,7 @@ namespace thekogans {
             }
         }
 
-        void JobQueueScheduler::ScheduleJobInfo (
+        JobQueueScheduler::JobInfo::Id JobQueueScheduler::ScheduleJobInfo (
                 JobInfo::SharedPtr jobInfo,
                 const TimeSpec &timeSpec) {
             LockGuard<SpinLock> guard (spinLock);
@@ -49,6 +118,7 @@ namespace thekogans {
             if (startTimer) {
                 timer.Start (timeSpec);
             }
+            return jobInfo->id;
         }
 
     } // namespace util

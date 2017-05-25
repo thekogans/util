@@ -196,6 +196,31 @@ namespace thekogans {
         #endif // defined (TOOLCHAIN_OS_Windows)
 
             /// \brief
+            /// Get the path associated with this child process.
+            /// \return Path associated with this child process.
+            inline const std::string &GetPath () const {
+                return path;
+            }
+            /// \brief
+            /// Get the type of standard io to hook.
+            /// \return Type of standard io to hook.
+            inline ui32 GetHookStdIO () const {
+                return hookStdIO;
+            }
+            /// \brief
+            /// Get the list of arguments associated with this child process.
+            /// \return List of arguments associated with this child process.
+            inline const std::list<std::string> &GetArguments () const {
+                return arguments;
+            }
+            /// \brief
+            /// Get the list of environment variables associated with this child process.
+            /// \return List of environment variables associated with this child process.
+            inline const std::list<std::string> &GetEnvironmentVariables () const {
+                return environmentVariables;
+            }
+
+            /// \brief
             /// Return the stdin pipe to the child process.
             /// \return The pipe handle.\n
             /// NOTE: You can use this handle as a parameter
@@ -228,10 +253,22 @@ namespace thekogans {
             /// \param[in] argument Argument to add.
             void AddArgument (const std::string &argument);
             /// \brief
+            /// Set the list of arguments.
+            /// \param[in] arguments_ List of arguments to set.
+            inline void SetArguments (const std::list<std::string> &arguments_) {
+                arguments = arguments_;
+            }
+            /// \brief
             /// Add an environment variable to the child process.
             /// \param[in] environmentVariable Variable to add.\n
             /// NOTE: Variables should be in the form of name=value
             void AddEnvironmentVariable (const std::string &environmentVariable);
+            /// \brief
+            /// Set the list of environment variables.
+            /// \param[in] environmentVariables_ List of environment variables to set.
+            inline void SetEnvironmentVariable (const std::list<std::string> &environmentVariables_) {
+                environmentVariables = environmentVariables_;
+            }
 
             /// \brief
             /// Return the command line which will be executed by this child process.

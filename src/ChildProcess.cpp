@@ -475,7 +475,7 @@ namespace thekogans {
                         THEKOGANS_UTIL_TRY {
                             childProcess.Spawn ();
                         }
-                        THEKOGANS_UTIL_CATCH_AND_LOG
+                        THEKOGANS_UTIL_CATCH_AND_LOG_SUBSYSTEM (THEKOGANS_UTIL)
                     }
                 }
             };
@@ -497,7 +497,7 @@ namespace thekogans {
                         THEKOGANS_UTIL_TRY {
                             status = childProcess.Exec ();
                         }
-                        THEKOGANS_UTIL_CATCH_AND_LOG
+                        THEKOGANS_UTIL_CATCH_AND_LOG_SUBSYSTEM (THEKOGANS_UTIL)
                     }
                 }
             };

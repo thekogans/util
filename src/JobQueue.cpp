@@ -172,7 +172,7 @@ namespace thekogans {
             }
         }
 
-        bool JobQueue::Cancel (const std::string &jobId) {
+        bool JobQueue::Cancel (const Job::Id &jobId) {
             if (!jobId.empty ()) {
                 LockGuard<Mutex> guard (jobsMutex);
                 for (Job *job = jobs.front (); job != 0; job = jobs.next (job)) {
@@ -237,7 +237,7 @@ namespace thekogans {
         }
 
         void JobQueue::FinishedJob (
-                const std::string &jobId,
+                const Job::Id &jobId,
                 ui64 start,
                 ui64 end) {
             LockGuard<Mutex> guard (jobsMutex);
