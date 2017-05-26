@@ -106,9 +106,9 @@ endif()
 # Link against the dependencies defined by Kragle, if this library is used in kragle
 # You might want to setup your own linkage for your project, dear user of the Util library...
 if(KRAGLE_DEPS)
-target_link_libraries(thekogans_util
-    boost_lib
-	zlib_lib)
+    target_link_libraries(thekogans_util
+            boost_lib
+            zlib_lib)
 endif()
 
 target_include_directories(thekogans_util PUBLIC include)
