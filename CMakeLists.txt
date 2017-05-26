@@ -11,6 +11,7 @@ if(APPLE)
     add_definitions(-DTOOLCHAIN_OS_OSX)
 endif()
 
+# TODO (rbosa): Please automate the pickup of the version numbers from 'thekogans_make.xml'
 add_definitions(
     -DTOOLCHAIN_ARCH_x86_64
     -DTHEKOGANS_UTIL_MAJOR_VERSION=0
