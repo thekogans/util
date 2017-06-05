@@ -21,6 +21,8 @@
 namespace thekogans {
     namespace util {
 
+        JobQueueScheduler::JobInfo::Compare JobQueueScheduler::JobInfo::compare;
+
         THEKOGANS_UTIL_IMPLEMENT_HEAP_WITH_LOCK (JobQueueScheduler::JobQueueJobInfo, SpinLock)
         THEKOGANS_UTIL_IMPLEMENT_HEAP_WITH_LOCK (JobQueueScheduler::RunLoopJobInfo, SpinLock)
 

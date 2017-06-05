@@ -3,7 +3,7 @@
                 project_type = "library"
                 major_version = "0"
                 minor_version = "16"
-                patch_version = "2"
+                patch_version = "3"
                 guid = "e541acd69d9d020f7eac98d5bf9e0d7a"
                 schema_version = "2">
   <features>
@@ -48,23 +48,23 @@
     </if>
     <choose>
       <when condition = "$(TOOLCHAIN_OS) == 'Windows'">
-        <system>Ws2_32.lib</system>
-        <system>mpr.lib</system>
+        <library>Ws2_32.lib</library>
+        <library>mpr.lib</library>
       </when>
       <when condition = "$(TOOLCHAIN_OS) == 'Linux'">
-        <system>-lpthread</system>
-        <system>-lrt</system>
-        <system>-ldl</system>
+        <library>pthread</library>
+        <library>rt</library>
+        <library>dl</library>
         <if condition = "$(have_feature -f:THEKOGANS_UTIL_HAVE_XLIB)">
-          <system>-lX11</system>
+          <library>X11</library>
         </if>
       </when>
       <when condition = "$(TOOLCHAIN_OS) == 'OSX'">
-        <system>-lpthread</system>
-        <system>-framework Foundation</system>
-        <system>-framework CoreFoundation</system>
-        <system>-framework CoreServices</system>
-        <system>-framework SystemConfiguration</system>
+        <library>pthread</library>
+        <framework>Foundation</framework>
+        <framework>CoreFoundation</framework>
+        <framework>CoreServices</framework>
+        <framework>SystemConfiguration</framework>
       </when>
     </choose>
   </dependencies>
@@ -661,6 +661,11 @@
       <cpp_source>boost/atomic/lockpool.cpp</cpp_source>
     </if>
   </cpp_sources>
+  <if condition = "$(TOOLCHAIN_OS) == 'OSX'">
+    <objective_cpp_sources prefix = "src">
+      <objective_cpp_source>MacUtils.mm</objective_cpp_source>
+    </objective_cpp_sources>
+  </if>
   <if condition = "$(have_feature -f:THEKOGANS_UTIL_HAVE_TESTS)">
     <cpp_tests prefix = "tests">
       <cpp_test>test_Version.cpp</cpp_test>

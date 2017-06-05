@@ -293,7 +293,7 @@ namespace thekogans {
             cpu_set_t affinityMask;
             CPU_ZERO (&affinityMask);
             CPU_SET (affinity, &affinityMask);
-            int result = pthread_setaffinity_np (thread, sizeof (affinityMask), &affinityMask)
+            int result = pthread_setaffinity_np (thread, sizeof (affinityMask), &affinityMask);
             if (result != 0) {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (result);
             }
