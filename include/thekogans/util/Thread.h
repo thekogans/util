@@ -304,7 +304,7 @@ namespace thekogans {
             /// \brief
             /// Derivative classes must override this method
             /// to provide their own thread implementation.
-            virtual void Run () = 0;
+            virtual void Run () throw () = 0;
 
         private:
             /// \brief

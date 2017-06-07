@@ -424,7 +424,7 @@ namespace thekogans {
             Console::Instance ().FlushPrintQueue ();
         }
 
-        void LoggerMgr::Run () {
+        void LoggerMgr::Run () throw () {
             while (1) {
                 Entry::UniquePtr entry = Deq ();
                 if (entry.get () != 0 && !entry->message.empty () && FilterEntry (*entry)) {

@@ -136,7 +136,7 @@ namespace thekogans {
             }
 
         private:
-            void Run () {
+            void Run () throw () {
                 const ui32 MaxEventsBatch = 32;
                 keventStruct kqueueEvents[MaxEventsBatch];
                 while (1) {

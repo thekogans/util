@@ -209,7 +209,7 @@ namespace thekogans {
                 // Thread
                 /// \brief
                 /// Worker thread.
-                virtual void Run ();
+                virtual void Run () throw ();
             };
             /// \brief
             /// Vectorizer workers.

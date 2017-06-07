@@ -37,6 +37,21 @@ namespace thekogans {
             }
         }
 
+        void Version::IncMajorVersion () {
+            ++majorVersion;
+            minorVersion = 0;
+            patchVersion = 0;
+        }
+
+        void Version::IncMinorVersion () {
+            ++minorVersion;
+            patchVersion = 0;
+        }
+
+        void Version::IncPatchVersion () {
+            ++patchVersion;
+        }
+
         _LIB_THEKOGANS_UTIL_DECL bool _LIB_THEKOGANS_UTIL_API operator == (
                 const Version &version1,
                 const Version &version2) {

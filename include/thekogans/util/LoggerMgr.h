@@ -463,7 +463,7 @@ namespace thekogans {
             // Thread
             /// \brief
             /// Thread that processes the log entries.
-            virtual void Run ();
+            virtual void Run () throw ();
 
             /// \brief
             /// Return true if entry passed all registered filters.

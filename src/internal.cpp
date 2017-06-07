@@ -122,7 +122,7 @@
             }
 
             // thekogans::util::Thread
-            virtual void Run () {
+            virtual void Run () throw () {
                 pthread_join (threadToJoin, result);
                 {
                     thekogans::util::LockGuard<thekogans::util::Mutex> guard (mutex);

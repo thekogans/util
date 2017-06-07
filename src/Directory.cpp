@@ -317,7 +317,7 @@ namespace thekogans {
             }
         }
 
-        void Directory::Watcher::Run () {
+        void Directory::Watcher::Run () throw () {
             while (1) {
                 THEKOGANS_UTIL_TRY {
                 #if defined (TOOLCHAIN_OS_Windows)

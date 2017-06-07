@@ -40,7 +40,7 @@ namespace thekogans {
             }
         }
 
-        void JobQueue::Worker::Run () {
+        void JobQueue::Worker::Run () throw () {
             while (!queue.done) {
                 Job::UniquePtr job = queue.Deq ();
                 if (job.get () != 0) {

@@ -53,7 +53,7 @@ namespace thekogans {
         /// _LIB_ORGANIZATION_PROJECT_API GetVersion ();
         /// \endcode
         ///
-        /// In a compilation unit, do this:
+        /// In the compilation unit, do this:
         ///
         /// \code{.cpp}
         /// // Replace ORGANIZATION and PROJECT with something appropriate.
@@ -98,6 +98,16 @@ namespace thekogans {
             /// ctor.
             /// \param[in] value String representation of a version (major.minor.patch).
             explicit Version (const std::string &value);
+
+            /// \brief
+            /// Increment majorVersion and set minorVersion and patchVersion to 0.
+            void IncMajorVersion ();
+            /// \brief
+            /// Increment minorVersion and set patchVersion to 0.
+            void IncMinorVersion ();
+            /// \brief
+            /// Increment patchVersion.
+            void IncPatchVersion ();
 
             /// \brief
             /// Return the canonical version string this project was compiled with.

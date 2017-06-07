@@ -132,7 +132,7 @@ namespace thekogans {
             }
         }
 
-        void Vectorizer::Worker::Run () {
+        void Vectorizer::Worker::Run () throw () {
             // NOTE: No exception handling here. If we were to wrap
             // the while loop with try/catch, the first exception
             // thrown would leave the vectorizer with one (or more)
