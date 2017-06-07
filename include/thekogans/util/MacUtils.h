@@ -15,26 +15,27 @@
 // You should have received a copy of the GNU General Public License
 // along with libthekogans_util. If not, see <http://www.gnu.org/licenses/>.
 
-#include "thekogans/util/NullLock.h"
+#if !defined (__thekogans_util_MacUtils_h)
+#define __thekogans_util_MacUtils_h
+
+#include <string>
 
 namespace thekogans {
     namespace util {
 
-        NullLock::NullLock () {
-        }
+        /// \brief
+        /// Return error description from the given OSStatus.
+        /// \param[in] errorCode OSStatus to return description for.
+        /// \return Error description from the given OSStatus.
+        std::string DescriptionFromOSStatus (OSStatus errorCode);
 
-        NullLock::~NullLock () {
-        }
-
-        bool NullLock::TryAcquire () {
-            return true;
-        }
-
-        void NullLock::Acquire () {
-        }
-
-        void NullLock::Release () {
-        }
+        /// \brief
+        /// Return error description from the given CFError.
+        /// \param[in] error CFError to return description for.
+        /// \return Error description from the given CFError.
+        std::string DescriptionFromCFError (CFErrorRef error);
 
     } // namespace util
 } // namespace thekogans
+
+#endif // !defined (__thekogans_util_MacUtils_h)
