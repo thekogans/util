@@ -304,6 +304,9 @@ namespace thekogans {
             /// \brief
             /// Derivative classes must override this method
             /// to provide their own thread implementation.
+            /// IMPORTANT: Note the throw (). It's there to remind
+            /// you that if your Run implementation leaks exceptions,
+            /// your application will crash.
             virtual void Run () throw () = 0;
 
         private:
