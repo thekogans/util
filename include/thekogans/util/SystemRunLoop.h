@@ -119,7 +119,21 @@ namespace thekogans {
         /// \endcode
 
         struct _LIB_THEKOGANS_UTIL_DECL SystemRunLoop : public RunLoop {
-        #if defined (TOOLCHAIN_OS_Linux)
+            /// \brief
+            /// Convenient typedef for std::unique_ptr<SystemRunLoop>.
+            typedef std::unique_ptr<SystemRunLoop> Ptr;
+
+        #if defined (TOOLCHAIN_OS_Windows)
+            /// \brief
+            /// Convenient typedef for LRESULT (CALLBACK *) (HWND, UINT, WPARAM, LPARAM, void *).
+            /// NOTE: Return 0 if you processed the event, otherwise call DefWindowProc.
+            typedef LRESULT (CALLBACK *EventProcessor) (
+                HWND /*wnd*/,
+                UINT /*message*/,
+                WPARAM /*wParam*/,
+                LPARAM /*lParam*/,
+                void * /*userData*/);
+        #elif defined (TOOLCHAIN_OS_Linux)
             /// \brief
             /// Convenient typedef for bool (*) (const XEvent &, void *).
             /// NOTE: Returning false from this callback will cause
@@ -127,13 +141,20 @@ namespace thekogans {
             typedef bool (*EventProcessor) (
                 const XEvent & /*event*/,
                 void * /*userData*/);
-        #endif // defined (TOOLCHAIN_OS_Linux)
+        #endif // defined (TOOLCHAIN_OS_Windows)
 
         private:
+            volatile bool done;
         #if defined (TOOLCHAIN_OS_Windows)
             /// \brief
             /// Windows window handle.
             HWND wnd;
+            /// \brief
+            /// Callback to process window events.
+            EventProcessor eventProcessor;
+            /// \brief
+            /// Optional user data passed to eventProcessor.
+            void *userData;
         #elif defined (TOOLCHAIN_OS_Linux)
             /// \brief
             /// Callback to process Xlib XEvent events.
@@ -173,7 +194,12 @@ namespace thekogans {
             /// \brief
             /// ctor.
             /// \param[in] wnd_ Windows window handle.
-            SystemRunLoop (HWND wnd_ = CreateThreadWindow ());
+            /// \param[in] eventProcessor_ Callback to process window events.
+            /// \param[in] userData_ Optional user data passed to eventProcessor.
+            SystemRunLoop (
+                HWND wnd_ = CreateThreadWindow (),
+                EventProcessor eventProcessor_ = 0,
+                void *userData_ = 0);
             /// \brief
             /// dtor.
             virtual ~SystemRunLoop ();
@@ -208,6 +234,12 @@ namespace thekogans {
             /// Create a run loop window to service job requests.
             /// \return Window that will process job requests.
             static HWND CreateThreadWindow ();
+            /// \brief
+            /// Return the window associated with this run loop.
+            /// \return Window associated with this run loop.
+            inline HWND GetWindow () const {
+                return wnd;
+            }
         #elif defined (TOOLCHAIN_OS_Linux)
             /// \brief
             /// Dispatch an event to the given run loop.
@@ -230,6 +262,11 @@ namespace thekogans {
             /// Stop the run loop. Calling this function will cause the Start call
             /// to return.
             virtual void Stop ();
+
+            /// \brief
+            /// Return true if Start was called.
+            /// \return true if Start was called.
+            virtual bool IsRunning ();
 
             /// \brief
             /// Enqueue a job to be performed on the run loop's thread.

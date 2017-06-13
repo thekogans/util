@@ -27,8 +27,14 @@ namespace thekogans {
     namespace util {
 
     #if defined (TOOLCHAIN_OS_Windows)
-        SystemRunLoop::SystemRunLoop (HWND wnd_) :
+        SystemRunLoop::SystemRunLoop (
+                HWND wnd_,
+                EventProcessor eventProcessor_,
+                void *userData_) :
+                done (true),
                 wnd (wnd_),
+                eventProcessor (eventProcessor_),
+                userData (userData_),
                 jobFinished (jobsMutex) {
             if (wnd != 0) {
                 SetWindowLongPtr (wnd, GWLP_USERDATA, (LONG_PTR)this);
@@ -62,7 +68,11 @@ namespace thekogans {
                     return 0;
                 }
             }
-            return DefWindowProc (wnd, message, wParam, lParam);
+            SystemRunLoop *runLoop =
+                (SystemRunLoop *)GetWindowLongPtr (wnd, GWLP_USERDATA);
+            return runLoop != 0 && runLoop->eventProcessor != 0 ?
+                runLoop->eventProcessor (wnd, message, wParam, lParam, runLoop->userData) :
+                DefWindowProc (wnd, message, wParam, lParam);
         }
 
         namespace {
@@ -114,6 +124,7 @@ namespace thekogans {
                 EventProcessor *eventProcessor_,
                 void *userData_,
                 const char *displayName_) :
+                done (true),
                 eventProcessor (eventProcessor_),
                 userData (userData_),
                 displayName (displayName_),
@@ -182,6 +193,7 @@ namespace thekogans {
         }
     #elif defined (TOOLCHAIN_OS_OSX)
         SystemRunLoop::SystemRunLoop (CFRunLoopRef runLoop_) :
+                done (true),
                 runLoop (runLoop_),
                 jobFinished (jobsMutex) {
             if (runLoop == 0) {
@@ -192,40 +204,50 @@ namespace thekogans {
     #endif // defined (TOOLCHAIN_OS_Windows)
 
         void SystemRunLoop::Start () {
-        #if defined (TOOLCHAIN_OS_Windows)
-            BOOL result;
-            MSG msg;
-            while ((result = GetMessage (&msg, 0, 0, 0)) != 0) {
-                if (result != -1) {
-                    TranslateMessage (&msg);
-                    DispatchMessage (&msg);
+            if (done) {
+                done = false;
+            #if defined (TOOLCHAIN_OS_Windows)
+                BOOL result;
+                MSG msg;
+                while ((result = GetMessage (&msg, 0, 0, 0)) != 0) {
+                    if (result != -1) {
+                        TranslateMessage (&msg);
+                        DispatchMessage (&msg);
+                    }
+                    else {
+                        THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                            THEKOGANS_UTIL_OS_ERROR_CODE);
+                    }
                 }
-                else {
-                    THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                        THEKOGANS_UTIL_OS_ERROR_CODE);
+            #elif defined (TOOLCHAIN_OS_Linux)
+                while (1) {
+                    XEvent event;
+                    XNextEvent (display, &event);
+                    if (!DispatchEvent (event, *this)) {
+                        break;
+                    }
                 }
+            #elif defined (TOOLCHAIN_OS_OSX)
+                CFRunLoopRun ();
+            #endif // defined (TOOLCHAIN_OS_Windows)
             }
-        #elif defined (TOOLCHAIN_OS_Linux)
-            while (1) {
-                XEvent event;
-                XNextEvent (display, &event);
-                if (!DispatchEvent (event, *this)) {
-                    break;
-                }
-            }
-        #elif defined (TOOLCHAIN_OS_OSX)
-            CFRunLoopRun ();
-        #endif // defined (TOOLCHAIN_OS_Windows)
         }
 
         void SystemRunLoop::Stop () {
-        #if defined (TOOLCHAIN_OS_Windows)
-            PostMessage (wnd, WM_CLOSE, 0, 0);
-        #elif defined (TOOLCHAIN_OS_Linux)
-            SendEvent (ID_STOP);
-        #elif defined (TOOLCHAIN_OS_OSX)
-            CFRunLoopStop (runLoop);
-        #endif // defined (TOOLCHAIN_OS_Windows)
+            if (!done) {
+                done = true;
+            #if defined (TOOLCHAIN_OS_Windows)
+                PostMessage (wnd, WM_CLOSE, 0, 0);
+            #elif defined (TOOLCHAIN_OS_Linux)
+                SendEvent (ID_STOP);
+            #elif defined (TOOLCHAIN_OS_OSX)
+                CFRunLoopStop (runLoop);
+            #endif // defined (TOOLCHAIN_OS_Windows)
+            }
+        }
+
+        bool SystemRunLoop::IsRunning () {
+            return !done;
         }
 
         void SystemRunLoop::Enq (

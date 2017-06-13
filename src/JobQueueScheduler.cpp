@@ -29,7 +29,7 @@ namespace thekogans {
         void JobQueueScheduler::Queue::Cancel (const JobQueue &jobQueue) {
             for (std::size_t i = c.size (); i-- > 0;) {
                 JobQueueJobInfo *jobQueueJobInfo =
-                    dynamic_cast<JobQueueJobInfo *> (c[i].get ());
+                    dynamic_cast<JobQueueJobInfo *> (c[i].Get ());
                 if (jobQueueJobInfo != 0 && &jobQueueJobInfo->jobQueue == &jobQueue) {
                     c.erase (c.begin () + i);
                 }
@@ -39,7 +39,7 @@ namespace thekogans {
         void JobQueueScheduler::Queue::Cancel (const RunLoop &runLoop) {
             for (std::size_t i = c.size (); i-- > 0;) {
                 RunLoopJobInfo *runLoopJobInfo =
-                    dynamic_cast<RunLoopJobInfo *> (c[i].get ());
+                    dynamic_cast<RunLoopJobInfo *> (c[i].Get ());
                 if (runLoopJobInfo != 0 && &runLoopJobInfo->runLoop == &runLoop) {
                     c.erase (c.begin () + i);
                 }
@@ -108,7 +108,7 @@ namespace thekogans {
         }
 
         JobQueue::Job::Id JobQueueScheduler::ScheduleJobInfo (
-                JobInfo::SharedPtr jobInfo,
+                JobInfo::Ptr jobInfo,
                 const TimeSpec &timeSpec) {
             LockGuard<SpinLock> guard (spinLock);
             bool startTimer = false;

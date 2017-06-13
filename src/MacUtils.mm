@@ -17,23 +17,36 @@
 
 #include <Foundation/Foundation.h>
 #include <string>
+#include "thekogans/util/StringUtils.h"
 
 namespace thekogans {
     namespace util {
 
         std::string DescriptionFromOSStatus (OSStatus errorCode) {
+            std::string UTF8String;
             NSError *error = [NSError errorWithDomain: NSOSStatusErrorDomain code: errorCode userInfo: nil];
-            return error.description.UTF8String;
+            if (error != 0) {
+                NSString *description = [error description];
+                if (description != 0) {
+                    UTF8String = [description UTF8String];
+                    [description release];
+                }
+                [error release];
+            }
+            return !UTF8String.empty () ? UTF8String :
+                FormatString ("[0x%x:%d - Unknown error.]", errorCode, errorCode);
         }
 
-        struct CFStringRefDeleter {
-            void operator () (CFStringRef stringRef) {
-                if (stringRef != 0) {
-                    CFRelease (stringRef);
+        namespace {
+            struct CFStringRefDeleter {
+                void operator () (CFStringRef stringRef) {
+                    if (stringRef != 0) {
+                        CFRelease (stringRef);
+                    }
                 }
-            }
-        };
-        typedef std::unique_ptr<const __CFString, CFStringRefDeleter> CFStringRefPtr;
+            };
+            typedef std::unique_ptr<const __CFString, CFStringRefDeleter> CFStringRefPtr;
+        }
 
         std::string DescriptionFromCFError (CFErrorRef error) {
             CFStringRefPtr description (CFErrorCopyDescription (error));

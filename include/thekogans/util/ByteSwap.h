@@ -20,6 +20,7 @@
 
 #include <cstdlib>
 #include <stdexcept>
+#include <utility>
 #if defined (THEKOGANS_UTIL_HAVE_STD_ATOMIC)
     #include <type_traits>
 #else // defined (THEKOGANS_UTIL_HAVE_STD_ATOMIC)
@@ -156,9 +157,10 @@ namespace thekogans {
                 /// \param[in] value Value whose bytes to swap.
                 /// \return Byte swapped value.
                 inline f32 operator () (f32 value) {
-                    return static_cast<f32> (
-                        SwapBytes<ui32, UI32_SIZE> () (
-                            static_cast<ui32> (value)));
+                    ui8 *ptr = (ui8 *)&value;
+                    std::swap (ptr[0], ptr[3]);
+                    std::swap (ptr[1], ptr[2]);
+                    return value;
                 }
             };
 
@@ -198,9 +200,12 @@ namespace thekogans {
                 /// \param[in] value Value whose bytes to swap.
                 /// \return Byte swapped value.
                 inline f64 operator () (f64 value) {
-                    return static_cast<f64> (
-                        SwapBytes<ui64, UI64_SIZE> () (
-                            static_cast<ui64> (value)));
+                    ui8 *ptr = (ui8 *)&value;
+                    std::swap (ptr[0], ptr[7]);
+                    std::swap (ptr[1], ptr[6]);
+                    std::swap (ptr[2], ptr[5]);
+                    std::swap (ptr[3], ptr[4]);
+                    return value;
                 }
             };
 

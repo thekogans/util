@@ -22,6 +22,7 @@
 #include <queue>
 #include "thekogans/util/Config.h"
 #include "thekogans/util/Types.h"
+#include "thekogans/util/RefCounted.h"
 #include "thekogans/util/Heap.h"
 #include "thekogans/util/Timer.h"
 #include "thekogans/util/TimeSpec.h"
@@ -53,10 +54,10 @@ namespace thekogans {
             ///
             /// \brief
             /// Abstract base for \see{JobQueue}/\see{RunLoop} jobs.
-            struct JobInfo {
+            struct JobInfo : public ThreadSafeRefCounted {
                 /// \brief
-                /// Convenient typedef for std::shared_ptr<JobInfo>.
-                typedef std::shared_ptr<JobInfo> SharedPtr;
+                /// Convenient typedef for ThreadSafeRefCounted::Ptr<JobInfo>.
+                typedef ThreadSafeRefCounted::Ptr<JobInfo> Ptr;
 
                 /// \brief
                 /// \see{JobQueue::Job} that will be scheduled.
@@ -94,8 +95,8 @@ namespace thekogans {
                     /// \param[in] jobInfo2 Second JobInfo to compare.
                     /// \return true if jobInfo1 should come before jobInfo2.
                     inline bool operator () (
-                            JobInfo::SharedPtr jobInfo1,
-                            JobInfo::SharedPtr jobInfo2) {
+                            JobInfo::Ptr jobInfo1,
+                            JobInfo::Ptr jobInfo2) {
                         return jobInfo1->deadline > jobInfo2->deadline;
                     }
                 } static compare;
@@ -177,10 +178,10 @@ namespace thekogans {
             };
             /// \brief
             /// Convenient typedef for
-            /// std::priority_queue<JobInfo::SharedPtr, std::vector<JobInfo::SharedPtr>, JobInfo::Compare>.
+            /// std::priority_queue<JobInfo::Ptr, std::vector<JobInfo::Ptr>, JobInfo::Compare>.
             typedef std::priority_queue<
-                JobInfo::SharedPtr,
-                std::vector<JobInfo::SharedPtr>,
+                JobInfo::Ptr,
+                std::vector<JobInfo::Ptr>,
                 JobInfo::Compare> QueueType;
             /// \struct JobQueueScheduler::Queue JobQueueScheduler.h thekogans/util/JobQueueScheduler.h
             ///
@@ -231,7 +232,7 @@ namespace thekogans {
                     const TimeSpec &timeSpec,
                     JobQueue &jobQueue = GlobalJobQueue::Instance ()) {
                 return ScheduleJobInfo (
-                    JobInfo::SharedPtr (
+                    JobInfo::Ptr (
                         new JobQueueJobInfo (
                             std::move (job),
                             GetCurrentTime () + timeSpec,
@@ -250,7 +251,7 @@ namespace thekogans {
                     const TimeSpec &timeSpec,
                     RunLoop &runLoop = MainRunLoop::Instance ()) {
                 return ScheduleJobInfo (
-                    JobInfo::SharedPtr (
+                    JobInfo::Ptr (
                         new RunLoopJobInfo (
                             std::move (job),
                             GetCurrentTime () + timeSpec,
@@ -295,7 +296,7 @@ namespace thekogans {
             /// IMPORTANT: timeSpec is a relative value.
             /// \return JobInfo::Id which can be used in a call to Cancel.
             JobQueue::Job::Id ScheduleJobInfo (
-                JobInfo::SharedPtr jobInfo,
+                JobInfo::Ptr jobInfo,
                 const TimeSpec &timeSpec);
 
             /// \brief

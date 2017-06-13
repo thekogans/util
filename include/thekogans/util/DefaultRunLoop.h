@@ -147,6 +147,11 @@ namespace thekogans {
             virtual void Stop ();
 
             /// \brief
+            /// Return true if Start was called.
+            /// \return true if Start was called.
+            virtual bool IsRunning ();
+
+            /// \brief
             /// Enqueue a job to be performed on the run loop's thread.
             /// \param[in] job Job to enqueue.
             /// \param[in] wait Wait for job to finish.

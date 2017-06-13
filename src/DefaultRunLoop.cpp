@@ -48,6 +48,10 @@ namespace thekogans {
             }
         }
 
+        bool DefaultRunLoop::IsRunning () {
+            return !done;
+        }
+
         void DefaultRunLoop::Enq (
                 JobQueue::Job::UniquePtr job,
                 bool wait) {
