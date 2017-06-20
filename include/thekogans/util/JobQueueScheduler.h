@@ -43,8 +43,8 @@ namespace thekogans {
 
         struct _LIB_THEKOGANS_UTIL_DECL JobQueueScheduler : public Timer::Callback {
             /// \brief
-            /// Convenient typedef for std::unique_ptr<JobQueueScheduler>.
-            typedef std::unique_ptr<JobQueueScheduler> UniquePtr;
+            /// Convenient typedef for std::shared_ptr<JobQueueScheduler>.
+            typedef std::shared_ptr<JobQueueScheduler> SharedPtr;
 
         private:
             /// \brief

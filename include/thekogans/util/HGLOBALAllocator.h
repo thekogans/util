@@ -15,29 +15,32 @@
 // You should have received a copy of the GNU General Public License
 // along with libthekogans_util. If not, see <http://www.gnu.org/licenses/>.
 
-#if !defined (__thekogans_util_DefaultAllocator_h)
-#define __thekogans_util_DefaultAllocator_h
+#if !defined (__thekogans_util_HGLOBALAllocator_h)
+#define __thekogans_util_HGLOBALAllocator_h
+
+#if defined (TOOLCHAIN_OS_Windows)
 
 #include "thekogans/util/Config.h"
+#include "thekogans/util/Types.h"
 #include "thekogans/util/Allocator.h"
 #include "thekogans/util/Exception.h"
 
 namespace thekogans {
     namespace util {
 
-        /// \struct DefaultAllocator DefaultAllocator.h thekogans/util/DefaultAllocator.h
+        /// \struct HGLOBALAllocator HGLOBALAllocator.h thekogans/util/HGLOBALAllocator.h
         ///
         /// \brief
-        /// Uses system new/delete to allocate from the global heap.
-        /// DefaultAllocator is part of the \see{Allocator} framework.
+        /// Uses Windows GlobalAlloc (GMEM_FIXED, ...)/GlobalFree to allocate from the global heap.
+        /// HGLOBALAllocator is part of the \see{Allocator} framework.
 
-        struct _LIB_THEKOGANS_UTIL_DECL DefaultAllocator : public Allocator {
+        struct _LIB_THEKOGANS_UTIL_DECL HGLOBALAllocator : public Allocator {
             /// \brief
-            /// Global DefaultAllocator. Used by default in \see{Heap} and \see{Buffer}.
-            static DefaultAllocator Global;
+            /// Global HGLOBALAllocator. Used by default in \see{Heap} and \see{Buffer}.
+            static HGLOBALAllocator Global;
 
             /// \brief
-            /// Allocate a block from system heap.
+            /// Allocate a block from system heap (GMEM_FIXED).
             /// \param[in] size Size of block to allocate.
             /// \return Pointer to the allocated block (0 if out of memory).
             virtual void *Alloc (std::size_t size);
@@ -48,20 +51,29 @@ namespace thekogans {
             virtual void Free (
                 void *ptr,
                 std::size_t /*size*/);
+
+            /// \brief
+            /// Allocate a block from system heap.
+            /// \param[in] flags GlobalAlloc flags.
+            /// \param[in] size Size of block to allocate.
+            /// \return Pointer to the allocated block (0 if out of memory).
+            void *Alloc (
+                ui32 flags,
+                std::size_t size);
         };
 
-        /// \def THEKOGANS_UTIL_IMPLEMENT_DEFAULT_ALLOCATOR_FUNCTIONS(type)
-        /// Macro to implement DefaultAllocator functions.
-        #define THEKOGANS_UTIL_IMPLEMENT_DEFAULT_ALLOCATOR_FUNCTIONS(type)\
+        /// \def THEKOGANS_UTIL_IMPLEMENT_HGLOBAL_ALLOCATOR_FUNCTIONS(type)
+        /// Macro to implement HGLOBALAllocator functions.
+        #define THEKOGANS_UTIL_IMPLEMENT_HGLOBAL_ALLOCATOR_FUNCTIONS(type)\
         void *type::operator new (std::size_t size) {\
             assert (size == sizeof (type));\
-            return thekogans::util::DefaultAllocator::Global.Alloc (size);\
+            return thekogans::util::HGLOBALAllocator::Global.Alloc (size);\
         }\
         void *type::operator new (\
                 std::size_t size,\
                 std::nothrow_t) throw () {\
             assert (size == sizeof (type));\
-            return thekogans::util::DefaultAllocator::Global.Alloc (size);\
+            return thekogans::util::HGLOBALAllocator::Global.Alloc (size);\
         }\
         void *type::operator new (\
                 std::size_t size,\
@@ -70,12 +82,12 @@ namespace thekogans {
             return ptr;\
         }\
         void type::operator delete (void *ptr) {\
-            thekogans::util::DefaultAllocator::Global.Free (ptr, sizeof (type));\
+            thekogans::util::HGLOBALAllocator::Global.Free (ptr, sizeof (type));\
         }\
         void type::operator delete (\
                 void *ptr,\
                 std::nothrow_t) throw () {\
-            thekogans::util::DefaultAllocator::Global.Free (ptr, sizeof (type));\
+            thekogans::util::HGLOBALAllocator::Global.Free (ptr, sizeof (type));\
         }\
         void type::operator delete (\
             void *,\
@@ -84,4 +96,6 @@ namespace thekogans {
     } // namespace util
 } // namespace thekogans
 
-#endif // !defined (__thekogans_util_DefaultAllocator_h)
+#endif // defined (TOOLCHAIN_OS_Windows)
+
+#endif // !defined (__thekogans_util_HGLOBALAllocator_h)

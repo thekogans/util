@@ -107,6 +107,9 @@
     <cpp_header>$(organization)/$(project_directory)/FixedBuffer.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/Flags.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/Fraction.h</cpp_header>
+    <if condition = "$(TOOLCHAIN_OS) == 'Windows'">
+      <cpp_header>$(organization)/$(project_directory)/HGLOBALAllocator.h</cpp_header>
+    </if>
     <cpp_header>$(organization)/$(project_directory)/GUID.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/HRTimer.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/HRTimerMgr.h</cpp_header>
@@ -603,6 +606,9 @@
     <cpp_source>File.cpp</cpp_source>
     <cpp_source>FileLogger.cpp</cpp_source>
     <cpp_source>Fraction.cpp</cpp_source>
+    <if condition = "$(TOOLCHAIN_OS) == 'Windows'">
+      <cpp_source>HGLOBALAllocator.cpp</cpp_source>>
+    </if>
     <cpp_source>GUID.cpp</cpp_source>
     <cpp_source>Hash.cpp</cpp_source>
     <cpp_source>Heap.cpp</cpp_source>

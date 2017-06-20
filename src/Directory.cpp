@@ -131,7 +131,7 @@ namespace thekogans {
             #if defined (TOOLCHAIN_OS_Windows)
                 if (CreateIoCompletionPort (handle,
                         Directory::Watcher::Instance ().handle,
-                        (ULONG_PTR)handle, 0) == NULL) {
+                        (ULONG_PTR)handle, 0) == 0) {
                     THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
                         THEKOGANS_UTIL_OS_ERROR_CODE);
                 }
@@ -546,7 +546,8 @@ namespace thekogans {
                 ULARGE_INTEGER ull;
                 ull.LowPart = ft.dwLowDateTime;
                 ull.HighPart = ft.dwHighDateTime;
-                return ull.QuadPart / 10000000ULL - 11644473600ULL;
+                return ull.QuadPart / THEKOGANS_UTIL_UI64_LITERAL (10000000) -
+                    THEKOGANS_UTIL_UI64_LITERAL (11644473600);
             }
 
             namespace {

@@ -45,12 +45,24 @@ namespace thekogans {
             virtual void *Alloc (std::size_t size) = 0;
             /// \brief
             /// Free a previously Alloc(ated) block.
+            /// NOTE: Allocator policy is to do nothing if ptr == 0.
             /// \param[in] ptr Pointer to the block returned by Alloc.
             /// \param[in] size Same size parameter previously passed in to Alloc.
             virtual void Free (
                 void *ptr,
                 std::size_t size) = 0;
         };
+
+        /// \def THEKOGANS_UTIL_DECLARE_ALLOCATOR_FUNCTIONS
+        /// Macro to declare allocator functions.
+        #define THEKOGANS_UTIL_DECLARE_ALLOCATOR_FUNCTIONS\
+        public:\
+            static void *operator new (std::size_t size);\
+            static void *operator new (std::size_t size, std::nothrow_t) throw ();\
+            static void *operator new (std::size_t, void *ptr);\
+            static void operator delete (void *ptr);\
+            static void operator delete (void *ptr, std::nothrow_t) throw ();\
+            static void operator delete (void *, void *);
 
     } // namespace util
 } // namespace thekogans

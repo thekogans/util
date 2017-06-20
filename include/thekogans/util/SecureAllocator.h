@@ -24,6 +24,7 @@
 #include "thekogans/util/Config.h"
 #include "thekogans/util/Types.h"
 #include "thekogans/util/Allocator.h"
+#include "thekogans/util/Exception.h"
 #include "thekogans/util/internal.h"
 
 namespace thekogans {
@@ -89,6 +90,37 @@ namespace thekogans {
                 void *ptr,
                 std::size_t size);
         };
+
+        /// \def THEKOGANS_UTIL_IMPLEMENT_SECURE_ALLOCATOR_FUNCTIONS(type)
+        /// Macro to implement SecureAllocator functions.
+        #define THEKOGANS_UTIL_IMPLEMENT_SECURE_ALLOCATOR_FUNCTIONS(type)\
+        void *type::operator new (std::size_t size) {\
+            assert (size == sizeof (type));\
+            return thekogans::util::SecureAllocator::Global.Alloc (size);\
+        }\
+        void *type::operator new (\
+                std::size_t size,\
+                std::nothrow_t) throw () {\
+            assert (size == sizeof (type));\
+            return thekogans::util::SecureAllocator::Global.Alloc (size);\
+        }\
+        void *type::operator new (\
+                std::size_t size,\
+                void *ptr) {\
+            assert (size == sizeof (type));\
+            return ptr;\
+        }\
+        void type::operator delete (void *ptr) {\
+            thekogans::util::SecureAllocator::Global.Free (ptr, sizeof (type));\
+        }\
+        void type::operator delete (\
+                void *ptr,\
+                std::nothrow_t) throw () {\
+            thekogans::util::SecureAllocator::Global.Free (ptr, sizeof (type));\
+        }\
+        void type::operator delete (\
+            void *,\
+            void *) {}
 
         /// \struct stdSecureAllocator SecureAllocator.h thekogans/util/SecureAllocator.h
         ///

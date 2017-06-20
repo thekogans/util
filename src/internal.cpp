@@ -40,7 +40,7 @@
         SECURITY_ATTRIBUTES securityAttributes;
         securityAttributes.nLength = sizeof (SECURITY_ATTRIBUTES);
         securityAttributes.bInheritHandle = TRUE;
-        securityAttributes.lpSecurityDescriptor = NULL;
+        securityAttributes.lpSecurityDescriptor = 0;
         fildes[0] = CreateNamedPipeA (
             name.c_str (),
             PIPE_ACCESS_INBOUND | FILE_FLAG_OVERLAPPED,

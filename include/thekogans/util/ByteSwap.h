@@ -119,7 +119,7 @@ namespace thekogans {
                 #elif defined (__GNUC__) &&\
                         ((__GNUC__ == 4 && __GNUC_MINOR__ >= 8) || __GNUC__ > 4)
                     return __builtin_bswap16 (value);
-                #else // __GNUC__
+                #else
                     return ((((value) >> 8) & 0xff) | (((value) & 0xff) << 8));
                 #endif // defined (TOOLCHAIN_OS_Windows)
                 }
@@ -139,7 +139,7 @@ namespace thekogans {
                 #elif defined (__GNUC__) &&\
                         ((__GNUC__ == 4 && __GNUC_MINOR__ >= 3) || __GNUC__ > 4)
                     return __builtin_bswap32 (value);
-                #else // __GNUC__
+                #else
                     return ((((value) & 0xff000000) >> 24) |
                         (((value) & 0x00ff0000) >> 8) |
                         (((value) & 0x0000ff00) << 8) |
@@ -157,9 +157,8 @@ namespace thekogans {
                 /// \param[in] value Value whose bytes to swap.
                 /// \return Byte swapped value.
                 inline f32 operator () (f32 value) {
-                    ui8 *ptr = (ui8 *)&value;
-                    std::swap (ptr[0], ptr[3]);
-                    std::swap (ptr[1], ptr[2]);
+                    ui32 *ptr = (ui32 *)&value;
+                    *ptr = SwapBytes<ui32, 4> () (*ptr);
                     return value;
                 }
             };
@@ -178,7 +177,7 @@ namespace thekogans {
                 #elif defined (__GNUC__) &&\
                         ((__GNUC__ == 4 && __GNUC_MINOR__ >= 3) || __GNUC__ > 4)
                     return __builtin_bswap64 (value);
-                #else // __GNUC__
+                #else
                     return ((((value) & 0xff00000000000000ull) >> 56) |
                         (((value) & 0x00ff000000000000ull) >> 40) |
                         (((value) & 0x0000ff0000000000ull) >> 24) |
@@ -200,11 +199,8 @@ namespace thekogans {
                 /// \param[in] value Value whose bytes to swap.
                 /// \return Byte swapped value.
                 inline f64 operator () (f64 value) {
-                    ui8 *ptr = (ui8 *)&value;
-                    std::swap (ptr[0], ptr[7]);
-                    std::swap (ptr[1], ptr[6]);
-                    std::swap (ptr[2], ptr[5]);
-                    std::swap (ptr[3], ptr[4]);
+                    ui64 *ptr = (ui64 *)&value;
+                    *ptr = SwapBytes<ui64, 8> () (*ptr);
                     return value;
                 }
             };

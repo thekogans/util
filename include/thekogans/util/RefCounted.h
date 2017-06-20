@@ -64,16 +64,20 @@ namespace thekogans {
 
             /// \brief
             /// Increment reference count.
-            void AddRef () {
-                ++count;
+            /// \return Incremented reference count.
+            ui32 AddRef () {
+                return ++count;
             }
             /// \brief
             /// Decrement reference count, and if 0, delete the object.
-            void Release () {
+            /// \return Decremented reference count.
+            ui32 Release () {
                 assert (count > 0);
-                if (--count == 0) {
+                ui32 newCount = --count;
+                if (newCount == 0) {
                     Harakiri ();
                 }
+                return newCount;
             }
 
             /// \brief

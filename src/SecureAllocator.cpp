@@ -105,15 +105,10 @@ namespace thekogans {
             if (ptr != 0) {
                 SecureZeroMemory (ptr, size);
             #if defined (TOOLCHAIN_OS_Windows)
-                if (VirtualUnlock (ptr, size)) {
-                    VirtualFree (ptr, 0, MEM_RELEASE);
-                }
+                if (!VirtualUnlock (ptr, size) || !VirtualFree (ptr, 0, MEM_RELEASE)) {
             #else // defined (TOOLCHAIN_OS_Windows)
-                if (munlock (ptr, size) == 0) {
-                    munmap (ptr, size);
-                }
+                if (munlock (ptr, size) != 0 || munmap (ptr, size) != 0) {
             #endif // defined (TOOLCHAIN_OS_Windows)
-                else {
                     THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
                         THEKOGANS_UTIL_OS_ERROR_CODE);
                 }

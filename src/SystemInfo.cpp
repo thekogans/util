@@ -125,7 +125,7 @@ namespace thekogans {
                 ui32 cpuCount = 1;
                 int selectors[2] = {CTL_HW, HW_NCPU};
                 size_t length = sizeof (cpuCount);
-                sysctl (selectors, 2, &cpuCount, &length, NULL, 0);
+                sysctl (selectors, 2, &cpuCount, &length, 0, 0);
                 return cpuCount;
             }
         #endif // defined (TOOLCHAIN_OS_Linux)
@@ -212,7 +212,7 @@ namespace thekogans {
                 ui32 pageSize = 0;
                 int selectors[2] = {CTL_HW, HW_PAGESIZE};
                 size_t length = sizeof (pageSize);
-                sysctl (selectors, 2, &pageSize, &length, NULL, 0);
+                sysctl (selectors, 2, &pageSize, &length, 0, 0);
                 return pageSize;
             }
 
@@ -220,7 +220,7 @@ namespace thekogans {
                 ui64 memorySize = 0;
                 int selectors[2] = {CTL_HW, HW_MEMSIZE};
                 size_t length = sizeof (memorySize);
-                sysctl (selectors, 2, &memorySize, &length, NULL, 0);
+                sysctl (selectors, 2, &memorySize, &length, 0, 0);
                 return memorySize;
             }
         #endif // defined (TOOLCHAIN_OS_Linux)
@@ -315,7 +315,7 @@ namespace thekogans {
                 ui32 hasVectorUnit = 0;
                 int selectors[2] = {CTL_HW, HW_VECTORUNIT};
                 size_t length = sizeof (hasVectorUnit);
-                sysctl (selectors, 2, &hasVectorUnit, &length, NULL, 0);
+                sysctl (selectors, 2, &hasVectorUnit, &length, 0, 0);
                 return hasVectorUnit != 0;
             }
         #else // defined (TOOLCHAIN_OS_Linux)

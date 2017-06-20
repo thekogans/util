@@ -21,6 +21,7 @@
 #include <memory>
 #include "thekogans/util/Config.h"
 #include "thekogans/util/Allocator.h"
+#include "thekogans/util/Exception.h"
 
 namespace thekogans {
     namespace util {
@@ -58,6 +59,37 @@ namespace thekogans {
                 void * /*ptr*/,
                 std::size_t /*size*/);
         };
+
+        /// \def THEKOGANS_UTIL_IMPLEMENT_NULL_ALLOCATOR_FUNCTIONS(type)
+        /// Macro to implement NullAllocator functions.
+        #define THEKOGANS_UTIL_IMPLEMENT_NULL_ALLOCATOR_FUNCTIONS(type)\
+        void *type::operator new (std::size_t size) {\
+            assert (size == sizeof (type));\
+            return thekogans::util::NullAllocator::Global.Alloc (size);\
+        }\
+        void *type::operator new (\
+                std::size_t size,\
+                std::nothrow_t) throw () {\
+            assert (size == sizeof (type));\
+            return thekogans::util::NullAllocator::Global.Alloc (size);\
+        }\
+        void *type::operator new (\
+                std::size_t size,\
+                void *ptr) {\
+            assert (size == sizeof (type));\
+            return ptr;\
+        }\
+        void type::operator delete (void *ptr) {\
+            thekogans::util::NullAllocator::Global.Free (ptr, sizeof (type));\
+        }\
+        void type::operator delete (\
+                void *ptr,\
+                std::nothrow_t) throw () {\
+            thekogans::util::NullAllocator::Global.Free (ptr, sizeof (type));\
+        }\
+        void type::operator delete (\
+            void *,\
+            void *) {}
 
     } // namespace util
 } // namespace thekogans

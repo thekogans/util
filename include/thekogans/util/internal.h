@@ -16,6 +16,7 @@
 // along with libthekogans_util. If not, see <http://www.gnu.org/licenses/>.
 
 #if !defined (__thekogans_util_internal_h)
+#define __thekogans_util_internal_h
 
 #if defined (TOOLCHAIN_OS_Windows)
     #if defined (_MSC_VER)
@@ -80,7 +81,6 @@
     #include <sys/types.h>
     #include <unistd.h>
 
-
     #if defined (TOOLCHAIN_ARCH_i386)
         #define STAT_STRUCT struct stat
         #define STAT_FUNC stat
@@ -99,11 +99,6 @@
 #elif defined (TOOLCHAIN_OS_OSX)
     #include <sys/stat.h>
     #include <pthread.h>
-
-    int pthread_timedjoin_np (
-        pthread_t thread,
-        void **result,
-        timespec *timeSpec);
 
     #define STAT_STRUCT struct stat
     #define STAT_FUNC stat
@@ -127,6 +122,17 @@
     #else // defined (TOOLCHAIN_ARCH_i386)
         #error "Unknown architecture!"
     #endif // defined (TOOLCHAIN_ARCH_i386)
+
+    /// \brief
+    /// Join with a terminated thread.
+    /// \param[in] thread Thread to join with.
+    /// \param[out] result Thread result code.
+    /// \param[in] timeSpec How long to wait to join.
+    /// \return 0 = joined, ETIMEDOUT = wait timed out.
+    int pthread_timedjoin_np (
+        pthread_t thread,
+        void **result,
+        timespec *timeSpec);
 #endif // defined (TOOLCHAIN_OS_Linux)
 #endif // defined (TOOLCHAIN_OS_Windows)
 
