@@ -131,6 +131,17 @@ namespace thekogans {
             }
 
             /// \brief
+            /// Return serialized size of FixedBuffer<length>.
+            /// \return Serialized size of FixedBuffer<length>.
+            inline ui32 Size () const {
+                return
+                    Serializer::Size () +
+                    Serializer::Size (readOffset) +
+                    Serializer::Size (writeOffset) +
+                    length;
+            }
+
+            /// \brief
             /// Return number of bytes available for reading.
             /// \return Number of bytes available for reading.
             inline ui32 GetDataAvailableForReading () const {
@@ -183,6 +194,46 @@ namespace thekogans {
             /// FixedBuffer is neither copy constructable, nor assignable.
             THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (FixedBuffer)
         };
+
+        /// \brief
+        /// Serialize a FixedBuffer<length>.
+        /// \param[in] serializer Where to write the given guid.
+        /// \param[in] fixedbuffer FixedBuffer<length> to serialize.
+        /// \return serializer.
+        template<ui32 length>
+        Serializer &operator << (
+                Serializer &serializer,
+                const FixedBuffer<length> &fixedBuffer) {
+            serializer <<
+                fixedBuffer.endianness <<
+                fixedBuffer.readOffset <<
+                fixedBuffer.writeOffset;
+            if (serializer.Write (fixedBuffer.data, length) != length) {
+                THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
+                    "*this.Write (fixedBuffer.data, %u) != %u", length, length);
+            }
+            return serializer;
+        }
+
+        /// \brief
+        /// Extract a FixedBuffer<length>.
+        /// \param[in] serializer Where to read the guid from.
+        /// \param[out] fixedBuffer Where to place the extracted FixedBuffer<length>.
+        /// \return serializer.
+        template<ui32 length>
+        Serializer &operator >> (
+                Serializer &serializer,
+                FixedBuffer<length> &fixedBuffer) {
+            serializer >>
+                fixedBuffer.endianness >>
+                fixedBuffer.readOffset >>
+                fixedBuffer.writeOffset;
+            if (serializer.Read (fixedBuffer.data, length) != length) {
+                THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
+                    "serializer.Read (fixedBuffer.data, %u) != %u", length, length);
+            }
+            return serializer;
+        }
 
     } // namespace util
 } // namespace thekogans

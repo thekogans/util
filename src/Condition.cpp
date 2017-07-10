@@ -74,10 +74,9 @@ namespace thekogans {
             }
             return true;
         #else // defined (TOOLCHAIN_OS_Windows)
-            TimeSpec currentTimeSpec = GetCurrentTime ();
-            TimeSpec absoluteTimeSpec = currentTimeSpec + timeSpec;
+            timespec absolute = (GetCurrentTime () + timeSpec).Totimespec ();
             int errorCode = pthread_cond_timedwait (
-                &condition, &mutex.mutex, &absoluteTimeSpec);
+                &condition, &mutex.mutex, &absolute);
             if (errorCode != 0) {
                 if (errorCode != ETIMEDOUT) {
                     THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (errorCode);

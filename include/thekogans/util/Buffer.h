@@ -160,6 +160,18 @@ namespace thekogans {
                 Allocator *allocator_ = &DefaultAllocator::Global);
 
             /// \brief
+            /// Return the serialized size of this buffer.
+            /// \return Serialized size of this buffer.
+            inline ui32 Size () const {
+                return
+                    Serializer::Size () +
+                    Serializer::Size (length) +
+                    Serializer::Size (readOffset) +
+                    Serializer::Size (writeOffset) +
+                    length;
+            }
+
+            /// \brief
             /// Clone the buffer.
             /// \param[in] allocator Allocator for the returned buffer.
             /// \return A clone of this buffer.
@@ -369,6 +381,24 @@ namespace thekogans {
             /// TenantWriteBuffer is neither copy constructable, nor assignable.
             THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (TenantWriteBuffer)
         };
+
+        /// \brief
+        /// Write the given buffer to the given serializer.
+        /// \param[in] serializer Where to write the given guid.
+        /// \param[in] buffer Buffer to write.
+        /// \return serializer.
+        _LIB_THEKOGANS_UTIL_DECL Serializer & _LIB_THEKOGANS_UTIL_API operator << (
+            Serializer &serializer,
+            const Buffer &buffer);
+
+        /// \brief
+        /// Read a buffer from the given serializer.
+        /// \param[in] serializer Where to read the guid from.
+        /// \param[in] buffer Buffer to read.
+        /// \return serializer.
+        _LIB_THEKOGANS_UTIL_DECL Serializer & _LIB_THEKOGANS_UTIL_API operator >> (
+            Serializer &serializer,
+            Buffer &buffer);
 
     } // namespace util
 } // namespace thekogans

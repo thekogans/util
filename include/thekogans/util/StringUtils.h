@@ -169,6 +169,18 @@ namespace thekogans {
             const std::list<std::string> &strings);
 
         /// \brief
+        /// Parse a std::size_t represented by a given string.
+        /// \param[in] value Pointer to the beginning of the string.
+        /// \param[out] end On return will hold a pointer where parsing
+        /// has stopped (due to error?). It will be set to NULL if the
+        /// entire value was consumed.
+        /// \param[in] base Radix base of the number represented by value.
+        /// \return std::size_t represented by a given string.
+        _LIB_THEKOGANS_UTIL_DECL std::size_t _LIB_THEKOGANS_UTIL_API stringTosize_t (
+            const char *value,
+            char **end = 0,
+            i32 base = 10);
+        /// \brief
         /// Parse a i16 represented by a given string.
         /// \param[in] value Pointer to the beginning of the string.
         /// \param[out] end On return will hold a pointer where parsing
@@ -261,16 +273,6 @@ namespace thekogans {
             const char *value,
             char **end = 0);
         /// \brief
-        /// Parse a time_t represented by a given string.
-        /// \param[in] value Pointer to the beginning of the string.
-        /// \param[out] end On return will hold a pointer where parsing
-        /// has stopped (due to error?). It will be set to NULL if the
-        /// entire value was consumed.
-        /// \return time_t represented by a given string.
-        _LIB_THEKOGANS_UTIL_DECL time_t _LIB_THEKOGANS_UTIL_API stringTotime_t (
-            const char *value,
-            char **end = 0);
-        /// \brief
         /// Parse an OS specific error code. On windows error codes
         /// are unsigned, and on POSIX they are signed. This api puts
         /// a uniform face on parsing system specific error codes.
@@ -283,6 +285,7 @@ namespace thekogans {
             stringToTHEKOGANS_UTIL_ERROR_CODE (
                 const char *value,
                 char **end = 0);
+
         /// \brief
         /// Format a std::size_t.
         /// \param[in] value std::size_t to format.
@@ -351,6 +354,7 @@ namespace thekogans {
         _LIB_THEKOGANS_UTIL_DECL std::string _LIB_THEKOGANS_UTIL_API f64Tostring (
             f64 value,
             const char *format = "%g");
+
         /// \brief
         /// Format a string from a list of arguments.
         /// \param[in] format printf style format to use.

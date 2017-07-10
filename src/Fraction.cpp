@@ -26,7 +26,9 @@ namespace thekogans {
 
         namespace {
             // Euclid's greatest common divisor algorithm.
-            ui32 GCD (ui32 a, ui32 b) {
+            ui32 GCD (
+                    ui32 a,
+                    ui32 b) {
                 while (b > 0) {
                     ui32 t = b;
                     b = a % b;

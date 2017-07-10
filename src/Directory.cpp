@@ -366,7 +366,7 @@ namespace thekogans {
                                         case FILE_ACTION_REMOVED:
                                             eventSink->HandleDelete (watchId, directory,
                                                 Directory::Entry (Directory::Entry::Invalid,
-                                                    entryName, -1, -1, -1, 0));
+                                                    entryName, 0, -1, -1, -1, 0));
                                             break;
                                         case FILE_ACTION_MODIFIED:
                                             eventSink->HandleModified (watchId, directory,
@@ -520,16 +520,15 @@ namespace thekogans {
         const char * const Directory::Entry::VALUE_LINK = "link";
         const char * const Directory::Entry::ATTR_NAME = "Name";
     #if defined (TOOLCHAIN_OS_Windows)
+        const char * const Directory::Entry::ATTR_ATTRIBUTES = "Attributes";
         const char * const Directory::Entry::ATTR_CREATION_DATE = "CreationDate";
     #else // defined (TOOLCHAIN_OS_Windows)
+        const char * const Directory::Entry::ATTR_MODE = "Mode";
         const char * const Directory::Entry::ATTR_LAST_STATUS_DATE = "LastStatusDate";
     #endif // defined (TOOLCHAIN_OS_Windows)
         const char * const Directory::Entry::ATTR_LAST_ACCESSED_DATE = "LastAccessedDate";
         const char * const Directory::Entry::ATTR_LAST_MODIFIED_DATE = "LastModifiedDate";
         const char * const Directory::Entry::ATTR_SIZE = "Size";
-    #if !defined (TOOLCHAIN_OS_Windows)
-        const char * const Directory::Entry::ATTR_MODE = "Mode";
-    #endif // !defined (TOOLCHAIN_OS_Windows)
 
     #if defined (TOOLCHAIN_OS_Windows)
         namespace {
@@ -582,6 +581,7 @@ namespace thekogans {
 
         Directory::Entry::Entry (const std::string &path) :
                 type (Invalid),
+                attributes (0),
                 creationDate (-1),
                 lastAccessedDate (-1),
                 lastModifiedDate (-1),
@@ -591,6 +591,7 @@ namespace thekogans {
                     GetFileExInfoStandard, &attributeData) == TRUE) {
                 type = systemTotype (attributeData.dwFileAttributes);
                 name = Path (path).GetFullFileName ();
+                attributes = attributeData.dwFileAttributes;
                 creationDate = FILETIMETotime_t (attributeData.ftCreationTime);
                 lastAccessedDate = FILETIMETotime_t (attributeData.ftLastAccessTime);
                 lastModifiedDate = FILETIMETotime_t (attributeData.ftLastWriteTime);
@@ -613,6 +614,7 @@ namespace thekogans {
 
         Directory::Entry::Entry (const std::string &path) :
                 type (Invalid),
+                mode (0),
                 lastStatusDate (-1),
                 lastAccessedDate (-1),
                 lastModifiedDate (-1),
@@ -621,11 +623,11 @@ namespace thekogans {
             if (LSTAT_FUNC (path.c_str (), &buf) == 0) {
                 type = systemTotype (buf.st_mode);
                 name = Path (path).GetFullFileName ();
+                mode = buf.st_mode & (S_IRWXU | S_IRWXG | S_IRWXO);
                 lastStatusDate = buf.st_ctime;
                 lastAccessedDate = buf.st_atime;
                 lastModifiedDate = buf.st_mtime;
                 size = buf.st_size;
-                mode = buf.st_mode & (S_IRWXU | S_IRWXG | S_IRWXO);
             }
             else {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_AND_MESSAGE_EXCEPTION (
@@ -653,16 +655,15 @@ namespace thekogans {
             type = stringTotype (node.attribute (ATTR_TYPE).value ());
             name = Decodestring (node.attribute (ATTR_NAME).value ());
         #if defined (TOOLCHAIN_OS_Windows)
-            creationDate = util::stringTotime_t (node.attribute (ATTR_CREATION_DATE).value ());
+            attributes = util::stringToui32 (node.attribute (ATTR_ATTRIBUTES).value ());
+            creationDate = util::stringToi32 (node.attribute (ATTR_CREATION_DATE).value ());
         #else // defined (TOOLCHAIN_OS_Windows)
-            lastStatusDate = util::stringTotime_t (node.attribute (ATTR_LAST_STATUS_DATE).value ());
-        #endif // defined (TOOLCHAIN_OS_Windows)
-            lastAccessedDate = util::stringTotime_t (node.attribute (ATTR_LAST_ACCESSED_DATE).value ());
-            lastModifiedDate = util::stringTotime_t (node.attribute (ATTR_LAST_MODIFIED_DATE).value ());
-            size = util::stringToui64 (node.attribute (ATTR_SIZE).value ());
-        #if !defined (TOOLCHAIN_OS_Windows)
             mode = util::stringToi32 (node.attribute (ATTR_MODE).value ());
-        #endif // !defined (TOOLCHAIN_OS_Windows)
+            lastStatusDate = util::stringToi32 (node.attribute (ATTR_LAST_STATUS_DATE).value ());
+        #endif // defined (TOOLCHAIN_OS_Windows)
+            lastAccessedDate = util::stringToi32 (node.attribute (ATTR_LAST_ACCESSED_DATE).value ());
+            lastModifiedDate = util::stringToi32 (node.attribute (ATTR_LAST_MODIFIED_DATE).value ());
+            size = util::stringToui64 (node.attribute (ATTR_SIZE).value ());
         }
     #endif // defined (THEKOGANS_UTIL_HAVE_PUGIXML)
 
@@ -673,16 +674,15 @@ namespace thekogans {
             attributes.push_back (Attribute (ATTR_TYPE, typeTostring (type)));
             attributes.push_back (Attribute (ATTR_NAME, Encodestring (name)));
        #if defined (TOOLCHAIN_OS_Windows)
+            attributes.push_back (Attribute (ATTR_ATTRIBUTES, ui32Tostring (this->attributes)));
             attributes.push_back (Attribute (ATTR_CREATION_DATE, i64Tostring (creationDate)));
        #else // defined (TOOLCHAIN_OS_Windows)
+            attributes.push_back (Attribute (ATTR_MODE, i32Tostring (mode)));
             attributes.push_back (Attribute (ATTR_LAST_STATUS_DATE, i64Tostring (lastStatusDate)));
        #endif // defined (TOOLCHAIN_OS_Windows)
             attributes.push_back (Attribute (ATTR_LAST_ACCESSED_DATE, i64Tostring (lastAccessedDate)));
             attributes.push_back (Attribute (ATTR_LAST_MODIFIED_DATE, i64Tostring (lastModifiedDate)));
             attributes.push_back (Attribute (ATTR_SIZE, ui64Tostring (size)));
-       #if !defined (TOOLCHAIN_OS_Windows)
-            attributes.push_back (Attribute (ATTR_MODE, i32Tostring (mode)));
-       #endif // !defined (TOOLCHAIN_OS_Windows)
             return OpenTag (indentationLevel, tagName, attributes, true, true);
         }
 
@@ -690,12 +690,14 @@ namespace thekogans {
         Directory::Directory (const std::string &path_) :
                 path (path_),
                 handle (THEKOGANS_UTIL_INVALID_HANDLE_VALUE),
+                attributes (0),
                 creationDate (-1),
                 lastAccessedDate (-1),
                 lastModifiedDate (-1) {
             WIN32_FILE_ATTRIBUTE_DATA attributeData;
             if (GetFileAttributesEx (path.c_str (),
                     GetFileExInfoStandard, &attributeData) == TRUE) {
+                attributes = attributeData.dwFileAttributes;
                 creationDate = FILETIMETotime_t (attributeData.ftCreationTime);
                 lastAccessedDate = FILETIMETotime_t (attributeData.ftLastAccessTime);
                 lastModifiedDate = FILETIMETotime_t (attributeData.ftLastWriteTime);
@@ -764,6 +766,7 @@ namespace thekogans {
                 Entry &entry) const {
             entry.type = systemTotype (findData.dwFileAttributes);
             entry.name = findData.cFileName;
+            entry.attributes = findData.dwFileAttributes;
             entry.creationDate = FILETIMETotime_t (findData.ftCreationTime);
             entry.lastAccessedDate = FILETIMETotime_t (findData.ftLastAccessTime);
             entry.lastModifiedDate = FILETIMETotime_t (findData.ftLastWriteTime);
@@ -821,17 +824,17 @@ namespace thekogans {
         Directory::Directory (const std::string &path_) :
                 path (path_),
                 dir (0),
+                mode (0),
                 lastStatusDate (-1),
                 lastAccessedDate (-1),
-                lastModifiedDate (-1),
-                mode (0) {
+                lastModifiedDate (-1) {
             STAT_STRUCT buf;
             if (STAT_FUNC (path.c_str (), &buf) == 0) {
                 assert (systemTotype (buf.st_mode) == Entry::Folder);
+                mode = buf.st_mode & (S_IRWXU | S_IRWXG | S_IRWXO);
                 lastStatusDate = buf.st_ctime;
                 lastAccessedDate = buf.st_atime;
                 lastModifiedDate = buf.st_mtime;
-                mode = buf.st_mode & (S_IRWXU | S_IRWXG | S_IRWXO);
             }
             else {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_AND_MESSAGE_EXCEPTION (
@@ -960,11 +963,11 @@ namespace thekogans {
             if (LSTAT_FUNC (pathName.c_str (), &buf) == 0) {
                 entry.type = systemTotype (buf.st_mode);
                 entry.name = dirEnt.d_name;
+                entry.mode = buf.st_mode & (S_IRWXU | S_IRWXG | S_IRWXO);
                 entry.lastStatusDate = buf.st_ctime;
                 entry.lastAccessedDate = buf.st_atime;
                 entry.lastModifiedDate = buf.st_mtime;
                 entry.size = buf.st_size;
-                entry.mode = buf.st_mode & (S_IRWXU | S_IRWXG | S_IRWXO);
             }
             else {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_AND_MESSAGE_EXCEPTION (

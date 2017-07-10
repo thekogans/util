@@ -40,14 +40,17 @@ namespace thekogans {
 
         bool ConsoleCreateInstance::threadSafePrintString = true;
         bool ConsoleCreateInstance::hookCtrlBreak = true;
+        bool ConsoleCreateInstance::hookChild = false;
         bool ConsoleCreateInstance::coreDump = true;
 
         void ConsoleCreateInstance::Parameterize (
                 bool threadSafePrintString_,
                 bool hookCtrlBreak_,
+                bool hookChild_,
                 bool coreDump_) {
             threadSafePrintString = threadSafePrintString_;
             hookCtrlBreak = hookCtrlBreak_;
+            hookChild = hookChild_;
             coreDump = coreDump_;
         }
 
@@ -75,12 +78,18 @@ namespace thekogans {
             void CtrlBreakHandler (int /*signal*/) {
                 MainRunLoop::Instance ().Stop ();
             }
+
+            void ChildHandler (int /*signal*/) {
+                int status = 0;
+                wait (&status);
+            }
         #endif // defined (TOOLCHAIN_OS_Windows)
         }
 
         Console::Console (
                 bool threadSafePrintString_,
                 bool hookCtrlBreak,
+                bool hookChild,
                 bool coreDump) :
                 threadSafePrintString (threadSafePrintString_) {
             if (threadSafePrintString) {
@@ -95,9 +104,14 @@ namespace thekogans {
             #else // defined (TOOLCHAIN_OS_Windows)
                 signal (SIGTERM, CtrlBreakHandler);
                 signal (SIGINT, CtrlBreakHandler);
-                signal (SIGPIPE, SIG_IGN);
             #endif // defined (TOOLCHAIN_OS_Windows)
             }
+        #if defined (TOOLCHAIN_OS_Linux) || defined (TOOLCHAIN_OS_OSX)
+            signal (SIGPIPE, SIG_IGN);
+            if (hookChild) {
+                signal (SIGCHLD, ChildHandler);
+            }
+        #endif // defined (TOOLCHAIN_OS_Linux) || defined (TOOLCHAIN_OS_OSX)
         #if defined (TOOLCHAIN_OS_Linux)
             if (coreDump) {
                 rlimit limit;

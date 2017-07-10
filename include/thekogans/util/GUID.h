@@ -23,6 +23,8 @@
 #include <string>
 #include "thekogans/util/Config.h"
 #include "thekogans/util/Types.h"
+#include "thekogans/util/Serializer.h"
+#include "thekogans/util/Exception.h"
 
 namespace thekogans {
     namespace util {
@@ -65,6 +67,13 @@ namespace thekogans {
                 bool windowsGUID = false);
 
             /// \brief
+            /// Return the serialized size of this guid.
+            /// \return Serialized size of this guid.
+            inline ui32 Size () const {
+                return LENGTH;
+            }
+
+            /// \brief
             /// Convert the guid to a string representation.
             /// \return String representation of the guid.
             std::string ToString (bool upperCase = false) const;
@@ -99,8 +108,8 @@ namespace thekogans {
         };
 
         /// \brief
-        /// GUID size.
-        const std::size_t GUID_SIZE = sizeof (GUID);
+        /// Serialized GUID size.
+        const ui32 GUID_SIZE = GUID::LENGTH;
 
         /// \brief
         /// Compare two guids for order.
@@ -154,8 +163,37 @@ namespace thekogans {
         inline std::ostream &operator << (
                 std::ostream &stream,
                 const GUID &guid) {
-            stream << guid.ToString ();
-            return stream;
+            return stream << guid.ToString ();
+        }
+
+        /// \brief
+        /// Write the given guid to the given serializer.
+        /// \param[in] serializer Where to write the given guid.
+        /// \param[in] guid GUID to write.
+        /// \return serializer.
+        inline Serializer &operator << (
+                Serializer &serializer,
+                const GUID &guid) {
+            if (serializer.Write (guid.data, GUID_SIZE) != GUID_SIZE) {
+                THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
+                    "Write (guid.data, %u) != %u", GUID_SIZE, GUID_SIZE);
+            }
+            return serializer;
+        }
+
+        /// \brief
+        /// Read an guid from the given serializer.
+        /// \param[in] serializer Where to read the guid from.
+        /// \param[out] guid GUID to read.
+        /// \return serializer.
+        inline Serializer &operator >> (
+                Serializer &serializer,
+                GUID &guid) {
+            if (serializer.Read (guid.data, GUID_SIZE) != GUID_SIZE) {
+                THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
+                    "Read (guid.data, %u) != %u", GUID_SIZE, GUID_SIZE);
+            }
+            return serializer;
         }
 
     } // namespace util

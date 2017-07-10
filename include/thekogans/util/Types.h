@@ -33,13 +33,20 @@
 #include <cstddef>
 #include <cstdlib>
 #include <cstdarg>
-#include <ctime>
-#include <string>
-#include <vector>
 #include "thekogans/util/Config.h"
 
 namespace thekogans {
     namespace util {
+
+        /// \brief
+        /// One of thekogans util strengths is it's support for binary
+        /// serialization. To achieve this in platform independent manner,
+        /// we need well defined sizes for basic types. This type system,
+        /// together with the static_assert below makes sure that our
+        /// assumptions are rooted in reality. If you ever get compiler
+        /// errors that lead you here, chances are that thekogans util
+        /// (at least it's serialization machinery) is not suited for
+        /// your platform.
 
         /// \brief
         /// Signed 8 bit type.
@@ -91,21 +98,35 @@ namespace thekogans {
     #endif // defined (TOOLCHAIN_ARCH_i386)
 
         /// \brief
+        /// Validate assumptions about integral types sizes.
+        static_assert (
+            sizeof (i8) == 1 && sizeof (ui8) == 1 &&
+            sizeof (i16) == 2 && sizeof (ui16) == 2 &&
+            sizeof (i32) == 4 && sizeof (ui32) == 4 &&
+            sizeof (i64) == 8 && sizeof (ui64) == 8 &&
+            sizeof (f32) == 4 && sizeof (f64) == 8,
+            "Invalid assumption about integral types sizes.");
+
+        /// \brief
         /// Error code type.
-        #define THEKOGANS_UTIL_POSIX_ERROR_CODE int
+        #define THEKOGANS_UTIL_POSIX_ERROR_CODE thekogans::util::i32
         /// \brief
         /// Error code.
         #define THEKOGANS_UTIL_POSIX_OS_ERROR_CODE errno
         /// \brief
         /// Handle type.
-        #define THEKOGANS_UTIL_POSIX_HANDLE int
+        #define THEKOGANS_UTIL_POSIX_HANDLE thekogans::util::i32
         /// \brief
         /// Invalid handle value.
         #define THEKOGANS_UTIL_POSIX_INVALID_HANDLE_VALUE -1
     #if defined (TOOLCHAIN_OS_Windows)
         /// \brief
         /// Error code type.
-        #define THEKOGANS_UTIL_ERROR_CODE DWORD
+        /// NOTE: We don't use DWORD because M$ declares DWORD
+        /// as unsigned long?!? Since util is heavily focused
+        /// on serialization, and since we don't recognize long,
+        /// we use unsigned int (ui32).
+        #define THEKOGANS_UTIL_ERROR_CODE thekogans::util::ui32
         /// \brief
         /// Error code.
         #define THEKOGANS_UTIL_OS_ERROR_CODE GetLastError ()
@@ -117,7 +138,8 @@ namespace thekogans {
         #define THEKOGANS_UTIL_INVALID_HANDLE_VALUE INVALID_HANDLE_VALUE
         /// \brief
         /// Process id type.
-        #define THEKOGANS_UTIL_PROCESS_ID DWORD
+        /// See NOTE for THEKOGANS_UTIL_ERROR_CODE.
+        #define THEKOGANS_UTIL_PROCESS_ID thekogans::util::ui32
         /// \brief
         /// Invalid process id value.
         #define THEKOGANS_UTIL_INVALID_PROCESS_ID_VALUE 0xffffffff
@@ -152,47 +174,47 @@ namespace thekogans {
     #endif // defined (TOOLCHAIN_OS_Windows)
 
         /// \brief
+        /// bool type size.
+        const ui32 BOOL_SIZE = sizeof (ui8);
+        /// \brief
         /// Signed 8 bit type size.
-        const std::size_t I8_SIZE = sizeof (i8);
+        const ui32 I8_SIZE = sizeof (i8);
         /// \brief
         /// Unsigned 8 bit type size.
-        const std::size_t UI8_SIZE = sizeof (ui8);
+        const ui32 UI8_SIZE = sizeof (ui8);
         /// \brief
         /// Signed 16 bit type size.
-        const std::size_t I16_SIZE = sizeof (i16);
+        const ui32 I16_SIZE = sizeof (i16);
         /// \brief
         /// Unsigned 16 bit type size.
-        const std::size_t UI16_SIZE = sizeof (ui16);
+        const ui32 UI16_SIZE = sizeof (ui16);
         /// \brief
         /// Signed 32 bit type size.
-        const std::size_t I32_SIZE = sizeof (i32);
+        const ui32 I32_SIZE = sizeof (i32);
         /// \brief
         /// Unsigned 32 bit type size.
-        const std::size_t UI32_SIZE = sizeof (ui32);
+        const ui32 UI32_SIZE = sizeof (ui32);
         /// \brief
         /// Signed 64 bit type size.
-        const std::size_t I64_SIZE = sizeof (i64);
+        const ui32 I64_SIZE = sizeof (i64);
         /// \brief
         /// Unsigned 64 bit type size.
-        const std::size_t UI64_SIZE = sizeof (ui64);
+        const ui32 UI64_SIZE = sizeof (ui64);
         /// \brief
         /// 32 bit float type size.
-        const std::size_t F32_SIZE = sizeof (f32);
+        const ui32 F32_SIZE = sizeof (f32);
         /// \brief
         /// 64 bit float type size.
-        const std::size_t F64_SIZE = sizeof (f64);
+        const ui32 F64_SIZE = sizeof (f64);
         /// \brief
         /// Natural machine word size.
-        const std::size_t MACHINE_WORD_SIZE = sizeof (MachineWord);
+        const ui32 MACHINE_WORD_SIZE = sizeof (MachineWord);
         /// \brief
         /// ssize_t type size.
-        const std::size_t SSIZE_T_SIZE = sizeof (ssize_t);
+        const ui32 SSIZE_T_SIZE = sizeof (ssize_t);
         /// \brief
         /// std::size_t type size.
-        const std::size_t SIZE_T_SIZE = sizeof (std::size_t);
-        /// \brief
-        /// std::size_t type size.
-        const std::size_t TIME_T_SIZE = sizeof (time_t);
+        const ui32 SIZE_T_SIZE = sizeof (std::size_t);
 
         /// \brief
         /// VERY IMPORTANT: index = 0 - most significant byte/word/doubleword

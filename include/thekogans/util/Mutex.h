@@ -117,10 +117,6 @@ namespace thekogans {
             THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (Mutex)
         };
 
-        /// \brief
-        /// Mutex size.
-        const std::size_t MUTEX_SIZE = sizeof (Mutex);
-
     } // namespace util
 } // namespace thekogans
 

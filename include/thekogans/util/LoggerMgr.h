@@ -133,7 +133,7 @@ namespace thekogans {
 
         struct _LIB_THEKOGANS_UTIL_DECL LoggerMgr :
                 public Thread,
-                public Singleton<LoggerMgr, Mutex> {
+                public Singleton<LoggerMgr, SpinLock> {
             /// \brief
             /// Name of proceess.
             std::string processName;
@@ -166,7 +166,10 @@ namespace thekogans {
                 Debug,
                 /// \brief
                 /// Log errors, warnings, info, dubug and development.
-                Development
+                Development,
+                /// \brief
+                /// Highest log level we support.
+                MaxLevel = Development
             };
             /// \brief
             /// Level at which to log.

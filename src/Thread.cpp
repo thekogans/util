@@ -223,8 +223,7 @@ namespace thekogans {
                     }
                 }
                 else {
-                    TimeSpec absolute = GetCurrentTime ();
-                    absolute += timeSpec;
+                    timespec absolute = (GetCurrentTime () + timeSpec).Totimespec ();
                     int result = pthread_timedjoin_np (thread, 0, &absolute);
                     if (result != 0) {
                         if (result == ETIMEDOUT) {

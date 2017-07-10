@@ -21,6 +21,7 @@
 #include <cassert>
 #include "thekogans/util/Config.h"
 #include "thekogans/util/Types.h"
+#include "thekogans/util/Serializer.h"
 
 namespace thekogans {
     namespace util {
@@ -94,6 +95,16 @@ namespace thekogans {
                 sign (fraction.sign) {}
 
             /// \brief
+            /// Return the serialized size of this fraction.
+            /// \return Serialized size of this fraction.
+            inline ui32 Size () const {
+                return
+                    Serializer::Size (numerator) +
+                    Serializer::Size (denominator) +
+                    UI8_SIZE;
+            }
+
+            /// \brief
             /// Assignment operator.
             /// \param[in] fraction Fraction to copy.
             /// \return *this
@@ -132,6 +143,10 @@ namespace thekogans {
                 return sign == Positive ? value : -value;
             }
         };
+
+        /// \brief
+        /// Serialized Fraction size.
+        const ui32 FRACTION_SIZE = UI32_SIZE + UI32_SIZE + UI8_SIZE;
 
         /// \brief
         /// Multiply the fraction by an int.
@@ -323,6 +338,34 @@ namespace thekogans {
             }
             return fraction1.numerator * fraction2.denominator >=
                 fraction2.numerator * fraction1.denominator;
+        }
+
+        /// \brief
+        /// Write the given fraction to the given serializer.
+        /// \param[in] serializer Where to write the given guid.
+        /// \param[in] fraction Fraction to write.
+        /// \return serializer.
+        inline Serializer &operator << (
+                Serializer &serializer,
+                const Fraction &fraction) {
+            return serializer <<
+                fraction.numerator <<
+                fraction.denominator <<
+                (ui8)fraction.sign;
+        }
+
+        /// \brief
+        /// Read a fraction from the given serializer.
+        /// \param[in] serializer Where to read the guid from.
+        /// \param[in] fraction Fraction to read.
+        /// \return serializer.
+        inline Serializer &operator >> (
+                Serializer &serializer,
+                Fraction &fraction) {
+            return serializer >>
+                fraction.numerator >>
+                fraction.denominator >>
+                (ui8 &)fraction.sign;
         }
 
     } // namespace util

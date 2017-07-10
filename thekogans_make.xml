@@ -2,8 +2,8 @@
                 project = "util"
                 project_type = "library"
                 major_version = "0"
-                minor_version = "16"
-                patch_version = "4"
+                minor_version = "17"
+                patch_version = "0"
                 guid = "e541acd69d9d020f7eac98d5bf9e0d7a"
                 schema_version = "2">
   <features>
@@ -107,10 +107,10 @@
     <cpp_header>$(organization)/$(project_directory)/FixedBuffer.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/Flags.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/Fraction.h</cpp_header>
+    <cpp_header>$(organization)/$(project_directory)/GUID.h</cpp_header>
     <if condition = "$(TOOLCHAIN_OS) == 'Windows'">
       <cpp_header>$(organization)/$(project_directory)/HGLOBALAllocator.h</cpp_header>
     </if>
-    <cpp_header>$(organization)/$(project_directory)/GUID.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/HRTimer.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/HRTimerMgr.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/Hash.h</cpp_header>
@@ -123,6 +123,7 @@
     <cpp_header>$(organization)/$(project_directory)/LoggerMgr.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/MD5.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/MainRunLoop.h</cpp_header>
+    <cpp_header>$(organization)/$(project_directory)/MemoryLogger.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/MimeTypeMapper.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/Mutex.h</cpp_header>
     <if condition = "$(TOOLCHAIN_OS) == 'OSX'">
@@ -606,19 +607,20 @@
     <cpp_source>File.cpp</cpp_source>
     <cpp_source>FileLogger.cpp</cpp_source>
     <cpp_source>Fraction.cpp</cpp_source>
+    <cpp_source>GUID.cpp</cpp_source>
     <if condition = "$(TOOLCHAIN_OS) == 'Windows'">
       <cpp_source>HGLOBALAllocator.cpp</cpp_source>>
     </if>
-    <cpp_source>GUID.cpp</cpp_source>
-    <cpp_source>Hash.cpp</cpp_source>
-    <cpp_source>Heap.cpp</cpp_source>
     <cpp_source>HRTimer.cpp</cpp_source>
     <cpp_source>HRTimerMgr.cpp</cpp_source>
+    <cpp_source>Hash.cpp</cpp_source>
+    <cpp_source>Heap.cpp</cpp_source>
     <cpp_source>JobQueue.cpp</cpp_source>
     <cpp_source>JobQueueScheduler.cpp</cpp_source>
     <cpp_source>LoggerMgr.cpp</cpp_source>
     <cpp_source>MD5.cpp</cpp_source>
     <cpp_source>MainRunLoop.cpp</cpp_source>
+    <cpp_source>MemoryLogger.cpp</cpp_source>
     <cpp_source>MimeTypeMapper.cpp</cpp_source>
     <cpp_source>Mutex.cpp</cpp_source>
     <if condition = "$(TOOLCHAIN_OS) == 'OSX'">

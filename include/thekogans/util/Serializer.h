@@ -25,19 +25,9 @@
 #include "thekogans/util/Config.h"
 #include "thekogans/util/Types.h"
 #include "thekogans/util/ByteSwap.h"
-#include "thekogans/util/Flags.h"
-#include "thekogans/util/Exception.h"
 
 namespace thekogans {
     namespace util {
-
-        struct GUID;
-        struct Fraction;
-        struct TimeSpec;
-        struct Variant;
-        struct Buffer;
-        template<ui32 length>
-        struct FixedBuffer;
 
         /// \struct Serializer Serializer.h thekogans/util/Serializer.h
         ///
@@ -78,13 +68,50 @@ namespace thekogans {
                 const void * /*buffer*/,
                 ui32 /*count*/) = 0;
 
+            /// \brief
+            /// Return serializer size.
+            /// \return Serializer size.
+            inline ui32 Size () const {
+                return Size (endianness);
+            }
+
             // Binary Insertion/Extraction API.
+
+            /// \brief
+            /// This template is used to match non-integral types (structs).
+            /// NOTE: If you get a compiler error that leads you here, it
+            /// usually means that you're trying to serialize a struct and
+            /// you haven't defined a std::size_t Size () const for it.
+            /// \param[in] t Type whose Size function to call.
+            /// \return Size of serialized type.
+            template<typename T>
+            static ui32 Size (const T &t) {
+                return t.Size ();
+            }
 
             /// \brief
             /// Return serialized size of bool.
             /// \return Serialized size of bool.
-            static ui32 Size (bool value) {
-                return UI8_SIZE;
+            static ui32 Size (Endianness /*value*/) {
+                return ENDIANNESS_SIZE;
+            }
+
+            /// \brief
+            /// Serialize a endianness. It will be written as a single ui8.
+            /// \param[in] value Value to serialize.
+            /// \return *this.
+            Serializer &operator << (Endianness value);
+            /// \brief
+            /// Extract a endianness. It will be read as a single ui8.
+            /// \param[out] value Where to place the extracted value.
+            /// \return *this.
+            Serializer &operator >> (Endianness &value);
+
+            /// \brief
+            /// Return serialized size of bool.
+            /// \return Serialized size of bool.
+            static ui32 Size (bool /*value*/) {
+                return BOOL_SIZE;
             }
 
             /// \brief
@@ -122,7 +149,7 @@ namespace thekogans {
             /// Return serialized size of const std::string &.
             /// \return Serialized size of const std::string &.
             static ui32 Size (const std::string &value) {
-                return (ui32)(UI32_SIZE + value.size ());
+                return UI32_SIZE + (ui32)value.size ();
             }
 
             /// \brief
@@ -139,7 +166,7 @@ namespace thekogans {
             /// \brief
             /// Return serialized size of i8.
             /// \return Serialized size of i8.
-            static ui32 Size (i8 value) {
+            static ui32 Size (i8 /*value*/) {
                 return I8_SIZE;
             }
 
@@ -157,7 +184,7 @@ namespace thekogans {
             /// \brief
             /// Return serialized size of ui8.
             /// \return Serialized size of ui8.
-            static ui32 Size (ui8 value) {
+            static ui32 Size (ui8 /*value*/) {
                 return UI8_SIZE;
             }
 
@@ -175,7 +202,7 @@ namespace thekogans {
             /// \brief
             /// Return serialized size of i16.
             /// \return Serialized size of i16.
-            static ui32 Size (i16 value) {
+            static ui32 Size (i16 /*value*/) {
                 return I16_SIZE;
             }
 
@@ -195,7 +222,7 @@ namespace thekogans {
             /// \brief
             /// Return serialized size of ui16.
             /// \return Serialized size of ui16.
-            static ui32 Size (ui16 value) {
+            static ui32 Size (ui16 /*value*/) {
                 return UI16_SIZE;
             }
 
@@ -215,7 +242,7 @@ namespace thekogans {
             /// \brief
             /// Return serialized size of i32.
             /// \return Serialized size of i32.
-            static ui32 Size (i32 value) {
+            static ui32 Size (i32 /*value*/) {
                 return I32_SIZE;
             }
 
@@ -235,7 +262,7 @@ namespace thekogans {
             /// \brief
             /// Return serialized size of ui32.
             /// \return Serialized size of ui32.
-            static ui32 Size (ui32 value) {
+            static ui32 Size (ui32 /*value*/) {
                 return UI32_SIZE;
             }
 
@@ -255,7 +282,7 @@ namespace thekogans {
             /// \brief
             /// Return serialized size of i64.
             /// \return Serialized size of i64.
-            static ui32 Size (i64 value) {
+            static ui32 Size (i64 /*value*/) {
                 return I64_SIZE;
             }
 
@@ -275,7 +302,7 @@ namespace thekogans {
             /// \brief
             /// Return serialized size of ui64.
             /// \return Serialized size of ui64.
-            static ui32 Size (ui64 value) {
+            static ui32 Size (ui64 /*value*/) {
                 return UI64_SIZE;
             }
 
@@ -295,7 +322,7 @@ namespace thekogans {
             /// \brief
             /// Return serialized size of f32.
             /// \return Serialized size of f32.
-            static ui32 Size (f32 value) {
+            static ui32 Size (f32 /*value*/) {
                 return F32_SIZE;
             }
 
@@ -315,7 +342,7 @@ namespace thekogans {
             /// \brief
             /// Return serialized size of f64.
             /// \return Serialized size of f64.
-            static ui32 Size (f64 value) {
+            static ui32 Size (f64 /*value*/) {
                 return F64_SIZE;
             }
 
@@ -331,315 +358,6 @@ namespace thekogans {
             /// \param[out] value Where to place the extracted value.
             /// \return *this.
             Serializer &operator >> (f64 &value);
-
-            /// \brief
-            /// Return serialized size of const Flags<T> &.
-            /// \return Serialized size of const Flags<T> &.
-            template<typename T>
-            static ui32 Size (const Flags<T> &value) {
-                return Size ((const T)value);
-            }
-
-            /// \brief
-            /// Serialize a Flags<T>. endianness is used to properly
-            /// convert between serializer and host byte order.
-            /// \param[in] value Value to serialize.
-            /// \return *this.
-            template<typename T>
-            inline Serializer &operator << (const Flags<T> &value) {
-                *this << (const T)value;
-                return *this;
-            }
-            /// \brief
-            /// Extract a Flags<T>. endianness is used to properly
-            /// convert between serializer and host byte order.
-            /// \param[out] value Where to place the extracted value.
-            /// \return *this.
-            template<typename T>
-            inline Serializer &operator >> (Flags<T> &value) {
-                T t;
-                *this >> t;
-                value = Flags<T> (t);
-                return *this;
-            }
-
-            /// \brief
-            /// Return serialized size of const Fraction &.
-            /// \return Serialized size of const Fraction &.
-            static ui32 Size (const Fraction &value) {
-                return UI32_SIZE + UI32_SIZE + UI32_SIZE;
-            }
-
-            /// \brief
-            /// Serialize a Fraction. endianness is used to properly
-            /// convert between serializer and host byte order.
-            /// \param[in] value Value to serialize.
-            /// \return *this.
-            Serializer &operator << (const Fraction &value);
-            /// \brief
-            /// Extract a Fraction. endianness is used to properly
-            /// convert between serializer and host byte order.
-            /// \param[out] value Where to place the extracted value.
-            /// \return *this.
-            Serializer & operator >> (Fraction &value);
-
-            /// \brief
-            /// Return serialized size of const TimeSpec &.
-            /// \return Serialized size of const TimeSpec &.
-            static ui32 Size (const TimeSpec &value) {
-                return I64_SIZE + I64_SIZE;
-            }
-
-            /// \brief
-            /// Serialize a TimeSpec. endianness is used to properly
-            /// convert between serializer and host byte order.
-            /// \param[in] value Value to serialize.
-            /// \return *this.
-            Serializer &operator << (const TimeSpec &value);
-            /// \brief
-            /// Extract a TimeSpec. endianness is used to properly
-            /// convert between serializer and host byte order.
-            /// \param[out] value Where to place the extracted value.
-            /// \return *this.
-            Serializer & operator >> (TimeSpec &value);
-
-            /// \brief
-            /// Return serialized size of const GUID &.
-            /// \return Serialized size of const GUID &.
-            static ui32 Size (const GUID &value);
-
-            /// \brief
-            /// Serialize a GUID. It will be written as a 16 byte binary blob.
-            /// \param[in] value Value to serialize.
-            /// \return *this.
-            Serializer &operator << (const GUID &value);
-            /// \brief
-            /// Extract a GUID. It will be read as a 16 binary blob.
-            /// \param[out] value Where to place the extracted value.
-            /// \return *this.
-            Serializer &operator >> (GUID &value);
-
-            /// \brief
-            /// Return serialized size of const Variant &.
-            /// \return Serialized size of const Variant &.
-            static ui32 Size (const Variant &value);
-
-            /// \brief
-            /// Serialize a Variant.
-            /// \param[in] value Value to serialize.
-            /// \return *this.
-            Serializer &operator << (const Variant &value);
-            /// \brief
-            /// Extract a Variant.
-            /// \param[out] value Where to place the extracted value.
-            /// \return *this.
-            Serializer &operator >> (Variant &value);
-
-            /// \struct BufferHeader BufferHeader.h thekogans/packet/Serializer.h
-            ///
-            /// \brief
-            /// BufferHeader represents that part of the serialized \see{Buffer} that is not data.
-            /// It contains all \see{Buffer} metadata necessary to (de)serialize a buffer.
-            struct _LIB_THEKOGANS_UTIL_DECL BufferHeader {
-                /// \brief
-                /// \see{Buffer} \see{Endianness}
-                ui32 endianness;
-                /// \brief
-                /// \see{Buffer} data length.
-                ui32 length;
-                /// \brief
-                /// \see{Buffer} read offset.
-                ui32 readOffset;
-                /// \brief
-                /// \see{Buffer} write offset.
-                ui32 writeOffset;
-
-                enum {
-                    /// \brief
-                    /// BufferHeader serialized size.
-                    SIZE = UI32_SIZE + UI32_SIZE + UI32_SIZE + UI32_SIZE
-                };
-
-                /// \brief
-                /// ctor.
-                BufferHeader () :
-                    endianness (HostEndian),
-                    length (0),
-                    readOffset (0),
-                    writeOffset (0) {}
-
-                /// \brief
-                /// ctor.
-                /// \param[in] endianness_ \see{Buffer} \see{Endianness}
-                /// \param[in] length_ \see{Buffer} data length.
-                /// \param[in] readOffset_ \see{Buffer} read offset.
-                /// \param[in] writeOffset_ \see{Buffer} write offset.
-                BufferHeader (
-                    ui32 endianness_,
-                    ui32 length_,
-                    ui32 readOffset_,
-                    ui32 writeOffset_) :
-                    endianness (endianness_),
-                    length (length_),
-                    readOffset (readOffset_),
-                    writeOffset (writeOffset_) {}
-            };
-
-            /// \brief
-            /// Serialize a BufferHeader.
-            /// \param[in] bufferHeader Value to serialize.
-            /// \return *this.
-            inline Serializer &operator << (
-                    const BufferHeader &bufferHeader) {
-                *this <<
-                    bufferHeader.endianness <<
-                    bufferHeader.length <<
-                    bufferHeader.readOffset <<
-                    bufferHeader.writeOffset;
-                return *this;
-            }
-
-            /// \brief
-            /// Extract a BufferHeader.
-            /// \param[out] bufferHeader Where to place the extracted value.
-            /// \return *this.
-            inline Serializer &operator >> (
-                    BufferHeader &bufferHeader) {
-                *this >>
-                    bufferHeader.endianness >>
-                    bufferHeader.length >>
-                    bufferHeader.readOffset >>
-                    bufferHeader.writeOffset;
-                return *this;
-            }
-
-            /// \brief
-            /// Return serialized size of const Buffer &.
-            /// \param[in] value Value whose size to return.
-            /// \return Serialized size of const Buffer &.
-            static ui32 Size (const Buffer &value);
-
-            /// \brief
-            /// Serialize a Buffer.
-            /// \param[in] value Value to serialize.
-            /// \return *this.
-            Serializer &operator << (const Buffer &value);
-            /// \brief
-            /// Extract a Buffer.
-            /// \param[out] value Where to place the extracted value.
-            /// \return *this.
-            Serializer &operator >> (Buffer &value);
-
-            /// \struct FixedBufferHeader FixedBufferHeader.h thekogans/packet/Serializer.h
-            ///
-            /// \brief
-            /// FixedBufferHeader represents that part of the serialized \see{FixedBuffer} that is not data.
-            /// It contains all \see{FixedBuffer} metadata necessary to (de)serialize a fixed buffer.
-            struct _LIB_THEKOGANS_UTIL_DECL FixedBufferHeader {
-                /// \brief
-                /// \see{FixedBuffer} \see{Endianness}
-                ui32 endianness;
-                /// \brief
-                /// \see{FixedBuffer} read offset.
-                ui32 readOffset;
-                /// \brief
-                /// \see{FixedBuffer} write offset.
-                ui32 writeOffset;
-
-                enum {
-                    /// \brief
-                    /// FixedBufferHeader serialized size.
-                    SIZE = UI32_SIZE + UI32_SIZE + UI32_SIZE
-                };
-
-                /// \brief
-                /// ctor.
-                FixedBufferHeader () :
-                    endianness (HostEndian),
-                    readOffset (0),
-                    writeOffset (0) {}
-
-                /// \brief
-                /// ctor.
-                /// \param[in] endianness_ \see{FixedBuffer} \see{Endianness}
-                /// \param[in] readOffset_ \see{FixedBuffer} read offset.
-                /// \param[in] writeOffset_ \see{FixedBuffer} write offset.
-                FixedBufferHeader (
-                    ui32 endianness_,
-                    ui32 readOffset_,
-                    ui32 writeOffset_) :
-                    endianness (endianness_),
-                    readOffset (readOffset_),
-                    writeOffset (writeOffset_) {}
-            };
-
-            /// \brief
-            /// Serialize a FixedBufferHeader.
-            /// \param[in] fixedBufferHeader Value whose size to return.
-            /// \return *this.
-            inline Serializer &operator << (
-                    const FixedBufferHeader &fixedBufferHeader) {
-                *this <<
-                    fixedBufferHeader.endianness <<
-                    fixedBufferHeader.readOffset <<
-                    fixedBufferHeader.writeOffset;
-                return *this;
-            }
-
-            /// \brief
-            /// Extract a \see{FixedBufferHeader}.
-            /// \param[out] fixedBufferHeader Where to place the extracted value.
-            /// \return *this.
-            inline Serializer &operator >> (
-                    FixedBufferHeader &fixedBufferHeader) {
-                *this >>
-                    fixedBufferHeader.endianness >>
-                    fixedBufferHeader.readOffset >>
-                    fixedBufferHeader.writeOffset;
-                return *this;
-            }
-
-            /// \brief
-            /// Return serialized size of const FixedBuffer &.
-            /// \param[in] value Value to serialize.
-            /// \return Serialized size of const FixedBuffer &.
-            template<ui32 length>
-            static ui32 Size (const FixedBuffer<length> & /*value*/) {
-                return FixedBufferHeader::SIZE + length * UI8_SIZE;
-            }
-
-            /// \brief
-            /// Serialize a FixedBuffer.
-            /// \param[in] value Value to serialize.
-            /// \return *this.
-            template<ui32 length>
-            Serializer &operator << (const FixedBuffer<length> &value) {
-                *this << FixedBufferHeader (value.endianness, value.readOffset, value.writeOffset);
-                ui32 size = length * UI8_SIZE;
-                if (Write (value.data, size) != size) {
-                    THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                        "Write (value.data, %u) != %u", size, size);
-                }
-                return *this;
-            }
-            /// \brief
-            /// Extract a FixedBuffer.
-            /// \param[out] value Where to place the extracted value.
-            /// \return *this.
-            template<ui32 length>
-            Serializer &operator >> (FixedBuffer<length> &value) {
-                FixedBufferHeader fixedBufferHeader;
-                *this >> fixedBufferHeader;
-                value.endianness = (Endianness)fixedBufferHeader.endianness;
-                value.readOffset = fixedBufferHeader.readOffset;
-                value.writeOffset = fixedBufferHeader.writeOffset;
-                ui32 size = length * UI8_SIZE;
-                if (Read (value.data, size) != size) {
-                    THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                        "Read (value.data, %u) != %u", size, size);
-                }
-                return *this;
-            }
 
             /// \brief
             /// Return serialized size of const std::vector<T> &.
@@ -660,9 +378,9 @@ namespace thekogans {
             /// \return *this.
             template<typename T>
             inline Serializer &operator << (const std::vector<T> &value) {
-                ui32 length = (ui32)value.size ();
-                *this << length;
-                for (ui32 i = 0; i < length; ++i) {
+                ui32 count = (ui32)value.size ();
+                *this << count;
+                for (ui32 i = 0; i < count; ++i) {
                     *this << value[i];
                 }
                 return *this;
@@ -674,11 +392,11 @@ namespace thekogans {
             /// \return *this.
             template<typename T>
             inline Serializer &operator >> (std::vector<T> &value) {
-                ui32 length;
-                *this >> length;
-                if (length > 0) {
-                    value.resize (length);
-                    for (ui32 i = 0; i < length; ++i) {
+                ui32 count;
+                *this >> count;
+                if (count > 0) {
+                    value.resize (count);
+                    for (ui32 i = 0; i < count; ++i) {
                         *this >> value[i];
                     }
                 }
@@ -698,7 +416,7 @@ namespace thekogans {
             /// Return serialized size of const std::vector<i8> &.
             /// \return Serialized size of const std::vector<i8> &.
             static ui32 Size (const std::vector<i8> &value) {
-                return (ui32)(UI32_SIZE + value.size () * UI8_SIZE);
+                return UI32_SIZE + (ui32)value.size ();
             }
 
             /// \brief
@@ -716,7 +434,7 @@ namespace thekogans {
             /// Return serialized size of const std::vector<ui8> &.
             /// \return Serialized size of const std::vector<ui8> &.
             static ui32 Size (const std::vector<ui8> &value) {
-                return (ui32)(UI32_SIZE + value.size () * UI8_SIZE);
+                return UI32_SIZE + (ui32)value.size ();
             }
 
             /// \brief
@@ -751,8 +469,8 @@ namespace thekogans {
             /// \return *this.
             template<typename T>
             inline Serializer &operator << (const std::list<T> &value) {
-                ui32 length = value.size ();
-                *this << length;
+                ui32 count = value.size ();
+                *this << count;
                 for (typename std::list<T>::const_iterator
                         it = value.begin (),
                         end = value.end (); it != end; ++it) {
@@ -767,10 +485,10 @@ namespace thekogans {
             /// \return *this.
             template<typename T>
             inline Serializer &operator >> (std::list<T> &value) {
-                ui32 length;
-                *this >> length;
-                if (length > 0) {
-                    for (ui32 i = 0; i < length; ++i) {
+                ui32 count;
+                *this >> count;
+                if (count > 0) {
+                    for (ui32 i = 0; i < count; ++i) {
                         T t;
                         *this >> t;
                         value.push_back (t);

@@ -48,6 +48,7 @@
 #include "thekogans/util/Config.h"
 #include "thekogans/util/Types.h"
 #include "thekogans/util/Mutex.h"
+#include "thekogans/util/Serializer.h"
 #include "thekogans/util/StringUtils.h"
 #if defined (TOOLCHAIN_OS_OSX)
     #include "thekogans/util/MacUtils.h"
@@ -133,6 +134,10 @@ namespace thekogans {
 
                 /// \brief
                 /// ctor.
+                Location () :
+                    line (0) {}
+                /// \brief
+                /// ctor.
                 /// \param[in] file_ Module path.
                 /// \param[in] function_ Function in module.
                 /// \param[in] line_ Line number.
@@ -170,6 +175,17 @@ namespace thekogans {
                 /// \brief
                 /// "BuildTime"
                 static const char * const ATTR_BUILD_TIME;
+
+                /// \brief
+                /// Return location serialized size.
+                /// \return Location serialized size.
+                inline ui32 Size () const {
+                    return
+                        Serializer::Size (file) +
+                        Serializer::Size (function) +
+                        Serializer::Size (line) +
+                        Serializer::Size (buildTime);
+                }
 
             #if defined (THEKOGANS_UTIL_HAVE_PUGIXML)
                 /// \brief
@@ -252,6 +268,16 @@ namespace thekogans {
             virtual ~Exception () throw () {}
 
             /// \brief
+            /// Return exception serialized size.
+            /// \return Exception serialized size.
+            inline ui32 Size () const {
+                return
+                    Serializer::Size (errorCode) +
+                    Serializer::Size (message) +
+                    Serializer::Size (traceback);
+            }
+
+            /// \brief
             /// Return exception error code.
             /// \return Exception error code.
             inline THEKOGANS_UTIL_ERROR_CODE GetErrorCode () const {
@@ -314,7 +340,7 @@ namespace thekogans {
             /// Look up text for POSIX error code.
             /// \param[in] errorCode Error code which to get a text message.
             /// \return Text message for POSIX error code.
-            static std::string FromPOSIXErrorCode (int errorCode = errno);
+            static std::string FromPOSIXErrorCode (i32 errorCode = errno);
             /// \brief
             /// Look up text for POSIX error code and combine it with a supplied message.
             /// \param[in] errorCode Error code which to get a text message.
@@ -322,7 +348,7 @@ namespace thekogans {
             /// \param[in] ... Message text printf style arguments.
             /// \return Text message for POSIX error code + message.
             static std::string FromPOSIXErrorCodeAndMessage (
-                int errorCode,
+                i32 errorCode,
                 const char *format,
                 ...);
 
@@ -381,6 +407,28 @@ namespace thekogans {
             std::string ToString (
                 ui32 indentationLevel,
                 const char *tagName = TAG_EXCEPTION) const;
+
+            /// \brief
+            /// operator << needs access to Location.
+            friend Serializer &operator << (
+                Serializer &serializer,
+                const Location &location);
+            /// \brief
+            /// operator >> needs access to Location.
+            friend Serializer &operator >> (
+                Serializer &serializer,
+                Location &location);
+
+            /// \brief
+            /// operator << needs access to provate members.
+            friend Serializer &operator << (
+                Serializer &serializer,
+                const Exception &exception);
+            /// \brief
+            /// operator >> needs access to provate members.
+            friend Serializer &operator >> (
+                Serializer &serializer,
+                Exception &exception);
         };
 
     #if defined (_MSC_VER)
@@ -958,6 +1006,64 @@ namespace thekogans {
                     thekogans::util::FormatString (format, __VA_ARGS__).c_str (),\
                     exception.Report ().c_str ());\
             }
+
+        /// \brief
+        /// Write the given Exception::Location to the given serializer.
+        /// \param[in] serializer Where to write the given guid.
+        /// \param[in] location Exception::Location to write.
+        /// \return serializer.
+        inline Serializer &operator << (
+                Serializer &serializer,
+                const Exception::Location &location) {
+            return serializer <<
+                location.file <<
+                location.function <<
+                location.line <<
+                location.buildTime;
+        }
+
+        /// \brief
+        /// Read an Exception::Location from the given serializer.
+        /// \param[in] serializer Where to read the guid from.
+        /// \param[out] location Exception::Location to read.
+        /// \return serializer.
+        inline Serializer &operator >> (
+                Serializer &serializer,
+                Exception::Location &location) {
+            return serializer >>
+                location.file >>
+                location.function >>
+                location.line >>
+                location.buildTime;
+        }
+
+        /// \brief
+        /// Write the given exception to the given serializer.
+        /// \param[in] serializer Where to write the given guid.
+        /// \param[in] exception Exception to write.
+        /// \return serializer.
+        inline Serializer &operator << (
+                Serializer &serializer,
+                const Exception &exception) {
+            return serializer <<
+                exception.errorCode <<
+                exception.message <<
+                exception.traceback;
+        }
+
+        /// \brief
+        /// Read an Exception from the given serializer.
+        /// \param[in] serializer Where to read the guid from.
+        /// \param[out] exception Exception to read.
+        /// \return serializer.
+        inline Serializer &operator >> (
+                Serializer &serializer,
+                Exception &exception) {
+            return serializer >>
+                exception.errorCode >>
+                exception.message >>
+                exception.traceback;
+        }
 
     } // namespace util
 } // namespace thekogans

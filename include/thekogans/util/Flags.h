@@ -19,6 +19,7 @@
 #define __thekogans_util_Flags_h
 
 #include "thekogans/util/Types.h"
+#include "thekogans/util/Serializer.h"
 
 namespace thekogans {
     namespace util {
@@ -44,6 +45,13 @@ namespace thekogans {
             /// \param[in] flags_ Initial flags value.
             Flags (T flags_ = 0) :
                 flags (flags_) {}
+
+            /// \brief
+            /// Return serialized size of flags.
+            /// \return Serialized size of flags.
+            inline ui32 Size () const {
+                return Serializer::Size (flags);
+            }
 
             /// \brief
             /// Test if flag is set.
@@ -160,6 +168,35 @@ namespace thekogans {
         /// \brief
         /// Synonym for Flags<ui64>.
         typedef Flags<ui64> Flags64;
+
+        /// \brief
+        /// Serialize a Flags<T>. endianness is used to properly
+        /// convert between serializer and host byte order.
+        /// \param[in] serializer Where to write Flags<T>.
+        /// \param[in] flags Flags<T> to serialize.
+        /// \return serializer.
+        template<typename T>
+        inline Serializer &operator << (
+                Serializer &serializer,
+                const Flags<T> &flags) {
+            return serializer << (const T)flags;
+        }
+
+        /// \brief
+        /// Extract a Flags<T>. endianness is used to properly
+        /// convert between serializer and host byte order.
+        /// \param[in] serializer Where to read the Flags<T> from.
+        /// \param[out] value Where to place the extracted value.
+        /// \return serializer.
+        template<typename T>
+        inline Serializer &operator >> (
+                Serializer &serializer,
+                Flags<T> &flags) {
+            T t;
+            serializer >> t;
+            flags = Flags<T> (t);
+            return serializer;
+        }
 
     } // namespace util
 } // namespace thekogans

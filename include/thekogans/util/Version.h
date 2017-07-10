@@ -21,6 +21,7 @@
 #include <string>
 #include "thekogans/util/Config.h"
 #include "thekogans/util/Types.h"
+#include "thekogans/util/Serializer.h"
 #include "thekogans/util/StringUtils.h"
 
 namespace thekogans {
@@ -100,6 +101,16 @@ namespace thekogans {
             explicit Version (const std::string &value);
 
             /// \brief
+            /// Return the serialized size of this version.
+            /// \return Serialized size of this version.
+            inline ui32 Size () const {
+                return
+                    Serializer::Size (majorVersion) +
+                    Serializer::Size (minorVersion) +
+                    Serializer::Size (patchVersion);
+            }
+
+            /// \brief
             /// Increment majorVersion and set minorVersion and patchVersion to 0.
             void IncMajorVersion ();
             /// \brief
@@ -116,6 +127,10 @@ namespace thekogans {
                 return FormatString ("%u.%u.%u", majorVersion, minorVersion, patchVersion);
             }
         };
+
+        /// \brief
+        /// Serialized Version size.
+        const ui32 VERSION_SIZE = UI32_SIZE + UI32_SIZE + UI32_SIZE;
 
         /// \brief
         /// Compare two versions for equality.
@@ -169,6 +184,34 @@ namespace thekogans {
         _LIB_THEKOGANS_UTIL_DECL bool _LIB_THEKOGANS_UTIL_API operator >= (
             const Version &version1,
             const Version &version2);
+
+        /// \brief
+        /// Write the given version to the given serializer.
+        /// \param[in] serializer Where to write the given version.
+        /// \param[in] version Version to write.
+        /// \return serializer.
+        inline Serializer &operator << (
+                Serializer &serializer,
+                const Version &version) {
+            return serializer <<
+                version.majorVersion <<
+                version.minorVersion <<
+                version.patchVersion;
+        }
+
+        /// \brief
+        /// Read an version from the given serializer.
+        /// \param[in] serializer Where to read the version from.
+        /// \param[out] version Version to read.
+        /// \return serializer.
+        inline Serializer &operator >> (
+                Serializer &serializer,
+                Version &version) {
+            return serializer >>
+                version.majorVersion >>
+                version.minorVersion >>
+                version.patchVersion;
+        }
 
         /// \brief
         /// Return the compiled util version.

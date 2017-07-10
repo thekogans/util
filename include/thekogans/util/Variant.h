@@ -25,6 +25,7 @@
 #include "thekogans/util/Config.h"
 #include "thekogans/util/Types.h"
 #include "thekogans/util/GUID.h"
+#include "thekogans/util/Serializer.h"
 
 namespace thekogans {
     namespace util {
@@ -140,6 +141,15 @@ namespace thekogans {
                 /// \brief
                 /// GUID *
                 TYPE_GUID
+                // FIXME: add support for:
+                //TYPE_Buffer
+                //TYPE_Directory_Entry
+                //TYPE_FixedBuffer
+                //TYPE_Fraction
+                //TYPE_Exception
+                //TYPE_Flags
+                //TYPE_TimeSpec
+                //TYPE_Version
             };
             ui32 type;
             /// \brief
@@ -319,9 +329,10 @@ namespace thekogans {
             }
 
             /// \brief
-            /// Return underlying type size.
-            /// \return size Of underlying variant type.
-            std::size_t Size () const;
+            /// Return underlying variant type size.
+            /// \return Size of underlying variant type.
+            ui32 Size () const;
+
             /// \brief
             /// Hash the variant value.
             /// \param[in] radix Modular radix.
@@ -338,13 +349,13 @@ namespace thekogans {
             /// If type != variant.type, an exception is thrown.
             /// bool logic is true > false.
             /// \return *this < variant = -1, *this == variant = 0, *this > variant = 1.
-            int Compare (const Variant &variant) const;
+            i32 Compare (const Variant &variant) const;
             /// \brief
             /// Useful for string variants only. Does a
             /// prefix compare.
             /// \param[in] variant Variant to compare prefixes to.
             /// \return <0 = less, =0 = equal, >0 = greater.
-            int PrefixCompare (const Variant &variant) const;
+            i32 PrefixCompare (const Variant &variant) const;
 
         #if defined (THEKOGANS_UTIL_HAVE_PUGIXML)
             /// \brief
@@ -418,6 +429,23 @@ namespace thekogans {
         _LIB_THEKOGANS_UTIL_DECL bool _LIB_THEKOGANS_UTIL_API operator != (
             const Variant &variant1,
             const Variant &variant2);
+
+        /// \brief
+        /// Write the given variant to the given serializer.
+        /// \param[in] serializer Where to write the given variant.
+        /// \param[in] variant Variant to write.
+        /// \return serializer.
+        _LIB_THEKOGANS_UTIL_DECL Serializer & _LIB_THEKOGANS_UTIL_API operator << (
+            Serializer &serializer,
+            const Variant &variant);
+        /// \brief
+        /// Read a variant from the given serializer.
+        /// \param[in] serializer Where to read the variant from.
+        /// \param[in] variant Variant to read.
+        /// \return serializer.
+        _LIB_THEKOGANS_UTIL_DECL Serializer & _LIB_THEKOGANS_UTIL_API operator >> (
+            Serializer &serializer,
+            Variant &variant);
 
     } // namespace util
 } // namespace thekogans

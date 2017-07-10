@@ -179,8 +179,8 @@ namespace thekogans {
                 type == VALUE_GUID ? TYPE_GUID : TYPE_Invalid;
         }
 
-        std::size_t Variant::Size () const {
-            std::size_t size = UI32_SIZE;
+        ui32 Variant::Size () const {
+            ui32 size = UI32_SIZE;
             switch (type) {
                 case Variant::TYPE_bool:
                     size += UI8_SIZE;
@@ -216,7 +216,7 @@ namespace thekogans {
                     size += F64_SIZE;
                     break;
                 case Variant::TYPE_string: {
-                    size += value._string->size () + 1;
+                    size += (ui32)(value._string->size () + 1);
                     break;
                 }
                 case Variant::TYPE_GUID: {
@@ -601,6 +601,109 @@ namespace thekogans {
         _LIB_THEKOGANS_UTIL_DECL bool _LIB_THEKOGANS_UTIL_API operator != (
                 const Variant &variant1, const Variant &variant2) {
             return variant1.Compare (variant2) != 0;
+        }
+
+        Serializer &operator << (
+                Serializer &serializer,
+                const Variant &variant) {
+            serializer << variant.type;
+            switch (variant.type) {
+                case Variant::TYPE_bool:
+                    serializer << variant.value._bool;
+                    break;
+                case Variant::TYPE_i8:
+                    serializer << variant.value._i8;
+                    break;
+                case Variant::TYPE_ui8:
+                    serializer << variant.value._ui8;
+                    break;
+                case Variant::TYPE_i16:
+                    serializer << variant.value._i16;
+                    break;
+                case Variant::TYPE_ui16:
+                    serializer << variant.value._ui16;
+                    break;
+                case Variant::TYPE_i32:
+                    serializer << variant.value._i32;
+                    break;
+                case Variant::TYPE_ui32:
+                    serializer << variant.value._ui32;
+                    break;
+                case Variant::TYPE_i64:
+                    serializer << variant.value._i64;
+                    break;
+                case Variant::TYPE_ui64:
+                    serializer << variant.value._ui64;
+                    break;
+                case Variant::TYPE_f32:
+                    serializer << variant.value._f32;
+                    break;
+                case Variant::TYPE_f64:
+                    serializer << variant.value._f64;
+                    break;
+                case Variant::TYPE_string:
+                    assert (variant.value._string != 0);
+                    serializer << *variant.value._string;
+                    break;
+                case Variant::TYPE_GUID:
+                    assert (variant.value._string != 0);
+                    serializer << *variant.value._guid;
+                    break;
+            }
+            return serializer;
+        }
+
+        Serializer &operator >> (
+                Serializer &serializer,
+                Variant &variant) {
+            variant.Clear ();
+            serializer >> variant.type;
+            switch (variant.type) {
+                case Variant::TYPE_bool:
+                    serializer >> variant.value._bool;
+                    break;
+                case Variant::TYPE_i8:
+                    serializer >> variant.value._i8;
+                    break;
+                case Variant::TYPE_ui8:
+                    serializer >> variant.value._ui8;
+                    break;
+                case Variant::TYPE_i16:
+                    serializer >> variant.value._i16;
+                    break;
+                case Variant::TYPE_ui16:
+                    serializer >> variant.value._ui16;
+                    break;
+                case Variant::TYPE_i32:
+                    serializer >> variant.value._i32;
+                    break;
+                case Variant::TYPE_ui32:
+                    serializer >> variant.value._ui32;
+                    break;
+                case Variant::TYPE_i64:
+                    serializer >> variant.value._i64;
+                    break;
+                case Variant::TYPE_ui64:
+                    serializer >> variant.value._ui64;
+                    break;
+                case Variant::TYPE_f32:
+                    serializer >> variant.value._f32;
+                    break;
+                case Variant::TYPE_f64:
+                    serializer >> variant.value._f64;
+                    break;
+                case Variant::TYPE_string: {
+                    variant.value._string = new std::string ();
+                    serializer >> *variant.value._string;
+                    break;
+                }
+                case Variant::TYPE_GUID: {
+                    variant.value._guid = new GUID ();
+                    serializer >> *variant.value._guid;
+                    break;
+                }
+            }
+            return serializer;
         }
 
     } // namespace util

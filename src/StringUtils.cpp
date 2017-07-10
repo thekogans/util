@@ -230,6 +230,17 @@ namespace thekogans {
             return prefix;
         }
 
+        _LIB_THEKOGANS_UTIL_DECL std::size_t _LIB_THEKOGANS_UTIL_API stringTosize_t (
+                const char *value,
+                char **end,
+                i32 base) {
+        #if (SIZE_T_SIZE == UI32_SIZE)
+            return (std::size_t)strtoul (value, end, base);
+        #else // (SIZE_T_SIZE == UI32_SIZE)
+            return (std::size_t)strtoull (value, end, base);
+        #endif // (SIZE_T_SIZE == UI32_SIZE)
+        }
+
         _LIB_THEKOGANS_UTIL_DECL i16 _LIB_THEKOGANS_UTIL_API stringToi16 (
                 const char *value,
                 char **end,
@@ -305,19 +316,12 @@ namespace thekogans {
         #endif // defined (TOOLCHAIN_OS_Windows)
         }
 
-    #if (SIZE_T_SIZE == UI32_SIZE)
         _LIB_THEKOGANS_UTIL_DECL std::string _LIB_THEKOGANS_UTIL_API size_tTostring (
                 std::size_t value,
                 const char *format) {
-            return ui32Tostring ((ui32)value, format);
+            assert (format != 0);
+            return format != 0 ? FormatString (format, value) : std::string ();
         }
-    #else // (SIZE_T_SIZE == UI32_SIZE)
-        _LIB_THEKOGANS_UTIL_DECL std::string _LIB_THEKOGANS_UTIL_API size_tTostring (
-                std::size_t value,
-                const char *format) {
-            return ui64Tostring ((ui64)value, format);
-        }
-    #endif // (SIZE_T_SIZE == UI32_SIZE)
 
         _LIB_THEKOGANS_UTIL_DECL std::string _LIB_THEKOGANS_UTIL_API boolTostring (
                 bool value) {

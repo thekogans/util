@@ -48,6 +48,7 @@
 #include "thekogans/util/Singleton.h"
 #include "thekogans/util/SpinLock.h"
 #include "thekogans/util/Thread.h"
+#include "thekogans/util/Serializer.h"
 
 namespace thekogans {
     namespace util {
@@ -280,27 +281,28 @@ namespace thekogans {
             /// Windows directory traversal handle.
             THEKOGANS_UTIL_HANDLE handle;
             /// \brief
+            /// Windows directory attributes.
+            ui32 attributes;
+            /// \brief
             /// Windows directory creation date and time.
-            time_t creationDate;
+            i64 creationDate;
         #else // defined (TOOLCHAIN_OS_Windows)
             /// \brief
             /// POSIX directory traversal handle.
             DIR *dir;
             /// \brief
+            /// Permission flags.
+            i32 mode;
+            /// \brief
             /// POSIX directory last status date and time.
-            time_t lastStatusDate;
+            i64 lastStatusDate;
         #endif // defined (TOOLCHAIN_OS_Windows)
             /// \brief
             /// Directory last accessed date and time.
-            time_t lastAccessedDate;
+            i64 lastAccessedDate;
             /// \brief
             /// Directory last modified date and time.
-            time_t lastModifiedDate;
-        #if !defined (TOOLCHAIN_OS_Windows)
-            /// \brief
-            /// Permission flags.
-            mode_t mode;
-        #endif // !defined (TOOLCHAIN_OS_Windows)
+            i64 lastModifiedDate;
 
             /// \brief
             /// ctor.
@@ -338,9 +340,15 @@ namespace thekogans {
                 static const char * const ATTR_NAME;
             #if defined (TOOLCHAIN_OS_Windows)
                 /// \brief
+                /// "Attributes"
+                static const char * const ATTR_ATTRIBUTES;
+                /// \brief
                 /// "CreationDate"
                 static const char * const ATTR_CREATION_DATE;
             #else // defined (TOOLCHAIN_OS_Windows)
+                /// \brief
+                /// "Mode"
+                static const char * const ATTR_MODE;
                 /// \brief
                 /// "LastStatusDate"
                 static const char * const ATTR_LAST_STATUS_DATE;
@@ -354,11 +362,6 @@ namespace thekogans {
                 /// \brief
                 /// "Size"
                 static const char * const ATTR_SIZE;
-            #if !defined (TOOLCHAIN_OS_Windows)
-                /// \brief
-                /// "Mode"
-                static const char * const ATTR_MODE;
-            #endif // !defined (TOOLCHAIN_OS_Windows)
 
                 /// \brief
                 /// Entry type.
@@ -384,34 +387,40 @@ namespace thekogans {
                 std::string name;
             #if defined (TOOLCHAIN_OS_Windows)
                 /// \brief
+                /// Windows entry attributes,
+                ui32 attributes;
+                /// \brief
                 /// Entry creation date.
-                time_t creationDate;
+                i64 creationDate;
             #else // defined (TOOLCHAIN_OS_Windows)
                 /// \brief
+                /// Permission flags.
+                i32 mode;
+                /// \brief
                 /// Entry last status date.
-                time_t lastStatusDate;
+                i64 lastStatusDate;
             #endif // defined (TOOLCHAIN_OS_Windows)
                 /// \brief
                 /// Entry last accessed date.
-                time_t lastAccessedDate;
+                i64 lastAccessedDate;
                 /// \brief
                 /// Entry last modified date.
-                time_t lastModifiedDate;
+                i64 lastModifiedDate;
                 /// \brief
                 /// File size.
                 ui64 size;
-            #if !defined (TOOLCHAIN_OS_Windows)
-                /// \brief
-                /// Permission flags.
-                mode_t mode;
-            #endif // !defined (TOOLCHAIN_OS_Windows)
 
-            #if defined (TOOLCHAIN_OS_Windows)
                 /// \brief
                 /// Default ctor.
                 Entry () :
                     type (Invalid),
+                #if defined (TOOLCHAIN_OS_Windows)
+                    attributes (0),
                     creationDate (-1),
+                #else // defined (TOOLCHAIN_OS_Windows)
+                    mode (0),
+                    lastStatusDate (-1),
+                #endif // defined (TOOLCHAIN_OS_Windows)
                     lastAccessedDate (-1),
                     lastModifiedDate (-1),
                     size (0) {}
@@ -419,58 +428,41 @@ namespace thekogans {
                 /// ctor.
                 /// \param[in] type_ Entry type.
                 /// \param[in] name_ Entry name.
+            #if defined (TOOLCHAIN_OS_Windows)
+                /// \param[in] attributes_ Entry Windows attributes.
                 /// \param[in] creationDate_ Entries creation date.
+            #else // defined (TOOLCHAIN_OS_Windows)
+                /// \param[in] mode_ Entries permission flags.
+                /// \param[in] lastStatusDate_ Entries last status date.
+            #endif // defined (TOOLCHAIN_OS_Windows)
                 /// \param[in] lastAccessedDate_ Entries last access date.
                 /// \param[in] lastModifiedDate_ Entries last modified date.
                 /// \param[in] size_ Entries size (File/Link).
                 Entry (
                     i32 type_,
                     const char *name_,
-                    time_t creationDate_,
-                    time_t lastAccessedDate_,
-                    time_t lastModifiedDate_,
+                #if defined (TOOLCHAIN_OS_Windows)
+                    ui32 attributes_,
+                    i64 creationDate_,
+                #else // defined (TOOLCHAIN_OS_Windows)
+                    i32 mode_,
+                    i64 lastStatusDate_,
+                #endif // defined (TOOLCHAIN_OS_Windows)
+                    i64 lastAccessedDate_,
+                    i64 lastModifiedDate_,
                     ui64 size_) :
                     type (type_),
                     name (name_),
+                #if defined (TOOLCHAIN_OS_Windows)
+                    attributes (attributes_),
                     creationDate (creationDate_),
+                #else // defined (TOOLCHAIN_OS_Windows)
+                    mode (mode_),
+                    lastStatusDate (lastStatusDate_),
+                #endif // defined (TOOLCHAIN_OS_Windows)
                     lastAccessedDate (lastAccessedDate_),
                     lastModifiedDate (lastModifiedDate_),
                     size (size_) {}
-            #else // defined (TOOLCHAIN_OS_Windows)
-                /// \brief
-                /// Default ctor.
-                Entry () :
-                    type (Invalid),
-                    lastStatusDate (-1),
-                    lastAccessedDate (-1),
-                    lastModifiedDate (-1),
-                    size (0),
-                    mode (0) {}
-                /// \brief
-                /// ctor.
-                /// \param[in] type_ Entry type.
-                /// \param[in] name_ Entry name.
-                /// \param[in] lastStatusDate_ Entries last status date.
-                /// \param[in] lastAccessedDate_ Entries last access date.
-                /// \param[in] lastModifiedDate_ Entries last modified date.
-                /// \param[in] size_ Entries size (File/Link).
-                /// \param[in] mode_ Entries permission flags.
-                Entry (
-                    i32 type_,
-                    const char *name_,
-                    time_t lastStatusDate_,
-                    time_t lastAccessedDate_,
-                    time_t lastModifiedDate_,
-                    ui64 size_,
-                    mode_t mode_) :
-                    type (type_),
-                    name (name_),
-                    lastStatusDate (lastStatusDate_),
-                    lastAccessedDate (lastAccessedDate_),
-                    lastModifiedDate (lastModifiedDate_),
-                    size (size_),
-                    mode (mode_) {}
-            #endif // defined (TOOLCHAIN_OS_Windows)
                 /// \brief
                 /// ctor. Read entry info from file system.
                 /// \param[in] path File system path to get entry info from.
@@ -492,17 +484,39 @@ namespace thekogans {
                 static i32 stringTotype (const std::string &type);
 
                 /// \brief
+                /// Return the serialized size of this entry.
+                /// \return Serialized size of this entry.
+                inline ui32 Size () const {
+                    return
+                        Serializer::Size (type) +
+                        Serializer::Size (name) +
+                    #if defined (TOOLCHAIN_OS_Windows)
+                        Serializer::Size (attributes) +
+                        Serializer::Size (creationDate) +
+                    #else // defined (TOOLCHAIN_OS_Windows)
+                        Serializer::Size (mode) +
+                        Serializer::Size (lastStatusDate) +
+                    #endif // defined (TOOLCHAIN_OS_Windows)
+                        Serializer::Size (lastAccessedDate) +
+                        Serializer::Size (lastModifiedDate) +
+                        Serializer::Size (size);
+                }
+
+                /// \brief
                 /// Compare two entries irrespective of lastAccessedDate.
                 /// This timestamp is updated on every access (including reads),
                 /// and doesn't give a true measure of difference.
                 /// \param[in] entry Entry to compare to.
                 /// \return true = equal, false = different
                 inline bool CompareWeakly (const Entry &entry) const {
-                    return type == entry.type &&
+                    return
+                        type == entry.type &&
                         name == entry.name &&
                     #if defined (TOOLCHAIN_OS_Windows)
+                        attributes == entry.attributes &&
                         creationDate == entry.creationDate &&
                     #else // defined (TOOLCHAIN_OS_Windows)
+                        mode == entry.mode &&
                         lastStatusDate == entry.lastStatusDate &&
                     #endif // defined (TOOLCHAIN_OS_Windows)
                         lastModifiedDate == entry.lastModifiedDate &&
@@ -515,8 +529,10 @@ namespace thekogans {
                 /// <Entry Type = "Invalid | File | Folder | Link"
                 ///        Name = ""
             #if defined (TOOLCHAIN_OS_Windows)
+                ///        Attributes = ""
                 ///        CreationDate = ""
             #else // defined (TOOLCHAIN_OS_Windows)
+                ///        Mode = ""
                 ///        LastStatusDate = ""
             #endif // defined (TOOLCHAIN_OS_Windows)
                 ///        LastAccessedDate = ""
@@ -611,11 +627,14 @@ namespace thekogans {
         inline bool operator == (
                 const Directory::Entry &entry1,
                 const Directory::Entry &entry2) {
-            return entry1.type == entry2.type &&
+            return
+                entry1.type == entry2.type &&
                 entry1.name == entry2.name &&
             #if defined (TOOLCHAIN_OS_Windows)
+                entry1.attributes == entry2.attributes &&
                 entry1.creationDate == entry2.creationDate &&
             #else // defined (TOOLCHAIN_OS_Windows)
+                entry1.mode == entry2.mode &&
                 entry1.lastStatusDate == entry2.lastStatusDate &&
             #endif // defined (TOOLCHAIN_OS_Windows)
                 entry1.lastAccessedDate == entry2.lastAccessedDate &&
@@ -634,13 +653,61 @@ namespace thekogans {
             return entry1.type != entry2.type ||
                 entry1.name != entry2.name ||
             #if defined (TOOLCHAIN_OS_Windows)
+                entry1.attributes != entry2.attributes ||
                 entry1.creationDate != entry2.creationDate ||
             #else // defined (TOOLCHAIN_OS_Windows)
+                entry1.mode != entry2.mode ||
                 entry1.lastStatusDate != entry2.lastStatusDate ||
             #endif // defined (TOOLCHAIN_OS_Windows)
                 entry1.lastAccessedDate != entry2.lastAccessedDate ||
                 entry1.lastModifiedDate != entry2.lastModifiedDate ||
                 entry1.size != entry2.size;
+        }
+
+        /// \brief
+        /// Write the given entry to the given serializer.
+        /// \param[in] serializer Where to write the given entry.
+        /// \param[in] entry \see{Directory::Entry} to write.
+        /// \return serializer.
+        inline Serializer &operator << (
+                Serializer &serializer,
+                const Directory::Entry &entry) {
+            return serializer <<
+                entry.type <<
+                entry.name <<
+            #if defined (TOOLCHAIN_OS_Windows)
+                entry.attributes <<
+                entry.creationDate <<
+            #else // defined (TOOLCHAIN_OS_Windows)
+                entry.mode <<
+                entry.lastStatusDate <<
+            #endif // defined (TOOLCHAIN_OS_Windows)
+                entry.lastAccessedDate <<
+                entry.lastModifiedDate <<
+                entry.size;
+        }
+
+        /// \brief
+        /// Read an entry from the given serializer.
+        /// \param[in] serializer Where to read the entry from.
+        /// \param[in] entry \see{Directory::Entry} to read.
+        /// \return serializer.
+        inline Serializer &operator >> (
+                Serializer &serializer,
+                Directory::Entry &entry) {
+            return serializer >>
+                entry.type >>
+                entry.name >>
+            #if defined (TOOLCHAIN_OS_Windows)
+                entry.attributes >>
+                entry.creationDate >>
+            #else // defined (TOOLCHAIN_OS_Windows)
+                entry.mode >>
+                entry.lastStatusDate >>
+            #endif // defined (TOOLCHAIN_OS_Windows)
+                entry.lastAccessedDate >>
+                entry.lastModifiedDate >>
+                entry.size;
         }
 
         /// \brief

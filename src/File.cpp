@@ -175,7 +175,9 @@ namespace thekogans {
             return PlatformSeek (0, SEEK_CUR);
         }
 
-        i64 File::Seek (i64 offset, i32 fromWhere) {
+        i64 File::Seek (
+                i64 offset,
+                i32 fromWhere) {
             return PlatformSeek (offset, fromWhere);
         }
 
@@ -384,7 +386,13 @@ namespace thekogans {
             if (Flags32 (flags).Test (WriteOnly)) {
                 dwDesiredAccess |= GENERIC_WRITE;
             }
-            DWORD dwShareMode = FILE_SHARE_READ | FILE_SHARE_WRITE;
+            DWORD dwShareMode = 0;
+            if (Flags32 (flags).Test (ReadOnly)) {
+                dwShareMode |= FILE_SHARE_READ;
+            }
+            if (Flags32 (flags).Test (WriteOnly)) {
+                dwShareMode |= FILE_SHARE_WRITE;
+            }
             DWORD dwCreationDisposition = 0;
             if (Flags32 (flags).Test (Create)) {
                 if (Flags32 (flags).Test (Truncate)) {

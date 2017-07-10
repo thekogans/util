@@ -688,9 +688,8 @@ namespace thekogans {
                 /// A watermark. A way to identify that this
                 /// block of memory does indeed point to a
                 /// page.
-                /// The header will be 32/64 bytes,
-                /// depending on sizeof (std::size_t and
-                /// Page/Item *).
+                /// The header will be 32/64 bytes, depending
+                /// on sizeof (std::size_t and Page/Item *).
                 const std::size_t magic2;
                 /// \brief
                 /// The list of items. Directly following

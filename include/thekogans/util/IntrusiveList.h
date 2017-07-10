@@ -80,7 +80,7 @@ namespace thekogans {
 
         template<
             typename T,
-            int ID>
+            i32 ID>
         struct IntrusiveList {
             /// \struct IntrusiveList::Node IntrusiveList.h thekogans/util/IntrusiveList.h
             ///
@@ -456,7 +456,7 @@ namespace thekogans {
         /// Definition of the IntrusiveList<T, ID>::defaultCallback.
         template<
             typename T,
-            int ID>
+            i32 ID>
         THEKOGANS_UTIL_EXPORT typename IntrusiveList<T, ID>::DefaultCallback
             IntrusiveList<T, ID>::defaultCallback;
 

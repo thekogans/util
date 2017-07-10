@@ -32,15 +32,15 @@ namespace thekogans {
     namespace util {
 
         TimeSpec::TimeSpec (
-                time_t sec,
-                long nsec) {
-            if (sec == -1 && nsec == -1) {
-                tv_sec = sec;
-                tv_nsec = nsec;
+                i64 seconds_,
+                i32 nanoseconds_) {
+            if (seconds_ == -1 && nanoseconds_ == -1) {
+                seconds = seconds_;
+                nanoseconds = nanoseconds_;
             }
-            else if (sec != -1 && nsec != -1) {
-                tv_sec = sec + nsec / 1000000000;
-                tv_nsec = nsec % 1000000000;
+            else if (seconds_ != -1 && nanoseconds_ != -1) {
+                seconds = seconds_ + nanoseconds_ / 1000000000;
+                nanoseconds = nanoseconds_ % 1000000000;
             }
             else {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
@@ -48,13 +48,24 @@ namespace thekogans {
             }
         }
 
+    #if !defined (TOOLCHAIN_OS_Windows)
         TimeSpec::TimeSpec (const timespec &timeSpec) {
             if (timeSpec.tv_sec < 0 || timeSpec.tv_nsec < 0) {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
                     THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
             }
-            tv_sec = timeSpec.tv_sec;
-            tv_nsec = timeSpec.tv_nsec;
+            seconds = (i64)timeSpec.tv_sec;
+            nanoseconds = (i32)timeSpec.tv_nsec;
+        }
+    #endif // !defined (TOOLCHAIN_OS_Windows)
+
+        TimeSpec::TimeSpec (const timeval &timeVal) {
+            if (timeVal.tv_sec < 0 || timeVal.tv_usec < 0) {
+                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
+            }
+            seconds = (i64)timeVal.tv_sec;
+            nanoseconds = (i32)(timeVal.tv_usec * 1000);
         }
 
         TimeSpec TimeSpec::Zero (0, 0);
@@ -74,8 +85,8 @@ namespace thekogans {
         namespace {
             inline bool IsNormalized (const TimeSpec &timeSpec) {
                 return timeSpec == TimeSpec::Infinite ||
-                    (timeSpec.tv_sec >= 0 &&
-                        timeSpec.tv_nsec >= 0 && timeSpec.tv_nsec < 1000000000);
+                    (timeSpec.seconds >= 0 &&
+                        timeSpec.nanoseconds >= 0 && timeSpec.nanoseconds < 1000000000);
             }
         }
     #endif // defined (TOOLCHAIN_CONFIG_Debug)
@@ -90,9 +101,9 @@ namespace thekogans {
             return
                 timeSpec1 == TimeSpec::Infinite ? false :
                 timeSpec2 == TimeSpec::Infinite ? true :
-                timeSpec1.tv_sec < timeSpec2.tv_sec ||
-                (timeSpec1.tv_sec == timeSpec2.tv_sec &&
-                    timeSpec1.tv_nsec < timeSpec2.tv_nsec);
+                timeSpec1.seconds < timeSpec2.seconds ||
+                (timeSpec1.seconds == timeSpec2.seconds &&
+                    timeSpec1.nanoseconds < timeSpec2.nanoseconds);
         }
 
         _LIB_THEKOGANS_UTIL_DECL bool _LIB_THEKOGANS_UTIL_API operator > (
@@ -105,17 +116,17 @@ namespace thekogans {
             return
                 timeSpec2 == TimeSpec::Infinite ? false :
                 timeSpec1 == TimeSpec::Infinite ? true :
-                timeSpec1.tv_sec > timeSpec2.tv_sec ||
-                (timeSpec1.tv_sec == timeSpec2.tv_sec &&
-                    timeSpec1.tv_nsec > timeSpec2.tv_nsec);
+                timeSpec1.seconds > timeSpec2.seconds ||
+                (timeSpec1.seconds == timeSpec2.seconds &&
+                    timeSpec1.nanoseconds > timeSpec2.nanoseconds);
         }
 
         namespace {
             inline TimeSpec AddWithCarry (
                     const TimeSpec &timeSpec1,
                     const TimeSpec &timeSpec2) {
-                time_t sec = timeSpec1.tv_sec + timeSpec2.tv_sec;
-                long nsec = timeSpec1.tv_nsec + timeSpec2.tv_nsec;
+                time_t sec = timeSpec1.seconds + timeSpec2.seconds;
+                long nsec = timeSpec1.nanoseconds + timeSpec2.nanoseconds;
                 if (nsec > 999999999) {
                     sec += nsec / 1000000000;
                     nsec %= 1000000000;
@@ -140,8 +151,8 @@ namespace thekogans {
             inline TimeSpec SubWithBorrow (
                     const TimeSpec &timeSpec1,
                     const TimeSpec &timeSpec2) {
-                time_t sec = timeSpec1.tv_sec - timeSpec2.tv_sec;
-                long nsec = timeSpec1.tv_nsec - timeSpec2.tv_nsec;
+                time_t sec = timeSpec1.seconds - timeSpec2.seconds;
+                long nsec = timeSpec1.nanoseconds - timeSpec2.nanoseconds;
                 if (nsec < 0) {
                     --sec;
                     assert (sec >= 0);
@@ -211,8 +222,8 @@ namespace thekogans {
             #if defined (TOOLCHAIN_OS_Windows)
                 ::Sleep ((DWORD)timeSpec.ToMilliseconds ());
             #else // defined (TOOLCHAIN_OS_Windows)
-                TimeSpec required = timeSpec;
-                TimeSpec remainder;
+                timespec required = {timeSpec.seconds, timeSpec.nanoseconds};
+                timespec remainder;
                 while (nanosleep (&required, &remainder) != 0) {
                     THEKOGANS_UTIL_ERROR_CODE errorCode = THEKOGANS_UTIL_OS_ERROR_CODE;
                     if (errorCode != EINTR) {

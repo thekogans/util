@@ -82,10 +82,14 @@ namespace thekogans {
         #endif // defined (TOOLCHAIN_ENDIAN_Little)
         };
 
+        /// \brief
+        /// Serialized size of Endianness.
+        const ui32 ENDIANNESS_SIZE = UI8_SIZE;
+
         namespace detail {
             /// \brief
             /// Swap bytes template.
-            template<typename T, size_t size>
+            template<typename T, std::size_t size>
             struct SwapBytes {
                 inline T operator () (T value) {
                     throw std::out_of_range ("data size");

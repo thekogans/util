@@ -24,7 +24,7 @@
 #include <iostream>
 #include "thekogans/util/Config.h"
 #include "thekogans/util/Singleton.h"
-#include "thekogans/util/Mutex.h"
+#include "thekogans/util/SpinLock.h"
 
 namespace thekogans {
     namespace util {
@@ -46,7 +46,7 @@ namespace thekogans {
         _LIB_THEKOGANS_UTIL_DECL extern const char * const MIME_TYPES_TXT;
 
         struct _LIB_THEKOGANS_UTIL_DECL MimeTypeMapper :
-                public Singleton<MimeTypeMapper, Mutex> {
+                public Singleton<MimeTypeMapper, SpinLock> {
             /// \brief
             /// Convenient typedef for std::list<std::string>.
             typedef std::list<std::string> ExtensionList;

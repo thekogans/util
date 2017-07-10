@@ -318,28 +318,15 @@ namespace thekogans {
         /// As its name implies, ReadOnlyFile is a convenient
         /// platform independent read only file.
 
-        struct _LIB_THEKOGANS_UTIL_DECL ReadOnlyFile : public File {
+        struct _LIB_THEKOGANS_UTIL_DECL ReadOnlyFile : public SimpleFile {
             /// \brief
             /// ctor.
             /// \param[in] endianness File endianness.
             /// \param[in] path Path to file to open.
-            explicit ReadOnlyFile (
+            ReadOnlyFile (
                 Endianness endianness,
                 const std::string &path) :
-            #if defined (TOOLCHAIN_OS_Windows)
-                File (
-                    endianness,
-                    path,
-                    GENERIC_READ,
-                    FILE_SHARE_READ,
-                    OPEN_EXISTING,
-                    FILE_ATTRIBUTE_NORMAL) {}
-            #else // defined (TOOLCHAIN_OS_Windows)
-                File (
-                    endianness,
-                    path,
-                    O_RDONLY) {}
-            #endif // defined (TOOLCHAIN_OS_Windows)
+                SimpleFile (endianness, path, ReadOnly) {}
 
             /// \brief
             /// ReadOnlyFile is neither copy constructable, nor assignable.

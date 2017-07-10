@@ -33,6 +33,7 @@
 #include "thekogans/util/Config.h"
 #include "thekogans/util/Types.h"
 #include "thekogans/util/Constants.h"
+#include "thekogans/util/Serializer.h"
 #include "thekogans/util/Exception.h"
 
 namespace thekogans {
@@ -58,33 +59,32 @@ namespace thekogans {
         /// do range checking on their arguments, and clamp
         /// the result accordingly.
 
-    #if defined (TOOLCHAIN_OS_Windows)
-        /// \struct timespec TimeSpec.h thekogans/util/TimeSpec.h
-        ///
-        /// \brief
-        /// timespec is missing on Windows.
-        struct timespec {
+        struct _LIB_THEKOGANS_UTIL_DECL TimeSpec {
             /// \brief
-            /// seconds.
-            time_t tv_sec;
+            /// Seconds value.
+            i64 seconds;
             /// \brief
-            /// nanoseconds.
-            long tv_nsec;
-        };
-    #endif // defined (TOOLCHAIN_OS_Windows)
+            /// Nanoseconds value.
+            i32 nanoseconds;
 
-        struct _LIB_THEKOGANS_UTIL_DECL TimeSpec : public timespec {
             /// \brief
             /// ctor. Init to Infinite.
-            /// \param[in] sec Seconds value to initialize to.
-            /// \param[in] nsec Nanoseconds value to initialize to.
+            /// NOTE: This ctor is explicit. You provide either no values or both of them.
+            /// \param[in] seconds_ Seconds value to initialize to.
+            /// \param[in] nanoseconds_ Nanoseconds value to initialize to.
             explicit TimeSpec (
-                time_t sec = -1,
-                long nsec = -1);
+                i64 seconds_ = -1,
+                i32 nanoseconds_ = -1);
+        #if !defined (TOOLCHAIN_OS_Windows)
             /// \brief
             /// ctor.
             /// \param[in] timeSpec POSIX timespec to initialize to.
             TimeSpec (const timespec &timeSpec);
+        #endif // !defined (TOOLCHAIN_OS_Windows)
+            /// \brief
+            /// ctor.
+            /// \param[in] timeVal POSIX timeval to initialize to.
+            TimeSpec (const timeval &timeVal);
 
             /// \brief
             /// Zero
@@ -101,7 +101,7 @@ namespace thekogans {
             /// Create a TimeSpec from hours.
             /// \param[in] hours Value to use to initialize the TimeSpec.
             /// \return TimeSpec initialized to given value.
-            static TimeSpec FromHours (time_t hours) {
+            static TimeSpec FromHours (i64 hours) {
                 if (hours < 0) {
                     THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
                         THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
@@ -112,7 +112,7 @@ namespace thekogans {
             /// Create a TimeSpec from seconds.
             /// \param[in] seconds Value to use to initialize the TimeSpec.
             /// \return TimeSpec initialized to given value.
-            static TimeSpec FromSeconds (time_t seconds) {
+            static TimeSpec FromSeconds (i64 seconds) {
                 if (seconds < 0) {
                     THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
                         THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
@@ -123,23 +123,21 @@ namespace thekogans {
             /// Create a TimeSpec from milliseconds.
             /// \param[in] milliseconds Value to use to initialize the TimeSpec.
             /// \return TimeSpec initialized to given value.
-            static TimeSpec FromMilliseconds (time_t milliseconds) {
+            static TimeSpec FromMilliseconds (i64 milliseconds) {
                 if (milliseconds < 0) {
                     THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
                         THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
                 }
                 return TimeSpec (milliseconds / 1000, (milliseconds % 1000) * 1000000);
             }
+
             /// \brief
-            /// Create a TimeSpec from timeval.
-            /// \param[in] timeVal Value to use to initialize the TimeSpec.
-            /// \return TimeSpec initialized to given value.
-            static TimeSpec Fromtimeval (const timeval &timeVal) {
-                if (timeVal.tv_sec < 0 || timeVal.tv_usec < 0) {
-                    THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                        THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
-                }
-                return TimeSpec (timeVal.tv_sec, timeVal.tv_usec * 1000);
+            /// Return the serialized size of this time spec.
+            /// \return Serialized size of this time spec.
+            inline ui32 Size () const {
+                return
+                    Serializer::Size (seconds) +
+                    Serializer::Size (nanoseconds);
             }
 
             /// \brief
@@ -156,24 +154,36 @@ namespace thekogans {
             /// \brief
             /// Convert this TimeSpec to milliseconds.
             /// \return TimeSpec as milliseconds.
-            inline ui64 ToMilliseconds () const {
-                return tv_sec == -1 && tv_nsec == -1 ?
-                    UI64_MAX : tv_sec * 1000 + tv_nsec / 1000000;
+            inline i64 ToMilliseconds () const {
+                return seconds == -1 && nanoseconds == -1 ?
+                    I64_MAX : seconds * 1000 + nanoseconds / 1000000;
             }
             /// \brief
             /// Convert this TimeSpec to microseconds.
             /// \return TimeSpec as microseconds.
-            inline ui64 ToMicroseconds () const {
-                return tv_sec == -1 && tv_nsec == -1 ?
-                    UI64_MAX : tv_sec * 1000000 + tv_nsec / 1000;
+            inline i64 ToMicroseconds () const {
+                return seconds == -1 && nanoseconds == -1 ?
+                    I64_MAX : seconds * 1000000 + nanoseconds / 1000;
             }
             /// \brief
             /// Convert this TimeSpec to nanoseconds.
             /// \return TimeSpec as nanoseconds.
-            inline ui64 ToNanoseconds () const {
-                return tv_sec == -1 && tv_nsec == -1 ?
-                    UI64_MAX : tv_sec * 1000000000 + tv_nsec;
+            inline i64 ToNanoseconds () const {
+                return seconds == -1 && nanoseconds == -1 ?
+                    I64_MAX : seconds * 1000000000 + nanoseconds;
             }
+
+        #if !defined (TOOLCHAIN_OS_Windows)
+            /// \brief
+            /// Convert this TimeSpec to timespec.
+            /// \return TimeSpec as timespec.
+            inline timespec Totimespec () const {
+                timespec timeSpec;
+                timeSpec.tv_sec = (time_t)seconds;
+                timeSpec.tv_nsec = (long)nanoseconds;
+                return timeSpec;
+            }
+        #endif // !defined (TOOLCHAIN_OS_Windows)
 
             /// \brief
             /// Convert this TimeSpec to timeval.
@@ -181,18 +191,18 @@ namespace thekogans {
             inline timeval Totimeval () const {
                 timeval timeVal;
             #if defined (TOOLCHAIN_OS_Windows)
-                timeVal.tv_sec = (long)tv_sec;
+                timeVal.tv_sec = (long)seconds;
             #else // defined (TOOLCHAIN_OS_Windows)
-                timeVal.tv_sec = tv_sec;
+                timeVal.tv_sec = seconds;
             #endif // defined (TOOLCHAIN_OS_Windows)
-                timeVal.tv_usec = tv_nsec == -1 ? tv_nsec : tv_nsec / 1000;
+                timeVal.tv_usec = nanoseconds == -1 ? nanoseconds : nanoseconds / 1000;
                 return timeVal;
             }
         };
 
         /// \brief
-        /// TimeSpec size.
-        const std::size_t TIME_SPEC_SIZE = sizeof (TimeSpec);
+        /// Serialized TimeSpec size.
+        const ui32 TIME_SPEC_SIZE = I64_SIZE + I32_SIZE;
 
         /// \brief
         /// Compare two TimeSpecs for equality.
@@ -203,8 +213,8 @@ namespace thekogans {
                 const TimeSpec &timeSpec1,
                 const TimeSpec &timeSpec2) {
             return
-                timeSpec1.tv_sec == timeSpec2.tv_sec &&
-                timeSpec1.tv_nsec == timeSpec2.tv_nsec;
+                timeSpec1.seconds == timeSpec2.seconds &&
+                timeSpec1.nanoseconds == timeSpec2.nanoseconds;
         }
 
         /// \brief
@@ -216,8 +226,8 @@ namespace thekogans {
                 const TimeSpec &timeSpec1,
                 const TimeSpec &timeSpec2) {
             return
-                timeSpec1.tv_sec != timeSpec2.tv_sec ||
-                timeSpec1.tv_nsec != timeSpec2.tv_nsec;
+                timeSpec1.seconds != timeSpec2.seconds ||
+                timeSpec1.nanoseconds != timeSpec2.nanoseconds;
         }
 
         /// \brief
@@ -274,6 +284,32 @@ namespace thekogans {
         _LIB_THEKOGANS_UTIL_DECL TimeSpec _LIB_THEKOGANS_UTIL_API operator - (
             const TimeSpec &timeSpec1,
             const TimeSpec &timeSpec2);
+
+        /// \brief
+        /// Write the given timeSpec to the given serializer.
+        /// \param[in] serializer Where to write the given guid.
+        /// \param[in] timeSpec TimeSpec to write.
+        /// \return serializer.
+        inline Serializer &operator << (
+                Serializer &serializer,
+                const TimeSpec &timeSpec) {
+            return serializer <<
+                timeSpec.seconds <<
+                timeSpec.nanoseconds;
+        }
+
+        /// \brief
+        /// Read a timeSpec from the given serializer.
+        /// \param[in] serializer Where to read the guid from.
+        /// \param[in] timeSpec TimeSpec to read.
+        /// \return serializer.
+        inline Serializer &operator >> (
+                Serializer &serializer,
+                TimeSpec &timeSpec) {
+            return serializer >>
+                timeSpec.seconds >>
+                timeSpec.nanoseconds;
+        }
 
         /// \brief
         /// Get current system time.

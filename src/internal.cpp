@@ -135,7 +135,7 @@
     int pthread_timedjoin_np (
             pthread_t thread,
             void **result,
-            timespec *timeSpec) {
+            const timespec *timeSpec) {
         Waiter waiter (thread, result);
         waiter.Create (THEKOGANS_UTIL_NORMAL_THREAD_PRIORITY);
         if (!waiter.condition.Wait (*timeSpec)) {

@@ -57,6 +57,13 @@ namespace thekogans {
             /// true == Hook CTRL-C to call StopRunLoop.
             static bool hookCtrlBreak;
             /// \brief
+            /// Linux and OS X only. true == Hook SIGCHLD to call wait.
+            /// IMPORTANT: hookChild allows you to reap zombie children
+            /// without waiting for them explicitly. If you use this
+            /// functionality you need to use \see{ChildProcess::Spawn}
+            /// as \see{ChildProcess::Exec} call wait internally.
+            static bool hookChild;
+            /// \brief
             /// Linux only. true == Turn on core dump.
             static bool coreDump;
 
@@ -65,10 +72,12 @@ namespace thekogans {
             /// Call before the first use of Console::Instance.
             /// \param[in] threadSafePrintString_ true == Serialize access to std::cout and std::cerr.
             /// \param[in] hookCtrlBreak_ true == Hook CTRL-C to call StopRunLoop.
+            /// \param[in] hookChild_ Linux and OS X only. true == Hook SIGCHLD to call wait.
             /// \param[in] coreDump_ Linux only. true == Turn on core dump.
             static void Parameterize (
                 bool threadSafePrintString_ = true,
                 bool hookCtrlBreak_ = true,
+                bool hookChild_ = false,
                 bool coreDump_ = true);
 
             /// \brief
@@ -99,10 +108,12 @@ namespace thekogans {
             /// ctor.
             /// \param[in] threadSafePrintString_ true == Serialize access to std::cout and std::cerr.
             /// \param[in] hookCtrlBreak true == Hook CTRL-C to call StopRunLoop.
+            /// \param[in] hookChild Linux and OS X only. true == Hook SIGCHLD to call wait.
             /// \param[in] coreDump Linux only. true == Turn on core dump.
             Console (
                 bool threadSafePrintString_ = true,
                 bool hookCtrlBreak = true,
+                bool hookChild = false,
                 bool coreDump = true);
 
             enum {

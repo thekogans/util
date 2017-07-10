@@ -356,5 +356,40 @@ namespace thekogans {
         }
     #endif // defined (THEKOGANS_UTIL_HAVE_ZLIB)
 
+        Serializer &operator << (
+                Serializer &serializer,
+                const Buffer &buffer) {
+            serializer <<
+                buffer.endianness <<
+                buffer.length <<
+                buffer.readOffset <<
+                buffer.writeOffset;
+            if (buffer.length != 0 &&
+                    serializer.Write (buffer.data, buffer.length) != buffer.length) {
+                THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
+                    "serializer.Write (buffer.data, %u) != %u", buffer.length, buffer.length);
+            }
+            return serializer;
+        }
+
+        Serializer &operator >> (
+                Serializer &serializer,
+                Buffer &buffer) {
+            Endianness endianness;
+            ui32 length;
+            ui32 readOffset;
+            ui32 writeOffset;
+            serializer >> endianness >> length >> readOffset >> writeOffset;
+            buffer.Resize (length);
+            if (length > 0 && serializer.Read (buffer.data, length) != length) {
+                THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
+                    "serializer.Read (buffer.data, %u) != %u", length, length);
+            }
+            buffer.endianness = endianness;
+            buffer.readOffset = readOffset;
+            buffer.writeOffset = writeOffset;
+            return serializer;
+        }
+
     } //namespace util
 } // namespace thekogans

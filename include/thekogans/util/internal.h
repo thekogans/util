@@ -26,7 +26,7 @@
         #include <cstdio>
 
         #define atoll(str) _strtoui64 (str, 0, 10)
-        #define strncpy strncpy_s
+        //#define strncpy strncpy_s
         #define strcpy strcpy_s
         #define strtoll _strtoi64
         #define strtoull _strtoui64
@@ -69,7 +69,7 @@
     /// \param[in] length Length of data block.
     void SecureZeroMemory (
         void *data,
-        size_t length);
+        std::size_t length);
 #if defined (TOOLCHAIN_OS_Linux)
     #if !defined (_LARGEFILE64_SOURCE)
         #define _LARGEFILE64_SOURCE 1
@@ -132,7 +132,7 @@
     int pthread_timedjoin_np (
         pthread_t thread,
         void **result,
-        timespec *timeSpec);
+        const timespec *timeSpec);
 #endif // defined (TOOLCHAIN_OS_Linux)
 #endif // defined (TOOLCHAIN_OS_Windows)
 
