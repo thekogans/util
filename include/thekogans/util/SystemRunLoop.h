@@ -144,6 +144,8 @@ namespace thekogans {
         #endif // defined (TOOLCHAIN_OS_Windows)
 
         private:
+            /// \brief
+            /// true = exit the run loop.
             volatile bool done;
         #if defined (TOOLCHAIN_OS_Windows)
             /// \brief

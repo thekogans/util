@@ -266,7 +266,7 @@ namespace thekogans {
             /// \brief
             /// Set the list of environment variables.
             /// \param[in] environmentVariables_ List of environment variables to set.
-            inline void SetEnvironmentVariable (const std::list<std::string> &environmentVariables_) {
+            inline void SetEnvironmentVariables (const std::list<std::string> &environmentVariables_) {
                 environmentVariables = environmentVariables_;
             }
 

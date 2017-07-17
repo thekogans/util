@@ -117,6 +117,13 @@ namespace thekogans {
             }
 
         private:
+            /// \brief
+            /// Main allocation function used by Alloc and AllocMax.
+            /// \param[in,out] size in = minimum block size to allocate.\n
+            ///                     out = 'true' block size after alignment
+            ///                           (at least minimum).
+            /// \param[in] useMax false = Called by Alloc. true = Called by AllocMax.
+            /// \return Pointer to the aligned block.
             void *AllocHelper (
                 std::size_t &size,
                 bool useMax);
