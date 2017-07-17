@@ -304,6 +304,9 @@ namespace thekogans {
                 virtual void Run () throw ();
             };
             /// \brief
+            /// Count of busy workers.
+            ui32 busyWorkers;
+            /// \brief
             /// List of workers.
             WorkerList workers;
             /// \brief

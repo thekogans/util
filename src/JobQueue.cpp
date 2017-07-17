@@ -78,6 +78,7 @@ namespace thekogans {
                 jobFinished (jobsMutex),
                 idle (jobsMutex),
                 state (Idle),
+                busyWorkers (0),
                 workersBarrier (workerCount + 1) {
             if ((type == TYPE_FIFO || type == TYPE_LIFO) &&
                     workerCount > 0 && maxPendingJobs > 0) {
@@ -130,10 +131,13 @@ namespace thekogans {
                         return true;
                     }
                 } callback;
+                assert (busyWorkers == 0);
                 workers.clear (callback);
                 stats.jobCount = 0;
-                state = Idle;
-                idle.SignalAll ();
+                if (state == Busy) {
+                    state = Idle;
+                    idle.SignalAll ();
+                }
             }
         }
 
@@ -180,6 +184,10 @@ namespace thekogans {
                         jobs.erase (job);
                         delete job;
                         --stats.jobCount;
+                        if (jobs.empty () && busyWorkers == 0) {
+                            state = Idle;
+                            idle.SignalAll ();
+                        }
                         return true;
                     }
                 }
@@ -199,6 +207,10 @@ namespace thekogans {
             } callback;
             jobs.clear (callback);
             stats.jobCount = 0;
+            if (busyWorkers == 0) {
+                state = Idle;
+                idle.SignalAll ();
+            }
         }
 
         void JobQueue::WaitForIdle () {
@@ -231,7 +243,10 @@ namespace thekogans {
             Job::UniquePtr job;
             if (!jobs.empty ()) {
                 job.reset (jobs.pop_front ());
-                --stats.jobCount;
+                if (job.get () != 0) {
+                    --stats.jobCount;
+                    ++busyWorkers;
+                }
             }
             return job;
         }
@@ -241,7 +256,7 @@ namespace thekogans {
                 ui64 start,
                 ui64 end) {
             LockGuard<Mutex> guard (jobsMutex);
-            if (jobs.empty ()) {
+            if (jobs.empty () && --busyWorkers == 0) {
                 state = Idle;
                 idle.SignalAll ();
             }
