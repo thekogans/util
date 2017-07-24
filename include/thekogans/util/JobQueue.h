@@ -172,9 +172,9 @@ namespace thekogans {
             /// jobCount - Number of pending jobs.\n
             /// totalJobs - Number of retired (executed) jobs.\n
             /// totalJobTime - Amount of time spent executing jobs.\n
-            /// lastJobTime - Time spent executing last job.\n
-            /// minJobTime - Fastest job.\n
-            /// maxJobTime - Slowest job.\n
+            /// last - Last job.\n
+            /// min - Fastest job.\n
+            /// max - Slowest job.\n
             struct _LIB_THEKOGANS_UTIL_DECL Stats {
                 /// \brief
                 /// Pending job count.
@@ -185,34 +185,62 @@ namespace thekogans {
                 /// \brief
                 /// Total time taken to process totalJobs.
                 ui64 totalJobTime;
+                /// \struct JobQueue::Stats::Job JobQueue.h thekogans/util/JobQueue.h
+                ///
                 /// \brief
-                /// Last job time.
-                ui64 lastJobTime;
+                /// Job stats.
+                struct _LIB_THEKOGANS_UTIL_DECL Job {
+                    /// \brief
+                    /// Job id.
+                    JobQueue::Job::Id id;
+                    /// \brief
+                    /// Job start time.
+                    ui64 startTime;
+                    /// \brief
+                    /// Job end time.
+                    ui64 endTime;
+                    /// \brief
+                    /// Job total execution time.
+                    ui64 totalTime;
+
+                    /// \brief
+                    /// ctor.
+                    Job () :
+                        startTime (0),
+                        endTime (0),
+                        totalTime (0) {}
+                    /// \brief
+                    /// ctor.
+                    /// \param[in] id_ Job id.
+                    /// \param[in] startTime_ Job start time.
+                    /// \param[in] endTime_ Job end time.
+                    /// \param[in] totalTime_ Job total execution time.
+                    Job (
+                        JobQueue::Job::Id id_,
+                        ui64 startTime_,
+                        ui64 endTime_,
+                        ui64 totalTime_) :
+                        id (id_),
+                        startTime (startTime_),
+                        endTime (endTime_),
+                        totalTime (totalTime_) {}
+                };
                 /// \brief
-                /// Id of last completed job.
-                Job::Id lastJobId;
+                /// Last job stats.
+                Job lastJob;
                 /// \brief
-                /// Fastest job.
-                ui64 minJobTime;
+                /// Minimum job stats.
+                Job minJob;
                 /// \brief
-                /// Id of job with minimum completion time.
-                Job::Id minJobId;
-                /// \brief
-                /// Slowest job
-                ui64 maxJobTime;
-                /// \brief
-                /// Id of job with maximum completion time.
-                Job::Id maxJobId;
+                /// Maximum job stats.
+                Job maxJob;
 
                 /// \brief
                 /// ctor.
                 Stats () :
                     jobCount (0),
                     totalJobs (0),
-                    totalJobTime (0),
-                    lastJobTime (0),
-                    minJobTime (0),
-                    maxJobTime (0) {}
+                    totalJobTime (0) {}
 
                 /// \brief
                 /// After completion of each job, used to update the stats.
@@ -220,7 +248,7 @@ namespace thekogans {
                 /// \param[in] start Job start time.
                 /// \param[in] end Job end time.
                 void Update (
-                    const Job::Id &jobId,
+                    const JobQueue::Job::Id &jobId,
                     ui64 start,
                     ui64 end);
             };

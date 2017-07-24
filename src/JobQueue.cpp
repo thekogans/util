@@ -25,22 +25,23 @@ namespace thekogans {
     namespace util {
 
         void JobQueue::Stats::Update (
-                const Job::Id &jobId,
+                const JobQueue::Job::Id &jobId,
                 ui64 start,
                 ui64 end) {
             ++totalJobs;
             ui64 ellapsed =
                 HRTimer::ComputeEllapsedTime (start, end);
             totalJobTime += ellapsed;
-            lastJobTime = ellapsed;
-            lastJobId = jobId;
-            if (minJobTime > ellapsed) {
-                minJobTime = ellapsed;
-                minJobId = jobId;
+            lastJob = Job (jobId, start, end, ellapsed);
+            if (totalJobs == 1) {
+                minJob = Job (jobId, start, end, ellapsed);
+                maxJob = Job (jobId, start, end, ellapsed);
             }
-            if (maxJobTime < ellapsed) {
-                maxJobTime = ellapsed;
-                maxJobId = jobId;
+            else if (minJob.totalTime > ellapsed) {
+                minJob = Job (jobId, start, end, ellapsed);
+            }
+            else if (maxJob.totalTime < ellapsed) {
+                maxJob = Job (jobId, start, end, ellapsed);
             }
         }
 
