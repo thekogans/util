@@ -24,6 +24,7 @@
 #include "thekogans/util/Config.h"
 #include "thekogans/util/Types.h"
 #include "thekogans/util/Constants.h"
+#include "thekogans/util/GUID.h"
 #include "thekogans/util/IntrusiveList.h"
 #include "thekogans/util/Thread.h"
 #include "thekogans/util/Mutex.h"
@@ -87,6 +88,13 @@ namespace thekogans {
                 typedef std::unique_ptr<Job> UniquePtr;
 
                 /// \brief
+                /// Convenient typedef for std::string.
+                typedef std::string Id;
+
+                /// \brief
+                /// Job id.
+                const Id id;
+                /// \brief
                 /// Call Cancel () to set this flag. Monitor this
                 /// flag in Execute () to respond to cancellation
                 /// requests.
@@ -97,7 +105,9 @@ namespace thekogans {
 
                 /// \brief
                 /// ctor.
-                Job () :
+                /// \param[in] id_ Job id.
+                Job (const Id &id_ = GUID::FromRandom ().ToString ()) :
+                    id (id_),
                     cancelled (false),
                     finished (0) {}
                 /// \brief
@@ -113,16 +123,13 @@ namespace thekogans {
                 }
 
                 /// \brief
-                /// Convenient typedef for std::string.
-                typedef std::string Id;
-
-                /// \brief
                 /// Return a unique identifier for this
                 /// job. Used to cancel a pending job.
                 /// \return unique id for the job.
-                virtual Id GetId () const throw () {
-                    return Id ();
+                inline Id GetId () const throw () {
+                    return id;
                 }
+
                 // See VERY IMPORTANT comment in Stop below.
                 /// \brief
                 /// Called before the job is executed. Allows
@@ -182,11 +189,20 @@ namespace thekogans {
                 /// Last job time.
                 ui64 lastJobTime;
                 /// \brief
+                /// Id of last completed job.
+                Job::Id lastJobId;
+                /// \brief
                 /// Fastest job.
                 ui64 minJobTime;
                 /// \brief
+                /// Id of job with minimum completion time.
+                Job::Id minJobId;
+                /// \brief
                 /// Slowest job
                 ui64 maxJobTime;
+                /// \brief
+                /// Id of job with maximum completion time.
+                Job::Id maxJobId;
 
                 /// \brief
                 /// ctor.
@@ -200,9 +216,11 @@ namespace thekogans {
 
                 /// \brief
                 /// After completion of each job, used to update the stats.
+                /// \param[in] jobId Id of completed job.
                 /// \param[in] start Job start time.
                 /// \param[in] end Job end time.
                 void Update (
+                    const Job::Id &jobId,
                     ui64 start,
                     ui64 end);
             };
@@ -372,7 +390,8 @@ namespace thekogans {
             /// \param[in] job Job to enqueue.
             /// \param[in] wait Wait for job to finish.
             /// Used for synchronous job execution.
-            void Enq (
+            /// \return Job id.
+            Job::Id Enq (
                 Job::UniquePtr job,
                 bool wait = false);
 

@@ -25,18 +25,22 @@ namespace thekogans {
     namespace util {
 
         void JobQueue::Stats::Update (
+                const Job::Id &jobId,
                 ui64 start,
                 ui64 end) {
             ++totalJobs;
             ui64 ellapsed =
                 HRTimer::ComputeEllapsedTime (start, end);
             totalJobTime += ellapsed;
-            lastJobTime = end;
+            lastJobTime = ellapsed;
+            lastJobId = jobId;
             if (minJobTime > ellapsed) {
                 minJobTime = ellapsed;
+                minJobId = jobId;
             }
             if (maxJobTime < ellapsed) {
                 maxJobTime = ellapsed;
+                maxJobId = jobId;
             }
         }
 
@@ -141,7 +145,7 @@ namespace thekogans {
             }
         }
 
-        void JobQueue::Enq (
+        JobQueue::Job::Id JobQueue::Enq (
                 Job::UniquePtr job,
                 bool wait) {
             if (job.get () != 0) {
@@ -151,6 +155,7 @@ namespace thekogans {
                     if (wait) {
                         job->finished = &finished;
                     }
+                    Job::Id jobId = job->GetId ();
                     if (type == TYPE_FIFO) {
                         jobs.push_back (job.release ());
                     }
@@ -163,6 +168,7 @@ namespace thekogans {
                     while (wait && !finished) {
                         jobFinished.Wait ();
                     }
+                    return jobId;
                 }
                 else {
                     THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
@@ -260,7 +266,7 @@ namespace thekogans {
                 state = Idle;
                 idle.SignalAll ();
             }
-            stats.Update (start, end);
+            stats.Update (jobId, start, end);
             jobFinished.SignalAll ();
         }
 
