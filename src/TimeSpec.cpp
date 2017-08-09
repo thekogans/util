@@ -223,6 +223,13 @@ namespace thekogans {
             return TimeSpec (
                 (time_t)(now.ul / THEKOGANS_UTIL_UI64_LITERAL (10000000)),
                 (long)(systemTime.wMilliseconds * 1000));
+        #elif defined (TOOLCHAIN_OS_Linux)
+            timespec timeSpec;
+            if (clock_gettime (CLOCK_REALTIME, &timeSpec) != 0) {
+                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                    THEKOGANS_UTIL_OS_ERROR_CODE);
+            }
+            return TimeSpec (timeSpec.tv_sec, timeSpec.tv_nsec);
         #elif defined (TOOLCHAIN_OS_OSX)
             struct ClockServer : public Singleton<ClockServer, SpinLock> {
                 clock_serv_t calendarClockService;
@@ -239,13 +246,6 @@ namespace thekogans {
             mach_timespec_t machTimeSpec;
             ClockServer::Instance ().GetTime (machTimeSpec);
             return TimeSpec (machTimeSpec.tv_sec, machTimeSpec.tv_nsec);
-        #elif defined (TOOLCHAIN_OS_Linux)
-            TimeSpec timeSpec;
-            if (clock_gettime (CLOCK_REALTIME, &timeSpec) != 0) {
-                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                    THEKOGANS_UTIL_OS_ERROR_CODE);
-            }
-            return timeSpec;
         #endif // defined (TOOLCHAIN_OS_Windows)
         }
 
