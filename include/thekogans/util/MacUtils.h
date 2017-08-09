@@ -18,6 +18,7 @@
 #if !defined (__thekogans_util_MacUtils_h)
 #define __thekogans_util_MacUtils_h
 
+#include <IOKit/IOReturn.h>
 #include <string>
 
 namespace thekogans {
@@ -34,6 +35,12 @@ namespace thekogans {
         /// \param[in] error CFError to return description for.
         /// \return Error description from the given CFError.
         std::string DescriptionFromCFError (CFErrorRef error);
+
+        /// \brief
+        /// Return error description from the given IOReturn.
+        /// \param[in] errorCode IOReturn to return description for.
+        /// \return Error description from the given IOReturn.
+        std::string DescriptionFromIOReturn (IOReturn errorCode);
 
     } // namespace util
 } // namespace thekogans

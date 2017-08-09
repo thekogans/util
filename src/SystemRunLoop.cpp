@@ -93,7 +93,14 @@ namespace thekogans {
                 wndClassEx.lpszMenuName = 0;
                 wndClassEx.lpszClassName = CLASS_NAME;
                 wndClassEx.hIconSm = 0;
-                return RegisterClassEx (&wndClassEx);
+                ATOM atom = RegisterClassEx (&wndClassEx);
+                if (atom != 0) {
+                    return atom;
+                }
+                else {
+                    THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                        THEKOGANS_UTIL_OS_ERROR_CODE);
+                }
             }
         }
 

@@ -72,7 +72,7 @@ namespace thekogans {
             /// Return serializer size.
             /// \return Serializer size.
             inline ui32 Size () const {
-                return Size (endianness);
+                return ENDIANNESS_SIZE;
             }
 
             // Binary Insertion/Extraction API.
@@ -394,15 +394,11 @@ namespace thekogans {
             inline Serializer &operator >> (std::vector<T> &value) {
                 ui32 count;
                 *this >> count;
-                if (count > 0) {
-                    value.resize (count);
-                    for (ui32 i = 0; i < count; ++i) {
-                        *this >> value[i];
-                    }
+                std::vector<T> temp (count);
+                for (ui32 i = 0; i < count; ++i) {
+                    *this >> temp[i];
                 }
-                else {
-                    value.clear ();
-                }
+                value.swap (temp);
                 return *this;
             }
 
@@ -469,7 +465,7 @@ namespace thekogans {
             /// \return *this.
             template<typename T>
             inline Serializer &operator << (const std::list<T> &value) {
-                ui32 count = value.size ();
+                ui32 count = (ui32)value.size ();
                 *this << count;
                 for (typename std::list<T>::const_iterator
                         it = value.begin (),
@@ -487,16 +483,13 @@ namespace thekogans {
             inline Serializer &operator >> (std::list<T> &value) {
                 ui32 count;
                 *this >> count;
-                if (count > 0) {
-                    for (ui32 i = 0; i < count; ++i) {
-                        T t;
-                        *this >> t;
-                        value.push_back (t);
-                    }
+                std::list<T> temp;
+                for (ui32 i = 0; i < count; ++i) {
+                    T t;
+                    *this >> t;
+                    value.push_back (t);
                 }
-                else {
-                    value.clear ();
-                }
+                value.swap (temp);
                 return *this;
             }
         };

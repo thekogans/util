@@ -590,6 +590,19 @@ namespace thekogans {
             THEKOGANS_UTIL_CFERROR_EXCEPTION_EX (\
                 __FILE__, __FUNCTION__, __LINE__, __DATE__ " " __TIME__, error)
 
+        /// \def THEKOGANS_UTIL_IORETURN_EXCEPTION_EX(
+        ///          file, function, line, buildTime, error)
+        /// Build an Exception from IOReturn error.
+        #define THEKOGANS_UTIL_IORETURN_EXCEPTION_EX(\
+                file, function, line, buildTime, error)\
+            thekogans::util::Exception (file, function, line, buildTime,\
+                error, thekogans::util::DescriptionFromIOReturn (error).c_str ())
+        /// \def THEKOGANS_UTIL_IORETURN_EXCEPTION(error)
+        /// Build an Exception from OSStatus errorCode.
+        #define THEKOGANS_UTIL_IORETURN_EXCEPTION(error)\
+            THEKOGANS_UTIL_IORETURN_EXCEPTION_EX (\
+                __FILE__, __FUNCTION__, __LINE__, __DATE__ " " __TIME__, error)
+
         /// \def THEKOGANS_UTIL_SC_ERROR_CODE_EXCEPTION_EX(
         ///          file, function, line, buildTime, errorCode)
         /// Build an Exception from SCError errorCode.
@@ -777,6 +790,39 @@ namespace thekogans {
         #define THEKOGANS_UTIL_THROW_CFERROR_AND_MESSAGE_EXCEPTION(\
                 error, format, ...)\
             THEKOGANS_UTIL_THROW_CFERROR_AND_MESSAGE_EXCEPTION_EX (\
+                __FILE__, __FUNCTION__, __LINE__, __DATE__ " " __TIME__,\
+                error, format, __VA_ARGS__)
+
+        /// \def THEKOGANS_UTIL_THROW_IORETURN_EXCEPTION_EX(
+        ///          file, function, line, buildTime, error)
+        /// Throw an Exception from IOReturn error.
+        #define THEKOGANS_UTIL_THROW_IORETURN_EXCEPTION_EX(\
+                file, function, line, buildTime, error)\
+            THEKOGANS_UTIL_DEBUG_BREAK\
+            throw thekogans::util::Exception (file, function, line, buildTime,\
+                error, thekogans::util::DescriptionFromIOReturn (error).c_str ())
+        /// \def THEKOGANS_UTIL_THROW_IORETURN_EXCEPTION(error)
+        /// Throw an Exception from IOReturn error.
+        #define THEKOGANS_UTIL_THROW_IORETURN_EXCEPTION(error)\
+            THEKOGANS_UTIL_THROW_IORETURN_EXCEPTION_EX (\
+                __FILE__, __FUNCTION__, __LINE__, __DATE__ " " __TIME__, error)
+
+        /// \def THEKOGANS_UTIL_THROW_IORETURN_EXCEPTION_EX(
+        ///          file, function, line, buildTime, error)
+        /// Throw an Exception from IOReturn error.
+        #define THEKOGANS_UTIL_THROW_IORETURN_AND_MESSAGE_EXCEPTION_EX(\
+                file, function, line, buildTime, error, format, ...)\
+            THEKOGANS_UTIL_DEBUG_BREAK\
+            throw thekogans::util::Exception (file, function, line, buildTime, error,\
+                thekogans::util::FormatString ("%s%s",\
+                    thekogans::util::DescriptionFromIOReturn (error).c_str (),\
+                    thekogans::util::FormatString (format, __VA_ARGS__).c_str ()))
+        /// \def THEKOGANS_UTIL_THROW_IORETURN_AND_MESSAGE_EXCEPTION(
+        ///          errorCode, format, ...)
+        /// Throw an Exception from Ioreturn error.
+        #define THEKOGANS_UTIL_THROW_IORETURN_AND_MESSAGE_EXCEPTION(\
+                error, format, ...)\
+            THEKOGANS_UTIL_THROW_IORETURN_AND_MESSAGE_EXCEPTION_EX (\
                 __FILE__, __FUNCTION__, __LINE__, __DATE__ " " __TIME__,\
                 error, format, __VA_ARGS__)
 

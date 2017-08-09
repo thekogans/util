@@ -191,7 +191,7 @@ namespace thekogans {
                         jobs.erase (job);
                         delete job;
                         --stats.jobCount;
-                        if (jobs.empty () && busyWorkers == 0) {
+                        if (busyWorkers == 0 && jobs.empty ()) {
                             state = Idle;
                             idle.SignalAll ();
                         }
@@ -263,7 +263,7 @@ namespace thekogans {
                 ui64 start,
                 ui64 end) {
             LockGuard<Mutex> guard (jobsMutex);
-            if (jobs.empty () && --busyWorkers == 0) {
+            if (--busyWorkers == 0 && jobs.empty ()) {
                 state = Idle;
                 idle.SignalAll ();
             }

@@ -93,7 +93,7 @@ namespace thekogans {
                 bool coreDump) :
                 threadSafePrintString (threadSafePrintString_) {
             if (threadSafePrintString) {
-                jobQueue.reset (new JobQueue);
+                jobQueue.reset (new JobQueue ("Console"));
             }
             if (hookCtrlBreak) {
             #if defined (TOOLCHAIN_OS_Windows)

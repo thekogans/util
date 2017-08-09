@@ -31,6 +31,8 @@
 #include "thekogans/util/Condition.h"
 #include "thekogans/util/Barrier.h"
 #include "thekogans/util/Singleton.h"
+#include "thekogans/util/StringUtils.h"
+#include "thekogans/util/XMLUtils.h"
 
 namespace thekogans {
     namespace util {
@@ -224,6 +226,26 @@ namespace thekogans {
                         startTime (startTime_),
                         endTime (endTime_),
                         totalTime (totalTime_) {}
+
+                    /// \brief
+                    /// Return the XML representation of the Job stats.
+                    /// \param[in] name Job stats name (last, min, max).
+                    /// \param[in] indentationLevel Pretty print parameter. If
+                    /// the resulting tag is to be included in a larger structure
+                    /// you might want to provide a value that will embed it in
+                    /// the structure.
+                    /// \return The XML reprentation of the Job stats.
+                    inline std::string ToString (
+                            const std::string &name,
+                            ui32 indentationLevel) const {
+                        assert (!name.empty ());
+                        Attributes attributes;
+                        attributes.push_back (Attribute ("id", id));
+                        attributes.push_back (Attribute ("startTime", ui64Tostring (startTime)));
+                        attributes.push_back (Attribute ("endTime", ui64Tostring (endTime)));
+                        attributes.push_back (Attribute ("totalTime", ui64Tostring (totalTime)));
+                        return OpenTag (indentationLevel, name.c_str (), attributes, true, true);
+                    }
                 };
                 /// \brief
                 /// Last job stats.
@@ -251,6 +273,29 @@ namespace thekogans {
                     const JobQueue::Job::Id &jobId,
                     ui64 start,
                     ui64 end);
+
+                /// \brief
+                /// Return the XML representation of the Stats.
+                /// \param[in] name JobQueue name.
+                /// \param[in] indentationLevel Pretty print parameter. If
+                /// the resulting tag is to be included in a larger structure
+                /// you might want to provide a value that will embed it in
+                /// the structure.
+                /// \return The XML reprentation of the Stats.
+                std::string ToString (
+                        const std::string &name,
+                        ui32 indentationLevel) const {
+                    Attributes attributes;
+                    attributes.push_back (Attribute ("jobCount", ui32Tostring (jobCount)));
+                    attributes.push_back (Attribute ("totalJobs", ui32Tostring (totalJobs)));
+                    attributes.push_back (Attribute ("totalJobTime", ui64Tostring (totalJobTime)));
+                    return
+                        OpenTag (indentationLevel,  !name.empty () ? name.c_str () : "JobQueue", attributes, false, true) +
+                        lastJob.ToString ("last", indentationLevel + 1) +
+                        minJob.ToString ("min", indentationLevel + 1) +
+                        maxJob.ToString ("max", indentationLevel + 1) +
+                        CloseTag (indentationLevel, !name.empty () ? name.c_str () : "JobQueue");
+                }
             };
 
         protected:
@@ -333,6 +378,7 @@ namespace thekogans {
                 /// \brief
                 /// ctor.
                 /// \param[in] queue_ JobQueue to which this worker belongs.
+                /// \param[in] name Worker thread name.
                 /// \param[in] priority Worker thread priority.
                 /// \param[in] affinity Worker thread processor affinity.
                 Worker (JobQueue &queue_,

@@ -566,7 +566,7 @@ namespace thekogans {
                     /// \brief
                     /// Dump stats to std::ostream.
                     /// \param[in] stream std::ostream to dump the stats to.
-                    virtual void Dump (std::ostream & /*stream*/ = std::cout) = 0;
+                    virtual void Dump (std::ostream & /*stream*/ = std::cout) const = 0;
                 };
                 /// \brief
                 /// Return the snapshot of the heap state.
@@ -931,7 +931,7 @@ namespace thekogans {
                 /// \brief
                 /// Dump heap stats to std::ostream.
                 /// \param[in] stream std::ostream stream to dump the stats to.
-                virtual void Dump (std::ostream &stream) {
+                virtual void Dump (std::ostream &stream) const {
                     Attributes attributes;
                     attributes.push_back (Attribute ("name", name));
                     attributes.push_back (Attribute ("itemSize", size_tTostring (itemSize)));

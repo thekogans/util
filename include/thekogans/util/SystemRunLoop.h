@@ -252,6 +252,13 @@ namespace thekogans {
             static bool DispatchEvent (
                 const XEvent &event,
                 RunLoop &runLoop);
+        #elif defined (TOOLCHAIN_OS_OSX)
+            /// \brief
+            /// Return the OS X CFRunLoopRef associated with this run loop.
+            /// \return OS X CFRunLoopRef associated with this run loop.
+            inline CFRunLoopRef GetRunLoop () const {
+                return runLoop;
+            }
         #endif // defined (TOOLCHAIN_OS_Windows)
 
             // RunLoop
