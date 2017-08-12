@@ -26,8 +26,11 @@
         #if !defined (NOMINMAX)
             #define NOMINMAX
         #endif // !defined (NOMINMAX)
+        #include <windows.h>
     #endif // !defined (_WINDOWS_)
     #include <winsock2.h>
+#elif defined (TOOLCHAIN_OS_OSX)
+    #include <mach/clock_types.h>
 #endif // defined (TOOLCHAIN_OS_Windows)
 #include <ctime>
 #include "thekogans/util/Config.h"
@@ -72,14 +75,22 @@ namespace thekogans {
             /// NOTE: This ctor is explicit. You provide either no values or both of them.
             /// \param[in] seconds_ Seconds value to initialize to.
             /// \param[in] nanoseconds_ Nanoseconds value to initialize to.
+            /// NOTE: The nanoseconds_ value need not be normalized (<1000000000).
+            /// The ctor will normalize it if necessary.
             explicit TimeSpec (
                 i64 seconds_ = -1,
-                i32 nanoseconds_ = -1);
+                i64 nanoseconds_ = -1);
         #if !defined (TOOLCHAIN_OS_Windows)
             /// \brief
             /// ctor.
             /// \param[in] timeSpec POSIX timespec to initialize to.
             TimeSpec (const timespec &timeSpec);
+        #if defined (TOOLCHAIN_OS_OSX)
+            /// \brief
+            /// ctor.
+            /// \param[in] timeSpec OS X Mach timespec to initialize to.
+            TimeSpec (const mach_timespec_t &timeSpec);
+        #endif // defined (TOOLCHAIN_OS_OSX)
         #endif // !defined (TOOLCHAIN_OS_Windows)
             /// \brief
             /// ctor.
@@ -129,6 +140,28 @@ namespace thekogans {
                         THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
                 }
                 return TimeSpec (milliseconds / 1000, (milliseconds % 1000) * 1000000);
+            }
+            /// \brief
+            /// Create a TimeSpec from microseconds.
+            /// \param[in] microseconds Value to use to initialize the TimeSpec.
+            /// \return TimeSpec initialized to given value.
+            static TimeSpec FromMicroseconds (i64 microseconds) {
+                if (microseconds < 0) {
+                    THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                        THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
+                }
+                return TimeSpec (microseconds / 1000000, (microseconds % 1000000) * 1000);
+            }
+            /// \brief
+            /// Create a TimeSpec from nanoseconds.
+            /// \param[in] nanoseconds Value to use to initialize the TimeSpec.
+            /// \return TimeSpec initialized to given value.
+            static TimeSpec FromNanoseconds (i64 nanoseconds) {
+                if (nanoseconds < 0) {
+                    THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                        THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
+                }
+                return TimeSpec (nanoseconds / 1000000000, nanoseconds % 1000000000);
             }
 
             /// \brief

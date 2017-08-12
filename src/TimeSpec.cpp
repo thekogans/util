@@ -20,6 +20,7 @@
     #include <mach/mach.h>
     #include <mach/clock.h>
     #include <mach/mach_time.h>
+    #include <mach/kern_return.h>
     #include "thekogans/util/Singleton.h"
     #include "thekogans/util/SpinLock.h"
 #elif defined (TOOLCHAIN_OS_Linux)
@@ -33,14 +34,14 @@ namespace thekogans {
 
         TimeSpec::TimeSpec (
                 i64 seconds_,
-                i32 nanoseconds_) {
+                i64 nanoseconds_) {
             if (seconds_ == -1 && nanoseconds_ == -1) {
                 seconds = seconds_;
-                nanoseconds = nanoseconds_;
+                nanoseconds = (i32)nanoseconds_;
             }
             else if (seconds_ != -1 && nanoseconds_ != -1) {
                 seconds = seconds_ + nanoseconds_ / 1000000000;
-                nanoseconds = nanoseconds_ % 1000000000;
+                nanoseconds = (i32)(nanoseconds_ % 1000000000);
             }
             else {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
@@ -50,22 +51,50 @@ namespace thekogans {
 
     #if !defined (TOOLCHAIN_OS_Windows)
         TimeSpec::TimeSpec (const timespec &timeSpec) {
-            if (timeSpec.tv_sec < 0 || timeSpec.tv_nsec < 0) {
+            if (timeSpec.tv_sec == -1 && timeSpec.tv_nsec == -1) {
+                seconds = timeSpec.tv_sec;
+                nanoseconds = (i32)timeSpec.tv_nsec;
+            }
+            else if (timeSpec.tv_sec != -1 && timeSpec.tv_nsec != -1) {
+                seconds = timeSpec.tv_sec + timeSpec.tv_nsec / 1000000000;
+                nanoseconds = (i32)(timeSpec.tv_nsec % 1000000000);
+            }
+            else {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
                     THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
             }
-            seconds = (i64)timeSpec.tv_sec;
-            nanoseconds = (i32)timeSpec.tv_nsec;
         }
+    #if defined (TOOLCHAIN_OS_OSX)
+        TimeSpec::TimeSpec (const mach_timespec_t &timeSpec) {
+            if (timeSpec.tv_sec == -1 && timeSpec.tv_nsec == -1) {
+                seconds = timeSpec.tv_sec;
+                nanoseconds = (i32)timeSpec.tv_nsec;
+            }
+            else if (timeSpec.tv_sec != -1 && timeSpec.tv_nsec != -1) {
+                seconds = timeSpec.tv_sec + timeSpec.tv_nsec / 1000000000;
+                nanoseconds = (i32)(timeSpec.tv_nsec % 1000000000);
+            }
+            else {
+                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
+            }
+        }
+    #endif // defined (TOOLCHAIN_OS_OSX)
     #endif // !defined (TOOLCHAIN_OS_Windows)
 
         TimeSpec::TimeSpec (const timeval &timeVal) {
-            if (timeVal.tv_sec < 0 || timeVal.tv_usec < 0) {
+            if (timeSpec.tv_sec == -1 && timeSpec.tv_nsec == -1) {
+                seconds = (i64)timeVal.tv_sec;
+                nanoseconds = (i32)timeVal.tv_usec;
+            }
+            else if (timeSpec.tv_sec != -1 && timeSpec.tv_nsec != -1) {
+                seconds = (i64)(timeVal.tv_sec + timeVal.tv_nsec / 1000000);
+                nanoseconds = (i32)((timeVal.tv_usec % 1000000) * 1000);
+            }
+            else {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
                     THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
             }
-            seconds = (i64)timeVal.tv_sec;
-            nanoseconds = (i32)(timeVal.tv_usec * 1000);
         }
 
         TimeSpec TimeSpec::Zero (0, 0);
@@ -229,18 +258,32 @@ namespace thekogans {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
                     THEKOGANS_UTIL_OS_ERROR_CODE);
             }
-            return TimeSpec (timeSpec.tv_sec, timeSpec.tv_nsec);
+            return TimeSpec (timeSpec);
         #elif defined (TOOLCHAIN_OS_OSX)
             struct ClockServer : public Singleton<ClockServer, SpinLock> {
                 clock_serv_t calendarClockService;
                 ClockServer () {
-                    host_get_clock_service (mach_host_self (), CALENDAR_CLOCK, &calendarClockService);
+                    kern_return_t errorCode =
+                        host_get_clock_service (
+                            mach_host_self (),
+                            CALENDAR_CLOCK,
+                            &calendarClockService);
+                    if (errorCode != KERN_SUCCESS) {
+                        THEKOGANS_UTIL_THROW_MACH_ERROR_CODE_EXCEPTION (errorCode);
+                    }
                 }
                 ~ClockServer () {
+                    // For completeness only. Since ClockServer is a
+                    // private singleton, it's dtor should never be
+                    // called.
                     mach_port_deallocate (mach_task_self (), calendarClockService);
                 }
                 void GetTime (mach_timespec_t &machTimeSpec) {
-                    clock_get_time (calendarClockService, &machTimeSpec);
+                    kern_return_t errorCode =
+                        clock_get_time (calendarClockService, &machTimeSpec);
+                    if (errorCode != KERN_SUCCESS) {
+                        THEKOGANS_UTIL_THROW_MACH_ERROR_CODE_EXCEPTION (errorCode);
+                    }
                 }
             };
             mach_timespec_t machTimeSpec;
