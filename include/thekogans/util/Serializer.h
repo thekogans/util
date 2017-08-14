@@ -130,9 +130,7 @@ namespace thekogans {
             /// \brief
             /// Return serialized size of const char *.
             /// \return Serialized size of const char *.
-            static ui32 Size (const char *value) {
-                return (ui32)(strlen (value) + 1);
-            }
+            static ui32 Size (const char *value);
 
             /// \brief
             /// Serialize a c-string.

@@ -65,7 +65,7 @@ namespace thekogans {
         ///         int /*nCmdShow*/) {
         ///     ...
         ///     util::MainRunLoopCreateInstance::Parameterize (
-        ///         util::RunLoop::CreateThreadWindow ());
+        ///         0, 0, util::SystemRunLoop::CreateThreadWindow ());
         ///     ...
         ///     BOOL result;
         ///     MSG msg;
@@ -145,13 +145,19 @@ namespace thekogans {
         private:
         #if defined (TOOLCHAIN_OS_Windows)
             /// \brief
+            /// Callback to process Windows HWND events.
+            static SystemRunLoop::EventProcessor eventProcessor;
+            /// \brief
+            /// Optional user data passed to eventProcessor.
+            static void *userData;
+            /// \brief
             /// Windows window handle.
             static HWND wnd;
         #elif defined (TOOLCHAIN_OS_Linux)
         #if defined (THEKOGANS_UTIL_HAVE_XLIB)
             /// \brief
             /// Callback to process Xlib XEvent events.
-            static SystemRunLoop::EventProcessor *eventProcessor;
+            static SystemRunLoop::EventProcessor eventProcessor;
             /// \brief
             /// Optional user data passed to eventProcessor.
             static void *userData;
@@ -169,8 +175,13 @@ namespace thekogans {
         #if defined (TOOLCHAIN_OS_Windows)
             /// \brief
             /// Call before the first use of MainRunLoop::Instance.
+            /// \param[in] eventProcessor_ Callback to process Windows HWND events.
+            /// \param[in] userData_ Optional user data passed to eventProcessor.
             /// \param[in] wnd_ Windows window handle.
-            static void Parameterize (HWND wnd_);
+            static void Parameterize (
+                SystemRunLoop::EventProcessor eventProcessor_,
+                void *userData_,
+                HWND wnd_);
         #elif defined (TOOLCHAIN_OS_Linux)
         #if defined (THEKOGANS_UTIL_HAVE_XLIB)
             /// \brief
@@ -179,9 +190,9 @@ namespace thekogans {
             /// \param[in] userData_ Optional user data passed to eventProcessor.
             /// \param[in] displayName_ Xlib server display name.
             static void Parameterize (
-                SystemRunLoop::EventProcessor *eventProcessor_,
-                void *userData_ = 0,
-                const char *displayName_ = 0);
+                SystemRunLoop::EventProcessor eventProcessor_,
+                void *userData_,
+                const char *displayName_);
         #endif // defined (THEKOGANS_UTIL_HAVE_XLIB)
         #elif defined (TOOLCHAIN_OS_OSX)
             /// \brief

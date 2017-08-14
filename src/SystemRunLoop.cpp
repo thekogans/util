@@ -28,13 +28,13 @@ namespace thekogans {
 
     #if defined (TOOLCHAIN_OS_Windows)
         SystemRunLoop::SystemRunLoop (
-                HWND wnd_,
                 EventProcessor eventProcessor_,
-                void *userData_) :
+                void *userData_,
+                HWND wnd_) :
                 done (true),
-                wnd (wnd_),
                 eventProcessor (eventProcessor_),
                 userData (userData_),
+                wnd (wnd_),
                 jobFinished (jobsMutex) {
             if (wnd != 0) {
                 SetWindowLongPtr (wnd, GWLP_USERDATA, (LONG_PTR)this);
@@ -63,6 +63,7 @@ namespace thekogans {
                     runLoop->ExecuteJob ();
                     return 0;
                 }
+                case WM_DESTROY:
                 case WM_CLOSE: {
                     PostQuitMessage (0);
                     return 0;
@@ -77,7 +78,7 @@ namespace thekogans {
 
         namespace {
             const char * const CLASS_NAME = "thekogans_util_SystemRunLoop_Window_class";
-            const char * const WINDOW_NAME = "thekogans_util_SystemRunLoop_Window";
+            const char * const WINDOW_NAME = "thekogans_util_SystemRunLoop_Window_name";
 
             ATOM RegisterWindowClass () {
                 WNDCLASSEX wndClassEx;
@@ -128,7 +129,7 @@ namespace thekogans {
         }
 
         SystemRunLoop::SystemRunLoop (
-                EventProcessor *eventProcessor_,
+                EventProcessor eventProcessor_,
                 void *userData_,
                 const char *displayName_) :
                 done (true),
@@ -191,7 +192,7 @@ namespace thekogans {
                     systemRunLoop->ExecuteJob ();
                     return true;
                 }
-                return (*systemRunLoop->eventProcessor) (event, systemRunLoop->userData);
+                return systemRunLoop->eventProcessor (event, systemRunLoop->userData);
             }
             else {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
@@ -308,7 +309,8 @@ namespace thekogans {
             }
             else {
                 THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                    "%s", "Unable to create SystemRunLoop display.");
+                    "Unable to open display: %s",
+                    displayName != 0 ? displayName : "default");
             }
         }
     #endif // defined (TOOLCHAIN_OS_Linux)

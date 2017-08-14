@@ -364,10 +364,14 @@ namespace thekogans {
                 buffer.length <<
                 buffer.readOffset <<
                 buffer.writeOffset;
-            if (buffer.length != 0 &&
-                    serializer.Write (buffer.data, buffer.length) != buffer.length) {
-                THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                    "serializer.Write (buffer.data, %u) != %u", buffer.length, buffer.length);
+            if (buffer.length != 0) {
+                ui32 bytesWritten = serializer.Write (buffer.data, buffer.length);
+                if (buffer.length != bytesWritten) {
+                    THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
+                        "serializer.Write (buffer.data, %u) == %u",
+                        buffer.length,
+                        bytesWritten);
+                }
             }
             return serializer;
         }
@@ -381,9 +385,14 @@ namespace thekogans {
             ui32 writeOffset;
             serializer >> endianness >> length >> readOffset >> writeOffset;
             buffer.Resize (length);
-            if (length > 0 && serializer.Read (buffer.data, length) != length) {
-                THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                    "serializer.Read (buffer.data, %u) != %u", length, length);
+            if (length > 0) {
+                ui32 bytesRead = serializer.Read (buffer.data, length);
+                if (length != bytesRead) {
+                    THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
+                        "serializer.Read (buffer.data, %u) == %u",
+                        length,
+                        bytesRead);
+                }
             }
             buffer.endianness = endianness;
             buffer.readOffset = readOffset;

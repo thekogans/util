@@ -22,25 +22,32 @@ namespace thekogans {
     namespace util {
 
     #if defined (TOOLCHAIN_OS_Windows)
+        SystemRunLoop::EventProcessor MainRunLoopCreateInstance::eventProcessor = 0;
+        void *MainRunLoopCreateInstance::userData = 0;
         HWND MainRunLoopCreateInstance::wnd = 0;
 
-        void MainRunLoopCreateInstance::Parameterize (HWND wnd_) {
+        void MainRunLoopCreateInstance::Parameterize (
+                SystemRunLoop::EventProcessor eventProcessor_,
+                void *userData_,
+                HWND wnd_) {
+            eventProcessor = eventProcessor_;
+            userData = userData_;
             wnd = wnd_;
         }
 
         RunLoop *MainRunLoopCreateInstance::operator () () {
             return wnd != 0 ?
-                (RunLoop *)new SystemRunLoop (wnd) :
+                (RunLoop *)new SystemRunLoop (eventProcessor, userData, wnd) :
                 (RunLoop *)new DefaultRunLoop;
         }
     #elif defined (TOOLCHAIN_OS_Linux)
     #if defined (THEKOGANS_UTIL_HAVE_XLIB)
-        SystemRunLoop::EventProcessor *MainRunLoopCreateInstance::eventProcessor = 0;
+        SystemRunLoop::EventProcessor MainRunLoopCreateInstance::eventProcessor = 0;
         void *MainRunLoopCreateInstance::userData = 0;
         const char *MainRunLoopCreateInstance::displayName = 0;
 
         void MainRunLoopCreateInstance::Parameterize (
-                SystemRunLoop::EventProcessor *eventProcessor_,
+                SystemRunLoop::EventProcessor eventProcessor_,
                 void *userData_,
                 const char *displayName_) {
             eventProcessor = eventProcessor_;

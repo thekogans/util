@@ -83,12 +83,12 @@ namespace thekogans {
     #endif // !defined (TOOLCHAIN_OS_Windows)
 
         TimeSpec::TimeSpec (const timeval &timeVal) {
-            if (timeSpec.tv_sec == -1 && timeSpec.tv_nsec == -1) {
+            if (timeVal.tv_sec == -1 && timeVal.tv_usec == -1) {
                 seconds = (i64)timeVal.tv_sec;
                 nanoseconds = (i32)timeVal.tv_usec;
             }
-            else if (timeSpec.tv_sec != -1 && timeSpec.tv_nsec != -1) {
-                seconds = (i64)(timeVal.tv_sec + timeVal.tv_nsec / 1000000);
+            else if (timeVal.tv_sec != -1 && timeVal.tv_usec != -1) {
+                seconds = (i64)(timeVal.tv_sec + timeVal.tv_usec / 1000000);
                 nanoseconds = (i32)((timeVal.tv_usec % 1000000) * 1000);
             }
             else {
@@ -170,13 +170,13 @@ namespace thekogans {
             inline TimeSpec AddWithCarry (
                     const TimeSpec &timeSpec1,
                     const TimeSpec &timeSpec2) {
-                time_t sec = timeSpec1.seconds + timeSpec2.seconds;
-                long nsec = timeSpec1.nanoseconds + timeSpec2.nanoseconds;
-                if (nsec > 999999999) {
-                    sec += nsec / 1000000000;
-                    nsec %= 1000000000;
+                i64 seconds = timeSpec1.seconds + timeSpec2.seconds;
+                i32 nanoseconds = timeSpec1.nanoseconds + timeSpec2.nanoseconds;
+                if (nanoseconds > 999999999) {
+                    seconds += nanoseconds / 1000000000;
+                    nanoseconds %= 1000000000;
                 }
-                return TimeSpec (sec, nsec);
+                return TimeSpec (seconds, nanoseconds);
             }
         }
 
@@ -204,14 +204,14 @@ namespace thekogans {
             inline TimeSpec SubWithBorrow (
                     const TimeSpec &timeSpec1,
                     const TimeSpec &timeSpec2) {
-                time_t sec = timeSpec1.seconds - timeSpec2.seconds;
-                long nsec = timeSpec1.nanoseconds - timeSpec2.nanoseconds;
-                if (nsec < 0) {
-                    --sec;
-                    assert (sec >= 0);
-                    nsec += 1000000000;
+                i64 seconds = timeSpec1.seconds - timeSpec2.seconds;
+                i32 nanoseconds = timeSpec1.nanoseconds - timeSpec2.nanoseconds;
+                if (nanoseconds < 0) {
+                    --seconds;
+                    assert (seconds >= 0);
+                    nanoseconds += 1000000000;
                 }
-                return TimeSpec (sec, nsec);
+                return TimeSpec (seconds, nanoseconds);
             }
         }
 
@@ -250,8 +250,8 @@ namespace thekogans {
             // re-bias to 1/1/1970
             now.ul -= THEKOGANS_UTIL_UI64_LITERAL (116444736000000000);
             return TimeSpec (
-                (time_t)(now.ul / THEKOGANS_UTIL_UI64_LITERAL (10000000)),
-                (long)(systemTime.wMilliseconds * 1000));
+                (i64)(now.ul / THEKOGANS_UTIL_UI64_LITERAL (10000000)),
+                (i32)(systemTime.wMilliseconds * 1000));
         #elif defined (TOOLCHAIN_OS_Linux)
             timespec timeSpec;
             if (clock_gettime (CLOCK_REALTIME, &timeSpec) != 0) {

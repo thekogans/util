@@ -149,18 +149,18 @@ namespace thekogans {
             volatile bool done;
         #if defined (TOOLCHAIN_OS_Windows)
             /// \brief
-            /// Windows window handle.
-            HWND wnd;
-            /// \brief
             /// Callback to process window events.
             EventProcessor eventProcessor;
             /// \brief
             /// Optional user data passed to eventProcessor.
             void *userData;
+            /// \brief
+            /// Windows window handle.
+            HWND wnd;
         #elif defined (TOOLCHAIN_OS_Linux)
             /// \brief
             /// Callback to process Xlib XEvent events.
-            EventProcessor *eventProcessor;
+            EventProcessor eventProcessor;
             /// \brief
             /// Optional user data passed to eventProcessor.
             void *userData;
@@ -195,13 +195,15 @@ namespace thekogans {
         #if defined (TOOLCHAIN_OS_Windows)
             /// \brief
             /// ctor.
-            /// \param[in] wnd_ Windows window handle.
             /// \param[in] eventProcessor_ Callback to process window events.
             /// \param[in] userData_ Optional user data passed to eventProcessor.
+            /// \param[in] wnd_ Windows window handle.
+            /// NOTE: SystemRunLoop takes ownership of the passed in wnd_ and
+            /// will destroy it in it's dtor.
             SystemRunLoop (
-                HWND wnd_ = CreateThreadWindow (),
                 EventProcessor eventProcessor_ = 0,
-                void *userData_ = 0);
+                void *userData_ = 0,
+                HWND wnd_ = CreateThreadWindow ());
             /// \brief
             /// dtor.
             virtual ~SystemRunLoop ();
@@ -218,7 +220,7 @@ namespace thekogans {
             /// valid display name to SystemRunLoop so that it can dispatch
             /// events correctly.
             SystemRunLoop (
-                EventProcessor *eventProcessor_,
+                EventProcessor eventProcessor_,
                 void *userData_ = 0,
                 const char *displayName_ = 0);
             /// \brief

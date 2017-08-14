@@ -57,27 +57,49 @@ namespace thekogans {
             return *this;
         }
 
-        Serializer &Serializer::operator << (const char *value) {
-            ui32 size = Size (value);
-            if (Write (value, size) != size) {
-                THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                    "Write (value, %u) != %u", size, size);
+        ui32 Serializer::Size (const char *value) {
+            if (value != 0) {
+                return (ui32)(strlen (value) + 1);
             }
-            return *this;
+            else {
+                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
+            }
+        }
+
+        Serializer &Serializer::operator << (const char *value) {
+            if (value != 0) {
+                ui32 size = Size (value);
+                if (Write (value, size) != size) {
+                    THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
+                        "Write (value, %u) != %u", size, size);
+                }
+                return *this;
+            }
+            else {
+                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
+            }
         }
 
         Serializer &Serializer::operator >> (char *value) {
-            for (;;) {
-                if (Read (value, I8_SIZE) != I8_SIZE) {
-                    THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                        "Read (value, %u) != %u", I8_SIZE, I8_SIZE);
+            if (value != 0) {
+                for (;;) {
+                    if (Read (value, I8_SIZE) != I8_SIZE) {
+                        THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
+                            "Read (value, %u) != %u", I8_SIZE, I8_SIZE);
+                    }
+                    if (*value == 0) {
+                        break;
+                    }
+                    ++value;
                 }
-                if (*value == 0) {
-                    break;
-                }
-                ++value;
+                return *this;
             }
-            return *this;
+            else {
+                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
+            }
         }
 
         Serializer &Serializer::operator << (const std::string &value) {
