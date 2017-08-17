@@ -245,6 +245,7 @@ namespace thekogans {
         THEKOGANS_UTIL_IMPLEMENT_HEAP_WITH_LOCK_EX (Directory::Watcher::Watch, SpinLock, 64)
 
         Directory::Watcher::Watcher () :
+            Thread ("Watcher"),
             #if defined (TOOLCHAIN_OS_Windows)
                 handle (CreateIoCompletionPort (
                     THEKOGANS_UTIL_INVALID_HANDLE_VALUE, 0, 0, 1)) {
@@ -541,14 +542,6 @@ namespace thekogans {
                 return ull.QuadPart;
             }
 
-            inline time_t FILETIMETotime_t (const FILETIME &ft) {
-                ULARGE_INTEGER ull;
-                ull.LowPart = ft.dwLowDateTime;
-                ull.HighPart = ft.dwHighDateTime;
-                return ull.QuadPart / THEKOGANS_UTIL_UI64_LITERAL (10000000) -
-                    THEKOGANS_UTIL_UI64_LITERAL (11644473600);
-            }
-
             namespace {
                 typedef Flags<DWORD> FlagsDWORD;
 
@@ -592,9 +585,9 @@ namespace thekogans {
                 type = systemTotype (attributeData.dwFileAttributes);
                 name = Path (path).GetFullFileName ();
                 attributes = attributeData.dwFileAttributes;
-                creationDate = FILETIMETotime_t (attributeData.ftCreationTime);
-                lastAccessedDate = FILETIMETotime_t (attributeData.ftLastAccessTime);
-                lastModifiedDate = FILETIMETotime_t (attributeData.ftLastWriteTime);
+                creationDate = FILETIMEToi64 (attributeData.ftCreationTime);
+                lastAccessedDate = FILETIMEToi64 (attributeData.ftLastAccessTime);
+                lastModifiedDate = FILETIMEToi64 (attributeData.ftLastWriteTime);
                 size = DWORDDWORDToui64 (attributeData.nFileSizeLow,
                     attributeData.nFileSizeHigh);
             }
@@ -673,13 +666,13 @@ namespace thekogans {
             Attributes attributes;
             attributes.push_back (Attribute (ATTR_TYPE, typeTostring (type)));
             attributes.push_back (Attribute (ATTR_NAME, Encodestring (name)));
-       #if defined (TOOLCHAIN_OS_Windows)
+        #if defined (TOOLCHAIN_OS_Windows)
             attributes.push_back (Attribute (ATTR_ATTRIBUTES, ui32Tostring (this->attributes)));
             attributes.push_back (Attribute (ATTR_CREATION_DATE, i64Tostring (creationDate)));
-       #else // defined (TOOLCHAIN_OS_Windows)
+        #else // defined (TOOLCHAIN_OS_Windows)
             attributes.push_back (Attribute (ATTR_MODE, i32Tostring (mode)));
             attributes.push_back (Attribute (ATTR_LAST_STATUS_DATE, i64Tostring (lastStatusDate)));
-       #endif // defined (TOOLCHAIN_OS_Windows)
+        #endif // defined (TOOLCHAIN_OS_Windows)
             attributes.push_back (Attribute (ATTR_LAST_ACCESSED_DATE, i64Tostring (lastAccessedDate)));
             attributes.push_back (Attribute (ATTR_LAST_MODIFIED_DATE, i64Tostring (lastModifiedDate)));
             attributes.push_back (Attribute (ATTR_SIZE, ui64Tostring (size)));
@@ -698,9 +691,9 @@ namespace thekogans {
             if (GetFileAttributesEx (path.c_str (),
                     GetFileExInfoStandard, &attributeData) == TRUE) {
                 attributes = attributeData.dwFileAttributes;
-                creationDate = FILETIMETotime_t (attributeData.ftCreationTime);
-                lastAccessedDate = FILETIMETotime_t (attributeData.ftLastAccessTime);
-                lastModifiedDate = FILETIMETotime_t (attributeData.ftLastWriteTime);
+                creationDate = FILETIMEToi64 (attributeData.ftCreationTime);
+                lastAccessedDate = FILETIMEToi64 (attributeData.ftLastAccessTime);
+                lastModifiedDate = FILETIMEToi64 (attributeData.ftLastWriteTime);
             }
             else {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_AND_MESSAGE_EXCEPTION (

@@ -19,6 +19,15 @@
 #define __thekogans_util_internal_h
 
 #if defined (TOOLCHAIN_OS_Windows)
+    #if !defined (_WINDOWS_)
+        #if !defined (WIN32_LEAN_AND_MEAN)
+            #define WIN32_LEAN_AND_MEAN
+        #endif // !defined (WIN32_LEAN_AND_MEAN)
+        #if !defined (NOMINMAX)
+            #define NOMINMAX
+        #endif // !defined (NOMINMAX)
+        #include <windows.h>
+    #endif // !defined (_WINDOWS_)
     #if defined (_MSC_VER)
         #include <direct.h>
         #include <cstdlib>
@@ -41,6 +50,7 @@
     #endif // defined (_MSC_VER)
     #include "thekogans/util/Config.h"
     #include "thekogans/util/Types.h"
+    #include "thekogans/util/Constants.h"
 
     /// \brief
     /// Create both ends of an anonymous pipe. Useful
@@ -51,6 +61,32 @@
     /// \return 0 = success, -1 = errno contains the error.
     _LIB_THEKOGANS_UTIL_DECL int _LIB_THEKOGANS_UTIL_API pipe (
         THEKOGANS_UTIL_HANDLE fildes[2]);
+
+    /// \brief
+    /// Convert a given i64 value to Windows FILETIME.
+    /// \param[in] value i64 value to convert.
+    /// \return Converted FILETIME.
+    inline FILETIME i64ToFILETIME (i64 value) {
+        ULARGE_INTEGER ul;
+        ul.QuadPart = (value + THEKOGANS_UTIL_UI64_LITERAL (11644473600)) *
+            THEKOGANS_UTIL_UI64_LITERAL (10000000);
+        FILETIME ft;
+        ft.dwHighDateTime = ul.HighPart;
+        ft.dwLowDateTime = ul.LowPart;
+        return ft;
+    }
+
+    /// \brief
+    /// Convert a given Windows FILETIME value to i64.
+    /// \param[in] value FILETIME value to convert.
+    /// \return Converted i64.
+    inline i64 FILETIMEToi64 (const FILETIME &value) {
+        ULARGE_INTEGER ul;
+        ul.LowPart = value.dwLowDateTime;
+        ul.HighPart = value.dwHighDateTime;
+        return ul.QuadPart / THEKOGANS_UTIL_UI64_LITERAL (10000000) -
+            THEKOGANS_UTIL_UI64_LITERAL (11644473600);
+    }
 #else // defined (TOOLCHAIN_OS_Windows)
     #include <cstdarg>
     #include <cstdlib>

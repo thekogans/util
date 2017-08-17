@@ -48,7 +48,7 @@ namespace thekogans {
         void JobQueue::Worker::Run () throw () {
             while (!queue.done) {
                 Job::UniquePtr job = queue.Deq ();
-                if (job.get () != 0) {
+                if (!queue.done && job.get () != 0) {
                     ui64 start = HRTimer::Click ();
                     job->Prologue (queue.done);
                     job->Execute (queue.done);
@@ -119,7 +119,6 @@ namespace thekogans {
             LockGuard<Mutex> guard (workersMutex);
             if (!done) {
                 done = true;
-                CancelAll ();
                 jobsNotEmpty.SignalAll ();
                 workersBarrier.Wait ();
                 struct Callback : public WorkerList::Callback {
@@ -138,11 +137,7 @@ namespace thekogans {
                 } callback;
                 assert (busyWorkers == 0);
                 workers.clear (callback);
-                stats.jobCount = 0;
-                if (state == Busy) {
-                    state = Idle;
-                    idle.SignalAll ();
-                }
+                CancelAll ();
             }
         }
 
@@ -151,30 +146,40 @@ namespace thekogans {
                 bool wait) {
             if (job.get () != 0) {
                 LockGuard<Mutex> guard (jobsMutex);
-                if (stats.jobCount < maxPendingJobs) {
-                    volatile bool finished = false;
-                    if (wait) {
-                        job->finished = &finished;
-                    }
-                    Job::Id jobId = job->GetId ();
-                    if (type == TYPE_FIFO) {
-                        jobs.push_back (job.release ());
+                if (!done) {
+                    if (stats.jobCount < maxPendingJobs) {
+                        volatile bool finished = false;
+                        if (wait) {
+                            job->finished = &finished;
+                        }
+                        Job::Id jobId = job->GetId ();
+                        if (type == TYPE_FIFO) {
+                            jobs.push_back (job.release ());
+                        }
+                        else {
+                            jobs.push_front (job.release ());
+                        }
+                        ++stats.jobCount;
+                        jobsNotEmpty.Signal ();
+                        state = Busy;
+                        if (wait) {
+                            while (!finished) {
+                                jobFinished.Wait ();
+                            }
+                        }
+                        return jobId;
                     }
                     else {
-                        jobs.push_front (job.release ());
+                        THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
+                            "JobQueue (%s) max jobs (%u) reached.",
+                            !name.empty () ? name.c_str () : "no name",
+                            maxPendingJobs);
                     }
-                    ++stats.jobCount;
-                    jobsNotEmpty.Signal ();
-                    state = Busy;
-                    while (wait && !finished) {
-                        jobFinished.Wait ();
-                    }
-                    return jobId;
                 }
                 else {
                     THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                        "Max jobs (%u) reached.",
-                        maxPendingJobs);
+                        "JobQueue (%s) is not running.",
+                        !name.empty () ? name.c_str () : "no name");
                 }
             }
             else {
@@ -189,12 +194,17 @@ namespace thekogans {
                 for (Job *job = jobs.front (); job != 0; job = jobs.next (job)) {
                     if (job->GetId () == jobId) {
                         jobs.erase (job);
+                        job->Cancel ();
+                        if (job->finished != 0) {
+                            *job->finished = true;
+                        }
                         delete job;
                         --stats.jobCount;
                         if (busyWorkers == 0 && jobs.empty ()) {
                             state = Idle;
                             idle.SignalAll ();
                         }
+                        jobFinished.SignalAll ();
                         return true;
                     }
                 }
@@ -208,6 +218,10 @@ namespace thekogans {
                 typedef JobList::Callback::result_type result_type;
                 typedef JobList::Callback::argument_type argument_type;
                 virtual result_type operator () (argument_type job) {
+                    job->Cancel ();
+                    if (job->finished != 0) {
+                        *job->finished = true;
+                    }
                     delete job;
                     return true;
                 }
@@ -218,6 +232,7 @@ namespace thekogans {
                 state = Idle;
                 idle.SignalAll ();
             }
+            jobFinished.SignalAll ();
         }
 
         void JobQueue::WaitForIdle () {

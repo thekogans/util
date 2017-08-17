@@ -71,20 +71,33 @@ namespace thekogans {
         /// struct MyThread : public util::Thread (
         /// private:
         ///     util::RunLoop::Ptr runLoop;
+        ///     util::SpinLock spinLock;
         ///
         /// public:
         ///     MyThread (
         ///             util::i32 priority = THEKOGANS_UTIL_NORMAL_THREAD_PRIORITY,
         ///             util::ui32 affinity = UI32_MAX) {
         ///         Create (priority, affinity);
+        ///         // Wait until our thread creates the run loop and it
+        ///         // starts running.
+        ///         while (runLoop.get () == 0 || !runLoop->IsRunning ()) {
+        ///             util::Sleep (util::TimeSpec::FromMilliseconds (50));
+        ///         }
         ///     }
         ///
         ///     void Stop () {
-        ///         runLoop->Stop ();
+        ///         util::LockGuard<util::SpinLock> guard (spinLock);
+        ///         if (runLoop.get () != 0) {
+        ///             runLoop->Stop ();
+        ///             Wait ();
+        ///         }
         ///     }
         ///
         ///     void Enq (util::JobQueue::Job::UniquePtr job) {
-        ///         runLoop->Enq (std::move (job));
+        ///         util::LockGuard<util::SpinLock> guard (spinLock);
+        ///         if (runLoop.get () != 0) {
+        ///             runLoop->Enq (std::move (job));
+        ///         }
         ///     }
         ///
         /// private:
