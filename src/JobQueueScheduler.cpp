@@ -48,7 +48,7 @@ namespace thekogans {
 
         void JobQueueScheduler::Queue::Cancel (const JobQueue::Job::Id &id) {
             for (std::size_t i = c.size (); i-- > 0;) {
-                if (c[i]->id == id) {
+                if (c[i]->job->id == id) {
                     c.erase (c.begin () + i);
                     break;
                 }
@@ -120,7 +120,7 @@ namespace thekogans {
             if (startTimer) {
                 timer.Start (timeSpec);
             }
-            return jobInfo->id;
+            return jobInfo->job->id;
         }
 
     } // namespace util

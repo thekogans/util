@@ -31,12 +31,11 @@ namespace thekogans {
 
         void Pipeline::Job::Epilogue (volatile const bool &done) throw () {
             if (!done) {
-                Job::UniquePtr next = Clone ();
-                if (next.get () != 0) {
+                Job::Ptr next = Clone ();
+                if (next.Get () != 0) {
                     std::size_t nextStage = next->stage;
                     assert (nextStage < pipeline.stages.size ());
-                    pipeline.stages[nextStage]->Enq (
-                        JobQueue::Job::UniquePtr (next.release ()));
+                    pipeline.stages[nextStage]->Enq (*next);
                 }
                 else {
                     End ();
@@ -79,7 +78,7 @@ namespace thekogans {
             for (ui32 i = 0; i < stageCount; ++i) {
                 std::string stageName_;
                 if (!stageName.empty ()) {
-                    stageName_ = util::FormatString ("%s-%u", stageName.c_str (), i);
+                    stageName_ = FormatString ("%s-%u", stageName.c_str (), i);
                 }
                 JobQueue::UniquePtr stage (
                     new JobQueue (
@@ -129,16 +128,10 @@ namespace thekogans {
         }
 
         void Pipeline::Enq (
-                Job::UniquePtr job,
+                Job &job,
                 std::size_t stage) {
-            if (job.get () != 0) {
-                if (stage < stages.size ()) {
-                    stages[stage]->Enq (JobQueue::Job::UniquePtr (job.release ()));
-                }
-                else {
-                    THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                        THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
-                }
+            if (stage < stages.size ()) {
+                stages[stage]->Enq (job);
             }
             else {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (

@@ -60,7 +60,8 @@ namespace thekogans {
             ui32 bufferIndex;
 
         public:
-            /// \brief ctor
+            /// \brief
+            /// ctor.
             /// Initialize the hasher.
             SHA2_224_256 () {
                 Reset ();

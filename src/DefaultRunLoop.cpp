@@ -25,15 +25,13 @@ namespace thekogans {
             if (done) {
                 done = false;
                 while (!done) {
-                    JobQueue::Job::UniquePtr job = Deq ();
-                    if (job.get () != 0) {
+                    JobQueue::Job::Ptr job = Deq ();
+                    if (job.Get () != 0) {
                         job->Prologue (done);
                         job->Execute (done);
                         job->Epilogue (done);
-                        if (job->finished != 0) {
-                            *job->finished = true;
-                            jobFinished.SignalAll ();
-                        }
+                        job->finished = true;
+                        jobFinished.SignalAll ();
                     }
                 }
             }
@@ -53,34 +51,27 @@ namespace thekogans {
         }
 
         void DefaultRunLoop::Enq (
-                JobQueue::Job::UniquePtr job,
+                JobQueue::Job &job,
                 bool wait) {
-            if (job.get () != 0) {
-                LockGuard<Mutex> guard (mutex);
-                volatile bool finished = false;
-                if (wait) {
-                    job->finished = &finished;
-                }
-                jobs.push_back (std::move (job));
-                jobsNotEmpty.Signal ();
-                while (wait && !finished) {
+            LockGuard<Mutex> guard (mutex);
+            job.finished = false;
+            jobs.push_back (JobQueue::Job::Ptr (&job));
+            jobsNotEmpty.Signal ();
+            if (wait) {
+                while (!job.cancelled && !job.finished) {
                     jobFinished.Wait ();
                 }
             }
-            else {
-                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
-            }
         }
 
-        JobQueue::Job::UniquePtr DefaultRunLoop::Deq () {
+        JobQueue::Job::Ptr DefaultRunLoop::Deq () {
             LockGuard<Mutex> guard (mutex);
             while (!done && jobs.empty ()) {
                 jobsNotEmpty.Wait ();
             }
-            JobQueue::Job::UniquePtr job;
+            JobQueue::Job::Ptr job;
             if (!jobs.empty ()) {
-                job = std::move (jobs.front ());
+                job = jobs.front ();
                 jobs.pop_front ();
             }
             return job;

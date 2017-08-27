@@ -44,22 +44,25 @@ namespace thekogans {
     #if defined (THEKOGANS_UTIL_HAVE_XLIB)
         SystemRunLoop::EventProcessor MainRunLoopCreateInstance::eventProcessor = 0;
         void *MainRunLoopCreateInstance::userData = 0;
-        const char *MainRunLoopCreateInstance::displayName = 0;
+        SystemRunLoop::XlibWindow::Ptr MainRunLoopCreateInstance::window;
+        std::vector<Display *> MainRunLoopCreateInstance::displays;
 
         void MainRunLoopCreateInstance::Parameterize (
                 SystemRunLoop::EventProcessor eventProcessor_,
                 void *userData_,
-                const char *displayName_) {
+                SystemRunLoop::XlibWindow::Ptr window_,
+                const std::vector<Display *> &displays_) {
             eventProcessor = eventProcessor_;
             userData = userData_;
-            displayName = displayName_;
+            window = std::move (window_);
+            displays = displays_;
         }
     #endif // defined (THEKOGANS_UTIL_HAVE_XLIB)
 
         RunLoop *MainRunLoopCreateInstance::operator () () {
         #if defined (THEKOGANS_UTIL_HAVE_XLIB)
             return eventProcessor != 0 ?
-                (RunLoop *)new SystemRunLoop (eventProcessor, userData, displayName) :
+                (RunLoop *)new SystemRunLoop (eventProcessor, userData, std::move (window), displays) :
                 (RunLoop *)new DefaultRunLoop;
         #else // defined (THEKOGANS_UTIL_HAVE_XLIB)
             return new DefaultRunLoop;

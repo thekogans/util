@@ -209,9 +209,8 @@ namespace thekogans {
                 ui32 affinity) {
             processName = processName_;
             blocking = blocking_;
-            if (!blocking) {
-                Create (priority, affinity);
-            }
+            jobQueue.reset (!blocking ?
+                new JobQueue ("LoggerMgr", JobQueue::TYPE_FIFO, 1, priority, affinity) : 0);
         }
 
         void LoggerMgr::Reset (
@@ -241,35 +240,6 @@ namespace thekogans {
             if (subsystem != 0) {
                 LockGuard<Mutex> guard (loggerMapMutex);
                 loggerMap[subsystem] = loggerList;
-            }
-        }
-
-        namespace {
-            void LogSubsystem (
-                    const LoggerMgr::Entry &entry,
-                    const LoggerMgr::LoggerList &loggerList) {
-                for (LoggerMgr::LoggerList::const_iterator
-                        it = loggerList.begin (),
-                        end = loggerList.end (); it != end; ++it) {
-                    THEKOGANS_UTIL_TRY {
-                        if ((*it)->level >= entry.level) {
-                            (*it)->Log (entry.subsystem, entry.level, entry.header, entry.message);
-                        }
-                    }
-                    THEKOGANS_UTIL_CATCH (std::exception) {
-                        // There is very little we can do here.
-                    #if defined (TOOLCHAIN_CONFIG_Debug)
-                        Console::Instance ().PrintString (
-                            FormatString (
-                                "LoggerMgr::Log: %s\n",
-                                exception.what ()),
-                            Console::PRINT_CERR,
-                            Console::TEXT_COLOR_RED);
-                    #else // defined (TOOLCHAIN_CONFIG_Debug)
-                        (void)exception;
-                    #endif // defined (TOOLCHAIN_CONFIG_Debug)
-                    }
-                }
             }
         }
 
@@ -372,25 +342,69 @@ namespace thekogans {
             Log (subsystem, level, header, message);
         }
 
+        namespace {
+            void LogSubsystem (
+                    const LoggerMgr::Entry &entry,
+                    const LoggerMgr::LoggerList &loggerList) {
+                for (LoggerMgr::LoggerList::const_iterator
+                        it = loggerList.begin (),
+                        end = loggerList.end (); it != end; ++it) {
+                    THEKOGANS_UTIL_TRY {
+                        if ((*it)->level >= entry.level) {
+                            (*it)->Log (entry.subsystem, entry.level, entry.header, entry.message);
+                        }
+                    }
+                    THEKOGANS_UTIL_CATCH (std::exception) {
+                        // There is very little we can do here.
+                    #if defined (TOOLCHAIN_CONFIG_Debug)
+                        Console::Instance ().PrintString (
+                            FormatString (
+                                "LoggerMgr::Log: %s\n",
+                                exception.what ()),
+                            Console::PRINT_CERR,
+                            Console::TEXT_COLOR_RED);
+                    #else // defined (TOOLCHAIN_CONFIG_Debug)
+                        (void)exception;
+                    #endif // defined (TOOLCHAIN_CONFIG_Debug)
+                    }
+                }
+            }
+
+            struct LogSubsystemJob : public JobQueue::Job {
+                LoggerMgr::Entry::UniquePtr entry;
+                LoggerMgr::LoggerList loggerList;
+
+                LogSubsystemJob (
+                    LoggerMgr::Entry::UniquePtr entry_,
+                    const LoggerMgr::LoggerList &loggerList_) :
+                    entry (std::move (entry_)),
+                    loggerList (loggerList_) {}
+
+                virtual void Execute (volatile const bool & /*done*/) throw () {
+                    LogSubsystem (*entry, loggerList);
+                }
+            };
+        }
+
         void LoggerMgr::Log (
                 const char *subsystem,
                 ui32 level,
                 const std::string &header,
                 const std::string &message) {
-            if (blocking) {
-                Entry entry (subsystem, level, header, message);
-                if (FilterEntry (entry)) {
-                    LockGuard<Mutex> guard (loggerMapMutex);
-                    LoggerMap::iterator it = loggerMap.find (subsystem);
-                    if (it != loggerMap.end ()) {
-                        LogSubsystem (entry, it->second);
+            Entry::UniquePtr entry (new Entry (subsystem, level, header, message));
+            if (FilterEntry (*entry)) {
+                LockGuard<Mutex> guard (loggerMapMutex);
+                LoggerMap::iterator it = loggerMap.find (subsystem);
+                if (it != loggerMap.end ()) {
+                    if (blocking) {
+                        LogSubsystem (*entry, it->second);
+                    }
+                    else {
+                        jobQueue->Enq (
+                            *JobQueue::Job::Ptr (
+                                new LogSubsystemJob (std::move (entry), it->second)));
                     }
                 }
-            }
-            else {
-                LockGuard<Mutex> guard (entryListMutex);
-                entryList.push_back (new Entry (subsystem, level, header, message));
-                entryListNotEmpty.Signal ();
             }
         }
 
@@ -406,35 +420,10 @@ namespace thekogans {
         }
 
         void LoggerMgr::Flush () {
-            while (1) {
-                LockGuard<Mutex> guard (entryListMutex);
-                if (entryList.empty ()) {
-                    break;
-                }
-                entryListNotEmpty.Wait (TimeSpec::FromMilliseconds (200));
+            if (!blocking) {
+                jobQueue->WaitForIdle ();
             }
-            // Flush is sometimes called right before the application
-            // exits. In that case waiting for entryList to be empty
-            // is not enough as there is a race between the
-            // application closing and the LoggerMgr thread finishing
-            // processing the entries. We grab this lock here to make
-            // sure we finished processing all the entries before
-            // exiting.
-            volatile LockGuard<Mutex> guard (loggerMapMutex);
             Console::Instance ().FlushPrintQueue ();
-        }
-
-        void LoggerMgr::Run () throw () {
-            while (1) {
-                Entry::UniquePtr entry = Deq ();
-                if (entry.get () != 0 && !entry->message.empty () && FilterEntry (*entry)) {
-                    LockGuard<Mutex> guard (loggerMapMutex);
-                    LoggerMap::iterator it = loggerMap.find (entry->subsystem);
-                    if (it != loggerMap.end ()) {
-                        LogSubsystem (*entry, it->second);
-                    }
-                }
-            }
         }
 
         bool LoggerMgr::FilterEntry (Entry &entry) {
@@ -447,19 +436,6 @@ namespace thekogans {
                 }
             }
             return true;
-        }
-
-        LoggerMgr::Entry::UniquePtr LoggerMgr::Deq () {
-            LockGuard<Mutex> guard (entryListMutex);
-            while (entryList.empty ()) {
-                entryListNotEmpty.Wait ();
-            }
-            Entry::UniquePtr entry;
-            assert (!entryList.empty ());
-            if (!entryList.empty ()) {
-                entry.reset (entryList.pop_front ());
-            }
-            return entry;
         }
 
     } // namespace util

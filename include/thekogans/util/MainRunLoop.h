@@ -86,6 +86,33 @@ namespace thekogans {
         /// }
         /// \endcode
         ///
+        /// On Linux:
+        ///
+        /// \code{.cpp}
+        /// using namespace thekogans;
+        ///
+        /// int main (
+        ///         int /*argc*/,
+        ///         const char * /*argv*/ []) {
+        ///     ...
+        ///     util::MainRunLoopCreateInstance::Parameterize (
+        ///         0, 0, util::SystemRunLoop::CreateThreadWindow ());
+        ///     ...
+        ///     Display *display = XOpenDisplay (0);
+        ///     while (1) {
+        ///         XEvent event;
+        ///         XNextEvent (display, &event);
+        ///         if (!util::MainRunLoop::Instance ().DispatchEvent (display, event)) {
+        ///             break;
+        ///         }
+        ///     }
+        ///     or
+        ///     util::MainRunLoop::Instance ().Start ();
+        ///     ...
+        ///     return 0;
+        /// }
+        /// \endcode
+        ///
         /// On OS X:
         ///
         /// \code{.cpp}
@@ -98,42 +125,6 @@ namespace thekogans {
         ///     util::MainRunLoopCreateInstance::Parameterize (CFRunLoopGetMain ());
         ///     ...
         ///     CFRunLoopRun ();
-        ///     or
-        ///     util::MainRunLoop::Instance ().Start ();
-        ///     ...
-        ///     return 0;
-        /// }
-        /// \endcode
-        ///
-        /// On Linux:
-        ///
-        /// \code{.cpp}
-        /// using namespace thekogans;
-        ///
-        /// bool EventProcessor (
-        ///         XEvent &event,
-        ///         void * /*userData*/) {
-        ///     switch (event.type) {
-        ///         ...
-        ///     }
-        ///     return true;
-        /// }
-        ///
-        /// int main (
-        ///         int /*argc*/,
-        ///         const char * /*argv*/ []) {
-        ///     ...
-        ///     util::MainRunLoopCreateInstance::Parameterize (EventHandler);
-        ///     ...
-        ///     Display *display = XOpenDisplay (0);
-        ///     while (1) {
-        ///         XEvent event;
-        ///         XNextEvent (display, &event);
-        ///         if (!util::SystemRunLoop::DispatchEvent (
-        ///                 event, util::MainRunLoop::Instance ())) {
-        ///             break;
-        ///         }
-        ///     }
         ///     or
         ///     util::MainRunLoop::Instance ().Start ();
         ///     ...
@@ -163,7 +154,10 @@ namespace thekogans {
             static void *userData;
             /// \brief
             /// Xlib server display name.
-            static const char *displayName;
+            static SystemRunLoop::XlibWindow::Ptr window;
+            /// \brief
+            /// A list of displays to listen to.
+            static std::vector<Display *> displays;
         #endif // defined (THEKOGANS_UTIL_HAVE_XLIB)
         #elif defined (TOOLCHAIN_OS_OSX)
             /// \brief
@@ -188,11 +182,13 @@ namespace thekogans {
             /// Call before the first use of MainRunLoop::Instance.
             /// \param[in] eventProcessor_ Callback to process Xlib XEvent events.
             /// \param[in] userData_ Optional user data passed to eventProcessor.
-            /// \param[in] displayName_ Xlib server display name.
+            /// \param[in] window_ Xlib server window.
+            /// \param[in] displays_ A list of displays to listen to.
             static void Parameterize (
                 SystemRunLoop::EventProcessor eventProcessor_,
                 void *userData_,
-                const char *displayName_);
+                SystemRunLoop::XlibWindow::Ptr window_,
+                const std::vector<Display *> &displays_);
         #endif // defined (THEKOGANS_UTIL_HAVE_XLIB)
         #elif defined (TOOLCHAIN_OS_OSX)
             /// \brief

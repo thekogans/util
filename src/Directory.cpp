@@ -648,15 +648,15 @@ namespace thekogans {
             type = stringTotype (node.attribute (ATTR_TYPE).value ());
             name = Decodestring (node.attribute (ATTR_NAME).value ());
         #if defined (TOOLCHAIN_OS_Windows)
-            attributes = util::stringToui32 (node.attribute (ATTR_ATTRIBUTES).value ());
-            creationDate = util::stringToi32 (node.attribute (ATTR_CREATION_DATE).value ());
+            attributes = stringToui32 (node.attribute (ATTR_ATTRIBUTES).value ());
+            creationDate = stringToi32 (node.attribute (ATTR_CREATION_DATE).value ());
         #else // defined (TOOLCHAIN_OS_Windows)
-            mode = util::stringToi32 (node.attribute (ATTR_MODE).value ());
-            lastStatusDate = util::stringToi32 (node.attribute (ATTR_LAST_STATUS_DATE).value ());
+            mode = stringToi32 (node.attribute (ATTR_MODE).value ());
+            lastStatusDate = stringToi32 (node.attribute (ATTR_LAST_STATUS_DATE).value ());
         #endif // defined (TOOLCHAIN_OS_Windows)
-            lastAccessedDate = util::stringToi32 (node.attribute (ATTR_LAST_ACCESSED_DATE).value ());
-            lastModifiedDate = util::stringToi32 (node.attribute (ATTR_LAST_MODIFIED_DATE).value ());
-            size = util::stringToui64 (node.attribute (ATTR_SIZE).value ());
+            lastAccessedDate = stringToi32 (node.attribute (ATTR_LAST_ACCESSED_DATE).value ());
+            lastModifiedDate = stringToi32 (node.attribute (ATTR_LAST_MODIFIED_DATE).value ());
+            size = stringToui64 (node.attribute (ATTR_SIZE).value ());
         }
     #endif // defined (THEKOGANS_UTIL_HAVE_PUGIXML)
 
@@ -760,9 +760,9 @@ namespace thekogans {
             entry.type = systemTotype (findData.dwFileAttributes);
             entry.name = findData.cFileName;
             entry.attributes = findData.dwFileAttributes;
-            entry.creationDate = FILETIMETotime_t (findData.ftCreationTime);
-            entry.lastAccessedDate = FILETIMETotime_t (findData.ftLastAccessTime);
-            entry.lastModifiedDate = FILETIMETotime_t (findData.ftLastWriteTime);
+            entry.creationDate = FILETIMEToi64 (findData.ftCreationTime);
+            entry.lastAccessedDate = FILETIMEToi64 (findData.ftLastAccessTime);
+            entry.lastModifiedDate = FILETIMEToi64 (findData.ftLastWriteTime);
             entry.size = DWORDDWORDToui64 (findData.nFileSizeLow, findData.nFileSizeHigh);
         }
 

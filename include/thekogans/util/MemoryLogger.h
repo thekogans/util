@@ -123,7 +123,7 @@ namespace thekogans {
                 DEFAULT_MAX_ENTRIES = 1000
             };
 
-            /// \ brief
+            /// \brief
             /// ctor.
             /// \param[in] maxEntries_ Max entries to keep in memory before dropping the oldest.
             /// \param[in] level \see{LoggerMgr::level} this logger will log up to.

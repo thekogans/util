@@ -426,7 +426,7 @@ namespace thekogans {
     #endif // defined (THEKOGANS_UTIL_HAVE_PUGIXML)
 
         std::string Variant::ToString (
-                util::ui32 indentationLevel,
+                ui32 indentationLevel,
                 const char *tagName) const {
             std::string str;
             switch (type) {
@@ -533,7 +533,7 @@ namespace thekogans {
     #endif // defined (THEKOGANS_UTIL_HAVE_PUGIXML)
 
         std::string Variant::ToStringWithAttributes (
-                util::ui32 indentationLevel,
+                ui32 indentationLevel,
                 const char *tagName) const {
             std::string str;
             switch (type) {

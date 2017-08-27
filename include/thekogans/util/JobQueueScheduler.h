@@ -61,13 +61,10 @@ namespace thekogans {
 
                 /// \brief
                 /// \see{JobQueue::Job} that will be scheduled.
-                JobQueue::Job::UniquePtr job;
+                JobQueue::Job::Ptr job;
                 /// \brief
                 /// Absolute time when the job will be scheduled.
                 TimeSpec deadline;
-                /// \brief
-                /// Id which can be used in a call to JobQueueScheduler::Cancel.
-                const JobQueue::Job::Id id;
 
                 /// \brief
                 /// ctor.
@@ -75,11 +72,10 @@ namespace thekogans {
                 /// \param[in] job_ \see{JobQueue::Job} that will be scheduled.
                 /// \param[in] deadline_ Absolute time when the job will be scheduled.
                 JobInfo (
-                    JobQueue::Job::UniquePtr job_,
+                    JobQueue::Job &job_,
                     const TimeSpec &deadline_) :
-                    job (std::move (job_)),
-                    deadline (deadline_),
-                    id (GUID::FromRandom ().ToString ()) {}
+                    job (&job_),
+                    deadline (deadline_) {}
                 /// \brief
                 /// dtor.
                 virtual ~JobInfo () {}
@@ -125,16 +121,16 @@ namespace thekogans {
                 /// \param[in] job \see{JobQueue::Job} that will be scheduled.
                 /// \param[in] deadline Absolute time when the job will be scheduled.
                 JobQueueJobInfo (
-                    JobQueue::Job::UniquePtr job,
+                    JobQueue::Job &job,
                     const TimeSpec &deadline,
                     JobQueue &jobQueue_) :
-                    JobInfo (std::move (job), deadline),
+                    JobInfo (job, deadline),
                     jobQueue (jobQueue_) {}
 
                 /// \brief
                 /// Enqueue the job on the specified job queue.
                 virtual void EnqJob () {
-                    jobQueue.Enq (std::move (job));
+                    jobQueue.Enq (*job);
                 }
 
                 /// \brief
@@ -161,18 +157,19 @@ namespace thekogans {
                 /// \param[in] job \see{JobQueue::Job} that will be scheduled.
                 /// \param[in] deadline Absolute time when the job will be scheduled.
                 RunLoopJobInfo (
-                    JobQueue::Job::UniquePtr job,
+                    JobQueue::Job &job,
                     const TimeSpec &deadline,
                     RunLoop &runLoop_) :
-                    JobInfo (std::move (job), deadline),
+                    JobInfo (job, deadline),
                     runLoop (runLoop_) {}
 
                 /// \brief
                 /// Enqueue the job on the specified run loop.
                 virtual void EnqJob () {
-                    runLoop.Enq (std::move (job));
+                    runLoop.Enq (*job);
                 }
 
+                /// \brief
                 /// RunLoopJobInfo is neither copy constructable, nor assignable.
                 THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (RunLoopJobInfo)
             };
@@ -228,13 +225,13 @@ namespace thekogans {
             /// \param[in] timeSpec When in the future to execute the given job.
             /// IMPORTANT: timeSpec is a relative value.
             inline JobQueue::Job::Id Schedule (
-                    JobQueue::Job::UniquePtr job,
+                    JobQueue::Job &job,
                     const TimeSpec &timeSpec,
                     JobQueue &jobQueue = GlobalJobQueue::Instance ()) {
                 return ScheduleJobInfo (
                     JobInfo::Ptr (
                         new JobQueueJobInfo (
-                            std::move (job),
+                            job,
                             GetCurrentTime () + timeSpec,
                             jobQueue)),
                     timeSpec);
@@ -247,13 +244,13 @@ namespace thekogans {
             /// \param[in] timeSpec When in the future to execute the given job.
             /// IMPORTANT: timeSpec is a relative value.
             inline JobQueue::Job::Id Schedule (
-                    JobQueue::Job::UniquePtr job,
+                    JobQueue::Job &job,
                     const TimeSpec &timeSpec,
                     RunLoop &runLoop = MainRunLoop::Instance ()) {
                 return ScheduleJobInfo (
                     JobInfo::Ptr (
                         new RunLoopJobInfo (
-                            std::move (job),
+                            job,
                             GetCurrentTime () + timeSpec,
                             runLoop)),
                     timeSpec);

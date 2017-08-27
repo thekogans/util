@@ -35,6 +35,7 @@ namespace thekogans {
         /// OwnerList (OwnerList.h).
         ///
         /// Assume an abstract base class foo:
+        ///
         /// \code{.cpp}
         /// struct foo {
         ///     virtual ~foo () {}
@@ -43,6 +44,7 @@ namespace thekogans {
         /// \endcode
         ///
         /// Now, derive a concrete class from foo:
+        ///
         /// \code{.cpp}
         /// struct bar1 : public foo {
         ///     virtual void MustImplement () {
@@ -52,6 +54,7 @@ namespace thekogans {
         /// \endcode
         ///
         /// And another:
+        ///
         /// \code{.cpp}
         /// struct bar2 : public foo {
         ///     virtual void MustImplement () {
@@ -62,11 +65,13 @@ namespace thekogans {
         ///
         /// Now, suppose you want an OwnerList of type foo so that you
         /// can stash instances of both bar1, and bar2:
+        ///
         /// \code{.cpp}
         /// thekogans::util::OwnerList<foo> fooList;
         /// fooList.push_back (new bar1 ());
         /// fooList.push_back (new bar2 ());
         /// \endcode
+        ///
         /// And have the OwnerList be responsible for the lifetime
         /// management of the objects.
         ///
@@ -81,11 +86,13 @@ namespace thekogans {
         /// AbstractOwnerList was designed to solve. Since there are no
         /// members which rely on anything specific (other than the
         /// dtor), you can have this:
+        ///
         /// \code{.cpp}
         /// thekogans::util::AbstractOwnerList<foo> fooList;
         /// fooList.push_back (new bar1 ());
         /// fooList.push_back (new bar2 ());
         /// \endcode
+        ///
         /// And all will be well with the universe.
 
         template<typename T>

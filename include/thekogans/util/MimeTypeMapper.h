@@ -29,6 +29,10 @@
 namespace thekogans {
     namespace util {
 
+        /// \brief
+        /// Name of mime types file.
+        _LIB_THEKOGANS_UTIL_DECL extern const char * const MIME_TYPES_TXT;
+
         /// \struct MimeTypeMapper MimeTypeMapper.h thekogans/util/MimeTypeMapper.h
         ///
         /// \brief
@@ -40,10 +44,6 @@ namespace thekogans {
         /// gives the forward mapping, while ExtensionToMiMimeType
         /// gives the reverse. Once initialized (with a call to
         /// LoadMimeTypes), the class is thread safe.
-
-        /// \brief
-        /// Name of mime types file.
-        _LIB_THEKOGANS_UTIL_DECL extern const char * const MIME_TYPES_TXT;
 
         struct _LIB_THEKOGANS_UTIL_DECL MimeTypeMapper :
                 public Singleton<MimeTypeMapper, SpinLock> {

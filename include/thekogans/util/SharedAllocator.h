@@ -309,6 +309,7 @@ namespace thekogans {
             /// NOTE: Due to it's design, the smallest block that a SharedAllocator can
             /// allocate is UI64_SIZE (which should be 8 bytes on all sane architectures).
             /// So, when calculating block sizes make sure to do something simmilar to:
+            ///
             /// \code{.cpp}
             /// using namespace thekogans;
             /// static const util::ui64 blockTable[] = {

@@ -43,6 +43,9 @@
 #include "thekogans/util/Condition.h"
 #include "thekogans/util/JobQueue.h"
 #include "thekogans/util/RunLoop.h"
+#if defined (TOOLCHAIN_OS_Linux)
+    #include "thekogans/util/XlibUtils.h"
+#endif // defined (TOOLCHAIN_OS_Linux)
 
 namespace thekogans {
     namespace util {
@@ -75,8 +78,10 @@ namespace thekogans {
         ///
         /// public:
         ///     MyThread (
+        ///             const std::string &name = std::string (),
         ///             util::i32 priority = THEKOGANS_UTIL_NORMAL_THREAD_PRIORITY,
-        ///             util::ui32 affinity = UI32_MAX) {
+        ///             util::ui32 affinity = UI32_MAX) :
+        ///             Thread (name) {
         ///         Create (priority, affinity);
         ///         // Wait until our thread creates the run loop and it
         ///         // starts running.
@@ -93,40 +98,25 @@ namespace thekogans {
         ///         }
         ///     }
         ///
-        ///     void Enq (util::JobQueue::Job::UniquePtr job) {
+        ///     void Enq (util::JobQueue::Job &job) {
         ///         util::LockGuard<util::SpinLock> guard (spinLock);
         ///         if (runLoop.get () != 0) {
-        ///             runLoop->Enq (std::move (job));
+        ///             runLoop->Enq (job);
         ///         }
         ///     }
         ///
         /// private:
-        /// #if defined (TOOLCHAIN_OS_Linux)
-        ///     static bool EventProcessor (
-        ///             const XEvent &event,
-        ///             void * /*userData*/) {
-        ///         switch (event.type) {
-        ///             ...
-        ///         }
-        ///         return true;
-        ///     }
-        /// #endif // defined (TOOLCHAIN_OS_Linux)
-        ///
         ///     // util::Thread
         ///     virtual void Run () {
         ///         THEKOGANS_UTIL_TRY {
-        ///         #if defined (TOOLCHAIN_OS_Linux)
-        ///             runLoop.reset (new util::SystemRunLoop (EventProcessor, this));
-        ///         #elif // defined (TOOLCHAIN_OS_Linux)
         ///             runLoop.reset (new util::SystemRunLoop);
-        ///         #endif // defined (TOOLCHAIN_OS_Linux)
         ///             runLoop->Start ();
-        ///             // This call to reset is very important as it allows the thread that
-        ///             // created the SystemRunLoop to destroy it too. This is especially
-        ///             // important under X as Xlib is not thread safe.
-        ///             runLoop.reset ();
         ///         }
         ///         THEKOGANS_UTIL_CATCH_AND_LOG
+        ///         // This call to reset is very important as it allows the thread that
+        ///         // created the SystemRunLoop to destroy it too. This is especially
+        ///         // important under X as Xlib is not thread safe.
+        ///         runLoop.reset ();
         ///     }
         /// }
         /// \endcode
@@ -148,12 +138,107 @@ namespace thekogans {
                 void * /*userData*/);
         #elif defined (TOOLCHAIN_OS_Linux)
             /// \brief
-            /// Convenient typedef for bool (*) (const XEvent &, void *).
+            /// Convenient typedef for void (*) (Display *, const XEvent &, void *).
             /// NOTE: Returning false from this callback will cause
             /// the event loop to terminate.
-            typedef bool (*EventProcessor) (
+            typedef void (*EventProcessor) (
+                Display * /*display*/,
                 const XEvent & /*event*/,
                 void * /*userData*/);
+
+            /// \struct SystemRunLoop::XlibWindow SystemRunLoop.h thekogans/util/SystemRunLoop.h
+            ///
+            /// \brief
+            /// Encapsulates Xlib Display, Window and Atom used to implement the run loop.
+            struct XlibWindow {
+                /// \brief
+                /// Convenient typedef for std::unique_ptr<XlibWindow>.
+                typedef std::unique_ptr<XlibWindow> Ptr;
+
+                /// \struct SystemRunLoop::XlibWindow::_Display SystemRunLoop.h thekogans/util/SystemRunLoop.h
+                ///
+                /// \brief
+                /// Manages the lifetime of Xlib Display.
+                struct _Display {
+                    /// \brief
+                    /// Xlib Display.
+                    Display *display;
+                    /// \brief
+                    /// true = We own the display and need to close it in our dtor.
+                    bool owner;
+
+                    /// \brief
+                    /// ctor.
+                    /// \param[in] display_ Xlib Display.
+                    _Display (Display *display_);
+                    /// \brief
+                    /// dtor.
+                    ~_Display ();
+                } display;
+                /// \struct SystemRunLoop::XlibWindow::_Window SystemRunLoop.h thekogans/util/SystemRunLoop.h
+                ///
+                /// \brief
+                /// Manages the lifetime of Xlib Window.
+                struct _Window {
+                    /// \brief
+                    /// Xlib Display.
+                    Display *display;
+                    /// \brief
+                    /// Xlib Window.
+                    Window window;
+                    /// \brief
+                    /// true = We own the window and need to close it in our dtor.
+                    bool owner;
+
+                    /// \brief
+                    /// ctor.
+                    /// \param[in] display_ Xlib Display.
+                    /// \param[in] window_ Xlib Window.
+                    _Window (
+                        Display *display_,
+                        Window window_);
+                    /// \brief
+                    /// dtor.
+                    ~_Window ();
+
+                private:
+                    /// \brief
+                    /// Create the Xlib window if none were provided in the ctor.
+                    /// \return A simple 0 area, invisible window that will receive
+                    /// job processing events.
+                    Window CreateWindow ();
+                } window;
+                /// \brief
+                /// A custom Xlib message type used to signal our window.
+                Atom message_type;
+
+                /// \brief
+                /// ctor.
+                /// \param[in] display_ Xlib Display.
+                /// \param[in] window_ Xlib Window.
+                XlibWindow (
+                    Display *display_ = 0,
+                    Window window_ = 0);
+
+            private:
+                enum {
+                    /// \brief
+                    /// Execute the next waiting job.
+                    ID_RUN_LOOP,
+                    /// \brief
+                    /// Stop the run loop.
+                    ID_STOP
+                };
+
+                /// \brief
+                /// Post an event with the given id.
+                /// \param[in] id Event id.
+                void PostEvent (long id);
+
+                /// \brief
+                /// SystemRunLoop needs access to PostEvent and event ids.
+                friend SystemRunLoop;
+            };
         #endif // defined (TOOLCHAIN_OS_Windows)
 
         private:
@@ -178,17 +263,11 @@ namespace thekogans {
             /// Optional user data passed to eventProcessor.
             void *userData;
             /// \brief
-            /// Xlib server display name.
-            const char *displayName;
+            /// Xlib window.
+            XlibWindow::Ptr window;
             /// \brief
-            /// Xlib server connection.
-            Display *display;
-            /// \brief
-            /// Xlib window id.
-            Window window;
-            /// \brief
-            /// Xlib atom for our custom ClientMessage.
-            Atom message_type;
+            /// A list of displays to listen to.
+            std::vector<Display *> displays;
         #elif defined (TOOLCHAIN_OS_OSX)
             /// \brief
             /// OS X run loop object.
@@ -196,7 +275,7 @@ namespace thekogans {
         #endif // defined (TOOLCHAIN_OS_Windows)
             /// \brief
             /// Job queue.
-            std::list<JobQueue::Job::UniquePtr> jobs;
+            std::list<JobQueue::Job::Ptr> jobs;
             /// \brief
             /// Synchronization lock for jobs.
             Mutex jobsMutex;
@@ -220,54 +299,56 @@ namespace thekogans {
             /// \brief
             /// dtor.
             virtual ~SystemRunLoop ();
-        #elif defined (TOOLCHAIN_OS_Linux)
-            /// \brief
-            /// ctor.
-            /// \param[in] eventProcessor_ Callback to process Xlib XEvent events.
-            /// \param[in] userData_ Optional user data passed to eventProcessor.
-            /// \param[in] displayName_ Xlib server display name.
-            /// NOTE: More often then not you call XOpenDisplay (0) to open the
-            /// connection to the main X server. If that's the case, leave
-            /// displayName_ = 0. It exists to enable those cases where you
-            /// open a connection to a specific server. In that case, pass a
-            /// valid display name to SystemRunLoop so that it can dispatch
-            /// events correctly.
-            SystemRunLoop (
-                EventProcessor eventProcessor_,
-                void *userData_ = 0,
-                const char *displayName_ = 0);
-            /// \brief
-            /// dtor.
-            virtual ~SystemRunLoop ();
-        #elif defined (TOOLCHAIN_OS_OSX)
-            /// \brief
-            /// ctor.
-            /// \param[in] runLoop_ OS X run loop object.
-            SystemRunLoop (CFRunLoopRef runLoop_ = CFRunLoopGetCurrent ());
-        #endif // defined (TOOLCHAIN_OS_Windows)
 
-        #if defined (TOOLCHAIN_OS_Windows)
             /// \brief
             /// Create a run loop window to service job requests.
             /// \return Window that will process job requests.
             static HWND CreateThreadWindow ();
             /// \brief
-            /// Return the window associated with this run loop.
-            /// \return Window associated with this run loop.
+            /// Return the Windows window associated with this run loop.
+            /// \return Windows window associated with this run loop.
             inline HWND GetWindow () const {
                 return wnd;
             }
         #elif defined (TOOLCHAIN_OS_Linux)
             /// \brief
+            /// ctor.
+            /// \param[in] eventProcessor_ Callback to process Xlib XEvent events.
+            /// \param[in] userData_ Optional user data passed to eventProcessor.
+            /// \param[in] window_ Xlib window.
+            /// \param[in] displays_ A list of displays to listen to.
+            SystemRunLoop (
+                EventProcessor eventProcessor_ = 0,
+                void *userData_ = 0,
+                XlibWindow::Ptr window_ = CreateThreadWindow (0),
+                const std::vector<Display *> &displays_ = std::vector<Display *> ());
+
+            /// \brief
+            /// Create a run loop window to service job requests.
+            /// \param[in] display Display for which to create the window.
+            /// \return Window that will process job requests.
+            static XlibWindow::Ptr CreateThreadWindow (Display *display);
+            /// \brief
+            /// Return the Xlib window associated with this run loop.
+            /// \return Xlib window associated with this run loop.
+            inline XlibWindow &GetWindow () const {
+                return *window;
+            }
+            /// \brief
             /// Dispatch an event to the given run loop.
+            /// \param[in] display Xlib display that received the event.
             /// \param[in] event Event to dispatch.
-            /// \param[in] runLoop SystemRunLoop this event belongs to.
             /// \return true = continue dispatching events,
             /// false = break out of the run loop.
-            static bool DispatchEvent (
-                const XEvent &event,
-                RunLoop &runLoop);
+            bool DispatchEvent (
+                Display *display,
+                const XEvent &event);
         #elif defined (TOOLCHAIN_OS_OSX)
+            /// \brief
+            /// ctor.
+            /// \param[in] runLoop_ OS X run loop object.
+            SystemRunLoop (CFRunLoopRef runLoop_ = CFRunLoopGetCurrent ());
+
             /// \brief
             /// Return the OS X CFRunLoopRef associated with this run loop.
             /// \return OS X CFRunLoopRef associated with this run loop.
@@ -298,24 +379,10 @@ namespace thekogans {
             /// \param[in] wait Wait for job to finish.
             /// Used for synchronous job execution.
             virtual void Enq (
-                JobQueue::Job::UniquePtr job,
+                JobQueue::Job &job,
                 bool wait = false);
 
         private:
-        #if defined (TOOLCHAIN_OS_Linux)
-            enum {
-                /// \brief
-                /// Execute the next waiting job.
-                ID_RUN_LOOP,
-                /// \brief
-                /// Stop the run loop.
-                ID_STOP
-            };
-            /// \brief
-            /// Send an event with the given id.
-            /// \param[in] id Event id.
-            void SendEvent (long id);
-        #endif // defined (TOOLCHAIN_OS_Linux)
             /// \brief
             /// Used internally to execute the next job.
             void ExecuteJob ();
@@ -329,6 +396,13 @@ namespace thekogans {
                 WPARAM /*wParam*/,
                 LPARAM /*lParam*/);
         #endif // defined (TOOLCHAIN_OS_Windows)
+
+            /// \brief
+            /// Atomically set done to the given value.
+            /// \param[in] value value to set done to.
+            /// \return true = done was set to the given value.
+            /// false = done was already set to the given value.
+            bool SetDone (bool value);
 
             /// \brief
             /// SystemRunLoop is neither copy constructable, nor assignable.

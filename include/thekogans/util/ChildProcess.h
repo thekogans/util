@@ -338,11 +338,11 @@ namespace thekogans {
             /// it's lifetime in any way. Please see the code example provided with
             /// CollectOutput bellow.
             /// \return JobQueue::Job representing the spawn job.
-            JobQueue::Job::UniquePtr CreateSpawnJob ();
+            JobQueue::Job::Ptr CreateSpawnJob ();
             /// \brief
             /// Create a ChildProcess exec job to be executed on the \see{MainRunLoop}.
             /// \return JobQueue::Job representing the exec job.
-            JobQueue::Job::UniquePtr CreateExecJob (ChildStatus &status);
+            JobQueue::Job::Ptr CreateExecJob (ChildStatus &status);
 
             enum {
                 /// \brief

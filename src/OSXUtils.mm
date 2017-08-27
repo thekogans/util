@@ -18,7 +18,7 @@
 #include <Foundation/Foundation.h>
 #include <string>
 #include "thekogans/util/StringUtils.h"
-#include "thekogans/util/MacUtils.h"
+#include "thekogans/util/OSXUtils.h"
 
 namespace thekogans {
     namespace util {
@@ -49,7 +49,7 @@ namespace thekogans {
             typedef std::unique_ptr<const __CFString, CFStringRefDeleter> CFStringRefPtr;
         }
 
-        std::string DescriptionFromCFError (CFErrorRef error) {
+        std::string DescriptionFromCFErrorRef (CFErrorRef error) {
             CFStringRefPtr description (CFErrorCopyDescription (error));
             const char *str = 0;
             if (description.get () != 0) {

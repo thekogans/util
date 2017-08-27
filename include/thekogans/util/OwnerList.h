@@ -60,7 +60,9 @@ namespace thekogans {
             }
             /// \brief
             /// dtor. Delete all list elements.
-            ~OwnerList () {deleteAndClear ();}
+            ~OwnerList () {
+                deleteAndClear ();
+            }
 
             /// \brief
             /// Deep copy assignemnt operator.

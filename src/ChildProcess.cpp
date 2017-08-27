@@ -464,7 +464,7 @@ namespace thekogans {
         #endif // defined (TOOLCHAIN_OS_Windows)
         }
 
-        JobQueue::Job::UniquePtr ChildProcess::CreateSpawnJob () {
+        JobQueue::Job::Ptr ChildProcess::CreateSpawnJob () {
             struct SpawnJob : public JobQueue::Job {
                 ChildProcess &childProcess;
                 SpawnJob (ChildProcess &childProcess_) :
@@ -479,10 +479,10 @@ namespace thekogans {
                     }
                 }
             };
-            return JobQueue::Job::UniquePtr (new SpawnJob (*this));
+            return JobQueue::Job::Ptr (new SpawnJob (*this));
         }
 
-        JobQueue::Job::UniquePtr ChildProcess::CreateExecJob (ChildStatus &status) {
+        JobQueue::Job::Ptr ChildProcess::CreateExecJob (ChildStatus &status) {
             struct ExecJob : public JobQueue::Job {
                 ChildProcess &childProcess;
                 ChildStatus &status;
@@ -501,7 +501,7 @@ namespace thekogans {
                     }
                 }
             };
-            return JobQueue::Job::UniquePtr (new ExecJob (*this, status));
+            return JobQueue::Job::Ptr (new ExecJob (*this, status));
         }
 
         Buffer::UniquePtr ChildProcess::CollectOutput (

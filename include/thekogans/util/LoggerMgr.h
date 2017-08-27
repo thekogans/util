@@ -31,8 +31,7 @@
 #include "thekogans/util/Singleton.h"
 #include "thekogans/util/SpinLock.h"
 #include "thekogans/util/Mutex.h"
-#include "thekogans/util/Thread.h"
-#include "thekogans/util/Condition.h"
+#include "thekogans/util/JobQueue.h"
 #include "thekogans/util/Logger.h"
 #include "thekogans/util/HRTimer.h"
 #include "thekogans/util/SystemInfo.h"
@@ -128,11 +127,10 @@ namespace thekogans {
         /// the queue or you will lose messages not yet processed.
         ///
         /// *** VERY, VERY IMPORTANT ***
-        /// You cannot use the LoggerMgr in Thread/Mutex/Condition/Singleton!
+        /// You cannot use the LoggerMgr in JobQueue/Mutex/Singleton!
         /// (circular dependency)
 
         struct _LIB_THEKOGANS_UTIL_DECL LoggerMgr :
-                public Thread,
                 public Singleton<LoggerMgr, SpinLock> {
             /// \brief
             /// Name of proceess.
@@ -236,30 +234,19 @@ namespace thekogans {
             /// \brief
             /// Synchronization mutex.
             Mutex loggerMapMutex;
-            /// \brief
-            /// Forward declaration of Entry.
-            struct Entry;
-            enum {
-                /// \brief
-                /// EntryList list id.
-                ENTRY_LIST_ID
-            };
-            /// \brief
-            /// Convenient typedef for IntrusiveList<Page, ENTRY_LIST_ID>.
-            typedef IntrusiveList<Entry, ENTRY_LIST_ID> EntryList;
             /// \struct LoggerMgr::Entry LoggerMgr.h thekogans/util/LoggerMgr.h
             ///
             /// \brief
             /// Internal class representing a log entry.
-            struct Entry : public EntryList::Node {
+            struct Entry {
+                /// \brief
+                /// Convenient typedef for std::unique_ptr<Entry>.
+                typedef std::unique_ptr<Entry> UniquePtr;
+
                 /// \brief
                 /// Entry has a private heap to help with memory
                 /// management, performance, and global heap fragmentation.
                 THEKOGANS_UTIL_DECLARE_HEAP_WITH_LOCK (Entry, SpinLock)
-
-                /// \brief
-                /// Convenient typedef for std::unique_ptr<Entry>.
-                typedef std::unique_ptr<Entry> UniquePtr;
 
                 /// \brief
                 /// Subsystem that generated this log entry.
@@ -304,14 +291,8 @@ namespace thekogans {
                 THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (Entry)
             };
             /// \brief
-            /// Log entries waiting to be processed.
-            EntryList entryList;
-            /// \brief
-            /// Synchronization mutex.
-            Mutex entryListMutex;
-            /// \brief
-            /// Synchronization condition variable.
-            Condition entryListNotEmpty;
+            /// Queue to excecute LogSubsystemJob jobs.
+            JobQueue::UniquePtr jobQueue;
             /// \struct LoggerMgr::Filter LoggerMgr.h thekogans/util/LoggerMgr.h
             ///
             /// \brief
@@ -347,13 +328,11 @@ namespace thekogans {
             /// \brief
             /// Default ctor.
             LoggerMgr () :
-                Thread ("LoggerMgr", false),
-                blocking (false),
+                blocking (true),
                 startTime (HRTimer::Click ()),
                 hostName (SystemInfo::Instance ().GetHostName ()),
                 level (Invalid),
-                decorations (NoDecorations),
-                entryListNotEmpty (entryListMutex) {}
+                decorations (NoDecorations) {}
 
             /// \brief
             /// Global sub-system name.
@@ -463,20 +442,11 @@ namespace thekogans {
             void Flush ();
 
         protected:
-            // Thread
-            /// \brief
-            /// Thread that processes the log entries.
-            virtual void Run () throw ();
-
             /// \brief
             /// Return true if entry passed all registered filters.
             /// \param[in] entry Entry to filter.
             /// \return true if entry passed all registered filters.
             bool FilterEntry (Entry &entry);
-
-            /// \brief
-            /// Used by the thread to dequeue log entries.
-            std::unique_ptr<Entry> Deq ();
 
             /// \brief
             /// LoggerMgr is neither copy constructable, nor assignable.

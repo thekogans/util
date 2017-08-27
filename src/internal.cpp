@@ -79,19 +79,31 @@
     int _vscprintf (
             const char *format,
             va_list argptr) {
-        va_list myargptr;
-        va_copy (myargptr, argptr);
-        int result = vsnprintf (0, 0, format, myargptr);
-        va_end (myargptr);
-        return result;
+        if (format != 0) {
+            va_list myargptr;
+            va_copy (myargptr, argptr);
+            int result = vsnprintf (0, 0, format, myargptr);
+            va_end (myargptr);
+            return result;
+        }
+        else {
+            THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
+        }
     }
 
     void SecureZeroMemory (
             void *data,
             size_t length) {
-        volatile thekogans::util::ui8 *ptr = (volatile thekogans::util::ui8 *)data;
-        while (length--) {
-            *ptr++ = 0;
+        if (data != 0 && length > 0) {
+            volatile thekogans::util::ui8 *ptr = (volatile thekogans::util::ui8 *)data;
+            while (length--) {
+                *ptr++ = 0;
+            }
+        }
+        else {
+            THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
         }
     }
 #if defined (TOOLCHAIN_OS_OSX)
@@ -136,13 +148,19 @@
             pthread_t thread,
             void **result,
             const timespec *timeSpec) {
-        Waiter waiter (thread, result);
-        waiter.Create (THEKOGANS_UTIL_NORMAL_THREAD_PRIORITY);
-        if (!waiter.condition.Wait (*timeSpec)) {
-            waiter.Cancel ();
+        if (timeSpec != 0) {
+            Waiter waiter (thread, result);
+            waiter.Create (THEKOGANS_UTIL_NORMAL_THREAD_PRIORITY);
+            if (!waiter.condition.Wait (*timeSpec)) {
+                waiter.Cancel ();
+            }
+            waiter.Wait ();
+            return waiter.IsExited () ? 0 : ETIMEDOUT;
         }
-        waiter.Wait ();
-        return waiter.IsExited () ? 0 : ETIMEDOUT;
+        else {
+            THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
+        }
     }
 #endif // defined (TOOLCHAIN_OS_OSX)
 #endif // defined (TOOLCHAIN_OS_Windows)

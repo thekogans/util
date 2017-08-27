@@ -36,6 +36,8 @@
 namespace thekogans {
     namespace util {
 
+        struct Condition;
+
         /// \struct Mutex Mutex.h thekogans/util/Mutex.h
         ///
         /// \brief
@@ -72,8 +74,6 @@ namespace thekogans {
         /// On Windows, a single thread can acquire a CRITICAL_SECTION
         /// as many times as it needs, while on POSIX, a single thread
         /// HAS to release the pthread_mutex_t between every acquisition.
-
-        struct Condition;
 
         struct _LIB_THEKOGANS_UTIL_DECL Mutex {
         private:

@@ -82,20 +82,35 @@ namespace thekogans {
         /// struct MyThread : public util::Thread (
         /// private:
         ///     util::RunLoop::Ptr runLoop;
+        ///     util::SpinLock spinLock;
         ///
         /// public:
         ///     MyThread (
+        ///             const std::string &name = std::string (),
         ///             util::i32 priority = THEKOGANS_UTIL_NORMAL_THREAD_PRIORITY,
-        ///             util::ui32 affinity = UI32_MAX) {
+        ///             util::ui32 affinity = UI32_MAX) :
+        ///             Thread (name) {
         ///         Create (priority, affinity);
+        ///         // Wait until our thread creates the run loop and it
+        ///         // starts running.
+        ///         while (runLoop.get () == 0 || !runLoop->IsRunning ()) {
+        ///             util::Sleep (util::TimeSpec::FromMilliseconds (50));
+        ///         }
         ///     }
         ///
         ///     void Stop () {
-        ///         runLoop->Stop ();
+        ///         util::LockGuard<util::SpinLock> guard (spinLock);
+        ///         if (runLoop.get () != 0) {
+        ///             runLoop->Stop ();
+        ///             Wait ();
+        ///         }
         ///     }
         ///
-        ///     void Enq (util::JobQueue::Job::UniquePtr job) {
-        ///         runLoop->Enq (std::move (job));
+        ///     void Enq (util::JobQueue::Job &job) {
+        ///         util::LockGuard<util::SpinLock> guard (spinLock);
+        ///         if (runLoop.get () != 0) {
+        ///             runLoop->Enq (job);
+        ///         }
         ///     }
         ///
         /// private:
@@ -106,6 +121,7 @@ namespace thekogans {
         ///             runLoop->Start ();
         ///         }
         ///         THEKOGANS_UTIL_CATCH_AND_LOG
+        ///         runLoop.reset ();
         ///     }
         /// }
         /// \endcode
@@ -126,7 +142,7 @@ namespace thekogans {
             Condition jobFinished;
             /// \brief
             /// Job queue.
-            std::list<JobQueue::Job::UniquePtr> jobs;
+            std::list<JobQueue::Job::Ptr> jobs;
 
         public:
             /// \brief
@@ -157,14 +173,14 @@ namespace thekogans {
             /// \param[in] wait Wait for job to finish.
             /// Used for synchronous job execution.
             virtual void Enq (
-                JobQueue::Job::UniquePtr job,
+                JobQueue::Job &job,
                 bool wait = false);
 
         private:
             /// \brief
             /// Used internally to get the next job.
             /// \return The next job to execute.
-            JobQueue::Job::UniquePtr Deq ();
+            JobQueue::Job::Ptr Deq ();
 
             /// \brief
             /// DefaultRunLoop is neither copy constructable, nor assignable.

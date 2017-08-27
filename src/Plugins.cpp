@@ -96,7 +96,7 @@ namespace thekogans {
 
         Plugins::Plugins (
                 const std::string &path_,
-                util::ui64 maxPluginsFileSize) :
+                ui64 maxPluginsFileSize) :
                 path (path_),
                 modified (false) {
             if (Path (path).Exists ()) {

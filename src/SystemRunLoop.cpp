@@ -18,6 +18,9 @@
 #if !defined (TOOLCHAIN_OS_Linux) || defined (THEKOGANS_UTIL_HAVE_XLIB)
 
 #if defined (TOOLCHAIN_OS_Linux)
+    #include <sys/types.h>
+    #include <sys/socket.h>
+    #include <sys/epoll.h>
     #include <cstring>
 #endif // defined (TOOLCHAIN_OS_Linux)
 #include "thekogans/util/LockGuard.h"
@@ -124,80 +127,128 @@ namespace thekogans {
             }
         }
     #elif defined (TOOLCHAIN_OS_Linux)
+        SystemRunLoop::XlibWindow::_Display::_Display (Display *display_) :
+                display (display_ == 0 ? XOpenDisplay (0) : display_),
+                owner (display_ == 0) {
+            if (display == 0) {
+                THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
+                    "%s", "Unable to create SystemRunLoop display.");
+            }
+        }
+
+        SystemRunLoop::XlibWindow::_Display::~_Display () {
+            if (owner) {
+                XCloseDisplay (display);
+            }
+        }
+
+        SystemRunLoop::XlibWindow::_Window::_Window (
+                Display *display_,
+                Window window_) :
+                display (display_),
+                window (window_ == 0 ? CreateWindow () : window_),
+                owner (window_ == 0) {
+            if (window == 0) {
+                THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
+                    "%s", "Unable to create SystemRunLoop window.");
+            }
+        }
+
+        SystemRunLoop::XlibWindow::_Window::~_Window () {
+            if (owner) {
+                DisplayGuard guard (display);
+                XDestroyWindow (display, window);
+            }
+        }
+
+        Window SystemRunLoop::XlibWindow::_Window::CreateWindow () {
+            DisplayGuard guard (display);
+            return XCreateSimpleWindow (
+                display,
+                DefaultRootWindow (display),
+                0, 0, 0, 0, 0,
+                BlackPixel (display, DefaultScreen (display)),
+                BlackPixel (display, DefaultScreen (display)));
+        }
+
         namespace {
             const char * const MESSAGE_TYPE_NAME = "thekogans_util_SystemRunLoop_message_type";
+
+            bool GetEvent (
+                    Display *display,
+                    XEvent &event) {
+                DisplayGuard guard (display);
+                if (XPending (display) > 0) {
+                    XNextEvent (display, &event);
+                    return true;
+                }
+                return false;
+            }
+        }
+
+        SystemRunLoop::XlibWindow::XlibWindow (
+                Display *display_,
+                Window window_) :
+                display (display_),
+                window (display.display, window_),
+                message_type (XInternAtom (display.display, MESSAGE_TYPE_NAME, False)) {
+            if (message_type == 0) {
+                THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
+                    "%s", "Unable to create SystemRunLoop atom.");
+            }
+        }
+
+        void SystemRunLoop::XlibWindow::PostEvent (long id) {
+            XClientMessageEvent event;
+            memset (&event, 0, sizeof (event));
+            event.type = ClientMessage;
+            event.message_type = message_type;
+            event.format = 32;
+            event.data.l[0] = id;
+            DisplayGuard guard (display.display);
+            XSendEvent (display.display, window.window, False, 0, (XEvent *)&event);
         }
 
         SystemRunLoop::SystemRunLoop (
                 EventProcessor eventProcessor_,
                 void *userData_,
-                const char *displayName_) :
+                XlibWindow::Ptr window_,
+                const std::vector<Display *> &displays_) :
                 done (true),
                 eventProcessor (eventProcessor_),
                 userData (userData_),
-                displayName (displayName_),
+                window (std::move (window_)),
+                displays (displays_),
                 jobFinished (jobsMutex) {
-            if (eventProcessor != 0) {
-                display = XOpenDisplay (displayName);
-                if (display != 0) {
-                    window = XCreateSimpleWindow (
-                        display,
-                        DefaultRootWindow (display),
-                        0, 0, 0, 0, 0,
-                        BlackPixel (display, DefaultScreen (display)),
-                        BlackPixel (display, DefaultScreen (display)));
-                    if (window != 0) {
-                        XSelectInput (display, window, StructureNotifyMask);
-                        message_type = XInternAtom (display, MESSAGE_TYPE_NAME, False);
-                        if (message_type == 0) {
-                            XDestroyWindow (display, window);
-                            XCloseDisplay (display);
-                            THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                                "%s", "Unable to create SystemRunLoop atom.");
-                        }
-                    }
-                    else {
-                        XCloseDisplay (display);
-                        THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                            "%s", "Unable to create SystemRunLoop window.");
-                    }
-                }
-                else {
-                    THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                        "%s", "Unable to create SystemRunLoop display.");
-                }
-            }
-            else {
+            if (window.get () == 0) {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
                     THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
             }
         }
 
-        SystemRunLoop::~SystemRunLoop () {
-            XDestroyWindow (display, window);
-            XCloseDisplay (display);
+        SystemRunLoop::XlibWindow::Ptr SystemRunLoop::CreateThreadWindow (
+                Display *display) {
+            return XlibWindow::Ptr (new XlibWindow (display));
         }
 
         bool SystemRunLoop::DispatchEvent (
-                const XEvent &event,
-                RunLoop &runLoop) {
-            SystemRunLoop *systemRunLoop = dynamic_cast<SystemRunLoop *> (&runLoop);
-            if (systemRunLoop != 0) {
-                if (event.type == ClientMessage &&
-                        event.xclient.window == systemRunLoop->window &&
-                        event.xclient.message_type == systemRunLoop->message_type) {
-                    if (event.xclient.data.l[0] == ID_STOP) {
-                        return false;
-                    }
-                    systemRunLoop->ExecuteJob ();
-                    return true;
+                Display *display,
+                const XEvent &event) {
+            if (display == window->display.display &&
+                    event.type == ClientMessage &&
+                    event.xclient.window == window->window.window &&
+                    event.xclient.message_type == window->message_type) {
+                if (event.xclient.data.l[0] == XlibWindow::ID_RUN_LOOP) {
+                    ExecuteJob ();
                 }
-                return systemRunLoop->eventProcessor (event, systemRunLoop->userData);
+                else if (event.xclient.data.l[0] == XlibWindow::ID_STOP) {
+                    return false;
+                }
             }
-            else {
-                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
+            else if (eventProcessor == 0) {
+                eventProcessor (display, event, userData);
             }
+            return true;
         }
     #elif defined (TOOLCHAIN_OS_OSX)
         SystemRunLoop::SystemRunLoop (CFRunLoopRef runLoop_) :
@@ -212,8 +263,7 @@ namespace thekogans {
     #endif // defined (TOOLCHAIN_OS_Windows)
 
         void SystemRunLoop::Start () {
-            if (done) {
-                done = false;
+            if (SetDone (false)) {
             #if defined (TOOLCHAIN_OS_Windows)
                 BOOL result;
                 MSG msg;
@@ -228,11 +278,82 @@ namespace thekogans {
                     }
                 }
             #elif defined (TOOLCHAIN_OS_Linux)
-                while (1) {
-                    XEvent event;
-                    XNextEvent (display, &event);
-                    if (!DispatchEvent (event, *this)) {
-                        break;
+                enum {
+                    DEFAULT_MAX_SIZE = 256
+                };
+                struct epoll {
+                    THEKOGANS_UTIL_HANDLE handle;
+                    explicit epoll (util::ui32 maxSize) :
+                            handle (epoll_create (maxSize)) {
+                        if (handle == THEKOGANS_UTIL_INVALID_HANDLE_VALUE) {
+                            THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                                THEKOGANS_UTIL_OS_ERROR_CODE);
+                        }
+                    }
+                    ~epoll () {
+                        close (handle);
+                    }
+                } epoll (DEFAULT_MAX_SIZE);
+                {
+                    epoll_event event = {0};
+                    event.events = EPOLLIN;
+                    event.data.ptr = window->display.display;
+                    if (epoll_ctl (epoll.handle, EPOLL_CTL_ADD,
+                            ConnectionNumber (window->display.display), &event) < 0) {
+                        THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                            THEKOGANS_UTIL_OS_ERROR_CODE);
+                    }
+                }
+                for (std::size_t i = 0, count = displays.size (); i < count; ++i) {
+                    if (displays[i] != window->display.display) {
+                        epoll_event event = {0};
+                        event.events = EPOLLIN;
+                        event.data.ptr = displays[i];
+                        if (epoll_ctl (epoll.handle, EPOLL_CTL_ADD,
+                                ConnectionNumber (displays[i]), &event) < 0) {
+                            THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                                THEKOGANS_UTIL_OS_ERROR_CODE);
+                        }
+                    }
+                }
+                while (!done) {
+                    std::vector<epoll_event> events (DEFAULT_MAX_SIZE);
+                    int count = epoll_wait (epoll.handle, &events[0], DEFAULT_MAX_SIZE, -1);
+                    if (count < 0) {
+                        THEKOGANS_UTIL_ERROR_CODE errorCode = THEKOGANS_UTIL_OS_ERROR_CODE;
+                        // EINTR means a signal interrupted our wait.
+                        if (errorCode != EINTR) {
+                            THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (errorCode);
+                        }
+                    }
+                    else {
+                        for (int i = 0; i < count; ++i) {
+                            Display *display = (Display *)events[i].data.ptr;
+                            if (display != 0) {
+                                if (events[i].events & EPOLLERR) {
+                                    THEKOGANS_UTIL_ERROR_CODE errorCode = 0;
+                                    socklen_t length = sizeof (errorCode);
+                                    if (getsockopt (
+                                            ConnectionNumber (display),
+                                            SOL_SOCKET,
+                                            SO_ERROR,
+                                            &errorCode,
+                                            &length) == -1) {
+                                        THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                                            THEKOGANS_UTIL_OS_ERROR_CODE);
+                                    }
+                                    THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (errorCode);
+                                }
+                                else if (events[i].events & EPOLLIN) {
+                                    XEvent event;
+                                    while (GetEvent (display, event)) {
+                                        if (!DispatchEvent (display, event)) {
+                                            break;
+                                        }
+                                    }
+                                }
+                            }
+                        }
                     }
                 }
             #elif defined (TOOLCHAIN_OS_OSX)
@@ -242,12 +363,11 @@ namespace thekogans {
         }
 
         void SystemRunLoop::Stop () {
-            if (!done) {
-                done = true;
+            if (SetDone (true)) {
             #if defined (TOOLCHAIN_OS_Windows)
                 PostMessage (wnd, WM_CLOSE, 0, 0);
             #elif defined (TOOLCHAIN_OS_Linux)
-                SendEvent (ID_STOP);
+                window->PostEvent (XlibWindow::ID_STOP);
             #elif defined (TOOLCHAIN_OS_OSX)
                 CFRunLoopStop (runLoop);
             #endif // defined (TOOLCHAIN_OS_Windows)
@@ -255,23 +375,21 @@ namespace thekogans {
         }
 
         bool SystemRunLoop::IsRunning () {
+            LockGuard<Mutex> guard (jobsMutex);
             return !done;
         }
 
         void SystemRunLoop::Enq (
-                JobQueue::Job::UniquePtr job,
+                JobQueue::Job &job,
                 bool wait) {
-            if (job.get () != 0) {
-                LockGuard<Mutex> guard (jobsMutex);
-                volatile bool finished = false;
-                if (wait) {
-                    job->finished = &finished;
-                }
-                jobs.push_back (std::move (job));
+            LockGuard<Mutex> guard (jobsMutex);
+            if (!done) {
+                job.finished = false;
+                jobs.push_back (JobQueue::Job::Ptr (&job));
             #if defined (TOOLCHAIN_OS_Windows)
                 PostMessage (wnd, RUN_LOOP_MESSAGE, 0, 0);
             #elif defined (TOOLCHAIN_OS_Linux)
-                SendEvent (ID_RUN_LOOP);
+                window->PostEvent (XlibWindow::ID_RUN_LOOP);
             #elif defined (TOOLCHAIN_OS_OSX)
                 CFRunLoopPerformBlock (
                     runLoop,
@@ -281,59 +399,43 @@ namespace thekogans {
                     });
                 CFRunLoopWakeUp (runLoop);
             #endif // defined (TOOLCHAIN_OS_Windows)
-                while (wait && !finished) {
-                    jobFinished.Wait ();
+                if (wait) {
+                    while (!job.cancelled && !job.finished) {
+                        jobFinished.Wait ();
+                    }
                 }
-            }
-            else {
-                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
-            }
-        }
-
-    #if defined (TOOLCHAIN_OS_Linux)
-        void SystemRunLoop::SendEvent (long id) {
-            // FIXME: Read about this here: https://ubuntuforums.org/archive/index.php/t-570702.html
-            // If creating and destroying displays is too expensive, we'll need to rethink this.
-            Display *display = XOpenDisplay (displayName);
-            if (display != 0) {
-                XClientMessageEvent event;
-                memset (&event, 0, sizeof (event));
-                event.type = ClientMessage;
-                event.message_type = message_type;
-                event.format = 32;
-                event.data.l[0] = id;
-                XSendEvent (display, window, False, 0, (XEvent *)&event);
-                XFlush (display);
-                XCloseDisplay (display);
             }
             else {
                 THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                    "Unable to open display: %s",
-                    displayName != 0 ? displayName : "default");
+                    "%s", "SystemRunLoop (%s) is not running.");
             }
         }
-    #endif // defined (TOOLCHAIN_OS_Linux)
 
         void SystemRunLoop::ExecuteJob () {
-            JobQueue::Job::UniquePtr job;
+            JobQueue::Job::Ptr job;
             {
                 LockGuard<Mutex> guard (jobsMutex);
                 if (!jobs.empty ()) {
-                    job = std::move (jobs.front ());
+                    job = jobs.front ();
                     jobs.pop_front ();
                 }
             }
-            if (job.get () != 0) {
-                bool done = false;
+            if (job.Get () != 0) {
                 job->Prologue (done);
                 job->Execute (done);
                 job->Epilogue (done);
-                if (job->finished != 0) {
-                    *job->finished = true;
-                    jobFinished.SignalAll ();
-                }
+                job->finished = true;
+                jobFinished.SignalAll ();
             }
+        }
+
+        bool SystemRunLoop::SetDone (bool value) {
+            LockGuard<Mutex> guard (jobsMutex);
+            if (done != value) {
+                done = value;
+                return true;
+            }
+            return false;
         }
 
     } // namespace util

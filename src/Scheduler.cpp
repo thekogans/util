@@ -132,11 +132,9 @@ namespace thekogans {
                                 }
                             }
                         };
-                        util::JobQueue::Job::UniquePtr job (
-                            new WorkerJob (workerPtr, *this));
-                        if (job.get () != 0) {
-                            (*workerPtr)->Enq (std::move (job));
-                        }
+                        (*workerPtr)->Enq (
+                            *util::JobQueue::Job::Ptr (
+                                new WorkerJob (workerPtr, *this)));
                     }
                 }
             }

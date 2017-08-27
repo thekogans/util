@@ -29,6 +29,7 @@
 #else // defined (TOOLCHAIN_OS_Windows)
     #if defined (TOOLCHAIN_OS_Linux)
         #include <sys/resource.h>
+        #include <sys/wait.h>
     #endif // defined (TOOLCHAIN_OS_Linux)
     #include <signal.h>
 #endif // defined (TOOLCHAIN_OS_Windows
@@ -214,9 +215,9 @@ namespace thekogans {
                         }
                     }
                 };
-                JobQueue::Job::UniquePtr job (
-                    new PrintJob (str, where, color));
-                jobQueue->Enq (std::move (job));
+                jobQueue->Enq (
+                    *JobQueue::Job::Ptr (
+                        new PrintJob (str, where, color)));
             }
             else {
                 PrintStringWithColor (str, where, color);

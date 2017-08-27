@@ -50,8 +50,8 @@ namespace thekogans {
             /// to perform one time initialization/tear down.
             struct _LIB_THEKOGANS_UTIL_DECL Job : public JobQueue::Job {
                 /// \brief
-                /// Convenient typedef for std::unique_ptr<Job>.
-                typedef std::unique_ptr<Job> UniquePtr;
+                /// Convenient typedef for util::ThreadSafeRefCounted::Ptr<Job>.
+                typedef util::ThreadSafeRefCounted::Ptr<Job> Ptr;
 
                 /// \brief
                 /// Pipeline on which this job is staged.
@@ -92,7 +92,7 @@ namespace thekogans {
                 /// Called at the end of each stage to provide
                 /// a job for the next stage.
                 /// \return Job for next stage (Job::UniquePtr () to end)
-                virtual Job::UniquePtr Clone () throw () = 0;
+                virtual Job::Ptr Clone () throw () = 0;
                 /// \brief
                 /// These provide the same functionality as
                 /// Prologue/Epilogue, except at pipeline
@@ -219,7 +219,7 @@ namespace thekogans {
             /// \param[in] job Job to enqueue.
             /// \param[in] stage Stage to enqueue the job on.
             void Enq (
-                Job::UniquePtr job,
+                Job &job,
                 std::size_t stage = 0);
 
             /// \brief

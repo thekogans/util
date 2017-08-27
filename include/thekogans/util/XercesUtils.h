@@ -36,11 +36,15 @@
 namespace thekogans {
     namespace util {
 
-        /// \brief Initialize the Xerces XML library.
+        /// \struct XercesPlatformInit XercesUtils.h thekogans/util/XercesUtils.h
+        ///
+        /// \brief
+        /// Initialize the Xerces XML library.
         ///
         /// More often than not, you will create a stack instance of
         /// this class in main, and forget about it. But you can use
         /// it at any scope level you want.
+
         struct XercesPlatformInit {
             /// \brief
             /// ctor. Initialize the library.

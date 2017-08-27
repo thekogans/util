@@ -48,7 +48,7 @@ namespace thekogans {
         void Exception::Location::Parse (const pugi::xml_node &node) {
             file = Decodestring (node.attribute (ATTR_FILE).value ());
             function = Decodestring (node.attribute (ATTR_FUNCTION).value ());
-            line = util::stringToui32 (node.attribute (ATTR_LINE).value ());
+            line = stringToui32 (node.attribute (ATTR_LINE).value ());
             buildTime = Decodestring (node.attribute (ATTR_BUILD_TIME).value ());
         }
     #endif // defined (THEKOGANS_UTIL_HAVE_PUGIXML)

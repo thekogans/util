@@ -17,12 +17,8 @@
 
 #if defined (THEKOGANS_UTIL_HAVE_XERCES)
 
-#include <vector>
-#include <cstdio>
-#include "thekogans/util/internal.h"
+#include <string>
 #include "thekogans/util/Config.h"
-#include "thekogans/util/Types.h"
-#include "thekogans/util/Array.h"
 #include "thekogans/util/Exception.h"
 #include "thekogans/util/LoggerMgr.h"
 #include "thekogans/util/StringUtils.h"
@@ -90,7 +86,8 @@ namespace thekogans {
         }
 
         _LIB_THEKOGANS_UTIL_DECL std::string _LIB_THEKOGANS_UTIL_API XMLFileLocTostring (
-                XMLFileLoc value, const char *format) {
+                XMLFileLoc value,
+                const char *format) {
             assert (format != 0);
             return format != 0 ? FormatString (format, value) : std::string ();
         }

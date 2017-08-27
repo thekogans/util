@@ -66,7 +66,7 @@
     /// Convert a given i64 value to Windows FILETIME.
     /// \param[in] value i64 value to convert.
     /// \return Converted FILETIME.
-    inline FILETIME i64ToFILETIME (i64 value) {
+    inline FILETIME i64ToFILETIME (thekogans::util::i64 value) {
         ULARGE_INTEGER ul;
         ul.QuadPart = (value + THEKOGANS_UTIL_UI64_LITERAL (11644473600)) *
             THEKOGANS_UTIL_UI64_LITERAL (10000000);
@@ -80,7 +80,7 @@
     /// Convert a given Windows FILETIME value to i64.
     /// \param[in] value FILETIME value to convert.
     /// \return Converted i64.
-    inline i64 FILETIMEToi64 (const FILETIME &value) {
+    inline thekogans::util::i64 FILETIMEToi64 (const FILETIME &value) {
         ULARGE_INTEGER ul;
         ul.LowPart = value.dwLowDateTime;
         ul.HighPart = value.dwHighDateTime;

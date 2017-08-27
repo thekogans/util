@@ -15,8 +15,8 @@
 // You should have received a copy of the GNU General Public License
 // along with libthekogans_util. If not, see <http://www.gnu.org/licenses/>.
 
-#if !defined (__thekogans_util_MacUtils_h)
-#define __thekogans_util_MacUtils_h
+#if !defined (__thekogans_util_OSXUtils_h)
+#define __thekogans_util_OSXUtils_h
 
 #include <IOKit/IOReturn.h>
 #include <string>
@@ -34,7 +34,7 @@ namespace thekogans {
         /// Return error description from the given CFError.
         /// \param[in] error CFError to return description for.
         /// \return Error description from the given CFError.
-        std::string DescriptionFromCFError (CFErrorRef error);
+        std::string DescriptionFromCFErrorRef (CFErrorRef error);
 
         /// \brief
         /// Return error description from the given IOReturn.
@@ -45,4 +45,4 @@ namespace thekogans {
     } // namespace util
 } // namespace thekogans
 
-#endif // !defined (__thekogans_util_MacUtils_h)
+#endif // !defined (__thekogans_util_OSXUtils_h)

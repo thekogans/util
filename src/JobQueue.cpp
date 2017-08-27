@@ -47,21 +47,15 @@ namespace thekogans {
 
         void JobQueue::Worker::Run () throw () {
             while (!queue.done) {
-                Job::UniquePtr job = queue.Deq ();
-                if (!queue.done && job.get () != 0) {
+                Job::Ptr job = queue.Deq ();
+                if (job.Get () != 0) {
                     ui64 start = HRTimer::Click ();
                     job->Prologue (queue.done);
                     job->Execute (queue.done);
                     job->Epilogue (queue.done);
                     ui64 end = HRTimer::Click ();
-                    if (job->finished != 0) {
-                        *job->finished = true;
-                    }
-                    queue.FinishedJob (job->GetId (), start, end);
+                    queue.FinishedJob (*job, start, end);
                 }
-            }
-            if (!exited) {
-                queue.workersBarrier.Wait ();
             }
         }
 
@@ -83,8 +77,7 @@ namespace thekogans {
                 jobFinished (jobsMutex),
                 idle (jobsMutex),
                 state (Idle),
-                busyWorkers (0),
-                workersBarrier (workerCount + 1) {
+                busyWorkers (0) {
             if ((type == TYPE_FIFO || type == TYPE_LIFO) &&
                     workerCount > 0 && maxPendingJobs > 0) {
                 Start ();
@@ -97,8 +90,7 @@ namespace thekogans {
 
         void JobQueue::Start () {
             LockGuard<Mutex> guard (workersMutex);
-            if (done) {
-                done = false;
+            if (SetDone (false)) {
                 for (ui32 i = 0; i < workerCount; ++i) {
                     std::string workerName;
                     if (!name.empty ()) {
@@ -117,96 +109,76 @@ namespace thekogans {
 
         void JobQueue::Stop () {
             LockGuard<Mutex> guard (workersMutex);
-            if (!done) {
-                done = true;
+            if (SetDone (true)) {
                 jobsNotEmpty.SignalAll ();
-                workersBarrier.Wait ();
                 struct Callback : public WorkerList::Callback {
                     typedef WorkerList::Callback::result_type result_type;
                     typedef WorkerList::Callback::argument_type argument_type;
                     virtual result_type operator () (argument_type worker) {
-                        // All workers have hit the barrier but their
-                        // respective threads might not have exited
-                        // yet. Join the worker thread before deleting
-                        // it to let it's thread function finish it's
-                        // tear down.
+                        // Join the worker thread before deleting it to
+                        // let it's thread function finish it's tear down.
                         worker->Wait ();
                         delete worker;
                         return true;
                     }
                 } callback;
-                assert (busyWorkers == 0);
                 workers.clear (callback);
+                assert (busyWorkers == 0);
                 CancelAll ();
             }
         }
 
-        JobQueue::Job::Id JobQueue::Enq (
-                Job::UniquePtr job,
+        void JobQueue::Enq (
+                Job &job,
                 bool wait) {
-            if (job.get () != 0) {
-                LockGuard<Mutex> guard (jobsMutex);
-                if (!done) {
-                    if (stats.jobCount < maxPendingJobs) {
-                        volatile bool finished = false;
-                        if (wait) {
-                            job->finished = &finished;
-                        }
-                        Job::Id jobId = job->GetId ();
-                        if (type == TYPE_FIFO) {
-                            jobs.push_back (job.release ());
-                        }
-                        else {
-                            jobs.push_front (job.release ());
-                        }
-                        ++stats.jobCount;
-                        jobsNotEmpty.Signal ();
-                        state = Busy;
-                        if (wait) {
-                            while (!finished) {
-                                jobFinished.Wait ();
-                            }
-                        }
-                        return jobId;
+            LockGuard<Mutex> guard (jobsMutex);
+            if (!done) {
+                if (stats.jobCount < maxPendingJobs) {
+                    job.finished = false;
+                    if (type == TYPE_FIFO) {
+                        jobs.push_back (&job);
                     }
                     else {
-                        THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                            "JobQueue (%s) max jobs (%u) reached.",
-                            !name.empty () ? name.c_str () : "no name",
-                            maxPendingJobs);
+                        jobs.push_front (&job);
+                    }
+                    job.AddRef ();
+                    ++stats.jobCount;
+                    jobsNotEmpty.Signal ();
+                    state = Busy;
+                    if (wait) {
+                        while (!job.ShouldStop (done) && !job.finished) {
+                            jobFinished.Wait ();
+                        }
                     }
                 }
                 else {
                     THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                        "JobQueue (%s) is not running.",
-                        !name.empty () ? name.c_str () : "no name");
+                        "JobQueue (%s) max jobs (%u) reached.",
+                        !name.empty () ? name.c_str () : "no name",
+                        maxPendingJobs);
                 }
             }
             else {
-                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
+                THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
+                    "JobQueue (%s) is not running.",
+                    !name.empty () ? name.c_str () : "no name");
             }
         }
 
         bool JobQueue::Cancel (const Job::Id &jobId) {
-            if (!jobId.empty ()) {
-                LockGuard<Mutex> guard (jobsMutex);
-                for (Job *job = jobs.front (); job != 0; job = jobs.next (job)) {
-                    if (job->GetId () == jobId) {
-                        jobs.erase (job);
-                        job->Cancel ();
-                        if (job->finished != 0) {
-                            *job->finished = true;
-                        }
-                        delete job;
-                        --stats.jobCount;
-                        if (busyWorkers == 0 && jobs.empty ()) {
-                            state = Idle;
-                            idle.SignalAll ();
-                        }
-                        jobFinished.SignalAll ();
-                        return true;
+            LockGuard<Mutex> guard (jobsMutex);
+            for (Job *job = jobs.front (); job != 0; job = jobs.next (job)) {
+                if (job->GetId () == jobId) {
+                    jobs.erase (job);
+                    job->Cancel ();
+                    job->Release ();
+                    --stats.jobCount;
+                    jobFinished.SignalAll ();
+                    if (busyWorkers == 0 && jobs.empty ()) {
+                        state = Idle;
+                        idle.SignalAll ();
                     }
+                    return true;
                 }
             }
             return false;
@@ -214,30 +186,30 @@ namespace thekogans {
 
         void JobQueue::CancelAll () {
             LockGuard<Mutex> guard (jobsMutex);
-            struct Callback : public JobList::Callback {
-                typedef JobList::Callback::result_type result_type;
-                typedef JobList::Callback::argument_type argument_type;
-                virtual result_type operator () (argument_type job) {
-                    job->Cancel ();
-                    if (job->finished != 0) {
-                        *job->finished = true;
+            if (!jobs.empty ()) {
+                assert (state == Busy);
+                struct Callback : public JobList::Callback {
+                    typedef JobList::Callback::result_type result_type;
+                    typedef JobList::Callback::argument_type argument_type;
+                    virtual result_type operator () (argument_type job) {
+                        job->Cancel ();
+                        job->Release ();
+                        return true;
                     }
-                    delete job;
-                    return true;
+                } callback;
+                jobs.clear (callback);
+                stats.jobCount = 0;
+                jobFinished.SignalAll ();
+                if (busyWorkers == 0) {
+                    state = Idle;
+                    idle.SignalAll ();
                 }
-            } callback;
-            jobs.clear (callback);
-            stats.jobCount = 0;
-            if (busyWorkers == 0) {
-                state = Idle;
-                idle.SignalAll ();
             }
-            jobFinished.SignalAll ();
         }
 
         void JobQueue::WaitForIdle () {
             LockGuard<Mutex> guard (jobsMutex);
-            while (!done && state == Busy) {
+            while (state == Busy) {
                 idle.Wait ();
             }
         }
@@ -257,15 +229,16 @@ namespace thekogans {
             return state == Idle;
         }
 
-        JobQueue::Job::UniquePtr JobQueue::Deq () {
+        JobQueue::Job::Ptr JobQueue::Deq () {
             LockGuard<Mutex> guard (jobsMutex);
             while (!done && jobs.empty ()) {
                 jobsNotEmpty.Wait ();
             }
-            Job::UniquePtr job;
+            Job::Ptr job;
             if (!jobs.empty ()) {
-                job.reset (jobs.pop_front ());
-                if (job.get () != 0) {
+                job.Reset (jobs.pop_front ());
+                if (job.Get () != 0) {
+                    job->Release ();
                     --stats.jobCount;
                     ++busyWorkers;
                 }
@@ -274,16 +247,27 @@ namespace thekogans {
         }
 
         void JobQueue::FinishedJob (
-                const Job::Id &jobId,
+                Job &job,
                 ui64 start,
                 ui64 end) {
             LockGuard<Mutex> guard (jobsMutex);
+            assert (state == Busy);
+            stats.Update (job.id, start, end);
+            job.finished = true;
+            jobFinished.SignalAll ();
             if (--busyWorkers == 0 && jobs.empty ()) {
                 state = Idle;
                 idle.SignalAll ();
             }
-            stats.Update (jobId, start, end);
-            jobFinished.SignalAll ();
+        }
+
+        bool JobQueue::SetDone (bool value) {
+            LockGuard<Mutex> guard (jobsMutex);
+            if (done != value) {
+                done = value;
+                return true;
+            }
+            return false;
         }
 
         std::string GlobalJobQueueCreateInstance::name = std::string ();

@@ -243,7 +243,9 @@ namespace thekogans {
                 /// \brief
                 /// Default ctor.
                 Watcher ();
-                // This is just for show. Watcher is a Singleton.
+                /// \brief
+                /// dtor.
+                /// This is just for show. Watcher is a Singleton.
                 ~Watcher ();
 
                 /// \brief

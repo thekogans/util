@@ -51,7 +51,7 @@
 #include "thekogans/util/Serializer.h"
 #include "thekogans/util/StringUtils.h"
 #if defined (TOOLCHAIN_OS_OSX)
-    #include "thekogans/util/MacUtils.h"
+    #include "thekogans/util/OSXUtils.h"
 #endif // defined (TOOLCHAIN_OS_OSX)
 
 namespace thekogans {
@@ -577,17 +577,17 @@ namespace thekogans {
             THEKOGANS_UTIL_OSSTATUS_ERROR_CODE_EXCEPTION_EX (\
                 __FILE__, __FUNCTION__, __LINE__, __DATE__ " " __TIME__, errorCode)
 
-        /// \def THEKOGANS_UTIL_CFERROR_EXCEPTION_EX(
+        /// \def THEKOGANS_UTIL_CFERRORREF_EXCEPTION_EX(
         ///          file, function, line, buildTime, error)
-        /// Build an Exception from CFError error.
-        #define THEKOGANS_UTIL_CFERROR_EXCEPTION_EX(\
+        /// Build an Exception from CFErrorRef error.
+        #define THEKOGANS_UTIL_CFERRORREF_EXCEPTION_EX(\
                 file, function, line, buildTime, error)\
             thekogans::util::Exception (file, function, line, buildTime,\
-                CFErrorGetCode (error), thekogans::util::DescriptionFromCFError (error).c_str ())
-        /// \def THEKOGANS_UTIL_CFERROR_EXCEPTION(error)
-        /// Build an Exception from OSStatus errorCode.
-        #define THEKOGANS_UTIL_CFERROR_EXCEPTION(error)\
-            THEKOGANS_UTIL_CFERROR_EXCEPTION_EX (\
+                CFErrorGetCode (error), thekogans::util::DescriptionFromCFErrorRef (error).c_str ())
+        /// \def THEKOGANS_UTIL_CFERRORREF_EXCEPTION(error)
+        /// Build an Exception from CFErrorRef error.
+        #define THEKOGANS_UTIL_CFERRORREF_EXCEPTION(error)\
+            THEKOGANS_UTIL_CFERRORREF_EXCEPTION_EX (\
                 __FILE__, __FUNCTION__, __LINE__, __DATE__ " " __TIME__, error)
 
         /// \def THEKOGANS_UTIL_IORETURN_EXCEPTION_EX(
@@ -760,36 +760,36 @@ namespace thekogans {
                 __FILE__, __FUNCTION__, __LINE__, __DATE__ " " __TIME__,\
                 errorCode, format, __VA_ARGS__)
 
-        /// \def THEKOGANS_UTIL_THROW_CFERROR_EXCEPTION_EX(
+        /// \def THEKOGANS_UTIL_THROW_CFERRORREF_EXCEPTION_EX(
         ///          file, function, line, buildTime, error)
-        /// Throw an Exception from CFError error.
-        #define THEKOGANS_UTIL_THROW_CFERROR_EXCEPTION_EX(\
+        /// Throw an Exception from CFErrorRef error.
+        #define THEKOGANS_UTIL_THROW_CFERRORREF_EXCEPTION_EX(\
                 file, function, line, buildTime, error)\
             THEKOGANS_UTIL_DEBUG_BREAK\
             throw thekogans::util::Exception (file, function, line, buildTime,\
-                CFErrorGetCode (error), thekogans::util::DescriptionFromCFError (error).c_str ())
-        /// \def THEKOGANS_UTIL_THROW_CFERROR_EXCEPTION(error)
-        /// Throw an Exception from CFError error.
-        #define THEKOGANS_UTIL_THROW_CFERROR_EXCEPTION(error)\
-            THEKOGANS_UTIL_THROW_CFERROR_EXCEPTION_EX (\
+                CFErrorGetCode (error), thekogans::util::DescriptionFromCFErrorRef (error).c_str ())
+        /// \def THEKOGANS_UTIL_THROW_CFERRORREF_EXCEPTION(error)
+        /// Throw an Exception from CFErrorRef error.
+        #define THEKOGANS_UTIL_THROW_CFERRORREF_EXCEPTION(error)\
+            THEKOGANS_UTIL_THROW_CFERRORREF_EXCEPTION_EX (\
                 __FILE__, __FUNCTION__, __LINE__, __DATE__ " " __TIME__, error)
 
-        /// \def THEKOGANS_UTIL_THROW_CFERROR_EXCEPTION_EX(
+        /// \def THEKOGANS_UTIL_THROW_CFERRORREF_EXCEPTION_EX(
         ///          file, function, line, buildTime, error)
-        /// Throw an Exception from CFError error.
-        #define THEKOGANS_UTIL_THROW_CFERROR_AND_MESSAGE_EXCEPTION_EX(\
+        /// Throw an Exception from CFErrorRef error.
+        #define THEKOGANS_UTIL_THROW_CFERRORREF_AND_MESSAGE_EXCEPTION_EX(\
                 file, function, line, buildTime, error, format, ...)\
             THEKOGANS_UTIL_DEBUG_BREAK\
             throw thekogans::util::Exception (file, function, line, buildTime, CFErrorGetCode (error),\
                 thekogans::util::FormatString ("%s%s",\
-                    thekogans::util::DescriptionFromCFError (error).c_str (),\
+                    thekogans::util::DescriptionFromCFErrorRef (error).c_str (),\
                     thekogans::util::FormatString (format, __VA_ARGS__).c_str ()))
-        /// \def THEKOGANS_UTIL_THROW_CFERROR_AND_MESSAGE_EXCEPTION(
+        /// \def THEKOGANS_UTIL_THROW_CFERRORREF_AND_MESSAGE_EXCEPTION(
         ///          errorCode, format, ...)
-        /// Throw an Exception from CFError error.
-        #define THEKOGANS_UTIL_THROW_CFERROR_AND_MESSAGE_EXCEPTION(\
+        /// Throw an Exception from CFErrorRef error.
+        #define THEKOGANS_UTIL_THROW_CFERRORREF_AND_MESSAGE_EXCEPTION(\
                 error, format, ...)\
-            THEKOGANS_UTIL_THROW_CFERROR_AND_MESSAGE_EXCEPTION_EX (\
+            THEKOGANS_UTIL_THROW_CFERRORREF_AND_MESSAGE_EXCEPTION_EX (\
                 __FILE__, __FUNCTION__, __LINE__, __DATE__ " " __TIME__,\
                 error, format, __VA_ARGS__)
 

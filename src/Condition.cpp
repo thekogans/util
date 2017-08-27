@@ -21,9 +21,7 @@
         #include <synchapi.h>
     #endif // defined (__GNUC__)
 #endif // defined (TOOLCHAIN_OS_Windows)
-#include <ctime>
 #include "thekogans/util/Exception.h"
-#include "thekogans/util/internal.h"
 #include "thekogans/util/TimeSpec.h"
 #include "thekogans/util/Condition.h"
 

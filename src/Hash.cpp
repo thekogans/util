@@ -76,12 +76,12 @@ namespace thekogans {
 
         std::string Hash::DigestToString (const Digest &digest) {
             return digest.empty () ? std::string () :
-                util::HexEncodeBuffer (&digest[0], digest.size ());
+                HexEncodeBuffer (&digest[0], digest.size ());
         }
 
         Hash::Digest Hash::StringToDigest (const std::string &digest) {
             return digest.empty () ? Digest () :
-                util::HexDecodeBuffer (&digest[0], digest.size ());
+                HexDecodeBuffer (&digest[0], digest.size ());
         }
 
         void Hash::FromBuffer (

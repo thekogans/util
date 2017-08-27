@@ -131,6 +131,9 @@
     </if>
     <cpp_header>$(organization)/$(project_directory)/NullAllocator.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/NullLock.h</cpp_header>
+    <if condition = "$(TOOLCHAIN_OS) == 'OSX'">
+      <cpp_header>$(organization)/$(project_directory)/OSXUtils.h</cpp_header>
+    </if>
     <if condition = "$(TOOLCHAIN_OS) == 'Windows'">
       <cpp_header>$(organization)/$(project_directory)/OutputDebugStringLogger.h</cpp_header>
     </if>
@@ -173,6 +176,9 @@
     <cpp_header>$(organization)/$(project_directory)/internal.h</cpp_header>
     <if condition = "$(have_feature -f:THEKOGANS_UTIL_HAVE_XERCES)">
       <cpp_header>$(organization)/$(project_directory)/XercesUtils.h</cpp_header>
+    </if>
+    <if condition = "$(TOOLCHAIN_OS) == 'Linux' &amp;&amp; $(have_feature -f:THEKOGANS_UTIL_HAVE_XLIB)">
+      <cpp_header>$(organization)/$(project_directory)/XlibUtils.h</cpp_header>
     </if>
   </cpp_headers>
   <if condition = "!$(have_feature -f:THEKOGANS_UTIL_HAVE_STD_ATOMIC) &amp;&amp; !$(have_feature -f:THEKOGANS_UTIL_HAVE_BOOST_ATOMIC)">
@@ -646,6 +652,9 @@
     <cpp_source>SHA2_384_512.cpp</cpp_source>
     <cpp_source>SHA3.cpp</cpp_source>
     <cpp_source>SharedAllocator.cpp</cpp_source>
+    <if condition = "$(TOOLCHAIN_OS) == 'Windows' &amp;&amp; $(type) == 'Shared'">
+      <cpp_source>Singleton.cpp</cpp_source>
+    </if>
     <cpp_source>SpinLock.cpp</cpp_source>
     <cpp_source>SpinRWLock.cpp</cpp_source>
     <cpp_source>StringUtils.cpp</cpp_source>
@@ -663,6 +672,9 @@
     <if condition = "$(have_feature -f:THEKOGANS_UTIL_HAVE_XERCES)">
       <cpp_source>XercesUtils.cpp</cpp_source>
     </if>
+    <if condition = "$(TOOLCHAIN_OS) == 'Linux' &amp;&amp; $(have_feature -f:THEKOGANS_UTIL_HAVE_XLIB)">
+      <cpp_source>XlibUtils.cpp</cpp_source>
+    </if>
   </cpp_sources>
   <cpp_sources prefix = "src/3rdparty">
     <if condition = "!$(have_feature -f:THEKOGANS_UTIL_HAVE_STD_ATOMIC) &amp;&amp; !$(have_feature -f:THEKOGANS_UTIL_HAVE_BOOST_ATOMIC)">
@@ -671,7 +683,7 @@
   </cpp_sources>
   <if condition = "$(TOOLCHAIN_OS) == 'OSX'">
     <objective_cpp_sources prefix = "src">
-      <objective_cpp_source>MacUtils.mm</objective_cpp_source>
+      <objective_cpp_source>OSXUtils.mm</objective_cpp_source>
     </objective_cpp_sources>
   </if>
   <if condition = "$(have_feature -f:THEKOGANS_UTIL_HAVE_TESTS)">

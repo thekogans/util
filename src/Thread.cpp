@@ -116,7 +116,7 @@ namespace thekogans {
                 priority == HIGH_THREAD_PRIORITY ? THEKOGANS_UTIL_HIGH_THREAD_PRIORITY :
                 priority == HIGHEST_THREAD_PRIORITY ? THEKOGANS_UTIL_HIGHEST_THREAD_PRIORITY :
                 priority == REAL_TIME_THREAD_PRIORITY ? THEKOGANS_UTIL_REAL_TIME_THREAD_PRIORITY :
-                util::stringToi32 (priority.c_str ());
+                stringToi32 (priority.c_str ());
         }
 
         void Thread::Create (

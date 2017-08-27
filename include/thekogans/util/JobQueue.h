@@ -26,10 +26,10 @@
 #include "thekogans/util/Constants.h"
 #include "thekogans/util/GUID.h"
 #include "thekogans/util/IntrusiveList.h"
+#include "thekogans/util/RefCounted.h"
 #include "thekogans/util/Thread.h"
 #include "thekogans/util/Mutex.h"
 #include "thekogans/util/Condition.h"
-#include "thekogans/util/Barrier.h"
 #include "thekogans/util/Singleton.h"
 #include "thekogans/util/StringUtils.h"
 #include "thekogans/util/XMLUtils.h"
@@ -84,10 +84,12 @@ namespace thekogans {
             ///
             /// \brief
             /// A JobQueue::Job must, at least, implement the Execute method.
-            struct _LIB_THEKOGANS_UTIL_DECL Job : public JobList::Node {
+            struct _LIB_THEKOGANS_UTIL_DECL Job :
+                    public util::ThreadSafeRefCounted,
+                    public JobList::Node {
                 /// \brief
-                /// Convenient typedef for std::unique_ptr<Job>.
-                typedef std::unique_ptr<Job> UniquePtr;
+                /// Convenient typedef for util::ThreadSafeRefCounted::Ptr<Job>.
+                typedef util::ThreadSafeRefCounted::Ptr<Job> Ptr;
 
                 /// \brief
                 /// Convenient typedef for std::string.
@@ -103,7 +105,7 @@ namespace thekogans {
                 volatile bool cancelled;
                 /// \brief
                 /// Flag used internally to wait for synchronous jobs.
-                volatile bool *finished;
+                volatile bool finished;
 
                 /// \brief
                 /// ctor.
@@ -290,7 +292,12 @@ namespace thekogans {
                     attributes.push_back (Attribute ("totalJobs", ui32Tostring (totalJobs)));
                     attributes.push_back (Attribute ("totalJobTime", ui64Tostring (totalJobTime)));
                     return
-                        OpenTag (indentationLevel,  !name.empty () ? name.c_str () : "JobQueue", attributes, false, true) +
+                        OpenTag (
+                            indentationLevel,
+                            !name.empty () ? name.c_str () : "JobQueue",
+                            attributes,
+                            false,
+                            true) +
                         lastJob.ToString ("last", indentationLevel + 1) +
                         minJob.ToString ("min", indentationLevel + 1) +
                         maxJob.ToString ("max", indentationLevel + 1) +
@@ -404,9 +411,6 @@ namespace thekogans {
             /// \brief
             /// Synchronization mutex.
             Mutex workersMutex;
-            /// \brief
-            /// Synchronization barrier.
-            Barrier workersBarrier;
 
         public:
             /// \brief
@@ -464,9 +468,8 @@ namespace thekogans {
             /// \param[in] job Job to enqueue.
             /// \param[in] wait Wait for job to finish.
             /// Used for synchronous job execution.
-            /// \return Job id.
-            Job::Id Enq (
-                Job::UniquePtr job,
+            void Enq (
+                Job &job,
                 bool wait = false);
 
             /// \brief
@@ -502,17 +505,24 @@ namespace thekogans {
             /// \brief
             /// Used internally by worker(s) to get the next job.
             /// \return The next job to execute.
-            Job::UniquePtr Deq ();
+            Job::Ptr Deq ();
             /// \brief
             /// Called by worker(s) after each job is done.
             /// Used to update state and \see{JobQueue::Stats}.
-            /// \param[in] jobId Id of completed job.
+            /// \param[in] job Completed job.
             /// \param[in] start Completed job start time.
             /// \param[in] end Completed job end time.
             void FinishedJob (
-                const Job::Id &jobId,
+                Job &job,
                 ui64 start,
                 ui64 end);
+
+            /// \brief
+            /// Atomically set done to the given value.
+            /// \param[in] value value to set done to.
+            /// \return true = done was set to the given value.
+            /// false = done was already set to the given value.
+            bool SetDone (bool value);
 
             /// \brief
             /// JobQueue is neither copy constructable, nor assignable.

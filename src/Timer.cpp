@@ -231,9 +231,9 @@ namespace thekogans {
                 itimerspec timerSpec;
                 memset (&timerSpec, 0, sizeof (timerSpec));
                 if (periodic_) {
-                    timerSpec.it_interval = timeSpec;
+                    timerSpec.it_interval = timeSpec.Totimespec ();
                 }
-                timerSpec.it_value = timeSpec;
+                timerSpec.it_value = timeSpec.Totimespec ();
                 if (timer_settime (timer, 0, &timerSpec, 0) != 0) {
                     THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
                         THEKOGANS_UTIL_OS_ERROR_CODE);
