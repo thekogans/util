@@ -56,7 +56,11 @@ namespace thekogans {
         }
 
         Console *ConsoleCreateInstance::operator () () {
-            return new Console (threadSafePrintString, hookCtrlBreak, coreDump);
+            return new Console (
+                threadSafePrintString,
+                hookCtrlBreak,
+                hookChild,
+                coreDump);
         }
 
         namespace {
@@ -88,14 +92,11 @@ namespace thekogans {
         }
 
         Console::Console (
-                bool threadSafePrintString_,
+                bool threadSafePrintString,
                 bool hookCtrlBreak,
                 bool hookChild,
                 bool coreDump) :
-                threadSafePrintString (threadSafePrintString_) {
-            if (threadSafePrintString) {
-                jobQueue.reset (new JobQueue ("Console"));
-            }
+                jobQueue (threadSafePrintString ? new JobQueue ("Console") : 0) {
             if (hookCtrlBreak) {
             #if defined (TOOLCHAIN_OS_Windows)
                 if (!SetConsoleCtrlHandler ((PHANDLER_ROUTINE)CtrlBreakHandler, TRUE)) {
@@ -195,7 +196,7 @@ namespace thekogans {
                 const std::string &str,
                 ui32 where,
                 const ColorType color) {
-            if (threadSafePrintString) {
+            if (jobQueue.get () != 0) {
                 struct PrintJob : public JobQueue::Job {
                     std::string str;
                     ui32 where;
@@ -225,7 +226,7 @@ namespace thekogans {
         }
 
         void Console::FlushPrintQueue () {
-            if (threadSafePrintString) {
+            if (jobQueue.get () != 0) {
                 jobQueue->WaitForIdle ();
             }
         }

@@ -138,8 +138,9 @@ int main (
             " -h:[" << GetHasherList (" | ") << "] -d:[digestSize | ALL]... [-n] path" << std::endl;
         return 1;
     }
-    THEKOGANS_UTIL_LOG_INIT (argv[0]);
-    THEKOGANS_UTIL_LOG_RESET (util::LoggerMgr::Debug);
+    THEKOGANS_UTIL_LOG_INIT (
+        util::LoggerMgr::Debug,
+        util::LoggerMgr::All);
     THEKOGANS_UTIL_LOG_ADD_LOGGER (
         util::Logger::Ptr (new util::ConsoleLogger));
     for (util::OwnerList<Options::Hasher>::const_iterator

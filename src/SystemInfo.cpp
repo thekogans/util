@@ -34,6 +34,7 @@
         #include <signal.h>
         #include <setjmp.h>
     #elif defined (TOOLCHAIN_OS_OSX)
+        #include <libproc.h>
         #include <sys/types.h>
         #include <sys/sysctl.h>
     #endif // defined (TOOLCHAIN_OS_Windows)
@@ -470,6 +471,34 @@ namespace thekogans {
                 return cpuFeatures;
             }
 
+            std::string GetProcessPathHelper () {
+            #if defined (TOOLCHAIN_OS_Windows)
+                char path[MAX_PATH];
+                if (GetModuleFileName (0, path, sizeof (path)) == 0) {
+                    THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                        THEKOGANS_UTIL_OS_ERROR_CODE);
+                }
+                return path;
+            #elif defined (TOOLCHAIN_OS_Linux)
+                char path[MAX_PATH];
+                ssize_t count =
+                    readlink (FormatString ("/proc/%d/exe", getpid ()), path, size (path));
+                if (count < 0) {
+                    THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                        THEKOGANS_UTIL_OS_ERROR_CODE);
+                }
+                path[count] = '\0';
+                return path;
+            #elif defined (TOOLCHAIN_OS_OSX)
+                char path[PROC_PIDPATHINFO_MAXSIZE];
+                if (proc_pidpath (getpid (), path, sizeof (path)) <= 0) {
+                    THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                        THEKOGANS_UTIL_OS_ERROR_CODE);
+                }
+                return path;
+            #endif // defined (TOOLCHAIN_OS_Windows)
+            }
+
             std::string GetHostNameHelper () {
             #if defined (TOOLCHAIN_OS_Windows)
                 // This Windows specific initialization happens during
@@ -506,6 +535,7 @@ namespace thekogans {
             cpuFeatures (GetCPUFeaturesImpl ()),
             pageSize (GetPageSizeImpl ()),
             memorySize (GetMemorySizeImpl ()),
+            processPath (GetProcessPathHelper ()),
             hostName (GetHostNameHelper ()) {}
 
     } // namespace util

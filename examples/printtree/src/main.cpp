@@ -45,8 +45,9 @@ namespace {
 }
 
 int main (int argc, char *argv[]) {
-    THEKOGANS_UTIL_LOG_INIT ("printtree");
-    THEKOGANS_UTIL_LOG_RESET (thekogans::util::LoggerMgr::Debug);
+    THEKOGANS_UTIL_LOG_INIT (
+        thekogans::util::LoggerMgr::Debug,
+        thekogans::util::LoggerMgr::All);
     THEKOGANS_UTIL_LOG_ADD_LOGGER (
         thekogans::util::Logger::Ptr (new thekogans::util::ConsoleLogger));
     std::string path = argc == 2 ? argv[1] : thekogans::util::Path::GetCurrPath ();

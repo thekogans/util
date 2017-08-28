@@ -29,6 +29,7 @@
 #include "thekogans/util/JobQueue.h"
 #include "thekogans/util/RunLoop.h"
 #include "thekogans/util/MainRunLoop.h"
+#include "thekogans/util/Singleton.h"
 #include "thekogans/util/SpinLock.h"
 #include "thekogans/util/GUID.h"
 

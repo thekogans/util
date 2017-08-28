@@ -22,13 +22,11 @@
 #include <cassert>
 #include <iostream>
 #include "thekogans/util/internal.h"
-#include "thekogans/util/Config.h"
-#include "thekogans/util/Types.h"
-#include "thekogans/util/Heap.h"
 #include "thekogans/util/Exception.h"
 #include "thekogans/util/LockGuard.h"
 #include "thekogans/util/TimeSpec.h"
 #include "thekogans/util/Console.h"
+#include "thekogans/util/SystemInfo.h"
 #include "thekogans/util/LoggerMgr.h"
 
 namespace thekogans {
@@ -100,17 +98,17 @@ namespace thekogans {
                 }
                 value += "HRTime";
             }
-            else if (Flags32 (decorations).Test (Host)) {
+            else if (Flags32 (decorations).Test (HostName)) {
                 if (!value.empty ()) {
                     value += " | ";
                 }
-                value += "Host";
+                value += "HostName";
             }
-            else if (Flags32 (decorations).Test (ProcessName)) {
+            else if (Flags32 (decorations).Test (ProcessPath)) {
                 if (!value.empty ()) {
                     value += " | ";
                 }
-                value += "ProcessName";
+                value += "ProcessPath";
             }
             else if (Flags32 (decorations).Test (ProcessId)) {
                 if (!value.empty ()) {
@@ -156,11 +154,11 @@ namespace thekogans {
                 else if (decoration == "HRTime") {
                     return LoggerMgr::HRTime;
                 }
-                else if (decoration == "Host") {
-                    return LoggerMgr::Host;
+                else if (decoration == "HostName") {
+                    return LoggerMgr::HostName;
                 }
-                else if (decoration == "ProcessName") {
-                    return LoggerMgr::ProcessName;
+                else if (decoration == "ProcessPath") {
+                    return LoggerMgr::ProcessPath;
                 }
                 else if (decoration == "ProcessId") {
                     return LoggerMgr::ProcessId;
@@ -202,44 +200,51 @@ namespace thekogans {
             return value;
         }
 
-        void LoggerMgr::Init (
-                const std::string &processName_,
-                bool blocking_,
-                i32 priority,
-                ui32 affinity) {
-            processName = processName_;
-            blocking = blocking_;
-            jobQueue.reset (!blocking ?
-                new JobQueue ("LoggerMgr", JobQueue::TYPE_FIFO, 1, priority, affinity) : 0);
-        }
-
         void LoggerMgr::Reset (
                 ui32 level_,
-                ui32 decorations_) {
+                ui32 decorations_,
+                ui32 flags,
+                bool blocking,
+                const std::string &name,
+                i32 priority,
+                ui32 affinity) {
             Flush ();
+            LockGuard<SpinLock> guard (spinLock);
             level = level_;
             decorations = decorations_;
-            {
-                LockGuard<Mutex> guard (loggerMapMutex);
+            if (Flags32 (flags).Test (ClearLoggers)) {
                 loggerMap.clear ();
             }
+            if (Flags32 (flags).Test (ClearFilters)) {
+                filterList.clear ();
+            }
+            jobQueue.reset (!blocking ?
+                new JobQueue (name, JobQueue::TYPE_FIFO, 1, priority, affinity) : 0);
         }
 
         void LoggerMgr::AddLogger (
                 const char *subsystem,
                 Logger::Ptr logger) {
             if (subsystem != 0 && logger.Get () != 0) {
-                LockGuard<Mutex> guard (loggerMapMutex);
+                LockGuard<SpinLock> guard (spinLock);
                 loggerMap[subsystem].push_back (logger);
+            }
+            else {
+                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
             }
         }
 
         void LoggerMgr::AddLoggerList (
                 const char *subsystem,
                 const LoggerList &loggerList) {
-            if (subsystem != 0) {
-                LockGuard<Mutex> guard (loggerMapMutex);
+            if (subsystem != 0 && !loggerList.empty ()) {
+                LockGuard<SpinLock> guard (spinLock);
                 loggerMap[subsystem] = loggerList;
+            }
+            else {
+                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
             }
         }
 
@@ -285,12 +290,12 @@ namespace thekogans {
                         "%011.4f ",
                         HRTimer::ToSeconds (HRTimer::ComputeEllapsedTime (startTime, HRTimer::Click ())));
                 }
-                if (decorations.Test (Host)) {
-                    header += hostName;
+                if (decorations.Test (HostName)) {
+                    header += SystemInfo::Instance ().GetHostName ();
                     header += " ";
                 }
-                if (decorations.Test (ProcessName)) {
-                    header += processName;
+                if (decorations.Test (ProcessPath)) {
+                    header += SystemInfo::Instance ().GetProcessPath ();
                     header += " ";
                 }
                 if (decorations.Test (ProcessId | ThreadId)) {
@@ -393,16 +398,16 @@ namespace thekogans {
                 const std::string &message) {
             Entry::UniquePtr entry (new Entry (subsystem, level, header, message));
             if (FilterEntry (*entry)) {
-                LockGuard<Mutex> guard (loggerMapMutex);
+                LockGuard<SpinLock> guard (spinLock);
                 LoggerMap::iterator it = loggerMap.find (subsystem);
                 if (it != loggerMap.end ()) {
-                    if (blocking) {
-                        LogSubsystem (*entry, it->second);
-                    }
-                    else {
+                    if (jobQueue.get () != 0) {
                         jobQueue->Enq (
                             *JobQueue::Job::Ptr (
                                 new LogSubsystemJob (std::move (entry), it->second)));
+                    }
+                    else {
+                        LogSubsystem (*entry, it->second);
                     }
                 }
             }
@@ -410,7 +415,7 @@ namespace thekogans {
 
         void LoggerMgr::AddFilter (Filter::UniquePtr filter) {
             if (filter.get () != 0) {
-                LockGuard<Mutex> guard (filterListMutex);
+                LockGuard<SpinLock> guard (spinLock);
                 filterList.push_back (std::move (filter));
             }
             else {
@@ -420,14 +425,14 @@ namespace thekogans {
         }
 
         void LoggerMgr::Flush () {
-            if (!blocking) {
+            if (jobQueue.get () != 0) {
                 jobQueue->WaitForIdle ();
             }
             Console::Instance ().FlushPrintQueue ();
         }
 
         bool LoggerMgr::FilterEntry (Entry &entry) {
-            LockGuard<Mutex> guard (filterListMutex);
+            LockGuard<SpinLock> guard (spinLock);
             for (FilterList::iterator
                     it = filterList.begin (),
                     end = filterList.end (); it != end; ++it) {
@@ -436,6 +441,38 @@ namespace thekogans {
                 }
             }
             return true;
+        }
+
+        ui32 GlobalLoggerMgrCreateInstance::level = LoggerMgr::Info;
+        ui32 GlobalLoggerMgrCreateInstance::decorations = LoggerMgr::All;
+        bool GlobalLoggerMgrCreateInstance::blocking = false;
+        std::string GlobalLoggerMgrCreateInstance::name = "GlobalLoggerMgr";
+        i32 GlobalLoggerMgrCreateInstance::priority = THEKOGANS_UTIL_LOW_THREAD_PRIORITY;
+        ui32 GlobalLoggerMgrCreateInstance::affinity = UI32_MAX;
+
+        void GlobalLoggerMgrCreateInstance::Parameterize (
+                ui32 level_,
+                ui32 decorations_,
+                bool blocking_,
+                const std::string &name_,
+                i32 priority_,
+                ui32 affinity_) {
+            level = level_;
+            decorations = decorations_;
+            blocking = blocking_;
+            name = name_;
+            priority = priority_;
+            affinity = affinity_;
+        }
+
+        LoggerMgr *GlobalLoggerMgrCreateInstance::operator () () {
+            return new LoggerMgr (
+                level,
+                decorations,
+                blocking,
+                name,
+                priority,
+                affinity);
         }
 
     } // namespace util

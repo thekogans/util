@@ -96,9 +96,6 @@ namespace thekogans {
         struct _LIB_THEKOGANS_UTIL_DECL Console :
                 public Singleton<Console, SpinLock, ConsoleCreateInstance> {
         private:
-            /// \vrief
-            /// Serialize access to std::cout and std::cerr.
-            bool threadSafePrintString;
             /// \brief
             /// Used to synchronize access to std::cout and std::cerr in PrintString.
             JobQueue::UniquePtr jobQueue;
@@ -106,12 +103,12 @@ namespace thekogans {
         public:
             /// \brief
             /// ctor.
-            /// \param[in] threadSafePrintString_ true == Serialize access to std::cout and std::cerr.
+            /// \param[in] threadSafePrintString true == Serialize access to std::cout and std::cerr.
             /// \param[in] hookCtrlBreak true == Hook CTRL-C to call StopRunLoop.
             /// \param[in] hookChild Linux and OS X only. true == Hook SIGCHLD to call wait.
             /// \param[in] coreDump Linux only. true == Turn on core dump.
             Console (
-                bool threadSafePrintString_ = true,
+                bool threadSafePrintString = true,
                 bool hookCtrlBreak = true,
                 bool hookChild = false,
                 bool coreDump = true);

@@ -91,6 +91,9 @@ namespace thekogans {
             /// Total size of physical memory.
             ui64 memorySize;
             /// \brief
+            /// Process path.
+            std::string processPath;
+            /// \brief
             /// Host name.
             std::string hostName;
 
@@ -134,6 +137,13 @@ namespace thekogans {
             /// \return Physical memory size.
             inline ui64 GetMemorySize () const {
                 return memorySize;
+            }
+
+            /// \brief
+            /// Return process path.
+            /// \return Process path.
+            inline std::string GetProcessPath () const {
+                return processPath;
             }
 
             /// \brief

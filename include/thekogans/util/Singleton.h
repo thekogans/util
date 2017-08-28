@@ -182,7 +182,7 @@ namespace thekogans {
                     // and if it's STILL null, we are the lucky ones,
                     // we get to create the actual instance!
                 #if defined (TOOLCHAIN_OS_Windows) && defined (TOOLCHAIN_TYPE_Shared)
-                    // Windows shared libraries (DLL) are very different from their
+                    // Windows shared libraries (dll) are very different from their
                     // Linux (so)/OS X (dylib) counterparts. On Linux and OS X shared
                     // libraries are very similar to static libraries and the linker
                     // is able to resolve symbols very easily. In fact you have to go
