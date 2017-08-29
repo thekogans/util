@@ -15,6 +15,8 @@
 // You should have received a copy of the GNU General Public License
 // along with libthekogans_util. If not, see <http://www.gnu.org/licenses/>.
 
+#if defined (TOOLCHAIN_OS_Windows) && defined (TOOLCHAIN_TYPE_Shared)
+
 #include <string>
 #include <map>
 #include "thekogans/util/Exception.h"
@@ -23,7 +25,6 @@
 namespace thekogans {
     namespace util {
 
-    #if defined (TOOLCHAIN_OS_Windows) && defined (TOOLCHAIN_TYPE_Shared)
         namespace detail {
             _LIB_THEKOGANS_UTIL_DECL Mutex & _LIB_THEKOGANS_UTIL_API GetInstanceLock () {
                 static Mutex mutex;
@@ -55,7 +56,8 @@ namespace thekogans {
                 }
             }
         }
-    #endif // defined (TOOLCHAIN_OS_Windows) && defined (TOOLCHAIN_TYPE_Shared)
 
     } // namespace util
 } // namespace thekogans
+
+#endif // defined (TOOLCHAIN_OS_Windows) && defined (TOOLCHAIN_TYPE_Shared)

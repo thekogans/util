@@ -55,6 +55,13 @@ namespace thekogans {
                 state (Unlocked) {}
 
             /// \brief
+            /// Return true if locked.
+            /// \return true if locked.
+            inline bool IsLocked () const {
+                return state == Locked;
+            }
+
+            /// \brief
             /// Try to acquire the lock.
             /// \return true = acquired, false = failed to acquire
             bool TryAcquire ();

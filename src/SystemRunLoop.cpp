@@ -260,6 +260,20 @@ namespace thekogans {
                     THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
             }
         }
+
+        namespace {
+            struct CFRunLoopSourceRefDeleter {
+                void operator () (CFRunLoopSourceRef runLoopSourceRef) {
+                    if (runLoopSourceRef != 0) {
+                        CFRelease (runLoopSourceRef);
+                    }
+                }
+            };
+            typedef std::unique_ptr<__CFRunLoopSource, CFRunLoopSourceRefDeleter> CFRunLoopSourceRefPtr;
+
+            void DoNothingRunLoopCallback (void * /*info*/) {
+            }
+        }
     #endif // defined (TOOLCHAIN_OS_Windows)
 
         void SystemRunLoop::Start () {
@@ -357,7 +371,19 @@ namespace thekogans {
                     }
                 }
             #elif defined (TOOLCHAIN_OS_OSX)
-                CFRunLoopRun ();
+                // Create a dummy source so that CFRunLoopRun has
+                // something to wait on.
+                CFRunLoopSourceContext context = {0};
+                context.perform = DoNothingRunLoopCallback;
+                CFRunLoopSourceRefPtr runLoopSource (CFRunLoopSourceCreate (0, 0, &context));
+                if (runLoopSource.get () != 0) {
+                    CFRunLoopAddSource (runLoop, runLoopSource.get (), kCFRunLoopCommonModes);
+                    CFRunLoopRun ();
+                    CFRunLoopRemoveSource (runLoop, runLoopSource.get (), kCFRunLoopCommonModes);
+                }
+                else {
+                    THEKOGANS_UTIL_THROW_SC_ERROR_CODE_EXCEPTION (SCError ());
+                }
             #endif // defined (TOOLCHAIN_OS_Windows)
             }
         }
@@ -407,7 +433,7 @@ namespace thekogans {
             }
             else {
                 THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                    "%s", "SystemRunLoop (%s) is not running.");
+                    "%s", "SystemRunLoop is not running.");
             }
         }
 
