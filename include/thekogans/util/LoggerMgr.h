@@ -30,6 +30,7 @@
 #include "thekogans/util/IntrusiveList.h"
 #include "thekogans/util/Singleton.h"
 #include "thekogans/util/SpinLock.h"
+#include "thekogans/util/Mutex.h"
 #include "thekogans/util/JobQueue.h"
 #include "thekogans/util/Logger.h"
 #include "thekogans/util/HRTimer.h"
@@ -121,7 +122,7 @@ namespace thekogans {
         /// the queue or you will lose messages not yet processed.
         ///
         /// *** VERY, VERY IMPORTANT ***
-        /// You cannot use the LoggerMgr in JobQueue/SpinLock!
+        /// You cannot use the LoggerMgr in JobQueue/SpinLock/Mutex!
         /// (circular dependency)
 
         struct _LIB_THEKOGANS_UTIL_DECL LoggerMgr {
@@ -158,8 +159,8 @@ namespace thekogans {
                 /// Log messages only.
                 NoDecorations = 0,
                 /// \brief
-                /// Add a '*' separator between messages.
-                MessageSeparator = 1,
+                /// Add a '*' separator between entries.
+                EntrySeparator = 1,
                 /// \brief
                 /// Add a sub-system to log entries.
                 Subsystem = 2,
@@ -192,8 +193,8 @@ namespace thekogans {
                 Multiline = 1024,
                 /// \brief
                 /// Add every decoration to log entries.
-                All = MessageSeparator | Level | DateTime | HRTime |
-                    HostName | ProcessPath | ProcessId | ThreadId | Location | Multiline,
+                All = EntrySeparator | Level | DateTime | HRTime | HostName |
+                    ProcessPath | ProcessId | ThreadId | Location | Multiline,
                 /// \brief
                 /// Add subsystem to all log entries.
                 SubsystemAll = Subsystem | All
@@ -309,8 +310,8 @@ namespace thekogans {
             /// Queue to excecute LogSubsystemJob jobs.
             JobQueue::UniquePtr jobQueue;
             /// \brief
-            /// Synchronization spin lock.
-            SpinLock spinLock;
+            /// Synchronization mutex.
+            Mutex mutex;
 
         public:
             /// \brief

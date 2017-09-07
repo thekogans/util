@@ -55,7 +55,7 @@ namespace thekogans {
                         "Unable to insert intance: %s", name);
                 }
             }
-        }
+        } // namespace detail
 
     } // namespace util
 } // namespace thekogans

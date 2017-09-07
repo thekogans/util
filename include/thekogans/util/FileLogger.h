@@ -21,6 +21,7 @@
 #include <string>
 #include "thekogans/util/Config.h"
 #include "thekogans/util/Logger.h"
+#include "thekogans/util/File.h"
 
 namespace thekogans {
     namespace util {
@@ -48,6 +49,9 @@ namespace thekogans {
             /// \brief
             /// Max log file size before archiving.
             ui32 maxLogFileSize;
+            /// \brief
+            /// File to log to.
+            SimpleFile file;
 
             /// \brief
             /// ctor.
@@ -63,7 +67,13 @@ namespace thekogans {
                 Logger (level),
                 path (path_),
                 archive (archive_),
-                maxLogFileSize (maxLogFileSize_) {}
+                maxLogFileSize (maxLogFileSize_),
+                file (
+                    HostEndian,
+                    path,
+                    SimpleFile::WriteOnly |
+                    SimpleFile::Create |
+                    SimpleFile::Append) {}
 
             // Logger
             /// \brief
@@ -77,6 +87,12 @@ namespace thekogans {
                 ui32 /*level*/,
                 const std::string &header,
                 const std::string &message) throw ();
+
+            /// \brief
+            /// Flush the logger buffers.
+            virtual void Flush () {
+                file.Flush ();
+            }
 
         private:
             /// \brief

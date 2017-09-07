@@ -408,11 +408,11 @@ namespace thekogans {
             else {
                 dwCreationDisposition |= OPEN_EXISTING;
             }
+            if (Flags32 (flags).Test (Append)) {
+                dwDesiredAccess |= FILE_APPEND_DATA;
+            }
             DWORD dwFlagsAndAttributes = FILE_ATTRIBUTE_NORMAL;
             Open (path, dwDesiredAccess, dwShareMode, dwCreationDisposition, dwFlagsAndAttributes);
-            if (Flags32 (flags).Test (Append)) {
-                Seek (0, SEEK_END);
-            }
         #else // defined (TOOLCHAIN_OS_Windows)
             int flags_ = 0;
             if (Flags32 (flags).Test (ReadOnly)) {

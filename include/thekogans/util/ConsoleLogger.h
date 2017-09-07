@@ -97,6 +97,12 @@ namespace thekogans {
                 const std::string &message) throw ();
 
             /// \brief
+            /// Flush the logger buffers.
+            virtual void Flush () {
+                Console::Instance ().FlushPrintQueue ();
+            }
+
+            /// \brief
             /// ConsoleLogger is neither copy constructable, nor assignable.
             THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (ConsoleLogger)
         };

@@ -223,14 +223,7 @@ namespace thekogans {
             Singleton () {}
             /// \brief
             /// dtor.
-            virtual ~Singleton () {
-                // Whoa!, be on to you, who thinks it's a good idea to
-                // call delete instance here. Singletons are like std's ;),
-                // once acquired, persist forever.
-                //delete instance;
-                // Not even this is allowed (static initialization).
-                //instance = 0;
-            }
+            virtual ~Singleton () {}
 
             /// \brief
             /// Singleton is neither copy constructable, nor assignable.

@@ -308,7 +308,7 @@ namespace thekogans {
             return commandLine;
         }
 
-        THEKOGANS_UTIL_PROCESS_ID ChildProcess::Spawn () {
+        THEKOGANS_UTIL_PROCESS_ID ChildProcess::Spawn (bool detached) {
         #if defined (TOOLCHAIN_OS_Windows)
             if (path.empty ()) {
                 return THEKOGANS_UTIL_INVALID_PROCESS_ID_VALUE;
@@ -338,7 +338,8 @@ namespace thekogans {
                 startInfo.hStdError = stdIO->errPipe[1];
             }
             ClearProcessInformation (processInformation);
-            if (!CreateProcess (0, &commandLine[0], 0, 0, TRUE, 0,
+            if (!CreateProcess (0, &commandLine[0], 0, 0, TRUE,
+                    detached ? DETACHED_PROCESS : 0,
                     !environment.empty () ? (LPVOID)&environment[0] : 0,
                     0, &startInfo, &processInformation)) {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
@@ -383,6 +384,9 @@ namespace thekogans {
             }
             else {
                 // child process
+                if (detached && setsid () < 0) {
+                    exit (EXIT_FAILURE);
+                }
                 if (hookStdIO != HOOK_NONE) {
                     assert (stdIO.get () != 0);
                     stdIO->SetupChild ();
@@ -403,8 +407,9 @@ namespace thekogans {
                 else {
                     execvp (path.c_str (), (char * const *)&argv[0]);
                 }
-                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                    THEKOGANS_UTIL_OS_ERROR_CODE);
+                // If we got here that means execv... failed.
+                // Return the error code to the parent.
+                exit (THEKOGANS_UTIL_OS_ERROR_CODE);
             }
             return pid;
         #endif // defined (TOOLCHAIN_OS_Windows)

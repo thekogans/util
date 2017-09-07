@@ -22,7 +22,6 @@
 #include "thekogans/util/Path.h"
 #include "thekogans/util/Directory.h"
 #include "thekogans/util/Exception.h"
-#include "thekogans/util/File.h"
 #include "thekogans/util/Console.h"
 #include "thekogans/util/FileLogger.h"
 
@@ -37,16 +36,11 @@ namespace thekogans {
             if (!header.empty () || !message.empty ()) {
                 ArchiveLog ();
                 THEKOGANS_UTIL_TRY {
-                #if defined (TOOLCHAIN_OS_Windows)
-                    File stream (HostEndian, path, FILE_APPEND_DATA);
-                #else // defined (TOOLCHAIN_OS_Windows)
-                    File stream (HostEndian, path, O_WRONLY | O_CREAT | O_APPEND);
-                #endif // defined (TOOLCHAIN_OS_Windows)
                     if (!header.empty ()) {
-                        stream.Write (&header[0], (ui32)header.size ());
+                        file.Write (&header[0], (ui32)header.size ());
                     }
                     if (!message.empty ()) {
-                        stream.Write (&message[0], (ui32)message.size ());
+                        file.Write (&message[0], (ui32)message.size ());
                     }
                 }
                 THEKOGANS_UTIL_CATCH (std::exception) {
@@ -69,14 +63,25 @@ namespace thekogans {
             if (archive && Path (path).Exists ()) {
                 Directory::Entry entry (path);
                 if (entry.size > maxLogFileSize) {
+                    file.Close ();
                     if (Path (path + ".2").Exists ()) {
-                        unlink (std::string (path + ".2").c_str ());
+                        if (unlink (std::string (path + ".2").c_str ()) < 0) {
+                            THEKOGANS_UTIL_THROW_POSIX_ERROR_CODE_EXCEPTION (
+                                THEKOGANS_UTIL_POSIX_OS_ERROR_CODE);
+                        }
                     }
                     if (Path (path + ".1").Exists ()) {
-                        rename (std::string (path + ".1").c_str (),
-                            std::string (path + ".2").c_str ());
+                        if (rename (std::string (path + ".1").c_str (),
+                                std::string (path + ".2").c_str ()) < 0) {
+                            THEKOGANS_UTIL_THROW_POSIX_ERROR_CODE_EXCEPTION (
+                                THEKOGANS_UTIL_POSIX_OS_ERROR_CODE);
+                        }
                     }
-                    rename (path.c_str (), std::string (path + ".1").c_str ());
+                    if (rename (path.c_str (), std::string (path + ".1").c_str ()) < 0) {
+                        THEKOGANS_UTIL_THROW_POSIX_ERROR_CODE_EXCEPTION (
+                            THEKOGANS_UTIL_POSIX_OS_ERROR_CODE);
+                    }
+                    file.Open (path, SimpleFile::WriteOnly | SimpleFile::Create | SimpleFile::Append);
                 }
             }
         }

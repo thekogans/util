@@ -71,8 +71,8 @@ namespace thekogans {
                 return "SubsystemAll";
             }
             std::string value;
-            if (Flags32 (decorations).Test (MessageSeparator)) {
-                value = "MessageSeparator";
+            if (Flags32 (decorations).Test (EntrySeparator)) {
+                value = "EntrySeparator";
             }
             else if (Flags32 (decorations).Test (Subsystem)) {
                 if (!value.empty ()) {
@@ -139,8 +139,8 @@ namespace thekogans {
 
         namespace {
             ui32 stringTodecoration (const std::string &decoration) {
-                if (decoration == "MessageSeparator") {
-                    return LoggerMgr::MessageSeparator;
+                if (decoration == "EntrySeparator") {
+                    return LoggerMgr::EntrySeparator;
                 }
                 else if (decoration == "Subsystem") {
                     return LoggerMgr::Subsystem;
@@ -209,7 +209,7 @@ namespace thekogans {
                 i32 priority,
                 ui32 affinity) {
             Flush ();
-            LockGuard<SpinLock> guard (spinLock);
+            LockGuard<Mutex> guard (mutex);
             level = level_;
             decorations = decorations_;
             if (Flags32 (flags).Test (ClearLoggers)) {
@@ -226,7 +226,7 @@ namespace thekogans {
                 const char *subsystem,
                 Logger::Ptr logger) {
             if (subsystem != 0 && logger.Get () != 0) {
-                LockGuard<SpinLock> guard (spinLock);
+                LockGuard<Mutex> guard (mutex);
                 loggerMap[subsystem].push_back (logger);
             }
             else {
@@ -239,7 +239,7 @@ namespace thekogans {
                 const char *subsystem,
                 const LoggerList &loggerList) {
             if (subsystem != 0 && !loggerList.empty ()) {
-                LockGuard<SpinLock> guard (spinLock);
+                LockGuard<Mutex> guard (mutex);
                 loggerMap[subsystem] = loggerList;
             }
             else {
@@ -259,7 +259,7 @@ namespace thekogans {
                 ...) {
             std::string header;
             if (decorations != NoDecorations) {
-                if (decorations.Test (MessageSeparator) && decorations.Test (Multiline)) {
+                if (decorations.Test (EntrySeparator) && decorations.Test (Multiline)) {
                     header += std::string (80, '*');
                     header += "\n";
                 }
@@ -398,7 +398,7 @@ namespace thekogans {
                 const std::string &message) {
             Entry::UniquePtr entry (new Entry (subsystem, level, header, message));
             if (FilterEntry (*entry)) {
-                LockGuard<SpinLock> guard (spinLock);
+                LockGuard<Mutex> guard (mutex);
                 LoggerMap::iterator it = loggerMap.find (subsystem);
                 if (it != loggerMap.end ()) {
                     if (jobQueue.get () != 0) {
@@ -415,7 +415,7 @@ namespace thekogans {
 
         void LoggerMgr::AddFilter (Filter::UniquePtr filter) {
             if (filter.get () != 0) {
-                LockGuard<SpinLock> guard (spinLock);
+                LockGuard<Mutex> guard (mutex);
                 filterList.push_back (std::move (filter));
             }
             else {
@@ -425,14 +425,23 @@ namespace thekogans {
         }
 
         void LoggerMgr::Flush () {
+            LockGuard<Mutex> guard (mutex);
             if (jobQueue.get () != 0) {
                 jobQueue->WaitForIdle ();
             }
-            Console::Instance ().FlushPrintQueue ();
+            for (LoggerMap::iterator
+                    it = loggerMap.begin (),
+                    end = loggerMap.end (); it != end; ++it) {
+                for (LoggerList::iterator
+                        jt = it->second.begin (),
+                        end = it->second.end (); jt != end; ++jt) {
+                    (*jt)->Flush ();
+                }
+            }
         }
 
         bool LoggerMgr::FilterEntry (Entry &entry) {
-            LockGuard<SpinLock> guard (spinLock);
+            LockGuard<Mutex> guard (mutex);
             for (FilterList::iterator
                     it = filterList.begin (),
                     end = filterList.end (); it != end; ++it) {

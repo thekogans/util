@@ -67,6 +67,12 @@ namespace thekogans {
                 ui32 /*level*/,
                 const std::string & /*header*/,
                 const std::string & /*message*/) throw () = 0;
+
+            /// \brief
+            /// Flush the logger buffers. After this function returns,
+            /// all log entries should be committed to the substrate
+            /// represented by this logger.
+            virtual void Flush () {}
         };
 
     } // namespace util

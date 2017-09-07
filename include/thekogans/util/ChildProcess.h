@@ -277,8 +277,9 @@ namespace thekogans {
 
             /// \brief
             /// Async child process spawn.
+            /// \param[in] detached true = detach the child process from the parent,
             /// \return Process id.
-            THEKOGANS_UTIL_PROCESS_ID Spawn ();
+            THEKOGANS_UTIL_PROCESS_ID Spawn (bool detached = false);
             /// \enum
             /// Child process return status.
             enum ChildStatus {
