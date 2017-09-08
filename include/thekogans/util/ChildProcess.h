@@ -338,8 +338,9 @@ namespace thekogans {
             /// returned holds the reference to the child process and does not control
             /// it's lifetime in any way. Please see the code example provided with
             /// CollectOutput bellow.
+            /// \param[in] detached true = detach the child process from the parent,
             /// \return JobQueue::Job representing the spawn job.
-            JobQueue::Job::Ptr CreateSpawnJob ();
+            JobQueue::Job::Ptr CreateSpawnJob (bool detached = false);
             /// \brief
             /// Create a ChildProcess exec job to be executed on the \see{MainRunLoop}.
             /// \return JobQueue::Job representing the exec job.

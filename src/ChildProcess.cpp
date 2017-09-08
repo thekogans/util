@@ -469,22 +469,26 @@ namespace thekogans {
         #endif // defined (TOOLCHAIN_OS_Windows)
         }
 
-        JobQueue::Job::Ptr ChildProcess::CreateSpawnJob () {
+        JobQueue::Job::Ptr ChildProcess::CreateSpawnJob (bool detached) {
             struct SpawnJob : public JobQueue::Job {
                 ChildProcess &childProcess;
-                SpawnJob (ChildProcess &childProcess_) :
-                    childProcess (childProcess_) {}
+                bool detached;
+                SpawnJob (
+                    ChildProcess &childProcess_,
+                    bool detached_) :
+                    childProcess (childProcess_),
+                    detached (detached_) {}
                 // JobQueue::Job
                 virtual void Execute (volatile const bool &done) throw () {
                     if (!done) {
                         THEKOGANS_UTIL_TRY {
-                            childProcess.Spawn ();
+                            childProcess.Spawn (detached);
                         }
                         THEKOGANS_UTIL_CATCH_AND_LOG_SUBSYSTEM (THEKOGANS_UTIL)
                     }
                 }
             };
-            return JobQueue::Job::Ptr (new SpawnJob (*this));
+            return JobQueue::Job::Ptr (new SpawnJob (*this, detached));
         }
 
         JobQueue::Job::Ptr ChildProcess::CreateExecJob (ChildStatus &status) {
