@@ -527,12 +527,12 @@ namespace thekogans {
         typedef Singleton<LoggerMgr, SpinLock, GlobalLoggerMgrCreateInstance> GlobalLoggerMgr;
 
         /// \def THEKOGANS_UTIL_LOG_INIT_EX(
-        ///          level, decorations, flags, blocking, name, priority, affinity)
+        ///          level, decorations, blocking, name, priority, affinity)
         /// Parameterize the GlobalLoggerMgr ctor.
         #define THEKOGANS_UTIL_LOG_INIT_EX(\
-                level, decorations, flags, blocking, name, priority, affinity)\
+                level, decorations, blocking, name, priority, affinity)\
             thekogans::util::GlobalLoggerMgrCreateInstance::Parameterize (\
-                level, decorations, flags, blocking, name, priority, affinity)
+                level, decorations, blocking, name, priority, affinity)
         /// \def THEKOGANS_UTIL_LOG_INIT(level, decorations)
         /// Parameterize the GlobalLoggerMgr ctor.
         #define THEKOGANS_UTIL_LOG_INIT(level, decorations)\
