@@ -90,11 +90,14 @@ set(SOURCES
         src/internal.cpp)
 
 if(APPLE)
-    list(APPEND SOURCES src/NSLogLogger.cpp)
+    list(APPEND SOURCES
+        src/NSLogLogger.cpp
+        src/OSXUtils.mm)
 endif()
 
 if(WIN32)
-    list(APPEND SOURCES src/OutputDebugStringLogger.cpp)
+    list(APPEND SOURCES
+        src/OutputDebugStringLogger.cpp)
 endif()
 
 add_library(thekogans_util ${HEADERS} ${SOURCES})
