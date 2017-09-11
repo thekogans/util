@@ -50,13 +50,18 @@ namespace thekogans {
         struct _LIB_THEKOGANS_UTIL_DECL RefCounted {
         private:
             /// \brief
+            /// Object to delete when count == 0.
+            bool doDelete;
+            /// \brief
             /// Reference count.
             Count count;
 
         public:
             /// \brief
             /// ctor.
-            RefCounted () :
+            /// \param[in] Object to delete when count == 0.
+            RefCounted (bool doDelete_ = true) :
+                doDelete (doDelete_),
                 count (0) {}
             /// \brief
             /// dtor.
@@ -190,7 +195,9 @@ namespace thekogans {
             /// override this method to provide whatever means
             /// are appropriate for them.
             virtual void Harakiri () {
-                delete this;
+                if (doDelete) {
+                    delete this;
+                }
             }
         };
 

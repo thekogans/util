@@ -248,6 +248,7 @@ namespace thekogans {
             /// \brief
             /// Wait for thread to finish.
             /// \param[in] timeSpec How long to wait for.
+            /// \return true = succeeded, false = timed out
             /// IMPORTANT: timeSpec is a relative value.
             /// On POSIX (pthreads) systems Wait will add
             /// the current time to the value provided

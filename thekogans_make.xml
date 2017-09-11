@@ -143,7 +143,9 @@
     <cpp_header>$(organization)/$(project_directory)/Path.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/Pipeline.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/Plugins.h</cpp_header>
+    <cpp_header>$(organization)/$(project_directory)/Point.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/RandomSource.h</cpp_header>
+    <cpp_header>$(organization)/$(project_directory)/Rectangle.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/RefCounted.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/RunLoop.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/RWLock.h</cpp_header>
@@ -640,7 +642,9 @@
     <cpp_source>Path.cpp</cpp_source>
     <cpp_source>Pipeline.cpp</cpp_source>
     <cpp_source>Plugins.cpp</cpp_source>
+    <cpp_source>Point.cpp</cpp_source>
     <cpp_source>RandomSource.cpp</cpp_source>
+    <cpp_source>Rectangle.cpp</cpp_source>
     <cpp_source>RWLock.cpp</cpp_source>
     <cpp_source>Scheduler.cpp</cpp_source>
     <cpp_source>SecureAllocator.cpp</cpp_source>

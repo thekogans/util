@@ -391,6 +391,23 @@ namespace thekogans {
             THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (ChildProcess)
         };
 
+    #if !defined (TOOLCHAIN_OS_Windows)
+        /// \brief
+        /// Call this from main to daemonize the process.
+        /// After it returns the process is a daemon.
+        /// \param[in] userName Optional user name to run the daemon as.
+        /// \param[in] directory Optional directory to change to upon daemonization.
+        /// \param[in] lockFilePath Optional lock file to limit the daemon process
+        /// to a single instance.
+        /// \param[in] waitForChild How long should the parent process wait for
+        /// the child to become a daemon (in seconds).
+        _LIB_THEKOGANS_UTIL_DECL void _LIB_THEKOGANS_UTIL_API Daemonize (
+            const char *userName = 0,
+            const char *directory = 0,
+            const char *lockFilePath = 0,
+            i32 waitForChild = 3);
+    #endif // !defined (TOOLCHAIN_OS_Windows)
+
     } // namespace util
 } // namespace thekogans
 

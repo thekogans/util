@@ -85,11 +85,11 @@ namespace thekogans {
             /// \brief
             /// A JobQueue::Job must, at least, implement the Execute method.
             struct _LIB_THEKOGANS_UTIL_DECL Job :
-                    public util::ThreadSafeRefCounted,
+                    public ThreadSafeRefCounted,
                     public JobList::Node {
                 /// \brief
-                /// Convenient typedef for util::ThreadSafeRefCounted::Ptr<Job>.
-                typedef util::ThreadSafeRefCounted::Ptr<Job> Ptr;
+                /// Convenient typedef for ThreadSafeRefCounted::Ptr<Job>.
+                typedef ThreadSafeRefCounted::Ptr<Job> Ptr;
 
                 /// \brief
                 /// Convenient typedef for std::string.
@@ -113,7 +113,7 @@ namespace thekogans {
                 Job (const Id &id_ = GUID::FromRandom ().ToString ()) :
                     id (id_),
                     cancelled (false),
-                    finished (0) {}
+                    finished (false) {}
                 /// \brief
                 /// dtor.
                 virtual ~Job () {}

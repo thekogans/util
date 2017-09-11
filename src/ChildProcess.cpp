@@ -19,6 +19,8 @@
     #include <signal.h>
     #include <errno.h>
     #include <sys/wait.h>
+    #include <sys/types.h>
+    #include <pwd.h>
 #endif // !defined (TOOLCHAIN_OS_Windows)
 #include <cassert>
 #include <cstdlib>
@@ -532,6 +534,98 @@ namespace thekogans {
             }
             return buffer;
         }
+
+    #if !defined (TOOLCHAIN_OS_Windows)
+        namespace {
+            void SignalHandler (int signum) {
+                switch (signum) {
+                    case SIGALRM:
+                        exit (EXIT_FAILURE);
+                        break;
+                    case SIGUSR1:
+                        exit (EXIT_SUCCESS);
+                        break;
+                    case SIGCHLD:
+                        exit (EXIT_FAILURE);
+                        break;
+                }
+            }
+        }
+
+        // This function was adapted from: http://www.itp.uzh.ch/~dpotter/howto/daemonize
+        _LIB_THEKOGANS_UTIL_DECL void _LIB_THEKOGANS_UTIL_API Daemonize (
+                const char *userName,
+                const char *directory,
+                const char *lockFilePath,
+                i32 waitForChild) {
+            // Already a daemon.
+            if (getppid () == 1) {
+                return;
+            }
+            // Create the lock file as the current user.
+            if (lockFilePath != 0) {
+                THEKOGANS_UTIL_HANDLE lockFile = open (lockFilePath, O_RDWR | O_CREAT, 0640);
+                if (lockFile < 0) {
+                    THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                        THEKOGANS_UTIL_OS_ERROR_CODE);
+                }
+            }
+            // Drop user if there is one, and we were run as root.
+            if (userName != 0 && (getuid () == 0 || geteuid () == 0)) {
+                passwd *pw = getpwnam (userName);
+                if (pw != 0) {
+                    setuid (pw->pw_uid);
+                }
+            }
+            // Trap signals that we expect to recieve.
+            signal (SIGCHLD, SignalHandler);
+            signal (SIGUSR1, SignalHandler);
+            signal (SIGALRM, SignalHandler);
+            // Fork off the parent process.
+            pid_t pid = fork ();
+            if (pid < 0) {
+                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                    THEKOGANS_UTIL_OS_ERROR_CODE);
+            }
+            // If we got a good PID, then we can exit the parent process.
+            if (pid > 0) {
+                // Wait for confirmation from the child via SIGTERM or SIGCHLD, or
+                // for waitForChild seconds to elapse (SIGALRM). pause () should
+                // not return.
+                alarm (waitForChild);
+                pause ();
+                exit (EXIT_FAILURE);
+            }
+            // At this point we are executing as the child process.
+            pid_t parent = getppid ();
+            // Cancel certain signals.
+            signal (SIGCHLD, SIG_DFL); // A child process dies.
+            signal (SIGTSTP, SIG_IGN); // Various TTY signals.
+            signal (SIGTTOU, SIG_IGN);
+            signal (SIGTTIN, SIG_IGN);
+            signal (SIGHUP, SIG_IGN); // Ignore hangup signal.
+            signal (SIGTERM, SIG_DFL); // Die on SIGTERM.
+            // Change the file mode mask.
+            umask (0);
+            // Create a new SID for the child process.
+            if (setsid () < 0) {
+                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                    THEKOGANS_UTIL_OS_ERROR_CODE);
+            }
+            // Change the current working directory. This prevents the current
+            // directory from being locked; hence not being able to remove it.
+            if (directory != 0 && chdir (directory) < 0) {
+                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                    THEKOGANS_UTIL_OS_ERROR_CODE);
+            }
+            // Redirect standard io to /dev/null.
+            freopen ("/dev/null", "r", stdin);
+            freopen ("/dev/null", "w", stdout);
+            freopen ("/dev/null", "w", stderr);
+            // Tell the parent process that we are A-okay.
+            kill (parent, SIGUSR1);
+        }
+    #endif // !defined (TOOLCHAIN_OS_Windows)
 
     } // namespace util
 } // namespace thekogans

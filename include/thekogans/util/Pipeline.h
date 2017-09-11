@@ -50,8 +50,8 @@ namespace thekogans {
             /// to perform one time initialization/tear down.
             struct _LIB_THEKOGANS_UTIL_DECL Job : public JobQueue::Job {
                 /// \brief
-                /// Convenient typedef for util::ThreadSafeRefCounted::Ptr<Job>.
-                typedef util::ThreadSafeRefCounted::Ptr<Job> Ptr;
+                /// Convenient typedef for ThreadSafeRefCounted::Ptr<Job>.
+                typedef ThreadSafeRefCounted::Ptr<Job> Ptr;
 
                 /// \brief
                 /// Pipeline on which this job is staged.
