@@ -356,7 +356,7 @@ namespace thekogans {
         }
     #endif // defined (THEKOGANS_UTIL_HAVE_ZLIB)
 
-        Serializer &operator << (
+        _LIB_THEKOGANS_UTIL_DECL Serializer & _LIB_THEKOGANS_UTIL_API operator << (
                 Serializer &serializer,
                 const Buffer &buffer) {
             serializer <<
@@ -376,7 +376,7 @@ namespace thekogans {
             return serializer;
         }
 
-        Serializer &operator >> (
+        _LIB_THEKOGANS_UTIL_DECL Serializer & _LIB_THEKOGANS_UTIL_API operator >> (
                 Serializer &serializer,
                 Buffer &buffer) {
             Endianness endianness;

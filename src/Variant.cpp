@@ -603,7 +603,7 @@ namespace thekogans {
             return variant1.Compare (variant2) != 0;
         }
 
-        Serializer &operator << (
+        _LIB_THEKOGANS_UTIL_DECL Serializer & _LIB_THEKOGANS_UTIL_API operator << (
                 Serializer &serializer,
                 const Variant &variant) {
             serializer << variant.type;
@@ -653,7 +653,7 @@ namespace thekogans {
             return serializer;
         }
 
-        Serializer &operator >> (
+        _LIB_THEKOGANS_UTIL_DECL Serializer & _LIB_THEKOGANS_UTIL_API operator >> (
                 Serializer &serializer,
                 Variant &variant) {
             variant.Clear ();
