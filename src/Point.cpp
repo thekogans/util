@@ -24,9 +24,9 @@ namespace thekogans {
         bool Point::InRectangle (const Rectangle &rectangle) const {
             return
                 x >= rectangle.origin.x &&
-                x <= rectangle.origin.x + rectangle.extents.width &&
+                x <= rectangle.origin.x + (i32)rectangle.extents.width &&
                 y >= rectangle.origin.y &&
-                y <= rectangle.origin.y + rectangle.extents.height;
+                y <= rectangle.origin.y + (i32)rectangle.extents.height;
         }
 
     } // namespace util

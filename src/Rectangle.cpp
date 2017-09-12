@@ -65,18 +65,18 @@ namespace thekogans {
         Rectangle Rectangle::Intersection (const Rectangle &rectangle) const {
             // If the rectangles don't overlap, there can be no
             // intersection.
-            if (rectangle.origin.x + rectangle.extents.width < origin.x ||
-                    rectangle.origin.x > origin.x + extents.width ||
-                    rectangle.origin.y + rectangle.extents.height < origin.y ||
-                    rectangle.origin.y > origin.y + extents.height) {
+            if (rectangle.origin.x + (i32)rectangle.extents.width < origin.x ||
+                    rectangle.origin.x > origin.x + (i32)extents.width ||
+                    rectangle.origin.y + (i32)rectangle.extents.height < origin.y ||
+                    rectangle.origin.y > origin.y + (i32)extents.height) {
                 return Rectangle ();
             }
             i32 left = std::max (origin.x, rectangle.origin.x);
             i32 top = std::max (origin.y, rectangle.origin.y);
-            i32 right = std::min (origin.x + extents.width,
-                rectangle.origin.x + rectangle.extents.width);
-            i32 bottom = std::min (origin.y + extents.height,
-                rectangle.origin.y + rectangle.extents.height);
+            i32 right = std::min (origin.x + (i32)extents.width,
+                rectangle.origin.x + (i32)rectangle.extents.width);
+            i32 bottom = std::min (origin.y + (i32)extents.height,
+                rectangle.origin.y + (i32)rectangle.extents.height);
             return Rectangle (left, top, right - left, bottom - top);
         }
 
@@ -101,13 +101,13 @@ namespace thekogans {
                 (origin.x == rectangle.origin.x &&
                 extents.width == rectangle.extents.width &&
                 (origin.y < rectangle.origin.y ?
-                    origin.y + extents.height >= rectangle.origin.y :
-                    rectangle.origin.y + rectangle.extents.height >= origin.y)) ||
+                    origin.y + (i32)extents.height >= rectangle.origin.y :
+                    rectangle.origin.y + (i32)rectangle.extents.height >= origin.y)) ||
                 (origin.y == rectangle.origin.y &&
                 extents.height == rectangle.extents.height &&
                 (origin.x < rectangle.origin.x ?
-                    origin.x + extents.width >= rectangle.origin.x :
-                    rectangle.origin.x + rectangle.extents.width >= origin.x));
+                    origin.x + (i32)extents.width >= rectangle.origin.x :
+                    rectangle.origin.x + (i32)rectangle.extents.width >= origin.x));
         }
 
         void Rectangle::MergeWith (const Rectangle &rectangle) {
