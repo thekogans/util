@@ -300,7 +300,7 @@ namespace thekogans {
             }
         }
 
-        std::string ChildProcess::GetCommandLine () const {
+        std::string ChildProcess::BuildCommandLine () const {
             std::string commandLine = "\"" + path + "\"";
             for (std::list<std::string>::const_iterator
                     it = arguments.begin (),

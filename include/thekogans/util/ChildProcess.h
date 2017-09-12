@@ -186,8 +186,8 @@ namespace thekogans {
             /// ctor.
             /// \param[in] path_ Path of the child process image.
             /// \param[in] hookStdIO_ Flags to specify what if any stdio to hook.
-            explicit ChildProcess (
-                const std::string &path_,
+            ChildProcess (
+                const std::string &path_ = std::string (),
                 ui32 hookStdIO_ = HOOK_NONE);
         #if defined (TOOLCHAIN_OS_Windows)
             /// \brief
@@ -202,11 +202,25 @@ namespace thekogans {
                 return path;
             }
             /// \brief
+            /// Set the path associated with this child process.
+            /// \param[in] path_ Path associated with this child process.
+            inline void SetPath (const std::string &path_) {
+                path = path_;
+            }
+
+            /// \brief
             /// Get the type of standard io to hook.
             /// \return Type of standard io to hook.
             inline ui32 GetHookStdIO () const {
                 return hookStdIO;
             }
+            /// \brief
+            /// Set the type of standard io to hook.
+            /// \param[in] hookStdIO_ Type of standard io to hook.
+            inline void SetHookStdIO (ui32 hookStdIO_) {
+                hookStdIO = hookStdIO_;
+            }
+
             /// \brief
             /// Get the list of arguments associated with this child process.
             /// \return List of arguments associated with this child process.
@@ -273,7 +287,7 @@ namespace thekogans {
             /// \brief
             /// Return the command line which will be executed by this child process.
             /// \return Command line which will be executed by this child process.
-            std::string GetCommandLine () const;
+            std::string BuildCommandLine () const;
 
             /// \brief
             /// Async child process spawn.
