@@ -204,7 +204,7 @@ namespace thekogans {
                 ui32 maxWorkers = SystemInfo::Instance ().GetCPUCount () * 2,
                 i32 workerPriority = THEKOGANS_UTIL_NORMAL_THREAD_PRIORITY,
                 ui32 workerAffinity = UI32_MAX) :
-            workerPool (workerName, minWorkers, maxWorkers, workerPriority, workerAffinity) {}
+                workerPool (workerName, minWorkers, maxWorkers, workerPriority, workerAffinity) {}
 
         private:
             /// \brief

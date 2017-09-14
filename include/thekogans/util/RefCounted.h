@@ -40,11 +40,10 @@ namespace thekogans {
         /// give class designers finer control over the lifetime management of
         /// their classes. If you need more control over heap placement, that's
         /// what \see{Heap} is for.
-        /// VERY, VERY IMPORTANT: The flexibility of RefCounted comes with a
-        /// price. If you create a RefCounted object on the stack, you are NOT
-        /// allowed to use RefCounted::Ptr without either, overriding Harakiri
-        /// or calling AddRef in it's ctor. This way there will be an imbalance
-        /// between AddRef and Release calls and Harakiri will never be called.
+        /// VERY, VERY IMPORTANT: RefCounted takes a single parameter (doDelete).
+        /// It defaults to true which is what you need for heap allocated objects.
+        /// For static objects set doDelete to false to prevent Harakiri from
+        /// deleting an object that was not allocated.
 
         template<typename Count>
         struct _LIB_THEKOGANS_UTIL_DECL RefCounted {
@@ -126,6 +125,13 @@ namespace thekogans {
                     if (object != 0) {
                         object->Release ();
                     }
+                }
+
+                /// \brief
+                /// Check the pointer for nullness.
+                /// \return true if object != 0.
+                explicit operator bool () const {
+                    return object != 0;
                 }
 
                 /// \brief
@@ -233,6 +239,54 @@ namespace thekogans {
         }
 
         /// \brief
+        /// Compare two pointers for order.
+        /// \param[in] item1 First pointer to compare.
+        /// \param[in] item2 Second pointer to compare.
+        /// \return true == item1 < item2.
+        template<typename T>
+        inline bool operator < (
+                const ThreadSafeRefCounted::Ptr<T> &item1,
+                const ThreadSafeRefCounted::Ptr<T> &item2) {
+            return item1.Get () < item2.Get ();
+        }
+
+        /// \brief
+        /// Compare two pointers for order.
+        /// \param[in] item1 First pointer to compare.
+        /// \param[in] item2 Second pointer to compare.
+        /// \return true == item1 <= item2.
+        template<typename T>
+        inline bool operator <= (
+                const ThreadSafeRefCounted::Ptr<T> &item1,
+                const ThreadSafeRefCounted::Ptr<T> &item2) {
+            return item1.Get () <= item2.Get ();
+        }
+
+        /// \brief
+        /// Compare two pointers for order.
+        /// \param[in] item1 First pointer to compare.
+        /// \param[in] item2 Second pointer to compare.
+        /// \return true == item1 > item2.
+        template<typename T>
+        inline bool operator > (
+                const ThreadSafeRefCounted::Ptr<T> &item1,
+                const ThreadSafeRefCounted::Ptr<T> &item2) {
+            return item1.Get () > item2.Get ();
+        }
+
+        /// \brief
+        /// Compare two pointers for order.
+        /// \param[in] item1 First pointer to compare.
+        /// \param[in] item2 Second pointer to compare.
+        /// \return true == item1 >= item2.
+        template<typename T>
+        inline bool operator >= (
+                const ThreadSafeRefCounted::Ptr<T> &item1,
+                const ThreadSafeRefCounted::Ptr<T> &item2) {
+            return item1.Get () >= item2.Get ();
+        }
+
+        /// \brief
         /// Compare two pointers for equality.
         /// \param[in] item1 First pointer to compare.
         /// \param[in] item2 Second pointer to compare.
@@ -254,6 +308,54 @@ namespace thekogans {
                 const SingleThreadedRefCounted::Ptr<T> &item1,
                 const SingleThreadedRefCounted::Ptr<T> &item2) {
             return item1.Get () != item2.Get ();
+        }
+
+        /// \brief
+        /// Compare two pointers for order.
+        /// \param[in] item1 First pointer to compare.
+        /// \param[in] item2 Second pointer to compare.
+        /// \return true == item1 < item2.
+        template<typename T>
+        inline bool operator < (
+                const SingleThreadedRefCounted::Ptr<T> &item1,
+                const SingleThreadedRefCounted::Ptr<T> &item2) {
+            return item1.Get () < item2.Get ();
+        }
+
+        /// \brief
+        /// Compare two pointers for order.
+        /// \param[in] item1 First pointer to compare.
+        /// \param[in] item2 Second pointer to compare.
+        /// \return true == item1 <= item2.
+        template<typename T>
+        inline bool operator <= (
+                const SingleThreadedRefCounted::Ptr<T> &item1,
+                const SingleThreadedRefCounted::Ptr<T> &item2) {
+            return item1.Get () <= item2.Get ();
+        }
+
+        /// \brief
+        /// Compare two pointers for order.
+        /// \param[in] item1 First pointer to compare.
+        /// \param[in] item2 Second pointer to compare.
+        /// \return true == item1 > item2.
+        template<typename T>
+        inline bool operator > (
+                const SingleThreadedRefCounted::Ptr<T> &item1,
+                const SingleThreadedRefCounted::Ptr<T> &item2) {
+            return item1.Get () > item2.Get ();
+        }
+
+        /// \brief
+        /// Compare two pointers for order.
+        /// \param[in] item1 First pointer to compare.
+        /// \param[in] item2 Second pointer to compare.
+        /// \return true == item1 >= item2.
+        template<typename T>
+        inline bool operator >= (
+                const SingleThreadedRefCounted::Ptr<T> &item1,
+                const SingleThreadedRefCounted::Ptr<T> &item2) {
+            return item1.Get () >= item2.Get ();
         }
 
     } // namespace util

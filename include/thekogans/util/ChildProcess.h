@@ -222,19 +222,6 @@ namespace thekogans {
             }
 
             /// \brief
-            /// Get the list of arguments associated with this child process.
-            /// \return List of arguments associated with this child process.
-            inline const std::list<std::string> &GetArguments () const {
-                return arguments;
-            }
-            /// \brief
-            /// Get the list of environment variables associated with this child process.
-            /// \return List of environment variables associated with this child process.
-            inline const std::list<std::string> &GetEnvironmentVariables () const {
-                return environmentVariables;
-            }
-
-            /// \brief
             /// Return the stdin pipe to the child process.
             /// \return The pipe handle.\n
             /// NOTE: You can use this handle as a parameter
@@ -267,6 +254,12 @@ namespace thekogans {
             /// \param[in] argument Argument to add.
             void AddArgument (const std::string &argument);
             /// \brief
+            /// Get the list of arguments associated with this child process.
+            /// \return List of arguments associated with this child process.
+            inline const std::list<std::string> &GetArguments () const {
+                return arguments;
+            }
+            /// \brief
             /// Set the list of arguments.
             /// \param[in] arguments_ List of arguments to set.
             inline void SetArguments (const std::list<std::string> &arguments_) {
@@ -277,6 +270,12 @@ namespace thekogans {
             /// \param[in] environmentVariable Variable to add.\n
             /// NOTE: Variables should be in the form of name=value
             void AddEnvironmentVariable (const std::string &environmentVariable);
+            /// \brief
+            /// Get the list of environment variables associated with this child process.
+            /// \return List of environment variables associated with this child process.
+            inline const std::list<std::string> &GetEnvironmentVariables () const {
+                return environmentVariables;
+            }
             /// \brief
             /// Set the list of environment variables.
             /// \param[in] environmentVariables_ List of environment variables to set.
@@ -415,6 +414,27 @@ namespace thekogans {
         /// to a single instance.
         /// \param[in] waitForChild How long should the parent process wait for
         /// the child to become a daemon (in seconds).
+        /// NOTE: Before forking Daemonize hooks a number of signals so that parent
+        /// and child can synchronize the process. It is therefore important that
+        /// Daemonize be the very first thing that main does before initializing
+        /// anything else (especially \see{Console}). The following code snippet
+        /// shows the canonical use case:
+        ///
+        /// \code
+        /// #include <thekogans/util/ChildProcess.h>
+        /// #include <thekogans/util/MainRunLoop.h>
+        ///
+        /// using namespace thekogans;
+        ///
+        /// int main (
+        ///         int argc,
+        ///         const char *argv[]) {
+        ///     Daemonize (...);
+        ///     // initialize the daemon process here.
+        ///     util::MainRunLoop::Instance ().Start ();
+        ///     return 0;
+        /// }
+        /// \endcode
         _LIB_THEKOGANS_UTIL_DECL void _LIB_THEKOGANS_UTIL_API Daemonize (
             const char *userName = 0,
             const char *directory = 0,

@@ -162,7 +162,7 @@ namespace thekogans {
             /// a file (which might be updated at run-time), and have some/all of
             /// those options overiden on the command line.
             struct _LIB_THEKOGANS_UTIL_DECL Watcher :
-                    public Singleton<Watcher>,
+                    public Singleton<Watcher, SpinLock>,
                     public Thread {
                 /// \brief
                 /// Convenient typedef for THEKOGANS_UTIL_HANDLE.
