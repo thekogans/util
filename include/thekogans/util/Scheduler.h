@@ -287,6 +287,8 @@ namespace thekogans {
             Scheduler *operator () ();
         };
 
+        /// \struct GlobalScheduler Scheduler.h thekogans/util/Scheduler.h
+        ///
         /// \brief
         /// A global scheduler instance. The Scheduler is designed to be
         /// as flexible as possible. To be useful in different situations
@@ -297,7 +299,8 @@ namespace thekogans {
         /// the defaults. This typedef exists to aid in that. If all you
         /// need is a global scheduler then GlobalScheduler::Instance ()
         /// will do the trick.
-        typedef Singleton<Scheduler, SpinLock, GlobalSchedulerCreateInstance> GlobalScheduler;
+        struct _LIB_THEKOGANS_UTIL_DECL GlobalScheduler :
+            public Singleton<Scheduler, SpinLock, GlobalSchedulerCreateInstance> {};
 
     } // namespace util
 } // namespace thekogans

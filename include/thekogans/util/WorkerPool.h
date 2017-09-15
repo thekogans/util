@@ -294,6 +294,8 @@ namespace thekogans {
             WorkerPool *operator () ();
         };
 
+        /// \struct GlobalWorkerPool WorkerPool.h thekogans/util/WorkerPool.h
+        ///
         /// \brief
         /// A global worker pool instance. The WorkerPool is designed to be
         /// as flexible as possible. To be useful in different situations
@@ -304,7 +306,8 @@ namespace thekogans {
         /// the defaults. This typedef exists to aid in that. If all you
         /// need is a global worker pool then GlobalWorkerPool::Instance ()
         /// will do the trick.
-        typedef Singleton<WorkerPool, SpinLock, GlobalWorkerPoolCreateInstance> GlobalWorkerPool;
+        struct _LIB_THEKOGANS_UTIL_DECL GlobalWorkerPool :
+            public Singleton<WorkerPool, SpinLock, GlobalWorkerPoolCreateInstance> {};
 
     } // namespace util
 } // namespace thekogans

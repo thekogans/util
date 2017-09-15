@@ -42,7 +42,7 @@
 namespace thekogans {
     namespace util {
 
-        /// \struct MainRunLoopCreateInstance RunLoop.h thekogans/util/RunLoop.h
+        /// \struct MainRunLoopCreateInstance MainRunLoop.h thekogans/util/MainRunLoop.h
         ///
         /// \brief
         /// Call MainRunLoopCreateInstance::Parameterize before the first use of
@@ -203,9 +203,12 @@ namespace thekogans {
             RunLoop *operator () ();
         };
 
+        /// \struct MainRunLoop MainRunLoop.h thekogans/util/MainRunLoop.h
+        ///
         /// \brief
         /// Main thread run loop.
-        typedef Singleton<RunLoop, SpinLock, MainRunLoopCreateInstance> MainRunLoop;
+        struct _LIB_THEKOGANS_UTIL_DECL MainRunLoop :
+            public Singleton<RunLoop, SpinLock, MainRunLoopCreateInstance> {};
 
     } // namespace util
 } // namespace thekogans

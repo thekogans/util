@@ -19,39 +19,12 @@
 #define __thekogans_util_Singleton_h
 
 #include <cassert>
-#if defined (TOOLCHAIN_OS_Windows) && defined (TOOLCHAIN_TYPE_Shared)
-    #include <typeinfo>
-    #include "thekogans/util/Mutex.h"
-#endif // defined (TOOLCHAIN_OS_Windows) && defined (TOOLCHAIN_TYPE_Shared)
 #include "thekogans/util/Config.h"
 #include "thekogans/util/NullLock.h"
 #include "thekogans/util/LockGuard.h"
 
 namespace thekogans {
     namespace util {
-
-    #if defined (TOOLCHAIN_OS_Windows) && defined (TOOLCHAIN_TYPE_Shared)
-        namespace detail {
-            /// \brief
-            /// Used by Singleton::Instance to implement a global T * map.
-            /// IMPORTANT: The lock must be a Mutex (critical section) as
-            /// it's recursive nature allows chaining of singleton construction.
-            /// \return Global T * map lock.
-            _LIB_THEKOGANS_UTIL_DECL Mutex & _LIB_THEKOGANS_UTIL_API GetInstanceLock ();
-            /// \brief
-            /// Used by Singleton::Instance to implement a global T * map.
-            /// \param[in] name Class instance name.
-            /// \return T * associated with the given name.
-            _LIB_THEKOGANS_UTIL_DECL void * _LIB_THEKOGANS_UTIL_API GetInstance (const char *name);
-            /// \brief
-            /// Used by Singleton::Instance to implement a global T * map.
-            /// \param[in] name Class instance name.
-            /// \param[in] instance T * associated with the name,
-            _LIB_THEKOGANS_UTIL_DECL void _LIB_THEKOGANS_UTIL_API SetInstance (
-                const char *name,
-                void *instance);
-        }
-    #endif // defined (TOOLCHAIN_OS_Windows) && defined (TOOLCHAIN_TYPE_Shared)
 
         /// \struct DefaultCreateInstance Singleton.h thekogans/util/Singleton.h
         ///
@@ -117,6 +90,23 @@ namespace thekogans {
             }
         };
 
+        /// \struct DefaultDestroyInstance Singleton.h thekogans/util/Singleton.h
+        ///
+        /// \brief
+        /// Implements the default singleton destruction method.
+
+        template<typename T>
+        struct DefaultDestroyInstance {
+            /// \brief
+            /// Destroy the singleton instance.
+            /// \param[in] instance Singleton instance to destroy.
+            inline void operator () (T *instance) {
+                if (instance != 0) {
+                    delete instance;
+                }
+            }
+        };
+
         /// \struct Singleton Singleton.h thekogans/util/Singleton.h
         ///
         /// \brief
@@ -167,13 +157,13 @@ namespace thekogans {
         template<
             typename T,
             typename Lock = NullLock,
-            typename CreateInstance = DefaultCreateInstance<T>>
+            typename CreateInstance = DefaultCreateInstance<T>,
+            typename DestroyInstance = DefaultDestroyInstance<T>>
         struct Singleton {
             /// \brief
             /// Return the singleton instance. Create if first time accessed.
             /// \return The singleton instance.
             static T &Instance () {
-                static T * volatile instance = 0;
                 // We implement the double-checked locking pattern here
                 // to allow our singleton instance method to be thread-safe
                 // (i.e. thread-safe singleton construction).
@@ -181,43 +171,33 @@ namespace thekogans {
                     // Here we acquire the lock, check instance again,
                     // and if it's STILL null, we are the lucky ones,
                     // we get to create the actual instance!
-                #if defined (TOOLCHAIN_OS_Windows) && defined (TOOLCHAIN_TYPE_Shared)
-                    // Windows shared libraries (dll) are very different from their
-                    // Linux (so)/OS X (dylib) counterparts. On Linux and OS X shared
-                    // libraries are very similar to static libraries and the linker
-                    // is able to resolve symbols very easily. In fact you have to go
-                    // through some pains to actually hide symbol names from the linker.
-                    // As a result templates instantiated in one so/dylib are available
-                    // to other shared libraries and executables that link against them.
-                    // On Windows, DLLs have their own data segments and symbol visibility
-                    // rules. As a result, on Windows, It's practically impossible to share
-                    // template instances across DLLs. To remedy this, when building for
-                    // Windows we use a global instance map to hold the T *. So, while the
-                    // Singleton template instances will be different across DLL and process
-                    // boundaries, they will all access the same T *.
-                    LockGuard<Mutex> guard (detail::GetInstanceLock ());
-                    instance = reinterpret_cast<T *> (detail::GetInstance (typeid (T).name ()));
-                #else // defined (TOOLCHAIN_OS_Windows) && defined (TOOLCHAIN_TYPE_Shared)
-                    static Lock lock;
                     LockGuard<Lock> guard (lock);
-                #endif // defined (TOOLCHAIN_OS_Windows) && defined (TOOLCHAIN_TYPE_Shared)
                     if (instance == 0) {
                         instance = CreateInstance () ();
-                    #if defined (TOOLCHAIN_OS_Windows) && defined (TOOLCHAIN_TYPE_Shared)
-                        // Think of SetInstance as an extension of CreateInstance. Inserting
-                        // the created instance in to the map is part of constructing it. If
-                        // something goes wrong and it's not able to insert the new T * in to
-                        // the map SetInstance will throw an exception. Treat that exception
-                        // as you would any other thrown by the T ctor.
-                        detail::SetInstance (typeid (T).name (), instance);
-                    #endif // defined (TOOLCHAIN_OS_Windows) && defined (TOOLCHAIN_TYPE_Shared)
                     }
                 }
                 assert (instance != 0);
                 return *instance;
             }
 
+            /// \brief
+            /// Destroy the singleton instance.
+            static void Destroy () {
+                LockGuard<Lock> guard (lock);
+                if (instance != 0) {
+                    DestroyInstance () (instance);
+                    instance = 0;
+                }
+            }
+
         protected:
+            /// \brief
+            /// The one and only singleton instance.
+            static T * volatile instance;
+            /// \brief
+            /// Lock protecting singleton construction.
+            static Lock lock;
+
             /// \brief
             /// ctor.
             Singleton () {}
@@ -229,6 +209,24 @@ namespace thekogans {
             /// Singleton is neither copy constructable, nor assignable.
             THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (Singleton)
         };
+
+        /// \brief
+        /// Definition of the Singleton<T, Lock, CreateInstance, DestroyInstance>::instance.
+        template<
+            typename T,
+            typename Lock,
+            typename CreateInstance,
+            typename DestroyInstance>
+        T * volatile Singleton<T, Lock, CreateInstance, DestroyInstance>::instance = 0;
+
+        /// \brief
+        /// Definition of the Singleton<T, Lock, CreateInstance, DestroyInstance>::lock.
+        template<
+            typename T,
+            typename Lock,
+            typename CreateInstance,
+            typename DestroyInstance>
+        Lock Singleton<T, Lock, CreateInstance, DestroyInstance>::lock;
 
     } // namespace util
 } // namespace thekogans

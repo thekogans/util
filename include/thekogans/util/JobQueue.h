@@ -580,6 +580,8 @@ namespace thekogans {
             JobQueue *operator () ();
         };
 
+        /// \struct GlobalJobQueue JobQueue.h thekogans/util/JobQueue.h
+        ///
         /// \brief
         /// A global job queue instance. The JobQueue is designed to be
         /// as flexible as possible. To be useful in different situations
@@ -590,7 +592,8 @@ namespace thekogans {
         /// the defaults. This typedef exists to aid in that. If all you
         /// need is a background thread where you can schedule jobs, then
         /// GlobalJobQueue::Instance () will do the trick.
-        typedef Singleton<JobQueue, SpinLock, GlobalJobQueueCreateInstance> GlobalJobQueue;
+        struct _LIB_THEKOGANS_UTIL_DECL GlobalJobQueue :
+            public Singleton<JobQueue, SpinLock, GlobalJobQueueCreateInstance> {};
 
     } // namespace util
 } // namespace thekogans

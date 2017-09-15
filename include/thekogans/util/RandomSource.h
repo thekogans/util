@@ -104,9 +104,12 @@ namespace thekogans {
             THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (RandomSource)
         };
 
+        /// \struct GlobalRandomSource RandomSource.h thekogans/util/RandomSource.h
+        ///
         /// \brief
         /// A global random source instance.
-        typedef Singleton<RandomSource, SpinLock> GlobalRandomSource;
+        struct _LIB_THEKOGANS_UTIL_DECL GlobalRandomSource :
+            public Singleton<RandomSource, SpinLock> {};
 
     } // namespace util
 } // namespace thekogans

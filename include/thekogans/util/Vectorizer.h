@@ -256,6 +256,8 @@ namespace thekogans {
             Vectorizer *operator () ();
         };
 
+        /// \struct GlobalVectorizer Vectorizer.h thekogans/util/Vectorizer.h
+        ///
         /// \brief
         /// A global vectorizer instance. The Vectorizer is designed to be as
         /// flexible as possible. To be useful in different situations the
@@ -264,7 +266,8 @@ namespace thekogans {
         /// the most useful) use will have a single vectorizer using the defaults.
         /// This typedef exists to aid in that. If all you need is a global
         /// vectorizer then GlobalVectorizer::Instance () will do the trick.
-        typedef Singleton<Vectorizer, SpinLock, GlobalVectorizerCreateInstance> GlobalVectorizer;
+        struct _LIB_THEKOGANS_UTIL_DECL GlobalVectorizer :
+            public Singleton<Vectorizer, SpinLock, GlobalVectorizerCreateInstance> {};
 
     } // namespace util
 } // namespace thekogans

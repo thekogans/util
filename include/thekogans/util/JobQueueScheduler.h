@@ -302,9 +302,12 @@ namespace thekogans {
             THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (JobQueueScheduler)
         };
 
+        /// \struct GlobalJobQueueScheduler JobQueueScheduler.h thekogans/util/JobQueueScheduler.h
+        ///
         /// \brief
         /// A global job queue scheduler instance.
-        typedef Singleton<JobQueueScheduler, SpinLock> GlobalJobQueueScheduler;
+        struct _LIB_THEKOGANS_UTIL_DECL GlobalJobQueueScheduler :
+            public Singleton<JobQueueScheduler, SpinLock> {};
 
     } // namespace util
 } // namespace thekogans

@@ -522,9 +522,12 @@ namespace thekogans {
             LoggerMgr *operator () ();
         };
 
+        /// \struct GlobalLoggerMgr LoggerMgr.h thekogans/util/LoggerMgr.h
+        ///
         /// \brief
         /// A global logger mgr instance.
-        typedef Singleton<LoggerMgr, SpinLock, GlobalLoggerMgrCreateInstance> GlobalLoggerMgr;
+        struct _LIB_THEKOGANS_UTIL_DECL GlobalLoggerMgr :
+            public Singleton<LoggerMgr, SpinLock, GlobalLoggerMgrCreateInstance> {};
 
         /// \def THEKOGANS_UTIL_LOG_INIT_EX(
         ///          level, decorations, blocking, name, priority, affinity)
