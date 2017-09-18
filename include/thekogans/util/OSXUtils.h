@@ -18,6 +18,7 @@
 #if !defined (__thekogans_util_OSXUtils_h)
 #define __thekogans_util_OSXUtils_h
 
+#include <CoreFoundation/CFError.h>
 #include <IOKit/IOReturn.h>
 #include <string>
 

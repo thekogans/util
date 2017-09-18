@@ -103,7 +103,7 @@ namespace thekogans {
                 // timer. In this case, reuse the existing timer id and EV_ADD will
                 // modify the existing kqueue entry.
                 ui64 id = timer.id == NIDX64 ? idPool++ : timer.id;
-                uint16_t flags = EV_ADD;
+                ui16 flags = EV_ADD;
                 if (!periodic) {
                     flags |= EV_ONESHOT;
                 }

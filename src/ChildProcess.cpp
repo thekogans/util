@@ -573,8 +573,9 @@ namespace thekogans {
             // Drop user if there is one, and we were run as root.
             if (userName != 0 && (getuid () == 0 || geteuid () == 0)) {
                 passwd *pw = getpwnam (userName);
-                if (pw != 0) {
-                    setuid (pw->pw_uid);
+                if (pw == 0 || setuid (pw->pw_uid) < 0) {
+                    THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                        THEKOGANS_UTIL_OS_ERROR_CODE);
                 }
             }
             // Trap signals that we expect to recieve.
@@ -619,11 +620,16 @@ namespace thekogans {
                     THEKOGANS_UTIL_OS_ERROR_CODE);
             }
             // Redirect standard io to /dev/null.
-            freopen ("/dev/null", "r", stdin);
-            freopen ("/dev/null", "w", stdout);
-            freopen ("/dev/null", "w", stderr);
-            // Tell the parent process that we are A-okay.
-            kill (parent, SIGUSR1);
+            if (freopen ("/dev/null", "r", stdin) != 0 &&
+                    freopen ("/dev/null", "w", stdout) != 0 &&
+                    freopen ("/dev/null", "w", stderr) != 0) {
+                // Tell the parent process that we are A-okay.
+                kill (parent, SIGUSR1);
+            }
+            else {
+                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                    THEKOGANS_UTIL_OS_ERROR_CODE);
+            }
         }
     #endif // !defined (TOOLCHAIN_OS_Windows)
 

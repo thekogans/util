@@ -73,7 +73,8 @@ namespace thekogans {
         ///     }
         /// };
         ///
-        /// typedef Singleton<JobQueue, SpinLock, GlobalJobQueueCreateInstance> GlobalJobQueue;
+        /// struct _LIB_THEKOGANS_UTIL_DECL GlobalJobQueue :
+        ///     public Singleton<JobQueue, SpinLock, GlobalJobQueueCreateInstance> {};
         ///
         /// // Call GlobalJobQueueCreateInstance::Parameterize (...); before calling
         /// // GlobalJobQueue::Instance () and the GlobalJobQueue instance will be

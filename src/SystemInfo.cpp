@@ -33,6 +33,7 @@
         #include <unistd.h>
         #include <signal.h>
         #include <setjmp.h>
+        #include <climits>
     #elif defined (TOOLCHAIN_OS_OSX)
         #include <libproc.h>
         #include <sys/types.h>
@@ -471,7 +472,7 @@ namespace thekogans {
                 return cpuFeatures;
             }
 
-            std::string GetProcessPathHelper () {
+            std::string GetProcessPathImpl () {
             #if defined (TOOLCHAIN_OS_Windows)
                 char path[MAX_PATH];
                 if (GetModuleFileName (0, path, sizeof (path)) == 0) {
@@ -480,9 +481,9 @@ namespace thekogans {
                 }
                 return path;
             #elif defined (TOOLCHAIN_OS_Linux)
-                char path[MAX_PATH];
+                char path[PATH_MAX];
                 ssize_t count =
-                    readlink (FormatString ("/proc/%d/exe", getpid ()), path, size (path));
+                    readlink (FormatString ("/proc/%d/exe", getpid ()).c_str (), path, sizeof (path));
                 if (count < 0) {
                     THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
                         THEKOGANS_UTIL_OS_ERROR_CODE);
@@ -499,12 +500,8 @@ namespace thekogans {
             #endif // defined (TOOLCHAIN_OS_Windows)
             }
 
-            std::string GetHostNameHelper () {
+            std::string GetHostNameImpl () {
             #if defined (TOOLCHAIN_OS_Windows)
-                // This Windows specific initialization happens during
-                // static ctor creation. No throwing here. If WSAStartup
-                // fails, the clients will know soon enough when we
-                // call GetHostNameHelper.
                 struct WinSockInit {
                     WinSockInit () {
                         WSADATA data;
@@ -535,8 +532,8 @@ namespace thekogans {
             cpuFeatures (GetCPUFeaturesImpl ()),
             pageSize (GetPageSizeImpl ()),
             memorySize (GetMemorySizeImpl ()),
-            processPath (GetProcessPathHelper ()),
-            hostName (GetHostNameHelper ()) {}
+            processPath (GetProcessPathImpl ()),
+            hostName (GetHostNameImpl ()) {}
 
     } // namespace util
 } // namespace thekogans

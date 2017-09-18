@@ -38,11 +38,11 @@ namespace thekogans {
             /// SpinLock state type.
             typedef enum {
                 /// \brief
-                /// Locked.
-                Locked,
-                /// \brief
                 /// Unlocked.
-                Unlocked
+                Unlocked,
+                /// \brief
+                /// Locked.
+                Locked
             } LockState;
             /// \brief
             /// SpinLock state.
