@@ -105,6 +105,9 @@ add_library(thekogans_util ${HEADERS} ${SOURCES})
 if(WIN32)
     target_link_libraries(thekogans_util WS2_32)
 endif()
+if(APPLE)
+    target_link_libraries(thekogans_util "-framework SystemConfiguration")
+endif()
 
 # Link against the dependencies defined by Kragle, if this library is used in kragle
 # You might want to setup your own linkage for your project, dear user of the Util library...
