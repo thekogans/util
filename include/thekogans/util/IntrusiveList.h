@@ -132,8 +132,8 @@ namespace thekogans {
                 // is called by the runtime, static defaultCallback (declared
                 // below) might have already been destructed. Create a fresh
                 // one on the stack so that we can control it's lifetime.
-                DefaultCallback defaultCallback;
-                clear (defaultCallback);
+                DefaultCallback callback;
+                clear (callback);
             }
 
             /// \brief

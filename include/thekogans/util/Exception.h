@@ -502,7 +502,7 @@ namespace thekogans {
         #define THEKOGANS_UTIL_STRING_EXCEPTION_EX(\
                 file, function, line, buildTime, format, ...)\
             THEKOGANS_UTIL_EXCEPTION_EX (file, function,\
-                line, buildTime, -1, format, __VA_ARGS__)
+                line, buildTime, (THEKOGANS_UTIL_ERROR_CODE)-1, format, __VA_ARGS__)
         /// \def THEKOGANS_UTIL_STRING_EXCEPTION(format, ...)
         /// Build an Exception from message.
         #define THEKOGANS_UTIL_STRING_EXCEPTION(format, ...)\

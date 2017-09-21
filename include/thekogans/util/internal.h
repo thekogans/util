@@ -39,7 +39,6 @@
         #define strcpy strcpy_s
         #define strtoll _strtoi64
         #define strtoull _strtoui64
-        #define strtof strtod
         #define strcasecmp _stricmp
         #define strncasecmp _strnicmp
         #define snprintf sprintf_s
