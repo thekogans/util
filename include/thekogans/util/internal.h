@@ -35,8 +35,6 @@
         #include <cstdio>
 
         #define atoll(str) _strtoui64 (str, 0, 10)
-        //#define strncpy strncpy_s
-        #define strcpy strcpy_s
         #define strtoll _strtoi64
         #define strtoull _strtoui64
         #define strcasecmp _stricmp

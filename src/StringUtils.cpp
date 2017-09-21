@@ -26,6 +26,7 @@
 #include <sstream>
 #include <algorithm>
 #include "thekogans/util/internal.h"
+#include "thekogans/util/Array.h"
 #include "thekogans/util/SpinLock.h"
 #include "thekogans/util/LockGuard.h"
 #include "thekogans/util/Exception.h"
@@ -415,8 +416,24 @@ namespace thekogans {
 
         _LIB_THEKOGANS_UTIL_DECL std::string _LIB_THEKOGANS_UTIL_API GetEnvironmentVariable (
                 const char *name) {
+        #if defined (TOOLCHAIN_OS_Windows)
+            size_t requiredSize;
+            getenv_s (&requiredSize, 0, 0, name);
+            if (requiredSize > 0) {
+                Array<char> value (requiredSize);
+                if (getenv_s (&requiredSize, value.array, requiredSize, name) == 0) {
+                    return value.array;
+                }
+                else {
+                    THEKOGANS_UTIL_THROW_POSIX_ERROR_CODE_EXCEPTION (
+                        THEKOGANS_UTIL_POSIX_OS_ERROR_CODE);
+                }
+            }
+            return std::string ();
+        #else // defined (TOOLCHAIN_OS_Windows)
             const char *value = name != 0 ? getenv (name) : 0;
             return value != 0 ? value : std::string ();
+        #endif // defined (TOOLCHAIN_OS_Windows)
         }
 
     } // namespace util
