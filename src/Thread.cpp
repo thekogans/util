@@ -205,7 +205,7 @@ namespace thekogans {
 
     #if defined (TOOLCHAIN_OS_OSX)
         namespace {
-            struct Waiter : public thekogans::util::Thread {
+            struct Waiter : public Thread {
                 pthread_t threadToJoin;
                 void **result;
                 Mutex mutex;
@@ -230,7 +230,7 @@ namespace thekogans {
                     pthread_cancel (thread);
                 }
 
-                // thekogans::util::Thread
+                // Thread
                 virtual void Run () throw () {
                     pthread_join (threadToJoin, result);
                     {

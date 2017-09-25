@@ -419,25 +419,98 @@ namespace thekogans {
         #endif // defined (TOOLCHAIN_OS_Windows)
         }
 
+    #if !defined (TOOLCHAIN_OS_Windows)
+        namespace {
+            struct Waiter : public Thread {
+                pid_t pid;
+                int *status;
+                int options;
+                Mutex mutex;
+                Condition condition;
+
+                Waiter (pid_t pid_,
+                        int *status_,
+                        int options_) :
+                        pid (pid_),
+                        status (status_),
+                        options (options_),
+                        condition (mutex) {
+                    mutex.Acquire ();
+                }
+                ~Waiter () {
+                    mutex.Release ();
+                }
+
+                inline bool IsExited () const {
+                    return exited;
+                }
+
+                inline void Cancel () {
+                    pthread_cancel (thread);
+                }
+
+                // Thread
+                virtual void Run () throw () {
+                    pid = waitpid (pid, status, options);
+                    {
+                        LockGuard<Mutex> guard (mutex);
+                        condition.Signal ();
+                    }
+                }
+            };
+
+            pid_t waitpid_timed (
+                    pid_t pid,
+                    int *status,
+                    int options,
+                    const TimeSpec &timeSpec) {
+                if (status != 0) {
+                    Waiter waiter (pid, status, options);
+                    waiter.Create (THEKOGANS_UTIL_NORMAL_THREAD_PRIORITY);
+                    if (!waiter.condition.Wait (timeSpec)) {
+                        *status = ETIMEDOUT;
+                        waiter.Cancel ();
+                    }
+                    waiter.Wait ();
+                    return waiter.pid;
+                }
+                else {
+                    THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                        THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
+                }
+            }
+
+            #define WIFTIMEDOUT(status) ((status & 0xff) == ETIMEDOUT)
+        }
+    #endif // !defined (TOOLCHAIN_OS_Windows)
+
         ChildProcess::ChildStatus ChildProcess::Wait (const TimeSpec &timeSpec) {
         #if defined (TOOLCHAIN_OS_Windows)
-            return WaitForSingleObject (
+            DWORD result = WaitForSingleObject (
                 processInformation.hProcess,
-                (DWORD)timeSpec.ToMilliseconds ()) == WAIT_OBJECT_0 ? Finished : Failed;
+                (DWORD)timeSpec.ToMilliseconds ());;
+            return
+                result == WAIT_OBJECT_0 ? Finished :
+                result == WAIT_TIMEOUT ? TimedOut : Failed;
         #else // defined (TOOLCHAIN_OS_Windows)
             if (pid != THEKOGANS_UTIL_INVALID_PROCESS_ID_VALUE) {
                 int status;
-                pid_t wpid = waitpid (pid, &status, WUNTRACED);
+                pid_t wpid = timeSpec == TimeSpec::Infinite ?
+                    waitpid (pid, &status, WUNTRACED) :
+                    waitpid_timed (pid, &status, WUNTRACED, GetCurrentTime () + timeSpec);
+                pid = THEKOGANS_UTIL_INVALID_PROCESS_ID_VALUE;
+                returnCode = -1;
                 if (wpid == THEKOGANS_UTIL_INVALID_PROCESS_ID_VALUE) {
                     return Failed;
                 }
                 if (WIFEXITED (status)) {
-                    pid = THEKOGANS_UTIL_INVALID_PROCESS_ID_VALUE;
                     returnCode = WEXITSTATUS (status);
                     return Finished;
                 }
+                if (WIFTIMEDOUT (status)) {
+                    return TimedOut;
+                }
                 if (WIFSIGNALED (status)) {
-                    pid = THEKOGANS_UTIL_INVALID_PROCESS_ID_VALUE;
                     return Killed;
                 }
             }
@@ -600,7 +673,6 @@ namespace thekogans {
                 exit (EXIT_FAILURE);
             }
             // At this point we are executing as the child process.
-            pid_t parent = getppid ();
             // Cancel certain signals.
             signal (SIGCHLD, SIG_DFL); // A child process dies.
             signal (SIGTSTP, SIG_IGN); // Various TTY signals.
@@ -626,7 +698,7 @@ namespace thekogans {
                     freopen ("/dev/null", "w", stdout) != 0 &&
                     freopen ("/dev/null", "w", stderr) != 0) {
                 // Tell the parent process that we are A-okay.
-                kill (parent, SIGUSR1);
+                kill (getppid (), SIGUSR1);
             }
             else {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (

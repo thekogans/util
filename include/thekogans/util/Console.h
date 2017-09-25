@@ -72,7 +72,9 @@ namespace thekogans {
             /// Call before the first use of Console::Instance.
             /// \param[in] threadSafePrintString_ true == Serialize access to std::cout and std::cerr.
             /// \param[in] hookCtrlBreak_ true == Hook CTRL-C to call StopRunLoop.
-            /// \param[in] hookChild_ Linux and OS X only. true == Hook SIGCHLD to call wait.
+            /// \param[in] hookChild_ Linux and OS X only. true == Hook SIGCHLD to call waitpid.
+            /// NOTE: You should only pass in true for hookChild_ if you're calling \see{ChildProcess::Spawn}
+            /// (instead of \see{ChildProcess::Exec}, and you don't want to reap the zombie children yourself.
             /// \param[in] coreDump_ Linux only. true == Turn on core dump.
             static void Parameterize (
                 bool threadSafePrintString_ = true,
@@ -105,7 +107,9 @@ namespace thekogans {
             /// ctor.
             /// \param[in] threadSafePrintString true == Serialize access to std::cout and std::cerr.
             /// \param[in] hookCtrlBreak true == Hook CTRL-C to call StopRunLoop.
-            /// \param[in] hookChild Linux and OS X only. true == Hook SIGCHLD to call wait.
+            /// \param[in] hookChild Linux and OS X only. true == Hook SIGCHLD to call waitpid.
+            /// NOTE: You should only pass in true for hookChild_ if you're calling \see{ChildProcess::Spawn}
+            /// (instead of \see{ChildProcess::Exec}, and you don't want to reap the zombie children yourself.
             /// \param[in] coreDump Linux only. true == Turn on core dump.
             Console (
                 bool threadSafePrintString = true,

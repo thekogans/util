@@ -86,7 +86,7 @@ namespace thekogans {
 
             void ChildHandler (int /*signal*/) {
                 int status = 0;
-                wait (&status);
+                while (waitpid (-1, &status, WNOHANG) != -1);
             }
         #endif // defined (TOOLCHAIN_OS_Windows)
         }

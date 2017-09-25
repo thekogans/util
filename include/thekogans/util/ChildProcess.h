@@ -302,10 +302,13 @@ namespace thekogans {
                 /// \brief
                 /// Child process exited normally.
                 Finished = 0,
+                /// \brief
+                /// Timed out waiting for child process.
+                TimedOut = 1,
             #if !defined (TOOLCHAIN_OS_Windows)
                 /// \brief
                 /// Child process was killed.
-                Killed = 1
+                Killed = 2
             #endif // !defined (TOOLCHAIN_OS_Windows)
             };
             /// \brief
