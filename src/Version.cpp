@@ -15,7 +15,6 @@
 // You should have received a copy of the GNU General Public License
 // along with libthekogans_util. If not, see <http://www.gnu.org/licenses/>.
 
-#include "thekogans/util/internal.h"
 #include "thekogans/util/Exception.h"
 #include "thekogans/util/Version.h"
 

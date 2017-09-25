@@ -32,7 +32,6 @@
     #include <unistd.h>
 #endif // defined (TOOLCHAIN_OS_Windows)
 #include <string>
-#include "thekogans/util/internal.h"
 #include "thekogans/util/LockGuard.h"
 #include "thekogans/util/SharedAllocator.h"
 

@@ -30,9 +30,6 @@
 #endif // defined (TOOLCHAIN_OS_Windows)
 #include "thekogans/util/Exception.h"
 #include "thekogans/util/SecureAllocator.h"
-#if !defined (TOOLCHAIN_OS_Windows)
-    #include "thekogans/util/internal.h"
-#endif // !defined (TOOLCHAIN_OS_Windows)
 
 namespace thekogans {
     namespace util {
@@ -98,6 +95,25 @@ namespace thekogans {
             }
             return ptr;
         }
+
+    #if !defined (TOOLCHAIN_OS_Windows)
+        namespace {
+            void SecureZeroMemory (
+                    void *data,
+                    size_t length) {
+                if (data != 0 && length > 0) {
+                    volatile ui8 *ptr = (volatile ui8 *)data;
+                    while (length--) {
+                        *ptr++ = 0;
+                    }
+                }
+                else {
+                    THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                        THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
+                }
+            }
+        }
+    #endif // !defined (TOOLCHAIN_OS_Windows)
 
         void SecureAllocator::Free (
                 void *ptr,

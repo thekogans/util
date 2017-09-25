@@ -28,7 +28,6 @@
 #include "thekogans/util/SpinLock.h"
 #include "thekogans/util/StringUtils.h"
 #include "thekogans/util/XMLUtils.h"
-#include "thekogans/util/internal.h"
 #include "thekogans/util/Exception.h"
 
 namespace thekogans {

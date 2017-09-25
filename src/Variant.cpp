@@ -19,7 +19,9 @@
 #include <cstdlib>
 #include <cmath>
 #include <sstream>
-#include "thekogans/util/internal.h"
+#if defined (TOOLCHAIN_OS_Windows)
+    #include "thekogans/util/WindowsUtils.h"
+#endif // defined (TOOLCHAIN_OS_Windows)
 #include "thekogans/util/Config.h"
 #include "thekogans/util/Variant.h"
 #include "thekogans/util/XMLUtils.h"

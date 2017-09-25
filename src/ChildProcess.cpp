@@ -25,12 +25,14 @@
 #include <cassert>
 #include <cstdlib>
 #include <vector>
+#if defined (TOOLCHAIN_OS_Windows)
+    #include "thekogans/util/WindowsUtils.h"
+#endif // defined (TOOLCHAIN_OS_Windows)
 #include "thekogans/util/Flags.h"
 #include "thekogans/util/Path.h"
 #include "thekogans/util/LoggerMgr.h"
 #include "thekogans/util/Exception.h"
 #include "thekogans/util/File.h"
-#include "thekogans/util/internal.h"
 #include "thekogans/util/ChildProcess.h"
 
 namespace thekogans {

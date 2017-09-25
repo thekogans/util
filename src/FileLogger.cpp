@@ -18,7 +18,9 @@
 #include <cassert>
 #include <cstdio>
 #include <iostream>
-#include "thekogans/util/internal.h"
+#if defined (TOOLCHAIN_OS_Windows)
+    #include "thekogans/util/WindowsUtils.h"
+#endif // defined (TOOLCHAIN_OS_Windows)
 #include "thekogans/util/Path.h"
 #include "thekogans/util/Directory.h"
 #include "thekogans/util/Exception.h"

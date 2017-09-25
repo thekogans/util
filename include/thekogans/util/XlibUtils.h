@@ -15,10 +15,10 @@
 // You should have received a copy of the GNU General Public License
 // along with libthekogans_util. If not, see <http://www.gnu.org/licenses/>.
 
+#if defined (TOOLCHAIN_OS_Linux) && defined (THEKOGANS_UTIL_HAVE_XLIB)
+
 #if !defined (__thekogans_util_XlibUtils_h)
 #define __thekogans_util_XlibUtils_h
-
-#if defined (TOOLCHAIN_OS_Linux) && defined (THEKOGANS_UTIL_HAVE_XLIB)
 
 #include <X11/Xlib.h>
 #include <vector>
@@ -49,12 +49,19 @@ namespace thekogans {
 
         /// \brief
         /// Return a list of connections (Display) to all X-servers running on the system.
+        /// \param[in] path Path where displays are located.
+        /// \param[in] pattern Display file name pattern.
+        /// NOTE: More often than not, displays have the following pattern: "X%d". If you
+        /// have a custom X11 install, supply the pattern that works for you. Keep in mind
+        /// that your pattern needs to expose a display number.
         /// \return A list of connections (Display) to all X-servers running on the system.
-        std::vector<Display *> EnumerateDisplays ();
+        std::vector<Display *> EnumerateDisplays (
+            const char *path = "/tmp/.X11-unix",
+            const char *pattern = "X%d");
 
     } // namespace util
 } // namespace thekogans
 
-#endif // defined (TOOLCHAIN_OS_Linux) && defined (THEKOGANS_UTIL_HAVE_XLIB)
-
 #endif // !defined (__thekogans_util_XlibUtils_h)
+
+#endif // defined (TOOLCHAIN_OS_Linux) && defined (THEKOGANS_UTIL_HAVE_XLIB)

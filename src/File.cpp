@@ -20,7 +20,6 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
-#include "thekogans/util/internal.h"
 #include "thekogans/util/Buffer.h"
 #include "thekogans/util/Path.h"
 #include "thekogans/util/Exception.h"

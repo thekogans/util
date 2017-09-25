@@ -25,7 +25,6 @@
 #include <vector>
 #include <sstream>
 #include <algorithm>
-#include "thekogans/util/internal.h"
 #include "thekogans/util/Array.h"
 #include "thekogans/util/SpinLock.h"
 #include "thekogans/util/LockGuard.h"
@@ -377,6 +376,26 @@ namespace thekogans {
             assert (format != 0);
             return format != 0 ? FormatString (format, value) : std::string ();
         }
+
+    #if !defined (TOOLCHAIN_OS_Windows)
+        namespace {
+            int _vscprintf (
+                    const char *format,
+                    va_list argptr) {
+                if (format != 0) {
+                    va_list myargptr;
+                    va_copy (myargptr, argptr);
+                    int result = vsnprintf (0, 0, format, myargptr);
+                    va_end (myargptr);
+                    return result;
+                }
+                else {
+                    THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                        THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
+                }
+            }
+        }
+    #endif // !defined (TOOLCHAIN_OS_Windows)
 
         _LIB_THEKOGANS_UTIL_DECL std::string _LIB_THEKOGANS_UTIL_API FormatStringHelper (
                 const char *format,

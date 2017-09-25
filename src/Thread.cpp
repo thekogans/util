@@ -31,7 +31,8 @@
 #if defined (TOOLCHAIN_OS_Linux) || defined (TOOLCHAIN_OS_OSX)
     #include "thekogans/util/LockGuard.h"
 #if defined (TOOLCHAIN_OS_OSX)
-    #include "thekogans/util/internal.h"
+    #include "thekogans/util/Mutex.h"
+    #include "thekogans/util/Condition.h"
 #endif // defined (TOOLCHAIN_OS_OSX)
 #endif // defined (TOOLCHAIN_OS_Linux) || defined (TOOLCHAIN_OS_OSX)
 
@@ -201,6 +202,64 @@ namespace thekogans {
                 SetThreadAffinity (thread, affinity);
             }
         }
+
+    #if defined (TOOLCHAIN_OS_OSX)
+        namespace {
+            struct Waiter : public thekogans::util::Thread {
+                pthread_t threadToJoin;
+                void **result;
+                Mutex mutex;
+                Condition condition;
+
+                Waiter (pthread_t threadToJoin_,
+                        void **result_) :
+                        threadToJoin (threadToJoin_),
+                        result (result_),
+                        condition (mutex) {
+                    mutex.Acquire ();
+                }
+                ~Waiter () {
+                    mutex.Release ();
+                }
+
+                inline bool IsExited () const {
+                    return exited;
+                }
+
+                inline void Cancel () {
+                    pthread_cancel (thread);
+                }
+
+                // thekogans::util::Thread
+                virtual void Run () throw () {
+                    pthread_join (threadToJoin, result);
+                    {
+                        LockGuard<Mutex> guard (mutex);
+                        condition.Signal ();
+                    }
+                }
+            };
+
+            int pthread_timedjoin_np (
+                    pthread_t thread,
+                    void **result,
+                    const timespec *timeSpec) {
+                if (timeSpec != 0) {
+                    Waiter waiter (thread, result);
+                    waiter.Create (THEKOGANS_UTIL_NORMAL_THREAD_PRIORITY);
+                    if (!waiter.condition.Wait (*timeSpec)) {
+                        waiter.Cancel ();
+                    }
+                    waiter.Wait ();
+                    return waiter.IsExited () ? 0 : ETIMEDOUT;
+                }
+                else {
+                    THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                        THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
+                }
+            }
+        }
+    #endif // defined (TOOLCHAIN_OS_OSX)
 
         bool Thread::Wait (const TimeSpec &timeSpec) {
         #if defined (TOOLCHAIN_OS_Windows)

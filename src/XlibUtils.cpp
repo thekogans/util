@@ -17,9 +17,11 @@
 
 #if defined (TOOLCHAIN_OS_Linux) && defined (THEKOGANS_UTIL_HAVE_XLIB)
 
+#include <cstdio>
 #include "thekogans/util/Exception.h"
 #include "thekogans/util/LoggerMgr.h"
 #include "thekogans/util/Directory.h"
+#include "thekogans/util/StringUtils.h"
 #include "thekogans/util/XlibUtils.h"
 
 namespace thekogans {
@@ -40,15 +42,17 @@ namespace thekogans {
             XUnlockDisplay (display);
         }
 
-        std::vector<Display *> EnumerateDisplays () {
+        std::vector<Display *> EnumerateDisplays (
+                const char *path,
+                const char *pattern) {
             std::vector<Display *> displays;
-            Directory directory ("/tmp/.X11-unix");
+            Directory directory (path);
             Directory::Entry entry;
             for (bool gotEntry = directory.GetFirstEntry (entry);
                     gotEntry; gotEntry = directory.GetNextEntry (entry)) {
-                if (!entry.name.empty () && entry.name[0] == 'X') {
-                    entry.name[0] = ':';
-                    Display * display = XOpenDisplay (entry.name.c_str ());
+                i32 dispayNumber;
+                if (sscanf (entry.name.c_str (), pattern, &dispayNumber) == 1) {
+                    Display *display = XOpenDisplay (FormatString (":%d", dispayNumber).c_str ());
                     if (display != 0) {
                         displays.push_back (display);
                     }

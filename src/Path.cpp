@@ -36,7 +36,9 @@
 #include <cctype>
 #include <cassert>
 #include <algorithm>
-#include "thekogans/util/internal.h"
+#if defined (TOOLCHAIN_OS_Windows)
+    #include "thekogans/util/WindowsUtils.h"
+#endif // defined (TOOLCHAIN_OS_Windows)
 #include "thekogans/util/Directory.h"
 #include "thekogans/util/Path.h"
 

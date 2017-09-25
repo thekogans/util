@@ -15,8 +15,9 @@
 // You should have received a copy of the GNU General Public License
 // along with libthekogans_util. If not, see <http://www.gnu.org/licenses/>.
 
+#if defined (TOOLCHAIN_OS_OSX)
+
 #include <Foundation/Foundation.h>
-#include <string>
 #include "thekogans/util/StringUtils.h"
 #include "thekogans/util/OSXUtils.h"
 
@@ -125,3 +126,5 @@ namespace thekogans {
 
     } // namespace util
 } // namespace thekogans
+
+#endif // defined (TOOLCHAIN_OS_OSX)

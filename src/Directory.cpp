@@ -38,7 +38,9 @@
 #include <cassert>
 #include <list>
 #include <set>
-#include "thekogans/util/internal.h"
+#if defined (TOOLCHAIN_OS_Windows)
+    #include "thekogans/util/WindowsUtils.h"
+#endif // defined (TOOLCHAIN_OS_Windows)
 #include "thekogans/util/Flags.h"
 #include "thekogans/util/Path.h"
 #include "thekogans/util/LockGuard.h"

@@ -30,7 +30,7 @@
     #include "thekogans/util/Singleton.h"
     #include "thekogans/util/SpinLock.h"
     #include "thekogans/util/Thread.h"
-    #include "thekogans/util/internal.h"
+    #include "thekogans/util/OSXUtils.h"
 #endif // defined (TOOLCHAIN_OS_Windows)
 #include "thekogans/util/LoggerMgr.h"
 #include "thekogans/util/Exception.h"

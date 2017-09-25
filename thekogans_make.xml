@@ -2,7 +2,7 @@
                 project = "util"
                 project_type = "library"
                 major_version = "0"
-                minor_version = "17"
+                minor_version = "18"
                 patch_version = "0"
                 guid = "e541acd69d9d020f7eac98d5bf9e0d7a"
                 schema_version = "2">
@@ -118,6 +118,9 @@
     <cpp_header>$(organization)/$(project_directory)/IntrusiveList.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/JobQueue.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/JobQueueScheduler.h</cpp_header>
+    <if condition = "$(TOOLCHAIN_OS) == 'Linux'">
+      <cpp_header>$(organization)/$(project_directory)/LinuxUtils.h</cpp_header>
+    </if>
     <cpp_header>$(organization)/$(project_directory)/LockGuard.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/Logger.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/LoggerMgr.h</cpp_header>
@@ -173,9 +176,11 @@
     <cpp_header>$(organization)/$(project_directory)/Variant.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/Vectorizer.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/Version.h</cpp_header>
+    <if condition = "$(TOOLCHAIN_OS) == 'Windows'">
+      <cpp_header>$(organization)/$(project_directory)/WindowsUtils.h</cpp_header>
+    </if>
     <cpp_header>$(organization)/$(project_directory)/WorkerPool.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/XMLUtils.h</cpp_header>
-    <cpp_header>$(organization)/$(project_directory)/internal.h</cpp_header>
     <if condition = "$(have_feature -f:THEKOGANS_UTIL_HAVE_XERCES)">
       <cpp_header>$(organization)/$(project_directory)/XercesUtils.h</cpp_header>
     </if>
@@ -667,9 +672,11 @@
     <cpp_source>Variant.cpp</cpp_source>
     <cpp_source>Vectorizer.cpp</cpp_source>
     <cpp_source>Version.cpp</cpp_source>
+    <if condition = "$(TOOLCHAIN_OS) == 'Windows'">
+      <cpp_source>WindowsUtils.cpp</cpp_source>
+    </if>
     <cpp_source>WorkerPool.cpp</cpp_source>
     <cpp_source>XMLUtils.cpp</cpp_source>
-    <cpp_source>internal.cpp</cpp_source>
     <if condition = "$(have_feature -f:THEKOGANS_UTIL_HAVE_XERCES)">
       <cpp_source>XercesUtils.cpp</cpp_source>
     </if>
