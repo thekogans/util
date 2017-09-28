@@ -54,7 +54,7 @@ namespace thekogans {
             /// true == Serialize access to std::cout and std::cerr.
             static bool threadSafePrintString;
             /// \brief
-            /// true == Hook CTRL-C to call StopRunLoop.
+            /// true == Hook CTRL-C to call MainRunLoop::Instance ().Stop ().
             static bool hookCtrlBreak;
             /// \brief
             /// Linux and OS X only. true == Hook SIGCHLD to call wait.
@@ -71,8 +71,8 @@ namespace thekogans {
             /// \brief
             /// Call before the first use of Console::Instance.
             /// \param[in] threadSafePrintString_ true == Serialize access to std::cout and std::cerr.
-            /// \param[in] hookCtrlBreak_ true == Hook CTRL-C to call StopRunLoop.
-            /// \param[in] hookChild_ Linux and OS X only. true == Hook SIGCHLD to call waitpid.
+            /// \param[in] hookCtrlBreak_ true == Hook CTRL-C to call MainRunLoop::Instance ().Stop ().
+            /// \param[in] hookChild_ Linux and OS X only. true == Hook SIGCHLD to avoid zombie children.
             /// NOTE: You should only pass in true for hookChild_ if you're calling \see{ChildProcess::Spawn}
             /// (instead of \see{ChildProcess::Exec}, and you don't want to reap the zombie children yourself.
             /// \param[in] coreDump_ Linux only. true == Turn on core dump.
@@ -106,8 +106,8 @@ namespace thekogans {
             /// \brief
             /// ctor.
             /// \param[in] threadSafePrintString true == Serialize access to std::cout and std::cerr.
-            /// \param[in] hookCtrlBreak true == Hook CTRL-C to call StopRunLoop.
-            /// \param[in] hookChild Linux and OS X only. true == Hook SIGCHLD to call waitpid.
+            /// \param[in] hookCtrlBreak true == Hook CTRL-C to call MainRunLoop::Instance ().Stop ().
+            /// \param[in] hookChild Linux and OS X only. true == Hook SIGCHLD to avoid zombie children.
             /// NOTE: You should only pass in true for hookChild_ if you're calling \see{ChildProcess::Spawn}
             /// (instead of \see{ChildProcess::Exec}, and you don't want to reap the zombie children yourself.
             /// \param[in] coreDump Linux only. true == Turn on core dump.

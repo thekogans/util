@@ -247,6 +247,28 @@ namespace thekogans {
             }
         }
 
+        void LoggerMgr::AddDefaultLogger (Logger::Ptr logger) {
+            if (logger.Get () != 0) {
+                LockGuard<Mutex> guard (mutex);
+                defaultLoggers.push_back (logger);
+            }
+            else {
+                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
+            }
+        }
+
+        void LoggerMgr::AddDefaultLoggerList (const LoggerList &loggerList) {
+            if (!loggerList.empty ()) {
+                LockGuard<Mutex> guard (mutex);
+                defaultLoggers = loggerList;
+            }
+            else {
+                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
+            }
+        }
+
         void LoggerMgr::Log (
                 const char *subsystem,
                 ui32 level,
@@ -399,14 +421,18 @@ namespace thekogans {
             if (FilterEntry (*entry)) {
                 LockGuard<Mutex> guard (mutex);
                 LoggerMap::iterator it = loggerMap.find (subsystem);
-                if (it != loggerMap.end ()) {
+                if (it != loggerMap.end () || !defaultLoggers.empty ()) {
                     if (jobQueue.get () != 0) {
                         jobQueue->Enq (
                             *JobQueue::Job::Ptr (
-                                new LogSubsystemJob (std::move (entry), it->second)));
+                                new LogSubsystemJob (
+                                    std::move (entry),
+                                    it != loggerMap.end () ? it->second : defaultLoggers)));
                     }
                     else {
-                        LogSubsystem (*entry, it->second);
+                        LogSubsystem (
+                            *entry,
+                            it != loggerMap.end () ? it->second : defaultLoggers);
                     }
                 }
             }

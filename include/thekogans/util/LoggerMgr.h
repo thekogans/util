@@ -301,6 +301,11 @@ namespace thekogans {
             /// Map of all loggers.
             LoggerMap loggerMap;
             /// \brief
+            /// List of default loggers.
+            /// NOTE: All unknown subsystems will be serviced by the
+            /// loggers in this list.
+            LoggerList defaultLoggers;
+            /// \brief
             /// Convenient typedef for std::list<Filter::UniquePtr>.
             typedef std::list<Filter::UniquePtr> FilterList;
             /// \brief
@@ -417,6 +422,16 @@ namespace thekogans {
             void AddLoggerList (
                 const char *subsystem,
                 const LoggerList &loggerList);
+            /// \brief
+            /// Add a default logger. All entries for unknown subsystems
+            /// will be handled by the loggers in the defaultLoggers list.
+            /// \param[in] logger Logger to add.
+            void AddDefaultLogger (Logger::Ptr logger);
+            /// \brief
+            /// Add a default logger list. All entries for unknown subsystems
+            /// will be handled by the loggers in this list.
+            /// \param[in] loggerList Logger list to add.
+            void AddDefaultLoggerList (const LoggerList &loggerList);
 
             /// \brief
             /// Add a filter to the LoggerMgr.
@@ -575,6 +590,17 @@ namespace thekogans {
         /// this macro to add new subsystem logger list to the GlobalLoggerMgr.
         #define THEKOGANS_UTIL_LOG_SUBSYSTEM_ADD_LOGGER_LIST(subsystem, loggerList)\
             thekogans::util::GlobalLoggerMgr::Instance ().AddLoggerList (subsystem, loggerList)
+
+        /// \def THEKOGANS_UTIL_LOG_ADD_DEFAULT_LOGGER(logger)
+        /// After calling THEKOGANS_UTIL_LOG_[INIT | RESET][_EX] use
+        /// this macro to add new default loggers to the GlobalLoggerMgr.
+        #define THEKOGANS_UTIL_LOG_ADD_DEFAULT_LOGGER(logger)\
+            thekogans::util::GlobalLoggerMgr::Instance ().AddDefaultLogger (logger)
+        /// \def THEKOGANS_UTIL_LOG_ADD_DEFAULT_LOGGER_LIST(loggerList)
+        /// After calling THEKOGANS_UTIL_LOG_[INIT | RESET][_EX] use
+        /// this macro to add new default logger list to the GlobalLoggerMgr.
+        #define THEKOGANS_UTIL_LOG_ADD_DEFAULT_LOGGER_LIST(loggerList)\
+            thekogans::util::GlobalLoggerMgr::Instance ().AddLoggerList (loggerList)
 
         /// \def THEKOGANS_UTIL_LOG_ADD_FILTER(filter)
         /// After calling THEKOGANS_UTIL_LOG_[INIT | RESET][_EX] use

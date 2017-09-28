@@ -83,11 +83,6 @@ namespace thekogans {
             void CtrlBreakHandler (int /*signal*/) {
                 MainRunLoop::Instance ().Stop ();
             }
-
-            void ChildHandler (int /*signal*/) {
-                int status = 0;
-                while (waitpid (-1, &status, WNOHANG) != -1);
-            }
         #endif // defined (TOOLCHAIN_OS_Windows)
         }
 
@@ -111,7 +106,12 @@ namespace thekogans {
         #if defined (TOOLCHAIN_OS_Linux) || defined (TOOLCHAIN_OS_OSX)
             signal (SIGPIPE, SIG_IGN);
             if (hookChild) {
-                signal (SIGCHLD, ChildHandler);
+                struct sigaction action;
+                memset (&action, 0, sizeof (action));
+                action.sa_handler = SIG_IGN;
+                // Never wait for termination of a child process.
+                action.sa_flags = SA_NOCLDWAIT;
+                sigaction (SIGCHLD, &action, 0);
             }
         #endif // defined (TOOLCHAIN_OS_Linux) || defined (TOOLCHAIN_OS_OSX)
         #if defined (TOOLCHAIN_OS_Linux)

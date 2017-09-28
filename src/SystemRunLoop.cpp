@@ -409,31 +409,25 @@ namespace thekogans {
                 JobQueue::Job &job,
                 bool wait) {
             LockGuard<Mutex> guard (jobsMutex);
-            if (!done) {
-                job.finished = false;
-                jobs.push_back (JobQueue::Job::Ptr (&job));
-            #if defined (TOOLCHAIN_OS_Windows)
-                PostMessage (wnd, RUN_LOOP_MESSAGE, 0, 0);
-            #elif defined (TOOLCHAIN_OS_Linux)
-                window->PostEvent (XlibWindow::ID_RUN_LOOP);
-            #elif defined (TOOLCHAIN_OS_OSX)
-                CFRunLoopPerformBlock (
-                    runLoop,
-                    kCFRunLoopCommonModes,
-                    ^(void) {
-                        ExecuteJob ();
-                    });
-                CFRunLoopWakeUp (runLoop);
-            #endif // defined (TOOLCHAIN_OS_Windows)
-                if (wait) {
-                    while (!job.cancelled && !job.finished) {
-                        jobFinished.Wait ();
-                    }
+            job.finished = false;
+            jobs.push_back (JobQueue::Job::Ptr (&job));
+        #if defined (TOOLCHAIN_OS_Windows)
+            PostMessage (wnd, RUN_LOOP_MESSAGE, 0, 0);
+        #elif defined (TOOLCHAIN_OS_Linux)
+            window->PostEvent (XlibWindow::ID_RUN_LOOP);
+        #elif defined (TOOLCHAIN_OS_OSX)
+            CFRunLoopPerformBlock (
+                runLoop,
+                kCFRunLoopCommonModes,
+                ^(void) {
+                    ExecuteJob ();
+                });
+            CFRunLoopWakeUp (runLoop);
+        #endif // defined (TOOLCHAIN_OS_Windows)
+            if (wait) {
+                while (!job.cancelled && !job.finished) {
+                    jobFinished.Wait ();
                 }
-            }
-            else {
-                THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                    "%s", "SystemRunLoop is not running.");
             }
         }
 

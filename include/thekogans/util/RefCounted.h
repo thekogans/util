@@ -208,16 +208,21 @@ namespace thekogans {
         };
 
         /// \brief
+        /// Convenient typedef for RefCounted<THEKOGANS_UTIL_ATOMIC<ui32>>.
+        typedef RefCounted<THEKOGANS_UTIL_ATOMIC<ui32>> ThreadSafeRefCounted;
+        /// \brief
+        /// Convenient typedef for RefCounted<ui32>.
+        typedef RefCounted<ui32> SingleThreadedRefCounted;
+
+        /// \brief
         /// Compare two pointers for equality.
         /// \param[in] item1 First pointer to compare.
         /// \param[in] item2 Second pointer to compare.
         /// \return true == Same object, false == Different objects.
-        template<
-            typename Count,
-            typename T>
+        template<typename T>
         inline bool operator == (
-                const typename RefCounted<Count>::template Ptr<T> &item1,
-                const typename RefCounted<Count>::template Ptr<T> &item2) throw () {
+                const ThreadSafeRefCounted::Ptr<T> &item1,
+                const ThreadSafeRefCounted::Ptr<T> &item2) throw () {
             return item1.Get () == item2.Get ();
         }
 
@@ -226,12 +231,10 @@ namespace thekogans {
         /// \param[in] item1 First pointer to compare.
         /// \param[in] item2 Second pointer to compare.
         /// \return true == Different objects, false == Same object.
-        template<
-            typename Count,
-            typename T>
+        template<typename T>
         inline bool operator != (
-                const typename RefCounted<Count>::template Ptr<T> &item1,
-                const typename RefCounted<Count>::template Ptr<T> &item2) throw () {
+                const ThreadSafeRefCounted::Ptr<T> &item1,
+                const ThreadSafeRefCounted::Ptr<T> &item2) throw () {
             return item1.Get () != item2.Get ();
         }
 
@@ -240,12 +243,10 @@ namespace thekogans {
         /// \param[in] item1 First pointer to compare.
         /// \param[in] item2 Second pointer to compare.
         /// \return true == item1 < item2.
-        template<
-            typename Count,
-            typename T>
+        template<typename T>
         inline bool operator < (
-                const typename RefCounted<Count>::template Ptr<T> &item1,
-                const typename RefCounted<Count>::template Ptr<T> &item2) throw () {
+                const ThreadSafeRefCounted::Ptr<T> &item1,
+                const ThreadSafeRefCounted::Ptr<T> &item2) throw () {
             return item1.Get () < item2.Get ();
         }
 
@@ -254,12 +255,10 @@ namespace thekogans {
         /// \param[in] item1 First pointer to compare.
         /// \param[in] item2 Second pointer to compare.
         /// \return true == item1 <= item2.
-        template<
-            typename Count,
-            typename T>
+        template<typename T>
         inline bool operator <= (
-                const typename RefCounted<Count>::template Ptr<T> &item1,
-                const typename RefCounted<Count>::template Ptr<T> &item2) throw () {
+                const ThreadSafeRefCounted::Ptr<T> &item1,
+                const ThreadSafeRefCounted::Ptr<T> &item2) throw () {
             return item1.Get () <= item2.Get ();
         }
 
@@ -268,12 +267,10 @@ namespace thekogans {
         /// \param[in] item1 First pointer to compare.
         /// \param[in] item2 Second pointer to compare.
         /// \return true == item1 > item2.
-        template<
-            typename Count,
-            typename T>
+        template<typename T>
         inline bool operator > (
-                const typename RefCounted<Count>::template Ptr<T> &item1,
-                const typename RefCounted<Count>::template Ptr<T> &item2) throw () {
+                const ThreadSafeRefCounted::Ptr<T> &item1,
+                const ThreadSafeRefCounted::Ptr<T> &item2) throw () {
             return item1.Get () > item2.Get ();
         }
 
@@ -282,21 +279,84 @@ namespace thekogans {
         /// \param[in] item1 First pointer to compare.
         /// \param[in] item2 Second pointer to compare.
         /// \return true == item1 >= item2.
-        template<
-            typename Count,
-            typename T>
+        template<typename T>
         inline bool operator >= (
-                const typename RefCounted<Count>::template Ptr<T> &item1,
-                const typename RefCounted<Count>::template Ptr<T> &item2) throw () {
+                const ThreadSafeRefCounted::Ptr<T> &item1,
+                const ThreadSafeRefCounted::Ptr<T> &item2) throw () {
             return item1.Get () >= item2.Get ();
         }
 
         /// \brief
-        /// Convenient typedef for RefCounted<THEKOGANS_UTIL_ATOMIC<ui32>>.
-        typedef RefCounted<THEKOGANS_UTIL_ATOMIC<ui32>> ThreadSafeRefCounted;
+        /// Compare two pointers for equality.
+        /// \param[in] item1 First pointer to compare.
+        /// \param[in] item2 Second pointer to compare.
+        /// \return true == Same object, false == Different objects.
+        template<typename T>
+        inline bool operator == (
+                const SingleThreadedRefCounted::Ptr<T> &item1,
+                const SingleThreadedRefCounted::Ptr<T> &item2) throw () {
+            return item1.Get () == item2.Get ();
+        }
+
         /// \brief
-        /// Convenient typedef for RefCounted<ui32>.
-        typedef RefCounted<ui32> SingleThreadedRefCounted;
+        /// Compare two pointers for inequality.
+        /// \param[in] item1 First pointer to compare.
+        /// \param[in] item2 Second pointer to compare.
+        /// \return true == Different objects, false == Same object.
+        template<typename T>
+        inline bool operator != (
+                const SingleThreadedRefCounted::Ptr<T> &item1,
+                const SingleThreadedRefCounted::Ptr<T> &item2) throw () {
+            return item1.Get () != item2.Get ();
+        }
+
+        /// \brief
+        /// Compare two pointers for order.
+        /// \param[in] item1 First pointer to compare.
+        /// \param[in] item2 Second pointer to compare.
+        /// \return true == item1 < item2.
+        template<typename T>
+        inline bool operator < (
+                const SingleThreadedRefCounted::Ptr<T> &item1,
+                const SingleThreadedRefCounted::Ptr<T> &item2) throw () {
+            return item1.Get () < item2.Get ();
+        }
+
+        /// \brief
+        /// Compare two pointers for order.
+        /// \param[in] item1 First pointer to compare.
+        /// \param[in] item2 Second pointer to compare.
+        /// \return true == item1 <= item2.
+        template<typename T>
+        inline bool operator <= (
+                const SingleThreadedRefCounted::Ptr<T> &item1,
+                const SingleThreadedRefCounted::Ptr<T> &item2) throw () {
+            return item1.Get () <= item2.Get ();
+        }
+
+        /// \brief
+        /// Compare two pointers for order.
+        /// \param[in] item1 First pointer to compare.
+        /// \param[in] item2 Second pointer to compare.
+        /// \return true == item1 > item2.
+        template<typename T>
+        inline bool operator > (
+                const SingleThreadedRefCounted::Ptr<T> &item1,
+                const SingleThreadedRefCounted::Ptr<T> &item2) throw () {
+            return item1.Get () > item2.Get ();
+        }
+
+        /// \brief
+        /// Compare two pointers for order.
+        /// \param[in] item1 First pointer to compare.
+        /// \param[in] item2 Second pointer to compare.
+        /// \return true == item1 >= item2.
+        template<typename T>
+        inline bool operator >= (
+                const SingleThreadedRefCounted::Ptr<T> &item1,
+                const SingleThreadedRefCounted::Ptr<T> &item2) throw () {
+            return item1.Get () >= item2.Get ();
+        }
 
     } // namespace util
 } // namespace thekogans
