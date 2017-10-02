@@ -116,10 +116,13 @@ namespace thekogans {
             return true;
         #else // defined (TOOLCHAIN_OS_Windows)
             LockGuard<Mutex> guard (mutex);
-            while (state == Free) {
-                if (!condition.Wait (timeSpec)) {
+            TimeSpec now = GetCurrentTime ();
+            TimeSpec deadline = now + timeSpec;
+            while (state == Free && deadline > now) {
+                if (!condition.Wait (deadline - now)) {
                     return false;
                 }
+                now = GetCurrentTime ();
             }
             if (!manualReset) {
                 state = Free;

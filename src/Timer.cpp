@@ -63,19 +63,11 @@ namespace thekogans {
             }
         }
     #elif defined (TOOLCHAIN_OS_OSX)
-        namespace {
-        #if defined (THEKOGANS_UTIL_HAVE_STD_ATOMIC)
-            typedef std::atomic<ui64> IdPool;
-        #else // defined (THEKOGANS_UTIL_HAVE_STD_ATOMIC)
-            typedef boost::atomic<ui64> IdPool;
-        #endif // defined (THEKOGANS_UTIL_HAVE_STD_ATOMIC)
-        }
-
         struct TimerQueue :
                 public Singleton<TimerQueue, SpinLock>,
                 public Thread {
             THEKOGANS_UTIL_HANDLE handle;
-            IdPool idPool;
+            THEKOGANS_UTIL_ATOMIC<ui64> idPool;
 
             TimerQueue () :
                     Thread ("TimerQueue"),

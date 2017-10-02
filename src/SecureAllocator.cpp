@@ -100,16 +100,10 @@ namespace thekogans {
         namespace {
             void SecureZeroMemory (
                     void *data,
-                    size_t length) {
-                if (data != 0 && length > 0) {
-                    volatile ui8 *ptr = (volatile ui8 *)data;
-                    while (length--) {
-                        *ptr++ = 0;
-                    }
-                }
-                else {
-                    THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                        THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
+                    std::size_t size) {
+                volatile ui8 *ptr = (volatile ui8 *)data;
+                while (size--) {
+                    *ptr++ = 0;
                 }
             }
         }

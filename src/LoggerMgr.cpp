@@ -239,7 +239,10 @@ namespace thekogans {
                 const LoggerList &loggerList) {
             if (subsystem != 0 && !loggerList.empty ()) {
                 LockGuard<Mutex> guard (mutex);
-                loggerMap[subsystem] = loggerList;
+                loggerMap[subsystem].insert (
+                    loggerMap[subsystem].end (),
+                    loggerList.begin (),
+                    loggerList.end ());
             }
             else {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
@@ -261,7 +264,10 @@ namespace thekogans {
         void LoggerMgr::AddDefaultLoggerList (const LoggerList &loggerList) {
             if (!loggerList.empty ()) {
                 LockGuard<Mutex> guard (mutex);
-                defaultLoggers = loggerList;
+                defaultLoggers.insert (
+                    defaultLoggers.end (),
+                    loggerList.begin (),
+                    loggerList.end ());
             }
             else {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (

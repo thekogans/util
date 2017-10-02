@@ -184,7 +184,7 @@ namespace thekogans {
             ///         THEKOGANS_UTIL_LOG_ADD_LOGGER (
             ///             thekogans::util::Logger::Ptr (new thekogans::util::ConsoleLogger));
             ///         ...
-            ///         thekogans::util::Console::Instance ().StartRunLoop ();
+            ///         thekogans::util::MainRunLoop::Instance ().Start ();
             ///         THEKOGANS_UTIL_LOG_DEBUG ("%s exiting.\n", argv[0]);
             ///     }
             ///     THEKOGANS_UTIL_CATCH_AND_LOG

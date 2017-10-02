@@ -323,6 +323,15 @@ namespace thekogans {
                 /// "Entry"
                 static const char * const TAG_ENTRY;
                 /// \brief
+                /// "FileSystem"
+                static const char * const ATTR_FILE_SYSTEM;
+                /// \brief
+                /// "Windows"
+                static const char * const VALUE_WINDOWS;
+                /// \brief
+                /// "POSIX"
+                static const char * const VALUE_POSIX;
+                /// \brief
                 /// "Type"
                 static const char * const ATTR_TYPE;
                 /// \brief
@@ -340,21 +349,18 @@ namespace thekogans {
                 /// \brief
                 /// "Name"
                 static const char * const ATTR_NAME;
-            #if defined (TOOLCHAIN_OS_Windows)
                 /// \brief
                 /// "Attributes"
                 static const char * const ATTR_ATTRIBUTES;
                 /// \brief
                 /// "CreationDate"
                 static const char * const ATTR_CREATION_DATE;
-            #else // defined (TOOLCHAIN_OS_Windows)
                 /// \brief
                 /// "Mode"
                 static const char * const ATTR_MODE;
                 /// \brief
                 /// "LastStatusDate"
                 static const char * const ATTR_LAST_STATUS_DATE;
-            #endif // defined (TOOLCHAIN_OS_Windows)
                 /// \brief
                 /// "LastAccessedDate"
                 static const char * const ATTR_LAST_ACCESSED_DATE;
@@ -365,6 +371,17 @@ namespace thekogans {
                 /// "Size"
                 static const char * const ATTR_SIZE;
 
+                /// \brief
+                /// The file system this entry came from.
+                enum {
+                    /// \brief
+                    /// Windows file system.
+                    Windows,
+                    /// \brief
+                    /// POSIX (Linux/OS X) file system.
+                    POSIX
+                };
+                ui32 fileSystem;
                 /// \brief
                 /// Entry type.
                 enum {
@@ -387,21 +404,22 @@ namespace thekogans {
                 /// \brief
                 /// Entry name.
                 std::string name;
-            #if defined (TOOLCHAIN_OS_Windows)
-                /// \brief
-                /// Windows entry attributes,
-                ui32 attributes;
-                /// \brief
-                /// Entry creation date.
-                i64 creationDate;
-            #else // defined (TOOLCHAIN_OS_Windows)
-                /// \brief
-                /// Permission flags.
-                i32 mode;
-                /// \brief
-                /// Entry last status date.
-                i64 lastStatusDate;
-            #endif // defined (TOOLCHAIN_OS_Windows)
+                union {
+                    /// \brief
+                    /// Windows entry attributes,
+                    ui32 attributes;
+                    /// \brief
+                    /// POSIX entry permission flags.
+                    i32 mode;
+                };
+                union {
+                    /// \brief
+                    /// Windows entry creation date.
+                    i64 creationDate;
+                    /// \brief
+                    /// POSIX entry last status date.
+                    i64 lastStatusDate;
+                };
                 /// \brief
                 /// Entry last accessed date.
                 i64 lastAccessedDate;
@@ -415,6 +433,11 @@ namespace thekogans {
                 /// \brief
                 /// Default ctor.
                 Entry () :
+                #if defined (TOOLCHAIN_OS_Windows)
+                    fileSystem (Windows),
+                #else // defined (TOOLCHAIN_OS_Windows)
+                    fileSystem (POSIX),
+                #endif // defined (TOOLCHAIN_OS_Windows)
                     type (Invalid),
                 #if defined (TOOLCHAIN_OS_Windows)
                     attributes (0),
@@ -427,45 +450,6 @@ namespace thekogans {
                     lastModifiedDate (-1),
                     size (0) {}
                 /// \brief
-                /// ctor.
-                /// \param[in] type_ Entry type.
-                /// \param[in] name_ Entry name.
-            #if defined (TOOLCHAIN_OS_Windows)
-                /// \param[in] attributes_ Entry Windows attributes.
-                /// \param[in] creationDate_ Entries creation date.
-            #else // defined (TOOLCHAIN_OS_Windows)
-                /// \param[in] mode_ Entries permission flags.
-                /// \param[in] lastStatusDate_ Entries last status date.
-            #endif // defined (TOOLCHAIN_OS_Windows)
-                /// \param[in] lastAccessedDate_ Entries last access date.
-                /// \param[in] lastModifiedDate_ Entries last modified date.
-                /// \param[in] size_ Entries size (File/Link).
-                Entry (
-                    i32 type_,
-                    const char *name_,
-                #if defined (TOOLCHAIN_OS_Windows)
-                    ui32 attributes_,
-                    i64 creationDate_,
-                #else // defined (TOOLCHAIN_OS_Windows)
-                    i32 mode_,
-                    i64 lastStatusDate_,
-                #endif // defined (TOOLCHAIN_OS_Windows)
-                    i64 lastAccessedDate_,
-                    i64 lastModifiedDate_,
-                    ui64 size_) :
-                    type (type_),
-                    name (name_),
-                #if defined (TOOLCHAIN_OS_Windows)
-                    attributes (attributes_),
-                    creationDate (creationDate_),
-                #else // defined (TOOLCHAIN_OS_Windows)
-                    mode (mode_),
-                    lastStatusDate (lastStatusDate_),
-                #endif // defined (TOOLCHAIN_OS_Windows)
-                    lastAccessedDate (lastAccessedDate_),
-                    lastModifiedDate (lastModifiedDate_),
-                    size (size_) {}
-                /// \brief
                 /// ctor. Read entry info from file system.
                 /// \param[in] path File system path to get entry info from.
                 explicit Entry (const std::string &path);
@@ -473,6 +457,17 @@ namespace thekogans {
                 /// \brief
                 /// Empty entry. Use this const to compare against empty entries.
                 static const Entry Empty;
+
+                /// \brief
+                /// Given a numeric fileSystem, return a string representation.
+                /// \param[in] fileSystem Numeric fileSystem (Windows/POSIX)
+                /// \return "Windows" | "POSIX"
+                static std::string fileSystemTostring (ui32 fileSystem);
+                /// \brief
+                /// Given a string fileSystem, return a numeric representation.
+                /// \param[in] fileSystem String fileSystem ("Windows" | "POSIX")
+                /// \return Invalid/File/Folder/Link
+                static ui32 stringTofileSystem (const std::string &fileSystem);
 
                 /// \brief
                 /// Given a numeric type, return a string representation.
@@ -490,15 +485,14 @@ namespace thekogans {
                 /// \return Serialized size of this entry.
                 inline ui32 Size () const {
                     return
+                        Serializer::Size (fileSystem) +
                         Serializer::Size (type) +
                         Serializer::Size (name) +
-                    #if defined (TOOLCHAIN_OS_Windows)
-                        Serializer::Size (attributes) +
-                        Serializer::Size (creationDate) +
-                    #else // defined (TOOLCHAIN_OS_Windows)
-                        Serializer::Size (mode) +
-                        Serializer::Size (lastStatusDate) +
-                    #endif // defined (TOOLCHAIN_OS_Windows)
+                        (fileSystem == Windows ?
+                            Serializer::Size (attributes) +
+                            Serializer::Size (creationDate) :
+                            Serializer::Size (mode) +
+                            Serializer::Size (lastStatusDate)) +
                         Serializer::Size (lastAccessedDate) +
                         Serializer::Size (lastModifiedDate) +
                         Serializer::Size (size);
@@ -512,15 +506,14 @@ namespace thekogans {
                 /// \return true = equal, false = different
                 inline bool CompareWeakly (const Entry &entry) const {
                     return
+                        fileSystem == entry.fileSystem &&
                         type == entry.type &&
                         name == entry.name &&
-                    #if defined (TOOLCHAIN_OS_Windows)
-                        attributes == entry.attributes &&
-                        creationDate == entry.creationDate &&
-                    #else // defined (TOOLCHAIN_OS_Windows)
-                        mode == entry.mode &&
-                        lastStatusDate == entry.lastStatusDate &&
-                    #endif // defined (TOOLCHAIN_OS_Windows)
+                        (fileSystem == entry.fileSystem ?
+                            attributes == entry.attributes &&
+                            creationDate == entry.creationDate :
+                            mode == entry.mode &&
+                            lastStatusDate == entry.lastStatusDate) &&
                         lastModifiedDate == entry.lastModifiedDate &&
                         size == entry.size;
                 }
@@ -528,15 +521,17 @@ namespace thekogans {
             #if defined (THEKOGANS_UTIL_HAVE_PUGIXML)
                 /// \brief
                 /// Parse entry info from an xml dom that looks like this;
-                /// <Entry Type = "Invalid | File | Folder | Link"
+                /// <Entry FileSystem = "Windows | POSIX"
+                ///        Type = "Invalid | File | Folder | Link"
                 ///        Name = ""
-            #if defined (TOOLCHAIN_OS_Windows)
+                ///    if (fileSystem == Windows) {
                 ///        Attributes = ""
                 ///        CreationDate = ""
-            #else // defined (TOOLCHAIN_OS_Windows)
+                ///    }
+                ///    else {
                 ///        Mode = ""
                 ///        LastStatusDate = ""
-            #endif // defined (TOOLCHAIN_OS_Windows)
+                ///    }
                 ///        LastAccessedDate = ""
                 ///        LastModifiedDate = ""
                 ///        Size = ""/>
@@ -630,15 +625,14 @@ namespace thekogans {
                 const Directory::Entry &entry1,
                 const Directory::Entry &entry2) {
             return
+                entry1.fileSystem == entry2.fileSystem &&
                 entry1.type == entry2.type &&
                 entry1.name == entry2.name &&
-            #if defined (TOOLCHAIN_OS_Windows)
-                entry1.attributes == entry2.attributes &&
-                entry1.creationDate == entry2.creationDate &&
-            #else // defined (TOOLCHAIN_OS_Windows)
-                entry1.mode == entry2.mode &&
-                entry1.lastStatusDate == entry2.lastStatusDate &&
-            #endif // defined (TOOLCHAIN_OS_Windows)
+                (entry1.fileSystem == Directory::Entry::Windows ?
+                    entry1.attributes == entry2.attributes &&
+                    entry1.creationDate == entry2.creationDate :
+                    entry1.mode == entry2.mode &&
+                    entry1.lastStatusDate == entry2.lastStatusDate) &&
                 entry1.lastAccessedDate == entry2.lastAccessedDate &&
                 entry1.lastModifiedDate == entry2.lastModifiedDate &&
                 entry1.size == entry2.size;
@@ -652,15 +646,15 @@ namespace thekogans {
         inline bool operator != (
                 const Directory::Entry &entry1,
                 const Directory::Entry &entry2) {
-            return entry1.type != entry2.type ||
+            return
+                entry1.fileSystem != entry2.fileSystem ||
+                entry1.type != entry2.type ||
                 entry1.name != entry2.name ||
-            #if defined (TOOLCHAIN_OS_Windows)
-                entry1.attributes != entry2.attributes ||
-                entry1.creationDate != entry2.creationDate ||
-            #else // defined (TOOLCHAIN_OS_Windows)
-                entry1.mode != entry2.mode ||
-                entry1.lastStatusDate != entry2.lastStatusDate ||
-            #endif // defined (TOOLCHAIN_OS_Windows)
+                (entry1.fileSystem == Directory::Entry::Windows ?
+                    entry1.attributes != entry2.attributes ||
+                    entry1.creationDate != entry2.creationDate :
+                    entry1.mode != entry2.mode ||
+                    entry1.lastStatusDate != entry2.lastStatusDate) ||
                 entry1.lastAccessedDate != entry2.lastAccessedDate ||
                 entry1.lastModifiedDate != entry2.lastModifiedDate ||
                 entry1.size != entry2.size;
@@ -674,19 +668,25 @@ namespace thekogans {
         inline Serializer &operator << (
                 Serializer &serializer,
                 const Directory::Entry &entry) {
-            return serializer <<
+            serializer <<
+                entry.fileSystem <<
                 entry.type <<
-                entry.name <<
-            #if defined (TOOLCHAIN_OS_Windows)
-                entry.attributes <<
-                entry.creationDate <<
-            #else // defined (TOOLCHAIN_OS_Windows)
-                entry.mode <<
-                entry.lastStatusDate <<
-            #endif // defined (TOOLCHAIN_OS_Windows)
+                entry.name;
+            if (entry.fileSystem == Directory::Entry::Windows) {
+                serializer <<
+                    entry.attributes <<
+                    entry.creationDate;
+            }
+            else {
+                serializer <<
+                    entry.mode <<
+                    entry.lastStatusDate;
+            }
+            serializer <<
                 entry.lastAccessedDate <<
                 entry.lastModifiedDate <<
                 entry.size;
+            return serializer;
         }
 
         /// \brief
@@ -697,19 +697,25 @@ namespace thekogans {
         inline Serializer &operator >> (
                 Serializer &serializer,
                 Directory::Entry &entry) {
-            return serializer >>
+            serializer >>
+                entry.fileSystem >>
                 entry.type >>
-                entry.name >>
-            #if defined (TOOLCHAIN_OS_Windows)
-                entry.attributes >>
-                entry.creationDate >>
-            #else // defined (TOOLCHAIN_OS_Windows)
-                entry.mode >>
-                entry.lastStatusDate >>
-            #endif // defined (TOOLCHAIN_OS_Windows)
+                entry.name;
+            if (entry.fileSystem == Directory::Entry::Windows) {
+                serializer >>
+                    entry.attributes >>
+                    entry.creationDate;
+            }
+            else {
+                serializer >>
+                    entry.mode >>
+                    entry.lastStatusDate;
+            }
+            serializer >>
                 entry.lastAccessedDate >>
                 entry.lastModifiedDate >>
                 entry.size;
+            return serializer;
         }
 
         /// \brief
