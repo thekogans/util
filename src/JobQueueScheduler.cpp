@@ -98,7 +98,7 @@ namespace thekogans {
         void JobQueueScheduler::Alarm (Timer & /*timer*/) throw () {
             LockGuard<SpinLock> guard (spinLock);
             TimeSpec now = GetCurrentTime ();
-            while (!queue.empty () && queue.top ()->deadline >= now) {
+            while (!queue.empty () && queue.top ()->deadline <= now) {
                 queue.top ()->EnqJob ();
                 queue.pop ();
             }
