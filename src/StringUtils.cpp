@@ -30,6 +30,9 @@
 #include "thekogans/util/LockGuard.h"
 #include "thekogans/util/Exception.h"
 #include "thekogans/util/XMLUtils.h"
+#if defined (TOOLCHAIN_OS_Windows)
+    #include "thekogans/util/WindowsUtils.h"
+#endif // defined (TOOLCHAIN_OS_Windows)
 #include "thekogans/util/StringUtils.h"
 
 namespace thekogans {

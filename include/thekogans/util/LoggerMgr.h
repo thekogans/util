@@ -23,6 +23,7 @@
 #include <string>
 #include <list>
 #include <map>
+#include <sstream>
 #include "thekogans/util/Config.h"
 #include "thekogans/util/Types.h"
 #include "thekogans/util/Flags.h"
@@ -637,7 +638,7 @@ namespace thekogans {
                 __DATE__ " " __TIME__, format, __VA_ARGS__);
 
         /// \def THEKOGANS_UTIL_LOG_ERROR_EX(file, function, line, buildTime, format, ...)
-        /// Use this macro to log at level Error or higher.
+        /// Use this macro to log at level Error.
         #define THEKOGANS_UTIL_LOG_ERROR_EX(file, function, line, buildTime, format, ...)\
             if (thekogans::util::GlobalLoggerMgr::Instance ().GetLevel () >=\
                     thekogans::util::LoggerMgr::Error) {\
@@ -647,7 +648,7 @@ namespace thekogans {
                     file, function, line, buildTime, format, __VA_ARGS__);\
             }
         /// \def THEKOGANS_UTIL_LOG_ERROR(format, ...)
-        /// Use this macro to log at level Error or higher.
+        /// Use this macro to log at level Error.
         #define THEKOGANS_UTIL_LOG_ERROR(format, ...)\
             if (thekogans::util::GlobalLoggerMgr::Instance ().GetLevel () >=\
                     thekogans::util::LoggerMgr::Error) {\
@@ -659,7 +660,7 @@ namespace thekogans {
             }
         /// \def THEKOGANS_UTIL_LOG_SUBSYSTEM_ERROR_EX(
         ///          subsystem, file, function, line, buildTime, format, ...)
-        /// Use this macro to log at level Error or higher.
+        /// Use this macro to log at level Error.
         #define THEKOGANS_UTIL_LOG_SUBSYSTEM_ERROR_EX(\
                 subsystem, file, function, line, buildTime, format, ...)\
             if (thekogans::util::GlobalLoggerMgr::Instance ().GetLevel () >=\
@@ -669,7 +670,7 @@ namespace thekogans {
                     file, function, line, buildTime, format, __VA_ARGS__);\
             }
         /// \def THEKOGANS_UTIL_LOG_SUBSYSTEM_ERROR(subsystem, format, ...)
-        /// Use this macro to log at level Error or higher.
+        /// Use this macro to log at level Error.
         #define THEKOGANS_UTIL_LOG_SUBSYSTEM_ERROR(subsystem, format, ...)\
             if (thekogans::util::GlobalLoggerMgr::Instance ().GetLevel () >=\
                     thekogans::util::LoggerMgr::Error) {\
@@ -680,7 +681,7 @@ namespace thekogans {
             }
 
         /// \def THEKOGANS_UTIL_LOG_WARNING_EX(file, function, line, buildTime, format, ...)
-        /// Use this macro to log at level Warning or higher.
+        /// Use this macro to log at level Warning.
         #define THEKOGANS_UTIL_LOG_WARNING_EX(file, function, line, buildTime, format, ...)\
             if (thekogans::util::GlobalLoggerMgr::Instance ().GetLevel () >=\
                     thekogans::util::LoggerMgr::Warning) {\
@@ -690,7 +691,7 @@ namespace thekogans {
                     file, function, line, buildTime, format, __VA_ARGS__);\
             }
         /// \def THEKOGANS_UTIL_LOG_WARNING(format, ...)
-        /// Use this macro to log at level Warning or higher.
+        /// Use this macro to log at level Warning.
         #define THEKOGANS_UTIL_LOG_WARNING(format, ...)\
             if (thekogans::util::GlobalLoggerMgr::Instance ().GetLevel () >=\
                     thekogans::util::LoggerMgr::Warning) {\
@@ -702,7 +703,7 @@ namespace thekogans {
             }
         /// \def THEKOGANS_UTIL_LOG_SUBSYSTEM_WARNING_EX(
         ///          subsystem, file, function, line, buildTime, format, ...)
-        /// Use this macro to log at level Warning or higher.
+        /// Use this macro to log at level Warning.
         #define THEKOGANS_UTIL_LOG_SUBSYSTEM_WARNING_EX(\
                 subsystem, file, function, line, buildTime, format, ...)\
             if (thekogans::util::GlobalLoggerMgr::Instance ().GetLevel () >=\
@@ -712,7 +713,7 @@ namespace thekogans {
                     file, function, line, buildTime, format, __VA_ARGS__);\
             }
         /// \def THEKOGANS_UTIL_LOG_SUBSYSTEM_WARNING(subsystem, format, ...)
-        /// Use this macro to log at level Warning or higher.
+        /// Use this macro to log at level Warning.
         #define THEKOGANS_UTIL_LOG_SUBSYSTEM_WARNING(subsystem, format, ...)\
             if (thekogans::util::GlobalLoggerMgr::Instance ().GetLevel () >=\
                     thekogans::util::LoggerMgr::Warning) {\
@@ -723,7 +724,7 @@ namespace thekogans {
             }
 
         /// \def THEKOGANS_UTIL_LOG_INFO_EX(file, function, line, buildTime, format, ...)
-        /// Use this macro to log at level Info or higher.
+        /// Use this macro to log at level Info.
         #define THEKOGANS_UTIL_LOG_INFO_EX(file, function, line, buildTime, format, ...)\
             if (thekogans::util::GlobalLoggerMgr::Instance ().GetLevel () >=\
                     thekogans::util::LoggerMgr::Info) {\
@@ -733,7 +734,7 @@ namespace thekogans {
                     file, function, line, buildTime, format, __VA_ARGS__);\
             }
         /// \def THEKOGANS_UTIL_LOG_INFO(format, ...)
-        /// Use this macro to log at level Info or higher.
+        /// Use this macro to log at level Info.
         #define THEKOGANS_UTIL_LOG_INFO(format, ...)\
             if (thekogans::util::GlobalLoggerMgr::Instance ().GetLevel () >=\
                     thekogans::util::LoggerMgr::Info) {\
@@ -745,7 +746,7 @@ namespace thekogans {
             }
         /// \def THEKOGANS_UTIL_LOG_SUBSYSTEM_INFO_EX(
         ///          subsystem, file, function, line, buildTime, format, ...)
-        /// Use this macro to log at level Info or higher.
+        /// Use this macro to log at level Info.
         #define THEKOGANS_UTIL_LOG_SUBSYSTEM_INFO_EX(\
                 subsystem, file, function, line, buildTime, format, ...)\
             if (thekogans::util::GlobalLoggerMgr::Instance ().GetLevel () >=\
@@ -755,7 +756,7 @@ namespace thekogans {
                     file, function, line, buildTime, format, __VA_ARGS__);\
             }
         /// \def THEKOGANS_UTIL_LOG_SUBSYSTEM_INFO(subsystem, format, ...)
-        /// Use this macro to log at level Info or higher.
+        /// Use this macro to log at level Info.
         #define THEKOGANS_UTIL_LOG_SUBSYSTEM_INFO(subsystem, format, ...)\
             if (thekogans::util::GlobalLoggerMgr::Instance ().GetLevel () >=\
                     thekogans::util::LoggerMgr::Info) {\
@@ -766,7 +767,7 @@ namespace thekogans {
             }
 
         /// \def THEKOGANS_UTIL_LOG_DEBUG_EX(file, function, line, buildTime, format, ...)
-        /// Use this macro to log at level Debug or higher.
+        /// Use this macro to log at level Debug.
         #define THEKOGANS_UTIL_LOG_DEBUG_EX(file, function, line, buildTime, format, ...)\
             if (thekogans::util::GlobalLoggerMgr::Instance ().GetLevel () >=\
                     thekogans::util::LoggerMgr::Debug) {\
@@ -776,7 +777,7 @@ namespace thekogans {
                     file, function, line, buildTime, format, __VA_ARGS__);\
             }
         /// \def THEKOGANS_UTIL_LOG_DEBUG(format, ...)
-        /// Use this macro to log at level Debug or higher.
+        /// Use this macro to log at level Debug.
         #define THEKOGANS_UTIL_LOG_DEBUG(format, ...)\
             if (thekogans::util::GlobalLoggerMgr::Instance ().GetLevel () >=\
                     thekogans::util::LoggerMgr::Debug) {\
@@ -788,7 +789,7 @@ namespace thekogans {
             }
         /// \def THEKOGANS_UTIL_LOG_SUBSYSTEM_DEBUG_EX(
         ///          subsystem, file, function, line, buildTime, format, ...)
-        /// Use this macro to log at level Debug or higher.
+        /// Use this macro to log at level Debug.
         #define THEKOGANS_UTIL_LOG_SUBSYSTEM_DEBUG_EX(\
                 subsystem, file, function, line, buildTime, format, ...)\
             if (thekogans::util::GlobalLoggerMgr::Instance ().GetLevel () >=\
@@ -798,7 +799,7 @@ namespace thekogans {
                     file, function, line, buildTime, format, __VA_ARGS__);\
             }
         /// \def THEKOGANS_UTIL_LOG_SUBSYSTEM_DEBUG(subsystem, format, ...)
-        /// Use this macro to log at level Debug or higher.
+        /// Use this macro to log at level Debug.
         #define THEKOGANS_UTIL_LOG_SUBSYSTEM_DEBUG(subsystem, format, ...)\
             if (thekogans::util::GlobalLoggerMgr::Instance ().GetLevel () >=\
                     thekogans::util::LoggerMgr::Debug) {\
@@ -855,6 +856,243 @@ namespace thekogans {
         /// Use this macro to wait for GlobalLoggerMgr entry queue to drain.
         #define THEKOGANS_UTIL_LOG_FLUSH\
             thekogans::util::GlobalLoggerMgr::Instance ().Flush ();
+
+        /// \struct LogStream LoggerMgr.h thekogans/util/LoggerMgr.h
+        ///
+        /// \brief
+        /// LogStream is an adapter which converts LoggerMgr::Log from c printf
+        /// style interface in to a c++ stream style interface. Use the macros
+        /// below instead of the ones above to achieve this effect.
+
+        struct _LIB_THEKOGANS_UTIL_DECL LogStream : public std::stringstream {
+            /// \brief
+            /// Subsystem to log to.
+            const char *subsystem;
+            /// \brief
+            /// Level at which to log.
+            ui32 level;
+            /// \brief
+            /// Translation unit of this entry.
+            const char *file;
+            /// \brief
+            /// Function of the translation unit of this entry.
+            const char *function;
+            /// \brief
+            /// Translation unit line number of this entry.
+            ui32 line;
+            /// \brief
+            /// Translation unit build time of this entry.
+            const char *buildTime;
+            /// \brief
+            /// \see{LoggerMgr} to log too.
+            LoggerMgr &loggerMgr;
+
+            /// \brief
+            /// ctor.
+            /// \param[in] subsystem_ Subsystem to log to.
+            /// \param[in] level_ Level at which to log.
+            /// If LoggerMgr::level < level_, entry is not logged.
+            /// \param[in] file_ Translation unit of this entry.
+            /// \param[in] function_ Function of the translation unit of this entry.
+            /// \param[in] line_ Translation unit line number of this entry.
+            /// \param[in] buildTime_ Translation unit build time of this entry.
+            /// \param[in] loggerMgr_ \see{LoggerMgr} to log too.
+            LogStream (
+                const char *subsystem_,
+                ui32 level_,
+                const char *file_,
+                const char *function_,
+                ui32 line_,
+                const char *buildTime_,
+                LoggerMgr &loggerMgr_ = GlobalLoggerMgr::Instance ()) :
+                subsystem (subsystem_),
+                level (level_),
+                file (file_),
+                function (function_),
+                line (line_),
+                buildTime (buildTime_),
+                loggerMgr (loggerMgr_) {}
+            /// \brief
+            /// dtor.
+            /// This is where the magic happens. Our dtor will be called
+            /// after all insertions have been performed. Grab the resulting
+            /// string and pass it to LoggerMgr.
+            ~LogStream () {
+                if (loggerMgr.GetLevel () >= level) {
+                    loggerMgr.Log (subsystem, level, file, function, line, buildTime, str ().c_str ());
+                }
+            }
+        };
+
+        /// \def THEKOGANS_UTIL_LOG_STREAM_EX(level, file, line, buildTime, format)
+        /// Use this macro to bypass the level checking machinery.
+        #define THEKOGANS_UTIL_LOG_STREAM_EX(level, file, function, line, buildTime)\
+            thekogans::util::LogStream (\
+                thekogans::util::LoggerMgr::SUBSYSTEM_GLOBAL,\
+                level,\
+                file, function, line, buildTime)
+        /// \def THEKOGANS_UTIL_LOG_STREAM(level)
+        /// Use this macro to bypass the level checking machinery.
+        #define THEKOGANS_UTIL_LOG_STREAM(level)\
+            THEKOGANS_UTIL_LOG_STREAM_EX(\
+                level,\
+                __FILE__, __FUNCTION__, __LINE__, __DATE__ " " __TIME__)
+        /// \def THEKOGANS_UTIL_LOG_STREAM_SUBSYSTEM_EX(
+        ///          subsystem, level, file, function, line, buildTime)
+        /// Use this macro to bypass the level checking machinery.
+        #define THEKOGANS_UTIL_LOG_STREAM_SUBSYSTEM_EX(\
+                subsystem, level, file, function, line, buildTime)\
+            thekogans::util::LogStream (\
+                subsystem,\
+                level,\
+                file, function, line, buildTime)
+        /// \def THEKOGANS_UTIL_LOG_STREAM_SUBSYSTEM(subsystem, level)
+        /// Use this macro to bypass the level checking machinery.
+        #define THEKOGANS_UTIL_LOG_STREAM_SUBSYSTEM(subsystem, level)\
+            THEKOGANS_UTIL_LOG_STREAM_SUBSYSTEM_EX(\
+                subsystem,\
+                level,\
+                __FILE__, __FUNCTION__, __LINE__, __DATE__ " " __TIME__)
+
+        /// \def THEKOGANS_UTIL_LOG_STREAM_ERROR_EX(file, function, line, buildTime)
+        /// Use this macro to log at level Error.
+        #define THEKOGANS_UTIL_LOG_STREAM_ERROR_EX(file, function, line, buildTime)\
+            THEKOGANS_UTIL_LOG_STREAM_EX(\
+                thekogans::util::LoggerMgr::Error,\
+                file, function, line, buildTime)
+        /// \def THEKOGANS_UTIL_LOG_STREAM_ERROR
+        /// Use this macro to log at level Error.
+        #define THEKOGANS_UTIL_LOG_STREAM_ERROR\
+            THEKOGANS_UTIL_LOG_STREAM_ERROR_EX (\
+                __FILE__, __FUNCTION__, __LINE__, __DATE__ " " __TIME__)
+
+        /// \def THEKOGANS_UTIL_LOG_STREAM_SUBSYSTEM_ERROR_EX(
+        ///          subsystem, file, function, line, buildTime)
+        /// Use this macro to log at level Error.
+        #define THEKOGANS_UTIL_LOG_STREAM_SUBSYSTEM_ERROR_EX(\
+                subsystem, file, function, line, buildTime)\
+            THEKOGANS_UTIL_LOG_STREAM_SUBSYSTEM_EX(\
+                subsystem,\
+                thekogans::util::LoggerMgr::Error,\
+                file, function, line, buildTime)
+        /// \def THEKOGANS_UTIL_LOG_STREAM_SUBSYSTEM_ERROR(subsystem)
+        /// Use this macro to log at level Error.
+        #define THEKOGANS_UTIL_LOG_STREAM_SUBSYSTEM_ERROR(subsystem)\
+            THEKOGANS_UTIL_LOG_STREAM_SUBSYSTEM_ERROR_EX(\
+                subsystem,\
+                __FILE__, __FUNCTION__, __LINE__, __DATE__ " " __TIME__)
+
+        /// \def THEKOGANS_UTIL_LOG_STREAM_WARNING_EX(file, function, line, buildTime)
+        /// Use this macro to log at level Warning.
+        #define THEKOGANS_UTIL_LOG_STREAM_WARNING_EX(file, function, line, buildTime)\
+            THEKOGANS_UTIL_LOG_STREAM_EX(\
+                thekogans::util::LoggerMgr::Warning,\
+                file, function, line, buildTime)
+        /// \def THEKOGANS_UTIL_LOG_STREAM_WARNING
+        /// Use this macro to log at level Warning.
+        #define THEKOGANS_UTIL_LOG_STREAM_WARNING\
+            THEKOGANS_UTIL_LOG_STREAM_WARNING_EX (\
+                __FILE__, __FUNCTION__, __LINE__, __DATE__ " " __TIME__)
+
+        /// \def THEKOGANS_UTIL_LOG_STREAM_SUBSYSTEM_WARNING_EX(
+        ///          subsystem, file, function, line, buildTime)
+        /// Use this macro to log at level Warning.
+        #define THEKOGANS_UTIL_LOG_STREAM_SUBSYSTEM_WARNING_EX(\
+                subsystem, file, function, line, buildTime)\
+            THEKOGANS_UTIL_LOG_STREAM_SUBSYSTEM_EX(\
+                subsystem,\
+                thekogans::util::LoggerMgr::Warning,\
+                file, function, line, buildTime)
+        /// \def THEKOGANS_UTIL_LOG_STREAM_SUBSYSTEM_WARNING(subsystem)
+        /// Use this macro to log at level Warning.
+        #define THEKOGANS_UTIL_LOG_STREAM_SUBSYSTEM_WARNING(subsystem)\
+            THEKOGANS_UTIL_LOG_STREAM_SUBSYSTEM_WARNING_EX(\
+                subsystem,\
+                __FILE__, __FUNCTION__, __LINE__, __DATE__ " " __TIME__)
+
+        /// \def THEKOGANS_UTIL_LOG_STREAM_INFO_EX(file, function, line, buildTime)
+        /// Use this macro to log at level Info.
+        #define THEKOGANS_UTIL_LOG_STREAM_INFO_EX(file, function, line, buildTime)\
+            THEKOGANS_UTIL_LOG_STREAM_EX(\
+                thekogans::util::LoggerMgr::Info,\
+                file, function, line, buildTime)
+        /// \def THEKOGANS_UTIL_LOG_STREAM_INFO
+        /// Use this macro to log at level Info.
+        #define THEKOGANS_UTIL_LOG_STREAM_INFO\
+            THEKOGANS_UTIL_LOG_STREAM_INFO_EX (\
+                __FILE__, __FUNCTION__, __LINE__, __DATE__ " " __TIME__)
+
+        /// \def THEKOGANS_UTIL_LOG_STREAM_SUBSYSTEM_INFO_EX(
+        ///          subsystem, file, function, line, buildTime)
+        /// Use this macro to log at level Info.
+        #define THEKOGANS_UTIL_LOG_STREAM_SUBSYSTEM_INFO_EX(\
+                subsystem, file, function, line, buildTime)\
+            THEKOGANS_UTIL_LOG_STREAM_SUBSYSTEM_EX(\
+                subsystem,\
+                thekogans::util::LoggerMgr::Info,\
+                file, function, line, buildTime)
+        /// \def THEKOGANS_UTIL_LOG_STREAM_SUBSYSTEM_INFO(subsystem)
+        /// Use this macro to log at level Info.
+        #define THEKOGANS_UTIL_LOG_STREAM_SUBSYSTEM_INFO(subsystem)\
+            THEKOGANS_UTIL_LOG_STREAM_SUBSYSTEM_INFO_EX(\
+                subsystem,\
+                __FILE__, __FUNCTION__, __LINE__, __DATE__ " " __TIME__)
+
+        /// \def THEKOGANS_UTIL_LOG_STREAM_DEBUG_EX(file, function, line, buildTime)
+        /// Use this macro to log at level Debug.
+        #define THEKOGANS_UTIL_LOG_STREAM_DEBUG_EX(file, function, line, buildTime)\
+            THEKOGANS_UTIL_LOG_STREAM_EX(\
+                thekogans::util::LoggerMgr::Debug,\
+                file, function, line, buildTime)
+        /// \def THEKOGANS_UTIL_LOG_STREAM_DEBUG
+        /// Use this macro to log at level Debug.
+        #define THEKOGANS_UTIL_LOG_STREAM_DEBUG\
+            THEKOGANS_UTIL_LOG_STREAM_DEBUG_EX (\
+                __FILE__, __FUNCTION__, __LINE__, __DATE__ " " __TIME__)
+
+        /// \def THEKOGANS_UTIL_LOG_STREAM_SUBSYSTEM_DEBUG_EX(
+        ///          subsystem, file, function, line, buildTime)
+        /// Use this macro to log at level Debug.
+        #define THEKOGANS_UTIL_LOG_STREAM_SUBSYSTEM_DEBUG_EX(\
+                subsystem, file, function, line, buildTime)\
+            THEKOGANS_UTIL_LOG_STREAM_SUBSYSTEM_EX(\
+                subsystem,\
+                thekogans::util::LoggerMgr::Debug,\
+                file, function, line, buildTime)
+        /// \def THEKOGANS_UTIL_LOG_STREAM_SUBSYSTEM_DEBUG(subsystem)
+        /// Use this macro to log at level Debug.
+        #define THEKOGANS_UTIL_LOG_STREAM_SUBSYSTEM_DEBUG(subsystem)\
+            THEKOGANS_UTIL_LOG_STREAM_SUBSYSTEM_DEBUG_EX(\
+                subsystem,\
+                __FILE__, __FUNCTION__, __LINE__, __DATE__ " " __TIME__)
+
+        /// \def THEKOGANS_UTIL_LOG_STREAM_DEVELOPMENT_EX(file, function, line, buildTime)
+        /// Use this macro to log at level Development.
+        #define THEKOGANS_UTIL_LOG_STREAM_DEVELOPMENT_EX(file, function, line, buildTime)\
+            THEKOGANS_UTIL_LOG_STREAM_EX(\
+                thekogans::util::LoggerMgr::Development,\
+                file, function, line, buildTime)
+        /// \def THEKOGANS_UTIL_LOG_STREAM_DEVELOPMENT
+        /// Use this macro to log at level Development.
+        #define THEKOGANS_UTIL_LOG_STREAM_DEVELOPMENT\
+            THEKOGANS_UTIL_LOG_STREAM_DEVELOPMENT_EX (\
+                __FILE__, __FUNCTION__, __LINE__, __DATE__ " " __TIME__)
+
+        /// \def THEKOGANS_UTIL_LOG_STREAM_SUBSYSTEM_DEVELOPMENT_EX(
+        ///          subsystem, file, function, line, buildTime)
+        /// Use this macro to log at level Development.
+        #define THEKOGANS_UTIL_LOG_STREAM_SUBSYSTEM_DEVELOPMENT_EX(\
+                subsystem, file, function, line, buildTime)\
+            THEKOGANS_UTIL_LOG_STREAM_SUBSYSTEM_EX(\
+                subsystem,\
+                thekogans::util::LoggerMgr::Development,\
+                file, function, line, buildTime)
+        /// \def THEKOGANS_UTIL_LOG_STREAM_SUBSYSTEM_DEVELOPMENT(subsystem)
+        /// Use this macro to log at level Development.
+        #define THEKOGANS_UTIL_LOG_STREAM_SUBSYSTEM_DEVELOPMENT(subsystem)\
+            THEKOGANS_UTIL_LOG_STREAM_SUBSYSTEM_DEVELOPMENT_EX(\
+                subsystem,\
+                __FILE__, __FUNCTION__, __LINE__, __DATE__ " " __TIME__)
 
     } // namespace util
 } // namespace thekogans
