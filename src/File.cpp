@@ -374,9 +374,10 @@ namespace thekogans {
         #endif // defined (TOOLCHAIN_OS_Windows)
         }
 
-        void SimpleFile::OpenHelper (
+        void SimpleFile::Open (
                 const std::string &path,
-                i32 flags) {
+                i32 flags,
+                i32 /*mode*/) {
         #if defined (TOOLCHAIN_OS_Windows)
             DWORD dwDesiredAccess = 0;
             DWORD dwShareMode = 0;

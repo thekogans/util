@@ -295,7 +295,7 @@ namespace thekogans {
                     const std::string &path,
                     i32 flags = ReadWrite | Create) :
                     File (endianness) {
-                OpenHelper (path, flags);
+                Open (path, flags);
             }
 
             /// \brief
@@ -306,20 +306,9 @@ namespace thekogans {
             /// \param[in] flags Most useful POSIX open flags.
             /// \param[in] mode Not used. Here to match the signature of \see{File::Open}.
             virtual void Open (
-                    const std::string &path,
-                    i32 flags = ReadWrite | Create,
-                    i32 /*mode*/ = 0) {
-                OpenHelper (path, flags);
-            }
-
-        private:
-            /// \brief
-            /// Open the file.
-            /// \param[in] path Path to file to open.
-            /// \param[in] flags Most useful POSIX open flags.
-            void OpenHelper (
                 const std::string &path,
-                i32 flags = ReadWrite | Create);
+                i32 flags = ReadWrite | Create,
+                i32 /*mode*/ = 0);
 
             /// \brief
             /// SimpleFile is neither copy constructable, nor assignable.
