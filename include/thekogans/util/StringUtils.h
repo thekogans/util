@@ -59,6 +59,16 @@ namespace thekogans {
     #endif // defined (TOOLCHAIN_OS_Windows)
 
         /// \brief
+        /// Copy source to destination.
+        /// NOTE: The destination will be \0 terminated even if source is truncated.
+        /// \param[in] destination Where to place the copy.
+        /// \param[in] destinationLength Number of characters in destination.
+        /// \param[in] source String to copy.
+        _LIB_THEKOGANS_UTIL_DECL void _LIB_THEKOGANS_UTIL_API CopyString (
+            char *destination,
+            std::size_t destinationLength,
+            const char *source);
+        /// \brief
         /// Trim leading and trailing spaces.
         /// \param[in] str Pointer to string to trim spaces from.
         /// \return String with leading and trailing spaces trimmed.

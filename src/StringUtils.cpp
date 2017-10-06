@@ -15,7 +15,6 @@
 // You should have received a copy of the GNU General Public License
 // along with libthekogans_util. If not, see <http://www.gnu.org/licenses/>.
 
-#include <cassert>
 #include <cstdlib>
 #include <cstring>
 #include <cstdarg>
@@ -37,6 +36,22 @@
 
 namespace thekogans {
     namespace util {
+
+        _LIB_THEKOGANS_UTIL_DECL void _LIB_THEKOGANS_UTIL_API CopyString (
+                char *destination,
+                std::size_t destinationLength,
+                const char *source) {
+            if (destination != 0 && destinationLength != 0 && source != 0) {
+                while (--destinationLength != 0 && *source != '\0') {
+                    *destination++ = *source++;
+                }
+                *destination = '\0';
+            }
+            else {
+                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
+            }
+        }
 
         _LIB_THEKOGANS_UTIL_DECL std::string _LIB_THEKOGANS_UTIL_API TrimSpaces (
                 const char *str) {
@@ -322,8 +337,7 @@ namespace thekogans {
         _LIB_THEKOGANS_UTIL_DECL std::string _LIB_THEKOGANS_UTIL_API size_tTostring (
                 std::size_t value,
                 const char *format) {
-            assert (format != 0);
-            return format != 0 ? FormatString (format, value) : std::string ();
+            return FormatString (format, value);
         }
 
         _LIB_THEKOGANS_UTIL_DECL std::string _LIB_THEKOGANS_UTIL_API boolTostring (
@@ -334,50 +348,43 @@ namespace thekogans {
         _LIB_THEKOGANS_UTIL_DECL std::string _LIB_THEKOGANS_UTIL_API i32Tostring (
                 i32 value,
                 const char *format) {
-            assert (format != 0);
-            return format != 0 ? FormatString (format, value) : std::string ();
+            return FormatString (format, value);
         }
 
         _LIB_THEKOGANS_UTIL_DECL std::string _LIB_THEKOGANS_UTIL_API ui32Tostring (
                 ui32 value,
                 const char *format) {
-            assert (format != 0);
-            return format != 0 ? FormatString (format, value) : std::string ();
+            return FormatString (format, value);
         }
 
         _LIB_THEKOGANS_UTIL_DECL std::string _LIB_THEKOGANS_UTIL_API i64Tostring (
                 i64 value,
                 const char *format) {
-            assert (format != 0);
-            return format != 0 ? FormatString (format, value) : std::string ();
+            return FormatString (format, value);
         }
 
         _LIB_THEKOGANS_UTIL_DECL std::string _LIB_THEKOGANS_UTIL_API ui64Tostring (
                 ui64 value,
                 const char *format) {
-            assert (format != 0);
-            return format != 0 ? FormatString (format, value) : std::string ();
+            return FormatString (format, value);
         }
 
         _LIB_THEKOGANS_UTIL_DECL std::string _LIB_THEKOGANS_UTIL_API f32Tostring (
                 f32 value,
                 const char *format) {
-            assert (format != 0);
-            return format != 0 ? FormatString (format, value) : std::string ();
+            return FormatString (format, value);
         }
 
         _LIB_THEKOGANS_UTIL_DECL std::string _LIB_THEKOGANS_UTIL_API f64Tostring (
                 f64 value,
                 const char *format) {
-            assert (format != 0);
-            return format != 0 ? FormatString (format, value) : std::string ();
+            return FormatString (format, value);
         }
 
         _LIB_THEKOGANS_UTIL_DECL std::string _LIB_THEKOGANS_UTIL_API time_tTostring (
                 time_t value,
                 const char *format) {
-            assert (format != 0);
-            return format != 0 ? FormatString (format, value) : std::string ();
+            return FormatString (format, value);
         }
 
     #if !defined (TOOLCHAIN_OS_Windows)
@@ -385,17 +392,11 @@ namespace thekogans {
             int _vscprintf (
                     const char *format,
                     va_list argptr) {
-                if (format != 0) {
-                    va_list myargptr;
-                    va_copy (myargptr, argptr);
-                    int result = vsnprintf (0, 0, format, myargptr);
-                    va_end (myargptr);
-                    return result;
-                }
-                else {
-                    THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                        THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
-                }
+                va_list myargptr;
+                va_copy (myargptr, argptr);
+                int result = vsnprintf (0, 0, format, myargptr);
+                va_end (myargptr);
+                return result;
             }
         }
     #endif // !defined (TOOLCHAIN_OS_Windows)
@@ -403,28 +404,36 @@ namespace thekogans {
         _LIB_THEKOGANS_UTIL_DECL std::string _LIB_THEKOGANS_UTIL_API FormatStringHelper (
                 const char *format,
                 va_list argptr) {
-            assert (format != 0);
-            std::string str;
             if (format != 0) {
+                std::string str;
                 int size = _vscprintf (format, argptr);
                 if (size > 0) {
                     str.resize (size + 1);
                     vsnprintf (&str[0], size + 1, format, argptr);
                     str.resize (size);
                 }
+                return str;
             }
-            return str;
+            else {
+                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
+            }
         }
 
         _LIB_THEKOGANS_UTIL_DECL std::string _LIB_THEKOGANS_UTIL_API FormatString (
                 const char *format,
                 ...) {
-            assert (format != 0);
-            va_list argptr;
-            va_start (argptr, format);
-            std::string str = FormatStringHelper (format, argptr);
-            va_end (argptr);
-            return str;
+            if (format != 0) {
+                va_list argptr;
+                va_start (argptr, format);
+                std::string str = FormatStringHelper (format, argptr);
+                va_end (argptr);
+                return str;
+            }
+            else {
+                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
+            }
         }
 
         _LIB_THEKOGANS_UTIL_DECL std::string _LIB_THEKOGANS_UTIL_API ErrorCodeTostring (

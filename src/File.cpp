@@ -376,66 +376,69 @@ namespace thekogans {
 
         void SimpleFile::OpenHelper (
                 const std::string &path,
-                ui32 flags) {
+                i32 flags) {
         #if defined (TOOLCHAIN_OS_Windows)
             DWORD dwDesiredAccess = 0;
-            if (Flags32 (flags).Test (ReadOnly)) {
-                dwDesiredAccess |= GENERIC_READ;
-            }
-            if (Flags32 (flags).Test (WriteOnly)) {
-                dwDesiredAccess |= GENERIC_WRITE;
-            }
             DWORD dwShareMode = 0;
-            if (Flags32 (flags).Test (ReadOnly)) {
+            Flags<i32> flags_ (flags);
+            if (flags_.Test (ReadOnly)) {
+                dwDesiredAccess |= GENERIC_READ;
                 dwShareMode |= FILE_SHARE_READ;
             }
-            if (Flags32 (flags).Test (WriteOnly)) {
+            if (flags_.Test (WriteOnly)) {
+                dwDesiredAccess |= GENERIC_WRITE;
                 dwShareMode |= FILE_SHARE_WRITE;
             }
+            if (flags_.Test (Append)) {
+                dwDesiredAccess |= FILE_APPEND_DATA;
+            }
             DWORD dwCreationDisposition = 0;
-            if (Flags32 (flags).Test (Create)) {
-                if (Flags32 (flags).Test (Truncate)) {
+            if (flags_.Test (Create)) {
+                if (flags_.Test (Truncate)) {
                     dwCreationDisposition |= CREATE_ALWAYS;
                 }
                 else {
                     dwCreationDisposition |= OPEN_ALWAYS;
                 }
             }
-            else if (Flags32 (flags).Test (Truncate)) {
+            else if (flags_.Test (Truncate)) {
                 dwCreationDisposition |= TRUNCATE_EXISTING;
             }
             else {
                 dwCreationDisposition |= OPEN_EXISTING;
             }
-            if (Flags32 (flags).Test (Append)) {
-                dwDesiredAccess |= FILE_APPEND_DATA;
-            }
             DWORD dwFlagsAndAttributes = FILE_ATTRIBUTE_NORMAL;
-            Open (path, dwDesiredAccess, dwShareMode, dwCreationDisposition, dwFlagsAndAttributes);
+            File::Open (
+                path,
+                dwDesiredAccess,
+                dwShareMode,
+                dwCreationDisposition,
+                dwFlagsAndAttributes);
         #else // defined (TOOLCHAIN_OS_Windows)
-            int flags_ = 0;
-            if (Flags32 (flags).Test (ReadOnly)) {
-                if (Flags32 (flags).Test (WriteOnly)) {
-                    flags_ |= O_RDWR;
+            Flags<i32> flags_ (flags);
+            flags = 0;
+            if (flags_.Test (ReadOnly)) {
+                if (flags_.Test (WriteOnly)) {
+                    flags |= O_RDWR;
                 }
                 else {
-                    flags_ |= O_RDONLY;
+                    flags |= O_RDONLY;
                 }
             }
-            else if (Flags32 (flags).Test (WriteOnly)) {
-                flags_ |= O_WRONLY;
+            else if (flags_.Test (WriteOnly)) {
+                flags |= O_WRONLY;
             }
-            if (Flags32 (flags).Test (Create)) {
-                flags_ |= O_CREAT;
+            if (flags_.Test (Create)) {
+                flags |= O_CREAT;
             }
-            if (Flags32 (flags).Test (Truncate)) {
-                flags_ |= O_TRUNC;
+            if (flags_.Test (Truncate)) {
+                flags |= O_TRUNC;
             }
-            if (Flags32 (flags).Test (Append)) {
-                flags_ |= O_APPEND;
+            if (flags_.Test (Append)) {
+                flags |= O_APPEND;
             }
-            int mode = S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH;
-            Open (path, flags_, mode);
+            i32 mode = S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH;
+            File::Open (path, flags, mode);
         #endif // defined (TOOLCHAIN_OS_Windows)
         }
 

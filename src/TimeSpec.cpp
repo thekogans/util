@@ -110,6 +110,30 @@ namespace thekogans {
             return *this;
         }
 
+        TimeSpec TimeSpec::AddHours (i64 hours) const {
+            return *this + FromHours (hours);
+        }
+
+        TimeSpec TimeSpec::AddMinutes (i64 minutes) const {
+            return *this + FromMinutes (minutes);
+        }
+
+        TimeSpec TimeSpec::AddSeconds (i64 seconds) const {
+            return *this + FromSeconds (seconds);
+        }
+
+        TimeSpec TimeSpec::AddMilliseconds (i64 milliseconds) const {
+            return *this + FromMilliseconds (milliseconds);
+        }
+
+        TimeSpec TimeSpec::AddMicroseconds (i64 microseconds) const {
+            return *this + FromMicroseconds (microseconds);
+        }
+
+        TimeSpec TimeSpec::AddNanoseconds (i64 nanoseconds) const {
+            return *this + FromNanoseconds (nanoseconds);
+        }
+
     #if defined (TOOLCHAIN_CONFIG_Debug)
         namespace {
             inline bool IsNormalized (const TimeSpec &timeSpec) {

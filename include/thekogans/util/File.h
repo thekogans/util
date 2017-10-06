@@ -105,8 +105,8 @@ namespace thekogans {
             File (
                 Endianness endianness,
                 const std::string &path,
-                int flags = O_RDWR | O_CREAT,
-                int mode = S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
+                i32 flags = O_RDWR | O_CREAT,
+                i32 mode = S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
         #endif // defined (TOOLCHAIN_OS_Windows)
             /// \brief dtor
             /// Close the file.
@@ -134,8 +134,8 @@ namespace thekogans {
             /// \param[in] mode POSIX open parameter.
             virtual void Open (
                 const std::string &path_,
-                int flags = O_RDWR | O_CREAT,
-                int mode = S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
+                i32 flags = O_RDWR | O_CREAT,
+                i32 mode = S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
         #endif // defined (TOOLCHAIN_OS_Windows)
             /// \brief
             /// Close file.
@@ -293,19 +293,33 @@ namespace thekogans {
             SimpleFile (
                     Endianness endianness,
                     const std::string &path,
-                    ui32 flags = ReadWrite | Create) :
+                    i32 flags = ReadWrite | Create) :
                     File (endianness) {
+                OpenHelper (path, flags);
+            }
+
+            /// \brief
+            /// Open the file.
+            /// NOTE: This function overrides the one in \see{File}
+            /// for POSIX file systems (Linux/ OS X).
+            /// \param[in] path Path to file to open.
+            /// \param[in] flags Most useful POSIX open flags.
+            /// \param[in] mode Not used. Here to match the signature of \see{File::Open}.
+            virtual void Open (
+                    const std::string &path,
+                    i32 flags = ReadWrite | Create,
+                    i32 /*mode*/ = 0) {
                 OpenHelper (path, flags);
             }
 
         private:
             /// \brief
             /// Open the file.
-            /// \param[in] path_ Path to file to open.
+            /// \param[in] path Path to file to open.
             /// \param[in] flags Most useful POSIX open flags.
             void OpenHelper (
-                const std::string &path_,
-                ui32 flags = ReadWrite | Create);
+                const std::string &path,
+                i32 flags = ReadWrite | Create);
 
             /// \brief
             /// SimpleFile is neither copy constructable, nor assignable.

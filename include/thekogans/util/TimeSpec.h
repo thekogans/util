@@ -120,6 +120,17 @@ namespace thekogans {
                 return TimeSpec (hours * 3600, 0);
             }
             /// \brief
+            /// Create a TimeSpec from minutes.
+            /// \param[in] minutes Value to use to initialize the TimeSpec.
+            /// \return TimeSpec initialized to given value.
+            static TimeSpec FromMinutes (i64 minutes) {
+                if (minutes < 0) {
+                    THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                        THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
+                }
+                return TimeSpec (minutes * 60, 0);
+            }
+            /// \brief
             /// Create a TimeSpec from seconds.
             /// \param[in] seconds Value to use to initialize the TimeSpec.
             /// \return TimeSpec initialized to given value.
@@ -231,6 +242,53 @@ namespace thekogans {
                 timeVal.tv_usec = nanoseconds == -1 ? nanoseconds : nanoseconds / 1000;
                 return timeVal;
             }
+
+            /// \brief
+            /// The following convenience functions allow you to create
+            /// absolute time deadlines. Here is a canonical use case:
+            ///
+            /// \code{.cpp}
+            /// thekogans::util::TimeSpec deadline =
+            ///     thekogans::util::GetCurrentTime ().AddSeconds (5);
+            /// \endcode
+            ///
+            /// You can also chain multiple calls:
+            ///
+            /// \code{.cpp}
+            /// thekogans::util::TimeSpec deadline =
+            ///     thekogans::util::GetCurrentTime ().AddMinutes (1).AddSeconds (30);
+            /// \endcode
+
+            /// \brief
+            /// Create a TimeSpec from adding hours to the current value.
+            /// \param[in] hours Value to add to the current value.
+            /// \return *this + FromHours (hours).
+            TimeSpec AddHours (i64 hours) const;
+            /// \brief
+            /// Create a TimeSpec from adding minutes to the current value.
+            /// \param[in] minutes Value to add to the current value.
+            /// \return *this + FromMinutes (minutes).
+            TimeSpec AddMinutes (i64 minutes) const;
+            /// \brief
+            /// Create a TimeSpec from adding seconds to the current value.
+            /// \param[in] seconds Value to add to the current value.
+            /// \return *this + FromSeconds (seconds).
+            TimeSpec AddSeconds (i64 seconds) const;
+            /// \brief
+            /// Create a TimeSpec from adding milliseconds to the current value.
+            /// \param[in] milliseconds Value to add to the current value.
+            /// \return *this + FromMilliseconds (milliseconds).
+            TimeSpec AddMilliseconds (i64 milliseconds) const;
+            /// \brief
+            /// Create a TimeSpec from adding microseconds to the current value.
+            /// \param[in] microseconds Value to add to the current value.
+            /// \return *this + FromMicroseconds (microseconds).
+            TimeSpec AddMicroseconds (i64 microseconds) const;
+            /// \brief
+            /// Create a TimeSpec from adding nanoseconds to the current value.
+            /// \param[in] nanoseconds Value to add to the current value.
+            /// \return *this + FromNanoseconds (nanoseconds).
+            TimeSpec AddNanoseconds (i64 nanoseconds) const;
         };
 
         /// \brief

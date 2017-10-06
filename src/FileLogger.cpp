@@ -36,8 +36,8 @@ namespace thekogans {
                 const std::string &header,
                 const std::string &message) throw () {
             if (!header.empty () || !message.empty ()) {
-                ArchiveLog ();
                 THEKOGANS_UTIL_TRY {
+                    ArchiveLog ();
                     if (!header.empty ()) {
                         file.Write (&header[0], (ui32)header.size ());
                     }
