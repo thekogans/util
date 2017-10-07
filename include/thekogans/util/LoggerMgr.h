@@ -172,26 +172,29 @@ namespace thekogans {
                 /// Add a date and time to log entries.
                 DateTime = 8,
                 /// \brief
-                /// Add a high resulution timer to log entries.
+                /// Add a high resolution timer to log entries.
                 HRTime = 16,
                 /// \brief
+                /// Add a high resolution timer since process start to log entries.
+                HRElapsedTime = 32,
+                /// \brief
                 /// Add a host name to log entries.
-                HostName = 32,
+                HostName = 64,
                 /// \brief
                 /// Add a process path to log entries.
-                ProcessPath = 64,
+                ProcessPath = 128,
                 /// \brief
                 /// Add a process id to log entries.
-                ProcessId = 128,
+                ProcessId = 256,
                 /// \brief
                 /// Add a thread id to log entries.
-                ThreadId = 256,
+                ThreadId = 512,
                 /// \brief
                 /// Add a location to log entries.
-                Location = 512,
+                Location = 1024,
                 /// \brief
                 /// Add a location to log entries.
-                Multiline = 1024,
+                Multiline = 2048,
                 /// \brief
                 /// Add every decoration to log entries.
                 All = EntrySeparator | Level | DateTime | HRTime | HostName |

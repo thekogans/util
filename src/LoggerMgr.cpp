@@ -97,6 +97,12 @@ namespace thekogans {
                 }
                 value += "HRTime";
             }
+            else if (Flags32 (decorations).Test (HRElapsedTime)) {
+                if (!value.empty ()) {
+                    value += " | ";
+                }
+                value += "HRElapsedTime";
+            }
             else if (Flags32 (decorations).Test (HostName)) {
                 if (!value.empty ()) {
                     value += " | ";
@@ -152,6 +158,9 @@ namespace thekogans {
                 }
                 else if (decoration == "HRTime") {
                     return LoggerMgr::HRTime;
+                }
+                else if (decoration == "HRElapsedTime") {
+                    return LoggerMgr::HRElapsedTime;
                 }
                 else if (decoration == "HostName") {
                     return LoggerMgr::HostName;
@@ -313,9 +322,12 @@ namespace thekogans {
                     header += " ";
                 }
                 if (decorations.Test (HRTime)) {
-                    header += FormatString (
-                        "%011.4f ",
-                        HRTimer::ToSeconds (HRTimer::ComputeEllapsedTime (startTime, HRTimer::Click ())));
+                    header += FormatString ("%011.4f ",
+                            HRTimer::ToSeconds (HRTimer::Click ()));
+                }
+                if (decorations.Test (HRElapsedTime)) {
+                    header += FormatString ("%011.4f ",
+                            HRTimer::ToSeconds (HRTimer::ComputeEllapsedTime (startTime, HRTimer::Click ())));
                 }
                 if (decorations.Test (HostName)) {
                     header += SystemInfo::Instance ().GetHostName ();
