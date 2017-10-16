@@ -420,7 +420,7 @@ namespace thekogans {
             }
         }
 
-        _LIB_THEKOGANS_UTIL_DECL std::string _LIB_THEKOGANS_UTIL_API FormatString (
+        _LIB_THEKOGANS_UTIL_DECL std::string FormatString (
                 const char *format,
                 ...) {
             if (format != 0) {

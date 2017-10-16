@@ -162,8 +162,8 @@ namespace thekogans {
         }
 
         THEKOGANS_UTIL_HANDLE SharedAllocator::CreateSharedRegion () {
-            THEKOGANS_UTIL_HANDLE handle;
             if (name != 0 && size > 0) {
+                THEKOGANS_UTIL_HANDLE handle;
             #if defined (TOOLCHAIN_OS_Windows)
                 handle = CreateFileMapping (
                     INVALID_HANDLE_VALUE, 0, PAGE_READWRITE,
@@ -196,17 +196,17 @@ namespace thekogans {
                         THEKOGANS_UTIL_OS_ERROR_CODE);
                 }
             #endif // defined (TOOLCHAIN_OS_Windows)
+                return handle;
             }
             else {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
                     THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
             }
-            return handle;
         }
 
         THEKOGANS_UTIL_HANDLE SharedAllocator::OpenSharedRegion () {
-            THEKOGANS_UTIL_HANDLE handle;
             if (name != 0 && size > 0) {
+                THEKOGANS_UTIL_HANDLE handle;
             #if defined (TOOLCHAIN_OS_Windows)
                 handle = OpenFileMapping (FILE_MAP_ALL_ACCESS, FALSE, name);
                 // Don't you just love Microsoft and all their inconsistencies?
@@ -218,12 +218,12 @@ namespace thekogans {
                     THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
                         THEKOGANS_UTIL_OS_ERROR_CODE);
                 }
+                return handle;
             }
             else {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
                     THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
             }
-            return handle;
         }
 
     #if !defined (TOOLCHAIN_OS_Windows)

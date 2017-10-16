@@ -25,6 +25,7 @@
 #include "thekogans/util/Directory.h"
 #include "thekogans/util/Exception.h"
 #include "thekogans/util/Console.h"
+#include "thekogans/util/StringUtils.h"
 #include "thekogans/util/FileLogger.h"
 
 namespace thekogans {
@@ -62,22 +63,31 @@ namespace thekogans {
         }
 
         void FileLogger::ArchiveLog () {
-            if (archive && Path (path).Exists ()) {
+            if (archive && archiveCount > 0 && Path (path).Exists ()) {
                 Directory::Entry entry (path);
                 if (entry.size > maxLogFileSize) {
                     file.Close ();
-                    if (Path (path + ".2").Exists ()) {
-                        if (unlink (std::string (path + ".2").c_str ()) < 0) {
+                    ui32 archiveNumber = archiveCount;
+                    std::string archivePath =
+                        FormatString ("%s.%u", path.c_str (), archiveNumber--);
+                    if (Path (archivePath).Exists ()) {
+                        if (unlink (archivePath.c_str ()) < 0) {
                             THEKOGANS_UTIL_THROW_POSIX_ERROR_CODE_EXCEPTION (
                                 THEKOGANS_UTIL_POSIX_OS_ERROR_CODE);
                         }
                     }
-                    if (Path (path + ".1").Exists ()) {
-                        if (rename (std::string (path + ".1").c_str (),
-                                std::string (path + ".2").c_str ()) < 0) {
-                            THEKOGANS_UTIL_THROW_POSIX_ERROR_CODE_EXCEPTION (
-                                THEKOGANS_UTIL_POSIX_OS_ERROR_CODE);
+                    while (archiveNumber > 0) {
+                        std::string archivePath =
+                            FormatString ("%s.%u", path.c_str (), archiveNumber);
+                        if (Path (archivePath).Exists ()) {
+                            std::string nextArchivePath =
+                                FormatString ("%s.%u", path.c_str (), archiveNumber + 1);
+                            if (rename (archivePath.c_str (), nextArchivePath.c_str ()) < 0) {
+                                THEKOGANS_UTIL_THROW_POSIX_ERROR_CODE_EXCEPTION (
+                                    THEKOGANS_UTIL_POSIX_OS_ERROR_CODE);
+                            }
                         }
+                        --archiveNumber;
                     }
                     if (rename (path.c_str (), std::string (path + ".1").c_str ()) < 0) {
                         THEKOGANS_UTIL_THROW_POSIX_ERROR_CODE_EXCEPTION (

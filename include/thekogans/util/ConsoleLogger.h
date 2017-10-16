@@ -68,10 +68,13 @@ namespace thekogans {
             struct _LIB_THEKOGANS_UTIL_DECL DefaultColorScheme : public ColorScheme {
                 virtual Console::ColorType GetColor (ui32 level);
             };
+
+        private:
             /// \brief
             /// Current color scheme.
             ColorScheme::UniquePtr colorScheme;
 
+        public:
             /// \ brief
             /// ctor.
             /// \param[in] colorScheme_ Color scheme to use to color the log entries.

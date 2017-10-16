@@ -378,7 +378,7 @@ namespace thekogans {
         /// \param[in] format printf style format to use.
         /// \param[in] ... Variable number of argumets coinsiding with format.
         /// \return Formatted string.
-        _LIB_THEKOGANS_UTIL_DECL std::string _LIB_THEKOGANS_UTIL_API FormatString (
+        _LIB_THEKOGANS_UTIL_DECL std::string FormatString (
             const char *format,
             ...);
         /// \brief

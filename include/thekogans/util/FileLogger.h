@@ -35,12 +35,21 @@ namespace thekogans {
         /// dropped.
 
         struct _LIB_THEKOGANS_UTIL_DECL FileLogger : public Logger {
+        private:
             /// \brief
             /// Path to a file that will hold the log.
             const std::string path;
             /// \brief
             /// true = rotate the log, false = don't rotate the log.
             bool archive;
+            enum {
+                /// \brief
+                /// Default number of archives before we start droping.
+                DEFAULT_ARCHIVE_COUNT = 2
+            };
+            /// \brief
+            /// Number of archives before we start droping.
+            ui32 archiveCount;
             enum {
                 /// \brief
                 /// Default max log file size before archiving.
@@ -53,15 +62,18 @@ namespace thekogans {
             /// File to log to.
             SimpleFile file;
 
+        public:
             /// \brief
             /// ctor.
             /// \param[in] path_ Path of file to write log entries to.
             /// \param[in] archive_ true = archve the file.
+            /// \param[in] archiveCount_ Number of archives before we start droping.
             /// \param[in] maxLogFileSize_ Max log file size before archiving.
             /// \param[in] level \see{LoggerMgr::level} this logger will log up to.
             FileLogger (
                 const std::string &path_,
                 bool archive_ = true,
+                ui32 archiveCount_ = DEFAULT_ARCHIVE_COUNT,
                 ui32 maxLogFileSize_ = DEFAULT_MAX_LOG_FILE_SIZE,
                 ui32 level = UI32_MAX) :
                 Logger (level),

@@ -77,9 +77,14 @@ namespace thekogans {
             const char *name;
             /// \brief
             /// Size of the shared region.
+            /// NOTE: This is the total region size. SharedAllocator
+            /// overhead will come out of this size. To determine the
+            /// total size of the reagion for a particular allocation
+            /// need use the GetAllocatorOverhead family of functions
+            /// below.
             const ui64 size;
             /// \brief
-            /// Lock the pages in memory to prevent swapping.
+            /// true = Lock the pages in memory to prevent swapping.
             const bool secure;
             /// \brief
             /// true = Initialize the heap, and destroy it when done.

@@ -200,11 +200,13 @@ namespace thekogans {
             for (; currPipe == std::string::npos;
                     lastPipe = ++currPipe,
                     currPipe = decorations.find_first_of ('|', currPipe)) {
-                value |= stringTodecoration (TrimSpaces (
-                    decorations.substr (lastPipe, currPipe - lastPipe).c_str ()));
+                value |= stringTodecoration (
+                    TrimSpaces (
+                        decorations.substr (lastPipe, currPipe - lastPipe).c_str ()));
             }
-            value |= stringTodecoration (TrimSpaces (
-                decorations.substr (lastPipe).c_str ()));
+            value |= stringTodecoration (
+                TrimSpaces (
+                    decorations.substr (lastPipe).c_str ()));
             return value;
         }
 

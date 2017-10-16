@@ -15,6 +15,8 @@
 // You should have received a copy of the GNU General Public License
 // along with libthekogans_util. If not, see <http://www.gnu.org/licenses/>.
 
+#if defined (TOOLCHAIN_OS_Windows)
+
 #include "thekogans/util/StringUtils.h"
 #include "thekogans/util/WindowsUtils.h"
 
@@ -58,3 +60,5 @@ _LIB_THEKOGANS_UTIL_DECL int _LIB_THEKOGANS_UTIL_API pipe (
     }
     return 0;
 }
+
+#endif // defined (TOOLCHAIN_OS_Windows)
