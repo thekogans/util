@@ -324,12 +324,14 @@ namespace thekogans {
                     header += " ";
                 }
                 if (decorations.Test (HRTime)) {
-                    header += FormatString ("%011.4f ",
-                            HRTimer::ToSeconds (HRTimer::Click ()));
+                    header += FormatString (
+                        "%011.4f ",
+                        HRTimer::ToSeconds (HRTimer::Click ()));
                 }
                 if (decorations.Test (HRElapsedTime)) {
-                    header += FormatString ("%011.4f ",
-                            HRTimer::ToSeconds (HRTimer::ComputeEllapsedTime (startTime, HRTimer::Click ())));
+                    header += FormatString (
+                        "%011.4f ",
+                        HRTimer::ToSeconds (HRTimer::ComputeEllapsedTime (startTime, HRTimer::Click ())));
                 }
                 if (decorations.Test (HostName)) {
                     header += SystemInfo::Instance ().GetHostName ();
