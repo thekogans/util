@@ -71,7 +71,7 @@ namespace thekogans {
                 file (
                     HostEndian,
                     path,
-                    SimpleFile::WriteOnly |
+                    SimpleFile::ReadWrite |
                     SimpleFile::Create |
                     SimpleFile::Append) {}
 

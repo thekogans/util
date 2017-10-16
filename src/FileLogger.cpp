@@ -83,7 +83,7 @@ namespace thekogans {
                         THEKOGANS_UTIL_THROW_POSIX_ERROR_CODE_EXCEPTION (
                             THEKOGANS_UTIL_POSIX_OS_ERROR_CODE);
                     }
-                    file.Open (path, SimpleFile::WriteOnly | SimpleFile::Create | SimpleFile::Append);
+                    file.Open (path, SimpleFile::ReadWrite | SimpleFile::Create | SimpleFile::Append);
                 }
             }
         }
