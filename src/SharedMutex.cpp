@@ -103,14 +103,14 @@ namespace thekogans {
                 int fd;
                 Lock (const char *name_) :
                         name (std::string ("/tmp/") + name_),
-                        fd (open (name.c_str (), O_RDWR | O_CREAT | O_EXCL, S_IRUSR | S_IWUSR)) {
+                        fd (open (name.c_str (), O_RDWR | O_CREAT | O_EXCL, 0666/*S_IRUSR | S_IWUSR*/)) {
                     while (fd == -1) {
                         THEKOGANS_UTIL_ERROR_CODE errorCode = THEKOGANS_UTIL_OS_ERROR_CODE;
                         if (errorCode != EEXIST) {
                             THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (errorCode);
                         }
                         Sleep (TimeSpec::FromMilliseconds (100));
-                        fd = open (name.c_str (), O_RDWR | O_CREAT | O_EXCL, S_IRUSR | S_IWUSR);
+                        fd = open (name.c_str (), O_RDWR | O_CREAT | O_EXCL, 0666/*S_IRUSR | S_IWUSR*/);
                     }
                 }
                 ~Lock () {
@@ -126,7 +126,7 @@ namespace thekogans {
                         int fd;
                         bool owner;
                         File (const char *name) :
-                                fd (shm_open (name, O_RDWR | O_CREAT | O_EXCL, S_IRUSR | S_IWUSR)),
+                                fd (shm_open (name, O_RDWR | O_CREAT | O_EXCL, 0666/*S_IRUSR | S_IWUSR*/)),
                                 owner (fd != -1) {
                             if (fd != -1) {
                                 if (FTRUNCATE_FUNC (fd, sizeof (SharedMutexImpl)) == -1) {
@@ -139,7 +139,7 @@ namespace thekogans {
                             else {
                                 THEKOGANS_UTIL_ERROR_CODE errorCode = THEKOGANS_UTIL_OS_ERROR_CODE;
                                 if (errorCode == EEXIST) {
-                                    fd = shm_open (name, O_RDWR, S_IRUSR | S_IWUSR);
+                                    fd = shm_open (name, O_RDWR);
                                     if (fd != -1) {
                                         owner = false;
                                     }
