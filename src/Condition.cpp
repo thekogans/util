@@ -33,9 +33,10 @@ namespace thekogans {
         #if defined (TOOLCHAIN_OS_Windows)
             InitializeConditionVariable (&cv);
         #else // defined (TOOLCHAIN_OS_Windows)
-            if (pthread_cond_init (&condition, 0) != 0) {
-                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                    THEKOGANS_UTIL_OS_ERROR_CODE);
+            THEKOGANS_UTIL_ERROR_CODE errorCode =
+                pthread_cond_init (&condition, 0);
+            if (errorCode != 0) {
+                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (errorCode);
             }
         #endif // defined (TOOLCHAIN_OS_Windows)
         }
@@ -54,9 +55,10 @@ namespace thekogans {
                     THEKOGANS_UTIL_OS_ERROR_CODE);
             }
         #else // defined (TOOLCHAIN_OS_Windows)
-            if (pthread_cond_wait (&condition, &mutex.mutex) != 0) {
-                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                    THEKOGANS_UTIL_OS_ERROR_CODE);
+            THEKOGANS_UTIL_ERROR_CODE errorCode =
+                pthread_cond_wait (&condition, &mutex.mutex);
+            if (errorCode != 0) {
+                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (errorCode);
             }
         #endif // defined (TOOLCHAIN_OS_Windows)
         }
@@ -73,8 +75,8 @@ namespace thekogans {
             return true;
         #else // defined (TOOLCHAIN_OS_Windows)
             timespec absolute = (GetCurrentTime () + timeSpec).Totimespec ();
-            int errorCode = pthread_cond_timedwait (
-                &condition, &mutex.mutex, &absolute);
+            THEKOGANS_UTIL_ERROR_CODE errorCode =
+                pthread_cond_timedwait (&condition, &mutex.mutex, &absolute);
             if (errorCode != 0) {
                 if (errorCode != ETIMEDOUT) {
                     THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (errorCode);
@@ -89,9 +91,10 @@ namespace thekogans {
         #if defined (TOOLCHAIN_OS_Windows)
             WakeConditionVariable (&cv);
         #else // defined (TOOLCHAIN_OS_Windows)
-            if (pthread_cond_signal (&condition) != 0) {
-                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                    THEKOGANS_UTIL_OS_ERROR_CODE);
+            THEKOGANS_UTIL_ERROR_CODE errorCode =
+                pthread_cond_signal (&condition);
+            if (errorCode != 0) {
+                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (errorCode);
             }
         #endif // defined (TOOLCHAIN_OS_Windows)
         }
@@ -100,9 +103,10 @@ namespace thekogans {
         #if defined (TOOLCHAIN_OS_Windows)
             WakeAllConditionVariable (&cv);
         #else // defined (TOOLCHAIN_OS_Windows)
-            if (pthread_cond_broadcast (&condition) != 0) {
-                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                    THEKOGANS_UTIL_OS_ERROR_CODE);
+            THEKOGANS_UTIL_ERROR_CODE errorCode =
+                pthread_cond_broadcast (&condition);
+            if (errorCode != 0) {
+                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (errorCode);
             }
         #endif // defined (TOOLCHAIN_OS_Windows)
         }

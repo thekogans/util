@@ -50,11 +50,6 @@ namespace thekogans {
             /// \brief
             /// Number of archives before we start droping.
             ui32 archiveCount;
-            enum {
-                /// \brief
-                /// Default max log file size before archiving.
-                DEFAULT_MAX_LOG_FILE_SIZE = 2 * 1024 * 1024
-            };
             /// \brief
             /// Max log file size before archiving.
             ui32 maxLogFileSize;
@@ -63,6 +58,12 @@ namespace thekogans {
             SimpleFile file;
 
         public:
+            enum {
+                /// \brief
+                /// Default max log file size before archiving.
+                DEFAULT_MAX_LOG_FILE_SIZE = 2 * 1024 * 1024
+            };
+
             /// \brief
             /// ctor.
             /// \param[in] path_ Path of file to write log entries to.

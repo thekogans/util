@@ -18,6 +18,18 @@
 #if !defined (__thekogans_util_JobQueue_h)
 #define __thekogans_util_JobQueue_h
 
+#if defined (TOOLCHAIN_OS_Windows)
+    #if !defined (_WINDOWS_)
+        #if !defined (WIN32_LEAN_AND_MEAN)
+            #define WIN32_LEAN_AND_MEAN
+        #endif // !defined (WIN32_LEAN_AND_MEAN)
+        #if !defined (NOMINMAX)
+            #define NOMINMAX
+        #endif // !defined (NOMINMAX)
+        #include <windows.h>
+    #endif // !defined (_WINDOWS_)
+    #include <objbase.h>
+#endif // defined (TOOLCHAIN_OS_Windows)
 #include <memory>
 #include <string>
 #include <map>
@@ -64,6 +76,48 @@ namespace thekogans {
                 /// Last in first out.
                 TYPE_LIFO,
             };
+
+            /// \struct JobQueue::WorkerCallback JobQueue.h thekogans/util/JobQueue.h
+            ///
+            /// \brief
+            /// Gives the JobQueue owner a chance to initialize/uninitialize the worker threads.
+            struct _LIB_THEKOGANS_UTIL_DECL WorkerCallback {
+                /// \brief
+                /// dtor.
+                virtual ~WorkerCallback () {}
+
+                /// \brief
+                /// Called by the worker before entering the job execution loop.
+                virtual void InitializeWorker () throw () {}
+                /// \brief
+                /// Called by the worker before exiting the thread.
+                virtual void UninitializeWorker () throw () {}
+            };
+
+        #if defined (TOOLCHAIN_OS_Windows)
+            /// \struct JobQueue::COMInitializer JobQueue.h thekogans/util/JobQueue.h
+            ///
+            /// \brief
+            /// Initialize the Windows COM library.
+            struct _LIB_THEKOGANS_UTIL_DECL COMInitializer : public WorkerCallback {
+                /// \brief
+                /// CoInitializeEx concurrency model.
+                DWORD dwCoInit;
+
+                /// \brief
+                /// ctor.
+                /// \param[in] dwCoInit_ CoInitializeEx concurrency model.
+                COMInitializer (DWORD dwCoInit_ = COINIT_MULTITHREADED) :
+                    dwCoInit (dwCoInit_) {}
+
+                /// \brief
+                /// Called by the worker before entering the job execution loop.
+                virtual void InitializeWorker () throw ();
+                /// \brief
+                /// Called by the worker before exiting the thread.
+                virtual void UninitializeWorker () throw ();
+            };
+        #endif // defined (TOOLCHAIN_OS_Windows)
 
             /// \brief
             /// Forward declaration of Job.
@@ -325,6 +379,9 @@ namespace thekogans {
             /// Max pending jobs.
             const ui32 maxPendingJobs;
             /// \brief
+            /// Called to initialize/uninitialize the worker thread.
+            WorkerCallback *workerCallback;
+            /// \brief
             /// Flag to signal the worker thread.
             volatile bool done;
             /// \brief
@@ -422,13 +479,15 @@ namespace thekogans {
             /// \param[in] workerPriority_ Worker thread priority.
             /// \param[in] workerAffinity_ Worker thread processor affinity.
             /// \param[in] maxPendingJobs_ Max pending queue jobs.
+            /// \param[in] workerCallback_ Called to initialize/uninitialize the worker thread.
             JobQueue (
                 const std::string &name_ = std::string (),
                 Type type_ = TYPE_FIFO,
                 ui32 workerCount_ = 1,
                 i32 workerPriority_ = THEKOGANS_UTIL_NORMAL_THREAD_PRIORITY,
                 ui32 workerAffinity_ = UI32_MAX,
-                ui32 maxPendingJobs_ = UI32_MAX);
+                ui32 maxPendingJobs_ = UI32_MAX,
+                WorkerCallback *workerCallback_ = 0);
             /// \brief
             /// dtor. Stop the queue.
             virtual ~JobQueue () {
@@ -555,6 +614,9 @@ namespace thekogans {
             /// \brief
             /// Max pending jobs.
             static ui32 maxPendingJobs;
+            /// \brief
+            /// Called to initialize/uninitialize the worker thread.
+            static JobQueue::WorkerCallback *workerCallback;
 
         public:
             /// \brief
@@ -566,13 +628,15 @@ namespace thekogans {
             /// \param[in] workerPriority_ Worker thread priority.
             /// \param[in] workerAffinity_ Worker thread processor affinity.
             /// \param[in] maxPendingJobs_ Max pending queue jobs.
+            /// \param[in] workerCallback_ Called to initialize/uninitialize the worker thread.
             static void Parameterize (
                 const std::string &name_ = std::string (),
                 JobQueue::Type type_ = JobQueue::TYPE_FIFO,
                 ui32 workerCount_ = 1,
                 i32 workerPriority_ = THEKOGANS_UTIL_NORMAL_THREAD_PRIORITY,
                 ui32 workerAffinity_ = UI32_MAX,
-                ui32 maxPendingJobs_ = UI32_MAX);
+                ui32 maxPendingJobs_ = UI32_MAX,
+                JobQueue::WorkerCallback *workerCallback_ = 0);
 
             /// \brief
             /// Create a global job queue with custom ctor arguments.

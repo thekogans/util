@@ -18,11 +18,30 @@
 #include "thekogans/util/LockGuard.h"
 #include "thekogans/util/HRTimer.h"
 #include "thekogans/util/Exception.h"
+#if defined (TOOLCHAIN_OS_Windows)
+    #include "thekogans/util/LoggerMgr.h"
+#endif // defined (TOOLCHAIN_OS_Windows)
 #include "thekogans/util/StringUtils.h"
 #include "thekogans/util/JobQueue.h"
 
 namespace thekogans {
     namespace util {
+
+    #if defined (TOOLCHAIN_OS_Windows)
+        void JobQueue::COMInitializer::InitializeWorker () throw () {
+            THEKOGANS_UTIL_TRY {
+                HRESULT result = CoInitializeEx (0, dwCoInit);
+                if (result != S_OK) {
+                    THEKOGANS_UTIL_THROW_HRESULT_ERROR_CODE_EXCEPTION (result);
+                }
+            }
+            THEKOGANS_UTIL_CATCH_AND_LOG_SUBSYSTEM (THEKOGANS_UTIL)
+        }
+
+        void JobQueue::COMInitializer::UninitializeWorker () throw () {
+            CoUninitialize ();
+        }
+    #endif // defined (TOOLCHAIN_OS_Windows)
 
         void JobQueue::Stats::Update (
                 const JobQueue::Job::Id &jobId,
@@ -46,6 +65,20 @@ namespace thekogans {
         }
 
         void JobQueue::Worker::Run () throw () {
+            struct WorkerInitializer {
+                JobQueue &queue;
+                explicit WorkerInitializer (JobQueue &queue_) :
+                        queue (queue_) {
+                    if (queue.workerCallback != 0) {
+                        queue.workerCallback->InitializeWorker ();
+                    }
+                }
+                ~WorkerInitializer () {
+                    if (queue.workerCallback != 0) {
+                        queue.workerCallback->UninitializeWorker ();
+                    }
+                }
+            } workerInitializer (queue);
             while (!queue.done) {
                 Job::Ptr job = queue.Deq ();
                 if (job.Get () != 0) {
@@ -65,13 +98,15 @@ namespace thekogans {
                 ui32 workerCount_,
                 i32 workerPriority_,
                 ui32 workerAffinity_,
-                ui32 maxPendingJobs_) :
+                ui32 maxPendingJobs_,
+                WorkerCallback *workerCallback_) :
                 name (name_),
                 type (type_),
                 workerCount (workerCount_),
                 workerPriority (workerPriority_),
                 workerAffinity (workerAffinity_),
                 maxPendingJobs (maxPendingJobs_),
+                workerCallback (workerCallback_),
                 done (true),
                 jobsNotEmpty (jobsMutex),
                 jobFinished (jobsMutex),
@@ -276,6 +311,7 @@ namespace thekogans {
         i32 GlobalJobQueueCreateInstance::workerPriority = THEKOGANS_UTIL_NORMAL_THREAD_PRIORITY;
         ui32 GlobalJobQueueCreateInstance::workerAffinity = UI32_MAX;
         ui32 GlobalJobQueueCreateInstance::maxPendingJobs = UI32_MAX;
+        JobQueue::WorkerCallback *GlobalJobQueueCreateInstance::workerCallback = 0;
 
         void GlobalJobQueueCreateInstance::Parameterize (
                 const std::string &name_,
@@ -283,13 +319,15 @@ namespace thekogans {
                 ui32 workerCount_,
                 i32 workerPriority_,
                 ui32 workerAffinity_,
-                ui32 maxPendingJobs_) {
+                ui32 maxPendingJobs_,
+                JobQueue::WorkerCallback *workerCallback_) {
             name = name_;
             type = type_;
             workerCount = workerCount_;
             workerPriority = workerPriority_;
             workerAffinity = workerAffinity_;
             maxPendingJobs = maxPendingJobs_;
+            workerCallback = workerCallback_;
         }
 
         JobQueue *GlobalJobQueueCreateInstance::operator () () {
@@ -299,7 +337,8 @@ namespace thekogans {
                 workerCount,
                 workerPriority,
                 workerAffinity,
-                maxPendingJobs);
+                maxPendingJobs,
+                workerCallback);
         }
 
     } // namespace util

@@ -26,6 +26,8 @@
 #include "thekogans/util/Constants.h"
 #include "thekogans/util/Allocator.h"
 #include "thekogans/util/Exception.h"
+#include "thekogans/util/Singleton.h"
+#include "thekogans/util/SpinLock.h"
 
 namespace thekogans {
     namespace util {
@@ -66,7 +68,7 @@ namespace thekogans {
         /// physical pages.
 
         struct _LIB_THEKOGANS_UTIL_DECL SharedAllocator : public Allocator {
-        private:
+        protected:
             /// \brief
             /// Global name used to identify the shared region.
             /// NOTE: On Windows this name has to be acceptable
@@ -118,7 +120,7 @@ namespace thekogans {
                 /// \enum
                 /// Size of header.
                 enum {
-                    SIZE = UI32_SIZE + UI32_SIZE + UI64_SIZE
+                    SIZE = UI32_SIZE + UI32_SIZE + UI64_SIZE + UI64_SIZE
                 };
 
                 /// \brief
@@ -139,6 +141,9 @@ namespace thekogans {
                 /// block so as to make coalescing impossible. Please keep
                 /// that in mind when designing your algorithms.
                 ui64 freeList;
+                /// \brief
+                /// Use this offset to marshal allocations across process boundaries.
+                ui64 rootObject;
 
                 /// \brief
                 /// ctor used when owner == true.
@@ -148,7 +153,8 @@ namespace thekogans {
                         ui64 size) :
                         magic (MAGIC32),
                         lock (0),
-                        freeList (SIZE) {
+                        freeList (SIZE),
+                        rootObject (0) {
                     // Create the first block.
                     new (base + freeList) SharedAllocator::Block (size - SIZE);
                 }
@@ -365,7 +371,18 @@ namespace thekogans {
                 return base + offset;
             }
 
-        private:
+            /// \brief
+            /// Set the header.rootObject. Use this function to quickly share an
+            /// allocation across multiple processes without a lot of marshaling
+            /// overhead.
+            /// \param[in] rootObject Pointer to root object to set.
+            void SetRootObject (void *rootObject);
+            /// \brief
+            /// Return the header.rootObject.
+            /// \return header.rootObject.
+            void *GetRootObject ();
+
+        protected:
             /// \brief
             /// ctor helpers.
 
@@ -435,6 +452,87 @@ namespace thekogans {
             /// SharedAllocator is neither copy constructable, nor assignable.
             THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (SharedAllocator)
         };
+
+        /// \struct GlobalSharedAllocatorCreateInstance SharedAllocator.h thekogans/util/SharedAllocator.h
+        ///
+        /// \brief
+        /// Call GlobalSharedAllocatorCreateInstance::Parameterize before the first call to
+        /// GlobalSharedAllocator::Instance () to provice custom ctor arguments to the global
+        /// shared allocator instance.
+
+        struct _LIB_THEKOGANS_UTIL_DECL GlobalSharedAllocatorCreateInstance {
+        private:
+            /// \brief
+            /// Global name used to identify the shared region.
+            static const char *name;
+            /// \brief
+            /// Size of the shared region.
+            static ui64 size;
+            /// \brief
+            /// Lock the pages in memory to prevent swapping.
+            static bool secure;
+            /// \brief
+            /// true = Initialize the heap, and destroy it when done.
+            /// false = Use an already created heap.
+            static bool owner;
+
+        public:
+            /// \brief
+            /// Call before the first use of GlobalSharedAllocator::Instance.
+            /// \param[in] name_ Global name used to identify the shared region.
+            /// \param[in] size_ Size of the shared region.
+            /// \param[in] secure_ Lock the pages in memory to prevent swapping.
+            /// \param[in] owner_ true = Initialize the heap, and destroy it when done.
+            ///                   false = Use an already created heap.
+            static void Parameterize (
+                const char *name_ = "GlobalSharedAllocator",
+                ui64 size_ = 16 * 1024,
+                bool secure_ = false,
+                bool owner_ = false);
+
+            /// \brief
+            /// Create a global shared allocator with custom ctor arguments.
+            /// \return A global shared allocator with custom ctor arguments.
+            SharedAllocator *operator () ();
+        };
+
+        /// \struct GlobalSharedAllocator SharedAllocator.h thekogans/util/SharedAllocator.h
+        ///
+        /// \brief
+        /// The one and only global shared allocator instance.
+        struct _LIB_THEKOGANS_UTIL_DECL GlobalSharedAllocator :
+            public Singleton<SharedAllocator, SpinLock, GlobalSharedAllocatorCreateInstance> {};
+
+        /// \def THEKOGANS_UTIL_IMPLEMENT_SHARED_ALLOCATOR_FUNCTIONS(type)
+        /// Macro to implement SharedAllocator functions.
+        #define THEKOGANS_UTIL_IMPLEMENT_SHARED_ALLOCATOR_FUNCTIONS(type)\
+        void *type::operator new (std::size_t size) {\
+            assert (size == sizeof (type));\
+            return thekogans::util::GlobalSharedAllocator::Instance ().Alloc (size);\
+        }\
+        void *type::operator new (\
+                std::size_t size,\
+                std::nothrow_t) throw () {\
+            assert (size == sizeof (type));\
+            return thekogans::util::GlobalSharedAllocator::Instance ().Alloc (size);\
+        }\
+        void *type::operator new (\
+                std::size_t size,\
+                void *ptr) {\
+            assert (size == sizeof (type));\
+            return ptr;\
+        }\
+        void type::operator delete (void *ptr) {\
+            thekogans::util::GlobalSharedAllocator::Instance ().Free (ptr, sizeof (type));\
+        }\
+        void type::operator delete (\
+                void *ptr,\
+                std::nothrow_t) throw () {\
+            thekogans::util::GlobalSharedAllocator::Instance ().Free (ptr, sizeof (type));\
+        }\
+        void type::operator delete (\
+            void *,\
+            void *) {}
 
     } // namespace util
 } // namespace thekogans

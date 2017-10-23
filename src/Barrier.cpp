@@ -40,9 +40,10 @@ namespace thekogans {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
                     THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
             }
-            if (pthread_barrier_init (&barrier, 0, count) != 0) {
-                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                    THEKOGANS_UTIL_OS_ERROR_CODE);
+            THEKOGANS_UTIL_ERROR_CODE errorCode =
+                pthread_barrier_init (&barrier, 0, count);
+            if (errorCode != 0) {
+                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (errorCode);
             }
         }
     #else // defined (THEKOGANS_UTIL_USE_POSIX_BARRIER)
@@ -62,15 +63,17 @@ namespace thekogans {
             struct DisableCancelState {
                 int cancel;
                 DisableCancelState () {
-                    if (pthread_setcancelstate (PTHREAD_CANCEL_DISABLE, &cancel) != 0) {
-                        THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                            THEKOGANS_UTIL_OS_ERROR_CODE);
+                    THEKOGANS_UTIL_ERROR_CODE errorCode =
+                        pthread_setcancelstate (PTHREAD_CANCEL_DISABLE, &cancel);
+                    if (errorCode != 0) {
+                        THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (errorCode);
                     }
                 }
                 ~DisableCancelState () {
-                    if (pthread_setcancelstate (cancel, &cancel) != 0) {
-                        THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                            THEKOGANS_UTIL_OS_ERROR_CODE);
+                    THEKOGANS_UTIL_ERROR_CODE errorCode =
+                        pthread_setcancelstate (cancel, &cancel);
+                    if (errorCode != 0) {
+                        THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (errorCode);
                     }
                 }
             };
@@ -111,10 +114,10 @@ namespace thekogans {
             return EnterSynchronizationBarrier (&barrier, 0) == TRUE;
         #elif defined (THEKOGANS_UTIL_USE_POSIX_BARRIER)
             DisableCancelState disableCancelState;
-            int result = pthread_barrier_wait (&barrier);
-            if (result != PTHREAD_BARRIER_SERIAL_THREAD && result != 0) {
-                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                    THEKOGANS_UTIL_OS_ERROR_CODE);
+            THEKOGANS_UTIL_ERROR_CODE errorCode =
+                pthread_barrier_wait (&barrier);
+            if (errorCode != PTHREAD_BARRIER_SERIAL_THREAD && errorCode != 0) {
+                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (errorCode);
             }
             return result == PTHREAD_BARRIER_SERIAL_THREAD;
         #else // defined (THEKOGANS_UTIL_USE_POSIX_BARRIER)

@@ -15,11 +15,20 @@
 // You should have received a copy of the GNU General Public License
 // along with libthekogans_util. If not, see <http://www.gnu.org/licenses/>.
 
-#include "thekogans/util/Exception.h"
-#if !defined (TOOLCHAIN_OS_Windows)
-    #include "thekogans/util/Mutex.h"
+#if defined (TOOLCHAIN_OS_Windows)
+    #if !defined (_WINDOWS_)
+        #if !defined (WIN32_LEAN_AND_MEAN)
+            #define WIN32_LEAN_AND_MEAN
+        #endif // !defined (WIN32_LEAN_AND_MEAN)
+        #if !defined (NOMINMAX)
+            #define NOMINMAX
+        #endif // !defined (NOMINMAX)
+        #include <windows.h>
+    #endif // !defined (_WINDOWS_)
+    #include "thekogans/util/Exception.h"
+#else // defined (TOOLCHAIN_OS_Windows)
     #include "thekogans/util/LockGuard.h"
-#endif // !defined (TOOLCHAIN_OS_Windows)
+#endif // defined (TOOLCHAIN_OS_Windows)
 #include "thekogans/util/Event.h"
 
 namespace thekogans {

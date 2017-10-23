@@ -153,9 +153,10 @@ namespace thekogans {
                             guard (spinLock) {
                         sigset_t set;
                         sigfillset (&set);
-                        int result = pthread_sigmask (SIG_SETMASK, &set, &oldset);
-                        if (result != 0) {
-                            THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (result);
+                        THEKOGANS_UTIL_ERROR_CODE errorCode =
+                            pthread_sigmask (SIG_SETMASK, &set, &oldset);
+                        if (errorCode != 0) {
+                            THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (errorCode);
                         }
                     }
                     ~BlockSignals () {
@@ -166,33 +167,34 @@ namespace thekogans {
                     struct Attribute {
                         pthread_attr_t attribute;
                         Attribute () {
-                            int result = pthread_attr_init (&attribute);
-                            if (result != 0) {
-                                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (result);
+                            THEKOGANS_UTIL_ERROR_CODE errorCode = pthread_attr_init (&attribute);
+                            if (errorCode != 0) {
+                                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (errorCode);
                             }
                         }
                         ~Attribute () {
                             pthread_attr_destroy (&attribute);
                         }
                     } attribute;
-                    int result =
+                    THEKOGANS_UTIL_ERROR_CODE errorCode =
                         pthread_attr_setdetachstate (
                             &attribute.attribute,
                             PTHREAD_CREATE_DETACHED);
-                    if (result == 0) {
-                        result = pthread_create (&thread, &attribute.attribute, ThreadProc, this);
-                        if (result != 0) {
-                            THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (result);
+                    if (errorCode == 0) {
+                        errorCode = pthread_create (&thread, &attribute.attribute, ThreadProc, this);
+                        if (errorCode != 0) {
+                            THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (errorCode);
                         }
                     }
                     else {
-                        THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (result);
+                        THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (errorCode);
                     }
                 }
                 else {
-                    int result = pthread_create (&thread, 0, ThreadProc, this);
-                    if (result != 0) {
-                        THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (result);
+                    THEKOGANS_UTIL_ERROR_CODE errorCode =
+                        pthread_create (&thread, 0, ThreadProc, this);
+                    if (errorCode != 0) {
+                        THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (errorCode);
                     }
                 }
             }
@@ -276,19 +278,21 @@ namespace thekogans {
             if (joinable && !joined) {
                 joined = true;
                 if (timeSpec == TimeSpec::Infinite) {
-                    int result = pthread_join (thread, 0);
-                    if (result != 0) {
-                        THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (result);
+                    THEKOGANS_UTIL_ERROR_CODE errorCode =
+                        pthread_join (thread, 0);
+                    if (errorCode != 0) {
+                        THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (errorCode);
                     }
                 }
                 else {
                     timespec absolute = (GetCurrentTime () + timeSpec).Totimespec ();
-                    int result = pthread_timedjoin_np (thread, 0, &absolute);
-                    if (result != 0) {
-                        if (result == ETIMEDOUT) {
+                    THEKOGANS_UTIL_ERROR_CODE errorCode =
+                        pthread_timedjoin_np (thread, 0, &absolute);
+                    if (errorCode != 0) {
+                        if (errorCode == ETIMEDOUT) {
                             return false;
                         }
-                        THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (result);
+                        THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (errorCode);
                     }
                 }
                 return true;
@@ -310,9 +314,10 @@ namespace thekogans {
                     priority <= THEKOGANS_UTIL_REAL_TIME_THREAD_PRIORITY) {
                 int policy;
                 sched_param param;
-                int result = pthread_getschedparam (thread, &policy, &param);
-                if (result != 0) {
-                    THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (result);
+                THEKOGANS_UTIL_ERROR_CODE errorCode =
+                    pthread_getschedparam (thread, &policy, &param);
+                if (errorCode != 0) {
+                    THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (errorCode);
                 }
                 // Our priorities come from a virtual range:
                 // (THEKOGANS_UTIL_IDLE_THREAD_PRIORITY <= priority <= THEKOGANS_UTIL_REAL_TIME_THREAD_PRIORITY).
@@ -323,9 +328,9 @@ namespace thekogans {
                 f32 scale = ((f32)maxPriority - (f32)minPriority) /
                     ((f32)THEKOGANS_UTIL_REAL_TIME_THREAD_PRIORITY - (f32)THEKOGANS_UTIL_IDLE_THREAD_PRIORITY);
                 param.sched_priority = minPriority + scale * priority;
-                result = pthread_setschedparam (thread, policy, &param);
-                if (result != 0) {
-                    THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (result);
+                errorCode = pthread_setschedparam (thread, policy, &param);
+                if (errorCode != 0) {
+                    THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (errorCode);
                 }
             }
             else {
@@ -351,9 +356,10 @@ namespace thekogans {
             cpu_set_t affinityMask;
             CPU_ZERO (&affinityMask);
             CPU_SET (affinity, &affinityMask);
-            int result = pthread_setaffinity_np (thread, sizeof (affinityMask), &affinityMask);
-            if (result != 0) {
-                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (result);
+            THEKOGANS_UTIL_ERROR_CODE errorCode =
+                pthread_setaffinity_np (thread, sizeof (affinityMask), &affinityMask);
+            if (errorCode != 0) {
+                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (errorCode);
             }
         #elif defined (TOOLCHAIN_OS_OSX)
             thread_affinity_policy_data_t policy;

@@ -29,9 +29,10 @@ namespace thekogans {
         #if defined (TOOLCHAIN_OS_Windows)
             InitializeSRWLock (&rwlock);
         #else // defined (TOOLCHAIN_OS_Windows)
-            if (pthread_rwlock_init (&rwlock, 0) != 0) {
-                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                    THEKOGANS_UTIL_OS_ERROR_CODE);
+            THEKOGANS_UTIL_ERROR_CODE errorCode =
+                pthread_rwlock_init (&rwlock, 0);
+            if (errorCode != 0) {
+                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (errorCode);
             }
         #endif // defined (TOOLCHAIN_OS_Windows)
         }
@@ -63,15 +64,17 @@ namespace thekogans {
             }
         #else // defined (TOOLCHAIN_OS_Windows)
             if (read) {
-                if (pthread_rwlock_rdlock (&rwlock) != 0) {
-                    THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                        THEKOGANS_UTIL_OS_ERROR_CODE);
+                THEKOGANS_UTIL_ERROR_CODE errorCode =
+                    pthread_rwlock_rdlock (&rwlock);
+                if (errorCode != 0) {
+                    THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (errorCode);
                 }
             }
             else {
-                if (pthread_rwlock_wrlock (&rwlock) != 0) {
-                    THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                        THEKOGANS_UTIL_OS_ERROR_CODE);
+                THEKOGANS_UTIL_ERROR_CODE errorCode =
+                    pthread_rwlock_wrlock (&rwlock);
+                if (errorCode != 0) {
+                    THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (errorCode);
                 }
             }
         #endif // defined (TOOLCHAIN_OS_Windows)
@@ -86,9 +89,10 @@ namespace thekogans {
                 ReleaseSRWLockExclusive (&rwlock);
             }
         #else // defined (TOOLCHAIN_OS_Windows)
-            if (pthread_rwlock_unlock (&rwlock) != 0) {
-                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                    THEKOGANS_UTIL_OS_ERROR_CODE);
+            THEKOGANS_UTIL_ERROR_CODE errorCode =
+                pthread_rwlock_unlock (&rwlock);
+            if (errorCode != 0) {
+                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (errorCode);
             }
         #endif // defined (TOOLCHAIN_OS_Windows)
         }

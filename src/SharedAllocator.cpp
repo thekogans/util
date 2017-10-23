@@ -161,6 +161,22 @@ namespace thekogans {
             }
         }
 
+        void SharedAllocator::SetRootObject (void *rootObject) {
+            if (rootObject == 0 || ValidatePtr (rootObject) != 0) {
+                LockGuard<Lock> guard (lock);
+                header->rootObject = rootObject != 0 ? GetOffsetFromPtr (rootObject) : 0;
+            }
+            else {
+                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
+            }
+        }
+
+        void *SharedAllocator::GetRootObject () {
+            LockGuard<Lock> guard (lock);
+            return header->rootObject != 0 ? GetPtrFromOffset (header->rootObject) : 0;
+        }
+
         THEKOGANS_UTIL_HANDLE SharedAllocator::CreateSharedRegion () {
             if (name != 0 && size > 0) {
                 THEKOGANS_UTIL_HANDLE handle;
@@ -182,7 +198,7 @@ namespace thekogans {
                     close (handle);
                     shm_unlink (name);
                 }
-                handle = shm_open (name, O_CREAT | O_RDWR, S_IRUSR | S_IWUSR);
+                handle = shm_open (name, O_CREAT | O_EXCL | O_RDWR, S_IRUSR | S_IWUSR);
                 if (handle != THEKOGANS_UTIL_INVALID_HANDLE_VALUE) {
                     if (FTRUNCATE_FUNC (handle, size) == -1) {
                         THEKOGANS_UTIL_ERROR_CODE errorCode = THEKOGANS_UTIL_OS_ERROR_CODE;
@@ -283,6 +299,26 @@ namespace thekogans {
             }
         #endif // defined (TOOLCHAIN_OS_Windows)
             return base;
+        }
+
+        const char *GlobalSharedAllocatorCreateInstance::name = "GlobalSharedAllocator";
+        ui64 GlobalSharedAllocatorCreateInstance::size = 16 * 1024;
+        bool GlobalSharedAllocatorCreateInstance::secure = false;
+        bool GlobalSharedAllocatorCreateInstance::owner = false;
+
+        void GlobalSharedAllocatorCreateInstance::Parameterize (
+                const char *name_,
+                ui64 size_,
+                bool secure_,
+                bool owner_) {
+            name = name_;
+            size = size_;
+            secure = secure_;
+            owner = owner_;
+        }
+
+        SharedAllocator *GlobalSharedAllocatorCreateInstance::operator () () {
+            return new SharedAllocator (name, size, secure, owner);
         }
 
     } // namespace util

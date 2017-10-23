@@ -15,30 +15,24 @@
 // You should have received a copy of the GNU General Public License
 // along with libthekogans_util. If not, see <http://www.gnu.org/licenses/>.
 
-#if !defined (__thekogans_util_Event_h)
-#define __thekogans_util_Event_h
+#if !defined (__thekogans_util_SharedEvent_h)
+#define __thekogans_util_SharedEvent_h
 
 #include "thekogans/util/Config.h"
-#if defined (TOOLCHAIN_OS_Windows)
-    #include "thekogans/util/Types.h"
-#else // defined (TOOLCHAIN_OS_Windows)
-    #include "thekogans/util/Mutex.h"
-    #include "thekogans/util/Condition.h"
-#endif // defined (TOOLCHAIN_OS_Windows)
 #include "thekogans/util/TimeSpec.h"
 
 namespace thekogans {
     namespace util {
 
-        /// \struct Event Event.h thekogans/util/Event.h
+        /// \struct SharedEvent SharedEvent.h thekogans/util/SharedEvent.h
         ///
         /// \brief
-        /// Wraps a Windows event synchronization object.
-        /// Emulates it on Linux/OS X.
+        /// SharedEvent implements a cross process event. Use the same name
+        /// when creating the event to signal across process boundaries.
 
-        struct _LIB_THEKOGANS_UTIL_DECL Event {
+        struct _LIB_THEKOGANS_UTIL_DECL SharedEvent {
             /// \brief
-            /// Event state.
+            /// SharedEvent state.
             typedef enum {
                 /// \brief
                 /// Not signalled.
@@ -55,32 +49,28 @@ namespace thekogans {
             THEKOGANS_UTIL_HANDLE handle;
         #else // defined (TOOLCHAIN_OS_Windows)
             /// \brief
-            /// true = manual recet, false = auto recet.
-            bool manualReset;
+            /// Forward declaration of a private class.
+            struct SharedEventImpl;
             /// \brief
-            /// Event state.
-            volatile State state;
-            /// \brief
-            /// Synchronization mutex.
-            Mutex mutex;
-            /// \brief
-            /// Synchronization conditin variable.
-            Condition condition;
+            /// POSIX shared event implementation.
+            SharedEventImpl *event;
         #endif // defined (TOOLCHAIN_OS_Windows)
 
         public:
             /// \brief
             /// ctor.
-            /// \param[in] manualReset_
+            /// \param[in] name Shared event name.
+            /// \param[in] manualReset
             /// true = event is to be manually reset entering Signaled state,
             /// false = the event will be reset after the first waiting thread is woken up.
             /// \param[in] initialState Initial state of the event.
-            Event (
-                bool manualReset_ = true,
+            SharedEvent (
+                const char *name,
+                bool manualReset = true,
                 State initialState = Free);
             /// \brief
             /// dtor.
-            ~Event ();
+            ~SharedEvent ();
 
             /// \brief
             /// Put the event in to Signaled state. If any
@@ -113,11 +103,11 @@ namespace thekogans {
             bool Wait (const TimeSpec &timeSpec);
 
             /// \brief
-            /// Event is neither copy constructable, nor assignable.
-            THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (Event)
+            /// SharedEvent is neither copy constructable, nor assignable.
+            THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (SharedEvent)
         };
 
     } // namespace util
 } // namespace thekogans
 
-#endif // !defined (__thekogans_util_Event_h)
+#endif // !defined (__thekogans_util_SharedEvent_h)

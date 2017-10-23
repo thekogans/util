@@ -25,9 +25,10 @@ namespace thekogans {
         #if defined (TOOLCHAIN_OS_Windows)
             InitializeCriticalSection (&cs);
         #else // defined (TOOLCHAIN_OS_Windows)
-            if (pthread_mutex_init (&mutex, 0) != 0) {
-                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                    THEKOGANS_UTIL_OS_ERROR_CODE);
+            THEKOGANS_UTIL_ERROR_CODE errorCode =
+                pthread_mutex_init (&mutex, 0);
+            if (errorCode != 0) {
+                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (errorCode);
             }
         #endif // defined (TOOLCHAIN_OS_Windows)
         }
@@ -52,9 +53,10 @@ namespace thekogans {
         #if defined (TOOLCHAIN_OS_Windows)
             EnterCriticalSection (&cs);
         #else // defined (TOOLCHAIN_OS_Windows)
-            if (pthread_mutex_lock (&mutex) != 0) {
-                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                    THEKOGANS_UTIL_OS_ERROR_CODE);
+            THEKOGANS_UTIL_ERROR_CODE errorCode =
+                pthread_mutex_lock (&mutex);
+            if (errorCode != 0) {
+                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (errorCode);
             }
         #endif // defined (TOOLCHAIN_OS_Windows)
         }
@@ -63,9 +65,10 @@ namespace thekogans {
         #if defined (TOOLCHAIN_OS_Windows)
             LeaveCriticalSection (&cs);
         #else // defined (TOOLCHAIN_OS_Windows)
-            if (pthread_mutex_unlock (&mutex) != 0) {
-                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                    THEKOGANS_UTIL_OS_ERROR_CODE);
+            THEKOGANS_UTIL_ERROR_CODE errorCode =
+                pthread_mutex_unlock (&mutex);
+            if (errorCode != 0) {
+                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (errorCode);
             }
         #endif // defined (TOOLCHAIN_OS_Windows)
         }
