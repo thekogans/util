@@ -26,8 +26,8 @@
         #include <windows.h>
     #endif // !defined (_WINDOWS_)
 #else // defined (TOOLCHAIN_OS_Windows)
-    #include <sys/mman.h>
     #include "thekogans/util/TimeSpec.h"
+    #include "thekogans/util/POSIXUtils.h"
     #include "thekogans/util/LockGuard.h"
 #endif // defined (TOOLCHAIN_OS_Windows)
 #include "thekogans/util/Exception.h"
@@ -37,8 +37,7 @@ namespace thekogans {
     namespace util {
 
     #if !defined (TOOLCHAIN_OS_Windows)
-        struct SharedSemaphore::SharedSemaphoreImpl {
-            char name[NAME_MAX];
+        struct SharedSemaphore::SharedSemaphoreImpl : public SharedObject<SharedSemaphoreImpl> {
             ui32 maxCount;
             volatile ui32 count;
             struct Mutex {
@@ -149,26 +148,18 @@ namespace thekogans {
                     }
                 }
             } condition;
-            ui32 refCount;
 
             SharedSemaphoreImpl (
-                    const char *name_,
-                    ui32 maxCount_) :
+                    const char *name,
+                    ui32 maxCount_,
+                    ui32 initialCount) :
+                    SharedObject (name),
                     maxCount (maxCount_),
                     count (0),
-                    condition (mutex),
-                    refCount (1) {
-                strncpy (name, name_, NAME_MAX);
-            }
-
-            ui32 AddRef () {
-                LockGuard<Mutex> guard (mutex);
-                return ++refCount;
-            }
-
-            ui32 Release () {
-                LockGuard<Mutex> guard (mutex);
-                return --refCount;
+                    condition (mutex) {
+                if (initialCount != 0) {
+                    Release (initialCount);
+                }
             }
 
             void Acquire () {
@@ -195,103 +186,24 @@ namespace thekogans {
                     }
                 }
             }
+        };
 
-            struct Lock {
-                std::string name;
-                int fd;
-                Lock (const char *name_) :
-                        name (std::string ("/tmp/") + name_),
-                        fd (open (name.c_str (), O_RDWR | O_CREAT | O_EXCL, 0666/*S_IRUSR | S_IWUSR*/)) {
-                    while (fd == -1) {
-                        THEKOGANS_UTIL_ERROR_CODE errorCode = THEKOGANS_UTIL_OS_ERROR_CODE;
-                        if (errorCode != EEXIST) {
-                            THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (errorCode);
-                        }
-                        Sleep (TimeSpec::FromMilliseconds (100));
-                        fd = open (name.c_str (), O_RDWR | O_CREAT | O_EXCL, 0666/*S_IRUSR | S_IWUSR*/);
-                    }
-                }
-                ~Lock () {
-                    close (fd);
-                    unlink (name.c_str ());
-                }
-            };
+        struct SharedSemaphore::SharedSemaphoreImplCreator :
+                public SharedObject<SharedSemaphore::SharedSemaphoreImpl>::Creator {
+            ui32 maxCount;
+            ui32 initialCount;
 
-            static SharedSemaphoreImpl *Create (
-                    const char *name,
-                    ui32 maxCount,
-                    ui32 initialCount) {
-                if (name != 0) {
-                    Lock lock (name);
-                    struct File {
-                        int fd;
-                        bool owner;
-                        File (const char *name) :
-                                fd (shm_open (name, O_RDWR | O_CREAT | O_EXCL, 0666/*S_IRUSR | S_IWUSR*/)),
-                                owner (fd != -1) {
-                            if (fd != -1) {
-                                if (FTRUNCATE_FUNC (fd, sizeof (SharedSemaphoreImpl)) == -1) {
-                                    THEKOGANS_UTIL_ERROR_CODE errorCode = THEKOGANS_UTIL_OS_ERROR_CODE;
-                                    close (fd);
-                                    shm_unlink (name);
-                                    THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (errorCode);
-                                }
-                            }
-                            else {
-                                THEKOGANS_UTIL_ERROR_CODE errorCode = THEKOGANS_UTIL_OS_ERROR_CODE;
-                                if (errorCode == EEXIST) {
-                                    fd = shm_open (name, O_RDWR);
-                                    if (fd != -1) {
-                                        owner = false;
-                                    }
-                                    else {
-                                        THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                                            THEKOGANS_UTIL_OS_ERROR_CODE);
-                                    }
-                                }
-                                else {
-                                    THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (errorCode);
-                                }
-                            }
-                        }
-                        ~File () {
-                            close (fd);
-                        }
-                    } file (name);
-                    void *ptr = mmap (0, sizeof (SharedSemaphoreImpl),
-                        PROT_READ | PROT_WRITE, MAP_SHARED, file.fd, 0);
-                    if (ptr != 0) {
-                        SharedSemaphoreImpl *semaphore;
-                        if (file.owner) {
-                            semaphore = new (ptr) SharedSemaphoreImpl (name, maxCount);
-                            if (initialCount != 0) {
-                                semaphore->Release (initialCount);
-                            }
-                        }
-                        else {
-                            semaphore = (SharedSemaphoreImpl *)ptr;
-                            semaphore->AddRef ();
-                        }
-                        return semaphore;
-                    }
-                    else {
-                        THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                            THEKOGANS_UTIL_OS_ERROR_CODE);
-                    }
-                }
-                else {
-                    THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                        THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
-                }
-            }
+            SharedSemaphoreImplCreator (
+                ui32 maxCount_,
+                ui32 initialCount_) :
+                maxCount (maxCount_),
+                initialCount (initialCount_) {}
 
-            static void Destroy (SharedSemaphoreImpl *semaphore) {
-                Lock lock (semaphore->name);
-                if (semaphore->Release () == 0) {
-                    semaphore->~SharedSemaphoreImpl ();
-                    shm_unlink (semaphore->name);
-                }
-                munmap (semaphore, sizeof (SharedSemaphoreImpl));
+            virtual SharedSemaphore::SharedSemaphoreImpl *operator () (
+                    void *ptr,
+                    const char *name) const {
+                return new (ptr) SharedSemaphore::SharedSemaphoreImpl (
+                    name, maxCount, initialCount);
             }
         };
     #endif // !defined (TOOLCHAIN_OS_Windows)
@@ -303,7 +215,10 @@ namespace thekogans {
             #if defined (TOOLCHAIN_OS_Windows)
                 handle (CreateSemaphore (0, initialCount, maxCount, name)) {
             #else // defined (TOOLCHAIN_OS_Windows)
-                semaphore (SharedSemaphoreImpl::Create (name, maxCount, initialCount)) {
+                semaphore (
+                    SharedSemaphoreImpl::Create (
+                        name,
+                        SharedSemaphoreImplCreator (maxCount, initialCount))) {
             #endif // defined (TOOLCHAIN_OS_Windows)
             if (maxCount < initialCount) {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (

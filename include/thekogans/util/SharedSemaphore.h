@@ -43,6 +43,9 @@ namespace thekogans {
             /// \brief
             /// POSIX shared semaphore implementation.
             SharedSemaphoreImpl *semaphore;
+            /// \brief
+            /// Forward declaration of a private class.
+            struct SharedSemaphoreImplCreator;
         #endif // defined (TOOLCHAIN_OS_Windows)
 
         public:

@@ -147,6 +147,9 @@
     <cpp_header>$(organization)/$(project_directory)/Pipeline.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/Plugins.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/Point.h</cpp_header>
+    <if condition = "$(TOOLCHAIN_OS) != 'Windows'">
+      <cpp_header>$(organization)/$(project_directory)/POSIXUtils.h</cpp_header>
+    </if>
     <cpp_header>$(organization)/$(project_directory)/RandomSource.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/Rectangle.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/RefCounted.h</cpp_header>
@@ -651,6 +654,9 @@
     <cpp_source>Pipeline.cpp</cpp_source>
     <cpp_source>Plugins.cpp</cpp_source>
     <cpp_source>Point.cpp</cpp_source>
+    <if condition = "$(TOOLCHAIN_OS) != 'Windows'">
+      <cpp_source>POSIXUtils.cpp</cpp_source>
+    </if>
     <cpp_source>RandomSource.cpp</cpp_source>
     <cpp_source>Rectangle.cpp</cpp_source>
     <cpp_source>RWLock.cpp</cpp_source>

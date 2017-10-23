@@ -45,6 +45,9 @@ namespace thekogans {
             /// \brief
             /// POSIX shared mutex implementation.
             SharedMutexImpl *mutex;
+            /// \brief
+            /// Forward declaration of a private class.
+            struct SharedMutexImplCreator;
         #endif // defined (TOOLCHAIN_OS_Windows)
 
         public:

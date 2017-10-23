@@ -26,8 +26,8 @@
         #include <windows.h>
     #endif // !defined (_WINDOWS_)
 #else // defined (TOOLCHAIN_OS_Windows)
-    #include <sys/mman.h>
     #include "thekogans/util/LockGuard.h"
+    #include "thekogans/util/POSIXUtils.h"
 #endif // defined (TOOLCHAIN_OS_Windows)
 #include "thekogans/util/Exception.h"
 #include "thekogans/util/SharedEvent.h"
@@ -36,8 +36,7 @@ namespace thekogans {
     namespace util {
 
     #if !defined (TOOLCHAIN_OS_Windows)
-        struct SharedEvent::SharedEventImpl {
-            char name[NAME_MAX];
+        struct SharedEvent::SharedEventImpl : public SharedObject<SharedEventImpl> {
             bool manualReset;
             volatile SharedEvent::State state;
             struct Mutex {
@@ -169,26 +168,18 @@ namespace thekogans {
                     }
                 }
             } condition;
-            ui32 refCount;
 
             SharedEventImpl (
-                    const char *name_,
-                    bool manualReset_) :
+                    const char *name,
+                    bool manualReset_,
+                    SharedEvent::State initialState) :
+                    SharedObject (name),
                     manualReset (manualReset_),
                     state (SharedEvent::Free),
-                    condition (mutex),
-                    refCount (1) {
-                strncpy (name, name_, NAME_MAX);
-            }
-
-            ui32 AddRef () {
-                LockGuard<Mutex> guard (mutex);
-                return ++refCount;
-            }
-
-            ui32 Release () {
-                LockGuard<Mutex> guard (mutex);
-                return --refCount;
+                    condition (mutex) {
+                if (initialState == SharedEvent::Signalled) {
+                    Signal ();
+                }
             }
 
             void Signal () {
@@ -238,103 +229,24 @@ namespace thekogans {
                 }
                 return true;
             }
+        };
 
-            struct Lock {
-                std::string name;
-                int fd;
-                Lock (const char *name_) :
-                        name (std::string ("/tmp/") + name_),
-                        fd (open (name.c_str (), O_RDWR | O_CREAT | O_EXCL, 0666/*S_IRUSR | S_IWUSR*/)) {
-                    while (fd == -1) {
-                        THEKOGANS_UTIL_ERROR_CODE errorCode = THEKOGANS_UTIL_OS_ERROR_CODE;
-                        if (errorCode != EEXIST) {
-                            THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (errorCode);
-                        }
-                        Sleep (TimeSpec::FromMilliseconds (100));
-                        fd = open (name.c_str (), O_RDWR | O_CREAT | O_EXCL, 0666/*S_IRUSR | S_IWUSR*/);
-                    }
-                }
-                ~Lock () {
-                    close (fd);
-                    unlink (name.c_str ());
-                }
-            };
+        struct SharedEvent::SharedEventImplCreator :
+                public SharedObject<SharedEvent::SharedEventImpl>::Creator {
+            bool manualReset;
+            SharedEvent::State initialState;
 
-            static SharedEventImpl *Create (
-                    const char *name,
-                    bool manualReset,
-                    SharedEvent::State initialState) {
-                if (name != 0) {
-                    Lock lock (name);
-                    struct File {
-                        int fd;
-                        bool owner;
-                        File (const char *name) :
-                                fd (shm_open (name, O_RDWR | O_CREAT | O_EXCL, 0666/*S_IRUSR | S_IWUSR*/)),
-                                owner (fd != -1) {
-                            if (fd != -1) {
-                                if (FTRUNCATE_FUNC (fd, sizeof (SharedEventImpl)) == -1) {
-                                    THEKOGANS_UTIL_ERROR_CODE errorCode = THEKOGANS_UTIL_OS_ERROR_CODE;
-                                    close (fd);
-                                    shm_unlink (name);
-                                    THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (errorCode);
-                                }
-                            }
-                            else {
-                                THEKOGANS_UTIL_ERROR_CODE errorCode = THEKOGANS_UTIL_OS_ERROR_CODE;
-                                if (errorCode == EEXIST) {
-                                    fd = shm_open (name, O_RDWR);
-                                    if (fd != -1) {
-                                        owner = false;
-                                    }
-                                    else {
-                                        THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                                            THEKOGANS_UTIL_OS_ERROR_CODE);
-                                    }
-                                }
-                                else {
-                                    THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (errorCode);
-                                }
-                            }
-                        }
-                        ~File () {
-                            close (fd);
-                        }
-                    } file (name);
-                    void *ptr = mmap (0, sizeof (SharedEventImpl),
-                        PROT_READ | PROT_WRITE, MAP_SHARED, file.fd, 0);
-                    if (ptr != 0) {
-                        SharedEventImpl *event;
-                        if (file.owner) {
-                            event = new (ptr) SharedEventImpl (name, manualReset);
-                            if (initialState == SharedEvent::Signalled) {
-                                event->Signal ();
-                            }
-                        }
-                        else {
-                            event = (SharedEventImpl *)ptr;
-                            event->AddRef ();
-                        }
-                        return event;
-                    }
-                    else {
-                        THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                            THEKOGANS_UTIL_OS_ERROR_CODE);
-                    }
-                }
-                else {
-                    THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                        THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
-                }
-            }
+            SharedEventImplCreator (
+                bool manualReset_,
+                SharedEvent::State initialState_) :
+                manualReset (manualReset_),
+                initialState (initialState_) {}
 
-            static void Destroy (SharedEventImpl *event) {
-                Lock lock (event->name);
-                if (event->Release () == 0) {
-                    event->~SharedEventImpl ();
-                    shm_unlink (event->name);
-                }
-                munmap (event, sizeof (SharedEventImpl));
+            virtual SharedEvent::SharedEventImpl *operator () (
+                    void *ptr,
+                    const char *name) const {
+                return new (ptr) SharedEvent::SharedEventImpl (
+                    name, manualReset, initialState);
             }
         };
     #endif // !defined (TOOLCHAIN_OS_Windows)
@@ -351,7 +263,10 @@ namespace thekogans {
                     THEKOGANS_UTIL_OS_ERROR_CODE);
             }
         #else // defined (TOOLCHAIN_OS_Windows)
-                event (SharedEventImpl::Create (name, manualReset, initialState)) {
+                event (
+                    SharedEventImpl::Create (
+                        name,
+                        SharedEventImplCreator (manualReset, initialState))) {
             if (event == 0) {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
                     THEKOGANS_UTIL_OS_ERROR_CODE_ENOMEM);

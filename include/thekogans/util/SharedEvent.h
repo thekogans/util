@@ -54,6 +54,9 @@ namespace thekogans {
             /// \brief
             /// POSIX shared event implementation.
             SharedEventImpl *event;
+            /// \brief
+            /// Forward declaration of a private class.
+            struct SharedEventImplCreator;
         #endif // defined (TOOLCHAIN_OS_Windows)
 
         public:
