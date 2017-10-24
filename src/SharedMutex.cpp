@@ -104,6 +104,13 @@ namespace thekogans {
                 return new (ptr) SharedMutex::SharedMutexImpl (name);
             }
         };
+
+        struct SharedMutex::SharedMutexImplDestructor :
+                public SharedObject<SharedMutex::SharedMutexImpl>::Destructor {
+            virtual void operator () (SharedMutex::SharedMutexImpl *mutex) const {
+                mutex->~SharedMutexImpl ();
+            }
+        };
     #endif // !defined (TOOLCHAIN_OS_Windows)
 
         SharedMutex::SharedMutex (const char *name) :
@@ -129,7 +136,9 @@ namespace thekogans {
         #if defined (TOOLCHAIN_OS_Windows)
             CloseHandle (handle);
         #else // defined (TOOLCHAIN_OS_Windows)
-            SharedMutexImpl::Destroy (mutex);
+            SharedMutexImpl::Destroy (
+                mutex,
+                SharedMutexImplDestructor ());
         #endif // defined (TOOLCHAIN_OS_Windows)
         }
 

@@ -206,6 +206,13 @@ namespace thekogans {
                     name, maxCount, initialCount);
             }
         };
+
+        struct SharedSemaphore::SharedSemaphoreImplDestructor :
+                public SharedObject<SharedSemaphore::SharedSemaphoreImpl>::Destructor {
+            virtual void operator () (SharedSemaphore::SharedSemaphoreImpl *semaphore) const {
+                semaphore->~SharedSemaphoreImpl ();
+            }
+        };
     #endif // !defined (TOOLCHAIN_OS_Windows)
 
         SharedSemaphore::SharedSemaphore (
@@ -241,7 +248,9 @@ namespace thekogans {
         #if defined (TOOLCHAIN_OS_Windows)
             CloseHandle (handle);
         #else // defined (TOOLCHAIN_OS_Windows)
-            SharedSemaphoreImpl::Destroy (semaphore);
+            SharedSemaphoreImpl::Destroy (
+                semaphore,
+                SharedSemaphoreImplDestructor ());
         #endif // defined (TOOLCHAIN_OS_Windows)
         }
 

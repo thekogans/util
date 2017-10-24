@@ -48,6 +48,9 @@ namespace thekogans {
             /// \brief
             /// Forward declaration of a private class.
             struct SharedMutexImplCreator;
+            /// \brief
+            /// Forward declaration of a private class.
+            struct SharedMutexImplDestructor;
         #endif // defined (TOOLCHAIN_OS_Windows)
 
         public:

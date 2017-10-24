@@ -46,6 +46,9 @@ namespace thekogans {
             /// \brief
             /// Forward declaration of a private class.
             struct SharedSemaphoreImplCreator;
+            /// \brief
+            /// Forward declaration of a private class.
+            struct SharedSemaphoreImplDestructor;
         #endif // defined (TOOLCHAIN_OS_Windows)
 
         public:

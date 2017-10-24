@@ -249,6 +249,13 @@ namespace thekogans {
                     name, manualReset, initialState);
             }
         };
+
+        struct SharedEvent::SharedEventImplDestructor :
+                public SharedObject<SharedEvent::SharedEventImpl>::Destructor {
+            virtual void operator () (SharedEvent::SharedEventImpl *event) const {
+                event->~SharedEventImpl ();
+            }
+        };
     #endif // !defined (TOOLCHAIN_OS_Windows)
 
         SharedEvent::SharedEvent (
@@ -278,7 +285,9 @@ namespace thekogans {
         #if defined (TOOLCHAIN_OS_Windows)
             CloseHandle (handle);
         #else // defined (TOOLCHAIN_OS_Windows)
-            SharedEventImpl::Destroy (event);
+            SharedEventImpl::Destroy (
+                event,
+                SharedEventImplDestructor ());
         #endif // defined (TOOLCHAIN_OS_Windows)
         }
 

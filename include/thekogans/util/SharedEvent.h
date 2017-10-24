@@ -57,6 +57,9 @@ namespace thekogans {
             /// \brief
             /// Forward declaration of a private class.
             struct SharedEventImplCreator;
+            /// \brief
+            /// Forward declaration of a private class.
+            struct SharedEventImplDestructor;
         #endif // defined (TOOLCHAIN_OS_Windows)
 
         public:
