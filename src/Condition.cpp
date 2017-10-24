@@ -28,13 +28,42 @@
 namespace thekogans {
     namespace util {
 
-        Condition::Condition (Mutex &mutex_) :
+        Condition::Condition (
+                Mutex &mutex_,
+                bool shared) :
                 mutex (mutex_) {
         #if defined (TOOLCHAIN_OS_Windows)
             InitializeConditionVariable (&cv);
         #else // defined (TOOLCHAIN_OS_Windows)
-            THEKOGANS_UTIL_ERROR_CODE errorCode =
-                pthread_cond_init (&condition, 0);
+            THEKOGANS_UTIL_ERROR_CODE errorCode;
+            if (shared) {
+                struct Attribute {
+                    pthread_condattr_t attribute;
+                    Attribute () {
+                        {
+                            THEKOGANS_UTIL_ERROR_CODE errorCode =
+                                pthread_condattr_init (&attribute);
+                            if (errorCode != 0) {
+                                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (errorCode);
+                            }
+                        }
+                        {
+                            THEKOGANS_UTIL_ERROR_CODE errorCode =
+                                pthread_condattr_setpshared (&attribute, PTHREAD_PROCESS_SHARED);
+                            if (errorCode != 0) {
+                                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (errorCode);
+                            }
+                        }
+                    }
+                    ~Attribute () {
+                        pthread_condattr_destroy (&attribute);
+                    }
+                } attribute;
+                errorCode = pthread_cond_init (&condition, &attribute.attribute);
+            }
+            else {
+                errorCode = pthread_cond_init (&condition, 0);
+            }
             if (errorCode != 0) {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (errorCode);
             }

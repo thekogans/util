@@ -25,31 +25,146 @@
         #endif // !defined (NOMINMAX)
         #include <windows.h>
     #endif // !defined (_WINDOWS_)
-    #include "thekogans/util/Exception.h"
 #else // defined (TOOLCHAIN_OS_Windows)
+    #include "thekogans/util/Mutex.h"
+    #include "thekogans/util/Condition.h"
+    #include "thekogans/util/POSIXUtils.h"
     #include "thekogans/util/LockGuard.h"
 #endif // defined (TOOLCHAIN_OS_Windows)
+#include "thekogans/util/Exception.h"
 #include "thekogans/util/Event.h"
 
 namespace thekogans {
     namespace util {
 
-        Event::Event (
+    #if !defined (TOOLCHAIN_OS_Windows)
+        struct Event::EventImpl {
+            bool manualReset;
+            volatile State state;
+            bool shared;
+            Mutex mutex;
+            Condition condition;
+
+            EventImpl (
+                    bool manualReset_,
+                    State initialState,
+                    bool shared_ = false) :
+                    manualReset (manualReset_),
+                    state (Free),
+                    shared (shared_),
+                    mutex (shared),
+                    condition (mutex, shared) {
+                if (initialState == Signalled) {
+                    Signal ();
+                }
+            }
+
+            void Signal () {
+                LockGuard<Mutex> guard (mutex);
+                state = Signalled;
+                if (manualReset) {
+                    condition.SignalAll ();
+                }
+                else {
+                    condition.Signal ();
+                }
+            }
+
+            void SignalAll () {
+                LockGuard<Mutex> guard (mutex);
+                state = Signalled;
+                condition.SignalAll ();
+            }
+
+            void Reset () {
+                LockGuard<Mutex> guard (mutex);
+                state = Free;
+            }
+
+            void Wait () {
+                LockGuard<Mutex> guard (mutex);
+                while (state == Free) {
+                    condition.Wait ();
+                }
+                if (!manualReset) {
+                    state = Free;
+                }
+            }
+
+            bool Wait (const TimeSpec &timeSpec) {
+                LockGuard<Mutex> guard (mutex);
+                TimeSpec now = GetCurrentTime ();
+                TimeSpec deadline = now + timeSpec;
+                while (state == Free && deadline > now) {
+                    if (!condition.Wait (deadline - now)) {
+                        return false;
+                    }
+                    now = GetCurrentTime ();
+                }
+                if (!manualReset) {
+                    state = Free;
+                }
+                return true;
+            }
+        };
+
+        struct Event::SharedEventImpl :
+                public SharedObject<SharedEventImpl>,
+                public EventImpl {
+            SharedEventImpl (
+                bool manualReset,
+                State initialState,
+                const char *name) :
+                SharedObject (name),
+                EventImpl (manualReset, initialState, true) {}
+        };
+
+        struct Event::SharedEventImplConstructor :
+                public SharedObject<SharedEventImpl>::Constructor {
+            bool manualReset;
+            State initialState;
+
+            SharedEventImplConstructor (
                 bool manualReset_,
-                State initialState) :
+                State initialState_) :
+                manualReset (manualReset_),
+                initialState (initialState_) {}
+
+            virtual SharedEventImpl *operator () (
+                    void *ptr,
+                    const char *name) const {
+                return new (ptr) SharedEventImpl (manualReset, initialState, name);
+            }
+        };
+
+        struct Event::SharedEventImplDestructor :
+                public SharedObject<SharedEventImpl>::Destructor {
+            virtual void operator () (SharedEventImpl *event) const {
+                event->~SharedEventImpl ();
+            }
+        };
+    #endif // !defined (TOOLCHAIN_OS_Windows)
+
+        Event::Event (
+                bool manualReset,
+                State initialState,
+                const char *name) :
         #if defined (TOOLCHAIN_OS_Windows)
-                handle (CreateEvent (0, manualReset_ ? TRUE : FALSE,
-                    initialState == Signalled ? TRUE : FALSE, 0)) {
+                handle (CreateEvent (0, manualReset ? TRUE : FALSE,
+                    initialState == Signalled ? TRUE : FALSE, name)) {
             if (handle == THEKOGANS_UTIL_INVALID_HANDLE_VALUE) {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
                     THEKOGANS_UTIL_OS_ERROR_CODE);
             }
         #else // defined (TOOLCHAIN_OS_Windows)
-                manualReset (manualReset_),
-                state (Free),
-                condition (mutex) {
-            if (initialState == Signalled) {
-                Signal ();
+                event (name == 0 ?
+                    new EventImpl (manualReset, initialState) :
+                    SharedEventImpl::Create (
+                        name,
+                        SharedEventImplConstructor (manualReset, initialState))) {
+            if (event == 0) {
+                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                    THEKOGANS_UTIL_OS_ERROR_CODE_ENOMEM);
             }
         #endif // defined (TOOLCHAIN_OS_Windows)
         }
@@ -57,6 +172,15 @@ namespace thekogans {
         Event::~Event () {
         #if defined (TOOLCHAIN_OS_Windows)
             CloseHandle (handle);
+        #else // defined (TOOLCHAIN_OS_Windows)
+            if (!event->shared) {
+                delete event;
+            }
+            else {
+                SharedEventImpl::Destroy (
+                    (SharedEventImpl *)event,
+                    SharedEventImplDestructor ());
+            }
         #endif // defined (TOOLCHAIN_OS_Windows)
         }
 
@@ -64,14 +188,7 @@ namespace thekogans {
         #if defined (TOOLCHAIN_OS_Windows)
             SetEvent (handle);
         #else // defined (TOOLCHAIN_OS_Windows)
-            LockGuard<Mutex> guard (mutex);
-            state = Signalled;
-            if (manualReset) {
-                condition.SignalAll ();
-            }
-            else {
-                condition.Signal ();
-            }
+            event->Signal ();
         #endif // defined (TOOLCHAIN_OS_Windows)
         }
 
@@ -79,9 +196,7 @@ namespace thekogans {
         #if defined (TOOLCHAIN_OS_Windows)
             PulseEvent (handle);
         #else // defined (TOOLCHAIN_OS_Windows)
-            LockGuard<Mutex> guard (mutex);
-            state = Signalled;
-            condition.SignalAll ();
+            event->SignalAll ();
         #endif // defined (TOOLCHAIN_OS_Windows)
         }
 
@@ -89,8 +204,7 @@ namespace thekogans {
         #if defined (TOOLCHAIN_OS_Windows)
             ResetEvent (handle);
         #else // defined (TOOLCHAIN_OS_Windows)
-            LockGuard<Mutex> guard (mutex);
-            state = Free;
+            event->Reset ();
         #endif // defined (TOOLCHAIN_OS_Windows)
         }
 
@@ -101,13 +215,7 @@ namespace thekogans {
                     THEKOGANS_UTIL_OS_ERROR_CODE);
             }
         #else // defined (TOOLCHAIN_OS_Windows)
-            LockGuard<Mutex> guard (mutex);
-            while (state == Free) {
-                condition.Wait ();
-            }
-            if (!manualReset) {
-                state = Free;
-            }
+            event->Wait ();
         #endif // defined (TOOLCHAIN_OS_Windows)
         }
 
@@ -124,19 +232,7 @@ namespace thekogans {
             }
             return true;
         #else // defined (TOOLCHAIN_OS_Windows)
-            LockGuard<Mutex> guard (mutex);
-            TimeSpec now = GetCurrentTime ();
-            TimeSpec deadline = now + timeSpec;
-            while (state == Free && deadline > now) {
-                if (!condition.Wait (deadline - now)) {
-                    return false;
-                }
-                now = GetCurrentTime ();
-            }
-            if (!manualReset) {
-                state = Free;
-            }
-            return true;
+            return event->Wait (timeSpec);
         #endif // defined (TOOLCHAIN_OS_Windows)
         }
 

@@ -55,29 +55,34 @@ namespace thekogans {
             THEKOGANS_UTIL_HANDLE handle;
         #else // defined (TOOLCHAIN_OS_Windows)
             /// \brief
-            /// true = manual recet, false = auto recet.
-            bool manualReset;
+            /// Forward declaration of a private class.
+            struct EventImpl;
             /// \brief
-            /// Event state.
-            volatile State state;
+            /// POSIX shared event implementation.
+            EventImpl *event;
             /// \brief
-            /// Synchronization mutex.
-            Mutex mutex;
+            /// Forward declaration of a private class.
+            struct SharedEventImpl;
             /// \brief
-            /// Synchronization conditin variable.
-            Condition condition;
+            /// Forward declaration of a private class.
+            struct SharedEventImplConstructor;
+            /// \brief
+            /// Forward declaration of a private class.
+            struct SharedEventImplDestructor;
         #endif // defined (TOOLCHAIN_OS_Windows)
 
         public:
             /// \brief
             /// ctor.
-            /// \param[in] manualReset_
+            /// \param[in] manualReset
             /// true = event is to be manually reset entering Signaled state,
             /// false = the event will be reset after the first waiting thread is woken up.
             /// \param[in] initialState Initial state of the event.
+            /// \param[in] name Shared event name.
             Event (
-                bool manualReset_ = true,
-                State initialState = Free);
+                bool manualReset = true,
+                State initialState = Free,
+                const char *name = 0);
             /// \brief
             /// dtor.
             ~Event ();

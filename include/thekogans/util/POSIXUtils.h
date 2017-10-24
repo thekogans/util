@@ -69,19 +69,19 @@ namespace thekogans {
                 }
             }
 
-            /// \struct SharedObject::Creator POSIXUtils.h thekogans/util/POSIXUtils.h
+            /// \struct SharedObject::Constructor POSIXUtils.h thekogans/util/POSIXUtils.h
             ///
             /// \brief
             /// Used by Create below to construct the shared object if the shared region
             /// was created. If the shared region was opened, it's refCount will be
             /// incremented.
-            struct Creator {
+            struct Constructor {
                 /// \brief
                 /// dtor.
-                virtual ~Creator () {}
+                virtual ~Constructor () {}
 
                 /// \brief
-                /// A concrete type of Creator will use a placement new to construct
+                /// A concrete type of Constructor will use a placement new to construct
                 /// the shared object and call an appropriate ctor.
                 /// \param[in] ptr Pointer to call placement new on (new (ptr) T (name, ...)).
                 /// \param[in] name Name of shared object.
@@ -94,24 +94,24 @@ namespace thekogans {
             /// \brief
             /// Create or open a given shared memory region and construct the shared object.
             /// \param[in] name Name of shared memory region to create/open.
-            /// \param[in] creator A Creator instance used to construct the shared object.
+            /// \param[in] constructor A Constructor instance used to construct the shared object.
             /// \param[in] mode Protection mode used by the lock and shared memory region.
             /// \param[in] timeSpec Used by lock to put the process to sleep during lock contention.
             static T *Create (
                     const char *name,
-                    const Creator &creator,
+                    const Constructor &constructor,
                     mode_t mode = 0666,
                     const TimeSpec &timeSpec = TimeSpec::FromMilliseconds (100)) {
                 if (name != 0) {
                     Lock lock (name, mode, timeSpec);
                     struct SharedMemory {
                         THEKOGANS_UTIL_HANDLE handle;
-                        bool owner;
+                        bool created;
                         SharedMemory (
                                 const char *name,
                                 mode_t mode) :
                                 handle (shm_open (name, O_RDWR | O_CREAT | O_EXCL, mode)),
-                                owner (handle != -1) {
+                                created (handle != -1) {
                             if (handle != -1) {
                                 if (FTRUNCATE_FUNC (handle, sizeof (T)) == -1) {
                                     THEKOGANS_UTIL_ERROR_CODE errorCode = THEKOGANS_UTIL_OS_ERROR_CODE;
@@ -125,7 +125,7 @@ namespace thekogans {
                                 if (errorCode == EEXIST) {
                                     handle = shm_open (name, O_RDWR);
                                     if (handle != -1) {
-                                        owner = false;
+                                        created = false;
                                     }
                                     else {
                                         THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
@@ -145,8 +145,8 @@ namespace thekogans {
                         MAP_SHARED, sharedMemory.handle, 0);
                     if (ptr != 0) {
                         T *t;
-                        if (sharedMemory.owner) {
-                            t = creator (ptr, name);
+                        if (sharedMemory.created) {
+                            t = constructor (ptr, name);
                         }
                         else {
                             t = (T *)ptr;
@@ -175,7 +175,7 @@ namespace thekogans {
                 virtual ~Destructor () {}
 
                 /// \brief
-                /// Analog to Creator above. More often then not call t->~T ().
+                /// Analog to Constructor above. More often then not call t->~T ().
                 /// \param[in] t T instance to destruct.
                 virtual void operator () (T * /*t*/) const = 0;
             };
@@ -183,7 +183,7 @@ namespace thekogans {
             /// \brief
             /// Decrement the reference count and if 0, destroy the given instance of T.
             /// \param[in] t Instance of T to destroy.
-            /// \param[in] destructor Analog to Creator used to actually destroy t.
+            /// \param[in] destructor Analog to Constructor used to actually destroy t.
             /// \param[in] mode Protection mode used by the lock.
             /// \param[in] timeSpec Used by lock to put the process to sleep during lock contention.
             static void Destroy (

@@ -94,7 +94,9 @@ namespace thekogans {
         public:
             /// \brief
             /// Default ctor. Initialize to unacquired.
-            Mutex ();
+            /// \param[in] shared For pthread_mutex_t. Initialize with
+            /// PTHREAD_PROCESS_SHARED attribute.
+            Mutex (bool shared = false);
             /// \brief
             /// dtor.
             ~Mutex ();

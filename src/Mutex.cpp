@@ -21,12 +21,39 @@
 namespace thekogans {
     namespace util {
 
-        Mutex::Mutex () {
+        Mutex::Mutex (bool shared) {
         #if defined (TOOLCHAIN_OS_Windows)
             InitializeCriticalSection (&cs);
         #else // defined (TOOLCHAIN_OS_Windows)
-            THEKOGANS_UTIL_ERROR_CODE errorCode =
-                pthread_mutex_init (&mutex, 0);
+            THEKOGANS_UTIL_ERROR_CODE errorCode;
+            if (shared) {
+                struct Attribute {
+                    pthread_mutexattr_t attribute;
+                    Attribute () {
+                        {
+                            THEKOGANS_UTIL_ERROR_CODE errorCode =
+                                pthread_mutexattr_init (&attribute);
+                            if (errorCode != 0) {
+                                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (errorCode);
+                            }
+                        }
+                        {
+                            THEKOGANS_UTIL_ERROR_CODE errorCode =
+                                pthread_mutexattr_setpshared (&attribute, PTHREAD_PROCESS_SHARED);
+                            if (errorCode != 0) {
+                                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (errorCode);
+                            }
+                        }
+                    }
+                    ~Attribute () {
+                        pthread_mutexattr_destroy (&attribute);
+                    }
+                } attribute;
+                errorCode = pthread_mutex_init (&mutex, &attribute.attribute);
+            }
+            else {
+                errorCode = pthread_mutex_init (&mutex, 0);
+            }
             if (errorCode != 0) {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (errorCode);
             }

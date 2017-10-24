@@ -18,20 +18,6 @@
 #if !defined (__thekogans_util_Semaphore_h)
 #define __thekogans_util_Semaphore_h
 
-#if defined (TOOLCHAIN_OS_Windows)
-    #if !defined (_WINDOWS_)
-        #if !defined (WIN32_LEAN_AND_MEAN)
-            #define WIN32_LEAN_AND_MEAN
-        #endif // !defined (WIN32_LEAN_AND_MEAN)
-        #if !defined (NOMINMAX)
-            #define NOMINMAX
-        #endif // !defined (NOMINMAX)
-        #include <windows.h>
-    #endif // !defined (_WINDOWS_)
-#else // defined (TOOLCHAIN_OS_Windows)
-    #include "thekogans/util/Mutex.h"
-    #include "thekogans/util/Condition.h"
-#endif // defined (TOOLCHAIN_OS_Windows)
 #include "thekogans/util/Config.h"
 #include "thekogans/util/Types.h"
 
@@ -52,27 +38,32 @@ namespace thekogans {
             THEKOGANS_UTIL_HANDLE handle;
         #else // defined (TOOLCHAIN_OS_Windows)
             /// \brief
-            /// Max threads that can share the semaphore.
-            const ui32 maxCount;
+            /// Forward declaration of a private class.
+            struct SemaphoreImpl;
             /// \brief
-            /// Curent count of threads that acquired the semaphore.
-            volatile ui32 count;
+            /// POSIX shared semaphore implementation.
+            SemaphoreImpl *semaphore;
             /// \brief
-            /// Synchronization mutex.
-            Mutex mutex;
+            /// Forward declaration of a private class.
+            struct SharedSemaphoreImpl;
             /// \brief
-            /// Synchronization condition variable.
-            Condition condition;
+            /// Forward declaration of a private class.
+            struct SharedSemaphoreImplConstructor;
+            /// \brief
+            /// Forward declaration of a private class.
+            struct SharedSemaphoreImplDestructor;
         #endif // defined (TOOLCHAIN_OS_Windows)
 
         public:
             /// \brief
             /// ctor.
-            /// \param[in] maxCount_ Maximum number of concurent threads.
+            /// \param[in] maxCount Maximum number of concurent threads.
             /// \param[in] initialCount Initial state of the semaphore.
+            /// \param[in] name Shared semaphore name.
             Semaphore (
-                ui32 maxCount_ = 1,
-                ui32 initialCount = 1);
+                ui32 maxCount = 1,
+                ui32 initialCount = 1,
+                const char *name = 0);
             /// \brief
             /// dtor.
             ~Semaphore ();
@@ -87,7 +78,7 @@ namespace thekogans {
             /// signaled, one (or more) will be woken up,
             /// and given a chance to execute.
             /// \param[in] count_ Number of threads to release.
-            void Release (ui32 count_ = 1);
+            void Release (ui32 count = 1);
 
             /// \brief
             /// Semaphore is neither copy constructable, nor assignable.

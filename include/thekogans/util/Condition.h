@@ -63,7 +63,11 @@ namespace thekogans {
             /// \brief
             /// ctor.
             /// \param[in] mutex_ The mutex to pair this condition variable with.
-            explicit Condition (Mutex &mutex_);
+            /// \param[in] shared For pthread_cond_t. Initialize with
+            /// PTHREAD_PROCESS_SHARED attribute.
+            Condition (
+                Mutex &mutex_,
+                bool shared = false);
             /// \brief
             /// dtor.
             ~Condition ();

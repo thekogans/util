@@ -166,9 +166,6 @@
     <cpp_header>$(organization)/$(project_directory)/SHA2_384_512.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/SHA3.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/SharedAllocator.h</cpp_header>
-    <cpp_header>$(organization)/$(project_directory)/SharedEvent.h</cpp_header>
-    <cpp_header>$(organization)/$(project_directory)/SharedMutex.h</cpp_header>
-    <cpp_header>$(organization)/$(project_directory)/SharedSemaphore.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/Singleton.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/SpinLock.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/SpinRWLock.h</cpp_header>
@@ -667,9 +664,6 @@
     <cpp_source>SHA2_384_512.cpp</cpp_source>
     <cpp_source>SHA3.cpp</cpp_source>
     <cpp_source>SharedAllocator.cpp</cpp_source>
-    <cpp_source>SharedEvent.cpp</cpp_source>
-    <cpp_source>SharedMutex.cpp</cpp_source>
-    <cpp_source>SharedSemaphore.cpp</cpp_source>
     <cpp_source>SpinLock.cpp</cpp_source>
     <cpp_source>SpinRWLock.cpp</cpp_source>
     <cpp_source>StringUtils.cpp</cpp_source>
