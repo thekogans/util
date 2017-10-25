@@ -40,8 +40,8 @@ namespace thekogans {
         /// \brief
         /// SharedObject template abstracts out the boilerplate shm_* and m[un]map
         /// machinery used to create or open shared memory regions on POSIX systems.
-        /// It's used by SharedEvent, SharedMuted, SharedSemaphore and SharedAllocator.
-        /// Use it to create your own cross-process shared objects.
+        /// It's used by Event, Semaphore and SharedAllocator. Use it to create your
+        /// own cross-process shared objects.
 
         template<typename T>
         struct SharedObject {
@@ -62,6 +62,20 @@ namespace thekogans {
                     refCount (1) {
                 if (name_ != 0) {
                     strncpy (name, name_, NAME_MAX);
+                }
+                else {
+                    THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                        THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
+                }
+            }
+
+            /// \brief
+            /// Delete shared memory regions associated with a name.
+            /// \param[in] name Shared memory regions to delete.
+            static void Cleanup (const char *name) {
+                if (name != 0) {
+                    shm_unlink (name);
+                    shm_unlink (Lock::GetName (name).c_str ());
                 }
                 else {
                     THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
@@ -218,10 +232,10 @@ namespace thekogans {
                 /// \param[in] mode Lock protection mode.
                 /// \param[in] timeSpec Used to put the process to sleep during lock contention.
                 Lock (
-                        const std::string &name_,
+                        const char *name_,
                         mode_t mode = 0666,
                         const TimeSpec &timeSpec = TimeSpec::FromMilliseconds (100)) :
-                        name (name_ + "_lock"),
+                        name (GetName (name_)),
                         handle (shm_open (name.c_str (), O_RDWR | O_CREAT | O_EXCL, mode)) {
                     while (handle == -1) {
                         THEKOGANS_UTIL_ERROR_CODE errorCode = THEKOGANS_UTIL_OS_ERROR_CODE;
