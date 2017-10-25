@@ -255,7 +255,9 @@ namespace thekogans {
                 #if defined (MADV_DONTDUMP)
                     }
                     else {
+                        THEKOGANS_UTIL_ERROR_CODE errorCode = THEKOGANS_UTIL_OS_ERROR_CODE;
                         munlock (base, size);
+                        THEKOGANS_UTIL_OS_ERROR_CODE = errorCode;
                     }
                 #endif // defined (MADV_DONTDUMP)
                 }

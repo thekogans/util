@@ -109,24 +109,28 @@ namespace thekogans {
             /// Create or open a given shared memory region and construct the shared object.
             /// \param[in] name Name of shared memory region to create/open.
             /// \param[in] constructor A Constructor instance used to construct the shared object.
+            /// \param[in] secure true = lock region to prevent swapping.
             /// \param[in] mode Protection mode used by the lock and shared memory region.
             /// \param[in] timeSpec Used by lock to put the process to sleep during lock contention.
             static T *Create (
                     const char *name,
                     const Constructor &constructor,
+                    bool secure = false,
                     mode_t mode = 0666,
                     const TimeSpec &timeSpec = TimeSpec::FromMilliseconds (100)) {
                 if (name != 0) {
                     Lock lock (name, mode, timeSpec);
                     struct SharedMemory {
+                        const char *name;
                         THEKOGANS_UTIL_HANDLE handle;
                         bool created;
                         SharedMemory (
-                                const char *name,
+                                const char *name_,
                                 mode_t mode) :
+                                name (name_),
                                 handle (shm_open (name, O_RDWR | O_CREAT | O_EXCL, mode)),
                                 created (handle != -1) {
-                            if (handle != -1) {
+                            if (created) {
                                 if (FTRUNCATE_FUNC (handle, sizeof (T)) == -1) {
                                     THEKOGANS_UTIL_ERROR_CODE errorCode = THEKOGANS_UTIL_OS_ERROR_CODE;
                                     close (handle);
@@ -154,23 +158,45 @@ namespace thekogans {
                         ~SharedMemory () {
                             close (handle);
                         }
+
+                        void Destroy () {
+                            if (created) {
+                                shm_unlink (name);
+                            }
+                        }
                     } sharedMemory (name, mode);
                     void *ptr = mmap (0, sizeof (T), PROT_READ | PROT_WRITE,
                         MAP_SHARED, sharedMemory.handle, 0);
-                    if (ptr != 0) {
-                        T *t;
-                        if (sharedMemory.created) {
-                            t = constructor (ptr, name);
+                    if (ptr != MAP_FAILED) {
+                        if (!secure || LockRegion (ptr)) {
+                            T *t;
+                            if (sharedMemory.created) {
+                                THEKOGANS_UTIL_TRY {
+                                    t = constructor (ptr, name);
+                                }
+                                THEKOGANS_UTIL_CATCH_ANY {
+                                    munmap (ptr, sizeof (T));
+                                    sharedMemory.Destroy ();
+                                    throw;
+                                }
+                            }
+                            else {
+                                t = (T *)ptr;
+                                ++t->refCount;
+                            }
+                            return t;
                         }
                         else {
-                            t = (T *)ptr;
-                            ++t->refCount;
+                            THEKOGANS_UTIL_ERROR_CODE errorCode = THEKOGANS_UTIL_OS_ERROR_CODE;
+                            munmap (ptr, sizeof (T));
+                            sharedMemory.Destroy ();
+                            THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (errorCode);
                         }
-                        return t;
                     }
                     else {
-                        THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                            THEKOGANS_UTIL_OS_ERROR_CODE);
+                        THEKOGANS_UTIL_ERROR_CODE errorCode = THEKOGANS_UTIL_OS_ERROR_CODE;
+                        sharedMemory.Destroy ();
+                        THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (errorCode);
                     }
                 }
                 else {
@@ -198,17 +224,22 @@ namespace thekogans {
             /// Decrement the reference count and if 0, destroy the given instance of T.
             /// \param[in] t Instance of T to destroy.
             /// \param[in] destructor Analog to Constructor used to actually destroy t.
+            /// \param[in] secure true = unlock previously locked region.
             /// \param[in] mode Protection mode used by the lock.
             /// \param[in] timeSpec Used by lock to put the process to sleep during lock contention.
             static void Destroy (
                     T *t,
                     const Destructor &destructor,
+                    bool secure = false,
                     mode_t mode = 0666,
                     const TimeSpec &timeSpec = TimeSpec::FromMilliseconds (100)) {
                 Lock lock (t->name, mode, timeSpec);
                 if (--t->refCount == 0) {
                     destructor (t);
                     shm_unlink (t->name);
+                }
+                if (secure) {
+                    munlock (t, sizeof (T));
                 }
                 munmap (t, sizeof (T));
             }
@@ -254,7 +285,37 @@ namespace thekogans {
                     close (handle);
                     shm_unlink (name.c_str ());
                 }
+
+                /// \brief
+                /// Synthesize a lock name from object name and "_lock";
+                /// \param[in] name Object name.
+                /// \return name + "_lock";
+                static std::string GetName (const char *name) {
+                    return std::string (name) + "_lock";
+                }
             };
+
+            /// \brief
+            /// Lock shared memory region to prevent swapping.
+            /// \param[in] ptr Shared memory region to lock.
+            /// \return true = Locked the given memory region. false = failed to lock.
+            static bool LockRegion (void *ptr) {
+                if (mlock (ptr, sizeof (T)) == 0) {
+                #if defined (MADV_DONTDUMP)
+                    if (madvise (ptr, sizeof (T), MADV_DONTDUMP) == 0) {
+                #endif // defined (MADV_DONTDUMP)
+                        return true;
+                #if defined (MADV_DONTDUMP)
+                    }
+                    else {
+                        THEKOGANS_UTIL_ERROR_CODE errorCode = THEKOGANS_UTIL_OS_ERROR_CODE;
+                        munlock (ptr, sizeof (T));
+                        THEKOGANS_UTIL_OS_ERROR_CODE = errorCode;
+                    }
+                #endif // defined (MADV_DONTDUMP)
+                }
+                return false;
+            }
         };
 
     } // namespace util
