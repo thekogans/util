@@ -48,7 +48,7 @@ namespace thekogans {
             SemaphoreImpl (
                     ui32 maxCount_,
                     ui32 initialCount,
-                    bool shared_) :
+                    bool shared_ = false) :
                     maxCount (maxCount_),
                     count (0),
                     shared (shared_),
@@ -100,16 +100,17 @@ namespace thekogans {
                 public SharedObject<Semaphore::SharedSemaphoreImpl>::Constructor {
             ui32 maxCount;
             ui32 initialCount;
+            const char *name;
 
             SharedSemaphoreImplConstructor (
                 ui32 maxCount_,
-                ui32 initialCount_) :
+                ui32 initialCount_,
+                const char *name_) :
                 maxCount (maxCount_),
-                initialCount (initialCount_) {}
+                initialCount (initialCount_),
+                name (name_) {}
 
-            virtual Semaphore::SharedSemaphoreImpl *operator () (
-                    void *ptr,
-                    const char *name) const {
+            virtual Semaphore::SharedSemaphoreImpl *operator () (void *ptr) const {
                 return new (ptr) SharedSemaphoreImpl (maxCount, initialCount, name);
             }
         };
@@ -130,10 +131,10 @@ namespace thekogans {
                 handle (CreateSemaphore (0, initialCount, maxCount, name)) {
             #else // defined (TOOLCHAIN_OS_Windows)
                 semaphore (name == 0 ?
-                    new SemaphoreImpl (maxCount, initialCount, name) :
+                    new SemaphoreImpl (maxCount, initialCount) :
                     SharedSemaphoreImpl::Create (
                         name,
-                        SharedSemaphoreImplConstructor (maxCount, initialCount))) {
+                        SharedSemaphoreImplConstructor (maxCount, initialCount, name))) {
             #endif // defined (TOOLCHAIN_OS_Windows)
             if (maxCount < initialCount) {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (

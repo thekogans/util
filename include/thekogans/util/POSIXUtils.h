@@ -42,6 +42,11 @@ namespace thekogans {
         /// machinery used to create or open shared memory regions on POSIX systems.
         /// It's used by Event, Semaphore and SharedAllocator. Use it to create your
         /// own cross-process shared objects.
+        /// NOTE: Shared objects, by their nature, cannot contain pointers as
+        /// they would not be valid across process boundaries. So, while a concrete
+        /// shared object derives from SharedObject, think of it more like containment
+        /// or aggregation. This is why SharedObject does not define a virtual dtor.
+        /// RTTI is also not available for SharedObject derivatives.
 
         template<typename T>
         struct SharedObject {
@@ -70,7 +75,7 @@ namespace thekogans {
             }
 
             /// \brief
-            /// Delete shared memory regions associated with a name.
+            /// Delete shared memory regions associated with a given name.
             /// \param[in] name Shared memory regions to delete.
             static void Cleanup (const char *name) {
                 if (name != 0) {
@@ -97,12 +102,9 @@ namespace thekogans {
                 /// \brief
                 /// A concrete type of Constructor will use a placement new to construct
                 /// the shared object and call an appropriate ctor.
-                /// \param[in] ptr Pointer to call placement new on (new (ptr) T (name, ...)).
-                /// \param[in] name Name of shared object.
-                /// \return An instance of T.
-                virtual T *operator () (
-                    void * /*ptr*/,
-                    const char * /*name*/) const = 0;
+                /// \param[in] ptr Pointer to call placement new on (new (ptr) T (...)).
+                /// \return A constructed instance of T.
+                virtual T *operator () (void * /*ptr*/) const = 0;
             };
 
             /// \brief
@@ -142,10 +144,7 @@ namespace thekogans {
                                 THEKOGANS_UTIL_ERROR_CODE errorCode = THEKOGANS_UTIL_OS_ERROR_CODE;
                                 if (errorCode == EEXIST) {
                                     handle = shm_open (name, O_RDWR);
-                                    if (handle != -1) {
-                                        created = false;
-                                    }
-                                    else {
+                                    if (handle == -1) {
                                         THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
                                             THEKOGANS_UTIL_OS_ERROR_CODE);
                                     }
@@ -172,7 +171,7 @@ namespace thekogans {
                             T *t;
                             if (sharedMemory.created) {
                                 THEKOGANS_UTIL_TRY {
-                                    t = constructor (ptr, name);
+                                    t = constructor (ptr);
                                 }
                                 THEKOGANS_UTIL_CATCH_ANY {
                                     munmap (ptr, sizeof (T));

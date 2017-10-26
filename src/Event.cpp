@@ -123,16 +123,17 @@ namespace thekogans {
                 public SharedObject<SharedEventImpl>::Constructor {
             bool manualReset;
             State initialState;
+            const char *name;
 
             SharedEventImplConstructor (
                 bool manualReset_,
-                State initialState_) :
+                State initialState_,
+                const char *name_) :
                 manualReset (manualReset_),
-                initialState (initialState_) {}
+                initialState (initialState_),
+                name (name_) {}
 
-            virtual SharedEventImpl *operator () (
-                    void *ptr,
-                    const char *name) const {
+            virtual SharedEventImpl *operator () (void *ptr) const {
                 return new (ptr) SharedEventImpl (manualReset, initialState, name);
             }
         };
@@ -161,7 +162,7 @@ namespace thekogans {
                     new EventImpl (manualReset, initialState) :
                     SharedEventImpl::Create (
                         name,
-                        SharedEventImplConstructor (manualReset, initialState))) {
+                        SharedEventImplConstructor (manualReset, initialState, name))) {
             if (event == 0) {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
                     THEKOGANS_UTIL_OS_ERROR_CODE_ENOMEM);
