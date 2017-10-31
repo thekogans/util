@@ -38,25 +38,6 @@
 namespace thekogans {
     namespace util {
 
-        SharedAllocator::~SharedAllocator () {
-        #if defined (TOOLCHAIN_OS_Windows)
-            if (secure) {
-                VirtualUnlock (base, (SIZE_T)size);
-            }
-            UnmapViewOfFile (base);
-            CloseHandle (handle);
-        #else // defined (TOOLCHAIN_OS_Windows)
-            if (secure) {
-                munlock (base, size);
-            }
-            munmap (base, size);
-            close (handle);
-            if (owner) {
-                shm_unlink (name);
-            }
-        #endif // defined (TOOLCHAIN_OS_Windows)
-        }
-
         void *SharedAllocator::Alloc (std::size_t size) {
             if (size > 0) {
                 LockGuard<Lock> guard (lock);
@@ -177,150 +158,21 @@ namespace thekogans {
             return header->rootObject != 0 ? GetPtrFromOffset (header->rootObject) : 0;
         }
 
-        THEKOGANS_UTIL_HANDLE SharedAllocator::CreateSharedRegion () {
-            if (name != 0 && size > 0) {
-                THEKOGANS_UTIL_HANDLE handle;
-            #if defined (TOOLCHAIN_OS_Windows)
-                handle = CreateFileMapping (
-                    INVALID_HANDLE_VALUE, 0, PAGE_READWRITE,
-                    THEKOGANS_UTIL_UI64_GET_UI32_AT_INDEX (size, 0),
-                    THEKOGANS_UTIL_UI64_GET_UI32_AT_INDEX (size, 1), name);
-                if (handle == 0) {
-                    THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                        THEKOGANS_UTIL_OS_ERROR_CODE);
-                }
-            #else // defined (TOOLCHAIN_OS_Windows)
-                // ftruncate fails if there was an existing shared region.
-                // Since we are being asked to create a new one, delete the
-                // old one and recreate.
-                handle = shm_open (name, O_RDWR, S_IRUSR | S_IWUSR);
-                if (handle != THEKOGANS_UTIL_INVALID_HANDLE_VALUE) {
-                    close (handle);
-                    shm_unlink (name);
-                }
-                handle = shm_open (name, O_CREAT | O_EXCL | O_RDWR, S_IRUSR | S_IWUSR);
-                if (handle != THEKOGANS_UTIL_INVALID_HANDLE_VALUE) {
-                    if (FTRUNCATE_FUNC (handle, size) == -1) {
-                        THEKOGANS_UTIL_ERROR_CODE errorCode = THEKOGANS_UTIL_OS_ERROR_CODE;
-                        close (handle);
-                        shm_unlink (name);
-                        THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (errorCode);
-                    }
-                }
-                else {
-                    THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                        THEKOGANS_UTIL_OS_ERROR_CODE);
-                }
-            #endif // defined (TOOLCHAIN_OS_Windows)
-                return handle;
-            }
-            else {
-                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
-            }
-        }
-
-        THEKOGANS_UTIL_HANDLE SharedAllocator::OpenSharedRegion () {
-            if (name != 0 && size > 0) {
-                THEKOGANS_UTIL_HANDLE handle;
-            #if defined (TOOLCHAIN_OS_Windows)
-                handle = OpenFileMapping (FILE_MAP_ALL_ACCESS, FALSE, name);
-                // Don't you just love Microsoft and all their inconsistencies?
-                if (handle == 0) {
-            #else // defined (TOOLCHAIN_OS_Windows)
-                handle = shm_open (name, O_RDWR, S_IRUSR | S_IWUSR);
-                if (handle == THEKOGANS_UTIL_INVALID_HANDLE_VALUE) {
-            #endif // defined (TOOLCHAIN_OS_Windows)
-                    THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                        THEKOGANS_UTIL_OS_ERROR_CODE);
-                }
-                return handle;
-            }
-            else {
-                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
-            }
-        }
-
-    #if !defined (TOOLCHAIN_OS_Windows)
-        namespace {
-            bool LockRegion (
-                    ui8 *base,
-                    ui64 size) {
-                if (mlock (base, size) == 0) {
-                #if defined (MADV_DONTDUMP)
-                    if (madvise (base, size, MADV_DONTDUMP) == 0) {
-                #endif // defined (MADV_DONTDUMP)
-                        return true;
-                #if defined (MADV_DONTDUMP)
-                    }
-                    else {
-                        THEKOGANS_UTIL_ERROR_CODE errorCode = THEKOGANS_UTIL_OS_ERROR_CODE;
-                        munlock (base, size);
-                        THEKOGANS_UTIL_OS_ERROR_CODE = errorCode;
-                    }
-                #endif // defined (MADV_DONTDUMP)
-                }
-                return false;
-            }
-        }
-    #endif // !defined (TOOLCHAIN_OS_Windows)
-
-        ui8 *SharedAllocator::MapSharedRegion () {
-            ui8 *base = 0;
-        #if defined (TOOLCHAIN_OS_Windows)
-            base = (ui8 *)MapViewOfFile (handle, FILE_MAP_ALL_ACCESS, 0, 0, (SIZE_T)size);
-            if (base == 0 || (secure && !VirtualLock (base, (SIZE_T)size))) {
-                // Since we are throwing an exception during
-                // initialization, our dtor will never be call.
-                // Clean up the previously successful
-                // CreateSharedRegion/OpenSharedRegion.
-                THEKOGANS_UTIL_ERROR_CODE errorCode = THEKOGANS_UTIL_OS_ERROR_CODE;
-                if (base != 0) {
-                    UnmapViewOfFile (base);
-                }
-                CloseHandle (handle);
-                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (errorCode);
-            }
-        #else // defined (TOOLCHAIN_OS_Windows)
-            base = (ui8 *)mmap (0, size, PROT_READ | PROT_WRITE, MAP_SHARED, handle, 0);
-            if (base == MAP_FAILED || (secure && !LockRegion (base, size))) {
-                // Since we are throwing an exception during
-                // initialization, our dtor will never be call.
-                // Clean up the previously successful
-                // CreateSharedRegion/OpenSharedRegion.
-                THEKOGANS_UTIL_ERROR_CODE errorCode = THEKOGANS_UTIL_OS_ERROR_CODE;
-                if (base != MAP_FAILED) {
-                    munmap (base, size);
-                }
-                close (handle);
-                if (owner) {
-                    shm_unlink (name);
-                }
-                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (errorCode);
-            }
-        #endif // defined (TOOLCHAIN_OS_Windows)
-            return base;
-        }
-
         const char *GlobalSharedAllocatorCreateInstance::name = "GlobalSharedAllocator";
         ui64 GlobalSharedAllocatorCreateInstance::size = 16 * 1024;
         bool GlobalSharedAllocatorCreateInstance::secure = false;
-        bool GlobalSharedAllocatorCreateInstance::owner = false;
 
         void GlobalSharedAllocatorCreateInstance::Parameterize (
                 const char *name_,
                 ui64 size_,
-                bool secure_,
-                bool owner_) {
+                bool secure_) {
             name = name_;
             size = size_;
             secure = secure_;
-            owner = owner_;
         }
 
         SharedAllocator *GlobalSharedAllocatorCreateInstance::operator () () {
-            return new SharedAllocator (name, size, secure, owner);
+            return new SharedAllocator (name, size, secure);
         }
 
     } // namespace util

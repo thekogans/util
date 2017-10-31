@@ -28,6 +28,7 @@
 #include "thekogans/util/Exception.h"
 #include "thekogans/util/Singleton.h"
 #include "thekogans/util/SpinLock.h"
+#include "thekogans/util/SharedObject.h"
 
 namespace thekogans {
     namespace util {
@@ -69,49 +70,6 @@ namespace thekogans {
 
         struct _LIB_THEKOGANS_UTIL_DECL SharedAllocator : public Allocator {
         protected:
-            /// \brief
-            /// Global name used to identify the shared region.
-            /// NOTE: On Windows this name has to be acceptable
-            /// to CreateSharedRegion/OpenSharedRegion. On Linux/OS X
-            /// it needs to correspond to the requirements of shm_open.
-            /// Keep that in mind when selecting your names to have
-            /// the best shot at portability.
-            const char *name;
-            /// \brief
-            /// Size of the shared region.
-            /// NOTE: This is the total region size. SharedAllocator
-            /// overhead will come out of this size. To determine the
-            /// total size of the reagion for a particular allocation
-            /// need use the GetAllocatorOverhead family of functions
-            /// below.
-            const ui64 size;
-            /// \brief
-            /// true = Lock the pages in memory to prevent swapping.
-            const bool secure;
-            /// \brief
-            /// true = Initialize the heap, and destroy it when done.
-            /// false = Use an already created heap.
-            const bool owner;
-            /// \brief
-            /// Handle to the shared memory region.
-            THEKOGANS_UTIL_HANDLE handle;
-            /// \brief
-            /// Start of the shared region.
-            /// NOTE: All offsets are relative to base. Which will be
-            /// determined by where in our address space the OS maps
-            /// the shared region.
-            ui8 *base;
-            /// \brief
-            /// This is the smallest valid pointer that SharedAllocator
-            /// can return. Since it's constant, we calculate and cache
-            /// it in the ctor and use it in ValidatePtr to save two
-            /// additions.
-            const ui8 *smallestValidPtr;
-            /// \brief
-            /// Just past the end of the shared region. Since it's constant,
-            /// we calculate and cache it in the ctor and use it in ValidatePtr
-            /// to save an addition.
-            const ui8 *end;
             /// \struct SharedAllocator::Header SharedAllocator.h thekogans/util/SharedAllocator.h
             ///
             /// \brief
@@ -146,26 +104,17 @@ namespace thekogans {
                 ui64 rootObject;
 
                 /// \brief
-                /// ctor used when owner == true.
-                /// \param[in] base Start of the shared region.
+                /// ctor.
+                /// \param[in] ptr Start of the shared region.
                 /// \param[in] size Size of the shared region.
-                Header (ui8 *base,
+                Header (void *ptr,
                         ui64 size) :
                         magic (MAGIC32),
                         lock (0),
                         freeList (SIZE),
                         rootObject (0) {
                     // Create the first block.
-                    new (base + freeList) SharedAllocator::Block (size - SIZE);
-                }
-                /// \brief
-                /// ctor used when owner == false.
-                Header () {
-                    // A little sanity check.
-                    if (magic != MAGIC32) {
-                        THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                            "Invalid SharedAllocator header. Magic = %x", magic);
-                    }
+                    new ((ui8 *)ptr + freeList) SharedAllocator::Block (size - SIZE);
                 }
 
                 /// \brief
@@ -273,33 +222,60 @@ namespace thekogans {
                 /// Block is neither copy constructable, nor assignable.
                 THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (Block)
             };
+            /// \brief
+            /// This is the smallest valid pointer that SharedAllocator
+            /// can return. Since it's constant, we calculate and cache
+            /// it in the ctor and use it in ValidatePtr to save two
+            /// additions.
+            const ui8 *smallestValidPtr;
+            /// \brief
+            /// Just past the end of the shared region. Since it's constant,
+            /// we calculate and cache it in the ctor and use it in ValidatePtr
+            /// to save an addition.
+            const ui8 *end;
+
+            /// \struct SharedAllocator::Constructor SharedAllocator.h thekogans/util/SharedAllocator.h
+            ///
+            /// \brief
+            struct Constructor : public SharedObject::Constructor {
+                /// \brief
+                /// Size of the shared region.
+                ui64 size;
+
+                /// \brief
+                /// ctor.
+                /// \param[in] size Size of the shared region.
+                explicit Constructor (ui64 size_) :
+                    size (size_) {}
+
+                /// \brief
+                /// In place construct Header.
+                /// \param[in] ptr Where to in place construct the Header.
+                /// \return Constructed Header.
+                virtual void *operator () (void *ptr) const {
+                    return new (ptr) Header (ptr, size);
+                }
+            };
 
         public:
             /// \brief
             /// ctor.
-            /// \param[in] name_ Global name used to identify the shared region.
-            /// \param[in] size_ Size of the shared region.
-            /// \param[in] secure_ Lock the pages in memory to prevent swapping.
-            /// \param[in] owner_ true = Initialize the heap, and destroy it when done.
-            ///                   false = Use an already created heap.
+            /// \param[in] name Global name used to identify the shared region.
+            /// \param[in] size Size of the shared region.
+            /// \param[in] secure Lock the pages in memory to prevent swapping.
             SharedAllocator (
-                const char *name_,
-                ui64 size_,
-                bool secure_,
-                bool owner_) :
-                name (name_),
-                size (size_),
-                secure (secure_),
-                owner (owner_),
-                handle (owner ? CreateSharedRegion () : OpenSharedRegion ()),
-                base (MapSharedRegion ()),
-                smallestValidPtr (base + Header::SIZE + Block::HEADER_SIZE),
-                end (base + size),
-                header (owner ? new (base) Header (base, size) : new (base) Header ()),
-                lock (header->lock) {}
+                const char *name,
+                ui64 size,
+                bool secure) :
+                header ((Header *)SharedObject::Create (name, size, secure, Constructor (size))),
+                lock (header->lock),
+                smallestValidPtr ((ui8 *)header + Header::SIZE + Block::HEADER_SIZE),
+                end ((ui8 *)header + size) {}
             /// \brief
             /// dtor.
-            virtual ~SharedAllocator ();
+            virtual ~SharedAllocator () {
+                SharedObject::Destroy (header);
+            }
 
             /// \brief
             /// Allocate a shared block.
@@ -361,14 +337,14 @@ namespace thekogans {
             /// \param[in] ptr A local heap pointer.
             /// \return A global block offset.
             inline ui64 GetOffsetFromPtr (void *ptr) const {
-                return (ui64)((ui8 *)ptr - base);
+                return (ui64)((ui8 *)ptr - (ui8 *)header);
             }
             /// \brief
             /// Use this API to convert a global block offset to a local heap pointer.
             /// \param[in] offset A global block offset.
             /// \return A local heap pointer.
             inline void *GetPtrFromOffset (ui64 offset) const {
-                return base + offset;
+                return (ui8 *)header + offset;
             }
 
             /// \brief
@@ -384,22 +360,6 @@ namespace thekogans {
 
         protected:
             /// \brief
-            /// ctor helpers.
-
-            /// \brief
-            /// Create a shared region.
-            /// \return Handle to the newly created shared region.
-            THEKOGANS_UTIL_HANDLE CreateSharedRegion ();
-            /// \brief
-            /// Open an existing shared region.
-            /// \return Handle to an existing shared region.
-            THEKOGANS_UTIL_HANDLE OpenSharedRegion ();
-            /// \brief
-            /// Map the shared region in to the processes address space.
-            /// \return Base of mapped shared region.
-            ui8 *MapSharedRegion ();
-
-            /// \brief
             /// Private macros used to impart meaning and reduce code clutter.
 
             /// \brief
@@ -407,14 +367,14 @@ namespace thekogans {
             /// \param[in] offset Block offset.
             /// \return Block *.
             inline Block *GetBlockFromOffset (ui64 offset) const {
-                return offset != 0 ? (Block *)(base + offset) : 0;
+                return offset != 0 ? (Block *)((ui8 *)header + offset) : 0;
             }
             /// \brief
             /// Return a block offset given a Block *.
             /// \param[in] block Block pointer.
             /// \return Block offset.
             inline ui64 GetOffsetFromBlock (Block *block) const {
-                return block != 0 ? (ui64)((ui8 *)block - base) : 0;
+                return block != 0 ? (ui64)((ui8 *)block - (ui8 *)header) : 0;
             }
             /// \brief
             /// Given a block, calculate the offset of the next block.
@@ -471,10 +431,6 @@ namespace thekogans {
             /// \brief
             /// Lock the pages in memory to prevent swapping.
             static bool secure;
-            /// \brief
-            /// true = Initialize the heap, and destroy it when done.
-            /// false = Use an already created heap.
-            static bool owner;
 
         public:
             /// \brief
@@ -482,13 +438,10 @@ namespace thekogans {
             /// \param[in] name_ Global name used to identify the shared region.
             /// \param[in] size_ Size of the shared region.
             /// \param[in] secure_ Lock the pages in memory to prevent swapping.
-            /// \param[in] owner_ true = Initialize the heap, and destroy it when done.
-            ///                   false = Use an already created heap.
             static void Parameterize (
                 const char *name_ = "GlobalSharedAllocator",
                 ui64 size_ = 16 * 1024,
-                bool secure_ = false,
-                bool owner_ = false);
+                bool secure_ = false);
 
             /// \brief
             /// Create a global shared allocator with custom ctor arguments.

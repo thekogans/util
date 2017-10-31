@@ -45,13 +45,10 @@ namespace thekogans {
             SemaphoreImpl *semaphore;
             /// \brief
             /// Forward declaration of a private class.
-            struct SharedSemaphoreImpl;
+            struct SemaphoreImplConstructor;
             /// \brief
             /// Forward declaration of a private class.
-            struct SharedSemaphoreImplConstructor;
-            /// \brief
-            /// Forward declaration of a private class.
-            struct SharedSemaphoreImplDestructor;
+            struct SemaphoreImplDestructor;
         #endif // defined (TOOLCHAIN_OS_Windows)
 
         public:

@@ -32,6 +32,7 @@
 #include <xercesc/framework/MemBufInputSource.hpp>
 #include "thekogans/util/Config.h"
 #include "thekogans/util/Types.h"
+#include "thekogans/util/StringUtils.h"
 
 namespace thekogans {
     namespace util {

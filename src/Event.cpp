@@ -26,9 +26,11 @@
         #include <windows.h>
     #endif // !defined (_WINDOWS_)
 #else // defined (TOOLCHAIN_OS_Windows)
+    #include "thekogans/util/Heap.h"
+    #include "thekogans/util/SpinLock.h"
     #include "thekogans/util/Mutex.h"
     #include "thekogans/util/Condition.h"
-    #include "thekogans/util/POSIXUtils.h"
+    #include "thekogans/util/SharedObject.h"
     #include "thekogans/util/LockGuard.h"
 #endif // defined (TOOLCHAIN_OS_Windows)
 #include "thekogans/util/Exception.h"
@@ -39,6 +41,8 @@ namespace thekogans {
 
     #if !defined (TOOLCHAIN_OS_Windows)
         struct Event::EventImpl {
+            THEKOGANS_UTIL_DECLARE_HEAP_WITH_LOCK (EventImpl, SpinLock)
+
             bool manualReset;
             volatile State state;
             bool shared;
@@ -108,40 +112,26 @@ namespace thekogans {
             }
         };
 
-        struct Event::SharedEventImpl :
-                public SharedObject<SharedEventImpl>,
-                public EventImpl {
-            SharedEventImpl (
-                bool manualReset,
-                State initialState,
-                const char *name) :
-                SharedObject (name),
-                EventImpl (manualReset, initialState, true) {}
-        };
+        THEKOGANS_UTIL_IMPLEMENT_HEAP_WITH_LOCK (Event::EventImpl, SpinLock)
 
-        struct Event::SharedEventImplConstructor :
-                public SharedObject<SharedEventImpl>::Constructor {
+        struct Event::EventImplConstructor : public SharedObject::Constructor {
             bool manualReset;
             State initialState;
-            const char *name;
 
-            SharedEventImplConstructor (
+            EventImplConstructor (
                 bool manualReset_,
-                State initialState_,
-                const char *name_) :
+                State initialState_) :
                 manualReset (manualReset_),
-                initialState (initialState_),
-                name (name_) {}
+                initialState (initialState_) {}
 
-            virtual SharedEventImpl *operator () (void *ptr) const {
-                return new (ptr) SharedEventImpl (manualReset, initialState, name);
+            virtual void *operator () (void *ptr) const {
+                return new (ptr) EventImpl (manualReset, initialState, true);
             }
         };
 
-        struct Event::SharedEventImplDestructor :
-                public SharedObject<SharedEventImpl>::Destructor {
-            virtual void operator () (SharedEventImpl *event) const {
-                event->~SharedEventImpl ();
+        struct Event::EventImplDestructor : public SharedObject::Destructor {
+            virtual void operator () (void *ptr) const {
+                ((EventImpl *)ptr)->~EventImpl ();
             }
         };
     #endif // !defined (TOOLCHAIN_OS_Windows)
@@ -160,9 +150,11 @@ namespace thekogans {
         #else // defined (TOOLCHAIN_OS_Windows)
                 event (name == 0 ?
                     new EventImpl (manualReset, initialState) :
-                    SharedEventImpl::Create (
+                    (EventImpl *)SharedObject::Create (
                         name,
-                        SharedEventImplConstructor (manualReset, initialState, name))) {
+                        sizeof (EventImpl),
+                        false,
+                        EventImplConstructor (manualReset, initialState))) {
             if (event == 0) {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
                     THEKOGANS_UTIL_OS_ERROR_CODE_ENOMEM);
@@ -178,9 +170,7 @@ namespace thekogans {
                 delete event;
             }
             else {
-                SharedEventImpl::Destroy (
-                    (SharedEventImpl *)event,
-                    SharedEventImplDestructor ());
+                SharedObject::Destroy (event, EventImplDestructor ());
             }
         #endif // defined (TOOLCHAIN_OS_Windows)
         }

@@ -26,9 +26,11 @@
         #include <windows.h>
     #endif // !defined (_WINDOWS_)
 #else // defined (TOOLCHAIN_OS_Windows)
+    #include "thekogans/util/Heap.h"
+    #include "thekogans/util/SpinLock.h"
     #include "thekogans/util/Mutex.h"
     #include "thekogans/util/Condition.h"
-    #include "thekogans/util/POSIXUtils.h"
+    #include "thekogans/util/SharedObject.h"
     #include "thekogans/util/LockGuard.h"
 #endif // defined (TOOLCHAIN_OS_Windows)
 #include "thekogans/util/Exception.h"
@@ -39,6 +41,8 @@ namespace thekogans {
 
     #if !defined (TOOLCHAIN_OS_Windows)
         struct Semaphore::SemaphoreImpl {
+            THEKOGANS_UTIL_DECLARE_HEAP_WITH_LOCK (SemaphoreImpl, SpinLock)
+
             const ui32 maxCount;
             volatile ui32 count;
             bool shared;
@@ -85,40 +89,26 @@ namespace thekogans {
             }
         };
 
-        struct Semaphore::SharedSemaphoreImpl :
-                public SharedObject<SharedSemaphoreImpl>,
-                public SemaphoreImpl {
-            SharedSemaphoreImpl (
-                ui32 maxCount,
-                ui32 initialCount,
-                const char *name) :
-                SharedObject (name),
-                SemaphoreImpl (maxCount, initialCount, true) {}
-        };
+        THEKOGANS_UTIL_IMPLEMENT_HEAP_WITH_LOCK (Semaphore::SemaphoreImpl, SpinLock)
 
-        struct Semaphore::SharedSemaphoreImplConstructor :
-                public SharedObject<Semaphore::SharedSemaphoreImpl>::Constructor {
+        struct Semaphore::SemaphoreImplConstructor : public SharedObject::Constructor {
             ui32 maxCount;
             ui32 initialCount;
-            const char *name;
 
-            SharedSemaphoreImplConstructor (
+            SemaphoreImplConstructor (
                 ui32 maxCount_,
-                ui32 initialCount_,
-                const char *name_) :
+                ui32 initialCount_) :
                 maxCount (maxCount_),
-                initialCount (initialCount_),
-                name (name_) {}
+                initialCount (initialCount_) {}
 
-            virtual Semaphore::SharedSemaphoreImpl *operator () (void *ptr) const {
-                return new (ptr) SharedSemaphoreImpl (maxCount, initialCount, name);
+            virtual void *operator () (void *ptr) const {
+                return new (ptr) SemaphoreImpl (maxCount, initialCount, true);
             }
         };
 
-        struct Semaphore::SharedSemaphoreImplDestructor :
-                public SharedObject<SharedSemaphoreImpl>::Destructor {
-            virtual void operator () (SharedSemaphoreImpl *semaphore) const {
-                semaphore->~SharedSemaphoreImpl ();
+        struct Semaphore::SemaphoreImplDestructor : public SharedObject::Destructor {
+            virtual void operator () (void *ptr) const {
+                ((SemaphoreImpl *)ptr)->~SemaphoreImpl ();
             }
         };
     #endif // !defined (TOOLCHAIN_OS_Windows)
@@ -132,9 +122,11 @@ namespace thekogans {
             #else // defined (TOOLCHAIN_OS_Windows)
                 semaphore (name == 0 ?
                     new SemaphoreImpl (maxCount, initialCount) :
-                    SharedSemaphoreImpl::Create (
+                    (SemaphoreImpl *)SharedObject::Create (
                         name,
-                        SharedSemaphoreImplConstructor (maxCount, initialCount, name))) {
+                        sizeof (SemaphoreImpl),
+                        false,
+                        SemaphoreImplConstructor (maxCount, initialCount))) {
             #endif // defined (TOOLCHAIN_OS_Windows)
             if (maxCount < initialCount) {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
@@ -161,9 +153,7 @@ namespace thekogans {
                 delete semaphore;
             }
             else {
-                SharedSemaphoreImpl::Destroy (
-                    (SharedSemaphoreImpl *)semaphore,
-                    SharedSemaphoreImplDestructor ());
+                SharedObject::Destroy (semaphore, SemaphoreImplDestructor ());
             }
         #endif // defined (TOOLCHAIN_OS_Windows)
         }
