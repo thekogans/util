@@ -15,8 +15,8 @@ endif()
 add_definitions(
     -DTOOLCHAIN_ARCH_x86_64
     -DTHEKOGANS_UTIL_MAJOR_VERSION=0
-    -DTHEKOGANS_UTIL_MINOR_VERSION=16
-    -DTHEKOGANS_UTIL_PATCH_VERSION=2)
+    -DTHEKOGANS_UTIL_MINOR_VERSION=20
+    -DTHEKOGANS_UTIL_PATCH_VERSION=0)
 
 if(CMAKE_BUILD_TYPE STREQUAL "Debug")
     add_definitions(-DTOOLCHAIN_CONFIG_Debug)
@@ -54,16 +54,20 @@ set(SOURCES
     src/JobQueue.cpp
     src/JobQueueScheduler.cpp
     src/LoggerMgr.cpp
-    src/MainRunLoop.cpp
     src/MD5.cpp
+    src/MainRunLoop.cpp
+    src/MemoryLogger.cpp
     src/MimeTypeMapper.cpp
     src/Mutex.cpp
     src/NullAllocator.cpp
     src/NullLock.cpp
     src/Path.cpp
     src/Pipeline.cpp
+    src/Plugins.cpp
+    src/Point.cpp
     src/RWLock.cpp
     src/RandomSource.cpp
+    src/Rectangle.cpp
     src/SHA1.cpp
     src/SHA2.cpp
     src/SHA2_224_256.cpp
@@ -74,6 +78,7 @@ set(SOURCES
     src/Semaphore.cpp
     src/Serializer.cpp
     src/SharedAllocator.cpp
+    src/SharedObject.cpp
     src/SpinLock.cpp
     src/SpinRWLock.cpp
     src/StringUtils.cpp
@@ -86,7 +91,8 @@ set(SOURCES
     src/Vectorizer.cpp
     src/Version.cpp
     src/WorkerPool.cpp
-    src/XMLUtils.cpp)
+    src/XMLUtils.cpp
+    src/XercesUtils.cpp)
 
 if(APPLE)
     list(APPEND SOURCES
@@ -96,6 +102,7 @@ endif()
 
 if(WIN32)
     list(APPEND SOURCES
+        src/HGLOBALAllocator.cpp
         src/OutputDebugStringLogger.cpp
         src/WindowsUtils.cpp)
 endif()
