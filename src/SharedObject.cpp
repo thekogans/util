@@ -137,7 +137,8 @@ namespace thekogans {
                     if (!secure || VirtualLock (ptr, size)) {
                         if (sharedMemory.created) {
                             THEKOGANS_UTIL_TRY {
-                                ptr = constructor (new (ptr) SharedObjectHeader (name, size, secure) + 1);
+                                ptr = constructor (
+                                    new (ptr) SharedObjectHeader (name, size, secure) + 1);
                             }
                             THEKOGANS_UTIL_CATCH_ANY {
                                 UnmapViewOfFile (ptr);
@@ -212,7 +213,8 @@ namespace thekogans {
                     if (!secure || LockRegion (ptr, size)) {
                         if (sharedMemory.created) {
                             THEKOGANS_UTIL_TRY {
-                                ptr = constructor (new (ptr) SharedObjectHeader (name, size, secure) + 1);
+                                ptr = constructor (
+                                    new (ptr) SharedObjectHeader (name, size, secure) + 1);
                             }
                             THEKOGANS_UTIL_CATCH_ANY {
                                 munmap (ptr, size);

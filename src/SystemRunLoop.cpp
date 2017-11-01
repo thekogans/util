@@ -297,7 +297,7 @@ namespace thekogans {
                 };
                 struct epoll {
                     THEKOGANS_UTIL_HANDLE handle;
-                    explicit epoll (util::ui32 maxSize) :
+                    explicit epoll (ui32 maxSize) :
                             handle (epoll_create (maxSize)) {
                         if (handle == THEKOGANS_UTIL_INVALID_HANDLE_VALUE) {
                             THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (

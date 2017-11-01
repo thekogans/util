@@ -67,27 +67,12 @@ namespace thekogans {
         /// Convert a given i64 value to Windows FILETIME.
         /// \param[in] value i64 value to convert.
         /// \return Converted FILETIME.
-        inline FILETIME i64ToFILETIME (thekogans::util::i64 value) {
-            ULARGE_INTEGER ul;
-            ul.QuadPart = (value + THEKOGANS_UTIL_UI64_LITERAL (11644473600)) *
-                THEKOGANS_UTIL_UI64_LITERAL (10000000);
-            FILETIME ft;
-            ft.dwHighDateTime = ul.HighPart;
-            ft.dwLowDateTime = ul.LowPart;
-            return ft;
-        }
-
+        _LIB_THEKOGANS_UTIL_DECL FILETIME _LIB_THEKOGANS_UTIL_API i64ToFILETIME (i64 value);
         /// \brief
         /// Convert a given Windows FILETIME value to i64.
         /// \param[in] value FILETIME value to convert.
         /// \return Converted i64.
-        inline thekogans::util::i64 FILETIMEToi64 (const FILETIME &value) {
-            ULARGE_INTEGER ul;
-            ul.LowPart = value.dwLowDateTime;
-            ul.HighPart = value.dwHighDateTime;
-            return ul.QuadPart / THEKOGANS_UTIL_UI64_LITERAL (10000000) -
-                THEKOGANS_UTIL_UI64_LITERAL (11644473600);
-        }
+        _LIB_THEKOGANS_UTIL_DECL i64 _LIB_THEKOGANS_UTIL_API FILETIMEToi64 (const FILETIME &value);
 
     } // namespace util
 } // namespace thekogans

@@ -61,4 +61,28 @@ _LIB_THEKOGANS_UTIL_DECL int _LIB_THEKOGANS_UTIL_API pipe (
     return 0;
 }
 
+namespace thekogans {
+    namespace util {
+
+        _LIB_THEKOGANS_UTIL_DECL FILETIME _LIB_THEKOGANS_UTIL_API i64ToFILETIME (i64 value) {
+            ULARGE_INTEGER ul;
+            ul.QuadPart = (value + THEKOGANS_UTIL_UI64_LITERAL (11644473600)) *
+                THEKOGANS_UTIL_UI64_LITERAL (10000000);
+            FILETIME ft;
+            ft.dwHighDateTime = ul.HighPart;
+            ft.dwLowDateTime = ul.LowPart;
+            return ft;
+        }
+
+        _LIB_THEKOGANS_UTIL_DECL i64 _LIB_THEKOGANS_UTIL_API FILETIMEToi64 (const FILETIME &value) {
+            ULARGE_INTEGER ul;
+            ul.LowPart = value.dwLowDateTime;
+            ul.HighPart = value.dwHighDateTime;
+            return ul.QuadPart / THEKOGANS_UTIL_UI64_LITERAL (10000000) -
+                THEKOGANS_UTIL_UI64_LITERAL (11644473600);
+        }
+
+    } // namespace util
+} // namespace thekogans
+
 #endif // defined (TOOLCHAIN_OS_Windows)
