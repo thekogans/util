@@ -104,6 +104,7 @@
     <cpp_header>$(organization)/$(project_directory)/Exception.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/File.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/FileLogger.h</cpp_header>
+    <cpp_header>$(organization)/$(project_directory)/FixedArray.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/FixedBuffer.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/Flags.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/Fraction.h</cpp_header>

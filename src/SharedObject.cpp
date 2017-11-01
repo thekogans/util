@@ -26,6 +26,7 @@
 #elif defined (TOOLCHAIN_OS_OSX)
     #include "thekogans/util/OSXUtils.h"
 #endif // defined (TOOLCHAIN_OS_Linux)
+#include "thekogans/util/FixedArray.h"
 #include "thekogans/util/SharedObject.h"
 
 namespace thekogans {
@@ -33,26 +34,19 @@ namespace thekogans {
 
         namespace {
             struct SharedObjectHeader {
-                char name[NAME_MAX];
+                FixedArray<char, NAME_MAX> name;
                 ui64 size;
                 bool secure;
                 ui32 refCount;
 
                 SharedObjectHeader (
-                        const char *name_,
-                        ui64 size_,
-                        bool secure_) :
-                        size (size_),
-                        secure (secure_),
-                        refCount (1) {
-                    if (name_ != 0 && size > 0) {
-                        strncpy (name, name_, NAME_MAX);
-                    }
-                    else {
-                        THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                            THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
-                    }
-                }
+                    const char *name_,
+                    ui64 size_,
+                    bool secure_) :
+                    name (name_, strlen (name_) + 1),
+                    size (size_),
+                    secure (secure_),
+                    refCount (1) {}
             };
         }
 

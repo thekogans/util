@@ -15,16 +15,17 @@
 // You should have received a copy of the GNU General Public License
 // along with libthekogans_util. If not, see <http://www.gnu.org/licenses/>.
 
-#if !defined (__thekogans_util_Array_h)
-#define __thekogans_util_Array_h
+#if !defined (__thekogans_util_FixedArray_h)
+#define __thekogans_util_FixedArray_h
 
-#include <memory>
+#include <cstring>
 #include "thekogans/util/Config.h"
+#include "thekogans/util/Exception.h"
 
 namespace thekogans {
     namespace util {
 
-        /// \struct Array Array.h thekogans/util/Array.h
+        /// \struct FixedArray FixedArray.h thekogans/util/FixedArray.h
         ///
         /// \brief
         /// This little template acts as an interface between C++ and
@@ -33,29 +34,34 @@ namespace thekogans {
         /// Helps with life cycle management, and keeps the code
         /// clutter down.
         ///
-        /// IMPORTANT: Arrays are not resizable, and do not grow. This
+        /// IMPORTANT: FixedArrays are not resizable, and do not grow. This
         /// is the reason for a single explicit ctor. Want resizable,
         /// growable containers? That's what the stl is for!
 
-        template<typename T>
-        struct Array {
+        template<
+            typename T,
+            std::size_t size>
+        struct FixedArray {
             /// \brief
-            /// Array length.
-            std::size_t length;
-            /// \brief
-            /// Array elements.
-            T *array;
+            /// FixedArray elements.
+            T array[size];
 
             /// \brief
-            /// ctor. Create Array of length elements.
-            /// \param[in] length_ Number of elements in the array.
-            explicit Array (std::size_t length_) :
-                length (length_),
-                array (new T[length]) {}
-            /// \brief
-            /// dtor. Release the memory held by Array.
-            ~Array () {
-                delete [] array;
+            /// ctor.
+            /// \param[in] buffer Elements to initialize the array with.
+            /// \param[in] bufferSize Number of elements in buffer.
+            FixedArray (
+                    const T *buffer = 0,
+                    std::size_t bufferSize = 0) {
+                if (buffer != 0) {
+                    if (bufferSize < size) {
+                        memcpy (array, buffer, sizeof (T) * bufferSize);
+                    }
+                    else {
+                        THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                            THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
+                    }
+                }
             }
 
             /// \brief
@@ -87,11 +93,11 @@ namespace thekogans {
             }
 
             /// \brief
-            /// Array is neither copy constructable, nor assignable.
-            THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (Array)
+            /// FixedArray is neither copy constructable, nor assignable.
+            THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (FixedArray)
         };
 
     } // namespace util
 } // namespace thekogans
 
-#endif // !defined (__thekogans_util_Array_h)
+#endif // !defined (__thekogans_util_FixedArray_h)

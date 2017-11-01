@@ -80,8 +80,8 @@ namespace thekogans {
                 /// \brief
                 /// A concrete type of Constructor will use a placement new to construct
                 /// the shared object and call an appropriate ctor.
-                /// \param[in] ptr Pointer to call placement new on (new (ptr) SharedObject (...)).
-                /// \return A constructed instance of SharedObject.
+                /// \param[in] ptr Pointer to call placement new on (new (ptr) MySharedObject (...)).
+                /// \return A constructed instance of MySharedObject.
                 virtual void *operator () (void *ptr) const {
                     return ptr;
                 }
@@ -116,15 +116,15 @@ namespace thekogans {
             /// \struct SharedObject::Destructor SharedObject.h thekogans/util/SharedObject.h
             ///
             /// \brief
-            /// Called by Destroy below to destruct an instance of SharedObject.
+            /// Called by Destroy below to destruct an instance of MySharedObject.
             struct _LIB_THEKOGANS_UTIL_DECL Destructor {
                 /// \brief
                 /// dtor.
                 virtual ~Destructor () {}
 
                 /// \brief
-                /// Analog to Constructor above. More often then not call sharedObject->~SharedObject ().
-                /// \param[in] ptr SharedObject instance to destruct.
+                /// Analog to Constructor above. More often then not call sharedObject->~MySharedObject ().
+                /// \param[in] ptr MySharedObject instance to destruct.
                 virtual void operator () (void * /*ptr*/) const {}
             };
 
@@ -152,7 +152,7 @@ namespace thekogans {
             /// \struct SharedObject::Lock SharedObject.h thekogans/util/SharedObject.h
             ///
             /// \brief
-            /// Lock used to serialize T construction/destruction.
+            /// Lock used to serialize shared object construction/destruction.
             struct Lock {
             private:
             #if !defined (TOOLCHAIN_OS_Windows)
