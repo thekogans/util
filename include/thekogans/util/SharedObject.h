@@ -53,10 +53,8 @@ namespace thekogans {
         /// It's used by Event, Semaphore (POSIX) and SharedAllocator. Use it
         /// to create your own cross-process shared objects.
         /// NOTE: Shared objects, by their nature, cannot contain pointers as
-        /// they would not be valid across process boundaries. So, while a concrete
-        /// shared object derives from SharedObject, think of it more like containment
-        /// or aggregation. This is why SharedObject does not define a virtual dtor.
-        /// RTTI is also not available for SharedObject derivatives.
+        /// they would not be valid across process boundaries. RTTI is also not
+        /// available for Shared objects.
 
         struct _LIB_THEKOGANS_UTIL_DECL SharedObject {
         #if !defined (TOOLCHAIN_OS_Windows)
@@ -91,7 +89,7 @@ namespace thekogans {
             /// Create or open a given shared memory region and construct the shared object.
             /// \param[in] name Name of shared memory region to create/open.
             /// \param[in] size Size of shared region
-            /// (Usualy sizeof (SharedObject), but can be more. See \see{SharedAllocator}).
+            /// (Usualy sizeof (MySharedObject), but can be more. See \see{SharedAllocator}).
             /// \param[in] secure true = lock region to prevent swapping.
             /// \param[in] constructor A Constructor instance used to construct the shared object.
         #if defined (TOOLCHAIN_OS_Windows)
@@ -100,7 +98,7 @@ namespace thekogans {
             /// \param[in] mode Protection mode used by the lock and shared memory region.
         #endif // defined (TOOLCHAIN_OS_Windows)
             /// \param[in] timeSpec Used by lock to put the process to sleep during lock contention.
-            /// \return Created/Opened and constructed instance of SharedObject.
+            /// \return Created/Opened and constructed instance of MySharedObject.
             static void *Create (
                 const char *name,
                 ui64 size,
@@ -123,15 +121,16 @@ namespace thekogans {
                 virtual ~Destructor () {}
 
                 /// \brief
-                /// Analog to Constructor above. More often then not call sharedObject->~MySharedObject ().
+                /// Analog to Constructor above. More often then not call:
+                /// ((MySharedObject *)ptr)->~MySharedObject ().
                 /// \param[in] ptr MySharedObject instance to destruct.
                 virtual void operator () (void * /*ptr*/) const {}
             };
 
             /// \brief
-            /// Decrement the reference count and if 0, destroy the given instance of T.
-            /// \param[in] ptr Instance of SharedObject to destroy.
-            /// \param[in] destructor Analog to Constructor used to actually destroy t.
+            /// Decrement the reference count and if 0, destroy the given instance of MySharedObject.
+            /// \param[in] ptr Instance of MySharedObject to destroy.
+            /// \param[in] destructor Analog to Constructor used to actually destroy MySharedObject.
         #if defined (TOOLCHAIN_OS_Windows)
             /// \param[in] securityAttributes Security attributes used by the lock and shared memory region.
         #else // defined (TOOLCHAIN_OS_Windows)
