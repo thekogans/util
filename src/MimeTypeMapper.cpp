@@ -23,7 +23,7 @@
 namespace thekogans {
     namespace util {
 
-        _LIB_THEKOGANS_UTIL_DECL extern const char * const MIME_TYPES_TXT = "mime_types.txt";
+        const char * const MimeTypeMapper::MIME_TYPES_TXT = "mime_types.txt";
 
         namespace {
             std::size_t SkipSpace (

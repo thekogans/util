@@ -33,6 +33,10 @@ namespace thekogans {
     namespace util {
 
         namespace {
+        #if defined (TOOLCHAIN_OS_Windows) && !defined (NAME_MAX)
+            #define NAME_MAX 255
+        #endif // defined (TOOLCHAIN_OS_Windows) && !defined (NAME_MAX)
+
             struct SharedObjectHeader {
                 FixedArray<char, NAME_MAX> name;
                 ui64 size;

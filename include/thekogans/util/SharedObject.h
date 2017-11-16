@@ -38,12 +38,6 @@
 namespace thekogans {
     namespace util {
 
-    #if defined (TOOLCHAIN_OS_Windows)
-        #if !defined (NAME_MAX)
-            #define NAME_MAX 255
-        #endif // !defined (NAME_MAX)
-    #endif // defined (TOOLCHAIN_OS_Windows)
-
         /// \struct SharedObject SharedObject.h thekogans/util/SharedObject.h
         ///
         /// \brief

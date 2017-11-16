@@ -40,22 +40,22 @@ namespace thekogans {
 
         template<
             typename T,
-            std::size_t size>
+            std::size_t count>
         struct FixedArray {
             /// \brief
             /// FixedArray elements.
-            T array[size];
+            T array[count];
 
             /// \brief
             /// ctor.
-            /// \param[in] buffer Elements to initialize the array with.
-            /// \param[in] bufferSize Number of elements in buffer.
+            /// \param[in] array_ Elements to initialize the array with.
+            /// \param[in] count_ Number of elements in array_.
             FixedArray (
-                    const T *buffer = 0,
-                    std::size_t bufferSize = 0) {
-                if (buffer != 0) {
-                    if (bufferSize < size) {
-                        memcpy (array, buffer, sizeof (T) * bufferSize);
+                    const T *array_ = 0,
+                    std::size_t count_ = 0) {
+                if (array_ != 0) {
+                    if (count_ <= count) {
+                        memcpy (array, array_, sizeof (T) * count_);
                     }
                     else {
                         THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (

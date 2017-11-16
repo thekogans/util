@@ -29,10 +29,6 @@
 namespace thekogans {
     namespace util {
 
-        /// \brief
-        /// Name of mime types file.
-        _LIB_THEKOGANS_UTIL_DECL extern const char * const MIME_TYPES_TXT;
-
         /// \struct MimeTypeMapper MimeTypeMapper.h thekogans/util/MimeTypeMapper.h
         ///
         /// \brief
@@ -64,9 +60,13 @@ namespace thekogans {
             ExtensionMap extensionToMimeType;
 
             /// \brief
+            /// Name of mime types file.
+            static const char * const MIME_TYPES_TXT;
+
+            /// \brief
             /// Read the contents of path, and build the forward and reverse maps.
             /// \param[in] path Path to mime_types.txt
-            void LoadMimeTypes (const std::string &path);
+            void LoadMimeTypes (const std::string &path = MIME_TYPES_TXT);
 
             /// \brief
             /// Look up a given mime type, and return a list of
