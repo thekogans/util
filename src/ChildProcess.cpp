@@ -20,6 +20,7 @@
     #include <errno.h>
     #include <sys/wait.h>
     #include <sys/types.h>
+    #include <sys/stat.h>
     #include <pwd.h>
 #endif // !defined (TOOLCHAIN_OS_Windows)
 #include <cassert>

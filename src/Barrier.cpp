@@ -119,7 +119,7 @@ namespace thekogans {
             if (errorCode != PTHREAD_BARRIER_SERIAL_THREAD && errorCode != 0) {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (errorCode);
             }
-            return result == PTHREAD_BARRIER_SERIAL_THREAD;
+            return errorCode == PTHREAD_BARRIER_SERIAL_THREAD;
         #else // defined (THEKOGANS_UTIL_USE_POSIX_BARRIER)
             LockGuard<Mutex> guard (mutex);
             while (entered > THEKOGANS_UTIL_BARRIER_FLAG) {

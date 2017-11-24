@@ -40,6 +40,10 @@
 #include <set>
 #if defined (TOOLCHAIN_OS_Windows)
     #include "thekogans/util/WindowsUtils.h"
+#elif defined (TOOLCHAIN_OS_Linux)
+    #include "thekogans/util/LinuxUtils.h"
+#elif defined (TOOLCHAIN_OS_OSX)
+    #include "thekogans/util/OSXUtils.h"
 #endif // defined (TOOLCHAIN_OS_Windows)
 #include "thekogans/util/Flags.h"
 #include "thekogans/util/Path.h"
@@ -424,9 +428,9 @@ namespace thekogans {
                                     }
                                     if (Flags32 (event->mask).Test (IN_MOVED_FROM) ||
                                             Flags32 (event->mask).Test (IN_DELETE)) {
-                                        eventSink->HandleDelete (watchId, directory,
-                                            Directory::Entry (Directory::Entry::Invalid,
-                                                event->name, -1, -1, -1, 0, 0));
+                                        Directory::Entry entry;
+                                        entry.name = event->name;
+                                        eventSink->HandleDelete (watchId, directory, entry);
                                     }
                                     if (Flags32 (event->mask).Test (IN_CLOSE_WRITE)) {
                                         eventSink->HandleModified (watchId, directory,

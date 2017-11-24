@@ -184,7 +184,7 @@ namespace thekogans {
                         else {
                             THEKOGANS_UTIL_ERROR_CODE errorCode = THEKOGANS_UTIL_OS_ERROR_CODE;
                             if (errorCode == EEXIST) {
-                                handle = shm_open (name, O_RDWR);
+                                handle = shm_open (name, O_RDWR, mode);
                                 if (handle == THEKOGANS_UTIL_POSIX_INVALID_HANDLE_VALUE) {
                                     THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
                                         THEKOGANS_UTIL_OS_ERROR_CODE);
