@@ -62,7 +62,7 @@ namespace thekogans {
             ///
             /// \brief
             /// Used by Create below to construct the shared object if the shared region
-            /// was created. If the shared region was opened, it's refCount will be
+            /// was created. If an existing shared region was opened, it's refCount will be
             /// incremented.
             struct _LIB_THEKOGANS_UTIL_DECL Constructor {
                 /// \brief

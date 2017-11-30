@@ -434,13 +434,21 @@ namespace thekogans {
 
         public:
             /// \brief
+            /// Default GlobalSharedAllocator name.
+            static const char *DEFAULT_GLOBAL_SHARED_ALLOCATOR_NAME;
+            /// \brief
+            /// Default GlobalSharedAllocator size.
+            enum : ui64 {
+                DEFAULT_GLOBAL_SHARED_ALLOCATOR_SIZE = 16 * 1024
+            };
+            /// \brief
             /// Call before the first use of GlobalSharedAllocator::Instance.
             /// \param[in] name_ Global name used to identify the shared region.
             /// \param[in] size_ Size of the shared region.
             /// \param[in] secure_ Lock the pages in memory to prevent swapping.
             static void Parameterize (
-                const char *name_ = "GlobalSharedAllocator",
-                ui64 size_ = 16 * 1024,
+                const char *name_ = DEFAULT_GLOBAL_SHARED_ALLOCATOR_NAME,
+                ui64 size_ = DEFAULT_GLOBAL_SHARED_ALLOCATOR_SIZE,
                 bool secure_ = false);
 
             /// \brief

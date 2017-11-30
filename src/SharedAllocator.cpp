@@ -158,8 +158,9 @@ namespace thekogans {
             return header->rootObject != 0 ? GetPtrFromOffset (header->rootObject) : 0;
         }
 
-        const char *GlobalSharedAllocatorCreateInstance::name = "GlobalSharedAllocator";
-        ui64 GlobalSharedAllocatorCreateInstance::size = 16 * 1024;
+        const char *GlobalSharedAllocatorCreateInstance::DEFAULT_GLOBAL_SHARED_ALLOCATOR_NAME = "GlobalSharedAllocator";
+        const char *GlobalSharedAllocatorCreateInstance::name = DEFAULT_GLOBAL_SHARED_ALLOCATOR_NAME;
+        ui64 GlobalSharedAllocatorCreateInstance::size = DEFAULT_GLOBAL_SHARED_ALLOCATOR_SIZE;
         bool GlobalSharedAllocatorCreateInstance::secure = false;
 
         void GlobalSharedAllocatorCreateInstance::Parameterize (
