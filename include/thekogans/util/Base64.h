@@ -22,6 +22,7 @@
 #include "thekogans/util/Config.h"
 #include "thekogans/util/Types.h"
 #include "thekogans/util/Constants.h"
+#include "thekogans/util/Buffer.h"
 
 namespace thekogans {
     namespace util {
@@ -38,26 +39,24 @@ namespace thekogans {
             /// Encode a buffer.
             /// \param[in] buffer Buffer to encode.
             /// \param[in] length Length of buffer in bytes.
-            /// \param[out] output Resulting base64 encoding.
             /// \param[in] lineLength Insert a '\n' after every
             /// lineLength characters of output.
             /// \param[in] linePad Pad the start of every line
             /// with ' '.
-            static void Encode (
+            /// \return Resulting base64 encoding.
+            static Buffer::UniquePtr Encode (
                 const void *buffer,
                 std::size_t length,
-                std::vector<ui8> &output,
                 std::size_t lineLength = SIZE_T_MAX,
                 std::size_t linePad = 0);
             /// \brief
             /// Decode a buffer.
             /// \param[in] buffer Buffer to decode.
             /// \param[in] length Length of buffer in bytes.
-            /// \param[out] output Resulting decoding.
-            static void Decode (
+            /// \return Resulting decoding.
+            static Buffer::UniquePtr Decode (
                 const void *buffer,
-                std::size_t length,
-                std::vector<ui8> &output);
+                std::size_t length);
         };
 
     } // namespace util

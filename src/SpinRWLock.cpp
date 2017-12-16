@@ -21,53 +21,26 @@
 namespace thekogans {
     namespace util {
 
+    #if defined (THEKOGANS_UTIL_HAVE_STD_ATOMIC)
+        #define memory_order_acquire std::memory_order_acquire
+        #define memory_order_release std::memory_order_release
+    #else // defined (THEKOGANS_UTIL_HAVE_STD_ATOMIC)
+        #define memory_order_acquire boost::memory_order_acquire
+        #define memory_order_release boost::memory_order_release
+    #endif // defined (THEKOGANS_UTIL_HAVE_STD_ATOMIC)
+
         // This algorithm comes straight out of Intel TBB. I
         // re-implemented it using std atomic primitives.
 
-        namespace {
-            struct Backoff {
-                static const ui32 LOOPS_BEFORE_YIELD = 16;
-                ui32 count;
-                Backoff () : count (1) {}
-                void Pause () {
-                    if (count <= LOOPS_BEFORE_YIELD) {
-                        Thread::Pause (count);
-                        // Pause twice as long the next time.
-                        count *= 2;
-                    }
-                    else {
-                        // Pause is so long that we might as well
-                        // yield CPU to scheduler.
-                        Thread::YieldSlice ();
-                    }
-                }
-                void Reset () {
-                    count = 1;
-                }
-            };
-        }
-
         bool SpinRWLock::TryAcquire (bool read) {
-        #if defined (THEKOGANS_UTIL_HAVE_STD_ATOMIC)
-            ui32 currState = state.load (std::memory_order_acquire);
-        #else // defined (THEKOGANS_UTIL_HAVE_STD_ATOMIC)
-            ui32 currState = state.load (boost::memory_order_acquire);
-        #endif // defined (THEKOGANS_UTIL_HAVE_STD_ATOMIC)
+            ui32 currState = state.load (memory_order_acquire);
             if (read) {
                 if (!(currState & (WRITER | WRITER_PENDING))) {
-                #if defined (THEKOGANS_UTIL_HAVE_STD_ATOMIC)
-                    ui32 newState = state.fetch_add (ONE_READER, std::memory_order_release);
-                #else // defined (THEKOGANS_UTIL_HAVE_STD_ATOMIC)
-                    ui32 newState = state.fetch_add (ONE_READER, boost::memory_order_release);
-                #endif // defined (THEKOGANS_UTIL_HAVE_STD_ATOMIC)
+                    ui32 newState = state.fetch_add (ONE_READER, memory_order_release);
                     if (!(newState & WRITER)) {
                         return true;
                     }
-                #if defined (THEKOGANS_UTIL_HAVE_STD_ATOMIC)
-                    state.fetch_sub (ONE_READER, std::memory_order_release);
-                #else // defined (THEKOGANS_UTIL_HAVE_STD_ATOMIC)
-                    state.fetch_sub (ONE_READER, boost::memory_order_release);
-                #endif // defined (THEKOGANS_UTIL_HAVE_STD_ATOMIC)
+                    state.fetch_sub (ONE_READER, memory_order_release);
                 }
             }
             else {
@@ -81,36 +54,20 @@ namespace thekogans {
 
         void SpinRWLock::Acquire (bool read) {
             if (read) {
-                for (Backoff backoff;; backoff.Pause ()) {
-                #if defined (THEKOGANS_UTIL_HAVE_STD_ATOMIC)
-                    ui32 currState = state.load (std::memory_order_acquire);
-                #else // defined (THEKOGANS_UTIL_HAVE_STD_ATOMIC)
-                    ui32 currState = state.load (boost::memory_order_acquire);
-                #endif // defined (THEKOGANS_UTIL_HAVE_STD_ATOMIC)
+                for (Thread::Backoff backoff;; backoff.Pause ()) {
+                    ui32 currState = state.load (memory_order_acquire);
                     if (!(currState & (WRITER | WRITER_PENDING))) {
-                    #if defined (THEKOGANS_UTIL_HAVE_STD_ATOMIC)
-                        ui32 newState = state.fetch_add (ONE_READER, std::memory_order_release);
-                    #else // defined (THEKOGANS_UTIL_HAVE_STD_ATOMIC)
-                        ui32 newState = state.fetch_add (ONE_READER, boost::memory_order_release);
-                    #endif // defined (THEKOGANS_UTIL_HAVE_STD_ATOMIC)
+                        ui32 newState = state.fetch_add (ONE_READER, memory_order_release);
                         if (!(newState & WRITER)) {
                             break;
                         }
-                    #if defined (THEKOGANS_UTIL_HAVE_STD_ATOMIC)
-                        state.fetch_sub (ONE_READER, std::memory_order_release);
-                    #else // defined (THEKOGANS_UTIL_HAVE_STD_ATOMIC)
-                        state.fetch_sub (ONE_READER, boost::memory_order_release);
-                    #endif // defined (THEKOGANS_UTIL_HAVE_STD_ATOMIC)
+                        state.fetch_sub (ONE_READER, memory_order_release);
                     }
                 }
             }
             else {
-                for (Backoff backoff;; backoff.Pause ()) {
-                #if defined (THEKOGANS_UTIL_HAVE_STD_ATOMIC)
-                    ui32 currState = state.load (std::memory_order_acquire);
-                #else // defined (THEKOGANS_UTIL_HAVE_STD_ATOMIC)
-                    ui32 currState = state.load (boost::memory_order_acquire);
-                #endif // defined (THEKOGANS_UTIL_HAVE_STD_ATOMIC)
+                for (Thread::Backoff backoff;; backoff.Pause ()) {
+                    ui32 currState = state.load (memory_order_acquire);
                     if (!(currState & BUSY)) {
                         if (state.compare_exchange_strong (currState, WRITER)) {
                             break;
@@ -118,11 +75,7 @@ namespace thekogans {
                         backoff.Reset ();
                     }
                     else if (!(currState & WRITER_PENDING)) {
-                    #if defined (THEKOGANS_UTIL_HAVE_STD_ATOMIC)
-                        state.fetch_or (WRITER_PENDING, std::memory_order_release);
-                    #else // defined (THEKOGANS_UTIL_HAVE_STD_ATOMIC)
-                        state.fetch_or (WRITER_PENDING, boost::memory_order_release);
-                    #endif // defined (THEKOGANS_UTIL_HAVE_STD_ATOMIC)
+                        state.fetch_or (WRITER_PENDING, memory_order_release);
                     }
                 }
             }
@@ -131,21 +84,13 @@ namespace thekogans {
         void SpinRWLock::Release (bool read) {
             if (read) {
                 THEKOGANS_UTIL_ASSERT (state & READERS,
-                    "Invalid state of a SpinRWLock: no readers");
-            #if defined (THEKOGANS_UTIL_HAVE_STD_ATOMIC)
-                state.fetch_sub (ONE_READER, std::memory_order_release);
-            #else // defined (THEKOGANS_UTIL_HAVE_STD_ATOMIC)
-                state.fetch_sub (ONE_READER, boost::memory_order_release);
-            #endif // defined (THEKOGANS_UTIL_HAVE_STD_ATOMIC)
+                    "Invalid state of a SpinRWLock: no readers.");
+                state.fetch_sub (ONE_READER, memory_order_release);
             }
             else {
                 THEKOGANS_UTIL_ASSERT (state & WRITER,
-                    "Invalid state of a SpinRWLock: no writer");
-            #if defined (THEKOGANS_UTIL_HAVE_STD_ATOMIC)
-                state.fetch_and (READERS, std::memory_order_release);
-            #else // defined (THEKOGANS_UTIL_HAVE_STD_ATOMIC)
-                state.fetch_and (READERS, boost::memory_order_release);
-            #endif // defined (THEKOGANS_UTIL_HAVE_STD_ATOMIC)
+                    "Invalid state of a SpinRWLock: no writer.");
+                state.fetch_and (READERS, memory_order_release);
             }
         }
 

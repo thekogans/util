@@ -248,6 +248,20 @@ namespace thekogans {
             return prefix;
         }
 
+        _LIB_THEKOGANS_UTIL_DECL std::string _LIB_THEKOGANS_UTIL_API FormatList (
+                const std::list<std::string> &strings,
+                const std::string &separator) {
+            std::string formattedList;
+            if (!strings.empty ()) {
+                std::list<std::string>::const_iterator it = strings.begin ();
+                formattedList = *it++;
+                for (std::list<std::string>::const_iterator end = strings.end (); it != end; ++it) {
+                    formattedList += separator + *it;
+                }
+            }
+            return formattedList;
+        }
+
         _LIB_THEKOGANS_UTIL_DECL std::size_t _LIB_THEKOGANS_UTIL_API stringTosize_t (
                 const char *value,
                 char **end,

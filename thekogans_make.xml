@@ -135,9 +135,6 @@
     </if>
     <cpp_header>$(organization)/$(project_directory)/NullAllocator.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/NullLock.h</cpp_header>
-    <if condition = "$(TOOLCHAIN_OS) == 'OSX'">
-      <cpp_header>$(organization)/$(project_directory)/OSXUtils.h</cpp_header>
-    </if>
     <if condition = "$(TOOLCHAIN_OS) == 'Windows'">
       <cpp_header>$(organization)/$(project_directory)/OutputDebugStringLogger.h</cpp_header>
     </if>
@@ -693,6 +690,9 @@
     </if>
   </cpp_sources>
   <if condition = "$(TOOLCHAIN_OS) == 'OSX'">
+    <objective_cpp_headers prefix = "include">
+      <objective_cpp_header>$(organization)/$(project_directory)/OSXUtils.h</objective_cpp_header>
+    </objective_cpp_headers>
     <objective_cpp_sources prefix = "src">
       <objective_cpp_source>OSXUtils.mm</objective_cpp_source>
     </objective_cpp_sources>

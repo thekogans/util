@@ -98,7 +98,7 @@ namespace thekogans {
 
             /// \brief
             /// Variant types.
-            enum {
+            enum Type : ui32 {
                 /// \brief
                 /// Invalid type.
                 TYPE_Invalid,
@@ -150,8 +150,7 @@ namespace thekogans {
                 //TYPE_Flags
                 //TYPE_TimeSpec
                 //TYPE_Version
-            };
-            ui32 type;
+            } type;
             /// \brief
             /// A union of every type the Variant can take.
             union {
@@ -315,12 +314,12 @@ namespace thekogans {
             /// Convert integral type value to it's string equivalent.
             /// \param[in] type Intergal type value to convert.
             /// \return Type string equivalent.
-            static std::string TypeToString (ui32 type);
+            static std::string TypeToString (Type type);
             /// \brief
             /// Convert string type value to it's integral equivalent.
             /// \param[in] type String type value to convert.
             /// \return Type intergal equivalent.
-            static ui32 StringToType (const std::string &type);
+            static Type StringToType (const std::string &type);
 
             /// \brief
             /// Return true if type != Invalid

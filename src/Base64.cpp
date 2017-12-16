@@ -22,10 +22,9 @@
 namespace thekogans {
     namespace util {
 
-        void Base64::Encode (
+        Buffer::UniquePtr Base64::Encode (
                 const void *buffer,
                 std::size_t length,
-                std::vector<ui8> &output,
                 std::size_t lineLength,
                 std::size_t linePad) {
             if (buffer != 0 && length > 0) {
@@ -38,14 +37,17 @@ namespace thekogans {
                 const ui8 *bufferPtr = (const ui8 *)buffer;
                 std::size_t lineCount = length / lineLength + 1;
                 std::size_t extraSpace = lineCount * linePad + lineCount;
-                output.resize ((length + 2 - ((length + 2) % 3)) / 3 * 4 + extraSpace);
+                Buffer::UniquePtr output (
+                    new Buffer (
+                        HostEndian,
+                        (length + 2 - ((length + 2) % 3)) / 3 * 4 + extraSpace));
                 struct LineFormatter {
-                    ui8 *output;
+                    Buffer &output;
                     std::size_t lineLength;
                     std::size_t linePad;
                     std::size_t currChar;
                     LineFormatter (
-                        ui8 *output_,
+                        Buffer &output_,
                         std::size_t lineLength_,
                         std::size_t linePad_) :
                         output (output_),
@@ -55,24 +57,24 @@ namespace thekogans {
                     void Format (ui8 ch) {
                         if (currChar == 0) {
                             for (std::size_t i = 0; i < linePad; ++i) {
-                                *output++ = ' ';
+                                output.data[output.writeOffset++] = ' ';
                             }
                             currChar += linePad;
                         }
-                        *output++ = ch;
+                        output.data[output.writeOffset++] = ch;
                         ++currChar;
                         if (currChar == lineLength) {
-                            *output++ = '\n';
+                            output.data[output.writeOffset++] = '\n';
                             currChar = 0;
                         }
                     }
                     void Finish () {
                         if (currChar != 0) {
-                            *output++ = '\n';
+                            output.data[output.writeOffset++] = '\n';
                             currChar = 0;
                         }
                     }
-                } lineFormatter (&output[0], lineLength, linePad);
+                } lineFormatter (*output, lineLength, linePad);
                 for (std::size_t i = 0, count = length / 3; i < count; ++i) {
                     ui8 buffer0 = *bufferPtr++;
                     ui8 buffer1 = *bufferPtr++;
@@ -102,6 +104,7 @@ namespace thekogans {
                     }
                 }
                 lineFormatter.Finish ();
+                return output;
             }
             else {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
@@ -120,6 +123,19 @@ namespace thekogans {
                 0xff,   26,   27,   28,   29,   30,   31,   32,   33,   34,   35,   36,   37,   38,   39,   40,
                   41,   42,   43,   44,   45,   46,   47,   48,   49,   50,   51, 0xff, 0xff, 0xff, 0xff, 0xff
             };
+
+            std::size_t DecodeLength (
+                    const ui8 *buffer,
+                    std::size_t length) {
+                std::size_t padding = 0;
+                if (buffer[length - 1] == '=') {
+                    ++padding;
+                }
+                if (buffer[length - 2] == '=') {
+                    ++padding;
+                }
+                return (length * 3) / 4 - padding;
+            }
 
             inline bool IsValidBase64 (ui8 value) {
                 return value < 128 && unbase64[value] != 0xff;
@@ -158,15 +174,15 @@ namespace thekogans {
             }
         }
 
-        void Base64::Decode (
+        Buffer::UniquePtr Base64::Decode (
                 const void *buffer,
-                std::size_t length,
-                std::vector<ui8> &output) {
+                std::size_t length) {
             if (buffer != 0 && length > 0) {
-                output.resize (length);
-                ui8 *outputPtr = &output[0];
+                Buffer::UniquePtr output (
+                    new Buffer (
+                        HostEndian,
+                        DecodeLength ((ui8 *)buffer, length)));
                 std::size_t index = 0;
-                std::size_t charCount = 0;
                 for (const ui8 *bufferPtr = (const ui8 *)buffer,
                         *endBufferPtr = bufferPtr + length; bufferPtr < endBufferPtr; ++index) {
                     if (!isspace (*bufferPtr)) {
@@ -177,24 +193,22 @@ namespace thekogans {
                             ui8 buffer3 = *bufferPtr++;
                             switch (ValidateInput (index, buffer0, buffer1, buffer2, buffer3)) {
                                 case 0:
-                                    *outputPtr++ = unbase64[buffer0] << 2 |
+                                    output->data[output->writeOffset++] = unbase64[buffer0] << 2 |
                                         (unbase64[buffer1] & 0x30) >> 4;
-                                    *outputPtr++ = unbase64[buffer1] << 4 |
+                                    output->data[output->writeOffset++] = unbase64[buffer1] << 4 |
                                         (unbase64[buffer2] & 0x3c) >> 2;
-                                    *outputPtr++ = (unbase64[buffer2] & 0x03) << 6 | unbase64[buffer3];
-                                    charCount += 3;
+                                    output->data[output->writeOffset++] = (unbase64[buffer2] & 0x03) << 6 |
+                                        unbase64[buffer3];
                                     break;
                                 case 1:
-                                    *outputPtr++ = unbase64[buffer0] << 2 |
+                                    output->data[output->writeOffset++] = unbase64[buffer0] << 2 |
                                         (unbase64[buffer1] & 0x30) >> 4;
-                                    *outputPtr++ = unbase64[buffer1] << 4 |
+                                    output->data[output->writeOffset++] = unbase64[buffer1] << 4 |
                                         (unbase64[buffer2] & 0x3c) >> 2;
-                                    charCount += 2;
                                     break;
                                 case 2:
-                                    *outputPtr++ = unbase64[buffer0] << 2 |
+                                    output->data[output->writeOffset++] = unbase64[buffer0] << 2 |
                                         (unbase64[buffer1] & 0x30) >> 4;
-                                    ++charCount;
                                     break;
                             }
                         }
@@ -207,7 +221,7 @@ namespace thekogans {
                         ++bufferPtr;
                     }
                 }
-                output.resize (charCount);
+                return output;
             }
             else {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (

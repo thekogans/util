@@ -179,6 +179,15 @@ namespace thekogans {
             const std::list<std::string> &strings);
 
         /// \brief
+        /// Format a list of strings with the given separator.
+        /// \param[in] strings List of strings to format.
+        /// \param[in] separator List entry separator.
+        /// \return Formatted list.
+        _LIB_THEKOGANS_UTIL_DECL std::string _LIB_THEKOGANS_UTIL_API FormatList (
+            const std::list<std::string> &strings,
+            const std::string &separator);
+
+        /// \brief
         /// Parse a std::size_t represented by a given string.
         /// \param[in] value Pointer to the beginning of the string.
         /// \param[out] end On return will hold a pointer where parsing

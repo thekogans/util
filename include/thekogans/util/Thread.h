@@ -261,10 +261,59 @@ namespace thekogans {
             /// thereafter.
             bool Wait (const TimeSpec &timeSpec = TimeSpec::Infinite);
 
+            /// \struct Thread::Backoff Thread.h thekogans/util/Thread.h
+            ///
             /// \brief
-            /// Busy spin a thread for specified count.
-            /// \param[in] count Number of iterations to busy spin for.
-            static void Pause (ui32 count);
+            /// Implements an exponential thread contention management scheme.
+            /// Used by Spin[RW]Lock. Use it in your threading and resource
+            /// sharing algorithms to implement simple thread management to
+            /// avoid the 'Thundering Herd' problem.
+            struct _LIB_THEKOGANS_UTIL_DECL Backoff {
+                enum : ui32 {
+                    /// \brief
+                    /// Default max pause iterations before giving up the time slice.
+                    DEFAULT_MAX_PAUSE_BEFORE_YIELD = 16
+                };
+                /// \brief
+                /// Max pause iterations before giving up the time slice.
+                ui32 maxPauseBeforeYield;
+                /// \briwf
+                /// Current pause count.
+                ui32 count;
+
+                /// \brief
+                /// ctor.
+                /// \param[in] maxPauseBeforeYield_ Max pause iterations before giving up the time slice.
+                Backoff (ui32 maxPauseBeforeYield_ = DEFAULT_MAX_PAUSE_BEFORE_YIELD) :
+                    maxPauseBeforeYield (maxPauseBeforeYield_),
+                    count (1) {}
+
+                /// \brief
+                /// Pause the cpu or yield the time slice if we've been spinning too much.
+                void Pause () {
+                    if (count <= maxPauseBeforeYield) {
+                        for (ui32 i = 0; i < count; ++i) {
+                            Thread::Pause ();
+                        }
+                        // Pause twice as long the next time.
+                        count *= 2;
+                    }
+                    else {
+                        // Pause is so long that we might as well
+                        // yield CPU to scheduler.
+                        Thread::YieldSlice ();
+                    }
+                }
+                /// \brief
+                /// Reset the current pause count to 1.
+                void Reset () {
+                    count = 1;
+                }
+            };
+
+            /// \brief
+            /// Put the thread to sleep without giving up the time slice.
+            static void Pause ();
             /// \brief
             /// Yield the current thread's time slice.
             static void YieldSlice ();

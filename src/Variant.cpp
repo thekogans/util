@@ -54,6 +54,8 @@ namespace thekogans {
         Variant::Variant (const Variant &variant) :
                 type (variant.type) {
             switch (variant.type) {
+                case Variant::TYPE_Invalid:
+                    break;
                 case Variant::TYPE_bool:
                     value._bool = variant.value._bool;
                     break;
@@ -103,6 +105,8 @@ namespace thekogans {
                 Clear ();
                 type = variant.type;
                 switch (variant.type) {
+                    case Variant::TYPE_Invalid:
+                        break;
                     case Variant::TYPE_bool:
                         value._bool = variant.value._bool;
                         break;
@@ -149,7 +153,7 @@ namespace thekogans {
             return *this;
         }
 
-        std::string Variant::TypeToString (ui32 type) {
+        std::string Variant::TypeToString (Type type) {
             return type == TYPE_bool ? VALUE_BOOL :
                 type == TYPE_i8 ? VALUE_I8 :
                 type == TYPE_ui8 ? VALUE_UI8 :
@@ -165,7 +169,7 @@ namespace thekogans {
                 type == TYPE_GUID ? VALUE_GUID : VALUE_INVALID;
         }
 
-        ui32 Variant::StringToType (const std::string &type) {
+        Variant::Type Variant::StringToType (const std::string &type) {
             return type == VALUE_BOOL ? TYPE_bool :
                 type == VALUE_I8 ? TYPE_i8 :
                 type == VALUE_UI8 ? TYPE_ui8 :
@@ -184,6 +188,8 @@ namespace thekogans {
         ui32 Variant::Size () const {
             ui32 size = UI32_SIZE;
             switch (type) {
+                case Variant::TYPE_Invalid:
+                    break;
                 case Variant::TYPE_bool:
                     size += UI8_SIZE;
                     break;
@@ -231,6 +237,8 @@ namespace thekogans {
 
         ui32 Variant::Hash (ui32 radix) const {
             switch (type) {
+                case Variant::TYPE_Invalid:
+                    return 0;
                 case Variant::TYPE_bool:
                     return (value._bool ? 1 : 0) % radix;
                 case Variant::TYPE_i8:
@@ -277,6 +285,8 @@ namespace thekogans {
         int Variant::Compare (const Variant &variant) const {
             assert (type == variant.type);
             switch (type) {
+                case Variant::TYPE_Invalid:
+                    return 0;
                 case Variant::TYPE_bool:
                     return !value._bool && variant.value._bool ?
                         -1 : value._bool && !variant.value._bool ? 1 : 0;
@@ -324,6 +334,8 @@ namespace thekogans {
         int Variant::PrefixCompare (const Variant &variant) const {
             assert (type == variant.type);
             switch (type) {
+                case Variant::TYPE_Invalid:
+                    return 0;
                 case Variant::TYPE_bool:
                     return !value._bool && variant.value._bool ?
                         -1 : value._bool && !variant.value._bool ? 1 : 0;
@@ -380,6 +392,8 @@ namespace thekogans {
                     }
                     else if (childName == TAG_VALUE) {
                         switch (type) {
+                            case Variant::TYPE_Invalid:
+                                break;
                             case Variant::TYPE_bool:
                                 value._bool =
                                     std::string (child.text ().get ()) == XML_TRUE;
@@ -432,6 +446,8 @@ namespace thekogans {
                 const char *tagName) const {
             std::string str;
             switch (type) {
+                case Variant::TYPE_Invalid:
+                    break;
                 case Variant::TYPE_bool:
                     str = value._bool ? XML_TRUE : XML_FALSE;
                     break;
@@ -491,6 +507,8 @@ namespace thekogans {
             type = StringToType (node.attribute (ATTR_TYPE).value ());
             std::string value_ = node.attribute (ATTR_VALUE).value ();
             switch (type) {
+                case Variant::TYPE_Invalid:
+                    break;
                 case Variant::TYPE_bool:
                     value._bool = value_ == XML_TRUE;
                     break;
@@ -539,6 +557,8 @@ namespace thekogans {
                 const char *tagName) const {
             std::string str;
             switch (type) {
+                case Variant::TYPE_Invalid:
+                    break;
                 case Variant::TYPE_bool:
                     str = value._bool ? XML_TRUE : XML_FALSE;
                     break;
@@ -610,6 +630,8 @@ namespace thekogans {
                 const Variant &variant) {
             serializer << variant.type;
             switch (variant.type) {
+                case Variant::TYPE_Invalid:
+                    break;
                 case Variant::TYPE_bool:
                     serializer << variant.value._bool;
                     break;
@@ -659,8 +681,10 @@ namespace thekogans {
                 Serializer &serializer,
                 Variant &variant) {
             variant.Clear ();
-            serializer >> variant.type;
+            serializer >> (ui32 &)variant.type;
             switch (variant.type) {
+                case Variant::TYPE_Invalid:
+                    break;
                 case Variant::TYPE_bool:
                     serializer >> variant.value._bool;
                     break;

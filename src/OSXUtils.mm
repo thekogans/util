@@ -31,13 +31,13 @@ namespace thekogans {
                 NSString *description = [error description];
                 if (description != 0) {
                     UTF8String = [description UTF8String];
-                #if !__has_feature (objc_arc)
+                #if defined (__clang__) && !__has_feature (objc_arc)
                     [description release];
-                #endif // !__has_feature (objc_arc)
+                #endif // defined (__clang__) && !__has_feature (objc_arc)
                 }
-            #if !__has_feature (objc_arc)
+            #if defined (__clang__) && !__has_feature (objc_arc)
                 [error release];
-            #endif // !__has_feature (objc_arc)
+            #endif // defined (__clang__) && !__has_feature (objc_arc)
             }
             return !UTF8String.empty () ? UTF8String :
                 FormatString ("[0x%x:%d - Unknown error.]", errorCode, errorCode);

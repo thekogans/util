@@ -375,20 +375,12 @@ namespace thekogans {
         #endif // defined (TOOLCHAIN_OS_Windows)
         }
 
-        void Thread::Pause (ui32 count) {
-        #if defined (TOOLCHAIN_OS_Windows) && defined (TOOLCHAIN_ARCH_i386)
-            _asm {
-                mov eax, count
-            }
-            pauseLoop:
-            _asm {
-                pause
-                add eax, -1
-                jne pauseLoop
-            }
-        #else // defined (TOOLCHAIN_OS_Windows) && defined (TOOLCHAIN_ARCH_i386)
-            while (count-- > 0) {}
-        #endif // defined (TOOLCHAIN_OS_Windows) && defined (TOOLCHAIN_ARCH_i386)
+        void Thread::Pause () {
+        #if defined (TOOLCHAIN_OS_Windows)
+            YieldProcessor ();
+        #else // defined (TOOLCHAIN_OS_Windows)
+            asm ("pause");
+        #endif // defined (TOOLCHAIN_OS_Windows)
         }
 
         void Thread::YieldSlice () {
