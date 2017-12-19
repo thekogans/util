@@ -39,8 +39,8 @@ namespace thekogans {
             while (state.exchange (Locked, memory_order_acquire) == Locked) {
                 // Wait for lock to become free with exponential back-off.
                 // In a heavily contested lock, this leads to fewer cache
-                // line invalidations.
-                // This code was adapted from the ideas found:
+                // line invalidations and better performance.
+                // This code was adapted from the ideas found here:
                 // https://geidav.wordpress.com/tag/exponential-back-off/
                 Thread::Backoff backoff;
                 while (state.load (memory_order_relaxed) == Locked) {
