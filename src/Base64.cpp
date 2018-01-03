@@ -35,12 +35,11 @@ namespace thekogans {
                     'w', 'x', 'y', 'z', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '+', '/'
                 };
                 const ui8 *bufferPtr = (const ui8 *)buffer;
-                std::size_t lineCount = length / lineLength + 1;
-                std::size_t extraSpace = lineCount * linePad + lineCount;
+                std::size_t encodedLength = (length + 2 - (length + 2) % 3) * 4 / 3;
+                std::size_t lineCount = encodedLength / lineLength + 1;
+                std::size_t extraSpace = lineCount * (linePad + 1);
                 Buffer::UniquePtr output (
-                    new Buffer (
-                        HostEndian,
-                        (length + 2 - ((length + 2) % 3)) / 3 * 4 + extraSpace));
+                    new Buffer (HostEndian, (ui32)(encodedLength + extraSpace)));
                 struct LineFormatter {
                     Buffer &output;
                     std::size_t lineLength;
@@ -181,7 +180,7 @@ namespace thekogans {
                 Buffer::UniquePtr output (
                     new Buffer (
                         HostEndian,
-                        DecodeLength ((ui8 *)buffer, length)));
+                        (ui32)DecodeLength ((ui8 *)buffer, length)));
                 std::size_t index = 0;
                 for (const ui8 *bufferPtr = (const ui8 *)buffer,
                         *endBufferPtr = bufferPtr + length; bufferPtr < endBufferPtr; ++index) {

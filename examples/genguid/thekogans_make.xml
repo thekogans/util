@@ -13,4 +13,7 @@
   <cpp_sources prefix = "src">
     <cpp_source>main.cpp</cpp_source>
   </cpp_sources>
+  <if condition = "$(TOOLCHAIN_OS) == 'Windows'">
+    <subsystem>Console</subsystem>
+  </if>
 </thekogans_make>
