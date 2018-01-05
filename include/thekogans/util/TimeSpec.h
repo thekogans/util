@@ -47,7 +47,7 @@ namespace thekogans {
         /// \brief
         /// TimeSpec encapsulates the interval used by Windows/POSIX
         /// apis. It makes it easier to specify various threading, and
-        /// synchronization apis (Condition.h, Timer.h).
+        /// synchronization apis (Condition.h, Timer.h...).
         ///
         /// NOTE: Windows timeout interval is a relative millisecond
         /// value and is usually provided using a DWORD. Because we
@@ -57,7 +57,7 @@ namespace thekogans {
         /// not have enough bits to handle absolute time.
         ///
         /// IMPORTANT: TimeSpec's domain is:
-        /// TimeSpec::Zero <= timeSpec <= TimeSpec::Infinity.
+        /// [TimeSpec::Zero, TimeSpec::Infinity].
         /// To maintain that, the operators + and - (below),
         /// do range checking on their arguments, and clamp
         /// the result accordingly.
@@ -384,9 +384,7 @@ namespace thekogans {
         inline Serializer &operator << (
                 Serializer &serializer,
                 const TimeSpec &timeSpec) {
-            return serializer <<
-                timeSpec.seconds <<
-                timeSpec.nanoseconds;
+            return serializer << timeSpec.seconds << timeSpec.nanoseconds;
         }
 
         /// \brief
@@ -397,9 +395,7 @@ namespace thekogans {
         inline Serializer &operator >> (
                 Serializer &serializer,
                 TimeSpec &timeSpec) {
-            return serializer >>
-                timeSpec.seconds >>
-                timeSpec.nanoseconds;
+            return serializer >> timeSpec.seconds >> timeSpec.nanoseconds;
         }
 
         /// \brief

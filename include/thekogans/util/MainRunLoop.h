@@ -134,6 +134,9 @@ namespace thekogans {
 
         struct _LIB_THEKOGANS_UTIL_DECL MainRunLoopCreateInstance {
         private:
+            /// \brief
+            /// true = the main thread will call MainRunLoop::Instance ().Start ().
+            static bool willCallStart;
         #if defined (TOOLCHAIN_OS_Windows)
             /// \brief
             /// Callback to process Windows HWND events.
@@ -169,10 +172,13 @@ namespace thekogans {
         #if defined (TOOLCHAIN_OS_Windows)
             /// \brief
             /// Call before the first use of MainRunLoop::Instance.
+            /// \param[in] willCallStart_ true = the main thread will call
+            /// MainRunLoop::Instance ().Start ().
             /// \param[in] eventProcessor_ Callback to process Windows HWND events.
             /// \param[in] userData_ Optional user data passed to eventProcessor.
             /// \param[in] wnd_ Windows window handle.
             static void Parameterize (
+                bool willCallStart_,
                 SystemRunLoop::EventProcessor eventProcessor_,
                 void *userData_,
                 HWND wnd_);
@@ -180,11 +186,14 @@ namespace thekogans {
         #if defined (THEKOGANS_UTIL_HAVE_XLIB)
             /// \brief
             /// Call before the first use of MainRunLoop::Instance.
+            /// \param[in] willCallStart_ true = the main thread will call
+            /// MainRunLoop::Instance ().Start ().
             /// \param[in] eventProcessor_ Callback to process Xlib XEvent events.
             /// \param[in] userData_ Optional user data passed to eventProcessor.
             /// \param[in] window_ Xlib server window.
             /// \param[in] displays_ A list of displays to listen to.
             static void Parameterize (
+                bool willCallStart_,
                 SystemRunLoop::EventProcessor eventProcessor_,
                 void *userData_,
                 SystemRunLoop::XlibWindow::Ptr window_,
@@ -193,8 +202,12 @@ namespace thekogans {
         #elif defined (TOOLCHAIN_OS_OSX)
             /// \brief
             /// Call before the first use of MainRunLoop::Instance.
+            /// \param[in] willCallStart_ true = the main thread will call
+            /// MainRunLoop::Instance ().Start ().
             /// \param[in] runLoop_ OS X run loop object.
-            static void Parameterize (CFRunLoopRef runLoop_);
+            static void Parameterize (
+                bool willCallStart_,
+                CFRunLoopRef runLoop_);
         #endif // defined (TOOLCHAIN_OS_Windows)
 
             /// \brief

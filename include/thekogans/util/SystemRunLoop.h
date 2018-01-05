@@ -287,12 +287,14 @@ namespace thekogans {
         #if defined (TOOLCHAIN_OS_Windows)
             /// \brief
             /// ctor.
+            /// \param[in] done_ true = must call Start before Enq.
             /// \param[in] eventProcessor_ Callback to process window events.
             /// \param[in] userData_ Optional user data passed to eventProcessor.
             /// \param[in] wnd_ Windows window handle.
             /// NOTE: SystemRunLoop takes ownership of the passed in wnd_ and
             /// will destroy it in it's dtor.
             SystemRunLoop (
+                bool done_ = true,
                 EventProcessor eventProcessor_ = 0,
                 void *userData_ = 0,
                 HWND wnd_ = CreateThreadWindow ());
@@ -313,11 +315,13 @@ namespace thekogans {
         #elif defined (TOOLCHAIN_OS_Linux)
             /// \brief
             /// ctor.
+            /// \param[in] done_ true = must call Start before Enq.
             /// \param[in] eventProcessor_ Callback to process Xlib XEvent events.
             /// \param[in] userData_ Optional user data passed to eventProcessor.
             /// \param[in] window_ Xlib window.
             /// \param[in] displays_ A list of displays to listen to.
             SystemRunLoop (
+                bool done_ = true,
                 EventProcessor eventProcessor_ = 0,
                 void *userData_ = 0,
                 XlibWindow::Ptr window_ = CreateThreadWindow (0),
@@ -346,8 +350,11 @@ namespace thekogans {
         #elif defined (TOOLCHAIN_OS_OSX)
             /// \brief
             /// ctor.
+            /// \param[in] done_ true = must call Start before Enq.
             /// \param[in] runLoop_ OS X run loop object.
-            SystemRunLoop (CFRunLoopRef runLoop_ = CFRunLoopGetCurrent ());
+            SystemRunLoop (
+                bool done_ = true,
+                CFRunLoopRef runLoop_ = CFRunLoopGetCurrent ());
 
             /// \brief
             /// Return the OS X CFRunLoopRef associated with this run loop.

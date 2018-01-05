@@ -36,16 +36,16 @@ namespace thekogans {
         /// \struct SharedAllocator SharedAllocator.h thekogans/util/SharedAllocator.h
         ///
         /// \brief
-        /// SharedAllocator allocates blocks visible across multiple processes.
+        /// SharedAllocator allocates blocks visible across process boundaries.
         /// The first process is usually the owner, with others being the tenants.
         /// The shared region can be locked in memory (secure == true) to prevent
         /// swapping. Please keep in mind that while SharedAllocator is designed
-        /// to be used across process boundaries, the processes themselves cannot
-        /// deduce what's actually in the heap (that's because there is no guarantee
-        /// where in the process's virtual address space the shared region will be
-        /// mapped). To be able to use blocks allocated from one process in another
-        /// an IPC mechanism is needed to marshal block offsets from one process to
-        /// another. This marshaling is outside the scope of the SharedAllocator.
+        /// to be used simultaneously by multiple processes, the processes themselves
+        /// cannot deduce what's actually in the heap (that's because there is no
+        /// guarantee where in the process's virtual address space the shared region
+        /// will be mapped). To be able to use blocks allocated from one process in
+        /// another an IPC mechanism is needed to marshal block offsets from one
+        /// process to another. This marshaling is outside the scope of the SharedAllocator.
         /// You can begin this process by calling \see{SharedAllocator::GetOffsetFromPtr}
         /// within the process that wants to share a block of memory with a peer.
         /// The offset you get is universal and will work within any process that

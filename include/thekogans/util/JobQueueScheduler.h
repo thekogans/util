@@ -69,7 +69,6 @@ namespace thekogans {
 
                 /// \brief
                 /// ctor.
-                /// \param[in] jobQueue_ \see{JobQueue} the job will be scheduled on.
                 /// \param[in] job_ \see{JobQueue::Job} that will be scheduled.
                 /// \param[in] deadline_ Absolute time when the job will be scheduled.
                 JobInfo (
@@ -118,9 +117,9 @@ namespace thekogans {
 
                 /// \brief
                 /// ctor.
-                /// \param[in] jobQueue_ \see{JobQueue} the job will be scheduled on.
                 /// \param[in] job \see{JobQueue::Job} that will be scheduled.
                 /// \param[in] deadline Absolute time when the job will be scheduled.
+                /// \param[in] jobQueue_ \see{JobQueue} the job will be scheduled on.
                 JobQueueJobInfo (
                     JobQueue::Job &job,
                     const TimeSpec &deadline,
@@ -154,9 +153,9 @@ namespace thekogans {
 
                 /// \brief
                 /// ctor.
-                /// \param[in] runLoop_ \see{RunLoop} the job will be scheduled on.
                 /// \param[in] job \see{JobQueue::Job} that will be scheduled.
                 /// \param[in] deadline Absolute time when the job will be scheduled.
+                /// \param[in] runLoop_ \see{RunLoop} the job will be scheduled on.
                 RunLoopJobInfo (
                     JobQueue::Job &job,
                     const TimeSpec &deadline,
@@ -221,9 +220,10 @@ namespace thekogans {
 
             /// \brief
             /// Schedule a job to be performed in the future.
-            /// \param[in] jobQueue \see{JobQueue} that will execute the job.
             /// \param[in] job \see{JobQueue::Job} to execute.
             /// \param[in] timeSpec When in the future to execute the given job.
+            /// \param[in] jobQueue \see{JobQueue} that will execute the job.
+            /// \return JobInfo::Id which can be used in a call to Cancel.
             /// IMPORTANT: timeSpec is a relative value.
             inline JobQueue::Job::Id Schedule (
                     JobQueue::Job &job,
@@ -240,9 +240,10 @@ namespace thekogans {
 
             /// \brief
             /// Schedule a job to be performed in the future.
-            /// \param[in] runLoop \see{RunLoop} that will execute the job.
             /// \param[in] job \see{JobQueue::Job} to execute.
             /// \param[in] timeSpec When in the future to execute the given job.
+            /// \param[in] runLoop \see{RunLoop} that will execute the job.
+            /// \return JobInfo::Id which can be used in a call to Cancel.
             /// IMPORTANT: timeSpec is a relative value.
             inline JobQueue::Job::Id Schedule (
                     JobQueue::Job &job,
@@ -291,8 +292,8 @@ namespace thekogans {
             /// Schedule helper.
             /// \param[in] jobInfo JobInfo containing \see{JobQueue::Job} particulars.
             /// \param[in] timeSpec When in the future to execute the given job.
-            /// IMPORTANT: timeSpec is a relative value.
             /// \return JobInfo::Id which can be used in a call to Cancel.
+            /// IMPORTANT: timeSpec is a relative value.
             JobQueue::Job::Id ScheduleJobInfo (
                 JobInfo::Ptr jobInfo,
                 const TimeSpec &timeSpec);

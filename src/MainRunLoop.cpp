@@ -21,15 +21,18 @@
 namespace thekogans {
     namespace util {
 
+        bool MainRunLoopCreateInstance::willCallStart = true;
     #if defined (TOOLCHAIN_OS_Windows)
         SystemRunLoop::EventProcessor MainRunLoopCreateInstance::eventProcessor = 0;
         void *MainRunLoopCreateInstance::userData = 0;
         HWND MainRunLoopCreateInstance::wnd = 0;
 
         void MainRunLoopCreateInstance::Parameterize (
+                bool willCallStart_,
                 SystemRunLoop::EventProcessor eventProcessor_,
                 void *userData_,
                 HWND wnd_) {
+            willCallStart = willCallStart_;
             eventProcessor = eventProcessor_;
             userData = userData_;
             wnd = wnd_;
@@ -37,8 +40,12 @@ namespace thekogans {
 
         RunLoop *MainRunLoopCreateInstance::operator () () {
             return wnd != 0 ?
-                (RunLoop *)new SystemRunLoop (eventProcessor, userData, wnd) :
-                (RunLoop *)new DefaultRunLoop;
+                (RunLoop *)new SystemRunLoop (
+                    willCallStart,
+                    eventProcessor,
+                    userData,
+                    wnd) :
+                (RunLoop *)new DefaultRunLoop (willCallStart);
         }
     #elif defined (TOOLCHAIN_OS_Linux)
     #if defined (THEKOGANS_UTIL_HAVE_XLIB)
@@ -48,10 +55,12 @@ namespace thekogans {
         std::vector<Display *> MainRunLoopCreateInstance::displays;
 
         void MainRunLoopCreateInstance::Parameterize (
+                bool willCallStart_,
                 SystemRunLoop::EventProcessor eventProcessor_,
                 void *userData_,
                 SystemRunLoop::XlibWindow::Ptr window_,
                 const std::vector<Display *> &displays_) {
+            willCallStart = willCallStart_;
             eventProcessor = eventProcessor_;
             userData = userData_;
             window = std::move (window_);
@@ -62,23 +71,31 @@ namespace thekogans {
         RunLoop *MainRunLoopCreateInstance::operator () () {
         #if defined (THEKOGANS_UTIL_HAVE_XLIB)
             return eventProcessor != 0 ?
-                (RunLoop *)new SystemRunLoop (eventProcessor, userData, std::move (window), displays) :
-                (RunLoop *)new DefaultRunLoop;
+                (RunLoop *)new SystemRunLoop (
+                    willCallStart,
+                    eventProcessor,
+                    userData,
+                    std::move (window),
+                    displays) :
+                (RunLoop *)new DefaultRunLoop (willCallStart);
         #else // defined (THEKOGANS_UTIL_HAVE_XLIB)
-            return new DefaultRunLoop;
+            return new DefaultRunLoop (willCallStart);
         #endif // defined (THEKOGANS_UTIL_HAVE_XLIB)
         }
     #elif defined (TOOLCHAIN_OS_OSX)
         CFRunLoopRef MainRunLoopCreateInstance::runLoop = 0;
 
-        void MainRunLoopCreateInstance::Parameterize (CFRunLoopRef runLoop_) {
+        void MainRunLoopCreateInstance::Parameterize (
+                bool willCallStart_,
+                CFRunLoopRef runLoop_) {
+            willCallStart = willCallStart_;
             runLoop = runLoop_;
         }
 
         RunLoop *MainRunLoopCreateInstance::operator () () {
             return runLoop != 0 ?
-                (RunLoop *)new SystemRunLoop (runLoop) :
-                (RunLoop *)new DefaultRunLoop;
+                (RunLoop *)new SystemRunLoop (willCallStart, runLoop) :
+                (RunLoop *)new DefaultRunLoop (willCallStart);
         }
     #endif // defined (TOOLCHAIN_OS_Windows)
 

@@ -24,11 +24,15 @@
 
 /// \brief
 /// NOTE: Headers should be included in the following order:
+///
 /// - system/os specific
 /// - std c
 /// - std c++
 /// - third party dependencies
 /// - thekogans dependencies
+///
+/// The reason for this order is to prevent global namespace
+/// collisions as much as posible.
 
 #include <cstdlib>
 #include <iostream>

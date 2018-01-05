@@ -103,6 +103,14 @@ namespace thekogans {
                     }
                 }
                 lineFormatter.Finish ();
+                // If you ever catch this, it means that my buffer
+                // length calculations above are wrong.
+                if (output->writeOffset > output->length) {
+                    THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
+                        "Buffer overflow! (%u, %u)",
+                        output->length,
+                        output->writeOffset);
+                }
                 return output;
             }
             else {
@@ -219,6 +227,14 @@ namespace thekogans {
                     else {
                         ++bufferPtr;
                     }
+                }
+                // If you ever catch this, it means that my buffer
+                // length calculations above are wrong.
+                if (output->writeOffset > output->length) {
+                    THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
+                        "Buffer overflow! (%u, %u)",
+                        output->length,
+                        output->writeOffset);
                 }
                 return output;
             }

@@ -31,10 +31,11 @@ namespace thekogans {
 
     #if defined (TOOLCHAIN_OS_Windows)
         SystemRunLoop::SystemRunLoop (
+                bool done_,
                 EventProcessor eventProcessor_,
                 void *userData_,
                 HWND wnd_) :
-                done (true),
+                done (done_),
                 eventProcessor (eventProcessor_),
                 userData (userData_),
                 wnd (wnd_),
@@ -210,11 +211,12 @@ namespace thekogans {
         }
 
         SystemRunLoop::SystemRunLoop (
+                bool done_,
                 EventProcessor eventProcessor_,
                 void *userData_,
                 XlibWindow::Ptr window_,
                 const std::vector<Display *> &displays_) :
-                done (true),
+                done (done_),
                 eventProcessor (eventProcessor_),
                 userData (userData_),
                 window (std::move (window_)),
@@ -251,8 +253,10 @@ namespace thekogans {
             return true;
         }
     #elif defined (TOOLCHAIN_OS_OSX)
-        SystemRunLoop::SystemRunLoop (CFRunLoopRef runLoop_) :
-                done (true),
+        SystemRunLoop::SystemRunLoop (
+                bool done_,
+                CFRunLoopRef runLoop_) :
+                done (done_),
                 runLoop (runLoop_),
                 jobFinished (jobsMutex) {
             if (runLoop == 0) {
