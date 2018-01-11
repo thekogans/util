@@ -94,7 +94,7 @@ namespace thekogans {
     #elif defined (TOOLCHAIN_ARCH_x86_64)
         typedef ui64 MachineWord;
     #else // defined (TOOLCHAIN_ARCH_x86_64)
-        #error "Unknown MachineWord"
+        #error "Unknown MachineWord."
     #endif // defined (TOOLCHAIN_ARCH_i386)
 
         /// \brief

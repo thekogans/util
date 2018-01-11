@@ -45,7 +45,7 @@ namespace thekogans {
                     eventProcessor,
                     userData,
                     wnd) :
-                (RunLoop *)new DefaultRunLoop (willCallStart);
+                (RunLoop *)new DefaultRunLoop;
         }
     #elif defined (TOOLCHAIN_OS_Linux)
     #if defined (THEKOGANS_UTIL_HAVE_XLIB)
@@ -67,7 +67,6 @@ namespace thekogans {
             displays = displays_;
         }
     #endif // defined (THEKOGANS_UTIL_HAVE_XLIB)
-
         RunLoop *MainRunLoopCreateInstance::operator () () {
         #if defined (THEKOGANS_UTIL_HAVE_XLIB)
             return eventProcessor != 0 ?
@@ -77,9 +76,9 @@ namespace thekogans {
                     userData,
                     std::move (window),
                     displays) :
-                (RunLoop *)new DefaultRunLoop (willCallStart);
+                (RunLoop *)new DefaultRunLoop;
         #else // defined (THEKOGANS_UTIL_HAVE_XLIB)
-            return new DefaultRunLoop (willCallStart);
+            return new DefaultRunLoop;
         #endif // defined (THEKOGANS_UTIL_HAVE_XLIB)
         }
     #elif defined (TOOLCHAIN_OS_OSX)
@@ -95,7 +94,7 @@ namespace thekogans {
         RunLoop *MainRunLoopCreateInstance::operator () () {
             return runLoop != 0 ?
                 (RunLoop *)new SystemRunLoop (willCallStart, runLoop) :
-                (RunLoop *)new DefaultRunLoop (willCallStart);
+                (RunLoop *)new DefaultRunLoop;
         }
     #endif // defined (TOOLCHAIN_OS_Windows)
 

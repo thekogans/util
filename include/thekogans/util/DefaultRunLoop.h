@@ -147,9 +147,8 @@ namespace thekogans {
         public:
             /// \brief
             /// ctor.
-            /// \param[in] done_ true = must call Start.
-            DefaultRunLoop (bool done_ = true) :
-                done (done_),
+            DefaultRunLoop () :
+                done (true),
                 jobsNotEmpty (mutex),
                 jobFinished (mutex) {}
 

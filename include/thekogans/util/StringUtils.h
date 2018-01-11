@@ -310,15 +310,17 @@ namespace thekogans {
         /// \param[in] value std::size_t to format.
         /// \param[in] format Format string.
         /// \return A string representing a formatted std::size_t.
-    #if (SIZE_T_SIZE == UI32_SIZE)
+    #if defined (TOOLCHAIN_ARCH_i386)
         _LIB_THEKOGANS_UTIL_DECL std::string _LIB_THEKOGANS_UTIL_API size_tTostring (
             std::size_t value,
             const char *format = THEKOGANS_UTIL_UI32_FORMAT);
-    #else // (SIZE_T_SIZE == UI32_SIZE)
+    #elif defined (TOOLCHAIN_ARCH_x86_64)
         _LIB_THEKOGANS_UTIL_DECL std::string _LIB_THEKOGANS_UTIL_API size_tTostring (
             std::size_t value,
             const char *format = THEKOGANS_UTIL_UI64_FORMAT);
-    #endif // (SIZE_T_SIZE == UI32_SIZE)
+    #else // defined (TOOLCHAIN_ARCH_i386)
+        #error "Unknown architecture."
+    #endif // defined (TOOLCHAIN_ARCH_i386)
         /// \brief
         /// Convert a boolean value to a string.
         /// \param[in] value Value to convert.

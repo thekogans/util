@@ -34,8 +34,7 @@ namespace thekogans {
                     'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v',
                     'w', 'x', 'y', 'z', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '+', '/'
                 };
-                const ui8 *bufferPtr = (const ui8 *)buffer;
-                std::size_t encodedLength = (length + 2 - (length + 2) % 3) * 4 / 3;
+                std::size_t encodedLength = length / 3 * 4 + (length % 3 != 0 ? 4 : 0);
                 std::size_t lineCount = encodedLength / lineLength + 1;
                 std::size_t extraSpace = lineCount * (linePad + 1);
                 Buffer::UniquePtr output (
@@ -58,7 +57,6 @@ namespace thekogans {
                             for (std::size_t i = 0; i < linePad; ++i) {
                                 output.data[output.writeOffset++] = ' ';
                             }
-                            currChar += linePad;
                         }
                         output.data[output.writeOffset++] = ch;
                         ++currChar;
@@ -74,6 +72,7 @@ namespace thekogans {
                         }
                     }
                 } lineFormatter (*output, lineLength, linePad);
+                const ui8 *bufferPtr = (const ui8 *)buffer;
                 for (std::size_t i = 0, count = length / 3; i < count; ++i) {
                     ui8 buffer0 = *bufferPtr++;
                     ui8 buffer1 = *bufferPtr++;
@@ -148,100 +147,108 @@ namespace thekogans {
                 return value < 128 && unbase64[value] != 0xff;
             }
 
-            std::size_t ValidateInput (
-                    std::size_t index,
-                    ui8 buffer0,
-                    ui8 buffer1,
+            inline std::size_t GetEqualCount (
                     ui8 buffer2,
                     ui8 buffer3) {
                 std::size_t equalCount = 0;
-                bool valid = IsValidBase64 (buffer0) && IsValidBase64 (buffer1);
-                if (valid) {
-                    if (buffer3 == '=') {
-                        ++equalCount;
-                        if (buffer2 == '=') {
-                            ++equalCount;
-                        }
-                    }
-                    switch (equalCount) {
-                        case 0:
-                            valid = IsValidBase64 (buffer2) && IsValidBase64 (buffer3);
-                            break;
-                        case 1:
-                            valid = IsValidBase64 (buffer2);
-                            break;
-                    }
+                if (buffer2 == '=') {
+                    ++equalCount;
                 }
-                if (!valid) {
-                    THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                        "Invalid input @ %u (%u, %u, %u, %u)",
-                        index, buffer0, buffer1, buffer2, buffer3);
+                if (buffer3 == '=') {
+                    ++equalCount;
                 }
                 return equalCount;
+            }
+
+            Buffer::UniquePtr ValidateInput (
+                    const void *buffer,
+                    std::size_t length) {
+                if (buffer != 0 && length > 0) {
+                    Buffer::UniquePtr output (new Buffer (HostEndian, (ui32)length));
+                    ui32 equalCount = 0;
+                    std::size_t index = 0;
+                    for (const ui8 *bufferPtr = (const ui8 *)buffer,
+                             *endBufferPtr = bufferPtr + length; bufferPtr < endBufferPtr; ++index, ++bufferPtr) {
+                        if (!isspace (*bufferPtr)) {
+                            if (IsValidBase64 (*bufferPtr)) {
+                                if (equalCount == 0) {
+                                    output->data[output->writeOffset++] = *bufferPtr;
+                                }
+                                else {
+                                    THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
+                                        "Invalid input @ %u", index);
+                                }
+                            }
+                            else if (*bufferPtr == '=') {
+                                if (equalCount++ < 2) {
+                                    output->data[output->writeOffset++] = *bufferPtr;
+                                }
+                                else {
+                                    THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
+                                        "Invalid input @ %u", index);
+                                }
+                            }
+                            else {
+                                THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
+                                    "Invalid input @ %u", index);
+                            }
+                        }
+                    }
+                    if ((output->GetDataAvailableForReading () & 3) != 0) {
+                        THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
+                            "Invalid count: %u", output->GetDataAvailableForReading ());
+                    }
+                    return output;
+                }
+                else {
+                    THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                        THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
+                }
             }
         }
 
         Buffer::UniquePtr Base64::Decode (
                 const void *buffer,
                 std::size_t length) {
-            if (buffer != 0 && length > 0) {
-                Buffer::UniquePtr output (
-                    new Buffer (
-                        HostEndian,
-                        (ui32)DecodeLength ((ui8 *)buffer, length)));
-                std::size_t index = 0;
-                for (const ui8 *bufferPtr = (const ui8 *)buffer,
-                        *endBufferPtr = bufferPtr + length; bufferPtr < endBufferPtr; ++index) {
-                    if (!isspace (*bufferPtr)) {
-                        if (endBufferPtr - bufferPtr >= 4) {
-                            ui8 buffer0 = *bufferPtr++;
-                            ui8 buffer1 = *bufferPtr++;
-                            ui8 buffer2 = *bufferPtr++;
-                            ui8 buffer3 = *bufferPtr++;
-                            switch (ValidateInput (index, buffer0, buffer1, buffer2, buffer3)) {
-                                case 0:
-                                    output->data[output->writeOffset++] = unbase64[buffer0] << 2 |
-                                        (unbase64[buffer1] & 0x30) >> 4;
-                                    output->data[output->writeOffset++] = unbase64[buffer1] << 4 |
-                                        (unbase64[buffer2] & 0x3c) >> 2;
-                                    output->data[output->writeOffset++] = (unbase64[buffer2] & 0x03) << 6 |
-                                        unbase64[buffer3];
-                                    break;
-                                case 1:
-                                    output->data[output->writeOffset++] = unbase64[buffer0] << 2 |
-                                        (unbase64[buffer1] & 0x30) >> 4;
-                                    output->data[output->writeOffset++] = unbase64[buffer1] << 4 |
-                                        (unbase64[buffer2] & 0x3c) >> 2;
-                                    break;
-                                case 2:
-                                    output->data[output->writeOffset++] = unbase64[buffer0] << 2 |
-                                        (unbase64[buffer1] & 0x30) >> 4;
-                                    break;
-                            }
-                        }
-                        else {
-                            THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                                "Invalid input @ %u", index);
-                        }
-                    }
-                    else {
-                        ++bufferPtr;
-                    }
+            Buffer::UniquePtr input = ValidateInput (buffer, length);
+            Buffer::UniquePtr output (
+                new Buffer (HostEndian, (ui32)DecodeLength ((ui8 *)buffer, length)));
+            for (const ui8 *bufferPtr = input->GetReadPtr (),
+                     *endBufferPtr = bufferPtr + input->GetDataAvailableForReading (); bufferPtr < endBufferPtr;) {
+                ui8 buffer0 = *bufferPtr++;
+                ui8 buffer1 = *bufferPtr++;
+                ui8 buffer2 = *bufferPtr++;
+                ui8 buffer3 = *bufferPtr++;
+                switch (GetEqualCount (buffer2, buffer3)) {
+                    case 0:
+                        output->data[output->writeOffset++] = unbase64[buffer0] << 2 |
+                            (unbase64[buffer1] & 0x30) >> 4;
+                        output->data[output->writeOffset++] = unbase64[buffer1] << 4 |
+                            (unbase64[buffer2] & 0x3c) >> 2;
+                        output->data[output->writeOffset++] = (unbase64[buffer2] & 0x03) << 6 |
+                            unbase64[buffer3];
+                        break;
+                    case 1:
+                        output->data[output->writeOffset++] = unbase64[buffer0] << 2 |
+                            (unbase64[buffer1] & 0x30) >> 4;
+                        output->data[output->writeOffset++] = unbase64[buffer1] << 4 |
+                            (unbase64[buffer2] & 0x3c) >> 2;
+                        break;
+                    case 2:
+                        output->data[output->writeOffset++] = unbase64[buffer0] << 2 |
+                            (unbase64[buffer1] & 0x30) >> 4;
+                        break;
                 }
-                // If you ever catch this, it means that my buffer
-                // length calculations above are wrong.
-                if (output->writeOffset > output->length) {
-                    THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                        "Buffer overflow! (%u, %u)",
-                        output->length,
-                        output->writeOffset);
-                }
-                return output;
             }
-            else {
-                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
+            // If you ever catch this, it means that my buffer
+            // length calculations (DecodeLength) above are wrong.
+            if (output->writeOffset > output->length) {
+                THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
+                    "Buffer overflow! (%u, %u)",
+                    output->length,
+                    output->writeOffset);
             }
+            return output;
         }
 
     } // namespace util

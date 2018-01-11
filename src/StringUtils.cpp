@@ -266,11 +266,13 @@ namespace thekogans {
                 const char *value,
                 char **end,
                 i32 base) {
-        #if (SIZE_T_SIZE == UI32_SIZE)
+        #if defined (TOOLCHAIN_ARCH_i386)
             return (std::size_t)strtoul (value, end, base);
-        #else // (SIZE_T_SIZE == UI32_SIZE)
+        #elif defined (TOOLCHAIN_ARCH_x86_64)
             return (std::size_t)strtoull (value, end, base);
-        #endif // (SIZE_T_SIZE == UI32_SIZE)
+        #else // defined (TOOLCHAIN_ARCH_i386)
+            #error "Unknown architecture."
+        #endif // defined (TOOLCHAIN_ARCH_i386)
         }
 
         _LIB_THEKOGANS_UTIL_DECL i16 _LIB_THEKOGANS_UTIL_API stringToi16 (
@@ -330,11 +332,13 @@ namespace thekogans {
         _LIB_THEKOGANS_UTIL_DECL time_t _LIB_THEKOGANS_UTIL_API stringTotime_t (
                 const char *value,
                 char **end) {
-        #if (TIME_T_SIZE == I32_SIZE)
+        #if defined (TOOLCHAIN_ARCH_i386)
             return (time_t)stringToi32 (value, end);
-        #else // (TIME_T_SIZE == I32_SIZE)
+        #elif defined (TOOLCHAIN_ARCH_x86_64)
             return (time_t)stringToi64 (value, end);
-        #endif // (TIME_T_SIZE == I32_SIZE)
+        #else // defined (TOOLCHAIN_ARCH_i386)
+            #error "Unknown architecture."
+        #endif // defined (TOOLCHAIN_ARCH_i386)
         }
 
         _LIB_THEKOGANS_UTIL_DECL THEKOGANS_UTIL_ERROR_CODE _LIB_THEKOGANS_UTIL_API
