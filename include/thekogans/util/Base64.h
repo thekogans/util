@@ -38,7 +38,7 @@ namespace thekogans {
             /// \brief
             /// Encode a buffer.
             /// \param[in] buffer Buffer to encode.
-            /// \param[in] length Length of buffer in bytes.
+            /// \param[in] bufferLength Length of buffer in bytes.
             /// \param[in] lineLength Insert a '\n' after every
             /// lineLength characters of output.
             /// \param[in] linePad Pad the start of every line
@@ -46,17 +46,17 @@ namespace thekogans {
             /// \return Resulting base64 encoding.
             static Buffer::UniquePtr Encode (
                 const void *buffer,
-                std::size_t length,
+                std::size_t bufferLength,
                 std::size_t lineLength = SIZE_T_MAX,
                 std::size_t linePad = 0);
             /// \brief
             /// Decode a buffer.
-            /// \param[in] buffer Buffer to decode.
+            /// \param[in] bufferLength Buffer to decode.
             /// \param[in] length Length of buffer in bytes.
             /// \return Resulting decoding.
             static Buffer::UniquePtr Decode (
                 const void *buffer,
-                std::size_t length);
+                std::size_t bufferLength);
         };
 
     } // namespace util

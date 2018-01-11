@@ -24,18 +24,18 @@ namespace thekogans {
 
         Buffer::UniquePtr Base64::Encode (
                 const void *buffer,
-                std::size_t length,
+                std::size_t bufferLength,
                 std::size_t lineLength,
                 std::size_t linePad) {
-            if (buffer != 0 && length > 0) {
+            if (buffer != 0 && bufferLength > 0) {
                 static const ui8 base64[] = {
                     'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P',
                     'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z', 'a', 'b', 'c', 'd', 'e', 'f',
                     'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v',
                     'w', 'x', 'y', 'z', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '+', '/'
                 };
-                std::size_t encodedLength = length / 3;
-                if (length % 3 != 0) {
+                std::size_t encodedLength = bufferLength / 3;
+                if (bufferLength % 3 != 0) {
                     ++encodedLength;
                 }
                 encodedLength *= 4;
@@ -80,7 +80,7 @@ namespace thekogans {
                     }
                 } lineFormatter (*output, lineLength, linePad);
                 const ui8 *bufferPtr = (const ui8 *)buffer;
-                for (std::size_t i = 0, count = length / 3; i < count; ++i) {
+                for (std::size_t i = 0, count = bufferLength / 3; i < count; ++i) {
                     ui8 buffer0 = *bufferPtr++;
                     ui8 buffer1 = *bufferPtr++;
                     ui8 buffer2 = *bufferPtr++;
@@ -89,7 +89,7 @@ namespace thekogans {
                     lineFormatter.Format (base64[(buffer1 << 2 | buffer2 >> 6) & 0x3f]);
                     lineFormatter.Format (base64[buffer2 & 0x3f]);
                 }
-                switch (length % 3) {
+                switch (bufferLength % 3) {
                     case 1: {
                         ui8 buffer0 = *bufferPtr++;
                         lineFormatter.Format (base64[buffer0 >> 2]);
@@ -139,15 +139,15 @@ namespace thekogans {
 
             std::size_t DecodedLength (
                     const ui8 *buffer,
-                    std::size_t length) {
+                    std::size_t bufferLength) {
                 std::size_t padding = 0;
-                if (buffer[length - 1] == '=') {
+                if (buffer[bufferLength - 1] == '=') {
                     ++padding;
                 }
-                if (buffer[length - 2] == '=') {
+                if (buffer[bufferLength - 2] == '=') {
                     ++padding;
                 }
-                return length * 3 / 4 - padding;
+                return bufferLength * 3 / 4 - padding;
             }
 
             inline bool IsValidBase64 (ui8 value) {
@@ -169,13 +169,13 @@ namespace thekogans {
 
             Buffer::UniquePtr ValidateInput (
                     const void *buffer,
-                    std::size_t length) {
-                if (buffer != 0 && length > 0) {
-                    Buffer::UniquePtr output (new Buffer (HostEndian, (ui32)length));
+                    std::size_t bufferLength) {
+                if (buffer != 0 && bufferLength > 0) {
+                    Buffer::UniquePtr output (new Buffer (HostEndian, (ui32)bufferLength));
                     ui32 equalCount = 0;
                     std::size_t index = 0;
                     for (const ui8 *bufferPtr = (const ui8 *)buffer,
-                            *endBufferPtr = bufferPtr + length;
+                            *endBufferPtr = bufferPtr + bufferLength;
                             bufferPtr < endBufferPtr; ++index, ++bufferPtr) {
                         if (!isspace (*bufferPtr)) {
                             if (IsValidBase64 (*bufferPtr)) {
@@ -217,11 +217,14 @@ namespace thekogans {
 
         Buffer::UniquePtr Base64::Decode (
                 const void *buffer,
-                std::size_t length) {
-            Buffer::UniquePtr input = ValidateInput (buffer, length);
+                std::size_t bufferLength) {
+            Buffer::UniquePtr input = ValidateInput (buffer, bufferLength);
             if (input->GetDataAvailableForReading () > 0) {
                 Buffer::UniquePtr output (
-                    new Buffer (HostEndian, (ui32)DecodedLength ((ui8 *)buffer, length)));
+                    new Buffer (HostEndian,
+                        (ui32)DecodedLength (
+                            input->GetReadPtr (),
+                            input->GetDataAvailableForReading ())));
                 const ui8 *bufferPtr = input->GetReadPtr ();
                 for (const ui8 *endBufferPtr = bufferPtr + input->GetDataAvailableForReading () - 4;
                         bufferPtr < endBufferPtr;) {
