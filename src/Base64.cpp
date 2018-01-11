@@ -34,9 +34,16 @@ namespace thekogans {
                     'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v',
                     'w', 'x', 'y', 'z', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '+', '/'
                 };
-                std::size_t encodedLength = length / 3 * 4 + (length % 3 != 0 ? 4 : 0);
-                std::size_t lineCount = encodedLength / lineLength + 1;
-                std::size_t extraSpace = lineCount * (linePad + 1);
+                std::size_t encodedLength = length / 3;
+                if (length % 3 != 0) {
+                    ++encodedLength;
+                }
+                encodedLength *= 4;
+                std::size_t lineCount = encodedLength / lineLength;
+                if (encodedLength % lineLength) {
+                    ++lineCount;
+                }
+                std::size_t extraSpace = lineCount * (linePad + 1); // + 1 is for \n
                 Buffer::UniquePtr output (
                     new Buffer (HostEndian, (ui32)(encodedLength + extraSpace)));
                 struct LineFormatter {
@@ -130,7 +137,7 @@ namespace thekogans {
                   41,   42,   43,   44,   45,   46,   47,   48,   49,   50,   51, 0xff, 0xff, 0xff, 0xff, 0xff
             };
 
-            std::size_t DecodeLength (
+            std::size_t DecodedLength (
                     const ui8 *buffer,
                     std::size_t length) {
                 std::size_t padding = 0;
@@ -140,14 +147,14 @@ namespace thekogans {
                 if (buffer[length - 2] == '=') {
                     ++padding;
                 }
-                return (length * 3) / 4 - padding;
+                return length * 3 / 4 - padding;
             }
 
             inline bool IsValidBase64 (ui8 value) {
                 return value < 128 && unbase64[value] != 0xff;
             }
 
-            inline std::size_t GetEqualCount (
+            inline std::size_t EqualCount (
                     ui8 buffer2,
                     ui8 buffer3) {
                 std::size_t equalCount = 0;
@@ -168,7 +175,8 @@ namespace thekogans {
                     ui32 equalCount = 0;
                     std::size_t index = 0;
                     for (const ui8 *bufferPtr = (const ui8 *)buffer,
-                             *endBufferPtr = bufferPtr + length; bufferPtr < endBufferPtr; ++index, ++bufferPtr) {
+                            *endBufferPtr = bufferPtr + length;
+                            bufferPtr < endBufferPtr; ++index, ++bufferPtr) {
                         if (!isspace (*bufferPtr)) {
                             if (IsValidBase64 (*bufferPtr)) {
                                 if (equalCount == 0) {
@@ -211,44 +219,58 @@ namespace thekogans {
                 const void *buffer,
                 std::size_t length) {
             Buffer::UniquePtr input = ValidateInput (buffer, length);
-            Buffer::UniquePtr output (
-                new Buffer (HostEndian, (ui32)DecodeLength ((ui8 *)buffer, length)));
-            for (const ui8 *bufferPtr = input->GetReadPtr (),
-                     *endBufferPtr = bufferPtr + input->GetDataAvailableForReading (); bufferPtr < endBufferPtr;) {
+            if (input->GetDataAvailableForReading () > 0) {
+                Buffer::UniquePtr output (
+                    new Buffer (HostEndian, (ui32)DecodedLength ((ui8 *)buffer, length)));
+                const ui8 *bufferPtr = input->GetReadPtr ();
+                for (const ui8 *endBufferPtr = bufferPtr + input->GetDataAvailableForReading () - 4;
+                        bufferPtr < endBufferPtr;) {
+                    ui8 buffer0 = *bufferPtr++;
+                    ui8 buffer1 = *bufferPtr++;
+                    ui8 buffer2 = *bufferPtr++;
+                    ui8 buffer3 = *bufferPtr++;
+                    output->data[output->writeOffset++] =
+                        unbase64[buffer0] << 2 | (unbase64[buffer1] & 0x30) >> 4;
+                    output->data[output->writeOffset++] =
+                        unbase64[buffer1] << 4 | (unbase64[buffer2] & 0x3c) >> 2;
+                    output->data[output->writeOffset++] =
+                        (unbase64[buffer2] & 0x03) << 6 | unbase64[buffer3];
+                }
                 ui8 buffer0 = *bufferPtr++;
                 ui8 buffer1 = *bufferPtr++;
                 ui8 buffer2 = *bufferPtr++;
                 ui8 buffer3 = *bufferPtr++;
-                switch (GetEqualCount (buffer2, buffer3)) {
+                switch (EqualCount (buffer2, buffer3)) {
                     case 0:
-                        output->data[output->writeOffset++] = unbase64[buffer0] << 2 |
-                            (unbase64[buffer1] & 0x30) >> 4;
-                        output->data[output->writeOffset++] = unbase64[buffer1] << 4 |
-                            (unbase64[buffer2] & 0x3c) >> 2;
-                        output->data[output->writeOffset++] = (unbase64[buffer2] & 0x03) << 6 |
-                            unbase64[buffer3];
+                        output->data[output->writeOffset++] =
+                            unbase64[buffer0] << 2 | (unbase64[buffer1] & 0x30) >> 4;
+                        output->data[output->writeOffset++] =
+                            unbase64[buffer1] << 4 | (unbase64[buffer2] & 0x3c) >> 2;
+                        output->data[output->writeOffset++] =
+                            (unbase64[buffer2] & 0x03) << 6 | unbase64[buffer3];
                         break;
                     case 1:
-                        output->data[output->writeOffset++] = unbase64[buffer0] << 2 |
-                            (unbase64[buffer1] & 0x30) >> 4;
-                        output->data[output->writeOffset++] = unbase64[buffer1] << 4 |
-                            (unbase64[buffer2] & 0x3c) >> 2;
+                        output->data[output->writeOffset++] =
+                            unbase64[buffer0] << 2 | (unbase64[buffer1] & 0x30) >> 4;
+                        output->data[output->writeOffset++] =
+                            unbase64[buffer1] << 4 | (unbase64[buffer2] & 0x3c) >> 2;
                         break;
                     case 2:
-                        output->data[output->writeOffset++] = unbase64[buffer0] << 2 |
-                            (unbase64[buffer1] & 0x30) >> 4;
+                        output->data[output->writeOffset++] =
+                            unbase64[buffer0] << 2 | (unbase64[buffer1] & 0x30) >> 4;
                         break;
                 }
+                // If you ever catch this, it means that my buffer
+                // length calculations (DecodedLength) above are wrong.
+                if (output->writeOffset > output->length) {
+                    THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
+                        "Buffer overflow! (%u, %u)",
+                        output->length,
+                        output->writeOffset);
+                }
+                return output;
             }
-            // If you ever catch this, it means that my buffer
-            // length calculations (DecodeLength) above are wrong.
-            if (output->writeOffset > output->length) {
-                THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                    "Buffer overflow! (%u, %u)",
-                    output->length,
-                    output->writeOffset);
-            }
-            return output;
+            return Buffer::UniquePtr ();
         }
 
     } // namespace util
