@@ -112,6 +112,9 @@ namespace thekogans {
             /// Type of io to hook.
             ui32 hookStdIO;
             /// \brief
+            /// Child process startup directory.
+            std::string startupDirectory;
+            /// \brief
             /// Arguments to the child process.
             std::list<std::string> arguments;
             /// \brief
@@ -247,6 +250,19 @@ namespace thekogans {
             inline THEKOGANS_UTIL_HANDLE GetErrPipe () const {
                 return stdIO.get () != 0 ?
                     stdIO->errPipe[0] : THEKOGANS_UTIL_INVALID_HANDLE_VALUE;
+            }
+
+            /// \brief
+            /// Set child process startup directory.
+            /// \param[in] startupDirectory_ Child process startup directory.
+            inline void SetStartupDirectory (const std::string &startupDirectory_) {
+                startupDirectory = startupDirectory_;
+            }
+            /// \brief
+            /// Return the child process startup directory.
+            /// \return Child process startup directory.
+            inline const std::string &GetStartupDirectory () const {
+                return startupDirectory;
             }
 
             /// \brief

@@ -346,7 +346,9 @@ namespace thekogans {
             if (!CreateProcess (0, &commandLine[0], 0, 0, TRUE,
                     detached ? DETACHED_PROCESS : 0,
                     !environment.empty () ? (LPVOID)&environment[0] : 0,
-                    0, &startInfo, &processInformation)) {
+                    !startupDirectory.empty () ? startupDirectory.c_str () : 0,
+                    &startInfo,
+                    &processInformation)) {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
                     THEKOGANS_UTIL_OS_ERROR_CODE);
             }
@@ -395,6 +397,9 @@ namespace thekogans {
                 if (hookStdIO != HOOK_NONE) {
                     assert (stdIO.get () != 0);
                     stdIO->SetupChild ();
+                }
+                if (!startupDirectory.empty ()) {
+                    chdir (startupDirectory.c_str ());
                 }
                 if (!envp.empty ()) {
                 #if defined (TOOLCHAIN_OS_OSX)
