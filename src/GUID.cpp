@@ -29,7 +29,7 @@ namespace thekogans {
     namespace util {
 
         namespace {
-            const ui8 _data_[GUID::LENGTH] = {
+            const ui8 _data_[GUID::SIZE] = {
                 UI8_MAX, UI8_MAX, UI8_MAX, UI8_MAX, UI8_MAX, UI8_MAX, UI8_MAX, UI8_MAX,
                 UI8_MAX, UI8_MAX, UI8_MAX, UI8_MAX, UI8_MAX, UI8_MAX, UI8_MAX, UI8_MAX
             };
@@ -42,7 +42,7 @@ namespace thekogans {
                     const std::string &guid,
                     bool windowsGUID) {
                 if (windowsGUID) {
-                    if (guid.size () == GUID::LENGTH * 2 + 4) { // +4 to account for 4 '-'.
+                    if (guid.size () == GUID::SIZE * 2 + 4) { // +4 to account for 4 '-'.
                         std::size_t i = 0;
                         for (; i < 8; ++i) {
                             if (!isxdigit (guid[i])) {
@@ -97,8 +97,8 @@ namespace thekogans {
                     }
                 }
                 else {
-                    if (guid.size () == GUID::LENGTH * 2) {
-                        for (std::size_t i = 0; i < GUID::LENGTH * 2; ++i) {
+                    if (guid.size () == GUID::SIZE * 2) {
+                        for (std::size_t i = 0; i < GUID::SIZE * 2; ++i) {
                             if (!isxdigit (guid[i])) {
                                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
                                     THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
@@ -149,13 +149,13 @@ namespace thekogans {
                     }
                 }
                 else {
-                    for (std::size_t i = 0; i < LENGTH; ++i) {
+                    for (std::size_t i = 0; i < SIZE; ++i) {
                         data[i] = GetNumber (guid[i * 2]) * 16 + GetNumber (guid[i * 2 + 1]);
                     }
                 }
             }
             else {
-                memcpy (data, _data_, LENGTH);
+                memcpy (data, _data_, SIZE);
             }
         }
 
@@ -204,7 +204,7 @@ namespace thekogans {
 
         GUID GUID::FromRandom () {
             GUID guid;
-            GlobalRandomSource::Instance ().GetBytes (guid.data, LENGTH);
+            GlobalRandomSource::Instance ().GetBytes (guid.data, SIZE);
             return guid;
         }
 

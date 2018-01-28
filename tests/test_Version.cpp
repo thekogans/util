@@ -23,16 +23,16 @@
 
 using namespace thekogans;
 
-TEST (theKogans, Version) {
+TEST (thekogans, Version) {
     const util::Version &version = util::GetVersion ();
     // The build system exposes the versions numbers through macros
     // on the compiler command line:
     // -D$(ORGANIZATION)_$(PROJECT)_MAJOR_VERSION=$(major_version)
     // -D$(ORGANIZATION)_$(PROJECT)_MINOR_VERSION=$(minor_version)
-    // -D$(ORGANIZATION)_$(PROJECT)_PATCH_VERSION=$(patch_version) 
+    // -D$(ORGANIZATION)_$(PROJECT)_PATCH_VERSION=$(patch_version)
     //
     // For the test to work, the test Version file must be a copy
-    // of the util Version file 
+    // of the util Version file
     //
     // This may seem silly but it actually verifies
     // the library is loadable and the build environment
@@ -46,7 +46,7 @@ TEST (theKogans, Version) {
 // concept per test block.
 // Also checks that invoking the functions more
 // than once doesn't cause side-effects
-TEST (theKogans, VersionToString) {
+TEST (thekogans, VersionToString) {
     #define expand(s) #s
     #define stringize(s) expand (s)
     #define VERSIONSTRING\

@@ -48,6 +48,7 @@
 #include "thekogans/util/Serializer.h"
 #include "thekogans/util/Buffer.h"
 #include "thekogans/util/GUID.h"
+#include "thekogans/util/Exception.h"
 
 namespace thekogans {
     namespace util {
@@ -147,7 +148,7 @@ namespace thekogans {
             /// \brief
             /// Return number of bytes available for reading.
             /// \return Number of bytes available for reading.
-            virtual ui64 GetDataAvailable ();
+            virtual ui64 GetDataAvailableForReading ();
 
             // Serializer
             /// \brief

@@ -189,10 +189,6 @@ namespace thekogans {
                 writeOffset += advance;
                 return advance;
             }
-
-            /// \brief
-            /// FixedBuffer is neither copy constructable, nor assignable.
-            THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (FixedBuffer)
         };
 
         /// \brief

@@ -67,7 +67,7 @@ namespace thekogans {
 
         /// \brief
         /// Smallest 8 bit integer.
-        const i8 I8_MIN = -128;
+        const i8 I8_MIN = (i8)0x80;
         /// \brief
         /// Largest 8 bit integer.
         const i8 I8_MAX = 0x7f;
@@ -81,7 +81,7 @@ namespace thekogans {
 
         /// \brief
         /// Smallest 16 bit integer.
-        const i16 I16_MIN = -32768;
+        const i16 I16_MIN = (i16)0x8000;
         /// \brief
         /// Largest 16 bit integer.
         const i16 I16_MAX = 0x7fff;
@@ -95,7 +95,7 @@ namespace thekogans {
 
         /// \brief
         /// Smallest 32 bit integer.
-        const i32 I32_MIN = -2147483647 - 1;
+        const i32 I32_MIN = 0x80000000;
         /// \brief
         /// Largest 32 bit integer.
         const i32 I32_MAX = 0x7fffffff;

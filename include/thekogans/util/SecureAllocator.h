@@ -72,6 +72,7 @@ namespace thekogans {
             /// enough physical pages to satisfy Alloc requests.
             /// \param[in] minWorkingSetSize Minimum physical pages to reserve.
             /// \param[in] maxWorkingSetSize Maximum physical pages to reserve.
+            /// NOTE: Both values are in bytes.
             static void ReservePages (
                 ui64 minWorkingSetSize,
                 ui64 maxWorkingSetSize);

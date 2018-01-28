@@ -2,7 +2,7 @@
                 project = "util"
                 project_type = "library"
                 major_version = "0"
-                minor_version = "20"
+                minor_version = "21"
                 patch_version = "0"
                 guid = "e541acd69d9d020f7eac98d5bf9e0d7a"
                 schema_version = "2">

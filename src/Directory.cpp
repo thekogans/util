@@ -171,7 +171,8 @@ namespace thekogans {
                         handle, buffer, sizeof (buffer), FALSE,
                         FILE_NOTIFY_CHANGE_CREATION |
                         FILE_NOTIFY_CHANGE_SIZE |
-                        FILE_NOTIFY_CHANGE_FILE_NAME, 0, &overlapped, 0)) {
+                        FILE_NOTIFY_CHANGE_FILE_NAME |
+                        FILE_NOTIFY_CHANGE_DIR_NAME, 0, &overlapped, 0)) {
                     THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
                         THEKOGANS_UTIL_OS_ERROR_CODE);
                 }

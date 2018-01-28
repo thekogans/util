@@ -154,7 +154,8 @@ namespace thekogans {
         }
 
         std::string Variant::TypeToString (Type type) {
-            return type == TYPE_bool ? VALUE_BOOL :
+            return
+                type == TYPE_bool ? VALUE_BOOL :
                 type == TYPE_i8 ? VALUE_I8 :
                 type == TYPE_ui8 ? VALUE_UI8 :
                 type == TYPE_i16 ? VALUE_I16 :
@@ -170,7 +171,8 @@ namespace thekogans {
         }
 
         Variant::Type Variant::StringToType (const std::string &type) {
-            return type == VALUE_BOOL ? TYPE_bool :
+            return
+                type == VALUE_BOOL ? TYPE_bool :
                 type == VALUE_I8 ? TYPE_i8 :
                 type == VALUE_UI8 ? TYPE_ui8 :
                 type == VALUE_I16 ? TYPE_i16 :
@@ -628,7 +630,8 @@ namespace thekogans {
         _LIB_THEKOGANS_UTIL_DECL Serializer & _LIB_THEKOGANS_UTIL_API operator << (
                 Serializer &serializer,
                 const Variant &variant) {
-            serializer << variant.type;
+            ui32 type = variant.type;
+            serializer << type;
             switch (variant.type) {
                 case Variant::TYPE_Invalid:
                     break;
@@ -681,7 +684,9 @@ namespace thekogans {
                 Serializer &serializer,
                 Variant &variant) {
             variant.Clear ();
-            serializer >> (ui32 &)variant.type;
+            ui32 type;
+            serializer >> type;
+            variant.type = (Variant::Type)type;
             switch (variant.type) {
                 case Variant::TYPE_Invalid:
                     break;

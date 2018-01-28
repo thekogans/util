@@ -42,11 +42,6 @@ namespace thekogans {
             /// \brief
             /// true = rotate the log, false = don't rotate the log.
             bool archive;
-            enum {
-                /// \brief
-                /// Default number of archives before we start droping.
-                DEFAULT_ARCHIVE_COUNT = 2
-            };
             /// \brief
             /// Number of archives before we start droping.
             ui32 archiveCount;
@@ -59,6 +54,9 @@ namespace thekogans {
 
         public:
             enum {
+                /// \brief
+                /// Default number of archives before we start droping.
+                DEFAULT_ARCHIVE_COUNT = 2,
                 /// \brief
                 /// Default max log file size before archiving.
                 DEFAULT_MAX_LOG_FILE_SIZE = 2 * 1024 * 1024

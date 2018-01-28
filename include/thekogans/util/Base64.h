@@ -36,23 +36,71 @@ namespace thekogans {
 
         struct _LIB_THEKOGANS_UTIL_DECL Base64 {
             /// \brief
+            /// Return the buffer length required to hold the result of Encode.
+            /// \param[in] buffer Buffer to encode.
+            /// \param[in] bufferLength Length of buffer in bytes.
+            /// \param[in] lineLength Insert a '\n' after every
+            /// lineLength characters of output.
+            /// \param[in] linePad Pad the start of every line with ' '.
+            /// \return Buffer length required to encode the given buffer.
+            static std::size_t GetEncodedLength (
+                const void *buffer,
+                std::size_t bufferLength,
+                std::size_t lineLength,
+                std::size_t linePad);
+
+            /// \brief
             /// Encode a buffer.
             /// \param[in] buffer Buffer to encode.
             /// \param[in] bufferLength Length of buffer in bytes.
             /// \param[in] lineLength Insert a '\n' after every
             /// lineLength characters of output.
-            /// \param[in] linePad Pad the start of every line
-            /// with ' '.
+            /// \param[in] linePad Pad the start of every line with ' '.
+            /// \param[out] encoded Where to write encoded bytes.
+            /// \return Number of bytes written to encoded.
+            static std::size_t Encode (
+                const void *buffer,
+                std::size_t bufferLength,
+                std::size_t lineLength,
+                std::size_t linePad,
+                ui8 *encoded);
+            /// \brief
+            /// Encode a buffer.
+            /// \param[in] buffer Buffer to encode.
+            /// \param[in] bufferLength Length of buffer in bytes.
+            /// \param[in] lineLength Insert a '\n' after every
+            /// lineLength characters of output.
+            /// \param[in] linePad Pad the start of every line with ' '.
             /// \return Resulting base64 encoding.
             static Buffer::UniquePtr Encode (
                 const void *buffer,
                 std::size_t bufferLength,
                 std::size_t lineLength = SIZE_T_MAX,
                 std::size_t linePad = 0);
+
+            /// \brief
+            /// Return the buffer length required to hold the result of Decode.
+            /// \param[in] buffer Buffer to decode.
+            /// \param[in] bufferLength Length of buffer in bytes.
+            /// \return Buffer length required to decode the given buffer.
+            static std::size_t GetDecodedLength (
+                const void *buffer,
+                std::size_t bufferLength);
+
             /// \brief
             /// Decode a buffer.
             /// \param[in] bufferLength Buffer to decode.
             /// \param[in] length Length of buffer in bytes.
+            /// \param[out] decoded Where to write the resulting decoding.
+            /// \return Number of bytes written to decoded.
+            static std::size_t Decode (
+                const void *buffer,
+                std::size_t bufferLength,
+                ui8 *decoded);
+            /// \brief
+            /// Decode a buffer.
+            /// \param[in] buffer Buffer to decode.
+            /// \param[in] bufferLength Length of buffer in bytes.
             /// \return Resulting decoding.
             static Buffer::UniquePtr Decode (
                 const void *buffer,

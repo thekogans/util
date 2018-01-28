@@ -215,6 +215,102 @@ namespace thekogans {
         typedef RefCounted<ui32> SingleThreadedRefCounted;
 
         /// \brief
+        /// \see{ThreadSafeRefCounted::Ptr} static cast operator.
+        /// \param[in] u Type to cast from.
+        /// \return Pointer to destination type.
+        template<
+            typename T,
+            typename _U>
+        inline ThreadSafeRefCounted::Ptr<T> static_refcounted_pointer_cast (
+                const ThreadSafeRefCounted::Ptr<_U> &u) throw () {
+            return ThreadSafeRefCounted::Ptr<T> (static_cast<T *> (u.Get ()));
+        }
+
+        /// \brief
+        /// \see{ThreadSafeRefCounted::Ptr} dynamic cast operator.
+        /// \param[in] u Type to cast from.
+        /// \return Pointer to destination type.
+        template<
+            typename T,
+            typename _U>
+        inline ThreadSafeRefCounted::Ptr<T> dynamic_refcounted_pointer_cast (
+                const ThreadSafeRefCounted::Ptr<_U> &u) throw () {
+            return ThreadSafeRefCounted::Ptr<T> (dynamic_cast<T *> (u.Get ()));
+        }
+
+        /// \brief
+        /// \see{ThreadSafeRefCounted::Ptr} const cast operator.
+        /// \param[in] u Type to cast from.
+        /// \return Pointer to destination type.
+        template<
+            typename T,
+            typename _U>
+        inline ThreadSafeRefCounted::Ptr<T> const_refcounted_pointer_cast (
+                ThreadSafeRefCounted::Ptr<_U> &u) throw () {
+            return ThreadSafeRefCounted::Ptr<T> (const_cast<T *> (u.Get ()));
+        }
+
+        /// \brief
+        /// \see{ThreadSafeRefCounted::Ptr} reinterpret cast operator.
+        /// \param[in] u Type to cast from.
+        /// \return Pointer to destination type.
+        template<
+            typename T,
+            typename _U>
+        inline ThreadSafeRefCounted::Ptr<T> reinterpret_refcounted_pointer_cast (
+                ThreadSafeRefCounted::Ptr<_U> &u) throw () {
+            return ThreadSafeRefCounted::Ptr<T> (reinterpret_cast<T *> (u.Get ()));
+        }
+
+        /// \brief
+        /// \see{SingleThreadedRefCounted::Ptr} static cast operator.
+        /// \param[in] u Type to cast from.
+        /// \return Pointer to destination type.
+        template<
+            typename T,
+            typename _U>
+        inline SingleThreadedRefCounted::Ptr<T> static_refcounted_pointer_cast (
+                const SingleThreadedRefCounted::Ptr<_U> &u) throw () {
+            return SingleThreadedRefCounted::Ptr<T> (static_cast<T *> (u.Get ()));
+        }
+
+        /// \brief
+        /// \see{SingleThreadedRefCounted::Ptr} dynamic cast operator.
+        /// \param[in] u Type to cast from.
+        /// \return Pointer to destination type.
+        template<
+            typename T,
+            typename _U>
+        inline SingleThreadedRefCounted::Ptr<T> dynamic_refcounted_pointer_cast (
+                const SingleThreadedRefCounted::Ptr<_U> &u) throw () {
+            return SingleThreadedRefCounted::Ptr<T> (dynamic_cast<T *> (u.Get ()));
+        }
+
+        /// \brief
+        /// \see{SingleThreadedRefCounted::Ptr} const cast operator.
+        /// \param[in] u Type to cast from.
+        /// \return Pointer to destination type.
+        template<
+            typename T,
+            typename _U>
+        inline SingleThreadedRefCounted::Ptr<T> const_refcounted_pointer_cast (
+                SingleThreadedRefCounted::Ptr<_U> &u) throw () {
+            return SingleThreadedRefCounted::Ptr<T> (const_cast<T *> (u.Get ()));
+        }
+
+        /// \brief
+        /// \see{SingleThreadedRefCounted::Ptr} reinterpret cast operator.
+        /// \param[in] u Type to cast from.
+        /// \return Pointer to destination type.
+        template<
+            typename T,
+            typename _U>
+        inline SingleThreadedRefCounted::Ptr<T> reinterpret_refcounted_pointer_cast (
+                SingleThreadedRefCounted::Ptr<_U> &u) throw () {
+            return SingleThreadedRefCounted::Ptr<T> (reinterpret_cast<T *> (u.Get ()));
+        }
+
+        /// \brief
         /// Compare two pointers for equality.
         /// \param[in] item1 First pointer to compare.
         /// \param[in] item2 Second pointer to compare.

@@ -40,12 +40,12 @@ namespace thekogans {
         struct _LIB_THEKOGANS_UTIL_DECL GUID {
             enum {
                 /// \brief
-                /// GUID length.
-                LENGTH = 16
+                /// GUID size.
+                SIZE = 16
             };
             /// \brief
             /// GUID data.
-            ui8 data[LENGTH];
+            ui8 data[SIZE];
 
             /// \brief
             /// Default ctor.
@@ -53,15 +53,15 @@ namespace thekogans {
             /// \brief
             /// ctor. Initialize to a given value.
             /// \param[in] data_ Value to initialize to.
-            explicit GUID (const ui8 data_[LENGTH]) {
-                memcpy (data, data_, LENGTH);
+            explicit GUID (const ui8 data_[SIZE]) {
+                memcpy (data, data_, SIZE);
             }
             /// \brief
             /// ctor. Parse the GUID out of a string representation.
             /// NOTE: The guid must only contain hexadecimal (0 - 9, a - f) digits.
             /// \param[in] guid String representation of a guid to parse.
             /// \param[in] windowsGUID true = guid is in Windows GUID format (4-2-2-2-6),
-            /// false = guid is a string of LENGTH * 2 hexadecimal digits.
+            /// false = guid is a string of SIZE * 2 hexadecimal digits.
             explicit GUID (
                 const std::string &guid,
                 bool windowsGUID = false);
@@ -70,7 +70,7 @@ namespace thekogans {
             /// Return the serialized size of this guid.
             /// \return Serialized size of this guid.
             inline ui32 Size () const {
-                return LENGTH;
+                return SIZE;
             }
 
             /// \brief
@@ -109,7 +109,7 @@ namespace thekogans {
 
         /// \brief
         /// Serialized GUID size.
-        const ui32 GUID_SIZE = GUID::LENGTH;
+        const ui32 GUID_SIZE = GUID::SIZE;
 
         /// \brief
         /// Compare two guids for order.
@@ -119,7 +119,7 @@ namespace thekogans {
         inline bool operator < (
                 const GUID &guid1,
                 const GUID &guid2) {
-            return memcmp (guid1.data, guid2.data, GUID::LENGTH) < 0;
+            return memcmp (guid1.data, guid2.data, GUID::SIZE) < 0;
         }
 
         /// \brief
@@ -130,7 +130,7 @@ namespace thekogans {
         inline bool operator > (
                 const GUID &guid1,
                 const GUID &guid2) {
-            return memcmp (guid1.data, guid2.data, GUID::LENGTH) > 0;
+            return memcmp (guid1.data, guid2.data, GUID::SIZE) > 0;
         }
 
         /// \brief
@@ -141,7 +141,7 @@ namespace thekogans {
         inline bool operator == (
                 const GUID &guid1,
                 const GUID &guid2) {
-            return memcmp (guid1.data, guid2.data, GUID::LENGTH) == 0;
+            return memcmp (guid1.data, guid2.data, GUID::SIZE) == 0;
         }
 
         /// \brief
@@ -152,7 +152,7 @@ namespace thekogans {
         inline bool operator != (
                 const GUID &guid1,
                 const GUID &guid2) {
-            return memcmp (guid1.data, guid2.data, GUID::LENGTH) != 0;
+            return memcmp (guid1.data, guid2.data, GUID::SIZE) != 0;
         }
 
         /// \brief

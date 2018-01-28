@@ -190,16 +190,28 @@ namespace thekogans {
                 return length > writeOffset ? length - writeOffset : 0;
             }
             /// \brief
-            /// Return the current read data position.
-            /// \return The current read data position.
+            /// Return the current data read position.
+            /// \return The current data read position.
             inline const ui8 *GetReadPtr () const {
                 return data + readOffset;
             }
             /// \brief
-            /// Return the current write data position.
-            /// \return The current write data position.
+            /// Return just past the end of the current data read position.
+            /// \return Just past the end of the current data read position.
+            inline const ui8 *GetReadPtrEnd () const {
+                return GetReadPtr () + GetDataAvailableForReading ();
+            }
+            /// \brief
+            /// Return the current data write position.
+            /// \return The current data write position.
             inline ui8 *GetWritePtr () const {
                 return data + writeOffset;
+            }
+            /// \brief
+            /// Return just past the end of the current data write position.
+            /// \return Just past the end of the current data write position.
+            inline ui8 *GetWritePtrEnd () const {
+                return GetWritePtr () + GetDataAvailableForWriting ();
             }
             /// \brief
             /// Advance the read offset taking care not to overflow.
@@ -211,6 +223,14 @@ namespace thekogans {
             /// \param[in] advance Amount to advance the writeOffset.
             /// \return Number of bytes actually advanced.
             ui32 AdvanceWriteOffset (ui32 advance);
+
+            /// \brief
+            /// Reset the readOffset and the writeOffset to prepare the
+            /// buffer for reuse.
+            inline void Rewind () {
+                readOffset = 0;
+                writeOffset = 0;
+            }
 
         #if defined (THEKOGANS_UTIL_HAVE_ZLIB)
             /// \brief
