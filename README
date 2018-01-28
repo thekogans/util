@@ -1,3 +1,84 @@
-This folder contains thekogans util library.
+libthekogans_util is at the heart of every other library and
+program. It contains a lot of reusable, cross-platform code designed
+to hide platform specific details from other, higher level
+libraries. The library is developed, and tested on Windows, Linux, and
+OS X, in both 32 and 64 bit modes, and on little and big endian
+architectures (x86, MIPS, ARM…). Here is a complete feature list:
 
-Visit http://www.thekogans.net/?page_id=23 to learn how to build and use it.
+    - A type system (Types.h, Constants.h) to hide platform specific
+      types.
+
+    - A collection of useful, simple, and lightweight types (Flags.h,
+      Variant.h, GUID.h, Fraction.h, Array.h).
+
+    - A collection of standard container wrappers (AbstractOwnerList.h,
+      AbstractOwnerVector.h, OwnerList.h, OwnerVector.h, OwnerMap.h)
+      which help with lifetime management of heap allocated objects.
+
+    - An intrusive list (IntrusiveList.h) used in many situations
+      where std::list is not appropriate.
+
+    - A std::exception extension class (Exception.h) which uses a
+      trace-back mechanism to track the path of an exception as it is
+      being unwound.
+
+    - A high resolution timer (HRTimer.h, HRTimerMgr.h) which can be
+      used to help with code profiling.
+
+    - A millisecond resolution periodic timer (Timer.h) designed to be
+      used where accuracy is not paramount (idle processing…).
+
+    - A platform independent time interval (TimeSpec.h). This class
+      abstracts the time interval used by all timer, thread, and
+      synchronization classes, and provides a uniform way to specify a
+      timeout value.
+
+    - A full featured logging framework (LoggerMgr.h, Logger.h,
+      ConsoleLogger.h, FileLogger.h).
+
+    - A per class heap (Heap.h), which makes memory management a
+      breeze. It also provides built in diagnostics for leaks, and
+      double free (two of the nastiest memory bugs).
+
+    - An extensible collection of allocators (Allocator.h,
+      DefaultAllocator.h, AlignedAllocator.h, SecureAllocator.h,
+      SharedAllocator.h) that plug in to Heap and Buffer.
+
+    - A set of concurrency/synchronization wrappers (Thread.h,
+      NullLock.h, SpinLock.h, Mutex.h, Semaphore.h, Barrier.h,
+      SpinRWLock.h, RWLock.h, Condition.h, Event.h, TimeSpec.h,
+      LockGuard.h, RWLockGuard.h) designed to put a uniform api on top
+      of pthreads, and Windows specific threading api.
+
+    - A collection of process classes (ChildProcess.h, DynamicLibrary.h)
+      used to instantiate child processes, and load shared objects
+      (*.so, *.dylib, *.dll).
+
+    - A set of higher level threading abstractions (JobQueue.h,
+      WorkerPool.h, Pipeline.h, Vectorizer.h, GlobalVectorizer.h,
+      Scheduler.h) useful in many different situations.
+
+    - An extensible collection of hashers (Hash.h, MD5.h, SHA1.h,
+      SHA2.h, SHA3.h) to aid in the use of third party libraries.
+
+    - A set of classes (File.h, Directory.h, Path.h, MimeTypeMapper.h)
+      designed to help when dealing with file system objects. Of
+      these, Directory is especially noteworthy. It implements such
+      advanced, and useful features as; platform independent file
+      system traversal, and an asynchronous directory change
+      watcher/notifier.
+
+    - A convenient in memory stream (Buffer.h). It’s main purpose is to
+      provide serialization/deserialization services for binary
+      protocols. A handy (Deflate/Inflate) API is provided to
+      compress/decompress the buffer using zlib.
+
+    - A set of utilities to help with processing xml (pugixml.hpp,
+      XercesUtils.h, XMLUtils.h)
+
+    - A collection of string utilities (StringUtils.h) used to hide
+      platform inconsistencies.
+
+    - A set of miscellaneous classes (Config.h, Version.h, Console.h,
+      CommandLineOptions.h, Singleton.h, SystemInfo.h, ByteSwap.h,
+      Base64.h).
