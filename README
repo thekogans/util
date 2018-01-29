@@ -82,3 +82,21 @@ architectures (x86, MIPS, ARM…). Here is a complete feature list:
     - A set of miscellaneous classes (Config.h, Version.h, Console.h,
       CommandLineOptions.h, Singleton.h, SystemInfo.h, ByteSwap.h,
       Base64.h).
+
+libthekogans_util has the following required dependencies:
+
+Windows: Ws2_32.lib, mpr.lib.
+
+Linux: pthread, rt, dl.
+
+OS X: pthread, frameworks: Foundation, CoreFoundation, CoreServices,
+SystemConfiguration.
+
+libthekogans_util has the following optional dependencies:
+
+if -DTHEKOGANS_UTIL_HAVE_BOOST_ATOMIC is specified, boost_atomic.
+if -DTHEKOGANS_UTIL_HAVE_PUGIXML is specified, pugixml.
+if -DTHEKOGANS_UTIL_HAVE_XERCES is specified, xerces.
+if -DTHEKOGANS_UTIL_HAVE_ZLIB is specified, zlib.
+if -DTHEKOGANS_UTIL_HAVE_TESTS is specified, CppUnitXLite.
+Linux: if -DTHEKOGANS_UTIL_HAVE_XLIB is specified, X11.
