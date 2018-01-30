@@ -1,0 +1,316 @@
+version 0.11.8:
+
+    minor typo fixes.
+
+version 0.11.7:
+
+    SystemInfo.h:
+        added GetHostName.
+    LoggerMgr.h:
+        now using SystemInfo::GetHostName.
+    cleaned up formatting and comments.
+
+version 0.11.6:
+
+    JobQueue.h:
+        added Job::ShouldStop.
+    OwnerMap.h:
+        added Compare template parameter.
+    TimeSpec.h:
+        on windows removed my timeval.
+    cleaned up formatting and comments.
+
+version 0.11.5:
+
+    Exception.h:
+        silence a windows warning (4275).
+
+version 0.11.4:
+
+    updated the hash example to support naked hashes.
+
+version 0.11.3:
+
+    Config.h:
+        replaced _USRDLL with TOOLCHAIN_TYPE_Shared.
+
+version 0.11.2:
+
+    updated all thekogans_make.xml to schema version 2.
+    Buffer.h:
+        added SharedPtr typedef.
+    Config.h:
+        replaced _DLL with _USRDLL.
+
+version 0.11.1:
+
+    internal.h;
+        added OS X clock_gettime implementation.
+    JobQueue.h:
+        added GlobalJobQueue and GlobalJobQueueCreateInstance.
+    Scheduler.h:
+        added GlobalScheduler and GlobalSchedulerCreateInstance.
+    Singleton.h:
+        added CreateInstance template parameter.
+        added DefaultCreateInstance template.
+    Vectorizer.h:
+        added GlobalVectorizerCreateInstance.
+    Version.h:
+        added missing windows __declspec.
+    WorkerPool.h:
+        added GlobalWorkerPoolCreateInstance.
+
+version 0.11.0:
+
+    Buffer.h:
+        moved Byte[Source | Sink] to Serializer.h.
+        fixed BufferByte[Source | Sink] to inherit from Serializer::Byte[Source | Sink].
+    File.h:
+        added S_IRGRP | S_IROTH to OS X/Linux ctor/Open.
+        fixed FileByte[Source | Sink] to inherit from Serializer::Byte[Source | Sink].
+    added FixedBuffer.h.
+    fixed RandomByteSource to inherit from Serializer::ByteSource in RandomSource.h.
+    SecureAllocator.h:
+        added ReservePages.
+        added stdSecureAllocator.
+        added SecureString.
+        added SecureVector.
+    Serializer.h:
+        added operator >> (char *).
+        changed operator << (const std::string &) and operator >> (std::string &) to read and write pascal strings.
+        added Byte[Source | Sink].
+        added operator << (const FixedBuffer &) and operator >> (FixedBuffer &).
+
+version 0.10.1:
+
+    fixed incorrect macro names in Heap.h.
+
+version 0.10.0:
+
+    Buffer.h:
+        virtualized Resize, Clone, Deflate and Inflate so that SecureBuffer is able to use SecureAllocator.
+        added Resize, Clone, Deflate and Inflate overrides to SecureAllocator.
+        added default readOffset to TenantReadBuffer ctor.
+        added default writeOffset to TenantWriteBuffer ctor.
+    Config.h:
+        added THEKOGANS_UTIL_ATOMIC.
+        added THEKOGANS_UTIL module name. all util log entries will be under this subsystem heading.
+    Exception.h:
+        added THEKOGANS_UTIL_CATCH_AND_LOG_SUBSYSTEM.
+        added THEKOGANS_UTIL_CATCH_AND_LOG_SUBSYSTEM_WITH_MESSAGE.
+    made Logger derive from ThreadSafeRefCounted to better support subsystem logging.
+    added subsystem logging support to LoggerMgr. it’s now possible to register a separate Logger list for each subsystem.
+    updated all util internal logging to use the new subsystem support.
+    added Swap to RefCounted::Ptr.
+    defaulted Scheduler::JobQueue priority to PRIORITY_NORMAL.
+    added struct BufferHeader to Serializer.
+    added BitSet.[h | cpp].
+    cleaned up the use of atomic using the THEKOGANS_UTIL_ATOMIC macro from Config.h.
+    fixed linux compilation issues.
+    documentation improvements and typos.
+
+version 0.9.0:
+
+    rewrote Barrier custom implementation to fix a nasty race.
+    Buffer.h:
+        normalized ctor parameters.
+        added Byte[Source | Sink] interfaces to allow wrapping external sources.
+        added Tenant[Read | Write]Buffer.
+        added BufferByte[Source | Sink].
+    cleanup of _MSC_VER preprocessor defines to allow util to build with g++ on windows.
+    Console.h:
+        added thread safety to PrintString.
+        added color text printing to PrintString.
+    made ConsoleLogger use Console::PrintString.
+    added CRC32.h.
+    Exception.h:
+        added OS X System Configuration errors.
+        added Exception::Filter to allow custom filters to determine which exceptions to fire.
+    added FileByte[Source | Sink] in File.h.
+    cleaned up internal.h to build with g++ on windows.
+    added JobQueue::Job::Cancel to allow in flight job cancellation.
+    added GlobalJobQueue singleton in JobQueue.h.
+    added LockGuard::release to allow finer control.
+    added throw () to Logger interface.
+    added LoggerMgr::Filter to allow custom filters to determine which entries to log.
+    added NSLogLogger.h to dump log entries to xcode console.
+    added OutputDebugStringLogger.h to dump log entries to visual studio console.
+    added NullAllocator.h to support Tenant[Read | Write]Buffer.
+    added RandomByteSource in RandomSource.h.
+    added operator ==, != to RefCounted::Ptr in RefCounted.h.
+    added Serializer::Size api to aid with binary stream protocols.
+    fixed 64 bit formatting strings in StringUtils.h.
+    added Thread::AtExit api.
+    added Timer::[Set | Get]Name in Timer.h.
+    added GlobalWorkerPool in WorkerPool.h.
+    documentation improvements and typos.
+
+version 0.8.0:
+
+    removed boost as a dependency.
+
+version 0.7.2:
+
+    replaced offset with readOffset and writeOffset in Buffer.h.
+    documentation improvements and typos.
+
+version 0.7.1:
+
+    changed the signature of all Job interfaces to include throw ().
+    removed Vectorizer.[h | cpp].
+    renamed GlobalVectorizer.[h | cpp] to Vectorizer.[h | cpp].
+    fixed a bug in SharedAllocator::Lock when emulating a SpinLock with Mutex in SharedAllocator.h.
+    documentation improvements and typos.
+
+version 0.7.0:
+
+    added Scheduler.[h | cpp].
+    switched from Mutex to SpinLock in GlobalVectorizer.h.
+    switched from Mutex to SpinLock in Singleton.h.
+    added HexDecodeBuffer in StringUtils.h.
+    documentation improvements and typos.
+
+version 0.6.0:
+
+    added #include “thekogans/util/Config.h” to Array.h.
+    added GetCommandLine and GetReturnCode to ChildProcess.
+    added Unix permissions (mode) to Directory::Entry.
+    added DigestTostring and stringToDigest to Hash.
+    added digest comparison operators in Hash.h.
+    added ToWindowsPathSeparator, ToUnixPathSeparator and MakeAbsolute to Path.
+    added GetLongestCommonPrefix in StrinUtils.h.
+    added version comparison operators in Version.h.
+    added THEKOGANS_UTIL_HAVE_PUGIXML feature to turn on and off pugixml dependency.
+    documentation improvements and typos.
+
+version 0.5.7:
+
+    updated various scripts to work with the new toolchain features.
+
+version 0.5.6:
+
+    Timer.h:
+        reworked the Timer to be more lightweight. it’s now practical to have dozens of active timers at the same time.
+        replaced the inheritance api with a callback mechanism. it’s now possible to have all timers handled by a single callback handler.
+        added optional name ctor parameter. this helps in identifying the timer that fired.
+    reworked Console to allow waiting on ctrl+break.
+    documentation improvements and typos.
+
+version 0.5.5:
+
+    removed local copy of pugixml and moved it in to the toolchain.
+    ByteSwap.h:
+        removed dependency on boost/static_assert.hpp (replaced with c++0x static_assert).
+        removed dependency on boost/endian.hpp (replaced with toolchain TOOLCHAIN_ENDIAN).
+    Directory::Watcher replaced select with epoll in Linux variant.
+    added guards to definitions of _LARGEFILE64_SOURCE and _FILE_OFFSET_BITS in internal.h
+    fixed IntrusiveList::for_each to stash the next pointer before invoking the callback.
+    JobQueue:
+        replaced OwnerList<Job> with IntrusiveList<Job>.
+        replaced OwnerList<Worker> with IntrusiveList<Worker>.
+        removed volatile bool done from Worker.
+        Added Barrier for worker synchronization in Stop.
+    replaced storage_type *storage with storage_type &storage in SharedAllocator::Lock.
+    Thread.h:
+        removed the signals api. threads on POSIX systems are now created with signals disabled.
+        added bool joined to POSIX implementations to control Wait better.
+        fixed a subtle bug in Wait on Linux.
+    TimeSpec.h:
+        added parameter validation to various apis.
+        fixed conversion routines to account for Zero and Infinite.
+    added THEKOGANS_UTIL_ARRAY_SIZE to Types.h.
+    documentation improvements and typos.
+
+version 0.5.4:
+
+    consolidated TimeSpec to better handle absolute time values.
+    added IntrusiveList::contains to check for node containment.
+    documentation improvements and typos.
+
+version 0.5.3:
+
+    added THEKOGANS_UTIL_OS_ERROR_CODE_TIMEOUT to Exception.h.
+    LoggerMgr::Entry now derives from IntrusiveList::Node.
+    expanded documentation in SharedAllocator.h.
+    added operator <= and >= in TimeSpec.h.
+    several nasty bug fixes in IntrusiveList.h.
+
+version 0.5.2:
+
+    added tests/test_Version.cpp.
+    replaced Mutex with SpinLock in HeapRegistry.
+    documentation improvements and typos.
+
+version 0.5.1:
+
+    added secure flag to SharedAllocator::ctor.
+    removed SharedAllocator::Block::magic from release mode builds.
+    documentation improvements and typos.
+
+version 0.5.0:
+
+    added struct Allocator (Allocator.h) to model abstract allocators.
+    reworked DefaultAllocator and AlignedAllocator to inherit from Allocator.
+    added struct SecureAllocator (SecureAllocator.h).
+    added struct SharedAllocator (SharedAllocator.h).
+    added struct IntrusiveList (IntrusiveList.h).
+    reworked Heap to use Allocator.
+    reworked Heap to use IntrusiveList.
+    reworked WorkerPool to use IntrusiveList.
+    reworked Buffer to use Allocator.
+    reworked SecureBuffer to use SecureAllocator.
+    added THEKOGANS_UTIL_OS_ERROR_CODE_ENOMEM (Exception.h).
+    added FileLogger::maxLogFileSize.
+    added operator != (TimeSpec.h).
+    added GetCurrentTime (TimeSpec.h).
+    documentation improvements and typos.
+
+version 0.4.1:
+
+    exposed FileLogger::maxLogFileSize.
+    added volatile to Singleton::instance.
+    fixed a race in LoggerMgr::Flush.
+    documentation improvements and typos.
+
+version 0.4.0:
+
+    added Features file to control building of various features.
+    updated examples Makefiles to use the new build features.
+    updated Base64::Encode api signature to allow for formatted output.
+    updated CommandLineOptions::DoUnknownOption api signature to take the option value parameter.
+    added debug THEKOGANS_UTIL_DEBUG_BREAK for Linux/OS X to Config.h.
+    changed the name of Directory::Watcher::EventHandler to Directory::Watcher::EventSink.
+    changed LoggerMgr to precomputed hostName in ctor and use the cached value.
+    added std::ostream to MimeTypeMapper::Dump.
+    added Path::IsEmpty.
+    added RandomSource.h/cpp
+    added RefCounted.h/cpp
+    updated pugixml to version 1.6.
+    changed Variant::ToString signature to better align with other ToString methods.
+    Buffer:
+        added GetDataPtrAtOffset.
+        added AdvanceOffset.
+        wrapped Deflate/Inflate with THEKOGANS_UTIL_HAVE_ZLIB feature.
+        added SecureBuffer.
+    Exception:
+        added GetErrorCode.
+        added THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL.
+    GUID:
+        replaced magic numbers with enums.
+        replaced dependency on Kashmir library.
+        added ability for ctor to take Windows formatted guids.
+    Heap:
+        added support for nothrow variants of new/delete.
+        replaced Mutex with SpinLock.
+    WorkerPool:
+        added WorkerList::push_front api.
+        changed worker release to put the worker at the front of the list for better cache utilization.
+    internal:
+        added _vscprintf for Linux/OS X.
+        added OS X kqueue macros.
+    bug fixes.
+    documentation improvements and typos.
+
+version 0.3.4:
+
+    initial release

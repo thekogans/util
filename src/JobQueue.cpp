@@ -41,6 +41,20 @@ namespace thekogans {
         void JobQueue::COMInitializer::UninitializeWorker () throw () {
             CoUninitialize ();
         }
+
+        void JobQueue::OLEInitializer::InitializeWorker () throw () {
+            THEKOGANS_UTIL_TRY {
+                HRESULT result = OleInitialize (0);
+                if (result != S_OK) {
+                    THEKOGANS_UTIL_THROW_HRESULT_ERROR_CODE_EXCEPTION (result);
+                }
+            }
+            THEKOGANS_UTIL_CATCH_AND_LOG_SUBSYSTEM (THEKOGANS_UTIL)
+        }
+
+        void JobQueue::OLEInitializer::UninitializeWorker () throw () {
+            OleUninitialize ();
+        }
     #endif // defined (TOOLCHAIN_OS_Windows)
 
         void JobQueue::Stats::Update (

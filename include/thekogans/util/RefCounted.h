@@ -202,6 +202,7 @@ namespace thekogans {
             /// are appropriate for them.
             virtual void Harakiri () {
                 if (doDelete) {
+                    assert (count == 0);
                     delete this;
                 }
             }

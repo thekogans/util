@@ -117,6 +117,19 @@ namespace thekogans {
                 /// Called by the worker before exiting the thread.
                 virtual void UninitializeWorker () throw ();
             };
+
+            /// \struct JobQueue::OLEInitializer JobQueue.h thekogans/util/JobQueue.h
+            ///
+            /// \brief
+            /// Initialize the Windows OLE library.
+            struct _LIB_THEKOGANS_UTIL_DECL OLEInitializer : public WorkerCallback {
+                /// \brief
+                /// Called by the worker before entering the job execution loop.
+                virtual void InitializeWorker () throw ();
+                /// \brief
+                /// Called by the worker before exiting the thread.
+                virtual void UninitializeWorker () throw ();
+            };
         #endif // defined (TOOLCHAIN_OS_Windows)
 
             /// \brief
