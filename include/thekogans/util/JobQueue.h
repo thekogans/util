@@ -231,6 +231,18 @@ namespace thekogans {
                 inline bool ShouldStop (volatile const bool &done) const {
                     return done || cancelled;
                 }
+                /// \brief
+                /// Return true if job is still running.
+                /// \return true = Job has not been cancelled and is not finished.
+                inline bool Running () const {
+                    return !cancelled && !finished;
+                }
+                /// \brief
+                /// Return true if job completed successfully.
+                /// \return true = Job has not been cancelled and is finished.
+                inline bool Completed () const {
+                    return !cancelled && finished;
+                }
             };
         #if defined (_MSC_VER)
             #pragma warning (pop)

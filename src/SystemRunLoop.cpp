@@ -429,7 +429,7 @@ namespace thekogans {
             CFRunLoopWakeUp (runLoop);
         #endif // defined (TOOLCHAIN_OS_Windows)
             if (wait) {
-                while (!job.cancelled && !job.finished) {
+                while (!job.ShouldStop (done) && !job.finished) {
                     jobFinished.Wait ();
                 }
             }

@@ -1,3 +1,120 @@
+version 0.15.1:
+
+    Thread.cpp:
+        fixed incorrect error handling from pthread api.
+
+version 0.15.0:
+
+    ConsoleLogger.h:
+        added level parameter to the ctor.
+    Exception.h:
+        added THEKOGANS_UTIL_LOG_EXCEPTION, THEKOGANS_UTIL_LOG_EXCEPTION_WITH_MESSAGE,
+        THEKOGANS_UTIL_LOG_SUBSYSTEM_EXCEPTION and THEKOGANS_UTIL_LOG_SUBSYSTEM_EXCEPTION_WITH_MESSAGE macros.
+    File.h:
+        added SimpleFile.
+        added missing _LIB_THEKOGANS_UTIL_DECL to ReadOnlyFile declaration.
+    FileLogger.h:
+        added level parameter to the ctor.
+    Logger.h:
+        added level parameter to the ctor and class member.
+    LoggerMgr.h:
+        added HRTime decoration.
+    NSLogLogger.h:
+        added level parameter to the ctor.
+    OutputDebugStringLogger.h:
+        added level parameter to the ctor.
+    Plugins.h:
+        added a few typedefs to cleanup the interfaces.
+        added maxPluginsFileSize to the ctor to protect against malicious files.
+    SecureAllocator.h:
+        fixed template parameter names to guard against global space macros with the same name.
+    Timer.h:
+        documentation typos.
+        added throw () to the Alarm callback.
+    TimeSpec.h:
+        added FromHours.
+
+version 0.14.2:
+
+    Exception.h:
+        added a missing #include <cstdio>.
+    Plugins.h:
+        added THEKOGANS_UTIL_HAVE_PUGIXML guards.
+    StringUtils.h:
+        documentation typos.
+    SystemRunLoop.h:
+        added const to RunLoop parameted in DispatchEvent.
+    Types.h:
+        added a missing #include <cstdio>.
+        added THEKOGANS_UTIL_POSIX_ERROR_CODE, THEKOGANS_UTIL_POSIX_OS_ERROR_CODE,
+        THEKOGANS_UTIL_POSIX_HANDLE and THEKOGANS_UTIL_POSIX_INVALID_HANDLE_VALUE
+
+version 0.14.1:
+
+    Path.h:
+        changed the return value on GetComponents.
+    Plugins.h:
+        added maxPluginsFileSize to the ctor to protect against malicious files.
+
+version 0.14.0:
+
+    rewrote RunLoop and broke it out to DefaultRunLoop, SystemRunLoop, MainRunLoop.
+    JobQueue.h:
+        added worker affinity.
+    Pipeline.h:
+        added worker affinity.
+    Scheduler.h:
+        added worker affinity.
+    WorkerPool.h:
+        added worker affinity.
+    added documentation to Plugins.h
+    documentation improvements and typos.
+
+version 0.13.2:
+
+    ChildProcess.h
+        comment fixes.
+    Console.h:
+        completely removed the vestiges of the old RunLoop implementation.
+    LoggerMgr.h:
+        added blocking flag.
+    added Plugins.[h | cpp]
+    merged SystemRunLoop in to RunLoop.
+    Version.h:
+        added Empty.
+
+version 0.13.1:
+
+    ChildProcess.cpp
+        fixed testing the hookStdIo flags.
+
+version 0.13.0:
+
+    Console.h:
+        removed embedded RunLoop.
+    added RunLoop DefaultRunLoop and SystemRunLoop.
+
+version 0.12.1:
+
+    Thread.h:
+        moved exited to Windows side.
+    TimeSpec.h:
+        added explicit to ctor.
+
+version 0.12.0:
+
+    Console.h:
+        added RunLoop.
+        removed WaitCtrlBreak.
+    Heap.h:
+        added a few asserts for sanity checks.
+    JobQueue.h:
+        removed priority = -1 hack from worker initialization.
+    LoggerMgr.h:
+        added the const qualifier to LoggerList in AddLoggerList.
+    Path.h:
+        added Move.
+
 version 0.11.8:
 
     minor typo fixes.

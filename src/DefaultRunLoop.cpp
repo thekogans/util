@@ -58,7 +58,7 @@ namespace thekogans {
             jobs.push_back (JobQueue::Job::Ptr (&job));
             jobsNotEmpty.Signal ();
             if (wait) {
-                while (!job.cancelled && !job.finished) {
+                while (!job.ShouldStop (done) && !job.finished) {
                     jobFinished.Wait ();
                 }
             }
