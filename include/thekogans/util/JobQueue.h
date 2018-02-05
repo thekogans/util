@@ -227,19 +227,19 @@ namespace thekogans {
                 /// JobQueue responsive.
                 /// \param[in] done If true, this flag indicates that
                 /// the job should stop what it's doing, and exit.
-                /// \return true if the job should stop what it's doing and exit.
+                /// \return true == Job should stop what it's doing and exit.
                 inline bool ShouldStop (volatile const bool &done) const {
                     return done || cancelled;
                 }
                 /// \brief
                 /// Return true if job is still running.
-                /// \return true = Job has not been cancelled and is not finished.
+                /// \return true == Job has not been cancelled and is not finished.
                 inline bool Running () const {
                     return !cancelled && !finished;
                 }
                 /// \brief
                 /// Return true if job completed successfully.
-                /// \return true = Job has not been cancelled and is finished.
+                /// \return true == Job has not been cancelled and is finished.
                 inline bool Completed () const {
                     return !cancelled && finished;
                 }
