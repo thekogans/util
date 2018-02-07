@@ -149,6 +149,10 @@ namespace thekogans {
             /// \brief
             /// List of at exit functions.
             static ExitFuncList exitFuncList;
+            /// \brief
+            /// Main thread handle. Call \see{Thread::SetMainThread} from
+            /// any thread you want to set as main (usually main ()).
+            static THEKOGANS_UTIL_THREAD_HANDLE mainThread;
 
         public:
         #if defined (TOOLCHAIN_OS_Windows)
@@ -306,7 +310,7 @@ namespace thekogans {
                 }
                 /// \brief
                 /// Reset the current pause count to 1.
-                void Reset () {
+                inline void Reset () {
                     count = 1;
                 }
             };
@@ -348,6 +352,26 @@ namespace thekogans {
             /// \return this thread handle.
             inline THEKOGANS_UTIL_THREAD_HANDLE GetThreadHandle () const {
                 return thread;
+            }
+
+            /// \brief
+            /// Call this function from main () or any other thread you
+            /// want to set as main.
+            /// \param[in] mainThread_ Thread handle to set as main.
+            static void SetMainThread (
+                    THEKOGANS_UTIL_THREAD_HANDLE mainThread_ = GetCurrThreadHandle ()) {
+                mainThread = mainThread_;
+            }
+            /// \brief
+            /// Return true if the given thread is main thread.
+            /// \param[in] thread Thread handle o test if main.
+            /// \return true == thread is a main thread.
+            static bool IsMainThread (THEKOGANS_UTIL_THREAD_HANDLE thread) {
+            #if defined (TOOLCHAIN_OS_Windows)
+                return thread == mainThread;
+            #else // defined (TOOLCHAIN_OS_Windows)
+                return pthread_equal (thread, mainThread) != 0;
+            #endif // defined (TOOLCHAIN_OS_Windows)
             }
 
         protected:

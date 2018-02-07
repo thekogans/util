@@ -19,6 +19,7 @@
 #define __thekogans_util_RunLoop_h
 
 #include "thekogans/util/Config.h"
+#include "thekogans/util/TimeSpec.h"
 #include "thekogans/util/JobQueue.h"
 
 namespace thekogans {
@@ -63,6 +64,18 @@ namespace thekogans {
             virtual void Enq (
                 JobQueue::Job &job,
                 bool wait = false) = 0;
+
+            /// \brief
+            /// Wait until the given run loop is created the and it starts running.
+            /// \param[in] runLoop RunLoop to wait for.
+            /// \param[in] sleepTimeSpec How long to sleep between tries.
+            /// \param[in] waitTimeSpec Total time to wait.
+            /// \return true == the given run loop is running.
+            /// false == timed out waiting for the run loop to start.
+            static bool WaitForStart (
+                Ptr &runLoop,
+                const TimeSpec &sleepTimeSpec = TimeSpec::FromMilliseconds (50),
+                const TimeSpec &waitTimeSpec = TimeSpec::FromSeconds (3));
         };
 
     } // namespace util

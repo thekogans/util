@@ -43,6 +43,7 @@ namespace thekogans {
         SpinLock Thread::spinLock;
     #endif // !defined (TOOLCHAIN_OS_Windows)
         Thread::ExitFuncList Thread::exitFuncList;
+        THEKOGANS_UTIL_THREAD_HANDLE Thread::mainThread = Thread::GetCurrThreadHandle ();
 
         Thread::~Thread () {
         #if defined (TOOLCHAIN_OS_Windows)

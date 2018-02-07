@@ -18,35 +18,11 @@
 #include <cstring>
 #include <iostream>
 #include "thekogans/util/Console.h"
-#include "thekogans/util/Variant.h"
 #include "thekogans/util/StringUtils.h"
 #include "thekogans/util/CommandLineOptions.h"
 
 namespace thekogans {
     namespace util {
-
-        struct Option {
-            std::string shortForm;
-            std::string longForm;
-            std::string description;
-            Variant::Type type;
-            std::string group;
-            std::list<Variant> value;
-
-            Option (
-                const std::string shortForm_,
-                const std::string longForm_,
-                const std::string description_,
-                Variant::Type type_ = Variant::TYPE_bool,
-                const std::string group_ = std::string (),
-                const std::list<Variant> &defaultValue_ = std::list<Variant> ()) :
-                shortForm (shortForm_),
-                longForm (longForm_),
-                description (description_),
-                type (type_),
-                group (group_),
-                value (defaultValue_) {}
-        };
 
         void CommandLineOptions::Parse (
                 int argc,
