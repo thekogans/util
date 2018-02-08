@@ -68,6 +68,7 @@ namespace thekogans {
         ///         std::string (),
         ///         util::JobQueue::TYPE_FIFO,
         ///         util::UI32_MAX,
+        ///         0
         ///         false,
         ///         0,
         ///         0,
@@ -90,6 +91,7 @@ namespace thekogans {
         ///         std::string (),
         ///         util::JobQueue::TYPE_FIFO,
         ///         util::UI32_MAX,
+        ///         0
         ///         true,
         ///         0,
         ///         0,
@@ -114,6 +116,7 @@ namespace thekogans {
         ///         std::string (),
         ///         util::JobQueue::TYPE_FIFO,
         ///         util::UI32_MAX,
+        ///         0
         ///         false,
         ///         0,
         ///         0,
@@ -132,6 +135,7 @@ namespace thekogans {
         ///         std::string (),
         ///         util::JobQueue::TYPE_FIFO,
         ///         util::UI32_MAX,
+        ///         0
         ///         true,
         ///         0,
         ///         0,
@@ -156,6 +160,7 @@ namespace thekogans {
         ///         std::string (),
         ///         util::JobQueue::TYPE_FIFO,
         ///         util::UI32_MAX,
+        ///         0,
         ///         false,
         ///         CFRunLoopGetMain ());
         ///     ...
@@ -165,6 +170,7 @@ namespace thekogans {
         ///         std::string (),
         ///         util::JobQueue::TYPE_FIFO,
         ///         util::UI32_MAX,
+        ///         0,
         ///         true,
         ///         CFRunLoopGetMain ());
         ///     ...
@@ -185,6 +191,9 @@ namespace thekogans {
             /// \brief
             /// Max pending jobs.
             static ui32 maxPendingJobs;
+            /// \brief
+            /// Called to initialize/uninitialize the worker thread.
+            static JobQueue::WorkerCallback *workerCallback;
             /// \brief
             /// true = the main thread will call MainRunLoop::Instance ().Start ().
             static bool willCallStart;
@@ -226,6 +235,7 @@ namespace thekogans {
             /// \param[in] name_ RunLoop name.
             /// \param[in] type_ RunLoop queue type.
             /// \param[in] maxPendingJobs_ Max pending run loop jobs.
+            /// \param[in] workerCallback_ Called to initialize/uninitialize the worker thread.
             /// \param[in] willCallStart_ true = the main thread will call
             /// MainRunLoop::Instance ().Start ().
             /// \param[in] eventProcessor_ Callback to process Windows HWND events.
@@ -235,6 +245,7 @@ namespace thekogans {
                 const std::string &name_,
                 JobQueue::Type type_,
                 ui32 maxPendingJobs_,
+                JobQueue::WorkerCallback *workerCallback_,
                 bool willCallStart_,
                 SystemRunLoop::EventProcessor eventProcessor_,
                 void *userData_,
@@ -246,6 +257,7 @@ namespace thekogans {
             /// \param[in] name_ RunLoop name.
             /// \param[in] type_ RunLoop queue type.
             /// \param[in] maxPendingJobs_ Max pending run loop jobs.
+            /// \param[in] workerCallback_ Called to initialize/uninitialize the worker thread.
             /// \param[in] willCallStart_ true = the main thread will call
             /// MainRunLoop::Instance ().Start ().
             /// \param[in] eventProcessor_ Callback to process Xlib XEvent events.
@@ -256,6 +268,7 @@ namespace thekogans {
                 const std::string &name_,
                 JobQueue::Type type_,
                 ui32 maxPendingJobs_,
+                JobQueue::WorkerCallback *workerCallback_,
                 bool willCallStart_,
                 SystemRunLoop::EventProcessor eventProcessor_,
                 void *userData_,
@@ -268,6 +281,7 @@ namespace thekogans {
             /// \param[in] name_ RunLoop name.
             /// \param[in] type_ RunLoop queue type.
             /// \param[in] maxPendingJobs_ Max pending run loop jobs.
+            /// \param[in] workerCallback_ Called to initialize/uninitialize the worker thread.
             /// \param[in] willCallStart_ true = the main thread will call
             /// MainRunLoop::Instance ().Start ().
             /// \param[in] runLoop_ OS X run loop object.
@@ -275,6 +289,7 @@ namespace thekogans {
                 const std::string &name_,
                 JobQueue::Type type_,
                 ui32 maxPendingJobs_,
+                JobQueue::WorkerCallback *workerCallback_,
                 bool willCallStart_,
                 CFRunLoopRef runLoop_);
         #endif // defined (TOOLCHAIN_OS_Windows)

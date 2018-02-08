@@ -250,6 +250,9 @@ namespace thekogans {
             /// Max pending jobs.
             const ui32 maxPendingJobs;
             /// \brief
+            /// Called to initialize/uninitialize the worker thread.
+            JobQueue::WorkerCallback *workerCallback;
+            /// \brief
             /// true = exit the run loop.
             volatile bool done;
         #if defined (TOOLCHAIN_OS_Windows)
@@ -315,6 +318,7 @@ namespace thekogans {
             /// \param[in] name_ RunLoop name.
             /// \param[in] type_ RunLoop queue type.
             /// \param[in] maxPendingJobs_ Max pending run loop jobs.
+            /// \param[in] workerCallback_ Called to initialize/uninitialize the worker thread.
             /// \param[in] done_ true = must call Start.
             /// \param[in] eventProcessor_ Callback to process window events.
             /// \param[in] userData_ Optional user data passed to eventProcessor.
@@ -325,6 +329,7 @@ namespace thekogans {
                 const std::string &name_ = std::string (),
                 JobQueue::Type type_ = JobQueue::TYPE_FIFO,
                 ui32 maxPendingJobs_ = UI32_MAX,
+                JobQueue::WorkerCallback *workerCallback_ = 0,
                 bool done_ = true,
                 EventProcessor eventProcessor_ = 0,
                 void *userData_ = 0,
@@ -349,6 +354,7 @@ namespace thekogans {
             /// \param[in] name_ RunLoop name.
             /// \param[in] type_ RunLoop queue type.
             /// \param[in] maxPendingJobs_ Max pending run loop jobs.
+            /// \param[in] workerCallback_ Called to initialize/uninitialize the worker thread.
             /// \param[in] done_ true = must call Start before Enq.
             /// \param[in] eventProcessor_ Callback to process Xlib XEvent events.
             /// \param[in] userData_ Optional user data passed to eventProcessor.
@@ -358,6 +364,7 @@ namespace thekogans {
                 const std::string &name_ = std::string (),
                 JobQueue::Type type_ = JobQueue::TYPE_FIFO,
                 ui32 maxPendingJobs_ = UI32_MAX,
+                JobQueue::WorkerCallback *workerCallback_ = 0,
                 bool done_ = true,
                 EventProcessor eventProcessor_ = 0,
                 void *userData_ = 0,
@@ -393,12 +400,14 @@ namespace thekogans {
             /// \param[in] name_ RunLoop name.
             /// \param[in] type_ RunLoop queue type.
             /// \param[in] maxPendingJobs_ Max pending run loop jobs.
+            /// \param[in] workerCallback_ Called to initialize/uninitialize the worker thread.
             /// \param[in] done_ true = must call Start before Enq.
             /// \param[in] runLoop_ OS X run loop object.
             SystemRunLoop (
                 const std::string &name_ = std::string (),
                 JobQueue::Type type_ = JobQueue::TYPE_FIFO,
                 ui32 maxPendingJobs_ = UI32_MAX,
+                JobQueue::WorkerCallback *workerCallback_ = 0,
                 bool done_ = true,
                 CFRunLoopRef runLoop_ = CFRunLoopGetCurrent ());
             /// \brief

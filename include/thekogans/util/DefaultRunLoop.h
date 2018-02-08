@@ -136,6 +136,9 @@ namespace thekogans {
             /// Max pending jobs.
             const ui32 maxPendingJobs;
             /// \brief
+            /// Called to initialize/uninitialize the worker thread.
+            JobQueue::WorkerCallback *workerCallback;
+            /// \brief
             /// Flag to signal the worker thread.
             volatile bool done;
             /// \brief
@@ -175,13 +178,16 @@ namespace thekogans {
             /// \param[in] name_ RunLoop name.
             /// \param[in] type_ RunLoop queue type.
             /// \param[in] maxPendingJobs_ Max pending run loop jobs.
+            /// \param[in] workerCallback_ Called to initialize/uninitialize the worker thread.
             DefaultRunLoop (
                 const std::string &name_ = std::string (),
                 JobQueue::Type type_ = JobQueue::TYPE_FIFO,
-                ui32 maxPendingJobs_ = UI32_MAX) :
+                ui32 maxPendingJobs_ = UI32_MAX,
+                JobQueue::WorkerCallback *workerCallback_ = 0) :
                 name (name_),
                 type (type_),
                 maxPendingJobs (maxPendingJobs_),
+                workerCallback (workerCallback_),
                 done (true),
                 jobsNotEmpty (jobsMutex),
                 jobFinished (jobsMutex),

@@ -35,6 +35,7 @@ namespace thekogans {
                 const std::string &name_,
                 JobQueue::Type type_,
                 ui32 maxPendingJobs_,
+                JobQueue::WorkerCallback *workerCallback_,
                 bool done_,
                 EventProcessor eventProcessor_,
                 void *userData_,
@@ -42,6 +43,7 @@ namespace thekogans {
                 name (name_),
                 type (type_),
                 maxPendingJobs (maxPendingJobs_),
+                workerCallback (workerCallback_),
                 done (done_),
                 eventProcessor (eventProcessor_),
                 userData (userData_),
@@ -50,7 +52,7 @@ namespace thekogans {
                 idle (jobsMutex),
                 state (Idle),
                 busyWorkers (0) {
-            if (wnd != 0) {
+            if (maxPendingJobs != 0 && wnd != 0) {
                 SetWindowLongPtr (wnd, GWLP_USERDATA, (LONG_PTR)this);
             }
             else {
@@ -225,6 +227,7 @@ namespace thekogans {
                 const std::string &name_,
                 JobQueue::Type type_,
                 ui32 maxPendingJobs_,
+                JobQueue::WorkerCallback *workerCallback_,
                 bool done_,
                 EventProcessor eventProcessor_,
                 void *userData_,
@@ -233,6 +236,7 @@ namespace thekogans {
                 name (name_),
                 type (type_),
                 maxPendingJobs (maxPendingJobs_),
+                workerCallback (workerCallback_),
                 done (done_),
                 eventProcessor (eventProcessor_),
                 userData (userData_),
@@ -242,7 +246,7 @@ namespace thekogans {
                 idle (jobsMutex),
                 state (Idle),
                 busyWorkers (0) {
-            if (window.get () == 0) {
+            if (maxPendingJobs == 0 || window.get () == 0) {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
                     THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
             }
@@ -281,18 +285,20 @@ namespace thekogans {
                 const std::string &name_,
                 JobQueue::Type type_,
                 ui32 maxPendingJobs_,
+                JobQueue::WorkerCallback *workerCallback_,
                 bool done_,
                 CFRunLoopRef runLoop_) :
                 name (name_),
                 type (type_),
                 maxPendingJobs (maxPendingJobs_),
+                workerCallback (workerCallback_),
                 done (done_),
                 runLoop (runLoop_),
                 jobFinished (jobsMutex),
                 idle (jobsMutex),
                 state (Idle),
                 busyWorkers (0) {
-            if (runLoop == 0) {
+            if (maxPendingJobs == 0 || runLoop == 0) {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
                     THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
             }
@@ -319,6 +325,20 @@ namespace thekogans {
 
         void SystemRunLoop::Start () {
             if (SetDone (false)) {
+                struct WorkerInitializer {
+                    SystemRunLoop &runLoop;
+                    explicit WorkerInitializer (SystemRunLoop &runLoop_) :
+                            runLoop (runLoop_) {
+                        if (runLoop.workerCallback != 0) {
+                            runLoop.workerCallback->InitializeWorker ();
+                        }
+                    }
+                    ~WorkerInitializer () {
+                        if (runLoop.workerCallback != 0) {
+                            runLoop.workerCallback->UninitializeWorker ();
+                        }
+                    }
+                } workerInitializer (*this);
                 ExecuteJobs ();
             #if defined (TOOLCHAIN_OS_Windows)
                 BOOL result;

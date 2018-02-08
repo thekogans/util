@@ -24,6 +24,20 @@ namespace thekogans {
 
         void DefaultRunLoop::Start () {
             if (SetDone (false)) {
+                struct WorkerInitializer {
+                    DefaultRunLoop &runLoop;
+                    explicit WorkerInitializer (DefaultRunLoop &runLoop_) :
+                            runLoop (runLoop_) {
+                        if (runLoop.workerCallback != 0) {
+                            runLoop.workerCallback->InitializeWorker ();
+                        }
+                    }
+                    ~WorkerInitializer () {
+                        if (runLoop.workerCallback != 0) {
+                            runLoop.workerCallback->UninitializeWorker ();
+                        }
+                    }
+                } workerInitializer (*this);
                 while (!done) {
                     JobQueue::Job::Ptr job (Deq ());
                     if (job.Get () != 0) {
