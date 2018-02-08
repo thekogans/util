@@ -15,6 +15,7 @@
 // You should have received a copy of the GNU General Public License
 // along with libthekogans_util. If not, see <http://www.gnu.org/licenses/>.
 
+#include "thekogans/util/HRTimer.h"
 #include "thekogans/util/LockGuard.h"
 #include "thekogans/util/DefaultRunLoop.h"
 
@@ -22,59 +23,167 @@ namespace thekogans {
     namespace util {
 
         void DefaultRunLoop::Start () {
-            if (done) {
-                done = false;
+            if (SetDone (false)) {
                 while (!done) {
-                    JobQueue::Job::Ptr job = Deq ();
+                    JobQueue::Job::Ptr job (Deq ());
                     if (job.Get () != 0) {
+                        ui64 start = HRTimer::Click ();
                         job->Prologue (done);
                         job->Execute (done);
                         job->Epilogue (done);
-                        job->finished = true;
-                        jobFinished.SignalAll ();
+                        ui64 end = HRTimer::Click ();
+                        FinishedJob (*job, start, end);
                     }
                 }
             }
         }
 
-        void DefaultRunLoop::Stop () {
-            if (!done) {
-                done = true;
-                LockGuard<Mutex> guard (mutex);
-                jobs.clear ();
+        void DefaultRunLoop::Stop (bool cancelPendingJobs) {
+            if (SetDone (true)) {
                 jobsNotEmpty.Signal ();
+                //Wait ();
+                //assert (busyWorkers == 0);
+                if (cancelPendingJobs) {
+                    CancelAll ();
+                }
             }
-        }
-
-        bool DefaultRunLoop::IsRunning () {
-            return !done;
         }
 
         void DefaultRunLoop::Enq (
                 JobQueue::Job &job,
                 bool wait) {
-            LockGuard<Mutex> guard (mutex);
-            job.finished = false;
-            jobs.push_back (JobQueue::Job::Ptr (&job));
-            jobsNotEmpty.Signal ();
-            if (wait) {
-                while (!job.ShouldStop (done) && !job.finished) {
-                    jobFinished.Wait ();
+            LockGuard<Mutex> guard (jobsMutex);
+            if (stats.jobCount < maxPendingJobs) {
+                job.finished = false;
+                if (type == JobQueue::TYPE_FIFO) {
+                    jobs.push_back (&job);
+                }
+                else {
+                    jobs.push_front (&job);
+                }
+                job.AddRef ();
+                ++stats.jobCount;
+                jobsNotEmpty.Signal ();
+                state = Busy;
+                if (wait) {
+                    while (!job.ShouldStop (done) && !job.finished) {
+                        jobFinished.Wait ();
+                    }
+                }
+            }
+            else {
+                THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
+                    "DefaultRunLoop (%s) max jobs (%u) reached.",
+                    !name.empty () ? name.c_str () : "no name",
+                    maxPendingJobs);
+            }
+        }
+
+        bool DefaultRunLoop::Cancel (const JobQueue::Job::Id &jobId) {
+            LockGuard<Mutex> guard (jobsMutex);
+            for (JobQueue::Job *job = jobs.front (); job != 0; job = jobs.next (job)) {
+                if (job->GetId () == jobId) {
+                    jobs.erase (job);
+                    job->Cancel ();
+                    job->Release ();
+                    --stats.jobCount;
+                    jobFinished.SignalAll ();
+                    if (busyWorkers == 0 && jobs.empty ()) {
+                        state = Idle;
+                        idle.SignalAll ();
+                    }
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        void DefaultRunLoop::CancelAll () {
+            LockGuard<Mutex> guard (jobsMutex);
+            if (!jobs.empty ()) {
+                assert (state == Busy);
+                struct Callback : public JobQueue::JobList::Callback {
+                    typedef JobQueue::JobList::Callback::result_type result_type;
+                    typedef JobQueue::JobList::Callback::argument_type argument_type;
+                    virtual result_type operator () (argument_type job) {
+                        job->Cancel ();
+                        job->Release ();
+                        return true;
+                    }
+                } callback;
+                jobs.clear (callback);
+                stats.jobCount = 0;
+                jobFinished.SignalAll ();
+                if (busyWorkers == 0) {
+                    state = Idle;
+                    idle.SignalAll ();
                 }
             }
         }
 
-        JobQueue::Job::Ptr DefaultRunLoop::Deq () {
-            LockGuard<Mutex> guard (mutex);
+        void DefaultRunLoop::WaitForIdle () {
+            LockGuard<Mutex> guard (jobsMutex);
+            while (state == Busy) {
+                idle.Wait ();
+            }
+        }
+
+        JobQueue::Stats DefaultRunLoop::GetStats () {
+            LockGuard<Mutex> guard (jobsMutex);
+            return stats;
+        }
+
+        bool DefaultRunLoop::IsRunning () {
+            LockGuard<Mutex> guard (jobsMutex);
+            return !done;
+        }
+
+        bool DefaultRunLoop::IsEmpty () {
+            LockGuard<Mutex> guard (jobsMutex);
+            return jobs.empty ();
+        }
+
+        bool DefaultRunLoop::IsIdle () {
+            LockGuard<Mutex> guard (jobsMutex);
+            return state == Idle;
+        }
+
+        JobQueue::Job *DefaultRunLoop::Deq () {
+            LockGuard<Mutex> guard (jobsMutex);
             while (!done && jobs.empty ()) {
                 jobsNotEmpty.Wait ();
             }
-            JobQueue::Job::Ptr job;
+            JobQueue::Job *job = 0;
             if (!jobs.empty ()) {
-                job = jobs.front ();
-                jobs.pop_front ();
+                job = jobs.pop_front ();
+                --stats.jobCount;
+                ++busyWorkers;
             }
             return job;
+        }
+
+        void DefaultRunLoop::FinishedJob (
+                JobQueue::Job &job,
+                ui64 start,
+                ui64 end) {
+            LockGuard<Mutex> guard (jobsMutex);
+            assert (state == Busy);
+            stats.Update (job.id, start, end);
+            job.finished = true;
+            jobFinished.SignalAll ();
+            if (--busyWorkers == 0 && jobs.empty ()) {
+                state = Idle;
+                idle.SignalAll ();
+            }
+        }
+
+        bool DefaultRunLoop::SetDone (bool value) {
+            LockGuard<Mutex> guard (jobsMutex);
+            if (done != value) {
+                done = value;
+                return true;
+            }
+            return false;
         }
 
     } // namespace util

@@ -1,8 +1,8 @@
 libthekogans_util is at the heart of every other library and
 program. It contains a lot of reusable, cross-platform code designed
-to hide platform specific details from other, higher level
-libraries. The library is developed, and tested on Windows, Linux, and
-OS X, in both 32 and 64 bit modes, and on little and big endian
+to hide platform specific details from other, higher level libraries
+and programs. The library is developed, and tested on Windows, Linux,
+and OS X, in both 32 and 64 bit modes, and on little and big endian
 architectures (x86, MIPS, ARM…). Here is a complete feature list:
 
     - A type system (Types.h, Constants.h) to hide platform specific

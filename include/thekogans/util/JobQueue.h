@@ -544,7 +544,8 @@ namespace thekogans {
             /// Therefore, if you want your code to be responsive, and
             /// the queues to stop quickly, your jobs should pay close
             /// attention to the state of done.
-            void Stop ();
+            /// \param[in] cancelPendingJobs true = Cancel all pending jobs.
+            void Stop (bool cancelPendingJobs = true);
 
             /// \brief
             /// Enqueue a job. The next idle worker will pick it up,
@@ -576,6 +577,10 @@ namespace thekogans {
             Stats GetStats ();
 
             /// \brief
+            /// Return true if Start was called.
+            /// \return true = Start was called, false = Start was not called.
+            bool IsRunning ();
+            /// \brief
             /// Return true if there are no pending jobs.
             /// \return true = no pending jobs, false = jobs pending.
             bool IsEmpty ();
@@ -589,7 +594,7 @@ namespace thekogans {
             /// \brief
             /// Used internally by worker(s) to get the next job.
             /// \return The next job to execute.
-            Job::Ptr Deq ();
+            Job *Deq ();
             /// \brief
             /// Called by worker(s) after each job is done.
             /// Used to update state and \see{JobQueue::Stats}.
@@ -604,8 +609,8 @@ namespace thekogans {
             /// \brief
             /// Atomically set done to the given value.
             /// \param[in] value value to set done to.
-            /// \return true = done was set to the given value.
-            /// false = done was already set to the given value.
+            /// \return true == done was set to the given value.
+            /// false == done was already set to the given value.
             bool SetDone (bool value);
 
             /// \brief

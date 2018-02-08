@@ -48,12 +48,8 @@ namespace thekogans {
             /// Stop the run loop and in all likelihood exit the thread hosting it.
             /// Obviously, this function needs to be called from a different thread
             /// than the one that called Start.
-            virtual void Stop () = 0;
-
-            /// \brief
-            /// Return true if Start was called.
-            /// \return true if Start was called.
-            virtual bool IsRunning () = 0;
+            /// \param[in] cancelPendingJobs true = Cancel all pending jobs.
+            virtual void Stop (bool cancelPendingJobs = true) = 0;
 
             /// \brief
             /// Enqueue a job to be performed on the run loop thread.
@@ -64,6 +60,39 @@ namespace thekogans {
             virtual void Enq (
                 JobQueue::Job &job,
                 bool wait = false) = 0;
+
+            /// \brief
+            /// Cancel a queued job with a given id. If the job is not
+            /// in the queue (in flight), it is not canceled.
+            /// \param[in] jobId Id of job to cancel.
+            /// \return true = the job was cancelled. false = in flight or nonexistent.
+            virtual bool Cancel (const JobQueue::Job::Id &jobId) = 0;
+            /// \brief
+            /// Cancel all queued jobs. Job in flight is unaffected.
+            virtual void CancelAll () = 0;
+
+            /// \brief
+            /// Return a snapshot of the run loop stats.
+            /// \return A snapshot of the run loop stats.
+            virtual JobQueue::Stats GetStats () = 0;
+
+            /// \brief
+            /// Blocks until all jobs are complete and the queue is empty.
+            virtual void WaitForIdle () = 0;
+
+            /// \brief
+            /// Return true if Start was called.
+            /// \return true if Start was called.
+            virtual bool IsRunning () = 0;
+            /// \brief
+            /// Return true if there are no pending jobs.
+            /// \return true = no pending jobs, false = jobs pending.
+            virtual bool IsEmpty () = 0;
+            /// \brief
+            /// Return true if there are no pending jobs and the
+            /// worker is idle.
+            /// \return true = idle, false = busy.
+            virtual bool IsIdle () = 0;
 
             /// \brief
             /// Wait until the given run loop is created the and it starts running.

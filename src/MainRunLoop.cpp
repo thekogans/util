@@ -21,6 +21,9 @@
 namespace thekogans {
     namespace util {
 
+        std::string MainRunLoopCreateInstance::name;
+        JobQueue::Type MainRunLoopCreateInstance::type = JobQueue::TYPE_FIFO;
+        ui32 MainRunLoopCreateInstance::maxPendingJobs = UI32_MAX;
         bool MainRunLoopCreateInstance::willCallStart = true;
     #if defined (TOOLCHAIN_OS_Windows)
         SystemRunLoop::EventProcessor MainRunLoopCreateInstance::eventProcessor = 0;
@@ -28,10 +31,16 @@ namespace thekogans {
         HWND MainRunLoopCreateInstance::wnd = 0;
 
         void MainRunLoopCreateInstance::Parameterize (
+                const std::string &name_,
+                JobQueue::Type type_,
+                ui32 maxPendingJobs_,
                 bool willCallStart_,
                 SystemRunLoop::EventProcessor eventProcessor_,
                 void *userData_,
                 HWND wnd_) {
+            name = name_;
+            type = type_;
+            maxPendingJobs = maxPendingJobs_;
             willCallStart = willCallStart_;
             eventProcessor = eventProcessor_;
             userData = userData_;
@@ -41,11 +50,17 @@ namespace thekogans {
         RunLoop *MainRunLoopCreateInstance::operator () () {
             return wnd != 0 ?
                 (RunLoop *)new SystemRunLoop (
+                    name,
+                    type,
+                    maxPendingJobs,
                     willCallStart,
                     eventProcessor,
                     userData,
                     wnd) :
-                (RunLoop *)new DefaultRunLoop;
+                (RunLoop *)new DefaultRunLoop (
+                    name,
+                    type,
+                    maxPendingJobs);
         }
     #elif defined (TOOLCHAIN_OS_Linux)
     #if defined (THEKOGANS_UTIL_HAVE_XLIB)
@@ -55,11 +70,17 @@ namespace thekogans {
         std::vector<Display *> MainRunLoopCreateInstance::displays;
 
         void MainRunLoopCreateInstance::Parameterize (
+                const std::string &name_,
+                JobQueue::Type type_,
+                ui32 maxPendingJobs_,
                 bool willCallStart_,
                 SystemRunLoop::EventProcessor eventProcessor_,
                 void *userData_,
                 SystemRunLoop::XlibWindow::Ptr window_,
                 const std::vector<Display *> &displays_) {
+            name = name_;
+            type = type_;
+            maxPendingJobs = maxPendingJobs_;
             willCallStart = willCallStart_;
             eventProcessor = eventProcessor_;
             userData = userData_;
@@ -71,30 +92,54 @@ namespace thekogans {
         #if defined (THEKOGANS_UTIL_HAVE_XLIB)
             return eventProcessor != 0 ?
                 (RunLoop *)new SystemRunLoop (
+                    name,
+                    type,
+                    maxPendingJobs,
                     willCallStart,
                     eventProcessor,
                     userData,
                     std::move (window),
                     displays) :
-                (RunLoop *)new DefaultRunLoop;
+                (RunLoop *)new DefaultRunLoop (
+                    name,
+                    type,
+                    maxPendingJobs);
+
         #else // defined (THEKOGANS_UTIL_HAVE_XLIB)
-            return new DefaultRunLoop;
+            return new DefaultRunLoop (
+                name,
+                type,
+                maxPendingJobs);
         #endif // defined (THEKOGANS_UTIL_HAVE_XLIB)
         }
     #elif defined (TOOLCHAIN_OS_OSX)
         CFRunLoopRef MainRunLoopCreateInstance::runLoop = 0;
 
         void MainRunLoopCreateInstance::Parameterize (
+                const std::string &name_,
+                JobQueue::Type type_,
+                ui32 maxPendingJobs_,
                 bool willCallStart_,
                 CFRunLoopRef runLoop_) {
+            name = name_;
+            type = type_;
+            maxPendingJobs = maxPendingJobs_;
             willCallStart = willCallStart_;
             runLoop = runLoop_;
         }
 
         RunLoop *MainRunLoopCreateInstance::operator () () {
             return runLoop != 0 ?
-                (RunLoop *)new SystemRunLoop (willCallStart, runLoop) :
-                (RunLoop *)new DefaultRunLoop;
+                (RunLoop *)new SystemRunLoop (
+                    name,
+                    type,
+                    maxPendingJobs,
+                    willCallStart,
+                    runLoop) :
+                (RunLoop *)new DefaultRunLoop (
+                    name,
+                    type,
+                    maxPendingJobs);
         }
     #endif // defined (TOOLCHAIN_OS_Windows)
 

@@ -23,6 +23,7 @@
     #include <sys/epoll.h>
     #include <cstring>
 #endif // defined (TOOLCHAIN_OS_Linux)
+#include "thekogans/util/HRTimer.h"
 #include "thekogans/util/LockGuard.h"
 #include "thekogans/util/SystemRunLoop.h"
 
@@ -31,15 +32,25 @@ namespace thekogans {
 
     #if defined (TOOLCHAIN_OS_Windows)
         SystemRunLoop::SystemRunLoop (
+                const std::string &name_,
+                JobQueue::Type type_,
+                ui32 maxPendingJobs_,
                 bool done_,
                 EventProcessor eventProcessor_,
                 void *userData_,
                 HWND wnd_) :
+                name (name_),
+                type (type_),
+                maxPendingJobs (maxPendingJobs_),
                 done (done_),
                 eventProcessor (eventProcessor_),
                 userData (userData_),
                 wnd (wnd_),
-                jobFinished (jobsMutex) {
+                jobsNotEmpty (jobsMutex),
+                jobFinished (jobsMutex),
+                idle (jobsMutex),
+                state (Idle),
+                busyWorkers (0) {
             if (wnd != 0) {
                 SetWindowLongPtr (wnd, GWLP_USERDATA, (LONG_PTR)this);
             }
@@ -211,17 +222,27 @@ namespace thekogans {
         }
 
         SystemRunLoop::SystemRunLoop (
+                const std::string &name_,
+                JobQueue::Type type_,
+                ui32 maxPendingJobs_,
                 bool done_,
                 EventProcessor eventProcessor_,
                 void *userData_,
                 XlibWindow::Ptr window_,
                 const std::vector<Display *> &displays_) :
+                name (name_),
+                type (type_),
+                maxPendingJobs (maxPendingJobs_),
                 done (done_),
                 eventProcessor (eventProcessor_),
                 userData (userData_),
                 window (std::move (window_)),
                 displays (displays_),
-                jobFinished (jobsMutex) {
+                jobsNotEmpty (jobsMutex),
+                jobFinished (jobsMutex),
+                idle (jobsMutex),
+                state (Idle),
+                busyWorkers (0) {
             if (window.get () == 0) {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
                     THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
@@ -254,11 +275,21 @@ namespace thekogans {
         }
     #elif defined (TOOLCHAIN_OS_OSX)
         SystemRunLoop::SystemRunLoop (
+                const std::string &name_,
+                JobQueue::Type type_,
+                ui32 maxPendingJobs_,
                 bool done_,
                 CFRunLoopRef runLoop_) :
+                name (name_),
+                type (type_),
+                maxPendingJobs (maxPendingJobs_),
                 done (done_),
                 runLoop (runLoop_),
-                jobFinished (jobsMutex) {
+                jobsNotEmpty (jobsMutex),
+                jobFinished (jobsMutex),
+                idle (jobsMutex),
+                state (Idle),
+                busyWorkers (0) {
             if (runLoop == 0) {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
                     THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
@@ -392,7 +423,7 @@ namespace thekogans {
             }
         }
 
-        void SystemRunLoop::Stop () {
+        void SystemRunLoop::Stop (bool cancelPendingJobs) {
             if (SetDone (true)) {
             #if defined (TOOLCHAIN_OS_Windows)
                 PostMessage (wnd, WM_CLOSE, 0, 0);
@@ -401,7 +432,107 @@ namespace thekogans {
             #elif defined (TOOLCHAIN_OS_OSX)
                 CFRunLoopStop (runLoop);
             #endif // defined (TOOLCHAIN_OS_Windows)
+                if (cancelPendingJobs) {
+                    CancelAll ();
+                }
             }
+        }
+
+        void SystemRunLoop::Enq (
+                JobQueue::Job &job,
+                bool wait) {
+            LockGuard<Mutex> guard (jobsMutex);
+            if (stats.jobCount < maxPendingJobs) {
+                job.finished = false;
+                if (type == JobQueue::TYPE_FIFO) {
+                    jobs.push_back (&job);
+                }
+                else {
+                    jobs.push_front (&job);
+                }
+                job.AddRef ();
+                ++stats.jobCount;
+                jobsNotEmpty.Signal ();
+                state = Busy;
+            #if defined (TOOLCHAIN_OS_Windows)
+                PostMessage (wnd, RUN_LOOP_MESSAGE, 0, 0);
+            #elif defined (TOOLCHAIN_OS_Linux)
+                window->PostEvent (XlibWindow::ID_RUN_LOOP);
+            #elif defined (TOOLCHAIN_OS_OSX)
+                CFRunLoopPerformBlock (
+                    runLoop,
+                    kCFRunLoopCommonModes,
+                    ^(void) {
+                        ExecuteJob ();
+                    });
+                CFRunLoopWakeUp (runLoop);
+            #endif // defined (TOOLCHAIN_OS_Windows)
+                if (wait) {
+                    while (!job.ShouldStop (done) && !job.finished) {
+                        jobFinished.Wait ();
+                    }
+                }
+            }
+            else {
+                THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
+                    "SystemRunLoop (%s) max jobs (%u) reached.",
+                    !name.empty () ? name.c_str () : "no name",
+                    maxPendingJobs);
+            }
+        }
+
+        bool SystemRunLoop::Cancel (const JobQueue::Job::Id &jobId) {
+            LockGuard<Mutex> guard (jobsMutex);
+            for (JobQueue::Job *job = jobs.front (); job != 0; job = jobs.next (job)) {
+                if (job->GetId () == jobId) {
+                    jobs.erase (job);
+                    job->Cancel ();
+                    job->Release ();
+                    --stats.jobCount;
+                    jobFinished.SignalAll ();
+                    if (busyWorkers == 0 && jobs.empty ()) {
+                        state = Idle;
+                        idle.SignalAll ();
+                    }
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        void SystemRunLoop::CancelAll () {
+            LockGuard<Mutex> guard (jobsMutex);
+            if (!jobs.empty ()) {
+                assert (state == Busy);
+                struct Callback : public JobQueue::JobList::Callback {
+                    typedef JobQueue::JobList::Callback::result_type result_type;
+                    typedef JobQueue::JobList::Callback::argument_type argument_type;
+                    virtual result_type operator () (argument_type job) {
+                        job->Cancel ();
+                        job->Release ();
+                        return true;
+                    }
+                } callback;
+                jobs.clear (callback);
+                stats.jobCount = 0;
+                jobFinished.SignalAll ();
+                if (busyWorkers == 0) {
+                    state = Idle;
+                    idle.SignalAll ();
+                }
+            }
+        }
+
+        void SystemRunLoop::WaitForIdle () {
+            LockGuard<Mutex> guard (jobsMutex);
+            while (state == Busy) {
+                idle.Wait ();
+            }
+        }
+
+        JobQueue::Stats SystemRunLoop::GetStats () {
+            LockGuard<Mutex> guard (jobsMutex);
+            return stats;
         }
 
         bool SystemRunLoop::IsRunning () {
@@ -409,47 +540,54 @@ namespace thekogans {
             return !done;
         }
 
-        void SystemRunLoop::Enq (
-                JobQueue::Job &job,
-                bool wait) {
+        bool SystemRunLoop::IsEmpty () {
             LockGuard<Mutex> guard (jobsMutex);
-            job.finished = false;
-            jobs.push_back (JobQueue::Job::Ptr (&job));
-        #if defined (TOOLCHAIN_OS_Windows)
-            PostMessage (wnd, RUN_LOOP_MESSAGE, 0, 0);
-        #elif defined (TOOLCHAIN_OS_Linux)
-            window->PostEvent (XlibWindow::ID_RUN_LOOP);
-        #elif defined (TOOLCHAIN_OS_OSX)
-            CFRunLoopPerformBlock (
-                runLoop,
-                kCFRunLoopCommonModes,
-                ^(void) {
-                    ExecuteJob ();
-                });
-            CFRunLoopWakeUp (runLoop);
-        #endif // defined (TOOLCHAIN_OS_Windows)
-            if (wait) {
-                while (!job.ShouldStop (done) && !job.finished) {
-                    jobFinished.Wait ();
-                }
-            }
+            return jobs.empty ();
+        }
+
+        bool SystemRunLoop::IsIdle () {
+            LockGuard<Mutex> guard (jobsMutex);
+            return state == Idle;
         }
 
         void SystemRunLoop::ExecuteJob () {
-            JobQueue::Job::Ptr job;
-            {
-                LockGuard<Mutex> guard (jobsMutex);
-                if (!jobs.empty ()) {
-                    job = jobs.front ();
-                    jobs.pop_front ();
-                }
-            }
+            JobQueue::Job::Ptr job (Deq ());
             if (job.Get () != 0) {
+                ui64 start = HRTimer::Click ();
                 job->Prologue (done);
                 job->Execute (done);
                 job->Epilogue (done);
-                job->finished = true;
-                jobFinished.SignalAll ();
+                ui64 end = HRTimer::Click ();
+                FinishedJob (*job, start, end);
+            }
+        }
+
+        JobQueue::Job *SystemRunLoop::Deq () {
+            LockGuard<Mutex> guard (jobsMutex);
+            while (!done && jobs.empty ()) {
+                jobsNotEmpty.Wait ();
+            }
+            JobQueue::Job *job = 0;
+            if (!jobs.empty ()) {
+                job = jobs.pop_front ();
+                --stats.jobCount;
+                ++busyWorkers;
+            }
+            return job;
+        }
+
+        void SystemRunLoop::FinishedJob (
+                JobQueue::Job &job,
+                ui64 start,
+                ui64 end) {
+            LockGuard<Mutex> guard (jobsMutex);
+            assert (state == Busy);
+            stats.Update (job.id, start, end);
+            job.finished = true;
+            jobFinished.SignalAll ();
+            if (--busyWorkers == 0 && jobs.empty ()) {
+                state = Idle;
+                idle.SignalAll ();
             }
         }
 

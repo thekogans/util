@@ -65,7 +65,13 @@ namespace thekogans {
         ///         int /*nCmdShow*/) {
         ///     ...
         ///     util::MainRunLoopCreateInstance::Parameterize (
-        ///         0, 0, util::SystemRunLoop::CreateThreadWindow ());
+        ///         std::string (),
+        ///         util::JobQueue::TYPE_FIFO,
+        ///         util::UI32_MAX,
+        ///         false,
+        ///         0,
+        ///         0,
+        ///         util::SystemRunLoop::CreateThreadWindow ());
         ///     ...
         ///     BOOL result;
         ///     MSG msg;
@@ -80,6 +86,15 @@ namespace thekogans {
         ///         }
         ///     }
         ///     or
+        ///     util::MainRunLoopCreateInstance::Parameterize (
+        ///         std::string (),
+        ///         util::JobQueue::TYPE_FIFO,
+        ///         util::UI32_MAX,
+        ///         true,
+        ///         0,
+        ///         0,
+        ///         util::SystemRunLoop::CreateThreadWindow ());
+        ///     ...
         ///     util::MainRunLoop::Instance ().Start ();
         ///     ...
         ///     return 0;
@@ -96,7 +111,13 @@ namespace thekogans {
         ///         const char * /*argv*/ []) {
         ///     ...
         ///     util::MainRunLoopCreateInstance::Parameterize (
-        ///         0, 0, util::SystemRunLoop::CreateThreadWindow ());
+        ///         std::string (),
+        ///         util::JobQueue::TYPE_FIFO,
+        ///         util::UI32_MAX,
+        ///         false,
+        ///         0,
+        ///         0,
+        ///         util::SystemRunLoop::CreateThreadWindow ());
         ///     ...
         ///     Display *display = XOpenDisplay (0);
         ///     while (1) {
@@ -107,6 +128,15 @@ namespace thekogans {
         ///         }
         ///     }
         ///     or
+        ///     util::MainRunLoopCreateInstance::Parameterize (
+        ///         std::string (),
+        ///         util::JobQueue::TYPE_FIFO,
+        ///         util::UI32_MAX,
+        ///         true,
+        ///         0,
+        ///         0,
+        ///         util::SystemRunLoop::CreateThreadWindow ());
+        ///     ...
         ///     util::MainRunLoop::Instance ().Start ();
         ///     ...
         ///     return 0;
@@ -122,10 +152,22 @@ namespace thekogans {
         ///         int /*argc*/,
         ///         const char * /*argv*/ []) {
         ///     ...
-        ///     util::MainRunLoopCreateInstance::Parameterize (CFRunLoopGetMain ());
+        ///     util::MainRunLoopCreateInstance::Parameterize (
+        ///         std::string (),
+        ///         util::JobQueue::TYPE_FIFO,
+        ///         util::UI32_MAX,
+        ///         false,
+        ///         CFRunLoopGetMain ());
         ///     ...
         ///     CFRunLoopRun ();
         ///     or
+        ///     util::MainRunLoopCreateInstance::Parameterize (
+        ///         std::string (),
+        ///         util::JobQueue::TYPE_FIFO,
+        ///         util::UI32_MAX,
+        ///         true,
+        ///         CFRunLoopGetMain ());
+        ///     ...
         ///     util::MainRunLoop::Instance ().Start ();
         ///     ...
         ///     return 0;
@@ -134,6 +176,15 @@ namespace thekogans {
 
         struct _LIB_THEKOGANS_UTIL_DECL MainRunLoopCreateInstance {
         private:
+            /// \brief
+            /// \see{RunLoop} name.
+            static std::string name;
+            /// \brief
+            /// JobQueue type (TIPE_FIFO or TYPE_LIFO)
+            static JobQueue::Type type;
+            /// \brief
+            /// Max pending jobs.
+            static ui32 maxPendingJobs;
             /// \brief
             /// true = the main thread will call MainRunLoop::Instance ().Start ().
             static bool willCallStart;
@@ -172,12 +223,18 @@ namespace thekogans {
         #if defined (TOOLCHAIN_OS_Windows)
             /// \brief
             /// Call before the first use of MainRunLoop::Instance.
+            /// \param[in] name_ RunLoop name.
+            /// \param[in] type_ RunLoop queue type.
+            /// \param[in] maxPendingJobs_ Max pending run loop jobs.
             /// \param[in] willCallStart_ true = the main thread will call
             /// MainRunLoop::Instance ().Start ().
             /// \param[in] eventProcessor_ Callback to process Windows HWND events.
             /// \param[in] userData_ Optional user data passed to eventProcessor.
             /// \param[in] wnd_ Windows window handle.
             static void Parameterize (
+                const std::string &name_,
+                JobQueue::Type type_,
+                ui32 maxPendingJobs_,
                 bool willCallStart_,
                 SystemRunLoop::EventProcessor eventProcessor_,
                 void *userData_,
@@ -186,6 +243,9 @@ namespace thekogans {
         #if defined (THEKOGANS_UTIL_HAVE_XLIB)
             /// \brief
             /// Call before the first use of MainRunLoop::Instance.
+            /// \param[in] name_ RunLoop name.
+            /// \param[in] type_ RunLoop queue type.
+            /// \param[in] maxPendingJobs_ Max pending run loop jobs.
             /// \param[in] willCallStart_ true = the main thread will call
             /// MainRunLoop::Instance ().Start ().
             /// \param[in] eventProcessor_ Callback to process Xlib XEvent events.
@@ -193,6 +253,9 @@ namespace thekogans {
             /// \param[in] window_ Xlib server window.
             /// \param[in] displays_ A list of displays to listen to.
             static void Parameterize (
+                const std::string &name_,
+                JobQueue::Type type_,
+                ui32 maxPendingJobs_,
                 bool willCallStart_,
                 SystemRunLoop::EventProcessor eventProcessor_,
                 void *userData_,
@@ -202,10 +265,16 @@ namespace thekogans {
         #elif defined (TOOLCHAIN_OS_OSX)
             /// \brief
             /// Call before the first use of MainRunLoop::Instance.
+            /// \param[in] name_ RunLoop name.
+            /// \param[in] type_ RunLoop queue type.
+            /// \param[in] maxPendingJobs_ Max pending run loop jobs.
             /// \param[in] willCallStart_ true = the main thread will call
             /// MainRunLoop::Instance ().Start ().
             /// \param[in] runLoop_ OS X run loop object.
             static void Parameterize (
+                const std::string &name_,
+                JobQueue::Type type_,
+                ui32 maxPendingJobs_,
                 bool willCallStart_,
                 CFRunLoopRef runLoop_);
         #endif // defined (TOOLCHAIN_OS_Windows)

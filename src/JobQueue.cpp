@@ -94,7 +94,7 @@ namespace thekogans {
                 }
             } workerInitializer (queue);
             while (!queue.done) {
-                Job::Ptr job = queue.Deq ();
+                Job::Ptr job (queue.Deq ());
                 if (job.Get () != 0) {
                     ui64 start = HRTimer::Click ();
                     job->Prologue (queue.done);
@@ -156,7 +156,7 @@ namespace thekogans {
             }
         }
 
-        void JobQueue::Stop () {
+        void JobQueue::Stop (bool cancelPendingJobs) {
             LockGuard<Mutex> guard (workersMutex);
             if (SetDone (true)) {
                 jobsNotEmpty.SignalAll ();
@@ -173,7 +173,9 @@ namespace thekogans {
                 } callback;
                 workers.clear (callback);
                 assert (busyWorkers == 0);
-                CancelAll ();
+                if (cancelPendingJobs) {
+                    CancelAll ();
+                }
             }
         }
 
@@ -181,36 +183,29 @@ namespace thekogans {
                 Job &job,
                 bool wait) {
             LockGuard<Mutex> guard (jobsMutex);
-            if (!done) {
-                if (stats.jobCount < maxPendingJobs) {
-                    job.finished = false;
-                    if (type == TYPE_FIFO) {
-                        jobs.push_back (&job);
-                    }
-                    else {
-                        jobs.push_front (&job);
-                    }
-                    job.AddRef ();
-                    ++stats.jobCount;
-                    jobsNotEmpty.Signal ();
-                    state = Busy;
-                    if (wait) {
-                        while (!job.ShouldStop (done) && !job.finished) {
-                            jobFinished.Wait ();
-                        }
-                    }
+            if (stats.jobCount < maxPendingJobs) {
+                job.finished = false;
+                if (type == TYPE_FIFO) {
+                    jobs.push_back (&job);
                 }
                 else {
-                    THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                        "JobQueue (%s) max jobs (%u) reached.",
-                        !name.empty () ? name.c_str () : "no name",
-                        maxPendingJobs);
+                    jobs.push_front (&job);
+                }
+                job.AddRef ();
+                ++stats.jobCount;
+                jobsNotEmpty.Signal ();
+                state = Busy;
+                if (wait) {
+                    while (!job.ShouldStop (done) && !job.finished) {
+                        jobFinished.Wait ();
+                    }
                 }
             }
             else {
                 THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                    "JobQueue (%s) is not running.",
-                    !name.empty () ? name.c_str () : "no name");
+                    "JobQueue (%s) max jobs (%u) reached.",
+                    !name.empty () ? name.c_str () : "no name",
+                    maxPendingJobs);
             }
         }
 
@@ -268,6 +263,11 @@ namespace thekogans {
             return stats;
         }
 
+        bool JobQueue::IsRunning () {
+            LockGuard<Mutex> guard (jobsMutex);
+            return !done;
+        }
+
         bool JobQueue::IsEmpty () {
             LockGuard<Mutex> guard (jobsMutex);
             return jobs.empty ();
@@ -278,19 +278,16 @@ namespace thekogans {
             return state == Idle;
         }
 
-        JobQueue::Job::Ptr JobQueue::Deq () {
+        JobQueue::Job *JobQueue::Deq () {
             LockGuard<Mutex> guard (jobsMutex);
             while (!done && jobs.empty ()) {
                 jobsNotEmpty.Wait ();
             }
-            Job::Ptr job;
+            Job *job = 0;
             if (!jobs.empty ()) {
-                job.Reset (jobs.pop_front ());
-                if (job.Get () != 0) {
-                    job->Release ();
-                    --stats.jobCount;
-                    ++busyWorkers;
-                }
+                job = jobs.pop_front ();
+                --stats.jobCount;
+                ++busyWorkers;
             }
             return job;
         }
