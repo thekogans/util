@@ -579,14 +579,15 @@ namespace thekogans {
         void SystemRunLoop::ExecuteJobs () {
             while (!done) {
                 JobQueue::Job::Ptr job (Deq ());
-                if (job.Get () != 0) {
-                    ui64 start = HRTimer::Click ();
-                    job->Prologue (done);
-                    job->Execute (done);
-                    job->Epilogue (done);
-                    ui64 end = HRTimer::Click ();
-                    FinishedJob (*job, start, end);
+                if (job.Get () == 0) {
+                    break;
                 }
+                ui64 start = HRTimer::Click ();
+                job->Prologue (done);
+                job->Execute (done);
+                job->Epilogue (done);
+                ui64 end = HRTimer::Click ();
+                FinishedJob (*job, start, end);
             }
         }
 
