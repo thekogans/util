@@ -46,7 +46,6 @@ namespace thekogans {
                 eventProcessor (eventProcessor_),
                 userData (userData_),
                 wnd (wnd_),
-                jobsNotEmpty (jobsMutex),
                 jobFinished (jobsMutex),
                 idle (jobsMutex),
                 state (Idle),
@@ -62,6 +61,7 @@ namespace thekogans {
 
         SystemRunLoop::~SystemRunLoop () {
             DestroyWindow (wnd);
+            CancelAll ();
         }
 
         #define RUN_LOOP_MESSAGE WM_USER
@@ -75,7 +75,7 @@ namespace thekogans {
                 case RUN_LOOP_MESSAGE: {
                     SystemRunLoop *runLoop =
                         (SystemRunLoop *)GetWindowLongPtr (wnd, GWLP_USERDATA);
-                    runLoop->ExecuteJob ();
+                    runLoop->ExecuteJobs ();
                     return 0;
                 }
                 case WM_DESTROY:
@@ -238,7 +238,6 @@ namespace thekogans {
                 userData (userData_),
                 window (std::move (window_)),
                 displays (displays_),
-                jobsNotEmpty (jobsMutex),
                 jobFinished (jobsMutex),
                 idle (jobsMutex),
                 state (Idle),
@@ -247,6 +246,10 @@ namespace thekogans {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
                     THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
             }
+        }
+
+        SystemRunLoop::~SystemRunLoop () {
+            CancelAll ();
         }
 
         SystemRunLoop::XlibWindow::Ptr SystemRunLoop::CreateThreadWindow (
@@ -262,7 +265,7 @@ namespace thekogans {
                     event.xclient.window == window->window.window &&
                     event.xclient.message_type == window->message_type) {
                 if (event.xclient.data.l[0] == XlibWindow::ID_RUN_LOOP) {
-                    ExecuteJob ();
+                    ExecuteJobs ();
                 }
                 else if (event.xclient.data.l[0] == XlibWindow::ID_STOP) {
                     return false;
@@ -285,7 +288,6 @@ namespace thekogans {
                 maxPendingJobs (maxPendingJobs_),
                 done (done_),
                 runLoop (runLoop_),
-                jobsNotEmpty (jobsMutex),
                 jobFinished (jobsMutex),
                 idle (jobsMutex),
                 state (Idle),
@@ -294,6 +296,10 @@ namespace thekogans {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
                     THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
             }
+        }
+
+        SystemRunLoop::~SystemRunLoop () {
+            CancelAll ();
         }
 
         namespace {
@@ -313,6 +319,7 @@ namespace thekogans {
 
         void SystemRunLoop::Start () {
             if (SetDone (false)) {
+                ExecuteJobs ();
             #if defined (TOOLCHAIN_OS_Windows)
                 BOOL result;
                 MSG msg;
@@ -432,9 +439,9 @@ namespace thekogans {
             #elif defined (TOOLCHAIN_OS_OSX)
                 CFRunLoopStop (runLoop);
             #endif // defined (TOOLCHAIN_OS_Windows)
-                if (cancelPendingJobs) {
-                    CancelAll ();
-                }
+            }
+            if (cancelPendingJobs) {
+                CancelAll ();
             }
         }
 
@@ -452,7 +459,6 @@ namespace thekogans {
                 }
                 job.AddRef ();
                 ++stats.jobCount;
-                jobsNotEmpty.Signal ();
                 state = Busy;
             #if defined (TOOLCHAIN_OS_Windows)
                 PostMessage (wnd, RUN_LOOP_MESSAGE, 0, 0);
@@ -463,7 +469,7 @@ namespace thekogans {
                     runLoop,
                     kCFRunLoopCommonModes,
                     ^(void) {
-                        ExecuteJob ();
+                        ExecuteJobs ();
                     });
                 CFRunLoopWakeUp (runLoop);
             #endif // defined (TOOLCHAIN_OS_Windows)
@@ -550,25 +556,24 @@ namespace thekogans {
             return state == Idle;
         }
 
-        void SystemRunLoop::ExecuteJob () {
-            JobQueue::Job::Ptr job (Deq ());
-            if (job.Get () != 0) {
-                ui64 start = HRTimer::Click ();
-                job->Prologue (done);
-                job->Execute (done);
-                job->Epilogue (done);
-                ui64 end = HRTimer::Click ();
-                FinishedJob (*job, start, end);
+        void SystemRunLoop::ExecuteJobs () {
+            while (!done) {
+                JobQueue::Job::Ptr job (Deq ());
+                if (job.Get () != 0) {
+                    ui64 start = HRTimer::Click ();
+                    job->Prologue (done);
+                    job->Execute (done);
+                    job->Epilogue (done);
+                    ui64 end = HRTimer::Click ();
+                    FinishedJob (*job, start, end);
+                }
             }
         }
 
         JobQueue::Job *SystemRunLoop::Deq () {
             LockGuard<Mutex> guard (jobsMutex);
-            while (!done && jobs.empty ()) {
-                jobsNotEmpty.Wait ();
-            }
             JobQueue::Job *job = 0;
-            if (!jobs.empty ()) {
+            if (!done && !jobs.empty ()) {
                 job = jobs.pop_front ();
                 --stats.jobCount;
                 ++busyWorkers;

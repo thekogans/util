@@ -157,25 +157,27 @@ namespace thekogans {
         }
 
         void JobQueue::Stop (bool cancelPendingJobs) {
-            LockGuard<Mutex> guard (workersMutex);
-            if (SetDone (true)) {
-                jobsNotEmpty.SignalAll ();
-                struct Callback : public WorkerList::Callback {
-                    typedef WorkerList::Callback::result_type result_type;
-                    typedef WorkerList::Callback::argument_type argument_type;
-                    virtual result_type operator () (argument_type worker) {
-                        // Join the worker thread before deleting it to
-                        // let it's thread function finish it's tear down.
-                        worker->Wait ();
-                        delete worker;
-                        return true;
-                    }
-                } callback;
-                workers.clear (callback);
-                assert (busyWorkers == 0);
-                if (cancelPendingJobs) {
-                    CancelAll ();
+            {
+                LockGuard<Mutex> guard (workersMutex);
+                if (SetDone (true)) {
+                    jobsNotEmpty.SignalAll ();
+                    struct Callback : public WorkerList::Callback {
+                        typedef WorkerList::Callback::result_type result_type;
+                        typedef WorkerList::Callback::argument_type argument_type;
+                        virtual result_type operator () (argument_type worker) {
+                            // Join the worker thread before deleting it to
+                            // let it's thread function finish it's tear down.
+                            worker->Wait ();
+                            delete worker;
+                            return true;
+                        }
+                    } callback;
+                    workers.clear (callback);
+                    assert (busyWorkers == 0);
                 }
+            }
+            if (cancelPendingJobs) {
+                CancelAll ();
             }
         }
 
@@ -193,8 +195,8 @@ namespace thekogans {
                 }
                 job.AddRef ();
                 ++stats.jobCount;
-                jobsNotEmpty.Signal ();
                 state = Busy;
+                jobsNotEmpty.Signal ();
                 if (wait) {
                     while (!job.ShouldStop (done) && !job.finished) {
                         jobFinished.Wait ();
@@ -284,7 +286,7 @@ namespace thekogans {
                 jobsNotEmpty.Wait ();
             }
             Job *job = 0;
-            if (!jobs.empty ()) {
+            if (!done && !jobs.empty ()) {
                 job = jobs.pop_front ();
                 --stats.jobCount;
                 ++busyWorkers;

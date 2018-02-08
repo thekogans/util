@@ -41,9 +41,9 @@ namespace thekogans {
         void DefaultRunLoop::Stop (bool cancelPendingJobs) {
             if (SetDone (true)) {
                 jobsNotEmpty.Signal ();
-                if (cancelPendingJobs) {
-                    CancelAll ();
-                }
+            }
+            if (cancelPendingJobs) {
+                CancelAll ();
             }
         }
 
@@ -61,8 +61,8 @@ namespace thekogans {
                 }
                 job.AddRef ();
                 ++stats.jobCount;
-                jobsNotEmpty.Signal ();
                 state = Busy;
+                jobsNotEmpty.Signal ();
                 if (wait) {
                     while (!job.ShouldStop (done) && !job.finished) {
                         jobFinished.Wait ();
@@ -152,7 +152,7 @@ namespace thekogans {
                 jobsNotEmpty.Wait ();
             }
             JobQueue::Job *job = 0;
-            if (!jobs.empty ()) {
+            if (!done && !jobs.empty ()) {
                 job = jobs.pop_front ();
                 --stats.jobCount;
                 ++busyWorkers;

@@ -291,9 +291,6 @@ namespace thekogans {
             Mutex jobsMutex;
             /// \brief
             /// Synchronization condition variable.
-            Condition jobsNotEmpty;
-            /// \brief
-            /// Synchronization condition variable.
             Condition jobFinished;
             /// \brief
             /// Synchronization condition variable.
@@ -366,6 +363,9 @@ namespace thekogans {
                 void *userData_ = 0,
                 XlibWindow::Ptr window_ = CreateThreadWindow (0),
                 const std::vector<Display *> &displays_ = std::vector<Display *> ());
+            /// \brief
+            /// dtor.
+            virtual ~SystemRunLoop ();
 
             /// \brief
             /// Create a run loop window to service job requests.
@@ -401,6 +401,9 @@ namespace thekogans {
                 ui32 maxPendingJobs_ = UI32_MAX,
                 bool done_ = true,
                 CFRunLoopRef runLoop_ = CFRunLoopGetCurrent ());
+            /// \brief
+            /// dtor.
+            virtual ~SystemRunLoop ();
 
             /// \brief
             /// Return the OS X CFRunLoopRef associated with this run loop.
@@ -466,10 +469,10 @@ namespace thekogans {
 
         private:
             /// \brief
-            /// Used internally to execute the next job.
-            void ExecuteJob ();
+            /// Used internally to execute the pending jobs.
+            void ExecuteJobs ();
             /// \brief
-            /// Used internally by worker to get the next job.
+            /// Used internally to get the next job.
             /// \return The next job to execute.
             JobQueue::Job *Deq ();
             /// \brief

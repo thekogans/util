@@ -188,6 +188,11 @@ namespace thekogans {
                 idle (jobsMutex),
                 state (Idle),
                 busyWorkers (0) {}
+            /// \brief
+            /// dtor.
+            virtual ~DefaultRunLoop () {
+                CancelAll ();
+            }
 
             /// \brief
             /// Start the run loop. This is a blocking call and will
