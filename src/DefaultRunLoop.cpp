@@ -41,8 +41,6 @@ namespace thekogans {
         void DefaultRunLoop::Stop (bool cancelPendingJobs) {
             if (SetDone (true)) {
                 jobsNotEmpty.Signal ();
-                //Wait ();
-                //assert (busyWorkers == 0);
                 if (cancelPendingJobs) {
                     CancelAll ();
                 }
