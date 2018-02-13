@@ -160,6 +160,12 @@ namespace thekogans {
                 Allocator *allocator_ = &DefaultAllocator::Global);
 
             /// \brief
+            /// Clone the buffer.
+            /// \param[in] allocator Allocator for the returned buffer.
+            /// \return A clone of this buffer.
+            virtual UniquePtr Clone (Allocator *allocator = &DefaultAllocator::Global) const;
+
+            /// \brief
             /// Return the serialized size of this buffer.
             /// \return Serialized size of this buffer.
             inline ui32 Size () const {
@@ -172,10 +178,17 @@ namespace thekogans {
             }
 
             /// \brief
-            /// Clone the buffer.
-            /// \param[in] allocator Allocator for the returned buffer.
-            /// \return A clone of this buffer.
-            virtual UniquePtr Clone (Allocator *allocator = &DefaultAllocator::Global) const;
+            /// Return true if there is no more data available for reading.
+            /// \return true if there is no more data available for reading.
+            inline bool IsEmpty () const {
+                return GetDataAvailableForReading () == 0;
+            }
+            /// \brief
+            /// Return true if there is no more space available for writing.
+            /// \return true if there is no more space available for writing.
+            inline bool IsFull () const {
+                return GetDataAvailableForWriting () == 0;
+            }
 
             /// \brief
             /// Return number of bytes available for reading.

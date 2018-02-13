@@ -142,6 +142,19 @@ namespace thekogans {
             }
 
             /// \brief
+            /// Return true if there is no more data available for reading.
+            /// \return true if there is no more data available for reading.
+            inline bool IsEmpty () const {
+                return GetDataAvailableForReading () == 0;
+            }
+            /// \brief
+            /// Return true if there is no more space available for writing.
+            /// \return true if there is no more space available for writing.
+            inline bool IsFull () const {
+                return GetDataAvailableForWriting () == 0;
+            }
+
+            /// \brief
             /// Return number of bytes available for reading.
             /// \return Number of bytes available for reading.
             inline ui32 GetDataAvailableForReading () const {
@@ -160,10 +173,22 @@ namespace thekogans {
                 return data + readOffset;
             }
             /// \brief
+            /// Return just past the end of the current data read position.
+            /// \return Just past the end of the current data read position.
+            inline const ui8 *GetReadPtrEnd () const {
+                return GetReadPtr () + GetDataAvailableForReading ();
+            }
+            /// \brief
             /// Return the current write data position.
             /// \return The current write data position.
             inline ui8 *GetWritePtr () const {
                 return (ui8 *)(data + writeOffset);
+            }
+            /// \brief
+            /// Return just past the end of the current data write position.
+            /// \return Just past the end of the current data write position.
+            inline ui8 *GetWritePtrEnd () const {
+                return GetWritePtr () + GetDataAvailableForWriting ();
             }
             /// \brief
             /// Advance the read offset taking care not to overflow.
@@ -206,7 +231,7 @@ namespace thekogans {
                 fixedBuffer.writeOffset;
             if (serializer.Write (fixedBuffer.data, length) != length) {
                 THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                    "*this.Write (fixedBuffer.data, %u) != %u", length, length);
+                    "serializer.Write (fixedBuffer.data, %u) != %u", length, length);
             }
             return serializer;
         }
