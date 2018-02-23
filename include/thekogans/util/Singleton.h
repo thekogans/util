@@ -41,7 +41,7 @@ namespace thekogans {
         /// \code{.cpp}
         /// struct GlobalJobQueueCreateInstance {
         ///     static std::string name;
-        ///     static JobQueue::Type type;
+        ///     static RunLoop::Type type;
         ///     static ui32 workerCount;
         ///     static i32 workerPriority;
         ///     static ui32 workerAffinity;
@@ -49,7 +49,7 @@ namespace thekogans {
         ///
         ///     static void Parameterize (
         ///             const std::string &name_ = std::string (),
-        ///             JobQueue::Type type_ = JobQueue::TYPE_FIFO,
+        ///             RunLoop::Type type_ = RunLoop::TYPE_FIFO,
         ///             ui32 workerCount_ = 1,
         ///             i32 workerPriority_ = THEKOGANS_UTIL_NORMAL_THREAD_PRIORITY,
         ///             ui32 workerAffinity_ = UI32_MAX,

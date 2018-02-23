@@ -229,7 +229,7 @@ namespace thekogans {
                 filterList.clear ();
             }
             jobQueue.reset (!blocking ?
-                new JobQueue (name, JobQueue::TYPE_FIFO, 1, priority, affinity) : 0);
+                new JobQueue (name, RunLoop::TYPE_FIFO, 1, priority, affinity) : 0);
         }
 
         void LoggerMgr::AddLogger (
@@ -418,7 +418,7 @@ namespace thekogans {
                 }
             }
 
-            struct LogSubsystemJob : public JobQueue::Job {
+            struct LogSubsystemJob : public RunLoop::Job {
                 LoggerMgr::Entry::UniquePtr entry;
                 LoggerMgr::LoggerList loggerList;
 
@@ -446,7 +446,7 @@ namespace thekogans {
                 if (it != loggerMap.end () || !defaultLoggers.empty ()) {
                     if (jobQueue.get () != 0) {
                         jobQueue->Enq (
-                            *JobQueue::Job::Ptr (
+                            *RunLoop::Job::Ptr (
                                 new LogSubsystemJob (
                                     std::move (entry),
                                     it != loggerMap.end () ? it->second : defaultLoggers)));

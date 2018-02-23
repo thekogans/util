@@ -19,7 +19,6 @@
 #define __thekogans_util_DefaultRunLoop_h
 
 #include "thekogans/util/Config.h"
-#include "thekogans/util/JobQueue.h"
 #include "thekogans/util/Mutex.h"
 #include "thekogans/util/Condition.h"
 #include "thekogans/util/RunLoop.h"
@@ -104,10 +103,12 @@ namespace thekogans {
         ///         }
         ///     }
         ///
-        ///     void Enq (util::JobQueue::Job &job) {
+        ///     void Enq (
+        ///             Job &job,
+        ///             bool wait = false) {
         ///         util::LockGuard<util::SpinLock> guard (spinLock);
         ///         if (runLoop.get () != 0) {
-        ///             runLoop->Enq (job);
+        ///             runLoop->Enq (job, wait);
         ///         }
         ///     }
         ///
@@ -130,23 +131,23 @@ namespace thekogans {
             /// RunLoop name.
             const std::string name;
             /// \brief
-            /// JobQueue type (TIPE_FIFO or TYPE_LIFO)
-            const JobQueue::Type type;
+            /// RunLoop type (TIPE_FIFO or TYPE_LIFO)
+            const Type type;
             /// \brief
             /// Max pending jobs.
             const ui32 maxPendingJobs;
             /// \brief
             /// Called to initialize/uninitialize the worker thread.
-            JobQueue::WorkerCallback *workerCallback;
+            WorkerCallback *workerCallback;
             /// \brief
             /// Flag to signal the worker thread.
             volatile bool done;
             /// \brief
             /// Job queue.
-            JobQueue::JobList jobs;
+            JobList jobs;
             /// \brief
             /// RunLoop stats.
-            JobQueue::Stats stats;
+            Stats stats;
             /// \brief
             /// Synchronization lock for jobs.
             Mutex jobsMutex;
@@ -181,9 +182,9 @@ namespace thekogans {
             /// \param[in] workerCallback_ Called to initialize/uninitialize the worker thread.
             DefaultRunLoop (
                 const std::string &name_ = std::string (),
-                JobQueue::Type type_ = JobQueue::TYPE_FIFO,
+                Type type_ = TYPE_FIFO,
                 ui32 maxPendingJobs_ = UI32_MAX,
-                JobQueue::WorkerCallback *workerCallback_ = 0) :
+                WorkerCallback *workerCallback_ = 0) :
                 name (name_),
                 type (type_),
                 maxPendingJobs (maxPendingJobs_),
@@ -217,7 +218,7 @@ namespace thekogans {
             /// \param[in] wait Wait for job to finish.
             /// Used for synchronous job execution.
             virtual void Enq (
-                JobQueue::Job &job,
+                Job &job,
                 bool wait = false);
 
             /// \brief
@@ -225,7 +226,7 @@ namespace thekogans {
             /// in the queue (in flight), it is not canceled.
             /// \param[in] jobId Id of job to cancel.
             /// \return true if the job was cancelled. false if in flight.
-            virtual bool Cancel (const JobQueue::Job::Id &jobId);
+            virtual bool Cancel (const Job::Id &jobId);
             /// \brief
             /// Cancel all queued jobs. Jobs in flight are unaffected.
             virtual void CancelAll ();
@@ -237,7 +238,7 @@ namespace thekogans {
             /// \brief
             /// Return a snapshot of the queue stats.
             /// \return A snapshot of the queue stats.
-            virtual JobQueue::Stats GetStats ();
+            virtual Stats GetStats ();
 
             /// \brief
             /// Return true if Start was called.
@@ -257,15 +258,15 @@ namespace thekogans {
             /// \brief
             /// Used internally to get the next job.
             /// \return The next job to execute.
-            JobQueue::Job *Deq ();
+            Job *Deq ();
             /// \brief
             /// Called by worker(s) after each job is done.
-            /// Used to update state and \see{JobQueue::Stats}.
+            /// Used to update state and \see{Stats}.
             /// \param[in] job Completed job.
             /// \param[in] start Completed job start time.
             /// \param[in] end Completed job end time.
             void FinishedJob (
-                JobQueue::Job &job,
+                Job &job,
                 ui64 start,
                 ui64 end);
 

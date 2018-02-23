@@ -552,8 +552,8 @@ namespace thekogans {
         #endif // defined (TOOLCHAIN_OS_Windows)
         }
 
-        JobQueue::Job::Ptr ChildProcess::CreateSpawnJob (bool detached) {
-            struct SpawnJob : public JobQueue::Job {
+        RunLoop::Job::Ptr ChildProcess::CreateSpawnJob (bool detached) {
+            struct SpawnJob : public RunLoop::Job {
                 ChildProcess &childProcess;
                 bool detached;
                 SpawnJob (
@@ -561,7 +561,7 @@ namespace thekogans {
                     bool detached_) :
                     childProcess (childProcess_),
                     detached (detached_) {}
-                // JobQueue::Job
+                // RunLoop::Job
                 virtual void Execute (volatile const bool &done) throw () {
                     if (!done) {
                         THEKOGANS_UTIL_TRY {
@@ -571,11 +571,11 @@ namespace thekogans {
                     }
                 }
             };
-            return JobQueue::Job::Ptr (new SpawnJob (*this, detached));
+            return RunLoop::Job::Ptr (new SpawnJob (*this, detached));
         }
 
-        JobQueue::Job::Ptr ChildProcess::CreateExecJob (ChildStatus &status) {
-            struct ExecJob : public JobQueue::Job {
+        RunLoop::Job::Ptr ChildProcess::CreateExecJob (ChildStatus &status) {
+            struct ExecJob : public RunLoop::Job {
                 ChildProcess &childProcess;
                 ChildStatus &status;
                 ExecJob (
@@ -583,7 +583,7 @@ namespace thekogans {
                     ChildStatus &status_) :
                     childProcess (childProcess_),
                     status (status_) {}
-                // JobQueue::Job
+                // RunLoop::Job
                 virtual void Execute (volatile const bool &done) throw () {
                     if (!done) {
                         THEKOGANS_UTIL_TRY {
@@ -593,7 +593,7 @@ namespace thekogans {
                     }
                 }
             };
-            return JobQueue::Job::Ptr (new ExecJob (*this, status));
+            return RunLoop::Job::Ptr (new ExecJob (*this, status));
         }
 
         Buffer::UniquePtr ChildProcess::CollectOutput (

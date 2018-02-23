@@ -21,7 +21,9 @@
 
 using namespace thekogans;
 
-int main (int /*argc*/, const char * /*argv*/ []) {
+int main (
+        int /*argc*/,
+        const char * /*argv*/ []) {
     util::Endianness endianness = util::SystemInfo::Instance ().GetEndianness ();
     std::cout << "Endianness: " << (endianness == util::LittleEndian ? "LittleEndian" : "BigEndian") << std::endl;
     util::ui32 cpuCount = util::SystemInfo::Instance ().GetCPUCount ();

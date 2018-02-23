@@ -97,7 +97,7 @@ namespace thekogans {
                     WorkerPool::WorkerPtr::SharedPtr workerPtr (
                         new WorkerPool::WorkerPtr (workerPool, 0));
                     if (workerPtr.get () != 0 && workerPtr->worker != 0) {
-                        struct WorkerJob : public util::JobQueue::Job {
+                        struct WorkerJob : public util::RunLoop::Job {
                             WorkerPool::WorkerPtr::SharedPtr workerPtr;
                             Scheduler &scheduler;
 
@@ -133,7 +133,7 @@ namespace thekogans {
                             }
                         };
                         (*workerPtr)->Enq (
-                            *util::JobQueue::Job::Ptr (
+                            *util::RunLoop::Job::Ptr (
                                 new WorkerJob (workerPtr, *this)));
                     }
                 }

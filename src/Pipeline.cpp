@@ -68,7 +68,7 @@ namespace thekogans {
         Pipeline::Pipeline (
                 ui32 stageCount,
                 const std::string &stageName,
-                JobQueue::Type stageType,
+                RunLoop::Type stageType,
                 ui32 stageWorkerCount,
                 i32 stageWorkerPriority,
                 StagePriorityAdjustment stagePriorityAdjustment,
@@ -145,7 +145,7 @@ namespace thekogans {
             }
         }
 
-        void Pipeline::GetStats (std::vector<JobQueue::Stats> &stats) {
+        void Pipeline::GetStats (std::vector<RunLoop::Stats> &stats) {
             stats.resize (stages.size ());
             for (std::size_t i = 0, count = stages.size (); i < count; ++i) {
                 stats[i] = stages[i]->GetStats ();

@@ -18,6 +18,7 @@
 #if defined (TOOLCHAIN_OS_Windows)
 
 #include "thekogans/util/StringUtils.h"
+#include "thekogans/util/Exception.h"
 #include "thekogans/util/WindowsUtils.h"
 
 _LIB_THEKOGANS_UTIL_DECL int _LIB_THEKOGANS_UTIL_API pipe (
@@ -80,6 +81,80 @@ namespace thekogans {
             ul.HighPart = value.dwHighDateTime;
             return ul.QuadPart / THEKOGANS_UTIL_UI64_LITERAL (10000000) -
                 THEKOGANS_UTIL_UI64_LITERAL (11644473600);
+        }
+
+        WindowClass::WindowClass (
+                const std::string &name_,
+                WNDPROC wndProc,
+                UINT style,
+                HICON icon,
+                HCURSOR cursor,
+                HBRUSH background,
+                HINSTANCE instance_) :
+                name (name_),
+                instance (instance_),
+                atom (0) {
+            if (!name.empty () && wndProc != 0 && instance != 0) {
+                WNDCLASSEX wndClassEx;
+                wndClassEx.cbSize = sizeof (WNDCLASSEX);
+                wndClassEx.style = style;
+                wndClassEx.lpfnWndProc = wndProc;
+                wndClassEx.cbClsExtra = 0;
+                wndClassEx.cbWndExtra = 0;
+                wndClassEx.hInstance = instance;
+                wndClassEx.hIcon = icon;
+                wndClassEx.hCursor = cursor;
+                wndClassEx.hbrBackground = background;
+                wndClassEx.lpszMenuName = 0;
+                wndClassEx.lpszClassName = name.c_str ();
+                wndClassEx.hIconSm = 0;
+                atom = RegisterClassEx (&wndClassEx);
+                if (atom == 0) {
+                    THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                        THEKOGANS_UTIL_OS_ERROR_CODE);
+                }
+            }
+            else {
+                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
+            }
+        }
+
+        WindowClass::~WindowClass () {
+            UnregisterClass (name.c_str (), instance);
+        }
+
+        Window::Window (
+                const WindowClass &windowClass,
+                const Rectangle &rectangle,
+                const std::string &name,
+                DWORD style,
+                DWORD extendedStyle,
+                HWND parent,
+                HMENU menu,
+                void *userInfo) :
+                wnd (
+                    CreateWindowEx (
+                        extendedStyle,
+                        windowClass.name.c_str (),
+                        name.c_str (),
+                        style,
+                        rectangle.origin.x,
+                        rectangle.origin.y,
+                        rectangle.extents.width,
+                        rectangle.extents.height,
+                        parent,
+                        menu,
+                        windowClass.instance,
+                        userInfo)) {
+            if (wnd == 0) {
+                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                    THEKOGANS_UTIL_OS_ERROR_CODE);
+            }
+        }
+
+        Window::~Window () {
+            DestroyWindow (wnd);
         }
 
     } // namespace util

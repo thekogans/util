@@ -27,57 +27,6 @@
 namespace thekogans {
     namespace util {
 
-    #if defined (TOOLCHAIN_OS_Windows)
-        void JobQueue::COMInitializer::InitializeWorker () throw () {
-            THEKOGANS_UTIL_TRY {
-                HRESULT result = CoInitializeEx (0, dwCoInit);
-                if (result != S_OK) {
-                    THEKOGANS_UTIL_THROW_HRESULT_ERROR_CODE_EXCEPTION (result);
-                }
-            }
-            THEKOGANS_UTIL_CATCH_AND_LOG_SUBSYSTEM (THEKOGANS_UTIL)
-        }
-
-        void JobQueue::COMInitializer::UninitializeWorker () throw () {
-            CoUninitialize ();
-        }
-
-        void JobQueue::OLEInitializer::InitializeWorker () throw () {
-            THEKOGANS_UTIL_TRY {
-                HRESULT result = OleInitialize (0);
-                if (result != S_OK) {
-                    THEKOGANS_UTIL_THROW_HRESULT_ERROR_CODE_EXCEPTION (result);
-                }
-            }
-            THEKOGANS_UTIL_CATCH_AND_LOG_SUBSYSTEM (THEKOGANS_UTIL)
-        }
-
-        void JobQueue::OLEInitializer::UninitializeWorker () throw () {
-            OleUninitialize ();
-        }
-    #endif // defined (TOOLCHAIN_OS_Windows)
-
-        void JobQueue::Stats::Update (
-                const JobQueue::Job::Id &jobId,
-                ui64 start,
-                ui64 end) {
-            ++totalJobs;
-            ui64 ellapsed =
-                HRTimer::ComputeEllapsedTime (start, end);
-            totalJobTime += ellapsed;
-            lastJob = Job (jobId, start, end, ellapsed);
-            if (totalJobs == 1) {
-                minJob = Job (jobId, start, end, ellapsed);
-                maxJob = Job (jobId, start, end, ellapsed);
-            }
-            else if (minJob.totalTime > ellapsed) {
-                minJob = Job (jobId, start, end, ellapsed);
-            }
-            else if (maxJob.totalTime < ellapsed) {
-                maxJob = Job (jobId, start, end, ellapsed);
-            }
-        }
-
         void JobQueue::Worker::Run () throw () {
             struct WorkerInitializer {
                 JobQueue &queue;
@@ -253,16 +202,16 @@ namespace thekogans {
             }
         }
 
+        JobQueue::Stats JobQueue::GetStats () {
+            LockGuard<Mutex> guard (jobsMutex);
+            return stats;
+        }
+
         void JobQueue::WaitForIdle () {
             LockGuard<Mutex> guard (jobsMutex);
             while (state == Busy) {
                 idle.Wait ();
             }
-        }
-
-        JobQueue::Stats JobQueue::GetStats () {
-            LockGuard<Mutex> guard (jobsMutex);
-            return stats;
         }
 
         bool JobQueue::IsRunning () {
@@ -319,21 +268,21 @@ namespace thekogans {
         }
 
         std::string GlobalJobQueueCreateInstance::name = std::string ();
-        JobQueue::Type GlobalJobQueueCreateInstance::type = JobQueue::TYPE_FIFO;
+        RunLoop::Type GlobalJobQueueCreateInstance::type = RunLoop::TYPE_FIFO;
         ui32 GlobalJobQueueCreateInstance::workerCount = 1;
         i32 GlobalJobQueueCreateInstance::workerPriority = THEKOGANS_UTIL_NORMAL_THREAD_PRIORITY;
         ui32 GlobalJobQueueCreateInstance::workerAffinity = UI32_MAX;
         ui32 GlobalJobQueueCreateInstance::maxPendingJobs = UI32_MAX;
-        JobQueue::WorkerCallback *GlobalJobQueueCreateInstance::workerCallback = 0;
+        RunLoop::WorkerCallback *GlobalJobQueueCreateInstance::workerCallback = 0;
 
         void GlobalJobQueueCreateInstance::Parameterize (
                 const std::string &name_,
-                JobQueue::Type type_,
+                RunLoop::Type type_,
                 ui32 workerCount_,
                 i32 workerPriority_,
                 ui32 workerAffinity_,
                 ui32 maxPendingJobs_,
-                JobQueue::WorkerCallback *workerCallback_) {
+                RunLoop::WorkerCallback *workerCallback_) {
             name = name_;
             type = type_;
             workerCount = workerCount_;

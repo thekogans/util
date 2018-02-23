@@ -66,7 +66,7 @@ namespace thekogans {
         ///     ...
         ///     util::MainRunLoopCreateInstance::Parameterize (
         ///         std::string (),
-        ///         util::JobQueue::TYPE_FIFO,
+        ///         util::RunLoop::TYPE_FIFO,
         ///         util::UI32_MAX,
         ///         0
         ///         false,
@@ -89,7 +89,7 @@ namespace thekogans {
         ///     or
         ///     util::MainRunLoopCreateInstance::Parameterize (
         ///         std::string (),
-        ///         util::JobQueue::TYPE_FIFO,
+        ///         util::RunLoop::TYPE_FIFO,
         ///         util::UI32_MAX,
         ///         0
         ///         true,
@@ -114,7 +114,7 @@ namespace thekogans {
         ///     ...
         ///     util::MainRunLoopCreateInstance::Parameterize (
         ///         std::string (),
-        ///         util::JobQueue::TYPE_FIFO,
+        ///         util::RunLoop::TYPE_FIFO,
         ///         util::UI32_MAX,
         ///         0
         ///         false,
@@ -133,7 +133,7 @@ namespace thekogans {
         ///     or
         ///     util::MainRunLoopCreateInstance::Parameterize (
         ///         std::string (),
-        ///         util::JobQueue::TYPE_FIFO,
+        ///         util::RunLoop::TYPE_FIFO,
         ///         util::UI32_MAX,
         ///         0
         ///         true,
@@ -158,7 +158,7 @@ namespace thekogans {
         ///     ...
         ///     util::MainRunLoopCreateInstance::Parameterize (
         ///         std::string (),
-        ///         util::JobQueue::TYPE_FIFO,
+        ///         util::RunLoop::TYPE_FIFO,
         ///         util::UI32_MAX,
         ///         0,
         ///         false,
@@ -168,7 +168,7 @@ namespace thekogans {
         ///     or
         ///     util::MainRunLoopCreateInstance::Parameterize (
         ///         std::string (),
-        ///         util::JobQueue::TYPE_FIFO,
+        ///         util::RunLoop::TYPE_FIFO,
         ///         util::UI32_MAX,
         ///         0,
         ///         true,
@@ -187,13 +187,13 @@ namespace thekogans {
             static std::string name;
             /// \brief
             /// JobQueue type (TIPE_FIFO or TYPE_LIFO)
-            static JobQueue::Type type;
+            static RunLoop::Type type;
             /// \brief
             /// Max pending jobs.
             static ui32 maxPendingJobs;
             /// \brief
             /// Called to initialize/uninitialize the worker thread.
-            static JobQueue::WorkerCallback *workerCallback;
+            static RunLoop::WorkerCallback *workerCallback;
             /// \brief
             /// true = the main thread will call MainRunLoop::Instance ().Start ().
             static bool willCallStart;
@@ -205,8 +205,8 @@ namespace thekogans {
             /// Optional user data passed to eventProcessor.
             static void *userData;
             /// \brief
-            /// Windows window handle.
-            static HWND wnd;
+            /// Windows window.
+            static Window::Ptr window;
         #elif defined (TOOLCHAIN_OS_Linux)
         #if defined (THEKOGANS_UTIL_HAVE_XLIB)
             /// \brief
@@ -240,16 +240,16 @@ namespace thekogans {
             /// MainRunLoop::Instance ().Start ().
             /// \param[in] eventProcessor_ Callback to process Windows HWND events.
             /// \param[in] userData_ Optional user data passed to eventProcessor.
-            /// \param[in] wnd_ Windows window handle.
+            /// \param[in] window_ Windows window.
             static void Parameterize (
                 const std::string &name_,
-                JobQueue::Type type_,
+                RunLoop::Type type_,
                 ui32 maxPendingJobs_,
-                JobQueue::WorkerCallback *workerCallback_,
+                RunLoop::WorkerCallback *workerCallback_,
                 bool willCallStart_,
                 SystemRunLoop::EventProcessor eventProcessor_,
                 void *userData_,
-                HWND wnd_);
+                Window::Ptr window_);
         #elif defined (TOOLCHAIN_OS_Linux)
         #if defined (THEKOGANS_UTIL_HAVE_XLIB)
             /// \brief
@@ -266,9 +266,9 @@ namespace thekogans {
             /// \param[in] displays_ A list of displays to listen to.
             static void Parameterize (
                 const std::string &name_,
-                JobQueue::Type type_,
+                RunLoop::Type type_,
                 ui32 maxPendingJobs_,
-                JobQueue::WorkerCallback *workerCallback_,
+                RunLoop::WorkerCallback *workerCallback_,
                 bool willCallStart_,
                 SystemRunLoop::EventProcessor eventProcessor_,
                 void *userData_,
@@ -287,9 +287,9 @@ namespace thekogans {
             /// \param[in] runLoop_ OS X run loop object.
             static void Parameterize (
                 const std::string &name_,
-                JobQueue::Type type_,
+                RunLoop::Type type_,
                 ui32 maxPendingJobs_,
-                JobQueue::WorkerCallback *workerCallback_,
+                RunLoop::WorkerCallback *workerCallback_,
                 bool willCallStart_,
                 CFRunLoopRef runLoop_);
         #endif // defined (TOOLCHAIN_OS_Windows)

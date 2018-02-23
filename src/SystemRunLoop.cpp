@@ -33,13 +33,13 @@ namespace thekogans {
     #if defined (TOOLCHAIN_OS_Windows)
         SystemRunLoop::SystemRunLoop (
                 const std::string &name_,
-                JobQueue::Type type_,
+                Type type_,
                 ui32 maxPendingJobs_,
-                JobQueue::WorkerCallback *workerCallback_,
+                WorkerCallback *workerCallback_,
                 bool done_,
                 EventProcessor eventProcessor_,
                 void *userData_,
-                HWND wnd_) :
+                Window::Ptr window_) :
                 name (name_),
                 type (type_),
                 maxPendingJobs (maxPendingJobs_),
@@ -47,13 +47,13 @@ namespace thekogans {
                 done (done_),
                 eventProcessor (eventProcessor_),
                 userData (userData_),
-                wnd (wnd_),
+                window (std::move (window_)),
                 jobFinished (jobsMutex),
                 idle (jobsMutex),
                 state (Idle),
                 busyWorkers (0) {
-            if (maxPendingJobs != 0 && wnd != 0) {
-                SetWindowLongPtr (wnd, GWLP_USERDATA, (LONG_PTR)this);
+            if (maxPendingJobs != 0 && window.get () != 0) {
+                SetWindowLongPtr (window->wnd, GWLP_USERDATA, (LONG_PTR)this);
             }
             else {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
@@ -62,7 +62,6 @@ namespace thekogans {
         }
 
         SystemRunLoop::~SystemRunLoop () {
-            DestroyWindow (wnd);
             CancelAll ();
         }
 
@@ -96,49 +95,11 @@ namespace thekogans {
         namespace {
             const char * const CLASS_NAME = "thekogans_util_SystemRunLoop_Window_class";
             const char * const WINDOW_NAME = "thekogans_util_SystemRunLoop_Window_name";
-
-            ATOM RegisterWindowClass () {
-                WNDCLASSEX wndClassEx;
-                wndClassEx.cbSize = sizeof (WNDCLASSEX);
-                wndClassEx.style = CS_HREDRAW | CS_VREDRAW;
-                wndClassEx.lpfnWndProc = WndProc;
-                wndClassEx.cbClsExtra = 0;
-                wndClassEx.cbWndExtra = 0;
-                wndClassEx.hInstance = GetModuleHandle (0);
-                wndClassEx.hIcon = 0;
-                wndClassEx.hCursor = LoadCursor (0, IDC_ARROW);
-                wndClassEx.hbrBackground = (HBRUSH)(COLOR_WINDOW + 1);
-                wndClassEx.lpszMenuName = 0;
-                wndClassEx.lpszClassName = CLASS_NAME;
-                wndClassEx.hIconSm = 0;
-                ATOM atom = RegisterClassEx (&wndClassEx);
-                if (atom != 0) {
-                    return atom;
-                }
-                else {
-                    THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                        THEKOGANS_UTIL_OS_ERROR_CODE);
-                }
-            }
         }
 
-        HWND SystemRunLoop::CreateThreadWindow () {
-            static const ATOM atom = RegisterWindowClass ();
-            HWND wnd = CreateWindow (
-                CLASS_NAME,
-                WINDOW_NAME,
-                WS_POPUP,
-                0, 0, 0, 0,
-                0, 0,
-                GetModuleHandle (0),
-                0);
-            if (wnd != 0) {
-                return wnd;
-            }
-            else {
-                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                    THEKOGANS_UTIL_OS_ERROR_CODE);
-            }
+        Window::Ptr SystemRunLoop::CreateThreadWindow () {
+            static WindowClass windowClass (CLASS_NAME, WndProc);
+            return Window::Ptr (new Window (windowClass, Rectangle (), WINDOW_NAME, WS_POPUP));
         }
     #elif defined (TOOLCHAIN_OS_Linux)
         SystemRunLoop::XlibWindow::_Display::_Display (Display *display_) :
@@ -225,9 +186,9 @@ namespace thekogans {
 
         SystemRunLoop::SystemRunLoop (
                 const std::string &name_,
-                JobQueue::Type type_,
+                Type type_,
                 ui32 maxPendingJobs_,
-                JobQueue::WorkerCallback *workerCallback_,
+                WorkerCallback *workerCallback_,
                 bool done_,
                 EventProcessor eventProcessor_,
                 void *userData_,
@@ -283,9 +244,9 @@ namespace thekogans {
     #elif defined (TOOLCHAIN_OS_OSX)
         SystemRunLoop::SystemRunLoop (
                 const std::string &name_,
-                JobQueue::Type type_,
+                Type type_,
                 ui32 maxPendingJobs_,
-                JobQueue::WorkerCallback *workerCallback_,
+                WorkerCallback *workerCallback_,
                 bool done_,
                 CFRunLoopRef runLoop_) :
                 name (name_),
@@ -453,7 +414,7 @@ namespace thekogans {
         void SystemRunLoop::Stop (bool cancelPendingJobs) {
             if (SetDone (true)) {
             #if defined (TOOLCHAIN_OS_Windows)
-                PostMessage (wnd, WM_CLOSE, 0, 0);
+                PostMessage (window->wnd, WM_CLOSE, 0, 0);
             #elif defined (TOOLCHAIN_OS_Linux)
                 window->PostEvent (XlibWindow::ID_STOP);
             #elif defined (TOOLCHAIN_OS_OSX)
@@ -466,12 +427,12 @@ namespace thekogans {
         }
 
         void SystemRunLoop::Enq (
-                JobQueue::Job &job,
+                Job &job,
                 bool wait) {
             LockGuard<Mutex> guard (jobsMutex);
             if (stats.jobCount < maxPendingJobs) {
                 job.finished = false;
-                if (type == JobQueue::TYPE_FIFO) {
+                if (type == TYPE_FIFO) {
                     jobs.push_back (&job);
                 }
                 else {
@@ -481,7 +442,7 @@ namespace thekogans {
                 ++stats.jobCount;
                 state = Busy;
             #if defined (TOOLCHAIN_OS_Windows)
-                PostMessage (wnd, RUN_LOOP_MESSAGE, 0, 0);
+                PostMessage (window->wnd, RUN_LOOP_MESSAGE, 0, 0);
             #elif defined (TOOLCHAIN_OS_Linux)
                 window->PostEvent (XlibWindow::ID_RUN_LOOP);
             #elif defined (TOOLCHAIN_OS_OSX)
@@ -507,9 +468,9 @@ namespace thekogans {
             }
         }
 
-        bool SystemRunLoop::Cancel (const JobQueue::Job::Id &jobId) {
+        bool SystemRunLoop::Cancel (const Job::Id &jobId) {
             LockGuard<Mutex> guard (jobsMutex);
-            for (JobQueue::Job *job = jobs.front (); job != 0; job = jobs.next (job)) {
+            for (Job *job = jobs.front (); job != 0; job = jobs.next (job)) {
                 if (job->GetId () == jobId) {
                     jobs.erase (job);
                     job->Cancel ();
@@ -530,9 +491,9 @@ namespace thekogans {
             LockGuard<Mutex> guard (jobsMutex);
             if (!jobs.empty ()) {
                 assert (state == Busy);
-                struct Callback : public JobQueue::JobList::Callback {
-                    typedef JobQueue::JobList::Callback::result_type result_type;
-                    typedef JobQueue::JobList::Callback::argument_type argument_type;
+                struct Callback : public JobList::Callback {
+                    typedef JobList::Callback::result_type result_type;
+                    typedef JobList::Callback::argument_type argument_type;
                     virtual result_type operator () (argument_type job) {
                         job->Cancel ();
                         job->Release ();
@@ -556,7 +517,7 @@ namespace thekogans {
             }
         }
 
-        JobQueue::Stats SystemRunLoop::GetStats () {
+        RunLoop::Stats SystemRunLoop::GetStats () {
             LockGuard<Mutex> guard (jobsMutex);
             return stats;
         }
@@ -578,7 +539,7 @@ namespace thekogans {
 
         void SystemRunLoop::ExecuteJobs () {
             while (!done) {
-                JobQueue::Job::Ptr job (Deq ());
+                Job::Ptr job (Deq ());
                 if (job.Get () == 0) {
                     break;
                 }
@@ -591,9 +552,9 @@ namespace thekogans {
             }
         }
 
-        JobQueue::Job *SystemRunLoop::Deq () {
+        RunLoop::Job *SystemRunLoop::Deq () {
             LockGuard<Mutex> guard (jobsMutex);
-            JobQueue::Job *job = 0;
+            Job *job = 0;
             if (!done && !jobs.empty ()) {
                 job = jobs.pop_front ();
                 --stats.jobCount;
@@ -603,7 +564,7 @@ namespace thekogans {
         }
 
         void SystemRunLoop::FinishedJob (
-                JobQueue::Job &job,
+                Job &job,
                 ui64 start,
                 ui64 end) {
             LockGuard<Mutex> guard (jobsMutex);

@@ -342,7 +342,7 @@ namespace thekogans {
                 decorations (decorations_),
                 startTime (HRTimer::Click ()),
                 jobQueue (!blocking ?
-                    new JobQueue (name, JobQueue::TYPE_FIFO, 1, priority, affinity) : 0) {}
+                    new JobQueue (name, RunLoop::TYPE_FIFO, 1, priority, affinity) : 0) {}
             /// \brief
             /// dtor.
             ~LoggerMgr () {

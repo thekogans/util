@@ -44,11 +44,11 @@ namespace thekogans {
             /// \brief
             /// A pipeline job. Since a pipeline is a collection
             /// of JobQueues, the Pipeline::Job derives form
-            /// JobQueue::Job. JobQueue::Job Prologue and Epilogue
+            /// RunLoop::Job. RunLoop::Job Prologue and Epilogue
             /// are used to shepherd the job down the pipeline.
             /// Pipeline::Job Begin and End are used instead
             /// to perform one time initialization/tear down.
-            struct _LIB_THEKOGANS_UTIL_DECL Job : public JobQueue::Job {
+            struct _LIB_THEKOGANS_UTIL_DECL Job : public RunLoop::Job {
                 /// \brief
                 /// Convenient typedef for ThreadSafeRefCounted::Ptr<Job>.
                 typedef ThreadSafeRefCounted::Ptr<Job> Ptr;
@@ -69,7 +69,7 @@ namespace thekogans {
                     std::size_t stage_) :
                     pipeline (pipeline_),
                     stage (stage_) {}
-                // JobQueue::Job
+                // RunLoop::Job
                 /// \brief
                 /// JobQueue will call this before Execute.
                 /// If Stage == 0 will call Begin.
@@ -127,7 +127,7 @@ namespace thekogans {
                 std::string name;
                 /// \brief
                 /// Type of stage (TYPE_FIFO or TYPE_LIFO).
-                JobQueue::Type type;
+                RunLoop::Type type;
                 /// \brief
                 /// Count of workers servicing this stage.
                 ui32 workerCount;
@@ -147,7 +147,7 @@ namespace thekogans {
                 /// \param[in] workerAffinity_ Stage worker thread processor affinity.
                 StageInfo (
                     const std::string &name_ = std::string (),
-                    JobQueue::Type type_ = JobQueue::TYPE_FIFO,
+                    RunLoop::Type type_ = RunLoop::TYPE_FIFO,
                     ui32 workerCount_ = 1,
                     i32 workerPriority_ = THEKOGANS_UTIL_NORMAL_THREAD_PRIORITY,
                     ui32 workerAffinity_ = UI32_MAX) :
@@ -200,7 +200,7 @@ namespace thekogans {
             Pipeline (
                 ui32 stageCount,
                 const std::string &stageName = std::string (),
-                JobQueue::Type stageType = JobQueue::TYPE_FIFO,
+                RunLoop::Type stageType = RunLoop::TYPE_FIFO,
                 ui32 stageWorkerCount = 1,
                 i32 stageWorkerPriority = THEKOGANS_UTIL_NORMAL_THREAD_PRIORITY,
                 StagePriorityAdjustment stagePriorityAdjustment = NoAdjustment,
@@ -230,7 +230,7 @@ namespace thekogans {
             /// \brief
             /// Return the stats for each stage of the pipeline.
             /// \param[out] stats Vector where stage stats will be placed.\see{JobQueue}
-            void GetStats (std::vector<JobQueue::Stats> &stats);
+            void GetStats (std::vector<RunLoop::Stats> &stats);
 
             /// \brief
             /// Blocks until all jobs are complete and the pipeline is empty.

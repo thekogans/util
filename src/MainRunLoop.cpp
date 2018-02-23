@@ -22,24 +22,24 @@ namespace thekogans {
     namespace util {
 
         std::string MainRunLoopCreateInstance::name;
-        JobQueue::Type MainRunLoopCreateInstance::type = JobQueue::TYPE_FIFO;
+        RunLoop::Type MainRunLoopCreateInstance::type = RunLoop::TYPE_FIFO;
         ui32 MainRunLoopCreateInstance::maxPendingJobs = UI32_MAX;
-        JobQueue::WorkerCallback *MainRunLoopCreateInstance::workerCallback = 0;
+        RunLoop::WorkerCallback *MainRunLoopCreateInstance::workerCallback = 0;
         bool MainRunLoopCreateInstance::willCallStart = true;
     #if defined (TOOLCHAIN_OS_Windows)
         SystemRunLoop::EventProcessor MainRunLoopCreateInstance::eventProcessor = 0;
         void *MainRunLoopCreateInstance::userData = 0;
-        HWND MainRunLoopCreateInstance::wnd = 0;
+        Window::Ptr MainRunLoopCreateInstance::window;
 
         void MainRunLoopCreateInstance::Parameterize (
                 const std::string &name_,
-                JobQueue::Type type_,
+                RunLoop::Type type_,
                 ui32 maxPendingJobs_,
-                JobQueue::WorkerCallback *workerCallback_,
+                RunLoop::WorkerCallback *workerCallback_,
                 bool willCallStart_,
                 SystemRunLoop::EventProcessor eventProcessor_,
                 void *userData_,
-                HWND wnd_) {
+                Window::Ptr window_) {
             name = name_;
             type = type_;
             maxPendingJobs = maxPendingJobs_;
@@ -47,11 +47,11 @@ namespace thekogans {
             willCallStart = willCallStart_;
             eventProcessor = eventProcessor_;
             userData = userData_;
-            wnd = wnd_;
+            window = std::move (window_);
         }
 
         RunLoop *MainRunLoopCreateInstance::operator () () {
-            return wnd != 0 ?
+            return window.get () != 0 ?
                 (RunLoop *)new SystemRunLoop (
                     name,
                     type,
@@ -60,7 +60,7 @@ namespace thekogans {
                     willCallStart,
                     eventProcessor,
                     userData,
-                    wnd) :
+                    std::move (window)) :
                 (RunLoop *)new DefaultRunLoop (
                     name,
                     type,
@@ -76,9 +76,9 @@ namespace thekogans {
 
         void MainRunLoopCreateInstance::Parameterize (
                 const std::string &name_,
-                JobQueue::Type type_,
+                RunLoop::Type type_,
                 ui32 maxPendingJobs_,
-                JobQueue::WorkerCallback *workerCallback_,
+                RunLoop::WorkerCallback *workerCallback_,
                 bool willCallStart_,
                 SystemRunLoop::EventProcessor eventProcessor_,
                 void *userData_,
@@ -127,9 +127,9 @@ namespace thekogans {
 
         void MainRunLoopCreateInstance::Parameterize (
                 const std::string &name_,
-                JobQueue::Type type_,
+                RunLoop::Type type_,
                 ui32 maxPendingJobs_,
-                JobQueue::WorkerCallback *workerCallback_,
+                RunLoop::WorkerCallback *workerCallback_,
                 bool willCallStart_,
                 CFRunLoopRef runLoop_) {
             name = name_;

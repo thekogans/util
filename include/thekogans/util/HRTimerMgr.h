@@ -67,7 +67,7 @@ namespace thekogans {
         /// code used to extract metadata from media files:
         ///
         /// \code{.cpp}
-        /// struct ExtractMetadataJob : public thekogans::util::JobQueue::Job {
+        /// struct ExtractMetadataJob : public thekogans::util::RunLoop::Job {
         ///     // Nonessential members, and methods omitted for clarity.
         ///
         ///     virtual void Execute (volatile const bool &done) throw () {

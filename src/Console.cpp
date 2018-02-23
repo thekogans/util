@@ -197,7 +197,7 @@ namespace thekogans {
                 ui32 where,
                 const ColorType color) {
             if (jobQueue.get () != 0) {
-                struct PrintJob : public JobQueue::Job {
+                struct PrintJob : public RunLoop::Job {
                     std::string str;
                     ui32 where;
                     const ColorType color;
@@ -217,7 +217,7 @@ namespace thekogans {
                     }
                 };
                 jobQueue->Enq (
-                    *JobQueue::Job::Ptr (
+                    *RunLoop::Job::Ptr (
                         new PrintJob (str, where, color)));
             }
             else {

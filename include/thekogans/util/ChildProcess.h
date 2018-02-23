@@ -38,7 +38,7 @@
 #include <list>
 #include "thekogans/util/Config.h"
 #include "thekogans/util/TimeSpec.h"
-#include "thekogans/util/JobQueue.h"
+#include "thekogans/util/RunLoop.h"
 #include "thekogans/util/Buffer.h"
 
 namespace thekogans {
@@ -371,12 +371,12 @@ namespace thekogans {
             /// it's lifetime in any way. Please see the code example provided with
             /// CollectOutput bellow.
             /// \param[in] detached true = detach the child process from the parent,
-            /// \return JobQueue::Job representing the spawn job.
-            JobQueue::Job::Ptr CreateSpawnJob (bool detached = false);
+            /// \return RunLoop::Job representing the spawn job.
+            RunLoop::Job::Ptr CreateSpawnJob (bool detached = false);
             /// \brief
             /// Create a ChildProcess exec job to be executed on the \see{MainRunLoop}.
-            /// \return JobQueue::Job representing the exec job.
-            JobQueue::Job::Ptr CreateExecJob (ChildStatus &status);
+            /// \return RunLoop::Job representing the exec job.
+            RunLoop::Job::Ptr CreateExecJob (ChildStatus &status);
 
             enum {
                 /// \brief

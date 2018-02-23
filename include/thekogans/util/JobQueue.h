@@ -18,33 +18,19 @@
 #if !defined (__thekogans_util_JobQueue_h)
 #define __thekogans_util_JobQueue_h
 
-#if defined (TOOLCHAIN_OS_Windows)
-    #if !defined (_WINDOWS_)
-        #if !defined (WIN32_LEAN_AND_MEAN)
-            #define WIN32_LEAN_AND_MEAN
-        #endif // !defined (WIN32_LEAN_AND_MEAN)
-        #if !defined (NOMINMAX)
-            #define NOMINMAX
-        #endif // !defined (NOMINMAX)
-        #include <windows.h>
-    #endif // !defined (_WINDOWS_)
-    #include <objbase.h>
-#endif // defined (TOOLCHAIN_OS_Windows)
 #include <memory>
 #include <string>
 #include <map>
 #include "thekogans/util/Config.h"
 #include "thekogans/util/Types.h"
 #include "thekogans/util/Constants.h"
-#include "thekogans/util/GUID.h"
+#include "thekogans/util/RunLoop.h"
 #include "thekogans/util/IntrusiveList.h"
-#include "thekogans/util/RefCounted.h"
 #include "thekogans/util/Thread.h"
 #include "thekogans/util/Mutex.h"
 #include "thekogans/util/Condition.h"
 #include "thekogans/util/Singleton.h"
 #include "thekogans/util/StringUtils.h"
-#include "thekogans/util/XMLUtils.h"
 
 namespace thekogans {
     namespace util {
@@ -59,330 +45,10 @@ namespace thekogans {
         /// also forms the basis for \see{Pipeline}, \see{Vectorizer}, \see{WorkerPool} and
         /// \see{Scheduler}.
 
-        struct _LIB_THEKOGANS_UTIL_DECL JobQueue {
+        struct _LIB_THEKOGANS_UTIL_DECL JobQueue : public RunLoop {
             /// \brief
             /// Convenient typedef for std::unique_ptr<JobQueue>.
             typedef std::unique_ptr<JobQueue> UniquePtr;
-
-            /// \enum
-            /// The order in which pending jobs are processed;
-            /// First In, First Out (TYPE_FIFO), or Last In,
-            /// First Out (TYPE_LIFO).
-            enum Type {
-                /// \brief
-                /// First in first out.
-                TYPE_FIFO,
-                /// \brief
-                /// Last in first out.
-                TYPE_LIFO,
-            };
-
-            /// \struct JobQueue::WorkerCallback JobQueue.h thekogans/util/JobQueue.h
-            ///
-            /// \brief
-            /// Gives the JobQueue owner a chance to initialize/uninitialize the worker threads.
-            struct _LIB_THEKOGANS_UTIL_DECL WorkerCallback {
-                /// \brief
-                /// dtor.
-                virtual ~WorkerCallback () {}
-
-                /// \brief
-                /// Called by the worker before entering the job execution loop.
-                virtual void InitializeWorker () throw () {}
-                /// \brief
-                /// Called by the worker before exiting the thread.
-                virtual void UninitializeWorker () throw () {}
-            };
-
-        #if defined (TOOLCHAIN_OS_Windows)
-            /// \struct JobQueue::COMInitializer JobQueue.h thekogans/util/JobQueue.h
-            ///
-            /// \brief
-            /// Initialize the Windows COM library.
-            struct _LIB_THEKOGANS_UTIL_DECL COMInitializer : public WorkerCallback {
-                /// \brief
-                /// CoInitializeEx concurrency model.
-                DWORD dwCoInit;
-
-                /// \brief
-                /// ctor.
-                /// \param[in] dwCoInit_ CoInitializeEx concurrency model.
-                COMInitializer (DWORD dwCoInit_ = COINIT_MULTITHREADED) :
-                    dwCoInit (dwCoInit_) {}
-
-                /// \brief
-                /// Called by the worker before entering the job execution loop.
-                virtual void InitializeWorker () throw ();
-                /// \brief
-                /// Called by the worker before exiting the thread.
-                virtual void UninitializeWorker () throw ();
-            };
-
-            /// \struct JobQueue::OLEInitializer JobQueue.h thekogans/util/JobQueue.h
-            ///
-            /// \brief
-            /// Initialize the Windows OLE library.
-            struct _LIB_THEKOGANS_UTIL_DECL OLEInitializer : public WorkerCallback {
-                /// \brief
-                /// Called by the worker before entering the job execution loop.
-                virtual void InitializeWorker () throw ();
-                /// \brief
-                /// Called by the worker before exiting the thread.
-                virtual void UninitializeWorker () throw ();
-            };
-        #endif // defined (TOOLCHAIN_OS_Windows)
-
-            /// \brief
-            /// Forward declaration of Job.
-            struct Job;
-            enum {
-                /// \brief
-                /// JobList ID.
-                JOB_LIST_ID
-            };
-            /// \brief
-            /// Convenient typedef for IntrusiveList<Job, JOB_LIST_ID>.
-            typedef IntrusiveList<Job, JOB_LIST_ID> JobList;
-        #if defined (_MSC_VER)
-            #pragma warning (push)
-            #pragma warning (disable : 4275)
-        #endif // defined (_MSC_VER)
-            /// \struct JobQueue::Job JobQueue.h thekogans/util/JobQueue.h
-            ///
-            /// \brief
-            /// A JobQueue::Job must, at least, implement the Execute method.
-            struct _LIB_THEKOGANS_UTIL_DECL Job :
-                    public ThreadSafeRefCounted,
-                    public JobList::Node {
-                /// \brief
-                /// Convenient typedef for ThreadSafeRefCounted::Ptr<Job>.
-                typedef ThreadSafeRefCounted::Ptr<Job> Ptr;
-
-                /// \brief
-                /// Convenient typedef for std::string.
-                typedef std::string Id;
-
-                /// \brief
-                /// Job id.
-                const Id id;
-                /// \brief
-                /// Call Cancel () to set this flag. Monitor this
-                /// flag in Execute () to respond to cancellation
-                /// requests.
-                volatile bool cancelled;
-                /// \brief
-                /// Flag used internally to wait for synchronous jobs.
-                volatile bool finished;
-
-                /// \brief
-                /// ctor.
-                /// \param[in] id_ Job id.
-                Job (const Id &id_ = GUID::FromRandom ().ToString ()) :
-                    id (id_),
-                    cancelled (false),
-                    finished (false) {}
-                /// \brief
-                /// dtor.
-                virtual ~Job () {}
-
-                /// \brief
-                /// Call this method on a running job to cancel execution.
-                /// Monitor this flag in Execute () to respond to cancellation
-                /// requests.
-                inline void Cancel () {
-                    cancelled = true;
-                }
-
-                /// \brief
-                /// Return a unique identifier for this
-                /// job. Used to cancel a pending job.
-                /// \return unique id for the job.
-                inline Id GetId () const throw () {
-                    return id;
-                }
-
-                // See VERY IMPORTANT comment in Stop below.
-                /// \brief
-                /// Called before the job is executed. Allows
-                /// the job to perform one time initialization.
-                /// \param[in] done If true, this flag indicates that
-                /// the job should stop what it's doing, and exit.
-                virtual void Prologue (volatile const bool & /*done*/) throw () {}
-                /// \brief
-                /// Called to execute the job. This is the only api
-                /// the job MUST implement.
-                /// \param[in] done If true, this flag indicates that
-                /// the job should stop what it's doing, and exit.
-                virtual void Execute (volatile const bool & /*done*/) throw () = 0;
-                /// \brief
-                /// Called after the job is executed. Allows
-                /// the job to perform one time cleanup.
-                /// \param[in] done If true, this flag indicates that
-                /// the job should stop what it's doing, and exit.
-                virtual void Epilogue (volatile const bool & /*done*/) throw () {}
-
-                /// \brief
-                /// Return true if the job should stop what it's doing and exit.
-                /// Use this method in your implementation of Execute to keep the
-                /// JobQueue responsive.
-                /// \param[in] done If true, this flag indicates that
-                /// the job should stop what it's doing, and exit.
-                /// \return true == Job should stop what it's doing and exit.
-                inline bool ShouldStop (volatile const bool &done) const {
-                    return done || cancelled;
-                }
-                /// \brief
-                /// Return true if job is still running.
-                /// \return true == Job has not been cancelled and is not finished.
-                inline bool Running () const {
-                    return !cancelled && !finished;
-                }
-                /// \brief
-                /// Return true if job completed successfully.
-                /// \return true == Job has not been cancelled and is finished.
-                inline bool Completed () const {
-                    return !cancelled && finished;
-                }
-            };
-        #if defined (_MSC_VER)
-            #pragma warning (pop)
-        #endif // defined (_MSC_VER)
-
-            /// \struct JobQueue::Stats JobQueue.h thekogans/util/JobQueue.h
-            ///
-            /// \brief
-            /// Queue statistics.\n
-            /// jobCount - Number of pending jobs.\n
-            /// totalJobs - Number of retired (executed) jobs.\n
-            /// totalJobTime - Amount of time spent executing jobs.\n
-            /// last - Last job.\n
-            /// min - Fastest job.\n
-            /// max - Slowest job.\n
-            struct _LIB_THEKOGANS_UTIL_DECL Stats {
-                /// \brief
-                /// Pending job count.
-                ui32 jobCount;
-                /// \brief
-                /// Total jobs processed.
-                ui32 totalJobs;
-                /// \brief
-                /// Total time taken to process totalJobs.
-                ui64 totalJobTime;
-                /// \struct JobQueue::Stats::Job JobQueue.h thekogans/util/JobQueue.h
-                ///
-                /// \brief
-                /// Job stats.
-                struct _LIB_THEKOGANS_UTIL_DECL Job {
-                    /// \brief
-                    /// Job id.
-                    JobQueue::Job::Id id;
-                    /// \brief
-                    /// Job start time.
-                    ui64 startTime;
-                    /// \brief
-                    /// Job end time.
-                    ui64 endTime;
-                    /// \brief
-                    /// Job total execution time.
-                    ui64 totalTime;
-
-                    /// \brief
-                    /// ctor.
-                    Job () :
-                        startTime (0),
-                        endTime (0),
-                        totalTime (0) {}
-                    /// \brief
-                    /// ctor.
-                    /// \param[in] id_ Job id.
-                    /// \param[in] startTime_ Job start time.
-                    /// \param[in] endTime_ Job end time.
-                    /// \param[in] totalTime_ Job total execution time.
-                    Job (
-                        JobQueue::Job::Id id_,
-                        ui64 startTime_,
-                        ui64 endTime_,
-                        ui64 totalTime_) :
-                        id (id_),
-                        startTime (startTime_),
-                        endTime (endTime_),
-                        totalTime (totalTime_) {}
-
-                    /// \brief
-                    /// Return the XML representation of the Job stats.
-                    /// \param[in] name Job stats name (last, min, max).
-                    /// \param[in] indentationLevel Pretty print parameter. If
-                    /// the resulting tag is to be included in a larger structure
-                    /// you might want to provide a value that will embed it in
-                    /// the structure.
-                    /// \return The XML reprentation of the Job stats.
-                    inline std::string ToString (
-                            const std::string &name,
-                            ui32 indentationLevel) const {
-                        assert (!name.empty ());
-                        Attributes attributes;
-                        attributes.push_back (Attribute ("id", id));
-                        attributes.push_back (Attribute ("startTime", ui64Tostring (startTime)));
-                        attributes.push_back (Attribute ("endTime", ui64Tostring (endTime)));
-                        attributes.push_back (Attribute ("totalTime", ui64Tostring (totalTime)));
-                        return OpenTag (indentationLevel, name.c_str (), attributes, true, true);
-                    }
-                };
-                /// \brief
-                /// Last job stats.
-                Job lastJob;
-                /// \brief
-                /// Minimum job stats.
-                Job minJob;
-                /// \brief
-                /// Maximum job stats.
-                Job maxJob;
-
-                /// \brief
-                /// ctor.
-                Stats () :
-                    jobCount (0),
-                    totalJobs (0),
-                    totalJobTime (0) {}
-
-                /// \brief
-                /// After completion of each job, used to update the stats.
-                /// \param[in] jobId Id of completed job.
-                /// \param[in] start Job start time.
-                /// \param[in] end Job end time.
-                void Update (
-                    const JobQueue::Job::Id &jobId,
-                    ui64 start,
-                    ui64 end);
-
-                /// \brief
-                /// Return the XML representation of the Stats.
-                /// \param[in] name JobQueue name.
-                /// \param[in] indentationLevel Pretty print parameter. If
-                /// the resulting tag is to be included in a larger structure
-                /// you might want to provide a value that will embed it in
-                /// the structure.
-                /// \return The XML reprentation of the Stats.
-                std::string ToString (
-                        const std::string &name,
-                        ui32 indentationLevel) const {
-                    Attributes attributes;
-                    attributes.push_back (Attribute ("jobCount", ui32Tostring (jobCount)));
-                    attributes.push_back (Attribute ("totalJobs", ui32Tostring (totalJobs)));
-                    attributes.push_back (Attribute ("totalJobTime", ui64Tostring (totalJobTime)));
-                    return
-                        OpenTag (
-                            indentationLevel,
-                            !name.empty () ? name.c_str () : "JobQueue",
-                            attributes,
-                            false,
-                            true) +
-                        lastJob.ToString ("last", indentationLevel + 1) +
-                        minJob.ToString ("min", indentationLevel + 1) +
-                        maxJob.ToString ("max", indentationLevel + 1) +
-                        CloseTag (indentationLevel, !name.empty () ? name.c_str () : "JobQueue");
-                }
-            };
 
         protected:
             /// \brief
@@ -431,9 +97,9 @@ namespace thekogans {
             /// Worker state.
             enum State {
                 /// \brief
-                /// Worker(s) is/are idle.
+                /// Worker is idle.
                 Idle,
-                /// \Worker(s) is/are busy.
+                /// \Worker is busy.
                 Busy
             } volatile state;
             /// \brief
@@ -526,11 +192,12 @@ namespace thekogans {
                 return name;
             }
 
+            // RunLoop
             /// \brief
             /// Create the workers, and start waiting for jobs. The
             /// ctor calls this member, but if you ever need to stop
             /// the queue, you need to call Start manually to restart it.
-            void Start ();
+            virtual void Start ();
             /// \brief
             /// Stops all in flight, and cancels all pending jobs. The
             /// queue, and the worker pool are flushed. After calling
@@ -545,7 +212,7 @@ namespace thekogans {
             /// the queues to stop quickly, your jobs should pay close
             /// attention to the state of done.
             /// \param[in] cancelPendingJobs true = Cancel all pending jobs.
-            void Stop (bool cancelPendingJobs = true);
+            virtual void Stop (bool cancelPendingJobs = true);
 
             /// \brief
             /// Enqueue a job. The next idle worker will pick it up,
@@ -553,7 +220,7 @@ namespace thekogans {
             /// \param[in] job Job to enqueue.
             /// \param[in] wait Wait for job to finish.
             /// Used for synchronous job execution.
-            void Enq (
+            virtual void Enq (
                 Job &job,
                 bool wait = false);
 
@@ -562,33 +229,33 @@ namespace thekogans {
             /// in the queue (in flight), it is not canceled.
             /// \param[in] jobId Id of job to cancel.
             /// \return true if the job was cancelled. false if in flight.
-            bool Cancel (const Job::Id &jobId);
+            virtual bool Cancel (const Job::Id &jobId);
             /// \brief
             /// Cancel all queued jobs. Jobs in flight are unaffected.
-            void CancelAll ();
-
-            /// \brief
-            /// Blocks until all jobs are complete and the queue is empty.
-            void WaitForIdle ();
+            virtual void CancelAll ();
 
             /// \brief
             /// Return a snapshot of the queue stats.
             /// \return A snapshot of the queue stats.
-            Stats GetStats ();
+            virtual Stats GetStats ();
+
+            /// \brief
+            /// Blocks until all jobs are complete and the queue is empty.
+            virtual void WaitForIdle ();
 
             /// \brief
             /// Return true if Start was called.
             /// \return true = Start was called, false = Start was not called.
-            bool IsRunning ();
+            virtual bool IsRunning ();
             /// \brief
             /// Return true if there are no pending jobs.
             /// \return true = no pending jobs, false = jobs pending.
-            bool IsEmpty ();
+            virtual bool IsEmpty ();
             /// \brief
             /// Return true if there are no pending jobs and all the
             /// workers are idle.
             /// \return true = idle, false = busy.
-            bool IsIdle ();
+            virtual bool IsIdle ();
 
         private:
             /// \brief
@@ -597,7 +264,7 @@ namespace thekogans {
             Job *Deq ();
             /// \brief
             /// Called by worker(s) after each job is done.
-            /// Used to update state and \see{JobQueue::Stats}.
+            /// Used to update state and \see{RunLoop::Stats}.
             /// \param[in] job Completed job.
             /// \param[in] start Completed job start time.
             /// \param[in] end Completed job end time.
@@ -631,7 +298,7 @@ namespace thekogans {
             static std::string name;
             /// \brief
             /// JobQueue type (TIPE_FIFO or TYPE_LIFO)
-            static JobQueue::Type type;
+            static RunLoop::Type type;
             /// \brief
             /// Number of workers servicing the queue.
             static ui32 workerCount;
@@ -646,7 +313,7 @@ namespace thekogans {
             static ui32 maxPendingJobs;
             /// \brief
             /// Called to initialize/uninitialize the worker thread.
-            static JobQueue::WorkerCallback *workerCallback;
+            static RunLoop::WorkerCallback *workerCallback;
 
         public:
             /// \brief
@@ -661,12 +328,12 @@ namespace thekogans {
             /// \param[in] workerCallback_ Called to initialize/uninitialize the worker thread.
             static void Parameterize (
                 const std::string &name_ = std::string (),
-                JobQueue::Type type_ = JobQueue::TYPE_FIFO,
+                RunLoop::Type type_ = RunLoop::TYPE_FIFO,
                 ui32 workerCount_ = 1,
                 i32 workerPriority_ = THEKOGANS_UTIL_NORMAL_THREAD_PRIORITY,
                 ui32 workerAffinity_ = UI32_MAX,
                 ui32 maxPendingJobs_ = UI32_MAX,
-                JobQueue::WorkerCallback *workerCallback_ = 0);
+                RunLoop::WorkerCallback *workerCallback_ = 0);
 
             /// \brief
             /// Create a global job queue with custom ctor arguments.

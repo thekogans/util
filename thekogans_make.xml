@@ -118,7 +118,6 @@
     <cpp_header>$(organization)/$(project_directory)/Heap.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/IntrusiveList.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/JobQueue.h</cpp_header>
-    <cpp_header>$(organization)/$(project_directory)/JobQueueScheduler.h</cpp_header>
     <if condition = "$(TOOLCHAIN_OS) == 'Linux'">
       <cpp_header>$(organization)/$(project_directory)/LinuxUtils.h</cpp_header>
     </if>
@@ -149,6 +148,7 @@
     <cpp_header>$(organization)/$(project_directory)/Rectangle.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/RefCounted.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/RunLoop.h</cpp_header>
+    <cpp_header>$(organization)/$(project_directory)/RunLoopScheduler.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/RWLock.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/RWLockGuard.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/Scheduler.h</cpp_header>
@@ -628,7 +628,6 @@
     <cpp_source>Hash.cpp</cpp_source>
     <cpp_source>Heap.cpp</cpp_source>
     <cpp_source>JobQueue.cpp</cpp_source>
-    <cpp_source>JobQueueScheduler.cpp</cpp_source>
     <cpp_source>LoggerMgr.cpp</cpp_source>
     <cpp_source>MD5.cpp</cpp_source>
     <cpp_source>MainRunLoop.cpp</cpp_source>
@@ -650,6 +649,7 @@
     <cpp_source>RandomSource.cpp</cpp_source>
     <cpp_source>Rectangle.cpp</cpp_source>
     <cpp_source>RunLoop.cpp</cpp_source>
+    <cpp_source>RunLoopScheduler.cpp</cpp_source>
     <cpp_source>RWLock.cpp</cpp_source>
     <cpp_source>Scheduler.cpp</cpp_source>
     <cpp_source>SecureAllocator.cpp</cpp_source>

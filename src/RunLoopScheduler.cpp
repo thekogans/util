@@ -16,37 +16,24 @@
 // along with libthekogans_util. If not, see <http://www.gnu.org/licenses/>.
 
 #include "thekogans/util/LockGuard.h"
-#include "thekogans/util/JobQueueScheduler.h"
+#include "thekogans/util/RunLoopScheduler.h"
 
 namespace thekogans {
     namespace util {
 
-        JobQueueScheduler::JobInfo::Compare JobQueueScheduler::JobInfo::compare;
+        RunLoopScheduler::JobInfo::Compare RunLoopScheduler::JobInfo::compare;
 
-        THEKOGANS_UTIL_IMPLEMENT_HEAP_WITH_LOCK (JobQueueScheduler::JobQueueJobInfo, SpinLock)
-        THEKOGANS_UTIL_IMPLEMENT_HEAP_WITH_LOCK (JobQueueScheduler::RunLoopJobInfo, SpinLock)
+        THEKOGANS_UTIL_IMPLEMENT_HEAP_WITH_LOCK (RunLoopScheduler::JobInfo, SpinLock)
 
-        void JobQueueScheduler::Queue::Cancel (const JobQueue &jobQueue) {
+        void RunLoopScheduler::Queue::Cancel (const RunLoop &runLoop) {
             for (std::size_t i = c.size (); i-- > 0;) {
-                JobQueueJobInfo *jobQueueJobInfo =
-                    dynamic_cast<JobQueueJobInfo *> (c[i].Get ());
-                if (jobQueueJobInfo != 0 && &jobQueueJobInfo->jobQueue == &jobQueue) {
+                if (&c[i]->runLoop == &runLoop) {
                     c.erase (c.begin () + i);
                 }
             }
         }
 
-        void JobQueueScheduler::Queue::Cancel (const RunLoop &runLoop) {
-            for (std::size_t i = c.size (); i-- > 0;) {
-                RunLoopJobInfo *runLoopJobInfo =
-                    dynamic_cast<RunLoopJobInfo *> (c[i].Get ());
-                if (runLoopJobInfo != 0 && &runLoopJobInfo->runLoop == &runLoop) {
-                    c.erase (c.begin () + i);
-                }
-            }
-        }
-
-        void JobQueueScheduler::Queue::Cancel (const JobQueue::Job::Id &id) {
+        void RunLoopScheduler::Queue::Cancel (const RunLoop::Job::Id &id) {
             for (std::size_t i = c.size (); i-- > 0;) {
                 if (c[i]->job->id == id) {
                     c.erase (c.begin () + i);
@@ -55,18 +42,7 @@ namespace thekogans {
             }
         }
 
-        void JobQueueScheduler::Cancel (const JobQueue &jobQueue) {
-            LockGuard<SpinLock> guard (spinLock);
-            if (!queue.empty ()) {
-                TimeSpec deadline = queue.top ()->deadline;
-                queue.Cancel (jobQueue);
-                if (!queue.empty () && queue.top ()->deadline != deadline) {
-                    timer.Start (queue.top ()->deadline - GetCurrentTime ());
-                }
-            }
-        }
-
-        void JobQueueScheduler::Cancel (const RunLoop &runLoop) {
+        void RunLoopScheduler::Cancel (const RunLoop &runLoop) {
             LockGuard<SpinLock> guard (spinLock);
             if (!queue.empty ()) {
                 TimeSpec deadline = queue.top ()->deadline;
@@ -77,7 +53,7 @@ namespace thekogans {
             }
         }
 
-        void JobQueueScheduler::Cancel (const JobQueue::Job::Id &id) {
+        void RunLoopScheduler::Cancel (const RunLoop::Job::Id &id) {
             LockGuard<SpinLock> guard (spinLock);
             if (!queue.empty ()) {
                 TimeSpec deadline = queue.top ()->deadline;
@@ -88,14 +64,14 @@ namespace thekogans {
             }
         }
 
-        void JobQueueScheduler::Clear () {
+        void RunLoopScheduler::Clear () {
             LockGuard<SpinLock> guard (spinLock);
             timer.Stop ();
             Queue empty;
             queue.swap (empty);
         }
 
-        void JobQueueScheduler::Alarm (Timer & /*timer*/) throw () {
+        void RunLoopScheduler::Alarm (Timer & /*timer*/) throw () {
             LockGuard<SpinLock> guard (spinLock);
             TimeSpec now = GetCurrentTime ();
             while (!queue.empty () && queue.top ()->deadline <= now) {
@@ -107,7 +83,7 @@ namespace thekogans {
             }
         }
 
-        JobQueue::Job::Id JobQueueScheduler::ScheduleJobInfo (
+        RunLoop::Job::Id RunLoopScheduler::ScheduleJobInfo (
                 JobInfo::Ptr jobInfo,
                 const TimeSpec &timeSpec) {
             LockGuard<SpinLock> guard (spinLock);

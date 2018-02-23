@@ -42,7 +42,9 @@
 #include "thekogans/util/Condition.h"
 #include "thekogans/util/JobQueue.h"
 #include "thekogans/util/RunLoop.h"
-#if defined (TOOLCHAIN_OS_Linux)
+#if defined (TOOLCHAIN_OS_Windows)
+    #include "thekogans/util/WindowsUtils.h"
+#elif defined (TOOLCHAIN_OS_Linux)
     #include "thekogans/util/XlibUtils.h"
 #endif // defined (TOOLCHAIN_OS_Linux)
 
@@ -96,7 +98,7 @@ namespace thekogans {
         ///         }
         ///     }
         ///
-        ///     void Enq (util::JobQueue::Job &job) {
+        ///     void Enq (util::RunLoop::Job &job) {
         ///         util::LockGuard<util::SpinLock> guard (spinLock);
         ///         if (runLoop.get () != 0) {
         ///             runLoop->Enq (job);
@@ -245,13 +247,13 @@ namespace thekogans {
             const std::string name;
             /// \brief
             /// JobQueue type (TIPE_FIFO or TYPE_LIFO)
-            const JobQueue::Type type;
+            const Type type;
             /// \brief
             /// Max pending jobs.
             const ui32 maxPendingJobs;
             /// \brief
             /// Called to initialize/uninitialize the worker thread.
-            JobQueue::WorkerCallback *workerCallback;
+            WorkerCallback *workerCallback;
             /// \brief
             /// true = exit the run loop.
             volatile bool done;
@@ -263,8 +265,8 @@ namespace thekogans {
             /// Optional user data passed to eventProcessor.
             void *userData;
             /// \brief
-            /// Windows window handle.
-            HWND wnd;
+            /// Windows window.
+            Window::Ptr window;
         #elif defined (TOOLCHAIN_OS_Linux)
             /// \brief
             /// Callback to process Xlib XEvent events.
@@ -285,10 +287,10 @@ namespace thekogans {
         #endif // defined (TOOLCHAIN_OS_Windows)
             /// \brief
             /// Job queue.
-            JobQueue::JobList jobs;
+            JobList jobs;
             /// \brief
             /// RunLoop stats.
-            JobQueue::Stats stats;
+            Stats stats;
             /// \brief
             /// Synchronization lock for jobs.
             Mutex jobsMutex;
@@ -322,18 +324,18 @@ namespace thekogans {
             /// \param[in] done_ true = must call Start.
             /// \param[in] eventProcessor_ Callback to process window events.
             /// \param[in] userData_ Optional user data passed to eventProcessor.
-            /// \param[in] wnd_ Windows window handle.
+            /// \param[in] window_ Windows window.
             /// NOTE: SystemRunLoop takes ownership of the passed in wnd_ and
             /// will destroy it in it's dtor.
             SystemRunLoop (
                 const std::string &name_ = std::string (),
-                JobQueue::Type type_ = JobQueue::TYPE_FIFO,
+                Type type_ = TYPE_FIFO,
                 ui32 maxPendingJobs_ = UI32_MAX,
-                JobQueue::WorkerCallback *workerCallback_ = 0,
+                WorkerCallback *workerCallback_ = 0,
                 bool done_ = true,
                 EventProcessor eventProcessor_ = 0,
                 void *userData_ = 0,
-                HWND wnd_ = CreateThreadWindow ());
+                Window::Ptr window_ = CreateThreadWindow ());
             /// \brief
             /// dtor.
             virtual ~SystemRunLoop ();
@@ -341,12 +343,12 @@ namespace thekogans {
             /// \brief
             /// Create a run loop window to service job requests.
             /// \return Window that will process job requests.
-            static HWND CreateThreadWindow ();
+            static Window::Ptr CreateThreadWindow ();
             /// \brief
             /// Return the Windows window associated with this run loop.
             /// \return Windows window associated with this run loop.
-            inline HWND GetWindow () const {
-                return wnd;
+            inline Window &GetWindow () const {
+                return *window;
             }
         #elif defined (TOOLCHAIN_OS_Linux)
             /// \brief
@@ -362,9 +364,9 @@ namespace thekogans {
             /// \param[in] displays_ A list of displays to listen to.
             SystemRunLoop (
                 const std::string &name_ = std::string (),
-                JobQueue::Type type_ = JobQueue::TYPE_FIFO,
+                Type type_ = TYPE_FIFO,
                 ui32 maxPendingJobs_ = UI32_MAX,
-                JobQueue::WorkerCallback *workerCallback_ = 0,
+                WorkerCallback *workerCallback_ = 0,
                 bool done_ = true,
                 EventProcessor eventProcessor_ = 0,
                 void *userData_ = 0,
@@ -405,9 +407,9 @@ namespace thekogans {
             /// \param[in] runLoop_ OS X run loop object.
             SystemRunLoop (
                 const std::string &name_ = std::string (),
-                JobQueue::Type type_ = JobQueue::TYPE_FIFO,
+                Type type_ = TYPE_FIFO,
                 ui32 maxPendingJobs_ = UI32_MAX,
-                JobQueue::WorkerCallback *workerCallback_ = 0,
+                WorkerCallback *workerCallback_ = 0,
                 bool done_ = true,
                 CFRunLoopRef runLoop_ = CFRunLoopGetCurrent ());
             /// \brief
@@ -440,7 +442,7 @@ namespace thekogans {
             /// \param[in] wait Wait for job to finish.
             /// Used for synchronous job execution.
             virtual void Enq (
-                JobQueue::Job &job,
+                Job &job,
                 bool wait = false);
 
             /// \brief
@@ -448,7 +450,7 @@ namespace thekogans {
             /// in the queue (in flight), it is not canceled.
             /// \param[in] jobId Id of job to cancel.
             /// \return true if the job was cancelled. false if in flight.
-            virtual bool Cancel (const JobQueue::Job::Id &jobId);
+            virtual bool Cancel (const Job::Id &jobId);
             /// \brief
             /// Cancel all queued jobs. Jobs in flight are unaffected.
             virtual void CancelAll ();
@@ -460,7 +462,7 @@ namespace thekogans {
             /// \brief
             /// Return a snapshot of the queue stats.
             /// \return A snapshot of the queue stats.
-            virtual JobQueue::Stats GetStats ();
+            virtual Stats GetStats ();
 
             /// \brief
             /// Return true if Start was called.
@@ -483,15 +485,15 @@ namespace thekogans {
             /// \brief
             /// Used internally to get the next job.
             /// \return The next job to execute.
-            JobQueue::Job *Deq ();
+            Job *Deq ();
             /// \brief
             /// Called by worker after each job is done.
-            /// Used to update state and \see{JobQueue::Stats}.
+            /// Used to update state and \see{Stats}.
             /// \param[in] job Completed job.
             /// \param[in] start Completed job start time.
             /// \param[in] end Completed job end time.
             void FinishedJob (
-                JobQueue::Job &job,
+                Job &job,
                 ui64 start,
                 ui64 end);
 

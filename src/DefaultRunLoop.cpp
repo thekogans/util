@@ -39,7 +39,7 @@ namespace thekogans {
                     }
                 } workerInitializer (*this);
                 while (!done) {
-                    JobQueue::Job::Ptr job (Deq ());
+                    Job::Ptr job (Deq ());
                     if (job.Get () != 0) {
                         ui64 start = HRTimer::Click ();
                         job->Prologue (done);
@@ -62,12 +62,12 @@ namespace thekogans {
         }
 
         void DefaultRunLoop::Enq (
-                JobQueue::Job &job,
+                Job &job,
                 bool wait) {
             LockGuard<Mutex> guard (jobsMutex);
             if (stats.jobCount < maxPendingJobs) {
                 job.finished = false;
-                if (type == JobQueue::TYPE_FIFO) {
+                if (type == TYPE_FIFO) {
                     jobs.push_back (&job);
                 }
                 else {
@@ -91,9 +91,9 @@ namespace thekogans {
             }
         }
 
-        bool DefaultRunLoop::Cancel (const JobQueue::Job::Id &jobId) {
+        bool DefaultRunLoop::Cancel (const Job::Id &jobId) {
             LockGuard<Mutex> guard (jobsMutex);
-            for (JobQueue::Job *job = jobs.front (); job != 0; job = jobs.next (job)) {
+            for (Job *job = jobs.front (); job != 0; job = jobs.next (job)) {
                 if (job->GetId () == jobId) {
                     jobs.erase (job);
                     job->Cancel ();
@@ -114,9 +114,9 @@ namespace thekogans {
             LockGuard<Mutex> guard (jobsMutex);
             if (!jobs.empty ()) {
                 assert (state == Busy);
-                struct Callback : public JobQueue::JobList::Callback {
-                    typedef JobQueue::JobList::Callback::result_type result_type;
-                    typedef JobQueue::JobList::Callback::argument_type argument_type;
+                struct Callback : public JobList::Callback {
+                    typedef JobList::Callback::result_type result_type;
+                    typedef JobList::Callback::argument_type argument_type;
                     virtual result_type operator () (argument_type job) {
                         job->Cancel ();
                         job->Release ();
@@ -140,7 +140,7 @@ namespace thekogans {
             }
         }
 
-        JobQueue::Stats DefaultRunLoop::GetStats () {
+        RunLoop::Stats DefaultRunLoop::GetStats () {
             LockGuard<Mutex> guard (jobsMutex);
             return stats;
         }
@@ -160,12 +160,12 @@ namespace thekogans {
             return state == Idle;
         }
 
-        JobQueue::Job *DefaultRunLoop::Deq () {
+        RunLoop::Job *DefaultRunLoop::Deq () {
             LockGuard<Mutex> guard (jobsMutex);
             while (!done && jobs.empty ()) {
                 jobsNotEmpty.Wait ();
             }
-            JobQueue::Job *job = 0;
+            Job *job = 0;
             if (!done && !jobs.empty ()) {
                 job = jobs.pop_front ();
                 --stats.jobCount;
@@ -175,7 +175,7 @@ namespace thekogans {
         }
 
         void DefaultRunLoop::FinishedJob (
-                JobQueue::Job &job,
+                Job &job,
                 ui64 start,
                 ui64 end) {
             LockGuard<Mutex> guard (jobsMutex);

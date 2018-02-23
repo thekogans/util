@@ -49,7 +49,7 @@ namespace thekogans {
         ///     util::WorkerPool::WorkerPtr::SharedPtr workerPtr (
         ///         new util::WorkerPool::WorkerPtr (workerPool));
         ///     if (workerPtr.get () != 0 && workerPtr->worker != 0) {
-        ///         struct Job : public util::JobQueue::Job {
+        ///         struct Job : public util::RunLoop::Job {
         ///             util::WorkerPool::WorkerPtr::SharedPtr workerPtr;
         ///             ...
         ///             const util::GUID id;
@@ -57,7 +57,7 @@ namespace thekogans {
         ///                 workerPtr (workerPtr_),
         ///                 ...,
         ///                 id (util::GUID::FromRandom ()) {}
-        ///             // util::JobQueue::Job
+        ///             // util::RunLoop::Job
         ///             virtual std::string GetId () const throw () {
         ///                 return id.ToString ();
         ///             }
@@ -65,10 +65,9 @@ namespace thekogans {
         ///                 ...
         ///             }
         ///         };
-        ///         util::JobQueue::Job::UniquePtr job (
-        ///             new Job (workerPtr, ...));
+        ///         util::RunLoop::Job::Ptr job (new Job (workerPtr, ...));
         ///         if (job.get () != 0) {
-        ///             (*workerPtr)->Enq (std::move (job));
+        ///             (*workerPtr)->Enq (job);
         ///         }
         ///         else {
         ///             THEKOGANS_UTIL_LOG_ERROR ("%s\n",
@@ -146,7 +145,7 @@ namespace thekogans {
                     i32 priority = THEKOGANS_UTIL_NORMAL_THREAD_PRIORITY,
                     ui32 affinity = UI32_MAX,
                     ui32 maxPendingJobs = UI32_MAX) :
-                    JobQueue (name, JobQueue::TYPE_FIFO, 1, priority, affinity, maxPendingJobs) {}
+                    JobQueue (name, RunLoop::TYPE_FIFO, 1, priority, affinity, maxPendingJobs) {}
             };
             /// \brief
             /// List of workers.

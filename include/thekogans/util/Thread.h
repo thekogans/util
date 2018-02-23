@@ -357,15 +357,18 @@ namespace thekogans {
             /// \brief
             /// Call this function from main () or any other thread you
             /// want to set as main.
+            /// NOTE: mainThread is initialized by GetCurrThreadHandle ()
+            /// and if static initialization is done correctly by the runtime
+            /// should, by default, be initialized with main threads handle.
             /// \param[in] mainThread_ Thread handle to set as main.
             static void SetMainThread (
                     THEKOGANS_UTIL_THREAD_HANDLE mainThread_ = GetCurrThreadHandle ()) {
                 mainThread = mainThread_;
             }
             /// \brief
-            /// Return true if the given thread is main thread.
+            /// Return true if the given thread is the main thread.
             /// \param[in] thread Thread handle o test if main.
-            /// \return true == thread is a main thread.
+            /// \return true == thread is the main thread.
             static bool IsMainThread (THEKOGANS_UTIL_THREAD_HANDLE thread) {
             #if defined (TOOLCHAIN_OS_Windows)
                 return thread == mainThread;

@@ -23,20 +23,24 @@
 #include "thekogans/util/Exception.h"
 #include "thekogans/util/ConsoleLogger.h"
 
+using namespace thekogans;
+
 namespace {
-    void PrintTree (const std::string &path, thekogans::util::ui32 level) {
-        thekogans::util::Directory directory (path);
-        thekogans::util::Directory::Entry entry;
+    void PrintTree (
+            const std::string &path,
+            util::ui32 level) {
+        util::Directory directory (path);
+        util::Directory::Entry entry;
         for (bool gotEntry = directory.GetFirstEntry (entry);
                 gotEntry; gotEntry = directory.GetNextEntry (entry)) {
             if (!entry.name.empty ()) {
-                if (entry.type == thekogans::util::Directory::Entry::Folder) {
-                    if (!thekogans::util::IsDotOrDotDot (entry.name.c_str ())) {
-                        for (thekogans::util::ui32 i = 0; i < level; ++i) {
+                if (entry.type == util::Directory::Entry::Folder) {
+                    if (!util::IsDotOrDotDot (entry.name.c_str ())) {
+                        for (util::ui32 i = 0; i < level; ++i) {
                             std::cout << "  ";
                         }
                         std::cout << entry.name << std::endl;
-                        PrintTree (thekogans::util::MakePath (path, entry.name), level + 1);
+                        PrintTree (util::MakePath (path, entry.name), level + 1);
                     }
                 }
             }
@@ -44,16 +48,17 @@ namespace {
     }
 }
 
-int main (int argc, char *argv[]) {
+int main (
+        int argc,
+        char *argv[]) {
     THEKOGANS_UTIL_LOG_INIT (
-        thekogans::util::LoggerMgr::Debug,
-        thekogans::util::LoggerMgr::All);
+        util::LoggerMgr::Debug,
+        util::LoggerMgr::All);
     THEKOGANS_UTIL_LOG_ADD_LOGGER (
-        thekogans::util::Logger::Ptr (new thekogans::util::ConsoleLogger));
-    std::string path = argc == 2 ? argv[1] : thekogans::util::Path::GetCurrPath ();
-    if (!thekogans::util::Path (path).Exists ()) {
-        THEKOGANS_UTIL_LOG_ERROR ("Path not found: '%s'\n",
-            path.c_str ());
+        util::Logger::Ptr (new util::ConsoleLogger));
+    std::string path = argc == 2 ? argv[1] : util::Path::GetCurrPath ();
+    if (!util::Path (path).Exists ()) {
+        THEKOGANS_UTIL_LOG_ERROR ("Path not found: '%s'\n", path.c_str ());
         return 1;
     }
     THEKOGANS_UTIL_TRY {

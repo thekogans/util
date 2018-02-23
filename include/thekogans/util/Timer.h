@@ -55,7 +55,7 @@ namespace thekogans {
         ///         public util::Singleton<IdleProcessor, util::SpinLock> {
         ///     IdleProcessor () :
         ///         timer (*this),
-        ///         jobQueue (JobQueue::TYPE_FIFO, 1, THEKOGANS_UTIL_LOW_THREAD_PRIORITY) {}
+        ///         jobQueue (RunLoop::TYPE_FIFO, 1, THEKOGANS_UTIL_LOW_THREAD_PRIORITY) {}
         ///
         ///     inline void StartTimer (const util::TimeSpec &timeSpec) {
         ///         timer.Start (timeSpec);

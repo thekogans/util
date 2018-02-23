@@ -46,9 +46,12 @@
     #define rmdir _rmdir
     #define sscanf sscanf_s
 #endif // defined (_MSC_VER)
+#include <memory>
+#include <string>
 #include "thekogans/util/Config.h"
 #include "thekogans/util/Types.h"
 #include "thekogans/util/Constants.h"
+#include "thekogans/util/Rectangle.h"
 
 /// \brief
 /// Create both ends of an anonymous pipe. Useful
@@ -73,6 +76,83 @@ namespace thekogans {
         /// \param[in] value FILETIME value to convert.
         /// \return Converted i64.
         _LIB_THEKOGANS_UTIL_DECL i64 _LIB_THEKOGANS_UTIL_API FILETIMEToi64 (const FILETIME &value);
+
+        /// \struct WindowClass WindowsUtils.h thekogans/util/WindowsUtils.h
+        ///
+        /// \brief
+        /// A helper for creating window classes.
+
+        struct _LIB_THEKOGANS_UTIL_DECL WindowClass {
+            /// \brief
+            /// Class name.
+            std::string name;
+            /// \brief
+            /// Module instance handle.
+            HINSTANCE instance;
+            /// \brief
+            /// Registerd class atom.
+            ATOM atom;
+
+            /// \brief
+            /// ctor.
+            /// \param[in] name_ Class name.
+            /// \param[in] wndProc Window message handler.
+            /// \param[in] style Window class style.
+            /// \param[in] icon = Window class icon.
+            /// \param[in] cursor = Window class cursor.
+            /// \param[in] background Window class background brush.
+            /// \param[in] instance_ Module instance handle.
+            WindowClass (
+                const std::string &name_,
+                WNDPROC wndProc,
+                UINT style = CS_HREDRAW | CS_VREDRAW,
+                HICON icon = 0,
+                HCURSOR cursor = LoadCursor (0, IDC_ARROW),
+                HBRUSH background = (HBRUSH)(COLOR_WINDOW + 1),
+                HINSTANCE instance_ = GetModuleHandle (0));
+            /// \brief
+            /// dtor.
+            virtual ~WindowClass ();
+        };
+
+        /// \struct Window WindowsUtils.h thekogans/util/WindowsUtils.h
+        ///
+        /// \brief
+        /// A helper for creating windows. Hides a lot of Windows specific code and
+        /// defaults almost everything. Used by \see{SystemRunLoop}.
+
+        struct _LIB_THEKOGANS_UTIL_DECL Window {
+            /// \brief
+            /// Convenient typedef for std::unique_ptr<Window>.
+            typedef std::unique_ptr<Window> Ptr;
+
+            /// \brief
+            /// Windows window.
+            HWND wnd;
+
+            /// \brief
+            /// ctor.
+            /// \param[in] windowClass An instance of \see{WindowClass}.
+            /// \param[in] rectangle Window origin and extents.
+            /// \param[in] name Window name.
+            /// \param[in] style Window style.
+            /// \param[in] extendedStyle Extended window style.
+            /// \param[in] parent Window parent.
+            /// \param[in] menu Window menu.
+            /// \param[in] userInfo Passed to window proc in WM_CREATE message.
+            Window (
+                const WindowClass &windowClass,
+                const Rectangle &rectangle = Rectangle (),
+                const std::string &name = std::string (),
+                DWORD style = WS_POPUP | WS_VISIBLE,
+                DWORD extendedStyle = WS_EX_TOOLWINDOW,
+                HWND parent = 0,
+                HMENU menu = 0,
+                void *userInfo = 0);
+            /// \brief
+            /// dtor.
+            virtual ~Window ();
+        };
 
     } // namespace util
 } // namespace thekogans

@@ -284,8 +284,13 @@ namespace thekogans {
                 ui32 length = 0,
                 ui32 readOffset = 0,
                 ui32 writeOffset = 0) :
-                Buffer (endianness, data, length, readOffset,
-                    writeOffset, &SecureAllocator::Global) {}
+                Buffer (
+                    endianness,
+                    data,
+                    length,
+                    readOffset,
+                    writeOffset,
+                    &SecureAllocator::Global) {}
             /// \brief
             /// ctor for creating a buffer of a given length.
             /// \param[in] endianness Specifies how multi-byte values are stored.
@@ -297,8 +302,12 @@ namespace thekogans {
                 ui32 length,
                 ui32 readOffset = 0,
                 ui32 writeOffset = 0) :
-                Buffer (endianness, length, readOffset,
-                    writeOffset, &SecureAllocator::Global) {}
+                Buffer (
+                    endianness,
+                    length,
+                    readOffset,
+                    writeOffset,
+                    &SecureAllocator::Global) {}
             /// \brief
             /// ctor for creating a buffer from a given range.
             /// \param[in] endianness Specifies how multi-byte values are stored.
@@ -312,8 +321,13 @@ namespace thekogans {
                 const ui8 *end,
                 ui32 readOffset = 0,
                 ui32 writeOffset = UI32_MAX) :
-                Buffer (endianness, begin, end, readOffset,
-                    writeOffset, &SecureAllocator::Global) {}
+                Buffer (
+                    endianness,
+                    begin,
+                    end,
+                    readOffset,
+                    writeOffset,
+                    &SecureAllocator::Global) {}
 
             /// \brief
             /// Resize the buffer. Adjust readOffset and writeOffset to stay within [0, length).
@@ -368,8 +382,13 @@ namespace thekogans {
                 const ui8 *data,
                 ui32 length,
                 ui32 readOffset = 0) :
-                Buffer (endianness, (ui8 *)data,
-                    length, readOffset, length, &NullAllocator::Global) {}
+                Buffer (
+                    endianness,
+                    const_cast<ui8 *> (data),
+                    length,
+                    readOffset,
+                    length,
+                    &NullAllocator::Global) {}
 
             /// \brief
             /// Write raw bytes to a buffer.
@@ -407,8 +426,13 @@ namespace thekogans {
                 ui8 *data,
                 ui32 length,
                 ui32 writeOffset = 0) :
-                Buffer (endianness, data, length, 0,
-                    writeOffset, &NullAllocator::Global) {}
+                Buffer (
+                    endianness,
+                    data,
+                    length,
+                    0,
+                    writeOffset,
+                    &NullAllocator::Global) {}
 
             /// \brief
             /// TenantWriteBuffer is neither copy constructable, nor assignable.
