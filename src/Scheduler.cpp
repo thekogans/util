@@ -193,32 +193,48 @@ namespace thekogans {
             return jobQueue;
         }
 
-        std::string GlobalSchedulerCreateInstance::workerName = std::string ();
         ui32 GlobalSchedulerCreateInstance::minWorkers = SystemInfo::Instance ().GetCPUCount ();
         ui32 GlobalSchedulerCreateInstance::maxWorkers = SystemInfo::Instance ().GetCPUCount () * 2;
+        std::string GlobalSchedulerCreateInstance::name = std::string ();
+        RunLoop::Type GlobalSchedulerCreateInstance::type = RunLoop::TYPE_FIFO;
+        ui32 GlobalSchedulerCreateInstance::workerCount = 1;
         i32 GlobalSchedulerCreateInstance::workerPriority = THEKOGANS_UTIL_NORMAL_THREAD_PRIORITY;
         ui32 GlobalSchedulerCreateInstance::workerAffinity = UI32_MAX;
+        ui32 GlobalSchedulerCreateInstance::workerMaxPendingJobs = UI32_MAX;
+        RunLoop::WorkerCallback *GlobalSchedulerCreateInstance::workerCallback = 0;
 
         void GlobalSchedulerCreateInstance::Parameterize (
-                const std::string &workerName_,
                 ui32 minWorkers_,
                 ui32 maxWorkers_,
+                const std::string &name_,
+                RunLoop::Type type_,
+                ui32 workerCount_,
                 i32 workerPriority_,
-                ui32 workerAffinity_) {
-            workerName = workerName_;
+                ui32 workerAffinity_,
+                ui32 workerMaxPendingJobs_,
+                RunLoop::WorkerCallback *workerCallback_) {
             minWorkers = minWorkers_;
             maxWorkers = maxWorkers_;
+            name = name_;
+            type = type_;
+            workerCount = workerCount_;
             workerPriority = workerPriority_;
             workerAffinity = workerAffinity_;
+            workerMaxPendingJobs = workerMaxPendingJobs_;
+            workerCallback = workerCallback_;
         }
 
         Scheduler *GlobalSchedulerCreateInstance::operator () () {
             return new Scheduler (
-                workerName,
                 minWorkers,
                 maxWorkers,
+                name,
+                type,
+                workerCount,
                 workerPriority,
-                workerAffinity);
+                workerAffinity,
+                workerMaxPendingJobs,
+                workerCallback);
         }
 
     } // namespace util

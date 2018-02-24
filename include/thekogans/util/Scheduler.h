@@ -193,18 +193,35 @@ namespace thekogans {
             /// ctor.
             /// Create as many active workers as there are cpu cores.
             /// Have as many in reserve for heavy loads.
-            /// \param[in] workerName Worker thread name.
             /// \param[in] minWorkers Minimum worker count to keep in the pool.
             /// \param[in] maxWorkers Maximum worker count to allow the pool to grow to.
+            /// \param[in] name Worker thread name.
+            /// \param[in] type Worker queue type.
+            /// \param[in] workerCount Number of worker threads service the queue.
             /// \param[in] workerPriority Worker thread priority.
             /// \param[in] workerAffinity Worker thread processor affinity.
+            /// \param[in] workerMaxPendingJobs_ Max pending queue jobs.
+            /// \param[in] workerCallback Called to initialize/uninitialize the worker thread.
             Scheduler (
-                const std::string workerName = std::string (),
                 ui32 minWorkers = SystemInfo::Instance ().GetCPUCount (),
                 ui32 maxWorkers = SystemInfo::Instance ().GetCPUCount () * 2,
+                const std::string name = std::string (),
+                RunLoop::Type type = RunLoop::TYPE_FIFO,
+                ui32 workerCount = 1,
                 i32 workerPriority = THEKOGANS_UTIL_NORMAL_THREAD_PRIORITY,
-                ui32 workerAffinity = UI32_MAX) :
-                workerPool (workerName, minWorkers, maxWorkers, workerPriority, workerAffinity) {}
+                ui32 workerAffinity = UI32_MAX,
+                ui32 workerMaxPendingJobs = UI32_MAX,
+                RunLoop::WorkerCallback *workerCallback = 0) :
+                workerPool (
+                    minWorkers,
+                    maxWorkers,
+                    name,
+                    type,
+                    workerCount,
+                    workerPriority,
+                    workerAffinity,
+                    workerMaxPendingJobs,
+                    workerCallback) {}
 
         private:
             /// \brief
@@ -251,35 +268,55 @@ namespace thekogans {
         struct _LIB_THEKOGANS_UTIL_DECL GlobalSchedulerCreateInstance {
         private:
             /// \brief
-            /// Worker thread name.
-            static std::string workerName;
-            /// \brief
             /// Minimum worker count to keep in the pool.
             static ui32 minWorkers;
             /// \brief
             /// Maximum worker count to allow the pool to grow to.
             static ui32 maxWorkers;
             /// \brief
+            /// Worker thread name.
+            static std::string name;
+            /// \brief
+            /// Worker queue type.
+            static RunLoop::Type type;
+            /// \brief
+            /// Number of worker threads service the queue.
+            static ui32 workerCount;
+            /// \brief
             /// Worker thread priority.
             static i32 workerPriority;
             /// \brief
             /// Worker thread processor affinity.
             static ui32 workerAffinity;
+            /// \brief
+            /// Worker queue max pending jobs.
+            static ui32 workerMaxPendingJobs;
+            /// \brief
+            /// Called to initialize/uninitialize the worker thread.
+            static RunLoop::WorkerCallback *workerCallback;
 
         public:
             /// \brief
             /// Call before the first use of GlobalScheduler::Instance.
-            /// \param[in] workerName_ Worker thread name.
             /// \param[in] minWorkers_ Minimum worker count to keep in the pool.
             /// \param[in] maxWorkers_ Maximum worker count to allow the pool to grow to.
+            /// \param[in] name_ Worker thread name.
+            /// \param[in] type_ Worker queue type.
+            /// \param[in] workerCount_ Number of worker threads service the queue.
             /// \param[in] workerPriority_ Worker thread priority.
             /// \param[in] workerAffinity_ Worker thread processor affinity.
+            /// \param[in] workerMaxPendingJobs_ Max pending queue jobs.
+            /// \param[in] workerCallback_ Called to initialize/uninitialize the worker thread.
             static void Parameterize (
-                const std::string &workerName_ = std::string (),
                 ui32 minWorkers_ = SystemInfo::Instance ().GetCPUCount (),
                 ui32 maxWorkers_ = SystemInfo::Instance ().GetCPUCount () * 2,
+                const std::string &name_ = std::string (),
+                RunLoop::Type type_ = RunLoop::TYPE_FIFO,
+                ui32 workerCount_ = 1,
                 i32 workerPriority_ = THEKOGANS_UTIL_NORMAL_THREAD_PRIORITY,
-                ui32 workerAffinity_ = UI32_MAX);
+                ui32 workerAffinity_ = UI32_MAX,
+                ui32 workerMaxPendingJobs_ = UI32_MAX,
+                RunLoop::WorkerCallback *workerCallback_ = 0);
 
             /// \brief
             /// Create a global scheduler with custom ctor arguments.

@@ -56,7 +56,9 @@ namespace thekogans {
                         begin->type,
                         begin->workerCount,
                         begin->workerPriority,
-                        begin->workerAffinity));
+                        begin->workerAffinity,
+                        begin->maxPendingJobs,
+                        begin->workerCallback));
                 assert (stage.get () != 0);
                 if (stage.get () != 0) {
                     stages.push_back (stage.get ());
@@ -67,43 +69,47 @@ namespace thekogans {
 
         Pipeline::Pipeline (
                 ui32 stageCount,
-                const std::string &stageName,
-                RunLoop::Type stageType,
-                ui32 stageWorkerCount,
-                i32 stageWorkerPriority,
                 StagePriorityAdjustment stagePriorityAdjustment,
                 i32 stagePriorityAdjustmentDelta,
-                ui32 stageWorkerAffinity) {
+                const std::string &name,
+                RunLoop::Type type,
+                ui32 workerCount,
+                i32 workerPriority,
+                ui32 workerAffinity,
+                ui32 maxPendingJobs,
+                RunLoop::WorkerCallback *workerCallback) {
             assert (stageCount > 0);
             for (ui32 i = 0; i < stageCount; ++i) {
-                std::string stageName_;
-                if (!stageName.empty ()) {
-                    stageName_ = FormatString ("%s-%u", stageName.c_str (), i);
+                std::string stageName;
+                if (!name.empty ()) {
+                    stageName = FormatString ("%s-%u", name.c_str (), i);
                 }
                 JobQueue::UniquePtr stage (
                     new JobQueue (
-                        stageName_,
-                        stageType,
-                        stageWorkerCount,
-                        stageWorkerPriority,
-                        stageWorkerAffinity));
+                        stageName,
+                        type,
+                        workerCount,
+                        workerPriority,
+                        workerAffinity,
+                        maxPendingJobs,
+                        workerCallback));
             #if !defined (TOOLCHAIN_OS_Windows)
                 switch (stagePriorityAdjustment) {
                     case NoAdjustment:
                         break;
                     case Inc:
-                        stageWorkerPriority = IncPriority (stageWorkerPriority);
+                        workerPriority = IncPriority (workerPriority);
                         break;
                     case Add:
-                        stageWorkerPriority =
-                            AddPriority (stageWorkerPriority, stagePriorityAdjustmentDelta);
+                        workerPriority =
+                            AddPriority (workerPriority, stagePriorityAdjustmentDelta);
                         break;
                     case Dec:
-                        stageWorkerPriority = DecPriority (stageWorkerPriority);
+                        workerPriority = DecPriority (workerPriority);
                         break;
                     case Sub:
-                        stageWorkerPriority =
-                            SubPriority (stageWorkerPriority, stagePriorityAdjustmentDelta);
+                        workerPriority =
+                            SubPriority (workerPriority, stagePriorityAdjustmentDelta);
                         break;
                 }
             #endif // !defined (TOOLCHAIN_OS_Windows)

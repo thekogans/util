@@ -65,7 +65,7 @@ namespace thekogans {
             const i32 workerPriority;
             /// \brief
             /// \Worker thread processor affinity.
-            const i32 workerAffinity;
+            const ui32 workerAffinity;
             /// \brief
             /// Max pending jobs.
             const ui32 maxPendingJobs;

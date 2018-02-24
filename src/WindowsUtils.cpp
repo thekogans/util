@@ -146,7 +146,8 @@ namespace thekogans {
                         parent,
                         menu,
                         windowClass.instance,
-                        userInfo)) {
+                        userInfo)),
+                owner (true) {
             if (wnd == 0) {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
                     THEKOGANS_UTIL_OS_ERROR_CODE);
@@ -154,7 +155,9 @@ namespace thekogans {
         }
 
         Window::~Window () {
-            DestroyWindow (wnd);
+            if (owner) {
+                DestroyWindow (wnd);
+            }
         }
 
     } // namespace util

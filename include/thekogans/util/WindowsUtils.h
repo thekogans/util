@@ -129,7 +129,19 @@ namespace thekogans {
             /// \brief
             /// Windows window.
             HWND wnd;
+            /// \brief
+            /// true == call DestroyWindow in the dtor.
+            bool owner;
 
+            /// \brief
+            /// ctor.
+            /// \param[in] wnd_ Window handle to wrap.
+            /// \param[in] owner_ true == call DestroyWindow in the dtor.
+            Window (
+                HWND wnd_,
+                bool owner_ = false) :
+                wnd (wnd_),
+                owner (owner_) {}
             /// \brief
             /// ctor.
             /// \param[in] windowClass An instance of \see{WindowClass}.

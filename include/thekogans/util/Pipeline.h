@@ -137,6 +137,12 @@ namespace thekogans {
                 /// \brief
                 /// Worker thread processor affinity.
                 ui32 workerAffinity;
+                /// \brief
+                /// Max pending jobs.
+                ui32 maxPendingJobs;
+                /// \brief
+                /// Called to initialize/uninitialize the worker thread.
+                RunLoop::WorkerCallback *workerCallback;
 
                 /// \brief
                 /// ctor.
@@ -145,17 +151,23 @@ namespace thekogans {
                 /// \param[in] workerCount_ Number of workers servicing this stage.
                 /// \param[in] workerPriority_ Stage worker thread priority.
                 /// \param[in] workerAffinity_ Stage worker thread processor affinity.
+                /// \param[in] maxPendingJobs_ Max pending stage jobs.
+                /// \param[in] workerCallback_ Called to initialize/uninitialize the worker thread.
                 StageInfo (
                     const std::string &name_ = std::string (),
                     RunLoop::Type type_ = RunLoop::TYPE_FIFO,
                     ui32 workerCount_ = 1,
                     i32 workerPriority_ = THEKOGANS_UTIL_NORMAL_THREAD_PRIORITY,
-                    ui32 workerAffinity_ = UI32_MAX) :
+                    ui32 workerAffinity_ = UI32_MAX,
+                    ui32 maxPendingJobs_ = UI32_MAX,
+                    RunLoop::WorkerCallback *workerCallback_ = 0) :
                     name (name_),
                     type (type_),
                     workerCount (workerCount_),
                     workerPriority (workerPriority_),
-                    workerAffinity (workerAffinity_) {}
+                    workerAffinity (workerAffinity_),
+                    maxPendingJobs (maxPendingJobs_),
+                    workerCallback (workerCallback_) {}
             };
 
             /// \brief
@@ -190,22 +202,26 @@ namespace thekogans {
             /// \brief
             /// ctor.
             /// \param[in] stageCount Number of stages in the pipeline.
-            /// \param[in] stageName Stage name.
-            /// \param[in] stageType Stage type (fifo | lifo).
-            /// \param[in] stageWorkerCount Number of workers servicing each stage.
-            /// \param[in] stageWorkerPriority Stage worker thread priority.
             /// \param[in] stagePriorityAdjustment How to adjust priorities for each successive stage.
             /// \param[in] stagePriorityAdjustmentDelta Add/Sub adjustment delta.
-            /// \param[in] stageWorkerAffinity Stage worker thread processor affinity.
+            /// \param[in] name Stage name.
+            /// \param[in] type Stage type (fifo | lifo).
+            /// \param[in] workerCount Number of workers servicing each stage.
+            /// \param[in] workerPriority Stage worker thread priority.
+            /// \param[in] workerAffinity Stage worker thread processor affinity.
+            /// \param[in] maxPendingJobs Max pending stage jobs.
+            /// \param[in] workerCallback Called to initialize/uninitialize the worker thread.
             Pipeline (
                 ui32 stageCount,
-                const std::string &stageName = std::string (),
-                RunLoop::Type stageType = RunLoop::TYPE_FIFO,
-                ui32 stageWorkerCount = 1,
-                i32 stageWorkerPriority = THEKOGANS_UTIL_NORMAL_THREAD_PRIORITY,
                 StagePriorityAdjustment stagePriorityAdjustment = NoAdjustment,
                 i32 stagePriorityAdjustmentDelta = 0,
-                ui32 stageWorkerAffinity = UI32_MAX);
+                const std::string &name = std::string (),
+                RunLoop::Type type = RunLoop::TYPE_FIFO,
+                ui32 workerCount = 1,
+                i32 workerPriority = THEKOGANS_UTIL_NORMAL_THREAD_PRIORITY,
+                ui32 workerAffinity = UI32_MAX,
+                ui32 maxPendingJobs_ = UI32_MAX,
+                RunLoop::WorkerCallback *workerCallback_ = 0);
 
             /// \brief
             /// Start the pipeline. Create stages, and start waiting for jobs.
