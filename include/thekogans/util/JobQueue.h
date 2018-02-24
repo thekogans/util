@@ -20,7 +20,6 @@
 
 #include <memory>
 #include <string>
-#include <map>
 #include "thekogans/util/Config.h"
 #include "thekogans/util/Types.h"
 #include "thekogans/util/Constants.h"
@@ -170,7 +169,8 @@ namespace thekogans {
             /// \param[in] workerPriority_ Worker thread priority.
             /// \param[in] workerAffinity_ Worker thread processor affinity.
             /// \param[in] maxPendingJobs_ Max pending queue jobs.
-            /// \param[in] workerCallback_ Called to initialize/uninitialize the worker thread.
+            /// \param[in] workerCallback_ Called to initialize/uninitialize
+            /// the worker thread.
             JobQueue (
                 const std::string &name_ = std::string (),
                 Type type_ = TYPE_FIFO,

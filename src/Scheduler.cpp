@@ -200,7 +200,7 @@ namespace thekogans {
         ui32 GlobalSchedulerCreateInstance::workerCount = 1;
         i32 GlobalSchedulerCreateInstance::workerPriority = THEKOGANS_UTIL_NORMAL_THREAD_PRIORITY;
         ui32 GlobalSchedulerCreateInstance::workerAffinity = UI32_MAX;
-        ui32 GlobalSchedulerCreateInstance::workerMaxPendingJobs = UI32_MAX;
+        ui32 GlobalSchedulerCreateInstance::maxPendingJobs = UI32_MAX;
         RunLoop::WorkerCallback *GlobalSchedulerCreateInstance::workerCallback = 0;
 
         void GlobalSchedulerCreateInstance::Parameterize (
@@ -211,7 +211,7 @@ namespace thekogans {
                 ui32 workerCount_,
                 i32 workerPriority_,
                 ui32 workerAffinity_,
-                ui32 workerMaxPendingJobs_,
+                ui32 maxPendingJobs_,
                 RunLoop::WorkerCallback *workerCallback_) {
             minWorkers = minWorkers_;
             maxWorkers = maxWorkers_;
@@ -220,7 +220,7 @@ namespace thekogans {
             workerCount = workerCount_;
             workerPriority = workerPriority_;
             workerAffinity = workerAffinity_;
-            workerMaxPendingJobs = workerMaxPendingJobs_;
+            maxPendingJobs = maxPendingJobs_;
             workerCallback = workerCallback_;
         }
 
@@ -233,7 +233,7 @@ namespace thekogans {
                 workerCount,
                 workerPriority,
                 workerAffinity,
-                workerMaxPendingJobs,
+                maxPendingJobs,
                 workerCallback);
         }
 

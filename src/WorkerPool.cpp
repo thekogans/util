@@ -36,7 +36,7 @@ namespace thekogans {
                 ui32 workerCount_,
                 i32 workerPriority_,
                 ui32 workerAffinity_,
-                ui32 workerMaxPendingJobs_,
+                ui32 maxPendingJobs_,
                 RunLoop::WorkerCallback *workerCallback_) :
                 minWorkers (minWorkers_),
                 maxWorkers (maxWorkers_),
@@ -45,7 +45,7 @@ namespace thekogans {
                 workerCount (workerCount_),
                 workerPriority (workerPriority_),
                 workerAffinity (workerAffinity_),
-                workerMaxPendingJobs (workerMaxPendingJobs_),
+                maxPendingJobs (maxPendingJobs_),
                 workerCallback (workerCallback_),
                 activeWorkerCount (0) {
             assert (minWorkers > 0);
@@ -62,7 +62,7 @@ namespace thekogans {
                         workerCount,
                         workerPriority,
                         workerAffinity,
-                        workerMaxPendingJobs,
+                        maxPendingJobs,
                         workerCallback));
                 ++activeWorkerCount;
             }
@@ -120,7 +120,7 @@ namespace thekogans {
                         workerCount,
                         workerPriority,
                         workerAffinity,
-                        workerMaxPendingJobs,
+                        maxPendingJobs,
                         workerCallback);
                     ++activeWorkerCount;
                 }
@@ -152,7 +152,7 @@ namespace thekogans {
         ui32 GlobalWorkerPoolCreateInstance::workerCount = 1;
         i32 GlobalWorkerPoolCreateInstance::workerPriority = THEKOGANS_UTIL_NORMAL_THREAD_PRIORITY;
         ui32 GlobalWorkerPoolCreateInstance::workerAffinity = UI32_MAX;
-        ui32 GlobalWorkerPoolCreateInstance::workerMaxPendingJobs = UI32_MAX;
+        ui32 GlobalWorkerPoolCreateInstance::maxPendingJobs = UI32_MAX;
         RunLoop::WorkerCallback *GlobalWorkerPoolCreateInstance::workerCallback = 0;
 
         void GlobalWorkerPoolCreateInstance::Parameterize (
@@ -163,7 +163,7 @@ namespace thekogans {
                 ui32 workerCount_,
                 i32 workerPriority_,
                 ui32 workerAffinity_,
-                ui32 workerMaxPendingJobs_,
+                ui32 maxPendingJobs_,
                 RunLoop::WorkerCallback *workerCallback_) {
             minWorkers = minWorkers_;
             maxWorkers = maxWorkers_;
@@ -172,7 +172,7 @@ namespace thekogans {
             workerCount = workerCount_;
             workerPriority = workerPriority_;
             workerAffinity = workerAffinity_;
-            workerMaxPendingJobs = workerMaxPendingJobs_;
+            maxPendingJobs = maxPendingJobs_;
             workerCallback = workerCallback_;
         }
 
@@ -185,7 +185,7 @@ namespace thekogans {
                 workerCount,
                 workerPriority,
                 workerAffinity,
-                workerMaxPendingJobs,
+                maxPendingJobs,
                 workerCallback);
         }
 

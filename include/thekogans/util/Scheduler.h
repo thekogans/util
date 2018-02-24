@@ -200,7 +200,7 @@ namespace thekogans {
             /// \param[in] workerCount Number of worker threads service the queue.
             /// \param[in] workerPriority Worker thread priority.
             /// \param[in] workerAffinity Worker thread processor affinity.
-            /// \param[in] workerMaxPendingJobs_ Max pending queue jobs.
+            /// \param[in] maxPendingJobs_ Max pending queue jobs.
             /// \param[in] workerCallback Called to initialize/uninitialize the worker thread.
             Scheduler (
                 ui32 minWorkers = SystemInfo::Instance ().GetCPUCount (),
@@ -210,7 +210,7 @@ namespace thekogans {
                 ui32 workerCount = 1,
                 i32 workerPriority = THEKOGANS_UTIL_NORMAL_THREAD_PRIORITY,
                 ui32 workerAffinity = UI32_MAX,
-                ui32 workerMaxPendingJobs = UI32_MAX,
+                ui32 maxPendingJobs = UI32_MAX,
                 RunLoop::WorkerCallback *workerCallback = 0) :
                 workerPool (
                     minWorkers,
@@ -220,7 +220,7 @@ namespace thekogans {
                     workerCount,
                     workerPriority,
                     workerAffinity,
-                    workerMaxPendingJobs,
+                    maxPendingJobs,
                     workerCallback) {}
 
         private:
@@ -290,7 +290,7 @@ namespace thekogans {
             static ui32 workerAffinity;
             /// \brief
             /// Worker queue max pending jobs.
-            static ui32 workerMaxPendingJobs;
+            static ui32 maxPendingJobs;
             /// \brief
             /// Called to initialize/uninitialize the worker thread.
             static RunLoop::WorkerCallback *workerCallback;
@@ -305,7 +305,7 @@ namespace thekogans {
             /// \param[in] workerCount_ Number of worker threads service the queue.
             /// \param[in] workerPriority_ Worker thread priority.
             /// \param[in] workerAffinity_ Worker thread processor affinity.
-            /// \param[in] workerMaxPendingJobs_ Max pending queue jobs.
+            /// \param[in] maxPendingJobs_ Max pending queue jobs.
             /// \param[in] workerCallback_ Called to initialize/uninitialize the worker thread.
             static void Parameterize (
                 ui32 minWorkers_ = SystemInfo::Instance ().GetCPUCount (),
@@ -315,7 +315,7 @@ namespace thekogans {
                 ui32 workerCount_ = 1,
                 i32 workerPriority_ = THEKOGANS_UTIL_NORMAL_THREAD_PRIORITY,
                 ui32 workerAffinity_ = UI32_MAX,
-                ui32 workerMaxPendingJobs_ = UI32_MAX,
+                ui32 maxPendingJobs_ = UI32_MAX,
                 RunLoop::WorkerCallback *workerCallback_ = 0);
 
             /// \brief
