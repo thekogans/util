@@ -55,8 +55,13 @@ namespace thekogans {
                 path (path_) {}
 
             /// \brief
-            /// Return current directory.
-            static std::string GetCurrPath ();
+            /// Return the current directory path.
+            /// \return Current directory path.
+            static std::string GetCurrDirectory ();
+            /// \brief
+            /// Return the temporary directory path.
+            /// \return Temporary directory path.
+            static std::string GetTempDirectory ();
 
             /// \brief
             /// Return system native path seperator.

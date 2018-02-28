@@ -788,7 +788,7 @@ namespace thekogans {
                     std::list<std::string> components;
                     {
                         if (!Path (path).IsAbsolute ()) {
-                            Path (MakePath (Path::GetCurrPath (), path)).GetComponents (components);
+                            Path (MakePath (Path::GetCurrDirectory (), path)).GetComponents (components);
                         }
                         else {
                             Path (path).GetComponents (components);
@@ -908,7 +908,7 @@ namespace thekogans {
                     std::list<std::string> components;
                     {
                         if (!Path (path).IsAbsolute ()) {
-                            Path (MakePath (Path::GetCurrPath (), path)).GetComponents (components);
+                            Path (MakePath (Path::GetCurrDirectory (), path)).GetComponents (components);
                         }
                         else {
                             Path (path).GetComponents (components);

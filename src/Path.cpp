@@ -29,6 +29,7 @@
 #else // defined (TOOLCHAIN_OS_Windows)
     #include <sys/stat.h>
     #include <climits>
+    #include <cstdio>
     #include <cstdlib>
     #include <unistd.h>
 #endif // defined (TOOLCHAIN_OS_Windows)
@@ -70,13 +71,43 @@ namespace thekogans {
             const char FILE_EXTENSION_DELIMITER = '.';
         }
 
-        std::string Path::GetCurrPath () {
+        std::string Path::GetCurrDirectory () {
         #if defined (TOOLCHAIN_OS_Windows)
             char path[MAX_PATH];
             return _getcwd (path, MAX_PATH);
         #else // defined (TOOLCHAIN_OS_Windows)
             char path[PATH_MAX];
             return getcwd (path, PATH_MAX);
+        #endif // defined (TOOLCHAIN_OS_Windows)
+        }
+
+        std::string Path::GetTempDirectory () {
+        #if defined (TOOLCHAIN_OS_Windows)
+            char tempDirectory[MAX_PATH + 1];
+            if (GetTempPath (MAX_PATH, tempDirectory) != 0) {
+                return tempDirectory;
+            }
+            else {
+                THEKOGANS_UTIL_THROW_POSIX_ERROR_CODE_EXCEPTION (
+                    THEKOGANS_UTIL_POSIX_OS_ERROR_CODE);
+            }
+        #else // defined (TOOLCHAIN_OS_Windows)
+            std::string tempDirectory = GetEnvironmentVariable ("TMPDIR");
+        #if defined (P_tmpdir) || defined (_PATH_TMP)
+            if (tempDirectory.empty ()) {
+            #if defined (P_tmpdir)
+                tempDirectory = P_tmpdir;
+                if (tempDirectory.empty ()) {
+            #endif // defined (P_tmpdir)
+            #if defined (_PATH_TMP)
+                    tempDirectory = _PATH_TMP;
+            #endif // defined (_PATH_TMP)
+            #if defined (P_tmpdir)
+                }
+            #endif // defined (P_tmpdir)
+            }
+        #endif // defined (P_tmpdir) || defined (_PATH_TMP)
+            return tempDirectory;
         #endif // defined (TOOLCHAIN_OS_Windows)
         }
 

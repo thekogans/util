@@ -131,7 +131,7 @@ namespace thekogans {
             ///     thekogans::util::Directory::Watcher::WatchId watchId;
             ///     ...
             ///     Options () :
-            ///             startDirectory (thekogans::util::Path::GetCurrPath ()),
+            ///             startDirectory (thekogans::util::Path::GetCurrDirectory ()),
             ///             watchId (
             ///                 thekogans::util::Directory::Watcher::Instance ().AddWatch (
             ///                     startDirectory, *this)) {
