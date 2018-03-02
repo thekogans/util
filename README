@@ -54,11 +54,11 @@ architectures (x86, MIPS, ARM…). Here is a complete feature list:
       threading api.
 
     - A run loop framework (RunLoop.h, DefaultRunLoop.h, SystemRunLoop.h
-      MainRunLoop.h) for executing JobQueue::Jobs on any thread, including
-      main.
+      MainRunLoop.h, JobQueue) for executing RunLoop::Jobs on any thread,
+      including main.
 
     - A collection of process classes (ChildProcess.h, DynamicLibrary.h)
-      used to instantiate child processes, and load shared objects
+      used to instantiate child processes, and load shared libraries
       (*.so, *.dylib, *.dll).
 
     - A set of higher level threading abstractions (JobQueue.h,
