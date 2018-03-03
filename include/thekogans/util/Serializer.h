@@ -86,7 +86,7 @@ namespace thekogans {
             /// \return Size of serialized type.
             template<typename T>
             static ui32 Size (const T &t) {
-                return t.Size ();
+                return (ui32)t.Size ();
             }
 
             /// \brief
