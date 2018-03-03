@@ -194,8 +194,7 @@ namespace thekogans {
         /// \endcode
         #define THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE(type, lock, minSerializablesInPage, allocator)\
             THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_COMMON (type, lock, minSerializablesInPage, allocator)\
-            thekogans::util::Serializable::MapInitializer type::mapInitializer (\
-                #type, type::Create);
+            thekogans::util::Serializable::MapInitializer type::mapInitializer (#type, type::Create);
     #endif // defined (TOOLCHAIN_TYPE_Static)
 
         /// \brief

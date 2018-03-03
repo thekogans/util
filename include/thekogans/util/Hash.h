@@ -26,6 +26,7 @@
 #include <map>
 #include "thekogans/util/Config.h"
 #include "thekogans/util/Types.h"
+#include "thekogans/util/Exception.h"
 
 namespace thekogans {
     namespace util {
@@ -46,6 +47,10 @@ namespace thekogans {
             /// \brief
             /// typedef for the Hash map.
             typedef std::map<std::string, Factory> Map;
+            /// \brief
+            /// Controls Map's lifetime.
+            /// \return Serializable map.
+            static Map &GetMap ();
             /// \brief
             /// Used for Hash dynamic discovery and creation.
             /// \param[in] type Hash type (it's name).
@@ -176,6 +181,38 @@ namespace thekogans {
                 memcmp (&digest1[0], &digest2[0], digest1.size ()) != 0;
         }
 
+    #if defined (TOOLCHAIN_TYPE_Static)
+        /// \def THEKOGANS_UTIL_DECLARE_HASH(type)
+        /// Dynamic discovery macro. Add this to your class declaration.
+        /// Example:
+        /// \code{.cpp}
+        /// struct _LIB_THEKOGANS_UTIL_DECL SHA1 : public Hash {
+        ///     THEKOGANS_UTIL_DECLARE_HASH (SHA1)
+        ///     ...
+        /// };
+        /// \endcode
+        #define THEKOGANS_UTIL_DECLARE_HASH(type)\
+        public:\
+            static thekogans::util::Hash::SharedPtr Create () {\
+                return thekogans::util::Hash::SharedPtr (new type);\
+            }\
+            static void StaticInit () {\
+                std::pair<Map::iterator, bool> result =\
+                    GetMap ().insert (Map::value_type (#type, type::Create));\
+                if (!result.second) {\
+                    THEKOGANS_UTIL_THROW_STRING_EXCEPTION (\
+                        "'%s' is already registered.", #type);\
+                }\
+            }
+
+        /// \def THEKOGANS_UTIL_IMPLEMENT_HASH(type)
+        /// Dynamic discovery macro. Instantiate one of these in the class cpp file.
+        /// Example:
+        /// \code{.cpp}
+        /// THEKOGANS_UTIL_IMPLEMENT_HASH (SHA1)
+        /// \endcode
+        #define THEKOGANS_UTIL_IMPLEMENT_HASH(type)
+    #else // defined (TOOLCHAIN_TYPE_Static)
         /// \def THEKOGANS_UTIL_DECLARE_HASH(type)
         /// Dynamic discovery macro. Add this to your class declaration.
         /// Example:
@@ -201,6 +238,7 @@ namespace thekogans {
         #define THEKOGANS_UTIL_IMPLEMENT_HASH(type)\
             thekogans::util::Hash::MapInitializer type::mapInitializer (\
                 #type, type::Create);
+    #endif // defined (TOOLCHAIN_TYPE_Static)
 
     } // namespace util
 } // namespace thekogans

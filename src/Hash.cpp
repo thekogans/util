@@ -16,6 +16,8 @@
 // along with libthekogans_util. If not, see <http://www.gnu.org/licenses/>.
 
 #include <cassert>
+#include "thekogans/util/SpinLock.h"
+#include "thekogans/util/LockGuard.h"
 #include "thekogans/util/File.h"
 #include "thekogans/util/Exception.h"
 #include "thekogans/util/StringUtils.h"
@@ -30,14 +32,9 @@
 namespace thekogans {
     namespace util {
 
-        namespace {
-            // Believe it or not, but just declaring map static
-            // does not guarantee proper ctor call order!? Wrapping
-            // it in an accessor function does.
-            Hash::Map &GetMap () {
-                static Hash::Map map;
-                return map;
-            }
+        Hash::Map &Hash::GetMap () {
+            static Hash::Map map;
+            return map;
         }
 
         Hash::SharedPtr Hash::Get (const std::string &type) {
@@ -54,7 +51,7 @@ namespace thekogans {
             assert (result.second);
             if (!result.second) {
                 THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                    "Duplicate Hash: %s", type.c_str ());
+                    "%s is already registered.", type.c_str ());
             }
         }
 
@@ -67,10 +64,16 @@ namespace thekogans {
 
     #if defined (TOOLCHAIN_TYPE_Static)
         void Hash::StaticInit () {
-            volatile MD5 dummyMD5;
-            volatile SHA1 dummySHA1;
-            volatile SHA2 dummySHA2;
-            volatile SHA3 dummySHA3;
+            static volatile bool registered = false;
+            static SpinLock spinLock;
+            LockGuard<SpinLock> guard (spinLock);
+            if (!registered) {
+                MD5::StaticInit ();
+                SHA1::StaticInit ();
+                SHA2::StaticInit ();
+                SHA3::StaticInit ();
+                registered = true;
+            }
         }
     #endif // defined (TOOLCHAIN_TYPE_Static)
 
