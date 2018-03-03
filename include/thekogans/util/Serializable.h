@@ -162,8 +162,8 @@ namespace thekogans {
         ///     THEKOGANS_UTIL_MIN_SYMMETRIC_KEYS_IN_PAGE,
         ///     thekogans::util::SecureAllocator::Global)
         /// \endcode
-        #define THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE(type, minSerializablesInPage)\
-            THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_COMMON (type, minSerializablesInPage)
+        #define THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE(type, lock, minSerializablesInPage, allocator)\
+            THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_COMMON (type, lock, minSerializablesInPage, allocator)
     #else // defined (TOOLCHAIN_TYPE_Static)
         /// \def THEKOGANS_UTIL_DECLARE_SERIALIZABLE(type, lock)
         /// Dynamic discovery macro. Add this to your class declaration.
