@@ -26,11 +26,17 @@ namespace thekogans {
         }
 
         Serializable::Ptr Serializable::Get (util::Serializer &serializer) {
-            std::string type;
-            serializer >> type;
-            Map::iterator it = GetMap ().find (type);
-            return it != GetMap ().end () ?
-                it->second (serializer) : Serializable::Ptr ();
+            Serializable::Header header;
+            serializer >> header;
+            if (header.magic == MAGIC32) {
+                Map::iterator it = GetMap ().find (header.type);
+                return it != GetMap ().end () ?
+                    it->second (header, serializer) : Serializable::Ptr ();
+            }
+            else {
+                THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
+                    "%s is already registered.", header.type.c_str ());
+            }
         }
 
         Serializable::MapInitializer::MapInitializer (
@@ -41,7 +47,7 @@ namespace thekogans {
             assert (result.second);
             if (!result.second) {
                 THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                    "Duplicate Serializable: %s", type.c_str ());
+                    "%s is already registered.", type.c_str ());
             }
         }
 

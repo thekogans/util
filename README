@@ -76,9 +76,9 @@ architectures (x86, MIPS, ARM…). Here is a complete feature list:
       system traversal, and an asynchronous directory change
       watcher/notifier.
 
-    - A binary serializer framework (Serializer.h, Buffer.h, FixedBuffer.h,
-      File.h). It’s main purpose is to provide serialization/deserialization
-      services for binary protocols.
+    - A binary serializer framework (Serializable.h, Serializer.h,
+      Buffer.h, FixedBuffer.h, File.h). It’s main purpose is to provide
+      serialization/deserialization services for binary protocols.
 
     - A set of utilities to help with processing xml (XercesUtils.h,
       XMLUtils.h)
