@@ -61,7 +61,7 @@ namespace thekogans {
                 /// \brief
                 /// ctor.
                 Header () :
-                    magic (util::MAGIC32),
+                    magic (0),
                     version (0),
                     size (0) {}
                 /// \brief
@@ -70,10 +70,10 @@ namespace thekogans {
                 /// \param[in] version_ Serializable version.
                 /// \param[in] size_ Serializable size (not including the header).
                 Header (
-                    std::string type_,
+                    const char *type_,
                     ui16 version_,
                     ui32 size_) :
-                    magic (util::MAGIC32),
+                    magic (MAGIC32),
                     type (type_),
                     version (version_),
                     size (size_) {}
@@ -148,7 +148,7 @@ namespace thekogans {
             /// \brief
             /// Return serializable type (it's class name).
             /// \return Serializable type.
-            virtual std::string Type () const = 0;
+            virtual const char *Type () const = 0;
 
             /// \brief
             /// Return the serializable version.
@@ -192,7 +192,7 @@ namespace thekogans {
             }\
             static const char *TYPE;\
             static const thekogans::util::ui16 VERSION; \
-            virtual std::string Type () const {\
+            virtual const char *Type () const {\
                 return TYPE;\
             }\
             virtual thekogans::util::ui16 Version () const {\
@@ -322,20 +322,26 @@ namespace thekogans {
             return serializer;
         }
 
-        /// \def THEKOGANS_UTIL_SERIALIZABLE_INSERTION_EXTRACTION_OPERATORS(type)
-        /// Define serializable insertion and extraction operators.
-        #define THEKOGANS_UTIL_SERIALIZABLE_INSERTION_EXTRACTION_OPERATORS(type)\
-            inline thekogans::util::Serializer &operator << (\
-                    thekogans::util::Serializer &serializer,\
-                    const type &t) {\
-                serializer <<\
-                    thekogans::util::Serializable::Header (\
-                        t.Type (),\
-                        t.Version (),\
-                        t.Size ());\
-                t.Write (serializer);\
-                return serializer;\
-            }\
+        /// \brief
+        /// Serializable insertion operator.
+        /// \param[in] serializer Where to serialize the serializable.
+        /// \param[in] header Serializable to serialize.
+        /// \return serializer.
+        inline Serializer &operator << (
+                Serializer &serializer,
+                const Serializable &serializable) {
+            serializer <<
+                Serializable::Header (
+                    serializable.Type (),
+                    serializable.Version (),
+                    serializable.Size ());
+            serializable.Write (serializer);
+            return serializer;
+        }
+
+        /// \def THEKOGANS_UTIL_DEFINE_SERIALIZABLE_EXTRACTION_OPERATOR(type)
+        /// Define serializable extraction operator.
+        #define THEKOGANS_UTIL_DEFINE_SERIALIZABLE_EXTRACTION_OPERATOR(type)\
             inline thekogans::util::Serializer &operator >> (\
                     thekogans::util::Serializer &serializer,\
                     type::Ptr &t) {\
