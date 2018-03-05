@@ -33,7 +33,8 @@ namespace thekogans {
         ///
         /// \brief
         /// Serializable is an abstract base for all supported serializable types (See
-        /// \see{Serializer}).
+        /// \see{Serializer}). It exposes machinery used by descendants to register
+        /// themselves for dynamic discovery and creation.
 
         struct _LIB_THEKOGANS_UTIL_DECL Serializable : public ThreadSafeRefCounted {
             /// \brief
@@ -156,7 +157,7 @@ namespace thekogans {
             virtual ui16 Version () const = 0;
 
             /// \brief
-            /// Return the serializable size.
+            /// Return the serializable size (not including the header).
             /// \return Serializable size.
             virtual std::size_t Size () const = 0;
 
@@ -179,7 +180,7 @@ namespace thekogans {
             typedef thekogans::util::ThreadSafeRefCounted::Ptr<type> Ptr;\
             THEKOGANS_UTIL_DECLARE_HEAP_WITH_LOCK (type, lock)\
         public:\
-            explicit type (\
+            type (\
                     const Header &header,\
                     thekogans::util::Serializer &serializer) {\
                 Read (header, serializer);\
@@ -217,8 +218,8 @@ namespace thekogans {
         /// Dynamic discovery macro. Add this to your class declaration.
         /// Example:
         /// \code{.cpp}
-        /// struct _LIB_THEKOGANS_UTIL_DECL SymmetricKey : public Serializable {
-        ///     THEKOGANS_UTIL_DECLARE_SERIALIZABLE (SymmetricKey, thekogans::util::SpinLock)
+        /// struct _LIB_THEKOGANS_UTIL_DECL SymmetricKey : public util::Serializable {
+        ///     THEKOGANS_CRYPTO_DECLARE_SERIALIZABLE (SymmetricKey)
         ///     ...
         /// };
         /// \endcode
@@ -237,16 +238,14 @@ namespace thekogans {
         /// Dynamic discovery macro. Instantiate one of these in the class cpp file.
         /// Example:
         /// \code{.cpp}
-        /// #if !defined (THEKOGANS_UTIL_MIN_SYMMETRIC_KEYS_IN_PAGE)
-        ///     #define THEKOGANS_UTIL_MIN_SYMMETRIC_KEYS_IN_PAGE 16
-        /// #endif // !defined (THEKOGANS_UTIL_MIN_SYMMETRIC_KEYS_IN_PAGE)
+        /// #if !defined (THEKOGANS_CRYPTO_MIN_SYMMETRIC_KEYS_IN_PAGE)
+        ///     #define THEKOGANS_CRYPTO_MIN_SYMMETRIC_KEYS_IN_PAGE 16
+        /// #endif // !defined (THEKOGANS_CRYPTO_MIN_SYMMETRIC_KEYS_IN_PAGE)
         ///
-        /// THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE (
+        /// THEKOGANS_CRYPTO_IMPLEMENT_SERIALIZABLE (
         ///     SymmetricKey,
         ///     1,
-        ///     thekogans::util::SpinLoc,
-        ///     THEKOGANS_UTIL_MIN_SYMMETRIC_KEYS_IN_PAGE,
-        ///     thekogans::util::SecureAllocator::Global)
+        ///     THEKOGANS_CRYPTO_MIN_SYMMETRIC_KEYS_IN_PAGE)
         /// \endcode
         #define THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE(\
                 type, version, lock, minSerializablesInPage, allocator)\
@@ -257,8 +256,8 @@ namespace thekogans {
         /// Dynamic discovery macro. Add this to your class declaration.
         /// Example:
         /// \code{.cpp}
-        /// struct _LIB_THEKOGANS_UTIL_DECL SymmetricKey : public Serializable {
-        ///     THEKOGANS_UTIL_DECLARE_SERIALIZABLE (SymmetricKey, thekogans::util::SpinLock)
+        /// struct _LIB_THEKOGANS_UTIL_DECL SymmetricKey : public util::Serializable {
+        ///     THEKOGANS_CRYPTO_DECLARE_SERIALIZABLE (SymmetricKey)
         ///     ...
         /// };
         /// \endcode
@@ -271,16 +270,14 @@ namespace thekogans {
         /// Dynamic discovery macro. Instantiate one of these in the class cpp file.
         /// Example:
         /// \code{.cpp}
-        /// #if !defined (THEKOGANS_UTIL_MIN_SYMMETRIC_KEYS_IN_PAGE)
-        ///     #define THEKOGANS_UTIL_MIN_SYMMETRIC_KEYS_IN_PAGE 16
-        /// #endif // !defined (THEKOGANS_UTIL_MIN_SYMMETRIC_KEYS_IN_PAGE)
+        /// #if !defined (THEKOGANS_CRYPTO_MIN_SYMMETRIC_KEYS_IN_PAGE)
+        ///     #define THEKOGANS_CRYPTO_MIN_SYMMETRIC_KEYS_IN_PAGE 16
+        /// #endif // !defined (THEKOGANS_CRYPTO_MIN_SYMMETRIC_KEYS_IN_PAGE)
         ///
-        /// THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE (
+        /// THEKOGANS_CRYPTO_IMPLEMENT_SERIALIZABLE (
         ///     SymmetricKey,
         ///     1,
-        ///     thekogans::util::SpinLock,
-        ///     THEKOGANS_UTIL_MIN_SYMMETRIC_SERIALIZABLES_IN_PAGE,
-        ///     thekogans::util::SecureAllocator::Global)
+        ///     THEKOGANS_CRYPTO_MIN_SYMMETRIC_SERIALIZABLES_IN_PAGE)
         /// \endcode
         #define THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE(\
                 type, version, lock, minSerializablesInPage, allocator)\
