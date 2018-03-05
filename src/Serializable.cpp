@@ -21,22 +21,8 @@ namespace thekogans {
     namespace util {
 
         Serializable::Map &Serializable::GetMap () {
-            static Serializable::Map map;
+            static Map map;
             return map;
-        }
-
-        Serializable::Ptr Serializable::Get (util::Serializer &serializer) {
-            Serializable::Header header;
-            serializer >> header;
-            if (header.magic == MAGIC32) {
-                Map::iterator it = GetMap ().find (header.type);
-                return it != GetMap ().end () ?
-                    it->second (header, serializer) : Serializable::Ptr ();
-            }
-            else {
-                THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                    "%s is already registered.", header.type.c_str ());
-            }
         }
 
         Serializable::MapInitializer::MapInitializer (
@@ -48,6 +34,20 @@ namespace thekogans {
             if (!result.second) {
                 THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
                     "%s is already registered.", type.c_str ());
+            }
+        }
+
+        Serializable::Ptr Serializable::Get (util::Serializer &serializer) {
+            Header header;
+            serializer >> header;
+            if (header.magic == MAGIC32) {
+                Map::iterator it = GetMap ().find (header.type);
+                return it != GetMap ().end () ?
+                    it->second (header, serializer) : Ptr ();
+            }
+            else {
+                THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
+                    "%s is already registered.", header.type.c_str ());
             }
         }
 

@@ -41,6 +41,7 @@ namespace thekogans {
             /// Convenient typedef for ThreadSafeRefCounted::Ptr<Serializable>.
             typedef ThreadSafeRefCounted::Ptr<Serializable> Ptr;
 
+        protected:
             /// \struct Serializable::Header Serializable.h thekogans/util/Serializable.h
             ///
             /// \brief
@@ -103,11 +104,6 @@ namespace thekogans {
             /// Controls Map's lifetime.
             /// \return Serializable map.
             static Map &GetMap ();
-            /// \brief
-            /// Used for Serializable dynamic discovery and creation.
-            /// \param[in] serializer Serializer containing the Serializable.
-            /// \return A deserialized serializable.
-            static Ptr Get (Serializer &serializer);
             /// \struct Serializable::MapInitializer Serializable.h thekogans/util/Serializable.h
             ///
             /// \brief
@@ -129,13 +125,15 @@ namespace thekogans {
                     Factory factory);
             };
 
+        public:
             /// \brief
             /// dtor.
             virtual ~Serializable () {}
 
             /// \brief
             /// Return the size of the serializable including the header.
-            /// NOTE: Use this API when you're dealing with a generic Serializable.
+            /// NOTE: Use of this API is mendatory as virtual
+            /// std::size_t Size () (below) is protected.
             /// \return Size of the serializable including the header.
             static std::size_t Size (const Serializable &serializable) {
                 return
@@ -146,6 +144,13 @@ namespace thekogans {
                     serializable.Size ();
             }
 
+            /// \brief
+            /// Used for Serializable dynamic discovery and creation.
+            /// \param[in] serializer Serializer containing the Serializable.
+            /// \return A deserialized serializable.
+            static Ptr Get (Serializer &serializer);
+
+        protected:
             /// \brief
             /// Return serializable type (it's class name).
             /// \return Serializable type.
@@ -172,14 +177,25 @@ namespace thekogans {
             /// Write the serializable to the given serializer.
             /// \param[out] serializer Serializer to write the serializable to.
             virtual void Write (Serializer & /*serializer*/) const = 0;
+
+            friend Serializer &operator << (
+                Serializer &serializer,
+                const Header &header);
+            friend Serializer &operator >> (
+                Serializer &serializer,
+                Header &header);
+            friend Serializer &operator << (
+                Serializer &serializer,
+                const Serializable &serializable);
         };
 
         /// \def THEKOGANS_UTIL_DECLARE_SERIALIZABLE_COMMON(type, lock)
         /// Common code used by Static and Shared versions THEKOGANS_UTIL_DECLARE_SERIALIZABLE.
         #define THEKOGANS_UTIL_DECLARE_SERIALIZABLE_COMMON(type, lock)\
-            typedef thekogans::util::ThreadSafeRefCounted::Ptr<type> Ptr;\
-            THEKOGANS_UTIL_DECLARE_HEAP_WITH_LOCK (type, lock)\
         public:\
+            typedef thekogans::util::ThreadSafeRefCounted::Ptr<type> Ptr;\
+        protected:\
+            THEKOGANS_UTIL_DECLARE_HEAP_WITH_LOCK (type, lock)\
             type (\
                     const Header &header,\
                     thekogans::util::Serializer &serializer) {\
@@ -322,7 +338,7 @@ namespace thekogans {
         /// \brief
         /// Serializable insertion operator.
         /// \param[in] serializer Where to serialize the serializable.
-        /// \param[in] header Serializable to serialize.
+        /// \param[in] serializable Serializable to serialize.
         /// \return serializer.
         inline Serializer &operator << (
                 Serializer &serializer,
@@ -336,13 +352,14 @@ namespace thekogans {
             return serializer;
         }
 
-        /// \def THEKOGANS_UTIL_DEFINE_SERIALIZABLE_EXTRACTION_OPERATOR(type)
-        /// Define serializable extraction operator.
-        #define THEKOGANS_UTIL_DEFINE_SERIALIZABLE_EXTRACTION_OPERATOR(type)\
+        /// \def THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_EXTRACTION_OPERATOR(type)
+        /// Implement serializable extraction operator.
+        #define THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_EXTRACTION_OPERATOR(type)\
             inline thekogans::util::Serializer &operator >> (\
                     thekogans::util::Serializer &serializer,\
-                    type::Ptr &t) {\
-                t = thekogans::util::dynamic_refcounted_pointer_cast<type> (\
+                    type::Ptr &serializable) {\
+                serializable =\
+                    thekogans::util::dynamic_refcounted_pointer_cast<type> (\
                         thekogans::util::Serializable::Get (serializer));\
                 return serializer;\
             }
