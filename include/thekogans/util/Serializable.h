@@ -132,8 +132,8 @@ namespace thekogans {
 
             /// \brief
             /// Return the size of the serializable including the header.
-            /// NOTE: Use of this API is mendatory as virtual
-            /// std::size_t Size () (below) is protected.
+            /// Use of this API is mendatory as virtual std::size_t Size ()
+            /// (below) is protected.
             /// \return Size of the serializable including the header.
             static std::size_t Size (const Serializable &serializable) {
                 return
@@ -178,12 +178,18 @@ namespace thekogans {
             /// \param[out] serializer Serializer to write the serializable to.
             virtual void Write (Serializer & /*serializer*/) const = 0;
 
+            /// \brief
+            /// Needs access to Header.
             friend Serializer &operator << (
                 Serializer &serializer,
                 const Header &header);
+            /// \brief
+            /// Needs access to Header.
             friend Serializer &operator >> (
                 Serializer &serializer,
                 Header &header);
+            /// \brief
+            /// Needs access to Header and Write.
             friend Serializer &operator << (
                 Serializer &serializer,
                 const Serializable &serializable);
@@ -208,7 +214,7 @@ namespace thekogans {
                     new type (header, serializer));\
             }\
             static const char *TYPE;\
-            static const thekogans::util::ui16 VERSION; \
+            static const thekogans::util::ui16 VERSION;\
             virtual const char *Type () const {\
                 return TYPE;\
             }\
@@ -353,7 +359,7 @@ namespace thekogans {
         }
 
         /// \def THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_EXTRACTION_OPERATOR(type)
-        /// Implement serializable extraction operator.
+        /// Implement Serializable extraction operator.
         #define THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_EXTRACTION_OPERATOR(type)\
             inline thekogans::util::Serializer &operator >> (\
                     thekogans::util::Serializer &serializer,\
@@ -363,6 +369,10 @@ namespace thekogans {
                         thekogans::util::Serializable::Get (serializer));\
                 return serializer;\
             }
+
+        /// \brief
+        /// Implement Serializable extraction operator.
+        THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_EXTRACTION_OPERATOR (Serializable)
 
     } // namespace util
 } // namespace thekogans

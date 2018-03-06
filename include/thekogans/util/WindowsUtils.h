@@ -44,7 +44,6 @@
     #define vsnprintf vsprintf_s
     #define unlink _unlink
     #define rmdir _rmdir
-    #define sscanf sscanf_s
 #endif // defined (_MSC_VER)
 #include <memory>
 #include <string>
