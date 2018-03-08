@@ -266,7 +266,7 @@ namespace thekogans {
         }
 
         SystemRunLoop::~SystemRunLoop () {
-            CancelAll ();
+            CancelAllJobs ();
         }
 
         namespace {
@@ -422,11 +422,11 @@ namespace thekogans {
             #endif // defined (TOOLCHAIN_OS_Windows)
             }
             if (cancelPendingJobs) {
-                CancelAll ();
+                CancelAllJobs ();
             }
         }
 
-        void SystemRunLoop::Enq (
+        void SystemRunLoop::EnqJob (
                 Job &job,
                 bool wait) {
             LockGuard<Mutex> guard (jobsMutex);
@@ -468,7 +468,7 @@ namespace thekogans {
             }
         }
 
-        bool SystemRunLoop::Cancel (const Job::Id &jobId) {
+        bool SystemRunLoop::CancelJob (const Job::Id &jobId) {
             LockGuard<Mutex> guard (jobsMutex);
             for (Job *job = jobs.front (); job != 0; job = jobs.next (job)) {
                 if (job->GetId () == jobId) {
@@ -487,7 +487,24 @@ namespace thekogans {
             return false;
         }
 
-        void SystemRunLoop::CancelAll () {
+        void SystemRunLoop::CancelJobs (const EqualityTest &equalityTest) {
+            LockGuard<Mutex> guard (jobsMutex);
+            for (Job *job = jobs.front (); job != 0; job = jobs.next (job)) {
+                if (equalityTest (*job)) {
+                    jobs.erase (job);
+                    job->Cancel ();
+                    job->Release ();
+                    --stats.jobCount;
+                    jobFinished.SignalAll ();
+                    if (busyWorkers == 0 && jobs.empty ()) {
+                        state = Idle;
+                        idle.SignalAll ();
+                    }
+                }
+            }
+        }
+
+        void SystemRunLoop::CancelAllJobs () {
             LockGuard<Mutex> guard (jobsMutex);
             if (!jobs.empty ()) {
                 assert (state == Busy);
@@ -539,7 +556,7 @@ namespace thekogans {
 
         void SystemRunLoop::ExecuteJobs () {
             while (!done) {
-                Job::Ptr job (Deq ());
+                Job::Ptr job (DeqJob ());
                 if (job.Get () == 0) {
                     break;
                 }
@@ -552,7 +569,7 @@ namespace thekogans {
             }
         }
 
-        RunLoop::Job *SystemRunLoop::Deq () {
+        RunLoop::Job *SystemRunLoop::DeqJob () {
             LockGuard<Mutex> guard (jobsMutex);
             Job *job = 0;
             if (!done && !jobs.empty ()) {

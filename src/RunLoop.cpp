@@ -62,7 +62,7 @@ namespace thekogans {
                 ui64 end) {
             ++totalJobs;
             ui64 ellapsed =
-                HRTimer::ComputeEllapsedTime (start, end);
+                HRTimer::ComputeElapsedTime (start, end);
             totalJobTime += ellapsed;
             lastJob = Job (jobId, start, end, ellapsed);
             if (totalJobs == 1) {

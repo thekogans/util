@@ -198,7 +198,7 @@ namespace thekogans {
             /// \brief
             /// dtor.
             virtual ~DefaultRunLoop () {
-                CancelAll ();
+                CancelAllJobs ();
             }
 
             /// \brief
@@ -217,7 +217,7 @@ namespace thekogans {
             /// \param[in] job Job to enqueue.
             /// \param[in] wait Wait for job to finish.
             /// Used for synchronous job execution.
-            virtual void Enq (
+            virtual void EnqJob (
                 Job &job,
                 bool wait = false);
 
@@ -226,10 +226,15 @@ namespace thekogans {
             /// in the queue (in flight), it is not canceled.
             /// \param[in] jobId Id of job to cancel.
             /// \return true if the job was cancelled. false if in flight.
-            virtual bool Cancel (const Job::Id &jobId);
+            virtual bool CancelJob (const Job::Id &jobId);
+            /// \brief
+            /// Cancel all queued job matching the given equality test. Jobs in flight
+            /// are not canceled.
+            /// \param[in] equalityTest EqualityTest to query to determine which jobs to cancel.
+            virtual void CancelJobs (const EqualityTest &equalityTest);
             /// \brief
             /// Cancel all queued jobs. Jobs in flight are unaffected.
-            virtual void CancelAll ();
+            virtual void CancelAllJobs ();
 
             /// \brief
             /// Blocks until all jobs are complete and the queue is empty.
@@ -258,7 +263,7 @@ namespace thekogans {
             /// \brief
             /// Used internally to get the next job.
             /// \return The next job to execute.
-            Job *Deq ();
+            Job *DeqJob ();
             /// \brief
             /// Called by worker(s) after each job is done.
             /// Used to update state and \see{Stats}.

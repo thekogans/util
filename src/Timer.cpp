@@ -28,12 +28,13 @@
     #include <sys/time.h>
     #include "thekogans/util/Constants.h"
     #include "thekogans/util/Singleton.h"
-    #include "thekogans/util/SpinLock.h"
     #include "thekogans/util/Thread.h"
+    #include "thekogans/util/WorkerPool.h"
     #include "thekogans/util/OSXUtils.h"
 #endif // defined (TOOLCHAIN_OS_Windows)
 #include "thekogans/util/LoggerMgr.h"
 #include "thekogans/util/Exception.h"
+#include "thekogans/util/LockGuard.h"
 #include "thekogans/util/Timer.h"
 
 namespace thekogans {
@@ -49,7 +50,10 @@ namespace thekogans {
                 if (!timer->periodic) {
                     timer->Stop ();
                 }
-                timer->callback.Alarm (*timer);
+                if (timer->spinLock.TryAcquire ()) {
+                    LockGuard<SpinLock> guard (timer->spinLock, false);
+                    timer->callback.Alarm (*timer);
+                }
             }
         }
     #elif defined (TOOLCHAIN_OS_Linux)
@@ -59,7 +63,10 @@ namespace thekogans {
                 if (!timer->periodic) {
                     timer->Stop ();
                 }
-                timer->callback.Alarm (*timer);
+                if (timer->spinLock.TryAcquire ()) {
+                    LockGuard<SpinLock> guard (timer->spinLock, false);
+                    timer->callback.Alarm (*timer);
+                }
             }
         }
     #elif defined (TOOLCHAIN_OS_OSX)
@@ -68,11 +75,13 @@ namespace thekogans {
                 public Thread {
             THEKOGANS_UTIL_HANDLE handle;
             THEKOGANS_UTIL_ATOMIC<ui64> idPool;
+            WorkerPool workerPool;
 
             TimerQueue () :
                     Thread ("TimerQueue"),
                     handle (kqueue ()),
-                    idPool (0) {
+                    idPool (0),
+                    workerPool (1, 100, "TimerQueue-WorkerPool") {
                 if (handle == THEKOGANS_UTIL_INVALID_HANDLE_VALUE) {
                     THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
                         THEKOGANS_UTIL_OS_ERROR_CODE);
@@ -136,10 +145,35 @@ namespace thekogans {
                     for (int i = 0; i < count; ++i) {
                         Timer *timer = (Timer *)kqueueEvents[i].udata;
                         if (timer != 0) {
-                            if (!timer->periodic) {
-                                timer->id = NIDX64;
+                            THEKOGANS_UTIL_TRY {
+                                struct TimerJob : public RunLoop::Job {
+                                    WorkerPool::WorkerPtr::Ptr workerPtr;
+                                    Timer *timer;
+
+                                    TimerJob (
+                                        WorkerPool::WorkerPtr::Ptr workerPtr_,
+                                        Timer *timer_) :
+                                        workerPtr (workerPtr_),
+                                        timer (timer_) {}
+
+                                    virtual void Execute (volatile const bool &done) throw () {
+                                        if (!ShouldStop (done)) {
+                                            if (!timer->periodic) {
+                                                timer->id = NIDX64;
+                                            }
+                                            if (timer->spinLock.TryAcquire ()) {
+                                                LockGuard<SpinLock> guard (timer->spinLock, false);
+                                                timer->callback.Alarm (*timer);
+                                            }
+                                        }
+                                    }
+                                };
+                                WorkerPool::WorkerPtr::Ptr workerPtr (
+                                    new WorkerPool::WorkerPtr (workerPool));
+                                (*workerPtr)->EnqJob (
+                                    *RunLoop::Job::Ptr (new TimerJob (workerPtr, timer)));
                             }
-                            timer->callback.Alarm (*timer);
+                            THEKOGANS_UTIL_CATCH_AND_LOG_SUBSYSTEM (THEKOGANS_UTIL)
                         }
                     }
                 }

@@ -35,6 +35,7 @@
 #include "thekogans/util/Config.h"
 #include "thekogans/util/Types.h"
 #include "thekogans/util/TimeSpec.h"
+#include "thekogans/util/SpinLock.h"
 
 namespace thekogans {
     namespace util {
@@ -55,7 +56,11 @@ namespace thekogans {
         ///         public util::Singleton<IdleProcessor, util::SpinLock> {
         ///     IdleProcessor () :
         ///         timer (*this),
-        ///         jobQueue (RunLoop::TYPE_FIFO, 1, THEKOGANS_UTIL_LOW_THREAD_PRIORITY) {}
+        ///         jobQueue (
+        ///             "IdleProcessor",
+        ///             RunLoop::TYPE_FIFO,
+        ///             1,
+        ///             THEKOGANS_UTIL_LOW_THREAD_PRIORITY) {}
         ///
         ///     inline void StartTimer (const util::TimeSpec &timeSpec) {
         ///         timer.Start (timeSpec);
@@ -65,7 +70,7 @@ namespace thekogans {
         ///     }
         ///
         ///     inline void CancelPendingJobs (bool waitForIdle = true) {
-        ///         jobQueue.CancelAll ();
+        ///         jobQueue.CancelAllJobs ();
         ///         if (waitForIdle) {
         ///             jobQueue.WaitForIdle ();
         ///         }
@@ -78,7 +83,7 @@ namespace thekogans {
         ///     // Timer::Callback
         ///     virtual void Alarm (util::Timer & /*timer*/) throw () {
         ///         // queue idle jobs.
-        ///         jobQueue.Enq (...);
+        ///         jobQueue.EnqJob (...);
         ///     }
         /// };
         /// \endcode
@@ -110,6 +115,9 @@ namespace thekogans {
             /// \brief
             /// Timer name.
             std::string name;
+            /// \brief
+            /// Callback::Alarm synchronization lock.
+            SpinLock spinLock;
 
             /// \brief
             /// ctor.

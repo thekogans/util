@@ -30,7 +30,7 @@ namespace thekogans {
         const char * const HRTimerMgr::TimerInfo::ATTR_NAME = "Name";
         const char * const HRTimerMgr::TimerInfo::ATTR_START = "Start";
         const char * const HRTimerMgr::TimerInfo::ATTR_STOP = "Stop";
-        const char * const HRTimerMgr::TimerInfo::ATTR_ELLAPSED = "Ellapsed";
+        const char * const HRTimerMgr::TimerInfo::ATTR_ELAPSED = "Elapsed";
 
         void HRTimerMgr::TimerInfo::GetStats (
                 ui32 &count,
@@ -39,7 +39,7 @@ namespace thekogans {
                 ui64 &average,
                 ui64 &total) const {
             count = 1;
-            min = max = average = total = HRTimer::ComputeEllapsedTime (start, stop);
+            min = max = average = total = HRTimer::ComputeElapsedTime (start, stop);
         }
 
         std::string HRTimerMgr::TimerInfo::ToString (ui32 indentationLevel) const {
@@ -48,10 +48,10 @@ namespace thekogans {
             attributes_.push_back (Attribute (ATTR_START, ui64Tostring (start)));
             attributes_.push_back (Attribute (ATTR_STOP, ui64Tostring (stop)));
             attributes_.push_back (
-                Attribute (ATTR_ELLAPSED,
+                Attribute (ATTR_ELAPSED,
                     f64Tostring (
                         HRTimer::ToSeconds (
-                            HRTimer::ComputeEllapsedTime (start, stop)))));
+                            HRTimer::ComputeElapsedTime (start, stop)))));
             for (Attributes::const_iterator it = attributes.begin (),
                     end = attributes.end (); it != end; ++it) {
                 attributes_.push_back (Attribute ((*it).first, Encodestring ((*it).second)));

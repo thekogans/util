@@ -94,48 +94,46 @@ namespace thekogans {
                         break;
                 }
                 if (scheduleWorker) {
-                    WorkerPool::WorkerPtr::SharedPtr workerPtr (
-                        new WorkerPool::WorkerPtr (workerPool, 0));
-                    if (workerPtr.get () != 0 && workerPtr->worker != 0) {
-                        struct WorkerJob : public util::RunLoop::Job {
-                            WorkerPool::WorkerPtr::SharedPtr workerPtr;
-                            Scheduler &scheduler;
+                    struct WorkerJob : public util::RunLoop::Job {
+                        WorkerPool::WorkerPtr::Ptr workerPtr;
+                        Scheduler &scheduler;
 
-                            WorkerJob (
-                                WorkerPool::WorkerPtr::SharedPtr workerPtr_,
-                                Scheduler &scheduler_) :
-                                workerPtr (workerPtr_),
-                                scheduler (scheduler_) {}
+                        WorkerJob (
+                            WorkerPool::WorkerPtr::Ptr workerPtr_,
+                            Scheduler &scheduler_) :
+                            workerPtr (workerPtr_),
+                            scheduler (scheduler_) {}
 
-                            virtual void Execute (volatile const bool &done) throw () {
-                                // Use a warm worker to minimize cache thrashing.
-                                while (!done) {
-                                    Scheduler::JobQueue::Ptr jobQueue =
-                                        scheduler.GetNextJobQueue ();
-                                    if (jobQueue.Get () == 0) {
-                                        return;
-                                    }
-                                    Scheduler::JobQueue::Job::UniquePtr job = jobQueue->Deq ();
-                                    if (job.get () != 0) {
-                                        job->Execute (done);
-                                    }
-                                    {
-                                        // Put the queue in the back of it's priority list
-                                        // so that we respect the scheduling policy we advertise
-                                        // (see GetNextJobQueue).
-                                        LockGuard<SpinLock> guard (jobQueue->spinLock);
-                                        jobQueue->inFlight = false;
-                                        if (!jobQueue->jobs.empty ()) {
-                                            scheduler.AddJobQueue (jobQueue.Get (), false);
-                                        }
+                        virtual void Execute (volatile const bool &done) throw () {
+                            // Use a warm worker to minimize cache thrashing.
+                            while (!done) {
+                                Scheduler::JobQueue::Ptr jobQueue =
+                                    scheduler.GetNextJobQueue ();
+                                if (jobQueue.Get () == 0) {
+                                    return;
+                                }
+                                Scheduler::JobQueue::Job::UniquePtr job = jobQueue->Deq ();
+                                if (job.get () != 0) {
+                                    job->Execute (done);
+                                }
+                                {
+                                    // Put the queue in the back of it's priority list
+                                    // so that we respect the scheduling policy we advertise
+                                    // (see GetNextJobQueue).
+                                    LockGuard<SpinLock> guard (jobQueue->spinLock);
+                                    jobQueue->inFlight = false;
+                                    if (!jobQueue->jobs.empty ()) {
+                                        scheduler.AddJobQueue (jobQueue.Get (), false);
                                     }
                                 }
                             }
-                        };
-                        (*workerPtr)->Enq (
-                            *util::RunLoop::Job::Ptr (
-                                new WorkerJob (workerPtr, *this)));
-                    }
+                        }
+                    };
+                    WorkerPool::WorkerPtr::Ptr workerPtr (
+                        new WorkerPool::WorkerPtr (workerPool, 0));
+                    (*workerPtr)->EnqJob (
+                        *util::RunLoop::Job::Ptr (
+                            new WorkerJob (workerPtr, *this)));
                 }
             }
             else {

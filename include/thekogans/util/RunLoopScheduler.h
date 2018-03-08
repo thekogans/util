@@ -18,7 +18,6 @@
 #if !defined (__thekogans_util_RunLoopScheduler_h)
 #define __thekogans_util_RunLoopScheduler_h
 
-#include <memory>
 #include <queue>
 #include "thekogans/util/Config.h"
 #include "thekogans/util/Types.h"
@@ -41,10 +40,12 @@ namespace thekogans {
         /// A RunLoopScheduler allows you to schedule \see{RunLoop::Job}s to be executed
         /// in the future.
 
-        struct _LIB_THEKOGANS_UTIL_DECL RunLoopScheduler : public Timer::Callback {
+        struct _LIB_THEKOGANS_UTIL_DECL RunLoopScheduler :
+                public ThreadSafeRefCounted,
+                public Timer::Callback {
             /// \brief
-            /// Convenient typedef for std::shared_ptr<RunLoopScheduler>.
-            typedef std::shared_ptr<RunLoopScheduler> SharedPtr;
+            /// Convenient typedef for ThreadSafeRefCounted::Ptr<RunLoopScheduler>.
+            typedef ThreadSafeRefCounted::Ptr<RunLoopScheduler> Ptr;
 
         private:
             /// \brief
@@ -107,7 +108,7 @@ namespace thekogans {
                 /// \brief
                 /// Enqueue the job on the specified run loop.
                 inline void EnqJob () {
-                    runLoop.Enq (*job);
+                    runLoop.EnqJob (*job);
                 }
 
                 /// \brief

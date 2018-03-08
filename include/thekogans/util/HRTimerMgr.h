@@ -235,8 +235,8 @@ namespace thekogans {
                 /// "Stop"
                 static const char * const ATTR_STOP;
                 /// \brief
-                /// "Ellapsed"
-                static const char * const ATTR_ELLAPSED;
+                /// "Elapsed"
+                static const char * const ATTR_ELAPSED;
 
                 /// \brief
                 /// Start time.
@@ -272,7 +272,7 @@ namespace thekogans {
                 /// <Timer Name = "name"
                 ///        Start = "start"
                 ///        Stop = "stop"
-                ///        Ellapsed = "stop - start"/>
+                ///        Elapsed = "stop - start"/>
                 /// \param[in] indentationLevel 4 * indentationLevel
                 /// spaces to add to the beginning of the string.
                 /// \return An XML string from TimerInfo parameters

@@ -39,7 +39,7 @@ namespace thekogans {
                     }
                 } workerInitializer (*this);
                 while (!done) {
-                    Job::Ptr job (Deq ());
+                    Job::Ptr job (DeqJob ());
                     if (job.Get () != 0) {
                         ui64 start = HRTimer::Click ();
                         job->Prologue (done);
@@ -57,11 +57,11 @@ namespace thekogans {
                 jobsNotEmpty.Signal ();
             }
             if (cancelPendingJobs) {
-                CancelAll ();
+                CancelAllJobs ();
             }
         }
 
-        void DefaultRunLoop::Enq (
+        void DefaultRunLoop::EnqJob (
                 Job &job,
                 bool wait) {
             LockGuard<Mutex> guard (jobsMutex);
@@ -91,7 +91,7 @@ namespace thekogans {
             }
         }
 
-        bool DefaultRunLoop::Cancel (const Job::Id &jobId) {
+        bool DefaultRunLoop::CancelJob (const Job::Id &jobId) {
             LockGuard<Mutex> guard (jobsMutex);
             for (Job *job = jobs.front (); job != 0; job = jobs.next (job)) {
                 if (job->GetId () == jobId) {
@@ -110,7 +110,24 @@ namespace thekogans {
             return false;
         }
 
-        void DefaultRunLoop::CancelAll () {
+        void DefaultRunLoop::CancelJobs (const EqualityTest &equalityTest) {
+            LockGuard<Mutex> guard (jobsMutex);
+            for (Job *job = jobs.front (); job != 0; job = jobs.next (job)) {
+                if (equalityTest (*job)) {
+                    jobs.erase (job);
+                    job->Cancel ();
+                    job->Release ();
+                    --stats.jobCount;
+                    jobFinished.SignalAll ();
+                    if (busyWorkers == 0 && jobs.empty ()) {
+                        state = Idle;
+                        idle.SignalAll ();
+                    }
+                }
+            }
+        }
+
+        void DefaultRunLoop::CancelAllJobs () {
             LockGuard<Mutex> guard (jobsMutex);
             if (!jobs.empty ()) {
                 assert (state == Busy);
@@ -160,7 +177,7 @@ namespace thekogans {
             return state == Idle;
         }
 
-        RunLoop::Job *DefaultRunLoop::Deq () {
+        RunLoop::Job *DefaultRunLoop::DeqJob () {
             LockGuard<Mutex> guard (jobsMutex);
             while (!done && jobs.empty ()) {
                 jobsNotEmpty.Wait ();

@@ -75,13 +75,13 @@ int main (
             switch (option) {
                 case 'h': {
                     if (!hashers.empty () && hashers.back ()->digestSizes.empty ()) {
-                        util::Hash::SharedPtr hash = util::Hash::Get (hashers.back ()->name);
-                        assert (hash.get () != 0);
+                        util::Hash::Ptr hash = util::Hash::Get (hashers.back ()->name);
+                        assert (hash.Get () != 0);
                         hashers.back ()->digestSizes.clear ();
                         hash->GetDigestSizes (hashers.back ()->digestSizes);
                     }
-                    util::Hash::SharedPtr hash = util::Hash::Get (value);
-                    if (hash.get () != 0) {
+                    util::Hash::Ptr hash = util::Hash::Get (value);
+                    if (hash.Get () != 0) {
                         hashers.push_back (new Hasher (value));
                     }
                     else {
@@ -92,8 +92,8 @@ int main (
                 case 'd': {
                     if (!hashers.empty ()) {
                         if (value == "ALL") {
-                            util::Hash::SharedPtr hash = util::Hash::Get (hashers.back ()->name);
-                            assert (hash.get () != 0);
+                            util::Hash::Ptr hash = util::Hash::Get (hashers.back ()->name);
+                            assert (hash.Get () != 0);
                             hashers.back ()->digestSizes.clear ();
                             hash->GetDigestSizes (hashers.back ()->digestSizes);
                             if (hashers.back ()->digestSizes.empty ()) {
@@ -125,8 +125,8 @@ int main (
         }
         virtual void Epilog () {
             if (!hashers.empty () && hashers.back ()->digestSizes.empty ()) {
-                util::Hash::SharedPtr hash = util::Hash::Get (hashers.back ()->name);
-                assert (hash.get () != 0);
+                util::Hash::Ptr hash = util::Hash::Get (hashers.back ()->name);
+                assert (hash.Get () != 0);
                 hashers.back ()->digestSizes.clear ();
                 hash->GetDigestSizes (hashers.back ()->digestSizes);
             }
@@ -146,8 +146,8 @@ int main (
     for (util::OwnerList<Options::Hasher>::const_iterator
             it = options.hashers.begin (),
             end = options.hashers.end (); it != end; ++it) {
-        util::Hash::SharedPtr hash = util::Hash::Get ((*it)->name);
-        assert (hash.get () != 0);
+        util::Hash::Ptr hash = util::Hash::Get ((*it)->name);
+        assert (hash.Get () != 0);
         for (std::list<util::ui32>::const_iterator
                 jt = (*it)->digestSizes.begin (),
                 end = (*it)->digestSizes.end (); jt != end; ++jt) {

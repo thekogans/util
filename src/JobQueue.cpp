@@ -43,7 +43,7 @@ namespace thekogans {
                 }
             } workerInitializer (queue);
             while (!queue.done) {
-                Job::Ptr job (queue.Deq ());
+                Job::Ptr job (queue.DeqJob ());
                 if (job.Get () != 0) {
                     ui64 start = HRTimer::Click ();
                     job->Prologue (queue.done);
@@ -126,11 +126,11 @@ namespace thekogans {
                 }
             }
             if (cancelPendingJobs) {
-                CancelAll ();
+                CancelAllJobs ();
             }
         }
 
-        void JobQueue::Enq (
+        void JobQueue::EnqJob (
                 Job &job,
                 bool wait) {
             LockGuard<Mutex> guard (jobsMutex);
@@ -160,7 +160,7 @@ namespace thekogans {
             }
         }
 
-        bool JobQueue::Cancel (const Job::Id &jobId) {
+        bool JobQueue::CancelJob (const Job::Id &jobId) {
             LockGuard<Mutex> guard (jobsMutex);
             for (Job *job = jobs.front (); job != 0; job = jobs.next (job)) {
                 if (job->GetId () == jobId) {
@@ -179,7 +179,24 @@ namespace thekogans {
             return false;
         }
 
-        void JobQueue::CancelAll () {
+        void JobQueue::CancelJobs (const EqualityTest &equalityTest) {
+            LockGuard<Mutex> guard (jobsMutex);
+            for (Job *job = jobs.front (); job != 0; job = jobs.next (job)) {
+                if (equalityTest (*job)) {
+                    jobs.erase (job);
+                    job->Cancel ();
+                    job->Release ();
+                    --stats.jobCount;
+                    jobFinished.SignalAll ();
+                    if (busyWorkers == 0 && jobs.empty ()) {
+                        state = Idle;
+                        idle.SignalAll ();
+                    }
+                }
+            }
+        }
+
+        void JobQueue::CancelAllJobs () {
             LockGuard<Mutex> guard (jobsMutex);
             if (!jobs.empty ()) {
                 assert (state == Busy);
@@ -229,7 +246,7 @@ namespace thekogans {
             return state == Idle;
         }
 
-        JobQueue::Job *JobQueue::Deq () {
+        RunLoop::Job *JobQueue::DeqJob () {
             LockGuard<Mutex> guard (jobsMutex);
             while (!done && jobs.empty ()) {
                 jobsNotEmpty.Wait ();

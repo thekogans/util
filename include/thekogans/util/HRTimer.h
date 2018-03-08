@@ -41,9 +41,9 @@ namespace thekogans {
         ///     code to be timed goes here.
         /// }
         /// util::ui64 stop = util::HRTimer::Click ();
-        /// std::cout << "Ellapsed time (in seconds): " <<
+        /// std::cout << "Elapsed time (in seconds): " <<
         ///     util::HRTimer::ToSeconds (
-        ///         util::HRTimer::ComputeEllapsedTime (start, stop));
+        ///         util::HRTimer::ComputeElapsedTime (start, stop));
         /// \endcode
 
         struct _LIB_THEKOGANS_UTIL_DECL HRTimer {
@@ -61,15 +61,15 @@ namespace thekogans {
             /// \param[in] start The lesser value.
             /// \param[in] stop The grater value.
             /// \return Difference between the two.
-            static ui64 ComputeEllapsedTime (
+            static ui64 ComputeElapsedTime (
                     ui64 start,
                     ui64 stop) {
                 return stop > start ? stop - start : UI64_MAX - (start - stop);
             }
             /// \brief
             /// Using the timer frequency, convert ellapsed time to seconds.
-            /// \param[in] ellapsedTime Value returned by ComputeEllapsedTime.
-            /// \return Ellapsed seconds.
+            /// \param[in] elapsedTime Value returned by ComputeElapsedTime.
+            /// \return Elapsed seconds.
             static f64 ToSeconds (ui64 ellapsedTime) {
                 return (f64)(i64)ellapsedTime / (f64)GetFrequency ();
             }

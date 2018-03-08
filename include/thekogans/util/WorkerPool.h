@@ -46,46 +46,35 @@ namespace thekogans {
         /// util::WorkerPool workerPool;
         ///
         /// void foo (...) {
-        ///     util::WorkerPool::WorkerPtr::SharedPtr workerPtr (
-        ///         new util::WorkerPool::WorkerPtr (workerPool));
-        ///     if (workerPtr.get () != 0 && workerPtr->worker != 0) {
+        ///     THEKOGANS_UTIL_TRY {
         ///         struct Job : public util::RunLoop::Job {
-        ///             util::WorkerPool::WorkerPtr::SharedPtr workerPtr;
+        ///             util::WorkerPool::WorkerPtr::Ptr workerPtr;
         ///             ...
-        ///             const util::GUID id;
-        ///             Job (util::WorkerPool::WorkerPtr::SharedPtr workerPtr_, ...) :
+        ///             Job (
+        ///                 util::WorkerPool::WorkerPtr::Ptr workerPtr_,
+        //                  ...) :
         ///                 workerPtr (workerPtr_),
-        ///                 ...,
-        ///                 id (util::GUID::FromRandom ()) {}
+        ///                 ... {}
+        ///
         ///             // util::RunLoop::Job
-        ///             virtual std::string GetId () const throw () {
-        ///                 return id.ToString ();
-        ///             }
         ///             virtual void Execute (volatile const bool &) throw () {
         ///                 ...
         ///             }
         ///         };
-        ///         util::RunLoop::Job::Ptr job (new Job (workerPtr, ...));
-        ///         if (job.get () != 0) {
-        ///             (*workerPtr)->Enq (job);
-        ///         }
-        ///         else {
-        ///             THEKOGANS_UTIL_LOG_ERROR ("%s\n",
-        ///                 "Unable to allocate Job.");
-        ///         }
+        ///         util::WorkerPool::WorkerPtr::Ptr workerPtr (
+        ///             new util::WorkerPool::WorkerPtr (workerPool));
+        ///         (*workerPtr)->EnqJob (
+        ///             *RunLoop::Job::Ptr (new Job (workerPtr, ...)));
         ///     }
-        ///     else {
-        ///         THEKOGANS_UTIL_LOG_ERROR ("%s\n",
-        ///             "Unable to acquire a WorkerPool::Worker.");
-        ///     }
+        ///     THEKOGANS_UTIL_CATCH_AND_LOG_SUBSYSTEM (...)
         /// }
         /// \endcode
         ///
         /// Note how the Job controls the lifetime of the WorkerPtr.
-        /// By passing util::WorkerPool::WorkerPtr::SharedPtr in to the
+        /// By passing util::WorkerPool::WorkerPtr::Ptr in to the
         /// Job's ctor we guarantee that the worker will be released as
         /// soon as the Job goes out of scope (as it will be the last
-        /// reference on the shared_ptr).
+        /// reference on the ThreadSafeRefCounted).
 
         struct _LIB_THEKOGANS_UTIL_DECL WorkerPool {
         private:
@@ -208,10 +197,10 @@ namespace thekogans {
             /// \brief
             /// The only way to borrow a worker from the pool is with
             /// a WorkerPtr. Refer to the example above to see how.
-            struct _LIB_THEKOGANS_UTIL_DECL WorkerPtr {
+            struct _LIB_THEKOGANS_UTIL_DECL WorkerPtr : public ThreadSafeRefCounted {
                 /// \brief
-                /// Convenient typedef for std::shared_ptr<WorkerPtr>.
-                typedef std::shared_ptr<WorkerPtr> SharedPtr;
+                /// Convenient typedef for ThreadSafeRefCounted::Ptr<WorkerPtr>.
+                typedef ThreadSafeRefCounted::Ptr<WorkerPtr> Ptr;
 
                 /// \brief
                 /// WorkerPtr has a private heap to help with memory
@@ -238,6 +227,13 @@ namespace thekogans {
                 /// \brief
                 /// dtor. Release the worker back to the pool.
                 ~WorkerPtr ();
+
+                /// \brief
+                /// Return true if a worker was acquired.
+                /// \return true == A worker was acquired.
+                inline bool IsValid () const {
+                    return worker != 0;
+                }
 
                 /// \brief
                 /// Implicit cast operator. Convert a WorkerPtr to Worker.

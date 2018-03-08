@@ -18,14 +18,13 @@
 #if !defined (__thekogans_util_Hash_h)
 #define __thekogans_util_Hash_h
 
-#include <memory.h>
-#include <memory>
 #include <string>
 #include <vector>
 #include <list>
 #include <map>
 #include "thekogans/util/Config.h"
 #include "thekogans/util/Types.h"
+#include "thekogans/util/RefCounted.h"
 #include "thekogans/util/Exception.h"
 
 namespace thekogans {
@@ -36,14 +35,14 @@ namespace thekogans {
         /// \brief
         /// Base class used to represent an abstract hash generator.
 
-        struct _LIB_THEKOGANS_UTIL_DECL Hash {
+        struct _LIB_THEKOGANS_UTIL_DECL Hash : public ThreadSafeRefCounted {
             /// \brief
-            /// Convenient typedef for std::shared_ptr<Hash>.
-            typedef std::shared_ptr<Hash> SharedPtr;
+            /// Convenient typedef for ThreadSafeRefCounted::Ptr<Hash>.
+            typedef ThreadSafeRefCounted::Ptr<Hash> Ptr;
 
             /// \brief
             /// typedef for the Hash factory function.
-            typedef SharedPtr (*Factory) ();
+            typedef Ptr (*Factory) ();
             /// \brief
             /// typedef for the Hash map.
             typedef std::map<std::string, Factory> Map;
@@ -55,7 +54,7 @@ namespace thekogans {
             /// Used for Hash dynamic discovery and creation.
             /// \param[in] type Hash type (it's name).
             /// \return A Hash based on the passed in type.
-            static SharedPtr Get (const std::string &type);
+            static Ptr Get (const std::string &type);
             /// \struct Hash::MapInitializer Hash.h thekogans/util/Hash.h
             ///
             /// \brief
@@ -193,8 +192,8 @@ namespace thekogans {
         /// \endcode
         #define THEKOGANS_UTIL_DECLARE_HASH(type)\
         public:\
-            static thekogans::util::Hash::SharedPtr Create () {\
-                return thekogans::util::Hash::SharedPtr (new type);\
+            static thekogans::util::Hash::Ptr Create () {\
+                return thekogans::util::Hash::Ptr (new type);\
             }\
             static void StaticInit () {\
                 std::pair<Map::iterator, bool> result =\
@@ -225,8 +224,8 @@ namespace thekogans {
         #define THEKOGANS_UTIL_DECLARE_HASH(type)\
         public:\
             static thekogans::util::Hash::MapInitializer mapInitializer;\
-            static thekogans::util::Hash::SharedPtr Create () {\
-                return thekogans::util::Hash::SharedPtr (new type);\
+            static thekogans::util::Hash::Ptr Create () {\
+                return thekogans::util::Hash::Ptr (new type);\
             }
 
         /// \def THEKOGANS_UTIL_IMPLEMENT_HASH(type)

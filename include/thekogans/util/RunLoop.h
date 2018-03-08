@@ -362,7 +362,7 @@ namespace thekogans {
             /// Obviously, this function needs to be called from a different thread
             /// than the one that called Start.
             /// \param[in] cancelPendingJobs true = Cancel all pending jobs.
-            virtual void Stop (bool cancelPendingJobs = true) = 0;
+            virtual void Stop (bool /*cancelPendingJobs*/ = true) = 0;
 
             /// \brief
             /// Enqueue a job to be performed on the run loop thread.
@@ -370,19 +370,39 @@ namespace thekogans {
             /// \param[in] wait Wait for job to finish. Used for synchronous job execution.
             /// NOTE: Same constraint applies to Enq as Stop. Namely, you can't call Enq
             /// from the same thread that called Start.
-            virtual void Enq (
-                Job &job,
-                bool wait = false) = 0;
+            virtual void EnqJob (
+                Job & /*job*/,
+                bool /*wait*/ = false) = 0;
 
             /// \brief
             /// Cancel a queued job with a given id. If the job is not
             /// in the queue (in flight), it is not canceled.
             /// \param[in] jobId Id of job to cancel.
             /// \return true = the job was cancelled. false = in flight or nonexistent.
-            virtual bool Cancel (const Job::Id &jobId) = 0;
+            virtual bool CancelJob (const Job::Id & /*jobId*/) = 0;
+            /// \struct RunLoop::EqualityTest RunLoop.h thekogans/util/RunLoop.h
+            ///
+            /// \brief
+            /// Equality test to use to determine which jobs to cancel.
+            struct EqualityTest {
+                /// \brief
+                /// dtor.
+                virtual ~EqualityTest () {}
+
+                /// \brief
+                /// Reimplement this function to test for equality.
+                /// \param[in] job Instance to test for equality.
+                /// \return true == equal.
+                virtual bool operator () (const Job & /*job*/) const throw () = 0;
+            };
+            /// \brief
+            /// Cancel all queued job matching the given equality test. Jobs in flight
+            /// are not canceled.
+            /// \param[in] equalityTest EqualityTest to query to determine which jobs to cancel.
+            virtual void CancelJobs (const EqualityTest & /*equalityTest*/) = 0;
             /// \brief
             /// Cancel all queued jobs. Job in flight is unaffected.
-            virtual void CancelAll () = 0;
+            virtual void CancelAllJobs () = 0;
 
             /// \brief
             /// Return a snapshot of the run loop stats.

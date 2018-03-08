@@ -90,6 +90,11 @@ namespace thekogans {
                 Sleep (timeSpec);
                 worker = workerPool.GetWorker ();
             }
+            if (worker == 0) {
+                THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
+                    "Unable to acquire a worker from %s pool.",
+                    workerPool.name.c_str ());
+            }
         }
 
         WorkerPool::WorkerPtr::~WorkerPtr () {

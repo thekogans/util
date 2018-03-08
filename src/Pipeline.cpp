@@ -35,7 +35,7 @@ namespace thekogans {
                 if (next.Get () != 0) {
                     std::size_t nextStage = next->stage;
                     assert (nextStage < pipeline.stages.size ());
-                    pipeline.stages[nextStage]->Enq (*next);
+                    pipeline.stages[nextStage]->EnqJob (*next);
                 }
                 else {
                     End ();
@@ -137,7 +137,7 @@ namespace thekogans {
                 Job &job,
                 std::size_t stage) {
             if (stage < stages.size ()) {
-                stages[stage]->Enq (job);
+                stages[stage]->EnqJob (job);
             }
             else {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
@@ -147,7 +147,7 @@ namespace thekogans {
 
         void Pipeline::Flush () {
             for (std::size_t i = 0, count = stages.size (); i < count; ++i) {
-                stages[i]->CancelAll ();
+                stages[i]->CancelAllJobs ();
             }
         }
 

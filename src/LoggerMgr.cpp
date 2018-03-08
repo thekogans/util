@@ -331,7 +331,7 @@ namespace thekogans {
                 if (decorations.Test (HRElapsedTime)) {
                     header += FormatString (
                         "%011.4f ",
-                        HRTimer::ToSeconds (HRTimer::ComputeEllapsedTime (startTime, HRTimer::Click ())));
+                        HRTimer::ToSeconds (HRTimer::ComputeElapsedTime (startTime, HRTimer::Click ())));
                 }
                 if (decorations.Test (HostName)) {
                     header += SystemInfo::Instance ().GetHostName ();
@@ -445,7 +445,7 @@ namespace thekogans {
                 LoggerMap::iterator it = loggerMap.find (subsystem);
                 if (it != loggerMap.end () || !defaultLoggers.empty ()) {
                     if (jobQueue.get () != 0) {
-                        jobQueue->Enq (
+                        jobQueue->EnqJob (
                             *RunLoop::Job::Ptr (
                                 new LogSubsystemJob (
                                     std::move (entry),
