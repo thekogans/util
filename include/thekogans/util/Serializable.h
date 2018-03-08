@@ -140,7 +140,7 @@ namespace thekogans {
                     Header (
                         serializable.Type (),
                         serializable.Version (),
-                        serializable.Size ()).Size () +
+                        (ui32)serializable.Size ()).Size () +
                     serializable.Size ();
             }
 

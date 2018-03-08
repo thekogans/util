@@ -62,7 +62,7 @@ namespace thekogans {
         }
 
         SystemRunLoop::~SystemRunLoop () {
-            CancelAll ();
+            CancelAllJobs ();
         }
 
         #define RUN_LOOP_MESSAGE WM_USER
@@ -214,7 +214,7 @@ namespace thekogans {
         }
 
         SystemRunLoop::~SystemRunLoop () {
-            CancelAll ();
+            CancelAllJobs ();
         }
 
         SystemRunLoop::XlibWindow::Ptr SystemRunLoop::CreateThreadWindow (
