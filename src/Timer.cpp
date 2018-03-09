@@ -77,11 +77,19 @@ namespace thekogans {
             THEKOGANS_UTIL_ATOMIC<ui64> idPool;
             WorkerPool workerPool;
 
+            enum {
+                MIN_WORKER_POOL_WORKERS = 1,
+                MAX_WORKER_POOL_WORKERS = 100,
+            };
+
             TimerQueue () :
                     Thread ("TimerQueue"),
                     handle (kqueue ()),
                     idPool (0),
-                    workerPool (1, 100, "TimerQueue-WorkerPool") {
+                    workerPool (
+                        MIN_WORKER_POOL_WORKERS,
+                        MAX_WORKER_POOL_WORKERS,
+                        "TimerQueue-WorkerPool") {
                 if (handle == THEKOGANS_UTIL_INVALID_HANDLE_VALUE) {
                     THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
                         THEKOGANS_UTIL_OS_ERROR_CODE);

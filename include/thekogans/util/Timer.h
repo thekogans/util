@@ -96,6 +96,11 @@ namespace thekogans {
         ///
         /// This will arm the IdleProcessor timer to fire after 30 seconds.
         /// Call IdleProcessor::Instance ().StopTimer () to disarm the timer.
+        ///
+        /// NOTE: Timer is designed to have the same semantics on all supported
+        /// platforms. To that end if you're using a periodic timer and it fires
+        /// while Timer::Callback::Alarm is in progress, that event will be silently
+        /// dropped and that cycle will be missed. There are no 'catchup' events.
 
         struct _LIB_THEKOGANS_UTIL_DECL Timer {
             /// \struct Timer::Callback Timer.h thekogans/util/Timer.h
@@ -111,13 +116,7 @@ namespace thekogans {
                 /// Called every time the timer fires.
                 /// \param[in] timer Timer that fired.
                 virtual void Alarm (Timer & /*timer*/) throw () = 0;
-            } &callback;
-            /// \brief
-            /// Timer name.
-            std::string name;
-            /// \brief
-            /// Callback::Alarm synchronization lock.
-            SpinLock spinLock;
+            };
 
             /// \brief
             /// ctor.
@@ -166,6 +165,12 @@ namespace thekogans {
             bool IsRunning () const;
 
         private:
+            /// \brief
+            /// Receiver of the alarm notofocations.
+            Callback &callback;
+            /// \brief
+            /// Timer name.
+            std::string name;
         #if defined (TOOLCHAIN_OS_Windows)
             /// \brief
             /// Windows native timer object.
@@ -194,6 +199,9 @@ namespace thekogans {
             /// \brief
             /// true = timer is periodic, false = timer is one shot.
             bool periodic;
+            /// \brief
+            /// Periodic Callback::Alarm synchronization lock.
+            SpinLock spinLock;
 
             /// \brief
             /// Timer is neither copy constructable, nor assignable.
