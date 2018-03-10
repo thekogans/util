@@ -353,7 +353,7 @@ namespace thekogans {
                 Serializable::Header (
                     serializable.Type (),
                     serializable.Version (),
-                    serializable.Size ());
+                    (ui32)serializable.Size ());
             serializable.Write (serializer);
             return serializer;
         }
