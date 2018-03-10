@@ -73,7 +73,7 @@ namespace thekogans {
         ///     virtual void Execute (
         ///             std::size_t startIndex,
         ///             std::size_t endIndex,
-        ///             std::size_t rank) throw () {
+        ///             std::size_t /*rank*/) throw () {
         ///         for (; startIndex < endIndex; ++startIndex) {
         ///             result[startIndex] = vertices[startIndex] * xform;
         ///         }

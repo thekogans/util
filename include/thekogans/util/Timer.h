@@ -118,6 +118,60 @@ namespace thekogans {
                 virtual void Alarm (Timer & /*timer*/) throw () = 0;
             };
 
+        private:
+            /// \brief
+            /// Receiver of the alarm notofocations.
+            Callback &callback;
+            /// \brief
+            /// Timer name.
+            std::string name;
+        #if defined (TOOLCHAIN_OS_Windows)
+            /// \brief
+            /// Windows native timer object.
+            PTP_TIMER timer;
+            /// \brief
+            /// Windows timer callback.
+            friend VOID CALLBACK TimerCallback (
+                PTP_CALLBACK_INSTANCE /*Instance*/,
+                PVOID Context,
+                PTP_TIMER /*Timer*/);
+        #elif defined (TOOLCHAIN_OS_Linux)
+            /// \brief
+            /// Linux native timer object.
+            timer_t timer;
+            /// \brief
+            /// Linux timer callback.
+            friend void TimerCallback (union sigval val);
+        #elif defined (TOOLCHAIN_OS_OSX)
+            /// \brief
+            /// OS X kqueue event id.
+            ui64 id;
+            enum {
+                /// \brief
+                /// Default minimum number of workers in the pool.
+                DEFAULT_MIN_WORKER_POOL_WORKERS = 1,
+                /// \brief
+                /// Default maximum number of workers in the pool.
+                DEFAULT_MAX_WORKER_POOL_WORKERS = 100,
+            };
+            /// \brief
+            /// Minimum number of workers to keep around.
+            static ui32 minWorkers;
+            /// \brief
+            /// Maximum number of workers the pool can grow to.
+            static ui32 maxWorkers;
+            /// \brief
+            /// An OS X kqueue monitoring async timers.
+            friend struct TimerQueue;
+        #endif // defined (TOOLCHAIN_OS_Windows)
+            /// \brief
+            /// true = timer is periodic, false = timer is one shot.
+            bool periodic;
+            /// \brief
+            /// Periodic Callback::Alarm synchronization lock.
+            SpinLock spinLock;
+
+        public:
             /// \brief
             /// ctor.
             /// \param[in] callback_ Callback to notify of timer events.
@@ -131,6 +185,20 @@ namespace thekogans {
             /// \brief
             /// dtor.
             ~Timer ();
+
+        #if defined (TOOLCHAIN_OS_OSX)
+            /// \brief
+            /// On OS X Timer uses a kqueue and a \see{WorkerPool} to service
+            /// timers and alarms. If your app uses a lot of timers, firing
+            /// often, you might want to adjust the defaults to suit your needs.
+            /// IMPORTANT: This function must be called before you create the
+            /// first timer.
+            /// \param[in] minWorkers_ Minimum number of workers to keep around.
+            /// \param[in] maxWorkers_ Maximum number of workers the pool can grow to.
+            static void SetWorkerPoolMinMaxWorkers (
+                ui32 minWorkers_ = DEFAULT_MIN_WORKER_POOL_WORKERS,
+                ui32 maxWorkers_ = DEFAULT_MAX_WORKER_POOL_WORKERS);
+        #endif // defined (TOOLCHAIN_OS_OSX)
 
             /// \brief
             /// Return the timer name.
@@ -163,45 +231,6 @@ namespace thekogans {
             /// Rreturn true if timer is running.
             /// \return true == timer is running.
             bool IsRunning () const;
-
-        private:
-            /// \brief
-            /// Receiver of the alarm notofocations.
-            Callback &callback;
-            /// \brief
-            /// Timer name.
-            std::string name;
-        #if defined (TOOLCHAIN_OS_Windows)
-            /// \brief
-            /// Windows native timer object.
-            PTP_TIMER timer;
-            /// \brief
-            /// Windows timer callback.
-            friend VOID CALLBACK TimerCallback (
-                PTP_CALLBACK_INSTANCE /*Instance*/,
-                PVOID Context,
-                PTP_TIMER /*Timer*/);
-        #elif defined (TOOLCHAIN_OS_Linux)
-            /// \brief
-            /// Linux native timer object.
-            timer_t timer;
-            /// \brief
-            /// Linux timer callback.
-            friend void TimerCallback (union sigval val);
-        #elif defined (TOOLCHAIN_OS_OSX)
-            /// \brief
-            /// OS X kqueue event id.
-            ui64 id;
-            /// \brief
-            /// An OS X kqueue monitoring async timers.
-            friend struct TimerQueue;
-        #endif // defined (TOOLCHAIN_OS_Windows)
-            /// \brief
-            /// true = timer is periodic, false = timer is one shot.
-            bool periodic;
-            /// \brief
-            /// Periodic Callback::Alarm synchronization lock.
-            SpinLock spinLock;
 
             /// \brief
             /// Timer is neither copy constructable, nor assignable.

@@ -77,18 +77,13 @@ namespace thekogans {
             THEKOGANS_UTIL_ATOMIC<ui64> idPool;
             WorkerPool workerPool;
 
-            enum {
-                MIN_WORKER_POOL_WORKERS = 1,
-                MAX_WORKER_POOL_WORKERS = 100,
-            };
-
             TimerQueue () :
                     Thread ("TimerQueue"),
                     handle (kqueue ()),
                     idPool (0),
                     workerPool (
-                        MIN_WORKER_POOL_WORKERS,
-                        MAX_WORKER_POOL_WORKERS,
+                        Timer::minWorkers,
+                        Timer::maxWorkers,
                         "TimerQueue-WorkerPool") {
                 if (handle == THEKOGANS_UTIL_INVALID_HANDLE_VALUE) {
                     THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
@@ -187,6 +182,16 @@ namespace thekogans {
                 }
             }
         };
+
+        ui32 Timer::minWorkers = DEFAULT_MIN_WORKER_POOL_WORKERS;
+        ui32 Timer::maxWorkers = DEFAULT_MAX_WORKER_POOL_WORKERS;
+
+        void Timer::SetWorkerPoolMinMaxWorkers (
+                ui32 minWorkers_,
+                ui32 maxWorkers_) {
+            minWorkers = minWorkers_;
+            maxWorkers = maxWorkers_;
+        }
     #endif // defined (TOOLCHAIN_OS_Windows)
 
     #if defined (TOOLCHAIN_OS_Windows)
@@ -262,13 +267,13 @@ namespace thekogans {
                 SetThreadpoolTimer (timer, &dueTime,
                     periodic_ ? (DWORD)timeSpec.ToMilliseconds () : 0, 0);
             #elif defined (TOOLCHAIN_OS_Linux)
-                itimerspec timerSpec;
-                memset (&timerSpec, 0, sizeof (timerSpec));
+                itimerspec spec;
+                memset (&spec, 0, sizeof (spec));
                 if (periodic_) {
-                    timerSpec.it_interval = timeSpec.Totimespec ();
+                    spec.it_interval = timeSpec.Totimespec ();
                 }
-                timerSpec.it_value = timeSpec.Totimespec ();
-                if (timer_settime (timer, 0, &timerSpec, 0) != 0) {
+                spec.it_value = timeSpec.Totimespec ();
+                if (timer_settime (timer, 0, &spec, 0) != 0) {
                     THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
                         THEKOGANS_UTIL_OS_ERROR_CODE);
                 }
@@ -288,7 +293,7 @@ namespace thekogans {
             SetThreadpoolTimer (timer, 0, 0, 0);
         #elif defined (TOOLCHAIN_OS_Linux)
             itimerspec spec;
-            memset (&spec, 0, sizeof (itimerspec));
+            memset (&spec, 0, sizeof (spec));
             if (timer_settime (timer, 0, &spec, 0) != 0) {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
                     THEKOGANS_UTIL_OS_ERROR_CODE);
@@ -304,7 +309,7 @@ namespace thekogans {
             return IsThreadpoolTimerSet (timer) == TRUE;
         #elif defined (TOOLCHAIN_OS_Linux)
             itimerspec spec;
-            memset (&spec, 0, sizeof (itimerspec));
+            memset (&spec, 0, sizeof (spec));
             if (timer_gettime (timer, &spec) != 0) {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
                     THEKOGANS_UTIL_OS_ERROR_CODE);
