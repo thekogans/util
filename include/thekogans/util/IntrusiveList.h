@@ -169,7 +169,11 @@ namespace thekogans {
             /// \return Previous node of the given node.
             inline T *&prev (T *node) const {
                 assert (node != 0);
+            #if defined (TOOLCHAIN_OS_Windows) && (_MSC_VER > 1910)
+                return node->prev;
+            #else // defined (TOOLCHAIN_OS_Windows) && (_MSC_VER > 1910)
                 return node->IntrusiveList<T, ID>::Node::prev;
+            #endif // defined (TOOLCHAIN_OS_Windows) && (_MSC_VER > 1910)
             }
 
             /// \brief
@@ -178,7 +182,11 @@ namespace thekogans {
             /// \return Next node of the given node.
             inline T *&next (T *node) const {
                 assert (node != 0);
+            #if defined (TOOLCHAIN_OS_Windows) && (_MSC_VER > 1910)
+                return node->next;
+            #else // defined (TOOLCHAIN_OS_Windows) && (_MSC_VER > 1910)
                 return node->IntrusiveList<T, ID>::Node::next;
+            #endif // defined (TOOLCHAIN_OS_Windows) && (_MSC_VER > 1910)
             }
 
             /// \brief
@@ -187,7 +195,11 @@ namespace thekogans {
             /// \return true if a given node is in this list.
             inline bool &contains (T *node) const {
                 assert (node != 0);
+            #if defined (TOOLCHAIN_OS_Windows) && (_MSC_VER > 1910)
+                return node->inList;
+            #else // defined (TOOLCHAIN_OS_Windows) && (_MSC_VER > 1910)
                 return node->IntrusiveList<T, ID>::Node::inList;
+            #endif // defined (TOOLCHAIN_OS_Windows) && (_MSC_VER > 1910)
             }
 
             /// \brief
