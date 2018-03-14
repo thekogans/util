@@ -100,6 +100,7 @@ namespace thekogans {
             /// \param[in] icon = Window class icon.
             /// \param[in] cursor = Window class cursor.
             /// \param[in] background Window class background brush.
+            /// \param[in] menu Window menu resource name.
             /// \param[in] instance_ Module instance handle.
             WindowClass (
                 const std::string &name_,
@@ -108,6 +109,7 @@ namespace thekogans {
                 HICON icon = 0,
                 HCURSOR cursor = LoadCursor (0, IDC_ARROW),
                 HBRUSH background = (HBRUSH)(COLOR_WINDOW + 1),
+                LPCTSTR menu = 0,
                 HINSTANCE instance_ = GetModuleHandle (0));
             /// \brief
             /// dtor.

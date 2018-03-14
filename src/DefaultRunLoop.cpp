@@ -199,6 +199,7 @@ namespace thekogans {
             assert (state == Busy);
             stats.Update (job.id, start, end);
             job.finished = true;
+            job.Release ();
             jobFinished.SignalAll ();
             if (--busyWorkers == 0 && jobs.empty ()) {
                 state = Idle;

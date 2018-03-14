@@ -90,6 +90,7 @@ namespace thekogans {
                 HICON icon,
                 HCURSOR cursor,
                 HBRUSH background,
+                LPCTSTR menu,
                 HINSTANCE instance_) :
                 name (name_),
                 instance (instance_),
@@ -105,7 +106,7 @@ namespace thekogans {
                 wndClassEx.hIcon = icon;
                 wndClassEx.hCursor = cursor;
                 wndClassEx.hbrBackground = background;
-                wndClassEx.lpszMenuName = 0;
+                wndClassEx.lpszMenuName = menu;
                 wndClassEx.lpszClassName = name.c_str ();
                 wndClassEx.hIconSm = 0;
                 atom = RegisterClassEx (&wndClassEx);
