@@ -70,8 +70,8 @@ namespace thekogans {
         std::string DescriptionFromIOReturn (IOReturn errorCode);
 
         /// \brief
-        /// Return current user home directory.
-        /// \return Current user home directory.
+        /// Return the current user home directory path.
+        /// \return Current user home directory path.
         std::string GetHomeDirectory ();
 
     } // namespace util
