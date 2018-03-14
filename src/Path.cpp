@@ -27,6 +27,9 @@
     #endif // !defined (_WINDOWS_)
     #include <direct.h>
 #else // defined (TOOLCHAIN_OS_Windows)
+#if defined (TOOLCHAIN_OS_Linux)
+    #include <pwd.h>
+#endif // defined (TOOLCHAIN_OS_Linux)
     #include <sys/stat.h>
     #include <climits>
     #include <cstdio>
@@ -38,6 +41,7 @@
 #include <cassert>
 #include <algorithm>
 #if defined (TOOLCHAIN_OS_Windows)
+    #include "thekogans/util/StringUtils.h"
     #include "thekogans/util/WindowsUtils.h"
 #elif defined (TOOLCHAIN_OS_Linux)
     #include "thekogans/util/LinuxUtils.h"
@@ -108,6 +112,23 @@ namespace thekogans {
             }
         #endif // defined (P_tmpdir) || defined (_PATH_TMP)
             return tempDirectory;
+        #endif // defined (TOOLCHAIN_OS_Windows)
+        }
+
+        std::string Path::GetHomeDirectory () {
+        #if defined (TOOLCHAIN_OS_Windows)
+            return GetEnvironmentVariable ("USERPROFILE");
+        #elif defined (TOOLCHAIN_OS_Linux)
+            std::string homeDirectory = GetEnvironmentVariable ("HOME");
+            if (home.empty ()) {
+                const char *dir = getpwuid (getuid ())->pw_dir;
+                if (dir != 0) {
+                    homeDirectory = dir;
+                }
+            }
+            return homeDirectory;
+        #elif defined (TOOLCHAIN_OS_OSX)
+            return util::GetHomeDirectory ();
         #endif // defined (TOOLCHAIN_OS_Windows)
         }
 

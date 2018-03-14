@@ -69,6 +69,11 @@ namespace thekogans {
         /// \return Error description from the given IOReturn.
         std::string DescriptionFromIOReturn (IOReturn errorCode);
 
+        /// \brief
+        /// Return current user home directory.
+        /// \return Current user home directory.
+        std::string GetHomeDirectory ();
+
     } // namespace util
 } // namespace thekogans
 

@@ -128,6 +128,18 @@ namespace thekogans {
             return FormatString ("[0x%x:%d - Unknown error.]", errorCode, errorCode);
         }
 
+        std::string GetHomeDirectory () {
+            std::string UTF8String;
+            NSString *homeDirectory = NSHomeDirectory ();
+            if (homeDirectory != 0) {
+                UTF8String = [homeDirectory UTF8String];
+            #if defined (__clang__) && !__has_feature (objc_arc)
+                [homeDirectory release];
+            #endif // defined (__clang__) && !__has_feature (objc_arc)
+            }
+            return UTF8String;
+        }
+
     } // namespace util
 } // namespace thekogans
 

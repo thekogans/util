@@ -62,6 +62,10 @@ namespace thekogans {
             /// Return the temporary directory path.
             /// \return Temporary directory path.
             static std::string GetTempDirectory ();
+            /// \brief
+            /// Return current user home directory.
+            /// \return Current user home directory.
+            static std::string GetHomeDirectory ();
 
             /// \brief
             /// Return system native path seperator.
