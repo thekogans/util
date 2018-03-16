@@ -556,8 +556,8 @@ namespace thekogans {
 
         void SystemRunLoop::ExecuteJobs () {
             while (!done) {
-                Job::Ptr job (DeqJob ());
-                if (job.Get () == 0) {
+                Job *job = DeqJob ();
+                if (job == 0) {
                     break;
                 }
                 ui64 start = HRTimer::Click ();

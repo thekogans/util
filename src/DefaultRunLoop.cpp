@@ -39,8 +39,8 @@ namespace thekogans {
                     }
                 } workerInitializer (*this);
                 while (!done) {
-                    Job::Ptr job (DeqJob ());
-                    if (job.Get () != 0) {
+                    Job *job = DeqJob ();
+                    if (job != 0) {
                         ui64 start = HRTimer::Click ();
                         job->Prologue (done);
                         job->Execute (done);
