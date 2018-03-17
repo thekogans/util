@@ -391,15 +391,13 @@ namespace thekogans {
             }
             else {
                 // child process
-                if (detached && setsid () < 0) {
+                if ((detached && setsid () < 0) ||
+                        (!startupDirectory.empty () && chdir (startupDirectory.c_str ()) < 0)) {
                     exit (EXIT_FAILURE);
                 }
                 if (hookStdIO != HOOK_NONE) {
                     assert (stdIO.get () != 0);
                     stdIO->SetupChild ();
-                }
-                if (!startupDirectory.empty ()) {
-                    chdir (startupDirectory.c_str ());
                 }
                 if (!envp.empty ()) {
                 #if defined (TOOLCHAIN_OS_OSX)
