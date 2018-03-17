@@ -120,7 +120,7 @@ namespace thekogans {
             return GetEnvironmentVariable ("USERPROFILE");
         #elif defined (TOOLCHAIN_OS_Linux)
             std::string homeDirectory = GetEnvironmentVariable ("HOME");
-            if (home.empty ()) {
+            if (homeDirectory.empty ()) {
                 const char *dir = getpwuid (getuid ())->pw_dir;
                 if (dir != 0) {
                     homeDirectory = dir;
