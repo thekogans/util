@@ -120,7 +120,7 @@ namespace thekogans {
         /// *** IMPORTANT ***
         /// LoggerMgr queues entries to be logged. Before the process
         /// using LoggerMgr ends call THEKOGANS_UTIL_LOG_FLUSH to flush
-        /// the queue or you will lose messages not yet processed.
+        /// the queue or you will lose log entries not yet processed.
         ///
         /// *** VERY, VERY IMPORTANT ***
         /// You cannot use the LoggerMgr in JobQueue/SpinLock/Mutex!
@@ -160,7 +160,7 @@ namespace thekogans {
                 /// Log messages only.
                 NoDecorations = 0,
                 /// \brief
-                /// Add a '*' separator between entries.
+                /// Add a '*' separator between log entries.
                 EntrySeparator = 1,
                 /// \brief
                 /// Add a sub-system to log entries.
@@ -197,8 +197,17 @@ namespace thekogans {
                 Multiline = 2048,
                 /// \brief
                 /// Add every decoration to log entries.
-                All = EntrySeparator | Level | DateTime | HRTime | HostName |
-                    ProcessPath | ProcessId | ThreadId | Location | Multiline,
+                All = EntrySeparator |
+                    Level |
+                    DateTime |
+                    HRTime |
+                    HRElapsedTime |
+                    HostName |
+                    ProcessPath |
+                    ProcessId |
+                    ThreadId |
+                    Location |
+                    Multiline,
                 /// \brief
                 /// Add subsystem to all log entries.
                 SubsystemAll = Subsystem | All

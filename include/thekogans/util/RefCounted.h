@@ -42,8 +42,8 @@ namespace thekogans {
         /// what \see{Heap} is for.
         /// VERY, VERY IMPORTANT: RefCounted takes a single parameter (doDelete).
         /// It defaults to true which is what you need for heap allocated objects.
-        /// For static objects set doDelete to false to prevent Harakiri from
-        /// deleting an object that was not allocated.
+        /// For static objects (\see{Singleton}) set doDelete to false to prevent
+        /// Harakiri from deleting an object that was not allocated.
 
         template<typename Count>
         struct _LIB_THEKOGANS_UTIL_DECL RefCounted {
@@ -67,13 +67,13 @@ namespace thekogans {
             virtual ~RefCounted () {}
 
             /// \brief
-            /// Increment reference count.
+            /// Increment the reference count.
             /// \return Incremented reference count.
             ui32 AddRef () {
                 return ++count;
             }
             /// \brief
-            /// Decrement reference count, and if 0, delete the object.
+            /// Decrement the reference count, and if 0, delete the object.
             /// \return Decremented reference count.
             ui32 Release () {
                 assert (count > 0);
@@ -95,6 +95,9 @@ namespace thekogans {
             ///
             /// \brief
             /// RefCounted object smart pointer template.
+            /// NOTE: Unlike other ref counted pointers, Ptr is symmetric in the
+            /// way it deals with an objects reference count. It incrementes it in
+            /// it's ctor, and decrements it in it's dtor.
             template<typename T>
             struct Ptr {
                 /// \brief

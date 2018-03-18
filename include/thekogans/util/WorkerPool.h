@@ -229,13 +229,6 @@ namespace thekogans {
                 ~WorkerPtr ();
 
                 /// \brief
-                /// Return true if a worker was acquired.
-                /// \return true == A worker was acquired.
-                inline bool IsValid () const {
-                    return worker != 0;
-                }
-
-                /// \brief
                 /// Implicit cast operator. Convert a WorkerPtr to Worker.
                 /// \return worker pointer.
                 inline operator Worker * () const {

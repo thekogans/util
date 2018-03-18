@@ -203,7 +203,7 @@ namespace thekogans {
             /// \brief
             /// Return the timer name.
             /// \return Timer name.
-            inline std::string GetName () const {
+            inline const std::string &GetName () const {
                 return name;
             }
             /// brief

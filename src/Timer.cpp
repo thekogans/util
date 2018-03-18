@@ -54,6 +54,12 @@ namespace thekogans {
                     LockGuard<SpinLock> guard (timer->spinLock, false);
                     timer->callback.Alarm (*timer);
                 }
+                else {
+                    THEKOGANS_UTIL_LOG_SUBSYSTEM_WARNING (
+                        THEKOGANS_UTIL,
+                        "Skipping overlapping '%s' Alarm call.\n",
+                        timer->GetName ().c_str ());
+                }
             }
         }
     #elif defined (TOOLCHAIN_OS_Linux)
@@ -66,6 +72,12 @@ namespace thekogans {
                 if (timer->spinLock.TryAcquire ()) {
                     LockGuard<SpinLock> guard (timer->spinLock, false);
                     timer->callback.Alarm (*timer);
+                }
+                else {
+                    THEKOGANS_UTIL_LOG_SUBSYSTEM_WARNING (
+                        THEKOGANS_UTIL,
+                        "Skipping overlapping '%s' Alarm call.\n",
+                        timer->GetName ().c_str ());
                 }
             }
         }
@@ -167,6 +179,12 @@ namespace thekogans {
                                             if (timer->spinLock.TryAcquire ()) {
                                                 LockGuard<SpinLock> guard (timer->spinLock, false);
                                                 timer->callback.Alarm (*timer);
+                                            }
+                                            else {
+                                                THEKOGANS_UTIL_LOG_SUBSYSTEM_WARNING (
+                                                    THEKOGANS_UTIL,
+                                                    "Skipping overlapping '%s' Alarm call.\n",
+                                                    timer->GetName ().c_str ());
                                             }
                                         }
                                     }

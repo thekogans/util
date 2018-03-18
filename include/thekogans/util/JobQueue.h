@@ -93,12 +93,13 @@ namespace thekogans {
             /// Synchronization condition variable.
             Condition idle;
             /// \brief
-            /// Worker state.
+            /// Queue state.
             enum State {
                 /// \brief
-                /// Worker is idle.
+                /// Queue is idle.
                 Idle,
-                /// \Worker is busy.
+                /// \brief
+                /// Queue is busy.
                 Busy
             } volatile state;
             /// \brief

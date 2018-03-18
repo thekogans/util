@@ -98,9 +98,8 @@ namespace thekogans {
         }
 
         WorkerPool::WorkerPtr::~WorkerPtr () {
-            if (worker != 0) {
-                workerPool.ReleaseWorker (worker);
-            }
+            assert (worker != 0);
+            workerPool.ReleaseWorker (worker);
         }
 
         WorkerPool::Worker *WorkerPool::GetWorker () {
@@ -147,6 +146,10 @@ namespace thekogans {
                     // one used, and it's cache will be nice and warm.
                     workers.push_front (worker);
                 }
+            }
+            else {
+                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
             }
         }
 

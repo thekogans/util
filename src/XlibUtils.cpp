@@ -57,7 +57,8 @@ namespace thekogans {
                         displays.push_back (display);
                     }
                     else {
-                        THEKOGANS_UTIL_LOG_WARNING (
+                        THEKOGANS_UTIL_LOG_SUBSYSTEM_WARNING (
+                            THEKOGANS_UTIL,
                             "Unable to open display: %s\n",
                             entry.name.c_str ());
                     }
