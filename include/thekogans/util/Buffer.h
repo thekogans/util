@@ -441,6 +441,7 @@ namespace thekogans {
 
         /// \brief
         /// Write the given buffer to the given serializer.
+        /// NOTE: Insertion does not save the buffer's allocator.
         /// \param[in] serializer Where to write the given guid.
         /// \param[in] buffer Buffer to write.
         /// \return serializer.
@@ -450,6 +451,9 @@ namespace thekogans {
 
         /// \brief
         /// Read a buffer from the given serializer.
+        /// NOTE: Extraction does not preserve the buffer's allocator.
+        /// After this function completes, the buffer's data will have
+        /// been allocated using DefaultAllocator::Global.
         /// \param[in] serializer Where to read the guid from.
         /// \param[in] buffer Buffer to read.
         /// \return serializer.

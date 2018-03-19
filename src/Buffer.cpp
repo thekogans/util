@@ -400,5 +400,5 @@ namespace thekogans {
             return serializer;
         }
 
-    } //namespace util
+    } // namespace util
 } // namespace thekogans
