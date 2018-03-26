@@ -130,9 +130,9 @@ namespace thekogans {
                         CloseHandle (handle);
                     }
                 } sharedMemory (name, size, securityAttributes);
-                void *ptr = MapViewOfFile (sharedMemory.handle, FILE_MAP_ALL_ACCESS, 0, 0, size);
+                void *ptr = MapViewOfFile (sharedMemory.handle, FILE_MAP_ALL_ACCESS, 0, 0, (SIZE_T)size);
                 if (ptr != 0) {
-                    if (!secure || VirtualLock (ptr, size)) {
+                    if (!secure || VirtualLock (ptr, (SIZE_T)size)) {
                         if (sharedMemory.created) {
                             THEKOGANS_UTIL_TRY {
                                 ptr = constructor (
@@ -265,7 +265,7 @@ namespace thekogans {
                 destructor (sharedObject);
             }
             if (secure) {
-                VirtualUnlock (sharedObject, size);
+                VirtualUnlock (sharedObject, (SIZE_T)size);
             }
             UnmapViewOfFile (sharedObject);
         #else // defined (TOOLCHAIN_OS_Windows)
