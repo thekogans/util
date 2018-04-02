@@ -7,8 +7,8 @@
                 guid = "9905d3c24e647530b00727f32b154aac"
                 schema_version = "2">
   <dependencies>
-    <project organization = "thekogans"
-             name = "util"/>
+    <dependency organization = "thekogans"
+                name = "util"/>
   </dependencies>
   <cpp_sources prefix = "src">
     <cpp_source>main.cpp</cpp_source>
