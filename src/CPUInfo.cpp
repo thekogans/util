@@ -34,31 +34,35 @@ namespace thekogans {
 
     #if !defined (TOOLCHAIN_OS_Windows)
         namespace {
+        #if defined (TOOLCHAIN_ARCH_i386) || defined (TOOLCHAIN_ARCH_x86_64)
             void __cpuid (
-                    ui32 cpu_info[4],
-                    ui32 function_id) {
+                    ui32 registers[4],
+                    ui32 function) {
                 __asm__ volatile (
                     "pushq %%rbx\n"
                     "cpuid\n"
                     "movq %%rbx, %%rsi\n"
                     "popq %%rbx\n"
-                    : "=a" (cpu_info[0]), "=S" (cpu_info[1]), "=c" (cpu_info[2]), "=d" (cpu_info[3])
-                    : "a" (function_id));
+                    : "=a" (registers[0]), "=S" (registers[1]), "=c" (registers[2]), "=d" (registers[3])
+                    : "a" (function));
             }
 
             void __cpuidex (
-                    ui32 cpu_info[4],
-                    ui32 function_id,
-                    ui32 subfunction_id) {
+                    ui32 registers[4],
+                    ui32 function,
+                    ui32 subfunction) {
                 __asm__ volatile (
                     "mov %%ebx, %%edi\n"
                     "cpuid\n"
                     "xchg %%edi, %%ebx\n"
-                    : "=a" (cpu_info[0]), "=D" (cpu_info[1]), "=c" (cpu_info[2]), "=d" (cpu_info[3])
-                    : "a" (function_id), "c" (subfunction_id));
+                    : "=a" (registers[0]), "=D" (registers[1]), "=c" (registers[2]), "=d" (registers[3])
+                    : "a" (function), "c" (subfunction));
             }
 
-        #if defined (TOOLCHAIN_ARCH_ppc) || defined (TOOLCHAIN_ARCH_ppc64)
+            bool HaveAltiVec () {
+                return false;
+            }
+        #elif defined (TOOLCHAIN_ARCH_ppc) || defined (TOOLCHAIN_ARCH_ppc64)
         #if defined (TOOLCHAIN_OS_Linux)
             jmp_buf jmpbuf;
 
@@ -89,87 +93,90 @@ namespace thekogans {
                 return false;
             }
         #endif // defined (TOOLCHAIN_OS_Linux)
-        #else // defined (TOOLCHAIN_ARCH_ppc) || defined (TOOLCHAIN_ARCH_ppc64)
-            bool HaveAltiVec () {
-                return false;
-            }
-        #endif // defined (TOOLCHAIN_ARCH_ppc) || defined (TOOLCHAIN_ARCH_ppc64)
+        #endif // defined (TOOLCHAIN_ARCH_i386) || defined (TOOLCHAIN_ARCH_x86_64)
         }
     #endif // !defined (TOOLCHAIN_OS_Windows)
 
         CPUInfo::CPUInfo () :
-                isIntel_ (false),
-                isAMD_ (false),
-                L1CacheLineSize_ (0),
-                f_1_ECX_ (0),
-                f_1_EDX_ (0),
-                f_7_EBX_ (0),
-                f_7_ECX_ (0),
-                f_81_ECX_ (0),
-                f_81_EDX_ (0),
-                AltiVec_ (HaveAltiVec ()) {
-            std::array<ui32, 4> cpui;
-            // Calling __cpuid with 0x0 as the function_id argument
-            // gets the number of the highest valid function ID.
-            __cpuid (cpui.data (), 0);
-            ui32 nIds_ = cpui[0];
-            std::vector<std::array<ui32, 4>> data_;
-            for (ui32 i = 0; i <= nIds_; ++i) {
-                __cpuidex (cpui.data (), i, 0);
-                data_.push_back (cpui);
-            }
-            // Capture vendor string
-            char vendor[0x20];
-            memset (vendor, 0, sizeof (vendor));
-            *reinterpret_cast<ui32 *> (vendor + 0) = data_[0][1];
-            *reinterpret_cast<ui32 *> (vendor + 4) = data_[0][3];
-            *reinterpret_cast<ui32 *> (vendor + 8) = data_[0][2];
-            vendor_ = vendor;
-            if (vendor_ == "GenuineIntel") {
-                isIntel_ = true;
-            }
-            else if (vendor_ == "AuthenticAMD") {
-                isAMD_ = true;
-            }
-            // Load bitset with flags for function 0x00000001
-            if (nIds_ >= 1) {
-                if (isIntel_) {
-                    L1CacheLineSize_ = (((data_[1][1] >> 8) & 0xff) * 8);
+                isIntel (false),
+                isAMD (false),
+                l1CacheLineSize (0),
+                f_1_ECX (0),
+                f_1_EDX (0),
+                f_7_EBX (0),
+                f_7_ECX (0),
+                f_81_ECX (0),
+                f_81_EDX (0),
+                isAltiVec (HaveAltiVec ()) {
+        #if defined (TOOLCHAIN_ARCH_i386) || defined (TOOLCHAIN_ARCH_x86_64)
+            {
+                // Calling __cpuid with 0x0 as the function argument
+                // gets the number of the highest valid function ID.
+                std::array<ui32, 4> registers;
+                __cpuid (registers.data (), 0);
+                std::vector<std::array<ui32, 4>> data;
+                for (ui32 i = 0, count = registers[0]; i <= count; ++i) {
+                    __cpuidex (registers.data (), i, 0);
+                    data.push_back (registers);
                 }
-                f_1_ECX_ = data_[1][2];
-                f_1_EDX_ = data_[1][3];
+                // Capture vendor string.
+                char vendor_[0x20];
+                memset (vendor_, 0, sizeof (vendor));
+                *reinterpret_cast<ui32 *> (vendor_ + 0) = data[0][1];
+                *reinterpret_cast<ui32 *> (vendor_ + 4) = data[0][3];
+                *reinterpret_cast<ui32 *> (vendor_ + 8) = data[0][2];
+                vendor = vendor_;
+                if (vendor == "GenuineIntel") {
+                    isIntel = true;
+                }
+                else if (vendor == "AuthenticAMD") {
+                    isAMD = true;
+                }
+                // Load bitset with flags for function 0x00000001.
+                if (data.size () > 1) {
+                    // If on Intel, get the L1 cache line size.
+                    if (isIntel) {
+                        l1CacheLineSize = (((data[1][1] >> 8) & 0xff) * 8);
+                    }
+                    f_1_ECX = data[1][2];
+                    f_1_EDX = data[1][3];
+                }
+                // Load bitset with flags for function 0x00000007.
+                if (data.size () > 7) {
+                    f_7_EBX = data[7][1];
+                    f_7_ECX = data[7][2];
+                }
             }
-            // Load bitset with flags for function 0x00000007
-            if (nIds_ >= 7) {
-                f_7_EBX_ = data_[7][1];
-                f_7_ECX_ = data_[7][2];
+            {
+                // Calling __cpuid with 0x80000000 as the function argument
+                // gets the number of the highest valid extended ID.
+                std::array<ui32, 4> registers;
+                __cpuid (registers.data (), 0x80000000);
+                std::vector<std::array<ui32, 4>> data;
+                for (ui32 i = 0x80000000, count = registers[0]; i <= count; ++i) {
+                    __cpuidex (registers.data (), i, 0);
+                    data.push_back (registers);
+                }
+                // Load bitset with flags for function 0x80000001.
+                if (data.size () > 1) {
+                    f_81_ECX = data[1][2];
+                    f_81_EDX = data[1][3];
+                }
+                // Interpret CPU brand string if reported.
+                if (data.size () > 4) {
+                    char brand_[0x40];
+                    memset (brand_, 0, sizeof (brand));
+                    memcpy (brand_, data[2].data (), sizeof (registers));
+                    memcpy (brand_ + 16, data[3].data (), sizeof (registers));
+                    memcpy (brand_ + 32, data[4].data (), sizeof (registers));
+                    brand = brand_;
+                }
+                // If on AMD, get the L1 cache line size.
+                if (isAMD && data.size () > 5) {
+                    l1CacheLineSize = data[5][2] & 0xff;
+                }
             }
-            // Calling __cpuid with 0x80000000 as the function_id argument
-            // gets the number of the highest valid extended ID.
-            __cpuid (cpui.data (), 0x80000000);
-            ui32 nExIds_ = cpui[0];
-            std::vector<std::array<ui32, 4>> extdata_;
-            for (ui32 i = 0x80000000; i <= nExIds_; ++i) {
-                __cpuidex (cpui.data (), i, 0);
-                extdata_.push_back (cpui);
-            }
-            // Load bitset with flags for function 0x80000001
-            if (nExIds_ >= 0x80000001) {
-                f_81_ECX_ = extdata_[1][2];
-                f_81_EDX_ = extdata_[1][3];
-            }
-            // Interpret CPU brand string if reported
-            if (nExIds_ >= 0x80000004) {
-                char brand[0x40];
-                memset (brand, 0, sizeof (brand));
-                memcpy (brand, extdata_[2].data (), sizeof (cpui));
-                memcpy (brand + 16, extdata_[3].data (), sizeof (cpui));
-                memcpy (brand + 32, extdata_[4].data (), sizeof (cpui));
-                brand_ = brand;
-            }
-            if (isAMD_ && nExIds_ >= 0x80000005) {
-                L1CacheLineSize_ = extdata_[5][2] & 0xff;
-            }
+        #endif // defined (TOOLCHAIN_ARCH_i386) || defined (TOOLCHAIN_ARCH_x86_64)
         }
 
     } // namespace util

@@ -43,40 +43,40 @@ namespace thekogans {
         private:
             /// \brief
             /// Vendor string ("GenuineIntel", "AuthenticAMD"...).
-            std::string vendor_;
+            std::string vendor;
             /// \brief
             /// CPU brand.
-            std::string brand_;
+            std::string brand;
             /// \brief
             /// true == Intel cpu.
-            bool isIntel_;
+            bool isIntel;
             /// \brief
             /// true == AMD cpu.
-            bool isAMD_;
+            bool isAMD;
             /// \brief
             /// L1 cache line size.
-            ui32 L1CacheLineSize_;
+            ui32 l1CacheLineSize;
             /// \brief
             /// cpuid function 1 ecx register value.
-            std::bitset<32> f_1_ECX_;
+            std::bitset<32> f_1_ECX;
             /// \brief
             /// cpuid function 1 edx register value.
-            std::bitset<32> f_1_EDX_;
+            std::bitset<32> f_1_EDX;
             /// \brief
             /// cpuid function 7 ebx register value.
-            std::bitset<32> f_7_EBX_;
+            std::bitset<32> f_7_EBX;
             /// \brief
             /// cpuid function 7 ecx register value.
-            std::bitset<32> f_7_ECX_;
+            std::bitset<32> f_7_ECX;
             /// \brief
             /// cpuid function 81 ecx register value.
-            std::bitset<32> f_81_ECX_;
+            std::bitset<32> f_81_ECX;
             /// \brief
             /// cpuid function 81 edx register value.
-            std::bitset<32> f_81_EDX_;
+            std::bitset<32> f_81_EDX;
             /// \brief
             /// true == AltiVec is supported.
-            bool AltiVec_;
+            bool isAltiVec;
 
         public:
             /// \brief
@@ -87,363 +87,364 @@ namespace thekogans {
             /// Return the vendor string ("GenuineIntel", "AuthenticAMD"...).
             /// \return Vendor string.
             inline const std::string &Vendor () const {
-                return vendor_;
+                return vendor;
             }
             /// \brief
             /// Return the cpu brand.
             /// \return CPU brand.
             inline const std::string &Brand () const {
-                return brand_;
+                return brand;
             }
 
             /// \brief
             /// Return true if it's an Intel cpu.
             /// \return true == Intel cpu.
             inline bool Intel () const {
-                return isIntel_;
+                return isIntel;
             }
             /// \brief
             /// Return true if it's an AMD cpu.
             /// \return true == AMD cpu.
             inline bool AMD () const {
-                return isAMD_;
+                return isAMD;
             }
+
             /// \brief
             /// Return the size (in bytes) of the L1 cache line.
             /// \return The size (in bytes) of the L1 cache line.
             inline ui32 L1CacheLineSize () const {
-                return L1CacheLineSize_;
+                return l1CacheLineSize;
             }
 
             /// \brief
             /// Return true if SSE3 is supported.
             /// \return true == SSE3 is supported.
             inline bool SSE3 () const {
-                return f_1_ECX_[0];
+                return f_1_ECX[0];
             }
             /// \brief
             /// Return true if PCLMULQDQ is supported.
             /// \return true == PCLMULQDQ is supported.
             inline bool PCLMULQDQ () const {
-                return f_1_ECX_[1];
+                return f_1_ECX[1];
             }
             /// \brief
             /// Return true if MONITOR is supported.
             /// \return true == MONITOR is supported.
             inline bool MONITOR () const {
-                return f_1_ECX_[3];
+                return f_1_ECX[3];
             }
             /// \brief
             /// Return true if SSSE3 is supported.
             /// \return true == SSSE3 is supported.
             inline bool SSSE3 () const {
-                return f_1_ECX_[9];
+                return f_1_ECX[9];
             }
             /// \brief
             /// Return true if FMA is supported.
             /// \return true == FMA is supported.
             inline bool FMA () const {
-                return f_1_ECX_[12];
+                return f_1_ECX[12];
             }
             /// \brief
             /// Return true if CMPXCHG16B is supported.
             /// \return true == CMPXCHG16B is supported.
             inline bool CMPXCHG16B () const {
-                return f_1_ECX_[13];
+                return f_1_ECX[13];
             }
             /// \brief
             /// Return true if  is supported.
             /// \return true ==  is supported.
             inline bool SSE41 () const {
-                return f_1_ECX_[19];
+                return f_1_ECX[19];
             }
             /// \brief
             /// Return true if SSE42 is supported.
             /// \return true == SSE42 is supported.
             inline bool SSE42 () const {
-                return f_1_ECX_[20];
+                return f_1_ECX[20];
             }
             /// \brief
             /// Return true if MOVBE is supported.
             /// \return true == MOVBE is supported.
             inline bool MOVBE () const {
-                return f_1_ECX_[22];
+                return f_1_ECX[22];
             }
             /// \brief
             /// Return true if POPCNT is supported.
             /// \return true == POPCNT is supported.
             inline bool POPCNT () const {
-                return f_1_ECX_[23];
+                return f_1_ECX[23];
             }
             /// \brief
             /// Return true if AES is supported.
             /// \return true == AES is supported.
             inline bool AES () const {
-                return f_1_ECX_[25];
+                return f_1_ECX[25];
             }
             /// \brief
             /// Return true if XSAVE is supported.
             /// \return true == XSAVE is supported.
             inline bool XSAVE () const {
-                return f_1_ECX_[26];
+                return f_1_ECX[26];
             }
             /// \brief
             /// Return true if OSXSAVE is supported.
             /// \return true == OSXSAVE is supported.
             inline bool OSXSAVE () const {
-                return f_1_ECX_[27];
+                return f_1_ECX[27];
             }
             /// \brief
             /// Return true if AVX is supported.
             /// \return true == AVX is supported.
             inline bool AVX () const {
-                return f_1_ECX_[28];
+                return f_1_ECX[28];
             }
             /// \brief
             /// Return true if F16C is supported.
             /// \return true == F16C is supported.
             inline bool F16C () const {
-                return f_1_ECX_[29];
+                return f_1_ECX[29];
             }
             /// \brief
             /// Return true if RDRAND is supported.
             /// \return true == RDRAND is supported.
             inline bool RDRAND () const {
-                return f_1_ECX_[30];
+                return f_1_ECX[30];
             }
 
             /// \brief
             /// Return true if MSR is supported.
             /// \return true == MSR is supported.
             inline bool MSR () const {
-                return f_1_EDX_[5];
+                return f_1_EDX[5];
             }
             /// \brief
             /// Return true if CX8 is supported.
             /// \return true == CX8 is supported.
             inline bool CX8 () const {
-                return f_1_EDX_[8];
+                return f_1_EDX[8];
             }
             /// \brief
             /// Return true if SEP is supported.
             /// \return true == SEP is supported.
             inline bool SEP () const {
-                return f_1_EDX_[11];
+                return f_1_EDX[11];
             }
             /// \brief
             /// Return true if CMOV is supported.
             /// \return true == CMOV is supported.
             inline bool CMOV () const {
-                return f_1_EDX_[15];
+                return f_1_EDX[15];
             }
             /// \brief
             /// Return true if RDTSC is supported.
             /// \return true == RDTSC is supported.
             inline bool RDTSC () const {
-                return isIntel_ && f_1_EDX_[16];
+                return isIntel && f_1_EDX[16];
             }
             /// \brief
             /// Return true if CLFSH is supported.
             /// \return true == CLFSH is supported.
             inline bool CLFSH () const {
-                return f_1_EDX_[19];
+                return f_1_EDX[19];
             }
             /// \brief
             /// Return true if MMX is supported.
             /// \return true == MMX is supported.
             inline bool MMX () const {
-                return f_1_EDX_[23];
+                return f_1_EDX[23];
             }
             /// \brief
             /// Return true if FXSR is supported.
             /// \return true == FXSR is supported.
             inline bool FXSR () const {
-                return f_1_EDX_[24];
+                return f_1_EDX[24];
             }
             /// \brief
             /// Return true if SSE is supported.
             /// \return true == SSE is supported.
             inline bool SSE () const {
-                return f_1_EDX_[25];
+                return f_1_EDX[25];
             }
             /// \brief
             /// Return true if SSE2 is supported.
             /// \return true == SSE2 is supported.
             inline bool SSE2 () const {
-                return f_1_EDX_[26];
+                return f_1_EDX[26];
             }
 
             /// \brief
             /// Return true if FSGSBASE is supported.
             /// \return true == FSGSBASE is supported.
             inline bool FSGSBASE () const {
-                return f_7_EBX_[0];
+                return f_7_EBX[0];
             }
             /// \brief
             /// Return true if BMI1 is supported.
             /// \return true == BMI1 is supported.
             inline bool BMI1 () const {
-                return f_7_EBX_[3];
+                return f_7_EBX[3];
             }
             /// \brief
             /// Return true if HLE is supported.
             /// \return true == HLE is supported.
             inline bool HLE () const {
-                return isIntel_ && f_7_EBX_[4];
+                return isIntel && f_7_EBX[4];
             }
             /// \brief
             /// Return true if AVX2 is supported.
             /// \return true == AVX2 is supported.
             inline bool AVX2 () const {
-                return f_7_EBX_[5];
+                return f_7_EBX[5];
             }
             /// \brief
             /// Return true if BMI2 is supported.
             /// \return true == BMI2 is supported.
             inline bool BMI2 () const {
-                return f_7_EBX_[8];
+                return f_7_EBX[8];
             }
             /// \brief
             /// Return true if ERMS is supported.
             /// \return true == ERMS is supported.
             inline bool ERMS () const {
-                return f_7_EBX_[9];
+                return f_7_EBX[9];
             }
             /// \brief
             /// Return true if INVPCID is supported.
             /// \return true == INVPCID is supported.
             inline bool INVPCID () const {
-                return f_7_EBX_[10];
+                return f_7_EBX[10];
             }
             /// \brief
             /// Return true if RTM is supported.
             /// \return true == RTM is supported.
             inline bool RTM () const {
-                return isIntel_ && f_7_EBX_[11];
+                return isIntel && f_7_EBX[11];
             }
             /// \brief
             /// Return true if AVX512F is supported.
             /// \return true == AVX512F is supported.
             inline bool AVX512F () const {
-                return f_7_EBX_[16];
+                return f_7_EBX[16];
             }
             /// \brief
             /// Return true if RDSEED is supported.
             /// \return true == RDSEED is supported.
             inline bool RDSEED () const {
-                return f_7_EBX_[18];
+                return f_7_EBX[18];
             }
             /// \brief
             /// Return true if ADX is supported.
             /// \return true == ADX is supported.
             inline bool ADX () const {
-                return f_7_EBX_[19];
+                return f_7_EBX[19];
             }
             /// \brief
             /// Return true if AVX512PF is supported.
             /// \return true == AVX512PF is supported.
             inline bool AVX512PF () const {
-                return f_7_EBX_[26];
+                return f_7_EBX[26];
             }
             /// \brief
             /// Return true if AVX512ER is supported.
             /// \return true == AVX512ER is supported.
             inline bool AVX512ER () const {
-                return f_7_EBX_[27];
+                return f_7_EBX[27];
             }
             /// \brief
             /// Return true if AVX512CD is supported.
             /// \return true == AVX512CD is supported.
             inline bool AVX512CD () const {
-                return f_7_EBX_[28];
+                return f_7_EBX[28];
             }
             /// \brief
             /// Return true if SHA is supported.
             /// \return true == SHA is supported.
             inline bool SHA () const {
-                return f_7_EBX_[29];
+                return f_7_EBX[29];
             }
 
             /// \brief
             /// Return true if PREFETCHWT1 is supported.
             /// \return true == PREFETCHWT1 is supported.
             inline bool PREFETCHWT1 () const {
-                return f_7_ECX_[0];
+                return f_7_ECX[0];
             }
 
             /// \brief
             /// Return true if LAHF is supported.
             /// \return true == LAHF is supported.
             inline bool LAHF () const {
-                return f_81_ECX_[0];
+                return f_81_ECX[0];
             }
             /// \brief
             /// Return true if LZCNT is supported.
             /// \return true == LZCNT is supported.
             inline bool LZCNT () const {
-                return isIntel_ && f_81_ECX_[5];
+                return isIntel && f_81_ECX[5];
             }
             /// \brief
             /// Return true if ABM is supported.
             /// \return true == ABM is supported.
             inline bool ABM () const {
-                return isAMD_ && f_81_ECX_[5];
+                return isAMD && f_81_ECX[5];
             }
             /// \brief
             /// Return true if SSE4a is supported.
             /// \return true == SSE4a is supported.
             inline bool SSE4a () const {
-                return isAMD_ && f_81_ECX_[6];
+                return isAMD && f_81_ECX[6];
             }
             /// \brief
             /// Return true if XOP is supported.
             /// \return true == XOP is supported.
             inline bool XOP () const {
-                return isAMD_ && f_81_ECX_[11];
+                return isAMD && f_81_ECX[11];
             }
             /// \brief
             /// Return true if TBM is supported.
             /// \return true == TBM is supported.
             inline bool TBM () const {
-                return isAMD_ && f_81_ECX_[21];
+                return isAMD && f_81_ECX[21];
             }
 
             /// \brief
             /// Return true if SYSCALL is supported.
             /// \return true == SYSCALL is supported.
             inline bool SYSCALL () const {
-                return isIntel_ && f_81_EDX_[11];
+                return isIntel && f_81_EDX[11];
             }
             /// \brief
             /// Return true if MMXEXT is supported.
             /// \return true == MMXEXT is supported.
             inline bool MMXEXT () const {
-                return isAMD_ && f_81_EDX_[22];
+                return isAMD && f_81_EDX[22];
             }
             /// \brief
             /// Return true if RDTSCP is supported.
             /// \return true == RDTSCP is supported.
             inline bool RDTSCP () const {
-                return isIntel_ && f_81_EDX_[27];
+                return isIntel && f_81_EDX[27];
             }
             /// \brief
             /// Return true if _3DNOWEXT is supported.
             /// \return true == _3DNOWEXT is supported.
             inline bool _3DNOWEXT () const {
-                return isAMD_ && f_81_EDX_[30];
+                return isAMD && f_81_EDX[30];
             }
             /// \brief
             /// Return true if _3DNOW is supported.
             /// \return true == _3DNOW is supported.
             inline bool _3DNOW () const {
-                return isAMD_ && f_81_EDX_[31];
+                return isAMD && f_81_EDX[31];
             }
 
             /// \brief
             /// Return true if AltiVec is supported.
             /// \return true == AltiVec is supported.
             inline bool AltiVec () const {
-                return AltiVec_;
+                return isAltiVec;
             }
         };
 
