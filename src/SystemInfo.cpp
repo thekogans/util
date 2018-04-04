@@ -254,6 +254,7 @@ namespace thekogans {
                     cpuType[9] = (ui8)(c & 0xff); c >>= 8;
                     cpuType[10] = (ui8)(c & 0xff); c >>= 8;
                     cpuType[11] = (ui8)(c & 0xff); c >>= 8;
+                    cpuType[12] = '\0';
                 }
                 return cpuType;
             }

@@ -2,7 +2,7 @@
                 project = "util"
                 project_type = "library"
                 major_version = "0"
-                minor_version = "22"
+                minor_version = "23"
                 patch_version = "0"
                 guid = "e541acd69d9d020f7eac98d5bf9e0d7a"
                 schema_version = "2">
@@ -95,6 +95,7 @@
     <cpp_header>$(organization)/$(project_directory)/Console.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/ConsoleLogger.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/Constants.h</cpp_header>
+    <cpp_header>$(organization)/$(project_directory)/CPUInfo.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/CRC32.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/DefaultAllocator.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/DefaultRunLoop.h</cpp_header>
@@ -610,6 +611,7 @@
     <cpp_source>Condition.cpp</cpp_source>
     <cpp_source>Console.cpp</cpp_source>
     <cpp_source>ConsoleLogger.cpp</cpp_source>
+    <cpp_source>CPUInfo.cpp</cpp_source>
     <cpp_source>CRC32.cpp</cpp_source>
     <cpp_source>DefaultAllocator.cpp</cpp_source>
     <cpp_source>DefaultRunLoop.cpp</cpp_source>

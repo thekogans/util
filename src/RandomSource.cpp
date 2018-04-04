@@ -31,14 +31,9 @@ namespace thekogans {
                 urandom (HostEndian, "/dev/urandom") {
             #endif // defined (TOOLCHAIN_OS_Windows)
         #if defined (TOOLCHAIN_OS_Windows)
-            if (!CryptAcquireContext (&cryptProv, 0, 0, PROV_RSA_FULL, 0)) {
-                THEKOGANS_UTIL_ERROR_CODE errorCode = THEKOGANS_UTIL_OS_ERROR_CODE;
-                if (errorCode != (THEKOGANS_UTIL_ERROR_CODE)NTE_BAD_KEYSET) {
-                    THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (errorCode);
-                }
-                if (!CryptAcquireContext (&cryptProv, 0, 0, PROV_RSA_FULL, CRYPT_NEWKEYSET)) {
-                    THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (THEKOGANS_UTIL_OS_ERROR_CODE);
-                }
+            if (!CryptAcquireContext (&cryptProv, 0, 0, PROV_RSA_FULL, CRYPT_VERIFYCONTEXT | CRYPT_SILENT)) {
+                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                    THEKOGANS_UTIL_OS_ERROR_CODE);
             }
         #endif // defined (TOOLCHAIN_OS_Windows)
         }
