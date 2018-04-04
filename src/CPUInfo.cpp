@@ -39,27 +39,21 @@ namespace thekogans {
             }
         #else // defined (TOOLCHAIN_OS_Windows)
         #if defined (TOOLCHAIN_ARCH_i386) || defined (TOOLCHAIN_ARCH_x86_64)
-            void __cpuid (
+            inline void __cpuid (
                     int registers[4],
                     int function) {
                 __asm__ volatile (
-                    "pushq %%rbx\n"
-                    "cpuid\n"
-                    "movq %%rbx, %%rsi\n"
-                    "popq %%rbx\n"
-                    : "=a" (registers[0]), "=S" (registers[1]), "=c" (registers[2]), "=d" (registers[3])
-                    : "a" (function));
+                    "cpuid"
+                    : "=a" (registers[0]), "=b" (registers[1]), "=c" (registers[2]), "=d" (registers[3]): "a" (function));
             }
 
-            void __cpuidex (
+            inline void __cpuidex (
                     int registers[4],
                     int function,
                     int subfunction) {
                 __asm__ volatile (
-                    "mov %%ebx, %%edi\n"
-                    "cpuid\n"
-                    "xchg %%edi, %%ebx\n"
-                    : "=a" (registers[0]), "=D" (registers[1]), "=c" (registers[2]), "=d" (registers[3])
+                    "cpuid"
+                    : "=a" (registers[0]), "=b" (registers[1]), "=c" (registers[2]), "=d" (registers[3])
                     : "a" (function), "c" (subfunction));
             }
 
@@ -118,13 +112,9 @@ namespace thekogans {
                 // gets the number of the highest valid function ID.
                 std::array<ui32, 4> registers;
                 __cpuid ((int *)registers.data (), 0);
-                std::vector<std::array<ui32, 4>> data;
-                for (ui32 i = 0, count = registers[0]; i <= count; ++i) {
-                    __cpuidex ((int *)registers.data (), i, 0);
-                    data.push_back (registers);
-                }
+                ui32 functionCount = registers[0];
                 // Capture vendor string.
-                ui32 vendor_[] = {data[0][1], data[0][3], data[0][2], 0};
+                ui32 vendor_[] = {registers[1], registers[3], registers[2], 0};
                 vendor = (const char *)vendor_;
                 if (vendor == "GenuineIntel") {
                     isIntel = true;
@@ -133,18 +123,20 @@ namespace thekogans {
                     isAMD = true;
                 }
                 // Load bitset with flags for function 0x00000001.
-                if (data.size () > 1) {
+                if (functionCount >= 1) {
+                    __cpuidex ((int *)registers.data (), 1, 0);
                     // If on Intel, get the L1 cache line size.
                     if (isIntel) {
-                        l1CacheLineSize = (((data[1][1] >> 8) & 0xff) * 8);
+                        l1CacheLineSize = (((registers[1] >> 8) & 0xff) * 8);
                     }
-                    f_1_ECX = data[1][2];
-                    f_1_EDX = data[1][3];
+                    f_1_ECX = registers[2];
+                    f_1_EDX = registers[3];
                 }
                 // Load bitset with flags for function 0x00000007.
-                if (data.size () > 7) {
-                    f_7_EBX = data[7][1];
-                    f_7_ECX = data[7][2];
+                if (functionCount >= 7) {
+                    __cpuidex ((int *)registers.data (), 7, 0);
+                    f_7_EBX = registers[1];
+                    f_7_ECX = registers[2];
                 }
             }
             {
@@ -152,26 +144,30 @@ namespace thekogans {
                 // gets the number of the highest valid extended ID.
                 std::array<ui32, 4> registers;
                 __cpuid ((int *)registers.data (), 0x80000000);
-                std::vector<std::array<ui32, 4>> data;
-                for (ui32 i = 0x80000000, count = registers[0]; i <= count; ++i) {
-                    __cpuidex ((int *)registers.data (), i, 0);
-                    data.push_back (registers);
-                }
+                ui32 functionCount = registers[0];
                 // Load bitset with flags for function 0x80000001.
-                if (data.size () > 1) {
-                    f_81_ECX = data[1][2];
-                    f_81_EDX = data[1][3];
+                if (functionCount > 0x80000001) {
+                    __cpuidex ((int *)registers.data (), 0x80000001, 0);
+                    f_81_ECX = registers[2];
+                    f_81_EDX = registers[3];
                 }
                 // Interpret CPU brand string if reported.
-                if (data.size () > 4) {
+                if (functionCount > 0x80000004) {
                     std::array<ui32, 4> brand_[] = {
-                        data[2], data[3], data[4], std::array<ui32, 4> {{0, 0, 0, 0}}
+                        std::array<ui32, 4> {{0, 0, 0, 0}},
+                        std::array<ui32, 4> {{0, 0, 0, 0}},
+                        std::array<ui32, 4> {{0, 0, 0, 0}},
+                        std::array<ui32, 4> {{0, 0, 0, 0}}
                     };
+                    __cpuidex ((int *)brand_[0].data (), 0x80000002, 0);
+                    __cpuidex ((int *)brand_[1].data (), 0x80000003, 0);
+                    __cpuidex ((int *)brand_[2].data (), 0x80000004, 0);
                     brand = (const char *)brand_;
                 }
                 // If on AMD, get the L1 cache line size.
-                if (isAMD && data.size () > 5) {
-                    l1CacheLineSize = data[5][2] & 0xff;
+                if (isAMD && functionCount > 0x80000005) {
+                    __cpuidex ((int *)registers.data (), 0x80000005, 0);
+                    l1CacheLineSize = registers[2] & 0xff;
                 }
             }
         #endif // defined (TOOLCHAIN_ARCH_i386) || defined (TOOLCHAIN_ARCH_x86_64)
