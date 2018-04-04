@@ -107,6 +107,57 @@ namespace thekogans {
             sizeof (f32) == 4 && sizeof (f64) == 8,
             "Invalid assumption about integral types sizes.");
 
+        /// \enum
+        /// OS constants.
+        enum OS {
+            /// \brief
+            /// Windows.
+            Windows,
+            /// \brief
+            /// Linux.
+            Linux,
+            /// \brief
+            /// OS X.
+            OSX,
+        #if defined (TOOLCHAIN_OS_Windows)
+            /// \brief
+            /// Host OS is Windows.
+            HostOS = Windows
+        #elif defined (TOOLCHAIN_OS_Linux)
+            /// \brief
+            /// Host OS is Linux.
+            HostOS = Linux
+        #elif defined (TOOLCHAIN_OS_OSX)
+            /// \brief
+            /// Host OS is OS X.
+            HostOS = OSX
+        #else // defined (TOOLCHAIN_ENDIAN_Big)
+            #error "Unable to determine host OS."
+        #endif // defined (TOOLCHAIN_ENDIAN_Little)
+        };
+
+        /// \enum
+        /// Arch constants.
+        enum Arch {
+            /// \brief
+            /// i386.
+            i386,
+            /// \brief
+            /// x86_86.
+            x86_86,
+        #if defined (TOOLCHAIN_ARCH_i386)
+            /// \brief
+            /// Host Arch is i386.
+            HostArch = i386
+        #elif defined (TOOLCHAIN_ARCH_x86_64)
+            /// \brief
+            /// Host Arch is x86_86.
+            HostArch = x86_86
+        #else // defined (TOOLCHAIN_ENDIAN_Big)
+            #error "Unable to determine host Arch."
+        #endif // defined (TOOLCHAIN_ENDIAN_Little)
+        };
+
         /// \brief
         /// Error code type.
         #define THEKOGANS_UTIL_POSIX_ERROR_CODE thekogans::util::i32

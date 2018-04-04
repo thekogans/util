@@ -79,9 +79,8 @@ namespace thekogans {
                         --safety;
                     }
                 }
-                // Wipe temp on exit
+                // Wipe value on exit.
                 *((volatile ui32 *)&value) = 0;
-                // 0 = success; non-0 = failure (possibly partial failure).
                 return (ui32)(count - remainder);
             }
         }
@@ -97,7 +96,7 @@ namespace thekogans {
             if (CPUInfo::Instance ().RDRAND ()) {
                 hardwareCount = GetHardwareBytes (buffer, count);
                 if (hardwareCount == count) {
-                    return (ui32)count;
+                    return hardwareCount;
                 }
             }
             // If we got here either there's no hardware random source or,
