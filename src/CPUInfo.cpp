@@ -125,7 +125,7 @@ namespace thekogans {
                 }
                 // Capture vendor string.
                 char vendor_[0x20];
-                memset (vendor_, 0, sizeof (vendor));
+                memset (vendor_, 0, sizeof (vendor_));
                 *reinterpret_cast<ui32 *> (vendor_ + 0) = data[0][1];
                 *reinterpret_cast<ui32 *> (vendor_ + 4) = data[0][3];
                 *reinterpret_cast<ui32 *> (vendor_ + 8) = data[0][2];
@@ -169,7 +169,7 @@ namespace thekogans {
                 // Interpret CPU brand string if reported.
                 if (data.size () > 4) {
                     char brand_[0x40];
-                    memset (brand_, 0, sizeof (brand));
+                    memset (brand_, 0, sizeof (brand_));
                     memcpy (brand_, data[2].data (), sizeof (registers));
                     memcpy (brand_ + 16, data[3].data (), sizeof (registers));
                     memcpy (brand_ + 32, data[4].data (), sizeof (registers));
