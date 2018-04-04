@@ -15,6 +15,9 @@
 // You should have received a copy of the GNU General Public License
 // along with libthekogans_util. If not, see <http://www.gnu.org/licenses/>.
 
+#if defined (TOOLCHAIN_OS_Windows)
+    #include <intrin.h>
+#endif // defined (TOOLCHAIN_OS_Windows)
 #include "thekogans/util/ByteSwap.h"
 #include "thekogans/util/Exception.h"
 #include "thekogans/util/LockGuard.h"
@@ -57,19 +60,9 @@ namespace thekogans {
                 std::size_t safety = count / UI32_SIZE + 4;
                 ui32 value;
                 while (remainder > 0 && safety > 0) {
-                    char rc = 0;
+                    char rc;
                 #if defined (TOOLCHAIN_OS_Windows)
-                    __asm {
-                        push eax
-                        _emit 0x0F
-                        _emit 0xC7
-                        _emit 0xF0
-                        jnc failed
-                        mov dword ptr [value], eax
-                        mov byte ptr [haveValue], 1
-                    failed:
-                        pop eax
-                    }
+                    rc = _rdrand32_step (&value);
                 #else // defined (TOOLCHAIN_OS_Windows)
                     __asm__ volatile (
                         "rdrand %0 ; setc %1"
@@ -104,7 +97,7 @@ namespace thekogans {
             if (CPUInfo::Instance ().RDRAND ()) {
                 hardwareCount = GetHardwareBytes (buffer, count);
                 if (hardwareCount == count) {
-                    return count;
+                    return (ui32)count;
                 }
             }
             // If we got here either there's no hardware random source or,

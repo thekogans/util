@@ -32,12 +32,16 @@
 namespace thekogans {
     namespace util {
 
-    #if !defined (TOOLCHAIN_OS_Windows)
         namespace {
+        #if defined (TOOLCHAIN_OS_Windows)
+            bool HaveAltiVec () {
+                return false;
+            }
+        #else // defined (TOOLCHAIN_OS_Windows)
         #if defined (TOOLCHAIN_ARCH_i386) || defined (TOOLCHAIN_ARCH_x86_64)
             void __cpuid (
-                    ui32 registers[4],
-                    ui32 function) {
+                    int registers[4],
+                    int function) {
                 __asm__ volatile (
                     "pushq %%rbx\n"
                     "cpuid\n"
@@ -48,9 +52,9 @@ namespace thekogans {
             }
 
             void __cpuidex (
-                    ui32 registers[4],
-                    ui32 function,
-                    ui32 subfunction) {
+                    int registers[4],
+                    int function,
+                    int subfunction) {
                 __asm__ volatile (
                     "mov %%ebx, %%edi\n"
                     "cpuid\n"
@@ -94,8 +98,8 @@ namespace thekogans {
             }
         #endif // defined (TOOLCHAIN_OS_Linux)
         #endif // defined (TOOLCHAIN_ARCH_i386) || defined (TOOLCHAIN_ARCH_x86_64)
+        #endif // defined (TOOLCHAIN_OS_Windows)
         }
-    #endif // !defined (TOOLCHAIN_OS_Windows)
 
         CPUInfo::CPUInfo () :
                 isIntel (false),
@@ -113,10 +117,10 @@ namespace thekogans {
                 // Calling __cpuid with 0x0 as the function argument
                 // gets the number of the highest valid function ID.
                 std::array<ui32, 4> registers;
-                __cpuid (registers.data (), 0);
+                __cpuid ((int *)registers.data (), 0);
                 std::vector<std::array<ui32, 4>> data;
                 for (ui32 i = 0, count = registers[0]; i <= count; ++i) {
-                    __cpuidex (registers.data (), i, 0);
+                    __cpuidex ((int *)registers.data (), i, 0);
                     data.push_back (registers);
                 }
                 // Capture vendor string.
@@ -151,10 +155,10 @@ namespace thekogans {
                 // Calling __cpuid with 0x80000000 as the function argument
                 // gets the number of the highest valid extended ID.
                 std::array<ui32, 4> registers;
-                __cpuid (registers.data (), 0x80000000);
+                __cpuid ((int *)registers.data (), 0x80000000);
                 std::vector<std::array<ui32, 4>> data;
                 for (ui32 i = 0x80000000, count = registers[0]; i <= count; ++i) {
-                    __cpuidex (registers.data (), i, 0);
+                    __cpuidex ((int *)registers.data (), i, 0);
                     data.push_back (registers);
                 }
                 // Load bitset with flags for function 0x80000001.
