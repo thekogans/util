@@ -124,12 +124,8 @@ namespace thekogans {
                     data.push_back (registers);
                 }
                 // Capture vendor string.
-                char vendor_[0x20];
-                memset (vendor_, 0, sizeof (vendor_));
-                *reinterpret_cast<ui32 *> (vendor_ + 0) = data[0][1];
-                *reinterpret_cast<ui32 *> (vendor_ + 4) = data[0][3];
-                *reinterpret_cast<ui32 *> (vendor_ + 8) = data[0][2];
-                vendor = vendor_;
+                ui32 vendor_[] = {data[0][1], data[0][3], data[0][2], 0};
+                vendor = (const char *)vendor_;
                 if (vendor == "GenuineIntel") {
                     isIntel = true;
                 }
@@ -168,12 +164,10 @@ namespace thekogans {
                 }
                 // Interpret CPU brand string if reported.
                 if (data.size () > 4) {
-                    char brand_[0x40];
-                    memset (brand_, 0, sizeof (brand_));
-                    memcpy (brand_, data[2].data (), sizeof (registers));
-                    memcpy (brand_ + 16, data[3].data (), sizeof (registers));
-                    memcpy (brand_ + 32, data[4].data (), sizeof (registers));
-                    brand = brand_;
+                    std::array<ui32, 4> brand_[] = {
+                        data[2], data[3], data[4], std::array<ui32, 4> {{0, 0, 0, 0}}
+                    };
+                    brand = (const char *)brand_;
                 }
                 // If on AMD, get the L1 cache line size.
                 if (isAMD && data.size () > 5) {
