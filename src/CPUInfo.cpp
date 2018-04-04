@@ -146,13 +146,13 @@ namespace thekogans {
                 __cpuid ((int *)registers.data (), 0x80000000);
                 ui32 functionCount = registers[0];
                 // Load bitset with flags for function 0x80000001.
-                if (functionCount > 0x80000001) {
+                if (functionCount >= 0x80000001) {
                     __cpuidex ((int *)registers.data (), 0x80000001, 0);
                     f_81_ECX = registers[2];
                     f_81_EDX = registers[3];
                 }
                 // Interpret CPU brand string if reported.
-                if (functionCount > 0x80000004) {
+                if (functionCount >= 0x80000004) {
                     std::array<ui32, 4> brand_[] = {
                         std::array<ui32, 4> {{0, 0, 0, 0}},
                         std::array<ui32, 4> {{0, 0, 0, 0}},
@@ -165,7 +165,7 @@ namespace thekogans {
                     brand = (const char *)brand_;
                 }
                 // If on AMD, get the L1 cache line size.
-                if (isAMD && functionCount > 0x80000005) {
+                if (isAMD && functionCount >= 0x80000005) {
                     __cpuidex ((int *)registers.data (), 0x80000005, 0);
                     l1CacheLineSize = registers[2] & 0xff;
                 }
