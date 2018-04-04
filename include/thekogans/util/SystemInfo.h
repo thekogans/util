@@ -36,41 +36,6 @@ namespace thekogans {
 
         struct _LIB_THEKOGANS_UTIL_DECL SystemInfo :
                 public Singleton<SystemInfo, SpinLock> {
-            /// \brief
-            /// CPU features.
-            enum {
-                /// \brief
-                /// Time stamp counter.
-                CPU_HAS_RDTSC = 0x00000001,
-                /// \brief
-                /// Altivec
-                CPU_HAS_ALTIVEC = 0x00000002,
-                /// \brief
-                /// MMX
-                CPU_HAS_MMX = 0x00000004,
-                /// \brief
-                /// 3DNOW
-                CPU_HAS_3DNOW = 0x00000008,
-                /// \brief
-                /// SSE
-                CPU_HAS_SSE = 0x00000010,
-                /// \brief
-                /// SSE 2
-                CPU_HAS_SSE2 = 0x00000020,
-                /// \brief
-                /// SSE 3
-                CPU_HAS_SSE3 = 0x00000040,
-                /// \brief
-                /// SSE 4.1
-                CPU_HAS_SSE41 = 0x00000100,
-                /// \brief
-                /// SSE 4.2
-                CPU_HAS_SSE42 = 0x00000200,
-                /// \brief
-                /// AVX
-                CPU_HAS_AVX = 0x00000400
-            };
-
         private:
             /// \brief
             /// Host endianness.
@@ -78,12 +43,6 @@ namespace thekogans {
             /// \brief
             /// Host cpu count.
             ui32 cpuCount;
-            /// \brief
-            /// Host level 1 cache line size.
-            ui32 cpuL1CacheLineSize;
-            /// \brief
-            /// Bitflags containing the cpu features.
-            ui32 cpuFeatures;
             /// \brief
             /// Memory page size.
             ui32 pageSize;
@@ -113,18 +72,6 @@ namespace thekogans {
             /// \return CPU count.
             inline ui32 GetCPUCount () const {
                 return cpuCount;
-            }
-            /// \brief
-            /// Return the size (in bytes) of the cpu L1 cache line.
-            /// \return The size (in bytes) of the cpu L1 cache line.
-            inline ui32 GetCPUL1CacheLineSize () const {
-                return cpuL1CacheLineSize;
-            }
-            /// \brief
-            /// Return the cpu feature set.
-            /// \return The cpu feature set.
-            inline ui32 GetCPUFeatures () const {
-                return cpuFeatures;
             }
             /// \brief
             /// Return memory page size.
