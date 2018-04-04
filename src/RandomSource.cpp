@@ -18,6 +18,7 @@
 #include "thekogans/util/ByteSwap.h"
 #include "thekogans/util/Exception.h"
 #include "thekogans/util/LockGuard.h"
+#include "thekogans/util/CPUInfo.h"
 #include "thekogans/util/RandomSource.h"
 
 namespace thekogans {
@@ -44,17 +45,83 @@ namespace thekogans {
         #endif // defined (TOOLCHAIN_OS_Windows)
         }
 
+    #if defined (TOOLCHAIN_ARCH_i386) || defined (TOOLCHAIN_ARCH_x86_64)
+        namespace {
+            // This function was borrowed from:
+            // https://stackoverflow.com/questions/11407103/how-i-can-get-the-random-number-from-intels-processor-with-assembler
+            ui32 GetHardwareBytes (
+                    void *buffer,
+                    std::size_t count) {
+                std::size_t index = 0;
+                std::size_t remainder = count;
+                std::size_t safety = count / UI32_SIZE + 4;
+                ui32 value;
+                while (remainder > 0 && safety > 0) {
+                    char rc = 0;
+                #if defined (TOOLCHAIN_OS_Windows)
+                    __asm {
+                        push eax
+                        _emit 0x0F
+                        _emit 0xC7
+                        _emit 0xF0
+                        jnc failed
+                        mov dword ptr [value], eax
+                        mov byte ptr [haveValue], 1
+                    failed:
+                        pop eax
+                    }
+                #else // defined (TOOLCHAIN_OS_Windows)
+                    __asm__ volatile (
+                        "rdrand %0 ; setc %1"
+                        : "=r" (value), "=qm" (rc));
+                #endif // defined (TOOLCHAIN_OS_Windows)
+                    // 1 = success, 0 = underflow
+                    if (rc == 1) {
+                        std::size_t available = remainder < UI32_SIZE ? remainder : UI32_SIZE;
+                        memcpy ((ui8 *)buffer + index, &value, available);
+                        remainder -= available;
+                        index += available;
+                    }
+                    else {
+                        --safety;
+                    }
+                }
+                // Wipe temp on exit
+                *((volatile ui32 *)&value) = 0;
+                // 0 = success; non-0 = failure (possibly partial failure).
+                return (ui32)(count - remainder);
+            }
+        }
+    #endif // defined (TOOLCHAIN_ARCH_i386) || defined (TOOLCHAIN_ARCH_x86_64)
+
         ui32 RandomSource::GetBytes (
                 void *buffer,
                 std::size_t count) {
             LockGuard<SpinLock> guatd (spinLock);
+            ui32 hardwareCount = 0;
+        #if defined (TOOLCHAIN_ARCH_i386) || defined (TOOLCHAIN_ARCH_x86_64)
+            // If a hardware random source exists, use it first.
+            if (CPUInfo::Instance ().RDRAND ()) {
+                hardwareCount = GetHardwareBytes (buffer, count);
+                if (hardwareCount == count) {
+                    return count;
+                }
+            }
+            // If we got here either there's no hardware random source or,
+            // it couldn't generate enough bytes. Use other means.
+        #endif // defined (TOOLCHAIN_ARCH_i386) || defined (TOOLCHAIN_ARCH_x86_64)
         #if defined (TOOLCHAIN_OS_Windows)
-            if (!CryptGenRandom (cryptProv, (DWORD)count, (BYTE *)buffer)) {
+            if (!CryptGenRandom (
+                    cryptProv,
+                    (DWORD)(count - hardwareCount),
+                    (BYTE *)buffer + hardwareCount)) {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (THEKOGANS_UTIL_OS_ERROR_CODE);
             }
             return (ui32)count;
         #else // defined (TOOLCHAIN_OS_Windows)
-            return urandom.Read (buffer, (ui32)count);
+            return hardwareCount + urandom.Read (
+                (ui8 *)buffer + hardwareCount,
+                (ui32)(count - hardwareCount));
         #endif // defined (TOOLCHAIN_OS_Windows)
         }
 
