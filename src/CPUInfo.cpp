@@ -109,7 +109,8 @@ namespace thekogans {
         #if defined (TOOLCHAIN_ARCH_i386) || defined (TOOLCHAIN_ARCH_x86_64)
             {
                 // Calling __cpuid with 0x0 as the function argument
-                // gets the number of the highest valid function ID.
+                // gets the number of the highest valid function ID in
+                // registers[0] and the vendor string in registers[1-3].
                 std::array<ui32, 4> registers;
                 __cpuid ((int *)registers.data (), 0);
                 ui32 functionCount = registers[0];
@@ -141,7 +142,8 @@ namespace thekogans {
             }
             {
                 // Calling __cpuid with 0x80000000 as the function argument
-                // gets the number of the highest valid extended ID.
+                // gets the number of the highest valid extended ID in
+                // registers[0].
                 std::array<ui32, 4> registers;
                 __cpuid ((int *)registers.data (), 0x80000000);
                 ui32 functionCount = registers[0];
