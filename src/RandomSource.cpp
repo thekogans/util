@@ -55,11 +55,12 @@ namespace thekogans {
             ui32 GetHardwareBytes (
                     void *buffer,
                     std::size_t count) {
-                std::size_t index = 0;
-                std::size_t remainder = count;
-                std::size_t safety = count / UI32_SIZE + 4;
+                ui32 *begin = (ui32 *)buffer;
+                ui32 *end = begin + (count >> 2);
+                std::size_t safety = (count >> 2) + 4;
+                ui32 total = 0;
                 ui32 value;
-                while (remainder > 0 && safety > 0) {
+                while (begin < end && safety > 0) {
                     char rc;
                 #if defined (TOOLCHAIN_OS_Windows)
                     rc = _rdrand32_step (&value);
@@ -70,18 +71,37 @@ namespace thekogans {
                 #endif // defined (TOOLCHAIN_OS_Windows)
                     // 1 = success, 0 = underflow
                     if (rc == 1) {
-                        std::size_t available = remainder < UI32_SIZE ? remainder : UI32_SIZE;
-                        memcpy ((ui8 *)buffer + index, &value, available);
-                        remainder -= available;
-                        index += available;
+                        *begin++ = value;
+                        total += 4;
                     }
                     else {
                         --safety;
                     }
                 }
+                if (begin == end) {
+                    while (total < count && safety > 0) {
+                        char rc;
+                    #if defined (TOOLCHAIN_OS_Windows)
+                        rc = _rdrand32_step (&value);
+                    #else // defined (TOOLCHAIN_OS_Windows)
+                        __asm__ volatile (
+                            "rdrand %0 ; setc %1"
+                            : "=r" (value), "=qm" (rc));
+                    #endif // defined (TOOLCHAIN_OS_Windows)
+                        // 1 = success, 0 = underflow
+                        if (rc == 1) {
+                            std::size_t remainder = count & 3;
+                            memcpy (begin, &value, remainder);
+                            total += (ui32)remainder;
+                        }
+                        else {
+                            --safety;
+                        }
+                    }
+                }
                 // Wipe value on exit.
                 *((volatile ui32 *)&value) = 0;
-                return (ui32)(count - remainder);
+                return total;
             }
         }
     #endif // defined (TOOLCHAIN_ARCH_i386) || defined (TOOLCHAIN_ARCH_x86_64)
