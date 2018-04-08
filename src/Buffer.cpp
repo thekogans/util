@@ -63,45 +63,41 @@ namespace thekogans {
         ui32 Buffer::Read (
                 void *buffer,
                 ui32 count) {
-            if (count > 0) {
-                if (buffer != 0) {
-                    ui32 availableForReading = GetDataAvailableForReading ();
-                    if (count > availableForReading) {
-                        count = availableForReading;
-                    }
-                    if (count != 0) {
-                        memcpy (buffer, GetReadPtr (), count);
-                        AdvanceReadOffset (count);
-                    }
+            if (buffer != 0 && count > 0) {
+                ui32 availableForReading = GetDataAvailableForReading ();
+                if (count > availableForReading) {
+                    count = availableForReading;
                 }
-                else {
-                    THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                        THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
+                if (count != 0) {
+                    memcpy (buffer, GetReadPtr (), count);
+                    AdvanceReadOffset (count);
                 }
+                return count;
             }
-            return count;
+            else {
+                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
+            }
         }
 
         ui32 Buffer::Write (
                 const void *buffer,
                 ui32 count) {
-            if (count > 0) {
-                if (buffer != 0) {
-                    ui32 availableForWriting = GetDataAvailableForWriting ();
-                    if (count > availableForWriting) {
-                        count = availableForWriting;
-                    }
-                    if (count != 0) {
-                        memcpy (GetWritePtr (), buffer, count);
-                        AdvanceWriteOffset (count);
-                    }
+            if (buffer != 0 && count > 0) {
+                ui32 availableForWriting = GetDataAvailableForWriting ();
+                if (count > availableForWriting) {
+                    count = availableForWriting;
                 }
-                else {
-                    THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                        THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
+                if (count != 0) {
+                    memcpy (GetWritePtr (), buffer, count);
+                    AdvanceWriteOffset (count);
                 }
+                return count;
             }
-            return count;
+            else {
+                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
+            }
         }
 
         void Buffer::Resize (
@@ -135,32 +131,50 @@ namespace thekogans {
         }
 
         Buffer::UniquePtr Buffer::Clone (Allocator *allocator) const {
-            return UniquePtr (
-                new Buffer (
-                    endianness,
-                    data,
-                    data + length,
-                    readOffset,
-                    writeOffset,
-                    allocator));
+            if (allocator != 0) {
+                return UniquePtr (
+                    new Buffer (
+                        endianness,
+                        data,
+                        data + length,
+                        readOffset,
+                        writeOffset,
+                        allocator));
+            }
+            else {
+                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
+            }
         }
 
         ui32 Buffer::AdvanceReadOffset (ui32 advance) {
-            ui32 availableForReading = GetDataAvailableForReading ();
-            if (advance > availableForReading) {
-                advance = availableForReading;
+            if (advance > 0) {
+                ui32 availableForReading = GetDataAvailableForReading ();
+                if (advance > availableForReading) {
+                    advance = availableForReading;
+                }
+                readOffset += advance;
+                return advance;
             }
-            readOffset += advance;
-            return advance;
+            else {
+                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
+            }
         }
 
         ui32 Buffer::AdvanceWriteOffset (ui32 advance) {
-            ui32 availableForWriting = GetDataAvailableForWriting ();
-            if (advance > availableForWriting) {
-                advance = availableForWriting;
+            if (advance > 0) {
+                ui32 availableForWriting = GetDataAvailableForWriting ();
+                if (advance > availableForWriting) {
+                    advance = availableForWriting;
+                }
+                writeOffset += advance;
+                return advance;
             }
-            writeOffset += advance;
-            return advance;
+            else {
+                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
+            }
         }
 
     #if defined (THEKOGANS_UTIL_HAVE_ZLIB)
@@ -180,7 +194,7 @@ namespace thekogans {
                 void Write (
                         const ui8 *data_,
                         ui32 length_) {
-                    if (data_ != 0 && length_ != 0) {
+                    if (data_ != 0 && length_ > 0) {
                         ui8 *newData = (ui8 *)allocator->Alloc (length + length_);
                         memcpy (newData, data, length);
                         memcpy (newData + length, data_, length_);
@@ -272,37 +286,49 @@ namespace thekogans {
         }
 
         Buffer::UniquePtr Buffer::Deflate (Allocator *allocator) {
-            UniquePtr buffer;
-            if (GetDataAvailableForReading () != 0) {
-                OutBuffer outBuffer (allocator);
-                DeflateHelper (GetReadPtr (), GetDataAvailableForReading (), outBuffer);
-                buffer.reset (
-                    new Buffer (
-                        endianness,
-                        outBuffer.data,
-                        outBuffer.length,
-                        0,
-                        outBuffer.length,
-                        allocator));
+            if (allocator != 0) {
+                UniquePtr buffer;
+                if (GetDataAvailableForReading () != 0) {
+                    OutBuffer outBuffer (allocator);
+                    DeflateHelper (GetReadPtr (), GetDataAvailableForReading (), outBuffer);
+                    buffer.reset (
+                        new Buffer (
+                            endianness,
+                            outBuffer.data,
+                            outBuffer.length,
+                            0,
+                            outBuffer.length,
+                            allocator));
+                }
+                return buffer;
             }
-            return buffer;
+            else {
+                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
+            }
         }
 
         Buffer::UniquePtr Buffer::Inflate (Allocator *allocator) {
-            UniquePtr buffer;
-            if (GetDataAvailableForReading () != 0) {
-                OutBuffer outBuffer (allocator);
-                InflateHelper (GetReadPtr (), GetDataAvailableForReading (), outBuffer);
-                buffer.reset (
-                    new Buffer (
-                        endianness,
-                        outBuffer.data,
-                        outBuffer.length,
-                        0,
-                        outBuffer.length,
-                        allocator));
+            if (allocator != 0) {
+                UniquePtr buffer;
+                if (GetDataAvailableForReading () != 0) {
+                    OutBuffer outBuffer (allocator);
+                    InflateHelper (GetReadPtr (), GetDataAvailableForReading (), outBuffer);
+                    buffer.reset (
+                        new Buffer (
+                            endianness,
+                            outBuffer.data,
+                            outBuffer.length,
+                            0,
+                            outBuffer.length,
+                            allocator));
+                }
+                return buffer;
             }
-            return buffer;
+            else {
+                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
+            }
         }
     #endif // defined (THEKOGANS_UTIL_HAVE_ZLIB)
 

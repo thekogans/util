@@ -33,12 +33,8 @@ namespace thekogans {
     namespace util {
 
         namespace {
-        #if defined (TOOLCHAIN_OS_Windows)
-            bool HaveAltiVec () {
-                return false;
-            }
-        #else // defined (TOOLCHAIN_OS_Windows)
         #if defined (TOOLCHAIN_ARCH_i386) || defined (TOOLCHAIN_ARCH_x86_64)
+        #if !defined (TOOLCHAIN_OS_Windows)
             inline void __cpuid (
                     int registers[4],
                     int function) {
@@ -56,10 +52,7 @@ namespace thekogans {
                     : "=a" (registers[0]), "=b" (registers[1]), "=c" (registers[2]), "=d" (registers[3])
                     : "a" (function), "c" (subfunction));
             }
-
-            bool HaveAltiVec () {
-                return false;
-            }
+        #endif // !defined (TOOLCHAIN_OS_Windows)
         #elif defined (TOOLCHAIN_ARCH_ppc) || defined (TOOLCHAIN_ARCH_ppc64)
         #if defined (TOOLCHAIN_OS_Linux)
             jmp_buf jmpbuf;
@@ -72,7 +65,10 @@ namespace thekogans {
                 volatile bool altivec = false;
                 void (*handler) (int /*sig*/) = signal (SIGILL, IllegalInstruction);
                 if (setjmp (jmpbuf) == 0) {
-                    asm volatile ("mtspr 256, %0\n\t" "vand %%v0, %%v0, %%v0"::"r" (-1));
+                    __asm__ volatile (
+                        "mtspr 256, %0\n\t" "vand %%v0, %%v0, %%v0"
+                        :
+                        :"r" (-1));
                     altivec = true;
                 }
                 signal (SIGILL, handler);
@@ -92,9 +88,9 @@ namespace thekogans {
             }
         #endif // defined (TOOLCHAIN_OS_Linux)
         #endif // defined (TOOLCHAIN_ARCH_i386) || defined (TOOLCHAIN_ARCH_x86_64)
-        #endif // defined (TOOLCHAIN_OS_Windows)
         }
 
+    #if defined (TOOLCHAIN_ARCH_i386) || defined (TOOLCHAIN_ARCH_x86_64)
         CPUInfo::CPUInfo () :
                 isIntel (false),
                 isAMD (false),
@@ -104,9 +100,7 @@ namespace thekogans {
                 f_7_EBX (0),
                 f_7_ECX (0),
                 f_81_ECX (0),
-                f_81_EDX (0),
-                isAltiVec (HaveAltiVec ()) {
-        #if defined (TOOLCHAIN_ARCH_i386) || defined (TOOLCHAIN_ARCH_x86_64)
+                f_81_EDX (0) {
             {
                 // Calling __cpuid with 0x0 as the function argument
                 // gets the number of the highest valid function ID in
@@ -172,8 +166,11 @@ namespace thekogans {
                     l1CacheLineSize = registers[2] & 0xff;
                 }
             }
-        #endif // defined (TOOLCHAIN_ARCH_i386) || defined (TOOLCHAIN_ARCH_x86_64)
         }
+    #elif defined (TOOLCHAIN_ARCH_ppc) || defined (TOOLCHAIN_ARCH_ppc64)
+        CPUInfo::CPUInfo () :
+            isAltiVec (HaveAltiVec ()) {}
+    #endif // defined (TOOLCHAIN_ARCH_i386) || defined (TOOLCHAIN_ARCH_x86_64)
 
     } // namespace util
 } // namespace thekogans

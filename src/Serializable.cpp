@@ -33,7 +33,7 @@ namespace thekogans {
             assert (result.second);
             if (!result.second) {
                 THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                    "%s is already registered.", type.c_str ());
+                    "'%s' is already registered.", type.c_str ());
             }
         }
 
@@ -47,7 +47,7 @@ namespace thekogans {
             }
             else {
                 THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                    "%s is already registered.", header.type.c_str ());
+                    "Corrupt serializable '%s' header.", header.type.c_str ());
             }
         }
 

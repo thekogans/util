@@ -41,6 +41,7 @@ namespace thekogans {
         struct _LIB_THEKOGANS_UTIL_DECL CPUInfo :
                 public Singleton<CPUInfo, SpinLock> {
         private:
+        #if defined (TOOLCHAIN_ARCH_i386) || defined (TOOLCHAIN_ARCH_x86_64)
             /// \brief
             /// Vendor string ("GenuineIntel", "AuthenticAMD"...).
             std::string vendor;
@@ -74,15 +75,18 @@ namespace thekogans {
             /// \brief
             /// cpuid function 81 edx register value.
             std::bitset<32> f_81_EDX;
+        #elif defined (TOOLCHAIN_ARCH_ppc) || defined (TOOLCHAIN_ARCH_ppc64)
             /// \brief
             /// true == AltiVec is supported.
             bool isAltiVec;
+        #endif // defined (TOOLCHAIN_ARCH_i386) || defined (TOOLCHAIN_ARCH_x86_64)
 
         public:
             /// \brief
             /// ctor.
             CPUInfo ();
 
+        #if defined (TOOLCHAIN_ARCH_i386) || defined (TOOLCHAIN_ARCH_x86_64)
             /// \brief
             /// Return the vendor string ("GenuineIntel", "AuthenticAMD"...).
             /// \return Vendor string.
@@ -439,13 +443,14 @@ namespace thekogans {
             inline bool _3DNOW () const {
                 return isAMD && f_81_EDX[31];
             }
-
+        #elif defined (TOOLCHAIN_ARCH_ppc) || defined (TOOLCHAIN_ARCH_ppc64)
             /// \brief
             /// Return true if AltiVec is supported.
             /// \return true == AltiVec is supported.
             inline bool AltiVec () const {
                 return isAltiVec;
             }
+        #endif // defined (TOOLCHAIN_ARCH_i386) || defined (TOOLCHAIN_ARCH_x86_64)
         };
 
     } // namespace util

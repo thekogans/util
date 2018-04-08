@@ -48,37 +48,20 @@ namespace thekogans {
         #endif // defined (TOOLCHAIN_OS_Windows)
         }
 
-    #if defined (TOOLCHAIN_ARCH_i386) || defined (TOOLCHAIN_ARCH_x86_64)
         namespace {
             // This function was borrowed from:
             // https://stackoverflow.com/questions/11407103/how-i-can-get-the-random-number-from-intels-processor-with-assembler
             ui32 GetHardwareBytes (
                     void *buffer,
                     std::size_t count) {
-                ui32 *begin = (ui32 *)buffer;
-                ui32 *end = begin + (count >> 2);
-                std::size_t safety = (count >> 2) + 4;
-                ui32 total = 0;
-                ui32 value;
-                while (begin < end && safety > 0) {
-                    char rc;
-                #if defined (TOOLCHAIN_OS_Windows)
-                    rc = _rdrand32_step (&value);
-                #else // defined (TOOLCHAIN_OS_Windows)
-                    __asm__ volatile (
-                        "rdrand %0 ; setc %1"
-                        : "=r" (value), "=qm" (rc));
-                #endif // defined (TOOLCHAIN_OS_Windows)
-                    // 1 = success, 0 = underflow
-                    if (rc == 1) {
-                        *begin++ = value;
-                        total += 4;
-                    }
-                    else {
-                        --safety;
-                    }
-                }
-                if (begin == end) {
+                std::size_t total = 0;
+            #if defined (TOOLCHAIN_ARCH_i386) || defined (TOOLCHAIN_ARCH_x86_64)
+                if (CPUInfo::Instance ().RDRAND ()) {
+                    std::size_t remainder = count & 3;
+                    count &= ~3;
+                    std::size_t safety = (count >> 2) + 4;
+                    ui32 *ptr = (ui32 *)buffer;
+                    ui32 value;
                     while (total < count && safety > 0) {
                         char rc;
                     #if defined (TOOLCHAIN_OS_Windows)
@@ -90,51 +73,72 @@ namespace thekogans {
                     #endif // defined (TOOLCHAIN_OS_Windows)
                         // 1 = success, 0 = underflow
                         if (rc == 1) {
-                            std::size_t remainder = count & 3;
-                            memcpy (begin, &value, remainder);
-                            total += (ui32)remainder;
+                            *ptr++ = value;
+                            total += 4;
                         }
                         else {
                             --safety;
                         }
                     }
+                    if (total == count) {
+                        count += remainder;
+                        while (total < count && safety > 0) {
+                            char rc;
+                        #if defined (TOOLCHAIN_OS_Windows)
+                            rc = _rdrand32_step (&value);
+                        #else // defined (TOOLCHAIN_OS_Windows)
+                            __asm__ volatile (
+                                "rdrand %0 ; setc %1"
+                                : "=r" (value), "=qm" (rc));
+                        #endif // defined (TOOLCHAIN_OS_Windows)
+                            // 1 = success, 0 = underflow
+                            if (rc == 1) {
+                                memcpy (ptr, &value, remainder);
+                                total += remainder;
+                            }
+                            else {
+                                --safety;
+                            }
+                        }
+                    }
+                    // Wipe value on exit.
+                    *((volatile ui32 *)&value) = 0;
                 }
-                // Wipe value on exit.
-                *((volatile ui32 *)&value) = 0;
-                return total;
+            #endif // defined (TOOLCHAIN_ARCH_i386) || defined (TOOLCHAIN_ARCH_x86_64)
+                return (ui32)total;
             }
         }
-    #endif // defined (TOOLCHAIN_ARCH_i386) || defined (TOOLCHAIN_ARCH_x86_64)
 
         ui32 RandomSource::GetBytes (
                 void *buffer,
                 std::size_t count) {
-            LockGuard<SpinLock> guatd (spinLock);
-            ui32 hardwareCount = 0;
-        #if defined (TOOLCHAIN_ARCH_i386) || defined (TOOLCHAIN_ARCH_x86_64)
-            // If a hardware random source exists, use it first.
-            if (CPUInfo::Instance ().RDRAND ()) {
-                hardwareCount = GetHardwareBytes (buffer, count);
+            if (buffer != 0 && count > 0) {
+                LockGuard<SpinLock> guatd (spinLock);
+                // If a hardware random source exists, use it first.
+                ui32 hardwareCount = GetHardwareBytes (buffer, count);
                 if (hardwareCount == count) {
                     return hardwareCount;
                 }
+                // If we got here either there's no hardware random source or,
+                // it couldn't generate enough bytes. Use other means.
+            #if defined (TOOLCHAIN_OS_Windows)
+                if (!CryptGenRandom (
+                        cryptProv,
+                        (DWORD)(count - hardwareCount),
+                        (BYTE *)buffer + hardwareCount)) {
+                    THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (THEKOGANS_UTIL_OS_ERROR_CODE);
+                }
+                return (ui32)count;
+            #else // defined (TOOLCHAIN_OS_Windows)
+                return hardwareCount + urandom.Read (
+                    (ui8 *)buffer + hardwareCount,
+                    (ui32)(count - hardwareCount));
+            #endif // defined (TOOLCHAIN_OS_Windows)
             }
-            // If we got here either there's no hardware random source or,
-            // it couldn't generate enough bytes. Use other means.
-        #endif // defined (TOOLCHAIN_ARCH_i386) || defined (TOOLCHAIN_ARCH_x86_64)
-        #if defined (TOOLCHAIN_OS_Windows)
-            if (!CryptGenRandom (
-                    cryptProv,
-                    (DWORD)(count - hardwareCount),
-                    (BYTE *)buffer + hardwareCount)) {
-                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (THEKOGANS_UTIL_OS_ERROR_CODE);
+            else {
+                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
             }
-            return (ui32)count;
-        #else // defined (TOOLCHAIN_OS_Windows)
-            return hardwareCount + urandom.Read (
-                (ui8 *)buffer + hardwareCount,
-                (ui32)(count - hardwareCount));
-        #endif // defined (TOOLCHAIN_OS_Windows)
         }
 
         ui32 RandomSource::Getui32 () {
