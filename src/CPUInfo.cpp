@@ -122,7 +122,7 @@ namespace thekogans {
                 else if (vendor == "AuthenticAMD") {
                     isAMD = true;
                 }
-                // Load bitset with flags for function 0x00000001.
+                // Load flags for function 0x00000001.
                 if (functionCount >= 1) {
                     __cpuidex ((int *)registers.array, 1, 0);
                     // If on Intel, get the L1 cache line size.
@@ -132,7 +132,7 @@ namespace thekogans {
                     f_1_ECX = registers[2];
                     f_1_EDX = registers[3];
                 }
-                // Load bitset with flags for function 0x00000007.
+                // Load flags for function 0x00000007.
                 if (functionCount >= 7) {
                     __cpuidex ((int *)registers.array, 7, 0);
                     f_7_EBX = registers[1];
@@ -146,7 +146,7 @@ namespace thekogans {
                 FixedArray<ui32, 4> registers;
                 __cpuid ((int *)registers.array, 0x80000000);
                 ui32 functionCount = registers[0];
-                // Load bitset with flags for function 0x80000001.
+                // Load flags for function 0x80000001.
                 if (functionCount >= 0x80000001) {
                     __cpuidex ((int *)registers.array, 0x80000001, 0);
                     f_81_ECX = registers[2];
