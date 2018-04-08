@@ -25,25 +25,29 @@ namespace thekogans {
 
     #if defined (THEKOGANS_UTIL_USE_WINDOWS_BARRIER)
         Barrier::Barrier (ui32 count) {
-            if (count == 0) {
+            if (count != 0) {
+                if (!InitializeSynchronizationBarrier (&barrier, count, -1)) {
+                    THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                        THEKOGANS_UTIL_OS_ERROR_CODE);
+                }
+            }
+            else {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
                     THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
-            }
-            if (!InitializeSynchronizationBarrier (&barrier, count, -1)) {
-                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                    THEKOGANS_UTIL_OS_ERROR_CODE);
             }
         }
     #elif defined (THEKOGANS_UTIL_USE_POSIX_BARRIER)
         Barrier::Barrier (ui32 count) {
-            if (count == 0) {
+            if (count != 0) {
+                THEKOGANS_UTIL_ERROR_CODE errorCode =
+                    pthread_barrier_init (&barrier, 0, count);
+                if (errorCode != 0) {
+                    THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (errorCode);
+                }
+            }
+            else {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
                     THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
-            }
-            THEKOGANS_UTIL_ERROR_CODE errorCode =
-                pthread_barrier_init (&barrier, 0, count);
-            if (errorCode != 0) {
-                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (errorCode);
             }
         }
     #else // defined (THEKOGANS_UTIL_USE_POSIX_BARRIER)

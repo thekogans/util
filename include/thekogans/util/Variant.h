@@ -142,6 +142,7 @@ namespace thekogans {
                 /// GUID *
                 TYPE_GUID
                 // FIXME: add support for:
+                //TYPE_BitSet
                 //TYPE_Buffer
                 //TYPE_Directory_Entry
                 //TYPE_FixedBuffer

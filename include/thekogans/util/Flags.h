@@ -115,6 +115,14 @@ namespace thekogans {
             }
 
             /// \brief
+            /// Flag test operator.
+            /// \param[in] flag Flag to test.
+            /// \return true = flag is set, 0 = flag is clear.
+            inline bool operator [] (T flag) const {
+                return Test (flag);
+            }
+
+            /// \brief
             /// Or assign operator.
             /// \param[in] flag Flag to or with.
             /// \return *this

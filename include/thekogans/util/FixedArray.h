@@ -48,19 +48,28 @@ namespace thekogans {
 
             /// \brief
             /// ctor.
+            FixedArray () {}
+            /// \brief
+            /// ctor.
             /// \param[in] array_ Elements to initialize the array with.
             /// \param[in] count_ Number of elements in array_.
             FixedArray (
-                    const T *array_ = 0,
-                    std::size_t count_ = 0) {
-                if (array_ != 0) {
-                    if (count_ <= count) {
-                        memcpy (array, array_, sizeof (T) * count_);
-                    }
-                    else {
-                        THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                            THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
-                    }
+                    const T *array_,
+                    std::size_t count_) {
+                if (array_ != 0 && count_ <= count) {
+                    memcpy (array, array_, sizeof (T) * count_);
+                }
+                else {
+                    THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                        THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
+                }
+            }
+            /// \brief
+            /// ctor.
+            /// \param[in] value Value to initialize every element of the array to.
+            explicit FixedArray (const T &value) {
+                for (std::size_t i = 0; i < count; ++i) {
+                    array[i] = value;
                 }
             }
 
@@ -91,10 +100,6 @@ namespace thekogans {
             inline operator T * () {
                 return array;
             }
-
-            /// \brief
-            /// FixedArray is neither copy constructable, nor assignable.
-            THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (FixedArray)
         };
 
     } // namespace util
