@@ -54,15 +54,14 @@ namespace thekogans {
             ui32 GetHardwareBytes (
                     void *buffer,
                     std::size_t count) {
-                std::size_t total = 0;
             #if defined (TOOLCHAIN_ARCH_i386) || defined (TOOLCHAIN_ARCH_x86_64)
                 if (CPUInfo::Instance ().RDRAND ()) {
-                    std::size_t remainder = count & 3;
-                    count &= ~3;
-                    std::size_t safety = (count >> 2) + 4;
-                    ui32 *ptr = (ui32 *)buffer;
+                    std::size_t ui32Count = count >> 2;
+                    ui32 *begin = (ui32 *)buffer;
+                    ui32 *end = begin + ui32Count;
+                    std::size_t safety = ui32Count + 4;
                     ui32 value;
-                    while (total < count && safety > 0) {
+                    while (begin < end && safety > 0) {
                         char rc;
                     #if defined (TOOLCHAIN_OS_Windows)
                         rc = _rdrand32_step (&value);
@@ -73,39 +72,42 @@ namespace thekogans {
                     #endif // defined (TOOLCHAIN_OS_Windows)
                         // 1 = success, 0 = underflow
                         if (rc == 1) {
-                            *ptr++ = value;
-                            total += 4;
+                            *begin++ = value;
                         }
                         else {
                             --safety;
                         }
                     }
-                    if (total == count) {
-                        count += remainder;
-                        while (total < count && safety > 0) {
-                            char rc;
-                        #if defined (TOOLCHAIN_OS_Windows)
-                            rc = _rdrand32_step (&value);
-                        #else // defined (TOOLCHAIN_OS_Windows)
-                            __asm__ volatile (
-                                "rdrand %0 ; setc %1"
-                                : "=r" (value), "=qm" (rc));
-                        #endif // defined (TOOLCHAIN_OS_Windows)
-                            // 1 = success, 0 = underflow
-                            if (rc == 1) {
-                                memcpy (ptr, &value, remainder);
-                                total += remainder;
-                            }
-                            else {
-                                --safety;
+                    if (begin == end) {
+                        std::size_t remainder = count & 3;
+                        if (remainder > 0) {
+                            while (safety > 0) {
+                                char rc;
+                            #if defined (TOOLCHAIN_OS_Windows)
+                                rc = _rdrand32_step (&value);
+                            #else // defined (TOOLCHAIN_OS_Windows)
+                                __asm__ volatile (
+                                    "rdrand %0 ; setc %1"
+                                    : "=r" (value), "=qm" (rc));
+                            #endif // defined (TOOLCHAIN_OS_Windows)
+                                // 1 = success, 0 = underflow
+                                if (rc == 1) {
+                                    memcpy (begin, &value, remainder);
+                                    *((volatile ui32 *)&value) = 0;
+                                    return (ui32)count;
+                                }
+                                else {
+                                    --safety;
+                                }
                             }
                         }
                     }
                     // Wipe value on exit.
                     *((volatile ui32 *)&value) = 0;
+                    return (ui32)((ui8 *)begin - (ui8 *)buffer);
                 }
             #endif // defined (TOOLCHAIN_ARCH_i386) || defined (TOOLCHAIN_ARCH_x86_64)
-                return (ui32)total;
+                return 0;
             }
         }
 
