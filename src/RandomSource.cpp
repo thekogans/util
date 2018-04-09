@@ -74,31 +74,31 @@ namespace thekogans {
                         if (rc == 1) {
                             *begin++ = value;
                         }
-                        else if (--retries == 0) {
-                            // Wipe value on exit.
-                            *((volatile ui32 *)&value) = 0;
-                            return (ui32)((ui8 *)begin - (ui8 *)buffer);
-                        }
-                    }
-                    std::size_t remainder = count & 3;
-                    while (remainder > 0) {
-                        char rc;
-                    #if defined (TOOLCHAIN_OS_Windows)
-                        rc = _rdrand32_step (&value);
-                    #else // defined (TOOLCHAIN_OS_Windows)
-                        __asm__ volatile (
-                            "rdrand %0 ; setc %1"
-                            : "=r" (value), "=qm" (rc));
-                    #endif // defined (TOOLCHAIN_OS_Windows)
-                        // 1 = success, 0 = underflow
-                        if (rc == 1) {
-                            memcpy (begin, &value, remainder);
+                        else if (retries-- == 0) {
+                            count = (ui8 *)begin - (ui8 *)buffer;
                             break;
                         }
-                        else if (--retries == 0) {
-                            // Wipe value on exit.
-                            *((volatile ui32 *)&value) = 0;
-                            return (ui32)((ui8 *)begin - (ui8 *)buffer);
+                    }
+                    if (begin == end) {
+                        std::size_t remainder = count & 3;
+                        while (remainder > 0) {
+                            char rc;
+                        #if defined (TOOLCHAIN_OS_Windows)
+                            rc = _rdrand32_step (&value);
+                        #else // defined (TOOLCHAIN_OS_Windows)
+                            __asm__ volatile (
+                                "rdrand %0 ; setc %1"
+                                : "=r" (value), "=qm" (rc));
+                        #endif // defined (TOOLCHAIN_OS_Windows)
+                            // 1 = success, 0 = underflow
+                            if (rc == 1) {
+                                memcpy (begin, &value, remainder);
+                                break;
+                            }
+                            else if (retries-- == 0) {
+                                count = (ui8 *)begin - (ui8 *)buffer;
+                                break;
+                            }
                         }
                     }
                     // Wipe value on exit.
