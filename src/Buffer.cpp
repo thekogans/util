@@ -156,10 +156,6 @@ namespace thekogans {
                 readOffset += advance;
                 return advance;
             }
-            else {
-                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
-            }
         }
 
         ui32 Buffer::AdvanceWriteOffset (ui32 advance) {
@@ -170,10 +166,6 @@ namespace thekogans {
                 }
                 writeOffset += advance;
                 return advance;
-            }
-            else {
-                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
             }
         }
 
