@@ -148,25 +148,21 @@ namespace thekogans {
         }
 
         ui32 Buffer::AdvanceReadOffset (ui32 advance) {
-            if (advance > 0) {
-                ui32 availableForReading = GetDataAvailableForReading ();
-                if (advance > availableForReading) {
-                    advance = availableForReading;
-                }
-                readOffset += advance;
-                return advance;
+            ui32 availableForReading = GetDataAvailableForReading ();
+            if (advance > availableForReading) {
+                advance = availableForReading;
             }
+            readOffset += advance;
+            return advance;
         }
 
         ui32 Buffer::AdvanceWriteOffset (ui32 advance) {
-            if (advance > 0) {
-                ui32 availableForWriting = GetDataAvailableForWriting ();
-                if (advance > availableForWriting) {
-                    advance = availableForWriting;
-                }
-                writeOffset += advance;
-                return advance;
+            ui32 availableForWriting = GetDataAvailableForWriting ();
+            if (advance > availableForWriting) {
+                advance = availableForWriting;
             }
+            writeOffset += advance;
+            return advance;
         }
 
     #if defined (THEKOGANS_UTIL_HAVE_ZLIB)
