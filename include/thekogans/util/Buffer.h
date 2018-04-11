@@ -228,11 +228,13 @@ namespace thekogans {
             }
             /// \brief
             /// Advance the read offset taking care not to overflow.
+            /// NOTE: If advance == 0, the call is a silent noop.
             /// \param[in] advance Amount to advance the readOffset.
             /// \return Number of bytes actually advanced.
             ui32 AdvanceReadOffset (ui32 advance);
             /// \brief
             /// Advance the write offset taking care not to overflow.
+            /// NOTE: If advance == 0, the call is a silent noop.
             /// \param[in] advance Amount to advance the writeOffset.
             /// \return Number of bytes actually advanced.
             ui32 AdvanceWriteOffset (ui32 advance);

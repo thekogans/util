@@ -18,7 +18,7 @@
 #if defined (TOOLCHAIN_OS_Windows)
     #include <intrin.h>
 #endif // defined (TOOLCHAIN_OS_Windows)
-#include "thekogans/util/ByteSwap.h"
+#include "thekogans/util/Types.h"
 #include "thekogans/util/Exception.h"
 #include "thekogans/util/LockGuard.h"
 #include "thekogans/util/CPUInfo.h"

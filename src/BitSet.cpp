@@ -95,9 +95,6 @@ namespace thekogans {
             }
         }
 
-        namespace {
-        }
-
         void BitSet::Flip () {
             for (std::size_t i = 0, count = bits.size (); i < count; ++i) {
                 bits[i] = ~bits[i];
@@ -108,23 +105,24 @@ namespace thekogans {
         std::size_t BitSet::Count () const {
             std::size_t count = 0;
             if (size > 0) {
-                static const char * const bitsPerByte =
-                    "\0\1\1\2\1\2\2\3\1\2\2\3\2\3\3\4"
-                    "\1\2\2\3\2\3\3\4\2\3\3\4\3\4\4\5"
-                    "\1\2\2\3\2\3\3\4\2\3\3\4\3\4\4\5"
-                    "\2\3\3\4\3\4\4\5\3\4\4\5\4\5\5\6"
-                    "\1\2\2\3\2\3\3\4\2\3\3\4\3\4\4\5"
-                    "\2\3\3\4\3\4\4\5\3\4\4\5\4\5\5\6"
-                    "\2\3\3\4\3\4\4\5\3\4\4\5\4\5\5\6"
-                    "\3\4\4\5\4\5\5\6\4\5\5\6\5\6\6\7"
-                    "\1\2\2\3\2\3\3\4\2\3\3\4\3\4\4\5"
-                    "\2\3\3\4\3\4\4\5\3\4\4\5\4\5\5\6"
-                    "\2\3\3\4\3\4\4\5\3\4\4\5\4\5\5\6"
-                    "\3\4\4\5\4\5\5\6\4\5\5\6\5\6\6\7"
-                    "\2\3\3\4\3\4\4\5\3\4\4\5\4\5\5\6"
-                    "\3\4\4\5\4\5\5\6\4\5\5\6\5\6\6\7"
-                    "\3\4\4\5\4\5\5\6\4\5\5\6\5\6\6\7"
-                    "\4\5\5\6\5\6\6\7\5\6\6\7\6\7\7\x8";
+                static const ui8 bitsPerByte[] = {
+                    0, 1, 1, 2, 1, 2, 2, 3, 1, 2, 2, 3, 2, 3, 3, 4,
+                    1, 2, 2, 3, 2, 3, 3, 4, 2, 3, 3, 4, 3, 4, 4, 5,
+                    1, 2, 2, 3, 2, 3, 3, 4, 2, 3, 3, 4, 3, 4, 4, 5,
+                    2, 3, 3, 4, 3, 4, 4, 5, 3, 4, 4, 5, 4, 5, 5, 6,
+                    1, 2, 2, 3, 2, 3, 3, 4, 2, 3, 3, 4, 3, 4, 4, 5,
+                    2, 3, 3, 4, 3, 4, 4, 5, 3, 4, 4, 5, 4, 5, 5, 6,
+                    2, 3, 3, 4, 3, 4, 4, 5, 3, 4, 4, 5, 4, 5, 5, 6,
+                    3, 4, 4, 5, 4, 5, 5, 6, 4, 5, 5, 6, 5, 6, 6, 7,
+                    1, 2, 2, 3, 2, 3, 3, 4, 2, 3, 3, 4, 3, 4, 4, 5,
+                    2, 3, 3, 4, 3, 4, 4, 5, 3, 4, 4, 5, 4, 5, 5, 6,
+                    2, 3, 3, 4, 3, 4, 4, 5, 3, 4, 4, 5, 4, 5, 5, 6,
+                    3, 4, 4, 5, 4, 5, 5, 6, 4, 5, 5, 6, 5, 6, 6, 7,
+                    2, 3, 3, 4, 3, 4, 4, 5, 3, 4, 4, 5, 4, 5, 5, 6,
+                    3, 4, 4, 5, 4, 5, 5, 6, 4, 5, 5, 6, 5, 6, 6, 7,
+                    3, 4, 4, 5, 4, 5, 5, 6, 4, 5, 5, 6, 5, 6, 6, 7,
+                    4, 5, 5, 6, 5, 6, 6, 7, 5, 6, 6, 7, 6, 7, 7, 8,
+                };
                 const ui8 *begin = (const ui8 *)(const void *)&bits[0];
                 const ui8 *end = begin + (bits.size () << 2);
                 for (; begin != end; ++begin) {
@@ -202,14 +200,14 @@ namespace thekogans {
 
         BitSet &BitSet::operator <<= (std::size_t count) {
             if (size > 0) {
-                std::size_t wordCount = count / 32;
+                std::ptrdiff_t wordCount = (std::ptrdiff_t)(count / 32);
                 if (wordCount != 0) {
-                    for (std::size_t i = bits.size (); --i >= 0;) {
+                    for (std::ptrdiff_t i = bits.size (); --i >= 0;) {
                         bits[i] = wordCount <= i ? bits[i - wordCount] : 0;
                     }
                 }
                 if ((count %= 32) != 0) {
-                    for (std::size_t i = bits.size (); --i > 0;) {
+                    for (std::ptrdiff_t i = bits.size (); --i > 0;) {
                         bits[i] = (bits[i] << count) | (bits[i - 1] >> (32 - count));
                     }
                     bits[0] <<= count;
@@ -225,14 +223,14 @@ namespace thekogans {
 
         BitSet &BitSet::operator >>= (std::size_t count) {
             if (size > 0) {
-                std::size_t wordCount = count / 32;
+                std::ptrdiff_t wordCount = (std::ptrdiff_t)(count / 32);
                 if (wordCount != 0) {
-                    for (std::size_t i = 0, last = bits.size (); i <= last; ++i) {
-                        bits[i] = wordCount <= last - i - 1 ? bits[i + wordCount] : 0;
+                    for (std::ptrdiff_t i = 0, last = bits.size () - 1; i <= last; ++i) {
+                        bits[i] = wordCount <= last - i ? bits[i + wordCount] : 0;
                     }
                 }
                 if ((count %= 32) != 0) {
-                    for (std::size_t i = 0, last = bits.size () - 1; i < last; ++i) {
+                    for (std::ptrdiff_t i = 0, last = bits.size () - 1; i < last; ++i) {
                         bits[i] = (bits[i] >> count) | (bits[i + 1] << (32 - count));
                     }
                     bits.back () >>= count;

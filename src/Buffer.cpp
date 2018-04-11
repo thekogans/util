@@ -148,20 +148,24 @@ namespace thekogans {
         }
 
         ui32 Buffer::AdvanceReadOffset (ui32 advance) {
-            ui32 availableForReading = GetDataAvailableForReading ();
-            if (advance > availableForReading) {
-                advance = availableForReading;
+            if (advance > 0) {
+                ui32 availableForReading = GetDataAvailableForReading ();
+                if (advance > availableForReading) {
+                    advance = availableForReading;
+                }
+                readOffset += advance;
             }
-            readOffset += advance;
             return advance;
         }
 
         ui32 Buffer::AdvanceWriteOffset (ui32 advance) {
-            ui32 availableForWriting = GetDataAvailableForWriting ();
-            if (advance > availableForWriting) {
-                advance = availableForWriting;
+            if (advance > 0) {
+                ui32 availableForWriting = GetDataAvailableForWriting ();
+                if (advance > availableForWriting) {
+                    advance = availableForWriting;
+                }
+                writeOffset += advance;
             }
-            writeOffset += advance;
             return advance;
         }
 
