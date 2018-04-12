@@ -49,6 +49,7 @@
     <choose>
       <when condition = "$(TOOLCHAIN_OS) == 'Windows'">
         <library>Ws2_32.lib</library>
+        <library>Iphlpapi.lib</library>
         <library>mpr.lib</library>
       </when>
       <when condition = "$(TOOLCHAIN_OS) == 'Linux'">

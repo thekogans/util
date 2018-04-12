@@ -23,9 +23,10 @@
         #if !defined (NOMINMAX)
             #define NOMINMAX
         #endif // !defined (NOMINMAX)
-        #include <winsock2.h>
         #include <windows.h>
     #endif // !defined (_WINDOWS_)
+    #include <winsock2.h>
+    #include <iphlpapi.h>
 #elif defined (TOOLCHAIN_OS_Linux) || defined (TOOLCHAIN_OS_OSX)
     #include <ifaddrs.h>
     #include <net/ethernet.h>
