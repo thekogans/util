@@ -15,11 +15,11 @@
 // You should have received a copy of the GNU General Public License
 // along with libthekogans_util. If not, see <http://www.gnu.org/licenses/>.
 
-#include <sstream>
 #include <errno.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
+#include <sstream>
 #include "thekogans/util/Buffer.h"
 #include "thekogans/util/Path.h"
 #include "thekogans/util/Exception.h"

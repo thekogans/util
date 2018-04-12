@@ -24,7 +24,7 @@
     #include "thekogans/util/Singleton.h"
     #include "thekogans/util/SpinLock.h"
 #elif defined (TOOLCHAIN_OS_Linux)
-    #include <time.h>
+    #include <ctime>
 #endif // defined (TOOLCHAIN_OS_OSX)
 #include "thekogans/util/Constants.h"
 #include "thekogans/util/TimeSpec.h"

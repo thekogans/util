@@ -18,7 +18,6 @@
 #if !defined (__thekogans_util_Thread_h)
 #define __thekogans_util_Thread_h
 
-#include <memory>
 #if defined (TOOLCHAIN_OS_Windows)
     #if !defined (_WINDOWS_)
         #if !defined (WIN32_LEAN_AND_MEAN)
@@ -80,6 +79,7 @@
     /// Real time thread priority.
     #define THEKOGANS_UTIL_REAL_TIME_THREAD_PRIORITY 30
 #endif // defined (TOOLCHAIN_OS_Windows)
+#include <memory>
 #include "thekogans/util/Config.h"
 #include "thekogans/util/Types.h"
 #include "thekogans/util/StringUtils.h"

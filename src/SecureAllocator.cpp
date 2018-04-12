@@ -23,8 +23,8 @@
         #if !defined (NOMINMAX)
             #define NOMINMAX
         #endif // !defined (NOMINMAX)
+        #include <windows.h>
     #endif // !defined (_WINDOWS_)
-    #include <windows.h>
 #else // defined (TOOLCHAIN_OS_Windows)
     #include <sys/mman.h>
 #endif // defined (TOOLCHAIN_OS_Windows)
