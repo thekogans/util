@@ -31,6 +31,8 @@
     #include <ifaddrs.h>
     #include <net/ethernet.h>
     #if defined (TOOLCHAIN_OS_Linux)
+        #include <net/if_arp.h>
+        #include <linux/if_packet.h>
         #include <unistd.h>
         #include <climits>
     #elif defined (TOOLCHAIN_OS_OSX)
