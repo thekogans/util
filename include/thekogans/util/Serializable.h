@@ -34,7 +34,8 @@ namespace thekogans {
         /// \brief
         /// Serializable is an abstract base for all supported serializable types (See
         /// \see{Serializer}). It exposes machinery used by descendants to register
-        /// themselves for dynamic discovery and creation.
+        /// themselves for dynamic discovery, creation and serializable insertion and
+        /// extraction.
 
         struct _LIB_THEKOGANS_UTIL_DECL Serializable : public ThreadSafeRefCounted {
             /// \brief
@@ -310,7 +311,7 @@ namespace thekogans {
     #endif // defined (TOOLCHAIN_TYPE_Static)
 
         /// \brief
-        /// Serializable::Header serializer.
+        /// Serializable::Header insertion operator.
         /// \param[in] serializer Where to serialize the serializable header.
         /// \param[in] header Serializable::Header to serialize.
         /// \return serializer.
@@ -326,7 +327,7 @@ namespace thekogans {
         }
 
         /// \brief
-        /// Serializable::Header deserializer.
+        /// Serializable::Header extraction operator.
         /// \param[in] serializer Where to deserialize the serializable header.
         /// \param[in] header Serializable::Header to deserialize.
         /// \return serializer.
