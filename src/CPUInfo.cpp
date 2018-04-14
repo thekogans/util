@@ -108,7 +108,8 @@ namespace thekogans {
                     int function) {
                 __asm__ volatile (
                     "cpuid"
-                    : "=a" (registers[0]), "=b" (registers[1]), "=c" (registers[2]), "=d" (registers[3]): "a" (function));
+                    : "=a" (registers[0]), "=b" (registers[1]), "=c" (registers[2]), "=d" (registers[3])
+                    : "a" (function));
             }
 
             inline void __cpuidex (
