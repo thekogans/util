@@ -144,8 +144,13 @@ namespace thekogans {
 
         ui32 RandomSource::Getui32 () {
             ui32 value;
-            GetBytes (&value, UI32_SIZE);
-            return value;
+            if (GetBytes (&value, UI32_SIZE) == UI32_SIZE) {
+                return value;
+            }
+            else {
+                THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
+                    "Unable to get %u random bytes for value.", UI32_SIZE);
+            }
         }
 
         ui32 RandomSource::GetSeed (
