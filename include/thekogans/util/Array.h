@@ -18,6 +18,7 @@
 #if !defined (__thekogans_util_Array_h)
 #define __thekogans_util_Array_h
 
+#include <cstddef>
 #include <memory>
 #include "thekogans/util/Config.h"
 

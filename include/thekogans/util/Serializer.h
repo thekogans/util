@@ -81,7 +81,7 @@ namespace thekogans {
             /// This template is used to match non-integral types (structs).
             /// NOTE: If you get a compiler error that leads you here, it
             /// usually means that you're trying to serialize a struct and
-            /// you haven't defined a std::size_t Size () const for it.
+            /// you haven't defined a ui32 Size () const for it.
             /// \param[in] t Type whose Size function to call.
             /// \return Size of serialized type.
             template<typename T>

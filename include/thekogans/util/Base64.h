@@ -18,6 +18,7 @@
 #if !defined (__thekogans_util_Base64_h)
 #define __thekogans_util_Base64_h
 
+#include <cstddef>
 #include <vector>
 #include "thekogans/util/Config.h"
 #include "thekogans/util/Types.h"

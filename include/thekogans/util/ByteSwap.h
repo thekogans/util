@@ -18,6 +18,7 @@
 #if !defined (__thekogans_util_ByteSwap_h)
 #define __thekogans_util_ByteSwap_h
 
+#include <cstddef>
 #include <cstdlib>
 #include <stdexcept>
 #include <utility>

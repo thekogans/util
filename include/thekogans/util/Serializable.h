@@ -18,6 +18,7 @@
 #if !defined (__thekogans_util_Serializable_h)
 #define __thekogans_util_Serializable_h
 
+#include <cstddef>
 #include <string>
 #include "thekogans/util/Config.h"
 #include "thekogans/util/Types.h"

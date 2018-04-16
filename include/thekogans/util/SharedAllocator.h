@@ -18,6 +18,7 @@
 #if !defined (__thekogans_util_SharedAllocator_h)
 #define __thekogans_util_SharedAllocator_h
 
+#include <cstddef>
 #include <boost/memory_order.hpp>
 #include <boost/atomic/detail/config.hpp>
 #include <boost/atomic/detail/operations_lockfree.hpp>

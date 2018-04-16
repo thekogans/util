@@ -18,6 +18,7 @@
 #if !defined (__thekogans_util_DefaultAllocator_h)
 #define __thekogans_util_DefaultAllocator_h
 
+#include <cstddef>
 #include "thekogans/util/Config.h"
 #include "thekogans/util/Allocator.h"
 #include "thekogans/util/Exception.h"

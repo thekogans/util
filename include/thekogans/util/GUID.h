@@ -18,6 +18,7 @@
 #if !defined (__thekogans_util_GUID_h)
 #define __thekogans_util_GUID_h
 
+#include <cstddef>
 #include <memory.h>
 #include <iostream>
 #include <string>

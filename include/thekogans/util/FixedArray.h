@@ -18,6 +18,7 @@
 #if !defined (__thekogans_util_FixedArray_h)
 #define __thekogans_util_FixedArray_h
 
+#include <cstddef>
 #include <cstring>
 #include "thekogans/util/Config.h"
 #include "thekogans/util/Exception.h"

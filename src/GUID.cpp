@@ -204,8 +204,13 @@ namespace thekogans {
 
         GUID GUID::FromRandom () {
             GUID guid;
-            GlobalRandomSource::Instance ().GetBytes (guid.data, SIZE);
-            return guid;
+            if (GlobalRandomSource::Instance ().GetBytes (guid.data, SIZE) == SIZE) {
+                return guid;
+            }
+            else {
+                THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
+                    "Unable to get %u random bytes for guid.", SIZE);
+            }
         }
 
     } // namespace util

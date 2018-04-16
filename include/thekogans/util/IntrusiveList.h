@@ -18,6 +18,7 @@
 #if !defined (__thekogans_util_IntrusiveList_h)
 #define __thekogans_util_IntrusiveList_h
 
+#include <cstddef>
 #include <cassert>
 #include <utility>
 #include <functional>

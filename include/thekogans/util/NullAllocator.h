@@ -18,6 +18,7 @@
 #if !defined (__thekogans_util_NullAllocator_h)
 #define __thekogans_util_NullAllocator_h
 
+#include <cstddef>
 #include <memory>
 #include "thekogans/util/Config.h"
 #include "thekogans/util/Allocator.h"

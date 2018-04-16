@@ -20,6 +20,7 @@
 
 #if defined (TOOLCHAIN_OS_Windows)
 
+#include <cstddef>
 #include "thekogans/util/Config.h"
 #include "thekogans/util/Types.h"
 #include "thekogans/util/Allocator.h"

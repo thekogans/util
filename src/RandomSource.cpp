@@ -148,5 +148,72 @@ namespace thekogans {
             return value;
         }
 
+        ui32 RandomSource::GetSeed (
+                void *buffer,
+                std::size_t count) {
+            if (buffer != 0 && count > 0) {
+                LockGuard<SpinLock> guatd (spinLock);
+            #if defined (TOOLCHAIN_ARCH_i386) || defined (TOOLCHAIN_ARCH_x86_64)
+                if (CPUInfo::Instance ().RDSEED ()) {
+                    // This function was inspired by an answer from:
+                    // https://stackoverflow.com/questions/11407103/how-i-can-get-the-random-number-from-intels-processor-with-assembler
+                    std::size_t ui32Count = count >> 2;
+                    ui32 *begin = (ui32 *)buffer;
+                    ui32 *end = begin + ui32Count;
+                    std::size_t retries = ui32Count + 4;
+                    ui32 value;
+                    while (begin < end) {
+                        char rc;
+                    #if defined (TOOLCHAIN_OS_Windows)
+                        rc = _rdseed32_step (&value);
+                    #else // defined (TOOLCHAIN_OS_Windows)
+                        __asm__ volatile (
+                            "rdseed %0 ; setc %1"
+                            : "=r" (value), "=qm" (rc));
+                    #endif // defined (TOOLCHAIN_OS_Windows)
+                        // 1 = success, 0 = underflow
+                        if (rc == 1) {
+                            *begin++ = value;
+                        }
+                        else if (retries-- == 0) {
+                            count = (ui8 *)begin - (ui8 *)buffer;
+                            break;
+                        }
+                    }
+                    if (begin == end) {
+                        std::size_t remainder = count & 3;
+                        while (remainder > 0) {
+                            char rc;
+                        #if defined (TOOLCHAIN_OS_Windows)
+                            rc = _rdseed32_step (&value);
+                        #else // defined (TOOLCHAIN_OS_Windows)
+                            __asm__ volatile (
+                                "rdseed %0 ; setc %1"
+                                : "=r" (value), "=qm" (rc));
+                        #endif // defined (TOOLCHAIN_OS_Windows)
+                            // 1 = success, 0 = underflow
+                            if (rc == 1) {
+                                memcpy (begin, &value, remainder);
+                                break;
+                            }
+                            else if (retries-- == 0) {
+                                count = (ui8 *)begin - (ui8 *)buffer;
+                                break;
+                            }
+                        }
+                    }
+                    // Wipe value on exit.
+                    *((volatile ui32 *)&value) = 0;
+                    return (ui32)count;
+                }
+            #endif // defined (TOOLCHAIN_ARCH_i386) || defined (TOOLCHAIN_ARCH_x86_64)
+                return 0;
+            }
+            else {
+                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
+            }
+        }
+
     } // namespace util
 } // namespace thekogans

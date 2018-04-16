@@ -18,6 +18,7 @@
 #if !defined (__thekogans_util_CRC32_h)
 #define __thekogans_util_CRC32_h
 
+#include <cstddef>
 #include "thekogans/util/Config.h"
 #include "thekogans/util/Types.h"
 

@@ -18,6 +18,7 @@
 #if !defined (__thekogans_util_SecureAllocator_h)
 #define __thekogans_util_SecureAllocator_h
 
+#include <cstddef>
 #if __cplusplus >= 201103L
     #include <utility>
 #endif // __cplusplus >= 201103L

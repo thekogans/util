@@ -18,6 +18,7 @@
 #if !defined (__thekogans_util_Pipeline_h)
 #define __thekogans_util_Pipeline_h
 
+#include <cstddef>
 #include <memory>
 #include <vector>
 #include "thekogans/util/Config.h"

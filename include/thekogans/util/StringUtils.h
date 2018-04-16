@@ -18,6 +18,7 @@
 #if !defined (__thekogans_util_StringUtils_h)
 #define __thekogans_util_StringUtils_h
 
+#include <cstddef>
 #include <cstdarg>
 #include <string>
 #include <vector>

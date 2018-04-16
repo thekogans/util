@@ -87,6 +87,9 @@ namespace thekogans {
 
             /// \brief
             /// Use a system specific entropy source to return a count of random bytes.
+            /// NOTE: There is a very small but > 0 chance that the number
+            /// of bytes returned will be less than what you asked for. You
+            /// should check the return value and act accordingly.
             /// \param[out] buffer Buffer where random bytes will be placed.
             /// \param[in] count Count of random bytes to place in the buffer.
             /// \return Actual count of random bytes placed in the buffer.
@@ -98,6 +101,24 @@ namespace thekogans {
             /// Substitute for system rand function.
             /// \return A random ui32.
             ui32 Getui32 ();
+
+            /// \brief
+            /// Use a hardware entropy source to return a count of seed bytes.
+            /// NOTE: Unlike GetBytes above, this method will not fall back
+            /// on software implementation and will only deliver true random
+            /// bytes. Depending on your use case, there is a very good chance
+            /// that the number of bytes returned will be less than what you
+            /// asked for. This is on purpose. If you're using this routine,
+            /// it's because you have a need for true randomness and I will
+            /// not lie and tell you that I have it when I don't. It's up to
+            /// you to decide how to proceed as you know your code better then
+            /// I do.
+            /// \param[out] buffer Buffer where seed bytes will be placed.
+            /// \param[in] count Count of seed bytes to place in the buffer.
+            /// \return Actual count of seed bytes placed in the buffer.
+            ui32 GetSeed (
+                void *buffer,
+                std::size_t count);
 
             /// \brief
             /// RandomSource is neither copy constructable, nor assignable.

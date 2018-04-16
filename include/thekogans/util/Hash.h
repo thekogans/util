@@ -18,6 +18,7 @@
 #if !defined (__thekogans_util_Hash_h)
 #define __thekogans_util_Hash_h
 
+#include <cstddef>
 #include <string>
 #include <vector>
 #include <list>

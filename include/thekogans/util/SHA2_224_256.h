@@ -18,6 +18,7 @@
 #if !defined (__thekogans_util_SHA2_224_256_h)
 #define __thekogans_util_SHA2_224_256_h
 
+#include <cstddef>
 #include "thekogans/util/Config.h"
 #include "thekogans/util/Types.h"
 #include "thekogans/util/Hash.h"

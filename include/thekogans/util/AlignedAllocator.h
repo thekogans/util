@@ -18,6 +18,7 @@
 #if !defined (__thekogans_util_AlignedAllocator_h)
 #define __thekogans_util_AlignedAllocator_h
 
+#include <cstddef>
 #include <cassert>
 #include "thekogans/util/Config.h"
 #include "thekogans/util/Types.h"

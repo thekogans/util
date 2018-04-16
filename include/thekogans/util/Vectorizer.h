@@ -18,6 +18,7 @@
 #if !defined (__thekogans_util_Vectorizer_h)
 #define __thekogans_util_Vectorizer_h
 
+#include <cstddef>
 #include "thekogans/util/Config.h"
 #include "thekogans/util/Types.h"
 #include "thekogans/util/Constants.h"

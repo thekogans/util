@@ -18,6 +18,7 @@
 #if !defined (__thekogans_util_Constants_h)
 #define __thekogans_util_Constants_h
 
+#include <cstddef>
 #include <climits>
 #include <cfloat>
 #include "thekogans/util/Config.h"
