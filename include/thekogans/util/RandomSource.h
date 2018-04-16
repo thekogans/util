@@ -104,7 +104,10 @@ namespace thekogans {
 
             /// \brief
             /// Use a hardware entropy source to return a count of seed bytes.
-            /// NOTE: Unlike GetBytes above, this method will not fall back
+            /// NOTE: As per Intel's guidance here:
+            /// https://software.intel.com/en-us/blogs/2012/11/17/the-difference-between-rdrand-and-rdseed,
+            /// use of rdseed should be limited to seeding a prng.
+            /// IMPORTANT: Unlike GetBytes above, this method will not fall back
             /// on software implementation and will only deliver true random
             /// bytes. Depending on your use case, there is a very good chance
             /// that the number of bytes returned will be less than what you
@@ -112,7 +115,35 @@ namespace thekogans {
             /// it's because you have a need for true randomness and I will
             /// not lie and tell you that I have it when I don't. It's up to
             /// you to decide how to proceed as you know your code better then
-            /// I do.
+            /// I do. Here is an example from thekogans_crypto seeding OpenSSL
+            /// prng:
+            ///
+            /// \code{.cpp}
+            /// util::SecureBuffer entropy (util::HostEndian, entropyNeeded);
+            /// // Start by trying to get seed bytes.
+            /// entropy.AdvanceWriteOffset (
+            ///     util::GlobalRandomSource::Instance ().GetSeed (
+            ///         entropy.GetWritePtr (),
+            ///         entropy.GetDataAvailableForWriting ()));
+            /// // If entropy couldn't be satisfied with seed bytes,
+            /// // get random bytes.
+            /// if (entropy.GetDataAvailableForWriting () > 0) {
+            ///     entropy.AdvanceWriteOffset (
+            ///         util::GlobalRandomSource::Instance ().GetBytes (
+            ///             entropy.GetWritePtr (),
+            ///             entropy.GetDataAvailableForWriting ()));
+            /// }
+            /// if (entropy.GetDataAvailableForWriting () == 0) {
+            ///     RAND_seed (
+            ///         entropy.GetReadPtr (),
+            ///         (util::i32)entropy.GetDataAvailableForReading ());
+            /// }
+            /// else {
+            ///     THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
+            ///         "Unable to get %u random bytes for seed.", entropy.length);
+            /// }
+            /// \endcode
+            ///
             /// \param[out] buffer Buffer where seed bytes will be placed.
             /// \param[in] count Count of seed bytes to place in the buffer.
             /// \return Actual count of seed bytes placed in the buffer.
