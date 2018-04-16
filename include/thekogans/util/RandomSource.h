@@ -45,20 +45,20 @@ namespace thekogans {
         /// \brief
         /// Uses system specific resources to provide a source of random bytes.
         /// NOTE: If your intended usage is for cryptography, it is very highly
-        /// recommended that you use thekogans::util::SecureBuffer for this task:
+        /// recommended that you use \see{SecureBuffer} for this task:
         ///
         /// \code{.cpp}
-        /// thekogans::util::RandomSource randomSource;
-        /// thekogans::util::SecureBuffer entropy (thekogans::util::HostEndian, entropyNeeded);
-        /// entropy.AdvanceWriteOffset (
-        ///     randomSource.GetBytes (
-        ///         entropy.GetWritePtr (),
-        ///         entropy.GetDataAvailableForWriting ()));
+        /// using namespace thekogans;
+        /// util::SecureBuffer randomBytes (util::HostEndian, randomBytesNeeded);
+        /// randomBytes.AdvanceWriteOffset (
+        ///     util::GlobalRandomSource::Instance ().GetBytes (
+        ///         randomBytes.GetWritePtr (),
+        ///         randomBytes.GetDataAvailableForWriting ()));
         /// \endcode
         ///
-        /// The use of thekogans::util::SecureBuffer will guarantee that
-        /// buffer will be properly cleared when it goes out of scope and
-        /// that it won't be swapped to disc in an event of a core dump.
+        /// The use of \see{SecureBuffer} will guarantee that buffer will be
+        /// properly cleared when it goes out of scope and that it won't be
+        /// swapped out to disc in an event of a core dump.
 
         struct _LIB_THEKOGANS_UTIL_DECL RandomSource {
         private:

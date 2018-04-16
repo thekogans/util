@@ -35,7 +35,8 @@ namespace thekogans {
                 urandom (HostEndian, "/dev/urandom") {
             #endif // defined (TOOLCHAIN_OS_Windows)
         #if defined (TOOLCHAIN_OS_Windows)
-            if (!CryptAcquireContext (&cryptProv, 0, 0, PROV_RSA_FULL, CRYPT_VERIFYCONTEXT | CRYPT_SILENT)) {
+            if (!CryptAcquireContext (&cryptProv, 0, 0,
+                    PROV_RSA_FULL, CRYPT_VERIFYCONTEXT | CRYPT_SILENT)) {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
                     THEKOGANS_UTIL_OS_ERROR_CODE);
             }
@@ -157,9 +158,9 @@ namespace thekogans {
                 void *buffer,
                 std::size_t count) {
             if (buffer != 0 && count > 0) {
-                LockGuard<SpinLock> guatd (spinLock);
             #if defined (TOOLCHAIN_ARCH_i386) || defined (TOOLCHAIN_ARCH_x86_64)
                 if (CPUInfo::Instance ().RDSEED ()) {
+                    LockGuard<SpinLock> guatd (spinLock);
                     // This function was inspired by an answer from:
                     // https://stackoverflow.com/questions/11407103/how-i-can-get-the-random-number-from-intels-processor-with-assembler
                     std::size_t ui32Count = count >> 2;
