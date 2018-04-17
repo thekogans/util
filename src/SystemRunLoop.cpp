@@ -427,44 +427,50 @@ namespace thekogans {
         }
 
         void SystemRunLoop::EnqJob (
-                Job &job,
+                Job::Ptr job,
                 bool wait) {
-            LockGuard<Mutex> guard (jobsMutex);
-            if (stats.jobCount < maxPendingJobs) {
-                job.finished = false;
-                if (type == TYPE_FIFO) {
-                    jobs.push_back (&job);
+            if (job.Get () != 0) {
+                LockGuard<Mutex> guard (jobsMutex);
+                if (stats.jobCount < maxPendingJobs) {
+                    job->finished = false;
+                    if (type == TYPE_FIFO) {
+                        jobs.push_back (job.Get ());
+                    }
+                    else {
+                        jobs.push_front (job.Get ());
+                    }
+                    job->AddRef ();
+                    ++stats.jobCount;
+                    state = Busy;
+                #if defined (TOOLCHAIN_OS_Windows)
+                    PostMessage (window->wnd, RUN_LOOP_MESSAGE, 0, 0);
+                #elif defined (TOOLCHAIN_OS_Linux)
+                    window->PostEvent (XlibWindow::ID_RUN_LOOP);
+                #elif defined (TOOLCHAIN_OS_OSX)
+                    CFRunLoopPerformBlock (
+                        runLoop,
+                        kCFRunLoopCommonModes,
+                        ^(void) {
+                            ExecuteJobs ();
+                        });
+                    CFRunLoopWakeUp (runLoop);
+                #endif // defined (TOOLCHAIN_OS_Windows)
+                    if (wait) {
+                        while (!job->ShouldStop (done) && !job->finished) {
+                            jobFinished.Wait ();
+                        }
+                    }
                 }
                 else {
-                    jobs.push_front (&job);
-                }
-                job.AddRef ();
-                ++stats.jobCount;
-                state = Busy;
-            #if defined (TOOLCHAIN_OS_Windows)
-                PostMessage (window->wnd, RUN_LOOP_MESSAGE, 0, 0);
-            #elif defined (TOOLCHAIN_OS_Linux)
-                window->PostEvent (XlibWindow::ID_RUN_LOOP);
-            #elif defined (TOOLCHAIN_OS_OSX)
-                CFRunLoopPerformBlock (
-                    runLoop,
-                    kCFRunLoopCommonModes,
-                    ^(void) {
-                        ExecuteJobs ();
-                    });
-                CFRunLoopWakeUp (runLoop);
-            #endif // defined (TOOLCHAIN_OS_Windows)
-                if (wait) {
-                    while (!job.ShouldStop (done) && !job.finished) {
-                        jobFinished.Wait ();
-                    }
+                    THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
+                        "SystemRunLoop (%s) max jobs (%u) reached.",
+                        !name.empty () ? name.c_str () : "no name",
+                        maxPendingJobs);
                 }
             }
             else {
-                THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                    "SystemRunLoop (%s) max jobs (%u) reached.",
-                    !name.empty () ? name.c_str () : "no name",
-                    maxPendingJobs);
+                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
             }
         }
 

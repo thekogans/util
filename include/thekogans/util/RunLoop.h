@@ -371,7 +371,7 @@ namespace thekogans {
             /// NOTE: Same constraint applies to Enq as Stop. Namely, you can't call Enq
             /// from the same thread that called Start.
             virtual void EnqJob (
-                Job & /*job*/,
+                Job::Ptr /*job*/,
                 bool /*wait*/ = false) = 0;
 
             /// \brief

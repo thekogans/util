@@ -446,7 +446,7 @@ namespace thekogans {
                 if (it != loggerMap.end () || !defaultLoggers.empty ()) {
                     if (jobQueue.get () != 0) {
                         jobQueue->EnqJob (
-                            *RunLoop::Job::Ptr (
+                            RunLoop::Job::Ptr (
                                 new LogSubsystemJob (
                                     std::move (entry),
                                     it != loggerMap.end () ? it->second : defaultLoggers)));

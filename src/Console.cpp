@@ -217,7 +217,7 @@ namespace thekogans {
                     }
                 };
                 jobQueue->EnqJob (
-                    *RunLoop::Job::Ptr (
+                    RunLoop::Job::Ptr (
                         new PrintJob (str, where, color)));
             }
             else {

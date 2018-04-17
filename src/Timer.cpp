@@ -195,7 +195,7 @@ namespace thekogans {
                                 WorkerPool::WorkerPtr::Ptr workerPtr (
                                     new WorkerPool::WorkerPtr (workerPool));
                                 (*workerPtr)->EnqJob (
-                                    *RunLoop::Job::Ptr (new TimerJob (workerPtr, timer)));
+                                    RunLoop::Job::Ptr (new TimerJob (workerPtr, timer)));
                             }
                             THEKOGANS_UTIL_CATCH_AND_LOG_SUBSYSTEM (THEKOGANS_UTIL)
                         }

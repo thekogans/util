@@ -132,7 +132,7 @@ namespace thekogans {
                     WorkerPool::WorkerPtr::Ptr workerPtr (
                         new WorkerPool::WorkerPtr (workerPool, 0));
                     (*workerPtr)->EnqJob (
-                        *util::RunLoop::Job::Ptr (
+                        util::RunLoop::Job::Ptr (
                             new WorkerJob (workerPtr, *this)));
                 }
             }

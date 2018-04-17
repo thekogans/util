@@ -442,7 +442,7 @@ namespace thekogans {
             /// \param[in] wait Wait for job to finish.
             /// Used for synchronous job execution.
             virtual void EnqJob (
-                Job &job,
+                Job::Ptr job,
                 bool wait = false);
 
             /// \brief

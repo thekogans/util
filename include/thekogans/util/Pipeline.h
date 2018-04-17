@@ -236,7 +236,7 @@ namespace thekogans {
             /// \param[in] job Job to enqueue.
             /// \param[in] stage Stage to enqueue the job on.
             void Enq (
-                Job &job,
+                Job::Ptr job,
                 std::size_t stage = 0);
 
             /// \brief

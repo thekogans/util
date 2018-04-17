@@ -81,10 +81,10 @@ namespace thekogans {
                 /// \param[in] deadline_ Absolute time when the job will be scheduled.
                 /// \param[in] runLoop_ \see{RunLoop} the job will be scheduled on.
                 JobInfo (
-                    RunLoop::Job &job_,
+                    RunLoop::Job::Ptr job_,
                     const TimeSpec &deadline_,
                     RunLoop &runLoop_) :
-                    job (&job_),
+                    job (job_),
                     deadline (deadline_),
                     runLoop (runLoop_) {}
 
@@ -108,7 +108,7 @@ namespace thekogans {
                 /// \brief
                 /// Enqueue the job on the specified run loop.
                 inline void EnqJob () {
-                    runLoop.EnqJob (*job);
+                    runLoop.EnqJob (job);
                 }
 
                 /// \brief
@@ -164,7 +164,7 @@ namespace thekogans {
             /// \return JobInfo::Id which can be used in a call to Cancel.
             /// IMPORTANT: timeSpec is a relative value.
             inline RunLoop::Job::Id Schedule (
-                    RunLoop::Job &job,
+                    RunLoop::Job::Ptr job,
                     const TimeSpec &timeSpec,
                     RunLoop &runLoop = MainRunLoop::Instance ()) {
                 return ScheduleJobInfo (

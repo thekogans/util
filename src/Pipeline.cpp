@@ -35,7 +35,8 @@ namespace thekogans {
                 if (next.Get () != 0) {
                     std::size_t nextStage = next->stage;
                     assert (nextStage < pipeline.stages.size ());
-                    pipeline.stages[nextStage]->EnqJob (*next);
+                    pipeline.stages[nextStage]->EnqJob (
+                        dynamic_refcounted_pointer_cast<RunLoop::Job> (next));
                 }
                 else {
                     End ();
@@ -134,10 +135,11 @@ namespace thekogans {
         }
 
         void Pipeline::Enq (
-                Job &job,
+                Job::Ptr job,
                 std::size_t stage) {
-            if (stage < stages.size ()) {
-                stages[stage]->EnqJob (job);
+            if (job.Get () != 0 && stage < stages.size ()) {
+                stages[stage]->EnqJob (
+                    dynamic_refcounted_pointer_cast<RunLoop::Job> (job));
             }
             else {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (

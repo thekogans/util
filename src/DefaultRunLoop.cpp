@@ -62,32 +62,38 @@ namespace thekogans {
         }
 
         void DefaultRunLoop::EnqJob (
-                Job &job,
+                Job::Ptr job,
                 bool wait) {
-            LockGuard<Mutex> guard (jobsMutex);
-            if (stats.jobCount < maxPendingJobs) {
-                job.finished = false;
-                if (type == TYPE_FIFO) {
-                    jobs.push_back (&job);
+            if (job.Get () != 0) {
+                LockGuard<Mutex> guard (jobsMutex);
+                if (stats.jobCount < maxPendingJobs) {
+                    job->finished = false;
+                    if (type == TYPE_FIFO) {
+                        jobs.push_back (job.Get ());
+                    }
+                    else {
+                        jobs.push_front (job.Get ());
+                    }
+                    job->AddRef ();
+                    ++stats.jobCount;
+                    state = Busy;
+                    jobsNotEmpty.Signal ();
+                    if (wait) {
+                        while (!job->ShouldStop (done) && !job->finished) {
+                            jobFinished.Wait ();
+                        }
+                    }
                 }
                 else {
-                    jobs.push_front (&job);
-                }
-                job.AddRef ();
-                ++stats.jobCount;
-                state = Busy;
-                jobsNotEmpty.Signal ();
-                if (wait) {
-                    while (!job.ShouldStop (done) && !job.finished) {
-                        jobFinished.Wait ();
-                    }
+                    THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
+                        "DefaultRunLoop (%s) max jobs (%u) reached.",
+                        !name.empty () ? name.c_str () : "no name",
+                        maxPendingJobs);
                 }
             }
             else {
-                THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                    "DefaultRunLoop (%s) max jobs (%u) reached.",
-                    !name.empty () ? name.c_str () : "no name",
-                    maxPendingJobs);
+                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
             }
         }
 
