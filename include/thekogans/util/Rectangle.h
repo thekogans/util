@@ -317,7 +317,7 @@ namespace thekogans {
         /// \brief
         /// Serialize the given rectangle.
         /// \param[in] serializer Where to write the given rectangle.
-        /// \param[in] extents Rectangle to write.
+        /// \param[in] rectangle Rectangle to write.
         /// \return serializer.
         inline Serializer &operator << (
                 Serializer &serializer,
@@ -328,7 +328,7 @@ namespace thekogans {
         /// \brief
         /// Deserialize a rectangle.
         /// \param[in] serializer Where to read the rectangle.
-        /// \param[in] extents Rectangle to read.
+        /// \param[in] rectangle Rectangle to read.
         /// \return serializer.
         inline Serializer &operator >> (
                 Serializer &serializer,

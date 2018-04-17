@@ -88,6 +88,7 @@ namespace thekogans {
             THEKOGANS_UTIL_HANDLE handle;
             THEKOGANS_UTIL_ATOMIC<ui64> idPool;
             WorkerPool workerPool;
+            SpinLock spinLock;
 
             TimerQueue () :
                     Thread ("TimerQueue"),
@@ -114,6 +115,7 @@ namespace thekogans {
                     Timer &timer,
                     const TimeSpec &timeSpec,
                     bool periodic) {
+                LockGuard<SpinLock> guard (spinLock);
                 // StartTimer can be called repeatedly without calling StopTimer.
                 // This behavior is desirable when adjusting an already existing
                 // timer. In this case, reuse the existing timer id and EV_ADD will
@@ -135,6 +137,7 @@ namespace thekogans {
             }
 
             void StopTimer (Timer &timer) {
+                LockGuard<SpinLock> guard (spinLock);
                 if (timer.id != NIDX64) {
                     keventStruct event;
                     keventSet (&event, timer.id, EVFILT_TIMER, EV_DELETE, 0, 0, 0);

@@ -583,7 +583,8 @@ namespace thekogans {
         #define THEKOGANS_UTIL_CFERRORREF_EXCEPTION_EX(\
                 file, function, line, buildTime, error)\
             thekogans::util::Exception (file, function, line, buildTime,\
-                CFErrorGetCode (error), thekogans::util::DescriptionFromCFErrorRef (error).c_str ())
+                (thekogans::util::i32)CFErrorGetCode (error),\
+                thekogans::util::DescriptionFromCFErrorRef (error).c_str ())
         /// \def THEKOGANS_UTIL_CFERRORREF_EXCEPTION(error)
         /// Build an Exception from CFErrorRef error.
         #define THEKOGANS_UTIL_CFERRORREF_EXCEPTION(error)\
@@ -767,7 +768,8 @@ namespace thekogans {
                 file, function, line, buildTime, error)\
             THEKOGANS_UTIL_DEBUG_BREAK\
             throw thekogans::util::Exception (file, function, line, buildTime,\
-                CFErrorGetCode (error), thekogans::util::DescriptionFromCFErrorRef (error).c_str ())
+                (thekogans::util::i32)CFErrorGetCode (error),\
+                thekogans::util::DescriptionFromCFErrorRef (error).c_str ())
         /// \def THEKOGANS_UTIL_THROW_CFERRORREF_EXCEPTION(error)
         /// Throw an Exception from CFErrorRef error.
         #define THEKOGANS_UTIL_THROW_CFERRORREF_EXCEPTION(error)\

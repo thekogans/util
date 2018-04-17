@@ -58,7 +58,7 @@ namespace thekogans {
         public:
             /// \brief
             /// ctor.
-            /// \param[in] Delete object when count == 0.
+            /// \param[in] doDelete_ Delete object when count == 0.
             RefCounted (bool doDelete_ = true) :
                 doDelete (doDelete_),
                 count (0) {}

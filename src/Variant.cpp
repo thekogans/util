@@ -413,16 +413,16 @@ namespace thekogans {
                                 value._ui16 = (ui16)strtoul (child.text ().get (), 0, 10);
                                 break;
                             case Variant::TYPE_i32:
-                                value._i32 = strtol (child.text ().get (), 0, 10);
+                                value._i32 = (i32)strtol (child.text ().get (), 0, 10);
                                 break;
                             case Variant::TYPE_ui32:
-                                value._ui32 = strtoul (child.text ().get (), 0, 10);
+                                value._ui32 = (ui32)strtoul (child.text ().get (), 0, 10);
                                 break;
                             case Variant::TYPE_i64:
-                                value._i64 = strtoll (child.text ().get (), 0, 10);
+                                value._i64 = (i64)strtoll (child.text ().get (), 0, 10);
                                 break;
                             case Variant::TYPE_ui64:
-                                value._ui64 = strtoull (child.text ().get (), 0, 10);
+                                value._ui64 = (ui64)strtoull (child.text ().get (), 0, 10);
                                 break;
                             case Variant::TYPE_f32:
                                 value._f32 = (f32)strtof (child.text ().get (), 0);
@@ -527,16 +527,16 @@ namespace thekogans {
                     value._ui16 = (ui16)strtoul (value_.c_str (), 0, 10);
                     break;
                 case Variant::TYPE_i32:
-                    value._i32 = strtol (value_.c_str (), 0, 10);
+                    value._i32 = (i32)strtol (value_.c_str (), 0, 10);
                     break;
                 case Variant::TYPE_ui32:
-                    value._ui32 = strtoul (value_.c_str (), 0, 10);
+                    value._ui32 = (ui32)strtoul (value_.c_str (), 0, 10);
                     break;
                 case Variant::TYPE_i64:
-                    value._i64 = strtoll (value_.c_str (), 0, 10);
+                    value._i64 = (i64)strtoll (value_.c_str (), 0, 10);
                     break;
                 case Variant::TYPE_ui64:
-                    value._ui64 = strtoull (value_.c_str (), 0, 10);
+                    value._ui64 = (ui64)strtoull (value_.c_str (), 0, 10);
                     break;
                 case Variant::TYPE_f32:
                     value._f32 = (f32)strtof (value_.c_str (), 0);
