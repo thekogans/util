@@ -115,7 +115,7 @@ namespace thekogans {
                 void *buffer,
                 std::size_t count) {
             if (buffer != 0 && count > 0) {
-                LockGuard<SpinLock> guatd (spinLock);
+                LockGuard<SpinLock> guard (spinLock);
                 // If a hardware random source exists, use it first.
                 ui32 hardwareCount = GetHardwareBytes (buffer, count);
                 if (hardwareCount == count) {
@@ -160,7 +160,7 @@ namespace thekogans {
             if (buffer != 0 && count > 0) {
             #if defined (TOOLCHAIN_ARCH_i386) || defined (TOOLCHAIN_ARCH_x86_64)
                 if (CPUInfo::Instance ().RDSEED ()) {
-                    LockGuard<SpinLock> guatd (spinLock);
+                    LockGuard<SpinLock> guard (spinLock);
                     // This function was inspired by an answer from:
                     // https://stackoverflow.com/questions/11407103/how-i-can-get-the-random-number-from-intels-processor-with-assembler
                     std::size_t ui32Count = count >> 2;
