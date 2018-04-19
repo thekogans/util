@@ -101,7 +101,7 @@ architectures (x86, MIPS, ARM…). Here is a complete feature list:
 
 libthekogans_util has the following required dependencies:
 
-Windows: Ws2_32.lib, mpr.lib.
+Windows: Ws2_32.lib, mpr.lib, Iphlpapi.lib.
 
 Linux: pthread, rt, dl.
 
