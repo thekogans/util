@@ -111,6 +111,10 @@ namespace thekogans {
                 origin (origin_),
                 extents (extents_) {}
 
+            /// \brief
+            /// Rectangle (0, 0, 0, 0);
+            static Rectangle Empty;
+
             enum {
                 /// \brief
                 /// Serialized rectangle size.

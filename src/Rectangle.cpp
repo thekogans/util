@@ -31,6 +31,8 @@ namespace thekogans {
             return scale;
         }
 
+        Rectangle Rectangle::Empty (0, 0, 0, 0);
+
         void Rectangle::Split (
                 ui32 splitDirection,
                 f32 t,
