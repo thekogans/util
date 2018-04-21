@@ -38,6 +38,7 @@
         #define THEKOGANS_UTIL_USE_POSIX_BARRIER
     #endif // defined (_POSIX_BARRIERS) && (_POSIX_BARRIERS >= 20012L)
 #endif // defined (TOOLCHAIN_OS_Windows)
+#include <cstddef>
 #include "thekogans/util/Config.h"
 #include "thekogans/util/Types.h"
 #if !defined (THEKOGANS_UTIL_USE_WINDOWS_BARRIER) && !defined (THEKOGANS_UTIL_USE_POSIX_BARRIER)
@@ -67,10 +68,10 @@ namespace thekogans {
         #else // defined (THEKOGANS_UTIL_USE_POSIX_BARRIER)
             /// \brief
             /// Number of threads to wait for.
-            const ui32 count;
+            const std::size_t count;
             /// \brief
             /// Number of threads that entered the barrier.
-            ui32 entered;
+            std::size_t entered;
             /// \brief
             /// Synchronization mutex.
             Mutex mutex;
@@ -83,7 +84,7 @@ namespace thekogans {
             /// \brief
             /// ctor.
             /// \param[in] count Number of threads to synchronize.
-            explicit Barrier (ui32 count);
+            explicit Barrier (std::size_t count);
             /// \brief
             /// dtor.
             ~Barrier ();

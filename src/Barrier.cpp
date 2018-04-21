@@ -24,7 +24,7 @@ namespace thekogans {
     namespace util {
 
     #if defined (THEKOGANS_UTIL_USE_WINDOWS_BARRIER)
-        Barrier::Barrier (ui32 count) {
+        Barrier::Barrier (std::size_t count) {
             if (count != 0) {
                 if (!InitializeSynchronizationBarrier (&barrier, count, -1)) {
                     THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
@@ -37,7 +37,7 @@ namespace thekogans {
             }
         }
     #elif defined (THEKOGANS_UTIL_USE_POSIX_BARRIER)
-        Barrier::Barrier (ui32 count) {
+        Barrier::Barrier (std::size_t count) {
             if (count != 0) {
                 THEKOGANS_UTIL_ERROR_CODE errorCode =
                     pthread_barrier_init (&barrier, 0, count);
@@ -51,7 +51,7 @@ namespace thekogans {
             }
         }
     #else // defined (THEKOGANS_UTIL_USE_POSIX_BARRIER)
-        Barrier::Barrier (ui32 count_) :
+        Barrier::Barrier (std::size_t count_) :
                 count (count_),
                 entered (0),
                 condition (mutex) {

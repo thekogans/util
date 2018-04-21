@@ -138,13 +138,13 @@ namespace thekogans {
         /// Return the count of '0' bits in value.
         /// \param[in] value Value to examine.
         /// \return Number of 0 bits in value.
-        _LIB_THEKOGANS_UTIL_DECL ui32 _LIB_THEKOGANS_UTIL_API ZeroBitCount (
+        _LIB_THEKOGANS_UTIL_DECL std::size_t _LIB_THEKOGANS_UTIL_API ZeroBitCount (
             std::size_t value);
         /// \brief
         /// Return the count of '1' bits in value.
         /// \param[in] value Value to examine.
         /// \return Number of 1 bits in value.
-        _LIB_THEKOGANS_UTIL_DECL ui32 _LIB_THEKOGANS_UTIL_API OneBitCount (
+        _LIB_THEKOGANS_UTIL_DECL std::size_t _LIB_THEKOGANS_UTIL_API OneBitCount (
             std::size_t value);
         /// \brief
         /// Align value to the next power of 2.

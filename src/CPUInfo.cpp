@@ -176,7 +176,7 @@ namespace thekogans {
                     // gets the number of the highest valid function ID in
                     // registers[0] and the vendor string in registers[1-3].
                     FixedArray<ui32, 4> registers;
-                    __cpuid ((int *)registers.array, 0);
+                    __cpuid ((int *)(ui32 *)registers, 0);
                     ui32 functionCount = registers[0];
                     // Capture vendor string.
                     ui32 vendor_[] = {
@@ -194,7 +194,7 @@ namespace thekogans {
                     }
                     // Load flags for function 0x00000001.
                     if (functionCount >= 1) {
-                        __cpuidex ((int *)registers.array, 1, 0);
+                        __cpuidex ((int *)(ui32 *)registers, 1, 0);
                         // If on Intel, get the L1 cache line size.
                         if (isIntel) {
                             l1CacheLineSize = (((registers[1] >> 8) & 0xff) * 8);
@@ -204,7 +204,7 @@ namespace thekogans {
                     }
                     // Load flags for function 0x00000007.
                     if (functionCount >= 7) {
-                        __cpuidex ((int *)registers.array, 7, 0);
+                        __cpuidex ((int *)(ui32 *)registers, 7, 0);
                         f_7_EBX = registers[1];
                         f_7_ECX = registers[2];
                     }
@@ -214,11 +214,11 @@ namespace thekogans {
                     // gets the number of the highest valid extended ID in
                     // registers[0].
                     FixedArray<ui32, 4> registers;
-                    __cpuid ((int *)registers.array, 0x80000000);
+                    __cpuid ((int *)(ui32 *)registers, 0x80000000);
                     ui32 functionCount = registers[0];
                     // Load flags for function 0x80000001.
                     if (functionCount >= 0x80000001) {
-                        __cpuidex ((int *)registers.array, 0x80000001, 0);
+                        __cpuidex ((int *)(ui32 *)registers, 0x80000001, 0);
                         f_81_ECX = registers[2];
                         f_81_EDX = registers[3];
                     }
@@ -230,14 +230,14 @@ namespace thekogans {
                             FixedArray<ui32, 4> (0),
                             FixedArray<ui32, 4> (0)
                         };
-                        __cpuidex ((int *)brand_[0].array, 0x80000002, 0);
-                        __cpuidex ((int *)brand_[1].array, 0x80000003, 0);
-                        __cpuidex ((int *)brand_[2].array, 0x80000004, 0);
+                        __cpuidex ((int *)(ui32 *)brand_[0], 0x80000002, 0);
+                        __cpuidex ((int *)(ui32 *)brand_[1], 0x80000003, 0);
+                        __cpuidex ((int *)(ui32 *)brand_[2], 0x80000004, 0);
                         brand = (const char *)brand_;
                     }
                     // If on AMD, get the L1 cache line size.
                     if (isAMD && functionCount >= 0x80000005) {
-                        __cpuidex ((int *)registers.array, 0x80000005, 0);
+                        __cpuidex ((int *)(ui32 *)registers, 0x80000005, 0);
                         l1CacheLineSize = registers[2] & 0xff;
                     }
                 }

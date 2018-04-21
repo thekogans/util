@@ -39,7 +39,7 @@
 namespace thekogans {
     namespace util {
 
-        ChildProcess::StdIO::StdIO (ui32 hookStdIO_) :
+        ChildProcess::StdIO::StdIO (std::size_t hookStdIO_) :
                 hookStdIO (hookStdIO_) {
             {
                 inPipe[0] = THEKOGANS_UTIL_INVALID_HANDLE_VALUE;
@@ -269,7 +269,7 @@ namespace thekogans {
 
         ChildProcess::ChildProcess (
                 const std::string &path_,
-                ui32 hookStdIO_) :
+                std::size_t hookStdIO_) :
                 path (path_),
                 hookStdIO (hookStdIO_) {
         #if defined (TOOLCHAIN_OS_Windows)
@@ -596,10 +596,10 @@ namespace thekogans {
 
         Buffer::UniquePtr ChildProcess::CollectOutput (
                 THEKOGANS_UTIL_HANDLE handle,
-                ui32 chunkSize,
+                std::size_t chunkSize,
                 bool reap,
                 const TimeSpec &timeSpec) {
-            Buffer::UniquePtr buffer (new Buffer (HostEndian, chunkSize));
+            Buffer::UniquePtr buffer (new Buffer (HostEndian, (ui32)chunkSize));
             TenantFile stdOut (HostEndian, handle, std::string ());
             while (buffer->AdvanceWriteOffset (
                     stdOut.Read (buffer->GetWritePtr (), buffer->GetDataAvailableForWriting ())) > 0) {

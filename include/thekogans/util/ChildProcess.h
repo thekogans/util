@@ -110,7 +110,7 @@ namespace thekogans {
             std::string path;
             /// \brief
             /// Type of io to hook.
-            ui32 hookStdIO;
+            std::size_t hookStdIO;
             /// \brief
             /// Child process startup directory.
             std::string startupDirectory;
@@ -149,7 +149,7 @@ namespace thekogans {
 
                 /// \brief
                 /// Type of io to hook.
-                ui32 hookStdIO;
+                std::size_t hookStdIO;
                 /// \brief
                 /// Pipes for stdin.
                 THEKOGANS_UTIL_HANDLE inPipe[2];
@@ -163,7 +163,7 @@ namespace thekogans {
                 /// \brief
                 /// ctor.
                 /// \param[in] hookStdIO_ Flags to specify what if any stdio to hook.
-                explicit StdIO (ui32 hookStdIO_);
+                explicit StdIO (std::size_t hookStdIO_);
                 /// \brief
                 /// dtor.
                 ~StdIO ();
@@ -191,7 +191,7 @@ namespace thekogans {
             /// \param[in] hookStdIO_ Flags to specify what if any stdio to hook.
             ChildProcess (
                 const std::string &path_ = std::string (),
-                ui32 hookStdIO_ = HOOK_NONE);
+                std::size_t hookStdIO_ = HOOK_NONE);
         #if defined (TOOLCHAIN_OS_Windows)
             /// \brief
             /// dtor.
@@ -214,13 +214,13 @@ namespace thekogans {
             /// \brief
             /// Get the type of standard io to hook.
             /// \return Type of standard io to hook.
-            inline ui32 GetHookStdIO () const {
+            inline std::size_t GetHookStdIO () const {
                 return hookStdIO;
             }
             /// \brief
             /// Set the type of standard io to hook.
             /// \param[in] hookStdIO_ Type of standard io to hook.
-            inline void SetHookStdIO (ui32 hookStdIO_) {
+            inline void SetHookStdIO (std::size_t hookStdIO_) {
                 hookStdIO = hookStdIO_;
             }
 
@@ -414,7 +414,7 @@ namespace thekogans {
             /// \return Buffer containing the child's output.
             Buffer::UniquePtr CollectOutput (
                 THEKOGANS_UTIL_HANDLE handle,
-                ui32 chunkSize = DEFAULT_CHUNK_SIZE,
+                std::size_t chunkSize = DEFAULT_CHUNK_SIZE,
                 bool reap = true,
                 const TimeSpec &timeSpec = TimeSpec::Zero);
 

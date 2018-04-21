@@ -127,7 +127,7 @@ namespace thekogans {
             };
             static const char *hexTable = "0123456789ABCDEF";
             Array<ui8> encodedUri (uri.size () * 3);
-            ui8 *ptr = encodedUri.array;
+            ui8 *ptr = encodedUri;
             for (const ui8 *start = (const ui8 *)uri.c_str (),
                      *end = start + uri.size (); start < end; ++start) {
                 if (safeChar[*start]) {
@@ -140,7 +140,7 @@ namespace thekogans {
                     *ptr++ = hexTable[*start & 0x0f];
                 }
             }
-            return std::string ((char *)encodedUri.array, (char *)ptr);
+            return std::string ((char *)(ui8 *)encodedUri, (char *)ptr);
         }
 
         _LIB_THEKOGANS_UTIL_DECL std::string _LIB_THEKOGANS_UTIL_API DecodeURI (
@@ -165,7 +165,7 @@ namespace thekogans {
                 /* F */ 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff
             };
             Array<ui8> decodedUri (uri.size ());
-            ui8 *ptr = decodedUri.array;
+            ui8 *ptr = decodedUri;
             // IMPORTANT NOTE FROM RFC1630:
             // "Sequences which start with a percent sign but
             // are not followed by two hexadecimal characters
@@ -184,7 +184,7 @@ namespace thekogans {
                     *ptr++ = *start++;
                 }
             }
-            return std::string ((char *)decodedUri.array, (char *)ptr);
+            return std::string ((char *)(ui8 *)decodedUri, (char *)ptr);
         }
 
         _LIB_THEKOGANS_UTIL_DECL std::string _LIB_THEKOGANS_UTIL_API Encodestring (

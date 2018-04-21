@@ -470,8 +470,8 @@ namespace thekogans {
             getenv_s (&requiredSize, 0, 0, name);
             if (requiredSize > 0) {
                 Array<char> value (requiredSize);
-                if (getenv_s (&requiredSize, value.array, requiredSize, name) == 0) {
-                    return value.array;
+                if (getenv_s (&requiredSize, value, requiredSize, name) == 0) {
+                    return value;
                 }
                 else {
                     THEKOGANS_UTIL_THROW_POSIX_ERROR_CODE_EXCEPTION (
