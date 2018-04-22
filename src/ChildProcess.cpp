@@ -44,7 +44,7 @@ namespace thekogans {
             {
                 inPipe[0] = THEKOGANS_UTIL_INVALID_HANDLE_VALUE;
                 inPipe[1] = THEKOGANS_UTIL_INVALID_HANDLE_VALUE;
-                if (Flags32 (hookStdIO).Test (ChildProcess::HOOK_STDIN)) {
+                if (Flags<std::size_t> (hookStdIO).Test (ChildProcess::HOOK_STDIN)) {
                     if (pipe (inPipe) < 0) {
                         THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
                             THEKOGANS_UTIL_OS_ERROR_CODE);
@@ -61,7 +61,7 @@ namespace thekogans {
             {
                 outPipe[0] = THEKOGANS_UTIL_INVALID_HANDLE_VALUE;
                 outPipe[1] = THEKOGANS_UTIL_INVALID_HANDLE_VALUE;
-                if (Flags32 (hookStdIO).Test (ChildProcess::HOOK_STDOUT)) {
+                if (Flags<std::size_t> (hookStdIO).Test (ChildProcess::HOOK_STDOUT)) {
                     if (pipe (outPipe) < 0) {
                         THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
                             THEKOGANS_UTIL_OS_ERROR_CODE);
@@ -78,7 +78,7 @@ namespace thekogans {
             {
                 errPipe[0] = THEKOGANS_UTIL_INVALID_HANDLE_VALUE;
                 errPipe[1] = THEKOGANS_UTIL_INVALID_HANDLE_VALUE;
-                if (Flags32 (hookStdIO).Test (ChildProcess::HOOK_STDERR)) {
+                if (Flags<std::size_t> (hookStdIO).Test (ChildProcess::HOOK_STDERR)) {
                     if (pipe (errPipe) < 0) {
                         THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
                             THEKOGANS_UTIL_OS_ERROR_CODE);
@@ -604,7 +604,7 @@ namespace thekogans {
             while (buffer->AdvanceWriteOffset (
                     stdOut.Read (buffer->GetWritePtr (), buffer->GetDataAvailableForWriting ())) > 0) {
                 if (buffer->GetDataAvailableForWriting () == 0) {
-                    buffer->Resize (buffer->GetDataAvailableForReading () + chunkSize);
+                    buffer->Resize (buffer->GetDataAvailableForReading () + (ui32)chunkSize);
                 }
             }
             if (reap) {
