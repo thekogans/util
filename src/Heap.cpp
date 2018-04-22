@@ -23,7 +23,7 @@ namespace thekogans {
 
         void HeapRegistry::AddHeap (
                 const std::string &name,
-                StatsGenerator *heap) {
+                Diagnostics *heap) {
             assert (!name.empty ());
             assert (heap != 0);
             LockGuard<SpinLock> guard (spinLock);
@@ -38,6 +38,19 @@ namespace thekogans {
             }
         }
 
+        bool HeapRegistry::IsValidPtr (void *ptr) throw () {
+            if (ptr != 0) {
+                LockGuard<SpinLock> guard (spinLock);
+                for (Map::const_iterator it = map.begin (),
+                        end = map.end (); it != end; ++it) {
+                    if (it->second->IsValidPtr (ptr)) {
+                        return true;
+                    }
+                }
+            }
+            return false;
+        }
+
         void HeapRegistry::DumpHeaps (
                 const std::string &header,
                 std::ostream &stream) {
@@ -47,7 +60,7 @@ namespace thekogans {
             }
             for (Map::const_iterator it = map.begin (),
                     end = map.end (); it != end; ++it) {
-                StatsGenerator::Stats::UniquePtr stats = it->second->GetStats ();
+                Diagnostics::Stats::UniquePtr stats = it->second->GetStats ();
                 if (stats.get () != 0) {
                     stats->Dump (stream);
                 }

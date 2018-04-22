@@ -200,6 +200,8 @@ namespace thekogans {
         ///              reflect the change. Heap is now usable in situations
         ///              that call for Allocators that have a non trivial
         ///              ctor.
+        /// 04/22/2018 - version 2.5.0
+        ///              Added HeapRegistry::IsValidPtr.
         ///
         /// Author:
         ///
@@ -544,15 +546,22 @@ namespace thekogans {
 
         struct _LIB_THEKOGANS_UTIL_DECL HeapRegistry :
                 public Singleton<HeapRegistry, SpinLock> {
-            /// \struct HeapRegistry::StatsGenerator Heap.h thekogans/util/Heap.h
+            /// \struct HeapRegistry::Diagnostics Heap.h thekogans/util/Heap.h
             ///
             /// \brief
             /// An abstract base for the heap template to provide the stats.
-            struct StatsGenerator {
+            struct Diagnostics {
                 /// \brief
                 /// dtor.
-                virtual ~StatsGenerator () {}
-                /// \struct HeapRegistry::StatsGenerator::Stats Heap.h thekogans/util/Heap.h
+                virtual ~Diagnostics () {}
+
+                /// \brief
+                /// Return true if the given pointer is one of ours.
+                /// \param[in] ptr Pointer to check.
+                /// \return true == we own the pointer, false == the pointer is not one of ours.
+                virtual bool IsValidPtr (void *ptr) throw () = 0;
+
+                /// \struct HeapRegistry::Diagnostics::Stats Heap.h thekogans/util/Heap.h
                 ///
                 /// \brief
                 /// Heap stats.
@@ -568,14 +577,15 @@ namespace thekogans {
                     /// \param[in] stream std::ostream to dump the stats to.
                     virtual void Dump (std::ostream & /*stream*/ = std::cout) const = 0;
                 };
+
                 /// \brief
                 /// Return the snapshot of the heap state.
                 /// \return Snapshot of the heap state.
                 virtual Stats::UniquePtr GetStats () = 0;
             };
             /// \brief
-            /// Convenient typedef for std::map<std::string, StatsGenerator *>.
-            typedef std::map<std::string, StatsGenerator *> Map;
+            /// Convenient typedef for std::map<std::string, Diagnostics *>.
+            typedef std::map<std::string, Diagnostics *> Map;
             /// \brief
             /// Heap map.
             Map map;
@@ -587,11 +597,22 @@ namespace thekogans {
             /// Add a heap to the registry.
             /// \param[in] name Heap name.
             /// \param[in] heap Heap to add.
-            void AddHeap (const std::string &name, StatsGenerator *heap);
+            void AddHeap (
+                const std::string &name,
+                Diagnostics *heap);
             /// \brief
             /// Remove a named heap from the registry.
             /// \param[in] name Heap name.
             void DeleteHeap (const std::string &name);
+
+            /// \brief
+            /// Return true if the given pointer belongs to any of the heaps we manage.
+            /// NOTE: In order to honor the throw () we cannot de-reference the pointer.
+            /// We therefore search all pages in all heaps comparing range. Depending
+            /// on the state of your heaps, this could be a very costly operation.
+            /// \param[in] ptr Pointer to check.
+            /// \return true == heap pointer, false == not a heap pointer.
+            bool IsValidPtr (void *ptr) throw ();
 
             /// \brief
             /// Use this method to dump the state of all
@@ -611,7 +632,7 @@ namespace thekogans {
         template<
             typename T,
             typename Lock = NullLock>
-        struct Heap : public HeapRegistry::StatsGenerator {
+        struct Heap : public HeapRegistry::Diagnostics {
         protected:
             /// \brief
             /// Forward declaration of Page.
@@ -779,8 +800,20 @@ namespace thekogans {
                     --allocatedItems;
                 }
 
+                /// \brief
+                /// Return true if the given pointer is one of ours.
+                /// \param[in] ptr Pointer to check.
+                /// \return true == we own the pointer, false == the pointer is not one of ours.
+                inline bool IsValidPtr (void *ptr) {
+                #if defined (TOOLCHAIN_CONFIG_Debug)
+                    Item *item = (Item *)((std::size_t *)ptr - 1);
+                #else // defined (TOOLCHAIN_CONFIG_Debug)
+                    Item *item = (Item *)ptr;
+                #endif // defined (TOOLCHAIN_CONFIG_Debug)
+                    return IsItem (item);
+                }
+
             private:
-            #if defined (TOOLCHAIN_CONFIG_Debug)
                 /// \brief
                 /// Perform sanity checks on the pointer to
                 /// determine if it belongs to this page.
@@ -793,6 +826,7 @@ namespace thekogans {
                         item >= items && item < &items[maxItems] &&
                         (std::ptrdiff_t)((const std::size_t)item -
                             (const std::size_t)items) % sizeof (Item) == 0 &&
+                    #if defined (TOOLCHAIN_CONFIG_Debug)
                         // The test for magic is a lot more convincing
                         // once we verified that this is indeed one of
                         // our pointers.
@@ -802,8 +836,10 @@ namespace thekogans {
                         // Either way, this is an application bug, and
                         // hopefully this will make it easier to find.
                         item->magic1 == MAGIC && item->magic2 == MAGIC;
+                    #else // defined (TOOLCHAIN_CONFIG_Debug)
+                        1;
+                    #endif // defined (TOOLCHAIN_CONFIG_Debug)
                 }
-            #endif // defined (TOOLCHAIN_CONFIG_Debug)
 
                 /// \brief
                 /// Page is neither copy constructable, nor assignable.
@@ -875,13 +911,19 @@ namespace thekogans {
                 HeapRegistry::Instance ().DeleteHeap (name);
             }
 
-            // HeapRegistry::StatsGenerator::Stats
+            /// \brief
+            /// Return true if the given pointer is one of ours.
+            /// \param[in] ptr Pointer to check.
+            /// \return true == we own the pointer, false == the pointer is not one of ours.
+            virtual bool IsValidPtr (void *ptr) throw ();
+
+            // HeapRegistry::Diagnostics::Stats
             /// \struct Heap::Stats Heap.h thekogans/util/Heap.h
             ///
             /// \brief
             /// Contains a snapshop of the heap stats.
             /// This is very useful for debugging.
-            struct Stats : public HeapRegistry::StatsGenerator::Stats {
+            struct Stats : public HeapRegistry::Diagnostics::Stats {
                 /// \brief
                 /// Heap name.
                 std::string name;
@@ -946,11 +988,17 @@ namespace thekogans {
             /// \brief
             /// Return a snapshot of the heap state.
             /// \return A snapshot of the heap state.
-            virtual HeapRegistry::StatsGenerator::Stats::UniquePtr GetStats () {
+            virtual HeapRegistry::Diagnostics::Stats::UniquePtr GetStats () {
                 LockGuard<Lock> guard (lock);
-                return HeapRegistry::StatsGenerator::Stats::UniquePtr (
-                    new Stats (name, sizeof (T), minItemsInPage, minPageSize,
-                        itemCount, fullPages.count, partialPages.count));
+                return HeapRegistry::Diagnostics::Stats::UniquePtr (
+                    new Stats (
+                        name,
+                        sizeof (T),
+                        minItemsInPage,
+                        minPageSize,
+                        itemCount,
+                        fullPages.count,
+                        partialPages.count));
             }
 
             /// \brief
@@ -1037,7 +1085,33 @@ namespace thekogans {
             THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (Heap)
         };
 
-        template<typename T, typename Lock>
+        template<
+            typename T,
+            typename Lock>
+        bool Heap<T, Lock>::IsValidPtr (void *ptr) throw () {
+            if (ptr != 0) {
+                LockGuard<Lock> guard (lock);
+                // To honor the no throw promise, we can't assume the
+                // pointer came from this heap. We can't even assume
+                // that it is valid (we cannot de-reference it). We
+                // therefore search through our pages to see if the
+                // given pointer lies within range.
+                struct Callback : public PageList::Callback {
+                    void *ptr;
+                    explicit Callback (void *ptr_) :
+                        ptr (ptr_) {}
+                    virtual bool operator () (Page *page) {
+                        return !page->IsValidPtr (ptr);
+                    }
+                } callback (ptr);
+                return !fullPages.for_each (callback) || !partialPages.for_each (callback);
+            }
+            return false;
+        }
+
+        template<
+            typename T,
+            typename Lock>
         void *Heap<T, Lock>::Alloc (bool nothrow) {
             LockGuard<Lock> guard (lock);
             Page *page = GetPage ();
@@ -1062,7 +1136,9 @@ namespace thekogans {
             return 0;
         }
 
-        template<typename T, typename Lock>
+        template<
+            typename T,
+            typename Lock>
         void Heap<T, Lock>::Free (
                 void *ptr,
                 bool nothrow) {
@@ -1098,7 +1174,9 @@ namespace thekogans {
             }
         }
 
-        template<typename T, typename Lock>
+        template<
+            typename T,
+            typename Lock>
         void Heap<T, Lock>::Flush () {
             LockGuard<Lock> guard (lock);
             itemCount = 0;

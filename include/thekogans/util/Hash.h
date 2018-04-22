@@ -161,7 +161,7 @@ namespace thekogans {
         /// Compare two digests for equality.
         /// \param[in] digest1 First digest to compare.
         /// \param[in] digest2 Second digest to compare.
-        /// \retunr true = equal, false = not equal.
+        /// \return true = equal, false = not equal.
         inline bool operator == (
                 const Hash::Digest &digest1,
                 const Hash::Digest &digest2) {
@@ -173,7 +173,7 @@ namespace thekogans {
         /// Compare two digests for inequality.
         /// \param[in] digest1 First digest to compare.
         /// \param[in] digest2 Second digest to compare.
-        /// \retunr true = not equal, false = equal.
+        /// \return true = not equal, false = equal.
         inline bool operator != (
                 const Hash::Digest &digest1,
                 const Hash::Digest &digest2) {
