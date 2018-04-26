@@ -175,6 +175,7 @@ namespace thekogans {
                         jobs.erase (job);
                         --stats.jobCount;
                         if (busyWorkers == 0 && jobs.empty ()) {
+                            assert (state == Busy);
                             state = Idle;
                             idle.SignalAll ();
                         }
@@ -202,7 +203,8 @@ namespace thekogans {
                         --stats.jobCount;
                     }
                 }
-                if (busyWorkers == 0 && jobs.empty ()) {
+                if (busyWorkers == 0 && jobs.empty () && !jobs_.empty ()) {
+                    assert (state == Busy);
                     state = Idle;
                     idle.SignalAll ();
                 }
@@ -227,10 +229,10 @@ namespace thekogans {
             {
                 LockGuard<Mutex> guard (jobsMutex);
                 if (!jobs.empty ()) {
-                    assert (state == Busy);
                     jobs.swap (jobs_);
                     stats.jobCount = 0;
                     if (busyWorkers == 0) {
+                        assert (state == Busy);
                         state = Idle;
                         idle.SignalAll ();
                     }
@@ -298,9 +300,9 @@ namespace thekogans {
                 ui64 end) {
             {
                 LockGuard<Mutex> guard (jobsMutex);
-                assert (state == Busy);
                 stats.Update (job.id, start, end);
                 if (--busyWorkers == 0 && jobs.empty ()) {
+                    assert (state == Busy);
                     state = Idle;
                     idle.SignalAll ();
                 }
