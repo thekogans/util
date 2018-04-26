@@ -270,16 +270,21 @@ namespace thekogans {
                 Job &job,
                 ui64 start,
                 ui64 end) {
-            LockGuard<Mutex> guard (jobsMutex);
-            assert (state == Busy);
-            stats.Update (job.id, start, end);
+            {
+                LockGuard<Mutex> guard (jobsMutex);
+                assert (state == Busy);
+                stats.Update (job.id, start, end);
+                jobFinished.SignalAll ();
+                if (--busyWorkers == 0 && jobs.empty ()) {
+                    state = Idle;
+                    idle.SignalAll ();
+                }
+            }
+            // NOTE: This work needs to be done without holding a
+            // jobsMutex as the job dtor itself can call Stop (as is
+            // done by the WorkerPool::WorkerPtr).
             job.finished = true;
             job.Release ();
-            jobFinished.SignalAll ();
-            if (--busyWorkers == 0 && jobs.empty ()) {
-                state = Idle;
-                idle.SignalAll ();
-            }
         }
 
         bool JobQueue::SetDone (bool value) {

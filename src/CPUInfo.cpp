@@ -177,12 +177,12 @@ namespace thekogans {
                     // registers[0] and the vendor string in registers[1-3].
                     FixedArray<ui32, 4> registers;
                     __cpuid ((int *)(ui32 *)registers, 0);
-                    ui32 functionCount = registers[0];
+                    ui32 functionCount = registers.array[0];
                     // Capture vendor string.
                     ui32 vendor_[] = {
-                        registers[1],
-                        registers[3],
-                        registers[2],
+                        registers.array[1],
+                        registers.array[3],
+                        registers.array[2],
                         0
                     };
                     vendor = (const char *)vendor_;
@@ -197,30 +197,30 @@ namespace thekogans {
                         __cpuidex ((int *)(ui32 *)registers, 1, 0);
                         // If on Intel, get the L1 cache line size.
                         if (isIntel) {
-                            l1CacheLineSize = (((registers[1] >> 8) & 0xff) * 8);
+                            l1CacheLineSize = (((registers.array[1] >> 8) & 0xff) * 8);
                         }
-                        f_1_ECX = registers[2];
-                        f_1_EDX = registers[3];
+                        f_1_ECX = registers.array[2];
+                        f_1_EDX = registers.array[3];
                     }
                     // Load flags for function 0x00000007.
                     if (functionCount >= 7) {
                         __cpuidex ((int *)(ui32 *)registers, 7, 0);
-                        f_7_EBX = registers[1];
-                        f_7_ECX = registers[2];
+                        f_7_EBX = registers.array[1];
+                        f_7_ECX = registers.array[2];
                     }
                 }
                 {
                     // Calling __cpuid with 0x80000000 as the function argument
                     // gets the number of the highest valid extended ID in
-                    // registers[0].
+                    // registers.array[0].
                     FixedArray<ui32, 4> registers;
                     __cpuid ((int *)(ui32 *)registers, 0x80000000);
-                    ui32 functionCount = registers[0];
+                    ui32 functionCount = registers.array[0];
                     // Load flags for function 0x80000001.
                     if (functionCount >= 0x80000001) {
                         __cpuidex ((int *)(ui32 *)registers, 0x80000001, 0);
-                        f_81_ECX = registers[2];
-                        f_81_EDX = registers[3];
+                        f_81_ECX = registers.array[2];
+                        f_81_EDX = registers.array[3];
                     }
                     // Interpret CPU brand string if reported.
                     if (functionCount >= 0x80000004) {
@@ -238,7 +238,7 @@ namespace thekogans {
                     // If on AMD, get the L1 cache line size.
                     if (isAMD && functionCount >= 0x80000005) {
                         __cpuidex ((int *)(ui32 *)registers, 0x80000005, 0);
-                        l1CacheLineSize = registers[2] & 0xff;
+                        l1CacheLineSize = registers.array[2] & 0xff;
                     }
                 }
             }

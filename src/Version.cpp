@@ -26,6 +26,11 @@ namespace thekogans {
 
         const Version Version::Empty (0, 0, 0);
 
+    #if defined (_MSC_VER)
+        #pragma warning (push)
+        #pragma warning (disable : 4996)
+    #endif // defined (_MSC_VER)
+
         Version::Version (const std::string &value) :
                 majorVersion (0),
                 minorVersion (0),
@@ -38,6 +43,10 @@ namespace thekogans {
                 }
             }
         }
+
+    #if defined (_MSC_VER)
+        #pragma warning (pop)
+    #endif // defined (_MSC_VER)
 
         void Version::IncMajorVersion () {
             ++majorVersion;
