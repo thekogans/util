@@ -167,45 +167,47 @@ namespace thekogans {
         }
 
         bool JobQueue::CancelJob (const Job::Id &jobId) {
-            LockGuard<Mutex> guard (jobsMutex);
-            for (Job *job = jobs.front (); job != 0; job = jobs.next (job)) {
-                if (job->GetId () == jobId) {
-                    jobs.erase (job);
-                    job->Cancel ();
-                    job->Release ();
-                    --stats.jobCount;
-                    jobFinished.SignalAll ();
-                    if (busyWorkers == 0 && jobs.empty ()) {
-                        state = Idle;
-                        idle.SignalAll ();
+            Job *job = 0;
+            {
+                LockGuard<Mutex> guard (jobsMutex);
+                for (job = jobs.front (); job != 0; job = jobs.next (job)) {
+                    if (job->GetId () == jobId) {
+                        jobs.erase (job);
+                        --stats.jobCount;
+                        if (busyWorkers == 0 && jobs.empty ()) {
+                            state = Idle;
+                            idle.SignalAll ();
+                        }
+                        break;
                     }
-                    return true;
                 }
+            }
+            if (job != 0) {
+                job->Cancel ();
+                job->Release ();
+                jobFinished.SignalAll ();
+                return true;
             }
             return false;
         }
 
         void JobQueue::CancelJobs (const EqualityTest &equalityTest) {
-            LockGuard<Mutex> guard (jobsMutex);
-            for (Job *job = jobs.front (); job != 0; job = jobs.next (job)) {
-                if (equalityTest (*job)) {
-                    jobs.erase (job);
-                    job->Cancel ();
-                    job->Release ();
-                    --stats.jobCount;
-                    jobFinished.SignalAll ();
-                    if (busyWorkers == 0 && jobs.empty ()) {
-                        state = Idle;
-                        idle.SignalAll ();
+            JobList jobs_;
+            {
+                LockGuard<Mutex> guard (jobsMutex);
+                for (Job *job = jobs.front (); job != 0; job = jobs.next (job)) {
+                    if (equalityTest (*job)) {
+                        jobs.erase (job);
+                        jobs_.push_back (job);
+                        --stats.jobCount;
                     }
                 }
+                if (busyWorkers == 0 && jobs.empty ()) {
+                    state = Idle;
+                    idle.SignalAll ();
+                }
             }
-        }
-
-        void JobQueue::CancelAllJobs () {
-            LockGuard<Mutex> guard (jobsMutex);
-            if (!jobs.empty ()) {
-                assert (state == Busy);
+            if (!jobs_.empty ()) {
                 struct Callback : public JobList::Callback {
                     typedef JobList::Callback::result_type result_type;
                     typedef JobList::Callback::argument_type argument_type;
@@ -215,13 +217,37 @@ namespace thekogans {
                         return true;
                     }
                 } callback;
-                jobs.clear (callback);
-                stats.jobCount = 0;
+                jobs_.clear (callback);
                 jobFinished.SignalAll ();
-                if (busyWorkers == 0) {
-                    state = Idle;
-                    idle.SignalAll ();
+            }
+        }
+
+        void JobQueue::CancelAllJobs () {
+            JobList jobs_;
+            {
+                LockGuard<Mutex> guard (jobsMutex);
+                if (!jobs.empty ()) {
+                    assert (state == Busy);
+                    jobs.swap (jobs_);
+                    stats.jobCount = 0;
+                    if (busyWorkers == 0) {
+                        state = Idle;
+                        idle.SignalAll ();
+                    }
                 }
+            }
+            if (!jobs_.empty ()) {
+                struct Callback : public JobList::Callback {
+                    typedef JobList::Callback::result_type result_type;
+                    typedef JobList::Callback::argument_type argument_type;
+                    virtual result_type operator () (argument_type job) {
+                        job->Cancel ();
+                        job->Release ();
+                        return true;
+                    }
+                } callback;
+                jobs_.clear (callback);
+                jobFinished.SignalAll ();
             }
         }
 
@@ -274,7 +300,6 @@ namespace thekogans {
                 LockGuard<Mutex> guard (jobsMutex);
                 assert (state == Busy);
                 stats.Update (job.id, start, end);
-                jobFinished.SignalAll ();
                 if (--busyWorkers == 0 && jobs.empty ()) {
                     state = Idle;
                     idle.SignalAll ();
@@ -285,6 +310,7 @@ namespace thekogans {
             // done by the WorkerPool::WorkerPtr).
             job.finished = true;
             job.Release ();
+            jobFinished.SignalAll ();
         }
 
         bool JobQueue::SetDone (bool value) {
