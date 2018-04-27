@@ -50,7 +50,7 @@ namespace thekogans {
                     job->Execute (queue.done);
                     job->Epilogue (queue.done);
                     ui64 end = HRTimer::Click ();
-                    queue.FinishedJob (*job, start, end);
+                    queue.FinishedJob (job, start, end);
                 }
             }
         }
@@ -314,20 +314,14 @@ namespace thekogans {
             return job;
         }
 
-        namespace {
-            struct ReleaseJobQueue : public JobQueue {
-                ReleaseJobQueue () :
-                    JobQueue ("ReleaseJobQueue") {}
-            } releaseJobQueue;
-        }
-
         void JobQueue::FinishedJob (
-                Job &job,
+                Job *job,
                 ui64 start,
                 ui64 end) {
+            assert (job != 0);
             {
                 LockGuard<Mutex> guard (jobsMutex);
-                stats.Update (job.id, start, end);
+                stats.Update (job->id, start, end);
                 if (--busyWorkers == 0 && jobs.empty ()) {
                     assert (state == Busy);
                     state = Idle;
@@ -337,22 +331,40 @@ namespace thekogans {
             // NOTE: This work needs to be done without holding a
             // jobsMutex as the job dtor itself can call Stop (as is
             // done by the WorkerPool::WorkerPtr).
-            job.finished = true;
+            job->finished = true;
             jobFinished.SignalAll ();
-            struct ReleaseJob : public RunLoop::Job {
-                Job &job;
-                ReleaseJob (Job &job_) :
-                    job (job_) {}
-                virtual void Execute (volatile const bool & /*done*/) throw () {
-                    job.Release ();
-                }
-            };
-            if (dynamic_cast<ReleaseJob *> (&job) != 0) {
-                job.Release ();
-            }
-            else {
-                releaseJobQueue.EnqJob (
-                    RunLoop::Job::Ptr (new ReleaseJob (job)));
+            {
+                struct ReleaseJobQueue : public Thread {
+                private:
+                    RunLoop::JobList jobs;
+                    Mutex jobsMutex;
+                    Condition jobsNotEmpty;
+
+                public:
+                    ReleaseJobQueue () :
+                            Thread ("ReleaseJobQueue"),
+                            jobsNotEmpty (jobsMutex) {
+                        Create ();
+                    }
+
+                    void EnqJob (Job *job) {
+                        LockGuard<Mutex> guard (jobsMutex);
+                        jobs.push_back (job);
+                        jobsNotEmpty.Signal ();
+                    }
+
+                private:
+                    virtual void Run () throw () {
+                        while (1) {
+                            LockGuard<Mutex> guard (jobsMutex);
+                            jobsNotEmpty.Wait ();
+                            while (!jobs.empty ()) {
+                                jobs.pop_front ()->Release ();
+                            }
+                        }
+                    }
+                } static releaseJobQueue;
+                releaseJobQueue.EnqJob (job);
             }
         }
 

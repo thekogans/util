@@ -103,18 +103,18 @@ namespace thekogans {
         ///         }
         ///     }
         ///
-        ///     void Enq (
-        ///             Job &job,
+        ///     void EnqJob (
+        ///             Job::Ptr job,
         ///             bool wait = false) {
         ///         util::LockGuard<util::SpinLock> guard (spinLock);
         ///         if (runLoop.get () != 0) {
-        ///             runLoop->Enq (job, wait);
+        ///             runLoop->EnqJob (job, wait);
         ///         }
         ///     }
         ///
         /// private:
         ///     // util::Thread
-        ///     virtual void Run () {
+        ///     virtual void Run () throw () {
         ///         THEKOGANS_UTIL_TRY {
         ///             runLoop.reset (new util::DefaultRunLoop);
         ///             runLoop->Start ();
