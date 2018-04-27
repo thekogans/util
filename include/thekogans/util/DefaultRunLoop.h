@@ -271,7 +271,7 @@ namespace thekogans {
             /// \param[in] start Completed job start time.
             /// \param[in] end Completed job end time.
             void FinishedJob (
-                Job &job,
+                Job *job,
                 ui64 start,
                 ui64 end);
 

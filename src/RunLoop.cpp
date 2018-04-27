@@ -122,5 +122,34 @@ namespace thekogans {
             return runLoop.get () != 0 && runLoop->IsRunning ();
         }
 
+        RunLoop::ReleaseJobQueue::ReleaseJobQueue () :
+                Thread ("ReleaseJobQueue"),
+                jobsNotEmpty (jobsMutex) {
+            Create ();
+        }
+
+        void RunLoop::ReleaseJobQueue::EnqJob (Job *job) {
+            LockGuard<Mutex> guard (jobsMutex);
+            jobs.push_back (job);
+            jobsNotEmpty.Signal ();
+        }
+
+        RunLoop::Job *RunLoop::ReleaseJobQueue::DeqJob () {
+            LockGuard<Mutex> guard (jobsMutex);
+            while (jobs.empty ()) {
+                jobsNotEmpty.Wait ();
+            }
+            return jobs.pop_front ();
+        }
+
+        void RunLoop::ReleaseJobQueue::Run () throw () {
+            while (1) {
+                Job *job = DeqJob ();
+                if (job != 0) {
+                    job->Release ();
+                }
+            }
+        }
+
     } // namespace util
 } // namespace thekogans

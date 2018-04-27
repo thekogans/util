@@ -189,8 +189,8 @@ namespace thekogans {
             }
             if (job != 0) {
                 job->Cancel ();
+                GlobalReleaseJobQueue::Instance ().EnqJob (job);
                 jobFinished.SignalAll ();
-                job->Release ();
                 return true;
             }
             return false;
@@ -219,20 +219,12 @@ namespace thekogans {
                     typedef JobList::Callback::argument_type argument_type;
                     virtual result_type operator () (argument_type job) {
                         job->Cancel ();
+                        GlobalReleaseJobQueue::Instance ().EnqJob (job);
                         return true;
                     }
                 } cancelCallback;
-                jobs_.for_each (cancelCallback);
+                jobs_.clear (cancelCallback);
                 jobFinished.SignalAll ();
-                struct ReleaseCallback : public JobList::Callback {
-                    typedef JobList::Callback::result_type result_type;
-                    typedef JobList::Callback::argument_type argument_type;
-                    virtual result_type operator () (argument_type job) {
-                        job->Release ();
-                        return true;
-                    }
-                } releaseCallback;
-                jobs_.clear (releaseCallback);
             }
         }
 
@@ -256,20 +248,12 @@ namespace thekogans {
                     typedef JobList::Callback::argument_type argument_type;
                     virtual result_type operator () (argument_type job) {
                         job->Cancel ();
+                        GlobalReleaseJobQueue::Instance ().EnqJob (job);
                         return true;
                     }
                 } cancelCallback;
-                jobs_.for_each (cancelCallback);
+                jobs_.clear (cancelCallback);
                 jobFinished.SignalAll ();
-                struct ReleaseCallback : public JobList::Callback {
-                    typedef JobList::Callback::result_type result_type;
-                    typedef JobList::Callback::argument_type argument_type;
-                    virtual result_type operator () (argument_type job) {
-                        job->Release ();
-                        return true;
-                    }
-                } releaseCallback;
-                jobs_.clear (releaseCallback);
             }
         }
 
@@ -328,44 +312,9 @@ namespace thekogans {
                     idle.SignalAll ();
                 }
             }
-            // NOTE: This work needs to be done without holding a
-            // jobsMutex as the job dtor itself can call Stop (as is
-            // done by the WorkerPool::WorkerPtr).
             job->finished = true;
+            GlobalReleaseJobQueue::Instance ().EnqJob (job);
             jobFinished.SignalAll ();
-            {
-                struct ReleaseJobQueue : public Thread {
-                private:
-                    RunLoop::JobList jobs;
-                    Mutex jobsMutex;
-                    Condition jobsNotEmpty;
-
-                public:
-                    ReleaseJobQueue () :
-                            Thread ("ReleaseJobQueue"),
-                            jobsNotEmpty (jobsMutex) {
-                        Create ();
-                    }
-
-                    void EnqJob (Job *job) {
-                        LockGuard<Mutex> guard (jobsMutex);
-                        jobs.push_back (job);
-                        jobsNotEmpty.Signal ();
-                    }
-
-                private:
-                    virtual void Run () throw () {
-                        while (1) {
-                            LockGuard<Mutex> guard (jobsMutex);
-                            jobsNotEmpty.Wait ();
-                            while (!jobs.empty ()) {
-                                jobs.pop_front ()->Release ();
-                            }
-                        }
-                    }
-                } static releaseJobQueue;
-                releaseJobQueue.EnqJob (job);
-            }
         }
 
         bool JobQueue::SetDone (bool value) {

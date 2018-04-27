@@ -37,6 +37,11 @@
 #include "thekogans/util/IntrusiveList.h"
 #include "thekogans/util/GUID.h"
 #include "thekogans/util/TimeSpec.h"
+#include "thekogans/util/Thread.h"
+#include "thekogans/util/Mutex.h"
+#include "thekogans/util/Condition.h"
+#include "thekogans/util/Singleton.h"
+#include "thekogans/util/SpinLock.h"
 
 namespace thekogans {
     namespace util {
@@ -438,6 +443,53 @@ namespace thekogans {
                 Ptr &runLoop,
                 const TimeSpec &sleepTimeSpec = TimeSpec::FromMilliseconds (50),
                 const TimeSpec &waitTimeSpec = TimeSpec::FromSeconds (3));
+
+        protected:
+            /// \struct RunLoop::ReleaseJobQueue RunLoop.h thekogans/util/RunLoop.h
+            ///
+            /// \brief
+            /// ReleaseJobQueue is used internally by RunLoop derivatives (\see{JobQueue},
+            /// \see{SystemRunLoop}, \see{DefaultRunLoop}...) to schedule finished/cancelled
+            /// jobs for release. It's use resolves a number of potential deadlocks that can
+            /// arrive if Job::Release is called on the worker thread.
+            struct ReleaseJobQueue : public Thread {
+            private:
+                /// \brief
+                /// List of jobs waiting to be released.
+                JobList jobs;
+                /// \brief
+                /// Since ReleaseJobQueue is a global singleton, jobs needs to be protected.
+                Mutex jobsMutex;
+                /// \brief
+                /// Signal to our thread that we have jobs for it to release.
+                Condition jobsNotEmpty;
+
+            public:
+                /// \brief
+                /// ctor.
+                ReleaseJobQueue ();
+
+                /// \brief
+                /// Enqueue a job to be released later.
+                /// \param[in] job Job to release.
+                void EnqJob (Job *job);
+
+            private:
+                /// \brief
+                /// Dequeue the next job to release.
+                /// \return Next job to release.
+                Job *DeqJob ();
+
+                /// \brief
+                /// Job release thread.
+                virtual void Run () throw ();
+            };
+            /// \struct RunLoop::GlobalReleaseJobQueue RunLoop.h thekogans/util/RunLoop.h
+            ///
+            /// \brief
+            /// System wide ReleaseJobQueue singleton.
+            struct _LIB_THEKOGANS_UTIL_DECL GlobalReleaseJobQueue :
+                public Singleton<ReleaseJobQueue, SpinLock> {};
         };
 
     } // namespace util

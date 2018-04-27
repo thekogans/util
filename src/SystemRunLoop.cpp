@@ -475,61 +475,89 @@ namespace thekogans {
         }
 
         bool SystemRunLoop::CancelJob (const Job::Id &jobId) {
-            LockGuard<Mutex> guard (jobsMutex);
-            for (Job *job = jobs.front (); job != 0; job = jobs.next (job)) {
-                if (job->GetId () == jobId) {
-                    jobs.erase (job);
-                    job->Cancel ();
-                    job->Release ();
-                    --stats.jobCount;
-                    jobFinished.SignalAll ();
-                    if (busyWorkers == 0 && jobs.empty ()) {
-                        state = Idle;
-                        idle.SignalAll ();
+            Job *job = 0;
+            {
+                LockGuard<Mutex> guard (jobsMutex);
+                for (job = jobs.front (); job != 0; job = jobs.next (job)) {
+                    if (job->GetId () == jobId) {
+                        jobs.erase (job);
+                        --stats.jobCount;
+                        if (busyWorkers == 0 && jobs.empty ()) {
+                            assert (state == Busy);
+                            state = Idle;
+                            idle.SignalAll ();
+                        }
+                        break;
                     }
-                    return true;
                 }
+            }
+            if (job != 0) {
+                job->Cancel ();
+                GlobalReleaseJobQueue::Instance ().EnqJob (job);
+                jobFinished.SignalAll ();
+                return true;
             }
             return false;
         }
 
         void SystemRunLoop::CancelJobs (const EqualityTest &equalityTest) {
-            LockGuard<Mutex> guard (jobsMutex);
-            for (Job *job = jobs.front (); job != 0; job = jobs.next (job)) {
-                if (equalityTest (*job)) {
-                    jobs.erase (job);
-                    job->Cancel ();
-                    job->Release ();
-                    --stats.jobCount;
-                    jobFinished.SignalAll ();
-                    if (busyWorkers == 0 && jobs.empty ()) {
+            JobList jobs_;
+            {
+                LockGuard<Mutex> guard (jobsMutex);
+                for (Job *job = jobs.front (); job != 0; job = jobs.next (job)) {
+                    if (equalityTest (*job)) {
+                        jobs.erase (job);
+                        jobs_.push_back (job);
+                        --stats.jobCount;
+                    }
+                }
+                if (busyWorkers == 0 && jobs.empty () && !jobs_.empty ()) {
+                    assert (state == Busy);
+                    state = Idle;
+                    idle.SignalAll ();
+                }
+            }
+            if (!jobs_.empty ()) {
+                struct CancelCallback : public JobList::Callback {
+                    typedef JobList::Callback::result_type result_type;
+                    typedef JobList::Callback::argument_type argument_type;
+                    virtual result_type operator () (argument_type job) {
+                        job->Cancel ();
+                        GlobalReleaseJobQueue::Instance ().EnqJob (job);
+                        return true;
+                    }
+                } cancelCallback;
+                jobs_.clear (cancelCallback);
+                jobFinished.SignalAll ();
+            }
+        }
+
+        void SystemRunLoop::CancelAllJobs () {
+            JobList jobs_;
+            {
+                LockGuard<Mutex> guard (jobsMutex);
+                if (!jobs.empty ()) {
+                    jobs.swap (jobs_);
+                    stats.jobCount = 0;
+                    if (busyWorkers == 0) {
+                        assert (state == Busy);
                         state = Idle;
                         idle.SignalAll ();
                     }
                 }
             }
-        }
-
-        void SystemRunLoop::CancelAllJobs () {
-            LockGuard<Mutex> guard (jobsMutex);
-            if (!jobs.empty ()) {
-                assert (state == Busy);
-                struct Callback : public JobList::Callback {
+            if (!jobs_.empty ()) {
+                struct CancelCallback : public JobList::Callback {
                     typedef JobList::Callback::result_type result_type;
                     typedef JobList::Callback::argument_type argument_type;
                     virtual result_type operator () (argument_type job) {
                         job->Cancel ();
-                        job->Release ();
+                        GlobalReleaseJobQueue::Instance ().EnqJob (job);
                         return true;
                     }
-                } callback;
-                jobs.clear (callback);
-                stats.jobCount = 0;
+                } cancelCallback;
+                jobs_.clear (cancelCallback);
                 jobFinished.SignalAll ();
-                if (busyWorkers == 0) {
-                    state = Idle;
-                    idle.SignalAll ();
-                }
             }
         }
 
@@ -571,7 +599,7 @@ namespace thekogans {
                 job->Execute (done);
                 job->Epilogue (done);
                 ui64 end = HRTimer::Click ();
-                FinishedJob (*job, start, end);
+                FinishedJob (job, start, end);
             }
         }
 
@@ -587,19 +615,22 @@ namespace thekogans {
         }
 
         void SystemRunLoop::FinishedJob (
-                Job &job,
+                Job *job,
                 ui64 start,
                 ui64 end) {
-            LockGuard<Mutex> guard (jobsMutex);
-            assert (state == Busy);
-            stats.Update (job.id, start, end);
-            job.finished = true;
-            job.Release ();
-            jobFinished.SignalAll ();
-            if (--busyWorkers == 0 && jobs.empty ()) {
-                state = Idle;
-                idle.SignalAll ();
+            assert (job != 0);
+            {
+                LockGuard<Mutex> guard (jobsMutex);
+                stats.Update (job->id, start, end);
+                if (--busyWorkers == 0 && jobs.empty ()) {
+                    assert (state == Busy);
+                    state = Idle;
+                    idle.SignalAll ();
+                }
             }
+            job->finished = true;
+            GlobalReleaseJobQueue::Instance ().EnqJob (job);
+            jobFinished.SignalAll ();
         }
 
         bool SystemRunLoop::SetDone (bool value) {
