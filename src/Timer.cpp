@@ -176,18 +176,20 @@ namespace thekogans {
 
                                     virtual void Execute (volatile const bool &done) throw () {
                                         if (!ShouldStop (done)) {
-                                            if (!timer->periodic) {
-                                                timer->id = NIDX64;
-                                            }
-                                            if (timer->spinLock.TryAcquire ()) {
-                                                LockGuard<SpinLock> guard (timer->spinLock, false);
-                                                timer->callback.Alarm (*timer);
-                                            }
-                                            else {
-                                                THEKOGANS_UTIL_LOG_SUBSYSTEM_WARNING (
-                                                    THEKOGANS_UTIL,
-                                                    "Skipping overlapping '%s' Alarm call.\n",
-                                                    timer->GetName ().c_str ());
+                                            if (timer->id != NIDX64) {
+                                                if (!timer->periodic) {
+                                                    timer->id = NIDX64;
+                                                }
+                                                if (timer->spinLock.TryAcquire ()) {
+                                                    LockGuard<SpinLock> guard (timer->spinLock, false);
+                                                    timer->callback.Alarm (*timer);
+                                                }
+                                                else {
+                                                    THEKOGANS_UTIL_LOG_SUBSYSTEM_WARNING (
+                                                        THEKOGANS_UTIL,
+                                                        "Skipping overlapping '%s' Alarm call.\n",
+                                                        timer->GetName ().c_str ());
+                                                }
                                             }
                                         }
                                     }

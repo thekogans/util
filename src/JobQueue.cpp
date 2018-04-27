@@ -100,7 +100,11 @@ namespace thekogans {
                         }
                     }
                     workers.push_back (
-                        new Worker (*this, workerName, workerPriority, workerAffinity));
+                        new Worker (
+                            *this,
+                            workerName,
+                            workerPriority,
+                            workerAffinity));
                 }
             }
         }
@@ -311,7 +315,10 @@ namespace thekogans {
         }
 
         namespace {
-            struct ReleaseJobQueue : public Singleton<JobQueue, SpinLock> {};
+            struct ReleaseJobQueue : public JobQueue {
+                ReleaseJobQueue () :
+                    JobQueue ("ReleaseJobQueue") {}
+            } releaseJobQueue;
         }
 
         void JobQueue::FinishedJob (
@@ -340,8 +347,13 @@ namespace thekogans {
                     job.Release ();
                 }
             };
-            ReleaseJobQueue::Instance ().EnqJob (
-                RunLoop::Job::Ptr (new ReleaseJob (job)));
+            if (dynamic_cast<ReleaseJob *> (&job) != 0) {
+                job.Release ();
+            }
+            else {
+                releaseJobQueue.EnqJob (
+                    RunLoop::Job::Ptr (new ReleaseJob (job)));
+            }
         }
 
         bool JobQueue::SetDone (bool value) {
