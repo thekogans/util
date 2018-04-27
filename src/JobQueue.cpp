@@ -185,8 +185,8 @@ namespace thekogans {
             }
             if (job != 0) {
                 job->Cancel ();
-                job->Release ();
                 jobFinished.SignalAll ();
+                job->Release ();
                 return true;
             }
             return false;
@@ -210,17 +210,25 @@ namespace thekogans {
                 }
             }
             if (!jobs_.empty ()) {
-                struct Callback : public JobList::Callback {
+                struct CancelCallback : public JobList::Callback {
                     typedef JobList::Callback::result_type result_type;
                     typedef JobList::Callback::argument_type argument_type;
                     virtual result_type operator () (argument_type job) {
                         job->Cancel ();
+                        return true;
+                    }
+                } cancelCallback;
+                jobs_.for_each (cancelCallback);
+                jobFinished.SignalAll ();
+                struct ReleaseCallback : public JobList::Callback {
+                    typedef JobList::Callback::result_type result_type;
+                    typedef JobList::Callback::argument_type argument_type;
+                    virtual result_type operator () (argument_type job) {
                         job->Release ();
                         return true;
                     }
-                } callback;
-                jobs_.clear (callback);
-                jobFinished.SignalAll ();
+                } releaseCallback;
+                jobs_.clear (releaseCallback);
             }
         }
 
@@ -239,17 +247,25 @@ namespace thekogans {
                 }
             }
             if (!jobs_.empty ()) {
-                struct Callback : public JobList::Callback {
+                struct CancelCallback : public JobList::Callback {
                     typedef JobList::Callback::result_type result_type;
                     typedef JobList::Callback::argument_type argument_type;
                     virtual result_type operator () (argument_type job) {
                         job->Cancel ();
+                        return true;
+                    }
+                } cancelCallback;
+                jobs_.for_each (cancelCallback);
+                jobFinished.SignalAll ();
+                struct ReleaseCallback : public JobList::Callback {
+                    typedef JobList::Callback::result_type result_type;
+                    typedef JobList::Callback::argument_type argument_type;
+                    virtual result_type operator () (argument_type job) {
                         job->Release ();
                         return true;
                     }
-                } callback;
-                jobs_.clear (callback);
-                jobFinished.SignalAll ();
+                } releaseCallback;
+                jobs_.clear (releaseCallback);
             }
         }
 
@@ -294,6 +310,10 @@ namespace thekogans {
             return job;
         }
 
+        namespace {
+            struct ReleaseJobQueue : public Singleton<JobQueue, SpinLock> {};
+        }
+
         void JobQueue::FinishedJob (
                 Job &job,
                 ui64 start,
@@ -311,8 +331,17 @@ namespace thekogans {
             // jobsMutex as the job dtor itself can call Stop (as is
             // done by the WorkerPool::WorkerPtr).
             job.finished = true;
-            job.Release ();
             jobFinished.SignalAll ();
+            struct ReleaseJob : public RunLoop::Job {
+                Job &job;
+                ReleaseJob (Job &job_) :
+                    job (job_) {}
+                virtual void Execute (volatile const bool & /*done*/) throw () {
+                    job.Release ();
+                }
+            };
+            ReleaseJobQueue::Instance ().EnqJob (
+                RunLoop::Job::Ptr (new ReleaseJob (job)));
         }
 
         bool JobQueue::SetDone (bool value) {
