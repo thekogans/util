@@ -206,18 +206,26 @@ namespace thekogans {
                         Timer *timer = (Timer *)kqueueEvents[i].udata;
                         if (timer != 0) {
                             LockGuard<SpinLock> guard (timer->spinLock);
-                            if (timer->id != NIDX64 && timer->alarmJob == 0) {
-                                if (!timer->periodic) {
-                                    timer->id = NIDX64;
+                            if (timer->id != NIDX64) {
+                                if (timer->alarmJob == 0) {
+                                    if (!timer->periodic) {
+                                        timer->id = NIDX64;
+                                    }
+                                    THEKOGANS_UTIL_TRY {
+                                        WorkerPool::WorkerPtr::Ptr workerPtr (
+                                            new WorkerPool::WorkerPtr (workerPool));
+                                        (*workerPtr)->EnqJob (
+                                            RunLoop::Job::Ptr (
+                                                new Timer::AlarmJob (workerPtr, timer)));
+                                    }
+                                    THEKOGANS_UTIL_CATCH_AND_LOG_SUBSYSTEM (THEKOGANS_UTIL)
                                 }
-                                THEKOGANS_UTIL_TRY {
-                                    WorkerPool::WorkerPtr::Ptr workerPtr (
-                                        new WorkerPool::WorkerPtr (workerPool));
-                                    (*workerPtr)->EnqJob (
-                                        RunLoop::Job::Ptr (
-                                            new Timer::AlarmJob (workerPtr, timer)));
+                                else {
+                                    THEKOGANS_UTIL_LOG_SUBSYSTEM_WARNING (
+                                        THEKOGANS_UTIL,
+                                        "Skipping overlapping '%s' Alarm call.\n",
+                                        timer->GetName ().c_str ());
                                 }
-                                THEKOGANS_UTIL_CATCH_AND_LOG_SUBSYSTEM (THEKOGANS_UTIL)
                             }
                         }
                     }
