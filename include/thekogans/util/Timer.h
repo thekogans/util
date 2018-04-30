@@ -161,6 +161,12 @@ namespace thekogans {
             /// Maximum number of workers the pool can grow to.
             static ui32 maxWorkers;
             /// \brief
+            /// Forward declaration of AlarmJob.
+            struct AlarmJob;
+            /// \brief
+            /// Pointer to an active alarm job.
+            AlarmJob *alarmJob;
+            /// \brief
             /// An OS X kqueue monitoring async timers.
             friend struct TimerQueue;
         #endif // defined (TOOLCHAIN_OS_Windows)

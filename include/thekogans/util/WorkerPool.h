@@ -335,7 +335,7 @@ namespace thekogans {
         /// as we might need different pools running different counts at
         /// different queue priorities. That said, the most basic (and
         /// the most useful) use case will have a single worker pool using
-        /// the defaults. This typedef exists to aid in that. If all you
+        /// the defaults. This struct exists to aid in that. If all you
         /// need is a global worker pool then GlobalWorkerPool::Instance ()
         /// will do the trick.
         struct _LIB_THEKOGANS_UTIL_DECL GlobalWorkerPool :

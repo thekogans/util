@@ -82,13 +82,45 @@ namespace thekogans {
             }
         }
     #elif defined (TOOLCHAIN_OS_OSX)
+        struct Timer::AlarmJob : public RunLoop::Job {
+            WorkerPool::WorkerPtr::Ptr workerPtr;
+            Timer *timer;
+
+            AlarmJob (
+                    WorkerPool::WorkerPtr::Ptr workerPtr_,
+                    Timer *timer_) :
+                    workerPtr (workerPtr_),
+                    timer (timer_) {
+                // NOTE: No need to grab the lock here as it's
+                // already acquired by Run below.
+                timer->alarmJob = this;
+            }
+            ~AlarmJob () {
+                LockGuard<SpinLock> guard (timer->spinLock);
+                timer->alarmJob = 0;
+            }
+
+            void Wait () {
+                (*workerPtr)->WaitForJob (GetId ());
+            }
+
+            // RunLoop::Job
+            virtual void Execute (volatile const bool &done) throw () {
+                if (!ShouldStop (done)) {
+                    // Alarm must be called unprotected if we're to
+                    // follow the same semantics as Windows and Linux
+                    // and allow it to call Start/Stop.
+                    timer->callback.Alarm (*timer);
+                }
+            }
+        };
+
         struct TimerQueue :
                 public Singleton<TimerQueue, SpinLock>,
                 public Thread {
             THEKOGANS_UTIL_HANDLE handle;
             THEKOGANS_UTIL_ATOMIC<ui64> idPool;
             WorkerPool workerPool;
-            SpinLock spinLock;
 
             TimerQueue () :
                     Thread ("TimerQueue"),
@@ -115,7 +147,13 @@ namespace thekogans {
                     Timer &timer,
                     const TimeSpec &timeSpec,
                     bool periodic) {
-                LockGuard<SpinLock> guard (spinLock);
+                LockGuard<SpinLock> guard (timer.spinLock);
+                // If we're changing the timers period, cancel
+                // previously scheduled Alarm job.
+                if (timer.alarmJob != 0) {
+                    timer.alarmJob->Cancel ();
+                    timer.alarmJob->Wait ();
+                }
                 // StartTimer can be called repeatedly without calling StopTimer.
                 // This behavior is desirable when adjusting an already existing
                 // timer. In this case, reuse the existing timer id and EV_ADD will
@@ -137,8 +175,12 @@ namespace thekogans {
             }
 
             void StopTimer (Timer &timer) {
-                LockGuard<SpinLock> guard (spinLock);
+                LockGuard<SpinLock> guard (timer.spinLock);
                 if (timer.id != NIDX64) {
+                    if (timer.alarmJob != 0) {
+                        timer.alarmJob->Cancel ();
+                        timer.alarmJob->Wait ();
+                    }
                     keventStruct event;
                     keventSet (&event, timer.id, EVFILT_TIMER, EV_DELETE, 0, 0, 0);
                     if (keventFunc (handle, &event, 1, 0, 0, 0) != 0) {
@@ -163,43 +205,20 @@ namespace thekogans {
                     for (int i = 0; i < count; ++i) {
                         Timer *timer = (Timer *)kqueueEvents[i].udata;
                         if (timer != 0) {
-                            THEKOGANS_UTIL_TRY {
-                                struct TimerJob : public RunLoop::Job {
-                                    WorkerPool::WorkerPtr::Ptr workerPtr;
-                                    Timer *timer;
-
-                                    TimerJob (
-                                        WorkerPool::WorkerPtr::Ptr workerPtr_,
-                                        Timer *timer_) :
-                                        workerPtr (workerPtr_),
-                                        timer (timer_) {}
-
-                                    virtual void Execute (volatile const bool &done) throw () {
-                                        if (!ShouldStop (done)) {
-                                            if (timer->id != NIDX64) {
-                                                if (!timer->periodic) {
-                                                    timer->id = NIDX64;
-                                                }
-                                                if (timer->spinLock.TryAcquire ()) {
-                                                    LockGuard<SpinLock> guard (timer->spinLock, false);
-                                                    timer->callback.Alarm (*timer);
-                                                }
-                                                else {
-                                                    THEKOGANS_UTIL_LOG_SUBSYSTEM_WARNING (
-                                                        THEKOGANS_UTIL,
-                                                        "Skipping overlapping '%s' Alarm call.\n",
-                                                        timer->GetName ().c_str ());
-                                                }
-                                            }
-                                        }
-                                    }
-                                };
-                                WorkerPool::WorkerPtr::Ptr workerPtr (
-                                    new WorkerPool::WorkerPtr (workerPool));
-                                (*workerPtr)->EnqJob (
-                                    RunLoop::Job::Ptr (new TimerJob (workerPtr, timer)));
+                            LockGuard<SpinLock> guard (timer->spinLock);
+                            if (timer->id != NIDX64 && timer->alarmJob == 0) {
+                                if (!timer->periodic) {
+                                    timer->id = NIDX64;
+                                }
+                                THEKOGANS_UTIL_TRY {
+                                    WorkerPool::WorkerPtr::Ptr workerPtr (
+                                        new WorkerPool::WorkerPtr (workerPool));
+                                    (*workerPtr)->EnqJob (
+                                        RunLoop::Job::Ptr (
+                                            new Timer::AlarmJob (workerPtr, timer)));
+                                }
+                                THEKOGANS_UTIL_CATCH_AND_LOG_SUBSYSTEM (THEKOGANS_UTIL)
                             }
-                            THEKOGANS_UTIL_CATCH_AND_LOG_SUBSYSTEM (THEKOGANS_UTIL)
                         }
                     }
                 }
@@ -269,6 +288,7 @@ namespace thekogans {
             callback (callback_),
             name (name_),
             id (NIDX64),
+            alarmJob (0),
             periodic (false) {}
 
         Timer::~Timer () {

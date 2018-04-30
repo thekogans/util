@@ -265,7 +265,7 @@ namespace thekogans {
         /// vectorizer's worker pool needs to be parametrized as we might need
         /// to support different vector widths. That said, the most basic (and
         /// the most useful) use will have a single vectorizer using the defaults.
-        /// This typedef exists to aid in that. If all you need is a global
+        /// This struct exists to aid in that. If all you need is a global
         /// vectorizer then GlobalVectorizer::Instance () will do the trick.
         struct _LIB_THEKOGANS_UTIL_DECL GlobalVectorizer :
             public Singleton<Vectorizer, SpinLock, GlobalVectorizerCreateInstance> {};

@@ -333,7 +333,7 @@ namespace thekogans {
         /// might need to have different schedulers running workers at
         /// different thread priorities. That said, the most basic (and
         /// the most useful) use case will have a single scheduler using
-        /// the defaults. This typedef exists to aid in that. If all you
+        /// the defaults. This struct exists to aid in that. If all you
         /// need is a global scheduler then GlobalScheduler::Instance ()
         /// will do the trick.
         struct _LIB_THEKOGANS_UTIL_DECL GlobalScheduler :
