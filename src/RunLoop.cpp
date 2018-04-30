@@ -122,9 +122,12 @@ namespace thekogans {
             return runLoop.get () != 0 && runLoop->IsRunning ();
         }
 
+        THEKOGANS_UTIL_IMPLEMENT_HEAP_WITH_LOCK (RunLoop::JobProxy, SpinLock)
+
         RunLoop::ReleaseJobQueue::ReleaseJobQueue () :
-                Thread ("ReleaseJobQueue"),
+                Thread ("RunLoop::ReleaseJobQueue"),
                 jobsNotEmpty (jobsMutex) {
+            // FIXME: Change priority?
             Create ();
         }
 

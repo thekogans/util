@@ -456,7 +456,7 @@ namespace thekogans {
                     CFRunLoopWakeUp (runLoop);
                 #endif // defined (TOOLCHAIN_OS_Windows)
                     if (wait) {
-                        while (!job->ShouldStop (done) && !job->finished) {
+                        while (!job->finished) {
                             jobFinished.Wait ();
                         }
                     }
@@ -471,6 +471,65 @@ namespace thekogans {
             else {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
                     THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
+            }
+        }
+
+        bool SystemRunLoop::WaitForJob (const Job::Id &jobId) {
+            Job::Ptr job_;
+            {
+                LockGuard<Mutex> guard (jobsMutex);
+                for (Job *job = jobs.front (); job != 0; job = jobs.next (job)) {
+                    if (job->GetId () == jobId) {
+                        job_.Reset (job);
+                        break;
+                    }
+                }
+            }
+            if (job_.Get () != 0) {
+                while (!job_->finished) {
+                    jobFinished.Wait ();
+                }
+                return true;
+            }
+            return false;
+        }
+
+        void SystemRunLoop::WaitForJobs (const EqualityTest &equalityTest) {
+            JobProxyList jobs_;
+            {
+                LockGuard<Mutex> guard (jobsMutex);
+                for (Job *job = jobs.front (); job != 0; job = jobs.next (job)) {
+                    if (equalityTest (*job)) {
+                        jobs_.push_back (new JobProxy (job));
+                    }
+                }
+            }
+            if (!jobs_.empty ()) {
+                struct FinishedCallback : public JobProxyList::Callback {
+                    typedef JobProxyList::Callback::result_type result_type;
+                    typedef JobProxyList::Callback::argument_type argument_type;
+                    JobProxyList &jobs;
+                    explicit FinishedCallback (JobProxyList &jobs_) :
+                        jobs (jobs_) {}
+                    virtual result_type operator () (argument_type jobProxy) {
+                        if (jobProxy->job->finished) {
+                            jobs.erase (jobProxy);
+                            delete jobProxy;
+                            return true;
+                        }
+                        return false;
+                    }
+                } finishedCallback (jobs_);
+                while (!jobs_.for_each (finishedCallback)) {
+                    jobFinished.Wait ();
+                }
+            }
+        }
+
+        void SystemRunLoop::WaitForIdle () {
+            LockGuard<Mutex> guard (jobsMutex);
+            while (state == Busy) {
+                idle.Wait ();
             }
         }
 
@@ -493,7 +552,7 @@ namespace thekogans {
             }
             if (job != 0) {
                 job->Cancel ();
-                GlobalReleaseJobQueue::Instance ().EnqJob (job);
+                ReleaseJobQueue::Instance ().EnqJob (job);
                 jobFinished.SignalAll ();
                 return true;
             }
@@ -523,7 +582,7 @@ namespace thekogans {
                     typedef JobList::Callback::argument_type argument_type;
                     virtual result_type operator () (argument_type job) {
                         job->Cancel ();
-                        GlobalReleaseJobQueue::Instance ().EnqJob (job);
+                        ReleaseJobQueue::Instance ().EnqJob (job);
                         return true;
                     }
                 } cancelCallback;
@@ -552,19 +611,12 @@ namespace thekogans {
                     typedef JobList::Callback::argument_type argument_type;
                     virtual result_type operator () (argument_type job) {
                         job->Cancel ();
-                        GlobalReleaseJobQueue::Instance ().EnqJob (job);
+                        ReleaseJobQueue::Instance ().EnqJob (job);
                         return true;
                     }
                 } cancelCallback;
                 jobs_.clear (cancelCallback);
                 jobFinished.SignalAll ();
-            }
-        }
-
-        void SystemRunLoop::WaitForIdle () {
-            LockGuard<Mutex> guard (jobsMutex);
-            while (state == Busy) {
-                idle.Wait ();
             }
         }
 
@@ -629,7 +681,7 @@ namespace thekogans {
                 }
             }
             job->finished = true;
-            GlobalReleaseJobQueue::Instance ().EnqJob (job);
+            ReleaseJobQueue::Instance ().EnqJob (job);
             jobFinished.SignalAll ();
         }
 

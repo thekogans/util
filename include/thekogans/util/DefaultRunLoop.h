@@ -104,7 +104,7 @@ namespace thekogans {
         ///     }
         ///
         ///     void EnqJob (
-        ///             Job::Ptr job,
+        ///             util::RunLoop::Job::Ptr job,
         ///             bool wait = false) {
         ///         util::LockGuard<util::SpinLock> guard (spinLock);
         ///         if (runLoop.get () != 0) {
@@ -222,6 +222,21 @@ namespace thekogans {
                 bool wait = false);
 
             /// \brief
+            /// Wait for a queued job with a given id. If the job is not
+            /// in the queue (in flight), it is not waited on.
+            /// \param[in] jobId Id of job to wait on.
+            /// \return true if the job was waited on. false if in flight.
+            virtual bool WaitForJob (const Job::Id &jobId);
+            /// \brief
+            /// Wait for all queued job matching the given equality test. Jobs in flight
+            /// are not waited on.
+            /// \param[in] equalityTest EqualityTest to query to determine which jobs to wait on.
+            virtual void WaitForJobs (const EqualityTest &equalityTest);
+            /// \brief
+            /// Blocks until all jobs are complete and the queue is empty.
+            virtual void WaitForIdle ();
+
+            /// \brief
             /// Cancel a queued job with a given id. If the job is not
             /// in the queue (in flight), it is not canceled.
             /// \param[in] jobId Id of job to cancel.
@@ -235,10 +250,6 @@ namespace thekogans {
             /// \brief
             /// Cancel all queued jobs. Jobs in flight are unaffected.
             virtual void CancelAllJobs ();
-
-            /// \brief
-            /// Blocks until all jobs are complete and the queue is empty.
-            virtual void WaitForIdle ();
 
             /// \brief
             /// Return a snapshot of the queue stats.

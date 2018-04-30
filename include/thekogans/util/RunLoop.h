@@ -42,6 +42,7 @@
 #include "thekogans/util/Condition.h"
 #include "thekogans/util/Singleton.h"
 #include "thekogans/util/SpinLock.h"
+#include "thekogans/util/Heap.h"
 
 namespace thekogans {
     namespace util {
@@ -379,16 +380,10 @@ namespace thekogans {
                 Job::Ptr /*job*/,
                 bool /*wait*/ = false) = 0;
 
-            /// \brief
-            /// Cancel a queued job with a given id. If the job is not
-            /// in the queue (in flight), it is not canceled.
-            /// \param[in] jobId Id of job to cancel.
-            /// \return true = the job was cancelled. false = in flight or nonexistent.
-            virtual bool CancelJob (const Job::Id & /*jobId*/) = 0;
             /// \struct RunLoop::EqualityTest RunLoop.h thekogans/util/RunLoop.h
             ///
             /// \brief
-            /// Equality test to use to determine which jobs to cancel.
+            /// Equality test to use to determine which jobs to wait for and cancel.
             struct EqualityTest {
                 /// \brief
                 /// dtor.
@@ -400,6 +395,28 @@ namespace thekogans {
                 /// \return true == equal.
                 virtual bool operator () (const Job & /*job*/) const throw () = 0;
             };
+
+            /// \brief
+            /// Wait for a queued job with a given id. If the job is not
+            /// in the queue (in flight), it is not waited on.
+            /// \param[in] jobId Id of job to wait on.
+            /// \return true if the job was waited on. false if in flight.
+            virtual bool WaitForJob (const Job::Id & /*jobId*/) = 0;
+            /// \brief
+            /// Wait for all queued job matching the given equality test. Jobs in flight
+            /// are not waited on.
+            /// \param[in] equalityTest EqualityTest to query to determine which jobs to wait on.
+            virtual void WaitForJobs (const EqualityTest & /*equalityTest*/) = 0;
+            /// \brief
+            /// Blocks until all jobs are complete and the run loop is empty.
+            virtual void WaitForIdle () = 0;
+
+            /// \brief
+            /// Cancel a queued job with a given id. If the job is not
+            /// in the queue (in flight), it is not canceled.
+            /// \param[in] jobId Id of job to cancel.
+            /// \return true = the job was cancelled. false = in flight or nonexistent.
+            virtual bool CancelJob (const Job::Id & /*jobId*/) = 0;
             /// \brief
             /// Cancel all queued job matching the given equality test. Jobs in flight
             /// are not canceled.
@@ -413,10 +430,6 @@ namespace thekogans {
             /// Return a snapshot of the run loop stats.
             /// \return A snapshot of the run loop stats.
             virtual Stats GetStats () = 0;
-
-            /// \brief
-            /// Blocks until all jobs are complete and the run loop is empty.
-            virtual void WaitForIdle () = 0;
 
             /// \brief
             /// Return true if Start was called.
@@ -445,6 +458,46 @@ namespace thekogans {
                 const TimeSpec &waitTimeSpec = TimeSpec::FromSeconds (3));
 
         protected:
+            /// \brief
+            /// Forward declaration of JobProxy.
+            struct JobProxy;
+            enum {
+                /// \brief
+                /// JobProxyList ID.
+                JOB_PROXY_LIST_ID
+            };
+            /// \brief
+            /// Convenient typedef for IntrusiveList<JobProxy, JOB_PROXY_LIST_ID>.
+            typedef IntrusiveList<JobProxy, JOB_PROXY_LIST_ID> JobProxyList;
+
+        #if defined (_MSC_VER)
+            #pragma warning (push)
+            #pragma warning (disable : 4275)
+        #endif // defined (_MSC_VER)
+            /// \struct RunLoop::JobProxy RunLoop.h thekogans/util/RunLoop.h
+            ///
+            /// \brief
+            /// JobProxy is a job wrapper used to hold a list of jobs without
+            /// requiring that Job derive from multiple lists.
+            struct _LIB_THEKOGANS_UTIL_DECL JobProxy : public JobProxyList::Node {
+                /// \brief
+                /// A private JobProxy heap to help with memory management.
+                THEKOGANS_UTIL_DECLARE_HEAP_WITH_LOCK (JobProxy, SpinLock)
+
+                /// \brief
+                /// Proxied job.
+                Job::Ptr job;
+
+                /// \brief
+                /// ctor.
+                /// \param[in] job_ Job to proxy.
+                explicit JobProxy (Job *job_) :
+                    job (job_) {}
+            };
+        #if defined (_MSC_VER)
+            #pragma warning (pop)
+        #endif // defined (_MSC_VER)
+
             /// \struct RunLoop::ReleaseJobQueue RunLoop.h thekogans/util/RunLoop.h
             ///
             /// \brief
@@ -452,7 +505,9 @@ namespace thekogans {
             /// \see{SystemRunLoop}, \see{DefaultRunLoop}...) to schedule finished/cancelled
             /// jobs for release. It's use resolves a number of potential deadlocks that can
             /// arrive if Job::Release is called on the worker thread.
-            struct ReleaseJobQueue : public Thread {
+            struct _LIB_THEKOGANS_UTIL_DECL ReleaseJobQueue :
+                    public Singleton<ReleaseJobQueue, SpinLock>,
+                    public Thread {
             private:
                 /// \brief
                 /// List of jobs waiting to be released.
@@ -471,7 +526,7 @@ namespace thekogans {
 
                 /// \brief
                 /// Enqueue a job to be released later.
-                /// \param[in] job Job to release.
+                /// \param[in] job Job to release later.
                 void EnqJob (Job *job);
 
             private:
@@ -480,16 +535,11 @@ namespace thekogans {
                 /// \return Next job to release.
                 Job *DeqJob ();
 
+                // Thread
                 /// \brief
                 /// Job release thread.
                 virtual void Run () throw ();
             };
-            /// \struct RunLoop::GlobalReleaseJobQueue RunLoop.h thekogans/util/RunLoop.h
-            ///
-            /// \brief
-            /// System wide ReleaseJobQueue singleton.
-            struct _LIB_THEKOGANS_UTIL_DECL GlobalReleaseJobQueue :
-                public Singleton<ReleaseJobQueue, SpinLock> {};
         };
 
     } // namespace util
