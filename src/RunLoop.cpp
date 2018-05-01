@@ -113,13 +113,26 @@ namespace thekogans {
                 Ptr &runLoop,
                 const TimeSpec &sleepTimeSpec,
                 const TimeSpec &waitTimeSpec) {
-            TimeSpec now = GetCurrentTime ();
-            TimeSpec deadline = now + waitTimeSpec;
-            while ((runLoop.get () == 0 || !runLoop->IsRunning ()) && deadline > now) {
-                Sleep (sleepTimeSpec);
-                now = GetCurrentTime ();
+            if (sleepTimeSpec != TimeSpec::Infinite) {
+                if (waitTimeSpec == TimeSpec::Infinite) {
+                    while (runLoop.get () == 0 || !runLoop->IsRunning ()) {
+                        Sleep (sleepTimeSpec);
+                    }
+                }
+                else {
+                    TimeSpec now = GetCurrentTime ();
+                    TimeSpec deadline = now + waitTimeSpec;
+                    while ((runLoop.get () == 0 || !runLoop->IsRunning ()) && deadline > now) {
+                        Sleep (sleepTimeSpec);
+                        now = GetCurrentTime ();
+                    }
+                }
+                return runLoop.get () != 0 && runLoop->IsRunning ();
             }
-            return runLoop.get () != 0 && runLoop->IsRunning ();
+            else {
+                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
+            }
         }
 
         THEKOGANS_UTIL_IMPLEMENT_HEAP_WITH_LOCK (RunLoop::JobProxy, SpinLock)

@@ -112,6 +112,8 @@ namespace thekogans {
             /// before calling pthread_cond_timedwait.
             /// \param[in] timeSpec Amount of time to wait before returning TimedOut.
             /// \return true = succeeded, false = timed out.
+            /// WARNING: If you want to wait indefinitelly, call Wait above. This
+            /// method will throw THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL if timeSpec == Infinite.
             bool Wait (const TimeSpec &timeSpec);
 
             /// \brief

@@ -101,7 +101,9 @@ namespace thekogans {
 
             /// \brief
             /// Flush the logger buffers.
-            virtual void Flush () {
+            /// \param[in] timeSpec How long to wait for logger to complete.
+            /// IMPORTANT: timeSpec is a relative value.
+            virtual void Flush (const TimeSpec &timeSpec = TimeSpec::Infinite) {
                 Console::Instance ().FlushPrintQueue ();
             }
 

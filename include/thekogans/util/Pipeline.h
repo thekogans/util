@@ -235,7 +235,7 @@ namespace thekogans {
             /// Enqueue a job on a pipeline stage.
             /// \param[in] job Job to enqueue.
             /// \param[in] stage Stage to enqueue the job on.
-            void Enq (
+            void EnqJob (
                 Job::Ptr job,
                 std::size_t stage = 0);
 
@@ -251,7 +251,9 @@ namespace thekogans {
 
             /// \brief
             /// Blocks until all jobs are complete and the pipeline is empty.
-            void WaitForIdle ();
+            /// \param[in] timeSpec How long to wait for pipeline to complete.
+            /// IMPORTANT: timeSpec is a relative value.
+            void WaitForIdle (const TimeSpec &timeSpec = TimeSpec::Infinite);
 
             /// \brief
             /// Pipeline is neither copy constructable, nor assignable.

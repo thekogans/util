@@ -471,10 +471,10 @@ namespace thekogans {
             }
         }
 
-        void LoggerMgr::Flush () {
+        void LoggerMgr::Flush (const TimeSpec &timeSpec) {
             LockGuard<Mutex> guard (mutex);
             if (jobQueue.get () != 0) {
-                jobQueue->WaitForIdle ();
+                jobQueue->WaitForIdle (timeSpec);
             }
             for (LoggerMap::iterator
                     it = loggerMap.begin (),
@@ -482,7 +482,7 @@ namespace thekogans {
                 for (LoggerList::iterator
                         jt = it->second.begin (),
                         end = it->second.end (); jt != end; ++jt) {
-                    (*jt)->Flush ();
+                    (*jt)->Flush (timeSpec);
                 }
             }
         }

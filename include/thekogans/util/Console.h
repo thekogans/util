@@ -198,7 +198,9 @@ namespace thekogans {
             ///
             /// If you do something else, you need to make sure to call FlushPrintQueue
             /// yourself or you risk having your application deadlock on exit.
-            void FlushPrintQueue ();
+            /// \param[in] timeSpec How long to wait for FlushPrintQueue to complete.
+            /// IMPORTANT: timeSpec is a relative value.
+            void FlushPrintQueue (const TimeSpec &timeSpec = TimeSpec::Infinite);
 
             /// \brief
             /// Console is neither copy constructable, nor assignable.

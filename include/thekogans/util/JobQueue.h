@@ -219,26 +219,39 @@ namespace thekogans {
             /// Enqueue a job. The next idle worker will pick it up,
             /// and execute it on it's thread.
             /// \param[in] job Job to enqueue.
-            /// \param[in] wait Wait for job to finish.
-            /// Used for synchronous job execution.
+            /// \param[in] wait Wait for job to finish. Used for synchronous job execution.
+            /// \param[in] timeSpec How long to wait for the job to complete.
+            /// IMPORTANT: timeSpec is a relative value.
             virtual void EnqJob (
                 Job::Ptr job,
-                bool wait = false);
+                bool wait = false,
+                const TimeSpec &timeSpec = TimeSpec::Infinite);
 
             /// \brief
             /// Wait for a queued job with a given id. If the job is not
             /// in the queue (in flight), it is not waited on.
             /// \param[in] jobId Id of job to wait on.
+            /// \param[in] timeSpec How long to wait for the job to complete.
+            /// IMPORTANT: timeSpec is a relative value.
             /// \return true if the job was waited on. false if in flight.
-            virtual bool WaitForJob (const Job::Id &jobId);
+            virtual bool WaitForJob (
+                const Job::Id &jobId,
+                const TimeSpec &timeSpec = TimeSpec::Infinite);
             /// \brief
             /// Wait for all queued job matching the given equality test. Jobs in flight
             /// are not waited on.
             /// \param[in] equalityTest EqualityTest to query to determine which jobs to wait on.
-            virtual void WaitForJobs (const EqualityTest &equalityTest);
+            /// \param[in] timeSpec How long to wait for the jobs to complete.
+            /// IMPORTANT: timeSpec is a relative value.
+            virtual void WaitForJobs (
+                const EqualityTest &equalityTest,
+                const TimeSpec &timeSpec = TimeSpec::Infinite);
             /// \brief
             /// Blocks until all jobs are complete and the queue is empty.
-            virtual void WaitForIdle ();
+            /// \param[in] timeSpec How long to wait for the jobs to complete.
+            /// IMPORTANT: timeSpec is a relative value.
+            virtual void WaitForIdle (
+                const TimeSpec &timeSpec = TimeSpec::Infinite);
 
             /// \brief
             /// Cancel a queued job with a given id. If the job is not

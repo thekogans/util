@@ -374,11 +374,14 @@ namespace thekogans {
             /// Enqueue a job to be performed on the run loop thread.
             /// \param[in] job Job to enqueue.
             /// \param[in] wait Wait for job to finish. Used for synchronous job execution.
-            /// NOTE: Same constraint applies to Enq as Stop. Namely, you can't call Enq
+            /// \param[in] timeSpec How long to wait for the job to complete.
+            /// IMPORTANT: timeSpec is a relative value.
+            /// NOTE: Same constraint applies to EnqJob as Stop. Namely, you can't call EnqJob
             /// from the same thread that called Start.
             virtual void EnqJob (
                 Job::Ptr /*job*/,
-                bool /*wait*/ = false) = 0;
+                bool /*wait*/ = false,
+                const TimeSpec & /*timeSpec*/ = TimeSpec::Infinite) = 0;
 
             /// \struct RunLoop::EqualityTest RunLoop.h thekogans/util/RunLoop.h
             ///
@@ -400,16 +403,27 @@ namespace thekogans {
             /// Wait for a queued job with a given id. If the job is not
             /// in the queue (in flight), it is not waited on.
             /// \param[in] jobId Id of job to wait on.
+            /// \param[in] timeSpec How long to wait for the job to complete.
+            /// IMPORTANT: timeSpec is a relative value.
             /// \return true if the job was waited on. false if in flight.
-            virtual bool WaitForJob (const Job::Id & /*jobId*/) = 0;
+            virtual bool WaitForJob (
+                const Job::Id & /*jobId*/,
+                const TimeSpec & /*timeSpec*/ = TimeSpec::Infinite) = 0;
             /// \brief
             /// Wait for all queued job matching the given equality test. Jobs in flight
             /// are not waited on.
             /// \param[in] equalityTest EqualityTest to query to determine which jobs to wait on.
-            virtual void WaitForJobs (const EqualityTest & /*equalityTest*/) = 0;
+            /// \param[in] timeSpec How long to wait for the jobs to complete.
+            /// IMPORTANT: timeSpec is a relative value.
+            virtual void WaitForJobs (
+                const EqualityTest & /*equalityTest*/,
+                const TimeSpec & /*timeSpec*/ = TimeSpec::Infinite) = 0;
             /// \brief
             /// Blocks until all jobs are complete and the run loop is empty.
-            virtual void WaitForIdle () = 0;
+            /// \param[in] timeSpec How long to wait for the jobs to complete.
+            /// IMPORTANT: timeSpec is a relative value.
+            virtual void WaitForIdle (
+                const TimeSpec & /*timeSpec*/ = TimeSpec::Infinite) = 0;
 
             /// \brief
             /// Cancel a queued job with a given id. If the job is not

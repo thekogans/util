@@ -428,7 +428,8 @@ namespace thekogans {
 
         void SystemRunLoop::EnqJob (
                 Job::Ptr job,
-                bool wait) {
+                bool wait,
+                const TimeSpec &timeSpec) {
             if (job.Get () != 0) {
                 LockGuard<Mutex> guard (jobsMutex);
                 if (stats.jobCount < maxPendingJobs) {
@@ -456,8 +457,22 @@ namespace thekogans {
                     CFRunLoopWakeUp (runLoop);
                 #endif // defined (TOOLCHAIN_OS_Windows)
                     if (wait) {
-                        while (!job->finished) {
-                            jobFinished.Wait ();
+                        if (timeSpec == TimeSpec::Infinite) {
+                            while (!job->finished) {
+                                jobFinished.Wait ();
+                            }
+                        }
+                        else {
+                            TimeSpec now = GetCurrentTime ();
+                            TimeSpec deadline = now + timeSpec;
+                            while (!job->finished && deadline > now) {
+                                jobFinished.Wait ();
+                                now = GetCurrentTime ();
+                            }
+                            if (!job->finished) {
+                                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                                    THEKOGANS_UTIL_OS_ERROR_CODE_TIMEOUT);
+                            }
                         }
                     }
                 }
@@ -474,7 +489,9 @@ namespace thekogans {
             }
         }
 
-        bool SystemRunLoop::WaitForJob (const Job::Id &jobId) {
+        bool SystemRunLoop::WaitForJob (
+                const Job::Id &jobId,
+                const TimeSpec &timeSpec) {
             Job::Ptr job_;
             {
                 LockGuard<Mutex> guard (jobsMutex);
@@ -486,15 +503,31 @@ namespace thekogans {
                 }
             }
             if (job_.Get () != 0) {
-                while (!job_->finished) {
-                    jobFinished.Wait ();
+                if (timeSpec == TimeSpec::Infinite) {
+                    while (!job_->finished) {
+                        jobFinished.Wait ();
+                    }
+                }
+                else {
+                    TimeSpec now = GetCurrentTime ();
+                    TimeSpec deadline = now + timeSpec;
+                    while (!job_->finished && deadline > now) {
+                        jobFinished.Wait ();
+                        now = GetCurrentTime ();
+                    }
+                    if (!job_->finished) {
+                        THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                            THEKOGANS_UTIL_OS_ERROR_CODE_TIMEOUT);
+                    }
                 }
                 return true;
             }
             return false;
         }
 
-        void SystemRunLoop::WaitForJobs (const EqualityTest &equalityTest) {
+        void SystemRunLoop::WaitForJobs (
+                const EqualityTest &equalityTest,
+                const TimeSpec &timeSpec) {
             JobProxyList jobs_;
             {
                 LockGuard<Mutex> guard (jobsMutex);
@@ -520,16 +553,44 @@ namespace thekogans {
                         return false;
                     }
                 } finishedCallback (jobs_);
-                while (!jobs_.for_each (finishedCallback)) {
-                    jobFinished.Wait ();
+                if (timeSpec == TimeSpec::Infinite) {
+                    while (!jobs_.for_each (finishedCallback)) {
+                        jobFinished.Wait ();
+                    }
+                }
+                else {
+                    TimeSpec now = GetCurrentTime ();
+                    TimeSpec deadline = now + timeSpec;
+                    while (!jobs_.for_each (finishedCallback) && deadline > now) {
+                        jobFinished.Wait ();
+                        now = GetCurrentTime ();
+                    }
+                    if (!jobs_.empty ()) {
+                        THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                            THEKOGANS_UTIL_OS_ERROR_CODE_TIMEOUT);
+                    }
                 }
             }
         }
 
-        void SystemRunLoop::WaitForIdle () {
+        void SystemRunLoop::WaitForIdle (const TimeSpec &timeSpec) {
             LockGuard<Mutex> guard (jobsMutex);
-            while (state == Busy) {
-                idle.Wait ();
+            if (timeSpec == TimeSpec::Infinite) {
+                while (state == Busy) {
+                    idle.Wait ();
+                }
+            }
+            else {
+                TimeSpec now = GetCurrentTime ();
+                TimeSpec deadline = now + timeSpec;
+                while (state == Busy && deadline > now) {
+                    idle.Wait ();
+                    now = GetCurrentTime ();
+                }
+                if (state == Busy) {
+                    THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                        THEKOGANS_UTIL_OS_ERROR_CODE_TIMEOUT);
+                }
             }
         }
 

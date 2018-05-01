@@ -225,9 +225,9 @@ namespace thekogans {
             }
         }
 
-        void Console::FlushPrintQueue () {
+        void Console::FlushPrintQueue (const TimeSpec &timeSpec) {
             if (jobQueue.get () != 0) {
-                jobQueue->WaitForIdle ();
+                jobQueue->WaitForIdle (timeSpec);
             }
         }
 

@@ -486,7 +486,9 @@ namespace thekogans {
             /// \brief
             /// Wait until all queued log entries have
             /// been processed, and the queue is empty.
-            void Flush ();
+            /// \param[in] timeSpec How long to wait for Flush to complete.
+            /// IMPORTANT: timeSpec is a relative value.
+            void Flush (const TimeSpec &timeSpec = TimeSpec::Infinite);
 
         protected:
             /// \brief

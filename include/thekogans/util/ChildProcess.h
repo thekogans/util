@@ -330,11 +330,13 @@ namespace thekogans {
             /// \brief
             /// Wait for child process to complete.
             /// \param[in] timeSpec How long to wait for the child to exit.
+            /// IMPORTANT: timeSpec is a relative value.
             /// \return Child exit status.
             ChildStatus Wait (const TimeSpec &timeSpec = TimeSpec::Infinite);
             /// \brief
             /// Convenience api. Calls Spawn followed by Wait (synchronous).
             /// \param[in] timeSpec How long to wait for the child to exit.
+            /// IMPORTANT: timeSpec is a relative value.
             /// \return Child exit status.
             ChildStatus Exec (const TimeSpec &timeSpec = TimeSpec::Infinite);
             /// \brief

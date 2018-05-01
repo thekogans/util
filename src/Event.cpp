@@ -96,19 +96,25 @@ namespace thekogans {
             }
 
             bool Wait (const TimeSpec &timeSpec) {
-                LockGuard<Mutex> guard (mutex);
-                TimeSpec now = GetCurrentTime ();
-                TimeSpec deadline = now + timeSpec;
-                while (state == Free && deadline > now) {
-                    if (!condition.Wait (deadline - now)) {
-                        return false;
+                if (timeSpec != TimeSpec::Infinite) {
+                    LockGuard<Mutex> guard (mutex);
+                    TimeSpec now = GetCurrentTime ();
+                    TimeSpec deadline = now + timeSpec;
+                    while (state == Free && deadline > now) {
+                        if (!condition.Wait (deadline - now)) {
+                            return false;
+                        }
+                        now = GetCurrentTime ();
                     }
-                    now = GetCurrentTime ();
+                    if (!manualReset) {
+                        state = Free;
+                    }
+                    return true;
                 }
-                if (!manualReset) {
-                    state = Free;
+                else {
+                    THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                        THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
                 }
-                return true;
             }
         };
 

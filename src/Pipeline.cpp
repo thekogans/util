@@ -134,7 +134,7 @@ namespace thekogans {
             }
         }
 
-        void Pipeline::Enq (
+        void Pipeline::EnqJob (
                 Job::Ptr job,
                 std::size_t stage) {
             if (job.Get () != 0 && stage < stages.size ()) {
@@ -160,9 +160,9 @@ namespace thekogans {
             }
         }
 
-        void Pipeline::WaitForIdle () {
+        void Pipeline::WaitForIdle (const TimeSpec &timeSpec) {
             for (std::size_t i = 0, count = stages.size (); i < count; ++i) {
-                stages[i]->WaitForIdle ();
+                stages[i]->WaitForIdle (timeSpec);
             }
         }
 

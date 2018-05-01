@@ -24,6 +24,7 @@
 #include "thekogans/util/Types.h"
 #include "thekogans/util/Constants.h"
 #include "thekogans/util/RefCounted.h"
+#include "thekogans/util/TimeSpec.h"
 
 namespace thekogans {
     namespace util {
@@ -72,7 +73,9 @@ namespace thekogans {
             /// Flush the logger buffers. After this function returns,
             /// all log entries should be committed to the substrate
             /// represented by this logger.
-            virtual void Flush () {}
+            /// \param[in] timeSpec How long to wait for logger to complete.
+            /// IMPORTANT: timeSpec is a relative value.
+            virtual void Flush (const TimeSpec & /*timeSpec*/ = TimeSpec::Infinite) {}
         };
 
     } // namespace util
