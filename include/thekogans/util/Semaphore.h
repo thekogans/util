@@ -20,6 +20,7 @@
 
 #include "thekogans/util/Config.h"
 #include "thekogans/util/Types.h"
+#include "thekogans/util/TimeSpec.h"
 
 namespace thekogans {
     namespace util {
@@ -67,7 +68,10 @@ namespace thekogans {
 
             /// \brief
             /// Wait for the semaphore to become signaled.
-            void Acquire ();
+            /// \param[in] timeSpec Amount of time to wait before returning false.
+            /// IMPORTANT: timeSpec is a relative value.
+            /// \return true = succeeded, false = timed out.
+            bool Acquire (const TimeSpec &timeSpec = TimeSpec::Infinite);
 
             /// \brief
             /// Put the semaphore in to Signaled state. If any

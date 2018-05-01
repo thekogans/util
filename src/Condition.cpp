@@ -77,43 +77,44 @@ namespace thekogans {
         #endif // defined (TOOLCHAIN_OS_Windows)
         }
 
-        void Condition::Wait () {
-        #if defined (TOOLCHAIN_OS_Windows)
-            if (!SleepConditionVariableCS (&cv, &mutex.cs, INFINITE)) {
-                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                    THEKOGANS_UTIL_OS_ERROR_CODE);
-            }
-        #else // defined (TOOLCHAIN_OS_Windows)
-            THEKOGANS_UTIL_ERROR_CODE errorCode =
-                pthread_cond_wait (&condition, &mutex.mutex);
-            if (errorCode != 0) {
-                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (errorCode);
-            }
-        #endif // defined (TOOLCHAIN_OS_Windows)
-        }
-
         bool Condition::Wait (const TimeSpec &timeSpec) {
         #if defined (TOOLCHAIN_OS_Windows)
-            if (!SleepConditionVariableCS (&cv, &mutex.cs, (DWORD)timeSpec.ToMilliseconds ())) {
-                if (THEKOGANS_UTIL_OS_ERROR_CODE != ERROR_TIMEOUT) {
+            if (timeSpec == TimeSpec::Infinite) {
+                if (!SleepConditionVariableCS (&cv, &mutex.cs, INFINITE)) {
                     THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
                         THEKOGANS_UTIL_OS_ERROR_CODE);
                 }
-                return false;
             }
-            return true;
+            else {
+                if (!SleepConditionVariableCS (&cv, &mutex.cs, (DWORD)timeSpec.ToMilliseconds ())) {
+                    if (THEKOGANS_UTIL_OS_ERROR_CODE != ERROR_TIMEOUT) {
+                        THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                            THEKOGANS_UTIL_OS_ERROR_CODE);
+                    }
+                    return false;
+                }
+            }
         #else // defined (TOOLCHAIN_OS_Windows)
-            timespec absolute = (GetCurrentTime () + timeSpec).Totimespec ();
-            THEKOGANS_UTIL_ERROR_CODE errorCode =
-                pthread_cond_timedwait (&condition, &mutex.mutex, &absolute);
-            if (errorCode != 0) {
-                if (errorCode != ETIMEDOUT) {
+            if (timeSpec == TimeSpec::Infinite) {
+                THEKOGANS_UTIL_ERROR_CODE errorCode =
+                    pthread_cond_wait (&condition, &mutex.mutex);
+                if (errorCode != 0) {
                     THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (errorCode);
                 }
-                return false;
             }
-            return true;
+            else {
+                timespec absolute = (GetCurrentTime () + timeSpec).Totimespec ();
+                THEKOGANS_UTIL_ERROR_CODE errorCode =
+                    pthread_cond_timedwait (&condition, &mutex.mutex, &absolute);
+                if (errorCode != 0) {
+                    if (errorCode != ETIMEDOUT) {
+                        THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (errorCode);
+                    }
+                    return false;
+                }
+            }
         #endif // defined (TOOLCHAIN_OS_Windows)
+            return true;
         }
 
         void Condition::Signal () {

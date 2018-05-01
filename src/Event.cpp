@@ -85,19 +85,17 @@ namespace thekogans {
                 state = Free;
             }
 
-            void Wait () {
-                LockGuard<Mutex> guard (mutex);
-                while (state == Free) {
-                    condition.Wait ();
-                }
-                if (!manualReset) {
-                    state = Free;
-                }
-            }
-
             bool Wait (const TimeSpec &timeSpec) {
-                if (timeSpec != TimeSpec::Infinite) {
-                    LockGuard<Mutex> guard (mutex);
+                LockGuard<Mutex> guard (mutex);
+                if (timeSpec == TimeSpec::Infinite) {
+                    while (state == Free) {
+                        condition.Wait ();
+                    }
+                    if (!manualReset) {
+                        state = Free;
+                    }
+                }
+                else {
                     TimeSpec now = GetCurrentTime ();
                     TimeSpec deadline = now + timeSpec;
                     while (state == Free && deadline > now) {
@@ -109,12 +107,8 @@ namespace thekogans {
                     if (!manualReset) {
                         state = Free;
                     }
-                    return true;
                 }
-                else {
-                    THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                        THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
-                }
+                return true;
             }
         };
 
@@ -205,27 +199,24 @@ namespace thekogans {
         #endif // defined (TOOLCHAIN_OS_Windows)
         }
 
-        void Event::Wait () {
-        #if defined (TOOLCHAIN_OS_Windows)
-            if (WaitForSingleObject (handle, INFINITE) != WAIT_OBJECT_0) {
-                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                    THEKOGANS_UTIL_OS_ERROR_CODE);
-            }
-        #else // defined (TOOLCHAIN_OS_Windows)
-            event->Wait ();
-        #endif // defined (TOOLCHAIN_OS_Windows)
-        }
-
         bool Event::Wait (const TimeSpec &timeSpec) {
         #if defined (TOOLCHAIN_OS_Windows)
-            DWORD result = WaitForSingleObject (
-                handle, (DWORD)timeSpec.ToMilliseconds ());
-            if (result != WAIT_OBJECT_0) {
-                if (result != WAIT_TIMEOUT) {
+            if (timeSpec == TimeSpec::Infinite) {
+                if (WaitForSingleObject (handle, INFINITE) != WAIT_OBJECT_0) {
                     THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
                         THEKOGANS_UTIL_OS_ERROR_CODE);
                 }
-                return false;
+            }
+            else {
+                DWORD result = WaitForSingleObject (
+                    handle, (DWORD)timeSpec.ToMilliseconds ());
+                if (result != WAIT_OBJECT_0) {
+                    if (result != WAIT_TIMEOUT) {
+                        THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                            THEKOGANS_UTIL_OS_ERROR_CODE);
+                    }
+                    return false;
+                }
             }
             return true;
         #else // defined (TOOLCHAIN_OS_Windows)

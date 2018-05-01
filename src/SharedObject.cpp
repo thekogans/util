@@ -100,7 +100,7 @@ namespace thekogans {
                 mode_t mode,
             #endif // defined (TOOLCHAIN_OS_Windows)
                 const TimeSpec &timeSpec) {
-            if (name != 0 && size > 0) {
+            if (name != 0 && size > 0 && timeSpec != TimeSpec::Infinite) {
                 size += sizeof (SharedObjectHeader);
             #if defined (TOOLCHAIN_OS_Windows)
                 Lock lock (name, securityAttributes, timeSpec);
@@ -256,29 +256,35 @@ namespace thekogans {
                 mode_t mode,
             #endif // defined (TOOLCHAIN_OS_Windows)
                 const TimeSpec &timeSpec) {
-            SharedObjectHeader *sharedObject = (SharedObjectHeader *)ptr - 1;
-            ui64 size = sharedObject->size;
-            bool secure = sharedObject->secure;
-        #if defined (TOOLCHAIN_OS_Windows)
-            Lock lock (sharedObject->name, securityAttributes, timeSpec);
-            if (--sharedObject->refCount == 0) {
-                destructor (sharedObject);
+            if (ptr != 0 && timeSpec != TimeSpec::Infinite) {
+                SharedObjectHeader *sharedObject = (SharedObjectHeader *)ptr - 1;
+                ui64 size = sharedObject->size;
+                bool secure = sharedObject->secure;
+            #if defined (TOOLCHAIN_OS_Windows)
+                Lock lock (sharedObject->name, securityAttributes, timeSpec);
+                if (--sharedObject->refCount == 0) {
+                    destructor (sharedObject);
+                }
+                if (secure) {
+                    VirtualUnlock (sharedObject, (SIZE_T)size);
+                }
+                UnmapViewOfFile (sharedObject);
+            #else // defined (TOOLCHAIN_OS_Windows)
+                Lock lock (sharedObject->name, mode, timeSpec);
+                if (--sharedObject->refCount == 0) {
+                    destructor (sharedObject);
+                    shm_unlink (sharedObject->name);
+                }
+                if (secure) {
+                    munlock (sharedObject, size);
+                }
+                munmap (sharedObject, size);
+            #endif // defined (TOOLCHAIN_OS_Windows)
             }
-            if (secure) {
-                VirtualUnlock (sharedObject, (SIZE_T)size);
+            else {
+                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
             }
-            UnmapViewOfFile (sharedObject);
-        #else // defined (TOOLCHAIN_OS_Windows)
-            Lock lock (sharedObject->name, mode, timeSpec);
-            if (--sharedObject->refCount == 0) {
-                destructor (sharedObject);
-                shm_unlink (sharedObject->name);
-            }
-            if (secure) {
-                munlock (sharedObject, size);
-            }
-            munmap (sharedObject, size);
-        #endif // defined (TOOLCHAIN_OS_Windows)
         }
 
         SharedObject::Lock::Lock (

@@ -63,13 +63,31 @@ namespace thekogans {
                 }
             }
 
-            void Acquire () {
+            bool Acquire (const TimeSpec &timeSpec) {
                 LockGuard<Mutex> guard (mutex);
-                while (count == 0) {
-                    condition.Wait ();
+                if (timeSpec == TimeSpec::Infinite) {
+                    while (count == 0) {
+                        condition.Wait ();
+                    }
+                }
+                else {
+                    TimeSpec now = GetCurrentTime ();
+                    TimeSpec deadline = now + timeSpec;
+                    while (count == 0 && deadline > now) {
+                        if (!condition.Wait (deadline - now)) {
+                            return false;
+                        }
+                        now = GetCurrentTime ();
+                    }
                 }
                 if (count > 0) {
                     --count;
+                    return true;
+                }
+                else {
+                    THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
+                        "Unable to acquire the semaphore, count == %u.",
+                        count);
                 }
             }
 
@@ -158,14 +176,28 @@ namespace thekogans {
         #endif // defined (TOOLCHAIN_OS_Windows)
         }
 
-        void Semaphore::Acquire () {
+        bool Semaphore::Acquire (const TimeSpec &timeSpec) {
         #if defined (TOOLCHAIN_OS_Windows)
-            if (WaitForSingleObject (handle, INFINITE) != WAIT_OBJECT_0) {
-                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                    THEKOGANS_UTIL_OS_ERROR_CODE);
+            if (timeSpec == TimeSpec::Infinite) {
+                if (WaitForSingleObject (handle, INFINITE) != WAIT_OBJECT_0) {
+                    THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                        THEKOGANS_UTIL_OS_ERROR_CODE);
+                }
             }
+            else {
+                DWORD result = WaitForSingleObject (
+                    handle, (DWORD)timeSpec.ToMilliseconds ());
+                if (result != WAIT_OBJECT_0) {
+                    if (result != WAIT_TIMEOUT) {
+                        THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                            THEKOGANS_UTIL_OS_ERROR_CODE);
+                    }
+                    return false;
+                }
+            }
+            return true;
         #else // defined (TOOLCHAIN_OS_Windows)
-            semaphore->Acquire ();
+            return semaphore->Acquire (timeSpec);
         #endif // defined (TOOLCHAIN_OS_Windows)
         }
 

@@ -86,14 +86,22 @@ namespace thekogans {
                 const TimeSpec &timeSpec) :
                 workerPool (workerPool_),
                 worker (workerPool.GetWorker ()) {
-            while (worker == 0 && retries-- != 0) {
-                Sleep (timeSpec);
-                worker = workerPool.GetWorker ();
-            }
             if (worker == 0) {
-                THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                    "Unable to acquire a worker from %s pool.",
-                    workerPool.name.c_str ());
+                if (retries == 0 || timeSpec != TimeSpec::Infinite) {
+                    while (worker == 0 && retries-- != 0) {
+                        Sleep (timeSpec);
+                        worker = workerPool.GetWorker ();
+                    }
+                    if (worker == 0) {
+                        THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
+                            "Unable to acquire a worker from %s pool.",
+                            workerPool.name.c_str ());
+                    }
+                }
+                else {
+                    THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                        THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
+                }
             }
         }
 

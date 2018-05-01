@@ -300,6 +300,7 @@ namespace thekogans {
                     // For completeness only. Since ClockServer is a
                     // private singleton, it's dtor should never be
                     // called.
+                    assert (0);
                     mach_port_deallocate (mach_task_self (), calendarClockService);
                 }
                 void GetTime (mach_timespec_t &machTimeSpec) {

@@ -73,19 +73,14 @@ namespace thekogans {
             ~Condition ();
 
             /// \brief
-            /// Unconditional wait.
-            /// NOTE: This wait will either succeed, or throw an exception.
-            void Wait ();
-
-            /// \brief
-            /// Conditional wait.
+            /// Wait for condition.
             /// \param[in] timeSpec How long to wait.
             /// IMPORTANT: timeSpec is a relative value.
             /// On POSIX (pthreads) systems it will add
             /// the current time to the value provided
             /// before calling pthread_cond_timedwait.
             /// \return true = succeeded, false = timed out
-            bool Wait (const TimeSpec &timeSpec);
+            bool Wait (const TimeSpec &timeSpec = TimeSpec::Infinite);
 
             /// \brief
             /// Put the condition variable in to signaled state. If

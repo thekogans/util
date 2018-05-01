@@ -102,19 +102,13 @@ namespace thekogans {
 
             /// \brief
             /// Wait for the event to become signaled.
-            void Wait ();
-
-            /// \brief
-            /// Wait a specified amount of time for the event to become signaled.
-            /// IMPORTANT: timeSpec is a relative value.
             /// On POSIX (pthreads) systems it will add
             /// the current time to the value provided
             /// before calling pthread_cond_timedwait.
-            /// \param[in] timeSpec Amount of time to wait before returning TimedOut.
+            /// \param[in] timeSpec Amount of time to wait before returning false.
+            /// IMPORTANT: timeSpec is a relative value.
             /// \return true = succeeded, false = timed out.
-            /// WARNING: If you want to wait indefinitelly, call Wait above. This
-            /// method will throw THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL if timeSpec == Infinite.
-            bool Wait (const TimeSpec &timeSpec);
+            bool Wait (const TimeSpec &timeSpec = TimeSpec::Infinite);
 
             /// \brief
             /// Event is neither copy constructable, nor assignable.
