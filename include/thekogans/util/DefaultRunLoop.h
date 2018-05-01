@@ -234,7 +234,7 @@ namespace thekogans {
                 const Job::Id &jobId,
                 const TimeSpec &timeSpec = TimeSpec::Infinite);
             /// \brief
-            /// Wait for all queued job matching the given equality test. Jobs in flight
+            /// Wait for all queued jobs matching the given equality test. Jobs in flight
             /// are not waited on.
             /// \param[in] equalityTest EqualityTest to query to determine which jobs to wait on.
             /// \param[in] timeSpec How long to wait for the jobs to complete.
