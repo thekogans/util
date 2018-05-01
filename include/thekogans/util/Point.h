@@ -53,6 +53,10 @@ namespace thekogans {
                 x (x_),
                 y (y_) {}
 
+            /// \brief
+            /// Point (0, 0);
+            static Point Empty;
+
             enum {
                 /// \brief
                 /// Serialized point size.

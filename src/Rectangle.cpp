@@ -22,6 +22,8 @@
 namespace thekogans {
     namespace util {
 
+        Rectangle::Extents Rectangle::Extents::Empty (0, 0);
+
         f32 Rectangle::Extents::AspectFit (const Extents &extents) {
             f32 scale = width != 0 && height != 0 ? std::min (
                 (f32)extents.width / (f32)width,

@@ -60,6 +60,10 @@ namespace thekogans {
                     width (width_),
                     height (height_) {}
 
+                /// \brief
+                /// Extents (0, 0);
+                static Extents Empty;
+
                 enum {
                     /// \brief
                     /// Serialized extent size.
