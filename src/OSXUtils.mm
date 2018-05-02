@@ -17,12 +17,47 @@
 
 #if defined (TOOLCHAIN_OS_OSX)
 
+#include <AppKit/AppKit.h>
 #include <Foundation/Foundation.h>
+#include "thekogans/util/Thread.h"
+#include "thekogans/util/Exception.h"
 #include "thekogans/util/StringUtils.h"
 #include "thekogans/util/OSXUtils.h"
 
 namespace thekogans {
     namespace util {
+
+        void CocoaInit () {
+            if (NSApplicationLoad () == YES) {
+                Thread::SetMainThread ();
+                [NSApplication sharedApplication];
+            }
+            else {
+                THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
+                    "%s", "Failed to initialize Cocoa!\n");
+            }
+        }
+
+        void CocoaStart () {
+            [NSApp run];
+        }
+
+        void CocoaStop () {
+            [NSApp stop: nil];
+            // Inject an event, so that the loop actually checks
+            // the STOP flag set above and exits the loop.
+            NSEvent *event = [NSEvent
+                otherEventWithType: NSEventTypeApplicationDefined
+                location: NSMakePoint (0.0f, 0.0f)
+                modifierFlags: 0
+                timestamp: 0.0f
+                windowNumber: 0
+                context: nil
+                subtype: 0
+                data1: 0
+                data2: 0];
+            [NSApp postEvent: event atStart: NO];
+        }
 
         std::string DescriptionFromOSStatus (OSStatus errorCode) {
             std::string UTF8String;

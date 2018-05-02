@@ -63,6 +63,7 @@
       <when condition = "$(TOOLCHAIN_OS) == 'OSX'">
         <library>pthread</library>
         <framework>Foundation</framework>
+        <framework>Cocoa</framework>
         <framework>CoreFoundation</framework>
         <framework>CoreServices</framework>
         <framework>SystemConfiguration</framework>

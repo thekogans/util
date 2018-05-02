@@ -26,6 +26,9 @@
 #include "thekogans/util/HRTimer.h"
 #include "thekogans/util/LockGuard.h"
 #include "thekogans/util/SystemRunLoop.h"
+#if defined (TOOLCHAIN_OS_OSX)
+    #include "thekogans/util/OSXUtils.h"
+#endif // defined (TOOLCHAIN_OS_OSX)
 
 namespace thekogans {
     namespace util {
@@ -259,7 +262,7 @@ namespace thekogans {
                 idle (jobsMutex),
                 state (Idle),
                 busyWorkers (0) {
-            if (maxPendingJobs == 0 || runLoop == 0) {
+            if (maxPendingJobs == 0) {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
                     THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
             }
@@ -394,18 +397,27 @@ namespace thekogans {
                     }
                 }
             #elif defined (TOOLCHAIN_OS_OSX)
-                // Create a dummy source so that CFRunLoopRun has
-                // something to wait on.
-                CFRunLoopSourceContext context = {0};
-                context.perform = DoNothingRunLoopCallback;
-                CFRunLoopSourceRefPtr runLoopSource (CFRunLoopSourceCreate (0, 0, &context));
-                if (runLoopSource.get () != 0) {
-                    CFRunLoopAddSource (runLoop, runLoopSource.get (), kCFRunLoopCommonModes);
-                    CFRunLoopRun ();
-                    CFRunLoopRemoveSource (runLoop, runLoopSource.get (), kCFRunLoopCommonModes);
+                if (runLoop != 0) {
+                    // Create a dummy source so that CFRunLoopRun has
+                    // something to wait on.
+                    CFRunLoopSourceContext context = {0};
+                    context.perform = DoNothingRunLoopCallback;
+                    CFRunLoopSourceRefPtr runLoopSource (CFRunLoopSourceCreate (0, 0, &context));
+                    if (runLoopSource.get () != 0) {
+                        CFRunLoopAddSource (runLoop, runLoopSource.get (), kCFRunLoopCommonModes);
+                        CFRunLoopRun ();
+                        CFRunLoopRemoveSource (runLoop, runLoopSource.get (), kCFRunLoopCommonModes);
+                    }
+                    else {
+                        THEKOGANS_UTIL_THROW_SC_ERROR_CODE_EXCEPTION (SCError ());
+                    }
+                }
+                else if (Thread::IsMainThread ()) {
+                    CocoaStart ();
                 }
                 else {
-                    THEKOGANS_UTIL_THROW_SC_ERROR_CODE_EXCEPTION (SCError ());
+                    THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
+                        "%s", "Cocoa based SystemRunLoop can only start from main.");
                 }
             #endif // defined (TOOLCHAIN_OS_Windows)
             }
@@ -418,7 +430,12 @@ namespace thekogans {
             #elif defined (TOOLCHAIN_OS_Linux)
                 window->PostEvent (XlibWindow::ID_STOP);
             #elif defined (TOOLCHAIN_OS_OSX)
-                CFRunLoopStop (runLoop);
+                if (runLoop != 0) {
+                    CFRunLoopStop (runLoop);
+                }
+                else {
+                    CocoaStop ();
+                }
             #endif // defined (TOOLCHAIN_OS_Windows)
             }
             if (cancelPendingJobs) {
@@ -449,12 +466,12 @@ namespace thekogans {
                     window->PostEvent (XlibWindow::ID_RUN_LOOP);
                 #elif defined (TOOLCHAIN_OS_OSX)
                     CFRunLoopPerformBlock (
-                        runLoop,
+                        runLoop != 0 ? runLoop : CFRunLoopGetMain (),
                         kCFRunLoopCommonModes,
                         ^(void) {
                             ExecuteJobs ();
                         });
-                    CFRunLoopWakeUp (runLoop);
+                    CFRunLoopWakeUp (runLoop != 0 ? runLoop : CFRunLoopGetMain ());
                 #endif // defined (TOOLCHAIN_OS_Windows)
                     if (wait) {
                         if (timeSpec == TimeSpec::Infinite) {

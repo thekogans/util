@@ -124,6 +124,7 @@ namespace thekogans {
         }
     #elif defined (TOOLCHAIN_OS_OSX)
         CFRunLoopRef MainRunLoopCreateInstance::runLoop = 0;
+        bool MainRunLoopCreateInstance::useCocoa = false;
 
         void MainRunLoopCreateInstance::Parameterize (
                 const std::string &name_,
@@ -138,10 +139,13 @@ namespace thekogans {
             workerCallback = workerCallback_;
             willCallStart = willCallStart_;
             runLoop = runLoop_;
+            if (runLoop == 0) {
+                useCocoa = true;
+            }
         }
 
         RunLoop *MainRunLoopCreateInstance::operator () () {
-            return runLoop != 0 ?
+            return runLoop != 0 || useCocoa ?
                 (RunLoop *)new SystemRunLoop (
                     name,
                     type,

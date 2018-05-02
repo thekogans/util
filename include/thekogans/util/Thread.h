@@ -369,7 +369,8 @@ namespace thekogans {
             /// Return true if the given thread is the main thread.
             /// \param[in] thread Thread handle o test if main.
             /// \return true == thread is the main thread.
-            static bool IsMainThread (THEKOGANS_UTIL_THREAD_HANDLE thread) {
+            static bool IsMainThread (
+                    THEKOGANS_UTIL_THREAD_HANDLE thread = GetCurrThreadHandle ()) {
             #if defined (TOOLCHAIN_OS_Windows)
                 return thread == mainThread;
             #else // defined (TOOLCHAIN_OS_Windows)

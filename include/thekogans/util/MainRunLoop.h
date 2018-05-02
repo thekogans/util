@@ -226,6 +226,9 @@ namespace thekogans {
             /// \brief
             /// OS X run loop object.
             static CFRunLoopRef runLoop;
+            /// \brief
+            /// Use NSApp.
+            static bool useCocoa;
         #endif // defined (TOOLCHAIN_OS_Windows)
 
         public:

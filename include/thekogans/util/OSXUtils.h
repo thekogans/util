@@ -52,6 +52,16 @@ namespace thekogans {
     namespace util {
 
         /// \brief
+        /// Initialize the Cocoa framework.
+        void CocoaInit ();
+        /// \brief
+        /// Call [NSApp run];
+        void CocoaStart ();
+        /// \brief
+        /// Send an event to break out of [NSApp run];
+        void CocoaStop ();
+
+        /// \brief
         /// Return error description from the given OSStatus.
         /// \param[in] errorCode OSStatus to return description for.
         /// \return Error description from the given OSStatus.
