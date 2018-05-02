@@ -16,6 +16,9 @@
 // along with libthekogans_util. If not, see <http://www.gnu.org/licenses/>.
 
 #include "thekogans/util/DefaultRunLoop.h"
+#if defined (THEKOGANS_OS_OSX)
+    #include "thekogans/util/OSXUtils.h"
+#endif // defined (THEKOGANS_OS_OSX)
 #include "thekogans/util/MainRunLoop.h"
 
 namespace thekogans {
@@ -140,6 +143,7 @@ namespace thekogans {
             willCallStart = willCallStart_;
             runLoop = runLoop_;
             if (runLoop == 0) {
+                CocoaInit ();
                 useCocoa = true;
             }
         }

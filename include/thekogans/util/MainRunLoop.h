@@ -288,6 +288,8 @@ namespace thekogans {
             /// \param[in] willCallStart_ true = the main thread will call
             /// MainRunLoop::Instance ().Start ().
             /// \param[in] runLoop_ OS X run loop object.
+            /// NOTE: if runLoop_ == 0, SystemRunLoop will use \see{CocoaStart) \see{CocoaStop)
+            /// from OSXUtils.[h | mm].
             static void Parameterize (
                 const std::string &name_,
                 RunLoop::Type type_,

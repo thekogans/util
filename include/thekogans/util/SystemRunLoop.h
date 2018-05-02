@@ -407,6 +407,9 @@ namespace thekogans {
             /// \param[in] workerCallback_ Called to initialize/uninitialize the worker thread.
             /// \param[in] done_ true = must call Start before Enq.
             /// \param[in] runLoop_ OS X run loop object.
+            /// NOTE: if runLoop_ == 0, SystemRunLoop will use \see{CocoaStart) \see{CocoaStop)
+            /// from OSXUtils.[h | mm]. \see{MainRunLoopCreateInstance} takes care of the details
+            /// if you call \see{MainRunLoopCreateInstance::Parametrize} with runLoop == 0.
             SystemRunLoop (
                 const std::string &name_ = std::string (),
                 Type type_ = TYPE_FIFO,
