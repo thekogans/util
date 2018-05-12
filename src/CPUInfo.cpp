@@ -248,5 +248,67 @@ namespace thekogans {
             isAltiVec (HaveAltiVec ()) {}
     #endif // defined (TOOLCHAIN_ARCH_i386) || defined (TOOLCHAIN_ARCH_x86_64)
 
+        void CPUInfo::Dump (std::ostream &stream) const {
+            auto Supported = [&stream] (
+                    const std::string &feature,
+                    bool supported) {
+                stream << feature << (supported ? " supported" : " not supported") << std::endl;
+            };
+            stream << Vendor () << std::endl;
+            stream << Brand () << std::endl;
+            Supported ("3DNOW", _3DNOW ());
+            Supported ("3DNOWEXT", _3DNOWEXT ());
+            Supported ("ABM", ABM ());
+            Supported ("ADX", ADX ());
+            Supported ("AES", AES ());
+            Supported ("AVX", AVX ());
+            Supported ("AVX2", AVX2 ());
+            Supported ("AVX512CD", AVX512CD ());
+            Supported ("AVX512ER", AVX512ER ());
+            Supported ("AVX512F", AVX512F ());
+            Supported ("AVX512PF", AVX512PF ());
+            Supported ("BMI1", BMI1 ());
+            Supported ("BMI2", BMI2 ());
+            Supported ("CLFSH", CLFSH ());
+            Supported ("CMPXCHG16B", CMPXCHG16B ());
+            Supported ("CX8", CX8 ());
+            Supported ("ERMS", ERMS ());
+            Supported ("F16C", F16C ());
+            Supported ("FMA", FMA ());
+            Supported ("FSGSBASE", FSGSBASE ());
+            Supported ("FXSR", FXSR ());
+            Supported ("HLE", HLE ());
+            Supported ("INVPCID", INVPCID ());
+            Supported ("LAHF", LAHF ());
+            Supported ("LZCNT", LZCNT ());
+            Supported ("MMX", MMX ());
+            Supported ("MMXEXT", MMXEXT ());
+            Supported ("MONITOR", MONITOR ());
+            Supported ("MOVBE", MOVBE ());
+            Supported ("MSR", MSR ());
+            Supported ("OSXSAVE", OSXSAVE ());
+            Supported ("PCLMULQDQ", PCLMULQDQ ());
+            Supported ("POPCNT", POPCNT ());
+            Supported ("PREFETCHWT1", PREFETCHWT1 ());
+            Supported ("RDRAND", RDRAND ());
+            Supported ("RDSEED", RDSEED ());
+            Supported ("RDTSCP", RDTSCP ());
+            Supported ("RTM", RTM ());
+            Supported ("SEP", SEP ());
+            Supported ("SHA", SHA ());
+            Supported ("SSE", SSE ());
+            Supported ("SSE2", SSE2 ());
+            Supported ("SSE3", SSE3 ());
+            Supported ("SSE4.1", SSE41 ());
+            Supported ("SSE4.2", SSE42 ());
+            Supported ("SSE4a", SSE4a ());
+            Supported ("SSSE3", SSSE3 ());
+            Supported ("SYSCALL", SYSCALL ());
+            Supported ("TBM", TBM ());
+            Supported ("XOP", XOP ());
+            Supported ("XSAVE", XSAVE ());
+            stream << "L1 cache line size: " << L1CacheLineSize () << std::endl;
+        }
+
     } // namespace util
 } // namespace thekogans

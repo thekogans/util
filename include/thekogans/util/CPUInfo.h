@@ -449,6 +449,11 @@ namespace thekogans {
                 return isAltiVec;
             }
         #endif // defined (TOOLCHAIN_ARCH_i386) || defined (TOOLCHAIN_ARCH_x86_64)
+
+            /// \brief
+            /// Dump CPU info to std::ostream.
+            /// \param[in] stream std::ostream to dump the stats to.
+            void Dump (std::ostream &stream = std::cout) const;
         };
 
     } // namespace util
