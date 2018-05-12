@@ -35,7 +35,7 @@ namespace thekogans {
 
         void RunLoopScheduler::Queue::Cancel (const RunLoop::Job::Id &id) {
             for (std::size_t i = c.size (); i-- > 0;) {
-                if (c[i]->job->id == id) {
+                if (c[i]->job->GetId () == id) {
                     c.erase (c.begin () + i);
                     break;
                 }
@@ -96,7 +96,7 @@ namespace thekogans {
             if (startTimer) {
                 timer.Start (timeSpec);
             }
-            return jobInfo->job->id;
+            return jobInfo->job->GetId ();
         }
 
     } // namespace util
