@@ -54,7 +54,7 @@ architectures (x86, MIPS, ARM…). Here is a complete feature list:
       threading api.
 
     - A run loop framework (RunLoop.h, DefaultRunLoop.h, SystemRunLoop.h
-      MainRunLoop.h, JobQueue) for executing RunLoop::Jobs on any thread,
+      MainRunLoop.h, JobQueue.h) for executing RunLoop::Jobs on any thread,
       including main.
 
     - A collection of process classes (ChildProcess.h, DynamicLibrary.h)
@@ -106,7 +106,7 @@ Windows: Ws2_32.lib, mpr.lib, Iphlpapi.lib.
 Linux: pthread, rt, dl.
 
 OS X: pthread, frameworks: Foundation, CoreFoundation, CoreServices,
-SystemConfiguration.
+SystemConfiguration, Cocoa.
 
 libthekogans_util has the following optional dependencies:
 
