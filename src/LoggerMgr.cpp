@@ -229,7 +229,13 @@ namespace thekogans {
                 filterList.clear ();
             }
             jobQueue.reset (!blocking ?
-                new JobQueue (name, RunLoop::TYPE_FIFO, 1, priority, affinity) : 0);
+                new JobQueue (
+                    name,
+                    RunLoop::TYPE_FIFO,
+                    UI32_MAX,
+                    1,
+                    priority,
+                    affinity) : 0);
         }
 
         void LoggerMgr::AddLogger (

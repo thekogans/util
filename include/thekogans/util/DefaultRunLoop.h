@@ -18,7 +18,10 @@
 #if !defined (__thekogans_util_DefaultRunLoop_h)
 #define __thekogans_util_DefaultRunLoop_h
 
+#include <string>
 #include "thekogans/util/Config.h"
+#include "thekogans/util/Types.h"
+#include "thekogans/util/GUID.h"
 #include "thekogans/util/Mutex.h"
 #include "thekogans/util/Condition.h"
 #include "thekogans/util/RunLoop.h"
@@ -80,36 +83,32 @@ namespace thekogans {
         /// struct MyThread : public util::Thread (
         /// private:
         ///     util::RunLoop::Ptr runLoop;
-        ///     util::SpinLock spinLock;
         ///
         /// public:
         ///     MyThread (
         ///             const std::string &name = std::string (),
         ///             util::i32 priority = THEKOGANS_UTIL_NORMAL_THREAD_PRIORITY,
-        ///             util::ui32 affinity = UI32_MAX) :
+        ///             util::ui32 affinity = UI32_MAX,
+        ///             const util::TimeSpec &sleepTimeSpec = util::TimeSpec::FromMilliseconds (50),
+        ///             const util::TimeSpec &waitTimeSpec = util::TimeSpec::FromSeconds (3)) :
         ///             Thread (name) {
         ///         Create (priority, affinity);
-        ///         if (!util::RunLoop::WaitForStart (runLoop)) {
+        ///         if (!util::RunLoop::WaitForStart (runLoop, sleepTimeSpec, waitTimeSpec)) {
         ///             THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
         ///                 "%s", "Timed out waiting for RunLoop to start.");
         ///         }
         ///     }
         ///
         ///     void Stop () {
-        ///         util::LockGuard<util::SpinLock> guard (spinLock);
-        ///         if (runLoop.get () != 0) {
-        ///             runLoop->Stop ();
-        ///             Wait ();
-        ///         }
+        ///         runLoop->Stop ();
+        ///         Wait ();
         ///     }
         ///
-        ///     void EnqJob (
+        ///     bool EnqJob (
         ///             util::RunLoop::Job::Ptr job,
-        ///             bool wait = false) {
-        ///         util::LockGuard<util::SpinLock> guard (spinLock);
-        ///         if (runLoop.get () != 0) {
-        ///             runLoop->EnqJob (job, wait);
-        ///         }
+        ///             bool wait = false,
+        ///             const TimeSpec &timeSpec = TimeSpec::Infinite) {
+        ///         return runLoop->EnqJob (job, wait, timeSpec);
         ///     }
         ///
         /// private:
@@ -128,73 +127,23 @@ namespace thekogans {
         struct _LIB_THEKOGANS_UTIL_DECL DefaultRunLoop : public RunLoop {
         private:
             /// \brief
-            /// RunLoop name.
-            const std::string name;
-            /// \brief
-            /// RunLoop type (TIPE_FIFO or TYPE_LIFO)
-            const Type type;
-            /// \brief
-            /// Max pending jobs.
-            const ui32 maxPendingJobs;
-            /// \brief
             /// Called to initialize/uninitialize the worker thread.
             WorkerCallback *workerCallback;
-            /// \brief
-            /// Flag to signal the worker thread.
-            volatile bool done;
-            /// \brief
-            /// Job queue.
-            JobList jobs;
-            /// \brief
-            /// RunLoop stats.
-            Stats stats;
-            /// \brief
-            /// Synchronization lock for jobs.
-            Mutex jobsMutex;
-            /// \brief
-            /// Synchronization condition variable.
-            Condition jobsNotEmpty;
-            /// \brief
-            /// Synchronization condition variable.
-            Condition jobFinished;
-            /// \brief
-            /// Synchronization condition variable.
-            Condition idle;
-            /// \brief
-            /// Worker state.
-            enum State {
-                /// \brief
-                /// Worker(s) is/are idle.
-                Idle,
-                /// \Worker(s) is/are busy.
-                Busy
-            } volatile state;
-            /// \brief
-            /// Count of busy workers.
-            ui32 busyWorkers;
 
         public:
             /// \brief
             /// ctor.
-            /// \param[in] name_ RunLoop name.
-            /// \param[in] type_ RunLoop queue type.
-            /// \param[in] maxPendingJobs_ Max pending run loop jobs.
+            /// \param[in] name RunLoop name.
+            /// \param[in] type RunLoop queue type.
+            /// \param[in] maxPendingJobs Max pending run loop jobs.
             /// \param[in] workerCallback_ Called to initialize/uninitialize the worker thread.
             DefaultRunLoop (
-                const std::string &name_ = std::string (),
-                Type type_ = TYPE_FIFO,
-                ui32 maxPendingJobs_ = UI32_MAX,
+                const std::string &name = std::string (),
+                Type type = TYPE_FIFO,
+                ui32 maxPendingJobs = UI32_MAX,
                 WorkerCallback *workerCallback_ = 0) :
-                name (name_),
-                type (type_),
-                maxPendingJobs (maxPendingJobs_),
-                workerCallback (workerCallback_),
-                done (true),
-                jobsNotEmpty (jobsMutex),
-                jobFinished (jobsMutex),
-                idle (jobsMutex),
-                state (Idle),
-                busyWorkers (0) {}
+                RunLoop (name, type, maxPendingJobs),
+                workerCallback (workerCallback_) {}
             /// \brief
             /// dtor.
             virtual ~DefaultRunLoop () {
@@ -211,100 +160,6 @@ namespace thekogans {
             /// to return.
             /// \param[in] cancelPendingJobs true = Cancel all pending jobs.
             virtual void Stop (bool cancelPendingJobs = true);
-
-            /// \brief
-            /// Enqueue a job to be performed on the run loop's thread.
-            /// \param[in] job Job to enqueue.
-            /// \param[in] wait Wait for job to finish. Used for synchronous job execution.
-            /// \param[in] timeSpec How long to wait for the job to complete.
-            /// IMPORTANT: timeSpec is a relative value.
-            virtual void EnqJob (
-                Job::Ptr job,
-                bool wait = false,
-                const TimeSpec &timeSpec = TimeSpec::Infinite);
-
-            /// \brief
-            /// Wait for a queued job with a given id. If the job is not
-            /// in the queue (in flight), it is not waited on.
-            /// \param[in] jobId Id of job to wait on.
-            /// \param[in] timeSpec How long to wait for the job to complete.
-            /// IMPORTANT: timeSpec is a relative value.
-            /// \return true if the job was waited on. false if in flight.
-            virtual bool WaitForJob (
-                const Job::Id &jobId,
-                const TimeSpec &timeSpec = TimeSpec::Infinite);
-            /// \brief
-            /// Wait for all queued jobs matching the given equality test. Jobs in flight
-            /// are not waited on.
-            /// \param[in] equalityTest EqualityTest to query to determine which jobs to wait on.
-            /// \param[in] timeSpec How long to wait for the jobs to complete.
-            /// IMPORTANT: timeSpec is a relative value.
-            virtual void WaitForJobs (
-                const EqualityTest &equalityTest,
-                const TimeSpec &timeSpec = TimeSpec::Infinite);
-            /// \brief
-            /// Blocks until all jobs are complete and the queue is empty.
-            /// \param[in] timeSpec How long to wait for the jobs to complete.
-            /// IMPORTANT: timeSpec is a relative value.
-            virtual void WaitForIdle (
-                const TimeSpec &timeSpec = TimeSpec::Infinite);
-
-            /// \brief
-            /// Cancel a queued job with a given id. If the job is not
-            /// in the queue (in flight), it is not canceled.
-            /// \param[in] jobId Id of job to cancel.
-            /// \return true if the job was cancelled. false if in flight.
-            virtual bool CancelJob (const Job::Id &jobId);
-            /// \brief
-            /// Cancel all queued job matching the given equality test. Jobs in flight
-            /// are not canceled.
-            /// \param[in] equalityTest EqualityTest to query to determine which jobs to cancel.
-            virtual void CancelJobs (const EqualityTest &equalityTest);
-            /// \brief
-            /// Cancel all queued jobs. Jobs in flight are unaffected.
-            virtual void CancelAllJobs ();
-
-            /// \brief
-            /// Return a snapshot of the queue stats.
-            /// \return A snapshot of the queue stats.
-            virtual Stats GetStats ();
-
-            /// \brief
-            /// Return true if Start was called.
-            /// \return true if Start was called.
-            virtual bool IsRunning ();
-            /// \brief
-            /// Return true if there are no pending jobs.
-            /// \return true = no pending jobs, false = jobs pending.
-            virtual bool IsEmpty ();
-            /// \brief
-            /// Return true if there are no pending jobs and all the
-            /// workers are idle.
-            /// \return true = idle, false = busy.
-            virtual bool IsIdle ();
-
-        private:
-            /// \brief
-            /// Used internally to get the next job.
-            /// \return The next job to execute.
-            Job *DeqJob ();
-            /// \brief
-            /// Called by worker(s) after each job is done.
-            /// Used to update state and \see{Stats}.
-            /// \param[in] job Completed job.
-            /// \param[in] start Completed job start time.
-            /// \param[in] end Completed job end time.
-            void FinishedJob (
-                Job *job,
-                ui64 start,
-                ui64 end);
-
-            /// \brief
-            /// Atomically set done to the given value.
-            /// \param[in] value value to set done to.
-            /// \return true == done was set to the given value.
-            /// false == done was already set to the given value.
-            bool SetDone (bool value);
 
             /// \brief
             /// DefaultRunLoop is neither copy constructable, nor assignable.

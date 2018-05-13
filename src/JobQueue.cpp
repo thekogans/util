@@ -46,9 +46,11 @@ namespace thekogans {
                 Job *job = queue.DeqJob ();
                 if (job != 0) {
                     ui64 start = HRTimer::Click ();
+                    job->SetStatus (Job::Running);
                     job->Prologue (queue.done);
                     job->Execute (queue.done);
                     job->Epilogue (queue.done);
+                    job->Finish ();
                     ui64 end = HRTimer::Click ();
                     queue.FinishedJob (job, start, end);
                 }
@@ -56,28 +58,19 @@ namespace thekogans {
         }
 
         JobQueue::JobQueue (
-                const std::string &name_,
-                Type type_,
+                const std::string &name,
+                Type type,
+                ui32 maxPendingJobs,
                 ui32 workerCount_,
                 i32 workerPriority_,
                 ui32 workerAffinity_,
-                ui32 maxPendingJobs_,
                 WorkerCallback *workerCallback_) :
-                name (name_),
-                type (type_),
+                RunLoop (name, type, maxPendingJobs),
                 workerCount (workerCount_),
                 workerPriority (workerPriority_),
                 workerAffinity (workerAffinity_),
-                maxPendingJobs (maxPendingJobs_),
-                workerCallback (workerCallback_),
-                done (true),
-                jobsNotEmpty (jobsMutex),
-                jobFinished (jobsMutex),
-                idle (jobsMutex),
-                state (Idle),
-                busyWorkers (0) {
-            if ((type == TYPE_FIFO || type == TYPE_LIFO) &&
-                    workerCount > 0 && maxPendingJobs > 0) {
+                workerCallback (workerCallback_) {
+            if (workerCount > 0) {
                 Start ();
             }
             else {
@@ -126,7 +119,7 @@ namespace thekogans {
                         }
                     } callback;
                     workers.clear (callback);
-                    assert (busyWorkers == 0);
+                    assert (runningJobs.empty ());
                 }
             }
             if (cancelPendingJobs) {
@@ -134,333 +127,28 @@ namespace thekogans {
             }
         }
 
-        void JobQueue::EnqJob (
-                Job::Ptr job,
-                bool wait,
-                const TimeSpec &timeSpec) {
-            if (job.Get () != 0) {
-                LockGuard<Mutex> guard (jobsMutex);
-                if (stats.jobCount < maxPendingJobs) {
-                    job->finished = false;
-                    if (type == TYPE_FIFO) {
-                        jobs.push_back (job.Get ());
-                    }
-                    else {
-                        jobs.push_front (job.Get ());
-                    }
-                    job->AddRef ();
-                    ++stats.jobCount;
-                    state = Busy;
-                    jobsNotEmpty.Signal ();
-                    if (wait) {
-                        if (timeSpec == TimeSpec::Infinite) {
-                            while (!job->finished) {
-                                jobFinished.Wait ();
-                            }
-                        }
-                        else {
-                            TimeSpec now = GetCurrentTime ();
-                            TimeSpec deadline = now + timeSpec;
-                            while (!job->finished && deadline > now) {
-                                jobFinished.Wait ();
-                                now = GetCurrentTime ();
-                            }
-                            if (!job->finished) {
-                                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                                    THEKOGANS_UTIL_OS_ERROR_CODE_TIMEOUT);
-                            }
-                        }
-                    }
-                }
-                else {
-                    THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                        "JobQueue (%s) max jobs (%u) reached.",
-                        !name.empty () ? name.c_str () : "no name",
-                        maxPendingJobs);
-                }
-            }
-            else {
-                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
-            }
-        }
-
-        bool JobQueue::WaitForJob (
-                const Job::Id &jobId,
-                const TimeSpec &timeSpec) {
-            Job::Ptr job_;
-            {
-                LockGuard<Mutex> guard (jobsMutex);
-                for (Job *job = jobs.front (); job != 0; job = jobs.next (job)) {
-                    if (job->GetId () == jobId) {
-                        job_.Reset (job);
-                        break;
-                    }
-                }
-            }
-            if (job_.Get () != 0) {
-                if (timeSpec == TimeSpec::Infinite) {
-                    while (!job_->finished) {
-                        jobFinished.Wait ();
-                    }
-                }
-                else {
-                    TimeSpec now = GetCurrentTime ();
-                    TimeSpec deadline = now + timeSpec;
-                    while (!job_->finished && deadline > now) {
-                        jobFinished.Wait ();
-                        now = GetCurrentTime ();
-                    }
-                    if (!job_->finished) {
-                        THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                            THEKOGANS_UTIL_OS_ERROR_CODE_TIMEOUT);
-                    }
-                }
-                return true;
-            }
-            return false;
-        }
-
-        void JobQueue::WaitForJobs (
-                const EqualityTest &equalityTest,
-                const TimeSpec &timeSpec) {
-            JobProxyList jobs_;
-            {
-                LockGuard<Mutex> guard (jobsMutex);
-                for (Job *job = jobs.front (); job != 0; job = jobs.next (job)) {
-                    if (equalityTest (*job)) {
-                        jobs_.push_back (new JobProxy (job));
-                    }
-                }
-            }
-            if (!jobs_.empty ()) {
-                struct FinishedCallback : public JobProxyList::Callback {
-                    typedef JobProxyList::Callback::result_type result_type;
-                    typedef JobProxyList::Callback::argument_type argument_type;
-                    JobProxyList &jobs;
-                    explicit FinishedCallback (JobProxyList &jobs_) :
-                        jobs (jobs_) {}
-                    virtual result_type operator () (argument_type jobProxy) {
-                        if (jobProxy->job->finished) {
-                            jobs.erase (jobProxy);
-                            delete jobProxy;
-                            return true;
-                        }
-                        return false;
-                    }
-                } finishedCallback (jobs_);
-                if (timeSpec == TimeSpec::Infinite) {
-                    while (!jobs_.for_each (finishedCallback)) {
-                        jobFinished.Wait ();
-                    }
-                }
-                else {
-                    TimeSpec now = GetCurrentTime ();
-                    TimeSpec deadline = now + timeSpec;
-                    while (!jobs_.for_each (finishedCallback) && deadline > now) {
-                        jobFinished.Wait ();
-                        now = GetCurrentTime ();
-                    }
-                    if (!jobs_.empty ()) {
-                        THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                            THEKOGANS_UTIL_OS_ERROR_CODE_TIMEOUT);
-                    }
-                }
-            }
-        }
-
-        void JobQueue::WaitForIdle (const TimeSpec &timeSpec) {
-            LockGuard<Mutex> guard (jobsMutex);
-            if (timeSpec == TimeSpec::Infinite) {
-                while (state == Busy) {
-                    idle.Wait ();
-                }
-            }
-            else {
-                TimeSpec now = GetCurrentTime ();
-                TimeSpec deadline = now + timeSpec;
-                while (state == Busy && deadline > now) {
-                    idle.Wait ();
-                    now = GetCurrentTime ();
-                }
-                if (state == Busy) {
-                    THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                        THEKOGANS_UTIL_OS_ERROR_CODE_TIMEOUT);
-                }
-            }
-        }
-
-        bool JobQueue::CancelJob (const Job::Id &jobId) {
-            Job *job = 0;
-            {
-                LockGuard<Mutex> guard (jobsMutex);
-                for (job = jobs.front (); job != 0; job = jobs.next (job)) {
-                    if (job->GetId () == jobId) {
-                        jobs.erase (job);
-                        --stats.jobCount;
-                        if (busyWorkers == 0 && jobs.empty ()) {
-                            assert (state == Busy);
-                            state = Idle;
-                            idle.SignalAll ();
-                        }
-                        break;
-                    }
-                }
-            }
-            if (job != 0) {
-                job->Cancel ();
-                ReleaseJobQueue::Instance ().EnqJob (job);
-                jobFinished.SignalAll ();
-                return true;
-            }
-            return false;
-        }
-
-        void JobQueue::CancelJobs (const EqualityTest &equalityTest) {
-            JobList jobs_;
-            {
-                LockGuard<Mutex> guard (jobsMutex);
-                for (Job *job = jobs.front (); job != 0; job = jobs.next (job)) {
-                    if (equalityTest (*job)) {
-                        jobs.erase (job);
-                        jobs_.push_back (job);
-                        --stats.jobCount;
-                    }
-                }
-                if (busyWorkers == 0 && jobs.empty () && !jobs_.empty ()) {
-                    assert (state == Busy);
-                    state = Idle;
-                    idle.SignalAll ();
-                }
-            }
-            if (!jobs_.empty ()) {
-                struct CancelCallback : public JobList::Callback {
-                    typedef JobList::Callback::result_type result_type;
-                    typedef JobList::Callback::argument_type argument_type;
-                    virtual result_type operator () (argument_type job) {
-                        job->Cancel ();
-                        ReleaseJobQueue::Instance ().EnqJob (job);
-                        return true;
-                    }
-                } cancelCallback;
-                jobs_.clear (cancelCallback);
-                jobFinished.SignalAll ();
-            }
-        }
-
-        void JobQueue::CancelAllJobs () {
-            JobList jobs_;
-            {
-                LockGuard<Mutex> guard (jobsMutex);
-                if (!jobs.empty ()) {
-                    jobs.swap (jobs_);
-                    stats.jobCount = 0;
-                    if (busyWorkers == 0) {
-                        assert (state == Busy);
-                        state = Idle;
-                        idle.SignalAll ();
-                    }
-                }
-            }
-            if (!jobs_.empty ()) {
-                struct CancelCallback : public JobList::Callback {
-                    typedef JobList::Callback::result_type result_type;
-                    typedef JobList::Callback::argument_type argument_type;
-                    virtual result_type operator () (argument_type job) {
-                        job->Cancel ();
-                        ReleaseJobQueue::Instance ().EnqJob (job);
-                        return true;
-                    }
-                } cancelCallback;
-                jobs_.clear (cancelCallback);
-                jobFinished.SignalAll ();
-            }
-        }
-
-        JobQueue::Stats JobQueue::GetStats () {
-            LockGuard<Mutex> guard (jobsMutex);
-            return stats;
-        }
-
-        bool JobQueue::IsRunning () {
-            LockGuard<Mutex> guard (jobsMutex);
-            return !done;
-        }
-
-        bool JobQueue::IsEmpty () {
-            LockGuard<Mutex> guard (jobsMutex);
-            return jobs.empty ();
-        }
-
-        bool JobQueue::IsIdle () {
-            LockGuard<Mutex> guard (jobsMutex);
-            return state == Idle;
-        }
-
-        RunLoop::Job *JobQueue::DeqJob () {
-            LockGuard<Mutex> guard (jobsMutex);
-            while (!done && jobs.empty ()) {
-                jobsNotEmpty.Wait ();
-            }
-            Job *job = 0;
-            if (!done && !jobs.empty ()) {
-                job = jobs.pop_front ();
-                --stats.jobCount;
-                ++busyWorkers;
-            }
-            return job;
-        }
-
-        void JobQueue::FinishedJob (
-                Job *job,
-                ui64 start,
-                ui64 end) {
-            assert (job != 0);
-            {
-                LockGuard<Mutex> guard (jobsMutex);
-                stats.Update (job->id, start, end);
-                if (--busyWorkers == 0 && jobs.empty ()) {
-                    assert (state == Busy);
-                    state = Idle;
-                    idle.SignalAll ();
-                }
-            }
-            job->finished = true;
-            ReleaseJobQueue::Instance ().EnqJob (job);
-            jobFinished.SignalAll ();
-        }
-
-        bool JobQueue::SetDone (bool value) {
-            LockGuard<Mutex> guard (jobsMutex);
-            if (done != value) {
-                done = value;
-                return true;
-            }
-            return false;
-        }
-
         std::string GlobalJobQueueCreateInstance::name = std::string ();
         RunLoop::Type GlobalJobQueueCreateInstance::type = RunLoop::TYPE_FIFO;
+        ui32 GlobalJobQueueCreateInstance::maxPendingJobs = UI32_MAX;
         ui32 GlobalJobQueueCreateInstance::workerCount = 1;
         i32 GlobalJobQueueCreateInstance::workerPriority = THEKOGANS_UTIL_NORMAL_THREAD_PRIORITY;
         ui32 GlobalJobQueueCreateInstance::workerAffinity = UI32_MAX;
-        ui32 GlobalJobQueueCreateInstance::maxPendingJobs = UI32_MAX;
         RunLoop::WorkerCallback *GlobalJobQueueCreateInstance::workerCallback = 0;
 
         void GlobalJobQueueCreateInstance::Parameterize (
                 const std::string &name_,
                 RunLoop::Type type_,
+                ui32 maxPendingJobs_,
                 ui32 workerCount_,
                 i32 workerPriority_,
                 ui32 workerAffinity_,
-                ui32 maxPendingJobs_,
                 RunLoop::WorkerCallback *workerCallback_) {
             name = name_;
             type = type_;
+            maxPendingJobs = maxPendingJobs_;
             workerCount = workerCount_;
             workerPriority = workerPriority_;
             workerAffinity = workerAffinity_;
-            maxPendingJobs = maxPendingJobs_;
             workerCallback = workerCallback_;
         }
 
@@ -468,10 +156,10 @@ namespace thekogans {
             return new JobQueue (
                 name,
                 type,
+                maxPendingJobs,
                 workerCount,
                 workerPriority,
                 workerAffinity,
-                maxPendingJobs,
                 workerCallback);
         }
 

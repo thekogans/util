@@ -27,8 +27,8 @@ namespace thekogans {
         std::string MainRunLoopCreateInstance::name;
         RunLoop::Type MainRunLoopCreateInstance::type = RunLoop::TYPE_FIFO;
         ui32 MainRunLoopCreateInstance::maxPendingJobs = UI32_MAX;
-        RunLoop::WorkerCallback *MainRunLoopCreateInstance::workerCallback = 0;
         bool MainRunLoopCreateInstance::willCallStart = true;
+        RunLoop::WorkerCallback *MainRunLoopCreateInstance::workerCallback = 0;
     #if defined (TOOLCHAIN_OS_Windows)
         SystemRunLoop::EventProcessor MainRunLoopCreateInstance::eventProcessor = 0;
         void *MainRunLoopCreateInstance::userData = 0;
@@ -38,16 +38,16 @@ namespace thekogans {
                 const std::string &name_,
                 RunLoop::Type type_,
                 ui32 maxPendingJobs_,
-                RunLoop::WorkerCallback *workerCallback_,
                 bool willCallStart_,
+                RunLoop::WorkerCallback *workerCallback_,
                 SystemRunLoop::EventProcessor eventProcessor_,
                 void *userData_,
                 Window::Ptr window_) {
             name = name_;
             type = type_;
             maxPendingJobs = maxPendingJobs_;
-            workerCallback = workerCallback_;
             willCallStart = willCallStart_;
+            workerCallback = workerCallback_;
             eventProcessor = eventProcessor_;
             userData = userData_;
             window = std::move (window_);
@@ -59,8 +59,8 @@ namespace thekogans {
                     name,
                     type,
                     maxPendingJobs,
-                    workerCallback,
                     willCallStart,
+                    workerCallback,
                     eventProcessor,
                     userData,
                     std::move (window)) :
@@ -81,8 +81,8 @@ namespace thekogans {
                 const std::string &name_,
                 RunLoop::Type type_,
                 ui32 maxPendingJobs_,
-                RunLoop::WorkerCallback *workerCallback_,
                 bool willCallStart_,
+                RunLoop::WorkerCallback *workerCallback_,
                 SystemRunLoop::EventProcessor eventProcessor_,
                 void *userData_,
                 SystemRunLoop::XlibWindow::Ptr window_,
@@ -105,8 +105,8 @@ namespace thekogans {
                     name,
                     type,
                     maxPendingJobs,
-                    workerCallback,
                     willCallStart,
+                    workerCallback,
                     eventProcessor,
                     userData,
                     std::move (window),
@@ -133,14 +133,14 @@ namespace thekogans {
                 const std::string &name_,
                 RunLoop::Type type_,
                 ui32 maxPendingJobs_,
-                RunLoop::WorkerCallback *workerCallback_,
                 bool willCallStart_,
+                RunLoop::WorkerCallback *workerCallback_,
                 CFRunLoopRef runLoop_) {
             name = name_;
             type = type_;
             maxPendingJobs = maxPendingJobs_;
-            workerCallback = workerCallback_;
             willCallStart = willCallStart_;
+            workerCallback = workerCallback_;
             runLoop = runLoop_;
             if (runLoop == 0) {
                 CocoaInit ();
@@ -154,8 +154,8 @@ namespace thekogans {
                     name,
                     type,
                     maxPendingJobs,
-                    workerCallback,
                     willCallStart,
+                    workerCallback,
                     runLoop) :
                 (RunLoop *)new DefaultRunLoop (
                     name,

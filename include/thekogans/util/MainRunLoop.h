@@ -192,11 +192,11 @@ namespace thekogans {
             /// Max pending jobs.
             static ui32 maxPendingJobs;
             /// \brief
-            /// Called to initialize/uninitialize the worker thread.
-            static RunLoop::WorkerCallback *workerCallback;
-            /// \brief
             /// true = the main thread will call MainRunLoop::Instance ().Start ().
             static bool willCallStart;
+            /// \brief
+            /// Called to initialize/uninitialize the worker thread.
+            static RunLoop::WorkerCallback *workerCallback;
         #if defined (TOOLCHAIN_OS_Windows)
             /// \brief
             /// Callback to process Windows HWND events.
@@ -238,8 +238,8 @@ namespace thekogans {
             /// \param[in] name_ RunLoop name.
             /// \param[in] type_ RunLoop queue type.
             /// \param[in] maxPendingJobs_ Max pending run loop jobs.
-            /// \param[in] workerCallback_ Called to initialize/uninitialize the worker thread.
             /// \param[in] willCallStart_ true = the main thread will call
+            /// \param[in] workerCallback_ Called to initialize/uninitialize the worker thread.
             /// MainRunLoop::Instance ().Start ().
             /// \param[in] eventProcessor_ Callback to process Windows HWND events.
             /// \param[in] userData_ Optional user data passed to eventProcessor.
@@ -248,8 +248,8 @@ namespace thekogans {
                 const std::string &name_,
                 RunLoop::Type type_,
                 ui32 maxPendingJobs_,
-                RunLoop::WorkerCallback *workerCallback_,
                 bool willCallStart_,
+                RunLoop::WorkerCallback *workerCallback_,
                 SystemRunLoop::EventProcessor eventProcessor_,
                 void *userData_,
                 Window::Ptr window_);
@@ -260,8 +260,8 @@ namespace thekogans {
             /// \param[in] name_ RunLoop name.
             /// \param[in] type_ RunLoop queue type.
             /// \param[in] maxPendingJobs_ Max pending run loop jobs.
-            /// \param[in] workerCallback_ Called to initialize/uninitialize the worker thread.
             /// \param[in] willCallStart_ true = the main thread will call
+            /// \param[in] workerCallback_ Called to initialize/uninitialize the worker thread.
             /// MainRunLoop::Instance ().Start ().
             /// \param[in] eventProcessor_ Callback to process Xlib XEvent events.
             /// \param[in] userData_ Optional user data passed to eventProcessor.
@@ -271,8 +271,8 @@ namespace thekogans {
                 const std::string &name_,
                 RunLoop::Type type_,
                 ui32 maxPendingJobs_,
-                RunLoop::WorkerCallback *workerCallback_,
                 bool willCallStart_,
+                RunLoop::WorkerCallback *workerCallback_,
                 SystemRunLoop::EventProcessor eventProcessor_,
                 void *userData_,
                 SystemRunLoop::XlibWindow::Ptr window_,
@@ -284,8 +284,8 @@ namespace thekogans {
             /// \param[in] name_ RunLoop name.
             /// \param[in] type_ RunLoop queue type.
             /// \param[in] maxPendingJobs_ Max pending run loop jobs.
-            /// \param[in] workerCallback_ Called to initialize/uninitialize the worker thread.
             /// \param[in] willCallStart_ true = the main thread will call
+            /// \param[in] workerCallback_ Called to initialize/uninitialize the worker thread.
             /// MainRunLoop::Instance ().Start ().
             /// \param[in] runLoop_ OS X run loop object.
             /// NOTE: if runLoop_ == 0, SystemRunLoop will use \see{CocoaStart) \see{CocoaStop)
@@ -294,8 +294,8 @@ namespace thekogans {
                 const std::string &name_,
                 RunLoop::Type type_,
                 ui32 maxPendingJobs_,
-                RunLoop::WorkerCallback *workerCallback_,
                 bool willCallStart_,
+                RunLoop::WorkerCallback *workerCallback_,
                 CFRunLoopRef runLoop_);
         #endif // defined (TOOLCHAIN_OS_Windows)
 

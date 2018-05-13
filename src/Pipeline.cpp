@@ -55,10 +55,10 @@ namespace thekogans {
                     new JobQueue (
                         begin->name,
                         begin->type,
+                        begin->maxPendingJobs,
                         begin->workerCount,
                         begin->workerPriority,
                         begin->workerAffinity,
-                        begin->maxPendingJobs,
                         begin->workerCallback));
                 assert (stage.get () != 0);
                 if (stage.get () != 0) {
@@ -89,10 +89,10 @@ namespace thekogans {
                     new JobQueue (
                         stageName,
                         type,
+                        maxPendingJobs,
                         workerCount,
                         workerPriority,
                         workerAffinity,
-                        maxPendingJobs,
                         workerCallback));
             #if !defined (TOOLCHAIN_OS_Windows)
                 switch (stagePriorityAdjustment) {

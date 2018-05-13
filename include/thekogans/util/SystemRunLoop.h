@@ -245,20 +245,8 @@ namespace thekogans {
 
         private:
             /// \brief
-            /// RunLoop name.
-            const std::string name;
-            /// \brief
-            /// JobQueue type (TIPE_FIFO or TYPE_LIFO)
-            const Type type;
-            /// \brief
-            /// Max pending jobs.
-            const ui32 maxPendingJobs;
-            /// \brief
             /// Called to initialize/uninitialize the worker thread.
             WorkerCallback *workerCallback;
-            /// \brief
-            /// true = exit the run loop.
-            volatile bool done;
         #if defined (TOOLCHAIN_OS_Windows)
             /// \brief
             /// Callback to process window events.
@@ -287,54 +275,27 @@ namespace thekogans {
             /// OS X run loop object.
             CFRunLoopRef runLoop;
         #endif // defined (TOOLCHAIN_OS_Windows)
-            /// \brief
-            /// Job queue.
-            JobList jobs;
-            /// \brief
-            /// RunLoop stats.
-            Stats stats;
-            /// \brief
-            /// Synchronization lock for jobs.
-            Mutex jobsMutex;
-            /// \brief
-            /// Synchronization condition variable.
-            Condition jobFinished;
-            /// \brief
-            /// Synchronization condition variable.
-            Condition idle;
-            /// \brief
-            /// Worker state.
-            enum State {
-                /// \brief
-                /// Worker(s) is/are idle.
-                Idle,
-                /// \Worker(s) is/are busy.
-                Busy
-            } volatile state;
-            /// \brief
-            /// Count of busy workers.
-            ui32 busyWorkers;
 
         public:
         #if defined (TOOLCHAIN_OS_Windows)
             /// \brief
             /// ctor.
-            /// \param[in] name_ RunLoop name.
-            /// \param[in] type_ RunLoop queue type.
-            /// \param[in] maxPendingJobs_ Max pending run loop jobs.
+            /// \param[in] name RunLoop name.
+            /// \param[in] type RunLoop queue type.
+            /// \param[in] maxPendingJobs Max pending run loop jobs.
+            /// \param[in] done true = must call Start.
             /// \param[in] workerCallback_ Called to initialize/uninitialize the worker thread.
-            /// \param[in] done_ true = must call Start.
             /// \param[in] eventProcessor_ Callback to process window events.
             /// \param[in] userData_ Optional user data passed to eventProcessor.
             /// \param[in] window_ Windows window.
             /// NOTE: SystemRunLoop takes ownership of the passed in wnd_ and
             /// will destroy it in it's dtor.
             SystemRunLoop (
-                const std::string &name_ = std::string (),
-                Type type_ = TYPE_FIFO,
-                ui32 maxPendingJobs_ = UI32_MAX,
+                const std::string &name = std::string (),
+                Type type = TYPE_FIFO,
+                ui32 maxPendingJobs = UI32_MAX,
+                bool done = true,
                 WorkerCallback *workerCallback_ = 0,
-                bool done_ = true,
                 EventProcessor eventProcessor_ = 0,
                 void *userData_ = 0,
                 Window::Ptr window_ = CreateThreadWindow ());
@@ -355,21 +316,21 @@ namespace thekogans {
         #elif defined (TOOLCHAIN_OS_Linux)
             /// \brief
             /// ctor.
-            /// \param[in] name_ RunLoop name.
-            /// \param[in] type_ RunLoop queue type.
-            /// \param[in] maxPendingJobs_ Max pending run loop jobs.
+            /// \param[in] name RunLoop name.
+            /// \param[in] type RunLoop queue type.
+            /// \param[in] maxPendingJobs Max pending run loop jobs.
+            /// \param[in] done true = must call Start before Enq.
             /// \param[in] workerCallback_ Called to initialize/uninitialize the worker thread.
-            /// \param[in] done_ true = must call Start before Enq.
             /// \param[in] eventProcessor_ Callback to process Xlib XEvent events.
             /// \param[in] userData_ Optional user data passed to eventProcessor.
             /// \param[in] window_ Xlib window.
             /// \param[in] displays_ A list of displays to listen to.
             SystemRunLoop (
-                const std::string &name_ = std::string (),
-                Type type_ = TYPE_FIFO,
-                ui32 maxPendingJobs_ = UI32_MAX,
+                const std::string &name = std::string (),
+                Type type = TYPE_FIFO,
+                ui32 maxPendingJobs = UI32_MAX,
+                bool done = true,
                 WorkerCallback *workerCallback_ = 0,
-                bool done_ = true,
                 EventProcessor eventProcessor_ = 0,
                 void *userData_ = 0,
                 XlibWindow::Ptr window_ = CreateThreadWindow (0),
@@ -401,21 +362,21 @@ namespace thekogans {
         #elif defined (TOOLCHAIN_OS_OSX)
             /// \brief
             /// ctor.
-            /// \param[in] name_ RunLoop name.
-            /// \param[in] type_ RunLoop queue type.
-            /// \param[in] maxPendingJobs_ Max pending run loop jobs.
+            /// \param[in] name RunLoop name.
+            /// \param[in] type RunLoop queue type.
+            /// \param[in] maxPendingJobs Max pending run loop jobs.
+            /// \param[in] done true = must call Start before Enq.
             /// \param[in] workerCallback_ Called to initialize/uninitialize the worker thread.
-            /// \param[in] done_ true = must call Start before Enq.
             /// \param[in] runLoop_ OS X run loop object.
             /// NOTE: if runLoop_ == 0, SystemRunLoop will use \see{CocoaStart) \see{CocoaStop)
             /// from OSXUtils.[h | mm]. \see{MainRunLoopCreateInstance} takes care of the details
             /// if you call \see{MainRunLoopCreateInstance::Parametrize} with runLoop == 0.
             SystemRunLoop (
-                const std::string &name_ = std::string (),
-                Type type_ = TYPE_FIFO,
-                ui32 maxPendingJobs_ = UI32_MAX,
+                const std::string &name = std::string (),
+                Type type = TYPE_FIFO,
+                ui32 maxPendingJobs = UI32_MAX,
+                bool done = true,
                 WorkerCallback *workerCallback_ = 0,
-                bool done_ = true,
                 CFRunLoopRef runLoop_ = CFRunLoopGetCurrent ());
             /// \brief
             /// dtor.
@@ -442,101 +403,23 @@ namespace thekogans {
             virtual void Stop (bool cancelPendingJobs = true);
 
             /// \brief
-            /// Enqueue a job to be performed on the run loop's thread.
+            /// Enqueue a job to be performed on the run loop thread.
             /// \param[in] job Job to enqueue.
             /// \param[in] wait Wait for job to finish. Used for synchronous job execution.
             /// \param[in] timeSpec How long to wait for the job to complete.
             /// IMPORTANT: timeSpec is a relative value.
-            virtual void EnqJob (
+            /// NOTE: Same constraint applies to EnqJob as Stop. Namely, you can't call EnqJob
+            /// from the same thread that called Start.
+            /// \return true == !wait || WaitForJob (...)
+            virtual bool EnqJob (
                 Job::Ptr job,
                 bool wait = false,
                 const TimeSpec &timeSpec = TimeSpec::Infinite);
-
-            /// \brief
-            /// Wait for a queued job with a given id. If the job is not
-            /// in the queue (in flight), it is not waited on.
-            /// \param[in] jobId Id of job to wait on.
-            /// \param[in] timeSpec How long to wait for the job to complete.
-            /// IMPORTANT: timeSpec is a relative value.
-            /// \return true if the job was waited on. false if in flight.
-            virtual bool WaitForJob (
-                const Job::Id &jobId,
-                const TimeSpec &timeSpec = TimeSpec::Infinite);
-            /// \brief
-            /// Wait for all queued jobs matching the given equality test. Jobs in flight
-            /// are not waited on.
-            /// \param[in] equalityTest EqualityTest to query to determine which jobs to wait on.
-            /// \param[in] timeSpec How long to wait for the jobs to complete.
-            /// IMPORTANT: timeSpec is a relative value.
-            virtual void WaitForJobs (
-                const EqualityTest &equalityTest,
-                const TimeSpec &timeSpec = TimeSpec::Infinite);
-            /// \brief
-            /// Blocks until all jobs are complete and the queue is empty.
-            /// \param[in] timeSpec How long to wait for the jobs to complete.
-            /// IMPORTANT: timeSpec is a relative value.
-            virtual void WaitForIdle (
-                const TimeSpec &timeSpec = TimeSpec::Infinite);
-
-            /// \brief
-            /// Cancel a queued job with a given id. If the job is not
-            /// in the queue (in flight), it is not canceled.
-            /// \param[in] jobId Id of job to cancel.
-            /// \return true if the job was cancelled. false if in flight.
-            virtual bool CancelJob (const Job::Id &jobId);
-            /// \brief
-            /// Cancel all queued job matching the given equality test. Jobs in flight
-            /// are not canceled.
-            /// \param[in] equalityTest EqualityTest to query to determine which jobs to cancel.
-            virtual void CancelJobs (const EqualityTest &equalityTest);
-            /// \brief
-            /// Cancel all queued jobs. Jobs in flight are unaffected.
-            virtual void CancelAllJobs ();
-
-            /// \brief
-            /// Return a snapshot of the queue stats.
-            /// \return A snapshot of the queue stats.
-            virtual Stats GetStats ();
-
-            /// \brief
-            /// Return true if Start was called.
-            /// \return true if Start was called.
-            virtual bool IsRunning ();
-            /// \brief
-            /// Return true if there are no pending jobs.
-            /// \return true = no pending jobs, false = jobs pending.
-            virtual bool IsEmpty ();
-            /// \brief
-            /// Return true if there are no pending jobs and the
-            /// worker is idle.
-            /// \return true = idle, false = busy.
-            virtual bool IsIdle ();
 
         private:
             /// \brief
             /// Used internally to execute the pending jobs.
             void ExecuteJobs ();
-            /// \brief
-            /// Used internally to get the next job.
-            /// \return The next job to execute.
-            Job *DeqJob ();
-            /// \brief
-            /// Called by worker after each job is done.
-            /// Used to update state and \see{Stats}.
-            /// \param[in] job Completed job.
-            /// \param[in] start Completed job start time.
-            /// \param[in] end Completed job end time.
-            void FinishedJob (
-                Job *job,
-                ui64 start,
-                ui64 end);
-
-            /// \brief
-            /// Atomically set done to the given value.
-            /// \param[in] value value to set done to.
-            /// \return true = done was set to the given value.
-            /// false = done was already set to the given value.
-            bool SetDone (bool value);
 
         #if defined (TOOLCHAIN_OS_Windows)
             /// \brief

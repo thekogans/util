@@ -40,6 +40,7 @@
 #include "thekogans/util/Thread.h"
 #include "thekogans/util/Mutex.h"
 #include "thekogans/util/Condition.h"
+#include "thekogans/util/Event.h"
 #include "thekogans/util/Singleton.h"
 #include "thekogans/util/SpinLock.h"
 #include "thekogans/util/Heap.h"
@@ -51,13 +52,17 @@ namespace thekogans {
         ///
         /// \brief
         /// RunLoop is an abstract base for \see{JobQueue}, \see{DefaultRunLoop} and
-        /// \see{SystemRunLoop}. RunLoop allows you to schedule jobs to be executed on
-        /// the thread that's running the run loop.
+        /// \see{SystemRunLoop}. RunLoop allows you to schedule jobs (RunLoop::Job)
+        /// to be executed on the thread that's running the run loop.
 
         struct _LIB_THEKOGANS_UTIL_DECL RunLoop {
             /// \brief
             /// Convenient typedef for std::unique_ptr<RunLoop>.
             typedef std::unique_ptr<RunLoop> Ptr;
+
+            /// \brief
+            /// Convenient typedef for std::string.
+            typedef std::string Id;
 
             /// \enum
             /// The order in which pending jobs are processed;
@@ -103,46 +108,137 @@ namespace thekogans {
                 /// Convenient typedef for std::string.
                 typedef std::string Id;
 
+                /// \enum
+                /// Job status states.
+                enum Status {
+                    /// \brief
+                    /// Job is pending execution.
+                    Pending,
+                    /// \brief
+                    /// Job is currently running.
+                    Running,
+                    /// \brief
+                    /// Job has completed execution.
+                    Completed
+                };
+
+                /// \enum
+                /// Job execution disposition.
+                enum Disposition {
+                    /// \brief
+                    /// Unknown.
+                    Unknown,
+                    /// \brief
+                    /// Job was cancelled mid flight.
+                    Cancelled,
+                    /// \brief
+                    /// Job completed execution successfully.
+                    Finished
+                };
+
+            private:
                 /// \brief
                 /// Job id.
                 const Id id;
                 /// \brief
-                /// Call Cancel () to set this flag. Monitor this
-                /// flag in Execute () to respond to cancellation
-                /// requests.
-                volatile bool cancelled;
+                /// RunLoop id.
+                RunLoop::Id runloopId;
                 /// \brief
-                /// Flag used internally to wait for synchronous jobs.
-                volatile bool finished;
+                /// Job status.
+                volatile Status status;
+                /// \brief
+                /// Job disposition.
+                volatile Disposition disposition;
 
+            public:
                 /// \brief
                 /// ctor.
                 /// \param[in] id_ Job id.
                 Job (const Id &id_ = GUID::FromRandom ().ToString ()) :
                     id (id_),
-                    cancelled (false),
-                    finished (false) {}
+                    status (Completed),
+                    disposition (Unknown) {}
                 /// \brief
                 /// dtor.
                 virtual ~Job () {}
 
                 /// \brief
-                /// Call this method on a running job to cancel execution.
-                /// Monitor this flag in Execute () to respond to cancellation
-                /// requests.
-                inline void Cancel () {
-                    cancelled = true;
+                /// Return the job id.
+                /// \return Job id.
+                inline const Id &GetId () const {
+                    return id;
+                }
+                /// \brief
+                /// Return the job RunLoop id.
+                /// \return RunLoop id.
+                inline const Id &GetRunLoopId () const {
+                    return runloopId;
+                }
+                /// \brief
+                /// Return the job status.
+                /// \return Job status.
+                inline Status GetStatus () const {
+                    return status;
+                }
+                /// \brief
+                /// Return true if job is pending.
+                /// \return true == Job is pending.
+                inline bool IsPending () const {
+                    return status == Pending;
+                }
+                /// \brief
+                /// Return true if job is running.
+                /// \return true == Job is running.
+                inline bool IsRunning () const {
+                    return status == Running;
+                }
+                /// \brief
+                /// Return true if job completed.
+                /// \return true == Job has completed.
+                inline bool IsCompleted () const {
+                    return status == Completed;
                 }
 
                 /// \brief
-                /// Return a unique identifier for this
-                /// job. Used to cancel a pending job.
-                /// \return unique id for the job.
-                inline Id GetId () const throw () {
-                    return id;
+                /// Return the job disposition.
+                /// \return Job disposition.
+                inline Disposition GetDisposition () const {
+                    return disposition;
+                }
+                /// \brief
+                /// Return true if the job was cancelled.
+                /// \return true == the job was cancelled.
+                inline bool IsCancelled () const {
+                    return disposition == Cancelled;
+                }
+                /// \brief
+                /// Return true if the job has finished.
+                /// \return true == the job has finished.
+                inline bool IsFinished () const {
+                    return disposition == Finished;
                 }
 
-                // See VERY IMPORTANT comment in Stop below.
+                /// \brief
+                /// Call this method on a running job to cancel execution.
+                /// Monitor disposition (ShouldStop () below) in Execute ()
+                /// to respond to cancellation requests.
+                inline void Cancel () {
+                    if (disposition == Unknown) {
+                        disposition = Cancelled;
+                    }
+                }
+
+                /// \brief
+                /// Return true if the job should stop what it's doing and exit.
+                /// Use this method in your implementation of Execute to keep the
+                /// RunLoop responsive.
+                /// \param[in] done If true, this flag indicates that
+                /// the job should stop what it's doing, and exit.
+                /// \return true == Job should stop what it's doing and exit.
+                inline bool ShouldStop (volatile const bool &done) const {
+                    return done || IsCancelled ();
+                }
+
                 /// \brief
                 /// Called before the job is executed. Allows
                 /// the job to perform one time initialization.
@@ -162,28 +258,47 @@ namespace thekogans {
                 /// the job should stop what it's doing, and exit.
                 virtual void Epilogue (volatile const bool & /*done*/) throw () {}
 
+            private:
                 /// \brief
-                /// Return true if the job should stop what it's doing and exit.
-                /// Use this method in your implementation of Execute to keep the
-                /// RunLoop responsive.
-                /// \param[in] done If true, this flag indicates that
-                /// the job should stop what it's doing, and exit.
-                /// \return true == Job should stop what it's doing and exit.
-                inline bool ShouldStop (volatile const bool &done) const {
-                    return done || cancelled;
+                /// Used internally by RunLoop to set the RunLoop id and reset
+                /// the status and disposition.
+                /// \param[in] runloopId_ RunLoop id to which this job belongs.
+                inline void Reset (const RunLoop::Id &runloopId_) {
+                    runloopId = runloopId_;
+                    status = Pending;
+                    disposition = Unknown;
                 }
                 /// \brief
-                /// Return true if job is still running.
-                /// \return true == Job has not been cancelled and is not finished.
-                inline bool Running () const {
-                    return !cancelled && !finished;
+                /// Used internally by RunLoop and it's derivatives to set the
+                /// job status.
+                /// \param[in] status_ New job status.
+                inline void SetStatus (Status status_) {
+                    status = status_;
                 }
                 /// \brief
-                /// Return true if job completed successfully.
-                /// \return true == Job has not been cancelled and is finished.
-                inline bool Completed () const {
-                    return !cancelled && finished;
+                /// Used internally by RunLoop and it's derivatives to mark the
+                /// job as finished execution.
+                inline void Finish () {
+                    if (disposition == Unknown) {
+                        disposition = Finished;
+                    }
                 }
+
+                /// \brief
+                /// RunLoop uses Reset.
+                friend struct RunLoop;
+                /// \brief
+                /// DefaultRunLoop uses SetStatus and Finish.
+                friend struct DefaultRunLoop;
+                /// \brief
+                /// SystemRunLoop uses SetStatus and Finish.
+                friend struct SystemRunLoop;
+                /// \brief
+                /// JobQueue uses SetStatus and Finish.
+                friend struct JobQueue;
+                /// \brief
+                /// ReleaseJobQueue uses SetStatus.
+                friend struct ReleaseJobQueue;
             };
         #if defined (_MSC_VER)
             #pragma warning (pop)
@@ -193,8 +308,9 @@ namespace thekogans {
             ///
             /// \brief
             /// RunLoop statistics.\n
-            /// jobCount - Number of pending jobs.\n
-            /// totalJobs - Number of retired (executed) jobs.\n
+            /// pendingJobCount - Number of pending jobs.\n
+            /// runningJobCount - Number of running jobs.\n
+            /// totalJobs - Number of retired (completed) jobs.\n
             /// totalJobTime - Amount of time spent executing jobs.\n
             /// last - Last job.\n
             /// min - Fastest job.\n
@@ -202,7 +318,10 @@ namespace thekogans {
             struct _LIB_THEKOGANS_UTIL_DECL Stats {
                 /// \brief
                 /// Pending job count.
-                ui32 jobCount;
+                ui32 pendingJobCount;
+                /// \brief
+                /// Running job count.
+                ui32 runningJobCount;
                 /// \brief
                 /// Total jobs processed.
                 ui32 totalJobs;
@@ -274,7 +393,8 @@ namespace thekogans {
                 /// \brief
                 /// ctor.
                 Stats () :
-                    jobCount (0),
+                    pendingJobCount (0),
+                    runningJobCount (0),
                     totalJobs (0),
                     totalJobTime (0) {}
 
@@ -356,9 +476,92 @@ namespace thekogans {
             };
         #endif // defined (TOOLCHAIN_OS_Windows)
 
+        protected:
+            /// \brief
+            /// RunLoop id.
+            const Id id;
+            /// \brief
+            /// RunLoop name. If set, \see{Worker} threads will be named name-%d.
+            const std::string name;
+            /// \brief
+            /// RunLoop type (TIPE_FIFO or TYPE_LIFO)
+            const Type type;
+            /// \brief
+            /// Max pending jobs.
+            const ui32 maxPendingJobs;
+            /// \brief
+            /// Flag to signal the worker thread.
+            volatile bool done;
+            /// \brief
+            /// Queue of pending jobs.
+            JobList pendingJobs;
+            /// \brief
+            /// List of running jobs.
+            JobList runningJobs;
+            /// \brief
+            /// Queue stats.
+            Stats stats;
+            /// \brief
+            /// Synchronization mutex.
+            Mutex jobsMutex;
+            /// \brief
+            /// Synchronization condition variable.
+            Condition jobsNotEmpty;
+            /// \brief
+            /// Queue state.
+            enum State {
+                /// \brief
+                /// Queue is idle.
+                Idle,
+                /// \brief
+                /// Queue is busy.
+                Busy
+            };
+            THEKOGANS_UTIL_ATOMIC<State> state;
+            /// \brief
+            /// Synchronization event.
+            Event idle;
+
+        public:
+            /// \brief
+            /// ctor.
+            /// \param[in] name_ RunLoop name.
+            /// \param[in] type_ RunLoop queue type.
+            /// \param[in] maxPendingJobs_ Max pending run loop jobs.
+            /// \param[in] done_ true == Must call Start.
+            RunLoop (
+                const std::string &name_ = std::string (),
+                Type type_ = TYPE_FIFO,
+                ui32 maxPendingJobs_ = UI32_MAX,
+                bool done_ = true);
             /// \brief
             /// dtor.
             virtual ~RunLoop () {}
+
+            /// \brief
+            /// Return RunLoop id.
+            /// \return RunLoop id.
+            inline const Id &GetId () const {
+                return id;
+            }
+            /// \brief
+            /// Return RunLoop name.
+            /// \return RunLoop name.
+            inline const std::string &GetName () const {
+                return name;
+            }
+
+            /// \brief
+            /// Wait until the given run loop is created the and it starts running.
+            /// \param[in] runLoop RunLoop to wait for.
+            /// \param[in] sleepTimeSpec How long to sleep between tries.
+            /// \param[in] waitTimeSpec Total time to wait.
+            /// \return true == the given run loop is running.
+            /// false == timed out waiting for the run loop to start.
+            static bool WaitForStart (
+                Ptr &runLoop,
+                const TimeSpec &sleepTimeSpec = TimeSpec::FromMilliseconds (50),
+                const TimeSpec &waitTimeSpec = TimeSpec::FromSeconds (3));
 
             /// \brief
             /// Start waiting for jobs.
@@ -378,10 +581,17 @@ namespace thekogans {
             /// IMPORTANT: timeSpec is a relative value.
             /// NOTE: Same constraint applies to EnqJob as Stop. Namely, you can't call EnqJob
             /// from the same thread that called Start.
-            virtual void EnqJob (
-                Job::Ptr /*job*/,
-                bool /*wait*/ = false,
-                const TimeSpec & /*timeSpec*/ = TimeSpec::Infinite) = 0;
+            /// \return true == !wait || WaitForJob (...)
+            virtual bool EnqJob (
+                Job::Ptr job,
+                bool wait = false,
+                const TimeSpec &timeSpec = TimeSpec::Infinite);
+
+            /// \brief
+            /// Get a running or a pending job with the given id.
+            /// \param[in] jobId Id of job to retrieve.
+            /// \return Job matching the given id.
+            virtual Job::Ptr GetJob (const Job::Id &jobId);
 
             /// \struct RunLoop::EqualityTest RunLoop.h thekogans/util/RunLoop.h
             ///
@@ -396,164 +606,104 @@ namespace thekogans {
                 /// Reimplement this function to test for equality.
                 /// \param[in] job Instance to test for equality.
                 /// \return true == equal.
-                virtual bool operator () (const Job & /*job*/) const throw () = 0;
+                virtual bool operator () (const Job & /*job*/) const throw ();
             };
 
             /// \brief
-            /// Wait for a queued job with a given id. If the job is not
-            /// in the queue (in flight), it is not waited on.
+            /// Wait for a given job to complete.
+            /// \param[in] job Job to wait on.
+            /// NOTE: The RunLoop will check that the given job was in fact
+            /// en-queued on this run loop (Job::runloopId) and will throw
+            /// THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL if it doesn't.
+            /// \param[in] timeSpec How long to wait for the job to complete.
+            /// IMPORTANT: timeSpec is a relative value.
+            /// \return true == completed, false == timed out.
+            virtual bool WaitForJob (
+                Job::Ptr job,
+                const TimeSpec &timeSpec = TimeSpec::Infinite);
+            /// \brief
+            /// Wait for a running or a pending job with a given id to complete.
             /// \param[in] jobId Id of job to wait on.
             /// \param[in] timeSpec How long to wait for the job to complete.
             /// IMPORTANT: timeSpec is a relative value.
-            /// \return true if the job was waited on. false if in flight.
+            /// \return true == completed,
+            /// false == job with a given id was not in the queue or timed out.
             virtual bool WaitForJob (
-                const Job::Id & /*jobId*/,
-                const TimeSpec & /*timeSpec*/ = TimeSpec::Infinite) = 0;
+                const Job::Id &jobId,
+                const TimeSpec &timeSpec = TimeSpec::Infinite);
             /// \brief
-            /// Wait for all queued jobs matching the given equality test. Jobs in flight
-            /// are not waited on.
+            /// Wait for all running and pending jobs matching the given equality test to complete.
             /// \param[in] equalityTest EqualityTest to query to determine which jobs to wait on.
             /// \param[in] timeSpec How long to wait for the jobs to complete.
             /// IMPORTANT: timeSpec is a relative value.
-            virtual void WaitForJobs (
-                const EqualityTest & /*equalityTest*/,
-                const TimeSpec & /*timeSpec*/ = TimeSpec::Infinite) = 0;
+            /// \return true == All jobs satisfying the equalityTest completed,
+            /// false == One or more matching jobs timed out.
+            virtual bool WaitForJobs (
+                const EqualityTest &equalityTest,
+                const TimeSpec &timeSpec = TimeSpec::Infinite);
             /// \brief
-            /// Blocks until all jobs are complete and the run loop is empty.
+            /// Blocks until all jobs are complete and the queue is empty.
             /// \param[in] timeSpec How long to wait for the jobs to complete.
             /// IMPORTANT: timeSpec is a relative value.
-            virtual void WaitForIdle (
-                const TimeSpec & /*timeSpec*/ = TimeSpec::Infinite) = 0;
+            /// \return true == RunLoop is idle, false == Timed out.
+            virtual bool WaitForIdle (
+                const TimeSpec &timeSpec = TimeSpec::Infinite);
 
             /// \brief
-            /// Cancel a queued job with a given id. If the job is not
-            /// in the queue (in flight), it is not canceled.
+            /// Cancel a running or a pending job with a given id.
             /// \param[in] jobId Id of job to cancel.
-            /// \return true = the job was cancelled. false = in flight or nonexistent.
-            virtual bool CancelJob (const Job::Id & /*jobId*/) = 0;
+            /// \return true if the job was cancelled.
+            virtual bool CancelJob (const Job::Id &jobId);
             /// \brief
-            /// Cancel all queued job matching the given equality test. Jobs in flight
-            /// are not canceled.
+            /// Cancel all running and pending jobs matching the given equality test.
             /// \param[in] equalityTest EqualityTest to query to determine which jobs to cancel.
-            virtual void CancelJobs (const EqualityTest & /*equalityTest*/) = 0;
+            virtual void CancelJobs (const EqualityTest &equalityTest);
             /// \brief
-            /// Cancel all queued jobs. Job in flight is unaffected.
-            virtual void CancelAllJobs () = 0;
+            /// Cancel all running and pending jobs.
+            virtual void CancelAllJobs ();
 
             /// \brief
             /// Return a snapshot of the run loop stats.
             /// \return A snapshot of the run loop stats.
-            virtual Stats GetStats () = 0;
+            virtual Stats GetStats ();
 
             /// \brief
             /// Return true if Start was called.
             /// \return true if Start was called.
-            virtual bool IsRunning () = 0;
+            virtual bool IsRunning ();
             /// \brief
             /// Return true if there are no pending jobs.
             /// \return true = no pending jobs, false = jobs pending.
-            virtual bool IsEmpty () = 0;
+            virtual bool IsEmpty ();
             /// \brief
             /// Return true if there are no pending jobs and the
             /// worker is idle.
             /// \return true = idle, false = busy.
-            virtual bool IsIdle () = 0;
-
-            /// \brief
-            /// Wait until the given run loop is created the and it starts running.
-            /// \param[in] runLoop RunLoop to wait for.
-            /// \param[in] sleepTimeSpec How long to sleep between tries.
-            /// \param[in] waitTimeSpec Total time to wait.
-            /// \return true == the given run loop is running.
-            /// false == timed out waiting for the run loop to start.
-            static bool WaitForStart (
-                Ptr &runLoop,
-                const TimeSpec &sleepTimeSpec = TimeSpec::FromMilliseconds (50),
-                const TimeSpec &waitTimeSpec = TimeSpec::FromSeconds (3));
+            virtual bool IsIdle ();
 
         protected:
             /// \brief
-            /// Forward declaration of JobProxy.
-            struct JobProxy;
-            enum {
-                /// \brief
-                /// JobProxyList ID.
-                JOB_PROXY_LIST_ID
-            };
+            /// Used internally by worker(s) to get the next job.
+            /// \param[in] wait true == Wait until a job becomes available.
+            /// \return The next job to execute.
+            Job *DeqJob (bool wait = true);
             /// \brief
-            /// Convenient typedef for IntrusiveList<JobProxy, JOB_PROXY_LIST_ID>.
-            typedef IntrusiveList<JobProxy, JOB_PROXY_LIST_ID> JobProxyList;
+            /// Called by worker(s) after each job is done.
+            /// Used to update state and \see{RunLoop::Stats}.
+            /// \param[in] job Completed job.
+            /// \param[in] start Completed job start time.
+            /// \param[in] end Completed job end time.
+            void FinishedJob (
+                Job *job,
+                ui64 start,
+                ui64 end);
 
-        #if defined (_MSC_VER)
-            #pragma warning (push)
-            #pragma warning (disable : 4275)
-        #endif // defined (_MSC_VER)
-            /// \struct RunLoop::JobProxy RunLoop.h thekogans/util/RunLoop.h
-            ///
             /// \brief
-            /// JobProxy is a job wrapper used to hold a list of jobs without
-            /// requiring that Job derive from multiple lists.
-            struct _LIB_THEKOGANS_UTIL_DECL JobProxy : public JobProxyList::Node {
-                /// \brief
-                /// A private JobProxy heap to help with memory management.
-                THEKOGANS_UTIL_DECLARE_HEAP_WITH_LOCK (JobProxy, SpinLock)
-
-                /// \brief
-                /// Proxied job.
-                Job::Ptr job;
-
-                /// \brief
-                /// ctor.
-                /// \param[in] job_ Job to proxy.
-                explicit JobProxy (Job *job_) :
-                    job (job_) {}
-            };
-        #if defined (_MSC_VER)
-            #pragma warning (pop)
-        #endif // defined (_MSC_VER)
-
-            /// \struct RunLoop::ReleaseJobQueue RunLoop.h thekogans/util/RunLoop.h
-            ///
-            /// \brief
-            /// ReleaseJobQueue is used internally by RunLoop derivatives (\see{JobQueue},
-            /// \see{SystemRunLoop}, \see{DefaultRunLoop}...) to schedule finished/cancelled
-            /// jobs for release. It's use resolves a number of potential deadlocks that can
-            /// arrive if Job::Release is called on the worker thread.
-            struct _LIB_THEKOGANS_UTIL_DECL ReleaseJobQueue :
-                    public Singleton<ReleaseJobQueue, SpinLock>,
-                    public Thread {
-            private:
-                /// \brief
-                /// List of jobs waiting to be released.
-                JobList jobs;
-                /// \brief
-                /// Since ReleaseJobQueue is a global singleton, jobs needs to be protected.
-                Mutex jobsMutex;
-                /// \brief
-                /// Signal to our thread that we have jobs for it to release.
-                Condition jobsNotEmpty;
-
-            public:
-                /// \brief
-                /// ctor.
-                ReleaseJobQueue ();
-
-                /// \brief
-                /// Enqueue a job to be released later.
-                /// \param[in] job Job to release later.
-                void EnqJob (Job *job);
-
-            private:
-                /// \brief
-                /// Dequeue the next job to release.
-                /// \return Next job to release.
-                Job *DeqJob ();
-
-                // Thread
-                /// \brief
-                /// Job release thread.
-                virtual void Run () throw ();
-            };
+            /// Atomically set done to the given value.
+            /// \param[in] value Value to set done to.
+            /// \return true == done was set to the given value.
+            /// false == done was already set to the given value.
+            bool SetDone (bool value);
         };
 
     } // namespace util

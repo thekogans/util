@@ -51,12 +51,6 @@ namespace thekogans {
 
         protected:
             /// \brief
-            /// JobQueue name. If set, \see{Worker} threads will be named name-%d.
-            const std::string name;
-            /// \brief
-            /// JobQueue type (TIPE_FIFO or TYPE_LIFO)
-            const Type type;
-            /// \brief
             /// Number of workers servicing the queue.
             const ui32 workerCount;
             /// \brief
@@ -66,42 +60,8 @@ namespace thekogans {
             /// \Worker thread processor affinity.
             const ui32 workerAffinity;
             /// \brief
-            /// Max pending jobs.
-            const ui32 maxPendingJobs;
-            /// \brief
             /// Called to initialize/uninitialize the worker thread.
             WorkerCallback *workerCallback;
-            /// \brief
-            /// Flag to signal the worker thread.
-            volatile bool done;
-            /// \brief
-            /// Queue of jobs.
-            JobList jobs;
-            /// \brief
-            /// Queue stats.
-            Stats stats;
-            /// \brief
-            /// Synchronization mutex.
-            Mutex jobsMutex;
-            /// \brief
-            /// Synchronization condition variable.
-            Condition jobsNotEmpty;
-            /// \brief
-            /// Synchronization condition variable.
-            Condition jobFinished;
-            /// \brief
-            /// Synchronization condition variable.
-            Condition idle;
-            /// \brief
-            /// Queue state.
-            enum State {
-                /// \brief
-                /// Queue is idle.
-                Idle,
-                /// \brief
-                /// Queue is busy.
-                Busy
-            } volatile state;
             /// \brief
             /// Forward declaration of Worker.
             struct Worker;
@@ -151,9 +111,6 @@ namespace thekogans {
                 virtual void Run () throw ();
             };
             /// \brief
-            /// Count of busy workers.
-            ui32 busyWorkers;
-            /// \brief
             /// List of workers.
             WorkerList workers;
             /// \brief
@@ -163,34 +120,27 @@ namespace thekogans {
         public:
             /// \brief
             /// ctor.
-            /// \param[in] name_ JobQueue name. If set, \see{Worker}
+            /// \param[in] name JobQueue name. If set, \see{Worker}
             /// threads will be named name-%d.
-            /// \param[in] type_ Queue type.
+            /// \param[in] type Queue type.
+            /// \param[in] maxPendingJobs Max pending queue jobs.
             /// \param[in] workerCount_ Max workers to service the queue.
             /// \param[in] workerPriority_ Worker thread priority.
             /// \param[in] workerAffinity_ Worker thread processor affinity.
-            /// \param[in] maxPendingJobs_ Max pending queue jobs.
             /// \param[in] workerCallback_ Called to initialize/uninitialize
             /// the worker thread.
             JobQueue (
-                const std::string &name_ = std::string (),
-                Type type_ = TYPE_FIFO,
+                const std::string &name = std::string (),
+                Type type = TYPE_FIFO,
+                ui32 maxPendingJobs = UI32_MAX,
                 ui32 workerCount_ = 1,
                 i32 workerPriority_ = THEKOGANS_UTIL_NORMAL_THREAD_PRIORITY,
                 ui32 workerAffinity_ = UI32_MAX,
-                ui32 maxPendingJobs_ = UI32_MAX,
                 WorkerCallback *workerCallback_ = 0);
             /// \brief
             /// dtor. Stop the queue.
             virtual ~JobQueue () {
                 Stop ();
-            }
-
-            /// \brief
-            /// Return JobQueue name.
-            /// \return JobQueue name.
-            inline const std::string &GetName () const {
-                return name;
             }
 
             // RunLoop
@@ -200,7 +150,7 @@ namespace thekogans {
             /// the queue, you need to call Start manually to restart it.
             virtual void Start ();
             /// \brief
-            /// Stops all in flight, and cancels all pending jobs. The
+            /// Stops all running, and cancels all pending jobs. The
             /// queue, and the worker pool are flushed. After calling
             /// this method, the queue is dead, and consumes very little
             /// resources. You need to call Start to get it going
@@ -214,101 +164,6 @@ namespace thekogans {
             /// attention to the state of done.
             /// \param[in] cancelPendingJobs true = Cancel all pending jobs.
             virtual void Stop (bool cancelPendingJobs = true);
-
-            /// \brief
-            /// Enqueue a job. The next idle worker will pick it up,
-            /// and execute it on it's thread.
-            /// \param[in] job Job to enqueue.
-            /// \param[in] wait Wait for job to finish. Used for synchronous job execution.
-            /// \param[in] timeSpec How long to wait for the job to complete.
-            /// IMPORTANT: timeSpec is a relative value.
-            virtual void EnqJob (
-                Job::Ptr job,
-                bool wait = false,
-                const TimeSpec &timeSpec = TimeSpec::Infinite);
-
-            /// \brief
-            /// Wait for a queued job with a given id. If the job is not
-            /// in the queue (in flight), it is not waited on.
-            /// \param[in] jobId Id of job to wait on.
-            /// \param[in] timeSpec How long to wait for the job to complete.
-            /// IMPORTANT: timeSpec is a relative value.
-            /// \return true if the job was waited on. false if in flight.
-            virtual bool WaitForJob (
-                const Job::Id &jobId,
-                const TimeSpec &timeSpec = TimeSpec::Infinite);
-            /// \brief
-            /// Wait for all queued jobs matching the given equality test. Jobs in flight
-            /// are not waited on.
-            /// \param[in] equalityTest EqualityTest to query to determine which jobs to wait on.
-            /// \param[in] timeSpec How long to wait for the jobs to complete.
-            /// IMPORTANT: timeSpec is a relative value.
-            virtual void WaitForJobs (
-                const EqualityTest &equalityTest,
-                const TimeSpec &timeSpec = TimeSpec::Infinite);
-            /// \brief
-            /// Blocks until all jobs are complete and the queue is empty.
-            /// \param[in] timeSpec How long to wait for the jobs to complete.
-            /// IMPORTANT: timeSpec is a relative value.
-            virtual void WaitForIdle (
-                const TimeSpec &timeSpec = TimeSpec::Infinite);
-
-            /// \brief
-            /// Cancel a queued job with a given id. If the job is not
-            /// in the queue (in flight), it is not canceled.
-            /// \param[in] jobId Id of job to cancel.
-            /// \return true if the job was cancelled. false if in flight.
-            virtual bool CancelJob (const Job::Id &jobId);
-            /// \brief
-            /// Cancel all queued job matching the given equality test. Jobs in flight
-            /// are not canceled.
-            /// \param[in] equalityTest EqualityTest to query to determine which jobs to cancel.
-            virtual void CancelJobs (const EqualityTest &equalityTest);
-            /// \brief
-            /// Cancel all queued jobs. Jobs in flight are unaffected.
-            virtual void CancelAllJobs ();
-
-            /// \brief
-            /// Return a snapshot of the queue stats.
-            /// \return A snapshot of the queue stats.
-            virtual Stats GetStats ();
-
-            /// \brief
-            /// Return true if Start was called.
-            /// \return true = Start was called, false = Start was not called.
-            virtual bool IsRunning ();
-            /// \brief
-            /// Return true if there are no pending jobs.
-            /// \return true = no pending jobs, false = jobs pending.
-            virtual bool IsEmpty ();
-            /// \brief
-            /// Return true if there are no pending jobs and all the
-            /// workers are idle.
-            /// \return true = idle, false = busy.
-            virtual bool IsIdle ();
-
-        private:
-            /// \brief
-            /// Used internally by worker(s) to get the next job.
-            /// \return The next job to execute.
-            Job *DeqJob ();
-            /// \brief
-            /// Called by worker(s) after each job is done.
-            /// Used to update state and \see{RunLoop::Stats}.
-            /// \param[in] job Completed job.
-            /// \param[in] start Completed job start time.
-            /// \param[in] end Completed job end time.
-            void FinishedJob (
-                Job *job,
-                ui64 start,
-                ui64 end);
-
-            /// \brief
-            /// Atomically set done to the given value.
-            /// \param[in] value value to set done to.
-            /// \return true == done was set to the given value.
-            /// false == done was already set to the given value.
-            bool SetDone (bool value);
 
             /// \brief
             /// JobQueue is neither copy constructable, nor assignable.
@@ -330,6 +185,9 @@ namespace thekogans {
             /// JobQueue type (TIPE_FIFO or TYPE_LIFO)
             static RunLoop::Type type;
             /// \brief
+            /// Max pending jobs.
+            static ui32 maxPendingJobs;
+            /// \brief
             /// Number of workers servicing the queue.
             static ui32 workerCount;
             /// \brief
@@ -338,9 +196,6 @@ namespace thekogans {
             /// \brief
             /// Worker thread processor affinity.
             static ui32 workerAffinity;
-            /// \brief
-            /// Max pending jobs.
-            static ui32 maxPendingJobs;
             /// \brief
             /// Called to initialize/uninitialize the worker thread.
             static RunLoop::WorkerCallback *workerCallback;
@@ -351,18 +206,18 @@ namespace thekogans {
             /// \param[in] name_ JobQueue name. If set, \see{JobQueue::Worker}
             /// threads will be named name-%d.
             /// \param[in] type_ Queue type.
+            /// \param[in] maxPendingJobs_ Max pending queue jobs.
             /// \param[in] workerCount_ Max workers to service the queue.
             /// \param[in] workerPriority_ Worker thread priority.
             /// \param[in] workerAffinity_ Worker thread processor affinity.
-            /// \param[in] maxPendingJobs_ Max pending queue jobs.
             /// \param[in] workerCallback_ Called to initialize/uninitialize the worker thread.
             static void Parameterize (
                 const std::string &name_ = std::string (),
                 RunLoop::Type type_ = RunLoop::TYPE_FIFO,
+                ui32 maxPendingJobs_ = UI32_MAX,
                 ui32 workerCount_ = 1,
                 i32 workerPriority_ = THEKOGANS_UTIL_NORMAL_THREAD_PRIORITY,
                 ui32 workerAffinity_ = UI32_MAX,
-                ui32 maxPendingJobs_ = UI32_MAX,
                 RunLoop::WorkerCallback *workerCallback_ = 0);
 
             /// \brief
