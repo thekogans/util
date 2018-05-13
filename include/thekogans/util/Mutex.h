@@ -36,8 +36,6 @@
 namespace thekogans {
     namespace util {
 
-        struct Condition;
-
         /// \struct Mutex Mutex.h thekogans/util/Mutex.h
         ///
         /// \brief
@@ -93,10 +91,8 @@ namespace thekogans {
 
         public:
             /// \brief
-            /// Default ctor. Initialize to unacquired.
-            /// \param[in] shared For pthread_mutex_t. Initialize with
-            /// PTHREAD_PROCESS_SHARED attribute.
-            Mutex (bool shared = false);
+            /// ctor.
+            Mutex ();
             /// \brief
             /// dtor.
             ~Mutex ();
@@ -113,6 +109,30 @@ namespace thekogans {
             /// \brief
             /// Release the mutex.
             void Release ();
+
+    #if !defined (TOOLCHAIN_OS_Windows)
+        private:
+            /// \brief
+            /// ctor.
+            /// \param[in] shared For pthread_mutex_t. Initialize with
+            /// PTHREAD_PROCESS_SHARED attribute.
+            Mutex (bool shared) {
+                Init (shared);
+            }
+
+            /// \brief
+            /// Initialize the mutex.
+            /// \param[in] shared For pthread_mutex_t. Initialize with
+            /// PTHREAD_PROCESS_SHARED attribute.
+            void Init (bool shared);
+
+            /// \brief
+            /// Event needs access to the private ctor.
+            friend struct Event;
+            /// \brief
+            /// Semaphore needs access to the private ctor.
+            friend struct Semaphore;
+    #endif // !defined (TOOLCHAIN_OS_Windows)
 
             /// \brief
             /// Mutex is neither copy constructable, nor assignable.

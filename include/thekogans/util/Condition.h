@@ -63,11 +63,7 @@ namespace thekogans {
             /// \brief
             /// ctor.
             /// \param[in] mutex_ The mutex to pair this condition variable with.
-            /// \param[in] shared For pthread_cond_t. Initialize with
-            /// PTHREAD_PROCESS_SHARED attribute.
-            Condition (
-                Mutex &mutex_,
-                bool shared = false);
+            Condition (Mutex &mutex_);
             /// \brief
             /// dtor.
             ~Condition ();
@@ -91,6 +87,34 @@ namespace thekogans {
             /// Put the condition variable in to signaled state. If
             /// any threads are waiting on it, their wait will succeed.
             void SignalAll ();
+
+    #if !defined (TOOLCHAIN_OS_Windows)
+        private:
+            /// \brief
+            /// ctor.
+            /// \param[in] mutex_ The mutex to pair this condition variable with.
+            /// \param[in] shared For pthread_mutex_t. Initialize with
+            /// PTHREAD_PROCESS_SHARED attribute.
+            Condition (
+                    Mutex &mutex_,
+                    bool shared) :
+                    mutex (mutex_) {
+                Init (shared);
+            }
+
+            /// \brief
+            /// Initialize the mutex.
+            /// \param[in] shared For pthread_mutex_t. Initialize with
+            /// PTHREAD_PROCESS_SHARED attribute.
+            void Init (bool shared);
+
+            /// \brief
+            /// Event needs access to the private ctor.
+            friend struct Event;
+            /// \brief
+            /// Semaphore needs access to the private ctor.
+            friend struct Semaphore;
+    #endif // !defined (TOOLCHAIN_OS_Windows)
 
             /// \brief
             /// Condition is neither copy constructable, nor assignable.
