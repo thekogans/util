@@ -36,17 +36,17 @@ namespace thekogans {
         private:
             /// \enum
             /// SpinLock state type.
-            typedef enum {
+            enum State {
                 /// \brief
                 /// Unlocked.
                 Unlocked,
                 /// \brief
                 /// Locked.
                 Locked
-            } LockState;
+            };
             /// \brief
             /// SpinLock state.
-            THEKOGANS_UTIL_ATOMIC<LockState> state;
+            THEKOGANS_UTIL_ATOMIC<State> state;
 
         public:
             /// \brief
