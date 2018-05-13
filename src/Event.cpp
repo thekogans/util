@@ -32,6 +32,7 @@
     #include "thekogans/util/Condition.h"
     #include "thekogans/util/SharedObject.h"
     #include "thekogans/util/LockGuard.h"
+    #include "thekogans/util/HRTimer.h"
 #endif // defined (TOOLCHAIN_OS_Windows)
 #include "thekogans/util/Exception.h"
 #include "thekogans/util/Event.h"
@@ -52,6 +53,7 @@ namespace thekogans {
                 OpSignal,
                 OpSignalAll
             } op;
+            ui64 opTime;
             ui32 count;
 
             EventImpl (
@@ -64,6 +66,7 @@ namespace thekogans {
                     mutex (shared),
                     condition (mutex, shared),
                     op (OpSignal),
+                    opTime (0),
                     count (0) {
                 if (initialState == Signalled) {
                     Signal ();
@@ -76,23 +79,12 @@ namespace thekogans {
 
             void Signal () {
                 LockGuard<Mutex> guard (mutex);
-                state = Signalled;
-                op = OpSignal;
-                // If in manual reset mode, release all waiting threads
-                // to simulate the behavior of Windows event.
-                if (manualReset) {
-                    condition.SignalAll ();
-                }
-                else {
-                    condition.Signal ();
-                }
-            }
-
-            void SignalAll () {
-                LockGuard<Mutex> guard (mutex);
-                if (count > 0) {
+                if (state == Free) {
                     state = Signalled;
-                    op = OpSignalAll;
+                    op = OpSignal;
+                    opTime = HRTimer::Click ();
+                    // If in manual reset mode, release all waiting threads
+                    // to simulate the behavior of Windows event.
                     if (manualReset) {
                         condition.SignalAll ();
                     }
@@ -100,8 +92,20 @@ namespace thekogans {
                         condition.Signal ();
                     }
                 }
-                else {
-                    state = Free;
+            }
+
+            void SignalAll () {
+                LockGuard<Mutex> guard (mutex);
+                if (state == Free && count > 0) {
+                    state = Signalled;
+                    op = OpSignalAll;
+                    opTime = HRTimer::Click ();
+                    if (manualReset) {
+                        condition.SignalAll ();
+                    }
+                    else {
+                        condition.Signal ();
+                    }
                 }
             }
 
@@ -113,6 +117,7 @@ namespace thekogans {
             bool Wait (const TimeSpec &timeSpec) {
                 LockGuard<Mutex> guard (mutex);
                 {
+                    ui32 time = HRTimer::Click ();
                     struct CountMgr {
                         ui32 &count;
                         CountMgr (ui32 &count_) :
@@ -124,14 +129,15 @@ namespace thekogans {
                         }
                     } countMgr (count);
                     if (timeSpec == TimeSpec::Infinite) {
-                        while (state == Free) {
+                        while (state == Free || (op == OpSignalAll && time > opTime)) {
                             condition.Wait ();
                         }
                     }
                     else {
                         TimeSpec now = GetCurrentTime ();
                         TimeSpec deadline = now + timeSpec;
-                        while (state == Free && deadline > now) {
+                        while ((state == Free || (op == OpSignalAll && time > opTime)) &&
+                                deadline > now) {
                             condition.Wait (deadline - now);
                             now = GetCurrentTime ();
                         }
