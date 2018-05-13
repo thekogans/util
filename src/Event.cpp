@@ -61,7 +61,7 @@ namespace thekogans {
                     State initialState,
                     bool shared_ = false) :
                     manualReset (manualReset_),
-                    state (Free),
+                    state (NonSignalled),
                     shared (shared_),
                     mutex (shared),
                     condition (mutex, shared),
@@ -79,7 +79,7 @@ namespace thekogans {
 
             void Signal () {
                 LockGuard<Mutex> guard (mutex);
-                if (state == Free) {
+                if (state == NonSignalled) {
                     state = Signalled;
                     op = OpSignal;
                     opTime = HRTimer::Click ();
@@ -96,7 +96,7 @@ namespace thekogans {
 
             void SignalAll () {
                 LockGuard<Mutex> guard (mutex);
-                if (state == Free && count > 0) {
+                if (state == NonSignalled && count > 0) {
                     state = Signalled;
                     op = OpSignalAll;
                     opTime = HRTimer::Click ();
@@ -111,7 +111,7 @@ namespace thekogans {
 
             void Reset () {
                 LockGuard<Mutex> guard (mutex);
-                state = Free;
+                state = NonSignalled;
             }
 
             bool Wait (const TimeSpec &timeSpec) {
@@ -129,25 +129,25 @@ namespace thekogans {
                         }
                     } countMgr (count);
                     if (timeSpec == TimeSpec::Infinite) {
-                        while (state == Free || (op == OpSignalAll && time > opTime)) {
+                        while (state == NonSignalled || (op == OpSignalAll && time > opTime)) {
                             condition.Wait ();
                         }
                     }
                     else {
                         TimeSpec now = GetCurrentTime ();
                         TimeSpec deadline = now + timeSpec;
-                        while ((state == Free || (op == OpSignalAll && time > opTime)) &&
+                        while ((state == NonSignalled || (op == OpSignalAll && time > opTime)) &&
                                 deadline > now) {
                             condition.Wait (deadline - now);
                             now = GetCurrentTime ();
                         }
-                        if (state == Free) {
+                        if (state == NonSignalled) {
                             return false;
                         }
                     }
                 }
                 if (!manualReset || (op == OpSignalAll && count == 0)) {
-                    state = Free;
+                    state = NonSignalled;
                 }
                 return true;
             }
