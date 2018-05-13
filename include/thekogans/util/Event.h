@@ -33,8 +33,43 @@ namespace thekogans {
         /// \struct Event Event.h thekogans/util/Event.h
         ///
         /// \brief
-        /// Wraps a Windows event synchronization object.
-        /// Emulates it on Linux/OS X.
+        /// Wraps a Windows event synchronization object. Emulates it
+        /// on Linux/OS X.
+        ///
+        /// IMPORTANT: To emulate Windows behavior on POSIX, the following
+        /// semantics are observed:
+        ///
+        /// When calling Signal:
+        ///
+        /// The state of a manual-reset event object remains signaled
+        /// until it is set explicitly to the non-signaled state by the
+        /// Reset function. Any number of waiting threads, or threads
+        /// that subsequently begin wait operations for the specified
+        /// event object by calling Wait, can be released while the
+        /// object's state is signaled.
+        ///
+        /// The state of an auto-reset event object remains signaled
+        /// until a single waiting thread is released, at which time
+        /// the system automatically sets the state to non-signaled.
+        /// If no threads are waiting, the event object's state remains
+        /// signaled.
+        ///
+        /// Setting an event that is already set has no effect.
+        ///
+        /// When calling SignalAll:
+        ///
+        /// For a manual-reset event object, all waiting threads that
+        /// can be released immediately are released. The event object's
+        /// state is then reset to non-signaled state.
+        ///
+        /// For an auto-reset event object, SignalAll releases at most
+        /// one waiting thread, even if multiple threads are waiting.
+        /// Regardless of whether a thread was released or not, event
+        /// object's state is reset to non-signaled.
+        ///
+        /// If no threads are waiting, or if no thread can be released
+        /// immediately, SignalAll simply sets the event object's state
+        /// to non-signaled and returns.
 
         struct _LIB_THEKOGANS_UTIL_DECL Event {
             /// \brief

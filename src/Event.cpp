@@ -48,6 +48,11 @@ namespace thekogans {
             bool shared;
             Mutex mutex;
             Condition condition;
+            enum Op {
+                OpSignal,
+                OpSignalAll
+            } op;
+            ui32 count;
 
             EventImpl (
                     bool manualReset_,
@@ -57,15 +62,24 @@ namespace thekogans {
                     state (Free),
                     shared (shared_),
                     mutex (shared),
-                    condition (mutex, shared) {
+                    condition (mutex, shared),
+                    op (OpSignal),
+                    count (0) {
                 if (initialState == Signalled) {
                     Signal ();
                 }
             }
 
+            // On Windows Signal uses SetEvent and SignalAll uses PulseEvent.
+            // The following logic is necessary to emulate their behavior on
+            // POSIX.
+
             void Signal () {
                 LockGuard<Mutex> guard (mutex);
                 state = Signalled;
+                op = OpSignal;
+                // If in manual reset mode, release all waiting threads
+                // to simulate the behavior of Windows event.
                 if (manualReset) {
                     condition.SignalAll ();
                 }
@@ -76,8 +90,19 @@ namespace thekogans {
 
             void SignalAll () {
                 LockGuard<Mutex> guard (mutex);
-                state = Signalled;
-                condition.SignalAll ();
+                if (count > 0) {
+                    state = Signalled;
+                    op = OpSignalAll;
+                    if (manualReset) {
+                        condition.SignalAll ();
+                    }
+                    else {
+                        condition.Signal ();
+                    }
+                }
+                else {
+                    state = Free;
+                }
             }
 
             void Reset () {
@@ -87,26 +112,36 @@ namespace thekogans {
 
             bool Wait (const TimeSpec &timeSpec) {
                 LockGuard<Mutex> guard (mutex);
-                if (timeSpec == TimeSpec::Infinite) {
-                    while (state == Free) {
-                        condition.Wait ();
+                {
+                    struct CountMgr {
+                        ui32 &count;
+                        CountMgr (ui32 &count_) :
+                                count (count_) {
+                            ++count;
+                        }
+                        ~CountMgr () {
+                            --count;
+                        }
+                    } countMgr (count);
+                    if (timeSpec == TimeSpec::Infinite) {
+                        while (state == Free) {
+                            condition.Wait ();
+                        }
                     }
-                    if (!manualReset) {
-                        state = Free;
-                    }
-                }
-                else {
-                    TimeSpec now = GetCurrentTime ();
-                    TimeSpec deadline = now + timeSpec;
-                    while (state == Free && deadline > now) {
-                        if (!condition.Wait (deadline - now)) {
+                    else {
+                        TimeSpec now = GetCurrentTime ();
+                        TimeSpec deadline = now + timeSpec;
+                        while (state == Free && deadline > now) {
+                            condition.Wait (deadline - now);
+                            now = GetCurrentTime ();
+                        }
+                        if (state == Free) {
                             return false;
                         }
-                        now = GetCurrentTime ();
                     }
-                    if (!manualReset) {
-                        state = Free;
-                    }
+                }
+                if (!manualReset || (op == OpSignalAll && count == 0)) {
+                    state = Free;
                 }
                 return true;
             }
