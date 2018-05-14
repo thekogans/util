@@ -130,6 +130,9 @@ namespace thekogans {
                 /// Type of stage (TYPE_FIFO or TYPE_LIFO).
                 RunLoop::Type type;
                 /// \brief
+                /// Max pending jobs.
+                ui32 maxPendingJobs;
+                /// \brief
                 /// Count of workers servicing this stage.
                 ui32 workerCount;
                 /// \brief
@@ -139,9 +142,6 @@ namespace thekogans {
                 /// Worker thread processor affinity.
                 ui32 workerAffinity;
                 /// \brief
-                /// Max pending jobs.
-                ui32 maxPendingJobs;
-                /// \brief
                 /// Called to initialize/uninitialize the worker thread.
                 RunLoop::WorkerCallback *workerCallback;
 
@@ -149,25 +149,25 @@ namespace thekogans {
                 /// ctor.
                 /// \param[in] name_ Stage \see{JobQueue} name.
                 /// \param[in] type_ Stage \see{JobQueue} type.
+                /// \param[in] maxPendingJobs_ Max pending stage jobs.
                 /// \param[in] workerCount_ Number of workers servicing this stage.
                 /// \param[in] workerPriority_ Stage worker thread priority.
                 /// \param[in] workerAffinity_ Stage worker thread processor affinity.
-                /// \param[in] maxPendingJobs_ Max pending stage jobs.
                 /// \param[in] workerCallback_ Called to initialize/uninitialize the worker thread.
                 StageInfo (
                     const std::string &name_ = std::string (),
                     RunLoop::Type type_ = RunLoop::TYPE_FIFO,
+                    ui32 maxPendingJobs_ = UI32_MAX,
                     ui32 workerCount_ = 1,
                     i32 workerPriority_ = THEKOGANS_UTIL_NORMAL_THREAD_PRIORITY,
-                    ui32 workerAffinity_ = UI32_MAX,
-                    ui32 maxPendingJobs_ = UI32_MAX,
+                    ui32 workerAffinity_ = THEKOGANS_UTIL_MAX_THREAD_AFFINITY,
                     RunLoop::WorkerCallback *workerCallback_ = 0) :
                     name (name_),
                     type (type_),
+                    maxPendingJobs (maxPendingJobs_),
                     workerCount (workerCount_),
                     workerPriority (workerPriority_),
                     workerAffinity (workerAffinity_),
-                    maxPendingJobs (maxPendingJobs_),
                     workerCallback (workerCallback_) {}
             };
 
@@ -207,10 +207,10 @@ namespace thekogans {
             /// \param[in] stagePriorityAdjustmentDelta Add/Sub adjustment delta.
             /// \param[in] name Stage name.
             /// \param[in] type Stage type (fifo | lifo).
+            /// \param[in] maxPendingJobs Max pending stage jobs.
             /// \param[in] workerCount Number of workers servicing each stage.
             /// \param[in] workerPriority Stage worker thread priority.
             /// \param[in] workerAffinity Stage worker thread processor affinity.
-            /// \param[in] maxPendingJobs Max pending stage jobs.
             /// \param[in] workerCallback Called to initialize/uninitialize the worker thread.
             Pipeline (
                 ui32 stageCount,
@@ -218,10 +218,10 @@ namespace thekogans {
                 i32 stagePriorityAdjustmentDelta = 0,
                 const std::string &name = std::string (),
                 RunLoop::Type type = RunLoop::TYPE_FIFO,
+                ui32 maxPendingJobs_ = UI32_MAX,
                 ui32 workerCount = 1,
                 i32 workerPriority = THEKOGANS_UTIL_NORMAL_THREAD_PRIORITY,
-                ui32 workerAffinity = UI32_MAX,
-                ui32 maxPendingJobs_ = UI32_MAX,
+                ui32 workerAffinity = THEKOGANS_UTIL_MAX_THREAD_AFFINITY,
                 RunLoop::WorkerCallback *workerCallback_ = 0);
 
             /// \brief

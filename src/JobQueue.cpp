@@ -132,7 +132,7 @@ namespace thekogans {
         ui32 GlobalJobQueueCreateInstance::maxPendingJobs = UI32_MAX;
         ui32 GlobalJobQueueCreateInstance::workerCount = 1;
         i32 GlobalJobQueueCreateInstance::workerPriority = THEKOGANS_UTIL_NORMAL_THREAD_PRIORITY;
-        ui32 GlobalJobQueueCreateInstance::workerAffinity = UI32_MAX;
+        ui32 GlobalJobQueueCreateInstance::workerAffinity = THEKOGANS_UTIL_MAX_THREAD_AFFINITY;
         RunLoop::WorkerCallback *GlobalJobQueueCreateInstance::workerCallback = 0;
 
         void GlobalJobQueueCreateInstance::Parameterize (

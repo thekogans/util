@@ -42,34 +42,34 @@ namespace thekogans {
         /// struct GlobalJobQueueCreateInstance {
         ///     static std::string name;
         ///     static RunLoop::Type type;
+        ///     static ui32 maxPendingJobs;
         ///     static ui32 workerCount;
         ///     static i32 workerPriority;
         ///     static ui32 workerAffinity;
-        ///     static ui32 maxPendingJobsl
         ///
         ///     static void Parameterize (
         ///             const std::string &name_ = std::string (),
         ///             RunLoop::Type type_ = RunLoop::TYPE_FIFO,
+        ///             ui32 maxPendingJobs_ = UI32_MAX,
         ///             ui32 workerCount_ = 1,
         ///             i32 workerPriority_ = THEKOGANS_UTIL_NORMAL_THREAD_PRIORITY,
-        ///             ui32 workerAffinity_ = UI32_MAX,
-        ///             ui32 maxPendingJobs_ = UI32_MAX) {
+        ///             ui32 workerAffinity_ = THEKOGANS_UTIL_MAX_THREAD_AFFINITY) {
         ///         name = name_;
         ///         type = type_;
+        ///         maxPendingJobs = maxPendingJobs_;
         ///         workerCount = workerCount_;
         ///         workerPriority = workerPriority_;
         ///         workerAffinity = workerAffinity_;
-        ///         maxPendingJobs = maxPendingJobs_;
         ///     }
         ///
         ///     JobQueue *operator () () {
         ///         return JobQueue (
         ///             name,
         ///             type,
+        ///             maxPendingJobs,
         ///             workerCount,
         ///             workerPriority,
-        ///             workerAffinity,
-        ///             maxPendingJobs);
+        ///             workerAffinity);
         ///     }
         /// };
         ///

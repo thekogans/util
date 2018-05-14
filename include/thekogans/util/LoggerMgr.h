@@ -346,7 +346,7 @@ namespace thekogans {
                 bool blocking = false,
                 const std::string &name = "LoggerMgr",
                 i32 priority = THEKOGANS_UTIL_LOW_THREAD_PRIORITY,
-                ui32 affinity = UI32_MAX) :
+                ui32 affinity = THEKOGANS_UTIL_MAX_THREAD_AFFINITY) :
                 level (level_),
                 decorations (decorations_),
                 startTime (HRTimer::Click ()),
@@ -424,7 +424,7 @@ namespace thekogans {
                 bool blocking = false,
                 const std::string &name = "LoggerMgr",
                 i32 priority = THEKOGANS_UTIL_LOW_THREAD_PRIORITY,
-                ui32 affinity = UI32_MAX);
+                ui32 affinity = THEKOGANS_UTIL_MAX_THREAD_AFFINITY);
 
             /// \brief
             /// Add a subsystem logger. It will be called for each subsystem log entry.
@@ -550,7 +550,7 @@ namespace thekogans {
                 bool blocking_ = false,
                 const std::string &name_ = "GlobalLoggerMgr",
                 i32 priority_ = THEKOGANS_UTIL_LOW_THREAD_PRIORITY,
-                ui32 affinity_ = UI32_MAX);
+                ui32 affinity_ = THEKOGANS_UTIL_MAX_THREAD_AFFINITY);
 
             /// \brief
             /// Create a global job queue with custom ctor arguments.

@@ -33,20 +33,20 @@ namespace thekogans {
                 ui32 maxWorkers_,
                 const std::string &name_,
                 RunLoop::Type type_,
+                ui32 maxPendingJobs_,
                 ui32 workerCount_,
                 i32 workerPriority_,
                 ui32 workerAffinity_,
-                ui32 maxPendingJobs_,
                 RunLoop::WorkerCallback *workerCallback_) :
                 minWorkers (minWorkers_),
                 maxWorkers (maxWorkers_),
                 name (name_),
                 type (type_),
+                workerCallback (workerCallback_),
                 workerCount (workerCount_),
                 workerPriority (workerPriority_),
                 workerAffinity (workerAffinity_),
                 maxPendingJobs (maxPendingJobs_),
-                workerCallback (workerCallback_),
                 activeWorkerCount (0) {
             assert (minWorkers > 0);
             assert (maxWorkers >= minWorkers);
@@ -59,10 +59,10 @@ namespace thekogans {
                     new Worker (
                         workerName,
                         type,
+                        maxPendingJobs,
                         workerCount,
                         workerPriority,
                         workerAffinity,
-                        maxPendingJobs,
                         workerCallback));
                 ++activeWorkerCount;
             }
@@ -129,10 +129,10 @@ namespace thekogans {
                     worker = new Worker (
                         workerName,
                         type,
+                        maxPendingJobs,
                         workerCount,
                         workerPriority,
                         workerAffinity,
-                        maxPendingJobs,
                         workerCallback);
                     ++activeWorkerCount;
                 }
@@ -165,10 +165,10 @@ namespace thekogans {
         ui32 GlobalWorkerPoolCreateInstance::maxWorkers = SystemInfo::Instance ().GetCPUCount () * 2;
         std::string GlobalWorkerPoolCreateInstance::name = std::string ();
         RunLoop::Type GlobalWorkerPoolCreateInstance::type = RunLoop::TYPE_FIFO;
+        ui32 GlobalWorkerPoolCreateInstance::maxPendingJobs = UI32_MAX;
         ui32 GlobalWorkerPoolCreateInstance::workerCount = 1;
         i32 GlobalWorkerPoolCreateInstance::workerPriority = THEKOGANS_UTIL_NORMAL_THREAD_PRIORITY;
-        ui32 GlobalWorkerPoolCreateInstance::workerAffinity = UI32_MAX;
-        ui32 GlobalWorkerPoolCreateInstance::maxPendingJobs = UI32_MAX;
+        ui32 GlobalWorkerPoolCreateInstance::workerAffinity = THEKOGANS_UTIL_MAX_THREAD_AFFINITY;
         RunLoop::WorkerCallback *GlobalWorkerPoolCreateInstance::workerCallback = 0;
 
         void GlobalWorkerPoolCreateInstance::Parameterize (
@@ -176,19 +176,19 @@ namespace thekogans {
                 ui32 maxWorkers_,
                 const std::string &name_,
                 RunLoop::Type type_,
+                ui32 maxPendingJobs_,
                 ui32 workerCount_,
                 i32 workerPriority_,
                 ui32 workerAffinity_,
-                ui32 maxPendingJobs_,
                 RunLoop::WorkerCallback *workerCallback_) {
             minWorkers = minWorkers_;
             maxWorkers = maxWorkers_;
             name = name_;
             type = type_;
+            maxPendingJobs = maxPendingJobs_;
             workerCount = workerCount_;
             workerPriority = workerPriority_;
             workerAffinity = workerAffinity_;
-            maxPendingJobs = maxPendingJobs_;
             workerCallback = workerCallback_;
         }
 
@@ -198,10 +198,10 @@ namespace thekogans {
                 maxWorkers,
                 name,
                 type,
+                maxPendingJobs,
                 workerCount,
                 workerPriority,
                 workerAffinity,
-                maxPendingJobs,
                 workerCallback);
         }
 

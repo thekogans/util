@@ -91,6 +91,9 @@ namespace thekogans {
             /// Worker queue type.
             const RunLoop::Type type;
             /// \brief
+            /// Worker \see{JobQueue} max pending jobs.
+            const ui32 maxPendingJobs;
+            /// \brief
             /// Number of worker threads service the queue.
             const ui32 workerCount;
             /// \brief
@@ -99,9 +102,6 @@ namespace thekogans {
             /// \brief
             /// Worker \see{JobQueue} processor affinity.
             const ui32 workerAffinity;
-            /// \brief
-            /// Worker \see{JobQueue} max pending jobs.
-            const ui32 maxPendingJobs;
             /// \brief
             /// Called to initialize/uninitialize the worker thread.
             RunLoop::WorkerCallback *workerCallback;
@@ -136,27 +136,27 @@ namespace thekogans {
                 /// ctor.
                 /// \param[in] name Worker thread name.
                 /// \param[in] type Worker queue type.
+                /// \param[in] maxPendingJobs Worker \see{JobQueue} max pending jobs.
                 /// \param[in] workerCount Number of worker threads service the queue.
                 /// \param[in] workerPriority Worker thread priority.
                 /// \param[in] workerAffinity Worker thread processor affinity.
-                /// \param[in] maxPendingJobs Worker \see{JobQueue} max pending jobs.
                 /// \param[in] workerCallback Called to initialize/uninitialize the
                 /// queue worker thread(s).
                 Worker (
                     const std::string &name = std::string (),
                     Type type = TYPE_FIFO,
+                    ui32 maxPendingJobs = UI32_MAX,
                     ui32 workerCount = 1,
                     i32 workerPriority = THEKOGANS_UTIL_NORMAL_THREAD_PRIORITY,
-                    ui32 workerAffinity = UI32_MAX,
-                    ui32 maxPendingJobs = UI32_MAX,
+                    ui32 workerAffinity = THEKOGANS_UTIL_MAX_THREAD_AFFINITY,
                     WorkerCallback *workerCallback = 0) :
                     JobQueue (
                         name,
                         type,
+                        maxPendingJobs,
                         workerCount,
                         workerPriority,
                         workerAffinity,
-                        maxPendingJobs,
                         workerCallback) {}
             };
             /// \brief
@@ -173,20 +173,20 @@ namespace thekogans {
             /// \param[in] maxWorkers_ Maximum worker to allow the pool to grow to.
             /// \param[in] name_ Pool name.
             /// \param[in] type_ Worker queue type.
+            /// \param[in] maxPendingJobs_ Max pending queue jobs.
             /// \param[in] workerCount_ Number of worker threads service the queue.
             /// \param[in] workerPriority_ Worker thread priority.
             /// \param[in] workerAffinity_ Worker thread processor affinity.
-            /// \param[in] maxPendingJobs_ Max pending queue jobs.
             /// \param[in] workerCallback_ Called to initialize/uninitialize the worker thread.
             WorkerPool (
                 ui32 minWorkers_ = SystemInfo::Instance ().GetCPUCount (),
                 ui32 maxWorkers_ = SystemInfo::Instance ().GetCPUCount () * 2,
                 const std::string &name_ = std::string (),
                 RunLoop::Type type_ = RunLoop::TYPE_FIFO,
+                ui32 maxPendingJobs_ = UI32_MAX,
                 ui32 workerCount_ = 1,
                 i32 workerPriority_ = THEKOGANS_UTIL_NORMAL_THREAD_PRIORITY,
-                ui32 workerAffinity_ = UI32_MAX,
-                ui32 maxPendingJobs_ = UI32_MAX,
+                ui32 workerAffinity_ = THEKOGANS_UTIL_MAX_THREAD_AFFINITY,
                 RunLoop::WorkerCallback *workerCallback_ = 0);
             /// \brief
             /// dtor.
@@ -282,6 +282,9 @@ namespace thekogans {
             /// Worker queue type.
             static RunLoop::Type type;
             /// \brief
+            /// Worker queue max pending jobs.
+            static ui32 maxPendingJobs;
+            /// \brief
             /// Number of worker threads service the queue.
             static ui32 workerCount;
             /// \brief
@@ -290,9 +293,6 @@ namespace thekogans {
             /// \brief
             /// Worker queue processor affinity.
             static ui32 workerAffinity;
-            /// \brief
-            /// Worker queue max pending jobs.
-            static ui32 maxPendingJobs;
             /// \brief
             /// Called to initialize/uninitialize the worker thread.
             static RunLoop::WorkerCallback *workerCallback;
@@ -304,20 +304,20 @@ namespace thekogans {
             /// \param[in] maxWorkers_ Maximum worker to allow the pool to grow to.
             /// \param[in] name_ Pool name.
             /// \param[in] type_ Worker queue type.
+            /// \param[in] maxPendingJobs_ Max pending queue jobs.
             /// \param[in] workerCount_ Number of worker threads service the queue.
             /// \param[in] workerPriority_ Worker queue priority.
             /// \param[in] workerAffinity_ Worker queue processor affinity.
-            /// \param[in] maxPendingJobs_ Max pending queue jobs.
             /// \param[in] workerCallback_ Called to initialize/uninitialize the worker thread.
             static void Parameterize (
                 ui32 minWorkers_ = SystemInfo::Instance ().GetCPUCount (),
                 ui32 maxWorkers_ = SystemInfo::Instance ().GetCPUCount () * 2,
                 const std::string &name_ = std::string (),
                 RunLoop::Type type_ = RunLoop::TYPE_FIFO,
+                ui32 maxPendingJobs_ = UI32_MAX,
                 ui32 workerCount_ = 1,
                 i32 workerPriority_ = THEKOGANS_UTIL_NORMAL_THREAD_PRIORITY,
-                ui32 workerAffinity_ = UI32_MAX,
-                ui32 maxPendingJobs_ = UI32_MAX,
+                ui32 workerAffinity_ = THEKOGANS_UTIL_MAX_THREAD_AFFINITY,
                 RunLoop::WorkerCallback *workerCallback_ = 0);
 
             /// \brief

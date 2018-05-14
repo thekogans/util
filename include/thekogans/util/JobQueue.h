@@ -99,7 +99,7 @@ namespace thekogans {
                 Worker (JobQueue &queue_,
                         const std::string &name = std::string (),
                         i32 priority = THEKOGANS_UTIL_NORMAL_THREAD_PRIORITY,
-                        ui32 affinity = UI32_MAX) :
+                        ui32 affinity = THEKOGANS_UTIL_MAX_THREAD_AFFINITY) :
                         Thread (name),
                         queue (queue_) {
                     Create (priority, affinity);
@@ -135,7 +135,7 @@ namespace thekogans {
                 ui32 maxPendingJobs = UI32_MAX,
                 ui32 workerCount_ = 1,
                 i32 workerPriority_ = THEKOGANS_UTIL_NORMAL_THREAD_PRIORITY,
-                ui32 workerAffinity_ = UI32_MAX,
+                ui32 workerAffinity_ = THEKOGANS_UTIL_MAX_THREAD_AFFINITY,
                 WorkerCallback *workerCallback_ = 0);
             /// \brief
             /// dtor. Stop the queue.
@@ -217,7 +217,7 @@ namespace thekogans {
                 ui32 maxPendingJobs_ = UI32_MAX,
                 ui32 workerCount_ = 1,
                 i32 workerPriority_ = THEKOGANS_UTIL_NORMAL_THREAD_PRIORITY,
-                ui32 workerAffinity_ = UI32_MAX,
+                ui32 workerAffinity_ = THEKOGANS_UTIL_MAX_THREAD_AFFINITY,
                 RunLoop::WorkerCallback *workerCallback_ = 0);
 
             /// \brief

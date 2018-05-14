@@ -510,7 +510,7 @@ namespace thekogans {
         bool GlobalLoggerMgrCreateInstance::blocking = false;
         std::string GlobalLoggerMgrCreateInstance::name = "GlobalLoggerMgr";
         i32 GlobalLoggerMgrCreateInstance::priority = THEKOGANS_UTIL_LOW_THREAD_PRIORITY;
-        ui32 GlobalLoggerMgrCreateInstance::affinity = UI32_MAX;
+        ui32 GlobalLoggerMgrCreateInstance::affinity = THEKOGANS_UTIL_MAX_THREAD_AFFINITY;
 
         void GlobalLoggerMgrCreateInstance::Parameterize (
                 ui32 level_,

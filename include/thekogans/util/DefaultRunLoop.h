@@ -88,7 +88,7 @@ namespace thekogans {
         ///     MyThread (
         ///             const std::string &name = std::string (),
         ///             util::i32 priority = THEKOGANS_UTIL_NORMAL_THREAD_PRIORITY,
-        ///             util::ui32 affinity = UI32_MAX,
+        ///             util::ui32 affinity = THEKOGANS_UTIL_MAX_THREAD_AFFINITY,
         ///             const util::TimeSpec &sleepTimeSpec = util::TimeSpec::FromMilliseconds (50),
         ///             const util::TimeSpec &waitTimeSpec = util::TimeSpec::FromSeconds (3)) :
         ///             Thread (name) {

@@ -74,10 +74,10 @@ namespace thekogans {
                 i32 stagePriorityAdjustmentDelta,
                 const std::string &name,
                 RunLoop::Type type,
+                ui32 maxPendingJobs,
                 ui32 workerCount,
                 i32 workerPriority,
                 ui32 workerAffinity,
-                ui32 maxPendingJobs,
                 RunLoop::WorkerCallback *workerCallback) {
             assert (stageCount > 0);
             for (ui32 i = 0; i < stageCount; ++i) {
