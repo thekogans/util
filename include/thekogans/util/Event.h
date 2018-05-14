@@ -77,7 +77,7 @@ namespace thekogans {
             typedef enum {
                 /// \brief
                 /// Not signalled.
-                NonSignalled,
+                NotSignalled,
                 /// \brief
                 /// Signalled.
                 Signalled
@@ -113,7 +113,7 @@ namespace thekogans {
             /// \param[in] name Shared event name.
             Event (
                 bool manualReset = true,
-                State initialState = NonSignalled,
+                State initialState = NotSignalled,
                 const char *name = 0);
             /// \brief
             /// dtor.
@@ -132,7 +132,7 @@ namespace thekogans {
             void SignalAll ();
 
             /// \brief
-            /// Put a manual reset event in to NonSignalled state.
+            /// Put a manual reset event in to NotSignalled state.
             void Reset ();
 
             /// \brief

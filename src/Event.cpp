@@ -49,25 +49,24 @@ namespace thekogans {
             bool shared;
             Mutex mutex;
             Condition condition;
-            enum Op {
-                OpSignal,
-                OpSignalAll
-            } op;
-            ui64 opTime;
             ui32 count;
+            bool pulse;
+            ui64 pulseTime;
+            ui32 pulseCount;
 
             EventImpl (
                     bool manualReset_,
                     State initialState,
                     bool shared_ = false) :
                     manualReset (manualReset_),
-                    state (NonSignalled),
+                    state (NotSignalled),
                     shared (shared_),
                     mutex (shared),
                     condition (mutex, shared),
-                    op (OpSignal),
-                    opTime (0),
-                    count (0) {
+                    count (0),
+                    pulse (false),
+                    pulseTime (0),
+                    pulseCount (0) {
                 if (initialState == Signalled) {
                     Signal ();
                 }
@@ -79,10 +78,9 @@ namespace thekogans {
 
             void Signal () {
                 LockGuard<Mutex> guard (mutex);
-                if (state == NonSignalled) {
+                if (state == NotSignalled) {
                     state = Signalled;
-                    op = OpSignal;
-                    opTime = HRTimer::Click ();
+                    pulse = false;
                     // If in manual reset mode, release all waiting threads
                     // to simulate the behavior of Windows event.
                     if (manualReset) {
@@ -96,14 +94,16 @@ namespace thekogans {
 
             void SignalAll () {
                 LockGuard<Mutex> guard (mutex);
-                if (state == NonSignalled && count > 0) {
+                if (state == NotSignalled && count > 0) {
                     state = Signalled;
-                    op = OpSignalAll;
-                    opTime = HRTimer::Click ();
+                    pulse = true;
+                    pulseTime = HRTimer::Click ();
                     if (manualReset) {
+                        pulseCount = count;
                         condition.SignalAll ();
                     }
                     else {
+                        pulseCount = 1;
                         condition.Signal ();
                     }
                 }
@@ -111,43 +111,41 @@ namespace thekogans {
 
             void Reset () {
                 LockGuard<Mutex> guard (mutex);
-                state = NonSignalled;
+                state = NotSignalled;
             }
 
             bool Wait (const TimeSpec &timeSpec) {
                 LockGuard<Mutex> guard (mutex);
-                {
-                    ui32 time = HRTimer::Click ();
-                    struct CountMgr {
-                        ui32 &count;
-                        CountMgr (ui32 &count_) :
-                                count (count_) {
-                            ++count;
-                        }
-                        ~CountMgr () {
-                            --count;
-                        }
-                    } countMgr (count);
-                    if (timeSpec == TimeSpec::Infinite) {
-                        while (state == NonSignalled || (op == OpSignalAll && time > opTime)) {
-                            condition.Wait ();
-                        }
+                ui32 time = HRTimer::Click ();
+                struct CountMgr {
+                    ui32 &count;
+                    CountMgr (ui32 &count_) :
+                        count (count_) {
+                        ++count;
                     }
-                    else {
-                        TimeSpec now = GetCurrentTime ();
-                        TimeSpec deadline = now + timeSpec;
-                        while ((state == NonSignalled || (op == OpSignalAll && time > opTime)) &&
-                                deadline > now) {
-                            condition.Wait (deadline - now);
-                            now = GetCurrentTime ();
-                        }
-                        if (state == NonSignalled) {
-                            return false;
-                        }
+                    ~CountMgr () {
+                        --count;
+                    }
+                } countMgr (count);
+                if (timeSpec == TimeSpec::Infinite) {
+                    while (state == NotSignalled || (pulse && time > pulseTime)) {
+                        condition.Wait ();
                     }
                 }
-                if (!manualReset || (op == OpSignalAll && count == 0)) {
-                    state = NonSignalled;
+                else {
+                    TimeSpec now = GetCurrentTime ();
+                    TimeSpec deadline = now + timeSpec;
+                    while ((state == NotSignalled || (pulse && time > pulseTime)) &&
+                            deadline > now) {
+                        condition.Wait (deadline - now);
+                        now = GetCurrentTime ();
+                    }
+                    if (state == NotSignalled) {
+                        return false;
+                    }
+                }
+                if (!manualReset || (pulse && --pulseCount == 0)) {
+                    state = NotSignalled;
                 }
                 return true;
             }
