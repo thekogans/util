@@ -112,7 +112,7 @@ namespace thekogans {
 
             bool Wait (const TimeSpec &timeSpec) {
                 LockGuard<Mutex> guard (mutex);
-                ui32 time = HRTimer::Click ();
+                ui64 time = HRTimer::Click ();
                 struct CountMgr {
                     ui32 &count;
                     CountMgr (ui32 &count_) :
