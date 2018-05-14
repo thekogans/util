@@ -109,6 +109,8 @@ namespace thekogans {
             /// \param[in] manualReset
             /// true = event is to be manually reset entering Signaled state,
             /// false = the event will be reset after the first waiting thread is woken up.
+            /// VERY IMPORTANT: If your intention is to have multiple waiting threads be
+            /// released when you call SignalAll, you must set manualReset == true.
             /// \param[in] initialState Initial state of the event.
             /// \param[in] name Shared event name.
             Event (

@@ -47,30 +47,26 @@ namespace thekogans {
             bool manualReset;
             volatile State state;
             bool shared;
+            ui32 count;
+            volatile bool pulse;
+            volatile ui64 pulseTime;
+            ui32 pulseCount;
             Mutex mutex;
             Condition condition;
-            ui32 count;
-            bool pulse;
-            ui64 pulseTime;
-            ui32 pulseCount;
 
             EventImpl (
-                    bool manualReset_,
-                    State initialState,
-                    bool shared_ = false) :
-                    manualReset (manualReset_),
-                    state (NotSignalled),
-                    shared (shared_),
-                    mutex (shared),
-                    condition (mutex, shared),
-                    count (0),
-                    pulse (false),
-                    pulseTime (0),
-                    pulseCount (0) {
-                if (initialState == Signalled) {
-                    Signal ();
-                }
-            }
+                bool manualReset_,
+                State state_,
+                bool shared_ = false) :
+                manualReset (manualReset_),
+                state (state_),
+                shared (shared_),
+                count (0),
+                pulse (false),
+                pulseTime (0),
+                pulseCount (0),
+                mutex (shared),
+                condition (mutex, shared) {}
 
             // On Windows Signal uses SetEvent and SignalAll uses PulseEvent.
             // The following logic is necessary to emulate their behavior on
@@ -120,7 +116,7 @@ namespace thekogans {
                 struct CountMgr {
                     ui32 &count;
                     CountMgr (ui32 &count_) :
-                        count (count_) {
+                            count (count_) {
                         ++count;
                     }
                     ~CountMgr () {

@@ -69,6 +69,7 @@ namespace thekogans {
                     if (job != 0) {
                         job->SetStatus (RunLoop::Job::Completed);
                         job->Release ();
+                        // FIXME: Thundering herd.
                         jobCompleted.SignalAll ();
                     }
                 }
