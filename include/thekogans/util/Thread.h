@@ -87,13 +87,19 @@
 #include "thekogans/util/TimeSpec.h"
 #include "thekogans/util/SpinLock.h"
 
-/// \def THEKOGANS_UTIL_HANDLE
-/// OS specific thread handle type.
 #if defined (TOOLCHAIN_OS_Windows)
+    /// \brief
+    /// Window specific thread handle type.
     typedef THEKOGANS_UTIL_HANDLE THEKOGANS_UTIL_THREAD_HANDLE;
 #else // defined (TOOLCHAIN_OS_Windows)
+    /// \brief
+    /// POSIX specific thread handle type.
     typedef pthread_t THEKOGANS_UTIL_THREAD_HANDLE;
 #endif // defined (TOOLCHAIN_OS_Windows)
+
+/// \def THEKOGANS_UTIL_MAX_THREAD_AFFINITY
+/// Thread can run on any core.
+#define THEKOGANS_UTIL_MAX_THREAD_AFFINITY UI32_MAX
 
 namespace thekogans {
     namespace util {
@@ -247,7 +253,7 @@ namespace thekogans {
             /// \param[in] affinity Thread processor affinity.
             void Create (
                 i32 priority = THEKOGANS_UTIL_NORMAL_THREAD_PRIORITY,
-                ui32 affinity = UI32_MAX);
+                ui32 affinity = THEKOGANS_UTIL_MAX_THREAD_AFFINITY);
 
             /// \brief
             /// Wait for thread to finish.

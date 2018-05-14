@@ -201,7 +201,7 @@ namespace thekogans {
             }
         #endif // defined (TOOLCHAIN_OS_Windows)
             SetThreadPriority (thread, priority);
-            if (affinity != UI32_MAX) {
+            if (affinity != THEKOGANS_UTIL_MAX_THREAD_AFFINITY) {
                 SetThreadAffinity (thread, affinity);
             }
         }
