@@ -238,13 +238,13 @@ namespace thekogans {
             }
         }
 
-        RunLoop::Job::Ptr RunLoop::GetJob (const Job::Id &jobId) {
-            struct GetJobCallback : public JobList::Callback {
+        RunLoop::Job::Ptr RunLoop::GetJobWithId (const Job::Id &jobId) {
+            struct GetJobWithIdCallback : public JobList::Callback {
                 typedef JobList::Callback::result_type result_type;
                 typedef JobList::Callback::argument_type argument_type;
                 const Job::Id &jobId;
                 Job::Ptr job;
-                explicit GetJobCallback (const Job::Id &jobId_) :
+                explicit GetJobWithIdCallback (const Job::Id &jobId_) :
                     jobId (jobId_) {}
                 virtual result_type operator () (argument_type job_) {
                     if (job_->GetId () == jobId) {
@@ -253,14 +253,14 @@ namespace thekogans {
                     }
                     return true;
                 }
-            } getJobCallback (jobId);
+            } getJobWithIdCallback (jobId);
             {
                 LockGuard<Mutex> guard (jobsMutex);
-                if (runningJobs.for_each (getJobCallback)) {
-                    pendingJobs.for_each (getJobCallback);
+                if (runningJobs.for_each (getJobWithIdCallback)) {
+                    pendingJobs.for_each (getJobWithIdCallback);
                 }
             }
-            return getJobCallback.job;
+            return getJobWithIdCallback.job;
         }
 
         bool RunLoop::WaitForJob (
@@ -294,7 +294,7 @@ namespace thekogans {
         bool RunLoop::WaitForJob (
                 const Job::Id &jobId,
                 const TimeSpec &timeSpec) {
-            Job::Ptr job = GetJob (jobId);
+            Job::Ptr job = GetJobWithId (jobId);
             return job.Get () != 0 && WaitForJob (job, timeSpec);
         }
 

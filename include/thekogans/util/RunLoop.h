@@ -591,7 +591,7 @@ namespace thekogans {
             /// Get a running or a pending job with the given id.
             /// \param[in] jobId Id of job to retrieve.
             /// \return Job matching the given id.
-            virtual Job::Ptr GetJob (const Job::Id &jobId);
+            virtual Job::Ptr GetJobWithId (const Job::Id &jobId);
 
             /// \struct RunLoop::EqualityTest RunLoop.h thekogans/util/RunLoop.h
             ///
