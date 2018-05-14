@@ -42,11 +42,11 @@ namespace thekogans {
                 maxWorkers (maxWorkers_),
                 name (name_),
                 type (type_),
-                workerCallback (workerCallback_),
+                maxPendingJobs (maxPendingJobs_),
                 workerCount (workerCount_),
                 workerPriority (workerPriority_),
                 workerAffinity (workerAffinity_),
-                maxPendingJobs (maxPendingJobs_),
+                workerCallback (workerCallback_),
                 activeWorkerCount (0) {
             assert (minWorkers > 0);
             assert (maxWorkers >= minWorkers);
