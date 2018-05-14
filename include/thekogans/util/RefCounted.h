@@ -100,10 +100,12 @@ namespace thekogans {
             /// it's ctor, and decrements it in it's dtor.
             template<typename T>
             struct Ptr {
+            protected:
                 /// \brief
                 /// Reference counted object.
                 T *object;
 
+            public:
                 /// \brief
                 /// \ctor.
                 /// \param[in] object_ Reference counted object.
@@ -176,17 +178,27 @@ namespace thekogans {
                 T *Get () const {
                     return object;
                 }
+                /// \brief
+                /// Release the object without calling object->Release ().
+                /// \return T *.
+                T *Release () {
+                    T *object_ = object;
+                    object = 0;
+                    return object_;
+                }
 
                 /// \brief
                 /// Replace reference counted object.
                 /// \param[in] object_ New object to point to.
                 void Reset (T *object_ = 0) {
-                    if (object != 0) {
-                        object->Release ();
-                    }
-                    object = object_;
-                    if (object != 0) {
-                        object->AddRef ();
+                    if (object != object_) {
+                        if (object != 0) {
+                            object->Release ();
+                        }
+                        object = object_;
+                        if (object != 0) {
+                            object->AddRef ();
+                        }
                     }
                 }
 
@@ -220,98 +232,98 @@ namespace thekogans {
 
         /// \brief
         /// \see{ThreadSafeRefCounted::Ptr} static cast operator.
-        /// \param[in] u Type to cast from.
+        /// \param[in] from Type to cast from.
         /// \return Pointer to destination type.
         template<
-            typename T,
-            typename _U>
-        inline ThreadSafeRefCounted::Ptr<T> static_refcounted_pointer_cast (
-                const ThreadSafeRefCounted::Ptr<_U> &u) throw () {
-            return ThreadSafeRefCounted::Ptr<T> (static_cast<T *> (u.Get ()));
+            typename To,
+            typename From>
+        inline ThreadSafeRefCounted::Ptr<To> static_refcounted_pointer_cast (
+                const ThreadSafeRefCounted::Ptr<From> &from) throw () {
+            return ThreadSafeRefCounted::Ptr<To> (static_cast<To *> (from.Get ()));
         }
 
         /// \brief
         /// \see{ThreadSafeRefCounted::Ptr} dynamic cast operator.
-        /// \param[in] u Type to cast from.
+        /// \param[in] from Type to cast from.
         /// \return Pointer to destination type.
         template<
-            typename T,
-            typename _U>
-        inline ThreadSafeRefCounted::Ptr<T> dynamic_refcounted_pointer_cast (
-                const ThreadSafeRefCounted::Ptr<_U> &u) throw () {
-            return ThreadSafeRefCounted::Ptr<T> (dynamic_cast<T *> (u.Get ()));
+            typename To,
+            typename From>
+        inline ThreadSafeRefCounted::Ptr<To> dynamic_refcounted_pointer_cast (
+                const ThreadSafeRefCounted::Ptr<From> &from) throw () {
+            return ThreadSafeRefCounted::Ptr<To> (dynamic_cast<To *> (from.Get ()));
         }
 
         /// \brief
         /// \see{ThreadSafeRefCounted::Ptr} const cast operator.
-        /// \param[in] u Type to cast from.
+        /// \param[in] from Type to cast from.
         /// \return Pointer to destination type.
         template<
-            typename T,
-            typename _U>
-        inline ThreadSafeRefCounted::Ptr<T> const_refcounted_pointer_cast (
-                ThreadSafeRefCounted::Ptr<_U> &u) throw () {
-            return ThreadSafeRefCounted::Ptr<T> (const_cast<T *> (u.Get ()));
+            typename To,
+            typename From>
+        inline ThreadSafeRefCounted::Ptr<To> const_refcounted_pointer_cast (
+                ThreadSafeRefCounted::Ptr<From> &from) throw () {
+            return ThreadSafeRefCounted::Ptr<To> (const_cast<To *> (from.Get ()));
         }
 
         /// \brief
         /// \see{ThreadSafeRefCounted::Ptr} reinterpret cast operator.
-        /// \param[in] u Type to cast from.
+        /// \param[in] from Type to cast from.
         /// \return Pointer to destination type.
         template<
-            typename T,
-            typename _U>
-        inline ThreadSafeRefCounted::Ptr<T> reinterpret_refcounted_pointer_cast (
-                ThreadSafeRefCounted::Ptr<_U> &u) throw () {
-            return ThreadSafeRefCounted::Ptr<T> (reinterpret_cast<T *> (u.Get ()));
+            typename To,
+            typename From>
+        inline ThreadSafeRefCounted::Ptr<To> reinterpret_refcounted_pointer_cast (
+                ThreadSafeRefCounted::Ptr<From> &from) throw () {
+            return ThreadSafeRefCounted::Ptr<To> (reinterpret_cast<To *> (from.Get ()));
         }
 
         /// \brief
         /// \see{SingleThreadedRefCounted::Ptr} static cast operator.
-        /// \param[in] u Type to cast from.
+        /// \param[in] from Type to cast from.
         /// \return Pointer to destination type.
         template<
-            typename T,
-            typename _U>
-        inline SingleThreadedRefCounted::Ptr<T> static_refcounted_pointer_cast (
-                const SingleThreadedRefCounted::Ptr<_U> &u) throw () {
-            return SingleThreadedRefCounted::Ptr<T> (static_cast<T *> (u.Get ()));
+            typename To,
+            typename From>
+        inline SingleThreadedRefCounted::Ptr<To> static_refcounted_pointer_cast (
+                const SingleThreadedRefCounted::Ptr<From> &from) throw () {
+            return SingleThreadedRefCounted::Ptr<To> (static_cast<To *> (from.Get ()));
         }
 
         /// \brief
         /// \see{SingleThreadedRefCounted::Ptr} dynamic cast operator.
-        /// \param[in] u Type to cast from.
+        /// \param[in] from Type to cast from.
         /// \return Pointer to destination type.
         template<
-            typename T,
-            typename _U>
-        inline SingleThreadedRefCounted::Ptr<T> dynamic_refcounted_pointer_cast (
-                const SingleThreadedRefCounted::Ptr<_U> &u) throw () {
-            return SingleThreadedRefCounted::Ptr<T> (dynamic_cast<T *> (u.Get ()));
+            typename To,
+            typename From>
+        inline SingleThreadedRefCounted::Ptr<To> dynamic_refcounted_pointer_cast (
+                const SingleThreadedRefCounted::Ptr<From> &from) throw () {
+            return SingleThreadedRefCounted::Ptr<To> (dynamic_cast<To *> (from.Get ()));
         }
 
         /// \brief
         /// \see{SingleThreadedRefCounted::Ptr} const cast operator.
-        /// \param[in] u Type to cast from.
+        /// \param[in] from Type to cast from.
         /// \return Pointer to destination type.
         template<
-            typename T,
-            typename _U>
-        inline SingleThreadedRefCounted::Ptr<T> const_refcounted_pointer_cast (
-                SingleThreadedRefCounted::Ptr<_U> &u) throw () {
-            return SingleThreadedRefCounted::Ptr<T> (const_cast<T *> (u.Get ()));
+            typename To,
+            typename From>
+        inline SingleThreadedRefCounted::Ptr<To> const_refcounted_pointer_cast (
+                SingleThreadedRefCounted::Ptr<From> &from) throw () {
+            return SingleThreadedRefCounted::Ptr<To> (const_cast<To *> (from.Get ()));
         }
 
         /// \brief
         /// \see{SingleThreadedRefCounted::Ptr} reinterpret cast operator.
-        /// \param[in] u Type to cast from.
+        /// \param[in] from Type to cast from.
         /// \return Pointer to destination type.
         template<
-            typename T,
-            typename _U>
-        inline SingleThreadedRefCounted::Ptr<T> reinterpret_refcounted_pointer_cast (
-                SingleThreadedRefCounted::Ptr<_U> &u) throw () {
-            return SingleThreadedRefCounted::Ptr<T> (reinterpret_cast<T *> (u.Get ()));
+            typename To,
+            typename From>
+        inline SingleThreadedRefCounted::Ptr<To> reinterpret_refcounted_pointer_cast (
+                SingleThreadedRefCounted::Ptr<From> &from) throw () {
+            return SingleThreadedRefCounted::Ptr<To> (reinterpret_cast<To *> (from.Get ()));
         }
 
         /// \brief
