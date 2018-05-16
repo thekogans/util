@@ -45,10 +45,6 @@ namespace thekogans {
         /// \see{Scheduler}.
 
         struct _LIB_THEKOGANS_UTIL_DECL JobQueue : public RunLoop {
-            /// \brief
-            /// Convenient typedef for std::unique_ptr<JobQueue>.
-            typedef std::unique_ptr<JobQueue> UniquePtr;
-
         protected:
             /// \brief
             /// Number of workers servicing the queue.
@@ -115,7 +111,7 @@ namespace thekogans {
             WorkerList workers;
             /// \brief
             /// Synchronization mutex.
-            Mutex workersMutex;
+            Mutex mutex;
 
         public:
             /// \brief

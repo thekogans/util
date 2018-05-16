@@ -100,7 +100,7 @@ namespace thekogans {
         private:
             /// \brief
             /// Used to synchronize access to std::cout and std::cerr in PrintString.
-            JobQueue::UniquePtr jobQueue;
+            JobQueue::Ptr jobQueue;
 
         public:
             /// \brief

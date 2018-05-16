@@ -196,7 +196,7 @@ namespace thekogans {
                 const std::string &str,
                 ui32 where,
                 const ColorType color) {
-            if (jobQueue.get () != 0) {
+            if (jobQueue.Get () != 0) {
                 struct PrintJob : public RunLoop::Job {
                     std::string str;
                     ui32 where;
@@ -226,7 +226,7 @@ namespace thekogans {
         }
 
         void Console::FlushPrintQueue (const TimeSpec &timeSpec) {
-            if (jobQueue.get () != 0) {
+            if (jobQueue.Get () != 0) {
                 jobQueue->WaitForIdle (timeSpec);
             }
         }

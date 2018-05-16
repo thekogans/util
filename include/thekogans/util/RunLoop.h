@@ -55,10 +55,10 @@ namespace thekogans {
         /// \see{SystemRunLoop}. RunLoop allows you to schedule jobs (RunLoop::Job)
         /// to be executed on the thread that's running the run loop.
 
-        struct _LIB_THEKOGANS_UTIL_DECL RunLoop {
+        struct _LIB_THEKOGANS_UTIL_DECL RunLoop : public ThreadSafeRefCounted {
             /// \brief
-            /// Convenient typedef for std::unique_ptr<RunLoop>.
-            typedef std::unique_ptr<RunLoop> Ptr;
+            /// Convenient typedef for ThreadSafeRefCounted::Ptr<RunLoop>.
+            typedef ThreadSafeRefCounted::Ptr<RunLoop> Ptr;
 
             /// \brief
             /// Convenient typedef for std::string.
@@ -136,19 +136,22 @@ namespace thekogans {
                     Finished
                 };
 
-            private:
+            protected:
                 /// \brief
                 /// Job id.
                 const Id id;
                 /// \brief
                 /// RunLoop id.
-                RunLoop::Id runloopId;
+                RunLoop::Id runLoopId;
                 /// \brief
                 /// Job status.
                 volatile Status status;
                 /// \brief
                 /// Job disposition.
                 volatile Disposition disposition;
+                /// \brief
+                /// Set when job completes execution.
+                Event completed;
 
             public:
                 /// \brief
@@ -172,7 +175,7 @@ namespace thekogans {
                 /// Return the job RunLoop id.
                 /// \return RunLoop id.
                 inline const Id &GetRunLoopId () const {
-                    return runloopId;
+                    return runLoopId;
                 }
                 /// \brief
                 /// Return the job status.
@@ -240,6 +243,14 @@ namespace thekogans {
                 }
 
                 /// \brief
+                /// Wait for the job to complete.
+                /// \param[in] timeSpec How long to wait for the job to complete.
+                /// IMPORTANT: timeSpec is a relative value.
+                inline bool WaitCompleted (const TimeSpec &timeSpec = TimeSpec::Infinite) {
+                    return completed.Wait (timeSpec);
+                }
+
+                /// \brief
                 /// Called before the job is executed. Allows
                 /// the job to perform one time initialization.
                 /// \param[in] done If true, this flag indicates that
@@ -258,31 +269,21 @@ namespace thekogans {
                 /// the job should stop what it's doing, and exit.
                 virtual void Epilogue (volatile const bool & /*done*/) throw () {}
 
-            private:
+            protected:
                 /// \brief
                 /// Used internally by RunLoop to set the RunLoop id and reset
-                /// the status and disposition.
-                /// \param[in] runloopId_ RunLoop id to which this job belongs.
-                inline void Reset (const RunLoop::Id &runloopId_) {
-                    runloopId = runloopId_;
-                    status = Pending;
-                    disposition = Unknown;
-                }
+                /// status, disposition and completed.
+                /// \param[in] runLoopId_ RunLoop id to which this job belongs.
+                virtual void Reset (const RunLoop::Id &runLoopId_);
                 /// \brief
                 /// Used internally by RunLoop and it's derivatives to set the
                 /// job status.
                 /// \param[in] status_ New job status.
-                inline void SetStatus (Status status_) {
-                    status = status_;
-                }
+                virtual void SetStatus (Status status_);
                 /// \brief
                 /// Used internally by RunLoop and it's derivatives to mark the
                 /// job as finished execution.
-                inline void Finish () {
-                    if (disposition == Unknown) {
-                        disposition = Finished;
-                    }
-                }
+                void Finish ();
 
                 /// \brief
                 /// RunLoop uses Reset.
@@ -308,20 +309,12 @@ namespace thekogans {
             ///
             /// \brief
             /// RunLoop statistics.\n
-            /// pendingJobCount - Number of pending jobs.\n
-            /// runningJobCount - Number of running jobs.\n
             /// totalJobs - Number of retired (completed) jobs.\n
             /// totalJobTime - Amount of time spent executing jobs.\n
             /// last - Last job.\n
             /// min - Fastest job.\n
             /// max - Slowest job.\n
             struct _LIB_THEKOGANS_UTIL_DECL Stats {
-                /// \brief
-                /// Pending job count.
-                ui32 pendingJobCount;
-                /// \brief
-                /// Running job count.
-                ui32 runningJobCount;
                 /// \brief
                 /// Total jobs processed.
                 ui32 totalJobs;
@@ -393,8 +386,6 @@ namespace thekogans {
                 /// \brief
                 /// ctor.
                 Stats () :
-                    pendingJobCount (0),
-                    runningJobCount (0),
                     totalJobs (0),
                     totalJobTime (0) {}
 
@@ -503,24 +494,13 @@ namespace thekogans {
             Stats stats;
             /// \brief
             /// Synchronization mutex.
-            Mutex jobsMutex;
+            Mutex mutex;
             /// \brief
             /// Synchronization condition variable.
             Condition jobsNotEmpty;
             /// \brief
-            /// Queue state.
-            enum State {
-                /// \brief
-                /// Queue is idle.
-                Idle,
-                /// \brief
-                /// Queue is busy.
-                Busy
-            };
-            THEKOGANS_UTIL_ATOMIC<State> state;
-            /// \brief
             /// Synchronization event.
-            Event idle;
+            Condition idle;
 
         public:
             /// \brief
@@ -550,6 +530,15 @@ namespace thekogans {
             inline const std::string &GetName () const {
                 return name;
             }
+
+            /// \brief
+            /// Return the pendig job count.
+            /// \return Pendig job count.
+            std::size_t GetPendingJobCount ();
+            /// \brief
+            /// Return the running job count.
+            /// \return Running job count.
+            std::size_t GetRunningJobCount ();
 
             /// \brief
             /// Wait until the given run loop is created the and it starts running.
@@ -671,10 +660,6 @@ namespace thekogans {
             /// Return true if Start was called.
             /// \return true if Start was called.
             virtual bool IsRunning ();
-            /// \brief
-            /// Return true if there are no pending jobs.
-            /// \return true = no pending jobs, false = jobs pending.
-            virtual bool IsEmpty ();
             /// \brief
             /// Return true if there are no pending jobs and the
             /// worker is idle.

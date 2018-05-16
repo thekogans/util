@@ -32,30 +32,25 @@ namespace thekogans {
                 public Thread {
         private:
             RunLoop::JobList jobs;
-            Mutex jobsMutex;
+            Mutex mutex;
             Condition jobsNotEmpty;
-            Event jobCompleted;
 
         public:
             ReleaseJobQueue () :
                     Thread ("ReleaseJobQueue"),
-                    jobsNotEmpty (jobsMutex) {
+                    jobsNotEmpty (mutex) {
                 Create ();
             }
 
             void EnqJob (RunLoop::Job *job) {
-                LockGuard<Mutex> guard (jobsMutex);
+                LockGuard<Mutex> guard (mutex);
                 jobs.push_back (job);
                 jobsNotEmpty.Signal ();
             }
 
-            void Wait (const TimeSpec &timeSpec = TimeSpec::Infinite) {
-                jobCompleted.Wait (timeSpec);
-            }
-
         private:
             RunLoop::Job *DeqJob () {
-                LockGuard<Mutex> guard (jobsMutex);
+                LockGuard<Mutex> guard (mutex);
                 while (jobs.empty ()) {
                     jobsNotEmpty.Wait ();
                 }
@@ -69,12 +64,30 @@ namespace thekogans {
                     if (job != 0) {
                         job->SetStatus (RunLoop::Job::Completed);
                         job->Release ();
-                        // FIXME: Thundering herd.
-                        jobCompleted.SignalAll ();
                     }
                 }
             }
         };
+
+        void RunLoop::Job::Reset (const RunLoop::Id &runLoopId_) {
+            runLoopId = runLoopId_;
+            status = Pending;
+            disposition = Unknown;
+            completed.Reset ();
+        }
+
+        void RunLoop::Job::SetStatus (Status status_) {
+            status = status_;
+            if (status == Completed) {
+                completed.Signal ();
+            }
+        }
+
+        void RunLoop::Job::Finish () {
+            if (disposition == Unknown) {
+                disposition = Finished;
+            }
+        }
 
     #if defined (TOOLCHAIN_OS_Windows)
         void RunLoop::COMInitializer::InitializeWorker () throw () {
@@ -143,8 +156,6 @@ namespace thekogans {
                 const std::string &name,
                 ui32 indentationLevel) const {
             Attributes attributes;
-            attributes.push_back (Attribute ("pendingJobCount", ui32Tostring (pendingJobCount)));
-            attributes.push_back (Attribute ("runningJobCount", ui32Tostring (runningJobCount)));
             attributes.push_back (Attribute ("totalJobs", ui32Tostring (totalJobs)));
             attributes.push_back (Attribute ("totalJobTime", ui64Tostring (totalJobTime)));
             return
@@ -170,13 +181,23 @@ namespace thekogans {
                 type (type_),
                 maxPendingJobs (maxPendingJobs_),
                 done (done_),
-                jobsNotEmpty (jobsMutex),
-                state (Idle) {
+                jobsNotEmpty (mutex),
+                idle (mutex) {
             if ((type != TYPE_FIFO && type != TYPE_LIFO) ||
                     maxPendingJobs == 0) {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
                     THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
             }
+        }
+
+        std::size_t RunLoop::GetPendingJobCount () {
+            LockGuard<Mutex> guard (mutex);
+            return pendingJobs.size ();
+        }
+
+        std::size_t RunLoop::GetRunningJobCount () {
+            LockGuard<Mutex> guard (mutex);
+            return runningJobs.size ();
         }
 
         bool RunLoop::WaitForStart (
@@ -185,19 +206,19 @@ namespace thekogans {
                 const TimeSpec &waitTimeSpec) {
             if (sleepTimeSpec != TimeSpec::Infinite) {
                 if (waitTimeSpec == TimeSpec::Infinite) {
-                    while (runLoop.get () == 0 || !runLoop->IsRunning ()) {
+                    while (runLoop.Get () == 0 || !runLoop->IsRunning ()) {
                         Sleep (sleepTimeSpec);
                     }
                 }
                 else {
                     TimeSpec now = GetCurrentTime ();
                     TimeSpec deadline = now + waitTimeSpec;
-                    while ((runLoop.get () == 0 || !runLoop->IsRunning ()) && deadline > now) {
+                    while ((runLoop.Get () == 0 || !runLoop->IsRunning ()) && deadline > now) {
                         Sleep (sleepTimeSpec);
                         now = GetCurrentTime ();
                     }
                 }
-                return runLoop.get () != 0 && runLoop->IsRunning ();
+                return runLoop.Get () != 0 && runLoop->IsRunning ();
             }
             else {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
@@ -210,8 +231,8 @@ namespace thekogans {
                 bool wait,
                 const TimeSpec &timeSpec) {
             if (job.Get () != 0 && job->IsCompleted ()) {
-                LockGuard<Mutex> guard (jobsMutex);
-                if (stats.pendingJobCount < maxPendingJobs) {
+                LockGuard<Mutex> guard (mutex);
+                if (pendingJobs.size () < (std::size_t)maxPendingJobs) {
                     job->Reset (id);
                     if (type == TYPE_FIFO) {
                         pendingJobs.push_back (job.Get ());
@@ -220,8 +241,6 @@ namespace thekogans {
                         pendingJobs.push_front (job.Get ());
                     }
                     job->AddRef ();
-                    ++stats.pendingJobCount;
-                    state = Busy;
                     jobsNotEmpty.Signal ();
                     return !wait || WaitForJob (job, timeSpec);
                 }
@@ -255,7 +274,7 @@ namespace thekogans {
                 }
             } getJobWithIdCallback (jobId);
             {
-                LockGuard<Mutex> guard (jobsMutex);
+                LockGuard<Mutex> guard (mutex);
                 if (runningJobs.for_each (getJobWithIdCallback)) {
                     pendingJobs.for_each (getJobWithIdCallback);
                 }
@@ -269,14 +288,14 @@ namespace thekogans {
             if (job.Get () != 0 && job->GetRunLoopId () == id) {
                 if (timeSpec == TimeSpec::Infinite) {
                     while (!job->IsCompleted ()) {
-                        ReleaseJobQueue::Instance ().Wait ();
+                        job->WaitCompleted ();
                     }
                 }
                 else {
                     TimeSpec now = GetCurrentTime ();
                     TimeSpec deadline = now + timeSpec;
                     while (!job->IsCompleted () && deadline > now) {
-                        ReleaseJobQueue::Instance ().Wait (deadline - now);
+                        job->WaitCompleted (deadline - now);
                         now = GetCurrentTime ();
                     }
                     if (!job->IsCompleted ()) {
@@ -353,7 +372,7 @@ namespace thekogans {
                 }
             } waitForJobCallback (equalityTest);
             {
-                LockGuard<Mutex> guard (jobsMutex);
+                LockGuard<Mutex> guard (mutex);
                 pendingJobs.for_each (waitForJobCallback);
                 runningJobs.for_each (waitForJobCallback);
             }
@@ -372,17 +391,20 @@ namespace thekogans {
                         }
                         return false;
                     }
+                    bool Wait (const TimeSpec &timeSpec = TimeSpec::Infinite) {
+                        return jobs.empty () || jobs.front ()->job->WaitCompleted (timeSpec);
+                    }
                 } completedCallback (waitForJobCallback.jobs);
                 if (timeSpec == TimeSpec::Infinite) {
                     while (!waitForJobCallback.jobs.for_each (completedCallback)) {
-                        ReleaseJobQueue::Instance ().Wait ();
+                        completedCallback.Wait ();
                     }
                 }
                 else {
                     TimeSpec now = GetCurrentTime ();
                     TimeSpec deadline = now + timeSpec;
                     while (!waitForJobCallback.jobs.for_each (completedCallback) && deadline > now) {
-                        ReleaseJobQueue::Instance ().Wait (deadline - now);
+                        completedCallback.Wait (deadline - now);
                         now = GetCurrentTime ();
                     }
                     if (!waitForJobCallback.jobs.empty ()) {
@@ -394,24 +416,25 @@ namespace thekogans {
         }
 
         bool RunLoop::WaitForIdle (const TimeSpec &timeSpec) {
+            LockGuard<Mutex> guard (mutex);
             if (timeSpec == TimeSpec::Infinite) {
-                while (state == Busy) {
+                while (!runningJobs.empty ()) {
                     idle.Wait ();
                 }
             }
             else {
                 TimeSpec now = GetCurrentTime ();
                 TimeSpec deadline = now + timeSpec;
-                while (state == Busy && deadline > now) {
+                while (!runningJobs.empty () && deadline > now) {
                     idle.Wait (deadline - now);
                     now = GetCurrentTime ();
                 }
             }
-            return state == Idle;
+            return runningJobs.empty ();
         }
 
         bool RunLoop::CancelJob (const Job::Id &jobId) {
-            LockGuard<Mutex> guard (jobsMutex);
+            LockGuard<Mutex> guard (mutex);
             for (Job *job = runningJobs.front (); job != 0; job = runningJobs.next (job)) {
                 if (job->GetId () == jobId) {
                     // Since the job is already in flight, all we
@@ -429,11 +452,8 @@ namespace thekogans {
                 if (job->GetId () == jobId) {
                     job->Cancel ();
                     pendingJobs.erase (job);
-                    --stats.pendingJobCount;
                     ReleaseJobQueue::Instance ().EnqJob (job);
                     if (pendingJobs.empty () && runningJobs.empty ()) {
-                        assert (state == Busy);
-                        state = Idle;
                         idle.SignalAll ();
                     }
                     return true;
@@ -443,7 +463,7 @@ namespace thekogans {
         }
 
         void RunLoop::CancelJobs (const EqualityTest &equalityTest) {
-            LockGuard<Mutex> guard (jobsMutex);
+            LockGuard<Mutex> guard (mutex);
             for (Job *job = runningJobs.front (); job != 0; job = runningJobs.next (job)) {
                 if (equalityTest (*job)) {
                     job->Cancel ();
@@ -454,80 +474,63 @@ namespace thekogans {
                 typedef JobList::Callback::argument_type argument_type;
                 const EqualityTest &equalityTest;
                 JobList &pendingJobs;
-                ui32 count;
                 CancelCallback (
                     const EqualityTest &equalityTest_,
                     JobList &pendingJobs_) :
                     equalityTest (equalityTest_),
-                    pendingJobs (pendingJobs_),
-                    count (0) {}
+                    pendingJobs (pendingJobs_) {}
                 virtual result_type operator () (argument_type job) {
                     if (equalityTest (*job)) {
                         job->Cancel ();
                         pendingJobs.erase (job);
                         ReleaseJobQueue::Instance ().EnqJob (job);
-                        ++count;
                     }
                     return true;
                 }
             } cancelCallback (equalityTest, pendingJobs);
             pendingJobs.for_each (cancelCallback);
-            if (cancelCallback.count > 0) {
-                stats.pendingJobCount -= cancelCallback.count;
-                if (pendingJobs.empty () && runningJobs.empty ()) {
-                    assert (state == Busy);
-                    state = Idle;
-                    idle.SignalAll ();
-                }
+            if (pendingJobs.empty () && runningJobs.empty ()) {
+                idle.SignalAll ();
             }
         }
 
         void RunLoop::CancelAllJobs () {
-            LockGuard<Mutex> guard (jobsMutex);
+            LockGuard<Mutex> guard (mutex);
             for (Job *job = runningJobs.front (); job != 0; job = runningJobs.next (job)) {
                 job->Cancel ();
             }
-            if (!pendingJobs.empty ()) {
-                struct CancelCallback : public JobList::Callback {
-                    typedef JobList::Callback::result_type result_type;
-                    typedef JobList::Callback::argument_type argument_type;
-                    virtual result_type operator () (argument_type job) {
-                        job->Cancel ();
-                        ReleaseJobQueue::Instance ().EnqJob (job);
-                        return true;
-                    }
-                } cancelCallback;
-                pendingJobs.clear (cancelCallback);
-                stats.pendingJobCount = 0;
-                if (runningJobs.empty ()) {
-                    assert (state == Busy);
-                    state = Idle;
-                    idle.SignalAll ();
+            struct CancelCallback : public JobList::Callback {
+                typedef JobList::Callback::result_type result_type;
+                typedef JobList::Callback::argument_type argument_type;
+                virtual result_type operator () (argument_type job) {
+                    job->Cancel ();
+                    ReleaseJobQueue::Instance ().EnqJob (job);
+                    return true;
                 }
+            } cancelCallback;
+            pendingJobs.clear (cancelCallback);
+            if (runningJobs.empty ()) {
+                idle.SignalAll ();
             }
         }
 
         RunLoop::Stats RunLoop::GetStats () {
-            LockGuard<Mutex> guard (jobsMutex);
+            LockGuard<Mutex> guard (mutex);
             return stats;
         }
 
         bool RunLoop::IsRunning () {
-            LockGuard<Mutex> guard (jobsMutex);
+            LockGuard<Mutex> guard (mutex);
             return !done;
         }
 
-        bool RunLoop::IsEmpty () {
-            LockGuard<Mutex> guard (jobsMutex);
-            return pendingJobs.empty ();
-        }
-
         bool RunLoop::IsIdle () {
-            return state == Idle;
+            LockGuard<Mutex> guard (mutex);
+            return pendingJobs.empty () && runningJobs.empty ();
         }
 
         RunLoop::Job *RunLoop::DeqJob (bool wait) {
-            LockGuard<Mutex> guard (jobsMutex);
+            LockGuard<Mutex> guard (mutex);
             while (!done && pendingJobs.empty () && wait) {
                 jobsNotEmpty.Wait ();
             }
@@ -535,8 +538,6 @@ namespace thekogans {
             if (!done && !pendingJobs.empty ()) {
                 job = pendingJobs.pop_front ();
                 runningJobs.push_back (job);
-                --stats.pendingJobCount;
-                ++stats.runningJobCount;
             }
             return job;
         }
@@ -545,21 +546,18 @@ namespace thekogans {
                 Job *job,
                 ui64 start,
                 ui64 end) {
-            assert (job != 0 && stats.runningJobCount > 0);
-            LockGuard<Mutex> guard (jobsMutex);
+            assert (job != 0);
+            LockGuard<Mutex> guard (mutex);
             stats.Update (job->GetId (), start, end);
             runningJobs.erase (job);
-            --stats.runningJobCount;
             ReleaseJobQueue::Instance ().EnqJob (job);
             if (pendingJobs.empty () && runningJobs.empty ()) {
-                assert (state == Busy);
-                state = Idle;
                 idle.SignalAll ();
             }
         }
 
         bool RunLoop::SetDone (bool value) {
-            LockGuard<Mutex> guard (jobsMutex);
+            LockGuard<Mutex> guard (mutex);
             if (done != value) {
                 done = value;
                 return true;

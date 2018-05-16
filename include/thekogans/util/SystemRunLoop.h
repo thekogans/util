@@ -124,10 +124,6 @@ namespace thekogans {
         /// \endcode
 
         struct _LIB_THEKOGANS_UTIL_DECL SystemRunLoop : public RunLoop {
-            /// \brief
-            /// Convenient typedef for std::unique_ptr<SystemRunLoop>.
-            typedef std::unique_ptr<SystemRunLoop> Ptr;
-
         #if defined (TOOLCHAIN_OS_Windows)
             /// \brief
             /// Convenient typedef for LRESULT (CALLBACK *) (HWND, UINT, WPARAM, LPARAM, void *).

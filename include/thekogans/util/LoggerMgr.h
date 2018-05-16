@@ -326,7 +326,7 @@ namespace thekogans {
             FilterList filterList;
             /// \brief
             /// Queue to excecute LogSubsystemJob jobs.
-            JobQueue::UniquePtr jobQueue;
+            JobQueue::Ptr jobQueue;
             /// \brief
             /// Synchronization mutex.
             Mutex mutex;

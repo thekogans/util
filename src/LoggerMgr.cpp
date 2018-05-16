@@ -228,7 +228,7 @@ namespace thekogans {
             if (Flags32 (flags).Test (ClearFilters)) {
                 filterList.clear ();
             }
-            jobQueue.reset (!blocking ?
+            jobQueue.Reset (!blocking ?
                 new JobQueue (
                     name,
                     RunLoop::TYPE_FIFO,
@@ -450,7 +450,7 @@ namespace thekogans {
                 LockGuard<Mutex> guard (mutex);
                 LoggerMap::iterator it = loggerMap.find (subsystem);
                 if (it != loggerMap.end () || !defaultLoggers.empty ()) {
-                    if (jobQueue.get () != 0) {
+                    if (jobQueue.Get () != 0) {
                         jobQueue->EnqJob (
                             RunLoop::Job::Ptr (
                                 new LogSubsystemJob (
@@ -479,7 +479,7 @@ namespace thekogans {
 
         void LoggerMgr::Flush (const TimeSpec &timeSpec) {
             LockGuard<Mutex> guard (mutex);
-            if (jobQueue.get () != 0) {
+            if (jobQueue.Get () != 0) {
                 jobQueue->WaitForIdle (timeSpec);
             }
             for (LoggerMap::iterator
