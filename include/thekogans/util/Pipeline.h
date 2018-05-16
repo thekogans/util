@@ -23,7 +23,6 @@
 #include <vector>
 #include "thekogans/util/Config.h"
 #include "thekogans/util/Types.h"
-#include "thekogans/util/AbstractOwnerVector.h"
 #include "thekogans/util/JobQueue.h"
 
 namespace thekogans {
@@ -115,7 +114,7 @@ namespace thekogans {
         private:
             /// \brief
             /// Pipeline stages.
-            AbstractOwnerVector<JobQueue> stages;
+            std::vector<JobQueue::Ptr> stages;
 
         public:
             /// \struct Pipeline::StageInfo Pipeline.h thekogans/util/Pipeline.h

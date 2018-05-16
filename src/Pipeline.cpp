@@ -51,20 +51,16 @@ namespace thekogans {
                 const StageInfo *begin,
                 const StageInfo *end) {
             for (; begin != end; ++begin) {
-                JobQueue::UniquePtr stage (
-                    new JobQueue (
-                        begin->name,
-                        begin->type,
-                        begin->maxPendingJobs,
-                        begin->workerCount,
-                        begin->workerPriority,
-                        begin->workerAffinity,
-                        begin->workerCallback));
-                assert (stage.get () != 0);
-                if (stage.get () != 0) {
-                    stages.push_back (stage.get ());
-                    stage.release ();
-                }
+                stages.push_back (
+                    JobQueue::Ptr (
+                        new JobQueue (
+                            begin->name,
+                            begin->type,
+                            begin->maxPendingJobs,
+                            begin->workerCount,
+                            begin->workerPriority,
+                            begin->workerAffinity,
+                            begin->workerCallback)));
             }
         }
 
@@ -85,15 +81,16 @@ namespace thekogans {
                 if (!name.empty ()) {
                     stageName = FormatString ("%s-%u", name.c_str (), i);
                 }
-                JobQueue::UniquePtr stage (
-                    new JobQueue (
-                        stageName,
-                        type,
-                        maxPendingJobs,
-                        workerCount,
-                        workerPriority,
-                        workerAffinity,
-                        workerCallback));
+                stages.push_back (
+                    JobQueue::Ptr (
+                        new JobQueue (
+                            stageName,
+                            type,
+                            maxPendingJobs,
+                            workerCount,
+                            workerPriority,
+                            workerAffinity,
+                            workerCallback)));
             #if !defined (TOOLCHAIN_OS_Windows)
                 switch (stagePriorityAdjustment) {
                     case NoAdjustment:
@@ -114,11 +111,6 @@ namespace thekogans {
                         break;
                 }
             #endif // !defined (TOOLCHAIN_OS_Windows)
-                assert (stage.get () != 0);
-                if (stage.get () != 0) {
-                    stages.push_back (stage.get ());
-                    stage.release ();
-                }
             }
         }
 
