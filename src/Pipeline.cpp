@@ -86,16 +86,25 @@ namespace thekogans {
                 if (job != 0) {
                     // Short circuit cancelled pending jobs.
                     if (!job->IsCancelled ()) {
-                        THEKOGANS_UTIL_TRY {
-                            pipeline.stages[job->stage]->EnqJob (RunLoop::Job::Ptr (job));
-                            continue;
+                        if (job->stage < pipeline.stages.size ()) {
+                            LockGuard<Mutex> guard (pipeline.stagesMutex);
+                            THEKOGANS_UTIL_TRY {
+                                pipeline.stages[job->stage]->EnqJob (RunLoop::Job::Ptr (job));
+                                continue;
+                            }
+                            THEKOGANS_UTIL_CATCH (Exception) {
+                                job->Fail ();
+                                THEKOGANS_UTIL_LOG_ERROR ("%s\n", exception.Report ().c_str ());
+                            }
                         }
-                        THEKOGANS_UTIL_CATCH (Exception) {
-                            job->Fail ();
-                            THEKOGANS_UTIL_LOG_ERROR ("%s\n", exception.Report ().c_str ());
+                        else {
+                            THEKOGANS_UTIL_LOG_ERROR (
+                                "Job stage (%u) exceeds pipeline stage count (%u).\n",
+                                job->stage,
+                                pipeline.stages.size ());
                         }
                     }
-                    pipeline.FinishedJob (job, start, end);
+                    pipeline.FinishedJob (job, job->start, job->end);
                 }
             }
         }
