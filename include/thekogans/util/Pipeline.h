@@ -20,9 +20,18 @@
 
 #include <cstddef>
 #include <memory>
+#include <string>
 #include <vector>
 #include "thekogans/util/Config.h"
 #include "thekogans/util/Types.h"
+#include "thekogans/util/RefCounted.h"
+#include "thekogans/util/IntrusiveList.h"
+#include "thekogans/util/GUID.h"
+#include "thekogans/util/TimeSpec.h"
+#include "thekogans/util/Thread.h"
+#include "thekogans/util/Mutex.h"
+#include "thekogans/util/Condition.h"
+#include "thekogans/util/Event.h"
 #include "thekogans/util/JobQueue.h"
 
 namespace thekogans {
@@ -38,90 +47,20 @@ namespace thekogans {
         /// architectures perform scalar, and even super-scalar
         /// execution).
 
-        struct _LIB_THEKOGANS_UTIL_DECL Pipeline {
-            /// \struct Pipeline::Job Pipeline.h thekogans/util/Pipeline.h
+        struct _LIB_THEKOGANS_UTIL_DECL Pipeline : public ThreadSafeRefCounted {
+            /// \brief
+            /// Convenient typedef for ThreadSafeRefCounted::Ptr<Pipeline>.
+            typedef ThreadSafeRefCounted::Ptr<Pipeline> Ptr;
+
+            /// \brief
+            /// Convenient typedef for std::string.
+            typedef std::string Id;
+
+            /// \struct Pipeline::Stage Pipeline.h thekogans/util/Pipeline.h
             ///
             /// \brief
-            /// A pipeline job. Since a pipeline is a collection
-            /// of JobQueues, the Pipeline::Job derives form
-            /// RunLoop::Job. RunLoop::Job Prologue and Epilogue
-            /// are used to shepherd the job down the pipeline.
-            /// Pipeline::Job Begin and End are used instead
-            /// to perform one time initialization/tear down.
-            struct _LIB_THEKOGANS_UTIL_DECL Job : public RunLoop::Job {
-                /// \brief
-                /// Convenient typedef for ThreadSafeRefCounted::Ptr<Job>.
-                typedef ThreadSafeRefCounted::Ptr<Job> Ptr;
-
-                /// \brief
-                /// Pipeline on which this job is staged.
-                Pipeline &pipeline;
-                /// \brief
-                /// Current job stage.
-                std::size_t stage;
-
-                /// \brief
-                /// ctor.
-                /// \param[in] pipeline_ Pipeline that will execute this job.
-                /// \param[in] stage_ Pipeline stage that will execute this job.
-                Job (
-                    Pipeline &pipeline_,
-                    std::size_t stage_) :
-                    pipeline (pipeline_),
-                    stage (stage_) {}
-                // RunLoop::Job
-                /// \brief
-                /// JobQueue will call this before Execute.
-                /// If Stage == 0 will call Begin.
-                /// \param[in] done Check this to see if processing should be aborted.
-                /// NOTE: Be careful overriding this method as it is
-                /// part of the pipeline protocol. If you do, make
-                /// sure to call Pipeline::Job::Protocol somewhere
-                /// along the line.
-                virtual void Prologue (volatile const bool &done) throw ();
-                /// \brief
-                /// JobQueue will call this after Execute.
-                /// If at the end of the pipeline, call End.
-                /// \param[in] done Check this to see if processing should be aborted.
-                /// NOTE: Be careful overriding this method as it is
-                /// part of the pipeline protocol. If you do, make
-                /// sure to call Pipeline::Job::Epilogue somewhere
-                /// along the line.
-                virtual void Epilogue (volatile const bool &done) throw ();
-                /// \brief
-                /// Called at the end of each stage to provide
-                /// a job for the next stage.
-                /// \return Job for next stage (Job::UniquePtr () to end)
-                virtual Job::Ptr Clone () throw () = 0;
-                /// \brief
-                /// These provide the same functionality as
-                /// Prologue/Epilogue, except at pipeline
-                /// global level.
-                /// Called by the pipeline stage before calling Execute.
-                virtual void Begin () throw () {}
-                /// \brief
-                /// These provide the same functionality as
-                /// Prologue/Epilogue, except at pipeline
-                /// global level.
-                /// Called by the pipeline stage after calling Execute.
-                virtual void End () throw () {}
-
-                /// \brief
-                /// Job is neither copy constructable, nor assignable.
-                THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (Job)
-            };
-
-        private:
-            /// \brief
-            /// Pipeline stages.
-            std::vector<JobQueue::Ptr> stages;
-
-        public:
-            /// \struct Pipeline::StageInfo Pipeline.h thekogans/util/Pipeline.h
-            ///
-            /// \brief
-            /// Used to specify each stage parameters individually.
-            struct _LIB_THEKOGANS_UTIL_DECL StageInfo {
+            /// Used to specify stage parameters.
+            struct _LIB_THEKOGANS_UTIL_DECL Stage {
                 /// \brief
                 /// Stage \see{JobQueue} name.
                 std::string name;
@@ -153,7 +92,7 @@ namespace thekogans {
                 /// \param[in] workerPriority_ Stage worker thread priority.
                 /// \param[in] workerAffinity_ Stage worker thread processor affinity.
                 /// \param[in] workerCallback_ Called to initialize/uninitialize the worker thread.
-                StageInfo (
+                Stage (
                     const std::string &name_ = std::string (),
                     RunLoop::Type type_ = RunLoop::TYPE_FIFO,
                     ui32 maxPendingJobs_ = UI32_MAX,
@@ -171,88 +110,311 @@ namespace thekogans {
             };
 
             /// \brief
-            /// ctor.
-            /// \param[in] begin Pointer to the beginning of the StageInfo array.
-            /// \param[in] end Pointer to the end of the StageInfo array.
-            Pipeline (
-                const StageInfo *begin,
-                const StageInfo *end);
-            /// \enum
-            /// NOTE: Windows thread priorities are not integral
-            /// values (they are tokens). And as such, cannot be
-            /// arithmetically adjusted. On Windows, the last two
-            /// arguments will be ignored.
-            enum StagePriorityAdjustment {
+            /// Forward declaration of Job.
+            struct Job;
+            enum {
                 /// \brief
-                /// No priority adjustment.
-                NoAdjustment,
-                /// \brief
-                /// Each successive stage will get an elevated priority.
-                Inc,
-                /// \brief
-                /// Each successive stage priority will be elevated by delta.
-                Add,
-                /// \brief
-                /// Each successive stage will get an de-elevated priority.
-                Dec,
-                /// \brief
-                /// Each successive stage priority will be de-elevated by delta.
-                Sub
+                /// JobList ID.
+                JOB_LIST_ID = 1
             };
             /// \brief
+            /// Convenient typedef for IntrusiveList<Job, JOB_LIST_ID>.
+            typedef IntrusiveList<Job, JOB_LIST_ID> JobList;
+
+        #if defined (_MSC_VER)
+            #pragma warning (push)
+            #pragma warning (disable : 4275)
+        #endif // defined (_MSC_VER)
+            /// \struct Pipeline::Job Pipeline.h thekogans/util/Pipeline.h
+            ///
+            /// \brief
+            /// A pipeline job. Since a pipeline is a collection
+            /// of JobQueues, the Pipeline::Job derives form
+            /// RunLoop::Job. RunLoop::Job::SetStatus is used
+            /// to shepherd the job down the pipeline.
+            /// Pipeline::Job Begin and End are provided
+            /// to perform one time initialization/tear down.
+            struct _LIB_THEKOGANS_UTIL_DECL Job :
+                    public JobList::Node,
+                    public RunLoop::Job {
+                /// \brief
+                /// Convenient typedef for ThreadSafeRefCounted::Ptr<Job>.
+                typedef ThreadSafeRefCounted::Ptr<Job> Ptr;
+
+                /// \brief
+                /// Pipeline on which this job is staged.
+                Pipeline &pipeline;
+                /// \brief
+                /// Current job stage.
+                std::size_t stage;
+                /// \brief
+                /// Job execution start time.
+                ui64 start;
+                /// \brief
+                /// Job execution end time.
+                ui64 end;
+
+                /// \brief
+                /// ctor.
+                /// \param[in] pipeline_ Pipeline that will execute this job.
+                Job (Pipeline &pipeline_) :
+                    pipeline (pipeline_),
+                    stage (0),
+                    start (0),
+                    end (0) {}
+
+                /// \brief
+                /// Return the pipeline name on which this job is running.
+                /// \return Pipeline name on which this job is running.
+                inline const Pipeline::Id &GetPipelineId () const {
+                    return pipeline.GetId ();
+                }
+
+                /// \brief
+                /// Provides the same functionality as
+                /// Job::Prologue, except at pipeline
+                /// global level.
+                /// \param[in] done If true, this flag indicates that
+                /// the job should stop what it's doing, and exit.
+                virtual void Begin (volatile const bool &done) throw () {}
+                /// \brief
+                /// Provides the same functionality as
+                /// Job::Epilogue, except at pipeline
+                /// global level.
+                /// \param[in] done If true, this flag indicates that
+                /// the job should stop what it's doing, and exit.
+                virtual void End (volatile const bool &done) throw () {}
+
+            protected:
+                /// \brief
+                /// Used internally by RunLoop to set the RunLoop id and reset
+                /// the status, disposition and completed.
+                /// \param[in] runLoopId RunLoop id to which this job belongs.
+                void Reset ();
+                /// \brief
+                /// Used internally by RunLoop and it's derivatives to set the
+                /// job status.
+                /// \param[in] status_ New job status.
+                virtual void SetStatus (Status status_);
+
+                /// \brief
+                /// Pipeline uses Reset.
+                friend struct Pipeline;
+
+                /// \brief
+                /// Job is neither copy constructable, nor assignable.
+                THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (Job)
+            };
+        #if defined (_MSC_VER)
+            #pragma warning (pop)
+        #endif // defined (_MSC_VER)
+
+        private:
+            /// \brief
+            /// Pipeline id.
+            const Id id;
+            /// \brief
+            /// Pipeline name.
+            const std::string name;
+            /// \brief
+            /// Flag to signal the stage thread(s).
+            volatile bool done;
+            /// \brief
+            /// List of running jobs.
+            JobList runningJobs;
+            /// \brief
+            /// Pipeline stats.
+            RunLoop::Stats stats;
+            /// \brief
+            /// Synchronization mutex.
+            Mutex jobMutex;
+            /// \brief
+            /// Synchronization event.
+            Condition idle;
+            /// \brief
+            /// Pipeline stages.
+            std::vector<JobQueue::Ptr> stages;
+            /// \brief
+            /// Synchronization mutex.
+            Mutex stageMutex;
+
+        public:
+            /// \brief
             /// ctor.
-            /// \param[in] stageCount Number of stages in the pipeline.
-            /// \param[in] stagePriorityAdjustment How to adjust priorities for each successive stage.
-            /// \param[in] stagePriorityAdjustmentDelta Add/Sub adjustment delta.
-            /// \param[in] name Stage name.
-            /// \param[in] type Stage type (fifo | lifo).
-            /// \param[in] maxPendingJobs Max pending stage jobs.
-            /// \param[in] workerCount Number of workers servicing each stage.
-            /// \param[in] workerPriority Stage worker thread priority.
-            /// \param[in] workerAffinity Stage worker thread processor affinity.
-            /// \param[in] workerCallback Called to initialize/uninitialize the worker thread.
+            /// \param[in] name_ Pipeline name.
+            /// \param[in] begin Pointer to the beginning of the Stage array.
+            /// \param[in] end Pointer to the end of the Stage array.
             Pipeline (
-                ui32 stageCount,
-                StagePriorityAdjustment stagePriorityAdjustment = NoAdjustment,
-                i32 stagePriorityAdjustmentDelta = 0,
                 const std::string &name = std::string (),
-                RunLoop::Type type = RunLoop::TYPE_FIFO,
-                ui32 maxPendingJobs_ = UI32_MAX,
-                ui32 workerCount = 1,
-                i32 workerPriority = THEKOGANS_UTIL_NORMAL_THREAD_PRIORITY,
-                ui32 workerAffinity = THEKOGANS_UTIL_MAX_THREAD_AFFINITY,
-                RunLoop::WorkerCallback *workerCallback_ = 0);
+                const Stage *begin = 0,
+                const Stage *end = 0);
+
+            /// \brief
+            /// Return Pipeline id.
+            /// \return Pipeline id.
+            inline const Id &GetId () const {
+                return id;
+            }
+            /// \brief
+            /// Return Pipeline name.
+            /// \return Pipeline name.
+            inline const std::string &GetName () const {
+                return name;
+            }
+
+            /// \brief
+            /// Wait until the given pipeline is created the and it starts running.
+            /// \param[in] pipeline Pipeline to wait for.
+            /// \param[in] sleepTimeSpec How long to sleep between tries.
+            /// \param[in] waitTimeSpec Total time to wait.
+            /// \return true == the given pipeline is running.
+            /// false == timed out waiting for the pipeline to start.
+            static bool WaitForStart (
+                Ptr &pipeline,
+                const TimeSpec &sleepTimeSpec = TimeSpec::FromMilliseconds (50),
+                const TimeSpec &waitTimeSpec = TimeSpec::FromSeconds (3));
+
+            /// \brief
+            /// Add a stage to the pipeline.
+            /// \param[in] stage Stage to add.
+            void AddStage (const Stage &stage);
+            /// \brief
+            /// Return the stats for a given pipeline stage.
+            /// \return Stats corresponding to the given pipeline stage.
+            RunLoop::Stats GetStageStats (std::size_t stage);
+            /// \brief
+            /// Return the stats for all pipeline stages.
+            /// \param[out] stats Vector where stage stats will be placed.
+            void GetStagesStats (std::vector<RunLoop::Stats> &stats);
 
             /// \brief
             /// Start the pipeline. Create stages, and start waiting for jobs.
             void Start ();
             /// \brief
             /// Stop the pipeline. All stages are destroyed.
-            void Stop ();
+            /// \param[in] cancelRunningJobs true = Cancel all running jobs.
+            void Stop (bool cancelRunningJobs = true);
 
             /// \brief
             /// Enqueue a job on a pipeline stage.
             /// \param[in] job Job to enqueue.
-            /// \param[in] stage Stage to enqueue the job on.
-            void EnqJob (
-                Job::Ptr job,
-                std::size_t stage = 0);
-
-            /// \brief
-            /// Cancel all waiting jobs on all pipeline stages.
-            /// Jobs in flight are not canceled.
-            void Flush ();
-
-            /// \brief
-            /// Return the stats for each stage of the pipeline.
-            /// \param[out] stats Vector where stage stats will be placed.\see{JobQueue}
-            void GetStats (std::vector<RunLoop::Stats> &stats);
-
-            /// \brief
-            /// Blocks until all jobs are complete and the pipeline is empty.
-            /// \param[in] timeSpec How long to wait for pipeline to complete.
+            /// \param[in] wait Wait for job to finish. Used for synchronous job execution.
+            /// \param[in] timeSpec How long to wait for the job to complete.
             /// IMPORTANT: timeSpec is a relative value.
-            void WaitForIdle (const TimeSpec &timeSpec = TimeSpec::Infinite);
+            /// \return true == !wait || WaitForJob (...)
+            bool EnqJob (
+                Job::Ptr job,
+                bool wait = false,
+                const TimeSpec &timeSpec = TimeSpec::Infinite);
+
+            /// \brief
+            /// Get a running job with the given id.
+            /// \param[in] jobId Id of job to retrieve.
+            /// \return Job matching the given id.
+            Job::Ptr GetJobWithId (const Job::Id &jobId);
+
+            /// \struct Pipeline::EqualityTest Pipeline.h thekogans/util/Pipeline.h
+            ///
+            /// \brief
+            /// Equality test to use to determine which jobs to wait for and cancel.
+            struct EqualityTest {
+                /// \brief
+                /// dtor.
+                virtual ~EqualityTest () {}
+
+                /// \brief
+                /// Reimplement this function to test for equality.
+                /// \param[in] job Instance to test for equality.
+                /// \return true == equal.
+                virtual bool operator () (const Job & /*job*/) const throw ();
+            };
+
+            /// \brief
+            /// Wait for a given job to complete.
+            /// \param[in] job Job to wait on.
+            /// NOTE: The Pipeline will check that the given job was in fact
+            /// en-queued on this pipeline (Job::GetPipelineId) and will throw
+            /// THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL if it doesn't.
+            /// \param[in] timeSpec How long to wait for the job to complete.
+            /// IMPORTANT: timeSpec is a relative value.
+            /// \return true == completed, false == timed out.
+            bool WaitForJob (
+                Job::Ptr job,
+                const TimeSpec &timeSpec = TimeSpec::Infinite);
+            /// \brief
+            /// Wait for a running job with a given id to complete.
+            /// \param[in] jobId Id of job to wait on.
+            /// \param[in] timeSpec How long to wait for the job to complete.
+            /// IMPORTANT: timeSpec is a relative value.
+            /// \return true == completed,
+            /// false == job with a given id was not in the queue or timed out.
+            bool WaitForJob (
+                const Job::Id &jobId,
+                const TimeSpec &timeSpec = TimeSpec::Infinite);
+            /// \brief
+            /// Wait for all running jobs matching the given equality test to complete.
+            /// \param[in] equalityTest EqualityTest to query to determine which jobs to wait on.
+            /// \param[in] timeSpec How long to wait for the jobs to complete.
+            /// IMPORTANT: timeSpec is a relative value.
+            /// \return true == All jobs satisfying the equalityTest completed,
+            /// false == One or more matching jobs timed out.
+            bool WaitForJobs (
+                const EqualityTest &equalityTest,
+                const TimeSpec &timeSpec = TimeSpec::Infinite);
+            /// \brief
+            /// Blocks until all jobs are complete and the queue is empty.
+            /// \param[in] timeSpec How long to wait for the jobs to complete.
+            /// IMPORTANT: timeSpec is a relative value.
+            /// \return true == Pipeline is idle, false == Timed out.
+            bool WaitForIdle (
+                const TimeSpec &timeSpec = TimeSpec::Infinite);
+
+            /// \brief
+            /// Cancel a running job with a given id.
+            /// \param[in] jobId Id of job to cancel.
+            /// \return true if the job was cancelled.
+            bool CancelJob (const Job::Id &jobId);
+            /// \brief
+            /// Cancel all running jobs matching the given equality test.
+            /// \param[in] equalityTest EqualityTest to query to determine which jobs to cancel.
+            void CancelJobs (const EqualityTest &equalityTest);
+            /// \brief
+            /// Cancel all running jobs.
+            void CancelAllJobs ();
+
+            /// \brief
+            /// Return a snapshot of the run loop stats.
+            /// \return A snapshot of the run loop stats.
+            RunLoop::Stats GetStats ();
+
+            /// \brief
+            /// Return true if Start was called.
+            /// \return true if Start was called.
+            bool IsRunning ();
+            /// \brief
+            /// Return true if there are no running jobs and the
+            /// stages are idle.
+            /// \return true = idle, false = busy.
+            bool IsIdle ();
+
+        protected:
+            /// \brief
+            /// Called by job after it has traversed the pipeline.
+            /// Used to update state and \see{Pipeline::Stats}.
+            /// \param[in] job Completed job.
+            /// \param[in] start Completed job start time.
+            /// \param[in] end Completed job end time.
+            void FinishedJob (
+                Job *job,
+                ui64 start,
+                ui64 end);
+
+            /// \brief
+            /// Atomically set done to the given value.
+            /// \param[in] value Value to set done to.
+            /// \return true == done was set to the given value.
+            /// false == done was already set to the given value.
+            bool SetDone (bool value);
 
             /// \brief
             /// Pipeline is neither copy constructable, nor assignable.
