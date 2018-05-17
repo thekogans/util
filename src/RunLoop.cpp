@@ -258,6 +258,7 @@ namespace thekogans {
         }
 
         RunLoop::Job::Ptr RunLoop::GetJobWithId (const Job::Id &jobId) {
+            LockGuard<Mutex> guard (mutex);
             struct GetJobWithIdCallback : public JobList::Callback {
                 typedef JobList::Callback::result_type result_type;
                 typedef JobList::Callback::argument_type argument_type;
@@ -273,11 +274,8 @@ namespace thekogans {
                     return true;
                 }
             } getJobWithIdCallback (jobId);
-            {
-                LockGuard<Mutex> guard (mutex);
-                if (runningJobs.for_each (getJobWithIdCallback)) {
-                    pendingJobs.for_each (getJobWithIdCallback);
-                }
+            if (runningJobs.for_each (getJobWithIdCallback)) {
+                pendingJobs.for_each (getJobWithIdCallback);
             }
             return getJobWithIdCallback.job;
         }
@@ -418,19 +416,19 @@ namespace thekogans {
         bool RunLoop::WaitForIdle (const TimeSpec &timeSpec) {
             LockGuard<Mutex> guard (mutex);
             if (timeSpec == TimeSpec::Infinite) {
-                while (!runningJobs.empty ()) {
+                while (!pendingJobs.empty () || !runningJobs.empty ()) {
                     idle.Wait ();
                 }
             }
             else {
                 TimeSpec now = GetCurrentTime ();
                 TimeSpec deadline = now + timeSpec;
-                while (!runningJobs.empty () && deadline > now) {
+                while ((!pendingJobs.empty () || !runningJobs.empty ()) && deadline > now) {
                     idle.Wait (deadline - now);
                     now = GetCurrentTime ();
                 }
             }
-            return runningJobs.empty ();
+            return pendingJobs.empty () && runningJobs.empty ();
         }
 
         bool RunLoop::CancelJob (const Job::Id &jobId) {

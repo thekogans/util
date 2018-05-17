@@ -29,7 +29,7 @@
 #include "thekogans/util/Mutex.h"
 #include "thekogans/util/Condition.h"
 #include "thekogans/util/Singleton.h"
-#include "thekogans/util/StringUtils.h"
+#include "thekogans/util/SpinLock.h"
 
 namespace thekogans {
     namespace util {
@@ -111,7 +111,7 @@ namespace thekogans {
             WorkerList workers;
             /// \brief
             /// Synchronization mutex.
-            Mutex mutex;
+            Mutex workerMutex;
 
         public:
             /// \brief

@@ -33,17 +33,14 @@
 #include <memory>
 #include <string>
 #include "thekogans/util/Config.h"
+#include "thekogans/util/Types.h"
 #include "thekogans/util/RefCounted.h"
 #include "thekogans/util/IntrusiveList.h"
 #include "thekogans/util/GUID.h"
 #include "thekogans/util/TimeSpec.h"
-#include "thekogans/util/Thread.h"
 #include "thekogans/util/Mutex.h"
 #include "thekogans/util/Condition.h"
 #include "thekogans/util/Event.h"
-#include "thekogans/util/Singleton.h"
-#include "thekogans/util/SpinLock.h"
-#include "thekogans/util/Heap.h"
 
 namespace thekogans {
     namespace util {
@@ -274,7 +271,7 @@ namespace thekogans {
                 /// Used internally by RunLoop to set the RunLoop id and reset
                 /// status, disposition and completed.
                 /// \param[in] runLoopId_ RunLoop id to which this job belongs.
-                virtual void Reset (const RunLoop::Id &runLoopId_);
+                void Reset (const RunLoop::Id &runLoopId_);
                 /// \brief
                 /// Used internally by RunLoop and it's derivatives to set the
                 /// job status.
@@ -472,7 +469,7 @@ namespace thekogans {
             /// RunLoop id.
             const Id id;
             /// \brief
-            /// RunLoop name. If set, \see{Worker} threads will be named name-%d.
+            /// RunLoop name.
             const std::string name;
             /// \brief
             /// RunLoop type (TIPE_FIFO or TYPE_LIFO)
@@ -481,7 +478,7 @@ namespace thekogans {
             /// Max pending jobs.
             const ui32 maxPendingJobs;
             /// \brief
-            /// Flag to signal the worker thread.
+            /// Flag to signal the worker thread(s).
             volatile bool done;
             /// \brief
             /// Queue of pending jobs.
@@ -490,7 +487,7 @@ namespace thekogans {
             /// List of running jobs.
             JobList runningJobs;
             /// \brief
-            /// Queue stats.
+            /// RunLoop stats.
             Stats stats;
             /// \brief
             /// Synchronization mutex.
@@ -661,8 +658,7 @@ namespace thekogans {
             /// \return true if Start was called.
             virtual bool IsRunning ();
             /// \brief
-            /// Return true if there are no pending jobs and the
-            /// worker is idle.
+            /// Return true if there are no running or pending jobs.
             /// \return true = idle, false = busy.
             virtual bool IsIdle ();
 

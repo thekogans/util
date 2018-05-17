@@ -80,7 +80,7 @@ namespace thekogans {
         }
 
         void JobQueue::Start () {
-            LockGuard<Mutex> guard (mutex);
+            LockGuard<Mutex> guard (workerMutex);
             if (SetDone (false)) {
                 for (ui32 i = 0; i < workerCount; ++i) {
                     std::string workerName;
@@ -104,7 +104,7 @@ namespace thekogans {
 
         void JobQueue::Stop (bool cancelPendingJobs) {
             {
-                LockGuard<Mutex> guard (mutex);
+                LockGuard<Mutex> guard (workerMutex);
                 if (SetDone (true)) {
                     jobsNotEmpty.SignalAll ();
                     struct Callback : public WorkerList::Callback {
