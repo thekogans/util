@@ -44,7 +44,7 @@ namespace thekogans {
                         ui64 start = 0;
                         ui64 end = 0;
                         // Short circuit cancelled pending jobs.
-                        if (!job->IsCancelled ()) {
+                        if (job->GetDisposition () == Job::Unknown) {
                             start = HRTimer::Click ();
                             job->SetStatus (Job::Running);
                             job->Prologue (done);

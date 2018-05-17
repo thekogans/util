@@ -38,6 +38,7 @@
 #include "thekogans/util/IntrusiveList.h"
 #include "thekogans/util/GUID.h"
 #include "thekogans/util/TimeSpec.h"
+#include "thekogans/util/Exception.h"
 #include "thekogans/util/Mutex.h"
 #include "thekogans/util/Condition.h"
 #include "thekogans/util/Event.h"
@@ -160,6 +161,9 @@ namespace thekogans {
                 /// Job disposition.
                 volatile Disposition disposition;
                 /// \brief
+                /// If IsFailed, exception will hold the reason.
+                Exception exception;
+                /// \brief
                 /// Set when job completes execution.
                 Event completed;
 
@@ -275,10 +279,9 @@ namespace thekogans {
                 /// \brief
                 /// Used internally by RunLoop and it's derivatives to mark the
                 /// job as failed execution.
-                inline void Fail () {
-                    if (disposition == Unknown) {
-                        disposition = Failed;
-                    }
+                inline void Fail (const Exception &exception_) {
+                    disposition = Failed;
+                    exception = exception_;
                 }
                 /// \brief
                 /// Used internally by RunLoop and it's derivatives to mark the

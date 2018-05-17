@@ -48,14 +48,13 @@ namespace thekogans {
                     completed.Signal ();
                 }
                 else {
-                    if (stage < pipeline.stages.size () - 1) {
+                    if (IsFinished () && stage < pipeline.stages.size () - 1) {
                         THEKOGANS_UTIL_TRY {
                             pipeline.stages[++stage]->EnqJob (RunLoop::Job::Ptr (this));
                             return;
                         }
                         THEKOGANS_UTIL_CATCH (Exception) {
-                            Fail ();
-                            THEKOGANS_UTIL_LOG_ERROR ("%s\n", exception.Report ().c_str ());
+                            Fail (exception);
                         }
                     }
                     stage = pipeline.stages.size ();
@@ -85,7 +84,7 @@ namespace thekogans {
                 Job *job = pipeline.DeqJob ();
                 if (job != 0) {
                     // Short circuit cancelled pending jobs.
-                    if (!job->IsCancelled ()) {
+                    if (job->GetDisposition () == Job::Unknown) {
                         LockGuard<Mutex> guard (pipeline.stagesMutex);
                         if (job->stage < pipeline.stages.size ()) {
                             THEKOGANS_UTIL_TRY {
@@ -93,15 +92,15 @@ namespace thekogans {
                                 continue;
                             }
                             THEKOGANS_UTIL_CATCH (Exception) {
-                                job->Fail ();
-                                THEKOGANS_UTIL_LOG_ERROR ("%s\n", exception.Report ().c_str ());
+                                job->Fail (exception);
                             }
                         }
                         else {
-                            THEKOGANS_UTIL_LOG_ERROR (
-                                "Job stage (%u) exceeds pipeline stage count (%u).\n",
-                                job->stage,
-                                pipeline.stages.size ());
+                            job->Fail (
+                                THEKOGANS_UTIL_STRING_EXCEPTION (
+                                    "Job stage (%u) exceeds pipeline stage count (%u).\n",
+                                    job->stage,
+                                    pipeline.stages.size ()));
                         }
                     }
                     pipeline.FinishedJob (job, job->start, job->end);

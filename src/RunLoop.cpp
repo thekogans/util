@@ -99,7 +99,7 @@ namespace thekogans {
                 RunLoop::Job *job,
                 ui64 start,
                 ui64 end) {
-            if (!job->IsCancelled () && !job->IsFailed ()) {
+            if (job->IsFinished ()) {
                 ++totalJobs;
                 ui64 ellapsed =
                     HRTimer::ComputeElapsedTime (start, end);
