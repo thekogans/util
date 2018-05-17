@@ -86,8 +86,8 @@ namespace thekogans {
                 if (job != 0) {
                     // Short circuit cancelled pending jobs.
                     if (!job->IsCancelled ()) {
+                        LockGuard<Mutex> guard (pipeline.stagesMutex);
                         if (job->stage < pipeline.stages.size ()) {
-                            LockGuard<Mutex> guard (pipeline.stagesMutex);
                             THEKOGANS_UTIL_TRY {
                                 pipeline.stages[job->stage]->EnqJob (RunLoop::Job::Ptr (job));
                                 continue;
