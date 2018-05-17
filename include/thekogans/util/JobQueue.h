@@ -235,7 +235,7 @@ namespace thekogans {
         /// might need different queues running different worker counts at
         /// different thread priorities. That said, the most basic (and
         /// the most useful) use case will have a single job queue using
-        /// the defaults. This strct exists to aid in that. If all you
+        /// the defaults. This struct exists to aid in that. If all you
         /// need is a background thread where you can schedule jobs, then
         /// GlobalJobQueue::Instance () will do the trick.
         struct _LIB_THEKOGANS_UTIL_DECL GlobalJobQueue :

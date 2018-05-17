@@ -525,5 +525,49 @@ namespace thekogans {
             return false;
         }
 
+        std::string GlobalPipelineCreateInstance::name = std::string ();
+        RunLoop::Type GlobalPipelineCreateInstance::type = RunLoop::TYPE_FIFO;
+        ui32 GlobalPipelineCreateInstance::maxPendingJobs = UI32_MAX;
+        ui32 GlobalPipelineCreateInstance::workerCount = 1;
+        i32 GlobalPipelineCreateInstance::workerPriority = THEKOGANS_UTIL_NORMAL_THREAD_PRIORITY;
+        ui32 GlobalPipelineCreateInstance::workerAffinity = THEKOGANS_UTIL_MAX_THREAD_AFFINITY;
+        RunLoop::WorkerCallback *GlobalPipelineCreateInstance::workerCallback = 0;
+        const Pipeline::Stage *GlobalPipelineCreateInstance::begin = 0;
+        const Pipeline::Stage *GlobalPipelineCreateInstance::end = 0;
+
+        void GlobalPipelineCreateInstance::Parameterize (
+                const std::string &name_,
+                RunLoop::Type type_,
+                ui32 maxPendingJobs_,
+                ui32 workerCount_,
+                i32 workerPriority_,
+                ui32 workerAffinity_,
+                RunLoop::WorkerCallback *workerCallback_,
+                const Pipeline::Stage *begin_,
+                const Pipeline::Stage *end_) {
+            name = name_;
+            type = type_;
+            maxPendingJobs = maxPendingJobs_;
+            workerCount = workerCount_;
+            workerPriority = workerPriority_;
+            workerAffinity = workerAffinity_;
+            workerCallback = workerCallback_;
+            begin = begin_;
+            end = end_;
+        }
+
+        Pipeline *GlobalPipelineCreateInstance::operator () () {
+            return new Pipeline (
+                name,
+                type,
+                maxPendingJobs,
+                workerCount,
+                workerPriority,
+                workerAffinity,
+                workerCallback,
+                begin,
+                end);
+        }
+
     } // namespace util
 } // namespace thekogans

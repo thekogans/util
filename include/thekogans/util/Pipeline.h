@@ -505,6 +505,88 @@ namespace thekogans {
             THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (Pipeline)
         };
 
+        /// \struct GlobalPipelineCreateInstance Pipeline.h thekogans/util/Pipeline.h
+        ///
+        /// \brief
+        /// Call GlobalPipelineCreateInstance::Parameterize before the first use of
+        /// GlobalPipeline::Instance to supply custom arguments to GlobalPipeline ctor.
+
+        struct _LIB_THEKOGANS_UTIL_DECL GlobalPipelineCreateInstance {
+        private:
+            /// \brief
+            /// Pipeline name. If set, \see{Pipeline::Worker} threads will be named name-%d.
+            static std::string name;
+            /// \brief
+            /// Pipeline type (RunLoop::TIPE_FIFO or RunLoop::TYPE_LIFO)
+            static RunLoop::Type type;
+            /// \brief
+            /// Max pending jobs.
+            static ui32 maxPendingJobs;
+            /// \brief
+            /// Number of workers servicing the pipeline.
+            static ui32 workerCount;
+            /// \brief
+            /// Worker thread priority.
+            static i32 workerPriority;
+            /// \brief
+            /// Worker thread processor affinity.
+            static ui32 workerAffinity;
+            /// \brief
+            /// Called to initialize/uninitialize the worker thread.
+            static RunLoop::WorkerCallback *workerCallback;
+            /// \brief
+            /// Pointer to the beginning of the Pipeline::Stage array.
+            static const Pipeline::Stage *begin;
+            /// \brief
+            /// Pointer to the end of the Pipeline::Stage array.
+            static const Pipeline::Stage *end;
+
+        public:
+            /// \brief
+            /// Call before the first use of GlobalPipeline::Instance.
+            /// \param[in] name_ Pipeline name. If set, \see{Pipeline::Worker}
+            /// threads will be named name-%d.
+            /// \param[in] type_ Pipeline type.
+            /// \param[in] maxPendingJobs_ Max pending pipeline jobs.
+            /// \param[in] workerCount_ Max workers to service the pipeline.
+            /// \param[in] workerPriority_ Worker thread priority.
+            /// \param[in] workerAffinity_ Worker thread processor affinity.
+            /// \param[in] workerCallback_ Called to initialize/uninitialize the worker thread.
+            /// \param[in] begin_ Pointer to the beginning of the Pipeline::Stage array.
+            /// \param[in] end_ Pointer to the end of the Pipeline::Stage array.
+            static void Parameterize (
+                const std::string &name_ = std::string (),
+                RunLoop::Type type_ = RunLoop::TYPE_FIFO,
+                ui32 maxPendingJobs_ = UI32_MAX,
+                ui32 workerCount_ = 1,
+                i32 workerPriority_ = THEKOGANS_UTIL_NORMAL_THREAD_PRIORITY,
+                ui32 workerAffinity_ = THEKOGANS_UTIL_MAX_THREAD_AFFINITY,
+                RunLoop::WorkerCallback *workerCallback_ = 0,
+                const Pipeline::Stage *begin_ = 0,
+                const Pipeline::Stage *end_ = 0);
+
+            /// \brief
+            /// Create a global pipeline with custom ctor arguments.
+            /// \return A global pipeline with custom ctor arguments.
+            Pipeline *operator () ();
+        };
+
+        /// \struct GlobalPipeline Pipeline.h thekogans/util/Pipeline.h
+        ///
+        /// \brief
+        /// A global pipeline instance. The Pipeline is designed to be
+        /// as flexible as possible. To be useful in different situations
+        /// the pipelines's worker count needs to be parametrized as we
+        /// might need different pipelines running different worker counts
+        /// at different thread priorities, as well as different count of
+        /// stages. That said, the most basic (and the most useful) use
+        /// case will have a single pipeline using the defaults. This struct
+        /// exists to aid in that. If all you need is a single pipeline where
+        /// you can schedule jobs, then GlobalPipeline::Instance () will do
+        /// the trick.
+        struct _LIB_THEKOGANS_UTIL_DECL GlobalPipeline :
+            public Singleton<Pipeline, SpinLock, GlobalPipelineCreateInstance> {};
+
     } // namespace util
 } // namespace thekogans
 
