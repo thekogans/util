@@ -140,11 +140,59 @@ namespace thekogans {
             return worker;
         }
 
+        struct DeleteWorker :
+                public Singleton<DeleteWorker, SpinLock>,
+                public Thread {
+        private:
+            WorkerPool::WorkerList workers;
+            Mutex mutex;
+            Condition workersNotEmpty;
+
+        public:
+            DeleteWorker () :
+                    Thread ("DeleteWorker"),
+                    workersNotEmpty (mutex) {
+                Create ();
+            }
+
+            void EnqWorker (WorkerPool::Worker *worker) {
+                LockGuard<Mutex> guard (mutex);
+                workers.push_back (worker);
+                workersNotEmpty.Signal ();
+            }
+
+        private:
+            WorkerPool::Worker *DeqWorker () {
+                LockGuard<Mutex> guard (mutex);
+                while (workers.empty ()) {
+                    workersNotEmpty.Wait ();
+                }
+                return workers.pop_front ();
+            }
+
+            // Thread
+            virtual void Run () throw () {
+                while (1) {
+                    WorkerPool::Worker *worker = DeqWorker ();
+                    if (worker != 0) {
+                        delete worker;
+                    }
+                }
+            }
+        };
+
         void WorkerPool::ReleaseWorker (Worker *worker) {
             if (worker != 0) {
                 LockGuard<SpinLock> guard (spinLock);
                 if (activeWorkerCount > minWorkers) {
-                    delete worker;
+                    // Schedule the worker for deletion. This is done
+                    // to break the deadlock that happens when
+                    // JobQueue::Worker::Run calls FinishedJob, which
+                    // releases the job, which then tries to delete
+                    // the JobQueue. JobQueue::~JobQueue calls
+                    // JobQueue::Stop, which waits on the worker to
+                    // exit.
+                    DeleteWorker::Instance ().EnqWorker (worker);
                     --activeWorkerCount;
                 }
                 else {

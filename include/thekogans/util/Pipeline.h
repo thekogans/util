@@ -52,10 +52,6 @@ namespace thekogans {
             /// Convenient typedef for ThreadSafeRefCounted::Ptr<Pipeline>.
             typedef ThreadSafeRefCounted::Ptr<Pipeline> Ptr;
 
-            /// \brief
-            /// Convenient typedef for std::string.
-            typedef std::string Id;
-
             /// \struct Pipeline::Stage Pipeline.h thekogans/util/Pipeline.h
             ///
             /// \brief
@@ -115,7 +111,7 @@ namespace thekogans {
             enum {
                 /// \brief
                 /// JobList ID.
-                JOB_LIST_ID = 1
+                JOB_LIST_ID = RunLoop::LAST_JOB_LIST_ID
             };
             /// \brief
             /// Convenient typedef for IntrusiveList<Job, JOB_LIST_ID>.
@@ -135,12 +131,13 @@ namespace thekogans {
             /// Pipeline::Job Begin and End are provided
             /// to perform one time initialization/tear down.
             struct _LIB_THEKOGANS_UTIL_DECL Job :
-                    public JobList::Node,
-                    public RunLoop::Job {
+                    public RunLoop::Job,
+                    public JobList::Node {
                 /// \brief
                 /// Convenient typedef for ThreadSafeRefCounted::Ptr<Job>.
                 typedef ThreadSafeRefCounted::Ptr<Job> Ptr;
 
+            protected:
                 /// \brief
                 /// Pipeline on which this job is staged.
                 Pipeline &pipeline;
@@ -154,21 +151,40 @@ namespace thekogans {
                 /// Job execution end time.
                 ui64 end;
 
+            public:
                 /// \brief
                 /// ctor.
                 /// \param[in] pipeline_ Pipeline that will execute this job.
-                Job (Pipeline &pipeline_) :
+                explicit Job (Pipeline &pipeline_) :
                     pipeline (pipeline_),
                     stage (0),
                     start (0),
                     end (0) {}
 
                 /// \brief
-                /// Return the pipeline name on which this job is running.
-                /// \return Pipeline name on which this job is running.
-                inline const Pipeline::Id &GetPipelineId () const {
+                /// Return the pipeline on which this job can run.
+                /// \return Pipeline on which this job can run.
+                inline Pipeline &GetPipeline () const {
+                    return pipeline;
+                }
+                /// \brief
+                /// Return the pipeline id on which this job can run.
+                /// \return Pipeline id on which this job can run.
+                inline const RunLoop::Id &GetPipelineId () const {
                     return pipeline.GetId ();
                 }
+
+            protected:
+                /// \brief
+                /// Used internally by RunLoop to set the RunLoop id and reset
+                /// the status, disposition and completed.
+                /// \param[in] runLoopId_ RunLoop id to which this job belongs.
+                virtual void Reset (const RunLoop::Id &runLoopId_);
+                /// \brief
+                /// Used internally by RunLoop and it's derivatives to set the
+                /// job status.
+                /// \param[in] status_ New job status.
+                virtual void SetStatus (Status status_);
 
                 /// \brief
                 /// Provides the same functionality as
@@ -185,18 +201,6 @@ namespace thekogans {
                 /// the job should stop what it's doing, and exit.
                 virtual void End (volatile const bool &done) throw () {}
 
-            protected:
-                /// \brief
-                /// Used internally by RunLoop to set the RunLoop id and reset
-                /// the status, disposition and completed.
-                /// \param[in] runLoopId RunLoop id to which this job belongs.
-                void Reset ();
-                /// \brief
-                /// Used internally by RunLoop and it's derivatives to set the
-                /// job status.
-                /// \param[in] status_ New job status.
-                virtual void SetStatus (Status status_);
-
                 /// \brief
                 /// Pipeline uses Reset.
                 friend struct Pipeline;
@@ -212,13 +216,22 @@ namespace thekogans {
         private:
             /// \brief
             /// Pipeline id.
-            const Id id;
+            const RunLoop::Id id;
             /// \brief
             /// Pipeline name.
             const std::string name;
             /// \brief
+            /// Pipeline type (TIPE_FIFO or TYPE_LIFO)
+            const RunLoop::Type type;
+            /// \brief
+            /// Max pending jobs.
+            const ui32 maxPendingJobs;
+            /// \brief
             /// Flag to signal the stage thread(s).
             volatile bool done;
+            /// \brief
+            /// Queue of pending jobs.
+            JobList pendingJobs;
             /// \brief
             /// List of running jobs.
             JobList runningJobs;
@@ -227,32 +240,114 @@ namespace thekogans {
             RunLoop::Stats stats;
             /// \brief
             /// Synchronization mutex.
-            Mutex jobMutex;
+            Mutex jobsMutex;
+            /// \brief
+            /// Synchronization condition variable.
+            Condition jobsNotEmpty;
             /// \brief
             /// Synchronization event.
             Condition idle;
+            /// \brief
+            /// Number of workers servicing the queue.
+            const ui32 workerCount;
+            /// \brief
+            /// \Worker thread priority.
+            const i32 workerPriority;
+            /// \brief
+            /// \Worker thread processor affinity.
+            const ui32 workerAffinity;
+            /// \brief
+            /// Called to initialize/uninitialize the worker thread.
+            RunLoop::WorkerCallback *workerCallback;
+            /// \brief
+            /// Forward declaration of Worker.
+            struct Worker;
+            enum {
+                /// \brief
+                /// WorkerList ID.
+                WORKER_LIST_ID
+            };
+            /// \brief
+            /// Convenient typedef for IntrusiveList<Worker, WORKER_LIST_ID>.
+            typedef IntrusiveList<Worker, WORKER_LIST_ID> WorkerList;
+            /// \struct JobQueue::Worker JobQueue.h thekogans/util/JobQueue.h
+            ///
+            /// \brief
+            /// Worker takes pending jobs off the queue and
+            /// executes them. It then reports back to the
+            /// queue so that it can collect statistics.
+            struct Worker :
+                    public Thread,
+                    public WorkerList::Node {
+                /// \brief
+                /// Convenient typedef for std::unique_ptr<Worker>.
+                typedef std::unique_ptr<Worker> UniquePtr;
+
+                /// \brief
+                /// Pipeline to which this worker belongs.
+                Pipeline &pipeline;
+
+                /// \brief
+                /// ctor.
+                /// \param[in] pipeline_ Pipeline to which this worker belongs.
+                /// \param[in] name Worker thread name.
+                /// \param[in] priority Worker thread priority.
+                /// \param[in] affinity Worker thread processor affinity.
+                Worker (Pipeline &pipeline_,
+                        const std::string &name = std::string (),
+                        i32 priority = THEKOGANS_UTIL_NORMAL_THREAD_PRIORITY,
+                        ui32 affinity = THEKOGANS_UTIL_MAX_THREAD_AFFINITY) :
+                        Thread (name),
+                        pipeline (pipeline_) {
+                    Create (priority, affinity);
+                }
+
+                // Thread
+                /// \brief
+                /// Worker thread.
+                virtual void Run () throw ();
+            };
+            /// \brief
+            /// List of workers.
+            WorkerList workers;
+            /// \brief
+            /// Synchronization mutex.
+            Mutex workersMutex;
             /// \brief
             /// Pipeline stages.
             std::vector<JobQueue::Ptr> stages;
             /// \brief
             /// Synchronization mutex.
-            Mutex stageMutex;
+            Mutex stagesMutex;
 
         public:
             /// \brief
             /// ctor.
             /// \param[in] name_ Pipeline name.
+            /// \param[in] type_ Pipeline type.
+            /// \param[in] maxPendingJobs_ Max pending pipeline jobs.
+            /// \param[in] workerCount_ Max workers to service the pipeline.
+            /// \param[in] workerPriority_ Worker thread priority.
+            /// \param[in] workerAffinity_ Worker thread processor affinity.
+            /// \param[in] workerCallback_ Called to initialize/uninitialize
+            /// the worker thread.
             /// \param[in] begin Pointer to the beginning of the Stage array.
             /// \param[in] end Pointer to the end of the Stage array.
             Pipeline (
-                const std::string &name = std::string (),
+                const std::string &name_ = std::string (),
+                RunLoop::Type type_ = RunLoop::TYPE_FIFO,
+                ui32 maxPendingJobs_ = UI32_MAX,
+                ui32 workerCount_ = 1,
+                i32 workerPriority_ = THEKOGANS_UTIL_NORMAL_THREAD_PRIORITY,
+                ui32 workerAffinity_ = THEKOGANS_UTIL_MAX_THREAD_AFFINITY,
+                RunLoop::WorkerCallback *workerCallback_ = 0,
                 const Stage *begin = 0,
                 const Stage *end = 0);
 
             /// \brief
             /// Return Pipeline id.
             /// \return Pipeline id.
-            inline const Id &GetId () const {
+            inline const RunLoop::Id &GetId () const {
                 return id;
             }
             /// \brief
@@ -313,22 +408,6 @@ namespace thekogans {
             /// \return Job matching the given id.
             Job::Ptr GetJobWithId (const Job::Id &jobId);
 
-            /// \struct Pipeline::EqualityTest Pipeline.h thekogans/util/Pipeline.h
-            ///
-            /// \brief
-            /// Equality test to use to determine which jobs to wait for and cancel.
-            struct EqualityTest {
-                /// \brief
-                /// dtor.
-                virtual ~EqualityTest () {}
-
-                /// \brief
-                /// Reimplement this function to test for equality.
-                /// \param[in] job Instance to test for equality.
-                /// \return true == equal.
-                virtual bool operator () (const Job & /*job*/) const throw ();
-            };
-
             /// \brief
             /// Wait for a given job to complete.
             /// \param[in] job Job to wait on.
@@ -359,7 +438,7 @@ namespace thekogans {
             /// \return true == All jobs satisfying the equalityTest completed,
             /// false == One or more matching jobs timed out.
             bool WaitForJobs (
-                const EqualityTest &equalityTest,
+                const RunLoop::EqualityTest &equalityTest,
                 const TimeSpec &timeSpec = TimeSpec::Infinite);
             /// \brief
             /// Blocks until all jobs are complete and the queue is empty.
@@ -377,7 +456,7 @@ namespace thekogans {
             /// \brief
             /// Cancel all running jobs matching the given equality test.
             /// \param[in] equalityTest EqualityTest to query to determine which jobs to cancel.
-            void CancelJobs (const EqualityTest &equalityTest);
+            void CancelJobs (const RunLoop::EqualityTest &equalityTest);
             /// \brief
             /// Cancel all running jobs.
             void CancelAllJobs ();
@@ -398,6 +477,11 @@ namespace thekogans {
             bool IsIdle ();
 
         protected:
+            /// \brief
+            /// Used internally by worker(s) to get the next job.
+            /// \param[in] wait true == Wait until a job becomes available.
+            /// \return The next job to execute.
+            Job *DeqJob (bool wait = true);
             /// \brief
             /// Called by job after it has traversed the pipeline.
             /// Used to update state and \see{Pipeline::Stats}.

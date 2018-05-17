@@ -111,7 +111,7 @@ namespace thekogans {
             WorkerList workers;
             /// \brief
             /// Synchronization mutex.
-            Mutex workerMutex;
+            Mutex workersMutex;
 
         public:
             /// \brief

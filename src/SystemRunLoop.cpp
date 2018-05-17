@@ -426,7 +426,7 @@ namespace thekogans {
                 Job::Ptr job,
                 bool wait,
                 const TimeSpec &timeSpec) {
-            bool result = RunLoop::EnqJob (job, false);
+            bool result = RunLoop::EnqJob (job);
             if (result) {
             #if defined (TOOLCHAIN_OS_Windows)
                 PostMessage (window->wnd, RUN_LOOP_MESSAGE, 0, 0);
@@ -452,13 +452,18 @@ namespace thekogans {
                 if (job == 0) {
                     break;
                 }
-                ui64 start = HRTimer::Click ();
-                job->SetStatus (Job::Running);
-                job->Prologue (done);
-                job->Execute (done);
-                job->Epilogue (done);
-                job->Finish ();
-                ui64 end = HRTimer::Click ();
+                ui64 start = 0;
+                ui64 end = 0;
+                // Short circuit cancelled pending jobs.
+                if (!job->IsCancelled ()) {
+                    start = HRTimer::Click ();
+                    job->SetStatus (Job::Running);
+                    job->Prologue (done);
+                    job->Execute (done);
+                    job->Epilogue (done);
+                    job->Finish ();
+                    end = HRTimer::Click ();
+                }
                 FinishedJob (job, start, end);
             }
         }

@@ -41,13 +41,18 @@ namespace thekogans {
                 while (!done) {
                     Job *job = DeqJob ();
                     if (job != 0) {
-                        ui64 start = HRTimer::Click ();
-                        job->SetStatus (Job::Running);
-                        job->Prologue (done);
-                        job->Execute (done);
-                        job->Epilogue (done);
-                        job->Finish ();
-                        ui64 end = HRTimer::Click ();
+                        ui64 start = 0;
+                        ui64 end = 0;
+                        // Short circuit cancelled pending jobs.
+                        if (!job->IsCancelled ()) {
+                            start = HRTimer::Click ();
+                            job->SetStatus (Job::Running);
+                            job->Prologue (done);
+                            job->Execute (done);
+                            job->Epilogue (done);
+                            job->Finish ();
+                            end = HRTimer::Click ();
+                        }
                         FinishedJob (job, start, end);
                     }
                 }
@@ -57,9 +62,9 @@ namespace thekogans {
         void DefaultRunLoop::Stop (bool cancelPendingJobs) {
             if (SetDone (true)) {
                 jobsNotEmpty.Signal ();
-            }
-            if (cancelPendingJobs) {
-                CancelAllJobs ();
+                if (cancelPendingJobs) {
+                    CancelAllJobs ();
+                }
             }
         }
 

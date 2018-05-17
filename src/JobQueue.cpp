@@ -45,13 +45,18 @@ namespace thekogans {
             while (!queue.done) {
                 Job *job = queue.DeqJob ();
                 if (job != 0) {
-                    ui64 start = HRTimer::Click ();
-                    job->SetStatus (Job::Running);
-                    job->Prologue (queue.done);
-                    job->Execute (queue.done);
-                    job->Epilogue (queue.done);
-                    job->Finish ();
-                    ui64 end = HRTimer::Click ();
+                    ui64 start = 0;
+                    ui64 end = 0;
+                    // Short circuit cancelled pending jobs.
+                    if (!job->IsCancelled ()) {
+                        start = HRTimer::Click ();
+                        job->SetStatus (Job::Running);
+                        job->Prologue (queue.done);
+                        job->Execute (queue.done);
+                        job->Epilogue (queue.done);
+                        job->Finish ();
+                        end = HRTimer::Click ();
+                    }
                     queue.FinishedJob (job, start, end);
                 }
             }
@@ -80,7 +85,7 @@ namespace thekogans {
         }
 
         void JobQueue::Start () {
-            LockGuard<Mutex> guard (workerMutex);
+            LockGuard<Mutex> guard (workersMutex);
             if (SetDone (false)) {
                 for (ui32 i = 0; i < workerCount; ++i) {
                     std::string workerName;
@@ -104,7 +109,7 @@ namespace thekogans {
 
         void JobQueue::Stop (bool cancelPendingJobs) {
             {
-                LockGuard<Mutex> guard (workerMutex);
+                LockGuard<Mutex> guard (workersMutex);
                 if (SetDone (true)) {
                     jobsNotEmpty.SignalAll ();
                     struct Callback : public WorkerList::Callback {

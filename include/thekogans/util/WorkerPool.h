@@ -257,6 +257,10 @@ namespace thekogans {
             void ReleaseWorker (Worker *worker);
 
             /// \brief
+            /// DeleteWorker needs access to WorkerList.
+            friend struct DeleteWorker;
+
+            /// \brief
             /// WorkerPool is neither copy constructable, nor assignable.
             THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (WorkerPool)
         };

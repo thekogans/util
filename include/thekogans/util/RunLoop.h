@@ -80,11 +80,20 @@ namespace thekogans {
             enum {
                 /// \brief
                 /// JobList ID.
-                JOB_LIST_ID
+                JOB_LIST_ID,
+                /// \brief
+                /// Auxiliary JobList ID.
+                AUX_JOB_LIST_ID,
+                /// \brief
+                /// Use this sentinel to create your own job lists (\see{Pipeline}).
+                LAST_JOB_LIST_ID
             };
             /// \brief
             /// Convenient typedef for IntrusiveList<Job, JOB_LIST_ID>.
             typedef IntrusiveList<Job, JOB_LIST_ID> JobList;
+            /// \brief
+            /// Convenient typedef for IntrusiveList<Job, AUX_JOB_LIST_ID>.
+            typedef IntrusiveList<Job, AUX_JOB_LIST_ID> AuxJobList;
 
         #if defined (_MSC_VER)
             #pragma warning (push)
@@ -96,7 +105,8 @@ namespace thekogans {
             /// A RunLoop::Job must, at least, implement the Execute method.
             struct _LIB_THEKOGANS_UTIL_DECL Job :
                     public ThreadSafeRefCounted,
-                    public JobList::Node {
+                    public JobList::Node,
+                    public AuxJobList::Node {
                 /// \brief
                 /// Convenient typedef for ThreadSafeRefCounted::Ptr<Job>.
                 typedef ThreadSafeRefCounted::Ptr<Job> Ptr;
@@ -129,7 +139,10 @@ namespace thekogans {
                     /// Job was cancelled mid flight.
                     Cancelled,
                     /// \brief
-                    /// Job completed execution successfully.
+                    /// Job failed execution.
+                    Failed,
+                    /// \brief
+                    /// Job completed execution.
                     Finished
                 };
 
@@ -212,6 +225,12 @@ namespace thekogans {
                     return disposition == Cancelled;
                 }
                 /// \brief
+                /// Return true if the job has failed.
+                /// \return true == the job has failed.
+                inline bool IsFailed () const {
+                    return disposition == Failed;
+                }
+                /// \brief
                 /// Return true if the job has finished.
                 /// \return true == the job has finished.
                 inline bool IsFinished () const {
@@ -229,6 +248,48 @@ namespace thekogans {
                 }
 
                 /// \brief
+                /// Wait for the job to complete.
+                /// \param[in] timeSpec How long to wait for the job to complete.
+                /// IMPORTANT: timeSpec is a relative value.
+                inline bool WaitCompleted (const TimeSpec &timeSpec = TimeSpec::Infinite) {
+                    return completed.Wait (timeSpec);
+                }
+
+            protected:
+                /// \brief
+                /// Used internally by RunLoop to set the RunLoop id and reset
+                /// status, disposition and completed.
+                /// \param[in] runLoopId_ RunLoop id to which this job belongs.
+                virtual void Reset (const RunLoop::Id &runLoopId_);
+                /// \brief
+                /// Used internally by RunLoop and it's derivatives to set the
+                /// job status.
+                /// \param[in] status_ New job status.
+                virtual void SetStatus (Status status_) {
+                    status = status_;
+                    if (status == Completed) {
+                        completed.Signal ();
+                    }
+                }
+
+                /// \brief
+                /// Used internally by RunLoop and it's derivatives to mark the
+                /// job as failed execution.
+                inline void Fail () {
+                    if (disposition == Unknown) {
+                        disposition = Failed;
+                    }
+                }
+                /// \brief
+                /// Used internally by RunLoop and it's derivatives to mark the
+                /// job as finished execution.
+                inline void Finish () {
+                    if (disposition == Unknown) {
+                        disposition = Finished;
+                    }
+                }
+
+                /// \brief
                 /// Return true if the job should stop what it's doing and exit.
                 /// Use this method in your implementation of Execute to keep the
                 /// RunLoop responsive.
@@ -237,14 +298,6 @@ namespace thekogans {
                 /// \return true == Job should stop what it's doing and exit.
                 inline bool ShouldStop (volatile const bool &done) const {
                     return done || IsCancelled ();
-                }
-
-                /// \brief
-                /// Wait for the job to complete.
-                /// \param[in] timeSpec How long to wait for the job to complete.
-                /// IMPORTANT: timeSpec is a relative value.
-                inline bool WaitCompleted (const TimeSpec &timeSpec = TimeSpec::Infinite) {
-                    return completed.Wait (timeSpec);
                 }
 
                 /// \brief
@@ -266,22 +319,6 @@ namespace thekogans {
                 /// the job should stop what it's doing, and exit.
                 virtual void Epilogue (volatile const bool & /*done*/) throw () {}
 
-            protected:
-                /// \brief
-                /// Used internally by RunLoop to set the RunLoop id and reset
-                /// status, disposition and completed.
-                /// \param[in] runLoopId_ RunLoop id to which this job belongs.
-                void Reset (const RunLoop::Id &runLoopId_);
-                /// \brief
-                /// Used internally by RunLoop and it's derivatives to set the
-                /// job status.
-                /// \param[in] status_ New job status.
-                virtual void SetStatus (Status status_);
-                /// \brief
-                /// Used internally by RunLoop and it's derivatives to mark the
-                /// job as finished execution.
-                void Finish ();
-
                 /// \brief
                 /// RunLoop uses Reset.
                 friend struct RunLoop;
@@ -295,8 +332,8 @@ namespace thekogans {
                 /// JobQueue uses SetStatus and Finish.
                 friend struct JobQueue;
                 /// \brief
-                /// ReleaseJobQueue uses SetStatus.
-                friend struct ReleaseJobQueue;
+                /// Pipeline uses SignalCompleted.
+                friend struct Pipeline;
             };
         #if defined (_MSC_VER)
             #pragma warning (pop)
@@ -387,16 +424,6 @@ namespace thekogans {
                     totalJobTime (0) {}
 
                 /// \brief
-                /// After completion of each job, used to update the stats.
-                /// \param[in] jobId Id of completed job.
-                /// \param[in] start Job start time.
-                /// \param[in] end Job end time.
-                void Update (
-                    const RunLoop::Job::Id &jobId,
-                    ui64 start,
-                    ui64 end);
-
-                /// \brief
                 /// Return the XML representation of the Stats.
                 /// \param[in] name RunLoop name.
                 /// \param[in] indentationLevel Pretty print parameter. If
@@ -407,6 +434,24 @@ namespace thekogans {
                 std::string ToString (
                     const std::string &name,
                     ui32 indentationLevel) const;
+
+            private:
+                /// \brief
+                /// After completion of each job, used to update the stats.
+                /// \param[in] job Completed job.
+                /// \param[in] start Job start time.
+                /// \param[in] end Job end time.
+                void Update (
+                    RunLoop::Job *job,
+                    ui64 start,
+                    ui64 end);
+
+                /// \brief
+                /// RunLoop needs access to Update.
+                friend struct RunLoop;
+                /// \brief
+                /// Pipeline needs access to Update.
+                friend struct Pipeline;
             };
 
             /// \struct RunLoop::WorkerCallback RunLoop.h thekogans/util/RunLoop.h
@@ -491,7 +536,7 @@ namespace thekogans {
             Stats stats;
             /// \brief
             /// Synchronization mutex.
-            Mutex mutex;
+            Mutex jobsMutex;
             /// \brief
             /// Synchronization condition variable.
             Condition jobsNotEmpty;

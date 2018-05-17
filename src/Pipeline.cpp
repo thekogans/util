@@ -19,53 +19,124 @@
 #include "thekogans/util/Heap.h"
 #include "thekogans/util/HRTimer.h"
 #include "thekogans/util/Exception.h"
+#include "thekogans/util/LoggerMgr.h"
 #include "thekogans/util/Pipeline.h"
 
 namespace thekogans {
     namespace util {
 
-        void Pipeline::Job::Reset () {
-            stage = 0;
-            start = 0;
-            end = 0;
+        void Pipeline::Job::Reset (const RunLoop::Id &runLoopId_) {
+            RunLoop::Job::Reset (runLoopId_);
+            if (runLoopId_ == pipeline.GetId ()) {
+                stage = 0;
+                start = 0;
+                end = 0;
+            }
         }
 
         void Pipeline::Job::SetStatus (Status status_) {
-            if (status == Pending && status_ == Running && stage == 0) {
-                status = status_;
-                start = HRTimer::Click ();
-                Begin (pipeline.done);
+            status = status_;
+            if (IsRunning ()) {
+                if (stage == 0) {
+                    start = HRTimer::Click ();
+                    Begin (pipeline.done);
+                }
             }
-            else if (status == Running && status_ == Completed) {
-                status = status_;
-                stage = IsFinished () ? ++stage : pipeline.stages.size ();
-                if (stage < pipeline.stages.size ()) {
-                    pipeline.stages[stage]->EnqJob (RunLoop::Job::Ptr (this));
+            else if (IsCompleted ()) {
+                LockGuard<Mutex> guard (pipeline.stagesMutex);
+                if (stage == pipeline.stages.size ()) {
+                    completed.Signal ();
                 }
                 else {
+                    if (stage < pipeline.stages.size () - 1) {
+                        THEKOGANS_UTIL_TRY {
+                            pipeline.stages[++stage]->EnqJob (RunLoop::Job::Ptr (this));
+                            return;
+                        }
+                        THEKOGANS_UTIL_CATCH (Exception) {
+                            Fail ();
+                            THEKOGANS_UTIL_LOG_ERROR ("%s\n", exception.Report ().c_str ());
+                        }
+                    }
+                    stage = pipeline.stages.size ();
                     End (pipeline.done);
                     end = HRTimer::Click ();
                     pipeline.FinishedJob (this, start, end);
                 }
             }
-            else if (status == Completed && status_ == Completed &&
-                    stage == pipeline.stages.size ()) {
-                completed.SignalAll ();
+        }
+
+        void Pipeline::Worker::Run () throw () {
+            struct WorkerInitializer {
+                Pipeline &pipeline;
+                explicit WorkerInitializer (Pipeline &pipeline_) :
+                        pipeline (pipeline_) {
+                    if (pipeline.workerCallback != 0) {
+                        pipeline.workerCallback->InitializeWorker ();
+                    }
+                }
+                ~WorkerInitializer () {
+                    if (pipeline.workerCallback != 0) {
+                        pipeline.workerCallback->UninitializeWorker ();
+                    }
+                }
+            } workerInitializer (pipeline);
+            while (!pipeline.done) {
+                Job *job = pipeline.DeqJob ();
+                if (job != 0) {
+                    ui64 start = 0;
+                    ui64 end = 0;
+                    // Short circuit cancelled pending jobs.
+                    if (!job->IsCancelled ()) {
+                        THEKOGANS_UTIL_TRY {
+                            pipeline.stages[job->stage]->EnqJob (RunLoop::Job::Ptr (job));
+                        }
+                        THEKOGANS_UTIL_CATCH (Exception) {
+                            job->Cancel ();
+                            pipeline.FinishedJob (job, start, end);
+                            THEKOGANS_UTIL_LOG_ERROR ("%s\n", exception.Report ().c_str ());
+                        }
+                    }
+                    else {
+                        pipeline.FinishedJob (job, start, end);
+                    }
+                }
             }
         }
 
         Pipeline::Pipeline (
                 const std::string &name_,
+                RunLoop::Type type_,
+                ui32 maxPendingJobs_,
+                ui32 workerCount_,
+                i32 workerPriority_,
+                ui32 workerAffinity_,
+                RunLoop::WorkerCallback *workerCallback_,
                 const Stage *begin,
                 const Stage *end) :
                 id (GUID::FromRandom ().ToString ()),
                 name (name_),
+                type (type_),
+                maxPendingJobs (maxPendingJobs_),
                 done (true),
-                idle (jobMutex) {
-            if (begin != 0 && end != 0) {
-                for (; begin != end; ++begin) {
-                    AddStage (*begin);
+                jobsNotEmpty (jobsMutex),
+                idle (jobsMutex),
+                workerCount (workerCount_),
+                workerPriority (workerPriority_),
+                workerAffinity (workerAffinity_),
+                workerCallback (workerCallback_) {
+            if ((type == RunLoop::TYPE_FIFO || type == RunLoop::TYPE_LIFO) &&
+                    maxPendingJobs == 0 && workerCount > 0) {
+                Start ();
+                if (begin != 0 && end != 0) {
+                    for (; begin != end; ++begin) {
+                        AddStage (*begin);
+                    }
                 }
+            }
+            else {
+                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
             }
         }
 
@@ -82,7 +153,8 @@ namespace thekogans {
                 else {
                     TimeSpec now = GetCurrentTime ();
                     TimeSpec deadline = now + waitTimeSpec;
-                    while ((pipeline.Get () == 0 || !pipeline->IsRunning ()) && deadline > now) {
+                    while ((pipeline.Get () == 0 || !pipeline->IsRunning ()) &&
+                            deadline > now) {
                         Sleep (sleepTimeSpec);
                         now = GetCurrentTime ();
                     }
@@ -96,7 +168,7 @@ namespace thekogans {
         }
 
         void Pipeline::AddStage (const Stage &stage) {
-            LockGuard<Mutex> guard (stageMutex);
+            LockGuard<Mutex> guard (stagesMutex);
             stages.push_back (
                 JobQueue::Ptr (
                     new JobQueue (
@@ -110,7 +182,7 @@ namespace thekogans {
         }
 
         RunLoop::Stats Pipeline::GetStageStats (std::size_t stage) {
-            LockGuard<Mutex> guard (stageMutex);
+            LockGuard<Mutex> guard (stagesMutex);
             if (stage < stages.size ()) {
                 return stages[stage]->GetStats ();
             }
@@ -121,7 +193,7 @@ namespace thekogans {
         }
 
         void Pipeline::GetStagesStats (std::vector<RunLoop::Stats> &stats) {
-            LockGuard<Mutex> guard (stageMutex);
+            LockGuard<Mutex> guard (stagesMutex);
             stats.resize (stages.size ());
             for (std::size_t i = 0, count = stages.size (); i < count; ++i) {
                 stats[i] = stages[i]->GetStats ();
@@ -129,24 +201,49 @@ namespace thekogans {
         }
 
         void Pipeline::Start () {
-            LockGuard<Mutex> guard (stageMutex);
+            LockGuard<Mutex> guard (workersMutex);
             if (SetDone (false)) {
-                for (std::size_t i = 0, count = stages.size (); i < count; ++i) {
-                    stages[i]->Start ();
+                for (ui32 i = 0; i < workerCount; ++i) {
+                    std::string workerName;
+                    if (!name.empty ()) {
+                        if (workerCount > 1) {
+                            workerName = FormatString ("%s-%u", name.c_str (), i);
+                        }
+                        else {
+                            workerName = name;
+                        }
+                    }
+                    workers.push_back (
+                        new Worker (
+                            *this,
+                            workerName,
+                            workerPriority,
+                            workerAffinity));
                 }
             }
         }
 
-        void Pipeline::Stop (bool cancelRunningJobs) {
+        void Pipeline::Stop (bool cancelPendingJobs) {
             {
-                LockGuard<Mutex> guard (stageMutex);
+                LockGuard<Mutex> guard (workersMutex);
                 if (SetDone (true)) {
-                    for (std::size_t i = 0, count = stages.size (); i < count; ++i) {
-                        stages[i]->Stop (cancelRunningJobs);
-                    }
+                    jobsNotEmpty.SignalAll ();
+                    struct Callback : public WorkerList::Callback {
+                        typedef WorkerList::Callback::result_type result_type;
+                        typedef WorkerList::Callback::argument_type argument_type;
+                        virtual result_type operator () (argument_type worker) {
+                            // Join the worker thread before deleting it to
+                            // let it's thread function finish it's tear down.
+                            worker->Wait ();
+                            delete worker;
+                            return true;
+                        }
+                    } callback;
+                    workers.clear (callback);
+                    assert (runningJobs.empty ());
                 }
             }
-            if (cancelRunningJobs) {
+            if (cancelPendingJobs) {
                 CancelAllJobs ();
             }
         }
@@ -156,17 +253,25 @@ namespace thekogans {
                 bool wait,
                 const TimeSpec &timeSpec) {
             if (job.Get () != 0 && job->IsCompleted () && job->GetPipelineId () == id) {
-                job->Reset ();
-                {
-                    LockGuard<Mutex> guard (stageMutex);
-                    stages[job->stage]->EnqJob (RunLoop::Job::Ptr (job.Get ()));
+                LockGuard<Mutex> guard (jobsMutex);
+                if (pendingJobs.size () < (std::size_t)maxPendingJobs) {
+                    job->Reset (id);
+                    if (type == RunLoop::TYPE_FIFO) {
+                        pendingJobs.push_back (job.Get ());
+                    }
+                    else {
+                        pendingJobs.push_front (job.Get ());
+                    }
+                    job->AddRef ();
+                    jobsNotEmpty.Signal ();
+                    return !wait || WaitForJob (job, timeSpec);
                 }
-                {
-                    LockGuard<Mutex> guard (jobMutex);
-                    runningJobs.push_back (job.Get ());
+                else {
+                    THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
+                        "RunLoop (%s) max jobs (%u) reached.",
+                        !name.empty () ? name.c_str () : "no name",
+                        maxPendingJobs);
                 }
-                job->AddRef ();
-                return !wait || WaitForJob (job, timeSpec);
             }
             else {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
@@ -175,7 +280,7 @@ namespace thekogans {
         }
 
         Pipeline::Job::Ptr Pipeline::GetJobWithId (const Job::Id &jobId) {
-            LockGuard<Mutex> guard (jobMutex);
+            LockGuard<Mutex> guard (jobsMutex);
             struct GetJobWithIdCallback : public JobList::Callback {
                 typedef JobList::Callback::result_type result_type;
                 typedef JobList::Callback::argument_type argument_type;
@@ -191,7 +296,9 @@ namespace thekogans {
                     return true;
                 }
             } getJobWithIdCallback (jobId);
-            runningJobs.for_each (getJobWithIdCallback);
+            if (runningJobs.for_each (getJobWithIdCallback)) {
+                pendingJobs.for_each (getJobWithIdCallback);
+            }
             return getJobWithIdCallback.job;
         }
 
@@ -230,81 +337,44 @@ namespace thekogans {
             return job.Get () != 0 && WaitForJob (job, timeSpec);
         }
 
-        namespace {
-            struct JobProxy;
-            enum {
-                JOB_PROXY_LIST_ID
-            };
-            typedef IntrusiveList<JobProxy, JOB_PROXY_LIST_ID> JobProxyList;
-
-        #if defined (_MSC_VER)
-            #pragma warning (push)
-            #pragma warning (disable : 4275)
-        #endif // defined (_MSC_VER)
-            struct JobProxy : public JobProxyList::Node {
-                THEKOGANS_UTIL_DECLARE_HEAP_WITH_LOCK (JobProxy, SpinLock)
-
-                Pipeline::Job::Ptr job;
-
-                explicit JobProxy (Pipeline::Job *job_) :
-                    job (job_) {}
-            };
-        #if defined (_MSC_VER)
-            #pragma warning (pop)
-        #endif // defined (_MSC_VER)
-
-            THEKOGANS_UTIL_IMPLEMENT_HEAP_WITH_LOCK (JobProxy, SpinLock)
-        }
-
         bool Pipeline::WaitForJobs (
-                const EqualityTest &equalityTest,
+                const RunLoop::EqualityTest &equalityTest,
                 const TimeSpec &timeSpec) {
             struct WaitForJobCallback : public JobList::Callback {
                 typedef JobList::Callback::result_type result_type;
                 typedef JobList::Callback::argument_type argument_type;
-                const EqualityTest &equalityTest;
-                JobProxyList jobs;
-                explicit WaitForJobCallback (const EqualityTest &equalityTest_) :
+                const RunLoop::EqualityTest &equalityTest;
+                RunLoop::AuxJobList jobs;
+                explicit WaitForJobCallback (const RunLoop::EqualityTest &equalityTest_) :
                     equalityTest (equalityTest_) {}
-                ~WaitForJobCallback () {
-                    struct ClearCallback : public JobProxyList::Callback {
-                        typedef JobProxyList::Callback::result_type result_type;
-                        typedef JobProxyList::Callback::argument_type argument_type;
-                        virtual result_type operator () (argument_type jobProxy) {
-                            delete jobProxy;
-                            return true;
-                        }
-                    } clearCallback;
-                    jobs.clear (clearCallback);
-                }
                 virtual result_type operator () (argument_type job) {
                     if (equalityTest (*job)) {
-                        jobs.push_back (new JobProxy (job));
+                        jobs.push_back (job);
                     }
                     return true;
                 }
             } waitForJobCallback (equalityTest);
             {
-                LockGuard<Mutex> guard (jobMutex);
+                LockGuard<Mutex> guard (jobsMutex);
+                pendingJobs.for_each (waitForJobCallback);
                 runningJobs.for_each (waitForJobCallback);
             }
             if (!waitForJobCallback.jobs.empty ()) {
-                struct CompletedCallback : public JobProxyList::Callback {
-                    typedef JobProxyList::Callback::result_type result_type;
-                    typedef JobProxyList::Callback::argument_type argument_type;
-                    JobProxyList &jobs;
-                    explicit CompletedCallback (JobProxyList &jobs_) :
+                struct CompletedCallback : public RunLoop::AuxJobList::Callback {
+                    typedef RunLoop::AuxJobList::Callback::result_type result_type;
+                    typedef RunLoop::AuxJobList::Callback::argument_type argument_type;
+                    RunLoop::AuxJobList &jobs;
+                    explicit CompletedCallback (RunLoop::AuxJobList &jobs_) :
                         jobs (jobs_) {}
-                    virtual result_type operator () (argument_type jobProxy) {
-                        if (jobProxy->job->IsCompleted ()) {
-                            jobs.erase (jobProxy);
-                            delete jobProxy;
+                    virtual result_type operator () (argument_type job) {
+                        if (job->IsCompleted ()) {
+                            jobs.erase (job);
                             return true;
                         }
                         return false;
                     }
                     bool Wait (const TimeSpec &timeSpec = TimeSpec::Infinite) {
-                        return jobs.empty () || jobs.front ()->job->WaitCompleted (timeSpec);
+                        return jobs.empty () || jobs.front ()->WaitCompleted (timeSpec);
                     }
                 } completedCallback (waitForJobCallback.jobs);
                 if (timeSpec == TimeSpec::Infinite) {
@@ -328,16 +398,16 @@ namespace thekogans {
         }
 
         bool Pipeline::WaitForIdle (const TimeSpec &timeSpec) {
-            LockGuard<Mutex> guard (jobMutex);
+            LockGuard<Mutex> guard (jobsMutex);
             if (timeSpec == TimeSpec::Infinite) {
-                while (!runningJobs.empty ()) {
+                while (!pendingJobs.empty () || !runningJobs.empty ()) {
                     idle.Wait ();
                 }
             }
             else {
                 TimeSpec now = GetCurrentTime ();
                 TimeSpec deadline = now + timeSpec;
-                while (!runningJobs.empty () && deadline > now) {
+                while ((!pendingJobs.empty () || !runningJobs.empty ()) && deadline > now) {
                     idle.Wait (deadline - now);
                     now = GetCurrentTime ();
                 }
@@ -346,58 +416,85 @@ namespace thekogans {
         }
 
         bool Pipeline::CancelJob (const Job::Id &jobId) {
-            LockGuard<Mutex> guard (jobMutex);
-            for (Job *job = runningJobs.front (); job != 0; job = runningJobs.next (job)) {
-                if (job->GetId () == jobId) {
-                    // Since the job is already in flight, all we
-                    // need to do is cancel it. If it adheres to
-                    // the Job best practices, it will check it's
-                    // disposition shortly and exit it's Execute
-                    // method. The rest will be done by FinishedJob.
-                    // Either way, as far as the Pipeline is concerned,
-                    // the job is cancelled successfully.
-                    job->Cancel ();
+            LockGuard<Mutex> guard (jobsMutex);
+            struct CancelCallback : public JobList::Callback {
+                typedef JobList::Callback::result_type result_type;
+                typedef JobList::Callback::argument_type argument_type;
+                const Job::Id &jobId;
+                explicit CancelCallback (const Job::Id &jobId_) :
+                    jobId (jobId_) {}
+                virtual result_type operator () (argument_type job) {
+                    if (job->GetId () == jobId) {
+                        job->Cancel ();
+                        return false;
+                    }
                     return true;
                 }
-            }
-            return false;
+            } cancelCallback (jobId);
+            return
+                !runningJobs.for_each (cancelCallback) ||
+                !pendingJobs.for_each (cancelCallback);
         }
 
-        void Pipeline::CancelJobs (const EqualityTest &equalityTest) {
-            LockGuard<Mutex> guard (jobMutex);
-            for (Job *job = runningJobs.front (); job != 0; job = runningJobs.next (job)) {
-                if (equalityTest (*job)) {
-                    job->Cancel ();
+        void Pipeline::CancelJobs (const RunLoop::EqualityTest &equalityTest) {
+            LockGuard<Mutex> guard (jobsMutex);
+            struct CancelCallback : public JobList::Callback {
+                typedef JobList::Callback::result_type result_type;
+                typedef JobList::Callback::argument_type argument_type;
+                const RunLoop::EqualityTest &equalityTest;
+                explicit CancelCallback (const RunLoop::EqualityTest &equalityTest_) :
+                    equalityTest (equalityTest_) {}
+                virtual result_type operator () (argument_type job) {
+                    if (equalityTest (*job)) {
+                        job->Cancel ();
+                    }
+                    return true;
                 }
-            }
-            if (runningJobs.empty ()) {
-                idle.SignalAll ();
-            }
+            } cancelCallback (equalityTest);
+            runningJobs.for_each (cancelCallback);
+            pendingJobs.for_each (cancelCallback);
         }
 
         void Pipeline::CancelAllJobs () {
-            LockGuard<Mutex> guard (jobMutex);
-            for (Job *job = runningJobs.front (); job != 0; job = runningJobs.next (job)) {
-                job->Cancel ();
-            }
-            if (runningJobs.empty ()) {
-                idle.SignalAll ();
-            }
+            LockGuard<Mutex> guard (jobsMutex);
+            struct CancelCallback : public JobList::Callback {
+                typedef JobList::Callback::result_type result_type;
+                typedef JobList::Callback::argument_type argument_type;
+                virtual result_type operator () (argument_type job) {
+                    job->Cancel ();
+                    return true;
+                }
+            } cancelCallback;
+            runningJobs.for_each (cancelCallback);
+            pendingJobs.for_each (cancelCallback);
         }
 
         RunLoop::Stats Pipeline::GetStats () {
-            LockGuard<Mutex> guard (jobMutex);
+            LockGuard<Mutex> guard (jobsMutex);
             return stats;
         }
 
         bool Pipeline::IsRunning () {
-            LockGuard<Mutex> guard (jobMutex);
+            LockGuard<Mutex> guard (jobsMutex);
             return !done;
         }
 
         bool Pipeline::IsIdle () {
-            LockGuard<Mutex> guard (jobMutex);
-            return runningJobs.empty ();
+            LockGuard<Mutex> guard (jobsMutex);
+            return pendingJobs.empty () && runningJobs.empty ();
+        }
+
+        Pipeline::Job *Pipeline::DeqJob (bool wait) {
+            LockGuard<Mutex> guard (jobsMutex);
+            while (!done && pendingJobs.empty () && wait) {
+                jobsNotEmpty.Wait ();
+            }
+            Job *job = 0;
+            if (!done && !pendingJobs.empty ()) {
+                job = pendingJobs.pop_front ();
+                runningJobs.push_back (job);
+            }
+            return job;
         }
 
         void Pipeline::FinishedJob (
@@ -405,17 +502,18 @@ namespace thekogans {
                 ui64 start,
                 ui64 end) {
             assert (job != 0);
-            LockGuard<Mutex> guard (jobMutex);
-            stats.Update (job->GetId (), start, end);
+            LockGuard<Mutex> guard (jobsMutex);
+            stats.Update (job, start, end);
             runningJobs.erase (job);
+            job->SetStatus (RunLoop::Job::Completed);
             job->Release ();
-            if (runningJobs.empty ()) {
+            if (pendingJobs.empty () && runningJobs.empty ()) {
                 idle.SignalAll ();
             }
         }
 
         bool Pipeline::SetDone (bool value) {
-            LockGuard<Mutex> guard (jobMutex);
+            LockGuard<Mutex> guard (jobsMutex);
             if (done != value) {
                 done = value;
                 return true;
