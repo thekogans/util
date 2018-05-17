@@ -45,6 +45,10 @@ namespace thekogans {
         /// \see{Scheduler}.
 
         struct _LIB_THEKOGANS_UTIL_DECL JobQueue : public RunLoop {
+            /// \brief
+            /// Convenient typedef for ThreadSafeRefCounted::Ptr<JobQueue>.
+            typedef ThreadSafeRefCounted::Ptr<JobQueue> Ptr;
+
         protected:
             /// \brief
             /// Number of workers servicing the queue.

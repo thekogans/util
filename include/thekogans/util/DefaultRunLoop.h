@@ -125,6 +125,10 @@ namespace thekogans {
         /// \endcode
 
         struct _LIB_THEKOGANS_UTIL_DECL DefaultRunLoop : public RunLoop {
+            /// \brief
+            /// Convenient typedef for ThreadSafeRefCounted::Ptr<DefaultRunLoop>.
+            typedef ThreadSafeRefCounted::Ptr<DefaultRunLoop> Ptr;
+
         private:
             /// \brief
             /// Called to initialize/uninitialize the worker thread.

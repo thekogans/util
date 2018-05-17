@@ -124,6 +124,10 @@ namespace thekogans {
         /// \endcode
 
         struct _LIB_THEKOGANS_UTIL_DECL SystemRunLoop : public RunLoop {
+            /// \brief
+            /// Convenient typedef for ThreadSafeRefCounted::Ptr<SystemRunLoop>.
+            typedef ThreadSafeRefCounted::Ptr<SystemRunLoop> Ptr;
+
         #if defined (TOOLCHAIN_OS_Windows)
             /// \brief
             /// Convenient typedef for LRESULT (CALLBACK *) (HWND, UINT, WPARAM, LPARAM, void *).
