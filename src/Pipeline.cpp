@@ -84,22 +84,18 @@ namespace thekogans {
             while (!pipeline.done) {
                 Job *job = pipeline.DeqJob ();
                 if (job != 0) {
-                    ui64 start = 0;
-                    ui64 end = 0;
                     // Short circuit cancelled pending jobs.
                     if (!job->IsCancelled ()) {
                         THEKOGANS_UTIL_TRY {
                             pipeline.stages[job->stage]->EnqJob (RunLoop::Job::Ptr (job));
+                            continue;
                         }
                         THEKOGANS_UTIL_CATCH (Exception) {
-                            job->Cancel ();
-                            pipeline.FinishedJob (job, start, end);
+                            job->Fail ();
                             THEKOGANS_UTIL_LOG_ERROR ("%s\n", exception.Report ().c_str ());
                         }
                     }
-                    else {
-                        pipeline.FinishedJob (job, start, end);
-                    }
+                    pipeline.FinishedJob (job, start, end);
                 }
             }
         }
