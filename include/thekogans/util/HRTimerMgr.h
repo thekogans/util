@@ -70,7 +70,7 @@ namespace thekogans {
         /// struct ExtractMetadataJob : public thekogans::util::RunLoop::Job {
         ///     // Nonessential members, and methods omitted for clarity.
         ///
-        ///     virtual void Execute (volatile const bool &done) throw () {
+        ///     virtual void Execute (const THEKOGANS_UTIL_ATOMIC<bool> &done) throw () {
         ///         THEKOGANS_UTIL_HRTIMER_MGR ("ExtractMetadataJob::Execute");
         ///         {
         ///             THEKOGANS_UTIL_HRTIMER_MGR_SCOPE ("categories");
@@ -89,7 +89,7 @@ namespace thekogans {
         ///             THEKOGANS_UTIL_HRTIMER_MGR_PROTO_COMMA
         ///             const db::DB &db,
         ///             thekogans::util::i32 category,
-        ///             volatile const bool &done) {
+        ///             const THEKOGANS_UTIL_ATOMIC<bool> &done) {
         ///         assert (category < db::FolderItem::CATEGORY_LAST);
         ///         for (thekogans::util::i32 type = db::FolderItem::TYPE_FIRST;
         ///                 !done && type < db::FolderItem::TYPE_LAST; ++type) {

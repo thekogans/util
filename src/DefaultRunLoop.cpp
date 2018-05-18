@@ -23,7 +23,8 @@ namespace thekogans {
     namespace util {
 
         void DefaultRunLoop::Start () {
-            if (SetDone (false)) {
+            bool expected = true;
+            if (done.compare_exchange_strong (expected, false)) {
                 struct WorkerInitializer {
                     DefaultRunLoop &runLoop;
                     explicit WorkerInitializer (DefaultRunLoop &runLoop_) :
@@ -44,13 +45,13 @@ namespace thekogans {
                         ui64 start = 0;
                         ui64 end = 0;
                         // Short circuit cancelled pending jobs.
-                        if (job->GetDisposition () == Job::Unknown) {
+                        if (!job->ShouldStop (done)) {
                             start = HRTimer::Click ();
                             job->SetStatus (Job::Running);
                             job->Prologue (done);
                             job->Execute (done);
                             job->Epilogue (done);
-                            job->Finish ();
+                            job->Succeed ();
                             end = HRTimer::Click ();
                         }
                         FinishedJob (job, start, end);
@@ -64,7 +65,8 @@ namespace thekogans {
                 CancelAllJobs ();
                 WaitForIdle ();
             }
-            if (SetDone (true)) {
+            bool expected = false;
+            if (done.compare_exchange_strong (expected, true)) {
                 jobsNotEmpty.Signal ();
             }
         }

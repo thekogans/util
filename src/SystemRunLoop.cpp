@@ -57,10 +57,6 @@ namespace thekogans {
             }
         }
 
-        SystemRunLoop::~SystemRunLoop () {
-            CancelAllJobs ();
-        }
-
         #define RUN_LOOP_MESSAGE WM_USER
 
         LRESULT CALLBACK WndProc (
@@ -202,10 +198,6 @@ namespace thekogans {
             }
         }
 
-        SystemRunLoop::~SystemRunLoop () {
-            CancelAllJobs ();
-        }
-
         SystemRunLoop::XlibWindow::Ptr SystemRunLoop::CreateThreadWindow (
                 Display *display) {
             return XlibWindow::Ptr (new XlibWindow (display));
@@ -247,10 +239,6 @@ namespace thekogans {
             }
         }
 
-        SystemRunLoop::~SystemRunLoop () {
-            CancelAllJobs ();
-        }
-
         namespace {
             struct CFRunLoopSourceRefDeleter {
                 void operator () (CFRunLoopSourceRef runLoopSourceRef) {
@@ -267,7 +255,8 @@ namespace thekogans {
     #endif // defined (TOOLCHAIN_OS_Windows)
 
         void SystemRunLoop::Start () {
-            if (SetDone (false)) {
+            bool expected = true;
+            if (done.compare_exchange_strong (expected, false)) {
                 struct WorkerInitializer {
                     SystemRunLoop &runLoop;
                     explicit WorkerInitializer (SystemRunLoop &runLoop_) :
@@ -407,7 +396,8 @@ namespace thekogans {
                 CancelAllJobs ();
                 WaitForIdle ();
             }
-            if (SetDone (true)) {
+            bool expected = false;
+            if (done.compare_exchange_strong (expected, true)) {
             #if defined (TOOLCHAIN_OS_Windows)
                 PostMessage (window->wnd, WM_CLOSE, 0, 0);
             #elif defined (TOOLCHAIN_OS_Linux)
@@ -456,13 +446,13 @@ namespace thekogans {
                 ui64 start = 0;
                 ui64 end = 0;
                 // Short circuit cancelled pending jobs.
-                if (job->GetDisposition () == Job::Unknown) {
+                if (!job->ShouldStop (done)) {
                     start = HRTimer::Click ();
                     job->SetStatus (Job::Running);
                     job->Prologue (done);
                     job->Execute (done);
                     job->Epilogue (done);
-                    job->Finish ();
+                    job->Succeed ();
                     end = HRTimer::Click ();
                 }
                 FinishedJob (job, start, end);

@@ -210,7 +210,7 @@ namespace thekogans {
                         where (where_),
                         color (color_) {}
 
-                    virtual void Execute (volatile const bool &done) throw () {
+                    virtual void Execute (const THEKOGANS_UTIL_ATOMIC<bool> &done) throw () {
                         if (!done) {
                             PrintStringWithColor (str, where, color);
                         }

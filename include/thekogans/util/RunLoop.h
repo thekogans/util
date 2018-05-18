@@ -78,6 +78,8 @@ namespace thekogans {
             /// \brief
             /// Forward declaration of Job.
             struct Job;
+            /// \brief
+            /// Job list ids.
             enum {
                 /// \brief
                 /// JobList ID.
@@ -137,14 +139,14 @@ namespace thekogans {
                     /// Unknown.
                     Unknown,
                     /// \brief
-                    /// Job was cancelled mid flight.
+                    /// Job was cancelled.
                     Cancelled,
                     /// \brief
                     /// Job failed execution.
                     Failed,
                     /// \brief
-                    /// Job completed execution.
-                    Finished
+                    /// Job succeeded execution.
+                    Succeeded
                 };
 
             protected:
@@ -235,21 +237,17 @@ namespace thekogans {
                     return disposition == Failed;
                 }
                 /// \brief
-                /// Return true if the job has finished.
-                /// \return true == the job has finished.
-                inline bool IsFinished () const {
-                    return disposition == Finished;
+                /// Return true if the job has succeeded.
+                /// \return true == the job has succeeded.
+                inline bool IsSucceeded () const {
+                    return disposition == Succeeded;
                 }
 
                 /// \brief
                 /// Call this method on a running job to cancel execution.
                 /// Monitor disposition (ShouldStop () below) in Execute ()
                 /// to respond to cancellation requests.
-                inline void Cancel () {
-                    if (disposition == Unknown) {
-                        disposition = Cancelled;
-                    }
-                }
+                void Cancel ();
 
                 /// \brief
                 /// Wait for the job to complete.
@@ -277,8 +275,8 @@ namespace thekogans {
                 void Fail (const Exception &exception_);
                 /// \brief
                 /// Used internally by RunLoop and it's derivatives to mark the
-                /// job as finished execution.
-                void Finish ();
+                /// job as succeeded execution.
+                void Succeed ();
 
                 /// \brief
                 /// Return true if the job should stop what it's doing and exit.
@@ -286,9 +284,12 @@ namespace thekogans {
                 /// RunLoop responsive.
                 /// \param[in] done If true, this flag indicates that
                 /// the job should stop what it's doing, and exit.
+                /// \param[in] disposition Value to check against current disposition.
                 /// \return true == Job should stop what it's doing and exit.
-                inline bool ShouldStop (volatile const bool &done) const {
-                    return done || IsCancelled ();
+                inline bool ShouldStop (
+                        const THEKOGANS_UTIL_ATOMIC<bool> &done,
+                        Disposition disposition = Unknown) const {
+                    return done || GetDisposition () != disposition;
                 }
 
                 /// \brief
@@ -296,19 +297,19 @@ namespace thekogans {
                 /// the job to perform one time initialization.
                 /// \param[in] done If true, this flag indicates that
                 /// the job should stop what it's doing, and exit.
-                virtual void Prologue (volatile const bool & /*done*/) throw () {}
+                virtual void Prologue (const THEKOGANS_UTIL_ATOMIC<bool> & /*done*/) throw () {}
                 /// \brief
                 /// Called to execute the job. This is the only api
                 /// the job MUST implement.
                 /// \param[in] done If true, this flag indicates that
                 /// the job should stop what it's doing, and exit.
-                virtual void Execute (volatile const bool & /*done*/) throw () = 0;
+                virtual void Execute (const THEKOGANS_UTIL_ATOMIC<bool> & /*done*/) throw () = 0;
                 /// \brief
                 /// Called after the job is executed. Allows
                 /// the job to perform one time cleanup.
                 /// \param[in] done If true, this flag indicates that
                 /// the job should stop what it's doing, and exit.
-                virtual void Epilogue (volatile const bool & /*done*/) throw () {}
+                virtual void Epilogue (const THEKOGANS_UTIL_ATOMIC<bool> & /*done*/) throw () {}
 
                 /// \brief
                 /// RunLoop uses Reset.
@@ -515,7 +516,7 @@ namespace thekogans {
             const ui32 maxPendingJobs;
             /// \brief
             /// Flag to signal the worker thread(s).
-            volatile bool done;
+            THEKOGANS_UTIL_ATOMIC<bool> done;
             /// \brief
             /// Queue of pending jobs.
             JobList pendingJobs;
@@ -714,13 +715,6 @@ namespace thekogans {
                 Job *job,
                 ui64 start,
                 ui64 end);
-
-            /// \brief
-            /// Atomically set done to the given value.
-            /// \param[in] value Value to set done to.
-            /// \return true == done was set to the given value.
-            /// false == done was already set to the given value.
-            bool SetDone (bool value);
         };
 
     } // namespace util

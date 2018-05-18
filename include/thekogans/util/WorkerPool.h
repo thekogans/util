@@ -57,7 +57,7 @@ namespace thekogans {
         ///                 ... {}
         ///
         ///             // util::RunLoop::Job
-        ///             virtual void Execute (volatile const bool &) throw () {
+        ///             virtual void Execute (const THEKOGANS_UTIL_ATOMIC<bool> &) throw () {
         ///                 ...
         ///             }
         ///         };
@@ -207,6 +207,7 @@ namespace thekogans {
                 /// management, performance, and global heap fragmentation.
                 THEKOGANS_UTIL_DECLARE_HEAP_WITH_LOCK (WorkerPtr, SpinLock)
 
+            protected:
                 /// \brief
                 /// WorkerPool from which to acquire a worker.
                 WorkerPool &workerPool;
@@ -214,6 +215,7 @@ namespace thekogans {
                 /// \The acquired worker.
                 Worker *worker;
 
+            public:
                 /// \brief
                 /// ctor. Acquire a worker from the pool.
                 /// \param[in] workerPool_ WorkerPool from which to acquire a worker.

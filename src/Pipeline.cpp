@@ -47,9 +47,10 @@ namespace thekogans {
                     completed.Signal ();
                 }
                 else {
-                    if (IsFinished () && stage < pipeline.stages.size () - 1) {
+                    if (!ShouldStop (pipeline.done, Succeeded) &&
+                            stage < pipeline.stages.size () - 1) {
                         THEKOGANS_UTIL_TRY {
-                            pipeline.stages[++stage].EnqJob (RunLoop::Job::Ptr (this));
+                            pipeline.stages[++stage]->EnqJob (RunLoop::Job::Ptr (this));
                             return;
                         }
                         THEKOGANS_UTIL_CATCH (Exception) {
@@ -83,10 +84,10 @@ namespace thekogans {
                 Job *job = pipeline.DeqJob ();
                 if (job != 0) {
                     // Short circuit cancelled pending jobs.
-                    if (job->GetDisposition () == Job::Unknown) {
+                    if (!job->ShouldStop (pipeline.done)) {
                         if (job->stage < pipeline.stages.size ()) {
                             THEKOGANS_UTIL_TRY {
-                                pipeline.stages[job->stage].EnqJob (RunLoop::Job::Ptr (job));
+                                pipeline.stages[job->stage]->EnqJob (RunLoop::Job::Ptr (job));
                                 continue;
                             }
                             THEKOGANS_UTIL_CATCH (Exception) {
@@ -130,7 +131,19 @@ namespace thekogans {
             if ((type == RunLoop::TYPE_FIFO || type == RunLoop::TYPE_LIFO) &&
                     maxPendingJobs == 0 && workerCount > 0) {
                 if (begin != 0 && end != 0) {
-                    stages.insert (stages.begin (), begin, end);
+                    for (; begin != end; ++begin) {
+                        stages.push_back (
+                            JobQueue::Ptr (
+                                new JobQueue (
+                                    begin->name,
+                                    begin->type,
+                                    begin->maxPendingJobs,
+                                    begin->workerCount,
+                                    begin->workerPriority,
+                                    begin->workerAffinity,
+                                    begin->workerCallback,
+                                    false)));
+                    }
                     Start ();
                 }
             }
@@ -170,11 +183,21 @@ namespace thekogans {
         void Pipeline::AddStage (const Stage &stage) {
             LockGuard<Mutex> guard (workersMutex);
             if (!IsRunning ()) {
-                stages.push_back (stage);
+                stages.push_back (
+                    JobQueue::Ptr (
+                        new JobQueue (
+                            stage.name,
+                            stage.type,
+                            stage.maxPendingJobs,
+                            stage.workerCount,
+                            stage.workerPriority,
+                            stage.workerAffinity,
+                            stage.workerCallback,
+                            false)));
             }
             else {
                 THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                    "Pipeline (%s:%s) is running, call Stop.",
+                    "Can't add a stage to a running pipeline (%s:%s), call Stop first.",
                     name.c_str (),
                     id.c_str ());
             }
@@ -183,15 +206,7 @@ namespace thekogans {
         RunLoop::Stats Pipeline::GetStageStats (std::size_t stage) {
             LockGuard<Mutex> guard (workersMutex);
             if (stage < stages.size ()) {
-                if (IsRunning ()) {
-                    return stages[stage].GetStats ();
-                }
-                else {
-                    THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                        "Pipeline (%s:%s) is not running, call Start.",
-                        name.c_str (),
-                        id.c_str ());
-                }
+                return stages[stage]->GetStats ();
             }
             else {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
@@ -201,23 +216,19 @@ namespace thekogans {
 
         void Pipeline::GetStagesStats (std::vector<RunLoop::Stats> &stats) {
             LockGuard<Mutex> guard (workersMutex);
-            if (IsRunning ()) {
-                stats.resize (stages.size ());
-                for (std::size_t i = 0, count = stages.size (); i < count; ++i) {
-                    stats[i] = stages[i].GetStats ();
-                }
-            }
-            else {
-                THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                    "Pipeline (%s:%s) is not running, call Start.",
-                    name.c_str (),
-                    id.c_str ());
+            stats.resize (stages.size ());
+            for (std::size_t i = 0, count = stages.size (); i < count; ++i) {
+                stats[i] = stages[i]->GetStats ();
             }
         }
 
         void Pipeline::Start () {
             LockGuard<Mutex> guard (workersMutex);
-            if (SetDone (false)) {
+            bool expected = true;
+            if (done.compare_exchange_strong (expected, false)) {
+                for (std::size_t i = 0, count = stages.size (); i < count; ++i) {
+                    stages[i]->Start ();
+                }
                 for (ui32 i = 0; i < workerCount; ++i) {
                     std::string workerName;
                     if (!name.empty ()) {
@@ -235,9 +246,6 @@ namespace thekogans {
                             workerPriority,
                             workerAffinity));
                 }
-                for (std::size_t i = 0, count = stages.size (); i < count; ++i) {
-                    stages[i].Start ();
-                }
             }
         }
 
@@ -247,7 +255,8 @@ namespace thekogans {
                 WaitForIdle ();
             }
             LockGuard<Mutex> guard (workersMutex);
-            if (SetDone (true)) {
+            bool expected = false;
+            if (done.compare_exchange_strong (expected, true)) {
                 jobsNotEmpty.SignalAll ();
                 struct Callback : public WorkerList::Callback {
                     typedef WorkerList::Callback::result_type result_type;
@@ -263,7 +272,7 @@ namespace thekogans {
                 workers.clear (callback);
                 assert (runningJobs.empty ());
                 for (std::size_t i = 0, count = stages.size (); i < count; ++i) {
-                    stages[i].Stop ();
+                    stages[i]->Stop (cancelPendingJobs);
                 }
             }
         }
@@ -494,7 +503,6 @@ namespace thekogans {
         }
 
         bool Pipeline::IsRunning () {
-            LockGuard<Mutex> guard (jobsMutex);
             return !done;
         }
 
@@ -529,15 +537,6 @@ namespace thekogans {
             if (pendingJobs.empty () && runningJobs.empty ()) {
                 idle.SignalAll ();
             }
-        }
-
-        bool Pipeline::SetDone (bool value) {
-            LockGuard<Mutex> guard (jobsMutex);
-            if (done != value) {
-                done = value;
-                return true;
-            }
-            return false;
         }
 
         std::string GlobalPipelineCreateInstance::name = std::string ();

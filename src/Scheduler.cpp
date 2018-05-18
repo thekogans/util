@@ -104,7 +104,7 @@ namespace thekogans {
                             workerPtr (workerPtr_),
                             scheduler (scheduler_) {}
 
-                        virtual void Execute (volatile const bool &done) throw () {
+                        virtual void Execute (const THEKOGANS_UTIL_ATOMIC<bool> &done) throw () {
                             // Use a warm worker to minimize cache thrashing.
                             while (!done) {
                                 Scheduler::JobQueue::Ptr jobQueue =

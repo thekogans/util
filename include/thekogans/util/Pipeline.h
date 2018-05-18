@@ -52,13 +52,69 @@ namespace thekogans {
             /// Convenient typedef for ThreadSafeRefCounted::Ptr<Pipeline>.
             typedef ThreadSafeRefCounted::Ptr<Pipeline> Ptr;
 
+            /// \struct Pipeline::Stage Pipeline.h thekogans/util/Pipeline.h
+            ///
+            /// \brief
+            /// Used to specify stage parameters.
+            struct _LIB_THEKOGANS_UTIL_DECL Stage {
+                /// \brief
+                /// Stage \see{JobQueue} name.
+                std::string name;
+                /// \brief
+                /// Type of stage (TYPE_FIFO or TYPE_LIFO).
+                RunLoop::Type type;
+                /// \brief
+                /// Max pending jobs.
+                ui32 maxPendingJobs;
+                /// \brief
+                /// Count of workers servicing this stage.
+                ui32 workerCount;
+                /// \brief
+                /// Worker thread priority.
+                i32 workerPriority;
+                /// \brief
+                /// Worker thread processor affinity.
+                ui32 workerAffinity;
+                /// \brief
+                /// Called to initialize/uninitialize the worker thread.
+                RunLoop::WorkerCallback *workerCallback;
+
+                /// \brief
+                /// ctor.
+                /// \param[in] name_ Stage \see{JobQueue} name.
+                /// \param[in] type_ Stage \see{JobQueue} type.
+                /// \param[in] maxPendingJobs_ Max pending stage jobs.
+                /// \param[in] workerCount_ Number of workers servicing this stage.
+                /// \param[in] workerPriority_ Stage worker thread priority.
+                /// \param[in] workerAffinity_ Stage worker thread processor affinity.
+                /// \param[in] workerCallback_ Called to initialize/uninitialize the worker thread.
+                Stage (
+                    const std::string &name_ = std::string (),
+                    RunLoop::Type type_ = RunLoop::TYPE_FIFO,
+                    ui32 maxPendingJobs_ = UI32_MAX,
+                    ui32 workerCount_ = 1,
+                    i32 workerPriority_ = THEKOGANS_UTIL_NORMAL_THREAD_PRIORITY,
+                    ui32 workerAffinity_ = THEKOGANS_UTIL_MAX_THREAD_AFFINITY,
+                    RunLoop::WorkerCallback *workerCallback_ = 0) :
+                    name (name_),
+                    type (type_),
+                    maxPendingJobs (maxPendingJobs_),
+                    workerCount (workerCount_),
+                    workerPriority (workerPriority_),
+                    workerAffinity (workerAffinity_),
+                    workerCallback (workerCallback_) {}
+            };
+
             /// \brief
             /// Forward declaration of Job.
             struct Job;
             enum {
                 /// \brief
                 /// JobList ID.
-                JOB_LIST_ID = RunLoop::LAST_JOB_LIST_ID
+                JOB_LIST_ID = RunLoop::LAST_JOB_LIST_ID,
+                /// \brief
+                /// Use this sentinel to create your own job lists.
+                LAST_JOB_LIST_ID
             };
             /// \brief
             /// Convenient typedef for IntrusiveList<Job, JOB_LIST_ID>.
@@ -139,14 +195,14 @@ namespace thekogans {
                 /// global level.
                 /// \param[in] done If true, this flag indicates that
                 /// the job should stop what it's doing, and exit.
-                virtual void Begin (volatile const bool &done) throw () {}
+                virtual void Begin (const THEKOGANS_UTIL_ATOMIC<bool> &done) throw () {}
                 /// \brief
                 /// Provides the same functionality as
                 /// Job::Epilogue, except at pipeline
                 /// global level.
                 /// \param[in] done If true, this flag indicates that
                 /// the job should stop what it's doing, and exit.
-                virtual void End (volatile const bool &done) throw () {}
+                virtual void End (const THEKOGANS_UTIL_ATOMIC<bool> &done) throw () {}
 
                 /// \brief
                 /// Pipeline uses Reset.
@@ -159,108 +215,6 @@ namespace thekogans {
         #if defined (_MSC_VER)
             #pragma warning (pop)
         #endif // defined (_MSC_VER)
-
-            /// \struct Pipeline::Stage Pipeline.h thekogans/util/Pipeline.h
-            ///
-            /// \brief
-            /// Used to specify stage parameters.
-            struct _LIB_THEKOGANS_UTIL_DECL Stage {
-                /// \brief
-                /// Stage \see{JobQueue} name.
-                std::string name;
-                /// \brief
-                /// Type of stage (TYPE_FIFO or TYPE_LIFO).
-                RunLoop::Type type;
-                /// \brief
-                /// Max pending jobs.
-                ui32 maxPendingJobs;
-                /// \brief
-                /// Count of workers servicing this stage.
-                ui32 workerCount;
-                /// \brief
-                /// Worker thread priority.
-                i32 workerPriority;
-                /// \brief
-                /// Worker thread processor affinity.
-                ui32 workerAffinity;
-                /// \brief
-                /// Called to initialize/uninitialize the worker thread.
-                RunLoop::WorkerCallback *workerCallback;
-
-                /// \brief
-                /// ctor.
-                /// \param[in] name_ Stage \see{JobQueue} name.
-                /// \param[in] type_ Stage \see{JobQueue} type.
-                /// \param[in] maxPendingJobs_ Max pending stage jobs.
-                /// \param[in] workerCount_ Number of workers servicing this stage.
-                /// \param[in] workerPriority_ Stage worker thread priority.
-                /// \param[in] workerAffinity_ Stage worker thread processor affinity.
-                /// \param[in] workerCallback_ Called to initialize/uninitialize the worker thread.
-                Stage (
-                    const std::string &name_ = std::string (),
-                    RunLoop::Type type_ = RunLoop::TYPE_FIFO,
-                    ui32 maxPendingJobs_ = UI32_MAX,
-                    ui32 workerCount_ = 1,
-                    i32 workerPriority_ = THEKOGANS_UTIL_NORMAL_THREAD_PRIORITY,
-                    ui32 workerAffinity_ = THEKOGANS_UTIL_MAX_THREAD_AFFINITY,
-                    RunLoop::WorkerCallback *workerCallback_ = 0) :
-                    name (name_),
-                    type (type_),
-                    maxPendingJobs (maxPendingJobs_),
-                    workerCount (workerCount_),
-                    workerPriority (workerPriority_),
-                    workerAffinity (workerAffinity_),
-                    workerCallback (workerCallback_) {}
-
-            private:
-                /// \brief
-                /// \see{JobQueue} associated with this stage.
-                JobQueue::Ptr jobQueue;
-
-                /// \brief
-                /// Create the \see{JobQueue} associated with this stage.
-                inline void Start () {
-                    jobQueue.Reset (
-                        new JobQueue (
-                            name,
-                            type,
-                            maxPendingJobs,
-                            workerCount,
-                            workerPriority,
-                            workerAffinity,
-                            workerCallback));
-                }
-
-                /// \brief
-                /// Release the \see{JobQueue} associated with this stage.
-                inline void Stop () {
-                    jobQueue.Reset ();
-                }
-
-                /// \brief
-                /// Enqueue a job on the pipeline stage.
-                /// \param[in] job Job to enqueue.
-                inline void EnqJob (RunLoop::Job::Ptr job) {
-                    jobQueue->EnqJob (job);
-                }
-
-                /// \brief
-                /// Return a snapshot of the \see{JobQueue} stats.
-                /// \return A snapshot of the \see{JobQueue} stats.
-                inline RunLoop::Stats GetStats () {
-                    return jobQueue->GetStats ();
-                }
-
-                /// \brief
-                /// Job needs access to EnqJob.
-                friend struct Job;
-                /// \brief
-                /// Worker needs access to EnqJob.
-                friend struct Worker;
-                /// \brief
-                /// Pipeline needs access to Start, Stop and GetStats.
-                friend struct Pipeline;
-            };
 
         private:
             /// \brief
@@ -277,7 +231,7 @@ namespace thekogans {
             const ui32 maxPendingJobs;
             /// \brief
             /// Flag to signal the stage thread(s).
-            volatile bool done;
+            THEKOGANS_UTIL_ATOMIC<bool> done;
             /// \brief
             /// Queue of pending jobs.
             JobList pendingJobs;
@@ -361,7 +315,7 @@ namespace thekogans {
             WorkerList workers;
             /// \brief
             /// Pipeline stages.
-            std::vector<Stage> stages;
+            std::vector<JobQueue::Ptr> stages;
             /// \brief
             /// Synchronization mutex.
             Mutex workersMutex;
@@ -538,13 +492,6 @@ namespace thekogans {
                 Job *job,
                 ui64 start,
                 ui64 end);
-
-            /// \brief
-            /// Atomically set done to the given value.
-            /// \param[in] value Value to set done to.
-            /// \return true == done was set to the given value.
-            /// false == done was already set to the given value.
-            bool SetDone (bool value);
 
             /// \brief
             /// Pipeline is neither copy constructable, nor assignable.

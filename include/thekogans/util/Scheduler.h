@@ -136,7 +136,7 @@ namespace thekogans {
                     /// with enough frequency to be responsive. Once
                     /// done == true, a job should stop what it's doing
                     /// as soon as possible and exit.
-                    virtual void Execute (volatile const bool & /*done*/) throw () = 0;
+                    virtual void Execute (const THEKOGANS_UTIL_ATOMIC<bool> & /*done*/) throw () = 0;
                 };
                 /// \brief
                 /// List of queue jobs.

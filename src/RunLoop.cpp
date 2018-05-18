@@ -27,6 +27,12 @@
 namespace thekogans {
     namespace util {
 
+        void RunLoop::Job::Cancel () {
+            if (disposition == Unknown) {
+                disposition = Cancelled;
+            }
+        }
+
         void RunLoop::Job::Reset (const RunLoop::Id &runLoopId_) {
             runLoopId = runLoopId_;
             status = Pending;
@@ -46,9 +52,9 @@ namespace thekogans {
             exception = exception_;
         }
 
-        void RunLoop::Job::Finish () {
+        void RunLoop::Job::Succeed () {
             if (disposition == Unknown) {
-                disposition = Finished;
+                disposition = Succeeded;
             }
         }
 
@@ -117,7 +123,7 @@ namespace thekogans {
                 RunLoop::Job *job,
                 ui64 start,
                 ui64 end) {
-            if (job->IsFinished ()) {
+            if (job->IsSucceeded ()) {
                 ++totalJobs;
                 ui64 ellapsed = HRTimer::ComputeElapsedTime (start, end);
                 totalJobTime += ellapsed;
@@ -466,15 +472,6 @@ namespace thekogans {
             if (pendingJobs.empty () && runningJobs.empty ()) {
                 idle.SignalAll ();
             }
-        }
-
-        bool RunLoop::SetDone (bool value) {
-            LockGuard<Mutex> guard (jobsMutex);
-            if (done != value) {
-                done = value;
-                return true;
-            }
-            return false;
         }
 
     } // namespace util

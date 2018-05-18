@@ -48,13 +48,13 @@ namespace thekogans {
                     ui64 start = 0;
                     ui64 end = 0;
                     // Short circuit cancelled pending jobs.
-                    if (job->GetDisposition () == Job::Unknown) {
+                    if (!job->ShouldStop (queue.done)) {
                         start = HRTimer::Click ();
                         job->SetStatus (Job::Running);
                         job->Prologue (queue.done);
                         job->Execute (queue.done);
                         job->Epilogue (queue.done);
-                        job->Finish ();
+                        job->Succeed ();
                         end = HRTimer::Click ();
                     }
                     queue.FinishedJob (job, start, end);
@@ -69,14 +69,17 @@ namespace thekogans {
                 ui32 workerCount_,
                 i32 workerPriority_,
                 ui32 workerAffinity_,
-                WorkerCallback *workerCallback_) :
+                WorkerCallback *workerCallback_,
+                bool callStart) :
                 RunLoop (name, type, maxPendingJobs),
                 workerCount (workerCount_),
                 workerPriority (workerPriority_),
                 workerAffinity (workerAffinity_),
                 workerCallback (workerCallback_) {
             if (workerCount > 0) {
-                Start ();
+                if (callStart) {
+                    Start ();
+                }
             }
             else {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
@@ -86,7 +89,8 @@ namespace thekogans {
 
         void JobQueue::Start () {
             LockGuard<Mutex> guard (workersMutex);
-            if (SetDone (false)) {
+            bool expected = true;
+            if (done.compare_exchange_strong (expected, false)) {
                 for (ui32 i = 0; i < workerCount; ++i) {
                     std::string workerName;
                     if (!name.empty ()) {
@@ -112,8 +116,8 @@ namespace thekogans {
                 CancelAllJobs ();
                 WaitForIdle ();
             }
-            LockGuard<Mutex> guard (workersMutex);
-            if (SetDone (true)) {
+            bool expected = false;
+            if (done.compare_exchange_strong (expected, true)) {
                 jobsNotEmpty.SignalAll ();
                 struct Callback : public WorkerList::Callback {
                     typedef WorkerList::Callback::result_type result_type;
@@ -138,6 +142,7 @@ namespace thekogans {
         i32 GlobalJobQueueCreateInstance::workerPriority = THEKOGANS_UTIL_NORMAL_THREAD_PRIORITY;
         ui32 GlobalJobQueueCreateInstance::workerAffinity = THEKOGANS_UTIL_MAX_THREAD_AFFINITY;
         RunLoop::WorkerCallback *GlobalJobQueueCreateInstance::workerCallback = 0;
+        bool GlobalJobQueueCreateInstance::callStart = true;
 
         void GlobalJobQueueCreateInstance::Parameterize (
                 const std::string &name_,
@@ -146,7 +151,8 @@ namespace thekogans {
                 ui32 workerCount_,
                 i32 workerPriority_,
                 ui32 workerAffinity_,
-                RunLoop::WorkerCallback *workerCallback_) {
+                RunLoop::WorkerCallback *workerCallback_,
+                bool callStart_) {
             name = name_;
             type = type_;
             maxPendingJobs = maxPendingJobs_;
@@ -154,6 +160,7 @@ namespace thekogans {
             workerPriority = workerPriority_;
             workerAffinity = workerAffinity_;
             workerCallback = workerCallback_;
+            callStart = callStart_;
         }
 
         JobQueue *GlobalJobQueueCreateInstance::operator () () {
@@ -164,7 +171,8 @@ namespace thekogans {
                 workerCount,
                 workerPriority,
                 workerAffinity,
-                workerCallback);
+                workerCallback,
+                callStart);
         }
 
     } // namespace util

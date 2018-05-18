@@ -105,7 +105,7 @@ namespace thekogans {
             }
 
             // RunLoop::Job
-            virtual void Execute (volatile const bool &done) throw () {
+            virtual void Execute (const THEKOGANS_UTIL_ATOMIC<bool> &done) throw () {
                 if (!ShouldStop (done)) {
                     // Alarm must be called unprotected if we're to
                     // follow the same semantics as Windows and Linux

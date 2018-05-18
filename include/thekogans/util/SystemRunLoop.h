@@ -299,9 +299,6 @@ namespace thekogans {
                 EventProcessor eventProcessor_ = 0,
                 void *userData_ = 0,
                 Window::Ptr window_ = CreateThreadWindow ());
-            /// \brief
-            /// dtor.
-            virtual ~SystemRunLoop ();
 
             /// \brief
             /// Create a run loop window to service job requests.
@@ -335,9 +332,6 @@ namespace thekogans {
                 void *userData_ = 0,
                 XlibWindow::Ptr window_ = CreateThreadWindow (0),
                 const std::vector<Display *> &displays_ = std::vector<Display *> ());
-            /// \brief
-            /// dtor.
-            virtual ~SystemRunLoop ();
 
             /// \brief
             /// Create a run loop window to service job requests.
@@ -378,9 +372,6 @@ namespace thekogans {
                 bool done = true,
                 WorkerCallback *workerCallback_ = 0,
                 CFRunLoopRef runLoop_ = CFRunLoopGetCurrent ());
-            /// \brief
-            /// dtor.
-            virtual ~SystemRunLoop ();
 
             /// \brief
             /// Return the OS X CFRunLoopRef associated with this run loop.

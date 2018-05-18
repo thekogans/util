@@ -148,11 +148,6 @@ namespace thekogans {
                 WorkerCallback *workerCallback_ = 0) :
                 RunLoop (name, type, maxPendingJobs),
                 workerCallback (workerCallback_) {}
-            /// \brief
-            /// dtor.
-            virtual ~DefaultRunLoop () {
-                CancelAllJobs ();
-            }
 
             /// \brief
             /// Start the run loop. This is a blocking call and will

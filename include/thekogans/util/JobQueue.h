@@ -128,6 +128,7 @@ namespace thekogans {
             /// \param[in] workerPriority_ Worker thread priority.
             /// \param[in] workerAffinity_ Worker thread processor affinity.
             /// \param[in] workerCallback_ Called to initialize/uninitialize
+            /// \param[in] callStart true == Call Start.
             /// the worker thread.
             JobQueue (
                 const std::string &name = std::string (),
@@ -136,7 +137,8 @@ namespace thekogans {
                 ui32 workerCount_ = 1,
                 i32 workerPriority_ = THEKOGANS_UTIL_NORMAL_THREAD_PRIORITY,
                 ui32 workerAffinity_ = THEKOGANS_UTIL_MAX_THREAD_AFFINITY,
-                WorkerCallback *workerCallback_ = 0);
+                WorkerCallback *workerCallback_ = 0,
+                bool callStart = true);
             /// \brief
             /// dtor. Stop the queue.
             virtual ~JobQueue () {
@@ -158,10 +160,10 @@ namespace thekogans {
             ///
             /// VERY IMPORTANT: In order to stop the workers, the queue
             /// sets done = true. This is the same done as is passed as
-            /// volatile const bool & to Job::Prologue/Execute/Epilog.
-            /// Therefore, if you want your code to be responsive, and
-            /// the queues to stop quickly, your jobs should pay close
-            /// attention to the state of done.
+            /// const THEKOGANS_UTIL_ATOMIC<bool> & to
+            /// Job::Prologue/Execute/Epilog. Therefore, if you want your
+            /// code to be responsive, and the queues to stop quickly,
+            /// your jobs should pay close attention to the state of done.
             /// \param[in] cancelPendingJobs true = Cancel all pending jobs.
             virtual void Stop (bool cancelPendingJobs = true);
 
@@ -199,6 +201,9 @@ namespace thekogans {
             /// \brief
             /// Called to initialize/uninitialize the worker thread.
             static RunLoop::WorkerCallback *workerCallback;
+            /// \brief
+            /// Call Start.
+            static bool callStart;
 
         public:
             /// \brief
@@ -211,6 +216,7 @@ namespace thekogans {
             /// \param[in] workerPriority_ Worker thread priority.
             /// \param[in] workerAffinity_ Worker thread processor affinity.
             /// \param[in] workerCallback_ Called to initialize/uninitialize the worker thread.
+            /// \param[in] callStart_ Call Start.
             static void Parameterize (
                 const std::string &name_ = std::string (),
                 RunLoop::Type type_ = RunLoop::TYPE_FIFO,
@@ -218,7 +224,8 @@ namespace thekogans {
                 ui32 workerCount_ = 1,
                 i32 workerPriority_ = THEKOGANS_UTIL_NORMAL_THREAD_PRIORITY,
                 ui32 workerAffinity_ = THEKOGANS_UTIL_MAX_THREAD_AFFINITY,
-                RunLoop::WorkerCallback *workerCallback_ = 0);
+                RunLoop::WorkerCallback *workerCallback_ = 0,
+                bool callStart_ = true);
 
             /// \brief
             /// Create a global job queue with custom ctor arguments.
