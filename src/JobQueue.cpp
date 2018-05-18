@@ -108,27 +108,26 @@ namespace thekogans {
         }
 
         void JobQueue::Stop (bool cancelPendingJobs) {
-            {
-                LockGuard<Mutex> guard (workersMutex);
-                if (SetDone (true)) {
-                    jobsNotEmpty.SignalAll ();
-                    struct Callback : public WorkerList::Callback {
-                        typedef WorkerList::Callback::result_type result_type;
-                        typedef WorkerList::Callback::argument_type argument_type;
-                        virtual result_type operator () (argument_type worker) {
-                            // Join the worker thread before deleting it to
-                            // let it's thread function finish it's tear down.
-                            worker->Wait ();
-                            delete worker;
-                            return true;
-                        }
-                    } callback;
-                    workers.clear (callback);
-                    assert (runningJobs.empty ());
-                }
-            }
             if (cancelPendingJobs) {
                 CancelAllJobs ();
+                WaitForIdle ();
+            }
+            LockGuard<Mutex> guard (workersMutex);
+            if (SetDone (true)) {
+                jobsNotEmpty.SignalAll ();
+                struct Callback : public WorkerList::Callback {
+                    typedef WorkerList::Callback::result_type result_type;
+                    typedef WorkerList::Callback::argument_type argument_type;
+                    virtual result_type operator () (argument_type worker) {
+                        // Join the worker thread before deleting it to
+                        // let it's thread function finish it's tear down.
+                        worker->Wait ();
+                        delete worker;
+                        return true;
+                    }
+                } callback;
+                workers.clear (callback);
+                assert (runningJobs.empty ());
             }
         }
 

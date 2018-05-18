@@ -40,7 +40,7 @@ namespace thekogans {
         /// \struct Pipeline Pipeline.h thekogans/util/Pipeline.h
         ///
         /// \brief
-        /// A Pipeline builds on the JobQueue to provide staged
+        /// A Pipeline builds on the \see{JobQueue} to provide staged
         /// execution. Think of an assembly line where each station
         /// (pipeline stage) performs a specific task, and passes the
         /// job on to the next stage (this is how modern processor
@@ -51,59 +51,6 @@ namespace thekogans {
             /// \brief
             /// Convenient typedef for ThreadSafeRefCounted::Ptr<Pipeline>.
             typedef ThreadSafeRefCounted::Ptr<Pipeline> Ptr;
-
-            /// \struct Pipeline::Stage Pipeline.h thekogans/util/Pipeline.h
-            ///
-            /// \brief
-            /// Used to specify stage parameters.
-            struct _LIB_THEKOGANS_UTIL_DECL Stage {
-                /// \brief
-                /// Stage \see{JobQueue} name.
-                std::string name;
-                /// \brief
-                /// Type of stage (TYPE_FIFO or TYPE_LIFO).
-                RunLoop::Type type;
-                /// \brief
-                /// Max pending jobs.
-                ui32 maxPendingJobs;
-                /// \brief
-                /// Count of workers servicing this stage.
-                ui32 workerCount;
-                /// \brief
-                /// Worker thread priority.
-                i32 workerPriority;
-                /// \brief
-                /// Worker thread processor affinity.
-                ui32 workerAffinity;
-                /// \brief
-                /// Called to initialize/uninitialize the worker thread.
-                RunLoop::WorkerCallback *workerCallback;
-
-                /// \brief
-                /// ctor.
-                /// \param[in] name_ Stage \see{JobQueue} name.
-                /// \param[in] type_ Stage \see{JobQueue} type.
-                /// \param[in] maxPendingJobs_ Max pending stage jobs.
-                /// \param[in] workerCount_ Number of workers servicing this stage.
-                /// \param[in] workerPriority_ Stage worker thread priority.
-                /// \param[in] workerAffinity_ Stage worker thread processor affinity.
-                /// \param[in] workerCallback_ Called to initialize/uninitialize the worker thread.
-                Stage (
-                    const std::string &name_ = std::string (),
-                    RunLoop::Type type_ = RunLoop::TYPE_FIFO,
-                    ui32 maxPendingJobs_ = UI32_MAX,
-                    ui32 workerCount_ = 1,
-                    i32 workerPriority_ = THEKOGANS_UTIL_NORMAL_THREAD_PRIORITY,
-                    ui32 workerAffinity_ = THEKOGANS_UTIL_MAX_THREAD_AFFINITY,
-                    RunLoop::WorkerCallback *workerCallback_ = 0) :
-                    name (name_),
-                    type (type_),
-                    maxPendingJobs (maxPendingJobs_),
-                    workerCount (workerCount_),
-                    workerPriority (workerPriority_),
-                    workerAffinity (workerAffinity_),
-                    workerCallback (workerCallback_) {}
-            };
 
             /// \brief
             /// Forward declaration of Job.
@@ -125,7 +72,7 @@ namespace thekogans {
             ///
             /// \brief
             /// A pipeline job. Since a pipeline is a collection
-            /// of JobQueues, the Pipeline::Job derives form
+            /// of \see{JobQueue}s, the Pipeline::Job derives form
             /// RunLoop::Job. RunLoop::Job::SetStatus is used
             /// to shepherd the job down the pipeline.
             /// Pipeline::Job Begin and End are provided
@@ -212,6 +159,108 @@ namespace thekogans {
         #if defined (_MSC_VER)
             #pragma warning (pop)
         #endif // defined (_MSC_VER)
+
+            /// \struct Pipeline::Stage Pipeline.h thekogans/util/Pipeline.h
+            ///
+            /// \brief
+            /// Used to specify stage parameters.
+            struct _LIB_THEKOGANS_UTIL_DECL Stage {
+                /// \brief
+                /// Stage \see{JobQueue} name.
+                std::string name;
+                /// \brief
+                /// Type of stage (TYPE_FIFO or TYPE_LIFO).
+                RunLoop::Type type;
+                /// \brief
+                /// Max pending jobs.
+                ui32 maxPendingJobs;
+                /// \brief
+                /// Count of workers servicing this stage.
+                ui32 workerCount;
+                /// \brief
+                /// Worker thread priority.
+                i32 workerPriority;
+                /// \brief
+                /// Worker thread processor affinity.
+                ui32 workerAffinity;
+                /// \brief
+                /// Called to initialize/uninitialize the worker thread.
+                RunLoop::WorkerCallback *workerCallback;
+
+                /// \brief
+                /// ctor.
+                /// \param[in] name_ Stage \see{JobQueue} name.
+                /// \param[in] type_ Stage \see{JobQueue} type.
+                /// \param[in] maxPendingJobs_ Max pending stage jobs.
+                /// \param[in] workerCount_ Number of workers servicing this stage.
+                /// \param[in] workerPriority_ Stage worker thread priority.
+                /// \param[in] workerAffinity_ Stage worker thread processor affinity.
+                /// \param[in] workerCallback_ Called to initialize/uninitialize the worker thread.
+                Stage (
+                    const std::string &name_ = std::string (),
+                    RunLoop::Type type_ = RunLoop::TYPE_FIFO,
+                    ui32 maxPendingJobs_ = UI32_MAX,
+                    ui32 workerCount_ = 1,
+                    i32 workerPriority_ = THEKOGANS_UTIL_NORMAL_THREAD_PRIORITY,
+                    ui32 workerAffinity_ = THEKOGANS_UTIL_MAX_THREAD_AFFINITY,
+                    RunLoop::WorkerCallback *workerCallback_ = 0) :
+                    name (name_),
+                    type (type_),
+                    maxPendingJobs (maxPendingJobs_),
+                    workerCount (workerCount_),
+                    workerPriority (workerPriority_),
+                    workerAffinity (workerAffinity_),
+                    workerCallback (workerCallback_) {}
+
+            private:
+                /// \brief
+                /// \see{JobQueue} associated with this stage.
+                JobQueue::Ptr jobQueue;
+
+                /// \brief
+                /// Create the \see{JobQueue} associated with this stage.
+                inline void Start () {
+                    jobQueue.Reset (
+                        new JobQueue (
+                            name,
+                            type,
+                            maxPendingJobs,
+                            workerCount,
+                            workerPriority,
+                            workerAffinity,
+                            workerCallback));
+                }
+
+                /// \brief
+                /// Release the \see{JobQueue} associated with this stage.
+                inline void Stop () {
+                    jobQueue.Reset ();
+                }
+
+                /// \brief
+                /// Enqueue a job on the pipeline stage.
+                /// \param[in] job Job to enqueue.
+                inline void EnqJob (RunLoop::Job::Ptr job) {
+                    jobQueue->EnqJob (job);
+                }
+
+                /// \brief
+                /// Return a snapshot of the \see{JobQueue} stats.
+                /// \return A snapshot of the \see{JobQueue} stats.
+                inline RunLoop::Stats GetStats () {
+                    return jobQueue->GetStats ();
+                }
+
+                /// \brief
+                /// Job needs access to EnqJob.
+                friend struct Job;
+                /// \brief
+                /// Worker needs access to EnqJob.
+                friend struct Worker;
+                /// \brief
+                /// Pipeline needs access to Start, Stop and GetStats.
+                friend struct Pipeline;
+            };
 
         private:
             /// \brief
@@ -311,14 +360,11 @@ namespace thekogans {
             /// List of workers.
             WorkerList workers;
             /// \brief
+            /// Pipeline stages.
+            std::vector<Stage> stages;
+            /// \brief
             /// Synchronization mutex.
             Mutex workersMutex;
-            /// \brief
-            /// Pipeline stages.
-            std::vector<JobQueue::Ptr> stages;
-            /// \brief
-            /// Synchronization mutex.
-            Mutex stagesMutex;
 
         public:
             /// \brief
@@ -391,7 +437,7 @@ namespace thekogans {
             void Stop (bool cancelRunningJobs = true);
 
             /// \brief
-            /// Enqueue a job on a pipeline stage.
+            /// Enqueue a job on the pipeline.
             /// \param[in] job Job to enqueue.
             /// \param[in] wait Wait for job to finish. Used for synchronous job execution.
             /// \param[in] timeSpec How long to wait for the job to complete.
@@ -403,7 +449,7 @@ namespace thekogans {
                 const TimeSpec &timeSpec = TimeSpec::Infinite);
 
             /// \brief
-            /// Get a running job with the given id.
+            /// Get a running or a pending job with the given id.
             /// \param[in] jobId Id of job to retrieve.
             /// \return Job matching the given id.
             Job::Ptr GetJobWithId (const Job::Id &jobId);
@@ -421,7 +467,7 @@ namespace thekogans {
                 Job::Ptr job,
                 const TimeSpec &timeSpec = TimeSpec::Infinite);
             /// \brief
-            /// Wait for a running job with a given id to complete.
+            /// Wait for a running or a pending job with a given id to complete.
             /// \param[in] jobId Id of job to wait on.
             /// \param[in] timeSpec How long to wait for the job to complete.
             /// IMPORTANT: timeSpec is a relative value.
@@ -431,7 +477,7 @@ namespace thekogans {
                 const Job::Id &jobId,
                 const TimeSpec &timeSpec = TimeSpec::Infinite);
             /// \brief
-            /// Wait for all running jobs matching the given equality test to complete.
+            /// Wait for all running and pending jobs matching the given equality test to complete.
             /// \param[in] equalityTest EqualityTest to query to determine which jobs to wait on.
             /// \param[in] timeSpec How long to wait for the jobs to complete.
             /// IMPORTANT: timeSpec is a relative value.
@@ -449,21 +495,21 @@ namespace thekogans {
                 const TimeSpec &timeSpec = TimeSpec::Infinite);
 
             /// \brief
-            /// Cancel a running job with a given id.
+            /// Cancel a running or a pending job with a given id.
             /// \param[in] jobId Id of job to cancel.
             /// \return true if the job was cancelled.
             bool CancelJob (const Job::Id &jobId);
             /// \brief
-            /// Cancel all running jobs matching the given equality test.
+            /// Cancel all running and pending jobs matching the given equality test.
             /// \param[in] equalityTest EqualityTest to query to determine which jobs to cancel.
             void CancelJobs (const RunLoop::EqualityTest &equalityTest);
             /// \brief
-            /// Cancel all running jobs.
+            /// Cancel all running and pending jobs.
             void CancelAllJobs ();
 
             /// \brief
-            /// Return a snapshot of the run loop stats.
-            /// \return A snapshot of the run loop stats.
+            /// Return a snapshot of the pipeline stats.
+            /// \return A snapshot of the pipeline stats.
             RunLoop::Stats GetStats ();
 
             /// \brief

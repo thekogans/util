@@ -269,28 +269,16 @@ namespace thekogans {
                 /// Used internally by RunLoop and it's derivatives to set the
                 /// job status.
                 /// \param[in] status_ New job status.
-                virtual void SetStatus (Status status_) {
-                    status = status_;
-                    if (status == Completed) {
-                        completed.Signal ();
-                    }
-                }
+                virtual void SetStatus (Status status_);
 
                 /// \brief
                 /// Used internally by RunLoop and it's derivatives to mark the
                 /// job as failed execution.
-                inline void Fail (const Exception &exception_) {
-                    disposition = Failed;
-                    exception = exception_;
-                }
+                void Fail (const Exception &exception_);
                 /// \brief
                 /// Used internally by RunLoop and it's derivatives to mark the
                 /// job as finished execution.
-                inline void Finish () {
-                    if (disposition == Unknown) {
-                        disposition = Finished;
-                    }
-                }
+                void Finish ();
 
                 /// \brief
                 /// Return true if the job should stop what it's doing and exit.
@@ -561,7 +549,7 @@ namespace thekogans {
                 bool done_ = true);
             /// \brief
             /// dtor.
-            virtual ~RunLoop () {}
+            virtual ~RunLoop ();
 
             /// \brief
             /// Return RunLoop id.

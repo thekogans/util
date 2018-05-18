@@ -60,11 +60,12 @@ namespace thekogans {
         }
 
         void DefaultRunLoop::Stop (bool cancelPendingJobs) {
+            if (cancelPendingJobs) {
+                CancelAllJobs ();
+                WaitForIdle ();
+            }
             if (SetDone (true)) {
                 jobsNotEmpty.Signal ();
-                if (cancelPendingJobs) {
-                    CancelAllJobs ();
-                }
             }
         }
 

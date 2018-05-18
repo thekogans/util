@@ -403,6 +403,10 @@ namespace thekogans {
         }
 
         void SystemRunLoop::Stop (bool cancelPendingJobs) {
+            if (cancelPendingJobs) {
+                CancelAllJobs ();
+                WaitForIdle ();
+            }
             if (SetDone (true)) {
             #if defined (TOOLCHAIN_OS_Windows)
                 PostMessage (window->wnd, WM_CLOSE, 0, 0);
@@ -416,9 +420,6 @@ namespace thekogans {
                     CocoaStop ();
                 }
             #endif // defined (TOOLCHAIN_OS_Windows)
-            }
-            if (cancelPendingJobs) {
-                CancelAllJobs ();
             }
         }
 

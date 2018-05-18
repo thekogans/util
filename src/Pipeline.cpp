@@ -43,14 +43,13 @@ namespace thekogans {
                 }
             }
             else if (IsCompleted ()) {
-                LockGuard<Mutex> guard (pipeline.stagesMutex);
                 if (stage == pipeline.stages.size ()) {
                     completed.Signal ();
                 }
                 else {
                     if (IsFinished () && stage < pipeline.stages.size () - 1) {
                         THEKOGANS_UTIL_TRY {
-                            pipeline.stages[++stage]->EnqJob (RunLoop::Job::Ptr (this));
+                            pipeline.stages[++stage].EnqJob (RunLoop::Job::Ptr (this));
                             return;
                         }
                         THEKOGANS_UTIL_CATCH (Exception) {
@@ -85,10 +84,9 @@ namespace thekogans {
                 if (job != 0) {
                     // Short circuit cancelled pending jobs.
                     if (job->GetDisposition () == Job::Unknown) {
-                        LockGuard<Mutex> guard (pipeline.stagesMutex);
                         if (job->stage < pipeline.stages.size ()) {
                             THEKOGANS_UTIL_TRY {
-                                pipeline.stages[job->stage]->EnqJob (RunLoop::Job::Ptr (job));
+                                pipeline.stages[job->stage].EnqJob (RunLoop::Job::Ptr (job));
                                 continue;
                             }
                             THEKOGANS_UTIL_CATCH (Exception) {
@@ -131,11 +129,9 @@ namespace thekogans {
                 workerCallback (workerCallback_) {
             if ((type == RunLoop::TYPE_FIFO || type == RunLoop::TYPE_LIFO) &&
                     maxPendingJobs == 0 && workerCount > 0) {
-                Start ();
                 if (begin != 0 && end != 0) {
-                    for (; begin != end; ++begin) {
-                        AddStage (*begin);
-                    }
+                    stages.insert (stages.begin (), begin, end);
+                    Start ();
                 }
             }
             else {
@@ -172,23 +168,30 @@ namespace thekogans {
         }
 
         void Pipeline::AddStage (const Stage &stage) {
-            LockGuard<Mutex> guard (stagesMutex);
-            stages.push_back (
-                JobQueue::Ptr (
-                    new JobQueue (
-                        stage.name,
-                        stage.type,
-                        stage.maxPendingJobs,
-                        stage.workerCount,
-                        stage.workerPriority,
-                        stage.workerAffinity,
-                        stage.workerCallback)));
+            LockGuard<Mutex> guard (workersMutex);
+            if (!IsRunning ()) {
+                stages.push_back (stage);
+            }
+            else {
+                THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
+                    "Pipeline (%s:%s) is running, call Stop.",
+                    name.c_str (),
+                    id.c_str ());
+            }
         }
 
         RunLoop::Stats Pipeline::GetStageStats (std::size_t stage) {
-            LockGuard<Mutex> guard (stagesMutex);
+            LockGuard<Mutex> guard (workersMutex);
             if (stage < stages.size ()) {
-                return stages[stage]->GetStats ();
+                if (IsRunning ()) {
+                    return stages[stage].GetStats ();
+                }
+                else {
+                    THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
+                        "Pipeline (%s:%s) is not running, call Start.",
+                        name.c_str (),
+                        id.c_str ());
+                }
             }
             else {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
@@ -197,10 +200,18 @@ namespace thekogans {
         }
 
         void Pipeline::GetStagesStats (std::vector<RunLoop::Stats> &stats) {
-            LockGuard<Mutex> guard (stagesMutex);
-            stats.resize (stages.size ());
-            for (std::size_t i = 0, count = stages.size (); i < count; ++i) {
-                stats[i] = stages[i]->GetStats ();
+            LockGuard<Mutex> guard (workersMutex);
+            if (IsRunning ()) {
+                stats.resize (stages.size ());
+                for (std::size_t i = 0, count = stages.size (); i < count; ++i) {
+                    stats[i] = stages[i].GetStats ();
+                }
+            }
+            else {
+                THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
+                    "Pipeline (%s:%s) is not running, call Start.",
+                    name.c_str (),
+                    id.c_str ());
             }
         }
 
@@ -224,31 +235,36 @@ namespace thekogans {
                             workerPriority,
                             workerAffinity));
                 }
+                for (std::size_t i = 0, count = stages.size (); i < count; ++i) {
+                    stages[i].Start ();
+                }
             }
         }
 
         void Pipeline::Stop (bool cancelPendingJobs) {
-            {
-                LockGuard<Mutex> guard (workersMutex);
-                if (SetDone (true)) {
-                    jobsNotEmpty.SignalAll ();
-                    struct Callback : public WorkerList::Callback {
-                        typedef WorkerList::Callback::result_type result_type;
-                        typedef WorkerList::Callback::argument_type argument_type;
-                        virtual result_type operator () (argument_type worker) {
-                            // Join the worker thread before deleting it to
-                            // let it's thread function finish it's tear down.
-                            worker->Wait ();
-                            delete worker;
-                            return true;
-                        }
-                    } callback;
-                    workers.clear (callback);
-                    assert (runningJobs.empty ());
-                }
-            }
             if (cancelPendingJobs) {
                 CancelAllJobs ();
+                WaitForIdle ();
+            }
+            LockGuard<Mutex> guard (workersMutex);
+            if (SetDone (true)) {
+                jobsNotEmpty.SignalAll ();
+                struct Callback : public WorkerList::Callback {
+                    typedef WorkerList::Callback::result_type result_type;
+                    typedef WorkerList::Callback::argument_type argument_type;
+                    virtual result_type operator () (argument_type worker) {
+                        // Join the worker thread before deleting it to
+                        // let it's thread function finish it's tear down.
+                        worker->Wait ();
+                        delete worker;
+                        return true;
+                    }
+                } callback;
+                workers.clear (callback);
+                assert (runningJobs.empty ());
+                for (std::size_t i = 0, count = stages.size (); i < count; ++i) {
+                    stages[i].Stop ();
+                }
             }
         }
 
@@ -322,11 +338,8 @@ namespace thekogans {
                         job->WaitCompleted (deadline - now);
                         now = GetCurrentTime ();
                     }
-                    if (!job->IsCompleted ()) {
-                        return false;
-                    }
                 }
-                return true;
+                return job->IsCompleted ();
             }
             else {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
@@ -389,7 +402,8 @@ namespace thekogans {
                 else {
                     TimeSpec now = GetCurrentTime ();
                     TimeSpec deadline = now + timeSpec;
-                    while (!waitForJobCallback.jobs.for_each (completedCallback) && deadline > now) {
+                    while (!waitForJobCallback.jobs.for_each (completedCallback) &&
+                            deadline > now) {
                         completedCallback.Wait (deadline - now);
                         now = GetCurrentTime ();
                     }
@@ -411,7 +425,8 @@ namespace thekogans {
             else {
                 TimeSpec now = GetCurrentTime ();
                 TimeSpec deadline = now + timeSpec;
-                while ((!pendingJobs.empty () || !runningJobs.empty ()) && deadline > now) {
+                while ((!pendingJobs.empty () || !runningJobs.empty ()) &&
+                        deadline > now) {
                     idle.Wait (deadline - now);
                     now = GetCurrentTime ();
                 }

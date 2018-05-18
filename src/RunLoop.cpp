@@ -34,6 +34,24 @@ namespace thekogans {
             completed.Reset ();
         }
 
+        void RunLoop::Job::SetStatus (Status status_) {
+            status = status_;
+            if (status == Completed) {
+                completed.Signal ();
+            }
+        }
+
+        void RunLoop::Job::Fail (const Exception &exception_) {
+            disposition = Failed;
+            exception = exception_;
+        }
+
+        void RunLoop::Job::Finish () {
+            if (disposition == Unknown) {
+                disposition = Finished;
+            }
+        }
+
     #if defined (TOOLCHAIN_OS_Windows)
         void RunLoop::COMInitializer::InitializeWorker () throw () {
             THEKOGANS_UTIL_TRY {
@@ -101,8 +119,7 @@ namespace thekogans {
                 ui64 end) {
             if (job->IsFinished ()) {
                 ++totalJobs;
-                ui64 ellapsed =
-                    HRTimer::ComputeElapsedTime (start, end);
+                ui64 ellapsed = HRTimer::ComputeElapsedTime (start, end);
                 totalJobTime += ellapsed;
                 lastJob = Job (job->GetId (), start, end, ellapsed);
                 if (totalJobs == 1) {
@@ -137,6 +154,20 @@ namespace thekogans {
             }
         }
 
+        RunLoop::~RunLoop () {
+            LockGuard<Mutex> guard (jobsMutex);
+            struct ReleaseCallback : public JobList::Callback {
+                typedef JobList::Callback::result_type result_type;
+                typedef JobList::Callback::argument_type argument_type;
+                virtual result_type operator () (argument_type job) {
+                    job->Release ();
+                    return true;
+                }
+            } releaseCallback;
+            runningJobs.clear (releaseCallback);
+            pendingJobs.clear (releaseCallback);
+        }
+
         std::size_t RunLoop::GetPendingJobCount () {
             LockGuard<Mutex> guard (jobsMutex);
             return pendingJobs.size ();
@@ -160,7 +191,8 @@ namespace thekogans {
                 else {
                     TimeSpec now = GetCurrentTime ();
                     TimeSpec deadline = now + waitTimeSpec;
-                    while ((runLoop.Get () == 0 || !runLoop->IsRunning ()) && deadline > now) {
+                    while ((runLoop.Get () == 0 || !runLoop->IsRunning ()) &&
+                            deadline > now) {
                         Sleep (sleepTimeSpec);
                         now = GetCurrentTime ();
                     }
@@ -243,11 +275,8 @@ namespace thekogans {
                         job->WaitCompleted (deadline - now);
                         now = GetCurrentTime ();
                     }
-                    if (!job->IsCompleted ()) {
-                        return false;
-                    }
                 }
-                return true;
+                return job->IsCompleted ();
             }
             else {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
@@ -310,7 +339,8 @@ namespace thekogans {
                 else {
                     TimeSpec now = GetCurrentTime ();
                     TimeSpec deadline = now + timeSpec;
-                    while (!waitForJobCallback.jobs.for_each (completedCallback) && deadline > now) {
+                    while (!waitForJobCallback.jobs.for_each (completedCallback) &&
+                            deadline > now) {
                         completedCallback.Wait (deadline - now);
                         now = GetCurrentTime ();
                     }
@@ -332,7 +362,8 @@ namespace thekogans {
             else {
                 TimeSpec now = GetCurrentTime ();
                 TimeSpec deadline = now + timeSpec;
-                while ((!pendingJobs.empty () || !runningJobs.empty ()) && deadline > now) {
+                while ((!pendingJobs.empty () || !runningJobs.empty ()) &&
+                        deadline > now) {
                     idle.Wait (deadline - now);
                     now = GetCurrentTime ();
                 }
