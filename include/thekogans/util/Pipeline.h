@@ -322,6 +322,8 @@ namespace thekogans {
         public:
             /// \brief
             /// ctor.
+            /// \param[in] begin Pointer to the beginning of the Stage array.
+            /// \param[in] end Pointer to the end of the Stage array.
             /// \param[in] name_ Pipeline name.
             /// \param[in] type_ Pipeline type.
             /// \param[in] maxPendingJobs_ Max pending pipeline jobs.
@@ -330,18 +332,18 @@ namespace thekogans {
             /// \param[in] workerAffinity_ Worker thread processor affinity.
             /// \param[in] workerCallback_ Called to initialize/uninitialize
             /// the worker thread.
-            /// \param[in] begin Pointer to the beginning of the Stage array.
-            /// \param[in] end Pointer to the end of the Stage array.
+            /// NOTE: If you create a pipeline without stages, you will have
+            /// to call AddStage and Start (below) manually.
             Pipeline (
+                const Stage *begin = 0,
+                const Stage *end = 0,
                 const std::string &name_ = std::string (),
                 RunLoop::Type type_ = RunLoop::TYPE_FIFO,
                 ui32 maxPendingJobs_ = UI32_MAX,
                 ui32 workerCount_ = 1,
                 i32 workerPriority_ = THEKOGANS_UTIL_NORMAL_THREAD_PRIORITY,
                 ui32 workerAffinity_ = THEKOGANS_UTIL_MAX_THREAD_AFFINITY,
-                RunLoop::WorkerCallback *workerCallback_ = 0,
-                const Stage *begin = 0,
-                const Stage *end = 0);
+                RunLoop::WorkerCallback *workerCallback_ = 0);
 
             /// \brief
             /// Return Pipeline id.
@@ -506,6 +508,12 @@ namespace thekogans {
         struct _LIB_THEKOGANS_UTIL_DECL GlobalPipelineCreateInstance {
         private:
             /// \brief
+            /// Pointer to the beginning of the Pipeline::Stage array.
+            static const Pipeline::Stage *begin;
+            /// \brief
+            /// Pointer to the end of the Pipeline::Stage array.
+            static const Pipeline::Stage *end;
+            /// \brief
             /// Pipeline name. If set, \see{Pipeline::Worker} threads will be named name-%d.
             static std::string name;
             /// \brief
@@ -526,16 +534,12 @@ namespace thekogans {
             /// \brief
             /// Called to initialize/uninitialize the worker thread.
             static RunLoop::WorkerCallback *workerCallback;
-            /// \brief
-            /// Pointer to the beginning of the Pipeline::Stage array.
-            static const Pipeline::Stage *begin;
-            /// \brief
-            /// Pointer to the end of the Pipeline::Stage array.
-            static const Pipeline::Stage *end;
 
         public:
             /// \brief
             /// Call before the first use of GlobalPipeline::Instance.
+            /// \param[in] begin_ Pointer to the beginning of the Pipeline::Stage array.
+            /// \param[in] end_ Pointer to the end of the Pipeline::Stage array.
             /// \param[in] name_ Pipeline name. If set, \see{Pipeline::Worker}
             /// threads will be named name-%d.
             /// \param[in] type_ Pipeline type.
@@ -544,18 +548,18 @@ namespace thekogans {
             /// \param[in] workerPriority_ Worker thread priority.
             /// \param[in] workerAffinity_ Worker thread processor affinity.
             /// \param[in] workerCallback_ Called to initialize/uninitialize the worker thread.
-            /// \param[in] begin_ Pointer to the beginning of the Pipeline::Stage array.
-            /// \param[in] end_ Pointer to the end of the Pipeline::Stage array.
+            /// NOTE: If you create the global pipeline without stages, you will have
+            /// to call Pipeline::AddStage and Pipeline::Start manually.
             static void Parameterize (
+                const Pipeline::Stage *begin_ = 0,
+                const Pipeline::Stage *end_ = 0,
                 const std::string &name_ = std::string (),
                 RunLoop::Type type_ = RunLoop::TYPE_FIFO,
                 ui32 maxPendingJobs_ = UI32_MAX,
                 ui32 workerCount_ = 1,
                 i32 workerPriority_ = THEKOGANS_UTIL_NORMAL_THREAD_PRIORITY,
                 ui32 workerAffinity_ = THEKOGANS_UTIL_MAX_THREAD_AFFINITY,
-                RunLoop::WorkerCallback *workerCallback_ = 0,
-                const Pipeline::Stage *begin_ = 0,
-                const Pipeline::Stage *end_ = 0);
+                RunLoop::WorkerCallback *workerCallback_ = 0);
 
             /// \brief
             /// Create a global pipeline with custom ctor arguments.
