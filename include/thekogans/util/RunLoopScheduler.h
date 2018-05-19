@@ -27,6 +27,7 @@
 #include "thekogans/util/TimeSpec.h"
 #include "thekogans/util/RunLoop.h"
 #include "thekogans/util/MainRunLoop.h"
+#include "thekogans/util/Pipeline.h"
 #include "thekogans/util/Singleton.h"
 #include "thekogans/util/SpinLock.h"
 #include "thekogans/util/GUID.h"
@@ -37,8 +38,8 @@ namespace thekogans {
         /// \struct RunLoopScheduler RunLoopScheduler.h thekogans/util/RunLoopScheduler.h
         ///
         /// \brief
-        /// A RunLoopScheduler allows you to schedule \see{RunLoop::Job}s to be executed
-        /// in the future.
+        /// A RunLoopScheduler allows you to schedule \see{RunLoop::Job}s and \see{Pipeline::Job}s
+        /// to be executed in the future.
 
         struct _LIB_THEKOGANS_UTIL_DECL RunLoopScheduler :
                 public ThreadSafeRefCounted,
@@ -54,39 +55,30 @@ namespace thekogans {
             /// \struct RunLoopScheduler::JobInfo RunLoopScheduler.h thekogans/util/RunLoopScheduler.h
             ///
             /// \brief
-            /// Holds information about a future job to be scheduled on the given \see{RunLoop}.
+            /// Base class for information about a future job to be scheduled on
+            /// the given \see{RunLoop} or \see{Pipeline}.
             struct JobInfo : public ThreadSafeRefCounted {
                 /// \brief
                 /// Convenient typedef for ThreadSafeRefCounted::Ptr<JobInfo>.
                 typedef ThreadSafeRefCounted::Ptr<JobInfo> Ptr;
 
                 /// \brief
-                /// RunLoopJobInfo has a private heap to help with memory
-                /// management, performance, and global heap fragmentation.
-                THEKOGANS_UTIL_DECLARE_HEAP_WITH_LOCK (JobInfo, SpinLock)
-
-                /// \brief
-                /// \see{RunLoop::Job} that will be scheduled.
+                /// \see{RunLoop::Job} or \see{Pipeline::Job} that will be scheduled.
                 RunLoop::Job::Ptr job;
                 /// \brief
                 /// Absolute time when the job will be scheduled.
                 TimeSpec deadline;
-                /// \brief
-                /// \see{RunLoop} the job will be scheduled on.
-                RunLoop &runLoop;
 
                 /// \brief
                 /// ctor.
-                /// \param[in] job_ \see{RunLoop::Job} that will be scheduled.
+                /// \param[in] job_ \see{RunLoop::Job} or \see{Pipeline::Job} that will be scheduled.
                 /// \param[in] deadline_ Absolute time when the job will be scheduled.
-                /// \param[in] runLoop_ \see{RunLoop} the job will be scheduled on.
                 JobInfo (
                     RunLoop::Job::Ptr job_,
-                    const TimeSpec &deadline_,
-                    RunLoop &runLoop_) :
+                    const TimeSpec &deadline_) :
                     job (job_),
-                    deadline (deadline_),
-                    runLoop (runLoop_) {}
+                    deadline (deadline_) {}
+                virtual ~JobInfo () {}
 
                 /// \struct RunLoopScheduler::JobInfo::Compare RunLoopScheduler.h thekogans/util/RunLoopScheduler.h
                 ///
@@ -99,21 +91,106 @@ namespace thekogans {
                     /// \param[in] jobInfo2 Second JobInfo to compare.
                     /// \return true if jobInfo1 should come before jobInfo2.
                     inline bool operator () (
-                            JobInfo::Ptr jobInfo1,
-                            JobInfo::Ptr jobInfo2) {
+                            const JobInfo::Ptr &jobInfo1,
+                            const JobInfo::Ptr &jobInfo2) {
                         return jobInfo1->deadline > jobInfo2->deadline;
                     }
                 } static compare;
 
                 /// \brief
+                /// Return the id associated with this \see{RunLoop} or \see{Pipeline}.
+                /// \return Id associated with this \see{RunLoop} or \see{Pipeline}.
+                virtual const RunLoop::Id &GetRunLoopId () const = 0;
+
+                /// \brief
                 /// Enqueue the job on the specified run loop.
-                inline void EnqJob () {
+                virtual void EnqJob () = 0;
+            };
+            /// \struct RunLoopScheduler::RunLoopJobInfo RunLoopScheduler.h thekogans/util/RunLoopScheduler.h
+            ///
+            /// \brief
+            /// Holds information about a future job to be scheduled on the given \see{RunLoop}.
+            struct RunLoopJobInfo : public JobInfo {
+                /// \brief
+                /// RunLoopJobInfo has a private heap to help with memory
+                /// management, performance, and global heap fragmentation.
+                THEKOGANS_UTIL_DECLARE_HEAP_WITH_LOCK (RunLoopJobInfo, SpinLock)
+
+                /// \brief
+                /// \see{RunLoop} the job will be scheduled on.
+                RunLoop &runLoop;
+
+                /// \brief
+                /// ctor.
+                /// \param[in] job \see{RunLoop::Job} that will be scheduled.
+                /// \param[in] deadline Absolute time when the job will be scheduled.
+                /// \param[in] runLoop_ \see{RunLoop} the job will be scheduled on.
+                RunLoopJobInfo (
+                    RunLoop::Job::Ptr job,
+                    const TimeSpec &deadline,
+                    RunLoop &runLoop_) :
+                    JobInfo (job, deadline),
+                    runLoop (runLoop_) {}
+
+                /// \brief
+                /// Return the id associated with this \see{RunLoop}.
+                /// \return Id associated with this \see{RunLoop}.
+                virtual const RunLoop::Id &GetRunLoopId () const {
+                    return runLoop.GetId ();
+                }
+
+                /// \brief
+                /// Enqueue the job on the specified run loop.
+                virtual void EnqJob () {
                     runLoop.EnqJob (job);
                 }
 
                 /// \brief
                 /// RunLoopJobInfo is neither copy constructable, nor assignable.
-                THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (JobInfo)
+                THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (RunLoopJobInfo)
+            };
+            /// \struct RunLoopScheduler::PipelineJobInfo RunLoopScheduler.h thekogans/util/RunLoopScheduler.h
+            ///
+            /// \brief
+            /// Holds information about a future job to be scheduled on the given \see{Pipeline}.
+            struct PipelineJobInfo : public JobInfo {
+                /// \brief
+                /// PipelineJobInfo has a private heap to help with memory
+                /// management, performance, and global heap fragmentation.
+                THEKOGANS_UTIL_DECLARE_HEAP_WITH_LOCK (PipelineJobInfo, SpinLock)
+
+                /// \brief
+                /// \see{Pipeline} the job will be scheduled on.
+                Pipeline &pipeline;
+
+                /// \brief
+                /// ctor.
+                /// \param[in] job \see{Pipeline::Job} that will be scheduled.
+                /// \param[in] deadline Absolute time when the job will be scheduled.
+                /// \param[in] pipeline_ \see{Pipeline} the job will be scheduled on.
+                PipelineJobInfo (
+                    Pipeline::Job::Ptr job,
+                    const TimeSpec &deadline,
+                    Pipeline &pipeline_) :
+                    JobInfo (RunLoop::Job::Ptr (job.Get ()), deadline),
+                    pipeline (pipeline_) {}
+
+                /// \brief
+                /// Return the id associated with this \see{Pipeline}.
+                /// \return Id associated with this \see{Pipeline}.
+                virtual const RunLoop::Id &GetRunLoopId () const {
+                    return pipeline.GetId ();
+                }
+
+                /// \brief
+                /// Enqueue the job on the specified pipeline.
+                virtual void EnqJob () {
+                    pipeline.EnqJob (dynamic_refcounted_pointer_cast<Pipeline::Job> (job));
+                }
+
+                /// \brief
+                /// PipelineJobInfo is neither copy constructable, nor assignable.
+                THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (PipelineJobInfo)
             };
             /// \brief
             /// Convenient typedef for
@@ -133,13 +210,13 @@ namespace thekogans {
                     QueueType (JobInfo::compare) {}
 
                 /// \brief
-                /// Cancel all pending jobs associated with the given \see{RunLoop}.
-                /// \param[in] runLoop \see{RunLoop} whose jobs to cancel.
-                void Cancel (const RunLoop &runLoop);
-                /// \brief
                 /// Cancel the job associated with the given job id.
                 /// \param[in] id JobInfo id to cancel.
-                void Cancel (const RunLoop::Job::Id &id);
+                void CancelJob (const RunLoop::Job::Id &id);
+                /// \brief
+                /// Cancel all pending jobs associated with the given \see{RunLoop}.
+                /// \param[in] runLoop \see{RunLoop} whose jobs to cancel.
+                void CancelJobs (const RunLoop::Id &runLoopId);
             } queue;
             /// \brief
             /// Synchronization spin lock.
@@ -153,44 +230,62 @@ namespace thekogans {
             /// \brief
             /// dtor.
             ~RunLoopScheduler () {
-                Clear ();
+                CancelAllJobs ();
             }
 
             /// \brief
             /// Schedule a job to be performed in the future.
             /// \param[in] job \see{RunLoop::Job} to execute.
             /// \param[in] timeSpec When in the future to execute the given job.
-            /// \param[in] runLoop \see{RunLoop} that will execute the job.
-            /// \return JobInfo::Id which can be used in a call to Cancel.
             /// IMPORTANT: timeSpec is a relative value.
-            inline RunLoop::Job::Id Schedule (
+            /// \param[in] runLoop \see{RunLoop} that will execute the job.
+            /// \return RunLoop::Job::Id which can be used in a call to CancelJob.
+            inline RunLoop::Job::Id ScheduleRunLoopJob (
                     RunLoop::Job::Ptr job,
                     const TimeSpec &timeSpec,
                     RunLoop &runLoop = MainRunLoop::Instance ()) {
                 return ScheduleJobInfo (
                     JobInfo::Ptr (
-                        new JobInfo (
+                        new RunLoopJobInfo (
                             job,
                             GetCurrentTime () + timeSpec,
                             runLoop)),
                     timeSpec);
             }
+            /// \brief
+            /// Schedule a job to be performed in the future.
+            /// \param[in] job \see{Pipeline::Job} to execute.
+            /// \param[in] timeSpec When in the future to execute the given job.
+            /// IMPORTANT: timeSpec is a relative value.
+            /// \param[in] pipeline \see{Pipeline} that will execute the job.
+            /// \return RunLoop::Job::Id which can be used in a call to CancelJob.
+            inline Pipeline::Job::Id SchedulePipelineJob (
+                    Pipeline::Job::Ptr job,
+                    const TimeSpec &timeSpec,
+                    Pipeline &pipeline) {
+                return ScheduleJobInfo (
+                    JobInfo::Ptr (
+                        new PipelineJobInfo (
+                            job,
+                            GetCurrentTime () + timeSpec,
+                            pipeline)),
+                    timeSpec);
+            }
 
+            /// \brief
+            /// Cancel the job associated with the given job id.
+            /// \param[in] id Job id to cancel.
+            void CancelJob (const RunLoop::Job::Id &id);
             /// \brief
             /// Cancel all pending jobs associated with the given \see{RunLoop}.
             /// IMPORTANT: RunLoopJobInfo holds on to the \see{RunLoop} reference.
             /// Use this member to cancel all \see{RunLoop} jobs before that
             /// \see{RunLoop} goes out of scope.
             /// \param[in] runLoop \see{RunLoop} whose jobs to cancel.
-            void Cancel (const RunLoop &runLoop);
-            /// \brief
-            /// Cancel the job associated with the given job id.
-            /// \param[in] id JobInfo id to cancel.
-            void Cancel (const RunLoop::Job::Id &id);
-
+            void CancelJobs (const RunLoop::Id &runLoopId);
             /// \brief
             /// Remove all pendig jobs.
-            void Clear ();
+            void CancelAllJobs ();
 
         private:
             // Timer::Callback
@@ -201,10 +296,10 @@ namespace thekogans {
 
             /// \brief
             /// Schedule helper.
-            /// \param[in] jobInfo JobInfo containing \see{RunLoop::Job} particulars.
+            /// \param[in] jobInfo JobInfo containing \see{RunLoop::Job} or \see{Pipeline} particulars.
             /// \param[in] timeSpec When in the future to execute the given job.
-            /// \return JobInfo::Id which can be used in a call to Cancel.
             /// IMPORTANT: timeSpec is a relative value.
+            /// \return JobInfo::Id which can be used in a call to Cancel.
             RunLoop::Job::Id ScheduleJobInfo (
                 JobInfo::Ptr jobInfo,
                 const TimeSpec &timeSpec);

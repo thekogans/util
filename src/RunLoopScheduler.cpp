@@ -23,17 +23,10 @@ namespace thekogans {
 
         RunLoopScheduler::JobInfo::Compare RunLoopScheduler::JobInfo::compare;
 
-        THEKOGANS_UTIL_IMPLEMENT_HEAP_WITH_LOCK (RunLoopScheduler::JobInfo, SpinLock)
+        THEKOGANS_UTIL_IMPLEMENT_HEAP_WITH_LOCK (RunLoopScheduler::RunLoopJobInfo, SpinLock)
+        THEKOGANS_UTIL_IMPLEMENT_HEAP_WITH_LOCK (RunLoopScheduler::PipelineJobInfo, SpinLock)
 
-        void RunLoopScheduler::Queue::Cancel (const RunLoop &runLoop) {
-            for (std::size_t i = c.size (); i-- > 0;) {
-                if (&c[i]->runLoop == &runLoop) {
-                    c.erase (c.begin () + i);
-                }
-            }
-        }
-
-        void RunLoopScheduler::Queue::Cancel (const RunLoop::Job::Id &id) {
+        void RunLoopScheduler::Queue::CancelJob (const RunLoop::Job::Id &id) {
             for (std::size_t i = c.size (); i-- > 0;) {
                 if (c[i]->job->GetId () == id) {
                     c.erase (c.begin () + i);
@@ -42,29 +35,37 @@ namespace thekogans {
             }
         }
 
-        void RunLoopScheduler::Cancel (const RunLoop &runLoop) {
+        void RunLoopScheduler::Queue::CancelJobs (const RunLoop::Id &runLoopId) {
+            for (std::size_t i = c.size (); i-- > 0;) {
+                if (c[i]->GetRunLoopId () == runLoopId) {
+                    c.erase (c.begin () + i);
+                }
+            }
+        }
+
+        void RunLoopScheduler::CancelJob (const RunLoop::Job::Id &id) {
             LockGuard<SpinLock> guard (spinLock);
             if (!queue.empty ()) {
                 TimeSpec deadline = queue.top ()->deadline;
-                queue.Cancel (runLoop);
+                queue.CancelJob (id);
                 if (!queue.empty () && queue.top ()->deadline != deadline) {
                     timer.Start (queue.top ()->deadline - GetCurrentTime ());
                 }
             }
         }
 
-        void RunLoopScheduler::Cancel (const RunLoop::Job::Id &id) {
+        void RunLoopScheduler::CancelJobs (const RunLoop::Id &runLoopId) {
             LockGuard<SpinLock> guard (spinLock);
             if (!queue.empty ()) {
                 TimeSpec deadline = queue.top ()->deadline;
-                queue.Cancel (id);
+                queue.CancelJobs (runLoopId);
                 if (!queue.empty () && queue.top ()->deadline != deadline) {
                     timer.Start (queue.top ()->deadline - GetCurrentTime ());
                 }
             }
         }
 
-        void RunLoopScheduler::Clear () {
+        void RunLoopScheduler::CancelAllJobs () {
             LockGuard<SpinLock> guard (spinLock);
             timer.Stop ();
             Queue empty;
