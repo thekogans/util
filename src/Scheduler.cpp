@@ -16,6 +16,8 @@
 // along with libthekogans_util. If not, see <http://www.gnu.org/licenses/>.
 
 #include "thekogans/util/LockGuard.h"
+#include "thekogans/util/HRTimer.h"
+#include "thekogans/util/LoggerMgr.h"
 #include "thekogans/util/Scheduler.h"
 
 namespace thekogans {
@@ -23,57 +25,18 @@ namespace thekogans {
 
         THEKOGANS_UTIL_IMPLEMENT_HEAP_WITH_LOCK (Scheduler::JobQueue, SpinLock)
 
-        void Scheduler::JobQueue::Enq (Job::UniquePtr job) {
-            if (job.get () != 0) {
-                LockGuard<SpinLock> guard (spinLock);
-                jobs.push_back (job.release ());
+        bool Scheduler::JobQueue::EnqJob (
+                Job::Ptr job,
+                bool wait,
+                const TimeSpec &timeSpec) {
+            bool result = RunLoop::EnqJob (job);
+            if (result) {
                 if (!inList && !inFlight) {
                     scheduler.AddJobQueue (this, true);
                 }
+                result = !wait || WaitForJob (job, timeSpec);
             }
-            else {
-                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
-            }
-        }
-
-        void Scheduler::JobQueue::EnqFront (Job::UniquePtr job) {
-            if (job.get () != 0) {
-                LockGuard<SpinLock> guard (spinLock);
-                jobs.push_front (job.release ());
-                if (!inList && !inFlight) {
-                    scheduler.AddJobQueue (this, true);
-                }
-            }
-            else {
-                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
-            }
-        }
-
-        void Scheduler::JobQueue::Flush () {
-            LockGuard<SpinLock> guard (spinLock);
-            if (!jobs.empty ()) {
-                struct Callback : public JobList::Callback {
-                    typedef JobList::Callback::result_type result_type;
-                    typedef JobList::Callback::argument_type argument_type;
-                    virtual result_type operator () (argument_type job) {
-                        delete job;
-                        return true;
-                    }
-                } callback;
-                jobs.clear (callback);
-                scheduler.RemoveJobQueue (this);
-            }
-        }
-
-        Scheduler::JobQueue::Job::UniquePtr Scheduler::JobQueue::Deq () {
-            LockGuard<SpinLock> guard (spinLock);
-            Job::UniquePtr job;
-            if (!jobs.empty ()) {
-                job.reset (jobs.pop_front ());
-            }
-            return job;
+            return result;
         }
 
         void Scheduler::AddJobQueue (
@@ -81,7 +44,6 @@ namespace thekogans {
                 bool scheduleWorker) {
             if (jobQueue != 0) {
                 LockGuard<SpinLock> guard (spinLock);
-                jobQueue->AddRef ();
                 switch (jobQueue->priority) {
                     case JobQueue::PRIORITY_LOW:
                         low.push_back (jobQueue);
@@ -93,6 +55,7 @@ namespace thekogans {
                         high.push_back (jobQueue);
                         break;
                 }
+                jobQueue->AddRef ();
                 if (scheduleWorker) {
                     struct WorkerJob : public util::RunLoop::Job {
                         WorkerPool::WorkerPtr::Ptr workerPtr;
@@ -107,57 +70,46 @@ namespace thekogans {
                         virtual void Execute (const THEKOGANS_UTIL_ATOMIC<bool> &done) throw () {
                             // Use a warm worker to minimize cache thrashing.
                             while (!done) {
-                                Scheduler::JobQueue::Ptr jobQueue =
+                                Scheduler::JobQueue *jobQueue =
                                     scheduler.GetNextJobQueue ();
-                                if (jobQueue.Get () == 0) {
-                                    return;
-                                }
-                                Scheduler::JobQueue::Job::UniquePtr job = jobQueue->Deq ();
-                                if (job.get () != 0) {
-                                    job->Execute (done);
-                                }
-                                {
-                                    // Put the queue in the back of it's priority list
-                                    // so that we respect the scheduling policy we advertise
-                                    // (see GetNextJobQueue).
-                                    LockGuard<SpinLock> guard (jobQueue->spinLock);
-                                    jobQueue->inFlight = false;
-                                    if (!jobQueue->jobs.empty ()) {
-                                        scheduler.AddJobQueue (jobQueue.Get (), false);
+                                if (jobQueue != 0) {
+                                    RunLoop::Job *job = jobQueue->DeqJob ();
+                                    if (job != 0) {
+                                        ui64 start = 0;
+                                        ui64 end = 0;
+                                        // Short circuit cancelled pending jobs.
+                                        if (!job->ShouldStop (done)) {
+                                            start = HRTimer::Click ();
+                                            job->SetStatus (Job::Running);
+                                            job->Prologue (done);
+                                            job->Execute (done);
+                                            job->Epilogue (done);
+                                            job->Succeed ();
+                                            end = HRTimer::Click ();
+                                        }
+                                        jobQueue->FinishedJob (job, start, end);
+                                    }
+                                    {
+                                        // Put the queue in the back of it's priority list
+                                        // so that we respect the scheduling policy we advertise
+                                        // (see GetNextJobQueue).
+                                        jobQueue->inFlight = false;
+                                        if (jobQueue->GetPendingJobCount () != 0) {
+                                            scheduler.AddJobQueue (jobQueue, false);
+                                        }
                                     }
                                 }
                             }
                         }
                     };
-                    WorkerPool::WorkerPtr::Ptr workerPtr (
-                        new WorkerPool::WorkerPtr (workerPool, 0));
-                    (*workerPtr)->EnqJob (
-                        util::RunLoop::Job::Ptr (
-                            new WorkerJob (workerPtr, *this)));
-                }
-            }
-            else {
-                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
-            }
-        }
-
-        void Scheduler::RemoveJobQueue (JobQueue *jobQueue) {
-            if (jobQueue != 0) {
-                LockGuard<SpinLock> guard (spinLock);
-                if (jobQueue->inList) {
-                    switch (jobQueue->priority) {
-                        case JobQueue::PRIORITY_LOW:
-                            low.erase (jobQueue);
-                            break;
-                        case JobQueue::PRIORITY_NORMAL:
-                            normal.erase (jobQueue);
-                            break;
-                        case JobQueue::PRIORITY_HIGH:
-                            high.erase (jobQueue);
-                            break;
+                    THEKOGANS_UTIL_TRY {
+                        WorkerPool::WorkerPtr::Ptr workerPtr (
+                            new WorkerPool::WorkerPtr (workerPool, 0));
+                        (*workerPtr)->EnqJob (
+                            util::RunLoop::Job::Ptr (
+                                new WorkerJob (workerPtr, *this)));
                     }
-                    jobQueue->Release ();
+                    THEKOGANS_UTIL_CATCH_AND_LOG_SUBSYSTEM (THEKOGANS_UTIL)
                 }
             }
             else {
@@ -166,26 +118,21 @@ namespace thekogans {
             }
         }
 
-        Scheduler::JobQueue::Ptr Scheduler::GetNextJobQueue () {
+        Scheduler::JobQueue *Scheduler::GetNextJobQueue () {
             // Priority based, round-robin, O(1) scheduler!
             LockGuard<SpinLock> guard (spinLock);
-            JobQueue::Ptr jobQueue;
+            JobQueue *jobQueue = 0;
             if (!high.empty ()) {
-                LockGuard<SpinLock> guard (high.front ()->spinLock);
-                high.front ()->inFlight = true;
-                jobQueue.Reset (high.pop_front ());
+                jobQueue = high.pop_front ();
             }
             else if (!normal.empty ()) {
-                LockGuard<SpinLock> guard (normal.front ()->spinLock);
-                normal.front ()->inFlight = true;
-                jobQueue.Reset (normal.pop_front ());
+                jobQueue = normal.pop_front ();
             }
             else if (!low.empty ()) {
-                LockGuard<SpinLock> guard (low.front ()->spinLock);
-                low.front ()->inFlight = true;
-                jobQueue.Reset (low.pop_front ());
+                jobQueue = low.pop_front ();
             }
-            if (jobQueue.Get () != 0) {
+            if (jobQueue != 0) {
+                jobQueue->inFlight = true;
                 jobQueue->Release ();
             }
             return jobQueue;

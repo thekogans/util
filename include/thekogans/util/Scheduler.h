@@ -22,6 +22,7 @@
 #include "thekogans/util/Config.h"
 #include "thekogans/util/Types.h"
 #include "thekogans/util/Heap.h"
+#include "thekogans/util/RunLoop.h"
 #include "thekogans/util/RefCounted.h"
 #include "thekogans/util/Singleton.h"
 #include "thekogans/util/SpinLock.h"
@@ -45,6 +46,8 @@ namespace thekogans {
             /// \brief
             /// Forward declaration of JobQueue.
             struct JobQueue;
+
+        private:
             enum {
                 /// \brief
                 /// JobQueueList ID.
@@ -53,6 +56,8 @@ namespace thekogans {
             /// \brief
             /// Convenient typedef for IntrusiveList<JobQueue, JOB_QUEUE_LIST_ID>.
             typedef IntrusiveList<JobQueue, JOB_QUEUE_LIST_ID> JobQueueList;
+
+        public:
         #if defined (_MSC_VER)
             #pragma warning (push)
             #pragma warning (disable : 4275)
@@ -60,19 +65,18 @@ namespace thekogans {
             /// \struct Scheduler::JobQueue Scheduler.h thekogans/util/Scheduler.h
             ///
             /// \brief
-            /// A very lightweight (~50 bytes on a 64 bit architecture, less on
-            /// 32 bit ones) queue meant to be instantiated by all objects that
-            /// need to schedule tasks and have them be executed sequentially in
-            /// parallel. Once instantiated, put one or more jobs on the queue and
-            /// they will be executed in prioritized, round-robin order. The scheduler
-            /// runs in O(1). As there are no job states, if a job is in the queue,
-            /// it will be scheduled to execute using one of the workers from a
-            /// limited pool. Keep that in mind when designing your jobs as there
-            /// is a real possibility of exhausting the worker pool and effectively
-            /// killing the scheduler. Specifically, synchronous io is frowned upon.
-            /// The motto is; keep em nimble, keep em moving!
+            /// JobQueue is meant to be instantiated by all objects that need to
+            /// schedule tasks and have them be executed sequentially in parallel.
+            /// Once instantiated, put one or more jobs on the queue and they will
+            /// be executed in prioritized, round-robin order. The scheduler runs
+            /// in O(1). As there are no job states, if a job is in the queue, it
+            /// will be scheduled to execute using one of the workers from a limited
+            /// pool. Keep that in mind when designing your jobs as there is a real
+            /// possibility of exhausting the worker pool and effectively killing
+            /// the scheduler. Specifically, synchronous io is frowned upon. The
+            /// motto is; keep em nimble, keep em moving!
             struct _LIB_THEKOGANS_UTIL_DECL JobQueue :
-                    public ThreadSafeRefCounted,
+                    public RunLoop,
                     public JobQueueList::Node {
                 /// \brief
                 /// Convenient typedef for ThreadSafeRefCounted::Ptr<JobQueue>.
@@ -83,9 +87,6 @@ namespace thekogans {
                 /// management, performance, and global heap fragmentation.
                 THEKOGANS_UTIL_DECLARE_HEAP_WITH_LOCK (JobQueue, SpinLock)
 
-                /// \brief
-                /// Scheduler this JobQueue belongs to.
-                Scheduler &scheduler;
                 /// \brief
                 /// Queue priority.
                 enum Priority {
@@ -99,97 +100,63 @@ namespace thekogans {
                     /// \brief
                     /// Highest priority queue.
                     PRIORITY_HIGH
-                } priority;
+                };
+
+            private:
+                /// \brief
+                /// Scheduler this JobQueue belongs to.
+                Scheduler &scheduler;
+                /// \brief
+                /// Queue priority.
+                Priority priority;
                 /// \brief
                 /// Set true by a worker if it's processing a job from this queue.
-                volatile bool inFlight;
-                /// \brief
-                /// Forward declaration of Job.
-                struct Job;
-                enum {
-                    /// \brief
-                    /// JobList ID.
-                    JOB_LIST_ID
-                };
-                /// \brief
-                /// Convenient typedef for IntrusiveList<Job, JOB_LIST_ID>.
-                typedef IntrusiveList<Job, JOB_LIST_ID> JobList;
-                /// \struct Scheduler::JobQueue::Job Scheduler.h thekogans/util/Scheduler.h
-                ///
-                /// \brief
-                /// In keeping with the theme of keeping it lightweight, a
-                /// job has but one responsibility, and that's to execute
-                /// a task (as quickly as possible).
-                struct _LIB_THEKOGANS_UTIL_DECL Job : public JobList::Node {
-                    /// \brief
-                    /// Convenient typedef for std::unique_ptr<Job>.
-                    typedef std::unique_ptr<Job> UniquePtr;
+                THEKOGANS_UTIL_ATOMIC<bool> inFlight;
 
-                    /// \brief
-                    /// dtor.
-                    virtual ~Job () {}
-
-                    /// \brief
-                    /// Called by a worker thread to execute the job.
-                    /// See notes on keeping it brief above.
-                    /// \param[in] done A job should monitor this flag
-                    /// with enough frequency to be responsive. Once
-                    /// done == true, a job should stop what it's doing
-                    /// as soon as possible and exit.
-                    virtual void Execute (const THEKOGANS_UTIL_ATOMIC<bool> & /*done*/) throw () = 0;
-                };
-                /// \brief
-                /// List of queue jobs.
-                JobList jobs;
-                /// \brief
-                /// Synchronization lock.
-                SpinLock spinLock;
-
+            public:
                 /// \brief
                 /// ctor.
                 /// \param[in] scheduler_ Scheduler this JobQueue belongs to.
                 /// \param[in] priority_ JobQueue priority.
                 JobQueue (
                     Scheduler &scheduler_,
-                    Priority priority_ = PRIORITY_NORMAL) :
+                    Priority priority_ = PRIORITY_NORMAL,
+                    const std::string &name = std::string (),
+                    Type type = TYPE_FIFO,
+                    ui32 maxPendingJobs = UI32_MAX) :
+                    RunLoop (name, type, maxPendingJobs),
                     scheduler (scheduler_),
                     priority (priority_),
                     inFlight (false) {}
-                /// \brief
-                /// dtor.
-                ~JobQueue () {
-                    Flush ();
-                }
 
                 /// \brief
-                /// En-queue a job. The next idle worker will pick it up
-                /// and execute it on it's thread.
-                /// \param[in] job Job to en-queue.
-                void Enq (Job::UniquePtr job);
-                /// \brief
-                /// This is a very useful feature meant to aid in job
-                /// design and chunking. The idea is to be able to have
-                /// a currently executing job en-queue another job to
-                /// follow it. In effect, creating a pipeline. The hope
-                /// being that since the scheduler puts the queue back at
-                /// the end of it's priority chain that all waiting queues
-                /// will be given a chance to make progress.
+                /// Enqueue a job to be executed by thejob queue.
                 /// \param[in] job Job to enqueue.
-                void EnqFront (Job::UniquePtr job);
-
-                /// \brief
-                /// Flush all pending jobs. If a job is in flight, it's not affected.
-                void Flush ();
+                /// \param[in] wait Wait for job to finish. Used for synchronous job execution.
+                /// \param[in] timeSpec How long to wait for the job to complete.
+                /// IMPORTANT: timeSpec is a relative value.
+                /// \return true == !wait || WaitForJob (...)
+                virtual bool EnqJob (
+                    Job::Ptr job,
+                    bool wait = false,
+                    const TimeSpec &timeSpec = TimeSpec::Infinite);
 
             private:
                 /// \brief
-                /// Used internally by worker(s) to get the next job.
-                /// \return The next job to execute.
-                Job::UniquePtr Deq ();
+                /// Scheduler job queue starts when jobs are enqueued.
+                virtual void Start () {}
+                /// \brief
+                /// Scheduler job queue stops when there are no more jobs to execute.
+                /// \param[in] cancelPendingJobs true = Cancel all pending jobs.
+                virtual void Stop (bool /*cancelPendingJobs*/ = true) {}
 
                 /// \brief
-                /// Scheduler needs access to Deq.
+                /// Scheduler needs access to protected members.
                 friend struct Scheduler;
+
+                /// \brief
+                /// JobQueue is neither copy constructable, nor assignable.
+                THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (JobQueue)
             };
         #if defined (_MSC_VER)
             #pragma warning (pop)
@@ -255,14 +222,10 @@ namespace thekogans {
                 JobQueue *jobQueue,
                 bool scheduleWorker);
             /// \brief
-            /// Remove the JobQueue from it's corresponding list.
-            /// \param[in] jobQueue JobQueue to remove.
-            void RemoveJobQueue (JobQueue *jobQueue);
-            /// \brief
             /// Used by the worker to get the next appropriate
             /// JobQueue (based on priority).
             /// \return Highest priority JobQueue.
-            JobQueue::Ptr GetNextJobQueue ();
+            JobQueue *GetNextJobQueue ();
         };
 
         /// \struct GlobalSchedulerCreateInstance Scheduler.h thekogans/util/Scheduler.h
