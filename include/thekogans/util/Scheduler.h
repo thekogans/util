@@ -176,14 +176,20 @@ namespace thekogans {
                 /// will be given a chance to make progress.
                 /// \param[in] job Job to enqueue.
                 void EnqFront (Job::UniquePtr job);
+
+                /// \brief
+                /// Flush all pending jobs. If a job is in flight, it's not affected.
+                void Flush ();
+
+            private:
                 /// \brief
                 /// Used internally by worker(s) to get the next job.
                 /// \return The next job to execute.
                 Job::UniquePtr Deq ();
 
                 /// \brief
-                /// Flush all pending jobs. If a job is in flight, it's not affected.
-                void Flush ();
+                /// Scheduler needs access to Deq.
+                friend struct Scheduler;
             };
         #if defined (_MSC_VER)
             #pragma warning (pop)

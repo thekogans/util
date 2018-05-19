@@ -155,8 +155,8 @@ namespace thekogans {
                 return f_1_ECX.Test (1 << 13);
             }
             /// \brief
-            /// Return true if  is supported.
-            /// \return true ==  is supported.
+            /// Return true if SSE41 is supported.
+            /// \return true == SSE41 is supported.
             inline bool SSE41 () const {
                 return f_1_ECX.Test (1 << 19);
             }

@@ -26,7 +26,7 @@
 #include "thekogans/util/SystemInfo.h"
 #include "thekogans/util/Singleton.h"
 #include "thekogans/util/Thread.h"
-#include "thekogans/util/SpinLock.h"
+#include "thekogans/util/Mutex.h"
 #include "thekogans/util/Barrier.h"
 
 namespace thekogans {
@@ -164,10 +164,10 @@ namespace thekogans {
         private:
             /// \brief
             /// Flag to signal the worker thread.
-            volatile bool done;
+            THEKOGANS_UTIL_ATOMIC<bool> done;
             /// \brief
             /// Synchronization lock.
-            SpinLock spinLock;
+            Mutex mutex;
             /// \brief
             /// Used to synchronize vectorizer workers.
             Barrier barrier;

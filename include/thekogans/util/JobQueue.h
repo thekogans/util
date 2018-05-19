@@ -82,14 +82,12 @@ namespace thekogans {
             struct Worker :
                     public Thread,
                     public WorkerList::Node {
-                /// \brief
-                /// Convenient typedef for std::unique_ptr<Worker>.
-                typedef std::unique_ptr<Worker> UniquePtr;
-
+            private:
                 /// \brief
                 /// JobQueue to which this worker belongs.
                 JobQueue &queue;
 
+            public:
                 /// \brief
                 /// ctor.
                 /// \param[in] queue_ JobQueue to which this worker belongs.
@@ -105,6 +103,7 @@ namespace thekogans {
                     Create (priority, affinity);
                 }
 
+            private:
                 // Thread
                 /// \brief
                 /// Worker thread.

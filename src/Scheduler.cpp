@@ -51,15 +51,6 @@ namespace thekogans {
             }
         }
 
-        Scheduler::JobQueue::Job::UniquePtr Scheduler::JobQueue::Deq () {
-            LockGuard<SpinLock> guard (spinLock);
-            Job::UniquePtr job;
-            if (!jobs.empty ()) {
-                job.reset (jobs.pop_front ());
-            }
-            return job;
-        }
-
         void Scheduler::JobQueue::Flush () {
             LockGuard<SpinLock> guard (spinLock);
             if (!jobs.empty ()) {
@@ -74,6 +65,15 @@ namespace thekogans {
                 jobs.clear (callback);
                 scheduler.RemoveJobQueue (this);
             }
+        }
+
+        Scheduler::JobQueue::Job::UniquePtr Scheduler::JobQueue::Deq () {
+            LockGuard<SpinLock> guard (spinLock);
+            Job::UniquePtr job;
+            if (!jobs.empty ()) {
+                job.reset (jobs.pop_front ());
+            }
+            return job;
         }
 
         void Scheduler::AddJobQueue (

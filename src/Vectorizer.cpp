@@ -80,7 +80,7 @@ namespace thekogans {
                     // Vectorizer is, as it's name implies, a global
                     // resource. It is not re-entrant. We therefore need to
                     // serialize access to the one and only entry point.
-                    LockGuard<SpinLock> guard (spinLock);
+                    LockGuard<Mutex> guard (mutex);
                     assert (job == 0);
                     assert (workerCount == 0);
                     assert (chunkSize == 0);
