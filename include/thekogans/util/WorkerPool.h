@@ -130,7 +130,7 @@ namespace thekogans {
                 THEKOGANS_UTIL_DECLARE_HEAP_WITH_LOCK (Worker, SpinLock)
 
                 /// \brief
-                /// WorkerPool from which the worker came.
+                /// WorkerPool from which this worker came.
                 WorkerPool &workerPool;
 
                 /// \brief
