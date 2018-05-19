@@ -273,7 +273,7 @@ namespace thekogans {
             /// \brief
             /// Convenient typedef for IntrusiveList<Worker, WORKER_LIST_ID>.
             typedef IntrusiveList<Worker, WORKER_LIST_ID> WorkerList;
-            /// \struct JobQueue::Worker JobQueue.h thekogans/util/JobQueue.h
+            /// \struct Pipeline::Worker Pipeline.h thekogans/util/Pipeline.h
             ///
             /// \brief
             /// Worker takes pending jobs off the queue and
