@@ -38,7 +38,7 @@ namespace thekogans {
         ///
         /// \brief
         /// WorkerPool implements a very convenient pool of
-        /// JobQueues. Here is a canonical use case:
+        /// \see{JobQueue}s. Here is a canonical use case:
         ///
         /// \code{.cpp}
         /// using namespace thekogans;
@@ -47,10 +47,10 @@ namespace thekogans {
         ///
         /// void foo (...) {
         ///     struct Job : public util::RunLoop::Job {
-        ///         util::WorkerPool::WorkerPtr::Ptr workerPtr;
+        ///         util::WorkerPool::WorkerPtr workerPtr;
         ///         ...
         ///         Job (
-        ///             util::WorkerPool::WorkerPtr::Ptr workerPtr_,
+        ///             util::WorkerPool::WorkerPtr workerPtr_,
         ///             ...) :
         ///             workerPtr (workerPtr_),
         ///             ... {}
@@ -60,16 +60,16 @@ namespace thekogans {
         ///             ...
         ///         }
         ///     };
-        ///     util::WorkerPool::WorkerPtr::Ptr workerPtr = workerPool.GetWorker ();
+        ///     util::WorkerPool::WorkerPtr workerPtr = workerPool.GetWorker ();
         ///     if (workerPtr.Get () != 0) {
-        ///         (*workerPtr)->EnqJob (RunLoop::Job::Ptr (new Job (workerPtr, ...)));
+        ///         workerPtr->EnqJob (RunLoop::Job::Ptr (new Job (workerPtr, ...)));
         ///     }
         /// }
         /// \endcode
         ///
         /// Note how the Job controls the lifetime of the WorkerPtr.
-        /// By passing util::WorkerPool::WorkerPtr::Ptr in to the
-        /// Job's ctor we guarantee that the worker will be released as
+        /// By passing util::WorkerPool::WorkerPtr in to the Job's
+        /// ctor we guarantee that the worker will be released as
         /// soon as the Job goes out of scope (as it will be the last
         /// reference on the ThreadSafeRefCounted).
 
