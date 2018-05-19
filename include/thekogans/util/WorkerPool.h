@@ -217,7 +217,7 @@ namespace thekogans {
             /// \param[in] retries Number of times to retry if a worker is not immediately available.
             /// \param[in] timeSpec How long to wait between retries.
             /// IMPORTANT: timeSpec is a relative value.
-            /// \return A worker from the pool.
+            /// \return A worker from the pool (WorkerPtr () if pool is exhausted).
             WorkerPtr GetWorker (
                 ui32 retries = 1,
                 const TimeSpec &timeSpec = TimeSpec::FromMilliseconds (100));
