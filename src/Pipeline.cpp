@@ -47,8 +47,7 @@ namespace thekogans {
                     completed.Signal ();
                 }
                 else {
-                    if (!ShouldStop (pipeline.done, Succeeded) &&
-                            stage < pipeline.stages.size () - 1) {
+                    if (!ShouldStop (pipeline.done) && stage < pipeline.stages.size () - 1) {
                         THEKOGANS_UTIL_TRY {
                             pipeline.stages[++stage]->EnqJob (RunLoop::Job::Ptr (this));
                             return;
@@ -84,22 +83,13 @@ namespace thekogans {
                 Job *job = pipeline.DeqJob ();
                 if (job != 0) {
                     // Short circuit cancelled pending jobs.
-                    if (!job->ShouldStop (pipeline.done)) {
-                        if (job->stage < pipeline.stages.size ()) {
-                            THEKOGANS_UTIL_TRY {
-                                pipeline.stages[job->stage]->EnqJob (RunLoop::Job::Ptr (job));
-                                continue;
-                            }
-                            THEKOGANS_UTIL_CATCH (Exception) {
-                                job->Fail (exception);
-                            }
+                    if (!job->ShouldStop (pipeline.done) && job->stage < pipeline.stages.size ()) {
+                        THEKOGANS_UTIL_TRY {
+                            pipeline.stages[job->stage]->EnqJob (RunLoop::Job::Ptr (job));
+                            continue;
                         }
-                        else {
-                            job->Fail (
-                                THEKOGANS_UTIL_STRING_EXCEPTION (
-                                    "Job stage (%u) exceeds pipeline stage count (%u).\n",
-                                    job->stage,
-                                    pipeline.stages.size ()));
+                        THEKOGANS_UTIL_CATCH (Exception) {
+                            job->Fail (exception);
                         }
                     }
                     pipeline.FinishedJob (job, job->start, job->end);
