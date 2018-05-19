@@ -90,18 +90,23 @@ namespace thekogans {
 
             void SignalAll () {
                 LockGuard<Mutex> guard (mutex);
-                if (state == NotSignalled && count > 0) {
-                    state = Signalled;
-                    pulse = true;
-                    pulseTime = HRTimer::Click ();
-                    if (manualReset) {
-                        pulseCount = count;
-                        condition.SignalAll ();
+                if (state == NotSignalled) {
+                    if (count > 0) {
+                        state = Signalled;
+                        pulse = true;
+                        pulseTime = HRTimer::Click ();
+                        if (manualReset) {
+                            pulseCount = count;
+                            condition.SignalAll ();
+                        }
+                        else {
+                            pulseCount = 1;
+                            condition.Signal ();
+                        }
                     }
-                    else {
-                        pulseCount = 1;
-                        condition.Signal ();
-                    }
+                }
+                else {
+                    state = NotSignalled;
                 }
             }
 
