@@ -312,20 +312,23 @@ namespace thekogans {
                 virtual void Epilogue (const THEKOGANS_UTIL_ATOMIC<bool> & /*done*/) throw () {}
 
                 /// \brief
-                /// RunLoop uses Reset.
+                /// RunLoop needs acces to protected members.
                 friend struct RunLoop;
                 /// \brief
-                /// DefaultRunLoop uses SetStatus and Finish.
+                /// DefaultRunLoop needs acces to protected members.
                 friend struct DefaultRunLoop;
                 /// \brief
-                /// SystemRunLoop uses SetStatus and Finish.
+                /// SystemRunLoop needs acces to protected members.
                 friend struct SystemRunLoop;
                 /// \brief
-                /// JobQueue uses SetStatus and Finish.
+                /// JobQueue needs acces to protected members.
                 friend struct JobQueue;
                 /// \brief
-                /// Pipeline uses SignalCompleted.
+                /// Pipeline needs acces to protected members.
                 friend struct Pipeline;
+                /// \brief
+                /// Scheduler needs acces to protected members.
+                friend struct Scheduler;
             };
         #if defined (_MSC_VER)
             #pragma warning (pop)
