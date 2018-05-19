@@ -25,6 +25,13 @@ namespace thekogans {
 
         THEKOGANS_UTIL_IMPLEMENT_HEAP_WITH_LOCK (Scheduler::JobQueue, SpinLock)
 
+        void Scheduler::JobQueue::Stop (bool cancelPendingJobs) {
+            if (cancelPendingJobs) {
+                CancelAllJobs ();
+                WaitForIdle ();
+            }
+        }
+
         bool Scheduler::JobQueue::EnqJob (
                 Job::Ptr job,
                 bool wait,
@@ -43,17 +50,19 @@ namespace thekogans {
                 JobQueue *jobQueue,
                 bool scheduleWorker) {
             if (jobQueue != 0) {
-                LockGuard<SpinLock> guard (spinLock);
-                switch (jobQueue->priority) {
-                    case JobQueue::PRIORITY_LOW:
-                        low.push_back (jobQueue);
-                        break;
-                    case JobQueue::PRIORITY_NORMAL:
-                        normal.push_back (jobQueue);
-                        break;
-                    case JobQueue::PRIORITY_HIGH:
-                        high.push_back (jobQueue);
-                        break;
+                {
+                    LockGuard<SpinLock> guard (spinLock);
+                    switch (jobQueue->priority) {
+                        case JobQueue::PRIORITY_LOW:
+                            low.push_back (jobQueue);
+                            break;
+                        case JobQueue::PRIORITY_NORMAL:
+                            normal.push_back (jobQueue);
+                            break;
+                        case JobQueue::PRIORITY_HIGH:
+                            high.push_back (jobQueue);
+                            break;
+                    }
                 }
                 jobQueue->AddRef ();
                 if (scheduleWorker) {
@@ -70,8 +79,7 @@ namespace thekogans {
                         virtual void Execute (const THEKOGANS_UTIL_ATOMIC<bool> &done) throw () {
                             // Use a warm worker to minimize cache thrashing.
                             while (!done) {
-                                Scheduler::JobQueue *jobQueue =
-                                    scheduler.GetNextJobQueue ();
+                                Scheduler::JobQueue *jobQueue = scheduler.GetNextJobQueue ();
                                 if (jobQueue != 0) {
                                     RunLoop::Job *job = jobQueue->DeqJob ();
                                     if (job != 0) {
@@ -120,16 +128,18 @@ namespace thekogans {
 
         Scheduler::JobQueue *Scheduler::GetNextJobQueue () {
             // Priority based, round-robin, O(1) scheduler!
-            LockGuard<SpinLock> guard (spinLock);
             JobQueue *jobQueue = 0;
-            if (!high.empty ()) {
-                jobQueue = high.pop_front ();
-            }
-            else if (!normal.empty ()) {
-                jobQueue = normal.pop_front ();
-            }
-            else if (!low.empty ()) {
-                jobQueue = low.pop_front ();
+            {
+                LockGuard<SpinLock> guard (spinLock);
+                if (!high.empty ()) {
+                    jobQueue = high.pop_front ();
+                }
+                else if (!normal.empty ()) {
+                    jobQueue = normal.pop_front ();
+                }
+                else if (!low.empty ()) {
+                    jobQueue = low.pop_front ();
+                }
             }
             if (jobQueue != 0) {
                 jobQueue->inFlight = true;

@@ -130,6 +130,14 @@ namespace thekogans {
                     inFlight (false) {}
 
                 /// \brief
+                /// Scheduler job queue starts when jobs are enqueued.
+                virtual void Start () {}
+                /// \brief
+                /// Scheduler job queue stops when there are no more jobs to execute.
+                /// \param[in] cancelPendingJobs true = Cancel all pending jobs.
+                virtual void Stop (bool cancelPendingJobs = true);
+
+                /// \brief
                 /// Enqueue a job to be executed by the job queue.
                 /// \param[in] job Job to enqueue.
                 /// \param[in] wait Wait for job to finish. Used for synchronous job execution.
@@ -140,15 +148,6 @@ namespace thekogans {
                     Job::Ptr job,
                     bool wait = false,
                     const TimeSpec &timeSpec = TimeSpec::Infinite);
-
-            private:
-                /// \brief
-                /// Scheduler job queue starts when jobs are enqueued.
-                virtual void Start () {}
-                /// \brief
-                /// Scheduler job queue stops when there are no more jobs to execute.
-                /// \param[in] cancelPendingJobs true = Cancel all pending jobs.
-                virtual void Stop (bool /*cancelPendingJobs*/ = true) {}
 
                 /// \brief
                 /// Scheduler needs access to protected members.
