@@ -209,23 +209,22 @@ namespace thekogans {
 
             protected:
                 /// \brief
-                /// WorkerPool from which to acquire a worker.
+                /// WorkerPool from which the worker came.
                 WorkerPool &workerPool;
                 /// \brief
-                /// \The acquired worker.
+                /// WorkerPool worker.
                 Worker *worker;
 
             public:
                 /// \brief
-                /// ctor. Acquire a worker from the pool.
-                /// \param[in] workerPool_ WorkerPool from which to acquire a worker.
-                /// \param[in] retries Number of times to retry if a worker is not immediately available.
-                /// \param[in] timeSpec How long to wait between retries.
-                /// IMPORTANT: timeSpec is a relative value.
+                /// ctor.
+                /// \param[in] workerPool_ WorkerPool from which the worker came.
+                /// \param[in] worker_ WorkerPool worker.
                 WorkerPtr (
                     WorkerPool &workerPool_,
-                    ui32 retries = 1,
-                    const TimeSpec &timeSpec = TimeSpec::FromMilliseconds (100));
+                    Worker *worker_) :
+                    workerPool (workerPool_),
+                    worker (worker_) {}
                 /// \brief
                 /// dtor. Release the worker back to the pool.
                 ~WorkerPtr ();
@@ -247,6 +246,15 @@ namespace thekogans {
                 /// WorkerPtr is neither copy constructable, nor assignable.
                 THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (WorkerPtr)
             };
+            /// \brief
+            /// Acquire a worker from the pool.
+            /// \param[in] retries Number of times to retry if a worker is not immediately available.
+            /// \param[in] timeSpec How long to wait between retries.
+            /// IMPORTANT: timeSpec is a relative value.
+            /// \return A worker from the pool.
+            WorkerPtr::Ptr GetWorkerPtr (
+                ui32 retries = 1,
+                const TimeSpec &timeSpec = TimeSpec::FromMilliseconds (100));
 
         private:
             /// \brief

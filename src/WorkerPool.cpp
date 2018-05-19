@@ -80,34 +80,21 @@ namespace thekogans {
             workers.clear (callback);
         }
 
-        WorkerPool::WorkerPtr::WorkerPtr (
-                WorkerPool &workerPool_,
-                ui32 retries,
-                const TimeSpec &timeSpec) :
-                workerPool (workerPool_),
-                worker (workerPool.GetWorker ()) {
-            if (worker == 0) {
-                if (retries == 0 || timeSpec != TimeSpec::Infinite) {
-                    while (worker == 0 && retries-- != 0) {
-                        Sleep (timeSpec);
-                        worker = workerPool.GetWorker ();
-                    }
-                    if (worker == 0) {
-                        THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                            "Unable to acquire a worker from %s pool.",
-                            workerPool.name.c_str ());
-                    }
-                }
-                else {
-                    THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                        THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
-                }
+        WorkerPool::WorkerPtr::~WorkerPtr () {
+            if (worker != 0) {
+                workerPool.ReleaseWorker (worker);
             }
         }
 
-        WorkerPool::WorkerPtr::~WorkerPtr () {
-            assert (worker != 0);
-            workerPool.ReleaseWorker (worker);
+        WorkerPool::WorkerPtr::Ptr WorkerPool::GetWorkerPtr (
+                ui32 retries,
+                const TimeSpec &timeSpec) {
+            Worker *worker = GetWorker ();
+            while (worker == 0 && retries-- > 0) {
+                Sleep (timeSpec);
+                worker = GetWorker ();
+            }
+            return WorkerPtr::Ptr (new WorkerPtr (*this, worker));
         }
 
         WorkerPool::Worker *WorkerPool::GetWorker () {
