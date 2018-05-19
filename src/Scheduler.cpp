@@ -110,14 +110,12 @@ namespace thekogans {
                             }
                         }
                     };
-                    THEKOGANS_UTIL_TRY {
-                        WorkerPool::WorkerPtr::Ptr workerPtr (
-                            new WorkerPool::WorkerPtr (workerPool, 0));
+                    WorkerPool::WorkerPtr::Ptr workerPtr = workerPool.GetWorkerPtr (0);
+                    if (workerPtr.Get () != 0) {
                         (*workerPtr)->EnqJob (
                             util::RunLoop::Job::Ptr (
                                 new WorkerJob (workerPtr, *this)));
                     }
-                    THEKOGANS_UTIL_CATCH_AND_LOG_SUBSYSTEM (THEKOGANS_UTIL)
                 }
             }
             else {
