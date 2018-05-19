@@ -83,11 +83,11 @@ namespace thekogans {
         }
     #elif defined (TOOLCHAIN_OS_OSX)
         struct Timer::AlarmJob : public RunLoop::Job {
-            WorkerPool::WorkerPtr::Ptr workerPtr;
+            WorkerPool::WorkerPtr workerPtr;
             Timer *timer;
 
             AlarmJob (
-                    WorkerPool::WorkerPtr::Ptr workerPtr_,
+                    WorkerPool::WorkerPtr workerPtr_,
                     Timer *timer_) :
                     workerPtr (workerPtr_),
                     timer (timer_) {
@@ -101,7 +101,7 @@ namespace thekogans {
             }
 
             void Wait () {
-                (*workerPtr)->WaitForJob (GetId ());
+                workerPtr->WaitForJob (GetId ());
             }
 
             // RunLoop::Job
@@ -211,9 +211,9 @@ namespace thekogans {
                                     if (!timer->periodic) {
                                         timer->id = NIDX64;
                                     }
-                                    WorkerPool::WorkerPtr::Ptr workerPtr = workerPool.GetWorkerPtr (0);
+                                    WorkerPool::WorkerPtr workerPtr = workerPool.GetWorker (0);
                                     if (workerPtr.Get () != 0) {
-                                        (*workerPtr)->EnqJob (
+                                        workerPtr->EnqJob (
                                             RunLoop::Job::Ptr (
                                                 new Timer::AlarmJob (workerPtr, timer)));
                                     }

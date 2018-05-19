@@ -46,27 +46,24 @@ namespace thekogans {
         /// util::WorkerPool workerPool;
         ///
         /// void foo (...) {
-        ///     THEKOGANS_UTIL_TRY {
-        ///         struct Job : public util::RunLoop::Job {
-        ///             util::WorkerPool::WorkerPtr::Ptr workerPtr;
-        ///             ...
-        ///             Job (
-        ///                 util::WorkerPool::WorkerPtr::Ptr workerPtr_,
-        //                  ...) :
-        ///                 workerPtr (workerPtr_),
-        ///                 ... {}
+        ///     struct Job : public util::RunLoop::Job {
+        ///         util::WorkerPool::WorkerPtr::Ptr workerPtr;
+        ///         ...
+        ///         Job (
+        ///             util::WorkerPool::WorkerPtr::Ptr workerPtr_,
+        ///             ...) :
+        ///             workerPtr (workerPtr_),
+        ///             ... {}
         ///
-        ///             // util::RunLoop::Job
-        ///             virtual void Execute (const THEKOGANS_UTIL_ATOMIC<bool> &) throw () {
-        ///                 ...
-        ///             }
-        ///         };
-        ///         util::WorkerPool::WorkerPtr::Ptr workerPtr (
-        ///             new util::WorkerPool::WorkerPtr (workerPool));
-        ///         (*workerPtr)->EnqJob (
-        ///             *RunLoop::Job::Ptr (new Job (workerPtr, ...)));
+        ///         // util::RunLoop::Job
+        ///         virtual void Execute (const THEKOGANS_UTIL_ATOMIC<bool> &) throw () {
+        ///             ...
+        ///         }
+        ///     };
+        ///     util::WorkerPool::WorkerPtr::Ptr workerPtr = workerPool.GetWorker ();
+        ///     if (workerPtr.Get () != 0) {
+        ///         (*workerPtr)->EnqJob (RunLoop::Job::Ptr (new Job (workerPtr, ...)));
         ///     }
-        ///     THEKOGANS_UTIL_CATCH_AND_LOG_SUBSYSTEM (...)
         /// }
         /// \endcode
         ///
@@ -133,7 +130,12 @@ namespace thekogans {
                 THEKOGANS_UTIL_DECLARE_HEAP_WITH_LOCK (Worker, SpinLock)
 
                 /// \brief
+                /// WorkerPool from which the worker came.
+                WorkerPool &workerPool;
+
+                /// \brief
                 /// ctor.
+                /// \param[in] workerPool_ WorkerPool to which this worker belongs.
                 /// \param[in] name Worker thread name.
                 /// \param[in] type Worker queue type.
                 /// \param[in] maxPendingJobs Worker \see{JobQueue} max pending jobs.
@@ -143,6 +145,7 @@ namespace thekogans {
                 /// \param[in] workerCallback Called to initialize/uninitialize the
                 /// queue worker thread(s).
                 Worker (
+                    WorkerPool &workerPool_,
                     const std::string &name = std::string (),
                     Type type = TYPE_FIFO,
                     ui32 maxPendingJobs = UI32_MAX,
@@ -157,7 +160,20 @@ namespace thekogans {
                         workerCount,
                         workerPriority,
                         workerAffinity,
-                        workerCallback) {}
+                        workerCallback),
+                    workerPool (workerPool_) {}
+
+            protected:
+                /// \brief
+                /// If there are no more references to this worker,
+                /// release it back to the worker pool.
+                virtual void Harakiri () {
+                    workerPool.ReleaseWorker (this);
+                }
+
+                /// \brief
+                /// Worker is neither copy constructable, nor assignable.
+                THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (Worker)
             };
             /// \brief
             /// List of workers.
@@ -192,77 +208,27 @@ namespace thekogans {
             /// dtor.
             ~WorkerPool ();
 
-            /// \struct WorkerPool::WorkerPtr WorkerPool.h thekogans/util/WorkerPool.h
-            ///
             /// \brief
-            /// The only way to borrow a worker from the pool is with
-            /// a WorkerPtr. Refer to the example above to see how.
-            struct _LIB_THEKOGANS_UTIL_DECL WorkerPtr : public ThreadSafeRefCounted {
-                /// \brief
-                /// Convenient typedef for ThreadSafeRefCounted::Ptr<WorkerPtr>.
-                typedef ThreadSafeRefCounted::Ptr<WorkerPtr> Ptr;
+            /// Convenient typedef for ThreadSafeRefCounted::Ptr<Worker>.
+            typedef ThreadSafeRefCounted::Ptr<Worker> WorkerPtr;
 
-                /// \brief
-                /// WorkerPtr has a private heap to help with memory
-                /// management, performance, and global heap fragmentation.
-                THEKOGANS_UTIL_DECLARE_HEAP_WITH_LOCK (WorkerPtr, SpinLock)
-
-            protected:
-                /// \brief
-                /// WorkerPool from which the worker came.
-                WorkerPool &workerPool;
-                /// \brief
-                /// WorkerPool worker.
-                Worker *worker;
-
-            public:
-                /// \brief
-                /// ctor.
-                /// \param[in] workerPool_ WorkerPool from which the worker came.
-                /// \param[in] worker_ WorkerPool worker.
-                WorkerPtr (
-                    WorkerPool &workerPool_,
-                    Worker *worker_) :
-                    workerPool (workerPool_),
-                    worker (worker_) {}
-                /// \brief
-                /// dtor. Release the worker back to the pool.
-                ~WorkerPtr ();
-
-                /// \brief
-                /// Implicit cast operator. Convert a WorkerPtr to Worker.
-                /// \return worker pointer.
-                inline operator Worker * () const {
-                    return worker;
-                }
-                /// \brief
-                /// Dereference operator. Convert a WorkerPtr to Worker.
-                /// \return worker pointer.
-                inline Worker *operator -> () const {
-                    return worker;
-                }
-
-                /// \brief
-                /// WorkerPtr is neither copy constructable, nor assignable.
-                THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (WorkerPtr)
-            };
             /// \brief
             /// Acquire a worker from the pool.
             /// \param[in] retries Number of times to retry if a worker is not immediately available.
             /// \param[in] timeSpec How long to wait between retries.
             /// IMPORTANT: timeSpec is a relative value.
             /// \return A worker from the pool.
-            WorkerPtr::Ptr GetWorkerPtr (
+            WorkerPtr GetWorker (
                 ui32 retries = 1,
                 const TimeSpec &timeSpec = TimeSpec::FromMilliseconds (100));
 
         private:
             /// \brief
-            /// Used by WorkerPtr to acquire a worker from the pool.
+            /// Used by GetWorker to acquire a worker from the pool.
             /// \return Worker pointer.
-            Worker *GetWorker ();
+            Worker *GetWorkerHelper ();
             /// \brief
-            /// Used by WorkerPtr to release the worker to the pool.
+            /// Used by Worker to release the worker to the pool.
             /// \param[in] worker Worker to release.
             void ReleaseWorker (Worker *worker);
 

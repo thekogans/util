@@ -26,7 +26,6 @@ namespace thekogans {
     namespace util {
 
         THEKOGANS_UTIL_IMPLEMENT_HEAP_WITH_LOCK_EX (WorkerPool::Worker, SpinLock, 5)
-        THEKOGANS_UTIL_IMPLEMENT_HEAP_WITH_LOCK_EX (WorkerPool::WorkerPtr, SpinLock, 5)
 
         WorkerPool::WorkerPool (
                 ui32 minWorkers_,
@@ -57,6 +56,7 @@ namespace thekogans {
                 }
                 workers.push_back (
                     new Worker (
+                        *this,
                         workerName,
                         type,
                         maxPendingJobs,
@@ -80,24 +80,18 @@ namespace thekogans {
             workers.clear (callback);
         }
 
-        WorkerPool::WorkerPtr::~WorkerPtr () {
-            if (worker != 0) {
-                workerPool.ReleaseWorker (worker);
-            }
-        }
-
-        WorkerPool::WorkerPtr::Ptr WorkerPool::GetWorkerPtr (
+        WorkerPool::WorkerPtr WorkerPool::GetWorker (
                 ui32 retries,
                 const TimeSpec &timeSpec) {
-            Worker *worker = GetWorker ();
+            Worker *worker = GetWorkerHelper ();
             while (worker == 0 && retries-- > 0) {
                 Sleep (timeSpec);
-                worker = GetWorker ();
+                worker = GetWorkerHelper ();
             }
-            return WorkerPtr::Ptr (new WorkerPtr (*this, worker));
+            return WorkerPtr (worker);
         }
 
-        WorkerPool::Worker *WorkerPool::GetWorker () {
+        WorkerPool::Worker *WorkerPool::GetWorkerHelper () {
             Worker *worker = 0;
             {
                 LockGuard<SpinLock> guard (spinLock);
@@ -114,6 +108,7 @@ namespace thekogans {
                         workerName = FormatString ("%s-%u", name.c_str (), activeWorkerCount);
                     }
                     worker = new Worker (
+                        *this,
                         workerName,
                         type,
                         maxPendingJobs,
