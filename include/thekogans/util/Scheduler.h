@@ -130,7 +130,7 @@ namespace thekogans {
                     inFlight (false) {}
 
                 /// \brief
-                /// Enqueue a job to be executed by thejob queue.
+                /// Enqueue a job to be executed by the job queue.
                 /// \param[in] job Job to enqueue.
                 /// \param[in] wait Wait for job to finish. Used for synchronous job execution.
                 /// \param[in] timeSpec How long to wait for the job to complete.
