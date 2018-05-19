@@ -286,10 +286,8 @@ namespace thekogans {
                 /// the job should stop what it's doing, and exit.
                 /// \param[in] disposition Value to check against current disposition.
                 /// \return true == Job should stop what it's doing and exit.
-                inline bool ShouldStop (
-                        const THEKOGANS_UTIL_ATOMIC<bool> &done,
-                        Disposition disposition = Unknown) const {
-                    return done || GetDisposition () != disposition;
+                inline bool ShouldStop (const THEKOGANS_UTIL_ATOMIC<bool> &done) const {
+                    return done || IsCancelled () || IsFailed ();
                 }
 
                 /// \brief
