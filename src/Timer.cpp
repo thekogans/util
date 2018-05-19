@@ -211,14 +211,18 @@ namespace thekogans {
                                     if (!timer->periodic) {
                                         timer->id = NIDX64;
                                     }
-                                    THEKOGANS_UTIL_TRY {
-                                        WorkerPool::WorkerPtr::Ptr workerPtr (
-                                            new WorkerPool::WorkerPtr (workerPool));
+                                    WorkerPool::WorkerPtr::Ptr workerPtr = workerPool.GetWorkerPtr (0);
+                                    if (workerPtr.Get () != 0) {
                                         (*workerPtr)->EnqJob (
                                             RunLoop::Job::Ptr (
                                                 new Timer::AlarmJob (workerPtr, timer)));
                                     }
-                                    THEKOGANS_UTIL_CATCH_AND_LOG_SUBSYSTEM (THEKOGANS_UTIL)
+                                    else {
+                                        THEKOGANS_UTIL_LOG_SUBSYSTEM_WARNING (
+                                            THEKOGANS_UTIL,
+                                            "Unable to acquire a '%s' worker, skipping Alarm call.\n",
+                                            timer->GetName ().c_str ());
+                                    }
                                 }
                                 else {
                                     THEKOGANS_UTIL_LOG_SUBSYSTEM_WARNING (
