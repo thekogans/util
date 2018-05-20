@@ -148,6 +148,24 @@ namespace thekogans {
                     Job::Ptr job,
                     bool wait = false,
                     const TimeSpec &timeSpec = TimeSpec::Infinite);
+                /// \brief
+                /// This is a very useful feature meant to aid in job
+                /// design and chunking. The idea is to be able to have
+                /// a currently executing job en-queue another job to
+                /// follow it. In effect, creating a pipeline. The hope
+                /// being that since the scheduler puts the queue back at
+                /// the end of it's priority chain that all waiting queues
+                /// will be given a chance to make progress.
+                /// Enqueue a job to be executed by thejob queue.
+                /// \param[in] job Job to enqueue.
+                /// \param[in] wait Wait for job to finish. Used for synchronous job execution.
+                /// \param[in] timeSpec How long to wait for the job to complete.
+                /// IMPORTANT: timeSpec is a relative value.
+                /// \return true == !wait || WaitForJob (...)
+                virtual bool EnqJobFront (
+                    Job::Ptr job,
+                    bool wait = false,
+                    const TimeSpec &timeSpec = TimeSpec::Infinite);
 
                 /// \brief
                 /// Scheduler needs access to protected members.

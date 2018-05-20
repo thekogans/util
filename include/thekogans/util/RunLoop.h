@@ -610,6 +610,19 @@ namespace thekogans {
                 Job::Ptr job,
                 bool wait = false,
                 const TimeSpec &timeSpec = TimeSpec::Infinite);
+            /// \brief
+            /// Enqueue a job to be performed next on the run loop thread.
+            /// \param[in] job Job to enqueue.
+            /// \param[in] wait Wait for job to finish. Used for synchronous job execution.
+            /// \param[in] timeSpec How long to wait for the job to complete.
+            /// IMPORTANT: timeSpec is a relative value.
+            /// NOTE: Same constraint applies to EnqJob as Stop. Namely, you can't call EnqJob
+            /// from the same thread that called Start.
+            /// \return true == !wait || WaitForJob (...)
+            virtual bool EnqJobFront (
+                Job::Ptr job,
+                bool wait = false,
+                const TimeSpec &timeSpec = TimeSpec::Infinite);
 
             /// \brief
             /// Get a running or a pending job with the given id.

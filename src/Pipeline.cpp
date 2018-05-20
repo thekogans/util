@@ -47,9 +47,10 @@ namespace thekogans {
                     completed.Signal ();
                 }
                 else {
-                    if (!ShouldStop (pipeline.done) && stage < pipeline.stages.size () - 1) {
+                    if (!ShouldStop (pipeline.done) &&
+                            ((stage = GetNextStage()) < pipeline.stages.size ())) {
                         THEKOGANS_UTIL_TRY {
-                            pipeline.stages[++stage]->EnqJob (RunLoop::Job::Ptr (this));
+                            pipeline.stages[stage]->EnqJob (RunLoop::Job::Ptr (this));
                             return;
                         }
                         THEKOGANS_UTIL_CATCH (Exception) {
@@ -83,7 +84,8 @@ namespace thekogans {
                 Job *job = pipeline.DeqJob ();
                 if (job != 0) {
                     // Short circuit cancelled pending jobs.
-                    if (!job->ShouldStop (pipeline.done) && job->stage < pipeline.stages.size ()) {
+                    if (!job->ShouldStop (pipeline.done) &&
+                            ((job->stage = job->GetFirstStage ()) < pipeline.stages.size ())) {
                         THEKOGANS_UTIL_TRY {
                             pipeline.stages[job->stage]->EnqJob (RunLoop::Job::Ptr (job));
                             continue;
@@ -297,6 +299,33 @@ namespace thekogans {
                     THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
             }
         }
+
+        bool Pipeline::EnqJobFront (
+                Job::Ptr job,
+                bool wait,
+                const TimeSpec &timeSpec) {
+            if (job.Get () != 0 && job->IsCompleted ()) {
+                LockGuard<Mutex> guard (jobsMutex);
+                if (pendingJobs.size () < (std::size_t)maxPendingJobs) {
+                    job->Reset (id);
+                    pendingJobs.push_front (job.Get ());
+                    job->AddRef ();
+                    jobsNotEmpty.Signal ();
+                    return !wait || WaitForJob (job, timeSpec);
+                }
+                else {
+                    THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
+                        "RunLoop (%s) max jobs (%u) reached.",
+                        !name.empty () ? name.c_str () : "no name",
+                        maxPendingJobs);
+                }
+            }
+            else {
+                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
+            }
+        }
+
 
         Pipeline::Job::Ptr Pipeline::GetJobWithId (const Job::Id &jobId) {
             LockGuard<Mutex> guard (jobsMutex);

@@ -75,50 +75,46 @@ namespace thekogans {
         /// struct MyThread : public util::Thread (
         /// private:
         ///     util::RunLoop::Ptr runLoop;
-        ///     util::SpinLock spinLock;
         ///
         /// public:
         ///     MyThread (
         ///             const std::string &name = std::string (),
         ///             util::i32 priority = THEKOGANS_UTIL_NORMAL_THREAD_PRIORITY,
-        ///             util::ui32 affinity = THEKOGANS_UTIL_MAX_THREAD_AFFINITY) :
+        ///             util::ui32 affinity = THEKOGANS_UTIL_MAX_THREAD_AFFINITY,
+        ///             const util::TimeSpec &sleepTimeSpec = util::TimeSpec::FromMilliseconds (50),
+        ///             const util::TimeSpec &waitTimeSpec = util::TimeSpec::FromSeconds (3)) :
         ///             Thread (name) {
         ///         Create (priority, affinity);
-        ///         if (!util::RunLoop::WaitForStart (runLoop)) {
+        ///         if (!util::RunLoop::WaitForStart (runLoop, sleepTimeSpec, waitTimeSpec)) {
         ///             THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
         ///                 "%s", "Timed out waiting for RunLoop to start.");
         ///         }
         ///     }
         ///
         ///     void Stop () {
-        ///         util::LockGuard<util::SpinLock> guard (spinLock);
-        ///         if (runLoop.get () != 0) {
-        ///             runLoop->Stop ();
-        ///             Wait ();
-        ///         }
+        ///         runLoop->Stop ();
+        ///         Wait ();
         ///     }
         ///
-        ///     void EnqJob (
+        ///     bool EnqJob (
         ///             util::RunLoop::Job::Ptr job,
-        ///             bool wait = false) {
-        ///         util::LockGuard<util::SpinLock> guard (spinLock);
-        ///         if (runLoop.get () != 0) {
-        ///             runLoop->EnqJob (job, wait);
-        ///         }
+        ///             bool wait = false,
+        ///             const TimeSpec &timeSpec = TimeSpec::Infinite) {
+        ///         return runLoop->EnqJob (job, wait, timeSpec);
         ///     }
         ///
         /// private:
         ///     // util::Thread
         ///     virtual void Run () {
         ///         THEKOGANS_UTIL_TRY {
-        ///             runLoop.reset (new util::SystemRunLoop);
+        ///             runLoop.Reset (new util::SystemRunLoop);
         ///             runLoop->Start ();
         ///         }
         ///         THEKOGANS_UTIL_CATCH_AND_LOG
         ///         // This call to reset is very important as it allows the thread that
         ///         // created the SystemRunLoop to destroy it too. This is especially
         ///         // important under X as Xlib is not thread safe.
-        ///         runLoop.reset ();
+        ///         runLoop.Reset ();
         ///     }
         /// }
         /// \endcode
@@ -403,6 +399,19 @@ namespace thekogans {
             /// from the same thread that called Start.
             /// \return true == !wait || WaitForJob (...)
             virtual bool EnqJob (
+                Job::Ptr job,
+                bool wait = false,
+                const TimeSpec &timeSpec = TimeSpec::Infinite);
+            /// \brief
+            /// Enqueue a job to be performed next on the run loop thread.
+            /// \param[in] job Job to enqueue.
+            /// \param[in] wait Wait for job to finish. Used for synchronous job execution.
+            /// \param[in] timeSpec How long to wait for the job to complete.
+            /// IMPORTANT: timeSpec is a relative value.
+            /// NOTE: Same constraint applies to EnqJob as Stop. Namely, you can't call EnqJob
+            /// from the same thread that called Start.
+            /// \return true == !wait || WaitForJob (...)
+            virtual bool EnqJobFront (
                 Job::Ptr job,
                 bool wait = false,
                 const TimeSpec &timeSpec = TimeSpec::Infinite);

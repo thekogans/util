@@ -437,6 +437,30 @@ namespace thekogans {
             return result;
         }
 
+        bool SystemRunLoop::EnqJobFront (
+                Job::Ptr job,
+                bool wait,
+                const TimeSpec &timeSpec) {
+            bool result = RunLoop::EnqJobFront (job);
+            if (result) {
+            #if defined (TOOLCHAIN_OS_Windows)
+                PostMessage (window->wnd, RUN_LOOP_MESSAGE, 0, 0);
+            #elif defined (TOOLCHAIN_OS_Linux)
+                window->PostEvent (XlibWindow::ID_RUN_LOOP);
+            #elif defined (TOOLCHAIN_OS_OSX)
+                CFRunLoopPerformBlock (
+                    runLoop != 0 ? runLoop : CFRunLoopGetMain (),
+                    kCFRunLoopCommonModes,
+                    ^(void) {
+                        ExecuteJobs ();
+                    });
+                CFRunLoopWakeUp (runLoop != 0 ? runLoop : CFRunLoopGetMain ());
+            #endif // defined (TOOLCHAIN_OS_Windows)
+                result = !wait || WaitForJob (job, timeSpec);
+            }
+            return result;
+        }
+
         void SystemRunLoop::ExecuteJobs () {
             while (!done) {
                 Job *job = DeqJob (false);

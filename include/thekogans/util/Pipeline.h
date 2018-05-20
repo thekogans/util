@@ -190,6 +190,19 @@ namespace thekogans {
                 virtual void SetStatus (Status status_);
 
                 /// \brief
+                /// Override this method to provide custom staging.
+                /// \return First job pipeline stage.
+                virtual std::size_t GetFirstStage () const {
+                    return 0;
+                }
+                /// \brief
+                /// Override this method to provide custom staging.
+                /// \return Next job pipeline stage.
+                virtual std::size_t GetNextStage () const {
+                    return stage + 1;
+                }
+
+                /// \brief
                 /// Provides the same functionality as
                 /// Job::Prologue, except at pipeline
                 /// global level.
@@ -399,6 +412,17 @@ namespace thekogans {
             /// IMPORTANT: timeSpec is a relative value.
             /// \return true == !wait || WaitForJob (...)
             bool EnqJob (
+                Job::Ptr job,
+                bool wait = false,
+                const TimeSpec &timeSpec = TimeSpec::Infinite);
+            /// \brief
+            /// Enqueue a job to be performed next on the run loop thread.
+            /// \param[in] job Job to enqueue.
+            /// \param[in] wait Wait for job to finish. Used for synchronous job execution.
+            /// \param[in] timeSpec How long to wait for the job to complete.
+            /// IMPORTANT: timeSpec is a relative value.
+            /// \return true == !wait || WaitForJob (...)
+            bool EnqJobFront (
                 Job::Ptr job,
                 bool wait = false,
                 const TimeSpec &timeSpec = TimeSpec::Infinite);

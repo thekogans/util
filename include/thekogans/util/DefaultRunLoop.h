@@ -115,11 +115,14 @@ namespace thekogans {
         ///     // util::Thread
         ///     virtual void Run () throw () {
         ///         THEKOGANS_UTIL_TRY {
-        ///             runLoop.reset (new util::DefaultRunLoop);
+        ///             runLoop.Reset (new util::DefaultRunLoop);
         ///             runLoop->Start ();
         ///         }
         ///         THEKOGANS_UTIL_CATCH_AND_LOG
-        ///         runLoop.reset ();
+        ///         // This call to reset is very important as it allows the thread that
+        ///         // created the SystemRunLoop to destroy it too. This is especially
+        ///         // important under X as Xlib is not thread safe.
+        ///         runLoop.Reset ();
         ///     }
         /// }
         /// \endcode

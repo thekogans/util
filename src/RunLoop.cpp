@@ -242,6 +242,32 @@ namespace thekogans {
             }
         }
 
+        bool RunLoop::EnqJobFront (
+                Job::Ptr job,
+                bool wait,
+                const TimeSpec &timeSpec) {
+            if (job.Get () != 0 && job->IsCompleted ()) {
+                LockGuard<Mutex> guard (jobsMutex);
+                if (pendingJobs.size () < (std::size_t)maxPendingJobs) {
+                    job->Reset (id);
+                    pendingJobs.push_front (job.Get ());
+                    job->AddRef ();
+                    jobsNotEmpty.Signal ();
+                    return !wait || WaitForJob (job, timeSpec);
+                }
+                else {
+                    THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
+                        "RunLoop (%s) max jobs (%u) reached.",
+                        !name.empty () ? name.c_str () : "no name",
+                        maxPendingJobs);
+                }
+            }
+            else {
+                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
+            }
+        }
+
         RunLoop::Job::Ptr RunLoop::GetJobWithId (const Job::Id &jobId) {
             LockGuard<Mutex> guard (jobsMutex);
             struct GetJobWithIdCallback : public JobList::Callback {

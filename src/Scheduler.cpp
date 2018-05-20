@@ -46,6 +46,20 @@ namespace thekogans {
             return result;
         }
 
+        bool Scheduler::JobQueue::EnqJobFront (
+                Job::Ptr job,
+                bool wait,
+                const TimeSpec &timeSpec) {
+            bool result = RunLoop::EnqJobFront (job);
+            if (result) {
+                if (!inList && !inFlight) {
+                    scheduler.AddJobQueue (this, true);
+                }
+                result = !wait || WaitForJob (job, timeSpec);
+            }
+            return result;
+        }
+
         void Scheduler::AddJobQueue (
                 JobQueue *jobQueue,
                 bool scheduleWorker) {
