@@ -357,6 +357,11 @@ namespace thekogans {
                 i32 workerPriority_ = THEKOGANS_UTIL_NORMAL_THREAD_PRIORITY,
                 ui32 workerAffinity_ = THEKOGANS_UTIL_MAX_THREAD_AFFINITY,
                 RunLoop::WorkerCallback *workerCallback_ = 0);
+            /// \brief
+            /// dtor. Stop the pipeline.
+            virtual ~Pipeline () {
+                Stop ();
+            }
 
             /// \brief
             /// Return Pipeline id.
