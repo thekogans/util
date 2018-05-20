@@ -261,7 +261,7 @@ namespace thekogans {
             /// Synchronization condition variable.
             Condition jobsNotEmpty;
             /// \brief
-            /// Synchronization event.
+            /// Synchronization condition variable.
             Condition idle;
             /// \brief
             /// Number of workers servicing the queue.
@@ -385,6 +385,7 @@ namespace thekogans {
 
             /// \brief
             /// Add a stage to the pipeline.
+            /// NOTE: You can't add a stage to a running pipeline.
             /// \param[in] stage Stage to add.
             void AddStage (const Stage &stage);
             /// \brief
@@ -397,10 +398,10 @@ namespace thekogans {
             void GetStagesStats (std::vector<RunLoop::Stats> &stats);
 
             /// \brief
-            /// Start the pipeline. Create stages, and start waiting for jobs.
+            /// Start the pipeline and it's stages, and start waiting for jobs.
             void Start ();
             /// \brief
-            /// Stop the pipeline. All stages are destroyed.
+            /// Stop the pipeline and it's stages.
             /// \param[in] cancelRunningJobs true = Cancel all running jobs.
             void Stop (bool cancelRunningJobs = true);
 
@@ -416,7 +417,7 @@ namespace thekogans {
                 bool wait = false,
                 const TimeSpec &timeSpec = TimeSpec::Infinite);
             /// \brief
-            /// Enqueue a job to be performed next on the run loop thread.
+            /// Enqueue a job to be performed next on the pipeline.
             /// \param[in] job Job to enqueue.
             /// \param[in] wait Wait for job to finish. Used for synchronous job execution.
             /// \param[in] timeSpec How long to wait for the job to complete.
@@ -434,7 +435,7 @@ namespace thekogans {
             Job::Ptr GetJobWithId (const Job::Id &jobId);
 
             /// \brief
-            /// Wait for a given job to complete.
+            /// Wait for a given running or pending job to complete.
             /// \param[in] job Job to wait on.
             /// NOTE: The Pipeline will check that the given job was in fact
             /// en-queued on this pipeline (Job::GetPipelineId) and will throw

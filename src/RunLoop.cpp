@@ -463,7 +463,6 @@ namespace thekogans {
         }
 
         bool RunLoop::IsRunning () {
-            LockGuard<Mutex> guard (jobsMutex);
             return !done;
         }
 

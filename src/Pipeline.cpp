@@ -459,7 +459,7 @@ namespace thekogans {
                     now = GetCurrentTime ();
                 }
             }
-            return runningJobs.empty ();
+            return pendingJobs.empty () && runningJobs.empty ();
         }
 
         bool Pipeline::CancelJob (const Job::Id &jobId) {

@@ -534,7 +534,7 @@ namespace thekogans {
             /// Synchronization condition variable.
             Condition jobsNotEmpty;
             /// \brief
-            /// Synchronization event.
+            /// Synchronization condition variable.
             Condition idle;
 
         public:
