@@ -28,6 +28,8 @@
 #include "thekogans/util/JobQueue.h"
 #include "thekogans/util/TimeSpec.h"
 #include "thekogans/util/SpinLock.h"
+#include "thekogans/util/Mutex.h"
+#include "thekogans/util/Condition.h"
 #include "thekogans/util/SystemInfo.h"
 #include "thekogans/util/Singleton.h"
 
@@ -106,6 +108,9 @@ namespace thekogans {
             /// Current number of workers in the pool.
             ui32 activeWorkerCount;
             /// \brief
+            /// Current number of workers borrowed from the pool.
+            ui32 borrowedWorkerCount;
+            /// \brief
             /// Forward declaration of Worker.
             struct Worker;
             enum {
@@ -179,8 +184,11 @@ namespace thekogans {
             /// List of workers.
             WorkerList workers;
             /// \brief
-            /// Synchronization spin lock.
-            SpinLock spinLock;
+            /// Synchronization mutex.
+            Mutex workerMutex;
+            /// \brief
+            /// Synchronization condition variable.
+            Condition idle;
 
         public:
             /// \brief
@@ -221,6 +229,14 @@ namespace thekogans {
             WorkerPtr GetWorker (
                 ui32 retries = 1,
                 const TimeSpec &timeSpec = TimeSpec::FromMilliseconds (100));
+
+            /// \brief
+            /// Blocks until all borrowed workers have been returned to the pool.
+            /// \param[in] timeSpec How long to wait for workers to return.
+            /// IMPORTANT: timeSpec is a relative value.
+            /// \return true == WorkerPool is idle, false == Timed out.
+            bool WaitForIdle (
+                const TimeSpec &timeSpec = TimeSpec::Infinite);
 
         private:
             /// \brief

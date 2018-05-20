@@ -15,7 +15,6 @@
 // You should have received a copy of the GNU General Public License
 // along with libthekogans_util. If not, see <http://www.gnu.org/licenses/>.
 
-#include <cassert>
 #include "thekogans/util/Config.h"
 #include "thekogans/util/LockGuard.h"
 #include "thekogans/util/SpinLock.h"
@@ -46,29 +45,36 @@ namespace thekogans {
                 workerPriority (workerPriority_),
                 workerAffinity (workerAffinity_),
                 workerCallback (workerCallback_),
-                activeWorkerCount (0) {
-            assert (minWorkers > 0);
-            assert (maxWorkers >= minWorkers);
-            for (ui32 i = 0; i < minWorkers; ++i) {
-                std::string workerName;
-                if (!name.empty ()) {
-                    workerName = FormatString ("%s-%u", name.c_str (), i);
+                activeWorkerCount (0),
+                borrowedWorkerCount (0),
+                idle (workerMutex) {
+            if (minWorkers > 0 && minWorkers <= maxWorkers) {
+                for (ui32 i = 0; i < minWorkers; ++i) {
+                    std::string workerName;
+                    if (!name.empty ()) {
+                        workerName = FormatString ("%s-%u", name.c_str (), i);
+                    }
+                    workers.push_back (
+                        new Worker (
+                            *this,
+                            workerName,
+                            type,
+                            maxPendingJobs,
+                            workerCount,
+                            workerPriority,
+                            workerAffinity,
+                            workerCallback));
+                    ++activeWorkerCount;
                 }
-                workers.push_back (
-                    new Worker (
-                        *this,
-                        workerName,
-                        type,
-                        maxPendingJobs,
-                        workerCount,
-                        workerPriority,
-                        workerAffinity,
-                        workerCallback));
-                ++activeWorkerCount;
+            }
+            else {
+                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
             }
         }
 
         WorkerPool::~WorkerPool () {
+            WaitForIdle ();
             struct Callback : public WorkerList::Callback {
                 typedef WorkerList::Callback::result_type result_type;
                 typedef WorkerList::Callback::argument_type argument_type;
@@ -91,10 +97,28 @@ namespace thekogans {
             return WorkerPtr (worker);
         }
 
+        bool WorkerPool::WaitForIdle (const TimeSpec &timeSpec) {
+            LockGuard<Mutex> guard (workerMutex);
+            if (timeSpec == TimeSpec::Infinite) {
+                while (borrowedWorkerCount != 0) {
+                    idle.Wait ();
+                }
+            }
+            else {
+                TimeSpec now = GetCurrentTime ();
+                TimeSpec deadline = now + timeSpec;
+                while (borrowedWorkerCount != 0 && deadline > now) {
+                    idle.Wait (deadline - now);
+                    now = GetCurrentTime ();
+                }
+            }
+            return borrowedWorkerCount == 0;
+        }
+
         WorkerPool::Worker *WorkerPool::GetWorkerHelper () {
             Worker *worker = 0;
             {
-                LockGuard<SpinLock> guard (spinLock);
+                LockGuard<Mutex> guard (workerMutex);
                 if (!workers.empty ()) {
                     // Borrow a worker from the front of the queue.
                     // This combined with ReleaseWorker putting
@@ -117,6 +141,9 @@ namespace thekogans {
                         workerAffinity,
                         workerCallback);
                     ++activeWorkerCount;
+                }
+                if (worker != 0) {
+                    ++borrowedWorkerCount;
                 }
             }
             return worker;
@@ -165,12 +192,12 @@ namespace thekogans {
 
         void WorkerPool::ReleaseWorker (Worker *worker) {
             if (worker != 0) {
-                LockGuard<SpinLock> guard (spinLock);
+                LockGuard<Mutex> guard (workerMutex);
                 if (activeWorkerCount > minWorkers) {
                     // Schedule the worker for deletion. This is done
                     // to break the deadlock that happens when
                     // JobQueue::Worker::Run calls FinishedJob, which
-                    // releases the job, which then tries to delete
+                    // calls job->Release, which then tries to delete
                     // the JobQueue. JobQueue::~JobQueue calls
                     // JobQueue::Stop, which waits on the worker to
                     // exit.
@@ -183,6 +210,9 @@ namespace thekogans {
                     // is borrowed from this pool, it will be the last
                     // one used, and it's cache will be nice and warm.
                     workers.push_front (worker);
+                }
+                if (--borrowedWorkerCount == 0) {
+                    idle.SignalAll ();
                 }
             }
             else {
