@@ -99,7 +99,7 @@
 
 /// \def THEKOGANS_UTIL_MAX_THREAD_AFFINITY
 /// Thread can run on any core.
-#define THEKOGANS_UTIL_MAX_THREAD_AFFINITY UI32_MAX
+#define THEKOGANS_UTIL_MAX_THREAD_AFFINITY thekogans::util::UI32_MAX
 
 namespace thekogans {
     namespace util {
