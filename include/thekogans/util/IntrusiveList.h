@@ -426,15 +426,30 @@ namespace thekogans {
             /// Walk the list calling the callback for every node.
             /// The enumeration stops if callback returns false.
             /// \param[in] callback Called for every node in the list.
+            /// \param[in] reverse true == Walk the list tail to head.
             /// \return true == Iterated over all elements, false == callback returned false.
-            inline bool for_each (Callback &callback) {
-                for (T *node = head; node != 0;) {
-                    // After callback returns, we might not be able to call next (node).
-                    T *temp = next (node);
-                    if (!callback (node)) {
-                        return false;
+            inline bool for_each (
+                    Callback &callback,
+                    bool reverse = false) {
+                if (reverse) {
+                    for (T *node = tail; node != 0;) {
+                        // After callback returns, we might not be able to call prev (node).
+                        T *temp = prev (node);
+                        if (!callback (node)) {
+                            return false;
+                        }
+                        node = temp;
                     }
-                    node = temp;
+                }
+                else {
+                    for (T *node = head; node != 0;) {
+                        // After callback returns, we might not be able to call next (node).
+                        T *temp = next (node);
+                        if (!callback (node)) {
+                            return false;
+                        }
+                        node = temp;
+                    }
                 }
                 return true;
             }

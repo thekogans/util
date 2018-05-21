@@ -30,7 +30,6 @@
 #include "thekogans/util/SpinLock.h"
 #include "thekogans/util/Mutex.h"
 #include "thekogans/util/Condition.h"
-#include "thekogans/util/HRTimer.h"
 #include "thekogans/util/SystemInfo.h"
 #include "thekogans/util/Singleton.h"
 
@@ -151,9 +150,6 @@ namespace thekogans {
                 /// \brief
                 /// JobQueuePool from which this \see{JobQueue} came.
                 JobQueuePool &jobQueuePool;
-                /// \brief
-                /// Used to implement \see{JobQueue} TTL.
-                ui64 lastUsedTime;
 
             public:
                 /// \brief
@@ -184,8 +180,7 @@ namespace thekogans {
                         workerPriority,
                         workerAffinity,
                         workerCallback),
-                    jobQueuePool (jobQueuePool_),
-                    lastUsedTime (0) {}
+                    jobQueuePool (jobQueuePool_) {}
 
             protected:
                 // RefCounted
@@ -193,13 +188,8 @@ namespace thekogans {
                 /// If there are no more references to this job queue,
                 /// release it back to the pool.
                 virtual void Harakiri () {
-                    lastUsedTime = HRTimer::Click ();
                     jobQueuePool.ReleaseJobQueue (this);
                 }
-
-                /// \brief
-                /// JobQueuePool needs access to lastUsedTime.
-                friend struct JobQueuePool;
 
                 /// \brief
                 /// JobQueue is neither copy constructable, nor assignable.
@@ -286,12 +276,12 @@ namespace thekogans {
             void ReleaseJobQueue (JobQueue *jobQueue);
 
             /// \brief
-            /// Used by DeleteJobQueuePoolJobQueues.
+            /// Used by JobQueuePoolRegistry.
             void DeleteJobQueues ();
 
             /// \brief
-            /// DeleteJobQueuePoolJobQueues needs access to DeleteJobQueues.
-            friend struct DeleteJobQueuePoolJobQueues;
+            /// JobQueuePoolRegistry needs access to DeleteJobQueues.
+            friend struct JobQueuePoolRegistry;
 
             /// \brief
             /// JobQueuePool is neither copy constructable, nor assignable.

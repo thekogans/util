@@ -25,8 +25,8 @@
 namespace thekogans {
     namespace util {
 
-        struct DeleteJobQueuePoolJobQueues :
-                public Singleton<DeleteJobQueuePoolJobQueues, SpinLock>,
+        struct JobQueuePoolRegistry :
+                public Singleton<JobQueuePoolRegistry, SpinLock>,
                 public Timer::Callback {
         private:
             JobQueuePoolList jobQueuePools;
@@ -34,17 +34,18 @@ namespace thekogans {
             Mutex mutex;
 
         public:
-            DeleteJobQueuePoolJobQueues () :
+            JobQueuePoolRegistry () :
                     timer (*this) {
-                timer.Start (TimeSpec::FromSeconds (10));
+                // FIXME: Parametrize the interval.
+                timer.Start (TimeSpec::FromSeconds (10), true);
             }
 
-            void AddJobQueuePool (JobQueuePool *jobQueuePool) {
+            void RegisterJobQueuePool (JobQueuePool *jobQueuePool) {
                 LockGuard<Mutex> guard (mutex);
                 jobQueuePools.push_back (jobQueuePool);
             }
 
-            void DeleteJobQueuePool (JobQueuePool *jobQueuePool) {
+            void UnregisterJobQueuePool (JobQueuePool *jobQueuePool) {
                 LockGuard<Mutex> guard (mutex);
                 jobQueuePools.erase (jobQueuePool);
             }
@@ -104,7 +105,7 @@ namespace thekogans {
                             workerAffinity,
                             workerCallback));
                 }
-                DeleteJobQueuePoolJobQueues::Instance ().AddJobQueuePool (this);
+                JobQueuePoolRegistry::Instance ().RegisterJobQueuePool (this);
             }
             else {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
@@ -113,7 +114,7 @@ namespace thekogans {
         }
 
         JobQueuePool::~JobQueuePool () {
-            DeleteJobQueuePoolJobQueues::Instance ().DeleteJobQueuePool (this);
+            JobQueuePoolRegistry::Instance ().UnregisterJobQueuePool (this);
             LockGuard<Mutex> guard (mutex);
             {
                 struct StopCallback : public JobQueueList::Callback {
@@ -212,7 +213,7 @@ namespace thekogans {
                 LockGuard<Mutex> guard (mutex);
                 borrowedJobQueues.erase (jobQueue);
                 // Put the recently used job queue at the front of
-                // the queue. With any luck the next time a job queue
+                // the list. With any luck the next time a job queue
                 // is borrowed from this pool, it will be the last
                 // one used, and it's cache will be nice and warm.
                 availableJobQueues.push_front (jobQueue);
@@ -228,30 +229,20 @@ namespace thekogans {
 
         void JobQueuePool::DeleteJobQueues () {
             LockGuard<Mutex> guard (mutex);
-            std::size_t totalJobQueues = availableJobQueues.size () + borrowedJobQueues.size ();
-            if (totalJobQueues > minJobQueues) {
+            if (borrowedJobQueues.empty () && availableJobQueues.size () > minJobQueues) {
                 struct DeleteCallback : public JobQueueList::Callback {
                     typedef JobQueueList::Callback::result_type result_type;
                     typedef JobQueueList::Callback::argument_type argument_type;
                     std::size_t deleteCount;
-                    ui64 currentTime;
                     explicit DeleteCallback (std::size_t deleteCount_) :
-                        deleteCount (deleteCount_),
-                        currentTime (HRTimer::Click ()) {}
+                        deleteCount (deleteCount_) {}
                     virtual result_type operator () (argument_type jobQueue) {
-                        f64 idleTime =
-                            HRTimer::ToSeconds (
-                                HRTimer::ComputeElapsedTime (
-                                    jobQueue->lastUsedTime,
-                                    currentTime));
-                        if (idleTime > 10.0) {
-                            delete jobQueue;
-                            return --deleteCount > 0;
-                        }
-                        return false;
+                        delete jobQueue;
+                        return --deleteCount > 0;
                     }
-                } deleteCallback (totalJobQueues - minJobQueues);
-                availableJobQueues.for_each (deleteCallback);
+                } deleteCallback (availableJobQueues.size () - minJobQueues);
+                // Walk the pool in reverse to delete the least recently used queues.
+                availableJobQueues.for_each (deleteCallback, true);
             }
         }
 
