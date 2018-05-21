@@ -121,6 +121,7 @@
     <cpp_header>$(organization)/$(project_directory)/Heap.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/IntrusiveList.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/JobQueue.h</cpp_header>
+    <cpp_header>$(organization)/$(project_directory)/JobQueuePool.h</cpp_header>
     <if condition = "$(TOOLCHAIN_OS) == 'Linux'">
       <cpp_header>$(organization)/$(project_directory)/LinuxUtils.h</cpp_header>
     </if>
@@ -182,7 +183,6 @@
     <if condition = "$(TOOLCHAIN_OS) == 'Windows'">
       <cpp_header>$(organization)/$(project_directory)/WindowsUtils.h</cpp_header>
     </if>
-    <cpp_header>$(organization)/$(project_directory)/WorkerPool.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/XMLUtils.h</cpp_header>
     <if condition = "$(have_feature -f:THEKOGANS_UTIL_HAVE_XERCES)">
       <cpp_header>$(organization)/$(project_directory)/XercesUtils.h</cpp_header>
@@ -633,6 +633,7 @@
     <cpp_source>Hash.cpp</cpp_source>
     <cpp_source>Heap.cpp</cpp_source>
     <cpp_source>JobQueue.cpp</cpp_source>
+    <cpp_source>JobQueuePool.cpp</cpp_source>
     <cpp_source>LoggerMgr.cpp</cpp_source>
     <cpp_source>MD5.cpp</cpp_source>
     <cpp_source>MainRunLoop.cpp</cpp_source>
@@ -682,7 +683,6 @@
     <if condition = "$(TOOLCHAIN_OS) == 'Windows'">
       <cpp_source>WindowsUtils.cpp</cpp_source>
     </if>
-    <cpp_source>WorkerPool.cpp</cpp_source>
     <cpp_source>XMLUtils.cpp</cpp_source>
     <if condition = "$(have_feature -f:THEKOGANS_UTIL_HAVE_XERCES)">
       <cpp_source>XercesUtils.cpp</cpp_source>

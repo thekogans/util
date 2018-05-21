@@ -80,14 +80,14 @@ namespace thekogans {
                 }
                 jobQueue->AddRef ();
                 if (scheduleWorker) {
-                    struct WorkerJob : public util::RunLoop::Job {
-                        WorkerPool::WorkerPtr workerPtr;
+                    struct WorkerJob : public RunLoop::Job {
+                        util::JobQueue::Ptr jobQueue;
                         Scheduler &scheduler;
 
                         WorkerJob (
-                            WorkerPool::WorkerPtr workerPtr_,
+                            util::JobQueue::Ptr jobQueue_,
                             Scheduler &scheduler_) :
-                            workerPtr (workerPtr_),
+                            jobQueue (jobQueue_),
                             scheduler (scheduler_) {}
 
                         virtual void Execute (const THEKOGANS_UTIL_ATOMIC<bool> &done) throw () {
@@ -124,11 +124,11 @@ namespace thekogans {
                             }
                         }
                     };
-                    WorkerPool::WorkerPtr workerPtr = workerPool.GetWorker (0);
-                    if (workerPtr.Get () != 0) {
-                        workerPtr->EnqJob (
-                            util::RunLoop::Job::Ptr (
-                                new WorkerJob (workerPtr, *this)));
+                    util::JobQueue::Ptr jobQueue = jobQueuePool.GetJobQueue (0);
+                    if (jobQueue.Get () != 0) {
+                        jobQueue->EnqJob (
+                            RunLoop::Job::Ptr (
+                                new WorkerJob (jobQueue, *this)));
                     }
                 }
             }

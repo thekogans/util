@@ -27,7 +27,7 @@
 #include "thekogans/util/Singleton.h"
 #include "thekogans/util/SpinLock.h"
 #include "thekogans/util/IntrusiveList.h"
-#include "thekogans/util/WorkerPool.h"
+#include "thekogans/util/JobQueuePool.h"
 #include "thekogans/util/SystemInfo.h"
 
 namespace thekogans {
@@ -202,7 +202,7 @@ namespace thekogans {
                 i32 workerPriority = THEKOGANS_UTIL_NORMAL_THREAD_PRIORITY,
                 ui32 workerAffinity = THEKOGANS_UTIL_MAX_THREAD_AFFINITY,
                 RunLoop::WorkerCallback *workerCallback = 0) :
-                workerPool (
+                jobQueuePool (
                     minWorkers,
                     maxWorkers,
                     name,
@@ -227,8 +227,8 @@ namespace thekogans {
             /// Synchronization SpinLock for above lists.
             SpinLock spinLock;
             /// \brief
-            /// WorkerPool executing the jobs.
-            WorkerPool workerPool;
+            /// JobQueuePool executing the jobs.
+            JobQueuePool jobQueuePool;
 
             /// \brief
             /// Add a JobQueue to the appropriate list (governed by it's priority)

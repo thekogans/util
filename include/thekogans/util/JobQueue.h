@@ -41,8 +41,8 @@ namespace thekogans {
         ///
         /// As you add jobs to the queue, the next idle worker removes and executes them.
         /// The queue can be either FIFO or LIFO. While very usefull on it's own, JobQueue
-        /// also forms the basis for \see{Pipeline}, \see{Vectorizer}, \see{WorkerPool} and
-        /// \see{Scheduler}.
+        /// also forms the basis for \see{Pipeline}, \see{Vectorizer}, \see{JobQueuePool}
+        /// and \see{Scheduler}.
 
         struct _LIB_THEKOGANS_UTIL_DECL JobQueue : public RunLoop {
             /// \brief

@@ -37,7 +37,7 @@ namespace thekogans {
             }
         }
 
-        Serializable::Ptr Serializable::Get (util::Serializer &serializer) {
+        Serializable::Ptr Serializable::Get (Serializer &serializer) {
             Header header;
             serializer >> header;
             if (header.magic == MAGIC32) {

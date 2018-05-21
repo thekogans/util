@@ -29,7 +29,7 @@
     #include "thekogans/util/Constants.h"
     #include "thekogans/util/Singleton.h"
     #include "thekogans/util/Thread.h"
-    #include "thekogans/util/WorkerPool.h"
+    #include "thekogans/util/JobQueuePool.h"
     #include "thekogans/util/OSXUtils.h"
 #endif // defined (TOOLCHAIN_OS_Windows)
 #include "thekogans/util/LoggerMgr.h"
@@ -83,13 +83,13 @@ namespace thekogans {
         }
     #elif defined (TOOLCHAIN_OS_OSX)
         struct Timer::AlarmJob : public RunLoop::Job {
-            WorkerPool::WorkerPtr workerPtr;
+            JobQueue::Ptr jobQueue;
             Timer *timer;
 
             AlarmJob (
-                    WorkerPool::WorkerPtr workerPtr_,
+                    JobQueue::Ptr jobQueue_,
                     Timer *timer_) :
-                    workerPtr (workerPtr_),
+                    jobQueue (jobQueue_),
                     timer (timer_) {
                 // NOTE: No need to grab the lock here as it's
                 // already acquired by Run below.
@@ -101,7 +101,7 @@ namespace thekogans {
             }
 
             void Wait () {
-                workerPtr->WaitForJob (GetId ());
+                jobQueue->WaitForJob (GetId ());
             }
 
             // RunLoop::Job
@@ -120,16 +120,16 @@ namespace thekogans {
                 public Thread {
             THEKOGANS_UTIL_HANDLE handle;
             THEKOGANS_UTIL_ATOMIC<ui64> idPool;
-            WorkerPool workerPool;
+            JobQueuePool jobQueuePool;
 
             TimerQueue () :
                     Thread ("TimerQueue"),
                     handle (kqueue ()),
                     idPool (0),
-                    workerPool (
-                        Timer::minWorkers,
-                        Timer::maxWorkers,
-                        "TimerQueue-WorkerPool") {
+                    jobQueuePool (
+                        Timer::minJobQueues,
+                        Timer::maxJobQueues,
+                        "TimerQueue-JobQueuePool") {
                 if (handle == THEKOGANS_UTIL_INVALID_HANDLE_VALUE) {
                     THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
                         THEKOGANS_UTIL_OS_ERROR_CODE);
@@ -211,11 +211,11 @@ namespace thekogans {
                                     if (!timer->periodic) {
                                         timer->id = NIDX64;
                                     }
-                                    WorkerPool::WorkerPtr workerPtr = workerPool.GetWorker (0);
-                                    if (workerPtr.Get () != 0) {
-                                        workerPtr->EnqJob (
+                                    JobQueue::Ptr jobQueue = jobQueuePool.GetJobQueue (0);
+                                    if (jobQueue.Get () != 0) {
+                                        jobQueue->EnqJob (
                                             RunLoop::Job::Ptr (
-                                                new Timer::AlarmJob (workerPtr, timer)));
+                                                new Timer::AlarmJob (jobQueue, timer)));
                                     }
                                     else {
                                         THEKOGANS_UTIL_LOG_SUBSYSTEM_WARNING (
@@ -237,14 +237,14 @@ namespace thekogans {
             }
         };
 
-        ui32 Timer::minWorkers = DEFAULT_MIN_WORKER_POOL_WORKERS;
-        ui32 Timer::maxWorkers = DEFAULT_MAX_WORKER_POOL_WORKERS;
+        ui32 Timer::minJobQueues = DEFAULT_MIN_JOB_QUEUE_POOL_JOB_QUEUES;
+        ui32 Timer::maxJobQueues = DEFAULT_MAX_JOB_QUEUE_POOL_JOB_QUEUES;
 
-        void Timer::SetWorkerPoolMinMaxWorkers (
-                ui32 minWorkers_,
-                ui32 maxWorkers_) {
-            minWorkers = minWorkers_;
-            maxWorkers = maxWorkers_;
+        void Timer::SetJobQueuePoolMinMaxJobQueues (
+                ui32 minJobQueues_,
+                ui32 maxJobQueues_) {
+            minJobQueues = minJobQueues_;
+            maxJobQueues = maxJobQueues_;
         }
     #endif // defined (TOOLCHAIN_OS_Windows)
 

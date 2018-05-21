@@ -148,18 +148,18 @@ namespace thekogans {
             ui64 id;
             enum {
                 /// \brief
-                /// Default minimum number of workers in the pool.
-                DEFAULT_MIN_WORKER_POOL_WORKERS = 1,
+                /// Default minimum number of \see{JobQueue}s in the pool.
+                DEFAULT_MIN_JOB_QUEUE_POOL_JOB_QUEUES = 1,
                 /// \brief
-                /// Default maximum number of workers in the pool.
-                DEFAULT_MAX_WORKER_POOL_WORKERS = 100,
+                /// Default maximum number of \see{JobQueue}s in the pool.
+                DEFAULT_MAX_JOB_QUEUE_POOL_JOB_QUEUES = 100,
             };
             /// \brief
-            /// Minimum number of workers to keep around.
-            static ui32 minWorkers;
+            /// Minimum number of \see{JobQueue}s to keep around.
+            static ui32 minJobQueues;
             /// \brief
-            /// Maximum number of workers the pool can grow to.
-            static ui32 maxWorkers;
+            /// Maximum number of \see{JobQueue}s the pool can grow to.
+            static ui32 maxJobQueues;
             /// \brief
             /// Forward declaration of AlarmJob.
             struct AlarmJob;
@@ -194,16 +194,16 @@ namespace thekogans {
 
         #if defined (TOOLCHAIN_OS_OSX)
             /// \brief
-            /// On OS X Timer uses a kqueue and a \see{WorkerPool} to service
+            /// On OS X Timer uses a kqueue and a \see{JobQueuePool} to service
             /// timers and alarms. If your app uses a lot of timers, firing
             /// often, you might want to adjust the defaults to suit your needs.
             /// IMPORTANT: This function must be called before you create the
             /// first timer.
             /// \param[in] minWorkers_ Minimum number of workers to keep around.
             /// \param[in] maxWorkers_ Maximum number of workers the pool can grow to.
-            static void SetWorkerPoolMinMaxWorkers (
-                ui32 minWorkers_ = DEFAULT_MIN_WORKER_POOL_WORKERS,
-                ui32 maxWorkers_ = DEFAULT_MAX_WORKER_POOL_WORKERS);
+            static void SetJobQueuePoolMinMaxJobQueues (
+                ui32 minJobQueues_ = DEFAULT_MIN_JOB_QUEUE_POOL_JOB_QUEUES,
+                ui32 maxJobQueues_ = DEFAULT_MAX_JOB_QUEUE_POOL_JOB_QUEUES);
         #endif // defined (TOOLCHAIN_OS_OSX)
 
             /// \brief
