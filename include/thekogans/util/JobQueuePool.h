@@ -84,8 +84,8 @@ namespace thekogans {
         ///
         /// Note how the Job controls the lifetime of the \see{JobQueue}.
         /// By passing util::JobQueue::Ptr in to the Job's ctor we guarantee
-        /// that the jobQueue will be released as soon as the Job goes out of
-        /// scope (as it will be the last reference on the \see{JobQueue}).
+        /// that the \see{JobQueue} will be returned back to the pool as soon
+        /// as the Job goes out of scope (as Job will be the last reference).
 
         struct _LIB_THEKOGANS_UTIL_DECL JobQueuePool : public JobQueuePoolList::Node {
         private:
@@ -134,7 +134,7 @@ namespace thekogans {
             /// \struct JobQueuePool::JobQueue JobQueuePool.h thekogans/util/JobQueuePool.h
             ///
             /// \brief
-            /// .
+            /// Extends \see{JobQueue} to enable returning self to the pool after use.
             struct JobQueue :
                     public JobQueueList::Node,
                     public util::JobQueue {
@@ -184,6 +184,7 @@ namespace thekogans {
                     lastUsedTime (0) {}
 
             protected:
+                // RefCounted
                 /// \brief
                 /// If there are no more references to this job queue,
                 /// release it back to the pool.
@@ -285,7 +286,7 @@ namespace thekogans {
             void DeleteJobQueues ();
 
             /// \brief
-            /// DeleteJobQueue needs access to DeleteJobQueues.
+            /// DeleteJobQueuePoolJobQueues needs access to DeleteJobQueues.
             friend struct DeleteJobQueuePoolJobQueues;
 
             /// \brief
@@ -302,45 +303,46 @@ namespace thekogans {
         struct _LIB_THEKOGANS_UTIL_DECL GlobalJobQueuePoolCreateInstance {
         private:
             /// \brief
-            /// Minimum number of workers to keep in the pool.
+            /// Minimum number of \see{JobQueue}s to keep in the pool.
             static ui32 minJobQueues;
             /// \brief
-            /// Maximum number of workers allowed in the pool.
+            /// Maximum number of \see{JobQueue}s allowed in the pool.
             static ui32 maxJobQueues;
             /// \brief
-            /// Pool name.
+            /// \see{JobQueue} name.
             static std::string name;
             /// \brief
-            /// JobQueue queue type.
+            /// \see{JobQueue} type.
             static RunLoop::Type type;
             /// \brief
-            /// JobQueue queue max pending jobs.
+            /// Max pending \see{JobQueue} jobs.
             static ui32 maxPendingJobs;
             /// \brief
-            /// Number of worker threads service the queue.
+            /// Number of worker threads service the \see{JobQueue}.
             static ui32 workerCount;
             /// \brief
-            /// JobQueue queue priority.
+            /// \see{JobQueue} worker thread priority.
             static i32 workerPriority;
             /// \brief
-            /// JobQueue queue processor affinity.
+            /// \see{JobQueue} worker thread processor affinity.
             static ui32 workerAffinity;
             /// \brief
-            /// Called to initialize/uninitialize the worker thread.
+            /// Called to initialize/uninitialize the \see{JobQueue} worker thread.
             static RunLoop::WorkerCallback *workerCallback;
 
         public:
             /// \brief
             /// Call before the first use of GlobalJobQueuePool::Instance.
-            /// \param[in] minJobQueues_ Minimum worker to keep in the pool.
-            /// \param[in] maxJobQueues_ Maximum worker to allow the pool to grow to.
-            /// \param[in] name_ Pool name.
-            /// \param[in] type_ JobQueue queue type.
-            /// \param[in] maxPendingJobs_ Max pending queue jobs.
-            /// \param[in] workerCount_ Number of worker threads service the queue.
-            /// \param[in] workerPriority_ JobQueue queue priority.
-            /// \param[in] workerAffinity_ JobQueue queue processor affinity.
-            /// \param[in] workerCallback_ Called to initialize/uninitialize the worker thread.
+            /// \param[in] minJobQueues_ Minimum \see{JobQueue}s to keep in the pool.
+            /// \param[in] maxJobQueues_ Maximum \see{JobQueue}s to allow the pool to grow to.
+            /// \param[in] name_ \see{JobQueue} name.
+            /// \param[in] type_ \see{JobQueue} type.
+            /// \param[in] maxPendingJobs_ Max pending \see{JobQueue} jobs.
+            /// \param[in] workerCount_ Number of worker threads service the \see{JobQueue}.
+            /// \param[in] workerPriority_ \see{JobQueue} worker thread priority.
+            /// \param[in] workerAffinity_ \see{JobQueue} worker thread processor affinity.
+            /// \param[in] workerCallback_ Called to initialize/uninitialize the \see{JobQueue}
+            /// thread.
             static void Parameterize (
                 ui32 minJobQueues_ = SystemInfo::Instance ().GetCPUCount (),
                 ui32 maxJobQueues_ = SystemInfo::Instance ().GetCPUCount () * 2,
@@ -353,23 +355,23 @@ namespace thekogans {
                 RunLoop::WorkerCallback *workerCallback_ = 0);
 
             /// \brief
-            /// Create a global worker pool with custom ctor arguments.
-            /// \return A global worker pool with custom ctor arguments.
+            /// Create a global \see{JobQueuePool} with custom ctor arguments.
+            /// \return A global \see{JobQueuePool} with custom ctor arguments.
             JobQueuePool *operator () ();
         };
 
         /// \struct GlobalJobQueuePool JobQueuePool.h thekogans/util/JobQueuePool.h
         ///
         /// \brief
-        /// A global worker pool instance. The JobQueuePool is designed to be
-        /// as flexible as possible. To be useful in different situations
-        /// the worker pool's min/max worker count needs to be parametrized
-        /// as we might need different pools running different counts at
-        /// different queue priorities. That said, the most basic (and
-        /// the most useful) use case will have a single worker pool using
-        /// the defaults. This struct exists to aid in that. If all you
-        /// need is a global worker pool then GlobalJobQueuePool::Instance ()
-        /// will do the trick.
+        /// A global \see{JobQueuePool} instance. The \see{JobQueuePool} is
+        /// designed to be as flexible as possible. To be useful in different
+        /// situations the \see{JobQueuePool}'s min/max worker count needs to
+        /// be parametrized as we might need different pools running different
+        /// counts at different worker priorities. That said, the most basic
+        /// (and the most useful) use case will have a single pool using the
+        /// defaults. This struct exists to aid in that. If all you need is a
+        /// global \see{JobQueuePool} then GlobalJobQueuePool::Instance () will
+        /// do the trick.
         struct _LIB_THEKOGANS_UTIL_DECL GlobalJobQueuePool :
             public Singleton<JobQueuePool, SpinLock, GlobalJobQueuePoolCreateInstance> {};
 

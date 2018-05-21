@@ -55,7 +55,7 @@ namespace thekogans {
             /// \struct Pipeline::Stage Pipeline.h thekogans/util/Pipeline.h
             ///
             /// \brief
-            /// Used to specify stage parameters.
+            /// Used to specify stage (\see{JobQueue}) ctor parameters.
             struct _LIB_THEKOGANS_UTIL_DECL Stage {
                 /// \brief
                 /// Stage \see{JobQueue} name.
@@ -87,7 +87,8 @@ namespace thekogans {
                 /// \param[in] workerCount_ Number of workers servicing this stage.
                 /// \param[in] workerPriority_ Stage worker thread priority.
                 /// \param[in] workerAffinity_ Stage worker thread processor affinity.
-                /// \param[in] workerCallback_ Called to initialize/uninitialize the worker thread.
+                /// \param[in] workerCallback_ Called to initialize/uninitialize the
+                /// stage worker thread(s).
                 Stage (
                     const std::string &name_ = std::string (),
                     RunLoop::Type type_ = RunLoop::TYPE_FIFO,
