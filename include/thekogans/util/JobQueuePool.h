@@ -87,6 +87,10 @@ namespace thekogans {
         /// that the \see{JobQueue} will be returned back to the pool as soon
         /// as the Job goes out of scope (as Job will be the last reference).
 
+    #if defined (_MSC_VER)
+        #pragma warning (push)
+        #pragma warning (disable : 4275)
+    #endif // defined (_MSC_VER)
         struct _LIB_THEKOGANS_UTIL_DECL JobQueuePool : public JobQueuePoolList::Node {
         private:
             /// \brief
@@ -293,6 +297,9 @@ namespace thekogans {
             /// JobQueuePool is neither copy constructable, nor assignable.
             THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (JobQueuePool)
         };
+    #if defined (_MSC_VER)
+        #pragma warning (pop)
+    #endif // defined (_MSC_VER)
 
         /// \struct GlobalJobQueuePoolCreateInstance JobQueuePool.h thekogans/util/JobQueuePool.h
         ///
