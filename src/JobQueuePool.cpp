@@ -123,21 +123,8 @@ namespace thekogans {
             if (maxJobQueues > minJobQueues) {
                 JobQueuePoolRegistry::Instance ().UnregisterJobQueuePool (this);
             }
-            LockGuard<Mutex> guard (mutex);
             {
-                struct StopCallback : public JobQueueList::Callback {
-                    typedef JobQueueList::Callback::result_type result_type;
-                    typedef JobQueueList::Callback::argument_type argument_type;
-                    virtual result_type operator () (argument_type jobQueue) {
-                        jobQueue->Stop ();
-                        return true;
-                    }
-                } stopCallback;
-                availableJobQueues.for_each (stopCallback);
-                borrowedJobQueues.for_each (stopCallback);
-            }
-            WaitForIdle ();
-            {
+                LockGuard<Mutex> guard (mutex);
                 struct DeleteCallback : public JobQueueList::Callback {
                     typedef JobQueueList::Callback::result_type result_type;
                     typedef JobQueueList::Callback::argument_type argument_type;
