@@ -36,18 +36,6 @@
 namespace thekogans {
     namespace util {
 
-        /// \brief
-        /// Forward declaration of JobQueuePool.
-        struct JobQueuePool;
-        enum {
-            /// \brief
-            /// JobQueuePool list id.
-            JOB_QUEUE_POOL_LIST_ID
-        };
-        /// \brief
-        /// Convenient typedef for IntrusiveList<JobQueuePool, JOB_QUEUE_POOL_LIST_ID>.
-        typedef IntrusiveList<JobQueuePool, JOB_QUEUE_POOL_LIST_ID> JobQueuePoolList;
-
         /// \struct JobQueuePool JobQueuePool.h thekogans/util/JobQueuePool.h
         ///
         /// \brief
@@ -86,11 +74,7 @@ namespace thekogans {
         /// that the \see{JobQueue} will be returned back to the pool as soon
         /// as the Job goes out of scope (as Job will be the last reference).
 
-    #if defined (_MSC_VER)
-        #pragma warning (push)
-        #pragma warning (disable : 4275)
-    #endif // defined (_MSC_VER)
-        struct _LIB_THEKOGANS_UTIL_DECL JobQueuePool : public JobQueuePoolList::Node {
+        struct _LIB_THEKOGANS_UTIL_DECL JobQueuePool {
         private:
             /// \brief
             /// Minimum number of job queues to keep in the pool.
@@ -269,27 +253,16 @@ namespace thekogans {
             /// \brief
             /// Used by GetJobQueue to acquire a \see{JobQueue} from the pool.
             /// \return \see{JobQueue} pointer.
-            JobQueue *GetJobQueueHelper ();
+            JobQueue *AcquireJobQueue ();
             /// \brief
             /// Used by JobQueue to release itself to the pool.
             /// \param[in] jobQueue JobQueue to release.
             void ReleaseJobQueue (JobQueue *jobQueue);
 
             /// \brief
-            /// Used by JobQueuePoolRegistry.
-            void DeleteJobQueues ();
-
-            /// \brief
-            /// JobQueuePoolRegistry needs access to DeleteJobQueues.
-            friend struct JobQueuePoolRegistry;
-
-            /// \brief
             /// JobQueuePool is neither copy constructable, nor assignable.
             THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (JobQueuePool)
         };
-    #if defined (_MSC_VER)
-        #pragma warning (pop)
-    #endif // defined (_MSC_VER)
 
         /// \struct GlobalJobQueuePoolCreateInstance JobQueuePool.h thekogans/util/JobQueuePool.h
         ///

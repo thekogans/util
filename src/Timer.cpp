@@ -102,10 +102,6 @@ namespace thekogans {
                 timer->alarmJob = 0;
             }
 
-            void Wait () {
-                jobQueue->WaitForJob (GetId ());
-            }
-
             // RunLoop::Job
             virtual void Execute (const THEKOGANS_UTIL_ATOMIC<bool> &done) throw () {
                 if (!ShouldStop (done)) {
@@ -156,7 +152,7 @@ namespace thekogans {
                 // previously scheduled Alarm job.
                 if (timer.alarmJob != 0) {
                     timer.alarmJob->Cancel ();
-                    timer.alarmJob->Wait ();
+                    timer.alarmJob->WaitCompleted ();
                 }
                 // StartTimer can be called repeatedly without calling StopTimer.
                 // This behavior is desirable when adjusting an already existing
@@ -183,7 +179,7 @@ namespace thekogans {
                 if (timer.id != NIDX64) {
                     if (timer.alarmJob != 0) {
                         timer.alarmJob->Cancel ();
-                        timer.alarmJob->Wait ();
+                        timer.alarmJob->WaitCompleted ();
                     }
                     keventStruct event;
                     keventSet (&event, timer.id, EVFILT_TIMER, EV_DELETE, 0, 0, 0);
