@@ -34,8 +34,8 @@ namespace thekogans {
             }
         }
 
-        void Pipeline::Job::SetStatus (Status status_) {
-            status = status_;
+        void Pipeline::Job::SetState (State state_) {
+            state = state_;
             if (IsRunning ()) {
                 if (stage == 0) {
                     start = HRTimer::Click ();
@@ -551,7 +551,7 @@ namespace thekogans {
             LockGuard<Mutex> guard (jobsMutex);
             stats.Update (job, start, end);
             runningJobs.erase (job);
-            job->SetStatus (RunLoop::Job::Completed);
+            job->SetState (RunLoop::Job::Completed);
             job->Release ();
             if (pendingJobs.empty () && runningJobs.empty ()) {
                 idle.SignalAll ();

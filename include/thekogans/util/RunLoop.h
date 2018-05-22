@@ -119,8 +119,8 @@ namespace thekogans {
                 typedef std::string Id;
 
                 /// \enum
-                /// Job status states.
-                enum Status {
+                /// Job states.
+                enum State {
                     /// \brief
                     /// Job is pending execution.
                     Pending,
@@ -157,8 +157,8 @@ namespace thekogans {
                 /// RunLoop id.
                 RunLoop::Id runLoopId;
                 /// \brief
-                /// Job status.
-                volatile Status status;
+                /// Job state.
+                volatile State state;
                 /// \brief
                 /// Job disposition.
                 volatile Disposition disposition;
@@ -175,7 +175,7 @@ namespace thekogans {
                 /// \param[in] id_ Job id.
                 Job (const Id &id_ = GUID::FromRandom ().ToString ()) :
                     id (id_),
-                    status (Completed),
+                    state (Completed),
                     disposition (Unknown) {}
                 /// \brief
                 /// dtor.
@@ -194,28 +194,28 @@ namespace thekogans {
                     return runLoopId;
                 }
                 /// \brief
-                /// Return the job status.
-                /// \return Job status.
-                inline Status GetStatus () const {
-                    return status;
+                /// Return the job state.
+                /// \return Job state.
+                inline State GetState () const {
+                    return state;
                 }
                 /// \brief
                 /// Return true if job is pending.
                 /// \return true == Job is pending.
                 inline bool IsPending () const {
-                    return status == Pending;
+                    return state == Pending;
                 }
                 /// \brief
                 /// Return true if job is running.
                 /// \return true == Job is running.
                 inline bool IsRunning () const {
-                    return status == Running;
+                    return state == Running;
                 }
                 /// \brief
                 /// Return true if job completed.
                 /// \return true == Job has completed.
                 inline bool IsCompleted () const {
-                    return status == Completed;
+                    return state == Completed;
                 }
 
                 /// \brief
@@ -265,9 +265,9 @@ namespace thekogans {
                 virtual void Reset (const RunLoop::Id &runLoopId_);
                 /// \brief
                 /// Used internally by RunLoop and it's derivatives to set the
-                /// job status.
-                /// \param[in] status_ New job status.
-                virtual void SetStatus (Status status_);
+                /// job state.
+                /// \param[in] state_ New job state.
+                virtual void SetState (State state_);
 
                 /// \brief
                 /// Used internally by RunLoop and it's derivatives to mark the

@@ -50,7 +50,7 @@ namespace thekogans {
                     // Short circuit cancelled pending jobs.
                     if (!job->ShouldStop (queue.done)) {
                         start = HRTimer::Click ();
-                        job->SetStatus (Job::Running);
+                        job->SetState (Job::Running);
                         job->Prologue (queue.done);
                         job->Execute (queue.done);
                         job->Epilogue (queue.done);

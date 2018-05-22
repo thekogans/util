@@ -186,9 +186,9 @@ namespace thekogans {
                 virtual void Reset (const RunLoop::Id &runLoopId_);
                 /// \brief
                 /// Used internally by RunLoop and it's derivatives to set the
-                /// job status.
-                /// \param[in] status_ New job status.
-                virtual void SetStatus (Status status_);
+                /// job state.
+                /// \param[in] state_ New job state.
+                virtual void SetState (State state_);
 
                 /// \brief
                 /// Override this method to provide custom staging.

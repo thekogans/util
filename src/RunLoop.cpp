@@ -35,14 +35,14 @@ namespace thekogans {
 
         void RunLoop::Job::Reset (const RunLoop::Id &runLoopId_) {
             runLoopId = runLoopId_;
-            status = Pending;
+            state = Pending;
             disposition = Unknown;
             completed.Reset ();
         }
 
-        void RunLoop::Job::SetStatus (Status status_) {
-            status = status_;
-            if (status == Completed) {
+        void RunLoop::Job::SetState (State state_) {
+            state = state_;
+            if (state == Completed) {
                 completed.Signal ();
             }
         }
@@ -492,7 +492,7 @@ namespace thekogans {
             LockGuard<Mutex> guard (jobsMutex);
             stats.Update (job, start, end);
             runningJobs.erase (job);
-            job->SetStatus (RunLoop::Job::Completed);
+            job->SetState (RunLoop::Job::Completed);
             job->Release ();
             if (pendingJobs.empty () && runningJobs.empty ()) {
                 idle.SignalAll ();
