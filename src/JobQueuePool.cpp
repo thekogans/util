@@ -29,25 +29,29 @@ namespace thekogans {
                 public Singleton<JobQueuePoolRegistry, SpinLock>,
                 public Timer::Callback {
         private:
-            JobQueuePoolList jobQueuePools;
             Timer timer;
+            JobQueuePoolList jobQueuePools;
             Mutex mutex;
 
         public:
             JobQueuePoolRegistry () :
-                    timer (*this) {
-                // FIXME: Parametrize the interval.
-                timer.Start (TimeSpec::FromSeconds (10), true);
-            }
+                timer (*this) {}
 
             void RegisterJobQueuePool (JobQueuePool *jobQueuePool) {
                 LockGuard<Mutex> guard (mutex);
                 jobQueuePools.push_back (jobQueuePool);
+                if (jobQueuePools.size () == 1) {
+                    // FIXME: Parametrize the interval.
+                    timer.Start (TimeSpec::FromSeconds (10), true);
+                }
             }
 
             void UnregisterJobQueuePool (JobQueuePool *jobQueuePool) {
                 LockGuard<Mutex> guard (mutex);
                 jobQueuePools.erase (jobQueuePool);
+                if (jobQueuePools.empty ()) {
+                    timer.Stop ();
+                }
             }
 
         private:
@@ -66,7 +70,7 @@ namespace thekogans {
             }
         };
 
-        THEKOGANS_UTIL_IMPLEMENT_HEAP_WITH_LOCK_EX (JobQueuePool::JobQueue, SpinLock, 5)
+        THEKOGANS_UTIL_IMPLEMENT_HEAP_WITH_LOCK (JobQueuePool::JobQueue, SpinLock)
 
         JobQueuePool::JobQueuePool (
                 ui32 minJobQueues_,
@@ -105,7 +109,9 @@ namespace thekogans {
                             workerAffinity,
                             workerCallback));
                 }
-                JobQueuePoolRegistry::Instance ().RegisterJobQueuePool (this);
+                if (maxJobQueues > minJobQueues) {
+                    JobQueuePoolRegistry::Instance ().RegisterJobQueuePool (this);
+                }
             }
             else {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
@@ -114,7 +120,9 @@ namespace thekogans {
         }
 
         JobQueuePool::~JobQueuePool () {
-            JobQueuePoolRegistry::Instance ().UnregisterJobQueuePool (this);
+            if (maxJobQueues > minJobQueues) {
+                JobQueuePoolRegistry::Instance ().UnregisterJobQueuePool (this);
+            }
             LockGuard<Mutex> guard (mutex);
             {
                 struct StopCallback : public JobQueueList::Callback {

@@ -83,6 +83,8 @@ namespace thekogans {
         }
     #elif defined (TOOLCHAIN_OS_OSX)
         struct Timer::AlarmJob : public RunLoop::Job {
+            THEKOGANS_UTIL_DECLARE_HEAP_WITH_LOCK (AlarmJob, SpinLock)
+
             JobQueue::Ptr jobQueue;
             Timer *timer;
 
@@ -114,6 +116,8 @@ namespace thekogans {
                 }
             }
         };
+
+        THEKOGANS_UTIL_IMPLEMENT_HEAP_WITH_LOCK (Timer::AlarmJob, SpinLock)
 
         struct TimerQueue :
                 public Singleton<TimerQueue, SpinLock>,
