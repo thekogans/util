@@ -209,8 +209,8 @@ namespace thekogans {
             /// \param[in] workerCallback_ Called to initialize/uninitialize the \see{JobQueue}
             /// worker thread.
             JobQueuePool (
-                ui32 minJobQueues_ = SystemInfo::Instance ().GetCPUCount (),
-                ui32 maxJobQueues_ = SystemInfo::Instance ().GetCPUCount () * 2,
+                ui32 minJobQueues_,
+                ui32 maxJobQueues_,
                 const std::string &name_ = std::string (),
                 RunLoop::Type type_ = RunLoop::TYPE_FIFO,
                 ui32 maxPendingJobs_ = UI32_MAX,
@@ -314,8 +314,8 @@ namespace thekogans {
             /// \param[in] workerCallback_ Called to initialize/uninitialize the \see{JobQueue}
             /// thread.
             static void Parameterize (
-                ui32 minJobQueues_ = SystemInfo::Instance ().GetCPUCount (),
-                ui32 maxJobQueues_ = SystemInfo::Instance ().GetCPUCount () * 2,
+                ui32 minJobQueues_,
+                ui32 maxJobQueues_,
                 const std::string &name_ = std::string (),
                 RunLoop::Type type_ = RunLoop::TYPE_FIFO,
                 ui32 maxPendingJobs_ = UI32_MAX,

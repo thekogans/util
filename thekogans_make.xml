@@ -146,6 +146,7 @@
     <cpp_header>$(organization)/$(project_directory)/OwnerVector.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/Path.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/Pipeline.h</cpp_header>
+    <cpp_header>$(organization)/$(project_directory)/PipelinePool.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/Plugins.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/Point.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/RandomSource.h</cpp_header>
@@ -650,6 +651,7 @@
     </if>
     <cpp_source>Path.cpp</cpp_source>
     <cpp_source>Pipeline.cpp</cpp_source>
+    <cpp_source>PipelinePool.cpp</cpp_source>
     <cpp_source>Plugins.cpp</cpp_source>
     <cpp_source>Point.cpp</cpp_source>
     <cpp_source>RandomSource.cpp</cpp_source>

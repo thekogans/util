@@ -184,8 +184,8 @@ namespace thekogans {
             }
         }
 
-        ui32 GlobalJobQueuePoolCreateInstance::minJobQueues = SystemInfo::Instance ().GetCPUCount ();
-        ui32 GlobalJobQueuePoolCreateInstance::maxJobQueues = SystemInfo::Instance ().GetCPUCount () * 2;
+        ui32 GlobalJobQueuePoolCreateInstance::minJobQueues = 0;
+        ui32 GlobalJobQueuePoolCreateInstance::maxJobQueues = 0;
         std::string GlobalJobQueuePoolCreateInstance::name = std::string ();
         RunLoop::Type GlobalJobQueuePoolCreateInstance::type = RunLoop::TYPE_FIFO;
         ui32 GlobalJobQueuePoolCreateInstance::maxPendingJobs = UI32_MAX;
@@ -204,28 +204,41 @@ namespace thekogans {
                 i32 workerPriority_,
                 ui32 workerAffinity_,
                 RunLoop::WorkerCallback *workerCallback_) {
-            minJobQueues = minJobQueues_;
-            maxJobQueues = maxJobQueues_;
-            name = name_;
-            type = type_;
-            maxPendingJobs = maxPendingJobs_;
-            workerCount = workerCount_;
-            workerPriority = workerPriority_;
-            workerAffinity = workerAffinity_;
-            workerCallback = workerCallback_;
+            if (minJobQueues_ != 0 && maxJobQueues_ != 0) {
+                minJobQueues = minJobQueues_;
+                maxJobQueues = maxJobQueues_;
+                name = name_;
+                type = type_;
+                maxPendingJobs = maxPendingJobs_;
+                workerCount = workerCount_;
+                workerPriority = workerPriority_;
+                workerAffinity = workerAffinity_;
+                workerCallback = workerCallback_;
+            }
+            else {
+                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
+            }
         }
 
         JobQueuePool *GlobalJobQueuePoolCreateInstance::operator () () {
-            return new JobQueuePool (
-                minJobQueues,
-                maxJobQueues,
-                name,
-                type,
-                maxPendingJobs,
-                workerCount,
-                workerPriority,
-                workerAffinity,
-                workerCallback);
+            if (minJobQueues != 0 && maxJobQueues != 0) {
+                return new JobQueuePool (
+                    minJobQueues,
+                    maxJobQueues,
+                    name,
+                    type,
+                    maxPendingJobs,
+                    workerCount,
+                    workerPriority,
+                    workerAffinity,
+                    workerCallback);
+            }
+            else {
+                THEKOGANS_UTIL_THROW_STRING_EXCEPTION ("%s",
+                    "Must provide GlobalJobQueuePool minJobQueues and maxJobQueues. "
+                    "Call GlobalJobQueuePoolCreateInstance::Parameterize.");
+            }
         }
 
     } // namespace util

@@ -127,8 +127,8 @@ namespace thekogans {
             /// \param[in] workerPriority_ Worker thread priority.
             /// \param[in] workerAffinity_ Worker thread processor affinity.
             /// \param[in] workerCallback_ Called to initialize/uninitialize
-            /// \param[in] callStart true == Call Start.
             /// the worker thread.
+            /// \param[in] callStart true == Call Start.
             JobQueue (
                 const std::string &name = std::string (),
                 Type type = TYPE_FIFO,

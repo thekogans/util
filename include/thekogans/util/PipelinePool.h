@@ -1,0 +1,377 @@
+// Copyright 2011 Boris Kogan (boris@thekogans.net)
+//
+// This file is part of libthekogans_util.
+//
+// libthekogans_util is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// libthekogans_util is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with libthekogans_util. If not, see <http://www.gnu.org/licenses/>.
+
+#if !defined (__thekogans_util_PipelinePool_h)
+#define __thekogans_util_PipelinePool_h
+
+#include <memory>
+#include <string>
+#include "thekogans/util/Config.h"
+#include "thekogans/util/Types.h"
+#include "thekogans/util/Heap.h"
+#include "thekogans/util/IntrusiveList.h"
+#include "thekogans/util/Thread.h"
+#include "thekogans/util/Pipeline.h"
+#include "thekogans/util/TimeSpec.h"
+#include "thekogans/util/SpinLock.h"
+#include "thekogans/util/Mutex.h"
+#include "thekogans/util/Condition.h"
+#include "thekogans/util/SystemInfo.h"
+#include "thekogans/util/Singleton.h"
+
+namespace thekogans {
+    namespace util {
+
+        /// \struct PipelinePool PipelinePool.h thekogans/util/PipelinePool.h
+        ///
+        /// \brief
+        /// PipelinePool implements a very convenient pool of
+        /// \see{Pipeline}s. Here is a canonical use case:
+        ///
+        /// \code{.cpp}
+        /// using namespace thekogans;
+        ///
+        /// util::PipelinePool pipelinePool;
+        ///
+        /// void foo (...) {
+        ///     struct Job : public util::Pipeline::Job {
+        ///         util::Pipeline::Ptr pipeline;
+        ///         ...
+        ///         Job (
+        ///             util::Pipeline::Ptr pipeline_,
+        ///             ...) :
+        ///             pipeline (pipeline_),
+        ///             ... {}
+        ///
+        ///         // util::Pipeline::Job
+        ///         virtual void Execute (const THEKOGANS_UTIL_ATOMIC<bool> &) throw () {
+        ///             ...
+        ///         }
+        ///     };
+        ///     util::Pipeline::Ptr pipeline = pipelinePool.GetPipeline ();
+        ///     if (pipeline.Get () != 0) {
+        ///         pipeline->EnqJob (Pipeline::Job::Ptr (new Job (pipeline, ...)));
+        ///     }
+        /// }
+        /// \endcode
+        ///
+        /// Note how the Job controls the lifetime of the \see{Pipeline}.
+        /// By passing util::Pipeline::Ptr in to the Job's ctor we guarantee
+        /// that the \see{Pipeline} will be returned back to the pool as soon
+        /// as the Job goes out of scope (as Job will be the last reference).
+
+        struct _LIB_THEKOGANS_UTIL_DECL PipelinePool {
+        private:
+            /// \brief
+            /// Minimum number of pipelines to keep in the pool.
+            const ui32 minPipelines;
+            /// \brief
+            /// Maximum number of pipelines allowed in the pool.
+            const ui32 maxPipelines;
+            /// \brief
+            /// Pointer to the beginning of the \see{Pipeline::Stage} array.
+            const util::Pipeline::Stage *begin;
+            /// \brief
+            /// Pointer to the end of the \see{Pipeline::Stage} array.
+            const util::Pipeline::Stage *end;
+            /// \brief
+            /// \see{Pipeline} name.
+            const std::string name;
+            /// \brief
+            /// \see{Pipeline} type.
+            const RunLoop::Type type;
+            /// \brief
+            /// \see{Pipeline} max pending jobs.
+            const ui32 maxPendingJobs;
+            /// \brief
+            /// Number of worker threads service the \see{Pipeline}.
+            const ui32 workerCount;
+            /// \brief
+            /// \see{Pipeline} worker thread priority.
+            const i32 workerPriority;
+            /// \brief
+            /// \see{Pipeline} worker thread processor affinity.
+            const ui32 workerAffinity;
+            /// \brief
+            /// Called to initialize/uninitialize the \see{Pipeline} worker thread.
+            RunLoop::WorkerCallback *workerCallback;
+            /// \brief
+            /// Forward declaration of Pipeline.
+            struct Pipeline;
+            enum {
+                /// \brief
+                /// PipelineList list id.
+                PIPELINE_LIST_ID
+            };
+            /// \brief
+            /// Convenient typedef for IntrusiveList<Pipeline, PIPELINE_LIST_ID>.
+            typedef IntrusiveList<Pipeline, PIPELINE_LIST_ID> PipelineList;
+        #if defined (_MSC_VER)
+            #pragma warning (push)
+            #pragma warning (disable : 4275)
+        #endif // defined (_MSC_VER)
+            /// \struct PipelinePool::Pipeline PipelinePool.h thekogans/util/PipelinePool.h
+            ///
+            /// \brief
+            /// Extends \see{Pipeline} to enable returning self to the pool after use.
+            struct Pipeline :
+                    public PipelineList::Node,
+                    public util::Pipeline {
+                /// \brief
+                /// Pipeline has a private heap to help with memory
+                /// management, performance, and global heap fragmentation.
+                THEKOGANS_UTIL_DECLARE_HEAP_WITH_LOCK (Pipeline, SpinLock)
+
+            private:
+                /// \brief
+                /// PipelinePool from which this \see{Pipeline} came.
+                PipelinePool &pipelinePool;
+
+            public:
+                /// \brief
+                /// ctor.
+                /// \param[in] pipelinePool_ PipelinePool to which this pipeline belongs.
+                /// \param[in] begin Pointer to the beginning of the \see{Pipeline::Stage} array.
+                /// \param[in] end Pointer to the end of the \see{Pipeline::Stage} array.
+                /// \param[in] name \see{Pipeline} name.
+                /// \param[in] type \see{Pipeline} type.
+                /// \param[in] maxPendingJobs \see{Pipeline} max pending jobs.
+                /// \param[in] workerCount Number of worker threads service the \see{Pipeline}.
+                /// \param[in] workerPriority \see{Pipeline} worker thread priority.
+                /// \param[in] workerAffinity \see{Pipeline} worker thread processor affinity.
+                /// \param[in] workerCallback Called to initialize/uninitialize the
+                /// \see{Pipeline} worker thread(s).
+                Pipeline (
+                    PipelinePool &pipelinePool_,
+                    const util::Pipeline::Stage *begin,
+                    const util::Pipeline::Stage *end,
+                    const std::string &name = std::string (),
+                    RunLoop::Type type = RunLoop::TYPE_FIFO,
+                    ui32 maxPendingJobs = UI32_MAX,
+                    ui32 workerCount = 1,
+                    i32 workerPriority = THEKOGANS_UTIL_NORMAL_THREAD_PRIORITY,
+                    ui32 workerAffinity = THEKOGANS_UTIL_MAX_THREAD_AFFINITY,
+                    RunLoop::WorkerCallback *workerCallback = 0) :
+                    util::Pipeline (
+                        begin,
+                        end,
+                        name,
+                        type,
+                        maxPendingJobs,
+                        workerCount,
+                        workerPriority,
+                        workerAffinity,
+                        workerCallback),
+                    pipelinePool (pipelinePool_) {}
+
+            protected:
+                // RefCounted
+                /// \brief
+                /// If there are no more references to this pipeline,
+                /// release it back to the pool.
+                virtual void Harakiri () {
+                    pipelinePool.ReleasePipeline (this);
+                }
+
+                /// \brief
+                /// Pipeline is neither copy constructable, nor assignable.
+                THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (Pipeline)
+            };
+        #if defined (_MSC_VER)
+            #pragma warning (pop)
+        #endif // defined (_MSC_VER)
+            /// \brief
+            /// List of workers.
+            PipelineList availablePipelines;
+            /// \brief
+            /// List of workers.
+            PipelineList borrowedPipelines;
+            /// \brief
+            /// Synchronization mutex.
+            Mutex mutex;
+            /// \brief
+            /// Synchronization condition variable.
+            Condition idle;
+
+        public:
+            /// \brief
+            /// ctor.
+            /// \param[in] minPipelines_ Minimum \see{Pipeline}s to keep in the pool.
+            /// \param[in] maxPipelines_ Maximum \see{Pipeline}s to allow the pool to grow to.
+            /// \param[in] begin_ Pointer to the beginning of the \see{Pipeline::Stage} array.
+            /// \param[in] end_ Pointer to the end of the \see{Pipeline::Stage} array.
+            /// \param[in] name_ \see{Pipeline} name.
+            /// \param[in] type_ \see{Pipeline} type.
+            /// \param[in] maxPendingJobs_ Max pending \see{Pipeline} jobs.
+            /// \param[in] workerCount_ Number of worker threads service the \see{Pipeline}.
+            /// \param[in] workerPriority_ \see{Pipeline} worker thread priority.
+            /// \param[in] workerAffinity_ \see{Pipeline} worker thread processor affinity.
+            /// \param[in] workerCallback_ Called to initialize/uninitialize the \see{Pipeline}
+            /// worker thread.
+            PipelinePool (
+                ui32 minPipelines_,
+                ui32 maxPipelines_,
+                const util::Pipeline::Stage *begin_,
+                const util::Pipeline::Stage *end_,
+                const std::string &name_ = std::string (),
+                RunLoop::Type type_ = RunLoop::TYPE_FIFO,
+                ui32 maxPendingJobs_ = UI32_MAX,
+                ui32 workerCount_ = 1,
+                i32 workerPriority_ = THEKOGANS_UTIL_NORMAL_THREAD_PRIORITY,
+                ui32 workerAffinity_ = THEKOGANS_UTIL_MAX_THREAD_AFFINITY,
+                RunLoop::WorkerCallback *workerCallback_ = 0);
+            /// \brief
+            /// dtor.
+            ~PipelinePool ();
+
+            /// \brief
+            /// Acquire a \see{Pipeline} from the pool.
+            /// \param[in] retries Number of times to retry if a \see{Pipeline} is not
+            /// immediately available.
+            /// \param[in] timeSpec How long to wait between retries.
+            /// IMPORTANT: timeSpec is a relative value.
+            /// \return A \see{Pipeline} from the pool (Pipeline::Ptr () if pool is exhausted).
+            util::Pipeline::Ptr GetPipeline (
+                ui32 retries = 1,
+                const TimeSpec &timeSpec = TimeSpec::FromMilliseconds (100));
+
+            /// \brief
+            /// Blocks until all borrowed \see{Pipeline}s have been returned to the pool.
+            /// \param[in] timeSpec How long to wait for \see{Pipeline}s to return.
+            /// IMPORTANT: timeSpec is a relative value.
+            /// \return true == PipelinePool is idle, false == Timed out.
+            bool WaitForIdle (
+                const TimeSpec &timeSpec = TimeSpec::Infinite);
+
+            /// \brief
+            /// Return true if this pool has no outstanding \see{Pipeline}s.
+            /// \return true == this pool has no outstanding \see{Pipeline}s.
+            inline bool IsIdle () {
+                LockGuard<Mutex> guard (mutex);
+                return borrowedPipelines.empty ();
+            }
+
+        private:
+            /// \brief
+            /// Used by \see{GetPipeline} to acquire a \see{Pipeline} from the pool.
+            /// \return \see{Pipeline} pointer.
+            Pipeline *AcquirePipeline ();
+            /// \brief
+            /// Used by \see{Pipeline} to release itself to the pool.
+            /// \param[in] pipeline \see{Pipeline} to release.
+            void ReleasePipeline (Pipeline *pipeline);
+
+            /// \brief
+            /// PipelinePool is neither copy constructable, nor assignable.
+            THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (PipelinePool)
+        };
+
+        /// \struct GlobalPipelinePoolCreateInstance PipelinePool.h thekogans/util/PipelinePool.h
+        ///
+        /// \brief
+        /// Call GlobalPipelinePoolCreateInstance::Parameterize before the first use of
+        /// GlobalPipelinePool::Instance to supply custom arguments to GlobalPipelinePool ctor.
+
+        struct _LIB_THEKOGANS_UTIL_DECL GlobalPipelinePoolCreateInstance {
+        private:
+            /// \brief
+            /// Minimum number of \see{Pipeline}s to keep in the pool.
+            static ui32 minPipelines;
+            /// \brief
+            /// Maximum number of \see{Pipeline}s allowed in the pool.
+            static ui32 maxPipelines;
+            /// \brief
+            /// Pointer to the beginning of the \see{Pipeline::Stage} array.
+            static const Pipeline::Stage *begin;
+            /// \brief
+            /// Pointer to the end of the \see{Pipeline::Stage} array.
+            static const Pipeline::Stage *end;
+            /// \brief
+            /// \see{Pipeline} name.
+            static std::string name;
+            /// \brief
+            /// \see{Pipeline} type.
+            static RunLoop::Type type;
+            /// \brief
+            /// Max pending \see{Pipeline} jobs.
+            static ui32 maxPendingJobs;
+            /// \brief
+            /// Number of worker threads service the \see{Pipeline}.
+            static ui32 workerCount;
+            /// \brief
+            /// \see{Pipeline} worker thread priority.
+            static i32 workerPriority;
+            /// \brief
+            /// \see{Pipeline} worker thread processor affinity.
+            static ui32 workerAffinity;
+            /// \brief
+            /// Called to initialize/uninitialize the \see{Pipeline} worker thread.
+            static RunLoop::WorkerCallback *workerCallback;
+
+        public:
+            /// \brief
+            /// Call before the first use of GlobalPipelinePool::Instance.
+            /// \param[in] minPipelines_ Minimum \see{Pipeline}s to keep in the pool.
+            /// \param[in] maxPipelines_ Maximum \see{Pipeline}s to allow the pool to grow to.
+            /// \param[in] begin_ Pointer to the beginning of the \see{Pipeline::Stage} array.
+            /// \param[in] end_ Pointer to the end of the \see{Pipeline::Stage} array.
+            /// \param[in] name_ \see{Pipeline} name.
+            /// \param[in] type_ \see{Pipeline} type.
+            /// \param[in] maxPendingJobs_ Max pending \see{Pipeline} jobs.
+            /// \param[in] workerCount_ Number of worker threads service the \see{Pipeline}.
+            /// \param[in] workerPriority_ \see{Pipeline} worker thread priority.
+            /// \param[in] workerAffinity_ \see{Pipeline} worker thread processor affinity.
+            /// \param[in] workerCallback_ Called to initialize/uninitialize the \see{Pipeline}
+            /// thread.
+            static void Parameterize (
+                ui32 minPipelines_,
+                ui32 maxPipelines_,
+                const Pipeline::Stage *begin_,
+                const Pipeline::Stage *end_,
+                const std::string &name_ = std::string (),
+                RunLoop::Type type_ = RunLoop::TYPE_FIFO,
+                ui32 maxPendingJobs_ = UI32_MAX,
+                ui32 workerCount_ = 1,
+                i32 workerPriority_ = THEKOGANS_UTIL_NORMAL_THREAD_PRIORITY,
+                ui32 workerAffinity_ = THEKOGANS_UTIL_MAX_THREAD_AFFINITY,
+                RunLoop::WorkerCallback *workerCallback_ = 0);
+
+            /// \brief
+            /// Create a global \see{PipelinePool} with custom ctor arguments.
+            /// \return A global \see{PipelinePool} with custom ctor arguments.
+            PipelinePool *operator () ();
+        };
+
+        /// \struct GlobalPipelinePool PipelinePool.h thekogans/util/PipelinePool.h
+        ///
+        /// \brief
+        /// A global \see{PipelinePool} instance. The \see{PipelinePool} is
+        /// designed to be as flexible as possible. To be useful in different
+        /// situations the \see{PipelinePool}'s min/max worker count needs to
+        /// be parametrized as we might need different pools running different
+        /// counts at different worker priorities. That said, the most basic
+        /// (and the most useful) use case will have a single pool using the
+        /// defaults. This struct exists to aid in that. If all you need is a
+        /// global \see{PipelinePool} then GlobalPipelinePool::Instance () will
+        /// do the trick.
+        struct _LIB_THEKOGANS_UTIL_DECL GlobalPipelinePool :
+            public Singleton<PipelinePool, SpinLock, GlobalPipelinePoolCreateInstance> {};
+
+    } // namespace util
+} // namespace thekogans
+
+#endif // !defined (__thekogans_util_PipelinePool_h)

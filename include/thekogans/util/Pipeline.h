@@ -130,10 +130,10 @@ namespace thekogans {
             /// \brief
             /// A pipeline job. Since a pipeline is a collection
             /// of \see{JobQueue}s, the Pipeline::Job derives form
-            /// RunLoop::Job. RunLoop::Job::SetStatus is used
-            /// to shepherd the job down the pipeline.
-            /// Pipeline::Job Begin and End are provided
-            /// to perform one time initialization/tear down.
+            /// RunLoop::Job. RunLoop::Job::SetState is used to
+            /// shepherd the job down the pipeline. Pipeline::Job
+            /// Begin and End are provided to perform one time
+            /// initialization/tear down.
             struct _LIB_THEKOGANS_UTIL_DECL Job :
                     public RunLoop::Job,
                     public JobList::Node {
@@ -346,18 +346,18 @@ namespace thekogans {
             /// \param[in] workerAffinity_ Worker thread processor affinity.
             /// \param[in] workerCallback_ Called to initialize/uninitialize
             /// the worker thread.
-            /// NOTE: If you create a pipeline without stages, you will have
-            /// to call AddStage and Start (below) manually.
+            /// \param[in] callStart true == Call Start.
             Pipeline (
-                const Stage *begin = 0,
-                const Stage *end = 0,
+                const Stage *begin,
+                const Stage *end,
                 const std::string &name_ = std::string (),
                 RunLoop::Type type_ = RunLoop::TYPE_FIFO,
                 ui32 maxPendingJobs_ = UI32_MAX,
                 ui32 workerCount_ = 1,
                 i32 workerPriority_ = THEKOGANS_UTIL_NORMAL_THREAD_PRIORITY,
                 ui32 workerAffinity_ = THEKOGANS_UTIL_MAX_THREAD_AFFINITY,
-                RunLoop::WorkerCallback *workerCallback_ = 0);
+                RunLoop::WorkerCallback *workerCallback_ = 0,
+                bool callStart = true);
             /// \brief
             /// dtor. Stop the pipeline.
             virtual ~Pipeline () {
@@ -389,11 +389,6 @@ namespace thekogans {
                 const TimeSpec &sleepTimeSpec = TimeSpec::FromMilliseconds (50),
                 const TimeSpec &waitTimeSpec = TimeSpec::FromSeconds (3));
 
-            /// \brief
-            /// Add a stage to the pipeline.
-            /// NOTE: You can't add a stage to a running pipeline.
-            /// \param[in] stage Stage to add.
-            void AddStage (const Stage &stage);
             /// \brief
             /// Return the stats for a given pipeline stage.
             /// \return Stats corresponding to the given pipeline stage.
@@ -582,8 +577,8 @@ namespace thekogans {
             /// NOTE: If you create the global pipeline without stages, you will have
             /// to call Pipeline::AddStage and Pipeline::Start manually.
             static void Parameterize (
-                const Pipeline::Stage *begin_ = 0,
-                const Pipeline::Stage *end_ = 0,
+                const Pipeline::Stage *begin_,
+                const Pipeline::Stage *end_,
                 const std::string &name_ = std::string (),
                 RunLoop::Type type_ = RunLoop::TYPE_FIFO,
                 ui32 maxPendingJobs_ = UI32_MAX,

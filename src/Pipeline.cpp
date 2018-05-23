@@ -108,7 +108,8 @@ namespace thekogans {
                 ui32 workerCount_,
                 i32 workerPriority_,
                 ui32 workerAffinity_,
-                RunLoop::WorkerCallback *workerCallback_) :
+                RunLoop::WorkerCallback *workerCallback_,
+                bool callStart) :
                 id (GUID::FromRandom ().ToString ()),
                 name (name_),
                 type (type_),
@@ -120,22 +121,23 @@ namespace thekogans {
                 workerPriority (workerPriority_),
                 workerAffinity (workerAffinity_),
                 workerCallback (workerCallback_) {
-            if ((type == RunLoop::TYPE_FIFO || type == RunLoop::TYPE_LIFO) &&
+            if (begin != 0 && end != 0 &&
+                    (type == RunLoop::TYPE_FIFO || type == RunLoop::TYPE_LIFO) &&
                     maxPendingJobs == 0 && workerCount > 0) {
-                if (begin != 0 && end != 0) {
-                    for (; begin != end; ++begin) {
-                        stages.push_back (
-                            JobQueue::Ptr (
-                                new JobQueue (
-                                    begin->name,
-                                    begin->type,
-                                    begin->maxPendingJobs,
-                                    begin->workerCount,
-                                    begin->workerPriority,
-                                    begin->workerAffinity,
-                                    begin->workerCallback,
-                                    false)));
-                    }
+                for (; begin != end; ++begin) {
+                    stages.push_back (
+                        JobQueue::Ptr (
+                            new JobQueue (
+                                begin->name,
+                                begin->type,
+                                begin->maxPendingJobs,
+                                begin->workerCount,
+                                begin->workerPriority,
+                                begin->workerAffinity,
+                                begin->workerCallback,
+                                false)));
+                }
+                if (callStart) {
                     Start ();
                 }
             }
@@ -169,29 +171,6 @@ namespace thekogans {
             else {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
                     THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
-            }
-        }
-
-        void Pipeline::AddStage (const Stage &stage) {
-            LockGuard<Mutex> guard (workersMutex);
-            if (!IsRunning ()) {
-                stages.push_back (
-                    JobQueue::Ptr (
-                        new JobQueue (
-                            stage.name,
-                            stage.type,
-                            stage.maxPendingJobs,
-                            stage.workerCount,
-                            stage.workerPriority,
-                            stage.workerAffinity,
-                            stage.workerCallback,
-                            false)));
-            }
-            else {
-                THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                    "Can't add a stage to a running pipeline (%s:%s), call Stop first.",
-                    name.c_str (),
-                    id.c_str ());
             }
         }
 
@@ -578,28 +557,41 @@ namespace thekogans {
                 i32 workerPriority_,
                 ui32 workerAffinity_,
                 RunLoop::WorkerCallback *workerCallback_) {
-            begin = begin_;
-            end = end_;
-            name = name_;
-            type = type_;
-            maxPendingJobs = maxPendingJobs_;
-            workerCount = workerCount_;
-            workerPriority = workerPriority_;
-            workerAffinity = workerAffinity_;
-            workerCallback = workerCallback_;
+            if (begin_ != 0 && end_ != 0) {
+                begin = begin_;
+                end = end_;
+                name = name_;
+                type = type_;
+                maxPendingJobs = maxPendingJobs_;
+                workerCount = workerCount_;
+                workerPriority = workerPriority_;
+                workerAffinity = workerAffinity_;
+                workerCallback = workerCallback_;
+            }
+            else {
+                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
+            }
         }
 
         Pipeline *GlobalPipelineCreateInstance::operator () () {
-            return new Pipeline (
-                begin,
-                end,
-                name,
-                type,
-                maxPendingJobs,
-                workerCount,
-                workerPriority,
-                workerAffinity,
-                workerCallback);
+            if (begin != 0 && end != 0) {
+                return new Pipeline (
+                    begin,
+                    end,
+                    name,
+                    type,
+                    maxPendingJobs,
+                    workerCount,
+                    workerPriority,
+                    workerAffinity,
+                    workerCallback);
+            }
+            else {
+                THEKOGANS_UTIL_THROW_STRING_EXCEPTION ("%s",
+                    "Must provide GlobalPipeline stages. "
+                    "Call GlobalPipelineCreateInstance::Parameterize.");
+            }
         }
 
     } // namespace util
