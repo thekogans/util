@@ -546,6 +546,7 @@ namespace thekogans {
         i32 GlobalPipelineCreateInstance::workerPriority = THEKOGANS_UTIL_NORMAL_THREAD_PRIORITY;
         ui32 GlobalPipelineCreateInstance::workerAffinity = THEKOGANS_UTIL_MAX_THREAD_AFFINITY;
         RunLoop::WorkerCallback *GlobalPipelineCreateInstance::workerCallback = 0;
+        bool GlobalPipelineCreateInstance::callStart = true;
 
         void GlobalPipelineCreateInstance::Parameterize (
                 const Pipeline::Stage *begin_,
@@ -556,7 +557,8 @@ namespace thekogans {
                 ui32 workerCount_,
                 i32 workerPriority_,
                 ui32 workerAffinity_,
-                RunLoop::WorkerCallback *workerCallback_) {
+                RunLoop::WorkerCallback *workerCallback_,
+                bool callStart_) {
             if (begin_ != 0 && end_ != 0) {
                 begin = begin_;
                 end = end_;
@@ -567,6 +569,7 @@ namespace thekogans {
                 workerPriority = workerPriority_;
                 workerAffinity = workerAffinity_;
                 workerCallback = workerCallback_;
+                callStart = callStart_;
             }
             else {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
@@ -585,7 +588,8 @@ namespace thekogans {
                     workerCount,
                     workerPriority,
                     workerAffinity,
-                    workerCallback);
+                    workerCallback,
+                    callStart);
             }
             else {
                 THEKOGANS_UTIL_THROW_STRING_EXCEPTION ("%s",

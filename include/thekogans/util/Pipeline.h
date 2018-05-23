@@ -560,6 +560,9 @@ namespace thekogans {
             /// \brief
             /// Called to initialize/uninitialize the worker thread.
             static RunLoop::WorkerCallback *workerCallback;
+            /// \brief
+            /// Call Start.
+            static bool callStart;
 
         public:
             /// \brief
@@ -574,8 +577,7 @@ namespace thekogans {
             /// \param[in] workerPriority_ Worker thread priority.
             /// \param[in] workerAffinity_ Worker thread processor affinity.
             /// \param[in] workerCallback_ Called to initialize/uninitialize the worker thread.
-            /// NOTE: If you create the global pipeline without stages, you will have
-            /// to call Pipeline::AddStage and Pipeline::Start manually.
+            /// \param[in] callStart_ Call Start.
             static void Parameterize (
                 const Pipeline::Stage *begin_,
                 const Pipeline::Stage *end_,
@@ -585,7 +587,8 @@ namespace thekogans {
                 ui32 workerCount_ = 1,
                 i32 workerPriority_ = THEKOGANS_UTIL_NORMAL_THREAD_PRIORITY,
                 ui32 workerAffinity_ = THEKOGANS_UTIL_MAX_THREAD_AFFINITY,
-                RunLoop::WorkerCallback *workerCallback_ = 0);
+                RunLoop::WorkerCallback *workerCallback_ = 0,
+                bool callStart_ = true);
 
             /// \brief
             /// Create a global pipeline with custom ctor arguments.
