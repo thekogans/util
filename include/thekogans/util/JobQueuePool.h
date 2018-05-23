@@ -251,12 +251,12 @@ namespace thekogans {
 
         private:
             /// \brief
-            /// Used by GetJobQueue to acquire a \see{JobQueue} from the pool.
+            /// Used by \see{GetJobQueue} to acquire a \see{JobQueue} from the pool.
             /// \return \see{JobQueue} pointer.
             JobQueue *AcquireJobQueue ();
             /// \brief
-            /// Used by JobQueue to release itself to the pool.
-            /// \param[in] jobQueue JobQueue to release.
+            /// Used by \see{JobQueue} to release itself to the pool.
+            /// \param[in] jobQueue \see{JobQueue} to release.
             void ReleaseJobQueue (JobQueue *jobQueue);
 
             /// \brief
