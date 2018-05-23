@@ -368,6 +368,10 @@ namespace thekogans {
         /// defaults. This struct exists to aid in that. If all you need is a
         /// global \see{PipelinePool} then GlobalPipelinePool::Instance () will
         /// do the trick.
+        /// IMPORTANT: Unlike some other global objects, you cannot use this one
+        /// without first calling GlobalPipelinePoolCreateInstance::Parameterize
+        /// first. This is because, at the very least, you need to provide the
+        /// stages that will be implemented by the pipelines in this pool.
         struct _LIB_THEKOGANS_UTIL_DECL GlobalPipelinePool :
             public Singleton<PipelinePool, SpinLock, GlobalPipelinePoolCreateInstance> {};
 

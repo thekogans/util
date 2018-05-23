@@ -342,6 +342,10 @@ namespace thekogans {
         /// defaults. This struct exists to aid in that. If all you need is a
         /// global \see{JobQueuePool} then GlobalJobQueuePool::Instance () will
         /// do the trick.
+        /// IMPORTANT: Unlike some other global objects, you cannot use this one
+        /// without first calling GlobalJobQueuePoolCreateInstance::Parameterize
+        /// first. This is because you need to provide the min and max \see{JobQueue}s
+        /// that this pool will manage.
         struct _LIB_THEKOGANS_UTIL_DECL GlobalJobQueuePool :
             public Singleton<JobQueuePool, SpinLock, GlobalJobQueuePoolCreateInstance> {};
 
