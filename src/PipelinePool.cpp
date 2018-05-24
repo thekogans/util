@@ -50,16 +50,19 @@ namespace thekogans {
                 workerPriority (workerPriority_),
                 workerAffinity (workerAffinity_),
                 workerCallback (workerCallback_),
+                idPool (0),
                 idle (mutex) {
             if (minPipelines <= maxPipelines && maxPipelines > 0) {
                 for (ui32 i = 0; i < minPipelines; ++i) {
                     std::string pipelineName;
                     if (!name.empty ()) {
-                        pipelineName = FormatString ("%s-%u", name.c_str (), i);
+                        pipelineName = FormatString (
+                            "%s-%u",
+                            name.c_str (),
+                            ++idPool);
                     }
                     availablePipelines.push_back (
                         new Pipeline (
-                            *this,
                             begin,
                             end,
                             pipelineName,
@@ -68,7 +71,8 @@ namespace thekogans {
                             workerCount,
                             workerPriority,
                             workerAffinity,
-                            workerCallback));
+                            workerCallback,
+                            *this));
                 }
             }
             else {
@@ -137,10 +141,9 @@ namespace thekogans {
                         pipelineName = FormatString (
                             "%s-%u",
                             name.c_str (),
-                            availablePipelines.size () + borrowedPipelines.size ());
+                            ++idPool);
                     }
                     pipeline = new Pipeline (
-                        *this,
                         begin,
                         end,
                         pipelineName,
@@ -149,7 +152,8 @@ namespace thekogans {
                         workerCount,
                         workerPriority,
                         workerAffinity,
-                        workerCallback);
+                        workerCallback,
+                        *this);
                 }
                 if (pipeline != 0) {
                     borrowedPipelines.push_back (pipeline);
@@ -167,6 +171,7 @@ namespace thekogans {
                 // is borrowed from this pool, it will be the last
                 // one used, and it's cache will be nice and warm.
                 availablePipelines.push_front (pipeline);
+                // If the pool is idle, see if we need to remove excess pipelines.
                 if (borrowedPipelines.empty ()) {
                     if (availablePipelines.size () > minPipelines) {
                         struct DeleteCallback : public PipelineList::Callback {
@@ -254,7 +259,7 @@ namespace thekogans {
             }
             else {
                 THEKOGANS_UTIL_THROW_STRING_EXCEPTION ("%s",
-                    "Must provide GlobalPipelinePool minPipelines and maxPipelines. "
+                    "Must provide GlobalPipelinePool minPipelines, maxPipelines, begin and end. "
                     "Call GlobalPipelinePoolCreateInstance::Parameterize.");
             }
         }

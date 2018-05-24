@@ -138,7 +138,6 @@ namespace thekogans {
             public:
                 /// \brief
                 /// ctor.
-                /// \param[in] jobQueuePool_ JobQueuePool to which this jobQueue belongs.
                 /// \param[in] name \see{JobQueue} name.
                 /// \param[in] type \see{JobQueue} type.
                 /// \param[in] maxPendingJobs \see{JobQueue} max pending jobs.
@@ -147,15 +146,16 @@ namespace thekogans {
                 /// \param[in] workerAffinity \see{JobQueue} worker thread processor affinity.
                 /// \param[in] workerCallback Called to initialize/uninitialize the
                 /// \see{JobQueue} worker thread(s).
+                /// \param[in] jobQueuePool_ JobQueuePool to which this jobQueue belongs.
                 JobQueue (
-                    JobQueuePool &jobQueuePool_,
-                    const std::string &name = std::string (),
-                    Type type = TYPE_FIFO,
-                    ui32 maxPendingJobs = UI32_MAX,
-                    ui32 workerCount = 1,
-                    i32 workerPriority = THEKOGANS_UTIL_NORMAL_THREAD_PRIORITY,
-                    ui32 workerAffinity = THEKOGANS_UTIL_MAX_THREAD_AFFINITY,
-                    WorkerCallback *workerCallback = 0) :
+                    const std::string &name,
+                    Type type,
+                    ui32 maxPendingJobs,
+                    ui32 workerCount,
+                    i32 workerPriority,
+                    ui32 workerAffinity,
+                    WorkerCallback *workerCallback,
+                    JobQueuePool &jobQueuePool_) :
                     util::JobQueue (
                         name,
                         type,
@@ -188,6 +188,9 @@ namespace thekogans {
             /// \brief
             /// List of workers.
             JobQueueList borrowedJobQueues;
+            /// \brief
+            /// \see{JobQueue} id pool.
+            THEKOGANS_UTIL_ATOMIC<ui32> idPool;
             /// \brief
             /// Synchronization mutex.
             Mutex mutex;

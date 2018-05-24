@@ -46,23 +46,27 @@ namespace thekogans {
                 workerPriority (workerPriority_),
                 workerAffinity (workerAffinity_),
                 workerCallback (workerCallback_),
+                idPool (0),
                 idle (mutex) {
             if (minJobQueues <= maxJobQueues && maxJobQueues > 0) {
                 for (ui32 i = 0; i < minJobQueues; ++i) {
                     std::string jobQueueName;
                     if (!name.empty ()) {
-                        jobQueueName = FormatString ("%s-%u", name.c_str (), i);
+                        jobQueueName = FormatString (
+                            "%s-%u",
+                            name.c_str (),
+                            ++idPool);
                     }
                     availableJobQueues.push_back (
                         new JobQueue (
-                            *this,
                             jobQueueName,
                             type,
                             maxPendingJobs,
                             workerCount,
                             workerPriority,
                             workerAffinity,
-                            workerCallback));
+                            workerCallback,
+                            *this));
                 }
             }
             else {
@@ -131,17 +135,17 @@ namespace thekogans {
                         jobQueueName = FormatString (
                             "%s-%u",
                             name.c_str (),
-                            availableJobQueues.size () + borrowedJobQueues.size ());
+                            ++idPool);
                     }
                     jobQueue = new JobQueue (
-                        *this,
                         jobQueueName,
                         type,
                         maxPendingJobs,
                         workerCount,
                         workerPriority,
                         workerAffinity,
-                        workerCallback);
+                        workerCallback,
+                        *this);
                 }
                 if (jobQueue != 0) {
                     borrowedJobQueues.push_back (jobQueue);
@@ -159,6 +163,7 @@ namespace thekogans {
                 // is borrowed from this pool, it will be the last
                 // one used, and it's cache will be nice and warm.
                 availableJobQueues.push_front (jobQueue);
+                // If the pool is idle, see if we need to remove excess job queues.
                 if (borrowedJobQueues.empty ()) {
                     if (availableJobQueues.size () > minJobQueues) {
                         struct DeleteCallback : public JobQueueList::Callback {

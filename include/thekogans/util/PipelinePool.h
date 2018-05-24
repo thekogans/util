@@ -144,7 +144,6 @@ namespace thekogans {
             public:
                 /// \brief
                 /// ctor.
-                /// \param[in] pipelinePool_ PipelinePool to which this pipeline belongs.
                 /// \param[in] begin Pointer to the beginning of the \see{Pipeline::Stage} array.
                 /// \param[in] end Pointer to the end of the \see{Pipeline::Stage} array.
                 /// \param[in] name \see{Pipeline} name.
@@ -155,17 +154,18 @@ namespace thekogans {
                 /// \param[in] workerAffinity \see{Pipeline} worker thread processor affinity.
                 /// \param[in] workerCallback Called to initialize/uninitialize the
                 /// \see{Pipeline} worker thread(s).
+                /// \param[in] pipelinePool_ PipelinePool to which this pipeline belongs.
                 Pipeline (
-                    PipelinePool &pipelinePool_,
                     const util::Pipeline::Stage *begin,
                     const util::Pipeline::Stage *end,
-                    const std::string &name = std::string (),
-                    RunLoop::Type type = RunLoop::TYPE_FIFO,
-                    ui32 maxPendingJobs = UI32_MAX,
-                    ui32 workerCount = 1,
-                    i32 workerPriority = THEKOGANS_UTIL_NORMAL_THREAD_PRIORITY,
-                    ui32 workerAffinity = THEKOGANS_UTIL_MAX_THREAD_AFFINITY,
-                    RunLoop::WorkerCallback *workerCallback = 0) :
+                    const std::string &name,
+                    RunLoop::Type type,
+                    ui32 maxPendingJobs,
+                    ui32 workerCount,
+                    i32 workerPriority,
+                    ui32 workerAffinity,
+                    RunLoop::WorkerCallback *workerCallback,
+                    PipelinePool &pipelinePool_) :
                     util::Pipeline (
                         begin,
                         end,
@@ -200,6 +200,9 @@ namespace thekogans {
             /// \brief
             /// List of workers.
             PipelineList borrowedPipelines;
+            /// \brief
+            /// \see{Pipeline} id pool.
+            THEKOGANS_UTIL_ATOMIC<ui32> idPool;
             /// \brief
             /// Synchronization mutex.
             Mutex mutex;
