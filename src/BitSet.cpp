@@ -78,6 +78,7 @@ namespace thekogans {
         void BitSet::Set () {
             if (size > 0) {
                 memset (&bits[0], 0xff, bits.size () * UI32_SIZE);
+                Trim ();
             }
             else {
                 THEKOGANS_UTIL_THROW_STRING_EXCEPTION (

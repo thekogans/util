@@ -106,7 +106,7 @@ namespace thekogans {
                 ui32 crc) {
             if (buffer != 0 && length > 0) {
                 const ui8 *ptr = (const ui8 *)buffer;
-                crc = crc ^ ~0U;
+                crc ^= ~0U;
                 while (length--) {
                     crc = crc32Table[(crc ^ *ptr++) & 0xff] ^ (crc >> 8);
                 }

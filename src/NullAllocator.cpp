@@ -23,12 +23,6 @@ namespace thekogans {
 
         NullAllocator NullAllocator::Global;
 
-        NullAllocator::NullAllocator () {
-        }
-
-        NullAllocator::~NullAllocator () {
-        }
-
         void *NullAllocator::Alloc (std::size_t size) {
             if (size > 0) {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (

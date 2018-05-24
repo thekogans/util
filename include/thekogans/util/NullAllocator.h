@@ -41,13 +41,6 @@ namespace thekogans {
             static NullAllocator Global;
 
             /// \brief
-            /// ctor.
-            NullAllocator ();
-            /// \brief
-            /// dtor.
-            ~NullAllocator ();
-
-            /// \brief
             /// Allocate a block.
             /// \param[in] size Size of block to allocate.
             /// \return 0.
