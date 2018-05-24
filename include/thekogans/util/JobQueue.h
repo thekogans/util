@@ -146,7 +146,7 @@ namespace thekogans {
 
             // RunLoop
             /// \brief
-            /// Create the workers, and start waiting for jobs. The
+            /// Create the worker(s), and start waiting for jobs. The
             /// ctor calls this member, but if you ever need to stop
             /// the queue, you need to call Start manually to restart it.
             virtual void Start ();

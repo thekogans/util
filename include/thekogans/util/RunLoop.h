@@ -390,6 +390,10 @@ namespace thekogans {
                         totalTime (totalTime_) {}
 
                     /// \brief
+                    /// Reset the job stats.
+                    void Reset ();
+
+                    /// \brief
                     /// Return the XML representation of the Job stats.
                     /// \param[in] name Job stats name (last, min, max).
                     /// \param[in] indentationLevel Pretty print parameter. If
@@ -416,6 +420,10 @@ namespace thekogans {
                 Stats () :
                     totalJobs (0),
                     totalJobTime (0) {}
+
+                /// \brief
+                /// Reset the RunLoop stats.
+                void Reset ();
 
                 /// \brief
                 /// Return the XML representation of the Stats.
@@ -542,7 +550,7 @@ namespace thekogans {
             /// \brief
             /// ctor.
             /// \param[in] name_ RunLoop name.
-            /// \param[in] type_ RunLoop queue type.
+            /// \param[in] type_ RunLoop type.
             /// \param[in] maxPendingJobs_ Max pending run loop jobs.
             /// \param[in] done_ true == Must call Start.
             RunLoop (
@@ -665,7 +673,7 @@ namespace thekogans {
             /// \param[in] timeSpec How long to wait for the job to complete.
             /// IMPORTANT: timeSpec is a relative value.
             /// \return true == completed,
-            /// false == job with a given id was not in the queue or timed out.
+            /// false == job with a given id was not in the run loop or timed out.
             virtual bool WaitForJob (
                 const Job::Id &jobId,
                 const TimeSpec &timeSpec = TimeSpec::Infinite);
@@ -680,7 +688,7 @@ namespace thekogans {
                 const EqualityTest &equalityTest,
                 const TimeSpec &timeSpec = TimeSpec::Infinite);
             /// \brief
-            /// Blocks until all jobs are complete and the queue is empty.
+            /// Blocks until all jobs are complete and the run loop is empty.
             /// \param[in] timeSpec How long to wait for the jobs to complete.
             /// IMPORTANT: timeSpec is a relative value.
             /// \return true == RunLoop is idle, false == Timed out.
@@ -704,6 +712,9 @@ namespace thekogans {
             /// Return a snapshot of the run loop stats.
             /// \return A snapshot of the run loop stats.
             virtual Stats GetStats ();
+            /// \brief
+            /// Reset the run loop stats.
+            virtual void ResetStats ();
 
             /// \brief
             /// Return true if Start was called.

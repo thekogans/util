@@ -88,6 +88,13 @@ namespace thekogans {
         }
     #endif // defined (TOOLCHAIN_OS_Windows)
 
+        void RunLoop::Stats::Job::Reset () {
+            id.clear ();
+            startTime = 0;
+            endTime = 0;
+            totalTime = 0;
+        }
+
         std::string RunLoop::Stats::Job::ToString (
                 const std::string &name,
                 ui32 indentationLevel) const {
@@ -98,6 +105,14 @@ namespace thekogans {
             attributes.push_back (Attribute ("endTime", ui64Tostring (endTime)));
             attributes.push_back (Attribute ("totalTime", ui64Tostring (totalTime)));
             return OpenTag (indentationLevel, name.c_str (), attributes, true, true);
+        }
+
+        void RunLoop::Stats::Reset () {
+            totalJobs = 0;
+            totalJobTime = 0;
+            lastJob.Reset ();
+            minJob.Reset ();
+            maxJob.Reset ();
         }
 
         std::string RunLoop::Stats::ToString (
@@ -457,6 +472,11 @@ namespace thekogans {
         RunLoop::Stats RunLoop::GetStats () {
             LockGuard<Mutex> guard (jobsMutex);
             return stats;
+        }
+
+        void RunLoop::ResetStats () {
+            LockGuard<Mutex> guard (jobsMutex);
+            stats.Reset ();
         }
 
         bool RunLoop::IsRunning () {

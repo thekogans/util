@@ -175,7 +175,6 @@ namespace thekogans {
         }
 
         RunLoop::Stats Pipeline::GetStageStats (std::size_t stage) {
-            LockGuard<Mutex> guard (workersMutex);
             if (stage < stages.size ()) {
                 return stages[stage]->GetStats ();
             }
@@ -186,7 +185,6 @@ namespace thekogans {
         }
 
         void Pipeline::GetStagesStats (std::vector<RunLoop::Stats> &stats) {
-            LockGuard<Mutex> guard (workersMutex);
             stats.resize (stages.size ());
             for (std::size_t i = 0, count = stages.size (); i < count; ++i) {
                 stats[i] = stages[i]->GetStats ();
@@ -194,28 +192,30 @@ namespace thekogans {
         }
 
         void Pipeline::Start () {
-            LockGuard<Mutex> guard (workersMutex);
-            bool expected = true;
-            if (done.compare_exchange_strong (expected, false)) {
-                for (std::size_t i = 0, count = stages.size (); i < count; ++i) {
-                    stages[i]->Start ();
-                }
-                for (ui32 i = 0; i < workerCount; ++i) {
-                    std::string workerName;
-                    if (!name.empty ()) {
-                        if (workerCount > 1) {
-                            workerName = FormatString ("%s-%u", name.c_str (), i);
+            for (std::size_t i = 0, count = stages.size (); i < count; ++i) {
+                stages[i]->Start ();
+            }
+            {
+                LockGuard<Mutex> guard (workersMutex);
+                bool expected = true;
+                if (done.compare_exchange_strong (expected, false)) {
+                    for (ui32 i = 0; i < workerCount; ++i) {
+                        std::string workerName;
+                        if (!name.empty ()) {
+                            if (workerCount > 1) {
+                                workerName = FormatString ("%s-%u", name.c_str (), i);
+                            }
+                            else {
+                                workerName = name;
+                            }
                         }
-                        else {
-                            workerName = name;
-                        }
+                        workers.push_back (
+                            new Worker (
+                                *this,
+                                workerName,
+                                workerPriority,
+                                workerAffinity));
                     }
-                    workers.push_back (
-                        new Worker (
-                            *this,
-                            workerName,
-                            workerPriority,
-                            workerAffinity));
                 }
             }
         }
@@ -225,26 +225,28 @@ namespace thekogans {
                 CancelAllJobs ();
                 WaitForIdle ();
             }
-            LockGuard<Mutex> guard (workersMutex);
-            bool expected = false;
-            if (done.compare_exchange_strong (expected, true)) {
-                jobsNotEmpty.SignalAll ();
-                struct Callback : public WorkerList::Callback {
-                    typedef WorkerList::Callback::result_type result_type;
-                    typedef WorkerList::Callback::argument_type argument_type;
-                    virtual result_type operator () (argument_type worker) {
-                        // Join the worker thread before deleting it to
-                        // let it's thread function finish it's tear down.
-                        worker->Wait ();
-                        delete worker;
-                        return true;
-                    }
-                } callback;
-                workers.clear (callback);
-                assert (runningJobs.empty ());
-                for (std::size_t i = 0, count = stages.size (); i < count; ++i) {
-                    stages[i]->Stop (cancelPendingJobs);
+            {
+                LockGuard<Mutex> guard (workersMutex);
+                bool expected = false;
+                if (done.compare_exchange_strong (expected, true)) {
+                    jobsNotEmpty.SignalAll ();
+                    struct Callback : public WorkerList::Callback {
+                        typedef WorkerList::Callback::result_type result_type;
+                        typedef WorkerList::Callback::argument_type argument_type;
+                        virtual result_type operator () (argument_type worker) {
+                            // Join the worker thread before deleting it to
+                            // let it's thread function finish it's tear down.
+                            worker->Wait ();
+                            delete worker;
+                            return true;
+                        }
+                    } callback;
+                    workers.clear (callback);
+                    assert (runningJobs.empty ());
                 }
+            }
+            for (std::size_t i = 0, count = stages.size (); i < count; ++i) {
+                stages[i]->Stop (cancelPendingJobs);
             }
         }
 
@@ -495,6 +497,16 @@ namespace thekogans {
         RunLoop::Stats Pipeline::GetStats () {
             LockGuard<Mutex> guard (jobsMutex);
             return stats;
+        }
+
+        void Pipeline::ResetStats () {
+            {
+                LockGuard<Mutex> guard (jobsMutex);
+                stats.Reset ();
+            }
+            for (std::size_t i = 0, count = stages.size (); i < count; ++i) {
+                stages[i]->ResetStats ();
+            }
         }
 
         bool Pipeline::IsRunning () {

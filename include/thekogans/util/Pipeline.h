@@ -265,7 +265,7 @@ namespace thekogans {
             /// Synchronization condition variable.
             Condition idle;
             /// \brief
-            /// Number of workers servicing the queue.
+            /// Number of workers servicing the pipeline.
             const ui32 workerCount;
             /// \brief
             /// \Worker thread priority.
@@ -290,9 +290,9 @@ namespace thekogans {
             /// \struct Pipeline::Worker Pipeline.h thekogans/util/Pipeline.h
             ///
             /// \brief
-            /// Worker takes pending jobs off the queue and
-            /// executes them. It then reports back to the
-            /// queue so that it can collect statistics.
+            /// Worker takes pending jobs off the pipeline queue and
+            /// executes them. It then reports back to the pipeline
+            /// so that it can collect statistics.
             struct Worker :
                     public Thread,
                     public WorkerList::Node {
@@ -453,7 +453,7 @@ namespace thekogans {
             /// \param[in] timeSpec How long to wait for the job to complete.
             /// IMPORTANT: timeSpec is a relative value.
             /// \return true == completed,
-            /// false == job with a given id was not in the queue or timed out.
+            /// false == job with a given id was not in the pipeline or timed out.
             bool WaitForJob (
                 const Job::Id &jobId,
                 const TimeSpec &timeSpec = TimeSpec::Infinite);
@@ -468,7 +468,7 @@ namespace thekogans {
                 const RunLoop::EqualityTest &equalityTest,
                 const TimeSpec &timeSpec = TimeSpec::Infinite);
             /// \brief
-            /// Blocks until all jobs are complete and the queue is empty.
+            /// Blocks until all jobs are complete and the pipeline is empty.
             /// \param[in] timeSpec How long to wait for the jobs to complete.
             /// IMPORTANT: timeSpec is a relative value.
             /// \return true == Pipeline is idle, false == Timed out.
@@ -492,6 +492,9 @@ namespace thekogans {
             /// Return a snapshot of the pipeline stats.
             /// \return A snapshot of the pipeline stats.
             RunLoop::Stats GetStats ();
+            /// \brief
+            /// Reset the pipeline stats.
+            void ResetStats ();
 
             /// \brief
             /// Return true if Start was called.
@@ -612,6 +615,9 @@ namespace thekogans {
         /// exists to aid in that. If all you need is a single pipeline where
         /// you can schedule jobs, then GlobalPipeline::Instance () will do
         /// the trick.
+        /// IMPORTANT: Don't forget to call GlobalPipelineCreateInstance::Parameterize
+        /// before the first call to GlobalPipeline::Instance to provide the global
+        /// pipeline stages.
         struct _LIB_THEKOGANS_UTIL_DECL GlobalPipeline :
             public Singleton<Pipeline, SpinLock, GlobalPipelineCreateInstance> {};
 
