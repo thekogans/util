@@ -154,7 +154,7 @@ namespace thekogans {
                 /// Job id.
                 const Id id;
                 /// \brief
-                /// RunLoop id.
+                /// RunLoop id on which the job is running.
                 RunLoop::Id runLoopId;
                 /// \brief
                 /// Job state.

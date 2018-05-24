@@ -414,12 +414,9 @@ namespace thekogans {
                         completedCallback.Wait (deadline - now);
                         now = GetCurrentTime ();
                     }
-                    if (!waitForJobCallback.jobs.empty ()) {
-                        return false;
-                    }
                 }
             }
-            return true;
+            return waitForJobCallback.jobs.empty ();
         }
 
         bool Pipeline::WaitForIdle (const TimeSpec &timeSpec) {
