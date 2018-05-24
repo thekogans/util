@@ -284,8 +284,6 @@ namespace thekogans {
             /// \param[in] eventProcessor_ Callback to process window events.
             /// \param[in] userData_ Optional user data passed to eventProcessor.
             /// \param[in] window_ Windows window.
-            /// NOTE: SystemRunLoop takes ownership of the passed in wnd_ and
-            /// will destroy it in it's dtor.
             SystemRunLoop (
                 const std::string &name = std::string (),
                 Type type = TYPE_FIFO,

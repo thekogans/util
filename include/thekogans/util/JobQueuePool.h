@@ -247,10 +247,7 @@ namespace thekogans {
             /// \brief
             /// Return true if this pool has no outstanding \see{JobQueue}s.
             /// \return true == this pool has no outstanding \see{JobQueue}s.
-            inline bool IsIdle () {
-                LockGuard<Mutex> guard (mutex);
-                return borrowedJobQueues.empty ();
-            }
+            bool IsIdle ();
 
         private:
             /// \brief

@@ -530,6 +530,8 @@ namespace thekogans {
         /// \brief
         /// Call GlobalPipelineCreateInstance::Parameterize before the first use of
         /// GlobalPipeline::Instance to supply custom arguments to GlobalPipeline ctor.
+        /// NOTE: The call to GlobalPipelineCreateInstance::Parameterize is NOT optional.
+        /// You must, at the very least, provide the stages that GlobalPipeline will implement.
 
         struct _LIB_THEKOGANS_UTIL_DECL GlobalPipelineCreateInstance {
         private:
@@ -566,7 +568,8 @@ namespace thekogans {
 
         public:
             /// \brief
-            /// Call before the first use of GlobalPipeline::Instance.
+            /// Call before the first use of GlobalPipeline::Instance to provide
+            /// custom ctor arguments to GlobalPipeline.
             /// \param[in] begin_ Pointer to the beginning of the Pipeline::Stage array.
             /// \param[in] end_ Pointer to the end of the Pipeline::Stage array.
             /// \param[in] name_ Pipeline name. If set, \see{Pipeline::Worker}

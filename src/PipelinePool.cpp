@@ -124,6 +124,11 @@ namespace thekogans {
             return borrowedPipelines.empty ();
         }
 
+        bool PipelinePool::IsIdle () {
+            LockGuard<Mutex> guard (mutex);
+            return borrowedPipelines.empty ();
+        }
+
         PipelinePool::Pipeline *PipelinePool::AcquirePipeline () {
             Pipeline *pipeline = 0;
             {

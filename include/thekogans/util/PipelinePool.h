@@ -263,10 +263,7 @@ namespace thekogans {
             /// \brief
             /// Return true if this pool has no outstanding \see{Pipeline}s.
             /// \return true == this pool has no outstanding \see{Pipeline}s.
-            inline bool IsIdle () {
-                LockGuard<Mutex> guard (mutex);
-                return borrowedPipelines.empty ();
-            }
+            bool IsIdle ();
 
         private:
             /// \brief

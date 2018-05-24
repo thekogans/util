@@ -37,7 +37,7 @@ namespace thekogans {
         void Pipeline::Job::SetState (State state_) {
             state = state_;
             if (IsRunning ()) {
-                if (stage == 0) {
+                if (stage == GetFirstStage ()) {
                     start = HRTimer::Click ();
                     Begin (pipeline.done);
                 }
@@ -48,7 +48,7 @@ namespace thekogans {
                 }
                 else {
                     if (!ShouldStop (pipeline.done) &&
-                            ((stage = GetNextStage()) < pipeline.stages.size ())) {
+                            ((stage = GetNextStage ()) < pipeline.stages.size ())) {
                         THEKOGANS_UTIL_TRY {
                             pipeline.stages[stage]->EnqJob (RunLoop::Job::Ptr (this));
                             return;
@@ -335,14 +335,14 @@ namespace thekogans {
             if (job.Get () != 0 && job->GetPipelineId () == id) {
                 if (timeSpec == TimeSpec::Infinite) {
                     while (!job->IsCompleted ()) {
-                        job->WaitCompleted ();
+                        job->Wait ();
                     }
                 }
                 else {
                     TimeSpec now = GetCurrentTime ();
                     TimeSpec deadline = now + timeSpec;
                     while (!job->IsCompleted () && deadline > now) {
-                        job->WaitCompleted (deadline - now);
+                        job->Wait (deadline - now);
                         now = GetCurrentTime ();
                     }
                 }
@@ -398,7 +398,7 @@ namespace thekogans {
                         return false;
                     }
                     bool Wait (const TimeSpec &timeSpec = TimeSpec::Infinite) {
-                        return jobs.empty () || jobs.front ()->WaitCompleted (timeSpec);
+                        return jobs.empty () || jobs.front ()->Wait (timeSpec);
                     }
                 } completedCallback (waitForJobCallback.jobs);
                 if (timeSpec == TimeSpec::Infinite) {

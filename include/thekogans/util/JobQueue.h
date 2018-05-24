@@ -206,7 +206,8 @@ namespace thekogans {
 
         public:
             /// \brief
-            /// Call before the first use of GlobalJobQueue::Instance.
+            /// Call before the first use of GlobalJobQueue::Instance to provide
+            /// custom ctor arguments to GlobalJobQueue.
             /// \param[in] name_ JobQueue name. If set, \see{JobQueue::Worker}
             /// threads will be named name-%d.
             /// \param[in] type_ Queue type.

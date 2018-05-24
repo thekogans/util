@@ -297,14 +297,14 @@ namespace thekogans {
             if (job.Get () != 0 && job->GetRunLoopId () == id) {
                 if (timeSpec == TimeSpec::Infinite) {
                     while (!job->IsCompleted ()) {
-                        job->WaitCompleted ();
+                        job->Wait ();
                     }
                 }
                 else {
                     TimeSpec now = GetCurrentTime ();
                     TimeSpec deadline = now + timeSpec;
                     while (!job->IsCompleted () && deadline > now) {
-                        job->WaitCompleted (deadline - now);
+                        job->Wait (deadline - now);
                         now = GetCurrentTime ();
                     }
                 }
@@ -360,7 +360,7 @@ namespace thekogans {
                         return false;
                     }
                     bool Wait (const TimeSpec &timeSpec = TimeSpec::Infinite) {
-                        return jobs.empty () || jobs.front ()->WaitCompleted (timeSpec);
+                        return jobs.empty () || jobs.front ()->Wait (timeSpec);
                     }
                 } completedCallback (waitForJobCallback.jobs);
                 if (timeSpec == TimeSpec::Infinite) {

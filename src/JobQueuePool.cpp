@@ -118,6 +118,11 @@ namespace thekogans {
             return borrowedJobQueues.empty ();
         }
 
+        bool JobQueuePool::IsIdle () {
+            LockGuard<Mutex> guard (mutex);
+            return borrowedJobQueues.empty ();
+        }
+
         JobQueuePool::JobQueue *JobQueuePool::AcquireJobQueue () {
             JobQueue *jobQueue = 0;
             {

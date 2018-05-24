@@ -120,7 +120,7 @@ namespace thekogans {
         ///         }
         ///         THEKOGANS_UTIL_CATCH_AND_LOG
         ///         // This call to reset is very important as it allows the thread that
-        ///         // created the SystemRunLoop to destroy it too. This is especially
+        ///         // created the DefaultRunLoop to destroy it too. This is especially
         ///         // important under X as Xlib is not thread safe.
         ///         runLoop.Reset ();
         ///     }

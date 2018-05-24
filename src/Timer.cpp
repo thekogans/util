@@ -152,7 +152,7 @@ namespace thekogans {
                 // previously scheduled Alarm job.
                 if (timer.alarmJob != 0) {
                     timer.alarmJob->Cancel ();
-                    timer.alarmJob->WaitCompleted ();
+                    timer.alarmJob->Wait ();
                 }
                 // StartTimer can be called repeatedly without calling StopTimer.
                 // This behavior is desirable when adjusting an already existing
@@ -179,7 +179,7 @@ namespace thekogans {
                 if (timer.id != NIDX64) {
                     if (timer.alarmJob != 0) {
                         timer.alarmJob->Cancel ();
-                        timer.alarmJob->WaitCompleted ();
+                        timer.alarmJob->Wait ();
                     }
                     keventStruct event;
                     keventSet (&event, timer.id, EVFILT_TIMER, EV_DELETE, 0, 0, 0);

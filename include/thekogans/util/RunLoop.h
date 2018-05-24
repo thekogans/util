@@ -254,7 +254,7 @@ namespace thekogans {
                 /// \param[in] timeSpec How long to wait for the job to complete.
                 /// IMPORTANT: timeSpec is a relative value.
                 /// \return true == Wait completed successfully, false == Timed out.
-                inline bool WaitCompleted (const TimeSpec &timeSpec = TimeSpec::Infinite) {
+                inline bool Wait (const TimeSpec &timeSpec = TimeSpec::Infinite) {
                     return completed.Wait (timeSpec);
                 }
 
