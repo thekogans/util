@@ -123,7 +123,7 @@ namespace thekogans {
                 workerCallback (workerCallback_) {
             if (begin != 0 && end != 0 &&
                     (type == RunLoop::TYPE_FIFO || type == RunLoop::TYPE_LIFO) &&
-                    maxPendingJobs == 0 && workerCount > 0) {
+                    maxPendingJobs > 0 && workerCount > 0) {
                 for (; begin != end; ++begin) {
                     stages.push_back (
                         JobQueue::Ptr (
