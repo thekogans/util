@@ -183,13 +183,16 @@ namespace thekogans {
             #pragma warning (pop)
         #endif // defined (_MSC_VER)
             /// \brief
-            /// List of workers.
+            /// List of available \see{JobQueue}s.
             JobQueueList availableJobQueues;
             /// \brief
-            /// List of workers.
+            /// List of borrowed \see{JobQueue}s.
             JobQueueList borrowedJobQueues;
             /// \brief
-            /// \see{JobQueue} id pool.
+            /// \see{JobQueue} id pool. If !name.empty (),
+            /// each \see{JobQueue} created by this pool
+            /// will have the following name:
+            /// FormatString ("%s-%u", name.c_str (), ++idPool);
             THEKOGANS_UTIL_ATOMIC<ui32> idPool;
             /// \brief
             /// Synchronization mutex.

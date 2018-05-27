@@ -195,13 +195,16 @@ namespace thekogans {
             #pragma warning (pop)
         #endif // defined (_MSC_VER)
             /// \brief
-            /// List of workers.
+            /// List of available \see{Pipeline}s.
             PipelineList availablePipelines;
             /// \brief
-            /// List of workers.
+            /// List of borrowed \see{Pipeline}s.
             PipelineList borrowedPipelines;
             /// \brief
-            /// \see{Pipeline} id pool.
+            /// \see{Pipeline} id pool. If !name.empty (),
+            /// each \see{Pipeline} created by this pool
+            /// will have the following name:
+            /// FormatString ("%s-%u", name.c_str (), ++idPool);
             THEKOGANS_UTIL_ATOMIC<ui32> idPool;
             /// \brief
             /// Synchronization mutex.
