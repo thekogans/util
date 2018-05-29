@@ -189,7 +189,7 @@ namespace thekogans {
                                 delete pipeline;
                                 return --deleteCount > 0;
                             }
-                        } delete Callback (availablePipelines.size () - minPipelines);
+                        } deleteCallback (availablePipelines.size () - minPipelines);
                         // Walk t he pool in reverse to delete the least recently used pipelines.
                         availablePipelines.for_each (deleteCallback, true);
                     }
