@@ -227,7 +227,8 @@ namespace thekogans {
         public:
             /// \brief
             /// ctor.
-            Exception () {}
+            Exception () :
+                errorCode (0) {}
             /// \brief
             /// ctor.
             /// \param[in] file Translation unit of this exception.
