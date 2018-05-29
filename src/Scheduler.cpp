@@ -92,7 +92,7 @@ namespace thekogans {
 
                         virtual void Execute (const THEKOGANS_UTIL_ATOMIC<bool> &done) throw () {
                             // Use a warm worker to minimize cache thrashing.
-                            while (!done) {
+                            while (!ShouldStop (done)) {
                                 Scheduler::JobQueue *jobQueue = scheduler.GetNextJobQueue ();
                                 if (jobQueue != 0) {
                                     RunLoop::Job *job = jobQueue->DeqJob ();

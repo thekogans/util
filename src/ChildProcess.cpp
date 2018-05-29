@@ -561,7 +561,7 @@ namespace thekogans {
                     detached (detached_) {}
                 // RunLoop::Job
                 virtual void Execute (const THEKOGANS_UTIL_ATOMIC<bool> &done) throw () {
-                    if (!done) {
+                    if (!ShouldStop (done)) {
                         THEKOGANS_UTIL_TRY {
                             childProcess.Spawn (detached);
                         }
@@ -583,7 +583,7 @@ namespace thekogans {
                     status (status_) {}
                 // RunLoop::Job
                 virtual void Execute (const THEKOGANS_UTIL_ATOMIC<bool> &done) throw () {
-                    if (!done) {
+                    if (!ShouldStop (done)) {
                         THEKOGANS_UTIL_TRY {
                             status = childProcess.Exec ();
                         }

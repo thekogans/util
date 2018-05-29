@@ -76,7 +76,7 @@ namespace thekogans {
         ///             THEKOGANS_UTIL_HRTIMER_MGR_SCOPE ("categories");
         ///             VolumeDB volumeDB (requestQueue, false);
         ///             for (thekogans::util::i32 category = db::FolderItem::CATEGORY_FIRST;
-        ///                     !done && category < db::FolderItem::CATEGORY_LAST;
+        ///                     !ShouldStop (done) && category < db::FolderItem::CATEGORY_LAST;
         ///                     ++category) {
         ///                 ExtractCategory (THEKOGANS_UTIL_HRTIMER_MGR_GET_COMMA
         ///                     volumeDB, category, done);
