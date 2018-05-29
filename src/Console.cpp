@@ -211,7 +211,7 @@ namespace thekogans {
                         color (color_) {}
 
                     virtual void Execute (const THEKOGANS_UTIL_ATOMIC<bool> &done) throw () {
-                        if (!done) {
+                        if (!ShouldStop (done)) {
                             PrintStringWithColor (str, where, color);
                         }
                     }
