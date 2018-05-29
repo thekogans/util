@@ -324,6 +324,27 @@ namespace thekogans {
         }
     #endif // defined (THEKOGANS_UTIL_HAVE_ZLIB)
 
+    #if defined (TOOLCHAIN_OS_Windows)
+        HGLOBAL Buffer::ToHGLOBAL (UINT flags) const {
+            HGLOBAL global = 0;
+            if (GetDataAvailableForReading () > 0) {
+                global = GlobalAlloc (flags, GetDataAvailableForReading ());
+                if (global != 0) {
+                    memcpy (
+                        GlobalLock (global),
+                        GetReadPtr (),
+                        GetDataAvailableForReading ());
+                    GlobalUnlock (global);
+                }
+                else {
+                    THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                        THEKOGANS_UTIL_OS_ERROR_CODE);
+                }
+            }
+            return global;
+        }
+    #endif // defined (TOOLCHAIN_OS_Windows)
+
         void SecureBuffer::Resize (
                 ui32 length,
                 Allocator * /*allocator*/) {

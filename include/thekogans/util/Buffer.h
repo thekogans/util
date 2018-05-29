@@ -18,6 +18,17 @@
 #if !defined (__thekogans_util_Buffer_h)
 #define __thekogans_util_Buffer_h
 
+#if defined (TOOLCHAIN_OS_Windows)
+    #if !defined (_WINDOWS_)
+        #if !defined (WIN32_LEAN_AND_MEAN)
+            #define WIN32_LEAN_AND_MEAN
+        #endif // !defined (WIN32_LEAN_AND_MEAN)
+        #if !defined (NOMINMAX)
+            #define NOMINMAX
+        #endif // !defined (NOMINMAX)
+        #include <windows.h>
+    #endif // !defined (_WINDOWS_)
+#endif // defined (TOOLCHAIN_OS_Windows)
 #include <memory>
 #include "thekogans/util/Config.h"
 #include "thekogans/util/Types.h"
@@ -259,6 +270,14 @@ namespace thekogans {
             /// \return A buffer containing inflated data.
             virtual UniquePtr Inflate (Allocator *allocator = &DefaultAllocator::Global);
         #endif // defined (THEKOGANS_UTIL_HAVE_ZLIB)
+
+        #if defined (TOOLCHAIN_OS_Windows)
+            /// \brief
+            /// Convert the buffer to a Windows HGLOBAL.
+            /// \param[in] flags GlobalAlloc flags.
+            /// \return HGLOBAL containing the buffers contents.
+            HGLOBAL ToHGLOBAL (UINT flags = GMEM_MOVEABLE) const;
+        #endif // defined (TOOLCHAIN_OS_Windows)
 
             /// \brief
             /// Buffer is neither copy constructable, nor assignable.
