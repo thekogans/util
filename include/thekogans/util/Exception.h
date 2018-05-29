@@ -73,6 +73,10 @@ namespace thekogans {
     #endif // defined (_MSC_VER)
 
         struct _LIB_THEKOGANS_UTIL_DECL Exception : public std::exception {
+            /// \brief
+            /// Convenient typedef for std::unique_ptr<Exception>.
+            typedef std::unique_ptr<Exception> UniquePtr;
+
         public:
             /// \struct Exception::Filter Exception.h thekogans/util/Exception.h
             ///
