@@ -147,6 +147,26 @@ namespace thekogans {
             }
         }
 
+        Buffer::UniquePtr Buffer::GetSubBuffer (
+                ui32 offset,
+                ui32 count,
+                Allocator *allocator) const {
+            if (offset >= readOffset && offset < writeOffset && count > 0 && allocator != 0) {
+                if (offset + count > writeOffset) {
+                    count = writeOffset - offset;
+                }
+                return UniquePtr (
+                    new Buffer (
+                        endianness,
+                        data + offset,
+                        data + offset + count));
+            }
+            else {
+                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
+            }
+        }
+
         ui32 Buffer::AdvanceReadOffset (ui32 advance) {
             if (advance > 0) {
                 ui32 availableForReading = GetDataAvailableForReading ();
@@ -359,6 +379,13 @@ namespace thekogans {
                     data + length,
                     readOffset,
                     writeOffset));
+        }
+
+        Buffer::UniquePtr SecureBuffer::GetSubBuffer (
+                ui32 offset,
+                ui32 count,
+                Allocator * /*allocator*/) const {
+            return Buffer::GetSubBuffer (offset, count, &SecureAllocator::Global);
         }
 
     #if defined (THEKOGANS_UTIL_HAVE_ZLIB)

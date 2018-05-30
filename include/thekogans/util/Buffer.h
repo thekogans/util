@@ -177,6 +177,17 @@ namespace thekogans {
             virtual UniquePtr Clone (Allocator *allocator = &DefaultAllocator::Global) const;
 
             /// \brief
+            /// Return subset of the buffer.
+            /// \param[in] offset Beginning of sub-buffer.
+            /// \param[in] count Size of sub-buffer.
+            /// \param[in] allocator Allocator for the returned buffer.
+            /// \return A subset of this buffer.
+            virtual UniquePtr GetSubBuffer (
+                ui32 offset,
+                ui32 count,
+                Allocator *allocator = &DefaultAllocator::Global) const;
+
+            /// \brief
             /// Return the serialized size of this buffer.
             /// \return Serialized size of this buffer.
             inline ui32 Size () const {
@@ -365,6 +376,17 @@ namespace thekogans {
             /// NOTE: The allocator paramater is ignored as SecureBuffer uses the SecureAllocator.
             /// \return A clone of this buffer.
             virtual UniquePtr Clone (Allocator * /*allocator*/ = &DefaultAllocator::Global) const;
+
+            /// \brief
+            /// Return subset of the buffer.
+            /// \param[in] offset Beginning of sub-buffer.
+            /// \param[in] count Size of sub-buffer.
+            /// \param[in] allocator Allocator for the returned buffer.
+            /// \return A subset of this buffer.
+            virtual UniquePtr GetSubBuffer (
+                ui32 offset,
+                ui32 count,
+                Allocator * /*allocator*/ = &DefaultAllocator::Global) const;
 
         #if defined (THEKOGANS_UTIL_HAVE_ZLIB)
             /// \brief
