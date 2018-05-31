@@ -151,15 +151,18 @@ namespace thekogans {
                 ui32 offset,
                 ui32 count,
                 Allocator *allocator) const {
-            if (offset >= readOffset && offset < writeOffset && count > 0 && allocator != 0) {
-                if (offset + count > writeOffset) {
-                    count = writeOffset - offset;
+            if (offset < length && count > 0 && allocator != 0) {
+                if (offset + count > length) {
+                    count = length - offset;
                 }
                 return UniquePtr (
                     new Buffer (
                         endianness,
                         data + offset,
-                        data + offset + count));
+                        data + offset + count,
+                        0,
+                        UI32_MAX,
+                        allocator));
             }
             else {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (

@@ -182,6 +182,9 @@ namespace thekogans {
             /// \param[in] count Size of sub-buffer.
             /// \param[in] allocator Allocator for the returned buffer.
             /// \return A subset of this buffer.
+            /// NOTE: Unlike other methods, this one does NOT take
+            /// readOffset and writeOffset in to account. A straight
+            /// subset of [data, data + length) is returned.
             virtual UniquePtr GetSubBuffer (
                 ui32 offset,
                 ui32 count,
@@ -383,6 +386,9 @@ namespace thekogans {
             /// \param[in] count Size of sub-buffer.
             /// \param[in] allocator Allocator for the returned buffer.
             /// \return A subset of this buffer.
+            /// NOTE: Unlike other methods, this one does NOT take
+            /// readOffset and writeOffset in to account. A straight
+            /// subset of [data, data + length) is returned.
             virtual UniquePtr GetSubBuffer (
                 ui32 offset,
                 ui32 count,
