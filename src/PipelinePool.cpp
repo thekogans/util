@@ -52,7 +52,7 @@ namespace thekogans {
                 workerCallback (workerCallback_),
                 idPool (0),
                 idle (mutex) {
-            // By keeping at least one Pipeline in reserve coupled
+            // By requiring at least one Pipeline in reserve coupled
             // with the logic in ReleasePipeline below, we guarantee
             // that we avoid the deadlock associated with trying to
             // delete the Pipeline being released.
