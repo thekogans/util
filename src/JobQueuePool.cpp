@@ -49,6 +49,13 @@ namespace thekogans {
                 idPool (0),
                 idle (mutex) {
             if (minJobQueues <= maxJobQueues && maxJobQueues > 0) {
+                if (minJobQueues == 0) {
+                    // By keeping at least one JobQueue in reserve coupled
+                    // with the logic in ReleaseJobQueue below, we guarantee
+                    // that we avoid the deadlock associated with trying to
+                    // delete the JobQueue being released.
+                    minJobQueues = 1;
+                }
                 for (ui32 i = 0; i < minJobQueues; ++i) {
                     std::string jobQueueName;
                     if (!name.empty ()) {
@@ -183,6 +190,8 @@ namespace thekogans {
                             }
                         } deleteCallback (availableJobQueues.size () - minJobQueues);
                         // Walk the pool in reverse to delete the least recently used queues.
+                        // This logic guarantees that we avoid the deadlock associated with
+                        // deleating the passed in jobQueue.
                         availableJobQueues.for_each (deleteCallback, true);
                     }
                     idle.SignalAll ();

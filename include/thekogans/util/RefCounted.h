@@ -19,8 +19,10 @@
 #define __thekogans_util_RefCounted_h
 
 #include <cassert>
+#include <typeinfo>
 #include "thekogans/util/Config.h"
 #include "thekogans/util/Types.h"
+#include "thekogans/util/Exception.h"
 
 namespace thekogans {
     namespace util {
@@ -40,17 +42,10 @@ namespace thekogans {
         /// give class designers finer control over the lifetime management of
         /// their classes. If you need more control over heap placement, that's
         /// what \see{Heap} is for.
-        /// VERY, VERY IMPORTANT: RefCounted takes a single parameter (doDelete).
-        /// It defaults to true which is what you need for heap allocated objects.
-        /// For static objects (\see{Singleton}) set doDelete to false to prevent
-        /// Harakiri from deleting an object that was not allocated.
 
         template<typename Count>
         struct _LIB_THEKOGANS_UTIL_DECL RefCounted {
         private:
-            /// \brief
-            /// Delete object when count == 0.
-            bool doDelete;
             /// \brief
             /// Reference count.
             Count count;
@@ -58,9 +53,7 @@ namespace thekogans {
         public:
             /// \brief
             /// ctor.
-            /// \param[in] doDelete_ Delete object when count == 0.
-            RefCounted (bool doDelete_ = true) :
-                doDelete (doDelete_),
+            RefCounted () :
                 count (0) {}
             /// \brief
             /// dtor.
@@ -76,12 +69,18 @@ namespace thekogans {
             /// Decrement the reference count, and if 0, delete the object.
             /// \return Decremented reference count.
             ui32 Release () {
-                assert (count > 0);
-                ui32 newCount = --count;
-                if (newCount == 0) {
-                    Harakiri ();
+                if (count > 0) {
+                    ui32 newCount = --count;
+                    if (newCount == 0) {
+                        Harakiri ();
+                    }
+                    return newCount;
                 }
-                return newCount;
+                else {
+                    THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
+                        "AddRef/Release mismatch in %s.",
+                        typeid (*this).name ());
+                }
             }
 
             /// \brief
@@ -97,7 +96,8 @@ namespace thekogans {
             /// RefCounted object smart pointer template.
             /// NOTE: Unlike other ref counted pointers, Ptr is symmetric in the
             /// way it deals with an objects reference count. It incrementes it in
-            /// it's ctor, and decrements it in it's dtor.
+            /// it's ctor, and decrements it in it's dtor. In other words, Ptr
+            /// manages it's own reference, not one taken out by someone else.
             template<typename T>
             struct Ptr {
             protected:
@@ -215,11 +215,13 @@ namespace thekogans {
             /// Default method of suicide. Derived classes can
             /// override this method to provide whatever means
             /// are appropriate for them.
+            /// IMPORTANT: If you're using Ptr (above) with stack
+            /// or static RefCounted, overriding this method is
+            /// compulsory, as they were never 'allocated' to
+            /// begin with.
             virtual void Harakiri () {
-                if (doDelete) {
-                    assert (count == 0);
-                    delete this;
-                }
+                assert (count == 0);
+                delete this;
             }
         };
 

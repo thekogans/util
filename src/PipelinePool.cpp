@@ -53,6 +53,13 @@ namespace thekogans {
                 idPool (0),
                 idle (mutex) {
             if (minPipelines <= maxPipelines && maxPipelines > 0) {
+                if (minPipelines == 0) {
+                    // By keeping at least one Pipeline in reserve coupled
+                    // with the logic in ReleasePipeline below, we guarantee
+                    // that we avoid the deadlock associated with trying to
+                    // delete the Pipeline being released.
+                    minPipelines = 1;
+                }
                 for (ui32 i = 0; i < minPipelines; ++i) {
                     std::string pipelineName;
                     if (!name.empty ()) {
@@ -190,7 +197,9 @@ namespace thekogans {
                                 return --deleteCount > 0;
                             }
                         } deleteCallback (availablePipelines.size () - minPipelines);
-                        // Walk t he pool in reverse to delete the least recently used pipelines.
+                        // Walk the pool in reverse to delete the least recently used pipelines.
+                        // This logic guarantees that we avoid the deadlock associated with
+                        // deleating the passed in pipeline.
                         availablePipelines.for_each (deleteCallback, true);
                     }
                     idle.SignalAll ();

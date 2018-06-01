@@ -82,7 +82,7 @@ namespace thekogans {
         ///
         /// struct MyThread : public util::Thread (
         /// private:
-        ///     util::RunLoop::Ptr runLoop;
+        ///     util::DefaultRunLoop runLoop;
         ///
         /// public:
         ///     MyThread (
@@ -93,14 +93,10 @@ namespace thekogans {
         ///             const util::TimeSpec &waitTimeSpec = util::TimeSpec::FromSeconds (3)) :
         ///             Thread (name) {
         ///         Create (priority, affinity);
-        ///         if (!util::RunLoop::WaitForStart (runLoop, sleepTimeSpec, waitTimeSpec)) {
-        ///             THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-        ///                 "%s", "Timed out waiting for RunLoop to start.");
-        ///         }
         ///     }
         ///
         ///     void Stop () {
-        ///         runLoop->Stop ();
+        ///         runLoop.Stop ();
         ///         Wait ();
         ///     }
         ///
@@ -108,21 +104,16 @@ namespace thekogans {
         ///             util::RunLoop::Job::Ptr job,
         ///             bool wait = false,
         ///             const TimeSpec &timeSpec = TimeSpec::Infinite) {
-        ///         return runLoop->EnqJob (job, wait, timeSpec);
+        ///         return runLoop.EnqJob (job, wait, timeSpec);
         ///     }
         ///
         /// private:
         ///     // util::Thread
         ///     virtual void Run () throw () {
         ///         THEKOGANS_UTIL_TRY {
-        ///             runLoop.Reset (new util::DefaultRunLoop);
-        ///             runLoop->Start ();
+        ///             runLoop.Start ();
         ///         }
         ///         THEKOGANS_UTIL_CATCH_AND_LOG
-        ///         // This call to reset is very important as it allows the thread that
-        ///         // created the DefaultRunLoop to destroy it too. This is especially
-        ///         // important under X as Xlib is not thread safe.
-        ///         runLoop.Reset ();
         ///     }
         /// }
         /// \endcode

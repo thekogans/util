@@ -85,6 +85,8 @@ namespace thekogans {
         ///             const util::TimeSpec &waitTimeSpec = util::TimeSpec::FromSeconds (3)) :
         ///             Thread (name) {
         ///         Create (priority, affinity);
+        ///         // Wait for the SystemRunLoop to be created and started. This will make
+        ///         // it unnecessary to check runLoop.Get () != 0 in Stop and EnqJob below.
         ///         if (!util::RunLoop::WaitForStart (runLoop, sleepTimeSpec, waitTimeSpec)) {
         ///             THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
         ///                 "%s", "Timed out waiting for RunLoop to start.");
@@ -107,13 +109,16 @@ namespace thekogans {
         ///     // util::Thread
         ///     virtual void Run () {
         ///         THEKOGANS_UTIL_TRY {
+        ///             // NOTE: Windows will only deliver HWND events to a thread
+        ///             // that created the HWND. It's, therefore, important that
+        ///             // SystemRunLoop be created on the thread that will call
+        ///             // Start (unlike \see{DefaultRunLoop}).
         ///             runLoop.Reset (new util::SystemRunLoop);
         ///             runLoop->Start ();
         ///         }
         ///         THEKOGANS_UTIL_CATCH_AND_LOG
         ///         // This call to reset is very important as it allows the thread that
-        ///         // created the SystemRunLoop to destroy it too. This is especially
-        ///         // important under X as Xlib is not thread safe.
+        ///         // created the SystemRunLoop resources (HWND) to destroy them too.
         ///         runLoop.Reset ();
         ///     }
         /// }
