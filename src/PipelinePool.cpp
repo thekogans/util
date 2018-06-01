@@ -52,14 +52,11 @@ namespace thekogans {
                 workerCallback (workerCallback_),
                 idPool (0),
                 idle (mutex) {
-            if (minPipelines <= maxPipelines && maxPipelines > 0) {
-                if (minPipelines == 0) {
-                    // By keeping at least one Pipeline in reserve coupled
-                    // with the logic in ReleasePipeline below, we guarantee
-                    // that we avoid the deadlock associated with trying to
-                    // delete the Pipeline being released.
-                    minPipelines = 1;
-                }
+            // By keeping at least one Pipeline in reserve coupled
+            // with the logic in ReleasePipeline below, we guarantee
+            // that we avoid the deadlock associated with trying to
+            // delete the Pipeline being released.
+            if (0 < minPipelines && minPipelines <= maxPipelines) {
                 for (ui32 i = 0; i < minPipelines; ++i) {
                     std::string pipelineName;
                     if (!name.empty ()) {

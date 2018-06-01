@@ -48,14 +48,11 @@ namespace thekogans {
                 workerCallback (workerCallback_),
                 idPool (0),
                 idle (mutex) {
-            if (minJobQueues <= maxJobQueues && maxJobQueues > 0) {
-                if (minJobQueues == 0) {
-                    // By keeping at least one JobQueue in reserve coupled
-                    // with the logic in ReleaseJobQueue below, we guarantee
-                    // that we avoid the deadlock associated with trying to
-                    // delete the JobQueue being released.
-                    minJobQueues = 1;
-                }
+            // By requiring at least one JobQueue in reserve coupled
+            // with the logic in ReleaseJobQueue below, we guarantee
+            // that we avoid the deadlock associated with trying to
+            // delete the JobQueue being released.
+            if (0 < minJobQueues && minJobQueues <= maxJobQueues) {
                 for (ui32 i = 0; i < minJobQueues; ++i) {
                     std::string jobQueueName;
                     if (!name.empty ()) {
