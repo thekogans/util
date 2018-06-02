@@ -147,7 +147,7 @@ namespace thekogans {
             }
         }
 
-        Buffer::UniquePtr Buffer::GetSubBuffer (
+        Buffer::UniquePtr Buffer::Subset (
                 ui32 offset,
                 ui32 count,
                 Allocator *allocator) const {
@@ -384,11 +384,11 @@ namespace thekogans {
                     writeOffset));
         }
 
-        Buffer::UniquePtr SecureBuffer::GetSubBuffer (
+        Buffer::UniquePtr SecureBuffer::Subset (
                 ui32 offset,
                 ui32 count,
                 Allocator * /*allocator*/) const {
-            return Buffer::GetSubBuffer (offset, count, &SecureAllocator::Global);
+            return Buffer::Subset (offset, count, &SecureAllocator::Global);
         }
 
     #if defined (THEKOGANS_UTIL_HAVE_ZLIB)

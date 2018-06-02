@@ -185,7 +185,7 @@ namespace thekogans {
             /// NOTE: Unlike other methods, this one does NOT take
             /// readOffset and writeOffset in to account. A straight
             /// subset of [data, data + length) is returned.
-            virtual UniquePtr GetSubBuffer (
+            virtual UniquePtr Subset (
                 ui32 offset,
                 ui32 count,
                 Allocator *allocator = &DefaultAllocator::Global) const;
@@ -389,7 +389,7 @@ namespace thekogans {
             /// NOTE: Unlike other methods, this one does NOT take
             /// readOffset and writeOffset in to account. A straight
             /// subset of [data, data + length) is returned.
-            virtual UniquePtr GetSubBuffer (
+            virtual UniquePtr Subset (
                 ui32 offset,
                 ui32 count,
                 Allocator * /*allocator*/ = &DefaultAllocator::Global) const;
