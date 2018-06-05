@@ -54,11 +54,17 @@ namespace thekogans {
         /// struct IdleProcessor :
         ///         public util::Timer::Callback,
         ///         public util::Singleton<IdleProcessor, util::SpinLock> {
+        /// private:
+        ///     util::Timer timer;
+        ///     util::JobQueue jobQueue;
+        ///
+        /// public:
         ///     IdleProcessor () :
         ///         timer (*this),
         ///         jobQueue (
         ///             "IdleProcessor",
-        ///             RunLoop::TYPE_FIFO,
+        ///             util::RunLoop::TYPE_FIFO,
+        ///             util::UI32_MAX,
         ///             1,
         ///             THEKOGANS_UTIL_LOW_THREAD_PRIORITY) {}
         ///
@@ -77,9 +83,6 @@ namespace thekogans {
         ///     }
         ///
         /// private:
-        ///     util::Timer timer;
-        ///     util::JobQueue jobQueue;
-        ///
         ///     // Timer::Callback
         ///     virtual void Alarm (util::Timer & /*timer*/) throw () {
         ///         // queue idle jobs.

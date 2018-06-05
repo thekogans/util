@@ -561,7 +561,7 @@ namespace thekogans {
         /// \struct GlobalLoggerMgr LoggerMgr.h thekogans/util/LoggerMgr.h
         ///
         /// \brief
-        /// A global logger mgr instance.
+        /// A global logger manager instance.
         struct _LIB_THEKOGANS_UTIL_DECL GlobalLoggerMgr :
             public Singleton<LoggerMgr, SpinLock, GlobalLoggerMgrCreateInstance> {};
 
@@ -939,7 +939,14 @@ namespace thekogans {
             /// string and pass it to LoggerMgr.
             ~LogStream () {
                 if (loggerMgr.GetLevel () >= level) {
-                    loggerMgr.Log (subsystem, level, file, function, line, buildTime, str ().c_str ());
+                    loggerMgr.Log (
+                        subsystem,
+                        level,
+                        file,
+                        function,
+                        line,
+                        buildTime,
+                        str ().c_str ());
                 }
             }
         };

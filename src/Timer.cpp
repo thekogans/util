@@ -211,6 +211,11 @@ namespace thekogans {
                                     if (!timer->periodic) {
                                         timer->id = NIDX64;
                                     }
+                                    // Try to acquire a job queue from the pool. Note the
+                                    // retry count == 0. Delivering timer alarms on time
+                                    // is more important then delivering them at all. It's
+                                    // better to log a warning to let the developer adjust
+                                    // available/max queue count (SetJobQueuePoolMinMaxJobQueues).
                                     JobQueue::Ptr jobQueue = jobQueuePool.GetJobQueue (0);
                                     if (jobQueue.Get () != 0) {
                                         jobQueue->EnqJob (
