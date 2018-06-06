@@ -41,43 +41,45 @@ namespace thekogans {
     namespace util {
 
     #if defined (TOOLCHAIN_OS_Windows)
-        VOID CALLBACK TimerCallback (
+        VOID CALLBACK Timer::TimerCallback (
                 PTP_CALLBACK_INSTANCE /*Instance*/,
                 PVOID Context,
                 PTP_TIMER /*Timer*/) {
             Timer *timer = static_cast<Timer *> (Context);
             if (timer != 0) {
+                Callback::Ptr callback (&timer->callback);
                 if (!timer->periodic) {
                     timer->Stop ();
                 }
-                if (timer->spinLock.TryAcquire ()) {
-                    LockGuard<SpinLock> guard (timer->spinLock, false);
-                    timer->callback.Alarm (*timer);
+                if (timer->inAlarmSpinLock.TryAcquire ()) {
+                    LockGuard<SpinLock> guard (timer->inAlarmSpinLock, false);
+                    callback->Alarm (*timer);
                 }
                 else {
                     THEKOGANS_UTIL_LOG_SUBSYSTEM_WARNING (
                         THEKOGANS_UTIL,
                         "Skipping overlapping '%s' Alarm call.\n",
-                        timer->GetName ().c_str ());
+                        timer->name.c_str ());
                 }
             }
         }
     #elif defined (TOOLCHAIN_OS_Linux)
-        void TimerCallback (union sigval val) {
+        void Timer::TimerCallback (union sigval val) {
             Timer *timer = static_cast<Timer *> (val.sival_ptr);
             if (timer != 0) {
+                Callback::Ptr callback (&timer->callback);
                 if (!timer->periodic) {
                     timer->Stop ();
                 }
-                if (timer->spinLock.TryAcquire ()) {
-                    LockGuard<SpinLock> guard (timer->spinLock, false);
-                    timer->callback.Alarm (*timer);
+                if (timer->inAlarmSpinLock.TryAcquire ()) {
+                    LockGuard<SpinLock> guard (timer->inAlarmSpinLock, false);
+                    callback->Alarm (*timer);
                 }
                 else {
                     THEKOGANS_UTIL_LOG_SUBSYSTEM_WARNING (
                         THEKOGANS_UTIL,
                         "Skipping overlapping '%s' Alarm call.\n",
-                        timer->GetName ().c_str ());
+                        timer->name.c_str ());
                 }
             }
         }
@@ -85,30 +87,34 @@ namespace thekogans {
         struct Timer::AlarmJob : public RunLoop::Job {
             THEKOGANS_UTIL_DECLARE_HEAP_WITH_LOCK (AlarmJob, SpinLock)
 
+        private:
             JobQueue::Ptr jobQueue;
+            Callback::Ptr callback;
             Timer *timer;
 
+        public:
             AlarmJob (
-                    JobQueue::Ptr jobQueue_,
-                    Timer *timer_) :
-                    jobQueue (jobQueue_),
-                    timer (timer_) {
-                // NOTE: No need to grab the lock here as it's
-                // already acquired by Run below.
-                timer->alarmJob = this;
-            }
-            ~AlarmJob () {
-                LockGuard<SpinLock> guard (timer->spinLock);
-                timer->alarmJob = 0;
-            }
+                JobQueue::Ptr jobQueue_,
+                Callback::Ptr callback_,
+                Timer *timer_) :
+                jobQueue (jobQueue_),
+                callback (callback_),
+                timer (timer_) {}
 
+        protected:
             // RunLoop::Job
             virtual void Execute (const THEKOGANS_UTIL_ATOMIC<bool> &done) throw () {
                 if (!ShouldStop (done)) {
-                    // Alarm must be called unprotected if we're to
-                    // follow the same semantics as Windows and Linux
-                    // and allow it to call Start/Stop.
-                    timer->callback.Alarm (*timer);
+                    if (timer->inAlarmSpinLock.TryAcquire ()) {
+                        LockGuard<SpinLock> guard (timer->inAlarmSpinLock, false);
+                        callback->Alarm (*timer);
+                    }
+                    else {
+                        THEKOGANS_UTIL_LOG_SUBSYSTEM_WARNING (
+                            THEKOGANS_UTIL,
+                            "Skipping overlapping '%s' Alarm call.\n",
+                            timer->name.c_str ());
+                    }
                 }
             }
         };
@@ -147,40 +153,25 @@ namespace thekogans {
                     Timer &timer,
                     const TimeSpec &timeSpec,
                     bool periodic) {
-                LockGuard<SpinLock> guard (timer.spinLock);
-                // If we're changing the timers period, cancel
-                // previously scheduled Alarm job.
-                if (timer.alarmJob != 0) {
-                    timer.alarmJob->Cancel ();
-                    timer.alarmJob->Wait ();
+                if (timer.id == NIDX64) {
+                    ui64 id = idPool++;
+                    ui16 flags = EV_ADD;
+                    if (!periodic) {
+                        flags |= EV_ONESHOT;
+                    }
+                    keventStruct event;
+                    keventSet (&event, id, EVFILT_TIMER, flags, 0,
+                        timeSpec.ToMilliseconds (), &timer);
+                    if (keventFunc (handle, &event, 1, 0, 0, 0) != 0) {
+                        THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                            THEKOGANS_UTIL_OS_ERROR_CODE);
+                    }
+                    timer.id = id;
                 }
-                // StartTimer can be called repeatedly without calling StopTimer.
-                // This behavior is desirable when adjusting an already existing
-                // timer. In this case, reuse the existing timer id and EV_ADD will
-                // modify the existing kqueue entry.
-                ui64 id = timer.id == NIDX64 ? idPool++ : timer.id;
-                ui16 flags = EV_ADD;
-                if (!periodic) {
-                    flags |= EV_ONESHOT;
-                }
-                keventStruct event;
-                keventSet (&event, id, EVFILT_TIMER, flags, 0,
-                    timeSpec.ToMilliseconds (), &timer);
-                if (keventFunc (handle, &event, 1, 0, 0, 0) != 0) {
-                    THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                        THEKOGANS_UTIL_OS_ERROR_CODE);
-                }
-                timer.id = id;
-                timer.periodic = periodic;
             }
 
             void StopTimer (Timer &timer) {
-                LockGuard<SpinLock> guard (timer.spinLock);
                 if (timer.id != NIDX64) {
-                    if (timer.alarmJob != 0) {
-                        timer.alarmJob->Cancel ();
-                        timer.alarmJob->Wait ();
-                    }
                     keventStruct event;
                     keventSet (&event, timer.id, EVFILT_TIMER, EV_DELETE, 0, 0, 0);
                     if (keventFunc (handle, &event, 1, 0, 0, 0) != 0) {
@@ -188,11 +179,10 @@ namespace thekogans {
                             THEKOGANS_UTIL_OS_ERROR_CODE);
                     }
                     timer.id = NIDX64;
-                    timer.periodic = false;
                 }
             }
 
-            bool IsTimerRunning (const Timer &timer) const {
+            bool IsTimerRunning (const Timer &timer) {
                 return timer.id != NIDX64;
             }
 
@@ -204,37 +194,31 @@ namespace thekogans {
                     int count = keventFunc (handle, 0, 0, kqueueEvents, MaxEventsBatch, 0);
                     for (int i = 0; i < count; ++i) {
                         Timer *timer = (Timer *)kqueueEvents[i].udata;
-                        if (timer != 0) {
-                            LockGuard<SpinLock> guard (timer->spinLock);
-                            if (timer->id != NIDX64) {
-                                if (timer->alarmJob == 0) {
-                                    if (!timer->periodic) {
-                                        timer->id = NIDX64;
-                                    }
-                                    // Try to acquire a job queue from the pool. Note the
-                                    // retry count == 0. Delivering timer alarms on time
-                                    // is more important then delivering them at all. It's
-                                    // better to log a warning to let the developer adjust
-                                    // available/max queue count (SetJobQueuePoolMinMaxJobQueues).
-                                    JobQueue::Ptr jobQueue = jobQueuePool.GetJobQueue (0);
-                                    if (jobQueue.Get () != 0) {
-                                        jobQueue->EnqJob (
-                                            RunLoop::Job::Ptr (
-                                                new Timer::AlarmJob (jobQueue, timer)));
-                                    }
-                                    else {
-                                        THEKOGANS_UTIL_LOG_SUBSYSTEM_WARNING (
-                                            THEKOGANS_UTIL,
-                                            "Unable to acquire a '%s' worker, skipping Alarm call.\n",
-                                            timer->GetName ().c_str ());
-                                    }
+                        if (timer != 0 && timer->id != NIDX64) {
+                            Timer::Callback::Ptr callback (&timer->callback);
+                            if (!timer->periodic) {
+                                timer->id = NIDX64;
+                                timer->Stop ();
+                            }
+                            // Try to acquire a job queue from the pool. Note the
+                            // retry count == 0. Delivering timer alarms on time
+                            // is more important then delivering them at all. It's
+                            // better to log a warning to let the developer adjust
+                            // available/max queue count (SetJobQueuePoolMinMaxJobQueues).
+                            JobQueue::Ptr jobQueue = jobQueuePool.GetJobQueue (0);
+                            if (jobQueue.Get () != 0) {
+                                THEKOGANS_UTIL_TRY {
+                                    jobQueue->EnqJob (
+                                        RunLoop::Job::Ptr (
+                                            new Timer::AlarmJob (jobQueue, callback, timer)));
                                 }
-                                else {
-                                    THEKOGANS_UTIL_LOG_SUBSYSTEM_WARNING (
-                                        THEKOGANS_UTIL,
-                                        "Skipping overlapping '%s' Alarm call.\n",
-                                        timer->GetName ().c_str ());
-                                }
+                                THEKOGANS_UTIL_CATCH_AND_LOG_SUBSYSTEM (THEKOGANS_UTIL)
+                            }
+                            else {
+                                THEKOGANS_UTIL_LOG_SUBSYSTEM_WARNING (
+                                    THEKOGANS_UTIL,
+                                    "Unable to acquire a '%s' worker, skipping Alarm call.\n",
+                                    timer->GetName ().c_str ());
                             }
                         }
                     }
@@ -260,6 +244,7 @@ namespace thekogans {
                 callback (callback_),
                 name (name_),
                 timer (0),
+                timeSpec (TimeSpec::Zero),
                 periodic (false) {
             timer = CreateThreadpoolTimer (TimerCallback, this, 0);
             if (timer == 0) {
@@ -279,6 +264,7 @@ namespace thekogans {
                 callback (callback_),
                 name (name_),
                 timer (0),
+                timeSpec (TimeSpec::Zero),
                 periodic (false) {
             sigevent sigEvent;
             memset (&sigEvent, 0, sizeof (sigEvent));
@@ -305,7 +291,7 @@ namespace thekogans {
             callback (callback_),
             name (name_),
             id (NIDX64),
-            alarmJob (0),
+            timeSpec (TimeSpec::Zero),
             periodic (false) {}
 
         Timer::~Timer () {
@@ -314,32 +300,36 @@ namespace thekogans {
     #endif // defined (TOOLCHAIN_OS_Windows)
 
         void Timer::Start (
-                const TimeSpec &timeSpec,
+                const TimeSpec &timeSpec_,
                 bool periodic_) {
-            if (timeSpec != TimeSpec::Infinite) {
+            if (timeSpec_ != TimeSpec::Zero && timeSpec_ != TimeSpec::Infinite) {
+                LockGuard<SpinLock> guard (spinLock);
+                StopHelper ();
             #if defined (TOOLCHAIN_OS_Windows)
                 ULARGE_INTEGER largeInteger;
-                largeInteger.QuadPart = timeSpec.ToMilliseconds ();
+                largeInteger.QuadPart = timeSpec_.ToMilliseconds ();
                 largeInteger.QuadPart *= -10000;
                 FILETIME dueTime;
                 dueTime.dwLowDateTime = largeInteger.LowPart;
                 dueTime.dwHighDateTime = largeInteger.HighPart;
                 SetThreadpoolTimer (timer, &dueTime,
-                    periodic_ ? (DWORD)timeSpec.ToMilliseconds () : 0, 0);
+                    periodic_ ? (DWORD)timeSpec_.ToMilliseconds () : 0, 0);
             #elif defined (TOOLCHAIN_OS_Linux)
                 itimerspec spec;
                 memset (&spec, 0, sizeof (spec));
                 if (periodic_) {
-                    spec.it_interval = timeSpec.Totimespec ();
+                    spec.it_interval = timeSpec_.Totimespec ();
                 }
-                spec.it_value = timeSpec.Totimespec ();
+                spec.it_value = timeSpec_.Totimespec ();
                 if (timer_settime (timer, 0, &spec, 0) != 0) {
                     THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
                         THEKOGANS_UTIL_OS_ERROR_CODE);
                 }
             #elif defined (TOOLCHAIN_OS_OSX)
-                TimerQueue::Instance ().StartTimer (*this, timeSpec, periodic_);
+                TimerQueue::Instance ().StartTimer (*this, timeSpec_, periodic_);
             #endif // defined (TOOLCHAIN_OS_Windows)
+                callback.AddRef ();
+                timeSpec = timeSpec_;
                 periodic = periodic_;
             }
             else {
@@ -349,22 +339,12 @@ namespace thekogans {
         }
 
         void Timer::Stop () {
-        #if defined (TOOLCHAIN_OS_Windows)
-            SetThreadpoolTimer (timer, 0, 0, 0);
-        #elif defined (TOOLCHAIN_OS_Linux)
-            itimerspec spec;
-            memset (&spec, 0, sizeof (spec));
-            if (timer_settime (timer, 0, &spec, 0) != 0) {
-                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                    THEKOGANS_UTIL_OS_ERROR_CODE);
-            }
-        #elif defined (TOOLCHAIN_OS_OSX)
-            TimerQueue::Instance ().StopTimer (*this);
-        #endif // defined (TOOLCHAIN_OS_Windows)
-            periodic = false;
+            LockGuard<SpinLock> guard (spinLock);
+            StopHelper ();
         }
 
-        bool Timer::IsRunning () const {
+        bool Timer::IsRunning () {
+            LockGuard<SpinLock> guard (spinLock);
         #if defined (TOOLCHAIN_OS_Windows)
             return IsThreadpoolTimerSet (timer) == TRUE;
         #elif defined (TOOLCHAIN_OS_Linux)
@@ -374,12 +354,30 @@ namespace thekogans {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
                     THEKOGANS_UTIL_OS_ERROR_CODE);
             }
-            return
-                spec.it_interval != TimeSpec::Zero ||
-                spec.it_value != TimeSpec::Zero;
+            return spec.it_value != TimeSpec::Zero;
         #elif defined (TOOLCHAIN_OS_OSX)
             return TimerQueue::Instance ().IsTimerRunning (*this);
         #endif // defined (TOOLCHAIN_OS_Windows)
+        }
+
+        void Timer::StopHelper () {
+            if (timeSpec != TimeSpec::Zero) {
+            #if defined (TOOLCHAIN_OS_Windows)
+                SetThreadpoolTimer (timer, 0, 0, 0);
+            #elif defined (TOOLCHAIN_OS_Linux)
+                itimerspec spec;
+                memset (&spec, 0, sizeof (spec));
+                if (timer_settime (timer, 0, &spec, 0) != 0) {
+                    THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                        THEKOGANS_UTIL_OS_ERROR_CODE);
+                }
+            #elif defined (TOOLCHAIN_OS_OSX)
+                TimerQueue::Instance ().StopTimer (*this);
+            #endif // defined (TOOLCHAIN_OS_Windows)
+                callback.Release ();
+                timeSpec = TimeSpec::Zero;
+                periodic = false;
+            }
         }
 
     } // namespace util

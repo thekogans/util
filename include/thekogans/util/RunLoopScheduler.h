@@ -41,9 +41,7 @@ namespace thekogans {
         /// A RunLoopScheduler allows you to schedule \see{RunLoop::Job}s and \see{Pipeline::Job}s
         /// to be executed in the future.
 
-        struct _LIB_THEKOGANS_UTIL_DECL RunLoopScheduler :
-                public ThreadSafeRefCounted,
-                public Timer::Callback {
+        struct _LIB_THEKOGANS_UTIL_DECL RunLoopScheduler : public Timer::Callback {
             /// \brief
             /// Convenient typedef for ThreadSafeRefCounted::Ptr<RunLoopScheduler>.
             typedef ThreadSafeRefCounted::Ptr<RunLoopScheduler> Ptr;
@@ -226,7 +224,7 @@ namespace thekogans {
             /// \brief
             /// ctor.
             RunLoopScheduler () :
-                timer (*this) {}
+                timer (*this, "RunLoopScheduler") {}
             /// \brief
             /// dtor.
             ~RunLoopScheduler () {

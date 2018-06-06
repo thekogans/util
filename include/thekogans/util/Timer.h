@@ -34,6 +34,7 @@
 #include <string>
 #include "thekogans/util/Config.h"
 #include "thekogans/util/Types.h"
+#include "thekogans/util/RefCounted.h"
 #include "thekogans/util/TimeSpec.h"
 #include "thekogans/util/SpinLock.h"
 
@@ -60,7 +61,7 @@ namespace thekogans {
         ///
         /// public:
         ///     IdleProcessor () :
-        ///         timer (*this),
+        ///         timer ("IdleProcessor"),
         ///         jobQueue (
         ///             "IdleProcessor",
         ///             util::RunLoop::TYPE_FIFO,
@@ -83,6 +84,9 @@ namespace thekogans {
         ///     }
         ///
         /// private:
+        ///     // RefCounted
+        ///     virtual void Harakiri () {}
+        ///
         ///     // Timer::Callback
         ///     virtual void Alarm (util::Timer & /*timer*/) throw () {
         ///         // queue idle jobs.
@@ -104,13 +108,23 @@ namespace thekogans {
         /// platforms. To that end if you're using a periodic timer and it fires
         /// while Timer::Callback::Alarm is in progress, that event will be silently
         /// dropped and that cycle will be missed. There are no 'catchup' events.
+        ///
+        /// NOTE: IdleProcessor demonstrates the canonical way of using Timer.
+        /// By coupling the lifetime of the timer to the lifetime of the callback
+        /// (IdleProcessor), we avoid calling callback through a dangling pointer
+        /// as every call to Timer::Start takes out a reference on the callback.
 
         struct _LIB_THEKOGANS_UTIL_DECL Timer {
             /// \struct Timer::Callback Timer.h thekogans/util/Timer.h
             ///
             /// \brief
             /// An abstract base class used to notify timer listeners.
-            struct _LIB_THEKOGANS_UTIL_DECL Callback {
+            struct _LIB_THEKOGANS_UTIL_DECL Callback :
+                    public virtual thekogans::util::ThreadSafeRefCounted {
+                /// \brief
+                /// Convenient typedef for thekogans::util::ThreadSafeRefCounted::Ptr<Callback>.
+                typedef thekogans::util::ThreadSafeRefCounted::Ptr<Callback> Ptr;
+
                 /// \brief
                 /// dtor.
                 virtual ~Callback () {}
@@ -134,7 +148,7 @@ namespace thekogans {
             PTP_TIMER timer;
             /// \brief
             /// Windows timer callback.
-            friend VOID CALLBACK TimerCallback (
+            static VOID CALLBACK TimerCallback (
                 PTP_CALLBACK_INSTANCE /*Instance*/,
                 PVOID Context,
                 PTP_TIMER /*Timer*/);
@@ -144,7 +158,7 @@ namespace thekogans {
             timer_t timer;
             /// \brief
             /// Linux timer callback.
-            friend void TimerCallback (union sigval val);
+            static void TimerCallback (union sigval val);
         #elif defined (TOOLCHAIN_OS_OSX)
             /// \brief
             /// OS X kqueue event id.
@@ -167,18 +181,21 @@ namespace thekogans {
             /// Forward declaration of AlarmJob.
             struct AlarmJob;
             /// \brief
-            /// Pointer to an active alarm job.
-            AlarmJob *alarmJob;
-            /// \brief
             /// An OS X kqueue monitoring async timers.
             friend struct TimerQueue;
         #endif // defined (TOOLCHAIN_OS_Windows)
             /// \brief
+            /// How long before the timer fires.
+            TimeSpec timeSpec;
+            /// \brief
             /// true = timer is periodic, false = timer is one shot.
             bool periodic;
             /// \brief
-            /// Periodic Callback::Alarm synchronization lock.
+            /// Synchronization lock.
             SpinLock spinLock;
+            /// \brief
+            /// Periodic Callback::Alarm synchronization lock.
+            SpinLock inAlarmSpinLock;
 
         public:
             /// \brief
@@ -225,13 +242,13 @@ namespace thekogans {
             /// \brief
             /// Start the timer. If the timer is already running
             /// it will be rearmed with the new parameters.
-            /// \param[in] timeSpec How long before the timer fires.
+            /// \param[in] timeSpec_ How long before the timer fires.
             /// IMPORTANT: This is a relative value.
-            /// \param[in] periodic true = timer is periodic, false = timer is one shot.
+            /// \param[in] periodic_ true = timer is periodic, false = timer is one shot.
             /// It will fire with the period of timeSpec.
             void Start (
-                const TimeSpec &timeSpec,
-                bool periodic = false);
+                const TimeSpec &timeSpec_,
+                bool periodic_ = false);
             /// \brief
             /// Stop the timer.
             void Stop ();
@@ -239,7 +256,12 @@ namespace thekogans {
             /// \brief
             /// Rreturn true if timer is running.
             /// \return true == timer is running.
-            bool IsRunning () const;
+            bool IsRunning ();
+
+        private:
+            /// \brief
+            /// Unprotected Stop. Called by both Startand Stop.
+            void StopHelper ();
 
             /// \brief
             /// Timer is neither copy constructable, nor assignable.
