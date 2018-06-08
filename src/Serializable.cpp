@@ -30,7 +30,6 @@ namespace thekogans {
                 Factory factory) {
             std::pair<Map::iterator, bool> result =
                 GetMap ().insert (Map::value_type (type, factory));
-            assert (result.second);
             if (!result.second) {
                 THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
                     "'%s' is already registered.", type.c_str ());
@@ -42,12 +41,19 @@ namespace thekogans {
             serializer >> header;
             if (header.magic == MAGIC32) {
                 Map::iterator it = GetMap ().find (header.type);
-                return it != GetMap ().end () ?
-                    it->second (header, serializer) : Ptr ();
+                if (it != GetMap ().end ()) {
+                    return it->second (header, serializer);
+                }
+                else {
+                    THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
+                        "No register factory for serializable '%s'.",
+                        header.type.c_str ());
+                }
             }
             else {
                 THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                    "Corrupt serializable '%s' header.", header.type.c_str ());
+                    "Corrupt serializable '%s' header.",
+                    header.type.c_str ());
             }
         }
 
