@@ -165,9 +165,11 @@ namespace thekogans {
             /// \brief
             /// Resize the buffer. Adjust readOffset and writeOffset to stay within [0, length).
             /// \param[in] length_ New buffer length.
+            /// \param[in] shrink true == Shrink the buffer if new length < old length.
             /// \param[in] allocator_ Allocator to use to allocate new data.
             virtual void Resize (
                 ui32 length_,
+                bool shrink = true,
                 Allocator *allocator_ = &DefaultAllocator::Global);
 
             /// \brief
@@ -367,10 +369,12 @@ namespace thekogans {
             /// \brief
             /// Resize the buffer. Adjust readOffset and writeOffset to stay within [0, length).
             /// \param[in] length New buffer length.
+            /// \param[in] shrink true == Shrink the buffer if new length < old length.
             /// \param[in] allocator Allocator to use to allocate new data.
             /// NOTE: The allocator paramater is ignored as SecureBuffer uses the SecureAllocator.
             virtual void Resize (
                 ui32 length,
+                bool shrink = true,
                 Allocator * /*allocator*/ = &DefaultAllocator::Global);
 
             /// \brief

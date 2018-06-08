@@ -102,15 +102,18 @@ namespace thekogans {
 
         void Buffer::Resize (
                 ui32 length_,
+                bool shrink,
                 Allocator *allocator_) {
             if (length != length_) {
                 if (length_ > 0) {
-                    ui8 *data_ = (ui8 *)allocator_->Alloc (length_);
-                    if (data != 0) {
-                        memcpy (data_, data, std::min (length_, length));
-                        allocator->Free (data, length);
+                    if (shrink || length < length_) {
+                        ui8 *data_ = (ui8 *)allocator_->Alloc (length_);
+                        if (data != 0) {
+                            memcpy (data_, data, std::min (length_, length));
+                            allocator->Free (data, length);
+                        }
+                        data = data_;
                     }
-                    data = data_;
                     length = length_;
                     if (readOffset > length) {
                         readOffset = length;
@@ -370,8 +373,9 @@ namespace thekogans {
 
         void SecureBuffer::Resize (
                 ui32 length,
+                bool shrink,
                 Allocator * /*allocator*/) {
-            Buffer::Resize (length, &SecureAllocator::Global);
+            Buffer::Resize (length, shrink, &SecureAllocator::Global);
         }
 
         Buffer::UniquePtr SecureBuffer::Clone (Allocator * /*allocator*/) const {
