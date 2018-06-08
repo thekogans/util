@@ -152,6 +152,13 @@ namespace thekogans {
             /// \return A deserialized serializable.
             static Ptr Get (Serializer &serializer);
 
+            /// \brief
+            /// Return Serializable type.
+            /// \return Serializable type.
+            inline std::string GetType () const {
+                return Type ();
+            }
+
         protected:
             /// \brief
             /// Return serializable type (it's class name).
@@ -215,14 +222,17 @@ namespace thekogans {
                 return thekogans::util::Serializable::Ptr (\
                     new type (header, serializer));\
             }\
+        public:\
             static const char *TYPE;\
             static const thekogans::util::ui16 VERSION;\
+        protected:\
             virtual const char *Type () const {\
                 return TYPE;\
             }\
             virtual thekogans::util::ui16 Version () const {\
                 return VERSION;\
-            }
+            }\
+        public:
 
         /// \def THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_COMMON(
         ///     type, version, lock, minSerializablesInPage, allocator)
