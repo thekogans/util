@@ -36,7 +36,43 @@ namespace thekogans {
             }
         }
 
-        Serializable::Ptr Serializable::Get (Serializer &serializer) {
+        std::size_t Serializable::Size (const Serializable &serializable) {
+            Header header (
+                serializable.Type (),
+                serializable.Version (),
+                (ui32)serializable.Size ());
+            return header.Size () + header.size;
+        }
+
+        std::size_t Serializable::Serialize (ui8 *buffer) const {
+            if (buffer != 0) {
+                Header header (Type (), Version (), (ui32)Size ());
+                TenantWriteBuffer buffer_ (
+                    NetworkEndian,
+                    buffer,
+                    (ui32)(header.Size () + header.size));
+                buffer_ << header;
+                Write (buffer_);
+                return buffer_.GetDataAvailableForReading ();
+            }
+            else {
+                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
+            }
+        }
+
+        Buffer::UniquePtr Serializable::Serialize () const {
+            Header header (Type (), Version (), (ui32)Size ());
+            Buffer::UniquePtr buffer (
+                new Buffer (
+                    NetworkEndian,
+                    (ui32)(header.Size () + header.size)));
+            *buffer << header;
+            Write (*buffer);
+            return buffer;
+        }
+
+        Serializable::Ptr Serializable::Deserialize (Serializer &serializer) {
             Header header;
             serializer >> header;
             if (header.magic == MAGIC32) {

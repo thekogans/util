@@ -26,6 +26,7 @@
 #include "thekogans/util/Heap.h"
 #include "thekogans/util/RefCounted.h"
 #include "thekogans/util/Serializer.h"
+#include "thekogans/util/Buffer.h"
 
 namespace thekogans {
     namespace util {
@@ -43,7 +44,6 @@ namespace thekogans {
             /// Convenient typedef for ThreadSafeRefCounted::Ptr<Serializable>.
             typedef ThreadSafeRefCounted::Ptr<Serializable> Ptr;
 
-        protected:
             /// \struct Serializable::Header Serializable.h thekogans/util/Serializable.h
             ///
             /// \brief
@@ -94,6 +94,7 @@ namespace thekogans {
                 }
             };
 
+        protected:
             /// \brief
             /// typedef for the Serializable factory function.
             typedef Ptr (*Factory) (
@@ -145,20 +146,23 @@ namespace thekogans {
             /// Use of this API is mendatory as virtual std::size_t Size ()
             /// (below) is protected.
             /// \return Size of the serializable including the header.
-            static std::size_t Size (const Serializable &serializable) {
-                return
-                    Header (
-                        serializable.Type (),
-                        serializable.Version (),
-                        (ui32)serializable.Size ()).Size () +
-                    serializable.Size ();
-            }
-
+            static std::size_t Size (const Serializable &serializable);
             /// \brief
-            /// Used for Serializable dynamic discovery and creation.
-            /// \param[in] serializer Serializer containing the Serializable.
+            /// Serialize the given Serializable.
+            /// \param[in] serializable Serializable to serialize.
+            /// \param[in] buffer Where to serialize the given Serializable.
+            /// \return Number of bytes written to buffer.
+            std::size_t Serialize (ui8 *buffer) const;
+            /// \brief
+            /// Serialize the given Serializable.
+            /// \param[in] serializable Serializable to serialize.
+            /// \return \see{Buffer} containing the given serializable.
+            Buffer::UniquePtr Serialize () const;
+            /// \brief
+            /// Deserialize and return a Serializable from the given \see{Serializer}.
+            /// \param[in] serializer \see{Serializer} containing the Serializable.
             /// \return A deserialized serializable.
-            static Ptr Get (Serializer &serializer);
+            static Ptr Deserialize (Serializer &serializer);
 
             /// \brief
             /// Return Serializable type.
@@ -386,7 +390,7 @@ namespace thekogans {
                     type::Ptr &serializable) {\
                 serializable =\
                     thekogans::util::dynamic_refcounted_pointer_cast<type> (\
-                        thekogans::util::Serializable::Get (serializer));\
+                        thekogans::util::Serializable::Deserialize (serializer));\
                 return serializer;\
             }
 
