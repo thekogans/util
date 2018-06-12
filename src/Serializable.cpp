@@ -72,19 +72,25 @@ namespace thekogans {
             return buffer;
         }
 
+        Serializable::Ptr Serializable::Deserialize (
+                const Header &header,
+                Serializer &serializer) {
+            Map::iterator it = GetMap ().find (header.type);
+            if (it != GetMap ().end ()) {
+                return it->second (header, serializer);
+            }
+            else {
+                THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
+                    "No registered factory for serializable '%s'.",
+                    header.type.c_str ());
+            }
+        }
+
         Serializable::Ptr Serializable::Deserialize (Serializer &serializer) {
             Header header;
             serializer >> header;
             if (header.magic == MAGIC32) {
-                Map::iterator it = GetMap ().find (header.type);
-                if (it != GetMap ().end ()) {
-                    return it->second (header, serializer);
-                }
-                else {
-                    THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                        "No register factory for serializable '%s'.",
-                        header.type.c_str ());
-                }
+                return Deserialize (header, serializer);
             }
             else {
                 THEKOGANS_UTIL_THROW_STRING_EXCEPTION (

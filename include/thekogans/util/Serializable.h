@@ -159,6 +159,15 @@ namespace thekogans {
             /// \return \see{Buffer} containing the given serializable.
             Buffer::UniquePtr Serialize () const;
             /// \brief
+            /// Deserialize and return a Serializable from the given \see{Header}
+            /// and \see{Serializer}.
+            /// \param[in] header \see{Header} containg Serializable metadata.
+            /// \param[in] serializer \see{Serializer} containing the Serializable data.
+            /// \return A deserialized serializable.
+            static Ptr Deserialize (
+                const Header &header,
+                Serializer &serializer);
+            /// \brief
             /// Deserialize and return a Serializable from the given \see{Serializer}.
             /// \param[in] serializer \see{Serializer} containing the Serializable.
             /// \return A deserialized serializable.
