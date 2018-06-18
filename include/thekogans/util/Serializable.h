@@ -280,14 +280,7 @@ namespace thekogans {
         /// \endcode
         #define THEKOGANS_UTIL_DECLARE_SERIALIZABLE(type, lock)\
             THEKOGANS_UTIL_DECLARE_SERIALIZABLE_COMMON (type, lock)\
-            static void StaticInit () {\
-                std::pair<Map::iterator, bool> result =\
-                    GetMap ().insert (Map::value_type (#type, type::Create));\
-                if (!result.second) {\
-                    THEKOGANS_UTIL_THROW_STRING_EXCEPTION (\
-                        "'%s' is already registered.", #type);\
-                }\
-            }
+            static void StaticInit ();
 
         /// \def THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE(type, version, lock, minSerializablesInPage, allocator)
         /// Dynamic discovery macro. Instantiate one of these in the class cpp file.
@@ -305,7 +298,15 @@ namespace thekogans {
         #define THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE(\
                 type, version, lock, minSerializablesInPage, allocator)\
             THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_COMMON (\
-                type, version, lock, minSerializablesInPage, allocator)
+                type, version, lock, minSerializablesInPage, allocator)\
+            void type::StaticInit () {\
+                std::pair<Map::iterator, bool> result =\
+                    GetMap ().insert (Map::value_type (#type, type::Create));\
+                if (!result.second) {\
+                    THEKOGANS_UTIL_THROW_STRING_EXCEPTION (\
+                        "'%s' is already registered.", #type);\
+                }\
+            }
     #else // defined (TOOLCHAIN_TYPE_Static)
         /// \def THEKOGANS_UTIL_DECLARE_SERIALIZABLE(type, lock)
         /// Dynamic discovery macro. Add this to your class declaration.
