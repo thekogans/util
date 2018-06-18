@@ -74,11 +74,14 @@ namespace thekogans {
                     }
                 }
                 ~DisableCancelState () {
-                    THEKOGANS_UTIL_ERROR_CODE errorCode =
-                        pthread_setcancelstate (cancel, &cancel);
-                    if (errorCode != 0) {
-                        THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (errorCode);
+                    THEKOGANS_UTIL_TRY {
+                        THEKOGANS_UTIL_ERROR_CODE errorCode =
+                            pthread_setcancelstate (cancel, &cancel);
+                        if (errorCode != 0) {
+                            THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (errorCode);
+                        }
                     }
+                    THEKOGANS_UTIL_CATCH_AND_LOG_SUBSYSTEM (THEKOGANS_UTIL)
                 }
             };
         }
