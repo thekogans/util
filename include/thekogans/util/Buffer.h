@@ -497,7 +497,7 @@ namespace thekogans {
         /// \brief
         /// Write the given buffer to the given serializer.
         /// NOTE: Insertion does not save the buffer's allocator.
-        /// \param[in] serializer Where to write the given guid.
+        /// \param[in] serializer Where to write the given buffer.
         /// \param[in] buffer Buffer to write.
         /// \return serializer.
         _LIB_THEKOGANS_UTIL_DECL Serializer & _LIB_THEKOGANS_UTIL_API operator << (
@@ -509,12 +509,22 @@ namespace thekogans {
         /// NOTE: Extraction does not preserve the buffer's allocator.
         /// After this function completes, the buffer's data will have
         /// been allocated using DefaultAllocator::Global.
-        /// \param[in] serializer Where to read the guid from.
+        /// \param[in] serializer Where to read the buffer from.
         /// \param[in] buffer Buffer to read.
         /// \return serializer.
         _LIB_THEKOGANS_UTIL_DECL Serializer & _LIB_THEKOGANS_UTIL_API operator >> (
             Serializer &serializer,
             Buffer &buffer);
+        /// \brief
+        /// Read a buffer from the given serializer. If the pointer is 0, a new
+        /// \see{Buffer} will be allocated.
+        /// NOTE: The note in the above extractor applies.
+        /// \param[in] serializer Where to read the buffer from.
+        /// \param[in] buffer Buffer to read.
+        /// \return serializer.
+        _LIB_THEKOGANS_UTIL_DECL Serializer & _LIB_THEKOGANS_UTIL_API operator >> (
+            Serializer &serializer,
+            Buffer::UniquePtr &buffer);
 
     } // namespace util
 } // namespace thekogans

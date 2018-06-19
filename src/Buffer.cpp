@@ -477,5 +477,15 @@ namespace thekogans {
             return serializer;
         }
 
+        _LIB_THEKOGANS_UTIL_DECL Serializer & _LIB_THEKOGANS_UTIL_API operator >> (
+                Serializer &serializer,
+                Buffer::UniquePtr &buffer) {
+            if (buffer.get () == 0) {
+                buffer.reset (new util::Buffer (util::HostEndian));
+            }
+            serializer >> *buffer;
+            return serializer;
+        }
+
     } // namespace util
 } // namespace thekogans
