@@ -481,6 +481,8 @@ namespace thekogans {
                 Serializer &serializer,
                 Buffer::UniquePtr &buffer) {
             if (buffer.get () == 0) {
+                // It maters not what endianness we assign to the new buffer.
+                // The real endianness will be read from the serializer.
                 buffer.reset (new util::Buffer (util::HostEndian));
             }
             serializer >> *buffer;
