@@ -585,7 +585,7 @@ namespace thekogans {
             std::size_t GetRunningJobCount ();
 
             /// \brief
-            /// Wait until the given run loop is created the and it starts running.
+            /// Wait until the given run loop is created and it starts running.
             /// \param[in] runLoop RunLoop to wait for.
             /// \param[in] sleepTimeSpec How long to sleep between tries.
             /// \param[in] waitTimeSpec Total time to wait.
