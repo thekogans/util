@@ -143,10 +143,10 @@ namespace thekogans {
                 /// Log errors, warnings and info.
                 Info,
                 /// \brief
-                /// Log errors, warnings, info and dubug.
+                /// Log errors, warnings, info and debug.
                 Debug,
                 /// \brief
-                /// Log errors, warnings, info, dubug and development.
+                /// Log errors, warnings, info, debug and development.
                 Development,
                 /// \brief
                 /// Highest log level we support.
