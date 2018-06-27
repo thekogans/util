@@ -72,7 +72,7 @@ namespace thekogans {
             /// in O(1). As there are no job states, if a job is in the queue, it
             /// will be scheduled to execute using one of the workers from a limited
             /// pool. Keep that in mind when designing your jobs as there is a real
-            /// possibility of exhausting the worker pool and effectively killing
+            /// possibility of exhausting the job queue pool and effectively killing
             /// the scheduler. Specifically, synchronous io is frowned upon. The
             /// motto is; keep em nimble, keep em moving!
             struct _LIB_THEKOGANS_UTIL_DECL JobQueue :
@@ -315,7 +315,7 @@ namespace thekogans {
         /// \brief
         /// A global scheduler instance. The Scheduler is designed to be
         /// as flexible as possible. To be useful in different situations
-        /// the scheduler's worker pool needs to be parametrized as we
+        /// the scheduler's job queue pool needs to be parametrized as we
         /// might need to have different schedulers running workers at
         /// different thread priorities. That said, the most basic (and
         /// the most useful) use case will have a single scheduler using

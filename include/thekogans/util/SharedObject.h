@@ -92,6 +92,7 @@ namespace thekogans {
             /// \param[in] mode Protection mode used by the lock and shared memory region.
         #endif // defined (TOOLCHAIN_OS_Windows)
             /// \param[in] timeSpec Used by lock to put the process to sleep during lock contention.
+            /// IMPORTANT: timeSpec is a relative value.
             /// \return Created/Opened and constructed instance of MySharedObject.
             static void *Create (
                 const char *name,
@@ -131,6 +132,7 @@ namespace thekogans {
             /// \param[in] mode Protection mode used by the lock and shared memory region.
         #endif // defined (TOOLCHAIN_OS_Windows)
             /// \param[in] timeSpec Used by lock to put the process to sleep during lock contention.
+            /// IMPORTANT: timeSpec is a relative value.
             static void Destroy (
                 void *ptr,
                 const Destructor &destructor = Destructor (),
@@ -167,6 +169,7 @@ namespace thekogans {
                 /// \param[in] mode Protection mode used by the lock and shared memory region.
             #endif // defined (TOOLCHAIN_OS_Windows)
                 /// \param[in] timeSpec Used to put the process to sleep during lock contention.
+                /// IMPORTANT: timeSpec is a relative value.
                 Lock (
                     const char *name,
                 #if defined (TOOLCHAIN_OS_Windows)
