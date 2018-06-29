@@ -62,8 +62,9 @@ architectures (x86, MIPS, ARM…). Here is a complete feature list:
       (*.so, *.dylib, *.dll).
 
     - A set of higher level threading abstractions (JobQueue.h,
-      WorkerPool.h, Pipeline.h, Vectorizer.h, Scheduler.h
-      JobQueueScheduler.h) useful in many different situations.
+      JobQueuePool.h, Pipeline.h, PipelinePool.h, Vectorizer.h,
+      Scheduler.h, RunLoopScheduler.h) useful in many different
+      situations.
 
     - An extensible collection of hashers (Hash.h, MD5.h, SHA1.h,
       SHA2.h, SHA3.h, SHA2_224_256.h, SHA2_384_512.h) to aid in the
