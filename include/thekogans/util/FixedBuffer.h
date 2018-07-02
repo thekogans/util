@@ -49,17 +49,28 @@ namespace thekogans {
             /// \brief
             /// ctor.
             /// \param[in] endianness Specifies how multi-byte values are stored.
-            FixedBuffer (Endianness endianness = HostEndian) :
-                Serializer (endianness),
-                readOffset (0),
-                writeOffset (0) {}
+            /// \param[in] data_ Pointer to wrap.
+            /// \param[in] length_ Length of data.
+            FixedBuffer (
+                    Endianness endianness = HostEndian,
+                    const ui8 *data_ = 0,
+                    ui32 length_ = 0) :
+                    Serializer (endianness),
+                    readOffset (0),
+                    writeOffset (length_) {
+                if (writeOffset > length) {
+                    THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                        THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
+                }
+                if (data_ != 0 && length_ > 0) {
+                    memcpy (data, data_, length_);
+                }
+            }
             /// \brief
             /// ctor for creating a fixed buffer from a given range.
             /// \param[in] endianness Specifies how multi-byte values are stored.
             /// \param[in] begin Start of range.
             /// \param[in] end Just past the end of range.
-            /// \param[in] readOffset_ Offset at which to read.
-            /// \param[in] writeOffset_ Offset at which to write.
             FixedBuffer (
                     Endianness endianness,
                     const ui8 *begin,
