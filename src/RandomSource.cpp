@@ -128,7 +128,8 @@ namespace thekogans {
                         cryptProv,
                         (DWORD)(count - hardwareCount),
                         (BYTE *)buffer + hardwareCount)) {
-                    THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (THEKOGANS_UTIL_OS_ERROR_CODE);
+                    THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                        THEKOGANS_UTIL_OS_ERROR_CODE);
                 }
                 return (ui32)count;
             #else // defined (TOOLCHAIN_OS_Windows)
