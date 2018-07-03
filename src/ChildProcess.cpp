@@ -96,7 +96,7 @@ namespace thekogans {
 
     #if !defined (TOOLCHAIN_OS_Windows)
         void ChildProcess::StdIO::SetupParent () {
-            if (Flags32 (hookStdIO).Test (ChildProcess::HOOK_STDIN)) {
+            if (Flags<std::size_t> (hookStdIO).Test (ChildProcess::HOOK_STDIN)) {
                 // inPipe[0]
                 {
                     assert (inPipe[0] != THEKOGANS_UTIL_INVALID_HANDLE_VALUE);
@@ -109,7 +109,7 @@ namespace thekogans {
                     // Used by parent to write to child's stdin.
                 }
             }
-            if (Flags32 (hookStdIO).Test (ChildProcess::HOOK_STDOUT)) {
+            if (Flags<std::size_t> (hookStdIO).Test (ChildProcess::HOOK_STDOUT)) {
                 // outPipe[0]
                 {
                     assert (outPipe[0] != THEKOGANS_UTIL_INVALID_HANDLE_VALUE);
@@ -122,7 +122,7 @@ namespace thekogans {
                     outPipe[1] = THEKOGANS_UTIL_INVALID_HANDLE_VALUE;
                 }
             }
-            if (Flags32 (hookStdIO).Test (ChildProcess::HOOK_STDERR)) {
+            if (Flags<std::size_t> (hookStdIO).Test (ChildProcess::HOOK_STDERR)) {
                 // errPipe[0]
                 {
                     assert (errPipe[0] != THEKOGANS_UTIL_INVALID_HANDLE_VALUE);
@@ -138,7 +138,7 @@ namespace thekogans {
         }
 
         void ChildProcess::StdIO::SetupChild () {
-            if (Flags32 (hookStdIO).Test (ChildProcess::HOOK_STDIN)) {
+            if (Flags<std::size_t> (hookStdIO).Test (ChildProcess::HOOK_STDIN)) {
                 // inPipe[0]
                 {
                     assert (inPipe[0] != THEKOGANS_UTIL_INVALID_HANDLE_VALUE);
@@ -155,7 +155,7 @@ namespace thekogans {
                     inPipe[1] = THEKOGANS_UTIL_INVALID_HANDLE_VALUE;
                 }
             }
-            if (Flags32 (hookStdIO).Test (ChildProcess::HOOK_STDOUT)) {
+            if (Flags<std::size_t> (hookStdIO).Test (ChildProcess::HOOK_STDOUT)) {
                 // outPipe[0]
                 {
                     assert (outPipe[0] != THEKOGANS_UTIL_INVALID_HANDLE_VALUE);
@@ -172,7 +172,7 @@ namespace thekogans {
                     outPipe[1] = THEKOGANS_UTIL_INVALID_HANDLE_VALUE;
                 }
             }
-            if (Flags32 (hookStdIO).Test (ChildProcess::HOOK_STDERR)) {
+            if (Flags<std::size_t> (hookStdIO).Test (ChildProcess::HOOK_STDERR)) {
                 // errPipe[0]
                 {
                     assert (errPipe[0] != THEKOGANS_UTIL_INVALID_HANDLE_VALUE);
