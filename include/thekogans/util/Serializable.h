@@ -92,6 +92,31 @@ namespace thekogans {
                         Serializer::Size (version) +
                         Serializer::Size (size);
                 }
+
+                /// \brief
+                /// "Header"
+                static const char * const TAG_HEADER;
+                /// \brief
+                /// "Magic"
+                static const char * const ATTR_MAGIC;
+                /// \brief
+                /// "Type"
+                static const char * const ATTR_TYPE;
+                /// \brief
+                /// "Version"
+                static const char * const ATTR_VERSION;
+                /// \brief
+                /// "Size"
+                static const char * const ATTR_SIZE;
+
+                /// \brief
+                /// Return the XML representation of a header.
+                /// \param[in] indentationLevel How far to indent the leading tag.
+                /// \param[in] tagName The name of the leading tag.
+                /// \return XML representation of a header.
+                std::string ToString (
+                    ui32 indentationLevel = 0,
+                    const char *tagName = TAG_HEADER) const;
             };
 
         protected:
@@ -132,6 +157,11 @@ namespace thekogans {
             /// \brief
             /// dtor.
             virtual ~Serializable () {}
+
+            /// \brief
+            /// Check the map for the given type.
+            /// \return true == The given type is in the map.
+            static bool ValidateType (const std::string &type);
 
             /// \brief
             /// Return the size of the serialized header for a given type.

@@ -15,10 +15,28 @@
 // You should have received a copy of the GNU General Public License
 // along with libthekogans_util. If not, see <http://www.gnu.org/licenses/>.
 
+#include "thekogans/util/XMLUtils.h"
 #include "thekogans/util/Serializable.h"
 
 namespace thekogans {
     namespace util {
+
+        const char * const Serializable::Header::TAG_HEADER = "Header";
+        const char * const Serializable::Header::ATTR_MAGIC = "Magic";
+        const char * const Serializable::Header::ATTR_TYPE = "Type";
+        const char * const Serializable::Header::ATTR_VERSION = "Version";
+        const char * const Serializable::Header::ATTR_SIZE = "Size";
+
+        std::string Serializable::Header::ToString (
+                ui32 indentationLevel,
+                const char *tagName) const {
+            Attributes attributes;
+            attributes.push_back (Attribute (ATTR_MAGIC, ui32Tostring (magic)));
+            attributes.push_back (Attribute (ATTR_TYPE, type));
+            attributes.push_back (Attribute (ATTR_VERSION, ui32Tostring (version)));
+            attributes.push_back (Attribute (ATTR_SIZE, ui32Tostring (size)));
+            return OpenTag (0, tagName, attributes, true, true);
+        }
 
         Serializable::Map &Serializable::GetMap () {
             static Map map;
@@ -34,6 +52,10 @@ namespace thekogans {
                 THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
                     "'%s' is already registered.", type.c_str ());
             }
+        }
+
+        bool Serializable::ValidateType (const std::string &type) {
+            return GetMap ().find (type) != GetMap ().end ();
         }
 
         std::size_t Serializable::Size (const Serializable &serializable) {
