@@ -119,7 +119,7 @@ namespace thekogans {
             }
         }
 
-        ui64 File::GetDataAvailableForReading () {
+        ui64 File::GetDataAvailableForReading () const {
             return GetSize () - Tell ();
         }
 

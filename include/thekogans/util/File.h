@@ -148,7 +148,7 @@ namespace thekogans {
             /// \brief
             /// Return number of bytes available for reading.
             /// \return Number of bytes available for reading.
-            virtual ui64 GetDataAvailableForReading ();
+            virtual ui64 GetDataAvailableForReading () const;
 
             // Serializer
             /// \brief
