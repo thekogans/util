@@ -225,6 +225,14 @@ namespace thekogans {
                 writeOffset += advance;
                 return advance;
             }
+
+            /// \brief
+            /// Reset the readOffset and the writeOffset to prepare the
+            /// buffer for reuse.
+            inline void Rewind () {
+                readOffset = 0;
+                writeOffset = 0;
+            }
         };
 
         /// \brief
