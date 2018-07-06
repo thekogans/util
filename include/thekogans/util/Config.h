@@ -67,11 +67,13 @@
         #pragma warning (disable: 4251)  // using non-exported as public in exported
         #pragma warning (disable: 4786)
     #endif // defined (_MSC_VER)
+    #define THEKOGANS_UTIL_PACKED(x) __pragma (pack (push, 1)) x __pragma (pack (pop))
 #else // defined (TOOLCHAIN_OS_Windows)
     #define _LIB_THEKOGANS_UTIL_API
     #define _LIB_THEKOGANS_UTIL_DECL
     #define THEKOGANS_UTIL_EXPORT
     #define THEKOGANS_UTIL_TYPENAME typename
+    #define THEKOGANS_UTIL_PACKED(x) x __attribute__ ((packed))
 #endif // defined (TOOLCHAIN_OS_Windows)
 
 #if defined (TOOLCHAIN_CONFIG_Debug)
