@@ -59,7 +59,7 @@ namespace thekogans {
                 /// Serializable version.
                 ui16 version;
                 /// \brief
-                /// Serializable size (not including the header).
+                /// Serializable size in bytes (not including the header).
                 ui32 size;
 
                 /// \brief
@@ -72,7 +72,7 @@ namespace thekogans {
                 /// ctor.
                 /// \param[in] type_ Serializable type (it's class name).
                 /// \param[in] version_ Serializable version.
-                /// \param[in] size_ Serializable size (not including the header).
+                /// \param[in] size_ Serializable size in bytes (not including the header).
                 Header (
                     const char *type_,
                     ui16 version_,
@@ -178,15 +178,13 @@ namespace thekogans {
             /// \return Size of the serializable including the header.
             static std::size_t Size (const Serializable &serializable);
             /// \brief
-            /// Serialize the given Serializable.
-            /// \param[in] serializable Serializable to serialize.
-            /// \param[in] buffer Where to serialize the given Serializable.
+            /// Serialize the Serializable.
+            /// \param[in] buffer Where to serialize the Serializable.
             /// \return Number of bytes written to buffer.
             std::size_t Serialize (ui8 *buffer) const;
             /// \brief
-            /// Serialize the given Serializable.
-            /// \param[in] serializable Serializable to serialize.
-            /// \return \see{Buffer} containing the given serializable.
+            /// Serialize the Serializable.
+            /// \return \see{Buffer} containing the serializable.
             Buffer::UniquePtr Serialize () const;
             /// \brief
             /// Deserialize and return a Serializable from the given \see{Header}

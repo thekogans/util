@@ -58,12 +58,14 @@ namespace thekogans {
                     Serializer (endianness),
                     readOffset (0),
                     writeOffset (length_) {
-                if (writeOffset > length) {
+                if (writeOffset <= length) {
+                    if (data_ != 0 && length_ > 0) {
+                        memcpy (data, data_, length_);
+                    }
+                }
+                else {
                     THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
                         THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
-                }
-                if (data_ != 0 && length_ > 0) {
-                    memcpy (data, data_, length_);
                 }
             }
             /// \brief
@@ -78,12 +80,14 @@ namespace thekogans {
                     Serializer (endianness),
                     readOffset (0),
                     writeOffset ((ui32)(end - begin)) {
-                if (writeOffset > length) {
+                if (writeOffset <= length) {
+                    if (writeOffset > 0) {
+                        memcpy (data, begin, writeOffset);
+                    }
+                }
+                else {
                     THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
                         THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
-                }
-                if (writeOffset > 0) {
-                    memcpy (data, begin, writeOffset);
                 }
             }
 
@@ -96,23 +100,21 @@ namespace thekogans {
             virtual ui32 Read (
                     void *buffer,
                     ui32 count) {
-                if (count > 0) {
-                    if (buffer != 0) {
-                        ui32 availableForReading = GetDataAvailableForReading ();
-                        if (count > availableForReading) {
-                            count = availableForReading;
-                        }
-                        if (count != 0) {
-                            memcpy (buffer, GetReadPtr (), count);
-                            AdvanceReadOffset (count);
-                        }
+                if (buffer != 0 && count > 0) {
+                    ui32 availableForReading = GetDataAvailableForReading ();
+                    if (count > availableForReading) {
+                        count = availableForReading;
                     }
-                    else {
-                        THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                            THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
+                    if (count != 0) {
+                        memcpy (buffer, GetReadPtr (), count);
+                        AdvanceReadOffset (count);
                     }
+                    return count;
                 }
-                return count;
+                else {
+                    THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                        THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
+                }
             }
             /// \brief
             /// Write raw bytes to a fixed buffer.
@@ -122,23 +124,21 @@ namespace thekogans {
             virtual ui32 Write (
                     const void *buffer,
                     ui32 count) {
-                if (count > 0) {
-                    if (buffer != 0) {
-                        ui32 availableForWriting = GetDataAvailableForWriting ();
-                        if (count > availableForWriting) {
-                            count = availableForWriting;
-                        }
-                        if (count != 0) {
-                            memcpy (GetWritePtr (), buffer, count);
-                            AdvanceWriteOffset (count);
-                        }
+                if (buffer != 0 && count > 0) {
+                    ui32 availableForWriting = GetDataAvailableForWriting ();
+                    if (count > availableForWriting) {
+                        count = availableForWriting;
                     }
-                    else {
-                        THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                            THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
+                    if (count != 0) {
+                        memcpy (GetWritePtr (), buffer, count);
+                        AdvanceWriteOffset (count);
                     }
+                    return count;
                 }
-                return count;
+                else {
+                    THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                        THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
+                }
             }
 
             /// \brief
