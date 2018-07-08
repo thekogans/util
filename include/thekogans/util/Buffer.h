@@ -90,6 +90,18 @@ namespace thekogans {
             Allocator *allocator;
 
             /// \brief
+            /// Move ctor.
+            /// \param[in,out] other Buffer to move.
+            Buffer (Buffer &&other) :
+                    Serializer (other.endianness),
+                    data (0),
+                    length (0),
+                    readOffset (0),
+                    writeOffset (0),
+                    allocator (other.allocator) {
+                swap (other);
+            }
+            /// \brief
             /// ctor for wrapping a raw data pointer.
             /// \param[in] endianness How multi-byte values are stored.
             /// \param[in] data_ Pointer to wrap.
@@ -143,6 +155,17 @@ namespace thekogans {
             virtual ~Buffer () {
                 Resize (0);
             }
+
+            /// \brief
+            /// Move assignment operator.
+            /// \param[in,out] other Buffer to move.
+            /// \return *this.
+            Buffer &operator = (Buffer &&other);
+
+            /// \brief
+            /// std::swap for Buffer.
+            /// \param[in,out] other Buffer to swap.
+            void swap (Buffer &other);
 
             // Serializer
             /// \brief

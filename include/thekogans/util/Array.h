@@ -54,9 +54,36 @@ namespace thekogans {
                 length (length_),
                 array (new T[length]) {}
             /// \brief
+            /// Move ctor.
+            /// \param[in,out] other Array to move.
+            Array (Array<T> &&other) :
+                    length (0),
+                    array (0) {
+                swap (other);
+            }
+            /// \brief
             /// dtor. Release the memory held by Array.
             ~Array () {
                 delete [] array;
+            }
+
+            /// \brief
+            /// Move assignment operator.
+            /// \param[in,out] other Array to move.
+            /// \return *this;
+            Array<T> &operator = (Array<T> &&other) {
+                if (this != &other) {
+                    Array<T> temp (std::move (other));
+                    swap (other);
+                }
+                return *this;
+            }
+
+            /// \brief
+            /// std::swap for Array.
+            void swap (Array<T> &other) {
+                std::swap (length, other.length);
+                std::swap (array, other.array);
             }
 
             /// \brief

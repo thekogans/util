@@ -45,9 +45,9 @@ namespace thekogans {
             OwnerList () {}
             /// \brief
             /// Move ctor.
-            /// \param[in] ownerList List to move.
-            OwnerList (OwnerList &&ownerList) {
-                swap (ownerList);
+            /// \param[in] other List to move.
+            OwnerList (OwnerList<T> &&other) {
+                swap (other);
             }
             /// \brief
             /// dtor. Delete all list elements.
@@ -57,11 +57,12 @@ namespace thekogans {
 
             /// \brief
             /// Move assignemnt operator.
-            /// \param[in] ownerList List to move.
+            /// \param[in] other List to move.
             /// \return *this
-            OwnerList &operator = (OwnerList &&ownerList) {
-                if (this != &ownerList) {
-                    swap (ownerList);
+            OwnerList<T> &operator = (OwnerList<T> &&other) {
+                if (this != &other) {
+                    OwnerList<T> temp (std::move (other));
+                    swap (temp);
                 }
                 return *this;
             }

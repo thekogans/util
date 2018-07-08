@@ -60,6 +60,22 @@ namespace thekogans {
             }
         }
 
+        Buffer &Buffer::operator = (Buffer &&other) {
+            if (this != &other) {
+                Buffer temp (std::move (other));
+                swap (temp);
+            }
+            return *this;
+        }
+
+        void Buffer::swap (Buffer &other) {
+            std::swap (data, other.data);
+            std::swap (length, other.length);
+            std::swap (readOffset, other.readOffset);
+            std::swap (writeOffset, other.writeOffset);
+            std::swap (allocator, other.allocator);
+        }
+
         ui32 Buffer::Read (
                 void *buffer,
                 ui32 count) {

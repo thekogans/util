@@ -48,9 +48,9 @@ namespace thekogans {
             OwnerMap () {}
             /// \brief
             /// Move ctor.
-            /// \param[in] ownerMap Map to move.
-            OwnerMap (OwnerMap &&ownerMap) {
-                swap (ownerMap);
+            /// \param[in] other Map to move.
+            OwnerMap (OwnerMap<Key, T, Compare> &&other) {
+                swap (other);
             }
             /// \brief
             /// dtor. Delete all map elements.
@@ -60,11 +60,12 @@ namespace thekogans {
 
             /// \brief
             /// Move assignemnt operator.
-            /// \param[in] ownerMap Map to move.
+            /// \param[in] other Map to move.
             /// \return *this
-            OwnerMap &operator = (const OwnerMap &ownerMap) {
-                if (this != &ownerMap) {
-                    swap (ownerMap);
+            OwnerMap<Key, T, Compare> &operator = (OwnerMap<Key, T, Compare> &&other) {
+                if (this != &other) {
+                    OwnerMap<Key, T, Compare> temp (std::move (other));
+                    swap (temp);
                 }
                 return *this;
             }

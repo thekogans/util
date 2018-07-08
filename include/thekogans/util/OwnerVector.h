@@ -43,9 +43,9 @@ namespace thekogans {
                 std::vector<T *> (count, 0) {}
             /// \brief
             /// Move ctor.
-            /// \param[in] ownerVector Vector to move.
-            OwnerVector (OwnerVector &&ownerVector) {
-                swap (ownerVector);
+            /// \param[in] other Vector to move.
+            OwnerVector (OwnerVector<T> &&other) {
+                swap (other);
             }
             /// \brief
             /// dtor. Delete all vector elements.
@@ -55,11 +55,12 @@ namespace thekogans {
 
             /// \brief
             /// Move assignemnt operator.
-            /// \param[in] ownerVector Vector to move.
+            /// \param[in] other Vector to move.
             /// \return *this
-            OwnerVector &operator = (OwnerVector &&ownerVector) {
-                if (this != &ownerVector) {
-                    swap (ownerVector);
+            OwnerVector<T> &operator = (OwnerVector<T> &&other) {
+                if (this != &other) {
+                    OwnerVector<T> temp (std::move (other));
+                    swap (temp);
                 }
                 return *this;
             }

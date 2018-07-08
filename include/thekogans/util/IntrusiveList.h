@@ -126,6 +126,15 @@ namespace thekogans {
                 tail (0),
                 count (0) {}
             /// \brief
+            /// Move ctor.
+            /// \param[in,out] other IntrusiveList to move.
+            IntrusiveList (IntrusiveList<T, ID> &&other) :
+                    head (0),
+                    tail (0),
+                    count (0) {
+                swap (other);
+            }
+            /// \brief
             /// dtor.
             ~IntrusiveList () {
                 // IntrusiveList might be used in all sorts of situations,
@@ -137,6 +146,17 @@ namespace thekogans {
                 clear (callback);
             }
 
+            /// \brief
+            /// Move assignment operator.
+            /// \param[in,out] other IntrusiveList to move.
+            /// \return *this.
+            IntrusiveList &operator = (IntrusiveList<T, ID> &&other) {
+                if (this != &other) {
+                    IntrusiveList<T, ID> temp (std::move (other));
+                    swap (temp);
+                }
+                return *this;
+            }
             /// \brief
             /// Return the number of nodes in the list.
             /// \return Number of nodes in the list.
