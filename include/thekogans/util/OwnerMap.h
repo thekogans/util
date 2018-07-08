@@ -28,8 +28,7 @@ namespace thekogans {
         /// \struct OwnerMap OwnerMap.h thekogans/util/OwnerMap.h
         ///
         /// \brief
-        /// See OwnerList for the rational behind this template.
-        /// \see{OwnerList}
+        /// See \see{OwnerList} for the rational behind this template.
 
         template<
             typename Key,
@@ -48,15 +47,10 @@ namespace thekogans {
             /// Default ctor.
             OwnerMap () {}
             /// \brief
-            /// Deep copy ctor.
-            /// \param[in] ownerMap Map to copy.
-            OwnerMap (const OwnerMap &ownerMap) {
-                for (const_iterator p = ownerMap.begin (),
-                        end = ownerMap.end (); p != end; ++p) {
-                    std::unique_ptr<T> t (new T (*p->second));
-                    insert (value_type (p->first, t.get ()));
-                    t.release ();
-                }
+            /// Move ctor.
+            /// \param[in] ownerMap Map to move.
+            OwnerMap (OwnerMap &&ownerMap) {
+                swap (ownerMap);
             }
             /// \brief
             /// dtor. Delete all map elements.
@@ -65,21 +59,12 @@ namespace thekogans {
             }
 
             /// \brief
-            /// Deep copy assignemnt operator.
-            /// Maintains transactional semantics.
-            /// \param[in] ownerMap Map to copy.
+            /// Move assignemnt operator.
+            /// \param[in] ownerMap Map to move.
             /// \return *this
             OwnerMap &operator = (const OwnerMap &ownerMap) {
                 if (this != &ownerMap) {
-                    OwnerMap temp;
-                    for (const_iterator p = ownerMap.begin (),
-                            end = ownerMap.end (); p != end; ++p) {
-                        std::unique_ptr<T> t (new T (*p->second));
-                        temp.insert (value_type (p->first, t.get ()));
-                        t.release ();
-                    }
-                    // Guaranteed not to throw.
-                    swap (temp);
+                    swap (ownerMap);
                 }
                 return *this;
             }

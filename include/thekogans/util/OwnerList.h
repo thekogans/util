@@ -28,12 +28,8 @@ namespace thekogans {
         /// \struct OwnerList OwnerList.h thekogans/util/OwnerList.h
         ///
         /// \brief
-        /// OwnerList provides a lifetime management template for heap
-        /// allocated objects. Because a deep copy ctor, and an
-        /// assignment operator are provided, you can only use this
-        /// template with types that provide a copy ctor of their
-        /// own. OwnerList cannot be used with abstract base
-        /// classes. See AbstractOwnerList for an explanation.
+        /// OwnerList is a lifetime management template for a list of heap
+        /// allocated objects. It has the same semantics as std::unique_ptr.
 
         template<typename T>
         struct OwnerList : public std::list<T *> {
@@ -48,15 +44,10 @@ namespace thekogans {
             /// Default ctor.
             OwnerList () {}
             /// \brief
-            /// Deep copy ctor.
-            /// \param[in] ownerList List to copy.
-            OwnerList (const OwnerList &ownerList) {
-                for (const_iterator p = ownerList.begin (),
-                        end = ownerList.end (); p != end; ++p) {
-                    std::unique_ptr<T> t (new T (**p));
-                    push_back (t.get ());
-                    t.release ();
-                }
+            /// Move ctor.
+            /// \param[in] ownerList List to move.
+            OwnerList (OwnerList &&ownerList) {
+                swap (ownerList);
             }
             /// \brief
             /// dtor. Delete all list elements.
@@ -65,21 +56,12 @@ namespace thekogans {
             }
 
             /// \brief
-            /// Deep copy assignemnt operator.
-            /// Maintains transactional semantics.
-            /// \param[in] ownerList List to copy.
+            /// Move assignemnt operator.
+            /// \param[in] ownerList List to move.
             /// \return *this
-            OwnerList &operator = (const OwnerList &ownerList) {
+            OwnerList &operator = (OwnerList &&ownerList) {
                 if (this != &ownerList) {
-                    OwnerList temp;
-                    for (const_iterator p = ownerList.begin (),
-                            end = ownerList.end (); p != end; ++p) {
-                        std::unique_ptr<T> t (new T (**p));
-                        temp.push_back (t.get ());
-                        t.release ();
-                    }
-                    // Guaranteed not to throw.
-                    swap (temp);
+                    swap (ownerList);
                 }
                 return *this;
             }

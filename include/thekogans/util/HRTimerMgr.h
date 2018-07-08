@@ -26,7 +26,7 @@
 #include "thekogans/util/Constants.h"
 #include "thekogans/util/Heap.h"
 #include "thekogans/util/SpinLock.h"
-#include "thekogans/util/AbstractOwnerList.h"
+#include "thekogans/util/OwnerList.h"
 #include "thekogans/util/LoggerMgr.h"
 #include "thekogans/util/HRTimer.h"
 #include "thekogans/util/XMLUtils.h"
@@ -321,10 +321,10 @@ namespace thekogans {
 
                 /// \brief
                 /// A stack of open scopes.
-                AbstractOwnerList<TimerInfoBase> open;
+                OwnerList<TimerInfoBase> open;
                 /// \brief
                 /// A list of closed scopes.
-                AbstractOwnerList<TimerInfoBase> closed;
+                OwnerList<TimerInfoBase> closed;
 
                 /// \brief
                 /// ctor.

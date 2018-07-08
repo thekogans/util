@@ -84,7 +84,7 @@ namespace thekogans {
                 ui64 &average,
                 ui64 &total) const {
             assert (open.empty ());
-            for (AbstractOwnerList<TimerInfoBase>::const_iterator it = closed.begin (),
+            for (OwnerList<TimerInfoBase>::const_iterator it = closed.begin (),
                     end = closed.end (); it != end; ++it) {
                 ++count;
                 ui32 itemCount = 0;

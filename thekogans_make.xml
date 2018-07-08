@@ -80,8 +80,6 @@
   </cpp_preprocessor_definitions>
   <cpp_headers prefix = "include"
                install = "yes">
-    <cpp_header>$(organization)/$(project_directory)/AbstractOwnerList.h</cpp_header>
-    <cpp_header>$(organization)/$(project_directory)/AbstractOwnerVector.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/AlignedAllocator.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/Allocator.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/Array.h</cpp_header>

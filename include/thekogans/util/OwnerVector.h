@@ -29,8 +29,7 @@ namespace thekogans {
         /// \struct OwnerVector OwnerVector.h thekogans/util/OwnerVector.h
         ///
         /// \brief
-        /// See OwnerList for the rational behind this template.
-        /// \see{OwnerList}
+        /// See \see{OwnerList} for the rational behind this template.
 
         template<typename T>
         struct OwnerVector : public std::vector<T *> {
@@ -43,16 +42,10 @@ namespace thekogans {
             explicit OwnerVector (std::size_t count) :
                 std::vector<T *> (count, 0) {}
             /// \brief
-            /// Deep copy ctor.
-            /// \param[in] ownerVector Vector to copy.
-            OwnerVector (const OwnerVector &ownerVector) {
-                this->reserve (ownerVector.size ());
-                typedef THEKOGANS_UTIL_TYPENAME
-                    OwnerVector::const_iterator const_iterator;
-                for (const_iterator p = ownerVector.begin ();
-                        p < ownerVector.end (); ++p) {
-                    this->push_back (new T (**p));
-                }
+            /// Move ctor.
+            /// \param[in] ownerVector Vector to move.
+            OwnerVector (OwnerVector &&ownerVector) {
+                swap (ownerVector);
             }
             /// \brief
             /// dtor. Delete all vector elements.
@@ -61,27 +54,12 @@ namespace thekogans {
             }
 
             /// \brief
-            /// Deep copy assignemnt operator.
-            /// Maintains transactional semantics.
-            /// \param[in] ownerVector Vector to copy.
+            /// Move assignemnt operator.
+            /// \param[in] ownerVector Vector to move.
             /// \return *this
-            OwnerVector &operator = (const OwnerVector &ownerVector) {
+            OwnerVector &operator = (OwnerVector &&ownerVector) {
                 if (this != &ownerVector) {
-                    OwnerVector temp;
-                    temp.reserve (ownerVector.size ());
-                    typedef THEKOGANS_UTIL_TYPENAME
-                        OwnerVector::const_iterator const_iterator;
-                    for (const_iterator p = ownerVector.begin ();
-                            p < ownerVector.end (); ++p) {
-                        // push_back is guaranteed not to throw because of
-                        // the reserve above. new and T's ctor might
-                        // throw. In either case, temp will cleanup the
-                        // objects it has constructed successfully in its
-                        // dtor, so we are exception safe.
-                        temp.push_back (new T (**p));
-                    }
-                    // Guaranteed not to throw.
-                    this->swap (temp);
+                    swap (ownerVector);
                 }
                 return *this;
             }
