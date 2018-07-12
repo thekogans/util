@@ -336,6 +336,11 @@ namespace thekogans {
 
         struct _LIB_THEKOGANS_UTIL_DECL SecureBuffer : public Buffer {
             /// \brief
+            /// Move ctor.
+            /// \param[in,out] other SecureBuffer to move.
+            SecureBuffer (SecureBuffer &&other) :
+                Buffer (std::move (other)) {}
+            /// \brief
             /// ctor for wrapping a raw data pointer.
             /// \param[in] endianness How multi-byte values are stored.
             /// \param[in] data Pointer to wrap.
@@ -392,6 +397,12 @@ namespace thekogans {
                     readOffset,
                     writeOffset,
                     &SecureAllocator::Global) {}
+
+            /// \brief
+            /// Move assignment operator.
+            /// \param[in,out] other SecureBuffer to move.
+            /// \return *this.
+            SecureBuffer &operator = (SecureBuffer &&other);
 
             /// \brief
             /// Resize the buffer. Adjust readOffset and writeOffset to stay within [0, length).

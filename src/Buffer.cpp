@@ -117,10 +117,12 @@ namespace thekogans {
         }
 
         Buffer &Buffer::operator += (const Buffer &buffer) {
-            if (GetDataAvailableForWriting () < buffer.GetDataAvailableForReading ()) {
-                Resize (GetDataAvailableForReading () + buffer.GetDataAvailableForReading ());
+            if (buffer.GetDataAvailableForReading () > 0) {
+                if (GetDataAvailableForWriting () < buffer.GetDataAvailableForReading ()) {
+                    Resize (GetDataAvailableForReading () + buffer.GetDataAvailableForReading ());
+                }
+                Write (buffer.GetReadPtr (), buffer.GetDataAvailableForReading ());
             }
-            Write (buffer.GetReadPtr (), buffer.GetDataAvailableForReading ());
             return *this;
         }
 
@@ -391,6 +393,14 @@ namespace thekogans {
             return global;
         }
     #endif // defined (TOOLCHAIN_OS_Windows)
+
+        SecureBuffer &SecureBuffer::operator = (SecureBuffer &&other) {
+            if (this != &other) {
+                SecureBuffer temp (std::move (other));
+                swap (temp);
+            }
+            return *this;
+        }
 
         void SecureBuffer::Resize (
                 ui32 length,
