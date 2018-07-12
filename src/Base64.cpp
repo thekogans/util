@@ -184,11 +184,11 @@ namespace thekogans {
                 return value < 128 && unbase64[value] != 0xff;
             }
 
-            Buffer::UniquePtr ValidateInput (
+            Buffer ValidateInput (
                     const void *buffer,
                     std::size_t bufferLength) {
                 if (buffer != 0 && bufferLength > 0) {
-                    Buffer::UniquePtr output (new Buffer (HostEndian, (ui32)bufferLength));
+                    Buffer output (HostEndian, (ui32)bufferLength);
                     ui32 equalCount = 0;
                     std::size_t index = 0;
                     for (const ui8 *bufferPtr = (const ui8 *)buffer,
@@ -197,7 +197,7 @@ namespace thekogans {
                         if (!isspace (*bufferPtr)) {
                             if (IsValidBase64 (*bufferPtr)) {
                                 if (equalCount == 0) {
-                                    output->data[output->writeOffset++] = *bufferPtr;
+                                    output.data[output.writeOffset++] = *bufferPtr;
                                 }
                                 else {
                                     THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
@@ -206,7 +206,7 @@ namespace thekogans {
                             }
                             else if (*bufferPtr == '=') {
                                 if (equalCount++ < 2) {
-                                    output->data[output->writeOffset++] = *bufferPtr;
+                                    output.data[output.writeOffset++] = *bufferPtr;
                                 }
                                 else {
                                     THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
@@ -219,9 +219,9 @@ namespace thekogans {
                             }
                         }
                     }
-                    if ((output->GetDataAvailableForReading () & 3) != 0) {
+                    if ((output.GetDataAvailableForReading () & 3) != 0) {
                         THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                            "Invalid count: %u", output->GetDataAvailableForReading ());
+                            "Invalid count: %u", output.GetDataAvailableForReading ());
                     }
                     return output;
                 }
@@ -261,9 +261,9 @@ namespace thekogans {
         std::size_t Base64::GetDecodedLength (
                 const void *buffer,
                 std::size_t bufferLength) {
-            Buffer::UniquePtr input = ValidateInput (buffer, bufferLength);
-            return input->GetDataAvailableForReading () > 0 ?
-                DecodedLength (input->GetReadPtr (), input->GetDataAvailableForReading ()) : 0;
+            Buffer input = ValidateInput (buffer, bufferLength);
+            return input.GetDataAvailableForReading () > 0 ?
+                DecodedLength (input.GetReadPtr (), input.GetDataAvailableForReading ()) : 0;
         }
 
         std::size_t Base64::Decode (
@@ -271,10 +271,10 @@ namespace thekogans {
                 std::size_t bufferLength,
                 ui8 *decoded) {
             std::size_t count = 0;
-            Buffer::UniquePtr input = ValidateInput (buffer, bufferLength);
-            if (input->GetDataAvailableForReading () > 0) {
-                const ui8 *bufferPtr = input->GetReadPtr ();
-                for (const ui8 *endBufferPtr = input->GetReadPtrEnd () - 4;
+            Buffer input = ValidateInput (buffer, bufferLength);
+            if (input.GetDataAvailableForReading () > 0) {
+                const ui8 *bufferPtr = input.GetReadPtr ();
+                for (const ui8 *endBufferPtr = input.GetReadPtrEnd () - 4;
                         bufferPtr < endBufferPtr;) {
                     ui8 buffer0 = *bufferPtr++;
                     ui8 buffer1 = *bufferPtr++;
@@ -309,15 +309,15 @@ namespace thekogans {
         Buffer::UniquePtr Base64::Decode (
                 const void *buffer,
                 std::size_t bufferLength) {
-            Buffer::UniquePtr input = ValidateInput (buffer, bufferLength);
-            if (input->GetDataAvailableForReading () > 0) {
+            Buffer input = ValidateInput (buffer, bufferLength);
+            if (input.GetDataAvailableForReading () > 0) {
                 Buffer::UniquePtr output (
                     new Buffer (HostEndian,
                         (ui32)DecodedLength (
-                            input->GetReadPtr (),
-                            input->GetDataAvailableForReading ())));
-                const ui8 *bufferPtr = input->GetReadPtr ();
-                for (const ui8 *endBufferPtr = input->GetReadPtrEnd () - 4;
+                            input.GetReadPtr (),
+                            input.GetDataAvailableForReading ())));
+                const ui8 *bufferPtr = input.GetReadPtr ();
+                for (const ui8 *endBufferPtr = input.GetReadPtrEnd () - 4;
                         bufferPtr < endBufferPtr;) {
                     ui8 buffer0 = *bufferPtr++;
                     ui8 buffer1 = *bufferPtr++;
