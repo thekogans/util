@@ -64,7 +64,7 @@ namespace thekogans {
             std::size_t digestSize;
             /// \brief
             /// Block size for current digest size.
-            ui32 blockSize;
+            std::size_t blockSize;
             /// \brief
             /// Incremental state used during hashing.
             ui64 state[MAX_STATE_SIZE];

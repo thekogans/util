@@ -54,7 +54,7 @@ namespace thekogans {
                         bytesWritten = size;
                     }
                     memcpy (&buffer[bufferIndex], ptr, bytesWritten);
-                    bufferIndex += (ui32)bytesWritten;
+                    bufferIndex += bytesWritten;
                     ptr += bytesWritten;
                     size -= bytesWritten;
                     if (bufferIndex == blockSize) {
@@ -132,16 +132,16 @@ namespace thekogans {
 
         void SHA3::Transform () {
             const ui64 *buffer64 = (const ui64 *)buffer;
-            for (ui32 i = 0, count = blockSize / 8; i < count; ++i) {
+            for (std::size_t i = 0, count = blockSize / 8; i < count; ++i) {
                 state[i] ^= ByteSwap<HostEndian, LittleEndian> (buffer64[i]);
             }
-            for (ui32 round = 0; round < rounds; ++round) {
+            for (std::size_t round = 0; round < rounds; ++round) {
                 // Theta
                 ui64 coefficients[5];
-                for (ui32 i = 0; i < 5; ++i) {
+                for (std::size_t i = 0; i < 5; ++i) {
                     coefficients[i] = state[i] ^ state[i + 5] ^ state[i + 10] ^ state[i + 15] ^ state[i + 20];
                 }
-                for (ui32 i = 0; i < 5; ++i) {
+                for (std::size_t i = 0; i < 5; ++i) {
                     ui64 one = coefficients[mod5 (i + 4)] ^ rotateLeft (coefficients[mod5 (i + 1)], 1);
                     state[i] ^= one;
                     state[i + 5] ^= one;
@@ -222,7 +222,7 @@ namespace thekogans {
                 last = one;
                 state[1] = rotateLeft (last, 44);
                 // Chi
-                for (ui32 j = 0; j < 25; j += 5) {
+                for (std::size_t j = 0; j < 25; j += 5) {
                     ui64 one = state[j];
                     ui64 two = state[j + 1];
                     state[j] ^= state[j + 2] & ~two;

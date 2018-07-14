@@ -34,7 +34,7 @@ namespace thekogans {
             attributes.push_back (Attribute (ATTR_MAGIC, ui32Tostring (magic)));
             attributes.push_back (Attribute (ATTR_TYPE, type));
             attributes.push_back (Attribute (ATTR_VERSION, ui32Tostring (version)));
-            attributes.push_back (Attribute (ATTR_SIZE, ui32Tostring (size)));
+            attributes.push_back (Attribute (ATTR_SIZE, ui64Tostring (size)));
             return OpenTag (0, tagName, attributes, true, true);
         }
 

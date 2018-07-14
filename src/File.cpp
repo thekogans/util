@@ -128,7 +128,7 @@ namespace thekogans {
                 void *buffer,
                 std::size_t count) {
             DWORD countRead = 0;
-            if (!ReadFile (handle, buffer, count, &countRead, 0)) {
+            if (!ReadFile (handle, buffer, (DWORD)count, &countRead, 0)) {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
                     THEKOGANS_UTIL_OS_ERROR_CODE);
             }
@@ -139,7 +139,7 @@ namespace thekogans {
                 const void *buffer,
                 std::size_t count) {
             DWORD countWritten = 0;
-            if (!WriteFile (handle, buffer, count, &countWritten, 0)) {
+            if (!WriteFile (handle, buffer, (DWORD)count, &countWritten, 0)) {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
                     THEKOGANS_UTIL_OS_ERROR_CODE);
             }

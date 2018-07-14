@@ -162,13 +162,13 @@ namespace thekogans {
         const std::size_t NIDX = NIDX32;
         const std::size_t MAGIC = MAGIC32;
     #if !defined (SIZE_T_MAX)
-        #define SIZE_T_MAX UI32_MAX
+        #define SIZE_T_MAX thekogans::util::UI32_MAX
     #endif // !defined (SIZE_T_MAX)
     #elif defined (TOOLCHAIN_ARCH_x86_64)
         const std::size_t NIDX = NIDX64;
         const std::size_t MAGIC = MAGIC64;
     #if !defined (SIZE_T_MAX)
-        #define SIZE_T_MAX UI64_MAX;
+        #define SIZE_T_MAX thekogans::util::UI64_MAX
     #endif // !defined (SIZE_T_MAX)
     #else // defined (TOOLCHAIN_ARCH_i386)
         #error "Unknown SIZE_T_SIZE"
