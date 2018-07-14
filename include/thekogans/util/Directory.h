@@ -483,7 +483,7 @@ namespace thekogans {
                 /// \brief
                 /// Return the serialized size of this entry.
                 /// \return Serialized size of this entry.
-                inline ui32 Size () const {
+                inline std::size_t Size () const {
                     return
                         Serializer::Size (fileSystem) +
                         Serializer::Size (type) +
@@ -544,7 +544,7 @@ namespace thekogans {
                 /// \param[in] indentationLevel Number of '\t' to preceed the entry with.
                 /// \return encoded xml string.
                 std::string ToString (
-                    ui32 indentationLevel,
+                    std::size_t indentationLevel,
                     const char *tagName = TAG_ENTRY) const;
             };
 

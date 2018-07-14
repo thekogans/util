@@ -77,7 +77,7 @@ namespace thekogans {
         /// \return Formated open tag.
         _LIB_THEKOGANS_UTIL_DECL std::string _LIB_THEKOGANS_UTIL_API
             OpenTag (
-                ui32 indentationLevel,
+                std::size_t indentationLevel,
                 const char *tagName,
                 const Attributes &attributes = Attributes (),
                 bool close = false,
@@ -90,7 +90,7 @@ namespace thekogans {
         /// \return Formated close tag.
         _LIB_THEKOGANS_UTIL_DECL std::string _LIB_THEKOGANS_UTIL_API
             CloseTag (
-                ui32 indentationLevel,
+                std::size_t indentationLevel,
                 const char *tagName,
                 bool endl = true);
 

@@ -100,7 +100,7 @@ namespace thekogans {
                 /// \brief
                 /// Return the serialized size of this log entry.
                 /// \return Serialized size of this log entry.
-                inline ui32 Size () const {
+                inline std::size_t Size () const {
                     return
                         Serializer::Size (subsystem) +
                         Serializer::Size (level) +

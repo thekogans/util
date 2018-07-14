@@ -31,9 +31,9 @@ namespace thekogans {
 
         Buffer::Buffer (
             Endianness endianness,
-            ui32 length_,
-            ui32 readOffset_,
-            ui32 writeOffset_,
+            std::size_t length_,
+            std::size_t readOffset_,
+            std::size_t writeOffset_,
             Allocator *allocator_) :
             Serializer (endianness),
             data ((ui8 *)allocator_->Alloc (length_)),
@@ -46,14 +46,14 @@ namespace thekogans {
                 Endianness endianness,
                 const ui8 *begin,
                 const ui8 *end,
-                ui32 readOffset_,
-                ui32 writeOffset_,
+                std::size_t readOffset_,
+                std::size_t writeOffset_,
                 Allocator *allocator_) :
                 Serializer (endianness),
                 data ((ui8 *)allocator_->Alloc (end - begin)),
-                length ((ui32)(end - begin)),
+                length (end - begin),
                 readOffset (readOffset_),
-                writeOffset (writeOffset_ == UI32_MAX ? length : writeOffset_),
+                writeOffset (writeOffset_ == SIZE_T_MAX ? length.value : writeOffset_),
                 allocator (allocator_) {
             if (length > 0) {
                 memcpy (data, begin, length);
@@ -76,11 +76,11 @@ namespace thekogans {
             std::swap (allocator, other.allocator);
         }
 
-        ui32 Buffer::Read (
+        std::size_t Buffer::Read (
                 void *buffer,
-                ui32 count) {
+                std::size_t count) {
             if (buffer != 0 && count > 0) {
-                ui32 availableForReading = GetDataAvailableForReading ();
+                std::size_t availableForReading = GetDataAvailableForReading ();
                 if (count > availableForReading) {
                     count = availableForReading;
                 }
@@ -96,11 +96,11 @@ namespace thekogans {
             }
         }
 
-        ui32 Buffer::Write (
+        std::size_t Buffer::Write (
                 const void *buffer,
-                ui32 count) {
+                std::size_t count) {
             if (buffer != 0 && count > 0) {
-                ui32 availableForWriting = GetDataAvailableForWriting ();
+                std::size_t availableForWriting = GetDataAvailableForWriting ();
                 if (count > availableForWriting) {
                     count = availableForWriting;
                 }
@@ -127,13 +127,13 @@ namespace thekogans {
         }
 
         void Buffer::Resize (
-                ui32 length_,
+                std::size_t length_,
                 Allocator *allocator_) {
             if (length != length_) {
                 if (length_ > 0) {
                     ui8 *data_ = (ui8 *)allocator_->Alloc (length_);
                     if (data != 0) {
-                        memcpy (data_, data, std::min (length_, length));
+                        memcpy (data_, data, std::min (length_, (std::size_t)length.value));
                         allocator->Free (data, length);
                     }
                     data = data_;
@@ -174,11 +174,11 @@ namespace thekogans {
         }
 
         Buffer::UniquePtr Buffer::Subset (
-                ui32 offset,
-                ui32 count,
+                std::size_t offset,
+                std::size_t count,
                 Allocator *allocator) const {
             if (offset < length && count > 0 && allocator != 0) {
-                if (offset + count > length) {
+                if (count == SIZE_T_MAX || offset + count > length) {
                     count = length - offset;
                 }
                 return UniquePtr (
@@ -187,7 +187,7 @@ namespace thekogans {
                         data + offset,
                         data + offset + count,
                         0,
-                        UI32_MAX,
+                        SIZE_T_MAX,
                         allocator));
             }
             else {
@@ -196,9 +196,9 @@ namespace thekogans {
             }
         }
 
-        ui32 Buffer::AdvanceReadOffset (ui32 advance) {
+        std::size_t Buffer::AdvanceReadOffset (std::size_t advance) {
             if (advance > 0) {
-                ui32 availableForReading = GetDataAvailableForReading ();
+                std::size_t availableForReading = GetDataAvailableForReading ();
                 if (advance > availableForReading) {
                     advance = availableForReading;
                 }
@@ -207,9 +207,9 @@ namespace thekogans {
             return advance;
         }
 
-        ui32 Buffer::AdvanceWriteOffset (ui32 advance) {
+        std::size_t Buffer::AdvanceWriteOffset (std::size_t advance) {
             if (advance > 0) {
-                ui32 availableForWriting = GetDataAvailableForWriting ();
+                std::size_t availableForWriting = GetDataAvailableForWriting ();
                 if (advance > availableForWriting) {
                     advance = availableForWriting;
                 }
@@ -220,12 +220,12 @@ namespace thekogans {
 
     #if defined (THEKOGANS_UTIL_HAVE_ZLIB)
         namespace {
-            const ui32 BUFFER_SIZE = 16384;
+            const std::size_t BUFFER_SIZE = 16384;
 
             struct OutBuffer {
                 Allocator *allocator;
                 ui8 *data;
-                ui32 length;
+                std::size_t length;
 
                 explicit OutBuffer (Allocator *allocator_) :
                     allocator (allocator_),
@@ -234,7 +234,7 @@ namespace thekogans {
 
                 void Write (
                         const ui8 *data_,
-                        ui32 length_) {
+                        std::size_t length_) {
                     if (data_ != 0 && length_ > 0) {
                         ui8 *newData = (ui8 *)allocator->Alloc (length + length_);
                         memcpy (newData, data, length);
@@ -248,7 +248,7 @@ namespace thekogans {
 
             void DeflateHelper (
                     const ui8 *data,
-                    ui32 length,
+                    std::size_t length,
                     OutBuffer &outBuffer) {
                 ui8 tmpOutBuffer[BUFFER_SIZE];
                 z_stream zStream;
@@ -294,7 +294,7 @@ namespace thekogans {
 
             void InflateHelper (
                     const ui8 *data,
-                    ui32 length,
+                    std::size_t length,
                     OutBuffer &outBuffer) {
                 ui8 tmpOutBuffer[BUFFER_SIZE];
                 z_stream zStream;
@@ -403,7 +403,7 @@ namespace thekogans {
         }
 
         void SecureBuffer::Resize (
-                ui32 length,
+                std::size_t length,
                 Allocator * /*allocator*/) {
             Buffer::Resize (length, &SecureAllocator::Global);
         }
@@ -419,8 +419,8 @@ namespace thekogans {
         }
 
         Buffer::UniquePtr SecureBuffer::Subset (
-                ui32 offset,
-                ui32 count,
+                std::size_t offset,
+                std::size_t count,
                 Allocator * /*allocator*/) const {
             return Buffer::Subset (offset, count, &SecureAllocator::Global);
         }
@@ -468,7 +468,7 @@ namespace thekogans {
                 buffer.readOffset <<
                 buffer.writeOffset;
             if (buffer.length != 0) {
-                ui32 bytesWritten = serializer.Write (buffer.data, buffer.length);
+                std::size_t bytesWritten = serializer.Write (buffer.data, buffer.length);
                 if (buffer.length != bytesWritten) {
                     THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
                         "serializer.Write (buffer.data, %u) == %u",
@@ -483,13 +483,13 @@ namespace thekogans {
                 Serializer &serializer,
                 Buffer &buffer) {
             Endianness endianness;
-            ui32 length;
-            ui32 readOffset;
-            ui32 writeOffset;
+            SizeT length;
+            SizeT readOffset;
+            SizeT writeOffset;
             serializer >> endianness >> length >> readOffset >> writeOffset;
             buffer.Resize (length);
             if (length > 0) {
-                ui32 bytesRead = serializer.Read (buffer.data, length);
+                std::size_t bytesRead = serializer.Read (buffer.data, length);
                 if (length != bytesRead) {
                     THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
                         "serializer.Read (buffer.data, %u) == %u",

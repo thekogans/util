@@ -33,6 +33,7 @@
 #include "thekogans/util/Config.h"
 #include "thekogans/util/Types.h"
 #include "thekogans/util/Constants.h"
+#include "thekogans/util/SizeT.h"
 #include "thekogans/util/Heap.h"
 #include "thekogans/util/SpinLock.h"
 #include "thekogans/util/Serializer.h"
@@ -78,13 +79,13 @@ namespace thekogans {
             ui8 *data;
             /// \brief
             /// Length of data.
-            ui32 length;
+            SizeT length;
             /// \brief
             /// Current read position.
-            ui32 readOffset;
+            SizeT readOffset;
             /// \brief
             /// Current write position.
-            ui32 writeOffset;
+            SizeT writeOffset;
             /// \brief
             /// Allocator used for memory management.
             Allocator *allocator;
@@ -112,9 +113,9 @@ namespace thekogans {
             Buffer (
                 Endianness endianness = HostEndian,
                 ui8 *data_ = 0,
-                ui32 length_ = 0,
-                ui32 readOffset_ = 0,
-                ui32 writeOffset_ = 0,
+                std::size_t length_ = 0,
+                std::size_t readOffset_ = 0,
+                std::size_t writeOffset_ = 0,
                 Allocator *allocator_ = &DefaultAllocator::Global) :
                 Serializer (endianness),
                 data (data_),
@@ -131,9 +132,9 @@ namespace thekogans {
             /// \param[in] allocator_ Allocator used for memory management.
             Buffer (
                 Endianness endianness,
-                ui32 length_,
-                ui32 readOffset_ = 0,
-                ui32 writeOffset_ = 0,
+                std::size_t length_,
+                std::size_t readOffset_ = 0,
+                std::size_t writeOffset_ = 0,
                 Allocator *allocator_ = &DefaultAllocator::Global);
             /// \brief
             /// ctor for creating a buffer from a given range.
@@ -147,8 +148,8 @@ namespace thekogans {
                 Endianness endianness,
                 const ui8 *begin,
                 const ui8 *end,
-                ui32 readOffset_ = 0,
-                ui32 writeOffset_ = UI32_MAX,
+                std::size_t readOffset_ = 0,
+                std::size_t writeOffset_ = SIZE_T_MAX,
                 Allocator *allocator_ = &DefaultAllocator::Global);
             /// \brief
             /// dtor.
@@ -173,17 +174,17 @@ namespace thekogans {
             /// \param[out] buffer Where to place the bytes.
             /// \param[in] count Number of bytes to read.
             /// \return Number of bytes actually read.
-            virtual ui32 Read (
+            virtual std::size_t Read (
                 void *buffer,
-                ui32 count);
+                std::size_t count);
             /// \brief
             /// Write raw bytes to a buffer.
             /// \param[in] buffer Bytes to write.
             /// \param[in] count Number of bytes to write.
             /// \return Number of bytes actually written.
-            virtual ui32 Write (
+            virtual std::size_t Write (
                 const void *buffer,
-                ui32 count);
+                std::size_t count);
 
             /// \brief
             /// Append the contents of the given buffer to this one.
@@ -196,7 +197,7 @@ namespace thekogans {
             /// \param[in] length_ New buffer length.
             /// \param[in] allocator_ Allocator to use to allocate new data.
             virtual void Resize (
-                ui32 length_,
+                std::size_t length_,
                 Allocator *allocator_ = &DefaultAllocator::Global);
 
             /// \brief
@@ -215,14 +216,14 @@ namespace thekogans {
             /// readOffset and writeOffset in to account. A straight
             /// subset of [data, data + length) is returned.
             virtual UniquePtr Subset (
-                ui32 offset,
-                ui32 count,
+                std::size_t offset,
+                std::size_t count = SIZE_T_MAX,
                 Allocator *allocator = &DefaultAllocator::Global) const;
 
             /// \brief
             /// Return the serialized size of this buffer.
             /// \return Serialized size of this buffer.
-            inline ui32 Size () const {
+            inline std::size_t Size () const {
                 return
                     Serializer::Size () +
                     Serializer::Size (length) +
@@ -247,13 +248,13 @@ namespace thekogans {
             /// \brief
             /// Return number of bytes available for reading.
             /// \return Number of bytes available for reading.
-            inline ui32 GetDataAvailableForReading () const {
+            inline std::size_t GetDataAvailableForReading () const {
                 return writeOffset > readOffset ? writeOffset - readOffset : 0;
             }
             /// \brief
             /// Return number of bytes available for writing.
             /// \return Number of bytes available for writing.
-            inline ui32 GetDataAvailableForWriting () const {
+            inline std::size_t GetDataAvailableForWriting () const {
                 return length > writeOffset ? length - writeOffset : 0;
             }
             /// \brief
@@ -285,13 +286,13 @@ namespace thekogans {
             /// NOTE: If advance == 0, the call is a silent noop.
             /// \param[in] advance Amount to advance the readOffset.
             /// \return Number of bytes actually advanced.
-            ui32 AdvanceReadOffset (ui32 advance);
+            std::size_t AdvanceReadOffset (std::size_t advance);
             /// \brief
             /// Advance the write offset taking care not to overflow.
             /// NOTE: If advance == 0, the call is a silent noop.
             /// \param[in] advance Amount to advance the writeOffset.
             /// \return Number of bytes actually advanced.
-            ui32 AdvanceWriteOffset (ui32 advance);
+            std::size_t AdvanceWriteOffset (std::size_t advance);
 
             /// \brief
             /// Reset the readOffset and the writeOffset to prepare the
@@ -350,9 +351,9 @@ namespace thekogans {
             SecureBuffer (
                 Endianness endianness = HostEndian,
                 ui8 *data = 0,
-                ui32 length = 0,
-                ui32 readOffset = 0,
-                ui32 writeOffset = 0) :
+                std::size_t length = 0,
+                std::size_t readOffset = 0,
+                std::size_t writeOffset = 0) :
                 Buffer (
                     endianness,
                     data,
@@ -368,9 +369,9 @@ namespace thekogans {
             /// \param[in] writeOffset Offset at which to write.
             SecureBuffer (
                 Endianness endianness,
-                ui32 length,
-                ui32 readOffset = 0,
-                ui32 writeOffset = 0) :
+                std::size_t length,
+                std::size_t readOffset = 0,
+                std::size_t writeOffset = 0) :
                 Buffer (
                     endianness,
                     length,
@@ -388,8 +389,8 @@ namespace thekogans {
                 Endianness endianness,
                 const ui8 *begin,
                 const ui8 *end,
-                ui32 readOffset = 0,
-                ui32 writeOffset = UI32_MAX) :
+                std::size_t readOffset = 0,
+                std::size_t writeOffset = SIZE_T_MAX) :
                 Buffer (
                     endianness,
                     begin,
@@ -410,7 +411,7 @@ namespace thekogans {
             /// \param[in] allocator Allocator to use to allocate new data.
             /// NOTE: The allocator paramater is ignored as SecureBuffer uses the SecureAllocator.
             virtual void Resize (
-                ui32 length,
+                std::size_t length,
                 Allocator * /*allocator*/ = &DefaultAllocator::Global);
 
             /// \brief
@@ -430,8 +431,8 @@ namespace thekogans {
             /// readOffset and writeOffset in to account. A straight
             /// subset of [data, data + length) is returned.
             virtual UniquePtr Subset (
-                ui32 offset,
-                ui32 count,
+                std::size_t offset,
+                std::size_t count,
                 Allocator * /*allocator*/ = &DefaultAllocator::Global) const;
 
         #if defined (THEKOGANS_UTIL_HAVE_ZLIB)
@@ -469,8 +470,8 @@ namespace thekogans {
             TenantReadBuffer (
                 Endianness endianness,
                 const ui8 *data,
-                ui32 length,
-                ui32 readOffset = 0) :
+                std::size_t length,
+                std::size_t readOffset = 0) :
                 Buffer (
                     endianness,
                     const_cast<ui8 *> (data),
@@ -484,9 +485,9 @@ namespace thekogans {
             /// \param[in] buffer Bytes to write.
             /// \param[in] count Number of bytes to write.
             /// \return Number of bytes actually written.
-            virtual ui32 Write (
+            virtual std::size_t Write (
                     const void * /*buffer*/,
-                    ui32 /*count*/) {
+                    std::size_t /*count*/) {
                 assert (0);
                 THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
                     "%s", "TenantReadBuffer can't Write.");
@@ -513,8 +514,8 @@ namespace thekogans {
             TenantWriteBuffer (
                 Endianness endianness,
                 ui8 *data,
-                ui32 length,
-                ui32 writeOffset = 0) :
+                std::size_t length,
+                std::size_t writeOffset = 0) :
                 Buffer (
                     endianness,
                     data,
@@ -539,22 +540,22 @@ namespace thekogans {
             const Buffer &buffer);
 
         /// \brief
-        /// Read a buffer from the given serializer.
+        /// Read a Buffer from the given \see{Serializer}.
         /// NOTE: Extraction does not preserve the buffer's allocator.
         /// After this function completes, the buffer's data will have
         /// been allocated using DefaultAllocator::Global.
         /// \param[in] serializer Where to read the buffer from.
-        /// \param[in] buffer Buffer to read.
+        /// \param[out] buffer Buffer to read.
         /// \return serializer.
         _LIB_THEKOGANS_UTIL_DECL Serializer & _LIB_THEKOGANS_UTIL_API operator >> (
             Serializer &serializer,
             Buffer &buffer);
         /// \brief
-        /// Read a buffer from the given serializer. If the pointer is 0, a new
-        /// \see{Buffer} will be allocated.
+        /// Read a Buffer from the given \see{Serializer}. If the pointer is 0, a new
+        /// Buffer will be allocated.
         /// NOTE: The note in the above extractor applies.
         /// \param[in] serializer Where to read the buffer from.
-        /// \param[in] buffer Buffer to read.
+        /// \param[out] buffer Buffer to read.
         /// \return serializer.
         _LIB_THEKOGANS_UTIL_DECL Serializer & _LIB_THEKOGANS_UTIL_API operator >> (
             Serializer &serializer,

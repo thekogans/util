@@ -70,7 +70,7 @@ namespace thekogans {
             /// \brief
             /// Return the serialized size of this guid.
             /// \return Serialized size of this guid.
-            inline ui32 Size () const {
+            inline std::size_t Size () const {
                 return SIZE;
             }
 
@@ -110,7 +110,7 @@ namespace thekogans {
 
         /// \brief
         /// Serialized GUID size.
-        const ui32 GUID_SIZE = GUID::SIZE;
+        const std::size_t GUID_SIZE = GUID::SIZE;
 
         /// \brief
         /// Compare two guids for order.

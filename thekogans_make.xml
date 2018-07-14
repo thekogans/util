@@ -167,6 +167,7 @@
     <cpp_header>$(organization)/$(project_directory)/SharedAllocator.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/SharedObject.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/Singleton.h</cpp_header>
+    <cpp_header>$(organization)/$(project_directory)/SizeT.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/SpinLock.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/SpinRWLock.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/StringUtils.h</cpp_header>
@@ -669,6 +670,7 @@
     <cpp_source>SHA3.cpp</cpp_source>
     <cpp_source>SharedAllocator.cpp</cpp_source>
     <cpp_source>SharedObject.cpp</cpp_source>
+    <cpp_source>SizeT.cpp</cpp_source>
     <cpp_source>SpinLock.cpp</cpp_source>
     <cpp_source>SpinRWLock.cpp</cpp_source>
     <cpp_source>StringUtils.cpp</cpp_source>

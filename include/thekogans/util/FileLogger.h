@@ -43,11 +43,11 @@ namespace thekogans {
             /// true = rotate the log, false = don't rotate the log.
             bool archive;
             /// \brief
-            /// Number of archives before we start droping.
+            /// Number of archives before we start dropping.
             ui32 archiveCount;
             /// \brief
             /// Max log file size before archiving.
-            ui32 maxLogFileSize;
+            std::size_t maxLogFileSize;
             /// \brief
             /// File to log to.
             SimpleFile file;
@@ -73,7 +73,7 @@ namespace thekogans {
                 const std::string &path_,
                 bool archive_ = true,
                 ui32 archiveCount_ = DEFAULT_ARCHIVE_COUNT,
-                ui32 maxLogFileSize_ = DEFAULT_MAX_LOG_FILE_SIZE,
+                std::size_t maxLogFileSize_ = DEFAULT_MAX_LOG_FILE_SIZE,
                 ui32 level = UI32_MAX) :
                 Logger (level),
                 path (path_),

@@ -90,7 +90,7 @@ namespace thekogans {
         void Hash::FromBuffer (
                 const void *buffer,
                 std::size_t size,
-                ui32 digestSize,
+                std::size_t digestSize,
                 Digest &digest) {
             if (buffer != 0 && size > 0) {
                 Init (digestSize);
@@ -104,7 +104,7 @@ namespace thekogans {
 
         void Hash::FromFile (
                 const std::string &path,
-                ui32 digestSize,
+                std::size_t digestSize,
                 Digest &digest) {
             ReadOnlyFile file (HostEndian, path);
             if (file.GetSize () > 0) {

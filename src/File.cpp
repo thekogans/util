@@ -124,9 +124,9 @@ namespace thekogans {
         }
 
     #if defined (TOOLCHAIN_OS_Windows)
-        ui32 File::Read (
+        std::size_t File::Read (
                 void *buffer,
-                ui32 count) {
+                std::size_t count) {
             DWORD countRead = 0;
             if (!ReadFile (handle, buffer, count, &countRead, 0)) {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
@@ -135,9 +135,9 @@ namespace thekogans {
             return countRead;
         }
 
-        ui32 File::Write (
+        std::size_t File::Write (
                 const void *buffer,
-                ui32 count) {
+                std::size_t count) {
             DWORD countWritten = 0;
             if (!WriteFile (handle, buffer, count, &countWritten, 0)) {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
@@ -146,9 +146,9 @@ namespace thekogans {
             return countWritten;
         }
     #else // defined (TOOLCHAIN_OS_Windows)
-        ui32 File::Read (
+        std::size_t File::Read (
                 void *buffer,
-                ui32 count) {
+                std::size_t count) {
             ssize_t countRead;
             do {
                 countRead = read (handle, buffer, count);
@@ -160,9 +160,9 @@ namespace thekogans {
             return (ui32)countRead;
         }
 
-        ui32 File::Write (
+        std::size_t File::Write (
                 const void *buffer,
-                ui32 count) {
+                std::size_t count) {
             ssize_t countWritten;
             do {
                 countWritten = write (handle, buffer, count);

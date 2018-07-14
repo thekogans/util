@@ -183,7 +183,7 @@ namespace thekogans {
                 /// \brief
                 /// Return location serialized size.
                 /// \return Location serialized size.
-                inline ui32 Size () const {
+                inline std::size_t Size () const {
                     return
                         Serializer::Size (file) +
                         Serializer::Size (function) +
@@ -211,7 +211,7 @@ namespace thekogans {
                 /// \return The XML reprentation of the Location.
             #endif // defined (THEKOGANS_UTIL_HAVE_PUGIXML)
                 std::string ToString (
-                    ui32 indentationLevel,
+                    std::size_t indentationLevel,
                     const char *tagName = TAG_LOCATION) const;
             };
             /// \brief
@@ -275,7 +275,7 @@ namespace thekogans {
             /// \brief
             /// Return exception serialized size.
             /// \return Exception serialized size.
-            inline ui32 Size () const {
+            inline std::size_t Size () const {
                 return
                     Serializer::Size (errorCode) +
                     Serializer::Size (message) +
@@ -410,7 +410,7 @@ namespace thekogans {
             /// </Exception>
             /// \return XML encoded exception.
             std::string ToString (
-                ui32 indentationLevel,
+                std::size_t indentationLevel,
                 const char *tagName = TAG_EXCEPTION) const;
 
             /// \brief

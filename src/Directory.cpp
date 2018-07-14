@@ -671,7 +671,7 @@ namespace thekogans {
     #endif // defined (THEKOGANS_UTIL_HAVE_PUGIXML)
 
         std::string Directory::Entry::ToString (
-                ui32 indentationLevel,
+                std::size_t indentationLevel,
                 const char *tagName) const {
             Attributes attributes;
             attributes.push_back (Attribute (ATTR_FILE_SYSTEM, fileSystemTostring (fileSystem)));

@@ -66,7 +66,7 @@ namespace thekogans {
             };
         }
 
-        void SHA1::Init (ui32 digestSize) {
+        void SHA1::Init (std::size_t digestSize) {
             if (digestSize == DIGEST_SIZE_160) {
                 memcpy (state, initialHashValue, sizeof (state));
                 bitCount = 0;

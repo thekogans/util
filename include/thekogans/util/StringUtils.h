@@ -168,9 +168,9 @@ namespace thekogans {
         /// \param[in] str String to hash.
         /// \param[in] hashTableSize The final value will be 0 < value < hashTableSize.
         /// \return String hash.
-        _LIB_THEKOGANS_UTIL_DECL ui32 _LIB_THEKOGANS_UTIL_API HashString (
+        _LIB_THEKOGANS_UTIL_DECL std::size_t _LIB_THEKOGANS_UTIL_API HashString (
             const std::string &str,
-            ui32 hashTableSize);
+            std::size_t hashTableSize);
 
         /// \brief
         /// Given a list of strings, return the longest common prefix.

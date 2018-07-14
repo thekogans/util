@@ -26,7 +26,7 @@ namespace thekogans {
 
         THEKOGANS_UTIL_IMPLEMENT_HASH (SHA3)
 
-        void SHA3::Init (ui32 digestSize_) {
+        void SHA3::Init (std::size_t digestSize_) {
             if (digestSize_ == DIGEST_SIZE_224 || digestSize_ == DIGEST_SIZE_256 ||
                     digestSize_ == DIGEST_SIZE_384 || digestSize_ == DIGEST_SIZE_512) {
                 digestSize = digestSize_;

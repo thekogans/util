@@ -154,8 +154,8 @@ namespace thekogans {
                 {kIOReturnNotResponding, "device is not responding"},
                 {kIOReturnInvalid, "unanticipated driver error"}
             };
-            const ui32 descriptionTableSize = THEKOGANS_UTIL_ARRAY_SIZE (descriptionTable);
-            for (ui32 i = 0; i < descriptionTableSize; ++i) {
+            const std::size_t descriptionTableSize = THEKOGANS_UTIL_ARRAY_SIZE (descriptionTable);
+            for (std::size_t i = 0; i < descriptionTableSize; ++i) {
                 if (descriptionTable[i].errorCode == errorCode) {
                     return descriptionTable[i].description;
                 }

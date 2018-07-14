@@ -60,7 +60,7 @@ namespace thekogans {
                 ui16 version;
                 /// \brief
                 /// Serializable size in bytes (not including the header).
-                ui32 size;
+                SizeT size;
 
                 /// \brief
                 /// ctor.
@@ -76,7 +76,7 @@ namespace thekogans {
                 Header (
                     const char *type_,
                     ui16 version_,
-                    ui32 size_) :
+                    std::size_t size_) :
                     magic (MAGIC32),
                     type (type_),
                     version (version_),
@@ -115,7 +115,7 @@ namespace thekogans {
                 /// \param[in] tagName The name of the leading tag.
                 /// \return XML representation of a header.
                 std::string ToString (
-                    ui32 indentationLevel = 0,
+                    std::size_t indentationLevel = 0,
                     const char *tagName = TAG_HEADER) const;
             };
 
@@ -415,7 +415,7 @@ namespace thekogans {
                 Serializable::Header (
                     serializable.Type (),
                     serializable.Version (),
-                    (ui32)serializable.Size ());
+                    serializable.Size ());
             serializable.Write (serializer);
             return serializer;
         }

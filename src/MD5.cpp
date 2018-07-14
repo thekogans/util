@@ -57,7 +57,7 @@ namespace thekogans {
             };
         }
 
-        void MD5::Init (ui32 digestSize) {
+        void MD5::Init (std::size_t digestSize) {
             if (digestSize == DIGEST_SIZE_128) {
                 memcpy (state, initialHashValue, sizeof (state));
                 bitCount = 0;

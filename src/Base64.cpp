@@ -140,13 +140,13 @@ namespace thekogans {
                 Buffer::UniquePtr encoded (
                     new Buffer (
                         HostEndian,
-                        (ui32)GetEncodedLength (
+                        GetEncodedLength (
                             buffer,
                             bufferLength,
                             lineLength,
                             linePad)));
                 encoded->AdvanceWriteOffset (
-                    (ui32)Encode (
+                    Encode (
                         buffer,
                         bufferLength,
                         lineLength,
@@ -188,8 +188,8 @@ namespace thekogans {
                     const void *buffer,
                     std::size_t bufferLength) {
                 if (buffer != 0 && bufferLength > 0) {
-                    Buffer output (HostEndian, (ui32)bufferLength);
-                    ui32 equalCount = 0;
+                    Buffer output (HostEndian, bufferLength);
+                    std::size_t equalCount = 0;
                     std::size_t index = 0;
                     for (const ui8 *bufferPtr = (const ui8 *)buffer,
                             *endBufferPtr = bufferPtr + bufferLength;
@@ -313,7 +313,7 @@ namespace thekogans {
             if (input.GetDataAvailableForReading () > 0) {
                 Buffer::UniquePtr output (
                     new Buffer (HostEndian,
-                        (ui32)DecodedLength (
+                        DecodedLength (
                             input.GetReadPtr (),
                             input.GetDataAvailableForReading ())));
                 const ui8 *bufferPtr = input.GetReadPtr ();

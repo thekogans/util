@@ -110,7 +110,7 @@ namespace thekogans {
             /// \brief
             /// Return hasher name.
             /// \return Hasher name.
-            virtual std::string GetName (ui32 /*digestSize*/) const = 0;
+            virtual std::string GetName (std::size_t /*digestSize*/) const = 0;
             /// This API is used in streaming situations. Call Init at the
             /// beginning of the stream. As data comes in, call Update with
             /// each successive chunk. Once all data has been received,
@@ -118,11 +118,11 @@ namespace thekogans {
             /// \brief
             /// Return hasher supported digest sizes.
             /// \param[out] digestSizes List of supported digest sizes.
-            virtual void GetDigestSizes (std::list<ui32> & /*digestSizes*/) const = 0;
+            virtual void GetDigestSizes (std::list<std::size_t> & /*digestSizes*/) const = 0;
             /// \brief
             /// Initialize the hasher.
             /// \param[in] digestSize digest size.
-            virtual void Init (ui32 /*digestSize*/) = 0;
+            virtual void Init (std::size_t /*digestSize*/) = 0;
             /// \brief
             /// Hash a buffer.
             /// \param[in] buffer Buffer to hash.
@@ -144,7 +144,7 @@ namespace thekogans {
             void FromBuffer (
                 const void *buffer,
                 std::size_t size,
-                ui32 digestSize,
+                std::size_t digestSize,
                 Digest &digest);
             /// \brief
             /// Create a digest from a given file.
@@ -153,7 +153,7 @@ namespace thekogans {
             /// \param[out] digest Where to store the generated digest.
             void FromFile (
                 const std::string &path,
-                ui32 digestSize,
+                std::size_t digestSize,
                 Digest &digest);
         };
 

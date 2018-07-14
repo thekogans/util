@@ -46,7 +46,7 @@ namespace thekogans {
             };
             /// \brief
             /// Digest size (DIGEST_SIZE_224 or DIGEST_SIZE_256).
-            ui32 digestSize;
+            std::size_t digestSize;
             /// \brief
             /// Incremental state used during hashing.
             ui32 state[STATE_SIZE];
@@ -58,7 +58,7 @@ namespace thekogans {
             ui8 buffer[BLOCK_SIZE];
             /// \brief
             /// Index in to the buffer where next write will occur.
-            ui32 bufferIndex;
+            std::size_t bufferIndex;
 
         public:
             /// \brief
@@ -71,7 +71,7 @@ namespace thekogans {
             /// \brief
             /// Initialize the hasher.
             /// \param[in] digestSize digest size.
-            void Init (ui32 digestSize);
+            void Init (std::size_t digestSize);
             /// \brief
             /// Hash a buffer. Call multiple times before
             /// Finalize to process incremental data.

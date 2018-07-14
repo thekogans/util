@@ -53,7 +53,7 @@ namespace thekogans {
     #endif // defined (THEKOGANS_UTIL_HAVE_PUGIXML)
 
         std::string Exception::Location::ToString (
-                ui32 indentationLevel,
+                std::size_t indentationLevel,
                 const char *tagName) const {
             Attributes attributes;
             attributes.push_back (Attribute (ATTR_FILE, Encodestring (file)));
@@ -257,7 +257,7 @@ namespace thekogans {
     #endif // defined (THEKOGANS_UTIL_HAVE_PUGIXML)
 
         std::string Exception::ToString (
-                ui32 indentationLevel,
+                std::size_t indentationLevel,
                 const char *tagName) const {
             Attributes attributes;
             attributes.push_back (Attribute (ATTR_ERROR_CODE, ErrorCodeTostring (errorCode)));

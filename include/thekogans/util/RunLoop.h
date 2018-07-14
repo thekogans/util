@@ -344,6 +344,25 @@ namespace thekogans {
             /// max - Slowest job.\n
             struct _LIB_THEKOGANS_UTIL_DECL Stats {
                 /// \brief
+                /// "RunLoop"
+                static const char * const TAG_RUN_LOOP;
+                /// \brief
+                /// "TotalJobs"
+                static const char * const ATTR_TOTAL_JOBS;
+                /// \brief
+                /// "TotalJobTime"
+                static const char * const ATTR_TOTAL_JOB_TIME;
+                /// \brief
+                /// "LastJob"
+                static const char * const TAG_LAST_JOB;
+                /// \brief
+                /// "MinJob"
+                static const char * const TAG_MIN_JOB;
+                /// \brief
+                /// "MaxJob"
+                static const char * const TAG_MAX_JOB;
+
+                /// \brief
                 /// Total jobs processed.
                 ui32 totalJobs;
                 /// \brief
@@ -354,6 +373,22 @@ namespace thekogans {
                 /// \brief
                 /// Job stats.
                 struct _LIB_THEKOGANS_UTIL_DECL Job {
+                    /// \brief
+                    /// "Job"
+                    static const char * const TAG_JOB;
+                    /// \brief
+                    /// "Id"
+                    static const char * const ATTR_ID;
+                    /// \brief
+                    /// "StartTime"
+                    static const char * const ATTR_START_TIME;
+                    /// \brief
+                    /// "EndTime"
+                    static const char * const ATTR_END_TIME;
+                    /// \brief
+                    /// "TotalTime"
+                    static const char * const ATTR_TOTAL_TIME;
+
                     /// \brief
                     /// Job id.
                     RunLoop::Job::Id id;
@@ -395,15 +430,15 @@ namespace thekogans {
 
                     /// \brief
                     /// Return the XML representation of the Job stats.
-                    /// \param[in] name Job stats name (last, min, max).
                     /// \param[in] indentationLevel Pretty print parameter. If
                     /// the resulting tag is to be included in a larger structure
                     /// you might want to provide a value that will embed it in
                     /// the structure.
+                    /// \param[in] tagName Job stats name.
                     /// \return The XML reprentation of the Job stats.
                     std::string ToString (
-                        const std::string &name,
-                        ui32 indentationLevel) const;
+                        std::size_t indentationLevel,
+                        const char *tagName = TAG_JOB) const;
                 };
                 /// \brief
                 /// Last job stats.
@@ -427,15 +462,15 @@ namespace thekogans {
 
                 /// \brief
                 /// Return the XML representation of the Stats.
-                /// \param[in] name RunLoop name.
                 /// \param[in] indentationLevel Pretty print parameter. If
                 /// the resulting tag is to be included in a larger structure
                 /// you might want to provide a value that will embed it in
                 /// the structure.
+                /// \param[in] tagName Root tag name.
                 /// \return The XML reprentation of the Stats.
                 std::string ToString (
-                    const std::string &name,
-                    ui32 indentationLevel) const;
+                    std::size_t indentationLevel,
+                    const char *tagName = TAG_RUN_LOOP) const;
 
             private:
                 /// \brief

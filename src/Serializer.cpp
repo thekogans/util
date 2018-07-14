@@ -57,9 +57,9 @@ namespace thekogans {
             return *this;
         }
 
-        ui32 Serializer::Size (const char *value) {
+        std::size_t Serializer::Size (const char *value) {
             if (value != 0) {
-                return (ui32)(strlen (value) + 1);
+                return strlen (value) + 1;
             }
             else {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
@@ -69,7 +69,7 @@ namespace thekogans {
 
         Serializer &Serializer::operator << (const char *value) {
             if (value != 0) {
-                ui32 size = Size (value);
+                std::size_t size = Size (value);
                 if (Write (value, size) != size) {
                     THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
                         "Write (value, %u) != %u", size, size);
@@ -103,19 +103,20 @@ namespace thekogans {
         }
 
         Serializer &Serializer::operator << (const std::string &value) {
-            ui32 length = (ui32)value.size ();
-            *this << length;
-            if (length > 0) {
-                if (Write (value.c_str (), length) != length) {
+            *this << SizeT (value.size ());
+            if (value.size () > 0) {
+                if (Write (value.c_str (), value.size ()) != value.size ()) {
                     THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                        "Write (value.c_str (), %u) != %u", length, length);
+                        "Write (value.c_str (), %u) != %u",
+                        value.size (),
+                        value.size ());
                 }
             }
             return *this;
         }
 
         Serializer &Serializer::operator >> (std::string &value) {
-            ui32 length;
+            SizeT length;
             *this >> length;
             if (length > 0) {
                 value.resize (length);
@@ -339,10 +340,9 @@ namespace thekogans {
         }
 
         Serializer &Serializer::operator << (const std::vector<i8> &value) {
-            ui32 length = (ui32)value.size ();
-            *this << length;
-            if (length > 0) {
-                ui32 size = length * I8_SIZE;
+            *this << SizeT (value.size ());
+            if (value.size () > 0) {
+                std::size_t size = value.size () * I8_SIZE;
                 if (Write (&value[0], size) != size) {
                     THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
                         "Write (&value[0], %u) != %u", size, size);
@@ -352,11 +352,11 @@ namespace thekogans {
         }
 
         Serializer &Serializer::operator >> (std::vector<i8> &value) {
-            ui32 length;
+            SizeT length;
             *this >> length;
             if (length > 0) {
                 value.resize (length);
-                ui32 size = length * I8_SIZE;
+                std::size_t size = length * I8_SIZE;
                 if (Read (&value[0], size) != size) {
                     THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
                         "Read (&value[0], %u) != %u", size, size);
@@ -369,10 +369,9 @@ namespace thekogans {
         }
 
         Serializer &Serializer::operator << (const std::vector<ui8> &value) {
-            ui32 length = (ui32)value.size ();
-            *this << length;
-            if (length > 0) {
-                ui32 size = length * UI8_SIZE;
+            *this << SizeT (value.size ());
+            if (value.size () > 0) {
+                std::size_t size = value.size () * UI8_SIZE;
                 if (Write (&value[0], size) != size) {
                     THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
                         "Write (&value[0], %u) != %u", size, size);
@@ -382,11 +381,11 @@ namespace thekogans {
         }
 
         Serializer &Serializer::operator >> (std::vector<ui8> &value) {
-            ui32 length;
+            SizeT length;
             *this >> length;
             if (length > 0) {
                 value.resize (length);
-                ui32 size = length * UI8_SIZE;
+                std::size_t size = length * UI8_SIZE;
                 if (Read (&value[0], size) != size) {
                     THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
                         "Read (&value[0], %u) != %u", size, size);

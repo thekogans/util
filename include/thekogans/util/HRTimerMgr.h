@@ -200,7 +200,7 @@ namespace thekogans {
                 /// spaces to add to the beginning of the string.
                 /// \return An XML string from TimerInfoBase parameters
                 /// and attributes.
-                virtual std::string ToString (ui32 /*indentationLevel*/) const = 0;
+                virtual std::string ToString (std::size_t /*indentationLevel*/) const = 0;
 
                 /// \brief
                 /// Add a used defined key/value pair to be included
@@ -277,7 +277,7 @@ namespace thekogans {
                 /// spaces to add to the beginning of the string.
                 /// \return An XML string from TimerInfo parameters
                 /// and attributes.
-                virtual std::string ToString (ui32 indentationLevel) const;
+                virtual std::string ToString (std::size_t indentationLevel) const;
 
                 /// \brief
                 /// Record the current time as the start time.
@@ -360,7 +360,7 @@ namespace thekogans {
                 /// spaces to add to the beginning of the string.
                 /// \return An XML string from TimerInfo parameters
                 /// and attributes.
-                virtual std::string ToString (ui32 indentationLevel) const;
+                virtual std::string ToString (std::size_t indentationLevel) const;
 
                 /// \brief
                 /// Start a new sub-scope.
@@ -575,7 +575,7 @@ namespace thekogans {
             /// spaces to add to the beginning of the string.
             /// \return An XML string from root scope parameters
             /// and attributes.
-            inline std::string ToString (ui32 indentationLevel) const {
+            inline std::string ToString (std::size_t indentationLevel) const {
                 return root.ToString (indentationLevel);
             }
 

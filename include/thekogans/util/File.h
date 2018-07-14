@@ -156,17 +156,17 @@ namespace thekogans {
             /// \param[out] buffer Where to place the bytes.
             /// \param[in] count Number of bytes to read.
             /// \return Number of bytes actually read.
-            virtual ui32 Read (
+            virtual std::size_t Read (
                 void *buffer,
-                ui32 count);
+                std::size_t count);
             /// \brief
             /// Write bytes to a file.
             /// \param[in] buffer Where the bytes come from.
             /// \param[in] count Number of bytes to write.
             /// \return Number of bytes actually written.
-            virtual ui32 Write (
+            virtual std::size_t Write (
                 const void *buffer,
-                ui32 count);
+                std::size_t count);
 
             /// \brief
             /// Return the file pointer position.

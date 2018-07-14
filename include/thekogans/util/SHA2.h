@@ -55,7 +55,7 @@ namespace thekogans {
         private:
             /// \brief
             /// The size of digest the hash is being created for.
-            ui32 digestSize;
+            std::size_t digestSize;
             /// \brief
             /// Hasher for DIGEST_SIZE_224 and DIGEST_SIZE_256 hash sizes.
             SHA2_224_256 hasher_224_256;
@@ -72,16 +72,16 @@ namespace thekogans {
             /// \brief
             /// Return hasher name.
             /// \return Hasher name.
-            virtual std::string GetName (ui32 digestSize) const {
+            virtual std::string GetName (std::size_t digestSize) const {
                 return FormatString ("SHA2-%u", digestSize * 8);
             }
             /// \brief
             /// Return hasher supported digest sizes.
             /// \param[out] digestSizes List of supported digest sizes.
-            virtual void GetDigestSizes (std::list<ui32> &digestSizes) const;
+            virtual void GetDigestSizes (std::list<std::size_t> &digestSizes) const;
             /// Initialize the hasher.
             /// \param[in] digestSize Digest size.
-            virtual void Init (ui32 digestSize);
+            virtual void Init (std::size_t digestSize);
             /// \brief
             /// Hash a buffer.
             /// \param[in] buffer Buffer to hash.

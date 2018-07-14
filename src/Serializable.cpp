@@ -28,7 +28,7 @@ namespace thekogans {
         const char * const Serializable::Header::ATTR_SIZE = "Size";
 
         std::string Serializable::Header::ToString (
-                ui32 indentationLevel,
+                std::size_t indentationLevel,
                 const char *tagName) const {
             Attributes attributes;
             attributes.push_back (Attribute (ATTR_MAGIC, ui32Tostring (magic)));
@@ -62,17 +62,17 @@ namespace thekogans {
             Header header (
                 serializable.Type (),
                 serializable.Version (),
-                (ui32)serializable.Size ());
+                serializable.Size ());
             return header.Size () + header.size;
         }
 
         std::size_t Serializable::Serialize (ui8 *buffer) const {
             if (buffer != 0) {
-                Header header (Type (), Version (), (ui32)Size ());
+                Header header (Type (), Version (), Size ());
                 TenantWriteBuffer buffer_ (
                     NetworkEndian,
                     buffer,
-                    (ui32)(header.Size () + header.size));
+                    header.Size () + header.size);
                 buffer_ << header;
                 Write (buffer_);
                 return buffer_.GetDataAvailableForReading ();
@@ -84,11 +84,11 @@ namespace thekogans {
         }
 
         Buffer::UniquePtr Serializable::Serialize () const {
-            Header header (Type (), Version (), (ui32)Size ());
+            Header header (Type (), Version (), Size ());
             Buffer::UniquePtr buffer (
                 new Buffer (
                     NetworkEndian,
-                    (ui32)(header.Size () + header.size)));
+                    header.Size () + header.size));
             *buffer << header;
             Write (*buffer);
             return buffer;

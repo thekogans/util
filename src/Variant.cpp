@@ -187,8 +187,8 @@ namespace thekogans {
                 type == VALUE_GUID ? TYPE_GUID : TYPE_Invalid;
         }
 
-        ui32 Variant::Size () const {
-            ui32 size = UI32_SIZE;
+        std::size_t Variant::Size () const {
+            std::size_t size = UI32_SIZE;
             switch (type) {
                 case Variant::TYPE_Invalid:
                     break;
@@ -226,7 +226,8 @@ namespace thekogans {
                     size += F64_SIZE;
                     break;
                 case Variant::TYPE_string: {
-                    size += (ui32)(value._string->size () + 1);
+                    assert (value._string != 0);
+                    size += Serializer::Size (*value._string);
                     break;
                 }
                 case Variant::TYPE_GUID: {
@@ -237,7 +238,7 @@ namespace thekogans {
             return size;
         }
 
-        ui32 Variant::Hash (ui32 radix) const {
+        std::size_t Variant::Hash (std::size_t radix) const {
             switch (type) {
                 case Variant::TYPE_Invalid:
                     return 0;
@@ -260,9 +261,9 @@ namespace thekogans {
                 case Variant::TYPE_ui64:
                     return value._ui64 % radix;
                 case Variant::TYPE_f32:
-                    return (ui32)fmod (value._f32, (f32)radix);
+                    return (std::size_t)fmod (value._f32, (f32)radix);
                 case Variant::TYPE_f64:
-                    return (ui32)fmod (value._f64, (f64)radix);
+                    return (std::size_t)fmod (value._f64, (f64)radix);
                 case Variant::TYPE_string:
                     return HashString (*value._string, radix);
                 case Variant::TYPE_GUID:
@@ -444,7 +445,7 @@ namespace thekogans {
     #endif // defined (THEKOGANS_UTIL_HAVE_PUGIXML)
 
         std::string Variant::ToString (
-                ui32 indentationLevel,
+                std::size_t indentationLevel,
                 const char *tagName) const {
             std::string str;
             switch (type) {
@@ -555,7 +556,7 @@ namespace thekogans {
     #endif // defined (THEKOGANS_UTIL_HAVE_PUGIXML)
 
         std::string Variant::ToStringWithAttributes (
-                ui32 indentationLevel,
+                std::size_t indentationLevel,
                 const char *tagName) const {
             std::string str;
             switch (type) {

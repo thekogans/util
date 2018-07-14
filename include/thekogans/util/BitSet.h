@@ -22,6 +22,7 @@
 #include <vector>
 #include "thekogans/util/Config.h"
 #include "thekogans/util/Types.h"
+#include "thekogans/util/SizeT.h"
 #include "thekogans/util/Serializer.h"
 
 namespace thekogans {
@@ -41,7 +42,7 @@ namespace thekogans {
             std::vector<ui32> bits;
             /// \brief
             /// Size of the bit set.
-            std::size_t size;
+            SizeT size;
 
             /// \brief
             /// ctor.
@@ -310,8 +311,7 @@ namespace thekogans {
         inline Serializer &operator << (
                 Serializer &serializer,
                 const BitSet &bitSet) {
-            ui32 size = (ui32)bitSet.size;
-            serializer << bitSet.bits << size;
+            serializer << bitSet.bits << bitSet.size;
             return serializer;
         }
 
@@ -323,9 +323,7 @@ namespace thekogans {
         inline Serializer &operator >> (
                 Serializer &serializer,
                 BitSet &bitSet) {
-            ui32 size;
-            serializer >> bitSet.bits >> size;
-            bitSet.size = size;
+            serializer >> bitSet.bits >> bitSet.size;
             return serializer;
         }
 

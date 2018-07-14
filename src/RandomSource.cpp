@@ -50,7 +50,7 @@ namespace thekogans {
         }
 
         namespace {
-            ui32 GetHardwareBytes (
+            std::size_t GetHardwareBytes (
                     void *buffer,
                     std::size_t count) {
             #if defined (TOOLCHAIN_ARCH_i386) || defined (TOOLCHAIN_ARCH_x86_64)
@@ -104,20 +104,20 @@ namespace thekogans {
                     }
                     // Wipe value on exit.
                     *((volatile ui32 *)&value) = 0;
-                    return (ui32)count;
+                    return count;
                 }
             #endif // defined (TOOLCHAIN_ARCH_i386) || defined (TOOLCHAIN_ARCH_x86_64)
                 return 0;
             }
         }
 
-        ui32 RandomSource::GetBytes (
+        std::size_t RandomSource::GetBytes (
                 void *buffer,
                 std::size_t count) {
             if (buffer != 0 && count > 0) {
                 LockGuard<SpinLock> guard (spinLock);
                 // If a hardware random source exists, use it first.
-                ui32 hardwareCount = GetHardwareBytes (buffer, count);
+                std::size_t hardwareCount = GetHardwareBytes (buffer, count);
                 if (hardwareCount == count) {
                     return hardwareCount;
                 }
@@ -131,11 +131,11 @@ namespace thekogans {
                     THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
                         THEKOGANS_UTIL_OS_ERROR_CODE);
                 }
-                return (ui32)count;
+                return count;
             #else // defined (TOOLCHAIN_OS_Windows)
                 return hardwareCount + urandom.Read (
                     (ui8 *)buffer + hardwareCount,
-                    (ui32)(count - hardwareCount));
+                    count - hardwareCount);
             #endif // defined (TOOLCHAIN_OS_Windows)
             }
             else {
@@ -155,7 +155,7 @@ namespace thekogans {
             }
         }
 
-        ui32 RandomSource::GetSeed (
+        std::size_t RandomSource::GetSeed (
                 void *buffer,
                 std::size_t count) {
             if (buffer != 0 && count > 0) {
@@ -211,7 +211,7 @@ namespace thekogans {
                     }
                     // Wipe value on exit.
                     *((volatile ui32 *)&value) = 0;
-                    return (ui32)count;
+                    return count;
                 }
             #endif // defined (TOOLCHAIN_ARCH_i386) || defined (TOOLCHAIN_ARCH_x86_64)
                 return 0;

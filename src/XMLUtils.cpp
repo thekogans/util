@@ -35,7 +35,7 @@ namespace thekogans {
         _LIB_THEKOGANS_UTIL_DECL extern const char * const XML_FALSE = "false";
 
         _LIB_THEKOGANS_UTIL_DECL std::string _LIB_THEKOGANS_UTIL_API OpenTag (
-                ui32 indentationLevel,
+                std::size_t indentationLevel,
                 const char *tagName,
                 const Attributes &attributes,
                 bool close,
@@ -63,7 +63,7 @@ namespace thekogans {
         }
 
         _LIB_THEKOGANS_UTIL_DECL std::string _LIB_THEKOGANS_UTIL_API CloseTag (
-                ui32 indentationLevel,
+                std::size_t indentationLevel,
                 const char *tagName,
                 bool endl) {
             std::ostringstream stream;

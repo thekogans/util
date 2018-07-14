@@ -212,10 +212,10 @@ namespace thekogans {
             return !str.empty () ? HexFormatBuffer (&str[0], str.size ()) : std::string ();
         }
 
-        _LIB_THEKOGANS_UTIL_DECL ui32 _LIB_THEKOGANS_UTIL_API HashString (
+        _LIB_THEKOGANS_UTIL_DECL std::size_t _LIB_THEKOGANS_UTIL_API HashString (
                 const std::string &str,
-                ui32 hashTableSize) {
-            ui32 hash = 5381;
+                std::size_t hashTableSize) {
+            std::size_t hash = 5381;
             for (std::size_t i = 0, count = str.size (); i < count; ++i) {
                 hash = ((hash << 5) + hash) ^ str[i]; // hash * 33 ^ str[i]
             }

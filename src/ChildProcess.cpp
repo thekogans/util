@@ -599,12 +599,12 @@ namespace thekogans {
                 std::size_t chunkSize,
                 bool reap,
                 const TimeSpec &timeSpec) {
-            Buffer::UniquePtr buffer (new Buffer (HostEndian, (ui32)chunkSize));
+            Buffer::UniquePtr buffer (new Buffer (HostEndian, chunkSize));
             TenantFile stdOut (HostEndian, handle, std::string ());
             while (buffer->AdvanceWriteOffset (
                     stdOut.Read (buffer->GetWritePtr (), buffer->GetDataAvailableForWriting ())) > 0) {
                 if (buffer->GetDataAvailableForWriting () == 0) {
-                    buffer->Resize (buffer->GetDataAvailableForReading () + (ui32)chunkSize);
+                    buffer->Resize (buffer->GetDataAvailableForReading () + chunkSize);
                 }
             }
             if (reap) {

@@ -65,7 +65,7 @@ namespace thekogans {
             ui8 buffer[BLOCK_SIZE];
             /// \brief
             /// Index in to the buffer where next write will occur.
-            ui32 bufferIndex;
+            std::size_t bufferIndex;
 
         public:
             /// \brief
@@ -77,18 +77,18 @@ namespace thekogans {
             /// \brief
             /// Return hasher name.
             /// \return Hasher name.
-            virtual std::string GetName (ui32 /*digestSize*/) const {
+            virtual std::string GetName (std::size_t /*digestSize*/) const {
                 return "MD5";
             }
             /// \brief
             /// Return hasher supported digest sizes.
             /// \param[out] digestSizes List of supported digest sizes.
-            virtual void GetDigestSizes (std::list<ui32> &digestSizes) const {
+            virtual void GetDigestSizes (std::list<std::size_t> &digestSizes) const {
                 digestSizes.push_back (DIGEST_SIZE_128);
             }
             /// \brief
             /// Initialize the hasher.
-            virtual void Init (ui32 digestSize);
+            virtual void Init (std::size_t digestSize);
             /// \brief
             /// Hash a buffer. Call multiple times before
             /// Finalize to process incremental data.

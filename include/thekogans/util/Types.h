@@ -226,46 +226,55 @@ namespace thekogans {
 
         /// \brief
         /// bool type size.
-        const ui32 BOOL_SIZE = sizeof (ui8);
+        const std::size_t BOOL_SIZE = sizeof (ui8);
         /// \brief
         /// Signed 8 bit type size.
-        const ui32 I8_SIZE = sizeof (i8);
+        const std::size_t I8_SIZE = sizeof (i8);
         /// \brief
         /// Unsigned 8 bit type size.
-        const ui32 UI8_SIZE = sizeof (ui8);
+        const std::size_t UI8_SIZE = sizeof (ui8);
         /// \brief
         /// Signed 16 bit type size.
-        const ui32 I16_SIZE = sizeof (i16);
+        const std::size_t I16_SIZE = sizeof (i16);
         /// \brief
         /// Unsigned 16 bit type size.
-        const ui32 UI16_SIZE = sizeof (ui16);
+        const std::size_t UI16_SIZE = sizeof (ui16);
         /// \brief
         /// Signed 32 bit type size.
-        const ui32 I32_SIZE = sizeof (i32);
+        const std::size_t I32_SIZE = sizeof (i32);
         /// \brief
         /// Unsigned 32 bit type size.
-        const ui32 UI32_SIZE = sizeof (ui32);
+        const std::size_t UI32_SIZE = sizeof (ui32);
         /// \brief
         /// Signed 64 bit type size.
-        const ui32 I64_SIZE = sizeof (i64);
+        const std::size_t I64_SIZE = sizeof (i64);
         /// \brief
         /// Unsigned 64 bit type size.
-        const ui32 UI64_SIZE = sizeof (ui64);
+        const std::size_t UI64_SIZE = sizeof (ui64);
         /// \brief
         /// 32 bit float type size.
-        const ui32 F32_SIZE = sizeof (f32);
+        const std::size_t F32_SIZE = sizeof (f32);
         /// \brief
         /// 64 bit float type size.
-        const ui32 F64_SIZE = sizeof (f64);
+        const std::size_t F64_SIZE = sizeof (f64);
         /// \brief
         /// Natural machine word size.
-        const ui32 MACHINE_WORD_SIZE = sizeof (MachineWord);
+        const std::size_t MACHINE_WORD_SIZE = sizeof (MachineWord);
         /// \brief
         /// ssize_t type size.
-        const ui32 SSIZE_T_SIZE = sizeof (ssize_t);
+        const std::size_t SSIZE_T_SIZE = sizeof (ssize_t);
         /// \brief
         /// std::size_t type size.
-        const ui32 SIZE_T_SIZE = sizeof (std::size_t);
+        const std::size_t SIZE_T_SIZE = sizeof (std::size_t);
+
+        /// \def THEKOGANS_UTIL_IS_ODD(value)
+        /// Evaluates to true if the given value is odd.
+        /// \param[in] value Value to test for odd.
+        #define THEKOGANS_UTIL_IS_ODD(value) (((value) & 1) == 1)
+        /// \def THEKOGANS_UTIL_IS_EVEN(value)
+        /// Evaluates to true if the given value is even.
+        /// \param[in] value Value to test for even.
+        #define THEKOGANS_UTIL_IS_EVEN(value) (((value) & 1) == 0)
 
         /// \brief
         /// VERY IMPORTANT: index = 0 - most significant byte/word/doubleword

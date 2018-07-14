@@ -23,14 +23,14 @@ namespace thekogans {
 
         THEKOGANS_UTIL_IMPLEMENT_HASH (SHA2)
 
-        void SHA2::GetDigestSizes (std::list<ui32> &digestSizes) const {
+        void SHA2::GetDigestSizes (std::list<std::size_t> &digestSizes) const {
             digestSizes.push_back (DIGEST_SIZE_224);
             digestSizes.push_back (DIGEST_SIZE_256);
             digestSizes.push_back (DIGEST_SIZE_384);
             digestSizes.push_back (DIGEST_SIZE_512);
         }
 
-        void SHA2::Init (ui32 digestSize_) {
+        void SHA2::Init (std::size_t digestSize_) {
             digestSize = digestSize_;
             switch (digestSize) {
                 case DIGEST_SIZE_224:

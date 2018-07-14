@@ -93,7 +93,7 @@ namespace thekogans {
             /// \param[out] buffer Buffer where random bytes will be placed.
             /// \param[in] count Count of random bytes to place in the buffer.
             /// \return Actual count of random bytes placed in the buffer.
-            ui32 GetBytes (
+            std::size_t GetBytes (
                 void *buffer,
                 std::size_t count);
 
@@ -147,7 +147,7 @@ namespace thekogans {
             /// \param[out] buffer Buffer where seed bytes will be placed.
             /// \param[in] count Count of seed bytes to place in the buffer.
             /// \return Actual count of seed bytes placed in the buffer.
-            ui32 GetSeed (
+            std::size_t GetSeed (
                 void *buffer,
                 std::size_t count);
 

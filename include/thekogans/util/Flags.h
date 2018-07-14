@@ -49,7 +49,7 @@ namespace thekogans {
             /// \brief
             /// Return serialized size of flags.
             /// \return Serialized size of flags.
-            inline ui32 Size () const {
+            inline std::size_t Size () const {
                 return Serializer::Size (flags);
             }
 
@@ -150,7 +150,7 @@ namespace thekogans {
             /// Left shift assign operator.
             /// \param[in] count Bit count to shift.
             /// \return *this
-            inline Flags &operator <<= (ui32 count) {
+            inline Flags &operator <<= (std::size_t count) {
                 flags <<= count;
                 return *this;
             }
@@ -158,7 +158,7 @@ namespace thekogans {
             /// Right shift assign operator.
             /// \param[in] count Bit count to shift.
             /// \return *this
-            inline Flags &operator >>= (ui32 count) {
+            inline Flags &operator >>= (std::size_t count) {
                 flags >>= count;
                 return *this;
             }

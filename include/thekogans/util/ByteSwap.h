@@ -85,7 +85,7 @@ namespace thekogans {
 
         /// \brief
         /// Serialized size of Endianness.
-        const ui32 ENDIANNESS_SIZE = UI8_SIZE;
+        const std::size_t ENDIANNESS_SIZE = UI8_SIZE;
 
         namespace detail {
             /// \brief

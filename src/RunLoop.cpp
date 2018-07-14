@@ -88,6 +88,12 @@ namespace thekogans {
         }
     #endif // defined (TOOLCHAIN_OS_Windows)
 
+        const char * const RunLoop::Stats::Job::TAG_JOB = "Job";
+        const char * const RunLoop::Stats::Job::ATTR_ID = "Id";
+        const char * const RunLoop::Stats::Job::ATTR_START_TIME = "StartTime";
+        const char * const RunLoop::Stats::Job::ATTR_END_TIME = "EndTime";
+        const char * const RunLoop::Stats::Job::ATTR_TOTAL_TIME = "TotalTime";
+
         void RunLoop::Stats::Job::Reset () {
             id.clear ();
             startTime = 0;
@@ -96,16 +102,22 @@ namespace thekogans {
         }
 
         std::string RunLoop::Stats::Job::ToString (
-                const std::string &name,
-                ui32 indentationLevel) const {
-            assert (!name.empty ());
+                std::size_t indentationLevel,
+                const char *tagName) const {
             Attributes attributes;
-            attributes.push_back (Attribute ("id", id));
-            attributes.push_back (Attribute ("startTime", ui64Tostring (startTime)));
-            attributes.push_back (Attribute ("endTime", ui64Tostring (endTime)));
-            attributes.push_back (Attribute ("totalTime", ui64Tostring (totalTime)));
-            return OpenTag (indentationLevel, name.c_str (), attributes, true, true);
+            attributes.push_back (Attribute (ATTR_ID, id));
+            attributes.push_back (Attribute (ATTR_START_TIME, ui64Tostring (startTime)));
+            attributes.push_back (Attribute (ATTR_END_TIME, ui64Tostring (endTime)));
+            attributes.push_back (Attribute (ATTR_TOTAL_TIME, ui64Tostring (totalTime)));
+            return OpenTag (indentationLevel, tagName, attributes, true, true);
         }
+
+        const char * const RunLoop::Stats::TAG_RUN_LOOP = "RunLoop";
+        const char * const RunLoop::Stats::ATTR_TOTAL_JOBS = "TotalJobs";
+        const char * const RunLoop::Stats::ATTR_TOTAL_JOB_TIME = "TotalJobTime";
+        const char * const RunLoop::Stats::TAG_LAST_JOB = "LastJob";
+        const char * const RunLoop::Stats::TAG_MIN_JOB = "MinJob";
+        const char * const RunLoop::Stats::TAG_MAX_JOB = "MaxJob";
 
         void RunLoop::Stats::Reset () {
             totalJobs = 0;
@@ -116,22 +128,22 @@ namespace thekogans {
         }
 
         std::string RunLoop::Stats::ToString (
-                const std::string &name,
-                ui32 indentationLevel) const {
+                std::size_t indentationLevel,
+                const char *tagName) const {
             Attributes attributes;
-            attributes.push_back (Attribute ("totalJobs", ui32Tostring (totalJobs)));
-            attributes.push_back (Attribute ("totalJobTime", ui64Tostring (totalJobTime)));
+            attributes.push_back (Attribute (ATTR_TOTAL_JOBS, ui32Tostring (totalJobs)));
+            attributes.push_back (Attribute (ATTR_TOTAL_JOB_TIME, ui64Tostring (totalJobTime)));
             return
                 OpenTag (
                     indentationLevel,
-                    !name.empty () ? name.c_str () : "RunLoop",
+                    tagName,
                     attributes,
                     false,
                     true) +
-                lastJob.ToString ("last", indentationLevel + 1) +
-                minJob.ToString ("min", indentationLevel + 1) +
-                maxJob.ToString ("max", indentationLevel + 1) +
-                CloseTag (indentationLevel, !name.empty () ? name.c_str () : "RunLoop");
+                lastJob.ToString (indentationLevel + 1, TAG_LAST_JOB) +
+                minJob.ToString (indentationLevel + 1, TAG_MIN_JOB) +
+                maxJob.ToString (indentationLevel + 1, TAG_MAX_JOB) +
+                CloseTag (indentationLevel, tagName);
         }
 
         void RunLoop::Stats::Update (

@@ -149,6 +149,7 @@ namespace thekogans {
                 //TYPE_Fraction
                 //TYPE_Exception
                 //TYPE_Flags
+                //TYPE_SizeT
                 //TYPE_TimeSpec
                 //TYPE_Version
             } type;
@@ -331,13 +332,13 @@ namespace thekogans {
             /// \brief
             /// Return underlying variant type size.
             /// \return Size of underlying variant type.
-            ui32 Size () const;
+            std::size_t Size () const;
 
             /// \brief
             /// Hash the variant value.
             /// \param[in] radix Modular radix.
             /// \return 0 < hash < radix
-            ui32 Hash (ui32 radix) const;
+            std::size_t Hash (std::size_t radix) const;
             /// \brief
             /// After calling this method, the variant is Invalid.
             void Clear ();
@@ -374,7 +375,7 @@ namespace thekogans {
             /// \param[in] tagName The name of the leading tag.
             /// \return Serialized XML representation of the variant.
             std::string ToString (
-                ui32 indentationLevel = 0,
+                std::size_t indentationLevel = 0,
                 const char *tagName = TAG_VARIANT) const;
 
         #if defined (THEKOGANS_UTIL_HAVE_PUGIXML)
@@ -392,7 +393,7 @@ namespace thekogans {
             /// \param[in] tagName The name of the leading tag.
             /// \return Serialized XML representation of the variant.
             std::string ToStringWithAttributes (
-                ui32 indentationLevel = 0,
+                std::size_t indentationLevel = 0,
                 const char *tagName = TAG_VARIANT) const;
         };
 

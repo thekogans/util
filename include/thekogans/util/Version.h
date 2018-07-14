@@ -103,7 +103,7 @@ namespace thekogans {
             /// \brief
             /// Return the serialized size of this version.
             /// \return Serialized size of this version.
-            inline ui32 Size () const {
+            inline std::size_t Size () const {
                 return
                     Serializer::Size (majorVersion) +
                     Serializer::Size (minorVersion) +
@@ -130,7 +130,7 @@ namespace thekogans {
 
         /// \brief
         /// Serialized Version size.
-        const ui32 VERSION_SIZE = UI32_SIZE + UI32_SIZE + UI32_SIZE;
+        const std::size_t VERSION_SIZE = UI32_SIZE + UI32_SIZE + UI32_SIZE;
 
         /// \brief
         /// Compare two versions for equality.

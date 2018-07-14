@@ -42,7 +42,7 @@ namespace thekogans {
             min = max = average = total = HRTimer::ComputeElapsedTime (start, stop);
         }
 
-        std::string HRTimerMgr::TimerInfo::ToString (ui32 indentationLevel) const {
+        std::string HRTimerMgr::TimerInfo::ToString (std::size_t indentationLevel) const {
             Attributes attributes_;
             attributes_.push_back (Attribute (ATTR_NAME, Encodestring (name)));
             attributes_.push_back (Attribute (ATTR_START, ui64Tostring (start)));
@@ -107,7 +107,7 @@ namespace thekogans {
             }
         }
 
-        std::string HRTimerMgr::ScopeInfo::ToString (ui32 indentationLevel) const {
+        std::string HRTimerMgr::ScopeInfo::ToString (std::size_t indentationLevel) const {
             ui32 count = 0;
             ui64 min = UI64_MAX;
             ui64 max = 0;

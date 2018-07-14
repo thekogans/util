@@ -25,6 +25,7 @@
 #include "thekogans/util/Config.h"
 #include "thekogans/util/Types.h"
 #include "thekogans/util/ByteSwap.h"
+#include "thekogans/util/SizeT.h"
 
 namespace thekogans {
     namespace util {
@@ -56,22 +57,22 @@ namespace thekogans {
             /// \param[out] buffer Where to place the bytes.
             /// \param[in] count Number of bytes to read.
             /// \return Number of bytes actually read.
-            virtual ui32 Read (
+            virtual std::size_t Read (
                 void * /*buffer*/,
-                ui32 /*count*/) = 0;
+                std::size_t /*count*/) = 0;
             /// \brief
             /// Write raw bytes.
             /// \param[in] buffer Bytes to write.
             /// \param[in] count Number of bytes to write.
             /// \return Number of bytes actually written.
-            virtual ui32 Write (
+            virtual std::size_t Write (
                 const void * /*buffer*/,
-                ui32 /*count*/) = 0;
+                std::size_t /*count*/) = 0;
 
             /// \brief
             /// Return serializer size.
             /// \return Serializer size.
-            inline ui32 Size () const {
+            inline std::size_t Size () const {
                 return ENDIANNESS_SIZE;
             }
 
@@ -81,18 +82,18 @@ namespace thekogans {
             /// This template is used to match non-integral types (structs).
             /// NOTE: If you get a compiler error that leads you here, it
             /// usually means that you're trying to serialize a struct and
-            /// you haven't defined a ui32 Size () const for it.
+            /// you haven't defined a std::size_t Size () const for it.
             /// \param[in] t Type whose Size function to call.
             /// \return Size of serialized type.
             template<typename T>
-            static ui32 Size (const T &t) {
-                return (ui32)t.Size ();
+            static std::size_t Size (const T &t) {
+                return t.Size ();
             }
 
             /// \brief
             /// Return serialized size of bool.
             /// \return Serialized size of bool.
-            static ui32 Size (Endianness /*value*/) {
+            static std::size_t Size (Endianness /*value*/) {
                 return ENDIANNESS_SIZE;
             }
 
@@ -110,7 +111,7 @@ namespace thekogans {
             /// \brief
             /// Return serialized size of bool.
             /// \return Serialized size of bool.
-            static ui32 Size (bool /*value*/) {
+            static std::size_t Size (bool /*value*/) {
                 return BOOL_SIZE;
             }
 
@@ -130,7 +131,7 @@ namespace thekogans {
             /// \brief
             /// Return serialized size of const char *.
             /// \return Serialized size of const char *.
-            static ui32 Size (const char *value);
+            static std::size_t Size (const char *value);
 
             /// \brief
             /// Serialize a c-string.
@@ -146,8 +147,8 @@ namespace thekogans {
             /// \brief
             /// Return serialized size of const std::string &.
             /// \return Serialized size of const std::string &.
-            static ui32 Size (const std::string &value) {
-                return UI32_SIZE + (ui32)value.size ();
+            static std::size_t Size (const std::string &value) {
+                return SizeT (value.size ()).Size () + value.size ();
             }
 
             /// \brief
@@ -164,7 +165,7 @@ namespace thekogans {
             /// \brief
             /// Return serialized size of i8.
             /// \return Serialized size of i8.
-            static ui32 Size (i8 /*value*/) {
+            static std::size_t Size (i8 /*value*/) {
                 return I8_SIZE;
             }
 
@@ -182,7 +183,7 @@ namespace thekogans {
             /// \brief
             /// Return serialized size of ui8.
             /// \return Serialized size of ui8.
-            static ui32 Size (ui8 /*value*/) {
+            static std::size_t Size (ui8 /*value*/) {
                 return UI8_SIZE;
             }
 
@@ -200,7 +201,7 @@ namespace thekogans {
             /// \brief
             /// Return serialized size of i16.
             /// \return Serialized size of i16.
-            static ui32 Size (i16 /*value*/) {
+            static std::size_t Size (i16 /*value*/) {
                 return I16_SIZE;
             }
 
@@ -220,7 +221,7 @@ namespace thekogans {
             /// \brief
             /// Return serialized size of ui16.
             /// \return Serialized size of ui16.
-            static ui32 Size (ui16 /*value*/) {
+            static std::size_t Size (ui16 /*value*/) {
                 return UI16_SIZE;
             }
 
@@ -240,7 +241,7 @@ namespace thekogans {
             /// \brief
             /// Return serialized size of i32.
             /// \return Serialized size of i32.
-            static ui32 Size (i32 /*value*/) {
+            static std::size_t Size (i32 /*value*/) {
                 return I32_SIZE;
             }
 
@@ -260,7 +261,7 @@ namespace thekogans {
             /// \brief
             /// Return serialized size of ui32.
             /// \return Serialized size of ui32.
-            static ui32 Size (ui32 /*value*/) {
+            static std::size_t Size (ui32 /*value*/) {
                 return UI32_SIZE;
             }
 
@@ -280,7 +281,7 @@ namespace thekogans {
             /// \brief
             /// Return serialized size of i64.
             /// \return Serialized size of i64.
-            static ui32 Size (i64 /*value*/) {
+            static std::size_t Size (i64 /*value*/) {
                 return I64_SIZE;
             }
 
@@ -300,7 +301,7 @@ namespace thekogans {
             /// \brief
             /// Return serialized size of ui64.
             /// \return Serialized size of ui64.
-            static ui32 Size (ui64 /*value*/) {
+            static std::size_t Size (ui64 /*value*/) {
                 return UI64_SIZE;
             }
 
@@ -320,7 +321,7 @@ namespace thekogans {
             /// \brief
             /// Return serialized size of f32.
             /// \return Serialized size of f32.
-            static ui32 Size (f32 /*value*/) {
+            static std::size_t Size (f32 /*value*/) {
                 return F32_SIZE;
             }
 
@@ -340,7 +341,7 @@ namespace thekogans {
             /// \brief
             /// Return serialized size of f64.
             /// \return Serialized size of f64.
-            static ui32 Size (f64 /*value*/) {
+            static std::size_t Size (f64 /*value*/) {
                 return F64_SIZE;
             }
 
@@ -361,9 +362,9 @@ namespace thekogans {
             /// Return serialized size of const std::vector<T> &.
             /// \return Serialized size of const std::vector<T> &.
             template<typename T>
-            static ui32 Size (const std::vector<T> &value) {
-                ui32 size = UI32_SIZE;
-                for (ui32 i = 0, count = (ui32)value.size (); i < count; ++i) {
+            static std::size_t Size (const std::vector<T> &value) {
+                std::size_t size = SizeT (value.size ()).Size ();
+                for (std::size_t i = 0, count = value.size (); i < count; ++i) {
                     size += Size (value[i]);
                 }
                 return size;
@@ -376,9 +377,8 @@ namespace thekogans {
             /// \return *this.
             template<typename T>
             inline Serializer &operator << (const std::vector<T> &value) {
-                ui32 count = (ui32)value.size ();
-                *this << count;
-                for (ui32 i = 0; i < count; ++i) {
+                *this << SizeT (value.size ());
+                for (std::size_t i = 0, count = value.size (); i < count; ++i) {
                     *this << value[i];
                 }
                 return *this;
@@ -390,10 +390,10 @@ namespace thekogans {
             /// \return *this.
             template<typename T>
             inline Serializer &operator >> (std::vector<T> &value) {
-                ui32 count;
+                SizeT count;
                 *this >> count;
                 std::vector<T> temp (count);
-                for (ui32 i = 0; i < count; ++i) {
+                for (std::size_t i = 0; i < count; ++i) {
                     *this >> temp[i];
                 }
                 value.swap (temp);
@@ -409,8 +409,8 @@ namespace thekogans {
             /// \brief
             /// Return serialized size of const std::vector<i8> &.
             /// \return Serialized size of const std::vector<i8> &.
-            static ui32 Size (const std::vector<i8> &value) {
-                return UI32_SIZE + (ui32)value.size ();
+            static std::size_t Size (const std::vector<i8> &value) {
+                return SizeT (value.size ()).Size () + value.size ();
             }
 
             /// \brief
@@ -427,8 +427,8 @@ namespace thekogans {
             /// \brief
             /// Return serialized size of const std::vector<ui8> &.
             /// \return Serialized size of const std::vector<ui8> &.
-            static ui32 Size (const std::vector<ui8> &value) {
-                return UI32_SIZE + (ui32)value.size ();
+            static std::size_t Size (const std::vector<ui8> &value) {
+                return SizeT (value.size ()).Size () + value.size ();
             }
 
             /// \brief
@@ -446,8 +446,8 @@ namespace thekogans {
             /// Return serialized size of const std::list<T> &.
             /// \return Serialized size of const std::list<T> &.
             template<typename T>
-            static ui32 Size (const std::list<T> &value) {
-                ui32 size = UI32_SIZE;
+            static std::size_t Size (const std::list<T> &value) {
+                std::size_t size = SizeT (value.size ()).Size ();
                 for (typename std::list<T>::const_iterator
                         it = value.begin (),
                         end = value.end (); it != end; ++it) {
@@ -463,8 +463,7 @@ namespace thekogans {
             /// \return *this.
             template<typename T>
             inline Serializer &operator << (const std::list<T> &value) {
-                ui32 count = (ui32)value.size ();
-                *this << count;
+                *this << SizeT (value.size ());
                 for (typename std::list<T>::const_iterator
                         it = value.begin (),
                         end = value.end (); it != end; ++it) {
@@ -479,10 +478,10 @@ namespace thekogans {
             /// \return *this.
             template<typename T>
             inline Serializer &operator >> (std::list<T> &value) {
-                ui32 count;
+                SizeT count;
                 *this >> count;
                 std::list<T> temp;
-                for (ui32 i = 0; i < count; ++i) {
+                for (std::size_t i = 0; i < count; ++i) {
                     T t;
                     *this >> t;
                     value.push_back (t);

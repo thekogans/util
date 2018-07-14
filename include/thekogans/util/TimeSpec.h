@@ -178,7 +178,7 @@ namespace thekogans {
             /// \brief
             /// Return the serialized size of this time spec.
             /// \return Serialized size of this time spec.
-            inline ui32 Size () const {
+            inline std::size_t Size () const {
                 return
                     Serializer::Size (seconds) +
                     Serializer::Size (nanoseconds);
@@ -293,7 +293,7 @@ namespace thekogans {
 
         /// \brief
         /// Serialized TimeSpec size.
-        const ui32 TIME_SPEC_SIZE = I64_SIZE + I32_SIZE;
+        const std::size_t TIME_SPEC_SIZE = I64_SIZE + I32_SIZE;
 
         /// \brief
         /// Compare two TimeSpecs for equality.

@@ -110,11 +110,9 @@ namespace thekogans {
                         fileSize,
                         maxPluginsFileSize);
                 }
-                Buffer buffer (HostEndian, (ui32)fileSize);
+                Buffer buffer (HostEndian, fileSize);
                 if (buffer.AdvanceWriteOffset (
-                        file.Read (
-                            buffer.GetWritePtr (),
-                            (ui32)fileSize)) != (ui32)fileSize) {
+                        file.Read (buffer.GetWritePtr (), fileSize)) != fileSize) {
                     THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
                         "Unable to read %u bytes from '%s'.",
                         fileSize,

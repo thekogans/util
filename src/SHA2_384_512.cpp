@@ -113,7 +113,7 @@ namespace thekogans {
             };
         }
 
-        void SHA2_384_512::Init (ui32 digestSize_) {
+        void SHA2_384_512::Init (std::size_t digestSize_) {
             digestSize = digestSize_;
             memcpy (state,
                 digestSize == 48 ? initialHashValue384 : initialHashValue512 ,

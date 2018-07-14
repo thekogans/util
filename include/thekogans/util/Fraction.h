@@ -97,7 +97,7 @@ namespace thekogans {
             /// \brief
             /// Return the serialized size of this fraction.
             /// \return Serialized size of this fraction.
-            inline ui32 Size () const {
+            inline std::size_t Size () const {
                 return
                     Serializer::Size (numerator) +
                     Serializer::Size (denominator) +
@@ -146,7 +146,7 @@ namespace thekogans {
 
         /// \brief
         /// Serialized Fraction size.
-        const ui32 FRACTION_SIZE = UI32_SIZE + UI32_SIZE + UI8_SIZE;
+        const std::size_t FRACTION_SIZE = UI32_SIZE + UI32_SIZE + UI8_SIZE;
 
         /// \brief
         /// Multiply the fraction by an int.

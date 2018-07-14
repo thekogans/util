@@ -21,6 +21,7 @@
 #include "thekogans/util/Config.h"
 #include "thekogans/util/Types.h"
 #include "thekogans/util/Constants.h"
+#include "thekogans/util/SizeT.h"
 #include "thekogans/util/Serializer.h"
 #include "thekogans/util/Exception.h"
 
@@ -34,17 +35,17 @@ namespace thekogans {
         /// comes from it's ability to be 1. Defined inline and 2. Constructed like any
         /// other first class object (unlike c arrays).
 
-        template<ui32 length>
+        template<std::size_t length>
         struct FixedBuffer : public Serializer {
             /// \brief
             /// FixedBuffer data.
             ui8 data[length];
             /// \brief
             /// Current read position.
-            ui32 readOffset;
+            SizeT readOffset;
             /// \brief
             /// Current write position.
-            ui32 writeOffset;
+            SizeT writeOffset;
 
             /// \brief
             /// ctor.
@@ -54,7 +55,7 @@ namespace thekogans {
             FixedBuffer (
                     Endianness endianness = HostEndian,
                     const ui8 *data_ = 0,
-                    ui32 length_ = 0) :
+                    std::size_t length_ = 0) :
                     Serializer (endianness),
                     readOffset (0),
                     writeOffset (length_) {
@@ -79,7 +80,7 @@ namespace thekogans {
                     const ui8 *end) :
                     Serializer (endianness),
                     readOffset (0),
-                    writeOffset ((ui32)(end - begin)) {
+                    writeOffset (end - begin) {
                 if (writeOffset <= length) {
                     if (writeOffset > 0) {
                         memcpy (data, begin, writeOffset);
@@ -97,11 +98,11 @@ namespace thekogans {
             /// \param[out] buffer Where to place the bytes.
             /// \param[in] count Number of bytes to read.
             /// \return Number of bytes actually read.
-            virtual ui32 Read (
+            virtual std::size_t Read (
                     void *buffer,
-                    ui32 count) {
+                    std::size_t count) {
                 if (buffer != 0 && count > 0) {
-                    ui32 availableForReading = GetDataAvailableForReading ();
+                    std::size_t availableForReading = GetDataAvailableForReading ();
                     if (count > availableForReading) {
                         count = availableForReading;
                     }
@@ -121,11 +122,11 @@ namespace thekogans {
             /// \param[in] buffer Bytes to write.
             /// \param[in] count Number of bytes to write.
             /// \return Number of bytes actually written.
-            virtual ui32 Write (
+            virtual std::size_t Write (
                     const void *buffer,
-                    ui32 count) {
+                    std::size_t count) {
                 if (buffer != 0 && count > 0) {
-                    ui32 availableForWriting = GetDataAvailableForWriting ();
+                    std::size_t availableForWriting = GetDataAvailableForWriting ();
                     if (count > availableForWriting) {
                         count = availableForWriting;
                     }
@@ -144,7 +145,7 @@ namespace thekogans {
             /// \brief
             /// Return serialized size of FixedBuffer<length>.
             /// \return Serialized size of FixedBuffer<length>.
-            inline ui32 Size () const {
+            inline std::size_t Size () const {
                 return
                     Serializer::Size () +
                     Serializer::Size (readOffset) +
@@ -168,13 +169,13 @@ namespace thekogans {
             /// \brief
             /// Return number of bytes available for reading.
             /// \return Number of bytes available for reading.
-            inline ui32 GetDataAvailableForReading () const {
+            inline std::size_t GetDataAvailableForReading () const {
                 return writeOffset > readOffset ? writeOffset - readOffset : 0;
             }
             /// \brief
             /// Return number of bytes available for writing.
             /// \return Number of bytes available for writing.
-            inline ui32 GetDataAvailableForWriting () const {
+            inline std::size_t GetDataAvailableForWriting () const {
                 return length > writeOffset ? length - writeOffset : 0;
             }
             /// \brief
@@ -205,8 +206,8 @@ namespace thekogans {
             /// Advance the read offset taking care not to overflow.
             /// \param[in] advance Amount to advance the readOffset.
             /// \return Number of bytes actually advanced.
-            ui32 AdvanceReadOffset (ui32 advance) {
-                ui32 availableForReading = GetDataAvailableForReading ();
+            std::size_t AdvanceReadOffset (std::size_t advance) {
+                std::size_t availableForReading = GetDataAvailableForReading ();
                 if (advance > availableForReading) {
                     advance = availableForReading;
                 }
@@ -217,8 +218,8 @@ namespace thekogans {
             /// Advance the write offset taking care not to overflow.
             /// \param[in] advance Amount to advance the writeOffset.
             /// \return Number of bytes actually advanced.
-            ui32 AdvanceWriteOffset (ui32 advance) {
-                ui32 availableForWriting = GetDataAvailableForWriting ();
+            std::size_t AdvanceWriteOffset (std::size_t advance) {
+                std::size_t availableForWriting = GetDataAvailableForWriting ();
                 if (advance > availableForWriting) {
                     advance = availableForWriting;
                 }
@@ -240,7 +241,7 @@ namespace thekogans {
         /// \param[in] serializer Where to write the given guid.
         /// \param[in] fixedbuffer FixedBuffer<length> to serialize.
         /// \return serializer.
-        template<ui32 length>
+        template<std::size_t length>
         Serializer &operator << (
                 Serializer &serializer,
                 const FixedBuffer<length> &fixedBuffer) {
@@ -260,7 +261,7 @@ namespace thekogans {
         /// \param[in] serializer Where to read the guid from.
         /// \param[out] fixedBuffer Where to place the extracted FixedBuffer<length>.
         /// \return serializer.
-        template<ui32 length>
+        template<std::size_t length>
         Serializer &operator >> (
                 Serializer &serializer,
                 FixedBuffer<length> &fixedBuffer) {

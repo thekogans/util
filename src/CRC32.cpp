@@ -102,7 +102,7 @@ namespace thekogans {
 
         _LIB_THEKOGANS_UTIL_DECL ui32 _LIB_THEKOGANS_UTIL_API CRC32 (
                 const void *buffer,
-                size_t length,
+                std::size_t length,
                 ui32 crc) {
             if (buffer != 0 && length > 0) {
                 const ui8 *ptr = (const ui8 *)buffer;
