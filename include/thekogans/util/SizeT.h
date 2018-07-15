@@ -58,7 +58,7 @@ namespace thekogans {
             /// (including the fisrt byte).
             /// \param[in] firstByte Encodes the total size of the serialized SizeT.
             /// \return Size of the serialized SizeT.
-            inline static std::size_t Size (ui32 firstByte) {
+            static inline std::size_t Size (ui32 firstByte) {
                 return __builtin_ctz (firstByte | 0x100) + 1;
             }
 
@@ -193,7 +193,7 @@ namespace thekogans {
             /// Emulate __builtin_clzll on Windows.
             /// \param[in] value Value whose leading zero count to return.
             /// \return Leading zero count of the given value.
-            inline static std::size_t __builtin_clzll (ui64 value) {
+            static inline std::size_t __builtin_clzll (ui64 value) {
                 unsigned long leadingZero = 0;
                 _BitScanReverse64 (&leadingZero, value);
                 return 63 - leadingZero;
@@ -203,7 +203,7 @@ namespace thekogans {
             /// Emulate __builtin_ctz on Windows.
             /// \param[in] value Value whose trailing zero count to return.
             /// \return Trailing zero count of the given value.
-            inline static std::size_t __builtin_ctz (ui32 value) {
+            static inline std::size_t __builtin_ctz (ui32 value) {
                 unsigned long trailingZero = 0;
                 _BitScanForward (&trailingZero, value);
                 return trailingZero;
