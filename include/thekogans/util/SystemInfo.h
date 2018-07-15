@@ -111,6 +111,11 @@ namespace thekogans {
             }
 
             /// \brief
+            /// Dump system info to std::ostream.
+            /// \param[in] stream std::ostream to dump the info to.
+            void Dump (std::ostream &stream = std::cout) const;
+
+            /// \brief
             /// SystemInfo is neither copy constructable, nor assignable.
             THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (SystemInfo)
         };

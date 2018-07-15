@@ -27,8 +27,6 @@
 namespace thekogans {
     namespace util {
 
-        THEKOGANS_UTIL_IMPLEMENT_HEAP_WITH_LOCK (Buffer, SpinLock)
-
         Buffer::Buffer (
             Endianness endianness,
             std::size_t length_,
@@ -156,16 +154,15 @@ namespace thekogans {
             }
         }
 
-        Buffer::UniquePtr Buffer::Clone (Allocator *allocator) const {
+        Buffer Buffer::Clone (Allocator *allocator) const {
             if (allocator != 0) {
-                return UniquePtr (
-                    new Buffer (
-                        endianness,
-                        data,
-                        data + length,
-                        readOffset,
-                        writeOffset,
-                        allocator));
+                return Buffer (
+                    endianness,
+                    data,
+                    data + length,
+                    readOffset,
+                    writeOffset,
+                    allocator);
             }
             else {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
@@ -173,7 +170,7 @@ namespace thekogans {
             }
         }
 
-        Buffer::UniquePtr Buffer::Subset (
+        Buffer Buffer::Subset (
                 std::size_t offset,
                 std::size_t count,
                 Allocator *allocator) const {
@@ -181,14 +178,13 @@ namespace thekogans {
                 if (count == SIZE_T_MAX || offset + count > length) {
                     count = length - offset;
                 }
-                return UniquePtr (
-                    new Buffer (
-                        endianness,
-                        data + offset,
-                        data + offset + count,
-                        0,
-                        SIZE_T_MAX,
-                        allocator));
+                return Buffer (
+                    endianness,
+                    data + offset,
+                    data + offset + count,
+                    0,
+                    SIZE_T_MAX,
+                    allocator);
             }
             else {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
@@ -326,22 +322,20 @@ namespace thekogans {
             }
         }
 
-        Buffer::UniquePtr Buffer::Deflate (Allocator *allocator) {
+        Buffer Buffer::Deflate (Allocator *allocator) {
             if (allocator != 0) {
-                UniquePtr buffer;
                 if (GetDataAvailableForReading () != 0) {
                     OutBuffer outBuffer (allocator);
                     DeflateHelper (GetReadPtr (), GetDataAvailableForReading (), outBuffer);
-                    buffer.reset (
-                        new Buffer (
-                            endianness,
-                            outBuffer.data,
-                            outBuffer.length,
-                            0,
-                            outBuffer.length,
-                            allocator));
+                    return Buffer (
+                        endianness,
+                        outBuffer.data,
+                        outBuffer.length,
+                        0,
+                        outBuffer.length,
+                        allocator);
                 }
-                return buffer;
+                return Buffer ();
             }
             else {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
@@ -349,22 +343,20 @@ namespace thekogans {
             }
         }
 
-        Buffer::UniquePtr Buffer::Inflate (Allocator *allocator) {
+        Buffer Buffer::Inflate (Allocator *allocator) {
             if (allocator != 0) {
-                UniquePtr buffer;
                 if (GetDataAvailableForReading () != 0) {
                     OutBuffer outBuffer (allocator);
                     InflateHelper (GetReadPtr (), GetDataAvailableForReading (), outBuffer);
-                    buffer.reset (
-                        new Buffer (
-                            endianness,
-                            outBuffer.data,
-                            outBuffer.length,
-                            0,
-                            outBuffer.length,
-                            allocator));
+                    return Buffer (
+                        endianness,
+                        outBuffer.data,
+                        outBuffer.length,
+                        0,
+                        outBuffer.length,
+                        allocator);
                 }
-                return buffer;
+                return Buffer ();
             }
             else {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
@@ -408,17 +400,16 @@ namespace thekogans {
             Buffer::Resize (length, &SecureAllocator::Global);
         }
 
-        Buffer::UniquePtr SecureBuffer::Clone (Allocator * /*allocator*/) const {
-            return UniquePtr (
-                new SecureBuffer (
-                    endianness,
-                    data,
-                    data + length,
-                    readOffset,
-                    writeOffset));
+        Buffer SecureBuffer::Clone (Allocator * /*allocator*/) const {
+            return SecureBuffer (
+                endianness,
+                data,
+                data + length,
+                readOffset,
+                writeOffset);
         }
 
-        Buffer::UniquePtr SecureBuffer::Subset (
+        Buffer SecureBuffer::Subset (
                 std::size_t offset,
                 std::size_t count,
                 Allocator * /*allocator*/) const {
@@ -426,36 +417,32 @@ namespace thekogans {
         }
 
     #if defined (THEKOGANS_UTIL_HAVE_ZLIB)
-        Buffer::UniquePtr SecureBuffer::Deflate (Allocator * /*allocator*/) {
-            UniquePtr buffer;
+        Buffer SecureBuffer::Deflate (Allocator * /*allocator*/) {
             if (GetDataAvailableForReading () != 0) {
                 OutBuffer outBuffer (&SecureAllocator::Global);
                 DeflateHelper (GetReadPtr (), GetDataAvailableForReading (), outBuffer);
-                buffer.reset (
-                    new SecureBuffer (
-                        endianness,
-                        outBuffer.data,
-                        outBuffer.length,
-                        0,
-                        outBuffer.length));
+                return SecureBuffer (
+                    endianness,
+                    outBuffer.data,
+                    outBuffer.length,
+                    0,
+                    outBuffer.length);
             }
-            return buffer;
+            return SecureBuffer ();
         }
 
-        Buffer::UniquePtr SecureBuffer::Inflate (Allocator * /*allocator*/) {
-            UniquePtr buffer;
+        Buffer SecureBuffer::Inflate (Allocator * /*allocator*/) {
             if (GetDataAvailableForReading () != 0) {
                 OutBuffer outBuffer (&SecureAllocator::Global);
                 InflateHelper (GetReadPtr (), GetDataAvailableForReading (), outBuffer);
-                buffer.reset (
-                    new SecureBuffer (
-                        endianness,
-                        outBuffer.data,
-                        outBuffer.length,
-                        0,
-                        outBuffer.length));
+                return SecureBuffer (
+                    endianness,
+                    outBuffer.data,
+                    outBuffer.length,
+                    0,
+                    outBuffer.length);
             }
-            return buffer;
+            return SecureBuffer ();
         }
     #endif // defined (THEKOGANS_UTIL_HAVE_ZLIB)
 
@@ -500,18 +487,6 @@ namespace thekogans {
             buffer.endianness = endianness;
             buffer.readOffset = readOffset;
             buffer.writeOffset = writeOffset;
-            return serializer;
-        }
-
-        _LIB_THEKOGANS_UTIL_DECL Serializer & _LIB_THEKOGANS_UTIL_API operator >> (
-                Serializer &serializer,
-                Buffer::UniquePtr &buffer) {
-            if (buffer.get () == 0) {
-                // It maters not what endianness we assign to the new buffer.
-                // The real endianness will be read from the serializer.
-                buffer.reset (new util::Buffer (util::HostEndian));
-            }
-            serializer >> *buffer;
             return serializer;
         }
 

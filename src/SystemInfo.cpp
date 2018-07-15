@@ -258,5 +258,15 @@ namespace thekogans {
             hostName (GetHostNameImpl ()),
             hostId (GetHostIdImpl ()) {}
 
+        void SystemInfo::Dump (std::ostream &stream) const {
+            stream << "Endianness: " << (endianness == util::LittleEndian ? "LittleEndian" : "BigEndian") << std::endl;
+            stream << "CPU count: " << cpuCount << std::endl;
+            stream << "Page size: " << pageSize << std::endl;
+            stream << "Memory size: " << memorySize << std::endl;
+            stream << "Process Path: " << processPath << std::endl;
+            stream << "Host name: " << hostName << std::endl;
+            stream << "Host Id: " << hostId << std::endl;
+        }
+
     } // namespace util
 } // namespace thekogans

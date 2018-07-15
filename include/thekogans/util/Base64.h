@@ -73,7 +73,7 @@ namespace thekogans {
             /// lineLength characters of output.
             /// \param[in] linePad Pad the start of every line with ' '.
             /// \return Resulting base64 encoding.
-            static Buffer::UniquePtr Encode (
+            static Buffer Encode (
                 const void *buffer,
                 std::size_t bufferLength,
                 std::size_t lineLength = SIZE_T_MAX,
@@ -103,7 +103,7 @@ namespace thekogans {
             /// \param[in] buffer Buffer to decode.
             /// \param[in] bufferLength Length of buffer in bytes.
             /// \return Resulting decoding.
-            static Buffer::UniquePtr Decode (
+            static Buffer Decode (
                 const void *buffer,
                 std::size_t bufferLength);
         };

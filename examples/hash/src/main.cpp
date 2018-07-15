@@ -58,7 +58,7 @@ int main (
     struct Options : public util::CommandLineOptions {
         struct Hasher {
             std::string name;
-            std::list<util::ui32> digestSizes;
+            std::list<std::size_t> digestSizes;
             Hasher (const std::string &name_) :
                 name (name_) {}
         };
@@ -148,7 +148,7 @@ int main (
             end = options.hashers.end (); it != end; ++it) {
         util::Hash::Ptr hash = util::Hash::Get ((*it)->name);
         assert (hash.Get () != 0);
-        for (std::list<util::ui32>::const_iterator
+        for (std::list<std::size_t>::const_iterator
                 jt = (*it)->digestSizes.begin (),
                 end = (*it)->digestSizes.end (); jt != end; ++jt) {
             THEKOGANS_UTIL_TRY {

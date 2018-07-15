@@ -63,18 +63,6 @@ namespace thekogans {
 
         struct _LIB_THEKOGANS_UTIL_DECL Buffer : public Serializer {
             /// \brief
-            /// Convenient typedef for std::unique_ptr<Buffer>.
-            typedef std::unique_ptr<Buffer> UniquePtr;
-            /// \brief
-            /// Convenient typedef for std::shared_ptr<Buffer>.
-            typedef std::shared_ptr<Buffer> SharedPtr;
-
-            /// \brief
-            /// Buffer has a private heap to help with memory
-            /// management, performance, and global heap fragmentation.
-            THEKOGANS_UTIL_DECLARE_HEAP_WITH_LOCK (Buffer, SpinLock)
-
-            /// \brief
             /// Buffer data.
             ui8 *data;
             /// \brief
@@ -204,7 +192,7 @@ namespace thekogans {
             /// Clone the buffer.
             /// \param[in] allocator Allocator for the returned buffer.
             /// \return A clone of this buffer.
-            virtual UniquePtr Clone (Allocator *allocator = &DefaultAllocator::Global) const;
+            virtual Buffer Clone (Allocator *allocator = &DefaultAllocator::Global) const;
 
             /// \brief
             /// Return subset of the buffer.
@@ -215,7 +203,7 @@ namespace thekogans {
             /// NOTE: Unlike other methods, this one does NOT take
             /// readOffset and writeOffset in to account. A straight
             /// subset of [data, data + length) is returned.
-            virtual UniquePtr Subset (
+            virtual Buffer Subset (
                 std::size_t offset,
                 std::size_t count = SIZE_T_MAX,
                 Allocator *allocator = &DefaultAllocator::Global) const;
@@ -307,12 +295,12 @@ namespace thekogans {
             /// Use zlib to compress the buffer.
             /// \param[in] allocator Allocator for the returned buffer.
             /// \return A buffer containing deflated data.
-            virtual UniquePtr Deflate (Allocator *allocator = &DefaultAllocator::Global);
+            virtual Buffer Deflate (Allocator *allocator = &DefaultAllocator::Global);
             /// \brief
             /// Use zlib to decompress the buffer.
             /// \param[in] allocator Allocator for the returned buffer.
             /// \return A buffer containing inflated data.
-            virtual UniquePtr Inflate (Allocator *allocator = &DefaultAllocator::Global);
+            virtual Buffer Inflate (Allocator *allocator = &DefaultAllocator::Global);
         #endif // defined (THEKOGANS_UTIL_HAVE_ZLIB)
 
         #if defined (TOOLCHAIN_OS_Windows)
@@ -419,7 +407,7 @@ namespace thekogans {
             /// \param[in] allocator Allocator for the returned buffer.
             /// NOTE: The allocator paramater is ignored as SecureBuffer uses the SecureAllocator.
             /// \return A clone of this buffer.
-            virtual UniquePtr Clone (Allocator * /*allocator*/ = &DefaultAllocator::Global) const;
+            virtual Buffer Clone (Allocator * /*allocator*/ = &DefaultAllocator::Global) const;
 
             /// \brief
             /// Return subset of the buffer.
@@ -430,7 +418,7 @@ namespace thekogans {
             /// NOTE: Unlike other methods, this one does NOT take
             /// readOffset and writeOffset in to account. A straight
             /// subset of [data, data + length) is returned.
-            virtual UniquePtr Subset (
+            virtual Buffer Subset (
                 std::size_t offset,
                 std::size_t count,
                 Allocator * /*allocator*/ = &DefaultAllocator::Global) const;
@@ -441,13 +429,13 @@ namespace thekogans {
             /// \param[in] allocator Allocator for the returned buffer.
             /// NOTE: The allocator paramater is ignored as SecureBuffer uses the SecureAllocator.
             /// \return A buffer containing deflated data.
-            virtual UniquePtr Deflate (Allocator * /*allocator*/ = &DefaultAllocator::Global);
+            virtual Buffer Deflate (Allocator * /*allocator*/ = &DefaultAllocator::Global);
             /// \brief
             /// Use zlib to decompress the buffer.
             /// \param[in] allocator Allocator for the returned buffer.
             /// NOTE: The allocator paramater is ignored as SecureBuffer uses the SecureAllocator.
             /// \return A buffer containing inflated data.
-            virtual UniquePtr Inflate (Allocator * /*allocator*/ = &DefaultAllocator::Global);
+            virtual Buffer Inflate (Allocator * /*allocator*/ = &DefaultAllocator::Global);
         #endif // defined (THEKOGANS_UTIL_HAVE_ZLIB)
 
             /// \brief
@@ -550,16 +538,6 @@ namespace thekogans {
         _LIB_THEKOGANS_UTIL_DECL Serializer & _LIB_THEKOGANS_UTIL_API operator >> (
             Serializer &serializer,
             Buffer &buffer);
-        /// \brief
-        /// Read a Buffer from the given \see{Serializer}. If the pointer is 0, a new
-        /// Buffer will be allocated.
-        /// NOTE: The note in the above extractor applies.
-        /// \param[in] serializer Where to read the buffer from.
-        /// \param[out] buffer Buffer to read.
-        /// \return serializer.
-        _LIB_THEKOGANS_UTIL_DECL Serializer & _LIB_THEKOGANS_UTIL_API operator >> (
-            Serializer &serializer,
-            Buffer::UniquePtr &buffer);
 
     } // namespace util
 } // namespace thekogans

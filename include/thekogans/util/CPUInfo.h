@@ -452,8 +452,12 @@ namespace thekogans {
 
             /// \brief
             /// Dump CPU info to std::ostream.
-            /// \param[in] stream std::ostream to dump the stats to.
+            /// \param[in] stream std::ostream to dump the info to.
             void Dump (std::ostream &stream = std::cout) const;
+
+            /// \brief
+            /// CPUInfo is neither copy constructable, nor assignable.
+            THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (CPUInfo)
         };
 
     } // namespace util

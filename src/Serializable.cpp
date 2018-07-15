@@ -83,14 +83,13 @@ namespace thekogans {
             }
         }
 
-        Buffer::UniquePtr Serializable::Serialize () const {
+        Buffer Serializable::Serialize () const {
             Header header (Type (), Version (), Size ());
-            Buffer::UniquePtr buffer (
-                new Buffer (
-                    NetworkEndian,
-                    header.Size () + header.size));
-            *buffer << header;
-            Write (*buffer);
+            Buffer buffer (
+                NetworkEndian,
+                header.Size () + header.size);
+            buffer << header;
+            Write (buffer);
             return buffer;
         }
 

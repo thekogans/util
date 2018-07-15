@@ -131,34 +131,33 @@ namespace thekogans {
             }
         }
 
-        Buffer::UniquePtr Base64::Encode (
+        Buffer Base64::Encode (
                 const void *buffer,
                 std::size_t bufferLength,
                 std::size_t lineLength,
                 std::size_t linePad) {
             if (buffer != 0 && bufferLength > 0) {
-                Buffer::UniquePtr encoded (
-                    new Buffer (
-                        HostEndian,
-                        GetEncodedLength (
-                            buffer,
-                            bufferLength,
-                            lineLength,
-                            linePad)));
-                encoded->AdvanceWriteOffset (
+                Buffer encoded (
+                    HostEndian,
+                    GetEncodedLength (
+                        buffer,
+                        bufferLength,
+                        lineLength,
+                        linePad));
+                encoded.AdvanceWriteOffset (
                     Encode (
                         buffer,
                         bufferLength,
                         lineLength,
                         linePad,
-                        encoded->GetWritePtr ()));
+                        encoded.GetWritePtr ()));
                 // If you ever catch this, it means that my buffer
                 // length calculations above are wrong.
-                if (encoded->writeOffset > encoded->length) {
+                if (encoded.writeOffset > encoded.length) {
                     THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
                         "Buffer overflow! (%u, %u)",
-                        encoded->length,
-                        encoded->writeOffset);
+                        encoded.length,
+                        encoded.writeOffset);
                 }
                 return encoded;
             }
@@ -306,16 +305,16 @@ namespace thekogans {
             return count;
         }
 
-        Buffer::UniquePtr Base64::Decode (
+        Buffer Base64::Decode (
                 const void *buffer,
                 std::size_t bufferLength) {
             Buffer input = ValidateInput (buffer, bufferLength);
             if (input.GetDataAvailableForReading () > 0) {
-                Buffer::UniquePtr output (
-                    new Buffer (HostEndian,
-                        DecodedLength (
-                            input.GetReadPtr (),
-                            input.GetDataAvailableForReading ())));
+                Buffer output (
+                    HostEndian,
+                    DecodedLength (
+                        input.GetReadPtr (),
+                        input.GetDataAvailableForReading ()));
                 const ui8 *bufferPtr = input.GetReadPtr ();
                 for (const ui8 *endBufferPtr = input.GetReadPtrEnd () - 4;
                         bufferPtr < endBufferPtr;) {
@@ -323,11 +322,11 @@ namespace thekogans {
                     ui8 buffer1 = *bufferPtr++;
                     ui8 buffer2 = *bufferPtr++;
                     ui8 buffer3 = *bufferPtr++;
-                    output->data[output->writeOffset++] =
+                    output.data[output.writeOffset++] =
                         unbase64[buffer0] << 2 | (unbase64[buffer1] & 0x30) >> 4;
-                    output->data[output->writeOffset++] =
+                    output.data[output.writeOffset++] =
                         unbase64[buffer1] << 4 | (unbase64[buffer2] & 0x3c) >> 2;
-                    output->data[output->writeOffset++] =
+                    output.data[output.writeOffset++] =
                         (unbase64[buffer2] & 0x03) << 6 | unbase64[buffer3];
                 }
                 ui8 buffer0 = *bufferPtr++;
@@ -336,35 +335,35 @@ namespace thekogans {
                 ui8 buffer3 = *bufferPtr++;
                 switch (EqualCount (buffer2, buffer3)) {
                     case 0:
-                        output->data[output->writeOffset++] =
+                        output.data[output.writeOffset++] =
                             unbase64[buffer0] << 2 | (unbase64[buffer1] & 0x30) >> 4;
-                        output->data[output->writeOffset++] =
+                        output.data[output.writeOffset++] =
                             unbase64[buffer1] << 4 | (unbase64[buffer2] & 0x3c) >> 2;
-                        output->data[output->writeOffset++] =
+                        output.data[output.writeOffset++] =
                             (unbase64[buffer2] & 0x03) << 6 | unbase64[buffer3];
                         break;
                     case 1:
-                        output->data[output->writeOffset++] =
+                        output.data[output.writeOffset++] =
                             unbase64[buffer0] << 2 | (unbase64[buffer1] & 0x30) >> 4;
-                        output->data[output->writeOffset++] =
+                        output.data[output.writeOffset++] =
                             unbase64[buffer1] << 4 | (unbase64[buffer2] & 0x3c) >> 2;
                         break;
                     case 2:
-                        output->data[output->writeOffset++] =
+                        output.data[output.writeOffset++] =
                             unbase64[buffer0] << 2 | (unbase64[buffer1] & 0x30) >> 4;
                         break;
                 }
                 // If you ever catch this, it means that my buffer
                 // length calculations (DecodedLength) above are wrong.
-                if (output->writeOffset > output->length) {
+                if (output.writeOffset > output.length) {
                     THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
                         "Buffer overflow! (%u, %u)",
-                        output->length,
-                        output->writeOffset);
+                        output.length,
+                        output.writeOffset);
                 }
                 return output;
             }
-            return Buffer::UniquePtr ();
+            return Buffer ();
         }
 
     } // namespace util

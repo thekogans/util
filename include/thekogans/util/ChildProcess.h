@@ -414,7 +414,7 @@ namespace thekogans {
             /// \param[in] timeSpec If reap == true, indicates how long to wait for
             /// the child process to exit.
             /// \return Buffer containing the child's output.
-            Buffer::UniquePtr CollectOutput (
+            Buffer CollectOutput (
                 THEKOGANS_UTIL_HANDLE handle,
                 std::size_t chunkSize = DEFAULT_CHUNK_SIZE,
                 bool reap = true,

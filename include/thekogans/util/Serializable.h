@@ -185,7 +185,7 @@ namespace thekogans {
             /// \brief
             /// Serialize the Serializable.
             /// \return \see{Buffer} containing the serializable.
-            Buffer::UniquePtr Serialize () const;
+            Buffer Serialize () const;
             /// \brief
             /// Deserialize and return a Serializable from the given \see{Header}
             /// and \see{Serializer}.

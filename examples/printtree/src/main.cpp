@@ -56,7 +56,7 @@ int main (
         util::LoggerMgr::All);
     THEKOGANS_UTIL_LOG_ADD_LOGGER (
         util::Logger::Ptr (new util::ConsoleLogger));
-    std::string path = argc == 2 ? argv[1] : util::Path::GetCurrPath ();
+    std::string path = argc == 2 ? argv[1] : util::Path::GetCurrDirectory ();
     if (!util::Path (path).Exists ()) {
         THEKOGANS_UTIL_LOG_ERROR ("Path not found: '%s'\n", path.c_str ());
         return 1;
