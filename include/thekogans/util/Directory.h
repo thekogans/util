@@ -463,23 +463,23 @@ namespace thekogans {
                 /// Given a numeric fileSystem, return a string representation.
                 /// \param[in] fileSystem Numeric fileSystem (Windows/POSIX)
                 /// \return "Windows" | "POSIX"
-                static std::string fileSystemTostring (ui32 fileSystem);
+                static std::string fileSystemTostring (ui8 fileSystem);
                 /// \brief
                 /// Given a string fileSystem, return a numeric representation.
                 /// \param[in] fileSystem String fileSystem ("Windows" | "POSIX")
                 /// \return Invalid/File/Folder/Link
-                static ui32 stringTofileSystem (const std::string &fileSystem);
+                static ui8 stringTofileSystem (const std::string &fileSystem);
 
                 /// \brief
                 /// Given a numeric type, return a string representation.
                 /// \param[in] type Numeric type (Invalid/File/Folder/Link)
                 /// \return "Invalid" | "File" | "Folder" | "Link"
-                static std::string typeTostring (i32 type);
+                static std::string typeTostring (ui8 type);
                 /// \brief
                 /// Given a string type, return a numeric representation.
                 /// \param[in] type String type ("Invalid" | "File" | "Folder" |"Link")
                 /// \return Invalid/File/Folder/Link
-                static i32 stringTotype (const std::string &type);
+                static ui8 stringTotype (const std::string &type);
 
                 /// \brief
                 /// Return the serialized size of this entry.
