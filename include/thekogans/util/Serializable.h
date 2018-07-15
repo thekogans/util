@@ -164,14 +164,6 @@ namespace thekogans {
             static bool ValidateType (const std::string &type);
 
             /// \brief
-            /// Return the size of the serialized header for a given type.
-            /// \param[in] type Serializable type for which to get the header size.
-            /// \return Size of the serialized header for a given type.
-            static std::size_t HeaderSize (const char *type) {
-                return Header (type, 0, 0).Size ();
-            }
-
-            /// \brief
             /// Return the size of the serializable including the header.
             /// Use of this API is mendatory as virtual std::size_t Size ()
             /// (below) is protected.

@@ -18,6 +18,9 @@
 #if !defined (__thekogans_util_SizeT_h)
 #define __thekogans_util_SizeT_h
 
+#if defined (TOOLCHAIN_OS_Windows)
+    #include <intrin.h>
+#endif // defined (TOOLCHAIN_OS_Windows)
 #include "thekogans/util/Config.h"
 #include "thekogans/util/Types.h"
 
@@ -46,14 +49,18 @@ namespace thekogans {
             /// \brief
             /// Return the serialized size of the current value.
             /// \return Serialized size of the current value.
-            std::size_t Size () const;
+            inline std::size_t Size () const {
+                return (63 - __builtin_clzll (value | 1)) / 7 + 1;
+            }
 
             /// \brief
-            /// Given the first byte return the total size of the serialized value
+            /// Given the first byte return the total size of the serialized SizeT
             /// (including the fisrt byte).
-            /// \param[in] firstByte Encodes the total size of the serialized value.
-            /// \return Size of the serialized value.
-            static std::size_t Size (ui8 firstByte);
+            /// \param[in] firstByte Encodes the total size of the serialized SizeT.
+            /// \return Size of the serialized SizeT.
+            inline static std::size_t Size (ui32 firstByte) {
+                return __builtin_ctz (firstByte | 0x100) + 1;
+            }
 
             /// \brief
             /// Implicit typecast operator.
@@ -179,6 +186,29 @@ namespace thekogans {
                 --value;
                 return copy;
             }
+
+    #if defined (TOOLCHAIN_OS_Windows)
+        private:
+            /// \brief
+            /// Emulate __builtin_clzll on Windows.
+            /// \param[in] value Value whose leading zero count to return.
+            /// \return Leading zero count of the given value.
+            inline std::size_t __builtin_clzll (ui64 value) {
+                unsigned long leadingZero = 0;
+                _BitScanReverse64 (&leadingZero, value);
+                return 63 - leadingZero;
+            }
+
+            /// \brief
+            /// Emulate __builtin_ctz on Windows.
+            /// \param[in] value Value whose trailing zero count to return.
+            /// \return Trailing zero count of the given value.
+            inline std::size_t __builtin_ctz (ui32 value) {
+                unsigned long trailingZero = 0;
+                _BitScanForward (&trailingZero, value);
+                return trailingZero;
+            }
+    #endif // defined (TOOLCHAIN_OS_Windows)
         };
 
         /// \brief

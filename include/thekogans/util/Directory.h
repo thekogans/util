@@ -43,6 +43,7 @@
 #endif // defined (THEKOGANS_UTIL_HAVE_PUGIXML)
 #include "thekogans/util/Config.h"
 #include "thekogans/util/Types.h"
+#include "thekogans/util/SizeT.h"
 #include "thekogans/util/Heap.h"
 #include "thekogans/util/OwnerMap.h"
 #include "thekogans/util/Singleton.h"
@@ -381,7 +382,7 @@ namespace thekogans {
                     /// POSIX (Linux/OS X) file system.
                     POSIX
                 };
-                ui32 fileSystem;
+                ui8 fileSystem;
                 /// \brief
                 /// Entry type.
                 enum {
@@ -400,7 +401,7 @@ namespace thekogans {
                 };
                 /// \brief
                 /// Entry type.
-                i32 type;
+                ui8 type;
                 /// \brief
                 /// Entry name.
                 std::string name;
@@ -428,7 +429,7 @@ namespace thekogans {
                 i64 lastModifiedDate;
                 /// \brief
                 /// File size.
-                ui64 size;
+                SizeT size;
 
                 /// \brief
                 /// Default ctor.

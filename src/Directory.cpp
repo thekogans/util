@@ -574,7 +574,7 @@ namespace thekogans {
                 }
             }
 
-            i32 systemTotype (DWORD dwFileAttributes) {
+            ui8 systemTotype (DWORD dwFileAttributes) {
                 return
                     IsLink (dwFileAttributes) ? Directory::Entry::Link :
                     IsDirectory (dwFileAttributes) ? Directory::Entry::Folder :
@@ -603,7 +603,7 @@ namespace thekogans {
         }
     #else // defined (TOOLCHAIN_OS_Windows)
         namespace {
-            i32 systemTotype (mode_t st_mode) {
+            ui8 systemTotype (mode_t st_mode) {
                 return S_ISDIR (st_mode) ? Directory::Entry::Folder :
                     S_ISREG (st_mode) ? Directory::Entry::File :
                     S_ISLNK (st_mode) ? Directory::Entry::Link : Directory::Entry::Invalid;
@@ -631,21 +631,21 @@ namespace thekogans {
 
         const Directory::Entry Directory::Entry::Empty;
 
-        std::string Directory::Entry::fileSystemTostring (ui32 fileSystem) {
+        std::string Directory::Entry::fileSystemTostring (ui8 fileSystem) {
             return fileSystem == Windows ? VALUE_WINDOWS : VALUE_POSIX;
         }
 
-        ui32 Directory::Entry::stringTofileSystem (const std::string &fileSystem) {
+        ui8 Directory::Entry::stringTofileSystem (const std::string &fileSystem) {
             return fileSystem == VALUE_WINDOWS ? Windows : POSIX;
         }
 
-        std::string Directory::Entry::typeTostring (i32 type) {
+        std::string Directory::Entry::typeTostring (ui8 type) {
             return type == File ? VALUE_FILE :
                 type == Folder ? VALUE_FOLDER :
                 type == Link ? VALUE_LINK : VALUE_INVALID;
         }
 
-        i32 Directory::Entry::stringTotype (const std::string &type) {
+        ui8 Directory::Entry::stringTotype (const std::string &type) {
             return type == VALUE_FILE ? File :
                 type == VALUE_FOLDER ? Folder :
                 type == VALUE_LINK ? Link : Invalid;
