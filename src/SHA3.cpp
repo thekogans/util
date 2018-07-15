@@ -125,7 +125,7 @@ namespace thekogans {
                 return (x << numBits) | (x >> (64 - numBits));
             }
 
-            inline ui32 mod5 (ui32 x) {
+            inline std::size_t mod5 (std::size_t x) {
                 return x < 5 ? x : x - 5;
             }
         }
