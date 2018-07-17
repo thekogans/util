@@ -201,7 +201,10 @@ namespace thekogans {
         ///              that call for Allocators that have a non trivial
         ///              ctor.
         /// 04/22/2018 - version 2.5.0
-        ///              Added HeapRegistry::IsValidPtr.
+        ///              Added HeapRegistry::IsValidPtr (...).
+        /// 07/17/2018 - version 2.5.1
+        ///              Changed name type from std::string to const char *.
+        ///              Added GetName ().
         ///
         /// Author:
         ///
@@ -848,7 +851,7 @@ namespace thekogans {
 
             /// \brief
             /// Heap name.
-            const std::string name;
+            const char *name;
             /// \brief
             /// Heap minimum item in page.
             const std::size_t minItemsInPage;
@@ -882,7 +885,7 @@ namespace thekogans {
             /// \param[in] name_ Heap name.
             /// \param[in] minItemsInPage_ Heap minimum items in page.
             /// \param[in] allocator_ Page allocator.
-            Heap (const std::string &name_,
+            Heap (const char *name_ = 0,
                     std::size_t minItemsInPage_ =
                         THEKOGANS_UTIL_HEAP_DEFAULT_MIN_ITEMS_IN_PAGE,
                     Allocator &allocator_ = DefaultAllocator::Global) :
@@ -894,7 +897,9 @@ namespace thekogans {
                     allocator (allocator_, minPageSize) {
                 assert (minItemsInPage > 0);
                 assert (OneBitCount (minPageSize) == 1);
-                HeapRegistry::Instance ().AddHeap (name, this);
+                if (name != 0) {
+                    HeapRegistry::Instance ().AddHeap (name, this);
+                }
             }
             /// \brief
             /// dtor. Remove the heap from the registrty.
@@ -902,13 +907,15 @@ namespace thekogans {
                 // We're going out of scope. If there are still
                 // pages remaining, we have a memory leak.
                 THEKOGANS_UTIL_ASSERT (fullPages.empty () && partialPages.empty (),
-                    FormatString ("%s:%u", name.c_str (), itemCount));
+                    FormatString ("%s:%u", GetName (), itemCount));
                 // IMPORTANT: Do not uncomment this Flush. It
                 // interferes with static dtors. If you are using a
                 // local temp heap, inherit from this one, and call
                 // Flush from its dtor.
                 //Flush ();
-                HeapRegistry::Instance ().DeleteHeap (name);
+                if (name != 0) {
+                    HeapRegistry::Instance ().DeleteHeap (name);
+                }
             }
 
             /// \brief
@@ -975,7 +982,7 @@ namespace thekogans {
                 /// \param[in] stream std::ostream stream to dump the stats to.
                 virtual void Dump (std::ostream &stream) const {
                     Attributes attributes;
-                    attributes.push_back (Attribute ("name", name));
+                    attributes.push_back (Attribute ("name", GetName ()));
                     attributes.push_back (Attribute ("itemSize", size_tTostring (itemSize)));
                     attributes.push_back (Attribute ("minItemsInPage", size_tTostring (minItemsInPage)));
                     attributes.push_back (Attribute ("minPageSize", size_tTostring (minPageSize)));
@@ -992,7 +999,7 @@ namespace thekogans {
                 LockGuard<Lock> guard (lock);
                 return HeapRegistry::Diagnostics::Stats::UniquePtr (
                     new Stats (
-                        name,
+                        GetName (),
                         sizeof (T),
                         minItemsInPage,
                         minPageSize,
@@ -1037,6 +1044,13 @@ namespace thekogans {
             void Flush ();
 
         private:
+            /// \brief
+            /// If the heap was given a name, return it, otherwise return "unnamed".
+            /// \return Heap name.
+            inline char *GetName () const {
+                return name != 0  ? name : "unnamed";
+            }
+
             /// \brief
             /// Return first partially allocated page (presumably for allocation).
             /// If no partially allocated pages left, allocate a new one.
@@ -1131,7 +1145,8 @@ namespace thekogans {
             if (!nothrow) {
                 THEKOGANS_UTIL_THROW_EXCEPTION (
                     THEKOGANS_UTIL_OS_ERROR_CODE_ENOMEM,
-                    "Out of memory allocating a '%s'.", name.c_str ());
+                    "Out of memory allocating a '%s'.",
+                    GetName ());
             }
             return 0;
         }
