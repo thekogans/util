@@ -48,22 +48,19 @@ namespace thekogans {
         /// \brief
         /// Smallest 64 bit integer.
     #if !defined (LONGLONG_MIN)
-        const i64 LONGLONG_MIN =
-            THEKOGANS_UTIL_I64_LITERAL (0x8000000000000000);
+        #define LONGLONG_MIN THEKOGANS_UTIL_I64_LITERAL (0x8000000000000000)
     #endif // !defined (LONGLONG_MIN)
 
         /// \brief
         /// Largest 64 bit integer.
     #if !defined (LONGLONG_MAX)
-        const i64 LONGLONG_MAX =
-            THEKOGANS_UTIL_I64_LITERAL (0x7FFFFFFFFFFFFFFF);
+        #define LONGLONG_MAX THEKOGANS_UTIL_I64_LITERAL (0x7FFFFFFFFFFFFFFF)
     #endif // !defined (LONGLONG_MAX)
 
         /// \brief
         /// Largest 64 bit unsigned integer.
     #if !defined (ULONGLONG_MAX)
-        const ui64 ULONGLONG_MAX =
-            THEKOGANS_UTIL_UI64_LITERAL (0xffffffffffffffff);
+        #define ULONGLONG_MAX THEKOGANS_UTIL_UI64_LITERAL (0xffffffffffffffff)
     #endif // !defined (ULONGLONG_MAX)
 
         /// \brief
@@ -179,7 +176,7 @@ namespace thekogans {
         /// two f32s takes an eps parameter. eps defaults
         /// to EPSILON.
     #if !defined (EPSILON)
-        const f32 EPSILON = 0.000001f;
+        #define EPSILON 0.000001f
     #endif // !defined (EPSILON)
 
         // conversion factors
@@ -206,17 +203,17 @@ namespace thekogans {
         /// \brief
         /// PI
     #if !defined (PI)
-        const f32 PI = 3.14159265358979323846f;
+        #define PI 3.14159265358979323846f
     #endif // !defined (PI)
         /// \brief
         /// PI / 2
     #if !defined (HALFPI)
-        const f32 HALFPI = 0.5f * PI;
+        #define HALFPI (0.5f * PI)
     #endif // !defined (HALFPI)
         /// \brief
         /// 2 * PI
     #if !defined (TWOPI)
-        const f32 TWOPI = 2.0f * PI;
+        #define TWOPI (2.0f * PI)
     #endif // !defined (TWOPI)
 
         /// \brief
