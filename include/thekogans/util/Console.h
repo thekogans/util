@@ -178,23 +178,24 @@ namespace thekogans {
             /// int main (
             ///         int argc,
             ///         const char *argv[]) {
+            ///     THEKOGANS_UTIL_LOG_INIT (
+            ///         thekogans::util::LoggerMgr::Debug,
+            ///         thekogans::util::LoggerMgr::All);
+            ///     THEKOGANS_UTIL_LOG_ADD_LOGGER (
+            ///         thekogans::util::Logger::Ptr (new thekogans::util::ConsoleLogger));
+            ///     THEKOGANS_UTIL_IMPLEMENT_LOG_FLUSHER;
             ///     THEKOGANS_UTIL_TRY {
-            ///         THEKOGANS_UTIL_LOG_INIT (argv[0]);
-            ///         THEKOGANS_UTIL_LOG_RESET_EX (...);
-            ///         THEKOGANS_UTIL_LOG_ADD_LOGGER (
-            ///             thekogans::util::Logger::Ptr (new thekogans::util::ConsoleLogger));
             ///         ...
             ///         thekogans::util::MainRunLoop::Instance ().Start ();
             ///         THEKOGANS_UTIL_LOG_DEBUG ("%s exiting.\n", argv[0]);
             ///     }
             ///     THEKOGANS_UTIL_CATCH_AND_LOG
-            ///     THEKOGANS_UTIL_LOG_FLUSH
             ///     return 0;
             /// }
             /// \endcode
             ///
-            /// there's nothing for you to do as THEKOGANS_UTIL_LOG_FLUSH will take care
-            /// of calling thekogans::util::Console::Instance ().FlushPrintQueue ().
+            /// there's nothing for you to do as THEKOGANS_UTIL_IMPLEMENT_LOG_FLUSHER will
+            /// take care of calling thekogans::util::Console::Instance ().FlushPrintQueue ().
             ///
             /// If you do something else, you need to make sure to call FlushPrintQueue
             /// yourself or you risk having your application deadlock on exit.

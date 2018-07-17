@@ -141,8 +141,8 @@ int main (
     THEKOGANS_UTIL_LOG_INIT (
         util::LoggerMgr::Debug,
         util::LoggerMgr::All);
-    THEKOGANS_UTIL_LOG_ADD_LOGGER (
-        util::Logger::Ptr (new util::ConsoleLogger));
+    THEKOGANS_UTIL_LOG_ADD_LOGGER (util::Logger::Ptr (new util::ConsoleLogger));
+    THEKOGANS_UTIL_IMPLEMENT_LOG_FLUSHER;
     for (util::OwnerList<Options::Hasher>::const_iterator
             it = options.hashers.begin (),
             end = options.hashers.end (); it != end; ++it) {
@@ -165,6 +165,5 @@ int main (
             THEKOGANS_UTIL_CATCH_AND_LOG
         }
     }
-    THEKOGANS_UTIL_LOG_FLUSH
     return 0;
 }

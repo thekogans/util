@@ -877,6 +877,15 @@ namespace thekogans {
         #define THEKOGANS_UTIL_LOG_FLUSH\
             thekogans::util::GlobalLoggerMgr::Instance ().Flush ();
 
+        /// \def THEKOGANS_UTIL_IMPLEMENT_LOG_FLUSHER
+        /// Use this macro at the top of your main to flush the log on exit.
+        #define THEKOGANS_UTIL_IMPLEMENT_LOG_FLUSHER\
+            struct LogFlusher {\
+                ~LogFlusher () {\
+                    THEKOGANS_UTIL_LOG_FLUSH\
+                }\
+            } logFlusher
+
         /// \struct LogStream LoggerMgr.h thekogans/util/LoggerMgr.h
         ///
         /// \brief
