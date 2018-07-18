@@ -933,7 +933,7 @@ namespace thekogans {
             struct Stats : public HeapRegistry::Diagnostics::Stats {
                 /// \brief
                 /// Heap name.
-                std::string name;
+                const char *name;
                 /// \brief
                 /// Heap item size.
                 std::size_t itemSize;
@@ -962,7 +962,8 @@ namespace thekogans {
                 /// \param[in] itemCount_ Current number of items on the heap.
                 /// \param[in] fullPagesCount_ Number of full pages on the heap.
                 /// \param[in] partialPagesCount_ Number of partial pages on the heap.
-                Stats (const std::string &name_,
+                Stats (
+                    const char *name_,
                     std::size_t itemSize_,
                     std::size_t minItemsInPage_,
                     std::size_t minPageSize_,
@@ -982,7 +983,7 @@ namespace thekogans {
                 /// \param[in] stream std::ostream stream to dump the stats to.
                 virtual void Dump (std::ostream &stream) const {
                     Attributes attributes;
-                    attributes.push_back (Attribute ("name", GetName ()));
+                    attributes.push_back (Attribute ("name", name));
                     attributes.push_back (Attribute ("itemSize", size_tTostring (itemSize)));
                     attributes.push_back (Attribute ("minItemsInPage", size_tTostring (minItemsInPage)));
                     attributes.push_back (Attribute ("minPageSize", size_tTostring (minPageSize)));
@@ -1047,7 +1048,7 @@ namespace thekogans {
             /// \brief
             /// If the heap was given a name, return it, otherwise return "unnamed".
             /// \return Heap name.
-            inline char *GetName () const {
+            inline const char *GetName () const {
                 return name != 0  ? name : "unnamed";
             }
 
