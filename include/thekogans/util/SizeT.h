@@ -33,9 +33,18 @@ namespace thekogans {
         ///
         /// \brief
         /// SizeT implements an architecture independent, Prefix-encoded, variable length
-        /// serialized std::szie_t.
+        /// serialized std::size_t.
 
         struct _LIB_THEKOGANS_UTIL_DECL SizeT {
+            enum {
+                /// \brief
+                /// Min serialized SizeT size.
+                MIN_SIZE = UI8_SIZE,
+                /// \brief
+                /// Max serialized SizeT size.
+                MAX_SIZE = UI8_SIZE + UI64_SIZE
+            };
+
             /// \brief
             /// Use ui64 to represent architecture independent size (i386, x86_64...).
             ui64 value;
@@ -194,9 +203,9 @@ namespace thekogans {
             /// \param[in] value Value whose leading zero count to return.
             /// \return Leading zero count of the given value.
             static inline std::size_t __builtin_clzll (ui64 value) {
-                unsigned long leadingZero = 0;
-                _BitScanReverse64 (&leadingZero, value);
-                return 63 - leadingZero;
+                unsigned long mostSignificantOneBit = 0;
+                _BitScanReverse64 (&mostSignificantOneBit, value);
+                return 63 - mostSignificantOneBit;
             }
 
             /// \brief
@@ -204,9 +213,9 @@ namespace thekogans {
             /// \param[in] value Value whose trailing zero count to return.
             /// \return Trailing zero count of the given value.
             static inline std::size_t __builtin_ctz (ui32 value) {
-                unsigned long trailingZero = 0;
-                _BitScanForward (&trailingZero, value);
-                return trailingZero;
+                unsigned long leasetSignificantOneBit = 0;
+                _BitScanForward (&leasetSignificantOneBit, value);
+                return leasetSignificantOneBit;
             }
     #endif // defined (TOOLCHAIN_OS_Windows)
         };

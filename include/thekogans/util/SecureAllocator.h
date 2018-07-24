@@ -26,6 +26,7 @@
 #include "thekogans/util/Types.h"
 #include "thekogans/util/Allocator.h"
 #include "thekogans/util/Exception.h"
+#include "thekogans/util/Serializer.h"
 
 namespace thekogans {
     namespace util {

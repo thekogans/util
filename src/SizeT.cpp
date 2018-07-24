@@ -28,7 +28,7 @@ namespace thekogans {
                 Serializer &serializer,
                 const SizeT &sizeT) {
             std::size_t bytes = sizeT.Size ();
-            if (bytes < 9) {
+            if (bytes < SizeT::MAX_SIZE) {
                 ui64 value = ((sizeT.value << 1) | 1) << (bytes - 1);
                 for (std::size_t i = 0; i < bytes; ++i) {
                     serializer << (ui8)(value & 0xff);
@@ -47,7 +47,7 @@ namespace thekogans {
             ui8 value;
             serializer >> value;
             std::size_t bytes = SizeT::Size (value);
-            if (bytes < 9) {
+            if (bytes < SizeT::MAX_SIZE) {
                 sizeT.value = value;
                 for (std::size_t i = 1; i < bytes; ++i) {
                     serializer >> value;

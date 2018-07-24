@@ -253,12 +253,12 @@ namespace thekogans {
         protected:\
             THEKOGANS_UTIL_DECLARE_HEAP_WITH_LOCK (type, lock)\
             type (\
-                    const Header &header,\
+                    const thekogans::util::Serializable::Header &header,\
                     thekogans::util::Serializer &serializer) {\
                 Read (header, serializer);\
             }\
             static thekogans::util::Serializable::Ptr Create (\
-                    const Header &header,\
+                    const thekogans::util::Serializable::Header &header,\
                     thekogans::util::Serializer &serializer) {\
                 return thekogans::util::Serializable::Ptr (\
                     new type (header, serializer));\
