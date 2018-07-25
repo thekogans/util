@@ -51,6 +51,9 @@ namespace thekogans {
             /// \brief
             /// Used to figure out how to acquire and release the lock.
             bool read;
+            /// \brief
+            /// Release was called.
+            bool released;
 
         public:
             /// \brief
@@ -79,7 +82,8 @@ namespace thekogans {
                     bool read_,
                     bool acquire = true) :
                     lock (lock_),
-                    read (read_) {
+                    read (read_),
+                    released (false) {
                 if (acquire) {
                     lock.Acquire (read);
                 }
@@ -87,7 +91,27 @@ namespace thekogans {
             /// \brief
             /// dtor. Release the lock.
             ~RWLockGuard () {
-                lock.Release (read);
+                if (!released) {
+                    lock.Release (read);
+                }
+            }
+
+            /// \brief
+            /// Reacquire the lock.
+            inline void Acquire () {
+                if (released) {
+                    lock.Acquire (read);
+                    released = false;
+                }
+            }
+
+            /// \brief
+            /// Release the lock.
+            inline void Release () {
+                if (!released) {
+                    lock.Release (read);
+                    released = true;
+                }
             }
 
             /// \brief
