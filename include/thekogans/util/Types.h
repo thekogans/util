@@ -343,6 +343,21 @@ namespace thekogans {
         #define THEKOGANS_UTIL_ARRAY_SIZE(array)\
             (sizeof (array) / sizeof (array[0]))
 
+        /// \def THEKOGANS_UTIL_MERGE(prefix, lineNumber)
+        /// Concatenate a prefix and line number to for a unique name.
+        /// \param[in] prefix Name prefix.
+        /// \param[in] lineNumber Line number.
+        #define THEKOGANS_UTIL_MERGE(prefix, lineNumber) prefix##lineNumber
+        /// \def THEKOGANS_UTIL_LABEL(prefix, lineNumber)
+        /// Create a unique label using a prefix and a line number.
+        /// \param[in] prefix Label prefix.
+        /// \param[in] lineNumber Line number.
+        #define THEKOGANS_UTIL_LABEL(prefix, lineNumber) THEKOGANS_UTIL_MERGE(prefix, lineNumber)
+        /// \def THEKOGANS_UTIL_UNIQUE_NAME(prefix)
+        /// Given a prefix, create a unique name using __LINE__.
+        /// \param[in] prefix Name prefix.
+        #define THEKOGANS_UTIL_UNIQUE_NAME(prefix) THEKOGANS_UTIL_LABEL(prefix, __LINE__)
+
     } // namespace util
 } // namespace thekogans
 
