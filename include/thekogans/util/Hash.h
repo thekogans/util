@@ -49,7 +49,7 @@ namespace thekogans {
             typedef std::map<std::string, Factory> Map;
             /// \brief
             /// Controls Map's lifetime.
-            /// \return Serializable map.
+            /// \return Hash map.
             static Map &GetMap ();
             /// \brief
             /// Used for Hash dynamic discovery and creation.
