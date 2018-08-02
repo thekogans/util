@@ -101,6 +101,13 @@ namespace thekogans {
             totalTime = 0;
         }
 
+        void RunLoop::Stats::Job::Parse (const pugi::xml_node &node) {
+            id = node.attribute (ATTR_ID).value ();
+            startTime = stringToui64 (node.attribute (ATTR_START_TIME).value ());
+            endTime = stringToui64 (node.attribute (ATTR_END_TIME).value ());
+            totalTime = stringToui64 (node.attribute (ATTR_TOTAL_TIME).value ());
+        }
+
         std::string RunLoop::Stats::Job::ToString (
                 std::size_t indentationLevel,
                 const char *tagName) const {
@@ -113,6 +120,7 @@ namespace thekogans {
         }
 
         const char * const RunLoop::Stats::TAG_RUN_LOOP = "RunLoop";
+        const char * const RunLoop::Stats::ATTR_NAME = "Name";
         const char * const RunLoop::Stats::ATTR_TOTAL_JOBS = "TotalJobs";
         const char * const RunLoop::Stats::ATTR_TOTAL_JOB_TIME = "TotalJobTime";
         const char * const RunLoop::Stats::TAG_LAST_JOB = "LastJob";
@@ -127,10 +135,32 @@ namespace thekogans {
             maxJob.Reset ();
         }
 
+        void RunLoop::Stats::Parse (const pugi::xml_node &node) {
+            name = Decodestring (node.attribute (ATTR_NAME).value ());
+            totalJobs = stringToui32 (node.attribute (ATTR_TOTAL_JOBS).value ());
+            totalJobTime = stringToui64 (node.attribute (ATTR_TOTAL_JOB_TIME).value ());
+            for (pugi::xml_node child = node.first_child ();
+                    !child.empty (); child = child.next_sibling ()) {
+                if (child.type () == pugi::node_element) {
+                    std::string childName = child.name ();
+                    if (childName == TAG_LAST_JOB) {
+                        lastJob.Parse (child);
+                    }
+                    else if (childName == TAG_MIN_JOB) {
+                        minJob.Parse (child);
+                    }
+                    else if (childName == TAG_MAX_JOB) {
+                        maxJob.Parse (child);
+                    }
+                }
+            }
+        }
+
         std::string RunLoop::Stats::ToString (
                 std::size_t indentationLevel,
                 const char *tagName) const {
             Attributes attributes;
+            attributes.push_back (Attribute (ATTR_NAME, Encodestring (name)));
             attributes.push_back (Attribute (ATTR_TOTAL_JOBS, ui32Tostring (totalJobs)));
             attributes.push_back (Attribute (ATTR_TOTAL_JOB_TIME, ui64Tostring (totalJobTime)));
             return
@@ -178,6 +208,7 @@ namespace thekogans {
                 type (type_),
                 maxPendingJobs (maxPendingJobs_),
                 done (done_),
+                stats (name_),
                 jobsNotEmpty (jobsMutex),
                 idle (jobsMutex) {
             if ((type != TYPE_FIFO && type != TYPE_LIFO) ||

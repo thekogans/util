@@ -32,6 +32,9 @@
 #endif // defined (TOOLCHAIN_OS_Windows)
 #include <memory>
 #include <string>
+#if defined (THEKOGANS_UTIL_HAVE_PUGIXML)
+    #include <pugixml.hpp>
+#endif // defined (THEKOGANS_UTIL_HAVE_PUGIXML)
 #include "thekogans/util/Config.h"
 #include "thekogans/util/Types.h"
 #include "thekogans/util/RefCounted.h"
@@ -347,6 +350,9 @@ namespace thekogans {
                 /// "RunLoop"
                 static const char * const TAG_RUN_LOOP;
                 /// \brief
+                /// "Name"
+                static const char * const ATTR_NAME;
+                /// \brief
                 /// "TotalJobs"
                 static const char * const ATTR_TOTAL_JOBS;
                 /// \brief
@@ -362,6 +368,9 @@ namespace thekogans {
                 /// "MaxJob"
                 static const char * const TAG_MAX_JOB;
 
+                /// \brief
+                /// Run loop name.
+                std::string name;
                 /// \brief
                 /// Total jobs processed.
                 ui32 totalJobs;
@@ -428,6 +437,16 @@ namespace thekogans {
                     /// Reset the job stats.
                     void Reset ();
 
+                #if defined (THEKOGANS_UTIL_HAVE_PUGIXML)
+                    /// \brief
+                    /// Parse a job from an xml dom that looks like this;
+                    /// <Job Id = ""
+                    ///      StartTime = ""
+                    ///      EndTime = ""
+                    ///      TotalTime = ""/>
+                    /// \param[in] node DOM representation of an job.
+                    void Parse (const pugi::xml_node &node);
+                #endif // defined (THEKOGANS_UTIL_HAVE_PUGIXML)
                     /// \brief
                     /// Return the XML representation of the Job stats.
                     /// \param[in] indentationLevel Pretty print parameter. If
@@ -452,7 +471,9 @@ namespace thekogans {
 
                 /// \brief
                 /// ctor.
-                Stats () :
+                /// \param[in] name_ Run loop name.
+                explicit Stats (const std::string &name_) :
+                    name (name_),
                     totalJobs (0),
                     totalJobTime (0) {}
 
@@ -460,6 +481,19 @@ namespace thekogans {
                 /// Reset the RunLoop stats.
                 void Reset ();
 
+            #if defined (THEKOGANS_UTIL_HAVE_PUGIXML)
+                /// \brief
+                /// Parse run loop stats from an xml dom that looks like this;
+                /// <RunLoop Name = ""
+                ///          TotalJobs = ""
+                ///          TotalJobTime = "">
+                ///     <LastJob .../>
+                ///     <MinJob .../>
+                ///     <MaxJob .../>
+                /// </RunLoop>
+                /// \param[in] node DOM representation of run loop stats.
+                void Parse (const pugi::xml_node &node);
+            #endif // defined (THEKOGANS_UTIL_HAVE_PUGIXML)
                 /// \brief
                 /// Return the XML representation of the Stats.
                 /// \param[in] indentationLevel Pretty print parameter. If

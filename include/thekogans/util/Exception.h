@@ -202,6 +202,7 @@ namespace thekogans {
                 ///          BuildTime = "Module build date and time"/>
                 /// \param[in] node pugi::xml_node representing the location.
                 void Parse (const pugi::xml_node &node);
+            #endif // defined (THEKOGANS_UTIL_HAVE_PUGIXML)
                 /// \brief
                 /// Serialize the Location parameters in to an XML string.
                 /// \param[in] indentationLevel Pretty print parameter. If
@@ -209,7 +210,6 @@ namespace thekogans {
                 /// you might want to provide a value that will embed it in
                 /// the structure.
                 /// \return The XML reprentation of the Location.
-            #endif // defined (THEKOGANS_UTIL_HAVE_PUGIXML)
                 std::string ToString (
                     std::size_t indentationLevel,
                     const char *tagName = TAG_LOCATION) const;

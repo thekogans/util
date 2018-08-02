@@ -27,12 +27,21 @@ namespace thekogans {
         const char * const Serializable::Header::ATTR_VERSION = "Version";
         const char * const Serializable::Header::ATTR_SIZE = "Size";
 
+    #if defined (THEKOGANS_UTIL_HAVE_PUGIXML)
+        void Serializable::Header::Parse (const pugi::xml_node &node) {
+            magic = stringToui32 (node.attribute (ATTR_MAGIC).value ());
+            type = Decodestring (node.attribute (ATTR_TYPE).value ());
+            version = stringToui16 (node.attribute (ATTR_VERSION).value ());
+            size = stringToui64 (node.attribute (ATTR_SIZE).value ());
+        }
+    #endif // defined (THEKOGANS_UTIL_HAVE_PUGIXML)
+
         std::string Serializable::Header::ToString (
                 std::size_t indentationLevel,
                 const char *tagName) const {
             Attributes attributes;
             attributes.push_back (Attribute (ATTR_MAGIC, ui32Tostring (magic)));
-            attributes.push_back (Attribute (ATTR_TYPE, type));
+            attributes.push_back (Attribute (ATTR_TYPE, Encodestring (type)));
             attributes.push_back (Attribute (ATTR_VERSION, ui32Tostring (version)));
             attributes.push_back (Attribute (ATTR_SIZE, ui64Tostring (size)));
             return OpenTag (0, tagName, attributes, true, true);

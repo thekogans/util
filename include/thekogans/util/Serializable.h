@@ -20,6 +20,9 @@
 
 #include <cstddef>
 #include <string>
+#if defined (THEKOGANS_UTIL_HAVE_PUGIXML)
+    #include <pugixml.hpp>
+#endif // defined (THEKOGANS_UTIL_HAVE_PUGIXML)
 #include "thekogans/util/Config.h"
 #include "thekogans/util/Types.h"
 #include "thekogans/util/Constants.h"
@@ -109,6 +112,17 @@ namespace thekogans {
                 /// "Size"
                 static const char * const ATTR_SIZE;
 
+            #if defined (THEKOGANS_UTIL_HAVE_PUGIXML)
+                /// \brief
+                /// Parse the header from an xml dom that looks like this;
+                /// <Header Magic = "FARS"
+                ///         Type = ""
+                ///         Version = ""
+                ///         Size = ""
+                ///         ...>
+                /// \param[in] node DOM representation of a header.
+                void Parse (const pugi::xml_node &node);
+            #endif // defined (THEKOGANS_UTIL_HAVE_PUGIXML)
                 /// \brief
                 /// Return the XML representation of a header.
                 /// \param[in] indentationLevel How far to indent the leading tag.

@@ -115,6 +115,7 @@ namespace thekogans {
                 type (type_),
                 maxPendingJobs (maxPendingJobs_),
                 done (true),
+                stats (name_),
                 jobsNotEmpty (jobsMutex),
                 idle (jobsMutex),
                 workerCount (workerCount_),
@@ -185,9 +186,8 @@ namespace thekogans {
         }
 
         void Pipeline::GetStagesStats (std::vector<RunLoop::Stats> &stats) {
-            stats.resize (stages.size ());
             for (std::size_t i = 0, count = stages.size (); i < count; ++i) {
-                stats[i] = stages[i]->GetStats ();
+                stats.push_back (stages[i]->GetStats ());
             }
         }
 
