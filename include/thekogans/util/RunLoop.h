@@ -169,6 +169,9 @@ namespace thekogans {
                 /// If IsFailed, exception will hold the reason.
                 Exception exception;
                 /// \brief
+                /// Provides interruptable sleep (see Sleep below).
+                Event sleeping;
+                /// \brief
                 /// Set when job completes execution.
                 Event completed;
 
@@ -179,7 +182,8 @@ namespace thekogans {
                 Job (const Id &id_ = GUID::FromRandom ().ToString ()) :
                     id (id_),
                     state (Completed),
-                    disposition (Unknown) {}
+                    disposition (Unknown),
+                    sleeping (false) {}
                 /// \brief
                 /// dtor.
                 virtual ~Job () {}
@@ -292,6 +296,16 @@ namespace thekogans {
                 /// \return true == Job should stop what it's doing and exit.
                 inline bool ShouldStop (const THEKOGANS_UTIL_ATOMIC<bool> &done) const {
                     return done || IsCancelled () || IsFailed ();
+                }
+
+                /// \brief
+                /// Use this method when your job needs to sleep a while during execution.
+                /// It provides interruptable sleep in case of cancellation.
+                /// \param[in] timeSpec How long to sleep.
+                /// IMPORTANT: timeSpec is a relative value.
+                /// \return true == Slept successfully, false == Interrupted by Cancel.
+                inline bool Sleep (const TimeSpec &timeSpec = TimeSpec::Infinite) {
+                    return !sleeping.Wait (timeSpec);
                 }
 
                 /// \brief

@@ -30,6 +30,7 @@ namespace thekogans {
         void RunLoop::Job::Cancel () {
             if (disposition == Unknown) {
                 disposition = Cancelled;
+                sleeping.Signal ();
             }
         }
 
@@ -354,14 +355,14 @@ namespace thekogans {
                 const TimeSpec &timeSpec) {
             if (job.Get () != 0 && job->GetRunLoopId () == id) {
                 if (timeSpec == TimeSpec::Infinite) {
-                    while (!job->IsCompleted ()) {
+                    while (IsRunning () && !job->IsCompleted ()) {
                         job->Wait ();
                     }
                 }
                 else {
                     TimeSpec now = GetCurrentTime ();
                     TimeSpec deadline = now + timeSpec;
-                    while (!job->IsCompleted () && deadline > now) {
+                    while (IsRunning () && !job->IsCompleted () && deadline > now) {
                         job->Wait (deadline - now);
                         now = GetCurrentTime ();
                     }
@@ -422,14 +423,14 @@ namespace thekogans {
                     }
                 } completedCallback (waitForJobCallback.jobs);
                 if (timeSpec == TimeSpec::Infinite) {
-                    while (!waitForJobCallback.jobs.for_each (completedCallback)) {
+                    while (IsRunning () && !waitForJobCallback.jobs.for_each (completedCallback)) {
                         completedCallback.Wait ();
                     }
                 }
                 else {
                     TimeSpec now = GetCurrentTime ();
                     TimeSpec deadline = now + timeSpec;
-                    while (!waitForJobCallback.jobs.for_each (completedCallback) &&
+                    while (IsRunning () && !waitForJobCallback.jobs.for_each (completedCallback) &&
                             deadline > now) {
                         completedCallback.Wait (deadline - now);
                         now = GetCurrentTime ();
@@ -442,14 +443,14 @@ namespace thekogans {
         bool RunLoop::WaitForIdle (const TimeSpec &timeSpec) {
             LockGuard<Mutex> guard (jobsMutex);
             if (timeSpec == TimeSpec::Infinite) {
-                while (!pendingJobs.empty () || !runningJobs.empty ()) {
+                while (IsRunning () && (!pendingJobs.empty () || !runningJobs.empty ())) {
                     idle.Wait ();
                 }
             }
             else {
                 TimeSpec now = GetCurrentTime ();
                 TimeSpec deadline = now + timeSpec;
-                while ((!pendingJobs.empty () || !runningJobs.empty ()) &&
+                while (IsRunning () && (!pendingJobs.empty () || !runningJobs.empty ()) &&
                         deadline > now) {
                     idle.Wait (deadline - now);
                     now = GetCurrentTime ();
@@ -533,11 +534,11 @@ namespace thekogans {
 
         RunLoop::Job *RunLoop::DeqJob (bool wait) {
             LockGuard<Mutex> guard (jobsMutex);
-            while (!done && pendingJobs.empty () && wait) {
+            while (IsRunning () && pendingJobs.empty () && wait) {
                 jobsNotEmpty.Wait ();
             }
             Job *job = 0;
-            if (!done && !pendingJobs.empty ()) {
+            if (IsRunning () && !pendingJobs.empty ()) {
                 job = pendingJobs.pop_front ();
                 runningJobs.push_back (job);
             }
