@@ -41,13 +41,22 @@ namespace thekogans {
         /// \struct Condition Condition.h thekogans/util/Condition.h
         ///
         /// \brief
-        /// Wraps a Windows CONDITION_VARIABLE and a
-        /// POSIX pthread_cond_t in a platform independent api.
+        /// Wraps a Windows CONDITION_VARIABLE and a POSIX pthread_cond_t in a platform independent api.
+        /// VERY VERY IMPORTANT: Please keep in mind that on POSIX spurious wekeups are built in to the
+        /// specification of a condition variable:
+        /// https://groups.google.com/forum/?hl=de#!topic/comp.programming.threads/MnlYxCfql4w
+        /// (read what Dave Butenhof wrote in response to Patrick Doyle).
+        /// To properly use condition variables, a predicate loop must be used. Here's an example:
+        /// \code{.cpp}
+        /// while (predicate == false) {
+        ///     condition.Wait ();
+        /// }
+        /// \endcode
 
         struct _LIB_THEKOGANS_UTIL_DECL Condition {
         private:
             /// \brief
-            /// The mutex this condition variable is paired with.x
+            /// The mutex this condition variable is paired with.
             Mutex &mutex;
         #if defined (TOOLCHAIN_OS_Windows)
             /// \brief

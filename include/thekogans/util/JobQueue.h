@@ -41,8 +41,7 @@ namespace thekogans {
         ///
         /// As you add jobs to the queue, the next idle worker removes and executes them.
         /// The queue can be either FIFO or LIFO. While very usefull on it's own, JobQueue
-        /// also forms the basis for \see{Pipeline}, \see{Vectorizer}, \see{JobQueuePool}
-        /// and \see{Scheduler}.
+        /// also forms the basis for \see{Pipeline} and \see{JobQueuePool}.
 
         struct _LIB_THEKOGANS_UTIL_DECL JobQueue : public RunLoop {
             /// \brief
@@ -154,8 +153,7 @@ namespace thekogans {
             /// Stops all running, and cancels all pending jobs. The
             /// queue, and the worker pool are flushed. After calling
             /// this method, the queue is dead, and consumes very little
-            /// resources. You need to call Start to get it going
-            /// again.
+            /// resources. You need to call Start to get it going again.
             ///
             /// VERY IMPORTANT: In order to stop the workers, the queue
             /// sets done = true. This is the same done as is passed as

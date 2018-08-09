@@ -61,7 +61,7 @@ namespace thekogans {
             /// IMPORTANT: hookChild allows you to reap zombie children
             /// without waiting for them explicitly. If you use this
             /// functionality you need to use \see{ChildProcess::Spawn}
-            /// as \see{ChildProcess::Exec} call wait internally.
+            /// as \see{ChildProcess::Exec} calls wait internally.
             static bool hookChild;
             /// \brief
             /// Linux only. true == Turn on core dump.

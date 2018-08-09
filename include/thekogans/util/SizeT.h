@@ -33,7 +33,7 @@ namespace thekogans {
         ///
         /// \brief
         /// SizeT implements an architecture independent, Prefix-encoded, variable length
-        /// serialized std::size_t.
+        /// serializable std::size_t.
 
         struct _LIB_THEKOGANS_UTIL_DECL SizeT {
             enum {
