@@ -50,6 +50,10 @@ namespace thekogans {
         /// If you don't call MainRunLoopCreateInstance::Parameterize, MainRunLoop
         /// will create a \see{DefaultRunLoop} on it's first invocation of Instance.
         ///
+        /// VERY IMPORTANT: MainRunLoopCreateInstance::Parameterize performs initialization
+        /// (calls Thread::SetMainThread (). On OS X potentially calls CocoaInit ()) that
+        /// only makes sense when called from the main thread (main).
+        ///
         /// Follow these templates in order to create the \see{SystemRunLoop} on the
         /// right thread:
         ///
@@ -227,7 +231,7 @@ namespace thekogans {
             /// OS X run loop object.
             static CFRunLoopRef runLoop;
             /// \brief
-            /// Use NSApp.
+            /// Initialize and use OS X Cocoa framework.
             static bool useCocoa;
         #endif // defined (TOOLCHAIN_OS_Windows)
 
@@ -288,15 +292,18 @@ namespace thekogans {
             /// \param[in] workerCallback_ Called to initialize/uninitialize the worker thread.
             /// MainRunLoop::Instance ().Start ().
             /// \param[in] runLoop_ OS X run loop object.
-            /// NOTE: if runLoop_ == 0, SystemRunLoop will use \see{CocoaStart) \see{CocoaStop)
-            /// from OSXUtils.[h | mm].
+            /// NOTE: if runLoop_ == 0 && useCocoa_ == true, SystemRunLoop will use \see{CocoaStart)
+            /// \see{CocoaStop) from OSXUtils.[h | mm].
+            /// \param[in] useCocoa_ true == Initialize and use OS X Cocoa framework.
+            /// NOTE: if useCocoa_ == true, runLoop_ must be == 0.
             static void Parameterize (
                 const std::string &name_,
                 RunLoop::Type type_,
                 ui32 maxPendingJobs_,
                 bool willCallStart_,
                 RunLoop::WorkerCallback *workerCallback_,
-                CFRunLoopRef runLoop_);
+                CFRunLoopRef runLoop_,
+                bool useCocoa_);
         #endif // defined (TOOLCHAIN_OS_Windows)
 
             /// \brief

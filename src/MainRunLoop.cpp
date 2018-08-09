@@ -15,8 +15,10 @@
 // You should have received a copy of the GNU General Public License
 // along with libthekogans_util. If not, see <http://www.gnu.org/licenses/>.
 
+#include "thekogans/util/Thread.h"
 #include "thekogans/util/DefaultRunLoop.h"
 #if defined (THEKOGANS_OS_OSX)
+    #include "thekogans/util/Exception.h"
     #include "thekogans/util/OSXUtils.h"
 #endif // defined (THEKOGANS_OS_OSX)
 #include "thekogans/util/MainRunLoop.h"
@@ -24,7 +26,7 @@
 namespace thekogans {
     namespace util {
 
-        std::string MainRunLoopCreateInstance::name;
+        std::string MainRunLoopCreateInstance::name = "Main Thread";
         RunLoop::Type MainRunLoopCreateInstance::type = RunLoop::TYPE_FIFO;
         ui32 MainRunLoopCreateInstance::maxPendingJobs = UI32_MAX;
         bool MainRunLoopCreateInstance::willCallStart = true;
@@ -51,6 +53,7 @@ namespace thekogans {
             eventProcessor = eventProcessor_;
             userData = userData_;
             window = std::move (window_);
+            Thread::SetMainThread ();
         }
 
         RunLoop *MainRunLoopCreateInstance::operator () () {
@@ -96,6 +99,7 @@ namespace thekogans {
             userData = userData_;
             window = std::move (window_);
             displays = displays_;
+            Thread::SetMainThread ();
         }
     #endif // defined (THEKOGANS_UTIL_HAVE_XLIB)
         RunLoop *MainRunLoopCreateInstance::operator () () {
@@ -135,17 +139,25 @@ namespace thekogans {
                 ui32 maxPendingJobs_,
                 bool willCallStart_,
                 RunLoop::WorkerCallback *workerCallback_,
-                CFRunLoopRef runLoop_) {
+                CFRunLoopRef runLoop_,
+                bool useCocoa_) {
             name = name_;
             type = type_;
             maxPendingJobs = maxPendingJobs_;
             willCallStart = willCallStart_;
             workerCallback = workerCallback_;
             runLoop = runLoop_;
-            if (runLoop == 0) {
-                CocoaInit ();
-                useCocoa = true;
+            useCocoa = useCocoa_;
+            if (useCocoa) {
+                if (runLoop == 0) {
+                    CocoaInit ();
+                }
+                else {
+                    THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
+                        "%s", "useCocoa_ == true, runLoop_ must be == 0.");
+                }
             }
+            Thread::SetMainThread ();
         }
 
         RunLoop *MainRunLoopCreateInstance::operator () () {
