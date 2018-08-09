@@ -19,7 +19,6 @@
 
 #include <AppKit/AppKit.h>
 #include <Foundation/Foundation.h>
-#include "thekogans/util/Thread.h"
 #include "thekogans/util/Exception.h"
 #include "thekogans/util/StringUtils.h"
 #include "thekogans/util/OSXUtils.h"
@@ -29,7 +28,7 @@ namespace thekogans {
 
         void CocoaInit () {
             if (NSApplicationLoad () == YES) {
-                Thread::SetMainThread ();
+                [NSAutoreleasePool new];
                 [NSApplication sharedApplication];
             }
             else {
