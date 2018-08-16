@@ -343,9 +343,9 @@ namespace thekogans {
                 startInfo.hStdError = stdIO->errPipe[1];
             }
             ClearProcessInformation (processInformation);
-            if (!CreateProcess (0, &commandLine[0], 0, 0, TRUE,
+            if (!CreateProcess (0, commandLine.data (), 0, 0, TRUE,
                     detached ? DETACHED_PROCESS : 0,
-                    !environment.empty () ? (LPVOID)&environment[0] : 0,
+                    !environment.empty () ? (LPVOID)environment.data () : 0,
                     !startupDirectory.empty () ? startupDirectory.c_str () : 0,
                     &startInfo,
                     &processInformation)) {
@@ -403,17 +403,17 @@ namespace thekogans {
                 #if defined (TOOLCHAIN_OS_OSX)
                     execve (
                         path.c_str (),
-                        (char * const *)&argv[0],
-                        (char * const *)&envp[0]);
+                        (char * const *)argv.data (),
+                        (char * const *)envp.data ());
                 #else // defined (TOOLCHAIN_OS_OSX)
                     execvpe (
                         path.c_str (),
-                        (char * const *)&argv[0],
-                        (char * const *)&envp[0]);
+                        (char * const *)argv.data (),
+                        (char * const *)envp.data ());
                 #endif // defined (TOOLCHAIN_OS_OSX)
                 }
                 else {
-                    execvp (path.c_str (), (char * const *)&argv[0]);
+                    execvp (path.c_str (), (char * const *)argv.data ());
                 }
                 // If we got here that means execv... failed.
                 // Return the error code to the parent.

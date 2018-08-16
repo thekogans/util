@@ -78,13 +78,11 @@ namespace thekogans {
     #endif // defined (TOOLCHAIN_TYPE_Static)
 
         std::string Hash::DigestToString (const Digest &digest) {
-            return digest.empty () ? std::string () :
-                HexEncodeBuffer (&digest[0], digest.size ());
+            return HexEncodeBuffer (digest.data (), digest.size ());
         }
 
         Hash::Digest Hash::StringToDigest (const std::string &digest) {
-            return digest.empty () ? Digest () :
-                HexDecodeBuffer (&digest[0], digest.size ());
+            return HexDecodeBuffer (digest.c_str (), digest.size ());
         }
 
         void Hash::FromBuffer (

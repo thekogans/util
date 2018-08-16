@@ -176,7 +176,7 @@ namespace thekogans {
                 }
             }
         #endif // (HostEndian == LittleEndian)
-            memcpy (&digest[0], state, digestSize);
+            memcpy (digest.data (), state, digestSize);
             Reset ();
         }
 

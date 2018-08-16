@@ -141,14 +141,12 @@ namespace thekogans {
 
         _LIB_THEKOGANS_UTIL_DECL std::string _LIB_THEKOGANS_UTIL_API HexEncodestring (
                 const std::string &str) {
-            return !str.empty () ? HexEncodeBuffer (&str[0], str.size ()) : std::string ();
+            return HexEncodeBuffer (str.c_str (), str.size ());
         }
 
         _LIB_THEKOGANS_UTIL_DECL std::vector<ui8> _LIB_THEKOGANS_UTIL_API HexDecodestring (
                 const std::string &hexString) {
-            return !hexString.empty () ?
-                HexDecodeBuffer (&hexString[0], hexString.size ()) :
-                std::vector<ui8> ();
+            return HexDecodeBuffer (hexString.c_str (), hexString.size ());
         }
 
         namespace {
@@ -209,7 +207,7 @@ namespace thekogans {
 
         _LIB_THEKOGANS_UTIL_DECL std::string _LIB_THEKOGANS_UTIL_API HexFormatstring (
                 const std::string &str) {
-            return !str.empty () ? HexFormatBuffer (&str[0], str.size ()) : std::string ();
+            return HexFormatBuffer (str.c_str (), str.size ());
         }
 
         _LIB_THEKOGANS_UTIL_DECL std::size_t _LIB_THEKOGANS_UTIL_API HashString (

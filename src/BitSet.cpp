@@ -77,7 +77,7 @@ namespace thekogans {
 
         void BitSet::Set () {
             if (size > 0) {
-                memset (&bits[0], 0xff, bits.size () * UI32_SIZE);
+                memset (bits.data (), 0xff, bits.size () * UI32_SIZE);
                 Trim ();
             }
             else {
@@ -88,7 +88,7 @@ namespace thekogans {
 
         void BitSet::Clear () {
             if (size > 0) {
-                memset (&bits[0], 0, bits.size () * UI32_SIZE);
+                memset (bits.data (), 0, bits.size () * UI32_SIZE);
             }
             else {
                 THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
@@ -124,7 +124,7 @@ namespace thekogans {
                     3, 4, 4, 5, 4, 5, 5, 6, 4, 5, 5, 6, 5, 6, 6, 7,
                     4, 5, 5, 6, 5, 6, 6, 7, 5, 6, 6, 7, 6, 7, 7, 8,
                 };
-                const ui8 *begin = (const ui8 *)(const void *)&bits[0];
+                const ui8 *begin = (const ui8 *)(const void *)bits.data ();
                 const ui8 *end = begin + (bits.size () << 2);
                 for (; begin != end; ++begin) {
                     count += bitsPerByte[*begin];

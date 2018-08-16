@@ -188,7 +188,7 @@ namespace thekogans {
                 MD5 md5;
                 md5.FromFile (path, MD5::DIGEST_SIZE_128, digest);
             }
-            return GUID (&digest[0]);
+            return GUID (digest.data ());
         }
 
         GUID GUID::FromBuffer (
@@ -199,7 +199,7 @@ namespace thekogans {
                 MD5 md5;
                 md5.FromBuffer ((const ui8 *)buffer, length, MD5::DIGEST_SIZE_128, digest);
             }
-            return GUID (&digest[0]);
+            return GUID (digest.data ());
         }
 
         GUID GUID::FromRandom () {

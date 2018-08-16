@@ -63,7 +63,7 @@ namespace thekogans {
         ///     }
         ///
         ///     JobQueue *operator () () {
-        ///         return JobQueue (
+        ///         return new JobQueue (
         ///             name,
         ///             type,
         ///             maxPendingJobs,

@@ -245,7 +245,7 @@ namespace thekogans {
                 }
                 Hash::Digest digest;
                 sha2.Final (digest);
-                return !digest.empty () ? HexEncodeBuffer (&digest[0], digest.size ()) : std::string ();
+                return HexEncodeBuffer (digest.data (), digest.size ());
             }
         }
 

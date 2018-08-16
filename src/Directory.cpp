@@ -403,7 +403,7 @@ namespace thekogans {
                         ioctl (handle, FIONREAD, &length);
                         if (length > 0) {
                             std::vector<char> buffer (length);
-                            if (read (handle, &buffer[0], length) != (int)length) {
+                            if (read (handle, buffer.data (), length) != (int)length) {
                                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
                                     THEKOGANS_UTIL_OS_ERROR_CODE);
                             }
