@@ -72,7 +72,7 @@ namespace thekogans {
             ReadOnlyFile urandom;
         #endif // defined (TOOLCHAIN_OS_Windows)
             /// \brief
-            /// Synchronization lock.
+            /// Every call to get random bits has to be atomic.
             SpinLock spinLock;
 
         public:

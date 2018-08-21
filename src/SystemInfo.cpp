@@ -214,21 +214,21 @@ namespace thekogans {
                 } addrs;
                 if (getifaddrs (&addrs.head) == 0) {
                     for (ifaddrs *curr = addrs.head; curr != 0; curr = curr->ifa_next) {
-                        #if defined (TOOLCHAIN_OS_Linux)
-                            if (curr->ifa_addr->sa_family == AF_PACKET) {
-                                const sockaddr_ll *addr = (const sockaddr_ll *)curr->ifa_addr;
-                                if (addr->sll_hatype == ARPHRD_ETHER && addr->sll_halen == ETH_ALEN) {
-                                    macs.insert (HexEncodeBuffer (addr->sll_addr, addr->sll_halen));
-                                }
+                    #if defined (TOOLCHAIN_OS_Linux)
+                        if (curr->ifa_addr->sa_family == AF_PACKET) {
+                            const sockaddr_ll *addr = (const sockaddr_ll *)curr->ifa_addr;
+                            if (addr->sll_hatype == ARPHRD_ETHER && addr->sll_halen == ETH_ALEN) {
+                                macs.insert (HexEncodeBuffer (addr->sll_addr, addr->sll_halen));
                             }
-                        #else // defined (TOOLCHAIN_OS_Linux)
-                            if (curr->ifa_addr->sa_family == AF_LINK) {
-                                const sockaddr_dl *addr = (const sockaddr_dl *)curr->ifa_addr;
-                                if (addr->sdl_type == IFT_ETHER && addr->sdl_alen == ETHER_ADDR_LEN) {
-                                    macs.insert (HexEncodeBuffer (LLADDR (addr), addr->sdl_alen));
-                                }
+                        }
+                    #else // defined (TOOLCHAIN_OS_Linux)
+                        if (curr->ifa_addr->sa_family == AF_LINK) {
+                            const sockaddr_dl *addr = (const sockaddr_dl *)curr->ifa_addr;
+                            if (addr->sdl_type == IFT_ETHER && addr->sdl_alen == ETHER_ADDR_LEN) {
+                                macs.insert (HexEncodeBuffer (LLADDR (addr), addr->sdl_alen));
                             }
-                        #endif // defined (TOOLCHAIN_OS_Linux)
+                        }
+                    #endif // defined (TOOLCHAIN_OS_Linux)
                     }
                 }
                 else {
