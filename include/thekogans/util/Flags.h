@@ -115,6 +115,29 @@ namespace thekogans {
             }
 
             /// \brief
+            /// Test if a given flags is not set and set it.
+            /// \param[in] flag Flag to test and set.
+            /// \return true == flag was set, false == flag was already set.
+            inline bool TestAndSet (T flag) {
+                if (!Test (flag)) {
+                    Set (flag, true);
+                    return true;
+                }
+                return false;
+            }
+            /// \brief
+            /// Test if a given flags is set and reset it.
+            /// \param[in] flag Flag to test and reset.
+            /// \return true == flag was reset, false == flag was already reset.
+            inline bool TestAndReset (T flag) {
+                if (Test (flag)) {
+                    Set (flag, false);
+                    return true;
+                }
+                return false;
+            }
+
+            /// \brief
             /// Flag test operator.
             /// \param[in] flag Flag to test.
             /// \return true = flag is set, 0 = flag is clear.
