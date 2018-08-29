@@ -59,33 +59,58 @@ namespace thekogans {
             }
         }
 
+        RunLoop::WorkerInitializer::WorkerInitializer (WorkerCallback *workerCallback_) :
+                workerCallback (workerCallback_) {
+            if (workerCallback != 0) {
+                workerCallback->InitializeWorker ();
+            }
+        }
+
+        RunLoop::WorkerInitializer::~WorkerInitializer () {
+            if (workerCallback != 0) {
+                workerCallback->UninitializeWorker ();
+            }
+        }
+
     #if defined (TOOLCHAIN_OS_Windows)
         void RunLoop::COMInitializer::InitializeWorker () throw () {
-            THEKOGANS_UTIL_TRY {
-                HRESULT result = CoInitializeEx (0, dwCoInit);
-                if (result != S_OK) {
-                    THEKOGANS_UTIL_THROW_HRESULT_ERROR_CODE_EXCEPTION (result);
+            if (!initialized) {
+                THEKOGANS_UTIL_TRY {
+                    HRESULT result = CoInitializeEx (0, dwCoInit);
+                    if (result != S_OK) {
+                        THEKOGANS_UTIL_THROW_HRESULT_ERROR_CODE_EXCEPTION (result);
+                    }
+                    initialized = true;
                 }
+                THEKOGANS_UTIL_CATCH_AND_LOG_SUBSYSTEM (THEKOGANS_UTIL)
             }
-            THEKOGANS_UTIL_CATCH_AND_LOG_SUBSYSTEM (THEKOGANS_UTIL)
         }
 
         void RunLoop::COMInitializer::UninitializeWorker () throw () {
-            CoUninitialize ();
+            if (initialized) {
+                CoUninitialize ();
+                initialized = false;
+            }
         }
 
         void RunLoop::OLEInitializer::InitializeWorker () throw () {
-            THEKOGANS_UTIL_TRY {
-                HRESULT result = OleInitialize (0);
-                if (result != S_OK) {
-                    THEKOGANS_UTIL_THROW_HRESULT_ERROR_CODE_EXCEPTION (result);
+            if (!initialized) {
+                THEKOGANS_UTIL_TRY {
+                    HRESULT result = OleInitialize (0);
+                    if (result != S_OK) {
+                        THEKOGANS_UTIL_THROW_HRESULT_ERROR_CODE_EXCEPTION (result);
+                    }
+                    initialized = true;
                 }
+                THEKOGANS_UTIL_CATCH_AND_LOG_SUBSYSTEM (THEKOGANS_UTIL)
             }
-            THEKOGANS_UTIL_CATCH_AND_LOG_SUBSYSTEM (THEKOGANS_UTIL)
         }
 
         void RunLoop::OLEInitializer::UninitializeWorker () throw () {
-            OleUninitialize ();
+            if (initialized) {
+                OleUninitialize ();
+                initialized = false;
+            }
         }
     #endif // defined (TOOLCHAIN_OS_Windows)
 

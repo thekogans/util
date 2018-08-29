@@ -257,20 +257,7 @@ namespace thekogans {
         void SystemRunLoop::Start () {
             bool expected = true;
             if (done.compare_exchange_strong (expected, false)) {
-                struct WorkerInitializer {
-                    SystemRunLoop &runLoop;
-                    explicit WorkerInitializer (SystemRunLoop &runLoop_) :
-                            runLoop (runLoop_) {
-                        if (runLoop.workerCallback != 0) {
-                            runLoop.workerCallback->InitializeWorker ();
-                        }
-                    }
-                    ~WorkerInitializer () {
-                        if (runLoop.workerCallback != 0) {
-                            runLoop.workerCallback->UninitializeWorker ();
-                        }
-                    }
-                } workerInitializer (*this);
+                WorkerInitializer workerInitializer (workerCallback);
                 ExecuteJobs ();
             #if defined (TOOLCHAIN_OS_Windows)
                 BOOL result;

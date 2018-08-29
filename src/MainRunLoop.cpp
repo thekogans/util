@@ -49,10 +49,6 @@ namespace thekogans {
             type = type_;
             maxPendingJobs = maxPendingJobs_;
             willCallStart = willCallStart_;
-            if (workerCallback_ != 0) {
-                workerCallback_->InitializeWorker ();
-                workerCallback_ = 0;
-            }
             workerCallback = workerCallback_;
             eventProcessor = eventProcessor_;
             userData = userData_;
@@ -98,10 +94,6 @@ namespace thekogans {
             type = type_;
             maxPendingJobs = maxPendingJobs_;
             willCallStart = willCallStart_;
-            if (workerCallback_ != 0) {
-                workerCallback_->InitializeWorker ();
-                workerCallback_ = 0;
-            }
             workerCallback = workerCallback_;
             eventProcessor = eventProcessor_;
             userData = userData_;
@@ -153,10 +145,6 @@ namespace thekogans {
             type = type_;
             maxPendingJobs = maxPendingJobs_;
             willCallStart = willCallStart_;
-            if (workerCallback_ != 0) {
-                workerCallback_->InitializeWorker ();
-                workerCallback_ = 0;
-            }
             workerCallback = workerCallback_;
             runLoop = runLoop_;
             useCocoa = useCocoa_;

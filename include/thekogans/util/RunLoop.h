@@ -556,6 +556,24 @@ namespace thekogans {
                 virtual void UninitializeWorker () throw () {}
             };
 
+            /// \struct RunLoop::WorkerInitializer RunLoop.h thekogans/util/RunLoop.h
+            ///
+            /// \brief
+            /// Instantiate one of these in your RunLoop thread to initialize/uninitialize the worker.
+            struct _LIB_THEKOGANS_UTIL_DECL WorkerInitializer {
+                /// \brief
+                /// Worker thread initialization/uninitialization callback.
+                WorkerCallback *workerCallback;
+
+                /// \brief
+                /// ctor.
+                /// \param[in] workerCallback_ Worker thread initialization/uninitialization callback.
+                explicit WorkerInitializer (WorkerCallback *workerCallback_);
+                /// \brief
+                /// dtor.
+                ~WorkerInitializer ();
+            };
+
         #if defined (TOOLCHAIN_OS_Windows)
             /// \struct RunLoop::COMInitializer RunLoop.h thekogans/util/RunLoop.h
             ///
@@ -565,13 +583,21 @@ namespace thekogans {
                 /// \brief
                 /// CoInitializeEx concurrency model.
                 DWORD dwCoInit;
+                /// \brief
+                /// true == worker thread has been initialized.
+                bool initialized;
 
                 /// \brief
                 /// ctor.
                 /// \param[in] dwCoInit_ CoInitializeEx concurrency model.
-                COMInitializer (DWORD dwCoInit_ = COINIT_MULTITHREADED) :
-                    dwCoInit (dwCoInit_) {}
+                /// \param[in] initialized_ true == worker thread has been initialized.
+                COMInitializer (
+                    DWORD dwCoInit_ = COINIT_MULTITHREADED,
+                    bool initialized_ false) :
+                    dwCoInit (dwCoInit_),
+                    initialized (initialized_) {}
 
+                // WorkerCallback
                 /// \brief
                 /// Called by the worker before entering the job execution loop.
                 virtual void InitializeWorker () throw ();
@@ -585,6 +611,17 @@ namespace thekogans {
             /// \brief
             /// Initialize the Windows OLE library.
             struct _LIB_THEKOGANS_UTIL_DECL OLEInitializer : public WorkerCallback {
+                /// \brief
+                /// true == worker thread has been initialized.
+                bool initialized;
+
+                /// \brief
+                /// ctor.
+                /// \param[in] initialized_ true == worker thread has been initialized.
+                OLEInitializer (bool initialized_ false) :
+                    initialized (initialized_) {}
+
+                // WorkerCallback
                 /// \brief
                 /// Called by the worker before entering the job execution loop.
                 virtual void InitializeWorker () throw ();

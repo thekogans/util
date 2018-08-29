@@ -25,20 +25,7 @@ namespace thekogans {
         void DefaultRunLoop::Start () {
             bool expected = true;
             if (done.compare_exchange_strong (expected, false)) {
-                struct WorkerInitializer {
-                    DefaultRunLoop &runLoop;
-                    explicit WorkerInitializer (DefaultRunLoop &runLoop_) :
-                            runLoop (runLoop_) {
-                        if (runLoop.workerCallback != 0) {
-                            runLoop.workerCallback->InitializeWorker ();
-                        }
-                    }
-                    ~WorkerInitializer () {
-                        if (runLoop.workerCallback != 0) {
-                            runLoop.workerCallback->UninitializeWorker ();
-                        }
-                    }
-                } workerInitializer (*this);
+                WorkerInitializer workerInitializer (workerCallback);
                 while (!done) {
                     Job *job = DeqJob ();
                     if (job != 0) {

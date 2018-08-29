@@ -66,20 +66,7 @@ namespace thekogans {
         }
 
         void Pipeline::Worker::Run () throw () {
-            struct WorkerInitializer {
-                Pipeline &pipeline;
-                explicit WorkerInitializer (Pipeline &pipeline_) :
-                        pipeline (pipeline_) {
-                    if (pipeline.workerCallback != 0) {
-                        pipeline.workerCallback->InitializeWorker ();
-                    }
-                }
-                ~WorkerInitializer () {
-                    if (pipeline.workerCallback != 0) {
-                        pipeline.workerCallback->UninitializeWorker ();
-                    }
-                }
-            } workerInitializer (pipeline);
+            RunLoop::WorkerInitializer workerInitializer (pipeline.workerCallback);
             while (!pipeline.done) {
                 Job *job = pipeline.DeqJob ();
                 if (job != 0) {

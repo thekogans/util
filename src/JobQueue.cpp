@@ -28,20 +28,7 @@ namespace thekogans {
     namespace util {
 
         void JobQueue::Worker::Run () throw () {
-            struct WorkerInitializer {
-                JobQueue &queue;
-                explicit WorkerInitializer (JobQueue &queue_) :
-                        queue (queue_) {
-                    if (queue.workerCallback != 0) {
-                        queue.workerCallback->InitializeWorker ();
-                    }
-                }
-                ~WorkerInitializer () {
-                    if (queue.workerCallback != 0) {
-                        queue.workerCallback->UninitializeWorker ();
-                    }
-                }
-            } workerInitializer (queue);
+            RunLoop::WorkerInitializer workerInitializer (queue.workerCallback);
             while (!queue.done) {
                 Job *job = queue.DeqJob ();
                 if (job != 0) {
