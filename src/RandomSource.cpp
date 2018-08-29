@@ -144,17 +144,6 @@ namespace thekogans {
             }
         }
 
-        ui32 RandomSource::Getui32 () {
-            ui32 value;
-            if (GetBytes (&value, UI32_SIZE) == UI32_SIZE) {
-                return value;
-            }
-            else {
-                THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                    "Unable to get %u random bytes for value.", UI32_SIZE);
-            }
-        }
-
         std::size_t RandomSource::GetSeed (
                 void *buffer,
                 std::size_t count) {
@@ -219,6 +208,28 @@ namespace thekogans {
             else {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
                     THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
+            }
+        }
+
+        ui32 RandomSource::Getui32 () {
+            ui32 value;
+            if (GetBytes (&value, UI32_SIZE) == UI32_SIZE) {
+                return value;
+            }
+            else {
+                THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
+                    "Unable to get %u random bytes for value.", UI32_SIZE);
+            }
+        }
+
+        ui64 RandomSource::Getui64 () {
+            ui64 value;
+            if (GetBytes (&value, UI64_SIZE) == UI64_SIZE) {
+                return value;
+            }
+            else {
+                THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
+                    "Unable to get %u random bytes for value.", UI64_SIZE);
             }
         }
 

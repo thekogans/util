@@ -98,11 +98,6 @@ namespace thekogans {
                 std::size_t count);
 
             /// \brief
-            /// Substitute for system rand function.
-            /// \return A random ui32.
-            ui32 Getui32 ();
-
-            /// \brief
             /// Use a hardware entropy source to return a count of seed bytes.
             /// NOTE: As per Intel's guidance here:
             /// https://software.intel.com/en-us/blogs/2012/11/17/the-difference-between-rdrand-and-rdseed,
@@ -150,6 +145,16 @@ namespace thekogans {
             std::size_t GetSeed (
                 void *buffer,
                 std::size_t count);
+
+            /// \brief
+            /// Substitute for system rand function.
+            /// \return A random ui32.
+            ui32 Getui32 ();
+
+            /// \brief
+            /// Substitute for system rand function.
+            /// \return A random ui64.
+            ui64 Getui64 ();
 
             /// \brief
             /// RandomSource is neither copy constructable, nor assignable.
