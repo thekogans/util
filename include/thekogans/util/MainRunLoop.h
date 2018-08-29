@@ -51,8 +51,8 @@ namespace thekogans {
         /// will create a \see{DefaultRunLoop} on it's first invocation of Instance.
         ///
         /// VERY IMPORTANT: MainRunLoopCreateInstance::Parameterize performs initialization
-        /// (calls Thread::SetMainThread (). On OS X potentially calls CocoaInit ()) that
-        /// only makes sense when called from the main thread (main).
+        /// (calls Thread::SetMainThread ()) that only makes sense when called from the
+        /// main thread (main).
         ///
         /// Follow these templates in order to create the \see{SystemRunLoop} on the
         /// right thread:
@@ -69,10 +69,9 @@ namespace thekogans {
         ///         int /*nCmdShow*/) {
         ///     ...
         ///     util::MainRunLoopCreateInstance::Parameterize (
-        ///         std::string (),
+        ///         "MainRunLoop",
         ///         util::RunLoop::TYPE_FIFO,
         ///         util::UI32_MAX,
-        ///         0
         ///         false,
         ///         0,
         ///         0,
@@ -92,10 +91,9 @@ namespace thekogans {
         ///     }
         ///     or
         ///     util::MainRunLoopCreateInstance::Parameterize (
-        ///         std::string (),
+        ///         "MainRunLoop",
         ///         util::RunLoop::TYPE_FIFO,
         ///         util::UI32_MAX,
-        ///         0
         ///         true,
         ///         0,
         ///         0,
@@ -117,14 +115,14 @@ namespace thekogans {
         ///         const char * /*argv*/ []) {
         ///     ...
         ///     util::MainRunLoopCreateInstance::Parameterize (
-        ///         std::string (),
+        ///         "MainRunLoop",
         ///         util::RunLoop::TYPE_FIFO,
         ///         util::UI32_MAX,
-        ///         0
         ///         false,
         ///         0,
         ///         0,
-        ///         util::SystemRunLoop::CreateThreadWindow ());
+        ///         util::SystemRunLoop::CreateThreadWindow (),
+        ///         displayList);
         ///     ...
         ///     Display *display = XOpenDisplay (0);
         ///     while (1) {
@@ -136,14 +134,14 @@ namespace thekogans {
         ///     }
         ///     or
         ///     util::MainRunLoopCreateInstance::Parameterize (
-        ///         std::string (),
+        ///         "MainRunLoop",
         ///         util::RunLoop::TYPE_FIFO,
         ///         util::UI32_MAX,
-        ///         0
         ///         true,
         ///         0,
         ///         0,
-        ///         util::SystemRunLoop::CreateThreadWindow ());
+        ///         util::SystemRunLoop::CreateThreadWindow (),
+        ///         displayList);
         ///     ...
         ///     util::MainRunLoop::Instance ().Start ();
         ///     ...
@@ -160,23 +158,19 @@ namespace thekogans {
         ///         int /*argc*/,
         ///         const char * /*argv*/ []) {
         ///     ...
-        ///     util::MainRunLoopCreateInstance::Parameterize (
-        ///         std::string (),
-        ///         util::RunLoop::TYPE_FIFO,
-        ///         util::UI32_MAX,
-        ///         0,
-        ///         false,
-        ///         CFRunLoopGetMain ());
+        ///     // If using Cocoa, uncomment the following two lines.
+        ///     //util::RunLoop::CocoaInitializer cocoaInitializer;
+        ///     //util::RunLoop::WorkerInitializer workerInitializer (&cocoaInitializer);
         ///     ...
-        ///     CFRunLoopRun ();
-        ///     or
         ///     util::MainRunLoopCreateInstance::Parameterize (
-        ///         std::string (),
+        ///         "MainRunLoop",
         ///         util::RunLoop::TYPE_FIFO,
         ///         util::UI32_MAX,
-        ///         0,
         ///         true,
-        ///         CFRunLoopGetMain ());
+        ///         SystemRunLoop::OSXRunLoop::Ptr (
+        ///             new SystemRunLoop::CocoaOSXRunLoop
+        ///             or
+        ///             new SystemRunLoop::CFOSXRunLoop (CFRunLoopGetMain ())));
         ///     ...
         ///     util::MainRunLoop::Instance ().Start ();
         ///     ...
@@ -198,9 +192,6 @@ namespace thekogans {
             /// \brief
             /// true = the main thread will call MainRunLoop::Instance ().Start ().
             static bool willCallStart;
-            /// \brief
-            /// Called to initialize/uninitialize the worker thread.
-            static RunLoop::WorkerCallback *workerCallback;
         #if defined (TOOLCHAIN_OS_Windows)
             /// \brief
             /// Callback to process Windows HWND events.
@@ -229,10 +220,7 @@ namespace thekogans {
         #elif defined (TOOLCHAIN_OS_OSX)
             /// \brief
             /// OS X run loop object.
-            static CFRunLoopRef runLoop;
-            /// \brief
-            /// Initialize and use OS X Cocoa framework.
-            static bool useCocoa;
+            static SystemRunLoop::OSXRunLoop::Ptr runLoop;
         #endif // defined (TOOLCHAIN_OS_Windows)
 
         public:
@@ -243,8 +231,6 @@ namespace thekogans {
             /// \param[in] type_ RunLoop queue type.
             /// \param[in] maxPendingJobs_ Max pending run loop jobs.
             /// \param[in] willCallStart_ true = the main thread will call
-            /// \param[in] workerCallback_ Called to initialize/uninitialize the worker thread.
-            /// MainRunLoop::Instance ().Start ().
             /// \param[in] eventProcessor_ Callback to process Windows HWND events.
             /// \param[in] userData_ Optional user data passed to eventProcessor.
             /// \param[in] window_ Windows window.
@@ -253,7 +239,6 @@ namespace thekogans {
                 RunLoop::Type type_,
                 ui32 maxPendingJobs_,
                 bool willCallStart_,
-                RunLoop::WorkerCallback *workerCallback_,
                 SystemRunLoop::EventProcessor eventProcessor_,
                 void *userData_,
                 Window::Ptr window_);
@@ -265,8 +250,6 @@ namespace thekogans {
             /// \param[in] type_ RunLoop queue type.
             /// \param[in] maxPendingJobs_ Max pending run loop jobs.
             /// \param[in] willCallStart_ true = the main thread will call
-            /// \param[in] workerCallback_ Called to initialize/uninitialize the worker thread.
-            /// MainRunLoop::Instance ().Start ().
             /// \param[in] eventProcessor_ Callback to process Xlib XEvent events.
             /// \param[in] userData_ Optional user data passed to eventProcessor.
             /// \param[in] window_ Xlib server window.
@@ -276,7 +259,6 @@ namespace thekogans {
                 RunLoop::Type type_,
                 ui32 maxPendingJobs_,
                 bool willCallStart_,
-                RunLoop::WorkerCallback *workerCallback_,
                 SystemRunLoop::EventProcessor eventProcessor_,
                 void *userData_,
                 SystemRunLoop::XlibWindow::Ptr window_,
@@ -289,21 +271,13 @@ namespace thekogans {
             /// \param[in] type_ RunLoop queue type.
             /// \param[in] maxPendingJobs_ Max pending run loop jobs.
             /// \param[in] willCallStart_ true = the main thread will call
-            /// \param[in] workerCallback_ Called to initialize/uninitialize the worker thread.
-            /// MainRunLoop::Instance ().Start ().
             /// \param[in] runLoop_ OS X run loop object.
-            /// NOTE: if runLoop_ == 0 && useCocoa_ == true, SystemRunLoop will use \see{CocoaStart)
-            /// \see{CocoaStop) from OSXUtils.[h | mm].
-            /// \param[in] useCocoa_ true == Initialize and use OS X Cocoa framework.
-            /// NOTE: if useCocoa_ == true, runLoop_ must be == 0.
             static void Parameterize (
                 const std::string &name_,
                 RunLoop::Type type_,
                 ui32 maxPendingJobs_,
                 bool willCallStart_,
-                RunLoop::WorkerCallback *workerCallback_,
-                CFRunLoopRef runLoop_,
-                bool useCocoa_);
+                SystemRunLoop::OSXRunLoop::Ptr runLoop_);
         #endif // defined (TOOLCHAIN_OS_Windows)
 
             /// \brief

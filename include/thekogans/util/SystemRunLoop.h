@@ -242,12 +242,87 @@ namespace thekogans {
                 /// SystemRunLoop needs access to PostEvent and event ids.
                 friend SystemRunLoop;
             };
+        #elif defined (TOOLCHAIN_OS_OSX)
+            /// \struct SystemRunLoop::OSXRunLoop SystemRunLoop.h thekogans/util/SystemRunLoop.h
+            ///
+            /// \brief
+            /// Base class for OS X based run loop.
+            struct OSXRunLoop {
+                /// \brief
+                /// Convenient typedef for ThreadSafeRefCounted::Ptr<OSXRunLoop>.
+                typedef std::unique_ptr<OSXRunLoop> Ptr;
+
+                /// \brief
+                /// dtor.
+                virtual ~OSXRunLoop () {}
+
+                /// \brief
+                /// Return the OS X CFRunLoopRef associated with this run loop.
+                /// \return OS X CFRunLoopRef associated with this run loop.
+                virtual CFRunLoopRef GetCFRunLoop () = 0;
+
+                /// \brief
+                /// Start the run loop.
+                virtual void Start () = 0;
+                /// \brief
+                /// Stop the run loop.
+                virtual void Stop () = 0;
+            };
+
+            /// \struct SystemRunLoop::CFOSXRunLoop SystemRunLoop.h thekogans/util/SystemRunLoop.h
+            ///
+            /// \brief
+            /// CFRunLoopRef based OS X run loop.
+            struct CFOSXRunLoop : public OSXRunLoop {
+                /// \brief
+                /// OS X run loop.
+                CFRunLoopRef runLoop;
+
+                /// \brief
+                /// ctor.
+                /// \param[in] runLoop_ OS X run loop.
+                CFOSXRunLoop (CFRunLoopRef runLoop_ = CFRunLoopGetCurrent ()) :
+                    runLoop (runLoop_) {}
+
+                // OSXRunLoop
+                /// \brief
+                /// Return the OS X CFRunLoopRef associated with this run loop.
+                /// \return OS X CFRunLoopRef associated with this run loop.
+                virtual CFRunLoopRef GetCFRunLoop () {
+                    return runLoop;
+                }
+
+                /// \brief
+                /// Start the run loop.
+                virtual void Start ();
+                /// \brief
+                /// Stop the run loop.
+                virtual void Stop ();
+            };
+
+            /// \struct SystemRunLoop::CocoaOSXRunLoop SystemRunLoop.h thekogans/util/SystemRunLoop.h
+            ///
+            /// \brief
+            /// Cocoa based OS X run loop.
+            struct CocoaOSXRunLoop : public OSXRunLoop {
+                // OSXRunLoop
+                /// \brief
+                /// Return the OS X CFRunLoopRef associated with this run loop.
+                /// \return OS X CFRunLoopRef associated with this run loop.
+                virtual CFRunLoopRef GetCFRunLoop () {
+                    return CFRunLoopGetMain ();
+                }
+
+                /// \brief
+                /// Start the run loop.
+                virtual void Start ();
+                /// \brief
+                /// Stop the run loop.
+                virtual void Stop ();
+            };
         #endif // defined (TOOLCHAIN_OS_Windows)
 
         private:
-            /// \brief
-            /// Called to initialize/uninitialize the worker thread.
-            WorkerCallback *workerCallback;
         #if defined (TOOLCHAIN_OS_Windows)
             /// \brief
             /// Callback to process window events.
@@ -274,7 +349,7 @@ namespace thekogans {
         #elif defined (TOOLCHAIN_OS_OSX)
             /// \brief
             /// OS X run loop object.
-            CFRunLoopRef runLoop;
+            OSXRunLoop::Ptr runLoop;
         #endif // defined (TOOLCHAIN_OS_Windows)
 
         public:
@@ -285,7 +360,6 @@ namespace thekogans {
             /// \param[in] type RunLoop queue type.
             /// \param[in] maxPendingJobs Max pending run loop jobs.
             /// \param[in] done true = must call Start.
-            /// \param[in] workerCallback_ Called to initialize/uninitialize the worker thread.
             /// \param[in] eventProcessor_ Callback to process window events.
             /// \param[in] userData_ Optional user data passed to eventProcessor.
             /// \param[in] window_ Windows window.
@@ -294,7 +368,6 @@ namespace thekogans {
                 Type type = TYPE_FIFO,
                 ui32 maxPendingJobs = UI32_MAX,
                 bool done = true,
-                WorkerCallback *workerCallback_ = 0,
                 EventProcessor eventProcessor_ = 0,
                 void *userData_ = 0,
                 Window::Ptr window_ = CreateThreadWindow ());
@@ -316,7 +389,6 @@ namespace thekogans {
             /// \param[in] type RunLoop queue type.
             /// \param[in] maxPendingJobs Max pending run loop jobs.
             /// \param[in] done true = must call Start before Enq.
-            /// \param[in] workerCallback_ Called to initialize/uninitialize the worker thread.
             /// \param[in] eventProcessor_ Callback to process Xlib XEvent events.
             /// \param[in] userData_ Optional user data passed to eventProcessor.
             /// \param[in] window_ Xlib window.
@@ -326,7 +398,6 @@ namespace thekogans {
                 Type type = TYPE_FIFO,
                 ui32 maxPendingJobs = UI32_MAX,
                 bool done = true,
-                WorkerCallback *workerCallback_ = 0,
                 EventProcessor eventProcessor_ = 0,
                 void *userData_ = 0,
                 XlibWindow::Ptr window_ = CreateThreadWindow (0),
@@ -359,24 +430,19 @@ namespace thekogans {
             /// \param[in] type RunLoop queue type.
             /// \param[in] maxPendingJobs Max pending run loop jobs.
             /// \param[in] done true = must call Start before Enq.
-            /// \param[in] workerCallback_ Called to initialize/uninitialize the worker thread.
             /// \param[in] runLoop_ OS X run loop object.
-            /// NOTE: if runLoop_ == 0, SystemRunLoop will use \see{CocoaStart) \see{CocoaStop)
-            /// from OSXUtils.[h | mm]. \see{MainRunLoopCreateInstance} takes care of the details
-            /// if you call \see{MainRunLoopCreateInstance::Parameterize} with runLoop == 0.
             SystemRunLoop (
                 const std::string &name = std::string (),
                 Type type = TYPE_FIFO,
                 ui32 maxPendingJobs = UI32_MAX,
                 bool done = true,
-                WorkerCallback *workerCallback_ = 0,
-                CFRunLoopRef runLoop_ = CFRunLoopGetCurrent ());
+                OSXRunLoop::Ptr runLoop_ = OSXRunLoop::Ptr (new CFOSXRunLoop));
 
             /// \brief
             /// Return the OS X CFRunLoopRef associated with this run loop.
             /// \return OS X CFRunLoopRef associated with this run loop.
-            inline CFRunLoopRef GetRunLoop () const {
-                return runLoop;
+            inline OSXRunLoop &GetRunLoop () const {
+                return *runLoop;
             }
         #endif // defined (TOOLCHAIN_OS_Windows)
 

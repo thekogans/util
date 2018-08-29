@@ -583,19 +583,13 @@ namespace thekogans {
                 /// \brief
                 /// CoInitializeEx concurrency model.
                 DWORD dwCoInit;
-                /// \brief
-                /// true == worker thread has been initialized.
-                bool initialized;
 
                 /// \brief
                 /// ctor.
                 /// \param[in] dwCoInit_ CoInitializeEx concurrency model.
                 /// \param[in] initialized_ true == worker thread has been initialized.
-                COMInitializer (
-                    DWORD dwCoInit_ = COINIT_MULTITHREADED,
-                    bool initialized_ false) :
-                    dwCoInit (dwCoInit_),
-                    initialized (initialized_) {}
+                COMInitializer (DWORD dwCoInit_ = COINIT_MULTITHREADED) :
+                    dwCoInit (dwCoInit_) {}
 
                 // WorkerCallback
                 /// \brief
@@ -611,16 +605,20 @@ namespace thekogans {
             /// \brief
             /// Initialize the Windows OLE library.
             struct _LIB_THEKOGANS_UTIL_DECL OLEInitializer : public WorkerCallback {
+                // WorkerCallback
                 /// \brief
-                /// true == worker thread has been initialized.
-                bool initialized;
-
+                /// Called by the worker before entering the job execution loop.
+                virtual void InitializeWorker () throw ();
                 /// \brief
-                /// ctor.
-                /// \param[in] initialized_ true == worker thread has been initialized.
-                OLEInitializer (bool initialized_ false) :
-                    initialized (initialized_) {}
-
+                /// Called by the worker before exiting the thread.
+                virtual void UninitializeWorker () throw ();
+            };
+        #elif defined (TOOLCHAIN_OS_OSX)
+            /// \struct RunLoop::CocoaInitializer RunLoop.h thekogans/util/RunLoop.h
+            ///
+            /// \brief
+            /// Initialize the OS X Cocoa framework.
+            struct _LIB_THEKOGANS_UTIL_DECL CocoaInitializer : public WorkerCallback {
                 // WorkerCallback
                 /// \brief
                 /// Called by the worker before entering the job execution loop.

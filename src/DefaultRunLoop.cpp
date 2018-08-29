@@ -25,7 +25,6 @@ namespace thekogans {
         void DefaultRunLoop::Start () {
             bool expected = true;
             if (done.compare_exchange_strong (expected, false)) {
-                WorkerInitializer workerInitializer (workerCallback);
                 while (!done) {
                     Job *job = DeqJob ();
                     if (job != 0) {

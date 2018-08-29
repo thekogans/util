@@ -123,11 +123,6 @@ namespace thekogans {
             /// Convenient typedef for ThreadSafeRefCounted::Ptr<DefaultRunLoop>.
             typedef ThreadSafeRefCounted::Ptr<DefaultRunLoop> Ptr;
 
-        private:
-            /// \brief
-            /// Called to initialize/uninitialize the worker thread.
-            WorkerCallback *workerCallback;
-
         public:
             /// \brief
             /// ctor.
@@ -138,10 +133,8 @@ namespace thekogans {
             DefaultRunLoop (
                 const std::string &name = std::string (),
                 Type type = TYPE_FIFO,
-                ui32 maxPendingJobs = UI32_MAX,
-                WorkerCallback *workerCallback_ = 0) :
-                RunLoop (name, type, maxPendingJobs),
-                workerCallback (workerCallback_) {}
+                ui32 maxPendingJobs = UI32_MAX) :
+                RunLoop (name, type, maxPendingJobs) {}
 
             /// \brief
             /// Start the run loop. This is a blocking call and will

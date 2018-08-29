@@ -21,12 +21,14 @@
 #include <Foundation/Foundation.h>
 #include "thekogans/util/Exception.h"
 #include "thekogans/util/StringUtils.h"
+#include "thekogans/util/RunLoop.h"
+#include "thekogans/util/SystemRunLoop.h"
 #include "thekogans/util/OSXUtils.h"
 
 namespace thekogans {
     namespace util {
 
-        void CocoaInit () {
+        void RunLoop::CocoaInitializer::InitializeWorker () throw () {
             if (NSApplicationLoad () == YES) {
                 [NSAutoreleasePool new];
                 [NSApplication sharedApplication];
@@ -37,11 +39,14 @@ namespace thekogans {
             }
         }
 
-        void CocoaStart () {
+        void RunLoop::CocoaInitializer::UninitializeWorker () throw () {
+        }
+
+        void SystemRunLoop::CocoaOSXRunLoop::Start () {
             [NSApp run];
         }
 
-        void CocoaStop () {
+        void SystemRunLoop::CocoaOSXRunLoop::Stop () {
             [NSApp stop: nil];
             // Inject an event, so that the loop actually checks
             // the STOP flag set above and exits the loop.

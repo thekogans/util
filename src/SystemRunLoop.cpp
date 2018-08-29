@@ -39,12 +39,10 @@ namespace thekogans {
                 Type type,
                 ui32 maxPendingJobs,
                 bool done,
-                WorkerCallback *workerCallback_,
                 EventProcessor eventProcessor_,
                 void *userData_,
                 Window::Ptr window_) :
                 RunLoop (name, type, maxPendingJobs, done),
-                workerCallback (workerCallback_),
                 eventProcessor (eventProcessor_),
                 userData (userData_),
                 window (std::move (window_)) {
@@ -181,13 +179,11 @@ namespace thekogans {
                 Type type,
                 ui32 maxPendingJobs,
                 bool done,
-                WorkerCallback *workerCallback_,
                 EventProcessor eventProcessor_,
                 void *userData_,
                 XlibWindow::Ptr window_,
                 const std::vector<Display *> &displays_) :
                 RunLoop (name, type, maxPendingJobs, done),
-                workerCallback (workerCallback_),
                 eventProcessor (eventProcessor_),
                 userData (userData_),
                 window (std::move (window_)),
@@ -223,22 +219,6 @@ namespace thekogans {
             return true;
         }
     #elif defined (TOOLCHAIN_OS_OSX)
-        SystemRunLoop::SystemRunLoop (
-                const std::string &name,
-                Type type,
-                ui32 maxPendingJobs,
-                bool done,
-                WorkerCallback *workerCallback_,
-                CFRunLoopRef runLoop_) :
-                RunLoop (name, type, maxPendingJobs, done),
-                workerCallback (workerCallback_),
-                runLoop (runLoop_) {
-            if (maxPendingJobs == 0) {
-                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
-            }
-        }
-
         namespace {
             struct CFRunLoopSourceRefDeleter {
                 void operator () (CFRunLoopSourceRef runLoopSourceRef) {
@@ -252,12 +232,45 @@ namespace thekogans {
             void DoNothingRunLoopCallback (void * /*info*/) {
             }
         }
+
+        void SystemRunLoop::CFOSXRunLoop::Start () {
+            // Create a dummy source so that CFRunLoopRun has
+            // something to wait on.
+            CFRunLoopSourceContext context = {0};
+            context.perform = DoNothingRunLoopCallback;
+            CFRunLoopSourceRefPtr runLoopSource (CFRunLoopSourceCreate (0, 0, &context));
+            if (runLoopSource.get () != 0) {
+                CFRunLoopAddSource (runLoop, runLoopSource.get (), kCFRunLoopCommonModes);
+                CFRunLoopRun ();
+                CFRunLoopRemoveSource (runLoop, runLoopSource.get (), kCFRunLoopCommonModes);
+            }
+            else {
+                THEKOGANS_UTIL_THROW_SC_ERROR_CODE_EXCEPTION (SCError ());
+            }
+        }
+
+        void SystemRunLoop::CFOSXRunLoop::Stop () {
+            CFRunLoopStop (runLoop);
+        }
+
+        SystemRunLoop::SystemRunLoop (
+                const std::string &name,
+                Type type,
+                ui32 maxPendingJobs,
+                bool done,
+                OSXRunLoop::Ptr runLoop_) :
+                RunLoop (name, type, maxPendingJobs, done),
+                runLoop (std::move (runLoop_)) {
+            if (maxPendingJobs == 0 || runLoop.get () == 0) {
+                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
+            }
+        }
     #endif // defined (TOOLCHAIN_OS_Windows)
 
         void SystemRunLoop::Start () {
             bool expected = true;
             if (done.compare_exchange_strong (expected, false)) {
-                WorkerInitializer workerInitializer (workerCallback);
                 ExecuteJobs ();
             #if defined (TOOLCHAIN_OS_Windows)
                 BOOL result;
@@ -352,28 +365,7 @@ namespace thekogans {
                     }
                 }
             #elif defined (TOOLCHAIN_OS_OSX)
-                if (runLoop != 0) {
-                    // Create a dummy source so that CFRunLoopRun has
-                    // something to wait on.
-                    CFRunLoopSourceContext context = {0};
-                    context.perform = DoNothingRunLoopCallback;
-                    CFRunLoopSourceRefPtr runLoopSource (CFRunLoopSourceCreate (0, 0, &context));
-                    if (runLoopSource.get () != 0) {
-                        CFRunLoopAddSource (runLoop, runLoopSource.get (), kCFRunLoopCommonModes);
-                        CFRunLoopRun ();
-                        CFRunLoopRemoveSource (runLoop, runLoopSource.get (), kCFRunLoopCommonModes);
-                    }
-                    else {
-                        THEKOGANS_UTIL_THROW_SC_ERROR_CODE_EXCEPTION (SCError ());
-                    }
-                }
-                else if (Thread::IsMainThread ()) {
-                    CocoaStart ();
-                }
-                else {
-                    THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                        "%s", "Cocoa based SystemRunLoop can only start from main.");
-                }
+                runLoop->Start ();
             #endif // defined (TOOLCHAIN_OS_Windows)
             }
         }
@@ -390,12 +382,7 @@ namespace thekogans {
             #elif defined (TOOLCHAIN_OS_Linux)
                 window->PostEvent (XlibWindow::ID_STOP);
             #elif defined (TOOLCHAIN_OS_OSX)
-                if (runLoop != 0) {
-                    CFRunLoopStop (runLoop);
-                }
-                else {
-                    CocoaStop ();
-                }
+                runLoop->Stop ();
             #endif // defined (TOOLCHAIN_OS_Windows)
             }
         }
@@ -412,12 +399,12 @@ namespace thekogans {
                 window->PostEvent (XlibWindow::ID_RUN_LOOP);
             #elif defined (TOOLCHAIN_OS_OSX)
                 CFRunLoopPerformBlock (
-                    runLoop != 0 ? runLoop : CFRunLoopGetMain (),
+                    runLoop->GetCFRunLoop (),
                     kCFRunLoopCommonModes,
                     ^(void) {
                         ExecuteJobs ();
                     });
-                CFRunLoopWakeUp (runLoop != 0 ? runLoop : CFRunLoopGetMain ());
+                CFRunLoopWakeUp (runLoop->GetCFRunLoop ());
             #endif // defined (TOOLCHAIN_OS_Windows)
                 result = !wait || WaitForJob (job, timeSpec);
             }
@@ -436,12 +423,12 @@ namespace thekogans {
                 window->PostEvent (XlibWindow::ID_RUN_LOOP);
             #elif defined (TOOLCHAIN_OS_OSX)
                 CFRunLoopPerformBlock (
-                    runLoop != 0 ? runLoop : CFRunLoopGetMain (),
+                    runLoop->GetCFRunLoop (),
                     kCFRunLoopCommonModes,
                     ^(void) {
                         ExecuteJobs ();
                     });
-                CFRunLoopWakeUp (runLoop != 0 ? runLoop : CFRunLoopGetMain ());
+                CFRunLoopWakeUp (runLoop->GetCFRunLoop ());
             #endif // defined (TOOLCHAIN_OS_Windows)
                 result = !wait || WaitForJob (job, timeSpec);
             }

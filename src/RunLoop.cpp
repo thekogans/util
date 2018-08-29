@@ -74,43 +74,31 @@ namespace thekogans {
 
     #if defined (TOOLCHAIN_OS_Windows)
         void RunLoop::COMInitializer::InitializeWorker () throw () {
-            if (!initialized) {
-                THEKOGANS_UTIL_TRY {
-                    HRESULT result = CoInitializeEx (0, dwCoInit);
-                    if (result != S_OK) {
-                        THEKOGANS_UTIL_THROW_HRESULT_ERROR_CODE_EXCEPTION (result);
-                    }
-                    initialized = true;
+            THEKOGANS_UTIL_TRY {
+                HRESULT result = CoInitializeEx (0, dwCoInit);
+                if (result != S_OK) {
+                    THEKOGANS_UTIL_THROW_HRESULT_ERROR_CODE_EXCEPTION (result);
                 }
-                THEKOGANS_UTIL_CATCH_AND_LOG_SUBSYSTEM (THEKOGANS_UTIL)
             }
+            THEKOGANS_UTIL_CATCH_AND_LOG_SUBSYSTEM (THEKOGANS_UTIL)
         }
 
         void RunLoop::COMInitializer::UninitializeWorker () throw () {
-            if (initialized) {
-                CoUninitialize ();
-                initialized = false;
-            }
+            CoUninitialize ();
         }
 
         void RunLoop::OLEInitializer::InitializeWorker () throw () {
-            if (!initialized) {
-                THEKOGANS_UTIL_TRY {
-                    HRESULT result = OleInitialize (0);
-                    if (result != S_OK) {
-                        THEKOGANS_UTIL_THROW_HRESULT_ERROR_CODE_EXCEPTION (result);
-                    }
-                    initialized = true;
+            THEKOGANS_UTIL_TRY {
+                HRESULT result = OleInitialize (0);
+                if (result != S_OK) {
+                    THEKOGANS_UTIL_THROW_HRESULT_ERROR_CODE_EXCEPTION (result);
                 }
-                THEKOGANS_UTIL_CATCH_AND_LOG_SUBSYSTEM (THEKOGANS_UTIL)
             }
+            THEKOGANS_UTIL_CATCH_AND_LOG_SUBSYSTEM (THEKOGANS_UTIL)
         }
 
         void RunLoop::OLEInitializer::UninitializeWorker () throw () {
-            if (initialized) {
-                OleUninitialize ();
-                initialized = false;
-            }
+            OleUninitialize ();
         }
     #endif // defined (TOOLCHAIN_OS_Windows)
 

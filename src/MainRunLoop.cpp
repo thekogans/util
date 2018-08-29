@@ -30,7 +30,6 @@ namespace thekogans {
         RunLoop::Type MainRunLoopCreateInstance::type = RunLoop::TYPE_FIFO;
         ui32 MainRunLoopCreateInstance::maxPendingJobs = UI32_MAX;
         bool MainRunLoopCreateInstance::willCallStart = true;
-        RunLoop::WorkerCallback *MainRunLoopCreateInstance::workerCallback = 0;
     #if defined (TOOLCHAIN_OS_Windows)
         SystemRunLoop::EventProcessor MainRunLoopCreateInstance::eventProcessor = 0;
         void *MainRunLoopCreateInstance::userData = 0;
@@ -41,7 +40,6 @@ namespace thekogans {
                 RunLoop::Type type_,
                 ui32 maxPendingJobs_,
                 bool willCallStart_,
-                RunLoop::WorkerCallback *workerCallback_,
                 SystemRunLoop::EventProcessor eventProcessor_,
                 void *userData_,
                 Window::Ptr window_) {
@@ -49,7 +47,6 @@ namespace thekogans {
             type = type_;
             maxPendingJobs = maxPendingJobs_;
             willCallStart = willCallStart_;
-            workerCallback = workerCallback_;
             eventProcessor = eventProcessor_;
             userData = userData_;
             window = std::move (window_);
@@ -63,15 +60,13 @@ namespace thekogans {
                     type,
                     maxPendingJobs,
                     willCallStart,
-                    workerCallback,
                     eventProcessor,
                     userData,
                     std::move (window)) :
                 (RunLoop *)new DefaultRunLoop (
                     name,
                     type,
-                    maxPendingJobs,
-                    workerCallback);
+                    maxPendingJobs);
         }
     #elif defined (TOOLCHAIN_OS_Linux)
     #if defined (THEKOGANS_UTIL_HAVE_XLIB)
@@ -85,7 +80,6 @@ namespace thekogans {
                 RunLoop::Type type_,
                 ui32 maxPendingJobs_,
                 bool willCallStart_,
-                RunLoop::WorkerCallback *workerCallback_,
                 SystemRunLoop::EventProcessor eventProcessor_,
                 void *userData_,
                 SystemRunLoop::XlibWindow::Ptr window_,
@@ -94,7 +88,6 @@ namespace thekogans {
             type = type_;
             maxPendingJobs = maxPendingJobs_;
             willCallStart = willCallStart_;
-            workerCallback = workerCallback_;
             eventProcessor = eventProcessor_;
             userData = userData_;
             window = std::move (window_);
@@ -110,7 +103,6 @@ namespace thekogans {
                     type,
                     maxPendingJobs,
                     willCallStart,
-                    workerCallback,
                     eventProcessor,
                     userData,
                     std::move (window),
@@ -118,62 +110,44 @@ namespace thekogans {
                 (RunLoop *)new DefaultRunLoop (
                     name,
                     type,
-                    maxPendingJobs,
-                    workerCallback);
+                    maxPendingJobs);
 
         #else // defined (THEKOGANS_UTIL_HAVE_XLIB)
             return new DefaultRunLoop (
                 name,
                 type,
-                maxPendingJobs,
-                workerCallback);
+                maxPendingJobs);
         #endif // defined (THEKOGANS_UTIL_HAVE_XLIB)
         }
     #elif defined (TOOLCHAIN_OS_OSX)
-        CFRunLoopRef MainRunLoopCreateInstance::runLoop = 0;
-        bool MainRunLoopCreateInstance::useCocoa = false;
+        SystemRunLoop::OSXRunLoop::Ptr MainRunLoopCreateInstance::runLoop;
 
         void MainRunLoopCreateInstance::Parameterize (
                 const std::string &name_,
                 RunLoop::Type type_,
                 ui32 maxPendingJobs_,
                 bool willCallStart_,
-                RunLoop::WorkerCallback *workerCallback_,
-                CFRunLoopRef runLoop_,
-                bool useCocoa_) {
+                SystemRunLoop::OSXRunLoop::Ptr runLoop_) {
             name = name_;
             type = type_;
             maxPendingJobs = maxPendingJobs_;
             willCallStart = willCallStart_;
-            workerCallback = workerCallback_;
-            runLoop = runLoop_;
-            useCocoa = useCocoa_;
-            if (useCocoa) {
-                if (runLoop == 0) {
-                    CocoaInit ();
-                }
-                else {
-                    THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                        "%s", "useCocoa_ == true, runLoop_ must be == 0.");
-                }
-            }
+            runLoop = std::move (runLoop_);
             Thread::SetMainThread ();
         }
 
         RunLoop *MainRunLoopCreateInstance::operator () () {
-            return runLoop != 0 || useCocoa ?
+            return runLoop.get () != 0 ?
                 (RunLoop *)new SystemRunLoop (
                     name,
                     type,
                     maxPendingJobs,
                     willCallStart,
-                    workerCallback,
-                    runLoop) :
+                    std::move (runLoop)) :
                 (RunLoop *)new DefaultRunLoop (
                     name,
                     type,
-                    maxPendingJobs,
-                    workerCallback);
+                    maxPendingJobs);
         }
     #endif // defined (TOOLCHAIN_OS_Windows)
 
