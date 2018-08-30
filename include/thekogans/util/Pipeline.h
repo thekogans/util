@@ -40,7 +40,7 @@ namespace thekogans {
         /// \struct Pipeline Pipeline.h thekogans/util/Pipeline.h
         ///
         /// \brief
-        /// A Pipeline builds on the \see{JobQueue} to provide staged
+        /// A Pipeline builds on the \see{RunLoop} to provide staged
         /// execution. Think of an assembly line where each station
         /// (pipeline stage) performs a specific task, and passes the
         /// job on to the next stage (this is how modern processor
@@ -404,7 +404,10 @@ namespace thekogans {
             /// \brief
             /// Stop the pipeline and it's stages.
             /// \param[in] cancelRunningJobs true = Cancel all running jobs.
-            void Stop (bool cancelRunningJobs = true);
+            /// \param[in] cancelPendingJobs true = Cancel all pending jobs.
+            void Stop (
+                bool cancelRunningJobs = true,
+                bool cancelPendingJobs = true);
 
             /// \brief
             /// Enqueue a job on the pipeline.
@@ -435,6 +438,12 @@ namespace thekogans {
             /// \return Job matching the given id.
             Job::Ptr GetJobWithId (const Job::Id &jobId);
 
+            // NOTE for all Wait* methods below: If threads are waiting on pending
+            // jobs indefinitely and another thread calls Stop (..., false) then the
+            // waiting threads will be blocked until you call Start (). This is a
+            // feature, not a bug. It allows you to suspend run loop execution
+            // temporarily without affecting waiters.
+
             /// \brief
             /// Wait for a given running or pending job to complete.
             /// \param[in] job Job to wait on.
@@ -456,6 +465,19 @@ namespace thekogans {
             /// false == job with a given id was not in the pipeline or timed out.
             bool WaitForJob (
                 const Job::Id &jobId,
+                const TimeSpec &timeSpec = TimeSpec::Infinite);
+            /// \brief
+            /// Wait for all given running and pending jobs.
+            /// \param[in] jobs UserJobList (\see{IntrusiveList}) containing the jobs to wait on.
+            /// \param[in] timeSpec How long to wait for the jobs to complete.
+            /// IMPORTANT: timeSpec is a relative value.
+            /// \return true == All jobs satisfying the equalityTest completed,
+            /// false == One or more matching jobs timed out.
+            /// NOTE: This is a static method and is designed to allow you to
+            /// wait on a collection of jobs without regard as to which pipeline
+            /// they're running on.
+            static bool WaitForJobs (
+                const RunLoop::UserJobList &jobs,
                 const TimeSpec &timeSpec = TimeSpec::Infinite);
             /// \brief
             /// Wait for all running and pending jobs matching the given equality test to complete.
@@ -484,6 +506,12 @@ namespace thekogans {
             /// Cancel all running and pending jobs matching the given equality test.
             /// \param[in] equalityTest EqualityTest to query to determine which jobs to cancel.
             void CancelJobs (const RunLoop::EqualityTest &equalityTest);
+            /// \brief
+            /// Cancel all running jobs.
+            void CancelRunningJobs ();
+            /// \brief
+            /// Cancel all pending jobs.
+            void CancelPendingJobs ();
             /// \brief
             /// Cancel all running and pending jobs.
             void CancelAllJobs ();

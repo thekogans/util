@@ -450,7 +450,7 @@ namespace thekogans {
             /// \return true == Iterated over all elements, false == callback returned false.
             inline bool for_each (
                     Callback &callback,
-                    bool reverse = false) {
+                    bool reverse = false) const {
                 if (reverse) {
                     for (T *node = tail; node != 0;) {
                         // After callback returns, we might not be able to call prev (node).

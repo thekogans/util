@@ -144,8 +144,11 @@ namespace thekogans {
             /// \brief
             /// Stop the run loop. Calling this function will cause the Start call
             /// to return.
+            /// \param[in] cancelRunningJobs true = Cancel all running jobs.
             /// \param[in] cancelPendingJobs true = Cancel all pending jobs.
-            virtual void Stop (bool cancelPendingJobs = true);
+            virtual void Stop (
+                bool cancelRunningJobs = true,
+                bool cancelPendingJobs = true);
 
             /// \brief
             /// DefaultRunLoop is neither copy constructable, nor assignable.

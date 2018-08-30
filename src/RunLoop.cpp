@@ -53,9 +53,9 @@ namespace thekogans {
             exception = exception_;
         }
 
-        void RunLoop::Job::Succeed () {
+        void RunLoop::Job::Succeed (const THEKOGANS_UTIL_ATOMIC<bool> &done) {
             if (disposition == Unknown) {
-                disposition = Succeeded;
+                disposition = !done ? Succeeded : Cancelled;
             }
         }
 
@@ -178,12 +178,7 @@ namespace thekogans {
             attributes.push_back (Attribute (ATTR_TOTAL_JOBS, ui32Tostring (totalJobs)));
             attributes.push_back (Attribute (ATTR_TOTAL_JOB_TIME, ui64Tostring (totalJobTime)));
             return
-                OpenTag (
-                    indentationLevel,
-                    tagName,
-                    attributes,
-                    false,
-                    true) +
+                OpenTag (indentationLevel, tagName, attributes, false, true) +
                 lastJob.ToString (indentationLevel + 1, TAG_LAST_JOB) +
                 minJob.ToString (indentationLevel + 1, TAG_MIN_JOB) +
                 maxJob.ToString (indentationLevel + 1, TAG_MAX_JOB) +
@@ -395,6 +390,62 @@ namespace thekogans {
             return job.Get () != 0 && WaitForJob (job, timeSpec);
         }
 
+        namespace {
+            bool WaitForJobsHelper (
+                    RunLoop::AuxJobList &jobs,
+                    const TimeSpec &timeSpec) {
+                if (!jobs.empty ()) {
+                    struct CompletedCallback : public RunLoop::AuxJobList::Callback {
+                        typedef RunLoop::AuxJobList::Callback::result_type result_type;
+                        typedef RunLoop::AuxJobList::Callback::argument_type argument_type;
+                        RunLoop::AuxJobList &jobs;
+                        explicit CompletedCallback (RunLoop::AuxJobList &jobs_) :
+                            jobs (jobs_) {}
+                        virtual result_type operator () (argument_type job) {
+                            if (job->IsCompleted ()) {
+                                jobs.erase (job);
+                                return true;
+                            }
+                            return false;
+                        }
+                        bool Wait (const TimeSpec &timeSpec = TimeSpec::Infinite) {
+                            return jobs.empty () || jobs.front ()->Wait (timeSpec);
+                        }
+                    } completedCallback (jobs);
+                    if (timeSpec == TimeSpec::Infinite) {
+                        while (!jobs.for_each (completedCallback)) {
+                            completedCallback.Wait ();
+                        }
+                    }
+                    else {
+                        TimeSpec now = GetCurrentTime ();
+                        TimeSpec deadline = now + timeSpec;
+                        while (!jobs.for_each (completedCallback) && deadline > now) {
+                            completedCallback.Wait (deadline - now);
+                            now = GetCurrentTime ();
+                        }
+                    }
+                }
+                return jobs.empty ();
+            }
+        }
+
+        bool RunLoop::WaitForJobs (
+                const UserJobList &jobs,
+                const TimeSpec &timeSpec) {
+            struct WaitForJobCallback : public UserJobList::Callback {
+                typedef UserJobList::Callback::result_type result_type;
+                typedef UserJobList::Callback::argument_type argument_type;
+                AuxJobList jobs;
+                virtual result_type operator () (argument_type job) {
+                    jobs.push_back (job);
+                    return true;
+                }
+            } waitForJobCallback;
+            jobs.for_each (waitForJobCallback);
+            return WaitForJobsHelper (waitForJobCallback.jobs, timeSpec);
+        }
+
         bool RunLoop::WaitForJobs (
                 const EqualityTest &equalityTest,
                 const TimeSpec &timeSpec) {
@@ -417,40 +468,7 @@ namespace thekogans {
                 pendingJobs.for_each (waitForJobCallback);
                 runningJobs.for_each (waitForJobCallback);
             }
-            if (!waitForJobCallback.jobs.empty ()) {
-                struct CompletedCallback : public AuxJobList::Callback {
-                    typedef AuxJobList::Callback::result_type result_type;
-                    typedef AuxJobList::Callback::argument_type argument_type;
-                    AuxJobList &jobs;
-                    explicit CompletedCallback (AuxJobList &jobs_) :
-                        jobs (jobs_) {}
-                    virtual result_type operator () (argument_type job) {
-                        if (job->IsCompleted ()) {
-                            jobs.erase (job);
-                            return true;
-                        }
-                        return false;
-                    }
-                    bool Wait (const TimeSpec &timeSpec = TimeSpec::Infinite) {
-                        return jobs.empty () || jobs.front ()->Wait (timeSpec);
-                    }
-                } completedCallback (waitForJobCallback.jobs);
-                if (timeSpec == TimeSpec::Infinite) {
-                    while (IsRunning () && !waitForJobCallback.jobs.for_each (completedCallback)) {
-                        completedCallback.Wait ();
-                    }
-                }
-                else {
-                    TimeSpec now = GetCurrentTime ();
-                    TimeSpec deadline = now + timeSpec;
-                    while (IsRunning () && !waitForJobCallback.jobs.for_each (completedCallback) &&
-                            deadline > now) {
-                        completedCallback.Wait (deadline - now);
-                        now = GetCurrentTime ();
-                    }
-                }
-            }
-            return waitForJobCallback.jobs.empty ();
+            return WaitForJobsHelper (waitForJobCallback.jobs, timeSpec);
         }
 
         bool RunLoop::WaitForIdle (const TimeSpec &timeSpec) {
@@ -509,6 +527,32 @@ namespace thekogans {
                 }
             } cancelCallback (equalityTest);
             runningJobs.for_each (cancelCallback);
+            pendingJobs.for_each (cancelCallback);
+        }
+
+        void RunLoop::CancelRunningJobs () {
+            LockGuard<Mutex> guard (jobsMutex);
+            struct CancelCallback : public JobList::Callback {
+                typedef JobList::Callback::result_type result_type;
+                typedef JobList::Callback::argument_type argument_type;
+                virtual result_type operator () (argument_type job) {
+                    job->Cancel ();
+                    return true;
+                }
+            } cancelCallback;
+            runningJobs.for_each (cancelCallback);
+        }
+
+        void RunLoop::CancelPendingJobs () {
+            LockGuard<Mutex> guard (jobsMutex);
+            struct CancelCallback : public JobList::Callback {
+                typedef JobList::Callback::result_type result_type;
+                typedef JobList::Callback::argument_type argument_type;
+                virtual result_type operator () (argument_type job) {
+                    job->Cancel ();
+                    return true;
+                }
+            } cancelCallback;
             pendingJobs.for_each (cancelCallback);
         }
 

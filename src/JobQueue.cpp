@@ -41,7 +41,7 @@ namespace thekogans {
                         job->Prologue (queue.done);
                         job->Execute (queue.done);
                         job->Epilogue (queue.done);
-                        job->Succeed ();
+                        job->Succeed (queue.done);
                         end = HRTimer::Click ();
                     }
                     queue.FinishedJob (job, start, end);
@@ -98,27 +98,60 @@ namespace thekogans {
             }
         }
 
-        void JobQueue::Stop (bool cancelPendingJobs) {
-            if (cancelPendingJobs) {
+        void JobQueue::Stop (
+                bool cancelRunningJobs,
+                bool cancelPendingJobs) {
+            struct SavePendingJobs {
+                JobList &pendingJobs;
+                Mutex &jobsMutex;
+                JobList temp;
+                SavePendingJobs (
+                    JobList &pendingJobs_,
+                    Mutex &jobsMutex_) :
+                    pendingJobs (pendingJobs_),
+                    jobsMutex (jobsMutex_) {}
+                ~SavePendingJobs () {
+                    LockGuard<Mutex> guard (jobsMutex);
+                    temp.swap (pendingJobs);
+                }
+                void Save () {
+                    LockGuard<Mutex> guard (jobsMutex);
+                    temp.swap (pendingJobs);
+                }
+            } savePendingJobs (pendingJobs, jobsMutex);
+            if (cancelRunningJobs && cancelPendingJobs) {
                 CancelAllJobs ();
-                WaitForIdle ();
             }
-            bool expected = false;
-            if (done.compare_exchange_strong (expected, true)) {
-                jobsNotEmpty.SignalAll ();
-                struct Callback : public WorkerList::Callback {
-                    typedef WorkerList::Callback::result_type result_type;
-                    typedef WorkerList::Callback::argument_type argument_type;
-                    virtual result_type operator () (argument_type worker) {
-                        // Join the worker thread before deleting it to
-                        // let it's thread function finish it's tear down.
-                        worker->Wait ();
-                        delete worker;
-                        return true;
-                    }
-                } callback;
-                workers.clear (callback);
-                assert (runningJobs.empty ());
+            else if (!cancelRunningJobs && cancelPendingJobs) {
+                CancelPendingJobs ();
+            }
+            else if (cancelRunningJobs && !cancelPendingJobs) {
+                savePendingJobs.Save ();
+                CancelRunningJobs ();
+            }
+            else if (!cancelRunningJobs && !cancelPendingJobs) {
+                savePendingJobs.Save ();
+            }
+            WaitForIdle ();
+            {
+                LockGuard<Mutex> guard (workersMutex);
+                bool expected = false;
+                if (done.compare_exchange_strong (expected, true)) {
+                    jobsNotEmpty.SignalAll ();
+                    struct Callback : public WorkerList::Callback {
+                        typedef WorkerList::Callback::result_type result_type;
+                        typedef WorkerList::Callback::argument_type argument_type;
+                        virtual result_type operator () (argument_type worker) {
+                            // Join the worker thread before deleting it to
+                            // let it's thread function finish it's tear down.
+                            worker->Wait ();
+                            delete worker;
+                            return true;
+                        }
+                    } callback;
+                    workers.clear (callback);
+                    assert (runningJobs.empty ());
+                }
             }
         }
 

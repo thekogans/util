@@ -89,7 +89,17 @@ namespace thekogans {
                 JOB_LIST_ID,
                 /// \brief
                 /// Auxiliary JobList ID.
+                /// IMPORTANT: WaitForJobs use this list internally
+                /// so, if you want to keep your jobs in a list, use
+                /// USER_JOB_LIST_ID (UserJobList).
                 AUX_JOB_LIST_ID,
+                /// \brief
+                /// User JobList ID.
+                /// NOTE: Use this list to store your jobs.
+                /// IMPORTANT: WaitForJobs uses this list so,
+                /// if you want to be able to wait on multiple
+                /// jobs at once, you will need to use this list.
+                USER_JOB_LIST_ID,
                 /// \brief
                 /// Use this sentinel to create your own job lists (\see{Pipeline}).
                 LAST_JOB_LIST_ID
@@ -100,6 +110,9 @@ namespace thekogans {
             /// \brief
             /// Convenient typedef for IntrusiveList<Job, AUX_JOB_LIST_ID>.
             typedef IntrusiveList<Job, AUX_JOB_LIST_ID> AuxJobList;
+            /// \brief
+            /// Convenient typedef for IntrusiveList<Job, USER_JOB_LIST_ID>.
+            typedef IntrusiveList<Job, USER_JOB_LIST_ID> UserJobList;
 
         #if defined (_MSC_VER)
             #pragma warning (push)
@@ -112,7 +125,8 @@ namespace thekogans {
             struct _LIB_THEKOGANS_UTIL_DECL Job :
                     public ThreadSafeRefCounted,
                     public JobList::Node,
-                    public AuxJobList::Node {
+                    public AuxJobList::Node,
+                    public UserJobList::Node {
                 /// \brief
                 /// Convenient typedef for ThreadSafeRefCounted::Ptr<Job>.
                 typedef ThreadSafeRefCounted::Ptr<Job> Ptr;
@@ -284,7 +298,9 @@ namespace thekogans {
                 /// \brief
                 /// Used internally by RunLoop and it's derivatives to mark the
                 /// job as succeeded execution.
-                void Succeed ();
+                /// \param[in] done false == job completed successfully, otherwise
+                /// job was forced to exit Execute because the run loop was stopped.
+                void Succeed (const THEKOGANS_UTIL_ATOMIC<bool> &done);
 
                 /// \brief
                 /// Return true if the job should stop what it's doing and exit.
@@ -292,7 +308,6 @@ namespace thekogans {
                 /// RunLoop responsive.
                 /// \param[in] done If true, this flag indicates that
                 /// the job should stop what it's doing, and exit.
-                /// \param[in] disposition Value to check against current disposition.
                 /// \return true == Job should stop what it's doing and exit.
                 inline bool ShouldStop (const THEKOGANS_UTIL_ATOMIC<bool> &done) const {
                     return done || IsCancelled () || IsFailed ();
@@ -721,8 +736,11 @@ namespace thekogans {
             /// Stop the run loop and in all likelihood exit the thread hosting it.
             /// Obviously, this function needs to be called from a different thread
             /// than the one that called Start.
+            /// \param[in] cancelRunningJobs true = Cancel all running jobs.
             /// \param[in] cancelPendingJobs true = Cancel all pending jobs.
-            virtual void Stop (bool /*cancelPendingJobs*/ = true) = 0;
+            virtual void Stop (
+                bool /*cancelRunningJobs*/ = true,
+                bool /*cancelPendingJobs*/ = true) = 0;
 
             /// \brief
             /// Enqueue a job to be performed on the run loop thread.
@@ -773,6 +791,12 @@ namespace thekogans {
                 virtual bool operator () (const Job & /*job*/) const throw ();
             };
 
+            // NOTE for all Wait* methods below: If threads are waiting on pending
+            // jobs indefinitely and another thread calls Stop (..., false) then the
+            // waiting threads will be blocked until you call Start (). This is a
+            // feature, not a bug. It allows you to suspend run loop execution
+            // temporarily without affecting waiters.
+
             /// \brief
             /// Wait for a given job to complete.
             /// \param[in] job Job to wait on.
@@ -794,6 +818,19 @@ namespace thekogans {
             /// false == job with a given id was not in the run loop or timed out.
             virtual bool WaitForJob (
                 const Job::Id &jobId,
+                const TimeSpec &timeSpec = TimeSpec::Infinite);
+            /// \brief
+            /// Wait for all given running and pending jobs.
+            /// \param[in] jobs UserJobList (\see{IntrusiveList}) containing the jobs to wait on.
+            /// \param[in] timeSpec How long to wait for the jobs to complete.
+            /// IMPORTANT: timeSpec is a relative value.
+            /// \return true == All jobs satisfying the equalityTest completed,
+            /// false == One or more matching jobs timed out.
+            /// NOTE: This is a static method and is designed to allow you to
+            /// wait on a collection of jobs without regard as to which run loop
+            /// they're running on.
+            static bool WaitForJobs (
+                const UserJobList &jobs,
                 const TimeSpec &timeSpec = TimeSpec::Infinite);
             /// \brief
             /// Wait for all running and pending jobs matching the given equality test to complete.
@@ -822,6 +859,12 @@ namespace thekogans {
             /// Cancel all running and pending jobs matching the given equality test.
             /// \param[in] equalityTest EqualityTest to query to determine which jobs to cancel.
             virtual void CancelJobs (const EqualityTest &equalityTest);
+            /// \brief
+            /// Cancel all running jobs.
+            virtual void CancelRunningJobs ();
+            /// \brief
+            /// Cancel all pending jobs.
+            virtual void CancelPendingJobs ();
             /// \brief
             /// Cancel all running and pending jobs.
             virtual void CancelAllJobs ();

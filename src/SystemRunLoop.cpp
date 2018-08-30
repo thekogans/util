@@ -370,11 +370,41 @@ namespace thekogans {
             }
         }
 
-        void SystemRunLoop::Stop (bool cancelPendingJobs) {
-            if (cancelPendingJobs) {
+        void SystemRunLoop::Stop (
+                bool cancelRunningJobs,
+                bool cancelPendingJobs) {
+            struct SavePendingJobs {
+                JobList &pendingJobs;
+                Mutex &jobsMutex;
+                JobList temp;
+                SavePendingJobs (
+                    JobList &pendingJobs_,
+                    Mutex &jobsMutex_) :
+                    pendingJobs (pendingJobs_),
+                    jobsMutex (jobsMutex_) {}
+                ~SavePendingJobs () {
+                    LockGuard<Mutex> guard (jobsMutex);
+                    temp.swap (pendingJobs);
+                }
+                void Save () {
+                    LockGuard<Mutex> guard (jobsMutex);
+                    temp.swap (pendingJobs);
+                }
+            } savePendingJobs (pendingJobs, jobsMutex);
+            if (cancelRunningJobs && cancelPendingJobs) {
                 CancelAllJobs ();
-                WaitForIdle ();
             }
+            else if (!cancelRunningJobs && cancelPendingJobs) {
+                CancelPendingJobs ();
+            }
+            else if (cancelRunningJobs && !cancelPendingJobs) {
+                savePendingJobs.Save ();
+                CancelRunningJobs ();
+            }
+            else if (!cancelRunningJobs && !cancelPendingJobs) {
+                savePendingJobs.Save ();
+            }
+            WaitForIdle ();
             bool expected = false;
             if (done.compare_exchange_strong (expected, true)) {
             #if defined (TOOLCHAIN_OS_Windows)
@@ -450,7 +480,7 @@ namespace thekogans {
                     job->Prologue (done);
                     job->Execute (done);
                     job->Epilogue (done);
-                    job->Succeed ();
+                    job->Succeed (done);
                     end = HRTimer::Click ();
                 }
                 FinishedJob (job, start, end);

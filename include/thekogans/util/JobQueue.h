@@ -161,8 +161,11 @@ namespace thekogans {
             /// Job::Prologue/Execute/Epilog. Therefore, if you want your
             /// code to be responsive, and the queues to stop quickly,
             /// your jobs should pay close attention to the state of done.
+            /// \param[in] cancelRunningJobs true = Cancel all running jobs.
             /// \param[in] cancelPendingJobs true = Cancel all pending jobs.
-            virtual void Stop (bool cancelPendingJobs = true);
+            virtual void Stop (
+                bool cancelRunningJobs = true,
+                bool cancelPendingJobs = true);
 
             /// \brief
             /// JobQueue is neither copy constructable, nor assignable.
