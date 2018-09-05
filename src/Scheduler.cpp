@@ -31,7 +31,7 @@ namespace thekogans {
             struct SavePendingJobs {
                 JobList &pendingJobs;
                 Mutex &jobsMutex;
-                JobList temp;
+                JobList savedPendingJobs;
                 SavePendingJobs (
                     JobList &pendingJobs_,
                     Mutex &jobsMutex_) :
@@ -39,11 +39,11 @@ namespace thekogans {
                     jobsMutex (jobsMutex_) {}
                 ~SavePendingJobs () {
                     LockGuard<Mutex> guard (jobsMutex);
-                    temp.swap (pendingJobs);
+                    savedPendingJobs.swap (pendingJobs);
                 }
                 void Save () {
                     LockGuard<Mutex> guard (jobsMutex);
-                    temp.swap (pendingJobs);
+                    savedPendingJobs.swap (pendingJobs);
                 }
             } savePendingJobs (pendingJobs, jobsMutex);
             if (cancelRunningJobs && cancelPendingJobs) {

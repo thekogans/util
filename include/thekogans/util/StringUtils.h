@@ -30,6 +30,9 @@ namespace thekogans {
     namespace util {
 
         /// \brief
+        /// std::size_t format string.
+        #define THEKOGANS_UTIL_SIZE_T_FORMAT "%zu"
+        /// \brief
         /// Format strings for various integral types.
     #if defined (TOOLCHAIN_OS_Windows)
         /// \brief
@@ -58,6 +61,12 @@ namespace thekogans {
         /// ui64 format string.
         #define THEKOGANS_UTIL_UI64_FORMAT "%llu"
     #endif // defined (TOOLCHAIN_OS_Windows)
+        /// \brief
+        /// f64 format string.
+        #define THEKOGANS_UTIL_F32_FORMAT "%f"
+        /// \brief
+        /// f64 format string.
+        #define THEKOGANS_UTIL_F64_FORMAT "%g"
 
         /// \brief
         /// Copy source to destination.
@@ -311,17 +320,9 @@ namespace thekogans {
         /// \param[in] value std::size_t to format.
         /// \param[in] format Format string.
         /// \return A string representing a formatted std::size_t.
-    #if defined (TOOLCHAIN_ARCH_i386)
         _LIB_THEKOGANS_UTIL_DECL std::string _LIB_THEKOGANS_UTIL_API size_tTostring (
             std::size_t value,
-            const char *format = THEKOGANS_UTIL_UI32_FORMAT);
-    #elif defined (TOOLCHAIN_ARCH_x86_64)
-        _LIB_THEKOGANS_UTIL_DECL std::string _LIB_THEKOGANS_UTIL_API size_tTostring (
-            std::size_t value,
-            const char *format = THEKOGANS_UTIL_UI64_FORMAT);
-    #else // defined (TOOLCHAIN_ARCH_i386)
-        #error "Unknown architecture."
-    #endif // defined (TOOLCHAIN_ARCH_i386)
+            const char *format = THEKOGANS_UTIL_SIZE_T_FORMAT);
         /// \brief
         /// Convert a boolean value to a string.
         /// \param[in] value Value to convert.
@@ -367,7 +368,7 @@ namespace thekogans {
         /// \return Formatted value.
         _LIB_THEKOGANS_UTIL_DECL std::string _LIB_THEKOGANS_UTIL_API f32Tostring (
             f32 value,
-            const char *format = "%f");
+            const char *format = THEKOGANS_UTIL_F32_FORMAT);
         /// \brief
         /// Format an f64.
         /// \param[in] value Value to format.
@@ -375,7 +376,7 @@ namespace thekogans {
         /// \return Formatted value.
         _LIB_THEKOGANS_UTIL_DECL std::string _LIB_THEKOGANS_UTIL_API f64Tostring (
             f64 value,
-            const char *format = "%g");
+            const char *format = THEKOGANS_UTIL_F64_FORMAT);
 
         /// \brief
         /// Format a string from a list of arguments.

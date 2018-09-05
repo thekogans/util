@@ -104,7 +104,7 @@ namespace thekogans {
             struct SavePendingJobs {
                 JobList &pendingJobs;
                 Mutex &jobsMutex;
-                JobList temp;
+                JobList savedPendingJobs;
                 SavePendingJobs (
                     JobList &pendingJobs_,
                     Mutex &jobsMutex_) :
@@ -112,11 +112,11 @@ namespace thekogans {
                     jobsMutex (jobsMutex_) {}
                 ~SavePendingJobs () {
                     LockGuard<Mutex> guard (jobsMutex);
-                    temp.swap (pendingJobs);
+                    savedPendingJobs.swap (pendingJobs);
                 }
                 void Save () {
                     LockGuard<Mutex> guard (jobsMutex);
-                    temp.swap (pendingJobs);
+                    savedPendingJobs.swap (pendingJobs);
                 }
             } savePendingJobs (pendingJobs, jobsMutex);
             if (cancelRunningJobs && cancelPendingJobs) {
@@ -143,7 +143,7 @@ namespace thekogans {
                         typedef WorkerList::Callback::argument_type argument_type;
                         virtual result_type operator () (argument_type worker) {
                             // Join the worker thread before deleting it to
-                            // let it's thread function finish it's tear down.
+                            // let it's thread function finish it's teardown.
                             worker->Wait ();
                             delete worker;
                             return true;

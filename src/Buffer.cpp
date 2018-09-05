@@ -454,7 +454,7 @@ namespace thekogans {
                 buffer.length <<
                 buffer.readOffset <<
                 buffer.writeOffset;
-            if (buffer.length != 0) {
+            if (buffer.length > 0) {
                 std::size_t bytesWritten = serializer.Write (buffer.data, buffer.length);
                 if (buffer.length != bytesWritten) {
                     THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
