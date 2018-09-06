@@ -120,8 +120,9 @@ namespace thekogans {
 
             /// \brief
             /// Return path leading up to the last component.
+            /// \param[in] includePathSeparator true == Include the trailing path seperator.
             /// \return Path leading up to the last component.
-            std::string GetDirectory () const;
+            std::string GetDirectory (bool includePathSeparator = false) const;
             /// \brief
             /// Return directoy name.
             /// \return Directory name.

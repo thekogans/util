@@ -225,11 +225,11 @@ namespace thekogans {
             return absolute;
         }
 
-        std::string Path::GetDirectory () const {
+        std::string Path::GetDirectory (bool includePathSeparator) const {
             std::string::size_type pathSeparator =
                 path.find_last_of (PATH_SEPARATORS);
             return pathSeparator == std::string::npos ?
-                std::string () : path.substr (0, pathSeparator);
+                std::string () : path.substr (0, pathSeparator + (includePathSeparator ? 1 : 0));
         }
 
         std::string Path::GetDirectoryName () const {
