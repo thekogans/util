@@ -343,7 +343,7 @@ namespace thekogans {
                 startInfo.hStdError = stdIO->errPipe[1];
             }
             ClearProcessInformation (processInformation);
-            if (!CreateProcess (0, commandLine.data (), 0, 0, TRUE,
+            if (!CreateProcess (0, (LPSTR)commandLine.data (), 0, 0, TRUE,
                     detached ? DETACHED_PROCESS : 0,
                     !environment.empty () ? (LPVOID)environment.data () : 0,
                     !startupDirectory.empty () ? startupDirectory.c_str () : 0,
