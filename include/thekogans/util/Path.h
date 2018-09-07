@@ -83,7 +83,7 @@ namespace thekogans {
 
             /// \brief
             /// Return true if path is empty.
-            /// \return true = path is empty, false = path is not empty.
+            /// \return true == path is empty, false == path is not empty.
             inline bool IsEmpty () const {
                 return path.empty ();
             }
@@ -101,7 +101,7 @@ namespace thekogans {
             /// Return true if path is absolute, false if relative.
             /// NOTE: On Windows, this function will take the drive
             /// designation in to account.
-            /// \return true = path is absolute, false = path is relative.
+            /// \return true == path is absolute, false == path is relative.
             bool IsAbsolute () const;
             /// \brief
             /// Convert a relative path to it's canonical form.
@@ -137,12 +137,13 @@ namespace thekogans {
             std::string GetFileName () const;
             /// \brief
             /// Return extension.
+            /// \param[in] includeDot true == Include the dot.
             /// \return Extension.
-            std::string GetExtension () const;
+            std::string GetExtension (bool includeDot = false) const;
 
             /// \brief
             /// Check for path existance.
-            /// \return true = exists, false = does not exist.
+            /// \return true == exists, false == does not exist.
             bool Exists () const;
             /// \brief
             /// Move the underlying file/direcory pointed by path.
@@ -152,8 +153,8 @@ namespace thekogans {
             /// Delete the path. If the path points to a
             /// directory, will delete the whole branch if
             /// recursive == true.
-            /// \param[in] recursive true = delete branch,
-            /// false = delete file or empty directory.
+            /// \param[in] recursive true == delete branch,
+            /// false == delete file or empty directory.
             void Delete (bool recursive = true) const;
         };
 
@@ -168,8 +169,8 @@ namespace thekogans {
         /// \brief
         /// Create a path from a list of components.
         /// \param[in] components List of path components.
-        /// \param[in] absolute true = start with path seperator,
-        /// false = start with empty path.
+        /// \param[in] absolute true == start with path seperator,
+        /// false == start with empty path.
         /// \return Path from a list of components.
         _LIB_THEKOGANS_UTIL_DECL std::string _LIB_THEKOGANS_UTIL_API MakePath (
             const std::list<std::string> &components,
