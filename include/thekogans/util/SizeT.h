@@ -32,7 +32,7 @@ namespace thekogans {
         /// \struct SizeT SizeT.h thekogans/util/SizeT.h
         ///
         /// \brief
-        /// SizeT implements an architecture independent, Prefix-encoded, variable length
+        /// SizeT implements an architecture independent, Prefix-encoded, variable length,
         /// serializable std::size_t.
 
         struct _LIB_THEKOGANS_UTIL_DECL SizeT {
@@ -64,7 +64,7 @@ namespace thekogans {
 
             /// \brief
             /// Given the first byte return the total size of the serialized SizeT
-            /// (including the fisrt byte).
+            /// (including the first byte).
             /// \param[in] firstByte Encodes the total size of the serialized SizeT.
             /// \return Size of the serialized SizeT.
             static inline std::size_t Size (ui32 firstByte) {
@@ -94,7 +94,7 @@ namespace thekogans {
                 return *this;
             }
             /// \brief
-            /// Subtractin operator.
+            /// Subtraction operator.
             /// \param[in] value_ Value to subtract.
             /// \return *this.
             inline SizeT &operator -= (ui64 value_) {
@@ -118,7 +118,7 @@ namespace thekogans {
                 return *this;
             }
             /// \brief
-            /// Bitwise and operator.
+            /// Bit-wise and operator.
             /// \param[in] value_ Value to and.
             /// \return *this.
             inline SizeT &operator &= (ui64 value_) {
@@ -126,7 +126,7 @@ namespace thekogans {
                 return *this;
             }
             /// \brief
-            /// Bitwise or operator.
+            /// Bit-wise or operator.
             /// \param[in] value_ Value to or.
             /// \return *this.
             inline SizeT &operator |= (ui64 value_) {
@@ -151,7 +151,7 @@ namespace thekogans {
             }
             /// \brief
             /// Shift left operator.
-            /// \param[in] value_ Bitcount to shift.
+            /// \param[in] value_ Bit count to shift.
             /// \return *this.
             inline SizeT &operator <<= (ui64 count) {
                 value <<= count;
@@ -159,7 +159,7 @@ namespace thekogans {
             }
             /// \brief
             /// Shift right operator.
-            /// \param[in] value_ Bitcount to shift.
+            /// \param[in] value_ Bit count to shift.
             /// \return *this.
             inline SizeT &operator >>= (ui64 count) {
                 value >>= count;
