@@ -70,7 +70,7 @@ namespace thekogans {
             /// Once instantiated, put one or more jobs on the queue and they will
             /// be executed in prioritized, round-robin order. The scheduler runs
             /// in O(1). As there are no job states, if a job is in the queue, it
-            /// will be scheduled to execute using one of the workers from a limited
+            /// will be scheduled to execute using one of the job queues from a limited
             /// pool. Keep that in mind when designing your jobs as there is a real
             /// possibility of exhausting the job queue pool and effectively killing
             /// the scheduler. Specifically, synchronous io is frowned upon. The
@@ -88,7 +88,7 @@ namespace thekogans {
                 THEKOGANS_UTIL_DECLARE_HEAP_WITH_LOCK (JobQueue, SpinLock)
 
                 /// \brief
-                /// Queue priority.
+                /// JobQueue priority.
                 enum Priority {
                     /// \brief
                     /// Lowest priority queue. Will be starved by PRIORITY_NORMAL
@@ -107,10 +107,10 @@ namespace thekogans {
                 /// Scheduler this JobQueue belongs to.
                 Scheduler &scheduler;
                 /// \brief
-                /// Queue priority.
-                Priority priority;
+                /// JobQueue priority.
+                const Priority priority;
                 /// \brief
-                /// Set true by a worker if it's processing a job from this queue.
+                /// true == a job from this JobQueue is being executed.
                 THEKOGANS_UTIL_ATOMIC<bool> inFlight;
 
             public:
@@ -118,6 +118,9 @@ namespace thekogans {
                 /// ctor.
                 /// \param[in] scheduler_ Scheduler this JobQueue belongs to.
                 /// \param[in] priority_ JobQueue priority.
+                /// \param[in] name JobQueue name.
+                /// \param[in] type JobQueue type.
+                /// \param[in] maxPendingJobs Max pending queue jobs.
                 JobQueue (
                     Scheduler &scheduler_,
                     Priority priority_ = PRIORITY_NORMAL,
@@ -128,6 +131,11 @@ namespace thekogans {
                     scheduler (scheduler_),
                     priority (priority_),
                     inFlight (false) {}
+                /// \brief
+                /// dtor. Stop the queue.
+                virtual ~JobQueue () {
+                    Stop ();
+                }
 
                 /// \brief
                 /// Scheduler job queue starts when jobs are enqueued.
@@ -184,20 +192,20 @@ namespace thekogans {
 
             /// \brief
             /// ctor.
-            /// Create as many active workers as there are cpu cores.
+            /// Create as many active job queues as there are cpu cores.
             /// Have as many in reserve for heavy loads.
-            /// \param[in] minWorkers Minimum worker count to keep in the pool.
-            /// \param[in] maxWorkers Maximum worker count to allow the pool to grow to.
-            /// \param[in] name Worker thread name.
-            /// \param[in] type Worker queue type.
+            /// \param[in] minJobQueues Minimum worker count to keep in the pool.
+            /// \param[in] maxJobQueues Maximum worker count to allow the pool to grow to.
+            /// \param[in] name JobQueue thread name.
+            /// \param[in] type JobQueue queue type.
             /// \param[in] maxPendingJobs Max pending queue jobs.
             /// \param[in] workerCount Number of worker threads service the queue.
-            /// \param[in] workerPriority Worker thread priority.
-            /// \param[in] workerAffinity Worker thread processor affinity.
+            /// \param[in] workerPriority JobQueue thread priority.
+            /// \param[in] workerAffinity JobQueue thread processor affinity.
             /// \param[in] workerCallback Called to initialize/uninitialize the worker thread.
             Scheduler (
-                ui32 minWorkers = SystemInfo::Instance ().GetCPUCount (),
-                ui32 maxWorkers = SystemInfo::Instance ().GetCPUCount () * 2,
+                ui32 minJobQueues = SystemInfo::Instance ().GetCPUCount (),
+                ui32 maxJobQueues = SystemInfo::Instance ().GetCPUCount () * 2,
                 const std::string name = std::string (),
                 RunLoop::Type type = RunLoop::TYPE_FIFO,
                 ui32 maxPendingJobs = UI32_MAX,
@@ -206,8 +214,8 @@ namespace thekogans {
                 ui32 workerAffinity = THEKOGANS_UTIL_MAX_THREAD_AFFINITY,
                 RunLoop::WorkerCallback *workerCallback = 0) :
                 jobQueuePool (
-                    minWorkers,
-                    maxWorkers,
+                    minJobQueues,
+                    maxJobQueues,
                     name,
                     type,
                     maxPendingJobs,
@@ -215,6 +223,9 @@ namespace thekogans {
                     workerPriority,
                     workerAffinity,
                     workerCallback) {}
+            /// \brief
+            /// dtor.
+            ~Scheduler ();
 
         private:
             /// \brief
@@ -227,20 +238,21 @@ namespace thekogans {
             /// High priority JobQueue list.
             JobQueueList high;
             /// \brief
-            /// Synchronization SpinLock for above lists.
+            /// Synchronization \see{SpinLock} for above lists.
             SpinLock spinLock;
             /// \brief
-            /// JobQueuePool executing the jobs.
+            /// \see{JobQueuePool} executing the jobs.
             JobQueuePool jobQueuePool;
 
             /// \brief
             /// Add a JobQueue to the appropriate list (governed by it's priority)
-            /// and spin up a Worker to process it's head job.
+            /// and spin up a JobQueue to process it's head job.
             /// \param[in] jobQueue JobQueue to add.
-            /// \param[in] scheduleWorker true = Schedule a worker to process this queue.
+            /// \param[in] scheduleJobQueue true = Schedule a \see{JobQueuePool} \see{JobQueue}
+            /// to process this job queue.
             void AddJobQueue (
                 JobQueue *jobQueue,
-                bool scheduleWorker);
+                bool scheduleJobQueue = true);
             /// \brief
             /// Used by the worker to get the next appropriate
             /// JobQueue (based on priority).
@@ -258,27 +270,27 @@ namespace thekogans {
         private:
             /// \brief
             /// Minimum worker count to keep in the pool.
-            static ui32 minWorkers;
+            static ui32 minJobQueues;
             /// \brief
             /// Maximum worker count to allow the pool to grow to.
-            static ui32 maxWorkers;
+            static ui32 maxJobQueues;
             /// \brief
-            /// Worker thread name.
+            /// JobQueue thread name.
             static std::string name;
             /// \brief
-            /// Worker queue type.
+            /// JobQueue queue type.
             static RunLoop::Type type;
             /// \brief
-            /// Worker queue max pending jobs.
+            /// JobQueue queue max pending jobs.
             static ui32 maxPendingJobs;
             /// \brief
             /// Number of worker threads service the queue.
             static ui32 workerCount;
             /// \brief
-            /// Worker thread priority.
+            /// JobQueue thread priority.
             static i32 workerPriority;
             /// \brief
-            /// Worker thread processor affinity.
+            /// JobQueue thread processor affinity.
             static ui32 workerAffinity;
             /// \brief
             /// Called to initialize/uninitialize the worker thread.
@@ -287,18 +299,18 @@ namespace thekogans {
         public:
             /// \brief
             /// Call before the first use of GlobalScheduler::Instance.
-            /// \param[in] minWorkers_ Minimum worker count to keep in the pool.
-            /// \param[in] maxWorkers_ Maximum worker count to allow the pool to grow to.
-            /// \param[in] name_ Worker thread name.
-            /// \param[in] type_ Worker queue type.
+            /// \param[in] minJobQueues_ Minimum worker count to keep in the pool.
+            /// \param[in] maxJobQueues_ Maximum worker count to allow the pool to grow to.
+            /// \param[in] name_ JobQueue thread name.
+            /// \param[in] type_ JobQueue queue type.
             /// \param[in] maxPendingJobs_ Max pending queue jobs.
             /// \param[in] workerCount_ Number of worker threads service the queue.
-            /// \param[in] workerPriority_ Worker thread priority.
-            /// \param[in] workerAffinity_ Worker thread processor affinity.
+            /// \param[in] workerPriority_ JobQueue thread priority.
+            /// \param[in] workerAffinity_ JobQueue thread processor affinity.
             /// \param[in] workerCallback_ Called to initialize/uninitialize the worker thread.
             static void Parameterize (
-                ui32 minWorkers_ = SystemInfo::Instance ().GetCPUCount (),
-                ui32 maxWorkers_ = SystemInfo::Instance ().GetCPUCount () * 2,
+                ui32 minJobQueues_ = SystemInfo::Instance ().GetCPUCount (),
+                ui32 maxJobQueues_ = SystemInfo::Instance ().GetCPUCount () * 2,
                 const std::string &name_ = std::string (),
                 RunLoop::Type type_ = RunLoop::TYPE_FIFO,
                 ui32 maxPendingJobs_ = UI32_MAX,

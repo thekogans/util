@@ -283,25 +283,27 @@ namespace thekogans {
                 bool wait,
                 const TimeSpec &timeSpec) {
             if (job.Get () != 0 && job->IsCompleted ()) {
-                LockGuard<Mutex> guard (jobsMutex);
-                if (pendingJobs.size () < (std::size_t)maxPendingJobs) {
-                    job->Reset (id);
-                    if (type == TYPE_FIFO) {
-                        pendingJobs.push_back (job.Get ());
+                {
+                    LockGuard<Mutex> guard (jobsMutex);
+                    if (pendingJobs.size () < (std::size_t)maxPendingJobs) {
+                        job->Reset (id);
+                        if (type == TYPE_FIFO) {
+                            pendingJobs.push_back (job.Get ());
+                        }
+                        else {
+                            pendingJobs.push_front (job.Get ());
+                        }
+                        job->AddRef ();
+                        jobsNotEmpty.Signal ();
                     }
                     else {
-                        pendingJobs.push_front (job.Get ());
+                        THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
+                            "RunLoop (%s) max jobs (%u) reached.",
+                            !name.empty () ? name.c_str () : "no name",
+                            maxPendingJobs);
                     }
-                    job->AddRef ();
-                    jobsNotEmpty.Signal ();
-                    return !wait || WaitForJob (job, timeSpec);
                 }
-                else {
-                    THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                        "RunLoop (%s) max jobs (%u) reached.",
-                        !name.empty () ? name.c_str () : "no name",
-                        maxPendingJobs);
-                }
+                return !wait || WaitForJob (job, timeSpec);
             }
             else {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
@@ -314,20 +316,22 @@ namespace thekogans {
                 bool wait,
                 const TimeSpec &timeSpec) {
             if (job.Get () != 0 && job->IsCompleted ()) {
-                LockGuard<Mutex> guard (jobsMutex);
-                if (pendingJobs.size () < (std::size_t)maxPendingJobs) {
-                    job->Reset (id);
-                    pendingJobs.push_front (job.Get ());
-                    job->AddRef ();
-                    jobsNotEmpty.Signal ();
-                    return !wait || WaitForJob (job, timeSpec);
+                {
+                    LockGuard<Mutex> guard (jobsMutex);
+                    if (pendingJobs.size () < (std::size_t)maxPendingJobs) {
+                        job->Reset (id);
+                        pendingJobs.push_front (job.Get ());
+                        job->AddRef ();
+                        jobsNotEmpty.Signal ();
+                    }
+                    else {
+                        THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
+                            "RunLoop (%s) max jobs (%u) reached.",
+                            !name.empty () ? name.c_str () : "no name",
+                            maxPendingJobs);
+                    }
                 }
-                else {
-                    THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                        "RunLoop (%s) max jobs (%u) reached.",
-                        !name.empty () ? name.c_str () : "no name",
-                        maxPendingJobs);
-                }
+                return !wait || WaitForJob (job, timeSpec);
             }
             else {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (

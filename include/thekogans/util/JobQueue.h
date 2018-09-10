@@ -120,7 +120,7 @@ namespace thekogans {
             /// ctor.
             /// \param[in] name JobQueue name. If set, \see{Worker}
             /// threads will be named name-%d.
-            /// \param[in] type Queue type.
+            /// \param[in] type JobQueue type.
             /// \param[in] maxPendingJobs Max pending queue jobs.
             /// \param[in] workerCount_ Max workers to service the queue.
             /// \param[in] workerPriority_ Worker thread priority.
