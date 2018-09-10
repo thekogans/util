@@ -257,7 +257,7 @@ namespace thekogans {
             /// Used by the worker to get the next appropriate
             /// JobQueue (based on priority).
             /// \return Highest priority JobQueue.
-            JobQueue *GetNextJobQueue ();
+            JobQueue::Ptr GetNextJobQueue ();
         };
 
         /// \struct GlobalSchedulerCreateInstance Scheduler.h thekogans/util/Scheduler.h

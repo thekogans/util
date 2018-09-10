@@ -128,8 +128,9 @@ namespace thekogans {
                             }
                             break;
                     }
+                    jobQueue->inFlight = false;
+                    jobQueue->AddRef ();
                 }
-                jobQueue->AddRef ();
                 if (scheduleJobQueue) {
                     struct JobQueueJob : public RunLoop::Job {
                         util::JobQueue::Ptr jobQueue;
@@ -142,8 +143,8 @@ namespace thekogans {
                             scheduler (scheduler_) {}
 
                         virtual void Execute (const THEKOGANS_UTIL_ATOMIC<bool> &done) throw () {
-                            JobQueue *jobQueue;
-                            while (!ShouldStop (done) && (jobQueue = scheduler.GetNextJobQueue ()) != 0) {
+                            JobQueue::Ptr jobQueue;
+                            while (!ShouldStop (done) && (jobQueue = scheduler.GetNextJobQueue ()).Get () != 0) {
                                 RunLoop::Job *job;
                                 bool cancelled;
                                 // Skip over cancelled jobs.
@@ -166,11 +167,9 @@ namespace thekogans {
                                         jobQueue->FinishedJob (job, start, end);
                                     }
                                 } while (job != 0 && cancelled);
-                                jobQueue->inFlight = false;
                                 if (jobQueue->GetPendingJobCount () != 0) {
-                                    scheduler.AddJobQueue (jobQueue, false);
+                                    scheduler.AddJobQueue (jobQueue.Get (), false);
                                 }
-                                jobQueue->Release ();
                             }
                         }
                     };
@@ -188,22 +187,23 @@ namespace thekogans {
             }
         }
 
-        Scheduler::JobQueue *Scheduler::GetNextJobQueue () {
-            JobQueue *jobQueue = 0;
+        Scheduler::JobQueue::Ptr Scheduler::GetNextJobQueue () {
+            JobQueue::Ptr jobQueue;
             {
                 // Priority based, round-robin, O(1) scheduler!
                 LockGuard<SpinLock> guard (spinLock);
                 if (!high.empty () && !high.front ()->inFlight) {
-                    jobQueue = high.pop_front ();
+                    jobQueue.Reset (high.pop_front ());
                 }
                 else if (!normal.empty () && !normal.front ()->inFlight) {
-                    jobQueue = normal.pop_front ();
+                    jobQueue.Reset (normal.pop_front ());
                 }
                 else if (!low.empty () && !low.front ()->inFlight) {
-                    jobQueue = low.pop_front ();
+                    jobQueue.Reset (low.pop_front ());
                 }
-                if (jobQueue != 0) {
+                if (jobQueue.Get () != 0) {
                     jobQueue->inFlight = true;
+                    jobQueue->Release ();
                 }
             }
             return jobQueue;
