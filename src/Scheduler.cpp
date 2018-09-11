@@ -113,17 +113,17 @@ namespace thekogans {
                     LockGuard<SpinLock> guard (spinLock);
                     switch (jobQueue->priority) {
                         case JobQueue::PRIORITY_LOW:
-                            if (!low.push_back (jobQueue)) {
+                            if (jobQueue->inFlight || !low.push_back (jobQueue)) {
                                 return;
                             }
                             break;
                         case JobQueue::PRIORITY_NORMAL:
-                            if (!normal.push_back (jobQueue)) {
+                            if (jobQueue->inFlight || !normal.push_back (jobQueue)) {
                                 return;
                             }
                             break;
                         case JobQueue::PRIORITY_HIGH:
-                            if (!high.push_back (jobQueue)) {
+                            if (jobQueue->inFlight || !high.push_back (jobQueue)) {
                                 return;
                             }
                             break;
@@ -166,10 +166,10 @@ namespace thekogans {
                                         jobQueue->FinishedJob (job, start, end);
                                     }
                                 } while (job != 0 && cancelled);
+                                jobQueue->inFlight = false;
                                 if (jobQueue->GetPendingJobCount () != 0) {
                                     scheduler.AddJobQueue (jobQueue.Get (), false);
                                 }
-                                jobQueue->inFlight = false;
                             }
                         }
                     };
@@ -188,22 +188,20 @@ namespace thekogans {
 
         Scheduler::JobQueue::Ptr Scheduler::GetNextJobQueue () {
             JobQueue::Ptr jobQueue;
-            {
-                // Priority based, round-robin, O(1) scheduler!
-                LockGuard<SpinLock> guard (spinLock);
-                if (!high.empty () && !high.front ()->inFlight) {
-                    jobQueue.Reset (high.pop_front ());
-                }
-                else if (!normal.empty () && !normal.front ()->inFlight) {
-                    jobQueue.Reset (normal.pop_front ());
-                }
-                else if (!low.empty () && !low.front ()->inFlight) {
-                    jobQueue.Reset (low.pop_front ());
-                }
-                if (jobQueue.Get () != 0) {
-                    jobQueue->inFlight = true;
-                    jobQueue->Release ();
-                }
+            LockGuard<SpinLock> guard (spinLock);
+            // Priority based, round-robin, O(1) scheduler!
+            if (!high.empty ()) {
+                jobQueue.Reset (high.pop_front ());
+            }
+            else if (!normal.empty ()) {
+                jobQueue.Reset (normal.pop_front ());
+            }
+            else if (!low.empty ()) {
+                jobQueue.Reset (low.pop_front ());
+            }
+            if (jobQueue.Get () != 0) {
+                jobQueue->inFlight = true;
+                jobQueue->Release ();
             }
             return jobQueue;
         }
