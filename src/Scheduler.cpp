@@ -25,6 +25,15 @@ namespace thekogans {
 
         THEKOGANS_UTIL_IMPLEMENT_HEAP_WITH_LOCK (Scheduler::JobQueue, SpinLock)
 
+        void Scheduler::JobQueue::Start () {
+            bool expected = true;
+            if (done.compare_exchange_strong (expected, false)) {
+                if (GetPendingJobCount () != 0) {
+                    scheduler.AddJobQueue (this);
+                }
+            }
+        }
+
         void Scheduler::JobQueue::Stop (
                 bool cancelRunningJobs,
                 bool cancelPendingJobs) {
@@ -60,6 +69,10 @@ namespace thekogans {
                 savePendingJobs.Save ();
             }
             WaitForIdle ();
+            bool expected = false;
+            if (done.compare_exchange_strong (expected, true)) {
+                scheduler.DeleteJobQueue (this);
+            }
         }
 
         bool Scheduler::JobQueue::EnqJob (
@@ -87,18 +100,14 @@ namespace thekogans {
         }
 
         Scheduler::~Scheduler () {
+            {
+                LockGuard<SpinLock> guard (spinLock);
+                JobQueueList::DefaultCallback callback;
+                high.clear (callback);
+                normal.clear (callback);
+                low.clear (callback);
+            }
             jobQueuePool.WaitForIdle ();
-            struct ReleaseCallback : public JobQueueList::Callback {
-                typedef JobQueueList::Callback::result_type result_type;
-                typedef JobQueueList::Callback::argument_type argument_type;
-                virtual result_type operator () (argument_type jobQueue) {
-                    jobQueue->Release ();
-                    return true;
-                }
-            } releaseCallback;
-            high.clear (releaseCallback);
-            normal.clear (releaseCallback);
-            low.clear (releaseCallback);
         }
 
         void Scheduler::AddJobQueue (
@@ -106,29 +115,31 @@ namespace thekogans {
                 bool scheduleJobQueue) {
             if (jobQueue != 0) {
                 {
+                    LockGuard<SpinLock> guard (spinLock);
+                    if (!jobQueue->IsRunning () || jobQueue->inFlight) {
+                        return;
+                    }
                     // NOTE: It's okay for push_back to fail. It simply means
                     // the queue is already in it's proper list and will be
                     // returned by GetNextJobQueue when it's time to execute
                     // one of it's jobs.
-                    LockGuard<SpinLock> guard (spinLock);
                     switch (jobQueue->priority) {
                         case JobQueue::PRIORITY_LOW:
-                            if (jobQueue->inFlight || !low.push_back (jobQueue)) {
+                            if (!low.push_back (jobQueue)) {
                                 return;
                             }
                             break;
                         case JobQueue::PRIORITY_NORMAL:
-                            if (jobQueue->inFlight || !normal.push_back (jobQueue)) {
+                            if (!normal.push_back (jobQueue)) {
                                 return;
                             }
                             break;
                         case JobQueue::PRIORITY_HIGH:
-                            if (jobQueue->inFlight || !high.push_back (jobQueue)) {
+                            if (!high.push_back (jobQueue)) {
                                 return;
                             }
                             break;
                     }
-                    jobQueue->AddRef ();
                 }
                 if (scheduleJobQueue) {
                     struct JobQueueJob : public RunLoop::Job {
@@ -142,8 +153,8 @@ namespace thekogans {
                             scheduler (scheduler_) {}
 
                         virtual void Execute (const THEKOGANS_UTIL_ATOMIC<bool> &done) throw () {
-                            JobQueue::Ptr jobQueue;
-                            while (!ShouldStop (done) && (jobQueue = scheduler.GetNextJobQueue ()).Get () != 0) {
+                            JobQueue *jobQueue;
+                            while (!ShouldStop (done) && (jobQueue = scheduler.GetNextJobQueue ()) != 0) {
                                 RunLoop::Job *job;
                                 bool cancelled;
                                 // Skip over cancelled jobs.
@@ -153,14 +164,14 @@ namespace thekogans {
                                         ui64 start = 0;
                                         ui64 end = 0;
                                         // Short circuit cancelled pending jobs.
-                                        cancelled = job->ShouldStop (done);
+                                        cancelled = job->ShouldStop (jobQueue->done);
                                         if (!cancelled) {
                                             start = HRTimer::Click ();
                                             job->SetState (Job::Running);
-                                            job->Prologue (done);
-                                            job->Execute (done);
-                                            job->Epilogue (done);
-                                            job->Succeed (done);
+                                            job->Prologue (jobQueue->done);
+                                            job->Execute (jobQueue->done);
+                                            job->Epilogue (jobQueue->done);
+                                            job->Succeed (jobQueue->done);
                                             end = HRTimer::Click ();
                                         }
                                         jobQueue->FinishedJob (job, start, end);
@@ -168,7 +179,7 @@ namespace thekogans {
                                 } while (job != 0 && cancelled);
                                 jobQueue->inFlight = false;
                                 if (jobQueue->GetPendingJobCount () != 0) {
-                                    scheduler.AddJobQueue (jobQueue.Get (), false);
+                                    scheduler.AddJobQueue (jobQueue, false);
                                 }
                             }
                         }
@@ -186,22 +197,42 @@ namespace thekogans {
             }
         }
 
-        Scheduler::JobQueue::Ptr Scheduler::GetNextJobQueue () {
-            JobQueue::Ptr jobQueue;
+        void Scheduler::DeleteJobQueue (JobQueue *jobQueue) {
+            if (jobQueue != 0) {
+                LockGuard<SpinLock> guard (spinLock);
+                switch (jobQueue->priority) {
+                    case JobQueue::PRIORITY_LOW:
+                        low.erase (jobQueue);
+                        break;
+                    case JobQueue::PRIORITY_NORMAL:
+                        normal.erase (jobQueue);
+                        break;
+                    case JobQueue::PRIORITY_HIGH:
+                        high.erase (jobQueue);
+                        break;
+                }
+            }
+            else {
+                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
+            }
+        }
+
+        Scheduler::JobQueue *Scheduler::GetNextJobQueue () {
+            JobQueue *jobQueue = 0;
             LockGuard<SpinLock> guard (spinLock);
             // Priority based, round-robin, O(1) scheduler!
             if (!high.empty ()) {
-                jobQueue.Reset (high.pop_front ());
+                jobQueue = high.pop_front ();
             }
             else if (!normal.empty ()) {
-                jobQueue.Reset (normal.pop_front ());
+                jobQueue = normal.pop_front ();
             }
             else if (!low.empty ()) {
-                jobQueue.Reset (low.pop_front ());
+                jobQueue = low.pop_front ();
             }
-            if (jobQueue.Get () != 0) {
+            if (jobQueue != 0) {
                 jobQueue->inFlight = true;
-                jobQueue->Release ();
             }
             return jobQueue;
         }

@@ -122,15 +122,17 @@ namespace thekogans {
                 /// \param[in] type JobQueue type.
                 /// \param[in] maxPendingJobs Max pending queue jobs.
                 JobQueue (
-                    Scheduler &scheduler_,
-                    Priority priority_ = PRIORITY_NORMAL,
-                    const std::string &name = std::string (),
-                    Type type = TYPE_FIFO,
-                    ui32 maxPendingJobs = UI32_MAX) :
-                    RunLoop (name, type, maxPendingJobs),
-                    scheduler (scheduler_),
-                    priority (priority_),
-                    inFlight (false) {}
+                        Scheduler &scheduler_,
+                        Priority priority_ = PRIORITY_NORMAL,
+                        const std::string &name = std::string (),
+                        Type type = TYPE_FIFO,
+                        ui32 maxPendingJobs = UI32_MAX) :
+                        RunLoop (name, type, maxPendingJobs),
+                        scheduler (scheduler_),
+                        priority (priority_),
+                        inFlight (false) {
+                    Start ();
+                }
                 /// \brief
                 /// dtor. Stop the queue.
                 virtual ~JobQueue () {
@@ -139,7 +141,7 @@ namespace thekogans {
 
                 /// \brief
                 /// Scheduler job queue starts when jobs are enqueued.
-                virtual void Start () {}
+                virtual void Start ();
                 /// \brief
                 /// Scheduler job queue stops when there are no more jobs to execute.
                 /// \param[in] cancelRunningJobs true = Cancel all running jobs.
@@ -254,10 +256,14 @@ namespace thekogans {
                 JobQueue *jobQueue,
                 bool scheduleJobQueue = true);
             /// \brief
+            /// Remove the given JobQueue from its priority list.
+            /// \param[in] jobQueue JobQueue to remove.
+            void DeleteJobQueue (JobQueue *jobQueue);
+            /// \brief
             /// Used by the worker to get the next appropriate
             /// JobQueue (based on priority).
-            /// \return Highest priority JobQueue.
-            JobQueue::Ptr GetNextJobQueue ();
+            /// \return Highest priority JobQueue with a job ready to execute.
+            JobQueue *GetNextJobQueue ();
         };
 
         /// \struct GlobalSchedulerCreateInstance Scheduler.h thekogans/util/Scheduler.h
