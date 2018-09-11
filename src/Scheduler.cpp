@@ -128,7 +128,6 @@ namespace thekogans {
                             }
                             break;
                     }
-                    jobQueue->inFlight = false;
                     jobQueue->AddRef ();
                 }
                 if (scheduleJobQueue) {
@@ -170,14 +169,14 @@ namespace thekogans {
                                 if (jobQueue->GetPendingJobCount () != 0) {
                                     scheduler.AddJobQueue (jobQueue.Get (), false);
                                 }
+                                jobQueue->inFlight = false;
                             }
                         }
                     };
                     util::JobQueue::Ptr jobQueue = jobQueuePool.GetJobQueue (0);
                     if (jobQueue.Get () != 0) {
                         jobQueue->EnqJob (
-                            RunLoop::Job::Ptr (
-                                new JobQueueJob (jobQueue, *this)));
+                            RunLoop::Job::Ptr (new JobQueueJob (jobQueue, *this)));
                     }
                 }
             }
