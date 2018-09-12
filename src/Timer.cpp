@@ -53,7 +53,9 @@ namespace thekogans {
                 }
                 if (timer->inAlarmSpinLock.TryAcquire ()) {
                     LockGuard<SpinLock> guard (timer->inAlarmSpinLock, false);
-                    callback->Alarm (*timer);
+                    if (timer->timeSpec != TimeSpec::Zero) {
+                        callback->Alarm (*timer);
+                    }
                 }
                 else {
                     THEKOGANS_UTIL_LOG_SUBSYSTEM_WARNING (
@@ -73,7 +75,9 @@ namespace thekogans {
                 }
                 if (timer->inAlarmSpinLock.TryAcquire ()) {
                     LockGuard<SpinLock> guard (timer->inAlarmSpinLock, false);
-                    callback->Alarm (*timer);
+                    if (timer->timeSpec != TimeSpec::Zero) {
+                        callback->Alarm (*timer);
+                    }
                 }
                 else {
                     THEKOGANS_UTIL_LOG_SUBSYSTEM_WARNING (
@@ -107,7 +111,9 @@ namespace thekogans {
                 if (!ShouldStop (done)) {
                     if (timer->inAlarmSpinLock.TryAcquire ()) {
                         LockGuard<SpinLock> guard (timer->inAlarmSpinLock, false);
-                        callback->Alarm (*timer);
+                        if (timer->timeSpec != TimeSpec::Zero) {
+                            callback->Alarm (*timer);
+                        }
                     }
                     else {
                         THEKOGANS_UTIL_LOG_SUBSYSTEM_WARNING (
@@ -364,6 +370,7 @@ namespace thekogans {
             if (timeSpec != TimeSpec::Zero) {
             #if defined (TOOLCHAIN_OS_Windows)
                 SetThreadpoolTimer (timer, 0, 0, 0);
+                WaitForThreadpoolTimerCallbacks (timer, TRUE);
             #elif defined (TOOLCHAIN_OS_Linux)
                 itimerspec spec;
                 memset (&spec, 0, sizeof (spec));
@@ -374,9 +381,12 @@ namespace thekogans {
             #elif defined (TOOLCHAIN_OS_OSX)
                 TimerQueue::Instance ().StopTimer (*this);
             #endif // defined (TOOLCHAIN_OS_Windows)
-                callback.Release ();
-                timeSpec = TimeSpec::Zero;
-                periodic = false;
+                {
+                    LockGuard<SpinLock> guard (inAlarmSpinLock);
+                    callback.Release ();
+                    timeSpec = TimeSpec::Zero;
+                    periodic = false;
+                }
             }
         }
 
