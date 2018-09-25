@@ -79,6 +79,18 @@ namespace thekogans {
             std::size_t destinationLength,
             const char *source);
         /// \brief
+        /// Trim leading spaces.
+        /// \param[in] str Pointer to string to trim spaces from.
+        /// \return String with leading spaces trimmed.
+        _LIB_THEKOGANS_UTIL_DECL std::string _LIB_THEKOGANS_UTIL_API TrimLeftSpaces (
+            const char *str);
+        /// \brief
+        /// Trim trailing spaces.
+        /// \param[in] str Pointer to string to trim spaces from.
+        /// \return String with trailing spaces trimmed.
+        _LIB_THEKOGANS_UTIL_DECL std::string _LIB_THEKOGANS_UTIL_API TrimRightSpaces (
+            const char *str);
+        /// \brief
         /// Trim leading and trailing spaces.
         /// \param[in] str Pointer to string to trim spaces from.
         /// \return String with leading and trailing spaces trimmed.

@@ -436,7 +436,15 @@ namespace thekogans {
             /// Get a running or a pending job with the given id.
             /// \param[in] jobId Id of job to retrieve.
             /// \return Job matching the given id.
-            Job::Ptr GetJobWithId (const Job::Id &jobId);
+            Job::Ptr GetJob (const Job::Id &jobId);
+            /// \brief
+            /// Get all running and pending jobs matching the given equality test.
+            /// \param[in] equalityTest \see{RunLoop::EqualityTest} to query to determine the matching jobs.
+            /// \param[out] jobs \see{RunLoop::UserJobList} (\see{IntrusiveList}) containing the matching jobs.
+            /// NOTE: This method will take a reference on all matching jobs.
+            void GetJobs (
+                const RunLoop::EqualityTest &equalityTest,
+                RunLoop::UserJobList &jobs);
 
             // NOTE for all Wait* methods below: If threads are waiting on pending
             // jobs indefinitely and another thread calls Stop (..., false) then the
@@ -469,6 +477,8 @@ namespace thekogans {
             /// \brief
             /// Wait for all given running and pending jobs.
             /// \param[in] jobs UserJobList (\see{IntrusiveList}) containing the jobs to wait on.
+            /// NOTE: This method assumes that a reference was taken on jobs (see \see{GetJobs})
+            /// and will release that reference before returning.
             /// \param[in] timeSpec How long to wait for the jobs to complete.
             /// IMPORTANT: timeSpec is a relative value.
             /// \return true == All jobs satisfying the equalityTest completed,
@@ -502,6 +512,13 @@ namespace thekogans {
             /// \param[in] jobId Id of job to cancel.
             /// \return true if the job was cancelled.
             bool CancelJob (const Job::Id &jobId);
+            /// \brief
+            /// Cancel the list of given jobs.
+            /// \param[in] jobs List of jobs to cancel.
+            /// \param[in] release true == Call job->Release () after cancelling it.
+            static void CancelJobs (
+                const RunLoop::UserJobList &jobs,
+                bool release = false);
             /// \brief
             /// Cancel all running and pending jobs matching the given equality test.
             /// \param[in] equalityTest EqualityTest to query to determine which jobs to cancel.

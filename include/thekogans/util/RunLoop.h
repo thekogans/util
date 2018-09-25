@@ -773,7 +773,7 @@ namespace thekogans {
             /// Get a running or a pending job with the given id.
             /// \param[in] jobId Id of job to retrieve.
             /// \return Job matching the given id.
-            virtual Job::Ptr GetJobWithId (const Job::Id &jobId);
+            virtual Job::Ptr GetJob (const Job::Id &jobId);
 
             /// \struct RunLoop::EqualityTest RunLoop.h thekogans/util/RunLoop.h
             ///
@@ -788,8 +788,17 @@ namespace thekogans {
                 /// Reimplement this function to test for equality.
                 /// \param[in] job Instance to test for equality.
                 /// \return true == equal.
-                virtual bool operator () (const Job & /*job*/) const throw ();
+                virtual bool operator () (Job & /*job*/) const throw () = 0;
             };
+
+            /// \brief
+            /// Get all running and pending jobs matching the given equality test.
+            /// \param[in] equalityTest EqualityTest to query to determine the matching jobs.
+            /// \param[out] jobs UserJobList (\see{IntrusiveList}) containing the matching jobs.
+            /// NOTE: This method will take a reference on all matching jobs.
+            virtual void GetJobs (
+                const EqualityTest &equalityTest,
+                UserJobList &jobs);
 
             // NOTE for all Wait* methods below: If threads are waiting on pending
             // jobs indefinitely and another thread calls Stop (..., false) then the
@@ -822,6 +831,8 @@ namespace thekogans {
             /// \brief
             /// Wait for all given running and pending jobs.
             /// \param[in] jobs UserJobList (\see{IntrusiveList}) containing the jobs to wait on.
+            /// NOTE: This method assumes that a reference was taken on jobs (see \see{GetJobs})
+            /// and will release that reference before returning.
             /// \param[in] timeSpec How long to wait for the jobs to complete.
             /// IMPORTANT: timeSpec is a relative value.
             /// \return true == All jobs satisfying the equalityTest completed,
@@ -855,6 +866,13 @@ namespace thekogans {
             /// \param[in] jobId Id of job to cancel.
             /// \return true if the job was cancelled.
             virtual bool CancelJob (const Job::Id &jobId);
+            /// \brief
+            /// Cancel the list of given jobs.
+            /// \param[in] jobs List of jobs to cancel.
+            /// \param[in] release true == Call job->Release () after cancelling it.
+            static void CancelJobs (
+                const UserJobList &jobs,
+                bool release = false);
             /// \brief
             /// Cancel all running and pending jobs matching the given equality test.
             /// \param[in] equalityTest EqualityTest to query to determine which jobs to cancel.

@@ -240,6 +240,15 @@ namespace thekogans {
                 const TimeSpec &timeSpec = TimeSpec::FromMilliseconds (100));
 
             /// \brief
+            /// Return all borrowedJobQueues jobs matching the given equality test.
+            /// \param[in] equalityTest EqualityTest to query to determine the matching jobs.
+            /// \param[out] jobs \see{RunLoop::UserJobList} (\see{IntrusiveList}) containing the matching jobs.
+            /// NOTE: This method will take a reference on all matching jobs.
+            void GetJobs (
+                RunLoop::EqualityTest &equalityTest,
+                RunLoop::UserJobList &jobs);
+
+            /// \brief
             /// Blocks until all borrowed \see{JobQueue}s have been returned to the pool.
             /// \param[in] timeSpec How long to wait for \see{JobQueue}s to return.
             /// IMPORTANT: timeSpec is a relative value.

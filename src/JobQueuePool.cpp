@@ -104,6 +104,28 @@ namespace thekogans {
             return util::JobQueue::Ptr (jobQueue);
         }
 
+        void JobQueuePool::GetJobs (
+                RunLoop::EqualityTest &equalityTest,
+                RunLoop::UserJobList &jobs) {
+            LockGuard<Mutex> guard (mutex);
+            struct GetJobsCallback : public JobQueueList::Callback {
+                typedef JobQueueList::Callback::result_type result_type;
+                typedef JobQueueList::Callback::argument_type argument_type;
+                RunLoop::EqualityTest &equalityTest;
+                RunLoop::UserJobList &jobs;
+                GetJobsCallback (
+                    RunLoop::EqualityTest &equalityTest_,
+                    RunLoop::UserJobList &jobs_) :
+                    equalityTest (equalityTest_),
+                    jobs (jobs_) {}
+                virtual result_type operator () (argument_type jobQueue) {
+                    jobQueue->GetJobs (equalityTest, jobs);
+                    return true;
+                }
+            } getJobsCallback (equalityTest, jobs);
+            borrowedJobQueues.for_each (getJobsCallback);
+        }
+
         bool JobQueuePool::WaitForIdle (const TimeSpec &timeSpec) {
             LockGuard<Mutex> guard (mutex);
             if (timeSpec == TimeSpec::Infinite) {

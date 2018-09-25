@@ -53,6 +53,31 @@ namespace thekogans {
             }
         }
 
+        _LIB_THEKOGANS_UTIL_DECL std::string _LIB_THEKOGANS_UTIL_API TrimLeftSpaces (
+                const char *str) {
+            if (str != 0) {
+                while (*str != 0 && isspace (*str)) {
+                    ++str;
+                }
+                if (*str != 0) {
+                    return str;
+                }
+            }
+            return std::string ();
+        }
+
+        _LIB_THEKOGANS_UTIL_DECL std::string _LIB_THEKOGANS_UTIL_API TrimRightSpaces (
+                const char *str) {
+            if (str != 0) {
+                for (const char *end = str + strlen (str); end > str; --end) {
+                    if (!isspace (*(end - 1))) {
+                        return std::string (str, end);
+                    }
+                }
+            }
+            return std::string ();
+        }
+
         _LIB_THEKOGANS_UTIL_DECL std::string _LIB_THEKOGANS_UTIL_API TrimSpaces (
                 const char *str) {
             if (str != 0) {
