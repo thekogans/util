@@ -459,7 +459,8 @@ namespace thekogans {
 
         bool Pipeline::WaitForJobs (
                 const RunLoop::UserJobList &jobs,
-                const TimeSpec &timeSpec) {
+                const TimeSpec &timeSpec,
+                bool release) {
             struct WaitForJobCallback : public RunLoop::UserJobList::Callback {
                 typedef RunLoop::UserJobList::Callback::result_type result_type;
                 typedef RunLoop::UserJobList::Callback::argument_type argument_type;
@@ -470,7 +471,7 @@ namespace thekogans {
                 }
             } waitForJobCallback;
             jobs.for_each (waitForJobCallback);
-            return WaitForJobsHelper (waitForJobCallback.jobs, timeSpec, true);
+            return WaitForJobsHelper (waitForJobCallback.jobs, timeSpec, release);
         }
 
         bool Pipeline::WaitForJobs (

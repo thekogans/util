@@ -318,7 +318,7 @@ namespace thekogans {
                 }
             } getJobsEqualityTest (*this);
             JobQueuePool::Instance ().GetJobs (getJobsEqualityTest, jobs);
-            RunLoop::CancelJobs (jobs);
+            RunLoop::CancelJobs (jobs, false);
             RunLoop::WaitForJobs (jobs);
         }
 
