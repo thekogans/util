@@ -307,7 +307,6 @@ namespace thekogans {
         #elif defined (TOOLCHAIN_OS_OSX)
             KQueue::Instance ().StopTimer (*this);
         #endif // defined (TOOLCHAIN_OS_Windows)
-            RunLoop::UserJobList jobs;
             struct GetJobsEqualityTest : public RunLoop::EqualityTest {
                 Timer &timer;
                 explicit GetJobsEqualityTest (Timer &timer_) :
@@ -317,6 +316,7 @@ namespace thekogans {
                     return alarmJob != 0 && &alarmJob->timer == &timer;
                 }
             } getJobsEqualityTest (*this);
+            RunLoop::UserJobList jobs;
             JobQueuePool::Instance ().GetJobs (getJobsEqualityTest, jobs);
             RunLoop::CancelJobs (jobs, false);
             RunLoop::WaitForJobs (jobs);
