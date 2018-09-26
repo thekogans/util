@@ -265,6 +265,12 @@ namespace thekogans {
             /// Synchronization condition variable.
             Condition idle;
             /// \brief
+            /// true == pipeline is paused.
+            bool paused;
+            /// \brief
+            /// Signal waiting workers that the pipeline is not paused.
+            Condition notPaused;
+            /// \brief
             /// Number of workers servicing the pipeline.
             const ui32 workerCount;
             /// \brief
@@ -390,6 +396,20 @@ namespace thekogans {
                 const TimeSpec &waitTimeSpec = TimeSpec::FromSeconds (3));
 
             /// \brief
+            /// Pause the pipeline execution. Currently running jobs are allowed to finish,
+            /// but no other pending jobs are executed until Continue is called. If the
+            /// pipeline is paused, noop.
+            /// \param[in] cancelRunningJobs true == Cancel running jobs.
+            void Pause (bool cancelRunningJobs = false);
+            /// \brief
+            /// Continue the pipeline execution. If the pipeline is not paused, noop.
+            void Continue ();
+            /// \brief
+            /// Return true if the pipeline is paused.
+            /// \return true == the pipeline is paused.
+            bool IsPaused ();
+
+            /// \brief
             /// Return the stats for a given pipeline stage.
             /// \return Stats corresponding to the given pipeline stage.
             RunLoop::Stats GetStageStats (std::size_t stage);
@@ -445,11 +465,31 @@ namespace thekogans {
             void GetJobs (
                 const RunLoop::EqualityTest &equalityTest,
                 RunLoop::UserJobList &jobs);
+            /// \brief
+            /// Get all pending jobs.
+            /// \param[out] pendingJobs \see{RunLoop::UserJobList} (\see{IntrusiveList}) containing pending jobs.
+            /// NOTE: This method will take a reference on all pending jobs.
+            void GetPendingJobs (RunLoop::UserJobList &pendingJobs);
+            /// \brief
+            /// Get all running jobs.
+            /// \param[out] runningJobs \see{RunLoop::UserJobList} (\see{IntrusiveList}) containing running jobs.
+            /// NOTE: This method will take a reference on all running jobs.
+            void GetRunningJobs (RunLoop::UserJobList &runningJobs);
+            /// \brief
+            /// Get all running and pending jobs. pendingJobs and runningJobs can be the same
+            /// UserJobList. In that case first n jobs will be pending and the final m jobs
+            /// will be running.
+            /// \param[out] pendingJobs \see{RunLoop::UserJobList} (\see{IntrusiveList}) containing pending jobs.
+            /// \param[out] runningJobs \see{RunLoop::UserJobList} (\see{IntrusiveList}) containing running jobs.
+            /// NOTE: This method will take a reference on all jobs.
+            void GetAllJobs (
+                RunLoop::UserJobList &pendingJobs,
+                RunLoop::UserJobList &runningJobs);
 
             // NOTE for all Wait* methods below: If threads are waiting on pending
             // jobs indefinitely and another thread calls Stop (..., false) then the
             // waiting threads will be blocked until you call Start (). This is a
-            // feature, not a bug. It allows you to suspend run loop execution
+            // feature, not a bug. It allows you to suspend pipeline execution
             // temporarily without affecting waiters.
 
             /// \brief
@@ -506,8 +546,7 @@ namespace thekogans {
             /// \param[in] timeSpec How long to wait for the jobs to complete.
             /// IMPORTANT: timeSpec is a relative value.
             /// \return true == Pipeline is idle, false == Timed out.
-            bool WaitForIdle (
-                const TimeSpec &timeSpec = TimeSpec::Infinite);
+            bool WaitForIdle (const TimeSpec &timeSpec = TimeSpec::Infinite);
 
             /// \brief
             /// Cancel a running or a pending job with a given id.
@@ -519,7 +558,7 @@ namespace thekogans {
             /// \param[in] jobs List of jobs to cancel.
             /// \param[in] release true == Call job->Release () after cancelling it.
             /// NOTE: This is a static method and is designed to allow you to
-            /// cancel a collection of jobs without regard as to which run loop
+            /// cancel a collection of jobs without regard as to which pipeline
             /// they're running on.
             static void CancelJobs (
                 const RunLoop::UserJobList &jobs,
@@ -529,11 +568,11 @@ namespace thekogans {
             /// \param[in] equalityTest EqualityTest to query to determine which jobs to cancel.
             void CancelJobs (const RunLoop::EqualityTest &equalityTest);
             /// \brief
-            /// Cancel all running jobs.
-            void CancelRunningJobs ();
-            /// \brief
             /// Cancel all pending jobs.
             void CancelPendingJobs ();
+            /// \brief
+            /// Cancel all running jobs.
+            void CancelRunningJobs ();
             /// \brief
             /// Cancel all running and pending jobs.
             void CancelAllJobs ();

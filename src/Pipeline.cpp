@@ -105,6 +105,8 @@ namespace thekogans {
                 stats (name_),
                 jobsNotEmpty (jobsMutex),
                 idle (jobsMutex),
+                paused (false),
+                notPaused (jobsMutex),
                 workerCount (workerCount_),
                 workerPriority (workerPriority_),
                 workerAffinity (workerAffinity_),
@@ -160,6 +162,44 @@ namespace thekogans {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
                     THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
             }
+        }
+
+        void Pipeline::Pause (bool cancelRunningJobs) {
+            LockGuard<Mutex> guard (jobsMutex);
+            if (!paused) {
+                paused = true;
+                JobList savedPendingJobs;
+                savedPendingJobs.swap (pendingJobs);
+                if (cancelRunningJobs) {
+                    struct CancelRunningJobsCallback : public JobList::Callback {
+                        typedef JobList::Callback::result_type result_type;
+                        typedef JobList::Callback::argument_type argument_type;
+                        virtual result_type operator () (argument_type job) {
+                            job->Cancel ();
+                            return true;
+                        }
+                    } cancelRunningJobsCallback;
+                    runningJobs.for_each (cancelRunningJobsCallback);
+                }
+                jobsNotEmpty.SignalAll ();
+                while (!runningJobs.empty ()) {
+                    idle.Wait ();
+                }
+                savedPendingJobs.swap (pendingJobs);
+            }
+        }
+
+        void Pipeline::Continue () {
+            LockGuard<Mutex> guard (jobsMutex);
+            if (paused) {
+                paused = false;
+                notPaused.SignalAll ();
+            }
+        }
+
+        bool Pipeline::IsPaused () {
+            LockGuard<Mutex> guard (jobsMutex);
+            return paused;
         }
 
         RunLoop::Stats Pipeline::GetStageStats (std::size_t stage) {
@@ -241,6 +281,7 @@ namespace thekogans {
             else if (!cancelRunningJobs && !cancelPendingJobs) {
                 savePendingJobs.Save ();
             }
+            Continue ();
             WaitForIdle ();
             {
                 LockGuard<Mutex> guard (workersMutex);
@@ -502,20 +543,20 @@ namespace thekogans {
         bool Pipeline::WaitForIdle (const TimeSpec &timeSpec) {
             LockGuard<Mutex> guard (jobsMutex);
             if (timeSpec == TimeSpec::Infinite) {
-                while (IsRunning () && (!pendingJobs.empty () || !runningJobs.empty ())) {
+                while (IsRunning () && !paused && (!pendingJobs.empty () || !runningJobs.empty ())) {
                     idle.Wait ();
                 }
             }
             else {
                 TimeSpec now = GetCurrentTime ();
                 TimeSpec deadline = now + timeSpec;
-                while (IsRunning () && (!pendingJobs.empty () || !runningJobs.empty ()) &&
+                while (IsRunning () && !paused && (!pendingJobs.empty () || !runningJobs.empty ()) &&
                         deadline > now) {
                     idle.Wait (deadline - now);
                     now = GetCurrentTime ();
                 }
             }
-            return pendingJobs.empty () && runningJobs.empty ();
+            return paused || (pendingJobs.empty () && runningJobs.empty ());
         }
 
         bool Pipeline::CancelJob (const Job::Id &jobId) {
@@ -578,19 +619,6 @@ namespace thekogans {
             pendingJobs.for_each (cancelCallback);
         }
 
-        void Pipeline::CancelRunningJobs () {
-            LockGuard<Mutex> guard (jobsMutex);
-            struct CancelCallback : public JobList::Callback {
-                typedef JobList::Callback::result_type result_type;
-                typedef JobList::Callback::argument_type argument_type;
-                virtual result_type operator () (argument_type job) {
-                    job->Cancel ();
-                    return true;
-                }
-            } cancelCallback;
-            runningJobs.for_each (cancelCallback);
-        }
-
         void Pipeline::CancelPendingJobs () {
             LockGuard<Mutex> guard (jobsMutex);
             struct CancelCallback : public JobList::Callback {
@@ -602,6 +630,19 @@ namespace thekogans {
                 }
             } cancelCallback;
             pendingJobs.for_each (cancelCallback);
+        }
+
+        void Pipeline::CancelRunningJobs () {
+            LockGuard<Mutex> guard (jobsMutex);
+            struct CancelCallback : public JobList::Callback {
+                typedef JobList::Callback::result_type result_type;
+                typedef JobList::Callback::argument_type argument_type;
+                virtual result_type operator () (argument_type job) {
+                    job->Cancel ();
+                    return true;
+                }
+            } cancelCallback;
+            runningJobs.for_each (cancelCallback);
         }
 
         void Pipeline::CancelAllJobs () {
@@ -639,11 +680,14 @@ namespace thekogans {
 
         bool Pipeline::IsIdle () {
             LockGuard<Mutex> guard (jobsMutex);
-            return pendingJobs.empty () && runningJobs.empty ();
+            return paused || (pendingJobs.empty () && runningJobs.empty ());
         }
 
         Pipeline::Job *Pipeline::DeqJob (bool wait) {
             LockGuard<Mutex> guard (jobsMutex);
+            while (paused) {
+                notPaused.Wait ();
+            }
             while (IsRunning () && pendingJobs.empty () && wait) {
                 jobsNotEmpty.Wait ();
             }

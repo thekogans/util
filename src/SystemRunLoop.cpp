@@ -404,6 +404,7 @@ namespace thekogans {
             else if (!cancelRunningJobs && !cancelPendingJobs) {
                 savePendingJobs.Save ();
             }
+            Continue ();
             WaitForIdle ();
             bool expected = false;
             if (done.compare_exchange_strong (expected, true)) {

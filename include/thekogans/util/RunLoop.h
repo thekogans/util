@@ -678,6 +678,12 @@ namespace thekogans {
             /// \brief
             /// Synchronization condition variable.
             Condition idle;
+            /// \brief
+            /// true == run loop is paused.
+            bool paused;
+            /// \brief
+            /// Signal waiting workers that the run loop is not paused.
+            Condition notPaused;
 
         public:
             /// \brief
@@ -730,6 +736,20 @@ namespace thekogans {
                 const TimeSpec &waitTimeSpec = TimeSpec::FromSeconds (3));
 
             /// \brief
+            /// Pause the run loop execution. Currently running jobs are allowed to finish,
+            /// but no other pending jobs are executed until Continue is called. If the
+            /// run loop is paused, noop.
+            /// \param[in] cancelRunningJobs true == Cancel running jobs.
+            virtual void Pause (bool cancelRunningJobs = false);
+            /// \brief
+            /// Continue the run loop execution. If the run loop is not paused, noop.
+            virtual void Continue ();
+            /// \brief
+            /// Return true if the run loop is paused.
+            /// \return true == the run loop is paused.
+            virtual bool IsPaused ();
+
+            /// \brief
             /// Start waiting for jobs.
             virtual void Start () = 0;
             /// \brief
@@ -769,12 +789,6 @@ namespace thekogans {
                 bool wait = false,
                 const TimeSpec &timeSpec = TimeSpec::Infinite);
 
-            /// \brief
-            /// Get a running or a pending job with the given id.
-            /// \param[in] jobId Id of job to retrieve.
-            /// \return Job matching the given id.
-            virtual Job::Ptr GetJob (const Job::Id &jobId);
-
             /// \struct RunLoop::EqualityTest RunLoop.h thekogans/util/RunLoop.h
             ///
             /// \brief
@@ -792,6 +806,11 @@ namespace thekogans {
             };
 
             /// \brief
+            /// Get a running or a pending job with the given id.
+            /// \param[in] jobId Id of job to retrieve.
+            /// \return Job matching the given id.
+            virtual Job::Ptr GetJob (const Job::Id &jobId);
+            /// \brief
             /// Get all running and pending jobs matching the given equality test.
             /// \param[in] equalityTest EqualityTest to query to determine the matching jobs.
             /// \param[out] jobs UserJobList (\see{IntrusiveList}) containing the matching jobs.
@@ -799,6 +818,26 @@ namespace thekogans {
             virtual void GetJobs (
                 const EqualityTest &equalityTest,
                 UserJobList &jobs);
+            /// \brief
+            /// Get all pending jobs.
+            /// \param[out] pendingJobs UserJobList (\see{IntrusiveList}) containing pending jobs.
+            /// NOTE: This method will take a reference on all pending jobs.
+            virtual void GetPendingJobs (UserJobList &pendingJobs);
+            /// \brief
+            /// Get all running jobs.
+            /// \param[out] runningJobs UserJobList (\see{IntrusiveList}) containing running jobs.
+            /// NOTE: This method will take a reference on all running jobs.
+            virtual void GetRunningJobs (UserJobList &runningJobs);
+            /// \brief
+            /// Get all running and pending jobs. pendingJobs and runningJobs can be the same
+            /// UserJobList. In that case first n jobs will be pending and the final m jobs
+            /// will be running.
+            /// \param[out] pendingJobs UserJobList (\see{IntrusiveList}) containing pending jobs.
+            /// \param[out] runningJobs UserJobList (\see{IntrusiveList}) containing running jobs.
+            /// NOTE: This method will take a reference on all jobs.
+            virtual void GetAllJobs (
+                UserJobList &pendingJobs,
+                UserJobList &runningJobs);
 
             // NOTE for all Wait* methods below: If threads are waiting on pending
             // jobs indefinitely and another thread calls Stop (..., false) then the
@@ -854,12 +893,11 @@ namespace thekogans {
                 const EqualityTest &equalityTest,
                 const TimeSpec &timeSpec = TimeSpec::Infinite);
             /// \brief
-            /// Blocks until all jobs are complete and the run loop is empty.
+            /// Blocks until paused or all jobs are complete and the run loop is empty.
             /// \param[in] timeSpec How long to wait for the jobs to complete.
             /// IMPORTANT: timeSpec is a relative value.
             /// \return true == RunLoop is idle, false == Timed out.
-            virtual bool WaitForIdle (
-                const TimeSpec &timeSpec = TimeSpec::Infinite);
+            virtual bool WaitForIdle (const TimeSpec &timeSpec = TimeSpec::Infinite);
 
             /// \brief
             /// Cancel a running or a pending job with a given id.
@@ -881,11 +919,11 @@ namespace thekogans {
             /// \param[in] equalityTest EqualityTest to query to determine which jobs to cancel.
             virtual void CancelJobs (const EqualityTest &equalityTest);
             /// \brief
-            /// Cancel all running jobs.
-            virtual void CancelRunningJobs ();
-            /// \brief
             /// Cancel all pending jobs.
             virtual void CancelPendingJobs ();
+            /// \brief
+            /// Cancel all running jobs.
+            virtual void CancelRunningJobs ();
             /// \brief
             /// Cancel all running and pending jobs.
             virtual void CancelAllJobs ();

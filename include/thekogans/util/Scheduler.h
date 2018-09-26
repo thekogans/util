@@ -151,6 +151,10 @@ namespace thekogans {
                     bool cancelPendingJobs = true);
 
                 /// \brief
+                /// Continue the job queue execution. If the job queue is not paused, noop.
+                virtual void Continue ();
+
+                /// \brief
                 /// Enqueue a job to be executed by the job queue.
                 /// \param[in] job Job to enqueue.
                 /// \param[in] wait Wait for job to finish. Used for synchronous job execution.

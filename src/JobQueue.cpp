@@ -132,6 +132,7 @@ namespace thekogans {
             else if (!cancelRunningJobs && !cancelPendingJobs) {
                 savePendingJobs.Save ();
             }
+            Continue ();
             WaitForIdle ();
             {
                 LockGuard<Mutex> guard (workersMutex);

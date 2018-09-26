@@ -68,10 +68,18 @@ namespace thekogans {
             else if (!cancelRunningJobs && !cancelPendingJobs) {
                 savePendingJobs.Save ();
             }
+            Continue ();
             WaitForIdle ();
             bool expected = false;
             if (done.compare_exchange_strong (expected, true)) {
                 scheduler.DeleteJobQueue (this);
+            }
+        }
+
+        void Scheduler::JobQueue::Continue () {
+            RunLoop::Continue ();
+            if (GetPendingJobCount () != 0) {
+                scheduler.AddJobQueue (this);
             }
         }
 
@@ -178,7 +186,7 @@ namespace thekogans {
                                     }
                                 } while (job != 0 && cancelled);
                                 jobQueue->inFlight = false;
-                                if (jobQueue->GetPendingJobCount () != 0) {
+                                if (!jobQueue->IsPaused () && jobQueue->GetPendingJobCount () != 0) {
                                     scheduler.AddJobQueue (jobQueue, false);
                                 }
                             }
