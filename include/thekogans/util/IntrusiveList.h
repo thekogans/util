@@ -150,13 +150,36 @@ namespace thekogans {
             /// Move assignment operator.
             /// \param[in,out] other IntrusiveList to move.
             /// \return *this.
-            IntrusiveList &operator = (IntrusiveList<T, ID> &&other) {
+            inline IntrusiveList &operator = (IntrusiveList<T, ID> &&other) {
                 if (this != &other) {
                     IntrusiveList<T, ID> temp (std::move (other));
                     swap (temp);
                 }
                 return *this;
             }
+
+            /// \brief
+            /// Concatenate the given list to the tail of this one.
+            /// \param[in,out] other IntrusiveList to concatenate.
+            /// \return *this.
+            inline IntrusiveList &operator += (IntrusiveList<T, ID> &other) {
+                if (other.head != 0) {
+                    if (tail != 0) {
+                        next (tail) = other.head;
+                        prev (other.head) = tail;
+                    }
+                    else {
+                        head = other.head;
+                    }
+                    tail = other.tail;
+                    count += other.count;
+                    other.head = 0;
+                    other.tail = 0;
+                    other.count = 0;
+                }
+                return *this;
+            }
+
             /// \brief
             /// Return the number of nodes in the list.
             /// \return Number of nodes in the list.
