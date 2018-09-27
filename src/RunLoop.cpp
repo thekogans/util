@@ -230,17 +230,23 @@ namespace thekogans {
         }
 
         RunLoop::~RunLoop () {
-            LockGuard<Mutex> guard (jobsMutex);
-            struct ReleaseCallback : public JobList::Callback {
+            // RunLoop derivatives should have disposed of running jobs.
+            // The best we can do here is alert the engineer to a leak.
+            assert (runningJobs.empty ());
+            // Cancel remaining pending jobs to unblock waiters.
+            struct CancelJobCallback : public JobList::Callback {
                 typedef JobList::Callback::result_type result_type;
                 typedef JobList::Callback::argument_type argument_type;
+                RunLoop &runLoop;
+                explicit CancelJobCallback (RunLoop &runLoop_) :
+                    runLoop (runLoop_) {}
                 virtual result_type operator () (argument_type job) {
-                    job->Release ();
+                    job->Cancel ();
+                    runLoop.FinishedJob (job, 0, 0);
                     return true;
                 }
-            } releaseCallback;
-            runningJobs.clear (releaseCallback);
-            pendingJobs.clear (releaseCallback);
+            } cancelJobCallback (*this);
+            pendingJobs.clear (cancelJobCallback);
         }
 
         std::size_t RunLoop::GetPendingJobCount () {
