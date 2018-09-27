@@ -234,19 +234,14 @@ namespace thekogans {
             // The best we can do here is alert the engineer to a leak.
             assert (runningJobs.empty ());
             // Cancel remaining pending jobs to unblock waiters.
-            struct CancelJobCallback : public JobList::Callback {
-                typedef JobList::Callback::result_type result_type;
-                typedef JobList::Callback::argument_type argument_type;
-                RunLoop &runLoop;
-                explicit CancelJobCallback (RunLoop &runLoop_) :
-                    runLoop (runLoop_) {}
-                virtual result_type operator () (argument_type job) {
+            while (!pendingJobs.empty ()) {
+                Job *job = pendingJobs.pop_front ();
+                if (job != 0) {
+                    runningJobs.push_back (job);
                     job->Cancel ();
-                    runLoop.FinishedJob (job, 0, 0);
-                    return true;
+                    FinishedJob (job, 0, 0);
                 }
-            } cancelJobCallback (*this);
-            pendingJobs.clear (cancelJobCallback);
+            }
         }
 
         std::size_t RunLoop::GetPendingJobCount () {
