@@ -37,39 +37,24 @@ namespace thekogans {
         void Scheduler::JobQueue::Stop (
                 bool cancelRunningJobs,
                 bool cancelPendingJobs) {
-            struct SavePendingJobs {
-                JobList &pendingJobs;
-                Mutex &jobsMutex;
-                JobList savedPendingJobs;
-                SavePendingJobs (
-                    JobList &pendingJobs_,
-                    Mutex &jobsMutex_) :
-                    pendingJobs (pendingJobs_),
-                    jobsMutex (jobsMutex_) {}
-                ~SavePendingJobs () {
-                    LockGuard<Mutex> guard (jobsMutex);
-                    savedPendingJobs.swap (pendingJobs);
+            struct Pauser {
+                JobQueue &jobQueue;
+                bool cancelRunningJobs;
+                Pauser (JobQueue &jobQueue_,
+                        bool cancelRunningJobs_) :
+                        jobQueue (jobQueue_),
+                        cancelRunningJobs (cancelRunningJobs_) {
+                    jobQueue.Pause (cancelRunningJobs);
                 }
-                void Save () {
-                    LockGuard<Mutex> guard (jobsMutex);
-                    savedPendingJobs.swap (pendingJobs);
+                ~Pauser () {
+                    jobQueue.Continue ();
                 }
-            } savePendingJobs (pendingJobs, jobsMutex);
-            if (cancelRunningJobs && cancelPendingJobs) {
-                CancelAllJobs ();
-            }
-            else if (!cancelRunningJobs && cancelPendingJobs) {
+            } pauser (*this, cancelRunningJobs);
+            if (cancelPendingJobs) {
                 CancelPendingJobs ();
+                Continue ();
+                WaitForIdle ();
             }
-            else if (cancelRunningJobs && !cancelPendingJobs) {
-                savePendingJobs.Save ();
-                CancelRunningJobs ();
-            }
-            else if (!cancelRunningJobs && !cancelPendingJobs) {
-                savePendingJobs.Save ();
-            }
-            Continue ();
-            WaitForIdle ();
             bool expected = false;
             if (done.compare_exchange_strong (expected, true)) {
                 scheduler.DeleteJobQueue (this);

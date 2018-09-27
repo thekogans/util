@@ -839,10 +839,10 @@ namespace thekogans {
                 UserJobList &pendingJobs,
                 UserJobList &runningJobs);
 
-            // NOTE for all Wait* methods below: If threads are waiting on pending
-            // jobs indefinitely and another thread calls Stop (..., false) then the
-            // waiting threads will be blocked until you call Start (). This is a
-            // feature, not a bug. It allows you to suspend run loop execution
+            // NOTE for all Wait* methods below: If threads are waiting on pending/ jobs
+            // indefinitely and another thread calls Stop (..., false) or Pause () then
+            // the waiting threads will be blocked until you call Start () or Continue ().
+            // This is a feature, not a bug. It allows you to suspend run loop execution
             // temporarily without affecting waiters.
 
             /// \brief

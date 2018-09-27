@@ -49,39 +49,24 @@ namespace thekogans {
         void DefaultRunLoop::Stop (
                 bool cancelRunningJobs,
                 bool cancelPendingJobs) {
-            struct SavePendingJobs {
-                JobList &pendingJobs;
-                Mutex &jobsMutex;
-                JobList savedPendingJobs;
-                SavePendingJobs (
-                    JobList &pendingJobs_,
-                    Mutex &jobsMutex_) :
-                    pendingJobs (pendingJobs_),
-                    jobsMutex (jobsMutex_) {}
-                ~SavePendingJobs () {
-                    LockGuard<Mutex> guard (jobsMutex);
-                    savedPendingJobs.swap (pendingJobs);
+            struct Pauser {
+                DefaultRunLoop &defaultRunLoop;
+                bool cancelRunningJobs;
+                Pauser (DefaultRunLoop &defaultRunLoop_,
+                        bool cancelRunningJobs_) :
+                        defaultRunLoop (defaultRunLoop_),
+                        cancelRunningJobs (cancelRunningJobs_) {
+                    defaultRunLoop.Pause (cancelRunningJobs);
                 }
-                void Save () {
-                    LockGuard<Mutex> guard (jobsMutex);
-                    savedPendingJobs.swap (pendingJobs);
+                ~Pauser () {
+                    defaultRunLoop.Continue ();
                 }
-            } savePendingJobs (pendingJobs, jobsMutex);
-            if (cancelRunningJobs && cancelPendingJobs) {
-                CancelAllJobs ();
-            }
-            else if (!cancelRunningJobs && cancelPendingJobs) {
+            } pauser (*this, cancelRunningJobs);
+            if (cancelPendingJobs) {
                 CancelPendingJobs ();
+                Continue ();
+                WaitForIdle ();
             }
-            else if (cancelRunningJobs && !cancelPendingJobs) {
-                savePendingJobs.Save ();
-                CancelRunningJobs ();
-            }
-            else if (!cancelRunningJobs && !cancelPendingJobs) {
-                savePendingJobs.Save ();
-            }
-            Continue ();
-            WaitForIdle ();
             bool expected = false;
             if (done.compare_exchange_strong (expected, true)) {
                 jobsNotEmpty.Signal ();

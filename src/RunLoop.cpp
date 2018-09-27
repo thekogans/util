@@ -280,29 +280,80 @@ namespace thekogans {
             }
         }
 
-        void RunLoop::Pause (bool cancelRunningJobs) {
-            LockGuard<Mutex> guard (jobsMutex);
-            if (!paused) {
-                paused = true;
-                JobList savedPendingJobs;
-                savedPendingJobs.swap (pendingJobs);
-                if (cancelRunningJobs) {
-                    struct CancelRunningJobsCallback : public JobList::Callback {
-                        typedef JobList::Callback::result_type result_type;
-                        typedef JobList::Callback::argument_type argument_type;
+        namespace {
+            bool WaitForJobsHelper (
+                    RunLoop::AuxJobList &jobs,
+                    const TimeSpec &timeSpec,
+                    bool release) {
+                if (!jobs.empty ()) {
+                    struct CompletedCallback : public RunLoop::AuxJobList::Callback {
+                        typedef RunLoop::AuxJobList::Callback::result_type result_type;
+                        typedef RunLoop::AuxJobList::Callback::argument_type argument_type;
+                        RunLoop::AuxJobList &jobs;
+                        bool release;
+                        CompletedCallback (
+                            RunLoop::AuxJobList &jobs_,
+                            bool release_) :
+                            jobs (jobs_),
+                            release (release_) {}
                         virtual result_type operator () (argument_type job) {
-                            job->Cancel ();
-                            return true;
+                            if (job->IsCompleted ()) {
+                                jobs.erase (job);
+                                if (release) {
+                                    job->Release ();
+                                }
+                                return true;
+                            }
+                            return false;
                         }
-                    } cancelRunningJobsCallback;
-                    runningJobs.for_each (cancelRunningJobsCallback);
+                        bool Wait (const TimeSpec &timeSpec = TimeSpec::Infinite) {
+                            return jobs.empty () || jobs.front ()->Wait (timeSpec);
+                        }
+                    } completedCallback (jobs, release);
+                    if (timeSpec == TimeSpec::Infinite) {
+                        while (!jobs.for_each (completedCallback)) {
+                            completedCallback.Wait ();
+                        }
+                    }
+                    else {
+                        TimeSpec now = GetCurrentTime ();
+                        TimeSpec deadline = now + timeSpec;
+                        while (!jobs.for_each (completedCallback) && deadline > now) {
+                            completedCallback.Wait (deadline - now);
+                            now = GetCurrentTime ();
+                        }
+                    }
                 }
-                jobsNotEmpty.SignalAll ();
-                while (!runningJobs.empty ()) {
-                    idle.Wait ();
-                }
-                savedPendingJobs.swap (pendingJobs);
+                return jobs.empty ();
             }
+        }
+
+        void RunLoop::Pause (bool cancelRunningJobs) {
+            struct GetRunningJobsCallback : public JobList::Callback {
+                typedef JobList::Callback::result_type result_type;
+                typedef JobList::Callback::argument_type argument_type;
+                bool cancelRunningJobs;
+                AuxJobList runningJobs;
+                explicit GetRunningJobsCallback (bool cancelRunningJobs_) :
+                    cancelRunningJobs (cancelRunningJobs_) {}
+                virtual result_type operator () (argument_type job) {
+                    if (cancelRunningJobs) {
+                        job->Cancel ();
+                    }
+                    job->AddRef ();
+                    runningJobs.push_back (job);
+                    return true;
+                }
+            } getRunningJobsCallback (cancelRunningJobs);
+            {
+                LockGuard<Mutex> guard (jobsMutex);
+                if (!paused) {
+                    paused = true;
+                    runningJobs.for_each (getRunningJobsCallback);
+                    jobsNotEmpty.SignalAll ();
+                }
+            }
+            WaitForJobsHelper (getRunningJobsCallback.runningJobs, TimeSpec::Infinite, true);
         }
 
         void RunLoop::Continue () {
@@ -429,6 +480,7 @@ namespace thekogans {
         }
 
         void RunLoop::GetPendingJobs (UserJobList &pendingJobs) {
+            LockGuard<Mutex> guard (jobsMutex);
             struct GetPendingJobsCallback : public JobList::Callback {
                 typedef JobList::Callback::result_type result_type;
                 typedef JobList::Callback::argument_type argument_type;
@@ -445,6 +497,7 @@ namespace thekogans {
         }
 
         void RunLoop::GetRunningJobs (UserJobList &runningJobs) {
+            LockGuard<Mutex> guard (jobsMutex);
             struct GetRunningJobsCallback : public JobList::Callback {
                 typedef JobList::Callback::result_type result_type;
                 typedef JobList::Callback::argument_type argument_type;
@@ -463,6 +516,7 @@ namespace thekogans {
         void RunLoop::GetAllJobs (
                 UserJobList &pendingJobs,
                 UserJobList &runningJobs) {
+            LockGuard<Mutex> guard (jobsMutex);
             struct GetAllJobsCallback : public JobList::Callback {
                 typedef JobList::Callback::result_type result_type;
                 typedef JobList::Callback::argument_type argument_type;
@@ -523,54 +577,6 @@ namespace thekogans {
             return job.Get () != 0 && WaitForJob (job, timeSpec);
         }
 
-        namespace {
-            bool WaitForJobsHelper (
-                    RunLoop::AuxJobList &jobs,
-                    const TimeSpec &timeSpec,
-                    bool release) {
-                if (!jobs.empty ()) {
-                    struct CompletedCallback : public RunLoop::AuxJobList::Callback {
-                        typedef RunLoop::AuxJobList::Callback::result_type result_type;
-                        typedef RunLoop::AuxJobList::Callback::argument_type argument_type;
-                        RunLoop::AuxJobList &jobs;
-                        bool release;
-                        CompletedCallback (
-                            RunLoop::AuxJobList &jobs_,
-                            bool release_) :
-                            jobs (jobs_),
-                            release (release_) {}
-                        virtual result_type operator () (argument_type job) {
-                            if (job->IsCompleted ()) {
-                                jobs.erase (job);
-                                if (release) {
-                                    job->Release ();
-                                }
-                                return true;
-                            }
-                            return false;
-                        }
-                        bool Wait (const TimeSpec &timeSpec = TimeSpec::Infinite) {
-                            return jobs.empty () || jobs.front ()->Wait (timeSpec);
-                        }
-                    } completedCallback (jobs, release);
-                    if (timeSpec == TimeSpec::Infinite) {
-                        while (!jobs.for_each (completedCallback)) {
-                            completedCallback.Wait ();
-                        }
-                    }
-                    else {
-                        TimeSpec now = GetCurrentTime ();
-                        TimeSpec deadline = now + timeSpec;
-                        while (!jobs.for_each (completedCallback) && deadline > now) {
-                            completedCallback.Wait (deadline - now);
-                            now = GetCurrentTime ();
-                        }
-                    }
-                }
-                return jobs.empty ();
-            }
-        }
-
         bool RunLoop::WaitForJobs (
                 const UserJobList &jobs,
                 const TimeSpec &timeSpec,
@@ -600,6 +606,7 @@ namespace thekogans {
                     equalityTest (equalityTest_) {}
                 virtual result_type operator () (argument_type job) {
                     if (equalityTest (*job)) {
+                        job->AddRef ();
                         jobs.push_back (job);
                     }
                     return true;
@@ -610,26 +617,26 @@ namespace thekogans {
                 pendingJobs.for_each (waitForJobsCallback);
                 runningJobs.for_each (waitForJobsCallback);
             }
-            return WaitForJobsHelper (waitForJobsCallback.jobs, timeSpec, false);
+            return WaitForJobsHelper (waitForJobsCallback.jobs, timeSpec, true);
         }
 
         bool RunLoop::WaitForIdle (const TimeSpec &timeSpec) {
             LockGuard<Mutex> guard (jobsMutex);
             if (timeSpec == TimeSpec::Infinite) {
-                while (IsRunning () && !paused && (!pendingJobs.empty () || !runningJobs.empty ())) {
+                while (IsRunning () && (!pendingJobs.empty () || !runningJobs.empty ())) {
                     idle.Wait ();
                 }
             }
             else {
                 TimeSpec now = GetCurrentTime ();
                 TimeSpec deadline = now + timeSpec;
-                while (IsRunning () && !paused && (!pendingJobs.empty () || !runningJobs.empty ()) &&
+                while (IsRunning () && (!pendingJobs.empty () || !runningJobs.empty ()) &&
                         deadline > now) {
                     idle.Wait (deadline - now);
                     now = GetCurrentTime ();
                 }
             }
-            return paused || (pendingJobs.empty () && runningJobs.empty ());
+            return pendingJobs.empty () && runningJobs.empty ();
         }
 
         bool RunLoop::CancelJob (const Job::Id &jobId) {
@@ -748,7 +755,7 @@ namespace thekogans {
 
         bool RunLoop::IsIdle () {
             LockGuard<Mutex> guard (jobsMutex);
-            return paused || (pendingJobs.empty () && runningJobs.empty ());
+            return pendingJobs.empty () && runningJobs.empty ();
         }
 
         RunLoop::Job *RunLoop::DeqJob (bool wait) {

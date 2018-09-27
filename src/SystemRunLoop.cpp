@@ -373,39 +373,24 @@ namespace thekogans {
         void SystemRunLoop::Stop (
                 bool cancelRunningJobs,
                 bool cancelPendingJobs) {
-            struct SavePendingJobs {
-                JobList &pendingJobs;
-                Mutex &jobsMutex;
-                JobList savedPendingJobs;
-                SavePendingJobs (
-                    JobList &pendingJobs_,
-                    Mutex &jobsMutex_) :
-                    pendingJobs (pendingJobs_),
-                    jobsMutex (jobsMutex_) {}
-                ~SavePendingJobs () {
-                    LockGuard<Mutex> guard (jobsMutex);
-                    savedPendingJobs.swap (pendingJobs);
+            struct Pauser {
+                SystemRunLoop &systemRunLoop;
+                bool cancelRunningJobs;
+                Pauser (SystemRunLoop &systemRunLoop_,
+                        bool cancelRunningJobs_) :
+                        systemRunLoop (systemRunLoop_),
+                        cancelRunningJobs (cancelRunningJobs_) {
+                    systemRunLoop.Pause (cancelRunningJobs);
                 }
-                void Save () {
-                    LockGuard<Mutex> guard (jobsMutex);
-                    savedPendingJobs.swap (pendingJobs);
+                ~Pauser () {
+                    systemRunLoop.Continue ();
                 }
-            } savePendingJobs (pendingJobs, jobsMutex);
-            if (cancelRunningJobs && cancelPendingJobs) {
-                CancelAllJobs ();
-            }
-            else if (!cancelRunningJobs && cancelPendingJobs) {
+            } pauser (*this, cancelRunningJobs);
+            if (cancelPendingJobs) {
                 CancelPendingJobs ();
+                Continue ();
+                WaitForIdle ();
             }
-            else if (cancelRunningJobs && !cancelPendingJobs) {
-                savePendingJobs.Save ();
-                CancelRunningJobs ();
-            }
-            else if (!cancelRunningJobs && !cancelPendingJobs) {
-                savePendingJobs.Save ();
-            }
-            Continue ();
-            WaitForIdle ();
             bool expected = false;
             if (done.compare_exchange_strong (expected, true)) {
             #if defined (TOOLCHAIN_OS_Windows)
