@@ -396,9 +396,11 @@ namespace thekogans {
                 const TimeSpec &waitTimeSpec = TimeSpec::FromSeconds (3));
 
             /// \brief
-            /// Pause the pipeline execution. Currently running jobs are allowed to finish,
+            /// Pause pipeline execution. Currently running jobs are allowed to finish,
             /// but no other pending jobs are executed until Continue is called. If the
             /// pipeline is paused, noop.
+            /// VERY IMPORTANT: A paused pipeline does NOT imply idle. If you pause a
+            /// pipeline that has pending jobs, \see{IsIdle} (below) will return false.
             /// \param[in] cancelRunningJobs true == Cancel running jobs.
             void Pause (bool cancelRunningJobs = false);
             /// \brief
@@ -486,10 +488,10 @@ namespace thekogans {
                 RunLoop::UserJobList &pendingJobs,
                 RunLoop::UserJobList &runningJobs);
 
-            // NOTE for all Wait* methods below: If threads are waiting on pending
-            // jobs indefinitely and another thread calls Stop (..., false) then the
-            // waiting threads will be blocked until you call Start (). This is a
-            // feature, not a bug. It allows you to suspend pipeline execution
+            // NOTE for all Wait* methods below: If threads are waiting on pending jobs
+            // indefinitely and another thread calls Stop (..., false) or Pause () then
+            // the waiting threads will be blocked until you call Start () or Continue ().
+            // This is a feature, not a bug. It allows you to suspend pipeline execution
             // temporarily without affecting waiters.
 
             /// \brief
@@ -543,6 +545,7 @@ namespace thekogans {
                 const TimeSpec &timeSpec = TimeSpec::Infinite);
             /// \brief
             /// Blocks until all jobs are complete and the pipeline is empty.
+            /// IMPORTANT: See VERY IMPORTANT comment in \see{Pause} (above).
             /// \param[in] timeSpec How long to wait for the jobs to complete.
             /// IMPORTANT: timeSpec is a relative value.
             /// \return true == Pipeline is idle, false == Timed out.
@@ -592,6 +595,7 @@ namespace thekogans {
             /// \brief
             /// Return true if there are no running jobs and the
             /// stages are idle.
+            /// IMPORTANT: See VERY IMPORTANT comment in \see{Pause} (above).
             /// \return true = idle, false = busy.
             bool IsIdle ();
 

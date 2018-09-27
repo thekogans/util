@@ -736,9 +736,11 @@ namespace thekogans {
                 const TimeSpec &waitTimeSpec = TimeSpec::FromSeconds (3));
 
             /// \brief
-            /// Pause the run loop execution. Currently running jobs are allowed to finish,
+            /// Pause run loop execution. Currently running jobs are allowed to finish,
             /// but no other pending jobs are executed until Continue is called. If the
             /// run loop is paused, noop.
+            /// VERY IMPORTANT: A paused run loop does NOT imply idle. If you pause a
+            /// run loop that has pending jobs, \see{IsIdle} (below) will return false.
             /// \param[in] cancelRunningJobs true == Cancel running jobs.
             virtual void Pause (bool cancelRunningJobs = false);
             /// \brief
@@ -839,7 +841,7 @@ namespace thekogans {
                 UserJobList &pendingJobs,
                 UserJobList &runningJobs);
 
-            // NOTE for all Wait* methods below: If threads are waiting on pending/ jobs
+            // NOTE for all Wait* methods below: If threads are waiting on pending jobs
             // indefinitely and another thread calls Stop (..., false) or Pause () then
             // the waiting threads will be blocked until you call Start () or Continue ().
             // This is a feature, not a bug. It allows you to suspend run loop execution
@@ -894,6 +896,7 @@ namespace thekogans {
                 const TimeSpec &timeSpec = TimeSpec::Infinite);
             /// \brief
             /// Blocks until paused or all jobs are complete and the run loop is empty.
+            /// IMPORTANT: See VERY IMPORTANT comment in \see{Pause} (above).
             /// \param[in] timeSpec How long to wait for the jobs to complete.
             /// IMPORTANT: timeSpec is a relative value.
             /// \return true == RunLoop is idle, false == Timed out.
@@ -942,6 +945,7 @@ namespace thekogans {
             virtual bool IsRunning ();
             /// \brief
             /// Return true if there are no running or pending jobs.
+            /// IMPORTANT: See VERY IMPORTANT comment in \see{Pause} (above).
             /// \return true = idle, false = busy.
             virtual bool IsIdle ();
 
