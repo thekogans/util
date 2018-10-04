@@ -22,7 +22,7 @@
 namespace thekogans {
     namespace util {
 
-        Rectangle::Extents Rectangle::Extents::Empty (0, 0);
+        const Rectangle::Extents Rectangle::Extents::Empty (0, 0);
 
         f32 Rectangle::Extents::AspectFit (const Extents &extents) {
             f32 scale = width != 0 && height != 0 ? std::min (
@@ -33,7 +33,7 @@ namespace thekogans {
             return scale;
         }
 
-        Rectangle Rectangle::Empty (0, 0, 0, 0);
+        const Rectangle Rectangle::Empty (0, 0, 0, 0);
 
         void Rectangle::Split (
                 ui32 splitDirection,

@@ -353,7 +353,7 @@ namespace thekogans {
         /// \endcode
         #define THEKOGANS_UTIL_DECLARE_SERIALIZABLE(type, lock)\
             THEKOGANS_UTIL_DECLARE_SERIALIZABLE_COMMON (type, lock)\
-            static thekogans::util::Serializable::MapInitializer mapInitializer;
+            static const thekogans::util::Serializable::MapInitializer mapInitializer;
 
         /// \def THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE(
         ///     type, version, lock, minSerializablesInPage, allocator)
@@ -373,7 +373,7 @@ namespace thekogans {
                 type, version, lock, minSerializablesInPage, allocator)\
             THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_COMMON (\
                 type, version, lock, minSerializablesInPage, allocator)\
-            thekogans::util::Serializable::MapInitializer type::mapInitializer (\
+            const thekogans::util::Serializable::MapInitializer type::mapInitializer (\
                 #type, type::Create);
     #endif // defined (TOOLCHAIN_TYPE_Static)
 

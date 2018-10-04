@@ -224,7 +224,7 @@ namespace thekogans {
         /// \endcode
         #define THEKOGANS_UTIL_DECLARE_HASH(type)\
         public:\
-            static thekogans::util::Hash::MapInitializer mapInitializer;\
+            static const thekogans::util::Hash::MapInitializer mapInitializer;\
             static thekogans::util::Hash::Ptr Create () {\
                 return thekogans::util::Hash::Ptr (new type);\
             }
@@ -236,7 +236,7 @@ namespace thekogans {
         /// THEKOGANS_UTIL_IMPLEMENT_HASH (SHA1)
         /// \endcode
         #define THEKOGANS_UTIL_IMPLEMENT_HASH(type)\
-            thekogans::util::Hash::MapInitializer type::mapInitializer (\
+            const thekogans::util::Hash::MapInitializer type::mapInitializer (\
                 #type, type::Create);
     #endif // defined (TOOLCHAIN_TYPE_Static)
 

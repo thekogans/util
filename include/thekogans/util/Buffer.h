@@ -414,6 +414,7 @@ namespace thekogans {
             /// \param[in] offset Beginning of sub-buffer.
             /// \param[in] count Size of sub-buffer.
             /// \param[in] allocator Allocator for the returned buffer.
+            /// NOTE: The allocator paramater is ignored as SecureBuffer uses the SecureAllocator.
             /// \return A subset of this buffer.
             /// NOTE: Unlike other methods, this one does NOT take
             /// readOffset and writeOffset in to account. A straight
@@ -446,7 +447,7 @@ namespace thekogans {
         /// \struct TenantReadBuffer Buffer.h thekogans/util/Buffer.h
         ///
         /// \brief
-        /// TenantReadBuffer is used to wrap a static buffer for reading.
+        /// TenantReadBuffer is used to wrap a raw buffer for reading.
 
         struct TenantReadBuffer : public Buffer {
             /// \brief
@@ -490,7 +491,7 @@ namespace thekogans {
         /// \struct TenantWriteBuffer Buffer.h thekogans/util/Buffer.h
         ///
         /// \brief
-        /// TenantWriteBuffer is used to wrap a static buffer for writing.
+        /// TenantWriteBuffer is used to wrap a raw buffer for writing.
 
         struct TenantWriteBuffer : public Buffer {
             /// \brief

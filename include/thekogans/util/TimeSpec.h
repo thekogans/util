@@ -103,10 +103,10 @@ namespace thekogans {
             /// it is before TimeSpec::Zero is equivalent to asking what
             /// time it was before the Big Bang. Neither question makes
             /// much sense.
-            static TimeSpec Zero;
+            static const TimeSpec Zero;
             /// \brief
             /// Infinite
-            static TimeSpec Infinite;
+            static const TimeSpec Infinite;
 
             /// \brief
             /// Create a TimeSpec from hours.

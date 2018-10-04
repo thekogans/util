@@ -55,7 +55,7 @@ namespace thekogans {
 
             /// \brief
             /// Point (0, 0);
-            static Point Empty;
+            static const Point Empty;
 
             enum {
                 /// \brief

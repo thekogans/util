@@ -33,7 +33,7 @@ namespace thekogans {
         /// NullAllocator is a noop allocator. It's designed to be used in
         /// situations where an allocator instance is required but is not
         /// used. Specifically it's very useful with \see{TenantReadBuffer}
-        /// and \see{TenantWriteBuffer} instances created from static data.
+        /// and \see{TenantWriteBuffer} instances created from raw buffers.
 
         struct _LIB_THEKOGANS_UTIL_DECL NullAllocator : public Allocator {
             /// \brief

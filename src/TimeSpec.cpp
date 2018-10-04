@@ -97,8 +97,8 @@ namespace thekogans {
             }
         }
 
-        TimeSpec TimeSpec::Zero (0, 0);
-        TimeSpec TimeSpec::Infinite (-1, -1);
+        const TimeSpec TimeSpec::Zero (0, 0);
+        const TimeSpec TimeSpec::Infinite (-1, -1);
 
         TimeSpec &TimeSpec::operator += (const TimeSpec &timeSpec) {
             *this = *this + timeSpec;

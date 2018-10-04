@@ -62,7 +62,7 @@ namespace thekogans {
 
                 /// \brief
                 /// Extents (0, 0);
-                static Extents Empty;
+                static const Extents Empty;
 
                 enum {
                     /// \brief
@@ -117,7 +117,7 @@ namespace thekogans {
 
             /// \brief
             /// Rectangle (0, 0, 0, 0);
-            static Rectangle Empty;
+            static const Rectangle Empty;
 
             enum {
                 /// \brief

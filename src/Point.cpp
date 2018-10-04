@@ -21,7 +21,7 @@
 namespace thekogans {
     namespace util {
 
-        Point Point::Empty (0, 0);
+        const Point Point::Empty (0, 0);
 
         bool Point::InRectangle (const Rectangle &rectangle) const {
             return
