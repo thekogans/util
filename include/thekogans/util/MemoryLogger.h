@@ -27,6 +27,7 @@
 #include "thekogans/util/IntrusiveList.h"
 #include "thekogans/util/Serializer.h"
 #include "thekogans/util/SpinLock.h"
+#include "thekogans/util/File.h"
 
 namespace thekogans {
     namespace util {
@@ -132,6 +133,9 @@ namespace thekogans {
                 ui32 level = UI32_MAX) :
                 Logger (level),
                 maxEntries (maxEntries_) {}
+            /// \brief
+            /// dtor.
+            virtual ~MemoryLogger ();
 
             // Logger
             /// \brief
@@ -145,6 +149,21 @@ namespace thekogans {
                 ui32 level,
                 const std::string &header,
                 const std::string &message) throw ();
+
+            /// \brief
+            /// Save (and optioally clear) the entries to a file.
+            /// \param[in] path File path.
+            /// \param[in] flags File open flags.
+            /// \param[in] clear true == clear entry list after saving.
+            void SaveEntries (
+                const std::string &path,
+                i32 flags = SimpleFile::ReadWrite | SimpleFile::Create | SimpleFile::Append,
+                bool clear = true);
+
+        private:
+            /// \brief
+            /// Clear entryList.
+            void ClearEntries ();
 
             /// \brief
             /// MemoryLogger is neither copy constructable, nor assignable.
