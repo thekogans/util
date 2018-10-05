@@ -157,7 +157,7 @@ namespace thekogans {
                         THEKOGANS_UTIL_OS_ERROR_CODE);
                 }
             } while (countRead < 0);
-            return (ui32)countRead;
+            return (std::size_t)countRead;
         }
 
         std::size_t File::Write (
@@ -171,7 +171,7 @@ namespace thekogans {
                         THEKOGANS_UTIL_OS_ERROR_CODE);
                 }
             } while (countWritten < 0);
-            return (ui32)countWritten;
+            return (std::size_t)countWritten;
         }
     #endif // defined (TOOLCHAIN_OS_Windows)
 

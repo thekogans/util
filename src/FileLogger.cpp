@@ -40,10 +40,10 @@ namespace thekogans {
                 THEKOGANS_UTIL_TRY {
                     ArchiveLog ();
                     if (!header.empty ()) {
-                        file.Write (header.c_str (), (ui32)header.size ());
+                        file.Write (header.c_str (), header.size ());
                     }
                     if (!message.empty ()) {
-                        file.Write (message.c_str (), (ui32)message.size ());
+                        file.Write (message.c_str (), message.size ());
                     }
                 }
                 THEKOGANS_UTIL_CATCH (std::exception) {
