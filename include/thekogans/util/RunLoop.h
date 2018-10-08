@@ -89,7 +89,7 @@ namespace thekogans {
                 JOB_LIST_ID,
                 /// \brief
                 /// Auxiliary JobList ID.
-                /// IMPORTANT: WaitForJobs use this list internally
+                /// IMPORTANT: WaitForJobs uses this list internally
                 /// so, if you want to keep your jobs in a list, use
                 /// USER_JOB_LIST_ID (UserJobList).
                 AUX_JOB_LIST_ID,

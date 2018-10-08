@@ -117,13 +117,13 @@ namespace thekogans {
                 bool hookChild = false,
                 bool coreDump = true);
 
-            enum {
+            enum StdStream {
                 /// \brief
                 /// Print to std::cout.
-                PRINT_COUT,
+                StdOut,
                 /// \brief
                 /// Print to std::cerr.
-                PRINT_CERR
+                StdErr
             };
 
         #if defined (TOOLCHAIN_OS_Windows)
@@ -160,11 +160,11 @@ namespace thekogans {
             /// \brief
             /// Print a string to std::cout or std::cerr.
             /// \param[in] str String to print.
-            /// \param[in] where PRINT_COUT or PRINT_CERR.
+            /// \param[in] where StdOut or StdErr.
             /// \param[in] color Text color.
             void PrintString (
                 const std::string &str,
-                ui32 where = PRINT_COUT,
+                StdStream where = StdOut,
                 const ColorType color = 0);
 
             /// \brief

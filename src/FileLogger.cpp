@@ -53,7 +53,7 @@ namespace thekogans {
                         FormatString (
                             "FileLogger::Log: %s\n",
                             exception.what ()),
-                        Console::PRINT_CERR,
+                        Console::StdErr,
                         Console::TEXT_COLOR_RED);
                 #else // defined (TOOLCHAIN_CONFIG_Debug)
                     (void)exception;

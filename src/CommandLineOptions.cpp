@@ -63,7 +63,7 @@ namespace thekogans {
                 FormatString (
                     "Unknown option: '%s', skipping.\n",
                     optionAndValue.c_str ()),
-                Console::PRINT_CERR);
+                Console::StdErr);
         }
 
     } // namespace util

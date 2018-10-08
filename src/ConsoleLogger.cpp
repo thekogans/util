@@ -37,7 +37,7 @@ namespace thekogans {
                 const std::string &message) throw () {
             Console::Instance ().PrintString (
                 FormatString ("%s%s", header.c_str (), message.c_str ()),
-                Console::PRINT_CERR,
+                Console::StdErr,
                 colorScheme.get () != 0 ? colorScheme->GetColor (level) : 0);
         }
 

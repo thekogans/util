@@ -24,6 +24,7 @@
 #include "thekogans/util/Types.h"
 #include "thekogans/util/Heap.h"
 #include "thekogans/util/Logger.h"
+#include "thekogans/util/LoggerMgr.h"
 #include "thekogans/util/IntrusiveList.h"
 #include "thekogans/util/Serializer.h"
 #include "thekogans/util/SpinLock.h"
@@ -40,7 +41,7 @@ namespace thekogans {
         struct _LIB_THEKOGANS_UTIL_DECL MemoryLogger : public Logger {
             /// \brief
             /// Max entries to keep in memory before dropping the oldest.
-            ui32 maxEntries;
+            std::size_t maxEntries;
             /// \brief
             /// Event handler
             // FIXME: implement.
@@ -129,8 +130,8 @@ namespace thekogans {
             /// \param[in] maxEntries_ Max entries to keep in memory before dropping the oldest.
             /// \param[in] level \see{LoggerMgr::level} this logger will log up to.
             MemoryLogger (
-                ui32 maxEntries_ = DEFAULT_MAX_ENTRIES,
-                ui32 level = UI32_MAX) :
+                std::size_t maxEntries_ = DEFAULT_MAX_ENTRIES,
+                ui32 level = LoggerMgr::MaxLevel) :
                 Logger (level),
                 maxEntries (maxEntries_) {}
             /// \brief

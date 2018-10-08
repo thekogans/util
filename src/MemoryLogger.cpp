@@ -55,7 +55,12 @@ namespace thekogans {
                         i32 flags) :
                         file (HostEndian, path, flags) {}
                     virtual result_type operator () (argument_type entry) {
-                        file.Write (entry->header.c_str (), entry->header.size ());
+                        if (!entry->header.empty ()) {
+                            file.Write (entry->header.c_str (), entry->header.size ());
+                        }
+                        if (!entry->message.empty ()) {
+                            file.Write (entry->message.c_str (), entry->message.size ());
+                        }
                         return true;
                     }
                 } writeEntriesCallback (path, flags);

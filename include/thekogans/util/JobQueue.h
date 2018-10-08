@@ -238,14 +238,14 @@ namespace thekogans {
         ///
         /// \brief
         /// A global job queue instance. The JobQueue is designed to be
-        /// as flexible as possible. To be useful in different situations
+        /// as flexible as possible. To be useful in different contexts
         /// the job queue's worker count needs to be parametrized as we
-        /// might need different queues running different worker counts at
-        /// different thread priorities. That said, the most basic (and
-        /// the most useful) use case will have a single job queue using
-        /// the defaults. This struct exists to aid in that. If all you
-        /// need is a background thread where you can schedule jobs, then
-        /// GlobalJobQueue::Instance () will do the trick.
+        /// might need different queues running different worker counts
+        /// at different thread priorities. That said, the most basic
+        /// (and the most useful) use case will have a single job queue
+        /// using the defaults. This struct exists to aid in that. If all
+        /// you need is a background thread where you can schedule jobs,
+        /// then GlobalJobQueue::Instance () will do the trick.
         struct _LIB_THEKOGANS_UTIL_DECL GlobalJobQueue :
             public Singleton<JobQueue, SpinLock, GlobalJobQueueCreateInstance> {};
 

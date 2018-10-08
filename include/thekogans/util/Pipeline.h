@@ -699,7 +699,7 @@ namespace thekogans {
         ///
         /// \brief
         /// A global pipeline instance. The Pipeline is designed to be
-        /// as flexible as possible. To be useful in different situations
+        /// as flexible as possible. To be useful in different contexts
         /// the pipelines's worker count needs to be parametrized as we
         /// might need different pipelines running different worker counts
         /// at different thread priorities, as well as different count of

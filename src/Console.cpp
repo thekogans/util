@@ -144,9 +144,9 @@ namespace thekogans {
         namespace {
             void PrintStringWithColor (
                     const std::string &str,
-                    ui32 where,
+                    Console::StdStream where,
                     const Console::ColorType color) {
-                std::ostream &stream = where == Console::PRINT_COUT ? std::cout : std::cerr;
+                std::ostream &stream = where == Console::StdOut ? std::cout : std::cerr;
                 if (color != 0) {
                 #if defined (TOOLCHAIN_OS_Windows)
                     struct ColorSetter {
@@ -165,7 +165,7 @@ namespace thekogans {
                                 consoleScreenBufferInfo.wAttributes);
                         }
                     } colorSetter (
-                        where == Console::PRINT_COUT ?
+                        where == Console::StdOut ?
                             STD_OUTPUT_HANDLE :
                             STD_ERROR_HANDLE, color);
                 #else // defined (TOOLCHAIN_OS_Windows)
@@ -194,17 +194,17 @@ namespace thekogans {
 
         void Console::PrintString (
                 const std::string &str,
-                ui32 where,
+                StdStream where,
                 const ColorType color) {
             if (jobQueue.Get () != 0) {
                 struct PrintJob : public RunLoop::Job {
                     std::string str;
-                    ui32 where;
+                    StdStream where;
                     const ColorType color;
 
                     PrintJob (
                         const std::string &str_,
-                        ui32 where_,
+                        StdStream where_,
                         const ColorType color_) :
                         str (str_),
                         where (where_),
