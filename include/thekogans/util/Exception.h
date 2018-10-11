@@ -927,13 +927,20 @@ namespace thekogans {
         /// Catch and rethrow.
         #define THEKOGANS_UTIL_CATCH_AND_RETHROW\
             THEKOGANS_UTIL_CATCH (thekogans::util::Exception) {\
+                if (thekogans::util::Exception::FilterException (exception)) {\
+                    THEKOGANS_UTIL_DEBUG_BREAK\
+                    THEKOGANS_UTIL_RETHROW_EXCEPTION (exception);\
+                }\
+            }\
+            THEKOGANS_UTIL_CATCH (std::exception) {\
                 THEKOGANS_UTIL_DEBUG_BREAK\
-                THEKOGANS_UTIL_RETHROW_EXCEPTION (exception);\
+                throw;\
             }\
             THEKOGANS_UTIL_CATCH_ANY {\
                 THEKOGANS_UTIL_DEBUG_BREAK\
                 throw;\
             }
+
         /// \def THEKOGANS_UTIL_CATCH_AND_LOG
         /// Catch and log error.
         #define THEKOGANS_UTIL_CATCH_AND_LOG\
@@ -977,7 +984,7 @@ namespace thekogans {
                     "Caught unknown exception!");\
             }
         /// \def THEKOGANS_UTIL_CATCH_AND_LOG_SUBSYSTEM(subsystem)
-        /// Catch and log an subsystem error.
+        /// Catch and log a subsystem error.
         #define THEKOGANS_UTIL_CATCH_AND_LOG_SUBSYSTEM(subsystem)\
             THEKOGANS_UTIL_CATCH (thekogans::util::Exception) {\
                 if (thekogans::util::Exception::FilterException (exception)) {\
@@ -998,7 +1005,7 @@ namespace thekogans {
                     subsystem, "%s\n", "Caught unknown exception!");\
             }
         /// \def THEKOGANS_UTIL_CATCH_AND_LOG_SUBSYSTEM_WITH_MESSAGE(subsystem, format, ...)
-        /// Catch and log an subsystem error with message.
+        /// Catch and log a subsystem error with message.
         #define THEKOGANS_UTIL_CATCH_AND_LOG_SUBSYSTEM_WITH_MESSAGE(subsystem, format, ...)\
             THEKOGANS_UTIL_CATCH (thekogans::util::Exception) {\
                 if (thekogans::util::Exception::FilterException (exception)) {\
@@ -1020,6 +1027,102 @@ namespace thekogans {
                 THEKOGANS_UTIL_LOG_SUBSYSTEM_ERROR (subsystem, "%s\n%s\n",\
                     thekogans::util::FormatString (format, __VA_ARGS__).c_str (),\
                     "Caught unknown exception!");\
+            }
+
+        /// \def THEKOGANS_UTIL_CATCH_LOG_AND_RETHROW
+        /// Catch, log error, and rethrow the exception.
+        #define THEKOGANS_UTIL_CATCH_LOG_AND_RETHROW\
+            THEKOGANS_UTIL_CATCH (thekogans::util::Exception) {\
+                if (thekogans::util::Exception::FilterException (exception)) {\
+                    THEKOGANS_UTIL_DEBUG_BREAK\
+                    THEKOGANS_UTIL_LOG_ERROR ("%s\n", exception.Report ().c_str ());\
+                    THEKOGANS_UTIL_RETHROW_EXCEPTION (exception);\
+                }\
+            }\
+            THEKOGANS_UTIL_CATCH (std::exception) {\
+                THEKOGANS_UTIL_DEBUG_BREAK\
+                THEKOGANS_UTIL_LOG_ERROR ("%s\n", exception.what ());\
+                throw;\
+            }\
+            THEKOGANS_UTIL_CATCH_ANY {\
+                THEKOGANS_UTIL_DEBUG_BREAK\
+                THEKOGANS_UTIL_LOG_ERROR ("%s\n", "Caught unknown exception!");\
+                throw;\
+            }
+        /// \def THEKOGANS_UTIL_CATCH_LOG_WITH_MESSAGE_AND_RETHROW(format, ...)
+        /// Catch, log error with message, and rethrow the exception.
+        #define THEKOGANS_UTIL_CATCH_LOG_WITH_MESSAGE_AND_RETHROW(format, ...)\
+            THEKOGANS_UTIL_CATCH (thekogans::util::Exception) {\
+                if (thekogans::util::Exception::FilterException (exception)) {\
+                    THEKOGANS_UTIL_DEBUG_BREAK\
+                    THEKOGANS_UTIL_LOG_ERROR ("%s\n%s\n",\
+                        thekogans::util::FormatString (format, __VA_ARGS__).c_str (),\
+                        exception.Report ().c_str ());\
+                    THEKOGANS_UTIL_RETHROW_EXCEPTION (exception);\
+                }\
+            }\
+            THEKOGANS_UTIL_CATCH (std::exception) {\
+                THEKOGANS_UTIL_DEBUG_BREAK\
+                THEKOGANS_UTIL_LOG_ERROR ("%s\n%s\n",\
+                    thekogans::util::FormatString (format, __VA_ARGS__).c_str (),\
+                    exception.what ());\
+                throw;\
+            }\
+            THEKOGANS_UTIL_CATCH_ANY {\
+                THEKOGANS_UTIL_DEBUG_BREAK\
+                THEKOGANS_UTIL_LOG_ERROR ("%s\n%s\n",\
+                    thekogans::util::FormatString (format, __VA_ARGS__).c_str (),\
+                    "Caught unknown exception!");\
+                throw;\
+            }
+        /// \def THEKOGANS_UTIL_CATCH_LOG_SUBSYSTEM_AND_RETHROW(subsystem)
+        /// Catch, log subsystem error, and rethrow the exception.
+        #define THEKOGANS_UTIL_CATCH_LOG_SUBSYSTEM_AND_RETHROW(subsystem)\
+            THEKOGANS_UTIL_CATCH (thekogans::util::Exception) {\
+                if (thekogans::util::Exception::FilterException (exception)) {\
+                    THEKOGANS_UTIL_DEBUG_BREAK\
+                    THEKOGANS_UTIL_LOG_SUBSYSTEM_ERROR (\
+                        subsystem, "%s\n", exception.Report ().c_str ());\
+                    THEKOGANS_UTIL_RETHROW_EXCEPTION (exception);\
+                }\
+            }\
+            THEKOGANS_UTIL_CATCH (std::exception) {\
+                THEKOGANS_UTIL_DEBUG_BREAK\
+                THEKOGANS_UTIL_LOG_SUBSYSTEM_ERROR (\
+                    subsystem, "%s\n", exception.what ());\
+                throw;\
+            }\
+            THEKOGANS_UTIL_CATCH_ANY {\
+                THEKOGANS_UTIL_DEBUG_BREAK\
+                THEKOGANS_UTIL_LOG_SUBSYSTEM_ERROR (\
+                    subsystem, "%s\n", "Caught unknown exception!");\
+                throw;\
+            }
+        /// \def THEKOGANS_UTIL_CATCH_LOG_SUBSYSTEM_WITH_MESSAGE_AND_RETHROW(subsystem, format, ...)
+        /// Catch, log subsystem error with message, and rethrow the exception.
+        #define THEKOGANS_UTIL_CATCH_LOG_SUBSYSTEM_WITH_MESSAGE_AND_RETHROW(subsystem, format, ...)\
+            THEKOGANS_UTIL_CATCH (thekogans::util::Exception) {\
+                if (thekogans::util::Exception::FilterException (exception)) {\
+                    THEKOGANS_UTIL_DEBUG_BREAK\
+                    THEKOGANS_UTIL_LOG_SUBSYSTEM_ERROR (subsystem, "%s\n%s\n",\
+                        thekogans::util::FormatString (format, __VA_ARGS__).c_str (),\
+                        exception.Report ().c_str ());\
+                    THEKOGANS_UTIL_RETHROW_EXCEPTION (exception);\
+                }\
+            }\
+            THEKOGANS_UTIL_CATCH (std::exception) {\
+                THEKOGANS_UTIL_DEBUG_BREAK\
+                THEKOGANS_UTIL_LOG_SUBSYSTEM_ERROR (subsystem, "%s\n%s\n",\
+                    thekogans::util::FormatString (format, __VA_ARGS__).c_str (),\
+                    exception.what ());\
+                throw;\
+            }\
+            THEKOGANS_UTIL_CATCH_ANY {\
+                THEKOGANS_UTIL_DEBUG_BREAK\
+                THEKOGANS_UTIL_LOG_SUBSYSTEM_ERROR (subsystem, "%s\n%s\n",\
+                    thekogans::util::FormatString (format, __VA_ARGS__).c_str (),\
+                    "Caught unknown exception!");\
+                throw;\
             }
 
         /// \def THEKOGANS_UTIL_LOG_EXCEPTION
