@@ -182,22 +182,11 @@ namespace thekogans {
                 availablePipelines.push_front (pipeline);
                 // If the pool is idle, see if we need to remove excess pipelines.
                 if (borrowedPipelines.empty ()) {
-                    if (availablePipelines.size () > minPipelines) {
-                        struct DeleteCallback : public PipelineList::Callback {
-                            typedef PipelineList::Callback::result_type result_type;
-                            typedef PipelineList::Callback::argument_type argument_type;
-                            std::size_t deleteCount;
-                            explicit DeleteCallback (std::size_t deleteCount_) :
-                                deleteCount (deleteCount_) {}
-                            virtual result_type operator () (argument_type pipeline) {
-                                delete pipeline;
-                                return --deleteCount > 0;
-                            }
-                        } deleteCallback (availablePipelines.size () - minPipelines);
-                        // Walk the pool in reverse to delete the least recently used pipelines.
-                        // This logic guarantees that we avoid the deadlock associated with
+                    while (availablePipelines.size () > minPipelines) {
+                        // Delete the least recently used pipelines. This logic
+                        // guarantees that we avoid the deadlock associated with
                         // deleating the passed in pipeline.
-                        availablePipelines.for_each (deleteCallback, true);
+                        delete availablePipelines.pop_back ();
                     }
                     idle.SignalAll ();
                 }

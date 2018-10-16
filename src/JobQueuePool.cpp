@@ -196,22 +196,11 @@ namespace thekogans {
                 availableJobQueues.push_front (jobQueue);
                 // If the pool is idle, see if we need to remove excess job queues.
                 if (borrowedJobQueues.empty ()) {
-                    if (availableJobQueues.size () > minJobQueues) {
-                        struct DeleteCallback : public JobQueueList::Callback {
-                            typedef JobQueueList::Callback::result_type result_type;
-                            typedef JobQueueList::Callback::argument_type argument_type;
-                            std::size_t deleteCount;
-                            explicit DeleteCallback (std::size_t deleteCount_) :
-                                deleteCount (deleteCount_) {}
-                            virtual result_type operator () (argument_type jobQueue) {
-                                delete jobQueue;
-                                return --deleteCount > 0;
-                            }
-                        } deleteCallback (availableJobQueues.size () - minJobQueues);
-                        // Walk the pool in reverse to delete the least recently used queues.
-                        // This logic guarantees that we avoid the deadlock associated with
-                        // deleating the passed in jobQueue.
-                        availableJobQueues.for_each (deleteCallback, true);
+                    while (availableJobQueues.size () > minJobQueues) {
+                        // Delete the least recently used queues. This logic
+                        // guarantees that we avoid the deadlock associated
+                        // with deleating the passed in jobQueue.
+                        delete availableJobQueues.pop_back ();
                     }
                     idle.SignalAll ();
                 }
