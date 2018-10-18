@@ -142,6 +142,10 @@ namespace thekogans {
                 // is called by the runtime, static defaultCallback (declared
                 // below) might have already been destructed. Create a fresh
                 // one on the stack so that we can control it's lifetime.
+                // NOTE: Clearing the list makes semantic sense as the nodes
+                // are now free to be inserted in another list with the same
+                // id. The side effect of this design decision is that nodes
+                // have to survive the list they reside in.
                 DefaultCallback callback;
                 clear (callback);
             }
@@ -338,6 +342,18 @@ namespace thekogans {
                 }
                 head = tail = 0;
                 count = 0;
+            }
+
+            /// \brief
+            /// Release the \see{RefCounted} nodes held by this list and clear it.
+            inline void release () {
+                struct ReleaseCallback : public Callback {
+                    virtual bool operator () (T *node) {
+                        node->Release ();
+                        return true;
+                    }
+                } releaseCallback;
+                clear (releaseCallback);
             }
 
             /// \brief
