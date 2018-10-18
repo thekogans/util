@@ -246,6 +246,16 @@ namespace thekogans {
             /// \return true == timer is running.
             bool IsRunning ();
 
+            /// \brief
+            /// Wait for all pending callbacks to complete.
+            /// \param[in] timeSpec How long to wait for the callbacks to complete.
+            /// IMPORTANT: timeSpec is a relative value.
+            /// \param[in] cancelCallbacks true == Cancel pending callbacks.
+            /// \return true == All jobs completed, false == One or more jobs timed out.
+            bool WaitForCallbacks (
+                const TimeSpec &timeSpec = TimeSpec::Infinite,
+                bool cancelCallbacks = true);
+
         private:
             /// \brief
             /// Convenient typedef for Singleton<util::JobQueuePool, SpinLock, JobQueuePoolCreateInstance>.
@@ -253,13 +263,7 @@ namespace thekogans {
             /// \brief
             /// Forward declaration of AlarmJob.
             struct AlarmJob;
-            /// \brief
-            /// Periodic Callback::Alarm synchronization lock.
-            SpinLock inAlarmSpinLock;
 
-            /// \brief
-            /// Unprotected Stop (used by Start and Stop).
-            void StopHelper ();
             /// \brief
             /// Used internally to queue up an AlarmJob.
             void QueueAlarmJob ();

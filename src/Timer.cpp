@@ -160,11 +160,6 @@ namespace thekogans {
                     THEKOGANS_UTIL_OS_ERROR_CODE);
             }
         }
-
-        Timer::~Timer () {
-            Stop ();
-            CloseThreadpoolTimer (timer);
-        }
     #elif defined (TOOLCHAIN_OS_Linux)
         Timer::Timer (
                 Callback &callback_,
@@ -185,11 +180,6 @@ namespace thekogans {
                 Sleep (TimeSpec::FromMilliseconds (50));
             }
         }
-
-        Timer::~Timer () {
-            Stop ();
-            timer_delete (timer);
-        }
     #elif defined (TOOLCHAIN_OS_OSX)
         Timer::Timer (
             Callback &callback_,
@@ -197,18 +187,23 @@ namespace thekogans {
             callback (callback_),
             name (name_),
             id (idPool++) {}
+    #endif // defined (TOOLCHAIN_OS_Windows)
 
         Timer::~Timer () {
             Stop ();
+            WaitForCallbacks ();
+        #if defined (TOOLCHAIN_OS_Windows)
+            CloseThreadpoolTimer (timer);
+        #elif defined (TOOLCHAIN_OS_Linux)
+            timer_delete (timer);
+        #endif // defined (TOOLCHAIN_OS_Windows)
         }
-    #endif // defined (TOOLCHAIN_OS_Windows)
 
         void Timer::Start (
                 const TimeSpec &timeSpec,
                 bool periodic) {
             if (timeSpec != TimeSpec::Zero && timeSpec != TimeSpec::Infinite) {
                 LockGuard<SpinLock> guard (spinLock);
-                StopHelper ();
             #if defined (TOOLCHAIN_OS_Windows)
                 ULARGE_INTEGER largeInteger;
                 largeInteger.QuadPart = timeSpec.ToMilliseconds ();
@@ -241,7 +236,18 @@ namespace thekogans {
 
         void Timer::Stop () {
             LockGuard<SpinLock> guard (spinLock);
-            StopHelper ();
+        #if defined (TOOLCHAIN_OS_Windows)
+            SetThreadpoolTimer (timer, 0, 0, 0);
+        #elif defined (TOOLCHAIN_OS_Linux)
+            itimerspec spec;
+            memset (&spec, 0, sizeof (spec));
+            if (timer_settime (timer, 0, &spec, 0) != 0) {
+                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                    THEKOGANS_UTIL_OS_ERROR_CODE);
+            }
+        #elif defined (TOOLCHAIN_OS_OSX)
+            KQueue::Instance ().StopTimer (*this);
+        #endif // defined (TOOLCHAIN_OS_Windows)
         }
 
         bool Timer::IsRunning () {
@@ -277,49 +283,29 @@ namespace thekogans {
             // RunLoop::Job
             virtual void Execute (const THEKOGANS_UTIL_ATOMIC<bool> &done) throw () {
                 if (!ShouldStop (done)) {
-                    if (timer.inAlarmSpinLock.TryAcquire ()) {
-                        LockGuard<SpinLock> guard (timer.inAlarmSpinLock, false);
-                        timer.callback.Alarm (timer);
-                    }
-                    else {
-                        THEKOGANS_UTIL_LOG_SUBSYSTEM_WARNING (
-                            THEKOGANS_UTIL,
-                            "Skipping overlapping '%s' Alarm call.\n",
-                            timer.name.c_str ());
-                    }
+                    timer.callback.Alarm (timer);
                 }
             }
         };
 
         THEKOGANS_UTIL_IMPLEMENT_HEAP_WITH_LOCK (Timer::AlarmJob, SpinLock)
 
-        void Timer::StopHelper () {
-        #if defined (TOOLCHAIN_OS_Windows)
-            SetThreadpoolTimer (timer, 0, 0, 0);
-            WaitForThreadpoolTimerCallbacks (timer, TRUE);
-        #elif defined (TOOLCHAIN_OS_Linux)
-            itimerspec spec;
-            memset (&spec, 0, sizeof (spec));
-            if (timer_settime (timer, 0, &spec, 0) != 0) {
-                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                    THEKOGANS_UTIL_OS_ERROR_CODE);
-            }
-        #elif defined (TOOLCHAIN_OS_OSX)
-            KQueue::Instance ().StopTimer (*this);
-        #endif // defined (TOOLCHAIN_OS_Windows)
-            struct GetJobsEqualityTest : public RunLoop::EqualityTest {
+        bool Timer::WaitForCallbacks (
+                const TimeSpec &timeSpec,
+                bool cancelCallbacks) {
+            struct TimerEqualityTest : public RunLoop::EqualityTest {
                 Timer &timer;
-                explicit GetJobsEqualityTest (Timer &timer_) :
+                explicit TimerEqualityTest (Timer &timer_) :
                     timer (timer_) {}
                 virtual bool operator () (RunLoop::Job &job) const throw () {
                     AlarmJob *alarmJob = dynamic_cast<AlarmJob *> (&job);
                     return alarmJob != 0 && &alarmJob->timer == &timer;
                 }
-            } getJobsEqualityTest (*this);
-            RunLoop::UserJobList jobs;
-            JobQueuePool::Instance ().GetJobs (getJobsEqualityTest, jobs);
-            RunLoop::CancelJobs (jobs, false);
-            RunLoop::WaitForJobs (jobs);
+            } timerEqualityTest (*this);
+            if (cancelCallbacks) {
+                JobQueuePool::Instance ().CancelJobs (timerEqualityTest);
+            }
+            return JobQueuePool::Instance ().WaitForJobs (timerEqualityTest, timeSpec);
         }
 
         void Timer::QueueAlarmJob () {
