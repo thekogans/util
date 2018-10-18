@@ -874,7 +874,6 @@ namespace thekogans {
             /// \param[in] jobs UserJobList (\see{IntrusiveList}) containing the jobs to wait on.
             /// \param[in] timeSpec How long to wait for the jobs to complete.
             /// IMPORTANT: timeSpec is a relative value.
-            /// \param[in] release true == Call job->Release () after waiting on it.
             /// \return true == All jobs satisfying the equalityTest completed,
             /// false == One or more matching jobs timed out.
             /// NOTE: This is a static method and is designed to allow you to
@@ -882,8 +881,7 @@ namespace thekogans {
             /// they're running on.
             static bool WaitForJobs (
                 const UserJobList &jobs,
-                const TimeSpec &timeSpec = TimeSpec::Infinite,
-                bool release = true);
+                const TimeSpec &timeSpec = TimeSpec::Infinite);
             /// \brief
             /// Wait for all running and pending jobs matching the given equality test to complete.
             /// \param[in] equalityTest EqualityTest to query to determine which jobs to wait on.
@@ -910,13 +908,10 @@ namespace thekogans {
             /// \brief
             /// Cancel the list of given jobs.
             /// \param[in] jobs List of jobs to cancel.
-            /// \param[in] release true == Call job->Release () after cancelling it.
             /// NOTE: This is a static method and is designed to allow you to
             /// cancel a collection of jobs without regard as to which run loop
             /// they're running on.
-            static void CancelJobs (
-                const UserJobList &jobs,
-                bool release = true);
+            static void CancelJobs (const UserJobList &jobs);
             /// \brief
             /// Cancel all running and pending jobs matching the given equality test.
             /// \param[in] equalityTest EqualityTest to query to determine which jobs to cancel.

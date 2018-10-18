@@ -519,11 +519,8 @@ namespace thekogans {
             /// \brief
             /// Wait for all given running and pending jobs.
             /// \param[in] jobs UserJobList (\see{IntrusiveList}) containing the jobs to wait on.
-            /// NOTE: This method assumes that a reference was taken on jobs (see \see{GetJobs})
-            /// and will release that reference before returning.
             /// \param[in] timeSpec How long to wait for the jobs to complete.
             /// IMPORTANT: timeSpec is a relative value.
-            /// \param[in] release true == Call job->Release () after waiting on it.
             /// \return true == All jobs satisfying the equalityTest completed,
             /// false == One or more matching jobs timed out.
             /// NOTE: This is a static method and is designed to allow you to
@@ -531,8 +528,7 @@ namespace thekogans {
             /// they're running on.
             static bool WaitForJobs (
                 const RunLoop::UserJobList &jobs,
-                const TimeSpec &timeSpec = TimeSpec::Infinite,
-                bool release = true);
+                const TimeSpec &timeSpec = TimeSpec::Infinite);
             /// \brief
             /// Wait for all running and pending jobs matching the given equality test to complete.
             /// \param[in] equalityTest EqualityTest to query to determine which jobs to wait on.
@@ -559,13 +555,10 @@ namespace thekogans {
             /// \brief
             /// Cancel the list of given jobs.
             /// \param[in] jobs List of jobs to cancel.
-            /// \param[in] release true == Call job->Release () after cancelling it.
             /// NOTE: This is a static method and is designed to allow you to
             /// cancel a collection of jobs without regard as to which pipeline
             /// they're running on.
-            static void CancelJobs (
-                const RunLoop::UserJobList &jobs,
-                bool release = true);
+            static void CancelJobs (const RunLoop::UserJobList &jobs);
             /// \brief
             /// Cancel all running and pending jobs matching the given equality test.
             /// \param[in] equalityTest EqualityTest to query to determine which jobs to cancel.
