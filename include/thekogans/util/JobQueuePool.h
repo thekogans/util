@@ -245,16 +245,29 @@ namespace thekogans {
             /// \param[out] jobs \see{RunLoop::UserJobList} (\see{IntrusiveList}) containing the matching jobs.
             /// NOTE: This method will take a reference on all matching jobs.
             void GetJobs (
-                RunLoop::EqualityTest &equalityTest,
+                const RunLoop::EqualityTest &equalityTest,
                 RunLoop::UserJobList &jobs);
+            /// \brief
+            /// Wait for all borrowedJobQueues jobs matching the given equality test to complete.
+            /// \param[in] equalityTest EqualityTest to query to determine which jobs to wait on.
+            /// \param[in] timeSpec How long to wait for the jobs to complete.
+            /// IMPORTANT: timeSpec is a relative value.
+            /// \return true == All jobs satisfying the equalityTest completed,
+            /// false == One or more matching jobs timed out.
+            bool WaitForJobs (
+                const RunLoop::EqualityTest &equalityTest,
+                const TimeSpec &timeSpec = TimeSpec::Infinite);
+            /// \brief
+            /// Cancel all borrowedJobQueues jobs matching the given equality test.
+            /// \param[in] equalityTest EqualityTest to query to determine the matching jobs.
+            void CancelJobs (RunLoop::EqualityTest &equalityTest);
 
             /// \brief
             /// Blocks until all borrowed \see{JobQueue}s have been returned to the pool.
             /// \param[in] timeSpec How long to wait for \see{JobQueue}s to return.
             /// IMPORTANT: timeSpec is a relative value.
             /// \return true == JobQueuePool is idle, false == Timed out.
-            bool WaitForIdle (
-                const TimeSpec &timeSpec = TimeSpec::Infinite);
+            bool WaitForIdle (const TimeSpec &timeSpec = TimeSpec::Infinite);
 
             /// \brief
             /// Return true if this pool has no outstanding \see{JobQueue}s.

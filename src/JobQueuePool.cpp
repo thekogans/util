@@ -105,16 +105,16 @@ namespace thekogans {
         }
 
         void JobQueuePool::GetJobs (
-                RunLoop::EqualityTest &equalityTest,
+                const RunLoop::EqualityTest &equalityTest,
                 RunLoop::UserJobList &jobs) {
             LockGuard<Mutex> guard (mutex);
             struct GetJobsCallback : public JobQueueList::Callback {
                 typedef JobQueueList::Callback::result_type result_type;
                 typedef JobQueueList::Callback::argument_type argument_type;
-                RunLoop::EqualityTest &equalityTest;
+                const RunLoop::EqualityTest &equalityTest;
                 RunLoop::UserJobList &jobs;
                 GetJobsCallback (
-                    RunLoop::EqualityTest &equalityTest_,
+                    const RunLoop::EqualityTest &equalityTest_,
                     RunLoop::UserJobList &jobs_) :
                     equalityTest (equalityTest_),
                     jobs (jobs_) {}
@@ -124,6 +124,35 @@ namespace thekogans {
                 }
             } getJobsCallback (equalityTest, jobs);
             borrowedJobQueues.for_each (getJobsCallback);
+        }
+
+        bool JobQueuePool::WaitForJobs (
+                const RunLoop::EqualityTest &equalityTest,
+                const TimeSpec &timeSpec) {
+            struct MatchingJobs {
+                RunLoop::UserJobList jobs;
+                ~MatchingJobs () {
+                    jobs.release ();
+                }
+            } matchingJobs;
+            GetJobs (equalityTest, matchingJobs.jobs);
+            return RunLoop::WaitForJobs (matchingJobs.jobs, timeSpec);
+        }
+
+        void JobQueuePool::CancelJobs (RunLoop::EqualityTest &equalityTest) {
+            LockGuard<Mutex> guard (mutex);
+            struct CancelJobsCallback : public JobQueueList::Callback {
+                typedef JobQueueList::Callback::result_type result_type;
+                typedef JobQueueList::Callback::argument_type argument_type;
+                RunLoop::EqualityTest &equalityTest;
+                explicit CancelJobsCallback (RunLoop::EqualityTest &equalityTest_) :
+                    equalityTest (equalityTest_) {}
+                virtual result_type operator () (argument_type jobQueue) {
+                    jobQueue->CancelJobs (equalityTest);
+                    return true;
+                }
+            } cancelJobsCallback (equalityTest);
+            borrowedJobQueues.for_each (cancelJobsCallback);
         }
 
         bool JobQueuePool::WaitForIdle (const TimeSpec &timeSpec) {
