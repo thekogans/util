@@ -218,7 +218,7 @@ namespace thekogans {
                 if (periodic) {
                     spec.it_interval = timeSpec.Totimespec ();
                 }
-                spec.it_value = timeSpec_.Totimespec ();
+                spec.it_value = timeSpec.Totimespec ();
                 if (timer_settime (timer, 0, &spec, 0) != 0) {
                     THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
                         THEKOGANS_UTIL_OS_ERROR_CODE);
