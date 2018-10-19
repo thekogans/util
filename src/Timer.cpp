@@ -132,7 +132,7 @@ namespace thekogans {
 
         private:
             void Run () throw () {
-                const ui32 MaxEventsBatch = 32;
+                const int MaxEventsBatch = 32;
                 keventStruct kqueueEvents[MaxEventsBatch];
                 while (1) {
                     int count = keventFunc (handle, 0, 0, kqueueEvents, MaxEventsBatch, 0);
@@ -203,7 +203,6 @@ namespace thekogans {
                 const TimeSpec &timeSpec,
                 bool periodic) {
             if (timeSpec != TimeSpec::Zero && timeSpec != TimeSpec::Infinite) {
-                LockGuard<SpinLock> guard (spinLock);
             #if defined (TOOLCHAIN_OS_Windows)
                 ULARGE_INTEGER largeInteger;
                 largeInteger.QuadPart = timeSpec.ToMilliseconds ();
@@ -235,7 +234,6 @@ namespace thekogans {
         }
 
         void Timer::Stop () {
-            LockGuard<SpinLock> guard (spinLock);
         #if defined (TOOLCHAIN_OS_Windows)
             SetThreadpoolTimer (timer, 0, 0, 0);
         #elif defined (TOOLCHAIN_OS_Linux)
@@ -251,7 +249,6 @@ namespace thekogans {
         }
 
         bool Timer::IsRunning () {
-            LockGuard<SpinLock> guard (spinLock);
         #if defined (TOOLCHAIN_OS_Windows)
             return IsThreadpoolTimerSet (timer) == TRUE;
         #elif defined (TOOLCHAIN_OS_Linux)
@@ -309,7 +306,6 @@ namespace thekogans {
         }
 
         void Timer::QueueAlarmJob () {
-            LockGuard<SpinLock> guard (spinLock);
             // Try to acquire a job queue from the pool. Note the
             // retry count == 0. Delivering timer alarms on time
             // is more important then delivering them at all. It's

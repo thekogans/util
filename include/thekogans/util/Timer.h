@@ -201,9 +201,6 @@ namespace thekogans {
             /// An OS X kqueue monitoring async timers.
             struct KQueue;
         #endif // defined (TOOLCHAIN_OS_Windows)
-            /// \brief
-            /// Synchronization lock.
-            SpinLock spinLock;
 
         public:
             /// \brief
