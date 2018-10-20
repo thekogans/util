@@ -135,14 +135,9 @@ namespace thekogans {
         bool PipelinePool::WaitForJobs (
                 const RunLoop::EqualityTest &equalityTest,
                 const TimeSpec &timeSpec) {
-            struct MatchingJobs {
-                RunLoop::UserJobList jobs;
-                ~MatchingJobs () {
-                    jobs.release ();
-                }
-            } matchingJobs;
-            GetJobs (equalityTest, matchingJobs.jobs);
-            return RunLoop::WaitForJobs (matchingJobs.jobs, timeSpec);
+            RunLoop::UserJobList jobs;
+            GetJobs (equalityTest, jobs);
+            return RunLoop::WaitForJobs (jobs, timeSpec);
         }
 
         void PipelinePool::CancelJobs (RunLoop::EqualityTest &equalityTest) {

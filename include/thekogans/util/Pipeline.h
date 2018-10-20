@@ -463,19 +463,16 @@ namespace thekogans {
             /// Get all running and pending jobs matching the given equality test.
             /// \param[in] equalityTest \see{RunLoop::EqualityTest} to query to determine the matching jobs.
             /// \param[out] jobs \see{RunLoop::UserJobList} (\see{IntrusiveList}) containing the matching jobs.
-            /// NOTE: This method will take a reference on all matching jobs.
             void GetJobs (
                 const RunLoop::EqualityTest &equalityTest,
                 RunLoop::UserJobList &jobs);
             /// \brief
             /// Get all pending jobs.
             /// \param[out] pendingJobs \see{RunLoop::UserJobList} (\see{IntrusiveList}) containing pending jobs.
-            /// NOTE: This method will take a reference on all pending jobs.
             void GetPendingJobs (RunLoop::UserJobList &pendingJobs);
             /// \brief
             /// Get all running jobs.
             /// \param[out] runningJobs \see{RunLoop::UserJobList} (\see{IntrusiveList}) containing running jobs.
-            /// NOTE: This method will take a reference on all running jobs.
             void GetRunningJobs (RunLoop::UserJobList &runningJobs);
             /// \brief
             /// Get all running and pending jobs. pendingJobs and runningJobs can be the same
@@ -483,7 +480,6 @@ namespace thekogans {
             /// will be running.
             /// \param[out] pendingJobs \see{RunLoop::UserJobList} (\see{IntrusiveList}) containing pending jobs.
             /// \param[out] runningJobs \see{RunLoop::UserJobList} (\see{IntrusiveList}) containing running jobs.
-            /// NOTE: This method will take a reference on all jobs.
             void GetAllJobs (
                 RunLoop::UserJobList &pendingJobs,
                 RunLoop::UserJobList &runningJobs);

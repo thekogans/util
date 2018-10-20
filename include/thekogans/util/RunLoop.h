@@ -32,6 +32,7 @@
 #endif // defined (TOOLCHAIN_OS_Windows)
 #include <memory>
 #include <string>
+#include <list>
 #if defined (THEKOGANS_UTIL_HAVE_PUGIXML)
     #include <pugixml.hpp>
 #endif // defined (THEKOGANS_UTIL_HAVE_PUGIXML)
@@ -88,31 +89,12 @@ namespace thekogans {
                 /// JobList ID.
                 JOB_LIST_ID,
                 /// \brief
-                /// Auxiliary JobList ID.
-                /// IMPORTANT: WaitForJobs uses this list internally
-                /// so, if you want to keep your jobs in a list, use
-                /// USER_JOB_LIST_ID (UserJobList).
-                AUX_JOB_LIST_ID,
-                /// \brief
-                /// User JobList ID.
-                /// NOTE: Use this list to store your jobs.
-                /// IMPORTANT: WaitForJobs uses this list so,
-                /// if you want to be able to wait on multiple
-                /// jobs at once, you will need to use this list.
-                USER_JOB_LIST_ID,
-                /// \brief
                 /// Use this sentinel to create your own job lists (\see{Pipeline}).
                 LAST_JOB_LIST_ID
             };
             /// \brief
             /// Convenient typedef for IntrusiveList<Job, JOB_LIST_ID>.
             typedef IntrusiveList<Job, JOB_LIST_ID> JobList;
-            /// \brief
-            /// Convenient typedef for IntrusiveList<Job, AUX_JOB_LIST_ID>.
-            typedef IntrusiveList<Job, AUX_JOB_LIST_ID> AuxJobList;
-            /// \brief
-            /// Convenient typedef for IntrusiveList<Job, USER_JOB_LIST_ID>.
-            typedef IntrusiveList<Job, USER_JOB_LIST_ID> UserJobList;
 
         #if defined (_MSC_VER)
             #pragma warning (push)
@@ -124,9 +106,7 @@ namespace thekogans {
             /// A RunLoop::Job must, at least, implement the Execute method.
             struct _LIB_THEKOGANS_UTIL_DECL Job :
                     public ThreadSafeRefCounted,
-                    public JobList::Node,
-                    public AuxJobList::Node,
-                    public UserJobList::Node {
+                    public JobList::Node {
                 /// \brief
                 /// Convenient typedef for ThreadSafeRefCounted::Ptr<Job>.
                 typedef ThreadSafeRefCounted::Ptr<Job> Ptr;
@@ -364,6 +344,10 @@ namespace thekogans {
         #if defined (_MSC_VER)
             #pragma warning (pop)
         #endif // defined (_MSC_VER)
+
+            /// \brief
+            /// Convenient typedef for std::list<Job::Ptr>.
+            typedef std::list<Job::Ptr> UserJobList;
 
             /// \struct RunLoop::Stats RunLoop.h thekogans/util/RunLoop.h
             ///
@@ -816,19 +800,16 @@ namespace thekogans {
             /// Get all running and pending jobs matching the given equality test.
             /// \param[in] equalityTest EqualityTest to query to determine the matching jobs.
             /// \param[out] jobs UserJobList (\see{IntrusiveList}) containing the matching jobs.
-            /// NOTE: This method will take a reference on all matching jobs.
             virtual void GetJobs (
                 const EqualityTest &equalityTest,
                 UserJobList &jobs);
             /// \brief
             /// Get all pending jobs.
             /// \param[out] pendingJobs UserJobList (\see{IntrusiveList}) containing pending jobs.
-            /// NOTE: This method will take a reference on all pending jobs.
             virtual void GetPendingJobs (UserJobList &pendingJobs);
             /// \brief
             /// Get all running jobs.
             /// \param[out] runningJobs UserJobList (\see{IntrusiveList}) containing running jobs.
-            /// NOTE: This method will take a reference on all running jobs.
             virtual void GetRunningJobs (UserJobList &runningJobs);
             /// \brief
             /// Get all running and pending jobs. pendingJobs and runningJobs can be the same
@@ -836,7 +817,6 @@ namespace thekogans {
             /// will be running.
             /// \param[out] pendingJobs UserJobList (\see{IntrusiveList}) containing pending jobs.
             /// \param[out] runningJobs UserJobList (\see{IntrusiveList}) containing running jobs.
-            /// NOTE: This method will take a reference on all jobs.
             virtual void GetAllJobs (
                 UserJobList &pendingJobs,
                 UserJobList &runningJobs);

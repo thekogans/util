@@ -164,63 +164,19 @@ namespace thekogans {
             }
         }
 
-        namespace {
-            bool WaitForJobsHelper (
-                    RunLoop::AuxJobList &jobs,
-                    const TimeSpec &timeSpec) {
-                if (!jobs.empty ()) {
-                    struct CompletedCallback : public RunLoop::AuxJobList::Callback {
-                        typedef RunLoop::AuxJobList::Callback::result_type result_type;
-                        typedef RunLoop::AuxJobList::Callback::argument_type argument_type;
-                        RunLoop::AuxJobList &jobs;
-                        explicit CompletedCallback (RunLoop::AuxJobList &jobs_) :
-                            jobs (jobs_) {}
-                        virtual result_type operator () (argument_type job) {
-                            if (job->IsCompleted ()) {
-                                jobs.erase (job);
-                                return true;
-                            }
-                            return false;
-                        }
-                        bool Wait (const TimeSpec &timeSpec = TimeSpec::Infinite) {
-                            return jobs.empty () || jobs.front ()->Wait (timeSpec);
-                        }
-                    } completedCallback (jobs);
-                    if (timeSpec == TimeSpec::Infinite) {
-                        while (!jobs.for_each (completedCallback)) {
-                            completedCallback.Wait ();
-                        }
-                    }
-                    else {
-                        TimeSpec now = GetCurrentTime ();
-                        TimeSpec deadline = now + timeSpec;
-                        while (!jobs.for_each (completedCallback) && deadline > now) {
-                            completedCallback.Wait (deadline - now);
-                            now = GetCurrentTime ();
-                        }
-                    }
-                }
-                return jobs.empty ();
-            }
-        }
-
         void Pipeline::Pause (bool cancelRunningJobs) {
             struct GetRunningJobsCallback : public JobList::Callback {
                 typedef JobList::Callback::result_type result_type;
                 typedef JobList::Callback::argument_type argument_type;
                 bool cancelRunningJobs;
-                RunLoop::AuxJobList runningJobs;
+                RunLoop::UserJobList runningJobs;
                 explicit GetRunningJobsCallback (bool cancelRunningJobs_) :
                     cancelRunningJobs (cancelRunningJobs_) {}
-                ~GetRunningJobsCallback () {
-                    runningJobs.release ();
-                }
                 virtual result_type operator () (argument_type job) {
                     if (cancelRunningJobs) {
                         job->Cancel ();
                     }
-                    job->AddRef ();
-                    runningJobs.push_back (job);
+                    runningJobs.push_back (RunLoop::Job::Ptr (job));
                     return true;
                 }
             } getRunningJobsCallback (cancelRunningJobs);
@@ -232,7 +188,7 @@ namespace thekogans {
                     jobsNotEmpty.SignalAll ();
                 }
             }
-            WaitForJobsHelper (getRunningJobsCallback.runningJobs, TimeSpec::Infinite);
+            WaitForJobs (getRunningJobsCallback.runningJobs, TimeSpec::Infinite);
         }
 
         void Pipeline::Continue () {
@@ -550,17 +506,32 @@ namespace thekogans {
         bool Pipeline::WaitForJobs (
                 const RunLoop::UserJobList &jobs,
                 const TimeSpec &timeSpec) {
-            struct WaitForJobCallback : public RunLoop::UserJobList::Callback {
-                typedef RunLoop::UserJobList::Callback::result_type result_type;
-                typedef RunLoop::UserJobList::Callback::argument_type argument_type;
-                RunLoop::AuxJobList jobs;
-                virtual result_type operator () (argument_type job) {
-                    jobs.push_back (job);
-                    return true;
+            RunLoop::UserJobList::const_iterator it = jobs.begin ();
+            RunLoop::UserJobList::const_iterator end = jobs.end ();
+            if (timeSpec == TimeSpec::Infinite) {
+                while (it != end) {
+                    if ((*it)->IsCompleted ()) {
+                        ++it;
+                    }
+                    else {
+                        (*it)->Wait ();
+                    }
                 }
-            } waitForJobCallback;
-            jobs.for_each (waitForJobCallback);
-            return WaitForJobsHelper (waitForJobCallback.jobs, timeSpec);
+            }
+            else {
+                TimeSpec now = GetCurrentTime ();
+                TimeSpec deadline = now + timeSpec;
+                while (it != end && deadline > now) {
+                    if ((*it)->IsCompleted ()) {
+                        ++it;
+                    }
+                    else {
+                        (*it)->Wait (deadline - now);
+                    }
+                    now = GetCurrentTime ();
+                }
+            }
+            return it == end;
         }
 
         bool Pipeline::WaitForJobs (
@@ -570,16 +541,12 @@ namespace thekogans {
                 typedef JobList::Callback::result_type result_type;
                 typedef JobList::Callback::argument_type argument_type;
                 const RunLoop::EqualityTest &equalityTest;
-                RunLoop::AuxJobList jobs;
+                RunLoop::UserJobList jobs;
                 explicit WaitForJobCallback (const RunLoop::EqualityTest &equalityTest_) :
                     equalityTest (equalityTest_) {}
-                ~WaitForJobCallback () {
-                    jobs.release ();
-                }
                 virtual result_type operator () (argument_type job) {
                     if (equalityTest (*job)) {
-                        job->AddRef ();
-                        jobs.push_back (job);
+                        jobs.push_back (RunLoop::Job::Ptr (job));
                     }
                     return true;
                 }
@@ -589,7 +556,7 @@ namespace thekogans {
                 pendingJobs.for_each (waitForJobCallback);
                 runningJobs.for_each (waitForJobCallback);
             }
-            return WaitForJobsHelper (waitForJobCallback.jobs, timeSpec);
+            return WaitForJobs (waitForJobCallback.jobs, timeSpec);
         }
 
         bool Pipeline::WaitForIdle (const TimeSpec &timeSpec) {
@@ -633,15 +600,9 @@ namespace thekogans {
         }
 
         void Pipeline::CancelJobs (const RunLoop::UserJobList &jobs) {
-            struct CancelJobsCallback : public RunLoop::UserJobList::Callback {
-                typedef RunLoop::UserJobList::Callback::result_type result_type;
-                typedef RunLoop::UserJobList::Callback::argument_type argument_type;
-                virtual result_type operator () (argument_type job) {
-                    job->Cancel ();
-                    return true;
-                }
-            } cancelJobsCallback;
-            jobs.for_each (cancelJobsCallback);
+            for (RunLoop::UserJobList::const_iterator it = jobs.begin (), end = jobs.end (); it != end; ++it) {
+                (*it)->Cancel ();
+            }
         }
 
         void Pipeline::CancelJobs (const RunLoop::EqualityTest &equalityTest) {
