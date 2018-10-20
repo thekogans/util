@@ -147,26 +147,25 @@ namespace thekogans {
         };
     #endif // defined (TOOLCHAIN_OS_Windows)
 
-    #if defined (TOOLCHAIN_OS_Windows)
         Timer::Timer (
                 Callback &callback_,
                 const std::string &name_) :
                 callback (callback_),
                 name (name_),
+            #if defined (TOOLCHAIN_OS_Windows)
                 timer (0) {
+            #elif defined (TOOLCHAIN_OS_Linux)
+                timer (0) {
+            #elif defined (TOOLCHAIN_OS_OSX)
+                id (idPool++) {
+            #endif // defined (TOOLCHAIN_OS_Windows)
+        #if defined (TOOLCHAIN_OS_Windows)
             timer = CreateThreadpoolTimer (TimerCallback, this, 0);
             if (timer == 0) {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
                     THEKOGANS_UTIL_OS_ERROR_CODE);
             }
-        }
-    #elif defined (TOOLCHAIN_OS_Linux)
-        Timer::Timer (
-                Callback &callback_,
-                const std::string &name_) :
-                callback (callback_),
-                name (name_),
-                timer (0) {
+        #elif defined (TOOLCHAIN_OS_Linux)
             sigevent sigEvent;
             memset (&sigEvent, 0, sizeof (sigEvent));
             sigEvent.sigev_notify = SIGEV_THREAD;
@@ -179,15 +178,8 @@ namespace thekogans {
                 }
                 Sleep (TimeSpec::FromMilliseconds (50));
             }
+        #endif // defined (TOOLCHAIN_OS_Windows)
         }
-    #elif defined (TOOLCHAIN_OS_OSX)
-        Timer::Timer (
-            Callback &callback_,
-            const std::string &name_) :
-            callback (callback_),
-            name (name_),
-            id (idPool++) {}
-    #endif // defined (TOOLCHAIN_OS_Windows)
 
         Timer::~Timer () {
             Stop ();
