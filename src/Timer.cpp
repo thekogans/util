@@ -230,6 +230,7 @@ namespace thekogans {
         void Timer::Stop () {
         #if defined (TOOLCHAIN_OS_Windows)
             SetThreadpoolTimer (timer, 0, 0, 0);
+            WaitForThreadpoolTimerCallbacks (timer, TRUE);
         #elif defined (TOOLCHAIN_OS_Linux)
             itimerspec spec;
             memset (&spec, 0, sizeof (spec));
