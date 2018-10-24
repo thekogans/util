@@ -38,6 +38,7 @@
 #include "thekogans/util/TimeSpec.h"
 #include "thekogans/util/SpinLock.h"
 #include "thekogans/util/Singleton.h"
+#include "thekogans/util/RunLoop.h"
 #include "thekogans/util/JobQueuePool.h"
 
 namespace thekogans {
@@ -258,12 +259,31 @@ namespace thekogans {
             /// Convenient typedef for Singleton<util::JobQueuePool, SpinLock, JobQueuePoolCreateInstance>.
             typedef Singleton<util::JobQueuePool, SpinLock, JobQueuePoolCreateInstance> JobQueuePool;
             /// \brief
-            /// Forward declaration of AlarmJob.
-            struct AlarmJob;
+            /// Forward declaration of Job.
+            struct Job;
+            /// \brief
+            /// Job list id.
+            enum {
+                /// \brief
+                /// JobList ID.
+                JOB_LIST_ID = RunLoop::LAST_JOB_LIST_ID,
+                /// \brief
+                /// Use this sentinel to create your own job lists.
+                LAST_JOB_LIST_ID
+            };
+            /// \brief
+            /// Convenient typedef for IntrusiveList<Job, JOB_LIST_ID>.
+            typedef IntrusiveList<Job, JOB_LIST_ID> JobList;
+            /// \brief
+            /// Queue of pending jobs.
+            JobList jobs;
+            /// \brief
+            /// Synchronization lock.
+            SpinLock spinLock;
 
             /// \brief
-            /// Used internally to queue up an AlarmJob.
-            void QueueAlarmJob ();
+            /// Used internally to queue up an Job.
+            void QueueJob ();
 
             /// \brief
             /// Timer is neither copy constructable, nor assignable.

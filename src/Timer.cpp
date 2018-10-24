@@ -65,14 +65,14 @@ namespace thekogans {
                 PTP_TIMER /*Timer*/) {
             Timer *timer = static_cast<Timer *> (Context);
             if (timer != 0) {
-                timer->QueueAlarmJob ();
+                timer->QueueJob ();
             }
         }
     #elif defined (TOOLCHAIN_OS_Linux)
         void Timer::TimerCallback (union sigval val) {
             Timer *timer = static_cast<Timer *> (val.sival_ptr);
             if (timer != 0) {
-                timer->QueueAlarmJob ();
+                timer->QueueJob ();
             }
         }
     #elif defined (TOOLCHAIN_OS_OSX)
@@ -81,8 +81,10 @@ namespace thekogans {
         struct Timer::KQueue :
                 public Singleton<KQueue, SpinLock>,
                 public Thread {
+        private:
             THEKOGANS_UTIL_HANDLE handle;
 
+        public:
             KQueue () :
                     Thread ("TimerKQueue"),
                     handle (kqueue ()) {
@@ -131,7 +133,7 @@ namespace thekogans {
             }
 
         private:
-            void Run () throw () {
+            virtual void Run () throw () {
                 const int MaxEventsBatch = 32;
                 keventStruct kqueueEvents[MaxEventsBatch];
                 while (1) {
@@ -139,7 +141,7 @@ namespace thekogans {
                     for (int i = 0; i < count; ++i) {
                         Timer *timer = (Timer *)kqueueEvents[i].udata;
                         if (timer != 0) {
-                            timer->QueueAlarmJob ();
+                            timer->QueueJob ();
                         }
                     }
                 }
@@ -256,13 +258,17 @@ namespace thekogans {
         #endif // defined (TOOLCHAIN_OS_Windows)
         }
 
-        struct Timer::AlarmJob : public RunLoop::Job {
-            THEKOGANS_UTIL_DECLARE_HEAP_WITH_LOCK (AlarmJob, SpinLock)
+        struct Timer::Job :
+                public RunLoop::Job,
+                public Timer::JobList::Node {
+            THEKOGANS_UTIL_DECLARE_HEAP_WITH_LOCK (Job, SpinLock)
 
+        private:
             JobQueue::Ptr jobQueue;
             Timer &timer;
 
-            AlarmJob (
+        public:
+            Job (
                 JobQueue::Ptr jobQueue_,
                 Timer &timer_) :
                 jobQueue (jobQueue_),
@@ -270,6 +276,18 @@ namespace thekogans {
 
         protected:
             // RunLoop::Job
+            virtual void SetState (State state) {
+                if (state == Pending) {
+                    LockGuard<SpinLock> guard (timer.spinLock);
+                    timer.jobs.push_back (this);
+                }
+                else if (state == Completed) {
+                    LockGuard<SpinLock> guard (timer.spinLock);
+                    timer.jobs.erase (this);
+                }
+                RunLoop::Job::SetState (state);
+            }
+
             virtual void Execute (const THEKOGANS_UTIL_ATOMIC<bool> &done) throw () {
                 if (!ShouldStop (done)) {
                     timer.callback.Alarm (timer);
@@ -277,27 +295,38 @@ namespace thekogans {
             }
         };
 
-        THEKOGANS_UTIL_IMPLEMENT_HEAP_WITH_LOCK (Timer::AlarmJob, SpinLock)
+        THEKOGANS_UTIL_IMPLEMENT_HEAP_WITH_LOCK (Timer::Job, SpinLock)
 
         bool Timer::WaitForCallbacks (
                 const TimeSpec &timeSpec,
                 bool cancelCallbacks) {
-            struct TimerEqualityTest : public RunLoop::EqualityTest {
-                Timer &timer;
-                explicit TimerEqualityTest (Timer &timer_) :
-                    timer (timer_) {}
-                virtual bool operator () (RunLoop::Job &job) const throw () {
-                    AlarmJob *alarmJob = dynamic_cast<AlarmJob *> (&job);
-                    return alarmJob != 0 && &alarmJob->timer == &timer;
-                }
-            } timerEqualityTest (*this);
-            if (cancelCallbacks) {
-                JobQueuePool::Instance ().CancelJobs (timerEqualityTest);
+            RunLoop::UserJobList jobs;
+            {
+                LockGuard<SpinLock> guard (spinLock);
+                struct GetJobsCallback : public JobList::Callback {
+                    typedef JobList::Callback::result_type result_type;
+                    typedef JobList::Callback::argument_type argument_type;
+                    RunLoop::UserJobList &jobs;
+                    bool cancel;
+                    GetJobsCallback (
+                        RunLoop::UserJobList &jobs_,
+                        bool cancel_) :
+                        jobs (jobs_),
+                        cancel (cancel_) {}
+                    virtual result_type operator () (argument_type job) {
+                        if (cancel) {
+                            job->Cancel ();
+                        }
+                        jobs.push_back (Job::Ptr (job));
+                        return true;
+                    }
+                } getJobsCallback (jobs, cancelCallbacks);
+                this->jobs.for_each (getJobsCallback);
             }
-            return JobQueuePool::Instance ().WaitForJobs (timerEqualityTest, timeSpec);
+            return RunLoop::WaitForJobs (jobs, timeSpec);
         }
 
-        void Timer::QueueAlarmJob () {
+        void Timer::QueueJob () {
             // Try to acquire a job queue from the pool. Note the
             // retry count == 0. Delivering timer alarms on time
             // is more important then delivering them at all. It's
@@ -306,7 +335,7 @@ namespace thekogans {
             JobQueue::Ptr jobQueue = JobQueuePool::Instance ().GetJobQueue (0);
             if (jobQueue.Get () != 0) {
                 THEKOGANS_UTIL_TRY {
-                    jobQueue->EnqJob (RunLoop::Job::Ptr (new AlarmJob (jobQueue, *this)));
+                    jobQueue->EnqJob (Job::Ptr (new Job (jobQueue, *this)));
                 }
                 THEKOGANS_UTIL_CATCH_AND_LOG_SUBSYSTEM (THEKOGANS_UTIL)
             }
