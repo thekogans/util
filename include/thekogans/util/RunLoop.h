@@ -83,7 +83,7 @@ namespace thekogans {
             /// Forward declaration of Job.
             struct Job;
             /// \brief
-            /// Job list ids.
+            /// Job list id.
             enum {
                 /// \brief
                 /// JobList ID.
@@ -262,7 +262,7 @@ namespace thekogans {
             protected:
                 /// \brief
                 /// Used internally by RunLoop to set the RunLoop id and reset
-                /// status, disposition and completed.
+                /// state, disposition and completed.
                 /// \param[in] runLoopId_ RunLoop id to which this job belongs.
                 virtual void Reset (const RunLoop::Id &runLoopId_);
                 /// \brief

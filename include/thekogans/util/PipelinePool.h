@@ -98,7 +98,7 @@ namespace thekogans {
             /// \see{Pipeline} max pending jobs.
             const ui32 maxPendingJobs;
             /// \brief
-            /// Number of worker threads service the \see{Pipeline}.
+            /// Number of worker threads servicing the \see{Pipeline}.
             const ui32 workerCount;
             /// \brief
             /// \see{Pipeline} worker thread priority.
@@ -149,7 +149,7 @@ namespace thekogans {
                 /// \param[in] name \see{Pipeline} name.
                 /// \param[in] type \see{Pipeline} type.
                 /// \param[in] maxPendingJobs \see{Pipeline} max pending jobs.
-                /// \param[in] workerCount Number of worker threads service the \see{Pipeline}.
+                /// \param[in] workerCount Number of worker threads servicing the \see{Pipeline}.
                 /// \param[in] workerPriority \see{Pipeline} worker thread priority.
                 /// \param[in] workerAffinity \see{Pipeline} worker thread processor affinity.
                 /// \param[in] workerCallback Called to initialize/uninitialize the
@@ -223,7 +223,7 @@ namespace thekogans {
             /// \param[in] name_ \see{Pipeline} name.
             /// \param[in] type_ \see{Pipeline} type.
             /// \param[in] maxPendingJobs_ Max pending \see{Pipeline} jobs.
-            /// \param[in] workerCount_ Number of worker threads service the \see{Pipeline}.
+            /// \param[in] workerCount_ Number of worker threads servicing the \see{Pipeline}.
             /// \param[in] workerPriority_ \see{Pipeline} worker thread priority.
             /// \param[in] workerAffinity_ \see{Pipeline} worker thread processor affinity.
             /// \param[in] workerCallback_ Called to initialize/uninitialize the \see{Pipeline}
@@ -336,7 +336,7 @@ namespace thekogans {
             /// Max pending \see{Pipeline} jobs.
             static ui32 maxPendingJobs;
             /// \brief
-            /// Number of worker threads service the \see{Pipeline}.
+            /// Number of worker threads servicing the \see{Pipeline}.
             static ui32 workerCount;
             /// \brief
             /// \see{Pipeline} worker thread priority.
@@ -358,7 +358,7 @@ namespace thekogans {
             /// \param[in] name_ \see{Pipeline} name.
             /// \param[in] type_ \see{Pipeline} type.
             /// \param[in] maxPendingJobs_ Max pending \see{Pipeline} jobs.
-            /// \param[in] workerCount_ Number of worker threads service the \see{Pipeline}.
+            /// \param[in] workerCount_ Number of worker threads servicing the \see{Pipeline}.
             /// \param[in] workerPriority_ \see{Pipeline} worker thread priority.
             /// \param[in] workerAffinity_ \see{Pipeline} worker thread processor affinity.
             /// \param[in] workerCallback_ Called to initialize/uninitialize the \see{Pipeline}

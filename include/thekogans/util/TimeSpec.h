@@ -61,6 +61,18 @@ namespace thekogans {
         /// To maintain that, the operators + and - (below),
         /// do range checking on their arguments, and clamp
         /// the result accordingly.
+        ///
+        /// They also observe the following infinity convention:
+        ///
+        /// operator + | infinity | < infinity
+        /// -----------+----------+-----------
+        /// infinity   | infinity | infinity
+        /// < infinity | infinity | < infinity
+        ///
+        /// operator - | infinity | < infinity
+        /// -----------+----------+-----------
+        /// infinity   |    0     | infinity
+        /// < infinity |    0     | < infinity
 
         struct _LIB_THEKOGANS_UTIL_DECL TimeSpec {
             /// \brief

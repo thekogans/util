@@ -44,7 +44,7 @@ namespace thekogans {
             bool archive;
             /// \brief
             /// Number of archives before we start dropping.
-            ui32 archiveCount;
+            std::size_t archiveCount;
             /// \brief
             /// Max log file size before archiving.
             std::size_t maxLogFileSize;
@@ -72,7 +72,7 @@ namespace thekogans {
             FileLogger (
                 const std::string &path_,
                 bool archive_ = true,
-                ui32 archiveCount_ = DEFAULT_ARCHIVE_COUNT,
+                std::size_t archiveCount_ = DEFAULT_ARCHIVE_COUNT,
                 std::size_t maxLogFileSize_ = DEFAULT_MAX_LOG_FILE_SIZE,
                 ui32 level = UI32_MAX) :
                 Logger (level),

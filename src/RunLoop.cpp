@@ -36,7 +36,7 @@ namespace thekogans {
 
         void RunLoop::Job::Reset (const RunLoop::Id &runLoopId_) {
             runLoopId = runLoopId_;
-            state = Pending;
+            SetState (Pending);
             disposition = Unknown;
             completed.Reset ();
         }

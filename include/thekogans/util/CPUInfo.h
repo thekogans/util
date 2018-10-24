@@ -54,7 +54,7 @@ namespace thekogans {
             bool isAMD;
             /// \brief
             /// L1 cache line size.
-            ui32 l1CacheLineSize;
+            std::size_t l1CacheLineSize;
             /// \brief
             /// cpuid function 1 ecx register value.
             Flags32 f_1_ECX;
@@ -114,7 +114,7 @@ namespace thekogans {
             /// \brief
             /// Return the size (in bytes) of the L1 cache line.
             /// \return The size (in bytes) of the L1 cache line.
-            inline ui32 L1CacheLineSize () const {
+            inline std::size_t L1CacheLineSize () const {
                 return l1CacheLineSize;
             }
 

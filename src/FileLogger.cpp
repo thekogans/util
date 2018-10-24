@@ -67,7 +67,7 @@ namespace thekogans {
                 Directory::Entry entry (path);
                 if (entry.size > maxLogFileSize) {
                     file.Close ();
-                    ui32 archiveNumber = archiveCount;
+                    std::size_t archiveNumber = archiveCount;
                     std::string archivePath =
                         FormatString ("%s.%u", path.c_str (), archiveNumber--);
                     if (Path (archivePath).Exists ()) {

@@ -221,7 +221,8 @@ namespace thekogans {
         #endif // defined (TOOLCHAIN_CONFIG_Debug)
             return
                 timeSpec1 == TimeSpec::Infinite || timeSpec2 == TimeSpec::Infinite ?
-                    TimeSpec::Infinite : AddWithCarry (timeSpec1, timeSpec2);
+                    TimeSpec::Infinite :
+                    AddWithCarry (timeSpec1, timeSpec2);
         }
 
         namespace {
@@ -257,8 +258,10 @@ namespace thekogans {
             return
                 timeSpec1 < timeSpec2 ?
                     TimeSpec::Zero :
-                    timeSpec1 == TimeSpec::Infinite && timeSpec2 == TimeSpec::Infinite ?
-                        TimeSpec::Infinite :
+                    timeSpec1 == TimeSpec::Infinite ?
+                        timeSpec2 == TimeSpec::Infinite ?
+                            TimeSpec::Zero :
+                            TimeSpec::Infinite :
                         SubWithBorrow (timeSpec1, timeSpec2);
         }
 

@@ -205,7 +205,7 @@ namespace thekogans {
             /// \param[in] name JobQueue thread name.
             /// \param[in] type JobQueue queue type.
             /// \param[in] maxPendingJobs Max pending queue jobs.
-            /// \param[in] workerCount Number of worker threads service the queue.
+            /// \param[in] workerCount Number of worker threads servicing the queue.
             /// \param[in] workerPriority JobQueue thread priority.
             /// \param[in] workerAffinity JobQueue thread processor affinity.
             /// \param[in] workerCallback Called to initialize/uninitialize the worker thread.
@@ -294,7 +294,7 @@ namespace thekogans {
             /// JobQueue queue max pending jobs.
             static ui32 maxPendingJobs;
             /// \brief
-            /// Number of worker threads service the queue.
+            /// Number of worker threads servicing the queue.
             static ui32 workerCount;
             /// \brief
             /// JobQueue thread priority.
@@ -314,7 +314,7 @@ namespace thekogans {
             /// \param[in] name_ JobQueue thread name.
             /// \param[in] type_ JobQueue queue type.
             /// \param[in] maxPendingJobs_ Max pending queue jobs.
-            /// \param[in] workerCount_ Number of worker threads service the queue.
+            /// \param[in] workerCount_ Number of worker threads servicing the queue.
             /// \param[in] workerPriority_ JobQueue thread priority.
             /// \param[in] workerAffinity_ JobQueue thread processor affinity.
             /// \param[in] workerCallback_ Called to initialize/uninitialize the worker thread.

@@ -181,7 +181,7 @@ namespace thekogans {
             protected:
                 /// \brief
                 /// Used internally by RunLoop to set the RunLoop id and reset
-                /// the status, disposition and completed.
+                /// the state, disposition and completed.
                 /// \param[in] runLoopId_ RunLoop id to which this job belongs.
                 virtual void Reset (const RunLoop::Id &runLoopId_);
                 /// \brief

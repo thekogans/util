@@ -92,7 +92,7 @@ namespace thekogans {
             /// \see{JobQueue} max pending jobs.
             const ui32 maxPendingJobs;
             /// \brief
-            /// Number of worker threads service the \see{JobQueue}.
+            /// Number of worker threads servicing the \see{JobQueue}.
             const ui32 workerCount;
             /// \brief
             /// \see{JobQueue} worker thread priority.
@@ -141,7 +141,7 @@ namespace thekogans {
                 /// \param[in] name \see{JobQueue} name.
                 /// \param[in] type \see{JobQueue} type.
                 /// \param[in] maxPendingJobs \see{JobQueue} max pending jobs.
-                /// \param[in] workerCount Number of worker threads service the \see{JobQueue}.
+                /// \param[in] workerCount Number of worker threads servicing the \see{JobQueue}.
                 /// \param[in] workerPriority \see{JobQueue} worker thread priority.
                 /// \param[in] workerAffinity \see{JobQueue} worker thread processor affinity.
                 /// \param[in] workerCallback Called to initialize/uninitialize the
@@ -209,7 +209,7 @@ namespace thekogans {
             /// \param[in] name_ \see{JobQueue} name.
             /// \param[in] type_ \see{JobQueue} type.
             /// \param[in] maxPendingJobs_ Max pending \see{JobQueue} jobs.
-            /// \param[in] workerCount_ Number of worker threads service the \see{JobQueue}.
+            /// \param[in] workerCount_ Number of worker threads servicing the \see{JobQueue}.
             /// \param[in] workerPriority_ \see{JobQueue} worker thread priority.
             /// \param[in] workerAffinity_ \see{JobQueue} worker thread processor affinity.
             /// \param[in] workerCallback_ Called to initialize/uninitialize the \see{JobQueue}
@@ -313,7 +313,7 @@ namespace thekogans {
             /// Max pending \see{JobQueue} jobs.
             static ui32 maxPendingJobs;
             /// \brief
-            /// Number of worker threads service the \see{JobQueue}.
+            /// Number of worker threads servicing each \see{JobQueue} in the pool.
             static ui32 workerCount;
             /// \brief
             /// \see{JobQueue} worker thread priority.
@@ -333,7 +333,7 @@ namespace thekogans {
             /// \param[in] name_ \see{JobQueue} name.
             /// \param[in] type_ \see{JobQueue} type.
             /// \param[in] maxPendingJobs_ Max pending \see{JobQueue} jobs.
-            /// \param[in] workerCount_ Number of worker threads service the \see{JobQueue}.
+            /// \param[in] workerCount_ Number of worker threads servicing the \see{JobQueue}.
             /// \param[in] workerPriority_ \see{JobQueue} worker thread priority.
             /// \param[in] workerAffinity_ \see{JobQueue} worker thread processor affinity.
             /// \param[in] workerCallback_ Called to initialize/uninitialize the \see{JobQueue}
@@ -360,10 +360,10 @@ namespace thekogans {
         /// \brief
         /// A global \see{JobQueuePool} instance. The \see{JobQueuePool} is
         /// designed to be as flexible as possible. To be useful in different
-        /// situations the \see{JobQueuePool}'s min/max worker count needs to
+        /// situations the \see{JobQueuePool}'s min/max queue count needs to
         /// be parametrized as we might need different pools running different
-        /// counts at different worker priorities. That said, the most basic
-        /// (and the most useful) use case will have a single pool using the
+        /// counts at different queue priorities. That said, the most basic
+        /// (and the most useful) use case will have the global pool using the
         /// defaults. This struct exists to aid in that. If all you need is a
         /// global \see{JobQueuePool} then GlobalJobQueuePool::Instance () will
         /// do the trick.
