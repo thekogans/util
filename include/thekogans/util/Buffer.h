@@ -29,6 +29,7 @@
         #include <windows.h>
     #endif // !defined (_WINDOWS_)
 #endif // defined (TOOLCHAIN_OS_Windows)
+#include <cassert>
 #include <memory>
 #include "thekogans/util/Config.h"
 #include "thekogans/util/Types.h"
@@ -36,6 +37,7 @@
 #include "thekogans/util/SizeT.h"
 #include "thekogans/util/Heap.h"
 #include "thekogans/util/SpinLock.h"
+#include "thekogans/util/Exception.h"
 #include "thekogans/util/Serializer.h"
 #include "thekogans/util/DefaultAllocator.h"
 #include "thekogans/util/SecureAllocator.h"

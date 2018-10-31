@@ -21,7 +21,6 @@
 #if defined (THEKOGANS_UTIL_HAVE_ZLIB)
     #include <zlib.h>
 #endif // defined (THEKOGANS_UTIL_HAVE_ZLIB)
-#include "thekogans/util/Exception.h"
 #include "thekogans/util/Buffer.h"
 
 namespace thekogans {
