@@ -272,7 +272,7 @@ namespace thekogans {
                 fixedBuffer.readOffset >>
                 fixedBuffer.writeOffset;
             if (serializer.Read (fixedBuffer.data, length) != length) {
-                THEKxOGANxS_UTIL_THROW_STRING_EXCEPTION (
+                THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
                     "serializxer.Read (fixedBuffer.data, " THEKOGANS_UTIL_SIZE_T_FORMAT ") != " THEKOGANS_UTIL_SIZE_T_FORMAT,
                     length,
                     length);
