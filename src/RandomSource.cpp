@@ -218,7 +218,8 @@ namespace thekogans {
             }
             else {
                 THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                    "Unable to get %u random bytes for value.", UI32_SIZE);
+                    "Unable to get " THEKOGANS_UTIL_SIZE_T_FORMAT " random bytes for value.",
+                    UI32_SIZE);
             }
         }
 
@@ -229,7 +230,8 @@ namespace thekogans {
             }
             else {
                 THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                    "Unable to get %u random bytes for value.", UI64_SIZE);
+                    "Unable to get " THEKOGANS_UTIL_SIZE_T_FORMAT " random bytes for value.",
+                    UI64_SIZE);
             }
         }
 

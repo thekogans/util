@@ -183,7 +183,7 @@ namespace thekogans {
             /// and throw if bigger then maxPluginsFileSize.
             Plugins (
                 const std::string &path_,
-                ui64 maxPluginsFileSize = DEFAULT_MAX_PLUGINS_FILE_SIZE);
+                std::size_t maxPluginsFileSize = DEFAULT_MAX_PLUGINS_FILE_SIZE);
 
             /// \brief
             /// Return plugin map.

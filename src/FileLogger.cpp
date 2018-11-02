@@ -69,7 +69,10 @@ namespace thekogans {
                     file.Close ();
                     std::size_t archiveNumber = archiveCount;
                     std::string archivePath =
-                        FormatString ("%s.%u", path.c_str (), archiveNumber--);
+                        FormatString (
+                            "%s." THEKOGANS_UTIL_SIZE_T_FORMAT,
+                            path.c_str (),
+                            archiveNumber--);
                     if (Path (archivePath).Exists ()) {
                         if (unlink (archivePath.c_str ()) < 0) {
                             THEKOGANS_UTIL_THROW_POSIX_ERROR_CODE_EXCEPTION (
@@ -78,10 +81,16 @@ namespace thekogans {
                     }
                     while (archiveNumber > 0) {
                         std::string archivePath =
-                            FormatString ("%s.%u", path.c_str (), archiveNumber);
+                            FormatString (
+                                "%s." THEKOGANS_UTIL_SIZE_T_FORMAT,
+                                path.c_str (),
+                                archiveNumber);
                         if (Path (archivePath).Exists ()) {
                             std::string nextArchivePath =
-                                FormatString ("%s.%u", path.c_str (), archiveNumber + 1);
+                                FormatString (
+                                    "%s." THEKOGANS_UTIL_SIZE_T_FORMAT,
+                                    path.c_str (),
+                                    archiveNumber + 1);
                             if (rename (archivePath.c_str (), nextArchivePath.c_str ()) < 0) {
                                 THEKOGANS_UTIL_THROW_POSIX_ERROR_CODE_EXCEPTION (
                                     THEKOGANS_UTIL_POSIX_OS_ERROR_CODE);

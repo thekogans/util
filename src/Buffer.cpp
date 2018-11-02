@@ -457,7 +457,7 @@ namespace thekogans {
                 std::size_t bytesWritten = serializer.Write (buffer.data, buffer.length);
                 if (buffer.length != bytesWritten) {
                     THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                        "serializer.Write (buffer.data, %u) == %u",
+                        "serializer.Write (buffer.data, " THEKOGANS_UTIL_SIZE_T_FORMAT ") == " THEKOGANS_UTIL_SIZE_T_FORMAT,
                         buffer.length,
                         bytesWritten);
                 }
@@ -478,7 +478,7 @@ namespace thekogans {
                 std::size_t bytesRead = serializer.Read (buffer.data, length);
                 if (length != bytesRead) {
                     THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                        "serializer.Read (buffer.data, %u) == %u",
+                        "serializer.Read (buffer.data, " THEKOGANS_UTIL_SIZE_T_FORMAT ") == " THEKOGANS_UTIL_SIZE_T_FORMAT,
                         length,
                         bytesRead);
                 }

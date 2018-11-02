@@ -209,7 +209,7 @@ namespace thekogans {
             }
             else {
                 THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                    "Unable to get %u random bytes for guid.", SIZE);
+                    "Unable to get " THEKOGANS_UTIL_SIZE_T_FORMAT " random bytes for guid.", SIZE);
             }
         }
 

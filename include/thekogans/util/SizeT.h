@@ -73,8 +73,8 @@ namespace thekogans {
 
             /// \brief
             /// Implicit typecast operator.
-            inline operator ui64 () const {
-                return value;
+            inline operator std::size_t () const {
+                return (std::size_t)value;
             }
 
             /// \brief

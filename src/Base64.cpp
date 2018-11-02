@@ -155,7 +155,7 @@ namespace thekogans {
                 // length calculations above are wrong.
                 if (encoded.writeOffset > encoded.length) {
                     THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                        "Buffer overflow! (%u, %u)",
+                        "Buffer overflow! (" THEKOGANS_UTIL_SIZE_T_FORMAT ", " THEKOGANS_UTIL_SIZE_T_FORMAT ")",
                         encoded.length,
                         encoded.writeOffset);
                 }
@@ -200,7 +200,7 @@ namespace thekogans {
                                 }
                                 else {
                                     THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                                        "Invalid input @ %u", index);
+                                        "Invalid input @ " THEKOGANS_UTIL_SIZE_T_FORMAT, index);
                                 }
                             }
                             else if (*bufferPtr == '=') {
@@ -209,18 +209,19 @@ namespace thekogans {
                                 }
                                 else {
                                     THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                                        "Invalid input @ %u", index);
+                                        "Invalid input @ " THEKOGANS_UTIL_SIZE_T_FORMAT, index);
                                 }
                             }
                             else {
                                 THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                                    "Invalid input @ %u", index);
+                                    "Invalid input @ " THEKOGANS_UTIL_SIZE_T_FORMAT, index);
                             }
                         }
                     }
                     if ((output.GetDataAvailableForReading () & 3) != 0) {
                         THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                            "Invalid count: %u", output.GetDataAvailableForReading ());
+                            "Invalid count: " THEKOGANS_UTIL_SIZE_T_FORMAT,
+                            output.GetDataAvailableForReading ());
                     }
                     return output;
                 }
@@ -357,7 +358,7 @@ namespace thekogans {
                 // length calculations (DecodedLength) above are wrong.
                 if (output.writeOffset > output.length) {
                     THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                        "Buffer overflow! (%u, %u)",
+                        "Buffer overflow! (" THEKOGANS_UTIL_SIZE_T_FORMAT ", " THEKOGANS_UTIL_SIZE_T_FORMAT ")",
                         output.length,
                         output.writeOffset);
                 }

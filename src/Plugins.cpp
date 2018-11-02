@@ -96,16 +96,16 @@ namespace thekogans {
 
         Plugins::Plugins (
                 const std::string &path_,
-                ui64 maxPluginsFileSize) :
+                std::size_t maxPluginsFileSize) :
                 path (path_),
                 modified (false) {
             if (Path (path).Exists ()) {
                 ReadOnlyFile file (HostEndian, path);
                 // Protect yourself.
-                ui64 fileSize = file.GetSize ();
+                std::size_t fileSize = (std::size_t)file.GetSize ();
                 if (fileSize > maxPluginsFileSize) {
                     THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                        "'%s' is bigger (%u) than expected. (" THEKOGANS_UTIL_UI64_FORMAT ")",
+                        "'%s' is bigger (" THEKOGANS_UTIL_SIZE_T_FORMAT ") than expected. (" THEKOGANS_UTIL_SIZE_T_FORMAT ")",
                         path.c_str (),
                         fileSize,
                         maxPluginsFileSize);
@@ -114,7 +114,7 @@ namespace thekogans {
                 if (buffer.AdvanceWriteOffset (
                         file.Read (buffer.GetWritePtr (), fileSize)) != fileSize) {
                     THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                        "Unable to read %u bytes from '%s'.",
+                        "Unable to read " THEKOGANS_UTIL_SIZE_T_FORMAT " bytes from '%s'.",
                         fileSize,
                         path.c_str ());
                 }
