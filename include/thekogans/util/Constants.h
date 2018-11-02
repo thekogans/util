@@ -168,7 +168,7 @@ namespace thekogans {
         #define SIZE_T_MAX thekogans::util::UI64_MAX
     #endif // !defined (SIZE_T_MAX)
     #else // defined (TOOLCHAIN_ARCH_i386)
-        #error "Unknown SIZE_T_SIZE"
+        #error Unknown TOOLCHAIN_ARCH.
     #endif // defined (TOOLCHAIN_ARCH_i386)
 
         /// \brief

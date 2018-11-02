@@ -19,7 +19,7 @@
 #define __thekogans_util_Config_h
 
 #if !defined (__cplusplus)
-    #error libthekogans_util requires C++ compilation (use a .cpp suffix)
+    #error libthekogans_util requires C++ compilation (use a .cpp suffix).
 #endif // !defined (__cplusplus)
 
 /// \brief

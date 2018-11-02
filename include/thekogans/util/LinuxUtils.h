@@ -44,6 +44,8 @@
     #define FSTAT_FUNC fstat64
     #define LSEEK_FUNC lseek64
     #define FTRUNCATE_FUNC ftruncate64
+#else // defined (TOOLCHAIN_ARCH_i386)
+    #error Unknown TOOLCHAIN_ARCH.
 #endif // defined (TOOLCHAIN_ARCH_i386)
 
 #endif // !defined (__thekogans_util_LinuxUtils_h)

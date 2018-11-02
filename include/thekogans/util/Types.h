@@ -94,7 +94,7 @@ namespace thekogans {
     #elif defined (TOOLCHAIN_ARCH_x86_64)
         typedef ui64 MachineWord;
     #else // defined (TOOLCHAIN_ARCH_x86_64)
-        #error "Unknown MachineWord."
+        #error Unknown TOOLCHAIN_ARCH.
     #endif // defined (TOOLCHAIN_ARCH_i386)
 
         /// \brief
@@ -154,7 +154,7 @@ namespace thekogans {
             /// Host Arch is x86_86.
             HostArch = x86_86
         #else // defined (TOOLCHAIN_ENDIAN_Big)
-            #error "Unable to determine host Arch."
+            #error Unknown TOOLCHAIN_ARCH.
         #endif // defined (TOOLCHAIN_ENDIAN_Little)
         };
 
@@ -201,7 +201,7 @@ namespace thekogans {
         #elif defined (TOOLCHAIN_ARCH_x86_64)
             typedef __int64 ssize_t;
         #else // defined (TOOLCHAIN_ARCH_x86_64)
-            #error "Unknown ssize_t"
+            #error Unknown TOOLCHAIN_ARCH.
         #endif // defined (TOOLCHAIN_ARCH_i386)
     #else // defined (TOOLCHAIN_OS_Windows)
         /// \brief

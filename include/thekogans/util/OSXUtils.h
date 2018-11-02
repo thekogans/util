@@ -45,7 +45,7 @@
     #define keventSet(kev, ident, filter, flags, fflags, data, udata)\
         EV_SET64 (kev, ident, filter, flags, fflags, data, (uint64_t)udata, 0, 0)
 #else // defined (TOOLCHAIN_ARCH_i386)
-    #error "Unknown architecture!"
+    #error Unknown TOOLCHAIN_ARCH.
 #endif // defined (TOOLCHAIN_ARCH_i386)
 
 namespace thekogans {
