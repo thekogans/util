@@ -177,7 +177,9 @@ namespace thekogans {
                 const GUID &guid) {
             if (serializer.Write (guid.data, GUID_SIZE) != GUID_SIZE) {
                 THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                    "Write (guid.data, %u) != %u", GUID_SIZE, GUID_SIZE);
+                    "Write (guid.data, " THEKOGANS_UTIL_SIZE_T_FORMAT ") != " THEKOGANS_UTIL_SIZE_T_FORMAT,
+                    GUID_SIZE,
+                    GUID_SIZE);
             }
             return serializer;
         }
@@ -192,7 +194,9 @@ namespace thekogans {
                 GUID &guid) {
             if (serializer.Read (guid.data, GUID_SIZE) != GUID_SIZE) {
                 THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                    "Read (guid.data, %u) != %u", GUID_SIZE, GUID_SIZE);
+                    "Read (guid.data, " THEKOGANS_UTIL_SIZE_T_FORMAT ") != " THEKOGANS_UTIL_SIZE_T_FORMAT,
+                    GUID_SIZE,
+                    GUID_SIZE);
             }
             return serializer;
         }

@@ -25,7 +25,9 @@ namespace thekogans {
         Serializer &Serializer::operator << (Endianness value) {
             if (Write (&value, ENDIANNESS_SIZE) != ENDIANNESS_SIZE) {
                 THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                    "Write (&value, %u) != %u", ENDIANNESS_SIZE, ENDIANNESS_SIZE);
+                    "Write (&value, " THEKOGANS_UTIL_SIZE_T_FORMAT ") != " THEKOGANS_UTIL_SIZE_T_FORMAT,
+                    ENDIANNESS_SIZE,
+                    ENDIANNESS_SIZE);
             }
             return *this;
         }
@@ -33,7 +35,9 @@ namespace thekogans {
         Serializer &Serializer::operator >> (Endianness &value) {
             if (Read (&value, ENDIANNESS_SIZE) != ENDIANNESS_SIZE) {
                 THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                    "Read (&value, %u) != %u", ENDIANNESS_SIZE, ENDIANNESS_SIZE);
+                    "Read (&value, " THEKOGANS_UTIL_SIZE_T_FORMAT ") != " THEKOGANS_UTIL_SIZE_T_FORMAT,
+                    ENDIANNESS_SIZE,
+                    ENDIANNESS_SIZE);
             }
             return *this;
         }
@@ -42,7 +46,9 @@ namespace thekogans {
             ui8 b = value ? 1 : 0;
             if (Write (&b, BOOL_SIZE) != BOOL_SIZE) {
                 THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                    "Write (&b, %u) != %u", BOOL_SIZE, BOOL_SIZE);
+                    "Write (&b, " THEKOGANS_UTIL_SIZE_T_FORMAT ") != " THEKOGANS_UTIL_SIZE_T_FORMAT,
+                    BOOL_SIZE,
+                    BOOL_SIZE);
             }
             return *this;
         }
@@ -51,7 +57,9 @@ namespace thekogans {
             ui8 b;
             if (Read (&b, BOOL_SIZE) != BOOL_SIZE) {
                 THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                    "Read (&b, %u) != %u", BOOL_SIZE, BOOL_SIZE);
+                    "Read (&b, " THEKOGANS_UTIL_SIZE_T_FORMAT ") != " THEKOGANS_UTIL_SIZE_T_FORMAT,
+                    BOOL_SIZE,
+                    BOOL_SIZE);
             }
             value = b == 1;
             return *this;
@@ -72,7 +80,9 @@ namespace thekogans {
                 std::size_t size = Size (value);
                 if (Write (value, size) != size) {
                     THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                        "Write (value, %u) != %u", size, size);
+                        "Write (value, " THEKOGANS_UTIL_SIZE_T_FORMAT ") != " THEKOGANS_UTIL_SIZE_T_FORMAT,
+                        size,
+                        size);
                 }
                 return *this;
             }
@@ -87,7 +97,9 @@ namespace thekogans {
                 for (;;) {
                     if (Read (value, I8_SIZE) != I8_SIZE) {
                         THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                            "Read (value, %u) != %u", I8_SIZE, I8_SIZE);
+                            "Read (value, " THEKOGANS_UTIL_SIZE_T_FORMAT ") != " THEKOGANS_UTIL_SIZE_T_FORMAT,
+                            I8_SIZE,
+                            I8_SIZE);
                     }
                     if (*value == 0) {
                         break;
@@ -107,7 +119,7 @@ namespace thekogans {
             if (value.size () > 0) {
                 if (Write (value.c_str (), value.size ()) != value.size ()) {
                     THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                        "Write (value.c_str (), %u) != %u",
+                        "Write (value.c_str (), " THEKOGANS_UTIL_SIZE_T_FORMAT ") != " THEKOGANS_UTIL_SIZE_T_FORMAT,
                         value.size (),
                         value.size ());
                 }
@@ -122,7 +134,9 @@ namespace thekogans {
                 value.resize (length);
                 if (Read (&value[0], length) != length) {
                     THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                        "Read (&value[0], %u) != %u", length, length);
+                        "Read (&value[0], " THEKOGANS_UTIL_SIZE_T_FORMAT ") != " THEKOGANS_UTIL_SIZE_T_FORMAT,
+                        length,
+                        length);
                 }
             }
             else {
@@ -134,7 +148,9 @@ namespace thekogans {
         Serializer &Serializer::operator << (i8 value) {
             if (Write (&value, I8_SIZE) != I8_SIZE) {
                 THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                    "Write (&value, %u) != %u", I8_SIZE, I8_SIZE);
+                    "Write (&value, " THEKOGANS_UTIL_SIZE_T_FORMAT ") != " THEKOGANS_UTIL_SIZE_T_FORMAT,
+                    I8_SIZE,
+                    I8_SIZE);
             }
             return *this;
         }
@@ -142,7 +158,9 @@ namespace thekogans {
         Serializer &Serializer::operator >> (i8 &value) {
             if (Read (&value, I8_SIZE) != I8_SIZE) {
                 THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                    "Read (&value, %u) != %u", I8_SIZE, I8_SIZE);
+                    "Read (&value, " THEKOGANS_UTIL_SIZE_T_FORMAT ") != " THEKOGANS_UTIL_SIZE_T_FORMAT,
+                    I8_SIZE,
+                    I8_SIZE);
             }
             return *this;
         }
@@ -150,7 +168,9 @@ namespace thekogans {
         Serializer &Serializer::operator << (ui8 value) {
             if (Write (&value, UI8_SIZE) != UI8_SIZE) {
                 THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                    "Write (&value, %u) != %u", UI8_SIZE, UI8_SIZE);
+                    "Write (&value, " THEKOGANS_UTIL_SIZE_T_FORMAT ") != " THEKOGANS_UTIL_SIZE_T_FORMAT,
+                    UI8_SIZE,
+                    UI8_SIZE);
             }
             return *this;
         }
@@ -158,7 +178,9 @@ namespace thekogans {
         Serializer &Serializer::operator >> (ui8 &value) {
             if (Read (&value, UI8_SIZE) != UI8_SIZE) {
                 THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                    "Read (&value, %u) != %u", UI8_SIZE, UI8_SIZE);
+                    "Read (&value, " THEKOGANS_UTIL_SIZE_T_FORMAT ") != " THEKOGANS_UTIL_SIZE_T_FORMAT,
+                    UI8_SIZE,
+                    UI8_SIZE);
             }
             return *this;
         }
@@ -169,7 +191,9 @@ namespace thekogans {
             }
             if (Write (&value, I16_SIZE) != I16_SIZE) {
                 THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                    "Write (&value, %u) != %u", I16_SIZE, I16_SIZE);
+                    "Write (&value, " THEKOGANS_UTIL_SIZE_T_FORMAT ") != " THEKOGANS_UTIL_SIZE_T_FORMAT,
+                    I16_SIZE,
+                    I16_SIZE);
             }
             return *this;
         }
@@ -177,7 +201,9 @@ namespace thekogans {
         Serializer &Serializer::operator >> (i16 &value) {
             if (Read (&value, I16_SIZE) != I16_SIZE) {
                 THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                    "Read (&value, %u) != %u", I16_SIZE, I16_SIZE);
+                    "Read (&value, " THEKOGANS_UTIL_SIZE_T_FORMAT ") != " THEKOGANS_UTIL_SIZE_T_FORMAT,
+                    I16_SIZE,
+                    I16_SIZE);
             }
             if (endianness != HostEndian) {
                 value = ByteSwap<LittleEndian, BigEndian> (value);
@@ -191,7 +217,9 @@ namespace thekogans {
             }
             if (Write (&value, UI16_SIZE) != UI16_SIZE) {
                 THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                    "Write (&value, %u) != %u", UI16_SIZE, UI16_SIZE);
+                    "Write (&value, " THEKOGANS_UTIL_SIZE_T_FORMAT ") != " THEKOGANS_UTIL_SIZE_T_FORMAT,
+                    UI16_SIZE,
+                    UI16_SIZE);
             }
             return *this;
         }
@@ -199,7 +227,9 @@ namespace thekogans {
         Serializer &Serializer::operator >> (ui16 &value) {
             if (Read (&value, UI16_SIZE) != UI16_SIZE) {
                 THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                    "Read (&value, %u) != %u", UI16_SIZE, UI16_SIZE);
+                    "Read (&value, " THEKOGANS_UTIL_SIZE_T_FORMAT ") != " THEKOGANS_UTIL_SIZE_T_FORMAT,
+                    UI16_SIZE,
+                    UI16_SIZE);
             }
             if (endianness != HostEndian) {
                 value = ByteSwap<LittleEndian, BigEndian> (value);
@@ -213,7 +243,9 @@ namespace thekogans {
             }
             if (Write (&value, I32_SIZE) != I32_SIZE) {
                 THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                    "Write (&value, %u) != %u", I32_SIZE, I32_SIZE);
+                    "Write (&value, " THEKOGANS_UTIL_SIZE_T_FORMAT ") != " THEKOGANS_UTIL_SIZE_T_FORMAT,
+                    I32_SIZE,
+                    I32_SIZE);
             }
             return *this;
         }
@@ -221,7 +253,9 @@ namespace thekogans {
         Serializer &Serializer::operator >> (i32 &value) {
             if (Read (&value, I32_SIZE) != I32_SIZE) {
                 THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                    "Read (&value, %u) != %u", I32_SIZE, I32_SIZE);
+                    "Read (&value, " THEKOGANS_UTIL_SIZE_T_FORMAT ") != " THEKOGANS_UTIL_SIZE_T_FORMAT,
+                    I32_SIZE,
+                    I32_SIZE);
             }
             if (endianness != HostEndian) {
                 value = ByteSwap<LittleEndian, BigEndian> (value);
@@ -235,7 +269,9 @@ namespace thekogans {
             }
             if (Write (&value, UI32_SIZE) != UI32_SIZE) {
                 THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                    "Write (&value, %u) != %u", UI32_SIZE, UI32_SIZE);
+                    "Write (&value, " THEKOGANS_UTIL_SIZE_T_FORMAT ") != " THEKOGANS_UTIL_SIZE_T_FORMAT,
+                    UI32_SIZE,
+                    UI32_SIZE);
             }
             return *this;
         }
@@ -243,7 +279,9 @@ namespace thekogans {
         Serializer &Serializer::operator >> (ui32 &value) {
             if (Read (&value, UI32_SIZE) != UI32_SIZE) {
                 THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                    "Read (&value, %u) != %u", UI32_SIZE, UI32_SIZE);
+                    "Read (&value, " THEKOGANS_UTIL_SIZE_T_FORMAT ") != " THEKOGANS_UTIL_SIZE_T_FORMAT,
+                    UI32_SIZE,
+                    UI32_SIZE);
             }
             if (endianness != HostEndian) {
                 value = ByteSwap<LittleEndian, BigEndian> (value);
@@ -257,7 +295,9 @@ namespace thekogans {
             }
             if (Write (&value, I64_SIZE) != I64_SIZE) {
                 THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                    "Write (&value, %u) != %u", I64_SIZE, I64_SIZE);
+                    "Write (&value, " THEKOGANS_UTIL_SIZE_T_FORMAT ") != " THEKOGANS_UTIL_SIZE_T_FORMAT,
+                    I64_SIZE,
+                    I64_SIZE);
             }
             return *this;
         }
@@ -265,7 +305,9 @@ namespace thekogans {
         Serializer &Serializer::operator >> (i64 &value) {
             if (Read (&value, I64_SIZE) != I64_SIZE) {
                 THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                    "Read (&value, %u) != %u", I64_SIZE, I64_SIZE);
+                    "Read (&value, " THEKOGANS_UTIL_SIZE_T_FORMAT ") != " THEKOGANS_UTIL_SIZE_T_FORMAT,
+                    I64_SIZE,
+                    I64_SIZE);
             }
             if (endianness != HostEndian) {
                 value = ByteSwap<LittleEndian, BigEndian> (value);
@@ -279,7 +321,9 @@ namespace thekogans {
             }
             if (Write (&value, UI64_SIZE) != UI64_SIZE) {
                 THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                    "Write (&value, %u) != %u", UI64_SIZE, UI64_SIZE);
+                    "Write (&value, " THEKOGANS_UTIL_SIZE_T_FORMAT ") != " THEKOGANS_UTIL_SIZE_T_FORMAT,
+                    UI64_SIZE,
+                    UI64_SIZE);
             }
             return *this;
         }
@@ -287,7 +331,9 @@ namespace thekogans {
         Serializer &Serializer::operator >> (ui64 &value) {
             if (Read (&value, UI64_SIZE) != UI64_SIZE) {
                 THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                    "Read (&value, %u) != %u", UI64_SIZE, UI64_SIZE);
+                    "Read (&value, " THEKOGANS_UTIL_SIZE_T_FORMAT ") != " THEKOGANS_UTIL_SIZE_T_FORMAT,
+                    UI64_SIZE,
+                    UI64_SIZE);
             }
             if (endianness != HostEndian) {
                 value = ByteSwap<LittleEndian, BigEndian> (value);
@@ -301,7 +347,9 @@ namespace thekogans {
             }
             if (Write (&value, F32_SIZE) != F32_SIZE) {
                 THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                    "Write (&value, %u) != %u", F32_SIZE, F32_SIZE);
+                    "Write (&value, " THEKOGANS_UTIL_SIZE_T_FORMAT ") != " THEKOGANS_UTIL_SIZE_T_FORMAT,
+                    F32_SIZE,
+                    F32_SIZE);
             }
             return *this;
         }
@@ -309,7 +357,9 @@ namespace thekogans {
         Serializer &Serializer::operator >> (f32 &value) {
             if (Read (&value, F32_SIZE) != F32_SIZE) {
                 THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                    "Read (&value, %u) != %u", F32_SIZE, F32_SIZE);
+                    "Read (&value, " THEKOGANS_UTIL_SIZE_T_FORMAT ") != " THEKOGANS_UTIL_SIZE_T_FORMAT,
+                    F32_SIZE,
+                    F32_SIZE);
             }
             if (endianness != HostEndian) {
                 value = ByteSwap<LittleEndian, BigEndian> (value);
@@ -323,7 +373,9 @@ namespace thekogans {
             }
             if (Write (&value, F64_SIZE) != F64_SIZE) {
                 THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                    "Write (&value, %u) != %u", F64_SIZE, F64_SIZE);
+                    "Write (&value, " THEKOGANS_UTIL_SIZE_T_FORMAT ") != " THEKOGANS_UTIL_SIZE_T_FORMAT,
+                    F64_SIZE,
+                    F64_SIZE);
             }
             return *this;
         }
@@ -331,7 +383,9 @@ namespace thekogans {
         Serializer &Serializer::operator >> (f64 &value) {
             if (Read (&value, F64_SIZE) != F64_SIZE) {
                 THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                    "Read (&value, %u) != %u", F64_SIZE, F64_SIZE);
+                    "Read (&value, " THEKOGANS_UTIL_SIZE_T_FORMAT ") != " THEKOGANS_UTIL_SIZE_T_FORMAT,
+                    F64_SIZE,
+                    F64_SIZE);
             }
             if (endianness != HostEndian) {
                 value = ByteSwap<LittleEndian, BigEndian> (value);
@@ -345,7 +399,9 @@ namespace thekogans {
                 std::size_t size = value.size () * I8_SIZE;
                 if (Write (&value[0], size) != size) {
                     THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                        "Write (&value[0], %u) != %u", size, size);
+                        "Write (&value[0], " THEKOGANS_UTIL_SIZE_T_FORMAT ") != " THEKOGANS_UTIL_SIZE_T_FORMAT,
+                        size,
+                        size);
                 }
             }
             return *this;
@@ -359,7 +415,9 @@ namespace thekogans {
                 std::size_t size = length * I8_SIZE;
                 if (Read (&value[0], size) != size) {
                     THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                        "Read (&value[0], %u) != %u", size, size);
+                        "Read (&value[0], " THEKOGANS_UTIL_SIZE_T_FORMAT ") != " THEKOGANS_UTIL_SIZE_T_FORMAT,
+                        size,
+                        size);
                 }
             }
             else {
@@ -374,7 +432,9 @@ namespace thekogans {
                 std::size_t size = value.size () * UI8_SIZE;
                 if (Write (&value[0], size) != size) {
                     THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                        "Write (&value[0], %u) != %u", size, size);
+                        "Write (&value[0], " THEKOGANS_UTIL_SIZE_T_FORMAT ") != " THEKOGANS_UTIL_SIZE_T_FORMAT,
+                        size,
+                        size);
                 }
             }
             return *this;
@@ -388,7 +448,9 @@ namespace thekogans {
                 std::size_t size = length * UI8_SIZE;
                 if (Read (&value[0], size) != size) {
                     THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                        "Read (&value[0], %u) != %u", size, size);
+                        "Read (&value[0], " THEKOGANS_UTIL_SIZE_T_FORMAT ") != " THEKOGANS_UTIL_SIZE_T_FORMAT,
+                        size,
+                        size);
                 }
             }
             else {

@@ -35,6 +35,7 @@
 #include "thekogans/util/Exception.h"
 #include "thekogans/util/Singleton.h"
 #include "thekogans/util/IntrusiveList.h"
+#include "thekogans/util/StringUtils.h"
 #include "thekogans/util/XMLUtils.h"
 
 namespace thekogans {
@@ -907,7 +908,7 @@ namespace thekogans {
                 // We're going out of scope. If there are still
                 // pages remaining, we have a memory leak.
                 THEKOGANS_UTIL_ASSERT (fullPages.empty () && partialPages.empty (),
-                    FormatString ("%s:%u", GetName (), itemCount));
+                    FormatString ("%s:" THEKOGANS_UTIL_SIZE_T_FORMAT, GetName (), itemCount));
                 // IMPORTANT: Do not uncomment this Flush. It
                 // interferes with static dtors. If you are using a
                 // local temp heap, inherit from this one, and call

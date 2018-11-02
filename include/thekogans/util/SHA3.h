@@ -89,7 +89,7 @@ namespace thekogans {
             /// Return hasher name.
             /// \return Hasher name.
             virtual std::string GetName (std::size_t digestSize) const {
-                return FormatString ("SHA3-%u", digestSize * 8);
+                return FormatString ("SHA3-" THEKOGANS_UTIL_SIZE_T_FORMAT, digestSize * 8);
             }
             /// \brief
             /// Return hasher supported digest sizes.

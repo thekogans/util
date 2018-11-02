@@ -251,7 +251,9 @@ namespace thekogans {
                 fixedBuffer.writeOffset;
             if (serializer.Write (fixedBuffer.data, length) != length) {
                 THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                    "serializer.Write (fixedBuffer.data, %u) != %u", length, length);
+                    "serializer.Write (fixedBuffer.data, " THEKOGANS_UTIL_SIZE_T_FORMAT ") != " THEKOGANS_UTIL_SIZE_T_FORMAT,
+                    length,
+                    length);
             }
             return serializer;
         }
@@ -270,8 +272,10 @@ namespace thekogans {
                 fixedBuffer.readOffset >>
                 fixedBuffer.writeOffset;
             if (serializer.Read (fixedBuffer.data, length) != length) {
-                THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                    "serializer.Read (fixedBuffer.data, %u) != %u", length, length);
+                THEKxOGANxS_UTIL_THROW_STRING_EXCEPTION (
+                    "serializxer.Read (fixedBuffer.data, " THEKOGANS_UTIL_SIZE_T_FORMAT ") != " THEKOGANS_UTIL_SIZE_T_FORMAT,
+                    length,
+                    length);
             }
             return serializer;
         }

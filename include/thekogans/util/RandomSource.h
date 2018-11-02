@@ -135,7 +135,8 @@ namespace thekogans {
             /// }
             /// else {
             ///     THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-            ///         "Unable to get %u random bytes for seed.", entropy.length);
+            ///         "Unable to get " THEKOGANS_UTIL_SIZE_T_FORMAT " random bytes for seed.",
+            ///         entropy.length);
             /// }
             /// \endcode
             ///

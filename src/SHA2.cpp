@@ -61,7 +61,8 @@ namespace thekogans {
                     break;
                 default:
                     THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                        "Unsupported digest size: %u", digestSize);
+                        "Unsupported digest size: " THEKOGANS_UTIL_SIZE_T_FORMAT,
+                        digestSize);
             }
         }
 
@@ -77,7 +78,8 @@ namespace thekogans {
                     break;
                 default:
                     THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                        "Unsupported digest size: %u", digestSize);
+                        "Unsupported digest size: " THEKOGANS_UTIL_SIZE_T_FORMAT,
+                        digestSize);
             }
         }
 
