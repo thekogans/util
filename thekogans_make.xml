@@ -699,7 +699,8 @@
     </if>
   </cpp_sources>
   <if condition = "$(TOOLCHAIN_OS) == 'OSX'">
-    <objective_cpp_headers prefix = "include">
+    <objective_cpp_headers prefix = "include"
+                           install = "yes">
       <objective_cpp_header>$(organization)/$(project_directory)/OSXUtils.h</objective_cpp_header>
     </objective_cpp_headers>
     <objective_cpp_sources prefix = "src">

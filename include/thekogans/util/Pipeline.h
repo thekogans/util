@@ -462,24 +462,24 @@ namespace thekogans {
             /// \brief
             /// Get all running and pending jobs matching the given equality test.
             /// \param[in] equalityTest \see{RunLoop::EqualityTest} to query to determine the matching jobs.
-            /// \param[out] jobs \see{RunLoop::UserJobList} (\see{IntrusiveList}) containing the matching jobs.
+            /// \param[out] jobs \see{RunLoop::UserJobList} containing the matching jobs.
             void GetJobs (
                 const RunLoop::EqualityTest &equalityTest,
                 RunLoop::UserJobList &jobs);
             /// \brief
             /// Get all pending jobs.
-            /// \param[out] pendingJobs \see{RunLoop::UserJobList} (\see{IntrusiveList}) containing pending jobs.
+            /// \param[out] pendingJobs \see{RunLoop::UserJobList} containing pending jobs.
             void GetPendingJobs (RunLoop::UserJobList &pendingJobs);
             /// \brief
             /// Get all running jobs.
-            /// \param[out] runningJobs \see{RunLoop::UserJobList} (\see{IntrusiveList}) containing running jobs.
+            /// \param[out] runningJobs \see{RunLoop::UserJobList} containing running jobs.
             void GetRunningJobs (RunLoop::UserJobList &runningJobs);
             /// \brief
             /// Get all running and pending jobs. pendingJobs and runningJobs can be the same
             /// UserJobList. In that case first n jobs will be pending and the final m jobs
             /// will be running.
-            /// \param[out] pendingJobs \see{RunLoop::UserJobList} (\see{IntrusiveList}) containing pending jobs.
-            /// \param[out] runningJobs \see{RunLoop::UserJobList} (\see{IntrusiveList}) containing running jobs.
+            /// \param[out] pendingJobs \see{RunLoop::UserJobList} containing pending jobs.
+            /// \param[out] runningJobs \see{RunLoop::UserJobList} containing running jobs.
             void GetAllJobs (
                 RunLoop::UserJobList &pendingJobs,
                 RunLoop::UserJobList &runningJobs);
@@ -514,7 +514,7 @@ namespace thekogans {
                 const TimeSpec &timeSpec = TimeSpec::Infinite);
             /// \brief
             /// Wait for all given running and pending jobs.
-            /// \param[in] jobs UserJobList (\see{IntrusiveList}) containing the jobs to wait on.
+            /// \param[in] jobs \see{RunLoop::UserJobList} containing the jobs to wait on.
             /// \param[in] timeSpec How long to wait for the jobs to complete.
             /// IMPORTANT: timeSpec is a relative value.
             /// \return true == All jobs satisfying the equalityTest completed,
@@ -527,7 +527,8 @@ namespace thekogans {
                 const TimeSpec &timeSpec = TimeSpec::Infinite);
             /// \brief
             /// Wait for all running and pending jobs matching the given equality test to complete.
-            /// \param[in] equalityTest EqualityTest to query to determine which jobs to wait on.
+            /// \param[in] equalityTest \see{RunLoop::EqualityTest} to query to determine which
+            /// jobs to wait on.
             /// \param[in] timeSpec How long to wait for the jobs to complete.
             /// IMPORTANT: timeSpec is a relative value.
             /// \return true == All jobs satisfying the equalityTest completed,
@@ -557,7 +558,8 @@ namespace thekogans {
             static void CancelJobs (const RunLoop::UserJobList &jobs);
             /// \brief
             /// Cancel all running and pending jobs matching the given equality test.
-            /// \param[in] equalityTest EqualityTest to query to determine which jobs to cancel.
+            /// \param[in] equalityTest \see{RunLoop::EqualityTest} to query to determine
+            /// which jobs to cancel.
             void CancelJobs (const RunLoop::EqualityTest &equalityTest);
             /// \brief
             /// Cancel all pending jobs.
