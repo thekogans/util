@@ -23,11 +23,6 @@
 #elif defined (TOOLCHAIN_OS_Linux)
     #include <signal.h>
 #elif defined (TOOLCHAIN_OS_OSX)
-    #include <sys/types.h>
-    #include <sys/event.h>
-    #include <sys/time.h>
-    #include "thekogans/util/Constants.h"
-    #include "thekogans/util/Thread.h"
     #include "thekogans/util/OSXUtils.h"
 #endif // defined (TOOLCHAIN_OS_Windows)
 #include "thekogans/util/LoggerMgr.h"
@@ -76,77 +71,12 @@ namespace thekogans {
             }
         }
     #elif defined (TOOLCHAIN_OS_OSX)
-        THEKOGANS_UTIL_ATOMIC<ui64> Timer::idPool (0);
-
-        struct Timer::KQueue :
-                public Singleton<KQueue, SpinLock>,
-                public Thread {
-        private:
-            THEKOGANS_UTIL_HANDLE handle;
-
-        public:
-            KQueue () :
-                    Thread ("TimerKQueue"),
-                    handle (kqueue ()) {
-                if (handle == THEKOGANS_UTIL_INVALID_HANDLE_VALUE) {
-                    THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                        THEKOGANS_UTIL_OS_ERROR_CODE);
-                }
-                Create (THEKOGANS_UTIL_HIGH_THREAD_PRIORITY);
+        void Timer::TimerCallback (void *userData) {
+            Timer *timer = static_cast<Timer *> (userData);
+            if (timer != 0) {
+                timer->QueueJob ();
             }
-            // Considering this is a singleton, if this dtor ever gets
-            // called, we have a big problem. It's here only for show and
-            // completeness.
-            ~KQueue () {
-                close (handle);
-            }
-
-            void StartTimer (
-                    Timer &timer,
-                    const TimeSpec &timeSpec,
-                    bool periodic) {
-                ui16 flags = EV_ADD;
-                if (!periodic) {
-                    flags |= EV_ONESHOT;
-                }
-                keventStruct event;
-                keventSet (&event, timer.id, EVFILT_TIMER, flags, 0,
-                    timeSpec.ToMilliseconds (), &timer);
-                if (keventFunc (handle, &event, 1, 0, 0, 0) != 0) {
-                    THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                        THEKOGANS_UTIL_OS_ERROR_CODE);
-                }
-            }
-
-            void StopTimer (Timer &timer) {
-                keventStruct event;
-                keventSet (&event, timer.id, EVFILT_TIMER, EV_DELETE, 0, 0, 0);
-                // No error checking here as non-periodic filters are
-                // removed from the queue after an event has been delivered.
-                keventFunc (handle, &event, 1, 0, 0, 0);
-            }
-
-            bool IsTimerRunning (const Timer &timer) {
-                keventStruct event;
-                keventSet (&event, timer.id, EVFILT_TIMER, EV_ENABLE, 0, 0, 0);
-                return keventFunc (handle, &event, 1, 0, 0, 0) == 0;
-            }
-
-        private:
-            virtual void Run () throw () {
-                const int MaxEventsBatch = 32;
-                keventStruct kqueueEvents[MaxEventsBatch];
-                while (1) {
-                    int count = keventFunc (handle, 0, 0, kqueueEvents, MaxEventsBatch, 0);
-                    for (int i = 0; i < count; ++i) {
-                        Timer *timer = (Timer *)kqueueEvents[i].udata;
-                        if (timer != 0) {
-                            timer->QueueJob ();
-                        }
-                    }
-                }
-            }
-        };
+        }
     #endif // defined (TOOLCHAIN_OS_Windows)
 
         Timer::Timer (
@@ -154,13 +84,7 @@ namespace thekogans {
                 const std::string &name_) :
                 callback (callback_),
                 name (name_),
-            #if defined (TOOLCHAIN_OS_Windows)
                 timer (0) {
-            #elif defined (TOOLCHAIN_OS_Linux)
-                timer (0) {
-            #elif defined (TOOLCHAIN_OS_OSX)
-                id (idPool++) {
-            #endif // defined (TOOLCHAIN_OS_Windows)
         #if defined (TOOLCHAIN_OS_Windows)
             timer = CreateThreadpoolTimer (TimerCallback, this, 0);
             if (timer == 0) {
@@ -180,6 +104,12 @@ namespace thekogans {
                 }
                 Sleep (TimeSpec::FromMilliseconds (50));
             }
+        #elif defined (TOOLCHAIN_OS_OSX)
+            timer = CreateKQueueTimer (TimerCallback, this);
+            if (timer == 0) {
+                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                    THEKOGANS_UTIL_OS_ERROR_CODE);
+            }
         #endif // defined (TOOLCHAIN_OS_Windows)
         }
 
@@ -190,6 +120,8 @@ namespace thekogans {
             CloseThreadpoolTimer (timer);
         #elif defined (TOOLCHAIN_OS_Linux)
             timer_delete (timer);
+        #elif defined (TOOLCHAIN_OS_OSX)
+            DestroyKQueueTimer (timer);
         #endif // defined (TOOLCHAIN_OS_Windows)
         }
 
@@ -218,7 +150,7 @@ namespace thekogans {
                         THEKOGANS_UTIL_OS_ERROR_CODE);
                 }
             #elif defined (TOOLCHAIN_OS_OSX)
-                KQueue::Instance ().StartTimer (*this, timeSpec, periodic);
+                StartKQueueTimer (timer, timeSpec, periodic);
             #endif // defined (TOOLCHAIN_OS_Windows)
             }
             else {
@@ -239,7 +171,7 @@ namespace thekogans {
                     THEKOGANS_UTIL_OS_ERROR_CODE);
             }
         #elif defined (TOOLCHAIN_OS_OSX)
-            KQueue::Instance ().StopTimer (*this);
+            StopKQueueTimer (timer);
         #endif // defined (TOOLCHAIN_OS_Windows)
         }
 
@@ -255,7 +187,7 @@ namespace thekogans {
             }
             return spec.it_value != TimeSpec::Zero;
         #elif defined (TOOLCHAIN_OS_OSX)
-            return KQueue::Instance ().IsTimerRunning (*this);
+            return IsKQueueTimerRunning (timer);
         #endif // defined (TOOLCHAIN_OS_Windows)
         }
 

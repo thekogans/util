@@ -30,6 +30,8 @@
     #endif // !defined (_WINDOWS_)
 #elif defined (TOOLCHAIN_OS_Linux)
     #include <ctime>
+#elif defined (TOOLCHAIN_OS_OSX)
+    #include "thekogans/util/OSXUtils.h"
 #endif // defined (TOOLCHAIN_OS_Windows)
 #include <string>
 #include "thekogans/util/Config.h"
@@ -193,14 +195,11 @@ namespace thekogans {
             static void TimerCallback (union sigval val);
         #elif defined (TOOLCHAIN_OS_OSX)
             /// \brief
-            /// kqueue event id pool.
-            static THEKOGANS_UTIL_ATOMIC<ui64> idPool;
+            /// OS X native timer object.
+            KQueueTimer *timer;
             /// \brief
-            /// OS X kqueue event id.
-            ui64 id;
-            /// \brief
-            /// An OS X kqueue monitoring async timers.
-            struct KQueue;
+            /// OS X timer callback.
+            static void TimerCallback (void *userData);
         #endif // defined (TOOLCHAIN_OS_Windows)
 
         public:
@@ -240,8 +239,8 @@ namespace thekogans {
             void Stop ();
 
             /// \brief
-            /// Rreturn true if timer is running.
-            /// \return true == timer is running.
+            /// Rreturn true if timer is armed and running.
+            /// \return true == timer is armed and running.
             bool IsRunning ();
 
             /// \brief
@@ -282,7 +281,7 @@ namespace thekogans {
             SpinLock spinLock;
 
             /// \brief
-            /// Used internally to queue up an Job.
+            /// Used internally to queue up a Job.
             void QueueJob ();
 
             /// \brief
