@@ -74,6 +74,49 @@ namespace thekogans {
         /// \return Current user home directory path.
         std::string GetHomeDirectory ();
 
+        /// \brief
+        /// typedef for KQueueTimer alarm callback.
+        typedef void (*KQueueTimerCallback) (void * /*userData*/);
+
+        /// \brief
+        /// Forward declaration for KQueueTimer.
+        struct KQueueTimer;
+        /// \brief
+        /// Forward declaration for \see{TimeSpec}.
+        struct TimeSpec;
+
+        /// \brief
+        /// Create a KQueueTimer.
+        /// \param[in] timerCallback Timer alarm callback.
+        /// \param[in] userData Parameter passed to callback.
+        /// \return A new KQueueTimer struct.
+        KQueueTimer *CreateKQueueTimer (
+            KQueueTimerCallback timerCallback,
+            void *userData);
+        /// \brief
+        /// Destroy the given KQueueTimer.
+        /// \param[in] timer KQueueTimer to destroy.
+        void DestroyKQueueTimer (KQueueTimer *timer);
+        /// \brief
+        /// Start the given KQueueTimer.
+        /// \param[in] timer KQueueTimer to start.
+        /// \param[in] timeSpec \see{TimeSpec} representing the timer interval.
+        /// \param[in] periodic true == the timer will fire every timeSpec milliseconds,
+        /// false == the timer will fire once after timeSpec milliseconds.
+        void StartKQueueTimer (
+            KQueueTimer *timer,
+            const TimeSpec &timeSpec,
+            bool periodic);
+        /// \brief
+        /// Stop the given KQueueTimer.
+        /// \param[in] timer KQueueTimer to stop.
+        void StopKQueueTimer (KQueueTimer *timer);
+        /// \brief
+        /// Return true if the given KQueueTimer is running.
+        /// \param[in] timer KQueueTimer to check if running.
+        /// \return true == the given KQueueTimer is running.
+        bool IsKQueueTimerRunning (KQueueTimer *timer);
+
     } // namespace util
 } // namespace thekogans
 
