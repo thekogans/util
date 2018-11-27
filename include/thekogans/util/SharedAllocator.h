@@ -194,11 +194,11 @@ namespace thekogans {
                 enum {
                     /// \brief
                     /// Block header size.
-                #if defined (TOOLCHAIN_CONFIG_Debug)
+                #if defined (THEKOGANS_UTIL_CONFIG_Debug)
                     HEADER_SIZE = UI64_SIZE + UI64_SIZE,
-                #else // defined (TOOLCHAIN_CONFIG_Debug)
+                #else // defined (THEKOGANS_UTIL_CONFIG_Debug)
                     HEADER_SIZE = UI64_SIZE,
-                #endif // defined (TOOLCHAIN_CONFIG_Debug)
+                #endif // defined (THEKOGANS_UTIL_CONFIG_Debug)
                     /// \brief
                     /// Smallest block size that the SharedAllocator
                     /// can allocate.
@@ -208,11 +208,11 @@ namespace thekogans {
                     FREE_BLOCK_SIZE = HEADER_SIZE + SMALLEST_BLOCK_SIZE
                 };
 
-            #if defined (TOOLCHAIN_CONFIG_Debug)
+            #if defined (THEKOGANS_UTIL_CONFIG_Debug)
                 /// \brief
                 /// A block watermark. Used in ValidatePtr.
                 const ui64 magic;
-            #endif // defined (TOOLCHAIN_CONFIG_Debug)
+            #endif // defined (THEKOGANS_UTIL_CONFIG_Debug)
                 /// \brief
                 /// Block data size.
                 ui64 size;
@@ -232,9 +232,9 @@ namespace thekogans {
                 Block (
                     ui64 size_,
                     ui64 next_ = 0) :
-                #if defined (TOOLCHAIN_CONFIG_Debug)
+                #if defined (THEKOGANS_UTIL_CONFIG_Debug)
                     magic (MAGIC64),
-                #endif // defined (TOOLCHAIN_CONFIG_Debug)
+                #endif // defined (THEKOGANS_UTIL_CONFIG_Debug)
                     size (size_ - HEADER_SIZE),
                     next (next_) {}
 
@@ -417,13 +417,13 @@ namespace thekogans {
             inline Block *ValidatePtr (void *ptr) {
                 if (ptr >= smallestValidPtr && ptr < end) {
                     Block *block = (Block *)((ui8 *)ptr - Block::HEADER_SIZE);
-                #if defined (TOOLCHAIN_CONFIG_Debug)
+                #if defined (THEKOGANS_UTIL_CONFIG_Debug)
                     if (block->magic == MAGIC64) {
-                #endif // defined (TOOLCHAIN_CONFIG_Debug)
+                #endif // defined (THEKOGANS_UTIL_CONFIG_Debug)
                         return block;
-                #if defined (TOOLCHAIN_CONFIG_Debug)
+                #if defined (THEKOGANS_UTIL_CONFIG_Debug)
                     }
-                #endif // defined (TOOLCHAIN_CONFIG_Debug)
+                #endif // defined (THEKOGANS_UTIL_CONFIG_Debug)
                 }
                 return 0;
             }

@@ -79,7 +79,7 @@ namespace thekogans {
             /// \brief
             /// Get the list of all hashers registered with the map.
             static void GetHashers (std::list<std::string> &hashers);
-        #if defined (TOOLCHAIN_TYPE_Static)
+        #if defined (THEKOGANS_UTIL_TYPE_Static)
             /// \brief
             /// Because Hash uses dynamic initialization, when using
             /// it in static builds call this method to have the Hash
@@ -87,7 +87,7 @@ namespace thekogans {
             /// calling this api, the only hashers that will be available
             /// to your application are the ones you explicitly link to.
             static void StaticInit ();
-        #endif // defined (TOOLCHAIN_TYPE_Static)
+        #endif // defined (THEKOGANS_UTIL_TYPE_Static)
 
             /// \brief
             /// Virtual dtor.
@@ -181,7 +181,7 @@ namespace thekogans {
                 memcmp (&digest1[0], &digest2[0], digest1.size ()) != 0;
         }
 
-    #if defined (TOOLCHAIN_TYPE_Static)
+    #if defined (THEKOGANS_UTIL_TYPE_Static)
         /// \def THEKOGANS_UTIL_DECLARE_HASH(type)
         /// Dynamic discovery macro. Add this to your class declaration.
         /// Example:
@@ -212,7 +212,7 @@ namespace thekogans {
         /// THEKOGANS_UTIL_IMPLEMENT_HASH (SHA1)
         /// \endcode
         #define THEKOGANS_UTIL_IMPLEMENT_HASH(type)
-    #else // defined (TOOLCHAIN_TYPE_Static)
+    #else // defined (THEKOGANS_UTIL_TYPE_Static)
         /// \def THEKOGANS_UTIL_DECLARE_HASH(type)
         /// Dynamic discovery macro. Add this to your class declaration.
         /// Example:
@@ -238,7 +238,7 @@ namespace thekogans {
         #define THEKOGANS_UTIL_IMPLEMENT_HASH(type)\
             const thekogans::util::Hash::MapInitializer type::mapInitializer (\
                 #type, type::Create);
-    #endif // defined (TOOLCHAIN_TYPE_Static)
+    #endif // defined (THEKOGANS_UTIL_TYPE_Static)
 
     } // namespace util
 } // namespace thekogans

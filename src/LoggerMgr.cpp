@@ -410,16 +410,16 @@ namespace thekogans {
                     }
                     THEKOGANS_UTIL_CATCH (std::exception) {
                         // There is very little we can do here.
-                    #if defined (TOOLCHAIN_CONFIG_Debug)
+                    #if defined (THEKOGANS_UTIL_CONFIG_Debug)
                         Console::Instance ().PrintString (
                             FormatString (
                                 "LoggerMgr::Log: %s\n",
                                 exception.what ()),
                             Console::StdErr,
                             Console::TEXT_COLOR_RED);
-                    #else // defined (TOOLCHAIN_CONFIG_Debug)
+                    #else // defined (THEKOGANS_UTIL_CONFIG_Debug)
                         (void)exception;
-                    #endif // defined (TOOLCHAIN_CONFIG_Debug)
+                    #endif // defined (THEKOGANS_UTIL_CONFIG_Debug)
                     }
                 }
             }

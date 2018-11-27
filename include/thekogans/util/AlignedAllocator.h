@@ -41,11 +41,11 @@ namespace thekogans {
             /// \brief
             /// Footer at the end of the block that holds the block info.
             struct Footer {
-            #if defined (TOOLCHAIN_CONFIG_Debug)
+            #if defined (THEKOGANS_UTIL_CONFIG_Debug)
                 /// \brief
                 /// A watermark.
                 std::size_t magic;
-            #endif // defined (TOOLCHAIN_CONFIG_Debug)
+            #endif // defined (THEKOGANS_UTIL_CONFIG_Debug)
                 /// \brief
                 /// Pointer to the beginning of the allocated block (unaligned).
                 void *ptr;
@@ -59,17 +59,17 @@ namespace thekogans {
                 Footer (
                     void *ptr_,
                     std::size_t size_) :
-                #if defined (TOOLCHAIN_CONFIG_Debug)
+                #if defined (THEKOGANS_UTIL_CONFIG_Debug)
                     magic (MAGIC),
-                #endif // defined (TOOLCHAIN_CONFIG_Debug)
+                #endif // defined (THEKOGANS_UTIL_CONFIG_Debug)
                     ptr (ptr_),
                     size (size_) {}
                 /// \brief
                 /// dtor.
                 ~Footer () {
-                #if defined (TOOLCHAIN_CONFIG_Debug)
+                #if defined (THEKOGANS_UTIL_CONFIG_Debug)
                     assert (magic == MAGIC);
-                #endif // defined (TOOLCHAIN_CONFIG_Debug)
+                #endif // defined (THEKOGANS_UTIL_CONFIG_Debug)
                 }
             };
 

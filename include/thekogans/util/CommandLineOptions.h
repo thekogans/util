@@ -55,11 +55,11 @@ namespace thekogans {
         ///         core (false),
         ///         daemonize (false),
         ///         level (
-        ///         #if defined (TOOLCHAIN_CONFIG_Debug)
+        ///         #if defined (THEKOGANS_UTIL_CONFIG_Debug)
         ///             util::LoggerMgr::Debug
-        ///         #else // defined (TOOLCHAIN_CONFIG_Debug)
+        ///         #else // defined (THEKOGANS_UTIL_CONFIG_Debug)
         ///             util::LoggerMgr::Info
-        ///         #endif // defined (TOOLCHAIN_CONFIG_Debug)
+        ///         #endif // defined (THEKOGANS_UTIL_CONFIG_Debug)
         ///         ) {}
         ///
         ///     virtual void DoOption (char option, const std::string &value) {

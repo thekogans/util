@@ -47,17 +47,17 @@
 
 #if defined (TOOLCHAIN_OS_Windows)
     #define _LIB_THEKOGANS_UTIL_API __stdcall
-    #if defined (TOOLCHAIN_TYPE_Shared)
+    #if defined (THEKOGANS_UTIL_TYPE_Shared)
         #if defined (_LIB_THEKOGANS_UTIL_BUILD)
             #define _LIB_THEKOGANS_UTIL_DECL __declspec (dllexport)
         #else // defined (_LIB_THEKOGANS_UTIL_BUILD)
             #define _LIB_THEKOGANS_UTIL_DECL __declspec (dllimport)
         #endif // defined (_LIB_THEKOGANS_UTIL_BUILD)
         #define THEKOGANS_UTIL_EXPORT __declspec (dllexport)
-    #else // defined (TOOLCHAIN_TYPE_Shared)
+    #else // defined (THEKOGANS_UTIL_TYPE_Shared)
         #define _LIB_THEKOGANS_UTIL_DECL
         #define THEKOGANS_UTIL_EXPORT
-    #endif // defined (TOOLCHAIN_TYPE_Shared)
+    #endif // defined (THEKOGANS_UTIL_TYPE_Shared)
     #if defined (_MSC_VER) && (_MSC_VER <= 1200)
         #define THEKOGANS_UTIL_TYPENAME
     #else // defined (_MSC_VER) && (_MSC_VER <= 1200)
@@ -76,7 +76,7 @@
     #define THEKOGANS_UTIL_PACKED(x) x __attribute__ ((packed))
 #endif // defined (TOOLCHAIN_OS_Windows)
 
-#if defined (TOOLCHAIN_CONFIG_Debug)
+#if defined (THEKOGANS_UTIL_CONFIG_Debug)
     /// \def THEKOGANS_UTIL_ASSERT(condition, message)
     /// A more capable replacement for assert.
     #define THEKOGANS_UTIL_ASSERT(condition, message)\
@@ -102,10 +102,10 @@
     #else // defined (THEKOGANS_UTIL_BREAK_ON_THROW)
         #define THEKOGANS_UTIL_DEBUG_BREAK
     #endif // defined (THEKOGANS_UTIL_BREAK_ON_THROW)
-#else // defined (TOOLCHAIN_CONFIG_Debug)
+#else // defined (THEKOGANS_UTIL_CONFIG_Debug)
     #define THEKOGANS_UTIL_ASSERT(condition, message) do {} while (false)
     #define THEKOGANS_UTIL_DEBUG_BREAK
-#endif // defined (TOOLCHAIN_CONFIG_Debug)
+#endif // defined (THEKOGANS_UTIL_CONFIG_Debug)
 
 /// \def THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN(type)
 /// A convenient macro to suppress copy construction and assignment.

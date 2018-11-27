@@ -685,12 +685,12 @@ namespace thekogans {
                 /// \brief
                 /// Page item info.
                 struct Item {
-                #if defined (TOOLCHAIN_CONFIG_Debug)
+                #if defined (THEKOGANS_UTIL_CONFIG_Debug)
                     /// \brief
                     /// In debug, helps to catch item double
                     /// free, and buffer underrun.
                     std::size_t magic1;
-                #endif // defined (TOOLCHAIN_CONFIG_Debug)
+                #endif // defined (THEKOGANS_UTIL_CONFIG_Debug)
                     union {
                         /// \brief
                         /// Either a pointer to the next item in
@@ -700,12 +700,12 @@ namespace thekogans {
                         /// the item itself.
                         ui8 block[sizeof (T)];
                     };
-                #if defined (TOOLCHAIN_CONFIG_Debug)
+                #if defined (THEKOGANS_UTIL_CONFIG_Debug)
                     /// \brief
                     /// In debug, helps to catch item double
                     /// free, and buffer overrun.
                     std::size_t magic2;
-                #endif // defined (TOOLCHAIN_CONFIG_Debug)
+                #endif // defined (THEKOGANS_UTIL_CONFIG_Debug)
                 /// Within each page, freed items are stored
                 /// in a singly linked list.
                 } *freeItem;
@@ -736,9 +736,9 @@ namespace thekogans {
                         allocatedItems (0),
                         freeItem (0),
                         magic2 (MAGIC) {
-                #if defined (TOOLCHAIN_CONFIG_Debug)
+                #if defined (THEKOGANS_UTIL_CONFIG_Debug)
                     memset (items, 0, maxItems * sizeof (Item));
-                #endif // defined (TOOLCHAIN_CONFIG_Debug)
+                #endif // defined (THEKOGANS_UTIL_CONFIG_Debug)
                 }
 
                 /// \brief
@@ -762,10 +762,10 @@ namespace thekogans {
                         Item *item = freeItem;
                         // In release, this goes away, and the cost of
                         // allocation is reduced.
-                    #if defined (TOOLCHAIN_CONFIG_Debug)
+                    #if defined (THEKOGANS_UTIL_CONFIG_Debug)
                         item->magic1 = MAGIC;
                         item->magic2 = MAGIC;
-                    #endif // defined (TOOLCHAIN_CONFIG_Debug)
+                    #endif // defined (THEKOGANS_UTIL_CONFIG_Debug)
                         freeItem = freeItem->next;
                         ++allocatedItems;
                         return item->block;
@@ -775,10 +775,10 @@ namespace thekogans {
                         // In release, this goes away, and the assignment
                         // above, and return below get optimized down to:
                         // return &items[allocatedItems++];
-                    #if defined (TOOLCHAIN_CONFIG_Debug)
+                    #if defined (THEKOGANS_UTIL_CONFIG_Debug)
                         item->magic1 = MAGIC;
                         item->magic2 = MAGIC;
-                    #endif // defined (TOOLCHAIN_CONFIG_Debug)
+                    #endif // defined (THEKOGANS_UTIL_CONFIG_Debug)
                         return item->block;
                     }
                     // We are allocating from a full page!
@@ -790,15 +790,15 @@ namespace thekogans {
                 /// Free previously allocated item.
                 /// \param[in] ptr Pointer to item to free.
                 inline void Free (void *ptr) {
-                #if defined (TOOLCHAIN_CONFIG_Debug)
+                #if defined (THEKOGANS_UTIL_CONFIG_Debug)
                     assert (ptr != 0);
                     Item *item = (Item *)((std::size_t *)ptr - 1);
                     assert (IsItem (item));
                     item->magic1 = 0;
                     item->magic2 = 0;
-                #else // defined (TOOLCHAIN_CONFIG_Debug)
+                #else // defined (THEKOGANS_UTIL_CONFIG_Debug)
                     Item *item = (Item *)ptr;
-                #endif // defined (TOOLCHAIN_CONFIG_Debug)
+                #endif // defined (THEKOGANS_UTIL_CONFIG_Debug)
                     item->next = freeItem;
                     freeItem = item;
                     --allocatedItems;
@@ -809,11 +809,11 @@ namespace thekogans {
                 /// \param[in] ptr Pointer to check.
                 /// \return true == we own the pointer, false == the pointer is not one of ours.
                 inline bool IsValidPtr (void *ptr) {
-                #if defined (TOOLCHAIN_CONFIG_Debug)
+                #if defined (THEKOGANS_UTIL_CONFIG_Debug)
                     Item *item = (Item *)((std::size_t *)ptr - 1);
-                #else // defined (TOOLCHAIN_CONFIG_Debug)
+                #else // defined (THEKOGANS_UTIL_CONFIG_Debug)
                     Item *item = (Item *)ptr;
-                #endif // defined (TOOLCHAIN_CONFIG_Debug)
+                #endif // defined (THEKOGANS_UTIL_CONFIG_Debug)
                     return IsItem (item);
                 }
 
@@ -830,7 +830,7 @@ namespace thekogans {
                         item >= items && item < &items[maxItems] &&
                         (std::ptrdiff_t)((const std::size_t)item -
                             (const std::size_t)items) % sizeof (Item) == 0 &&
-                    #if defined (TOOLCHAIN_CONFIG_Debug)
+                    #if defined (THEKOGANS_UTIL_CONFIG_Debug)
                         // The test for magic is a lot more convincing
                         // once we verified that this is indeed one of
                         // our pointers.
@@ -840,9 +840,9 @@ namespace thekogans {
                         // Either way, this is an application bug, and
                         // hopefully this will make it easier to find.
                         item->magic1 == MAGIC && item->magic2 == MAGIC;
-                    #else // defined (TOOLCHAIN_CONFIG_Debug)
+                    #else // defined (THEKOGANS_UTIL_CONFIG_Debug)
                         1;
-                    #endif // defined (TOOLCHAIN_CONFIG_Debug)
+                    #endif // defined (THEKOGANS_UTIL_CONFIG_Debug)
                 }
 
                 /// \brief

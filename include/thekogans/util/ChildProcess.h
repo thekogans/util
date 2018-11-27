@@ -59,10 +59,10 @@ namespace thekogans {
         ///
         /// \code
         /// thekogans::util::ChildProcess ffmpegProcess (path to ffmpeg(.exe));
-        /// #if defined (TOOLCHAIN_CONFIG_Release)
+        /// #if defined (THEKOGANS_UTIL_CONFIG_Release)
         /// ffmpegProcess.AddArgument ("-loglevel");
         /// ffmpegProcess.AddArgument ("quiet");
-        /// #endif // defined (TOOLCHAIN_CONFIG_Release)
+        /// #endif // defined (THEKOGANS_UTIL_CONFIG_Release)
         /// ffmpegProcess.AddArgument ("-intra");
         /// ffmpegProcess.AddArgument ("-ss");
         /// ffmpegProcess.AddArgument (

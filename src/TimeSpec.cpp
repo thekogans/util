@@ -134,7 +134,7 @@ namespace thekogans {
             return *this + FromNanoseconds (nanoseconds);
         }
 
-    #if defined (TOOLCHAIN_CONFIG_Debug)
+    #if defined (THEKOGANS_UTIL_CONFIG_Debug)
         namespace {
             inline bool IsNormalized (const TimeSpec &timeSpec) {
                 return timeSpec == TimeSpec::Infinite ||
@@ -142,12 +142,12 @@ namespace thekogans {
                         timeSpec.nanoseconds >= 0 && timeSpec.nanoseconds < 1000000000);
             }
         }
-    #endif // defined (TOOLCHAIN_CONFIG_Debug)
+    #endif // defined (THEKOGANS_UTIL_CONFIG_Debug)
 
         _LIB_THEKOGANS_UTIL_DECL bool _LIB_THEKOGANS_UTIL_API operator < (
                 const TimeSpec &timeSpec1,
                 const TimeSpec &timeSpec2) {
-        #if defined (TOOLCHAIN_CONFIG_Debug)
+        #if defined (THEKOGANS_UTIL_CONFIG_Debug)
             THEKOGANS_UTIL_ASSERT (IsNormalized (timeSpec1),
                 FormatString (
                     THEKOGANS_UTIL_I64_FORMAT ":" THEKOGANS_UTIL_I32_FORMAT,
@@ -158,7 +158,7 @@ namespace thekogans {
                     THEKOGANS_UTIL_I64_FORMAT ":" THEKOGANS_UTIL_I32_FORMAT,
                     timeSpec2.seconds,
                     timeSpec2.nanoseconds));
-        #endif // defined (TOOLCHAIN_CONFIG_Debug)
+        #endif // defined (THEKOGANS_UTIL_CONFIG_Debug)
             return
                 timeSpec1 == TimeSpec::Infinite ? false :
                 timeSpec2 == TimeSpec::Infinite ? true :
@@ -170,7 +170,7 @@ namespace thekogans {
         _LIB_THEKOGANS_UTIL_DECL bool _LIB_THEKOGANS_UTIL_API operator > (
                 const TimeSpec &timeSpec1,
                 const TimeSpec &timeSpec2) {
-        #if defined (TOOLCHAIN_CONFIG_Debug)
+        #if defined (THEKOGANS_UTIL_CONFIG_Debug)
             THEKOGANS_UTIL_ASSERT (IsNormalized (timeSpec1),
                 FormatString (
                     THEKOGANS_UTIL_I64_FORMAT ":" THEKOGANS_UTIL_I32_FORMAT,
@@ -181,7 +181,7 @@ namespace thekogans {
                     THEKOGANS_UTIL_I64_FORMAT ":" THEKOGANS_UTIL_I32_FORMAT,
                     timeSpec2.seconds,
                     timeSpec2.nanoseconds));
-        #endif // defined (TOOLCHAIN_CONFIG_Debug)
+        #endif // defined (THEKOGANS_UTIL_CONFIG_Debug)
             return
                 timeSpec2 == TimeSpec::Infinite ? false :
                 timeSpec1 == TimeSpec::Infinite ? true :
@@ -207,7 +207,7 @@ namespace thekogans {
         _LIB_THEKOGANS_UTIL_DECL TimeSpec _LIB_THEKOGANS_UTIL_API operator + (
                 const TimeSpec &timeSpec1,
                 const TimeSpec &timeSpec2) {
-        #if defined (TOOLCHAIN_CONFIG_Debug)
+        #if defined (THEKOGANS_UTIL_CONFIG_Debug)
             THEKOGANS_UTIL_ASSERT (IsNormalized (timeSpec1),
                 FormatString (
                     THEKOGANS_UTIL_I64_FORMAT ":" THEKOGANS_UTIL_I32_FORMAT,
@@ -218,7 +218,7 @@ namespace thekogans {
                     THEKOGANS_UTIL_I64_FORMAT ":" THEKOGANS_UTIL_I32_FORMAT,
                     timeSpec2.seconds,
                     timeSpec2.nanoseconds));
-        #endif // defined (TOOLCHAIN_CONFIG_Debug)
+        #endif // defined (THEKOGANS_UTIL_CONFIG_Debug)
             return
                 timeSpec1 == TimeSpec::Infinite || timeSpec2 == TimeSpec::Infinite ?
                     TimeSpec::Infinite :
@@ -243,7 +243,7 @@ namespace thekogans {
         _LIB_THEKOGANS_UTIL_DECL TimeSpec _LIB_THEKOGANS_UTIL_API operator - (
                 const TimeSpec &timeSpec1,
                 const TimeSpec &timeSpec2) {
-        #if defined (TOOLCHAIN_CONFIG_Debug)
+        #if defined (THEKOGANS_UTIL_CONFIG_Debug)
             THEKOGANS_UTIL_ASSERT (IsNormalized (timeSpec1),
                 FormatString (
                     THEKOGANS_UTIL_I64_FORMAT ":" THEKOGANS_UTIL_I32_FORMAT,
@@ -254,7 +254,7 @@ namespace thekogans {
                     THEKOGANS_UTIL_I64_FORMAT ":" THEKOGANS_UTIL_I32_FORMAT,
                     timeSpec2.seconds,
                     timeSpec2.nanoseconds));
-        #endif // defined (TOOLCHAIN_CONFIG_Debug)
+        #endif // defined (THEKOGANS_UTIL_CONFIG_Debug)
             return
                 timeSpec1 < timeSpec2 ?
                     TimeSpec::Zero :

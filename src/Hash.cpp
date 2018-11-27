@@ -22,12 +22,12 @@
 #include "thekogans/util/Exception.h"
 #include "thekogans/util/StringUtils.h"
 #include "thekogans/util/Hash.h"
-#if defined (TOOLCHAIN_TYPE_Static)
+#if defined (THEKOGANS_UTIL_TYPE_Static)
     #include "thekogans/util/MD5.h"
     #include "thekogans/util/SHA1.h"
     #include "thekogans/util/SHA2.h"
     #include "thekogans/util/SHA3.h"
-#endif // defined (TOOLCHAIN_TYPE_Static)
+#endif // defined (THEKOGANS_UTIL_TYPE_Static)
 
 namespace thekogans {
     namespace util {
@@ -62,7 +62,7 @@ namespace thekogans {
             }
         }
 
-    #if defined (TOOLCHAIN_TYPE_Static)
+    #if defined (THEKOGANS_UTIL_TYPE_Static)
         void Hash::StaticInit () {
             static volatile bool registered = false;
             static SpinLock spinLock;
@@ -75,7 +75,7 @@ namespace thekogans {
                 registered = true;
             }
         }
-    #endif // defined (TOOLCHAIN_TYPE_Static)
+    #endif // defined (THEKOGANS_UTIL_TYPE_Static)
 
         std::string Hash::DigestToString (const Digest &digest) {
             return HexEncodeBuffer (digest.data (), digest.size ());

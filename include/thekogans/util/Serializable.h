@@ -302,7 +302,7 @@ namespace thekogans {
                 minSerializablesInPage,\
                 allocator)
 
-    #if defined (TOOLCHAIN_TYPE_Static)
+    #if defined (THEKOGANS_UTIL_TYPE_Static)
         /// \def THEKOGANS_UTIL_DECLARE_SERIALIZABLE(type, lock)
         /// Dynamic discovery macro. Add this to your class declaration.
         /// Example:
@@ -341,7 +341,7 @@ namespace thekogans {
                         "'%s' is already registered.", #type);\
                 }\
             }
-    #else // defined (TOOLCHAIN_TYPE_Static)
+    #else // defined (THEKOGANS_UTIL_TYPE_Static)
         /// \def THEKOGANS_UTIL_DECLARE_SERIALIZABLE(type, lock)
         /// Dynamic discovery macro. Add this to your class declaration.
         /// Example:
@@ -375,7 +375,7 @@ namespace thekogans {
                 type, version, lock, minSerializablesInPage, allocator)\
             const thekogans::util::Serializable::MapInitializer type::mapInitializer (\
                 #type, type::Create);
-    #endif // defined (TOOLCHAIN_TYPE_Static)
+    #endif // defined (THEKOGANS_UTIL_TYPE_Static)
 
         /// \brief
         /// Serializable::Header insertion operator.
