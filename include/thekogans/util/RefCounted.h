@@ -70,6 +70,8 @@ namespace thekogans {
             /// \return Decremented reference count.
             ui32 Release () {
                 if (count > 0) {
+                    // We save count in a local variable because after
+                    // Harakiri it wont be there to return.
                     ui32 newCount = --count;
                     if (newCount == 0) {
                         Harakiri ();

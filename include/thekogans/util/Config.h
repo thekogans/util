@@ -63,11 +63,11 @@
     #else // defined (_MSC_VER) && (_MSC_VER <= 1200)
         #define THEKOGANS_UTIL_TYPENAME typename
     #endif // defined (_MSC_VER) && (_MSC_VER <= 1200)
+    #define THEKOGANS_UTIL_PACKED(x) __pragma (pack (push, 1)) x __pragma (pack (pop))
     #if defined (_MSC_VER)
         #pragma warning (disable: 4251)  // using non-exported as public in exported
         #pragma warning (disable: 4786)
     #endif // defined (_MSC_VER)
-    #define THEKOGANS_UTIL_PACKED(x) __pragma (pack (push, 1)) x __pragma (pack (pop))
 #else // defined (TOOLCHAIN_OS_Windows)
     #define _LIB_THEKOGANS_UTIL_API
     #define _LIB_THEKOGANS_UTIL_DECL

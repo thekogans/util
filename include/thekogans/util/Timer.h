@@ -36,7 +36,6 @@
 #include <string>
 #include "thekogans/util/Config.h"
 #include "thekogans/util/Types.h"
-#include "thekogans/util/RefCounted.h"
 #include "thekogans/util/TimeSpec.h"
 #include "thekogans/util/SpinLock.h"
 #include "thekogans/util/Singleton.h"
