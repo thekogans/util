@@ -305,6 +305,33 @@ namespace thekogans {
             virtual Buffer Inflate (Allocator *allocator = &DefaultAllocator::Global);
         #endif // defined (THEKOGANS_UTIL_HAVE_ZLIB)
 
+            /// \brief
+            /// Convert the buffer to a std::string.
+            /// \return std::string containing the buffers contents.
+            inline std::string Tostring () const {
+                return GetDataAvailableForReading () > 0 ?
+                    std::string (GetReadPtr (), GetReadPtrEnd ()) :
+                    std::string ();
+            }
+
+            /// \brief
+            /// Convert the buffer to a std::vector.
+            /// \return std::vector containing the buffers contents.
+            inline std::vector<ui8> Tovector () const {
+                return GetDataAvailableForReading () > 0 ?
+                    std::vector<ui8> (GetReadPtr (), GetReadPtrEnd ()) :
+                    std::vector<ui8> ();
+            }
+
+            /// \brief
+            /// Convert the buffer to a SecureVector.
+            /// \return SecureVector containing the buffers contents.
+            inline SecureVector<ui8> ToSecureVector () const {
+                return GetDataAvailableForReading () > 0 ?
+                    SecureVector<ui8> (GetReadPtr (), GetReadPtrEnd ()) :
+                    SecureVector<ui8> ();
+            }
+
         #if defined (TOOLCHAIN_OS_Windows)
             /// \brief
             /// Convert the buffer to a Windows HGLOBAL.

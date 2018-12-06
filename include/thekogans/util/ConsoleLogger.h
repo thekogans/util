@@ -81,7 +81,7 @@ namespace thekogans {
             /// \param[in] level \see{LoggerMgr::level} this logger will log up to.
             ConsoleLogger (
                 ColorScheme::UniquePtr colorScheme_ =
-                    ColorScheme::UniquePtr (new DefaultColorScheme ()),
+                    ColorScheme::UniquePtr (new DefaultColorScheme),
                 ui32 level = UI32_MAX) :
                 Logger (level),
                 colorScheme (std::move (colorScheme_)) {}
