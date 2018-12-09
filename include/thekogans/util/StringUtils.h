@@ -109,6 +109,27 @@ namespace thekogans {
         _LIB_THEKOGANS_UTIL_DECL std::string _LIB_THEKOGANS_UTIL_API StringToLower (
             const char *str);
         /// \brief
+        /// The IsUTF8String () function scans the '\0'-terminated string starting
+        /// at str. It returns a pointer to the first byte of the first malformed
+        /// or overlong UTF-8 sequence found, or NULL if the string contains
+        /// only correct UTF-8. It also spots UTF-8 sequences that could cause
+        /// trouble if converted to UTF-16, namely surrogate characters
+        /// (U+D800..U+DFFF) and non-Unicode positions (U+FFFE..U+FFFF). This
+        /// routine is very likely to find a malformed sequence if the input
+        /// uses any other encoding than UTF-8. It therefore can be used as a
+        /// very effective heuristic for distinguishing between UTF-8 and other
+        /// encodings.
+        ///
+        /// I wrote this code mainly as a specification of functionality; there
+        /// are no doubt performance optimizations possible for certain CPUs.
+        ///
+        /// Markus Kuhn <http://www.cl.cam.ac.uk/~mgk25/> -- 2005-03-30
+        /// License: http://www.cl.cam.ac.uk/~mgk25/short-license.html
+        /// \param[in] str Pointer to UTF-8 encoded string to test.
+        /// \return If invalid, pointer to first malformed sequence, 0 if valid UTF-8.
+        _LIB_THEKOGANS_UTIL_DECL const ui8 * _LIB_THEKOGANS_UTIL_API IsUTF8String (
+            const ui8 *str);
+        /// \brief
         /// Hex encode a given buffer.
         /// \param[in] buffer Pointer to buffer to be hex encoded.
         /// \param[in] length Length of buffer.
