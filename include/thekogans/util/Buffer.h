@@ -287,9 +287,12 @@ namespace thekogans {
             /// \brief
             /// Reset the readOffset and the writeOffset to prepare the
             /// buffer for reuse.
-            inline void Rewind () {
+            /// \param[in] readOnly true == Reset for reading only.
+            inline void Rewind (bool readOnly = false) {
                 readOffset = 0;
-                writeOffset = 0;
+                if (!readOnly) {
+                    writeOffset = 0;
+                }
             }
 
         #if defined (THEKOGANS_UTIL_HAVE_ZLIB)
