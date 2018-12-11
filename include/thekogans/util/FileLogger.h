@@ -65,7 +65,7 @@ namespace thekogans {
             /// \brief
             /// ctor.
             /// \param[in] path_ Path of file to write log entries to.
-            /// \param[in] archive_ true = archve the file.
+            /// \param[in] archive_ true = archive the file.
             /// \param[in] archiveCount_ Number of archives before we start droping.
             /// \param[in] maxLogFileSize_ Max log file size before archiving.
             /// \param[in] level \see{LoggerMgr::level} this logger will log up to.
