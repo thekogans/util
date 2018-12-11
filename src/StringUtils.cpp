@@ -115,6 +115,55 @@ namespace thekogans {
             return lower;
         }
 
+        _LIB_THEKOGANS_UTIL_DECL const ui8 * _LIB_THEKOGANS_UTIL_API IsUTF8String (
+                const ui8 *str) {
+            while (*str != 0) {
+                if (*str < 0x80) {
+                    // 0xxxxxxx
+                    ++str;
+                }
+                else if ((str[0] & 0xe0) == 0xc0) {
+                    // 110XXXXx 10xxxxxx
+                    if ((str[1] & 0xc0) != 0x80 || (str[0] & 0xfe) == 0xc0) { // overlong?
+                        return str;
+                    }
+                    else {
+                        str += 2;
+                    }
+                }
+                else if ((str[0] & 0xf0) == 0xe0) {
+                    // 1110XXXX 10Xxxxxx 10xxxxxx
+                    if ((str[1] & 0xc0) != 0x80 ||
+                            (str[2] & 0xc0) != 0x80 ||
+                            (str[0] == 0xe0 && (str[1] & 0xe0) == 0x80) || // overlong?
+                            (str[0] == 0xed && (str[1] & 0xe0) == 0xa0) || // surrogate?
+                            (str[0] == 0xef && str[1] == 0xbf && (str[2] & 0xfe) == 0xbe)) { // U+FFFE or U+FFFF?
+                        return str;
+                    }
+                    else {
+                        str += 3;
+                    }
+                }
+                else if ((str[0] & 0xf8) == 0xf0) {
+                    // 11110XXX 10XXxxxx 10xxxxxx 10xxxxxx
+                    if ((str[1] & 0xc0) != 0x80 ||
+                            (str[2] & 0xc0) != 0x80 ||
+                            (str[3] & 0xc0) != 0x80 ||
+                            (str[0] == 0xf0 && (str[1] & 0xf0) == 0x80) || // overlong? */
+                            (str[0] == 0xf4 && str[1] > 0x8f) || str[0] > 0xf4) { // > U+10FFFF?
+                        return str;
+                    }
+                    else {
+                        str += 4;
+                    }
+                }
+                else {
+                    return str;
+                }
+            }
+            return 0;
+        }
+
         namespace {
             const char *hexTable = "0123456789abcdef";
         }
@@ -488,24 +537,32 @@ namespace thekogans {
 
         _LIB_THEKOGANS_UTIL_DECL std::string _LIB_THEKOGANS_UTIL_API GetEnvironmentVariable (
                 const char *name) {
-        #if defined (TOOLCHAIN_OS_Windows)
-            size_t requiredSize;
-            getenv_s (&requiredSize, 0, 0, name);
-            if (requiredSize > 0) {
-                Array<char> value (requiredSize);
-                if (getenv_s (&requiredSize, value, requiredSize, name) == 0) {
-                    return value.array;
+            if (name != 0) {
+            #if defined (TOOLCHAIN_OS_Windows)
+                size_t requiredSize;
+                getenv_s (&requiredSize, 0, 0, name);
+                if (requiredSize > 0) {
+                    Array<char> value (requiredSize);
+                    if (getenv_s (&requiredSize, value, requiredSize, name) == 0) {
+                        return value.array;
+                    }
+                    else {
+                        THEKOGANS_UTIL_THROW_POSIX_ERROR_CODE_EXCEPTION (
+                            THEKOGANS_UTIL_POSIX_OS_ERROR_CODE);
+                    }
                 }
-                else {
-                    THEKOGANS_UTIL_THROW_POSIX_ERROR_CODE_EXCEPTION (
-                        THEKOGANS_UTIL_POSIX_OS_ERROR_CODE);
+            #else // defined (TOOLCHAIN_OS_Windows)
+                const char *value = getenv (name);
+                if (value != 0) {
+                    return value;
                 }
+            #endif // defined (TOOLCHAIN_OS_Windows)
+                return std::string ();
             }
-            return std::string ();
-        #else // defined (TOOLCHAIN_OS_Windows)
-            const char *value = name != 0 ? getenv (name) : 0;
-            return value != 0 ? value : std::string ();
-        #endif // defined (TOOLCHAIN_OS_Windows)
+            else {
+                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
+            }
         }
 
     } // namespace util

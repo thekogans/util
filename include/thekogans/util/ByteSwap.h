@@ -18,6 +18,9 @@
 #if !defined (__thekogans_util_ByteSwap_h)
 #define __thekogans_util_ByteSwap_h
 
+#if defined (TOOLCHAIN_OS_OSX)
+    #include <libkern/OSByteOrder.h>
+#endif // defined (TOOLCHAIN_OS_OSX)
 #include <cstddef>
 #include <cstdlib>
 #include <stdexcept>
@@ -124,6 +127,8 @@ namespace thekogans {
                 #elif defined (__GNUC__) &&\
                         ((__GNUC__ == 4 && __GNUC_MINOR__ >= 8) || __GNUC__ > 4)
                     return __builtin_bswap16 (value);
+                #elif defined (TOOLCHAIN_OS_OSX)
+                    return OSSwapInt16 (value);
                 #else
                     return ((((value) >> 8) & 0xff) | (((value) & 0xff) << 8));
                 #endif // defined (TOOLCHAIN_OS_Windows)
@@ -144,6 +149,8 @@ namespace thekogans {
                 #elif defined (__GNUC__) &&\
                         ((__GNUC__ == 4 && __GNUC_MINOR__ >= 3) || __GNUC__ > 4)
                     return __builtin_bswap32 (value);
+                #elif defined (TOOLCHAIN_OS_OSX)
+                    return OSSwapInt32 (value);
                 #else
                     return ((((value) & 0xff000000) >> 24) |
                         (((value) & 0x00ff0000) >> 8) |
@@ -182,6 +189,8 @@ namespace thekogans {
                 #elif defined (__GNUC__) &&\
                         ((__GNUC__ == 4 && __GNUC_MINOR__ >= 3) || __GNUC__ > 4)
                     return __builtin_bswap64 (value);
+                #elif defined (TOOLCHAIN_OS_OSX)
+                    return OSSwapInt64 (value);
                 #else
                     return ((((value) & 0xff00000000000000ull) >> 56) |
                         (((value) & 0x00ff000000000000ull) >> 40) |
