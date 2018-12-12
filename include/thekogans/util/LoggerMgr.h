@@ -193,7 +193,7 @@ namespace thekogans {
                 /// Add a location to log entries.
                 Location = 1024,
                 /// \brief
-                /// Add a location to log entries.
+                /// Format log entries accross multiple lines.
                 Multiline = 2048,
                 /// \brief
                 /// Add every decoration to log entries.
