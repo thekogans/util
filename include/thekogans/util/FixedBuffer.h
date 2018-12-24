@@ -52,16 +52,21 @@ namespace thekogans {
             /// \param[in] endianness Specifies how multi-byte values are stored.
             /// \param[in] data_ Pointer to wrap.
             /// \param[in] length_ Length of data.
+            /// \param[in] clearUnused Clear unused array elements to 0.
             FixedBuffer (
                     Endianness endianness = HostEndian,
                     const ui8 *data_ = 0,
-                    std::size_t length_ = 0) :
+                    std::size_t length_ = 0,
+                    bool clearUnused = false) :
                     Serializer (endianness),
                     readOffset (0),
                     writeOffset (length_) {
                 if (writeOffset <= length) {
                     if (data_ != 0 && length_ > 0) {
                         memcpy (data, data_, length_);
+                    }
+                    if (clearUnused) {
+                        memset (GetWritePtr (), 0, GetDataAvailableForWriting ());
                     }
                 }
                 else {
@@ -74,16 +79,21 @@ namespace thekogans {
             /// \param[in] endianness Specifies how multi-byte values are stored.
             /// \param[in] begin Start of range.
             /// \param[in] end Just past the end of range.
+            /// \param[in] clearUnused Clear unused array elements to 0.
             FixedBuffer (
                     Endianness endianness,
                     const ui8 *begin,
-                    const ui8 *end) :
+                    const ui8 *end,
+                    bool clearUnused = false) :
                     Serializer (endianness),
                     readOffset (0),
                     writeOffset (end - begin) {
                 if (writeOffset <= length) {
                     if (writeOffset > 0) {
                         memcpy (data, begin, writeOffset);
+                    }
+                    if (clearUnused) {
+                        memset (GetWritePtr (), 0, GetDataAvailableForWriting ());
                     }
                 }
                 else {

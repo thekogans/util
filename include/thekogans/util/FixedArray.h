@@ -54,11 +54,18 @@ namespace thekogans {
             /// ctor.
             /// \param[in] array_ Elements to initialize the array with.
             /// \param[in] count_ Number of elements in array_.
+            /// \param[in] clearUnused Clear unused array elements to 0.
             FixedArray (
                     const T *array_,
-                    std::size_t count_) {
+                    std::size_t count_,
+                    bool clearUnused = false) {
                 if (array_ != 0 && count_ <= count) {
-                    memcpy (array, array_, sizeof (T) * count_);
+                    std::size_t usedBytes = sizeof (T) * count_;
+                    memcpy (array, array_, usedBytes);
+                    if (clearUnused) {
+                        std::size_t unusedBytes = sizeof (T) * (count - count_);
+                        memset (array + usedBytes, 0, unusedBytes);
+                    }
                 }
                 else {
                     THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
