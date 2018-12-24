@@ -129,5 +129,52 @@ namespace thekogans {
             return Deserialize (header, serializer);
         }
 
+        void ValueParser<Serializable::Header>::Reset () {
+            magicParser.Reset ();
+            typeParser.Reset ();
+            versionParser.Reset ();
+            sizeParser.Reset ();
+            state = STATE_MAGIC;
+        }
+
+        bool ValueParser<Serializable::Header>::ParseValue (Serializer &serializer) {
+            if (state == STATE_MAGIC) {
+                if (magicParser.ParseValue (serializer)) {
+                    if (value.magic == MAGIC32) {
+                        state = STATE_TYPE;
+                    }
+                    else {
+                        THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
+                            "Corrupt serializable header: %u.",
+                            value.magic);
+                    }
+                }
+            }
+            if (state == STATE_TYPE) {
+                if (typeParser.ParseValue (serializer)) {
+                    if (Serializable::ValidateType (value.type)) {
+                        state = STATE_VERSION;
+                    }
+                    else {
+                        THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
+                            "Unknown serializable type: %s.",
+                            value.type.c_str ());
+                    }
+                }
+            }
+            if (state == STATE_VERSION) {
+                if (versionParser.ParseValue (serializer)) {
+                    state = STATE_SIZE;
+                }
+            }
+            if (state == STATE_SIZE) {
+                if (sizeParser.ParseValue (serializer)) {
+                    Reset ();
+                    return true;
+                }
+            }
+            return false;
+        }
+
     } // namespace util
 } // namespace thekogans

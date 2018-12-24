@@ -30,6 +30,7 @@
 #include "thekogans/util/RefCounted.h"
 #include "thekogans/util/Serializer.h"
 #include "thekogans/util/Buffer.h"
+#include "thekogans/util/ValueParser.h"
 
 namespace thekogans {
     namespace util {
@@ -408,6 +409,71 @@ namespace thekogans {
                 header.size;
             return serializer;
         }
+
+        /// \struct ValueParser<Serializable::Header> Serializable.h thekogans/util/Serializable.h
+        ///
+        /// \brief
+        /// Specialization of ValueParser for \see{Serializable::Header}.
+
+        template<>
+        struct _LIB_THEKOGANS_UTIL_DECL ValueParser<Serializable::Header> {
+        private:
+            /// \brief
+            /// \see{Serializable::Header} to parse.
+            Serializable::Header &value;
+            /// \brief
+            /// Parses \see{Serializable::Header::magic}.
+            ValueParser<ui32> magicParser;
+            /// \brief
+            /// Parses \see{Serializable::Header::type}.
+            ValueParser<std::string> typeParser;
+            /// \brief
+            /// Parses \see{Serializable::Header::version}.
+            ValueParser<ui16> versionParser;
+            /// \brief
+            /// Parses \see{Serializable::Header::size}.
+            ValueParser<SizeT> sizeParser;
+            /// \enum
+            /// \see{Serializable::Header} parser is a state machine.
+            /// These are it's various states.
+            enum {
+                /// \brief
+                /// Next value is \see{Serializable::Header::magic}.
+                STATE_MAGIC,
+                /// \brief
+                /// Next value is \see{Serializable::Header::type}.
+                STATE_TYPE,
+                /// \brief
+                /// Next value is \see{Serializable::Header::version}.
+                STATE_VERSION,
+                /// \brief
+                /// Next value is \see{Serializable::Header::size}.
+                STATE_SIZE
+            } state;
+
+        public:
+            /// \brief
+            /// ctor.
+            /// \param[out] value_ Value to parse.
+            explicit ValueParser (Serializable::Header &value_) :
+                value (value_),
+                magicParser (value.magic),
+                typeParser (value.type),
+                versionParser (value.version),
+                sizeParser (value.size),
+                state (STATE_MAGIC) {}
+
+            /// \brief
+            /// Rewind the sub-parsers to get them ready for the next value.
+            void Reset ();
+
+            /// \brief
+            /// Try to parse a \see{Serializable::Header} from the given serializer.
+            /// \param[in] serializer Contains a complete or partial \see{Serializable::Header}.
+            /// \return true == \see{Serializable::Header} was successfully parsed,
+            /// false == call back with more data.
+            bool ParseValue (Serializer &serializer);
+        };
 
         /// \brief
         /// Serializable insertion operator.

@@ -2,7 +2,7 @@
                 project = "util"
                 project_type = "library"
                 major_version = "0"
-                minor_version = "26"
+                minor_version = "27"
                 patch_version = "0"
                 guid = "e541acd69d9d020f7eac98d5bf9e0d7a"
                 schema_version = "2">
@@ -177,6 +177,7 @@
     <cpp_header>$(organization)/$(project_directory)/TimeSpec.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/Timer.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/Types.h</cpp_header>
+    <cpp_header>$(organization)/$(project_directory)/ValueParser.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/Variant.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/Vectorizer.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/Version.h</cpp_header>
@@ -679,6 +680,7 @@
     <cpp_source>Thread.cpp</cpp_source>
     <cpp_source>Timer.cpp</cpp_source>
     <cpp_source>TimeSpec.cpp</cpp_source>
+    <cpp_source>ValueParser.cpp</cpp_source>
     <cpp_source>Variant.cpp</cpp_source>
     <cpp_source>Vectorizer.cpp</cpp_source>
     <cpp_source>Version.cpp</cpp_source>
