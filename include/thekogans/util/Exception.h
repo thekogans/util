@@ -209,6 +209,7 @@ namespace thekogans {
                 /// the resulting tag is to be included in a larger structure
                 /// you might want to provide a value that will embed it in
                 /// the structure.
+                /// \param[in] tagName Openning tag name.
                 /// \return The XML reprentation of the Location.
                 std::string ToString (
                     std::size_t indentationLevel,
@@ -408,6 +409,7 @@ namespace thekogans {
             ///               BuildTime = ""/>
             ///     ...
             /// </Exception>
+            /// \param[in] tagName Openning tag name.
             /// \return XML encoded exception.
             std::string ToString (
                 std::size_t indentationLevel,

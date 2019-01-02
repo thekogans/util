@@ -27,6 +27,8 @@
     #include <ctime>
 #endif // defined (TOOLCHAIN_OS_OSX)
 #include "thekogans/util/Constants.h"
+#include "thekogans/util/StringUtils.h"
+#include "thekogans/util/XMLUtils.h"
 #include "thekogans/util/TimeSpec.h"
 
 namespace thekogans {
@@ -132,6 +134,26 @@ namespace thekogans {
 
         TimeSpec TimeSpec::AddNanoseconds (i64 nanoseconds) const {
             return *this + FromNanoseconds (nanoseconds);
+        }
+
+        const char * const TimeSpec::TAG_TIME_SPEC = "TimeSpec";
+        const char * const TimeSpec::ATTR_SECONDS = "Seconds";
+        const char * const TimeSpec::ATTR_NANOSECONDS = "Nanoseconds";
+
+    #if defined (THEKOGANS_UTIL_HAVE_PUGIXML)
+        void TimeSpec::Parse (const pugi::xml_node &node) {
+            seconds = stringToui64 (node.attribute (ATTR_SECONDS).value ());
+            nanoseconds = stringToi32 (node.attribute (ATTR_NANOSECONDS).value ());
+        }
+    #endif // defined (THEKOGANS_UTIL_HAVE_PUGIXML)
+
+        std::string TimeSpec::ToString (
+                std::size_t indentationLevel,
+                const char *tagName) const {
+            Attributes attributes;
+            attributes.push_back (Attribute (ATTR_SECONDS, i64Tostring (seconds)));
+            attributes.push_back (Attribute (ATTR_NANOSECONDS, i32Tostring (nanoseconds)));
+            return OpenTag (indentationLevel, tagName, attributes, true, true);
         }
 
     #if defined (THEKOGANS_UTIL_CONFIG_Debug)

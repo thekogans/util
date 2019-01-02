@@ -33,6 +33,9 @@
     #include <mach/clock_types.h>
 #endif // defined (TOOLCHAIN_OS_Windows)
 #include <ctime>
+#if defined (THEKOGANS_UTIL_HAVE_PUGIXML)
+    #include <pugixml.hpp>
+#endif // defined (THEKOGANS_UTIL_HAVE_PUGIXML)
 #include "thekogans/util/Config.h"
 #include "thekogans/util/Types.h"
 #include "thekogans/util/Constants.h"
@@ -108,6 +111,14 @@ namespace thekogans {
             /// ctor.
             /// \param[in] timeVal POSIX timeval to initialize to.
             TimeSpec (const timeval &timeVal);
+        #if defined (THEKOGANS_UTIL_HAVE_PUGIXML)
+            /// \brief
+            /// ctor.
+            /// \param[in] node pugi::xml_node representing the TimeSpec.
+            TimeSpec (const pugi::xml_node &node) {
+                Parse (node);
+            }
+        #endif // defined (THEKOGANS_UTIL_HAVE_PUGIXML)
 
             /// \brief
             /// Zero
@@ -301,6 +312,38 @@ namespace thekogans {
             /// \param[in] nanoseconds Value to add to the current value.
             /// \return *this + FromNanoseconds (nanoseconds).
             TimeSpec AddNanoseconds (i64 nanoseconds) const;
+
+            /// \brief
+            /// "TimeSpec"
+            static const char * const TAG_TIME_SPEC;
+            /// \brief
+            /// "Seconds"
+            static const char * const ATTR_SECONDS;
+            /// \brief
+            /// "Nanoseconds"
+            static const char * const ATTR_NANOSECONDS;
+
+        #if defined (THEKOGANS_UTIL_HAVE_PUGIXML)
+            /// \brief
+            /// Given an pugi::xml_node, parse the
+            /// TimeSpec it represents. The TimeSpec has
+            /// the following format:
+            /// <tagName Seconds = "seconds"
+            ///          Nanoseconds = "nanoseconds"/>
+            /// \param[in] node pugi::xml_node representing the TimeSpec.
+            void Parse (const pugi::xml_node &node);
+        #endif // defined (THEKOGANS_UTIL_HAVE_PUGIXML)
+            /// \brief
+            /// Serialize the TimeSpec parameters in to an XML string.
+            /// \param[in] indentationLevel Pretty print parameter. If
+            /// the resulting tag is to be included in a larger structure
+            /// you might want to provide a value that will embed it in
+            /// the structure.
+            /// \param[in] tagName Openning tag name.
+            /// \return The XML reprentation of the TimeSpec.
+            std::string ToString (
+                std::size_t indentationLevel,
+                const char *tagName = TAG_TIME_SPEC) const;
         };
 
         /// \brief

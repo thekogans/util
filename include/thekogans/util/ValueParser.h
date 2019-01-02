@@ -104,6 +104,7 @@ namespace thekogans {
             /// \brief
             /// ctor.
             /// \param[out] value_ Value to parse.
+            /// \param[in] length_ Number of bytes that can fit in to value_.
             ValueParser (
                     ui8 *value_,
                     std::size_t length_) {
@@ -114,15 +115,17 @@ namespace thekogans {
             /// Rewind the offset to get it ready for the next value.
             void Reset ();
             /// \brief
-            ///
+            /// Reset the value and length to the given values.
+            /// \param[out] value_ Pointer to new value to parse to.
+            /// \param[in] length_ Number of bytes that can fit in to value_.
             void Reset (
                 ui8 *value_,
                 std::size_t length_);
 
             /// \brief
             /// Try to parse a ui8 * from the given serializer.
-            /// \param[in] serializer Contains a complete or partial std::string.
-            /// \return true == std::string was successfully parsed,
+            /// \param[in] serializer Contains a complete or partial ui8 *.
+            /// \return true == ui8 * was successfully parsed,
             /// false == call back with more data.
             bool ParseValue (Serializer &serializer);
         };

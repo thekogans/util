@@ -543,6 +543,7 @@ namespace thekogans {
                 /// Encode the entry as an xml string.
                 /// Take care to encode all xml char entities properly.
                 /// \param[in] indentationLevel Number of '\t' to preceed the entry with.
+                /// \param[in] tagName Openning tag name.
                 /// \return encoded xml string.
                 std::string ToString (
                     std::size_t indentationLevel,

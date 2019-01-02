@@ -19,6 +19,9 @@
 #define __thekogans_util_Fraction_h
 
 #include <cassert>
+#if defined (THEKOGANS_UTIL_HAVE_PUGIXML)
+    #include <pugixml.hpp>
+#endif // defined (THEKOGANS_UTIL_HAVE_PUGIXML)
 #include "thekogans/util/Config.h"
 #include "thekogans/util/Types.h"
 #include "thekogans/util/Serializer.h"
@@ -93,6 +96,25 @@ namespace thekogans {
                 numerator (fraction.numerator),
                 denominator (fraction.denominator),
                 sign (fraction.sign) {}
+        #if defined (THEKOGANS_UTIL_HAVE_PUGIXML)
+            /// \brief
+            /// ctor.
+            /// \param[in] node pugi::xml_node representing the Fraction.
+            Fraction (const pugi::xml_node &node) {
+                Parse (node);
+            }
+        #endif // defined (THEKOGANS_UTIL_HAVE_PUGIXML)
+
+            /// \brief
+            /// Convert an integral sign to it's string equivalent.
+            /// \param[in] sign Positive, Negative.
+            /// \return "Positive", "Negative".
+            static std::string signTostring (Sign sign);
+            /// \brief
+            /// Convert a string representation of the fraction sign to it's integral form.
+            /// \param[in] sign "Positive", "Negative".
+            /// \return Positive, Negative.
+            static Sign stringTosign (const std::string &sign);
 
             /// \brief
             /// Return the serialized size of this fraction.
@@ -142,6 +164,49 @@ namespace thekogans {
                 f32 value = (f32)numerator / (f32)denominator;
                 return sign == Positive ? value : -value;
             }
+
+            /// \brief
+            /// "Fraction"
+            static const char * const TAG_FRACTION;
+            /// \brief
+            /// "Numerator"
+            static const char * const ATTR_NUMERATOR;
+            /// \brief
+            /// "Denominator"
+            static const char * const ATTR_DENOMINATOR;
+            /// \brief
+            /// "Sign"
+            static const char * const ATTR_SIGN;
+            /// \brief
+            /// "Positive"
+            static const char * const VALUE_POSITIVE;
+            /// \brief
+            /// "Negative"
+            static const char * const VALUE_NEGATIVE;
+
+
+        #if defined (THEKOGANS_UTIL_HAVE_PUGIXML)
+            /// \brief
+            /// Given an pugi::xml_node, parse the
+            /// fraction it represents. The Fraction has
+            /// the following format:
+            /// <tagName Numerator = "Fraction numerator"
+            ///          Denominator = "Fraction denominator"
+            ///          Sign = "Fraction sign"/>
+            /// \param[in] node pugi::xml_node representing the fraction.
+            void Parse (const pugi::xml_node &node);
+        #endif // defined (THEKOGANS_UTIL_HAVE_PUGIXML)
+            /// \brief
+            /// Serialize the Fraction parameters in to an XML string.
+            /// \param[in] indentationLevel Pretty print parameter. If
+            /// the resulting tag is to be included in a larger structure
+            /// you might want to provide a value that will embed it in
+            /// the structure.
+            /// \param[in] tagName Openning tag name.
+            /// \return The XML reprentation of the Fraction.
+            std::string ToString (
+                std::size_t indentationLevel,
+                const char *tagName = TAG_FRACTION) const;
         };
 
         /// \brief

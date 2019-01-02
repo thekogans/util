@@ -16,6 +16,8 @@
 // along with libthekogans_util. If not, see <http://www.gnu.org/licenses/>.
 
 #include "thekogans/util/Types.h"
+#include "thekogans/util/StringUtils.h"
+#include "thekogans/util/XMLUtils.h"
 #include "thekogans/util/Fraction.h"
 
 namespace thekogans {
@@ -23,6 +25,14 @@ namespace thekogans {
 
         const Fraction Fraction::Zero (0, 1);
         const Fraction Fraction::One (1, 1);
+
+        std::string Fraction::signTostring (Sign sign) {
+            return sign == Positive ? VALUE_POSITIVE : VALUE_NEGATIVE;
+        }
+
+        Fraction::Sign Fraction::stringTosign (const std::string &sign) {
+            return sign == VALUE_POSITIVE ? Positive : Negative;
+        }
 
         namespace {
             // Euclid's greatest common divisor algorithm.
@@ -133,6 +143,31 @@ namespace thekogans {
             assert (gcd != 0);
             numerator /= gcd;
             denominator /= gcd;
+        }
+
+        const char * const Fraction::TAG_FRACTION = "Fraction";
+        const char * const Fraction::ATTR_NUMERATOR = "Numerator";
+        const char * const Fraction::ATTR_DENOMINATOR = "Denominator";
+        const char * const Fraction::ATTR_SIGN = "Sign";
+        const char * const Fraction::VALUE_POSITIVE = "Positive";
+        const char * const Fraction::VALUE_NEGATIVE = "Negative";
+
+    #if defined (THEKOGANS_UTIL_HAVE_PUGIXML)
+        void Fraction::Parse (const pugi::xml_node &node) {
+            numerator = stringToui32 (node.attribute (ATTR_NUMERATOR).value ());
+            denominator = stringToui32 (node.attribute (ATTR_DENOMINATOR).value ());
+            sign = stringTosign (node.attribute (ATTR_SIGN).value ());
+        }
+    #endif // defined (THEKOGANS_UTIL_HAVE_PUGIXML)
+
+        std::string Fraction::ToString (
+                std::size_t indentationLevel,
+                const char *tagName) const {
+            Attributes attributes;
+            attributes.push_back (Attribute (ATTR_NUMERATOR, ui32Tostring (numerator)));
+            attributes.push_back (Attribute (ATTR_DENOMINATOR, ui32Tostring (denominator)));
+            attributes.push_back (Attribute (ATTR_SIGN, signTostring (sign)));
+            return OpenTag (indentationLevel, tagName, attributes, true, true);
         }
 
         _LIB_THEKOGANS_UTIL_DECL Fraction _LIB_THEKOGANS_UTIL_API operator + (
