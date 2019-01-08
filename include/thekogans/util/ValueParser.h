@@ -190,10 +190,26 @@ namespace thekogans {
 
         template<>
         struct _LIB_THEKOGANS_UTIL_DECL ValueParser<std::string> {
+            enum Type {
+                /// \brief
+                /// String is a \see{SizeT} (Pascal) string.
+                SIZE_T_STRING,
+                /// \brief
+                /// String is delimited (\0, \n, \r\n, ...).
+                DELIMITED_STRING
+            };
+
         private:
             /// \brief
             /// String to parse.
             std::string &value;
+            Type type;
+            /// \brief
+            /// String delimiter to match.
+            const void *delimiter;
+            /// \brief
+            /// String delimiter length.
+            std::size_t delimiterLength;
             /// \brief
             /// String length.
             SizeT length;
@@ -218,12 +234,22 @@ namespace thekogans {
             /// \brief
             /// ctor.
             /// \param[out] value_ Value to parse.
-            explicit ValueParser (std::string &value_) :
+            /// \param[in] type_ Type of string to parse (SIZE_T_STRING, DELIMITED_STRING).
+            /// \param[in] delimiter_ If type_ == DELIMITED_STRING, pointer to delimiter.
+            /// \para,[in] delimiterLength_ Length of delimiter_.
+            explicit ValueParser (
+                std::string &value_,
+                Type type_ = SIZE_T_STRING,
+                const void *delimiter_ = 0,
+                std::size_t delimiterLength_ = 0) :
                 value (value_),
+                type (type_),
+                delimiter (delimiter_),
+                delimiterLength (delimiterLength_),
                 length (0),
                 lengthParser (length),
                 offset (0),
-                state (STATE_LENGTH) {}
+                state (type == SIZE_T_STRING ? STATE_LENGTH : STATE_STRING) {}
 
             /// \brief
             /// Rewind the lengthParser to get it ready for the next value.

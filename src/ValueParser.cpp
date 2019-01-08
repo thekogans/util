@@ -48,6 +48,7 @@ namespace thekogans {
         }
 
         void ValueParser<SizeT>::Reset () {
+            value = 0;
             size = 0;
             offset = 1;
             state = STATE_SIZE;
@@ -80,10 +81,11 @@ namespace thekogans {
         }
 
         void ValueParser<std::string>::Reset () {
+            value.clear ();
             length = 0;
             lengthParser.Reset ();
             offset = 0;
-            state = STATE_LENGTH;
+            state = type == SIZE_T_STRING ? STATE_LENGTH : STATE_STRING;
         }
 
         bool ValueParser<std::string>::ParseValue (Serializer &serializer) {
@@ -98,10 +100,28 @@ namespace thekogans {
                 }
             }
             if (state == STATE_STRING) {
-                offset += serializer.Read (&value[offset], length - offset);
-                if (offset == length) {
-                    Reset ();
-                    return true;
+                if (type == SIZE_T_STRING) {
+                    offset += serializer.Read (&value[offset], length - offset);
+                    if (offset == length) {
+                        Reset ();
+                        return true;
+                    }
+                }
+                else {
+                    ui8 byte;
+                    serializer >> byte;
+                    if (*((const ui8 *)delimiter + offset) != byte) {
+                        if (offset != 0) {
+                            value += std::string (
+                                (const ui8 *)delimiter,
+                                (const ui8 *)delimiter + offset);
+                        }
+                        value += byte;
+                    }
+                    else if (++offset == delimiterLength) {
+                        Reset ();
+                        return true;
+                    }
                 }
             }
             return false;
