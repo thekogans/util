@@ -23,6 +23,7 @@
 #include "thekogans/util/Serializer.h"
 #include "thekogans/util/Buffer.h"
 #include "thekogans/util/SizeT.h"
+#include "thekogans/util/Exception.h"
 
 namespace thekogans {
     namespace util {
@@ -236,20 +237,25 @@ namespace thekogans {
             /// \param[out] value_ Value to parse.
             /// \param[in] type_ Type of string to parse (SIZE_T_STRING, DELIMITED_STRING).
             /// \param[in] delimiter_ If type_ == DELIMITED_STRING, pointer to delimiter.
-            /// \para,[in] delimiterLength_ Length of delimiter_.
-            explicit ValueParser (
-                std::string &value_,
-                Type type_ = SIZE_T_STRING,
-                const void *delimiter_ = 0,
-                std::size_t delimiterLength_ = 0) :
-                value (value_),
-                type (type_),
-                delimiter (delimiter_),
-                delimiterLength (delimiterLength_),
-                length (0),
-                lengthParser (length),
-                offset (0),
-                state (type == SIZE_T_STRING ? STATE_LENGTH : STATE_STRING) {}
+            /// \param[in] delimiterLength_ Length of delimiter_.
+            ValueParser (
+                    std::string &value_,
+                    Type type_ = SIZE_T_STRING,
+                    const void *delimiter_ = 0,
+                    std::size_t delimiterLength_ = 0) :
+                    value (value_),
+                    type (type_),
+                    delimiter (delimiter_),
+                    delimiterLength (delimiterLength_),
+                    length (0),
+                    lengthParser (length),
+                    offset (0),
+                    state (type == SIZE_T_STRING ? STATE_LENGTH : STATE_STRING) {
+                if (type == DELIMITED_STRING && (delimiter == 0 || delimiterLength == 0)) {
+                    THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                        THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
+                }
+            }
 
             /// \brief
             /// Rewind the lengthParser to get it ready for the next value.
