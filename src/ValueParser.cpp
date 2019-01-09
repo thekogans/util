@@ -115,8 +115,17 @@ namespace thekogans {
                             value += std::string (
                                 (const ui8 *)delimiter,
                                 (const ui8 *)delimiter + offset);
+                            if (*(const ui8 *)delimiter == byte) {
+                                offset = 1;
+                            }
+                            else {
+                                offset = 0;
+                                value += byte;
+                            }
                         }
-                        value += byte;
+                        else {
+                            value += byte;
+                        }
                     }
                     else if (++offset == delimiterLength) {
                         Reset ();
