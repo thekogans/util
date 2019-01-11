@@ -96,6 +96,9 @@
     /// POSIX specific thread handle type.
     typedef pthread_t THEKOGANS_UTIL_THREAD_HANDLE;
 #endif // defined (TOOLCHAIN_OS_Windows)
+/// \def THEKOGANS_UTIL_INVALID_THREAD_HANDLE_VALUE
+/// \see{THEKOGANS_UTIL_THREAD_HANDLE} initialization sentinal.
+#define THEKOGANS_UTIL_INVALID_THREAD_HANDLE_VALUE 0
 
 /// \def THEKOGANS_UTIL_MAX_THREAD_AFFINITY
 /// Thread can run on any core.
