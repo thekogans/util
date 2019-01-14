@@ -48,10 +48,13 @@ namespace thekogans {
         }
 
         void ValueParser<SizeT>::Reset () {
+            static const std::size_t bytesPerType[] = {
+                UI8_SIZE, UI16_SIZE, UI32_SIZE, UI64_SIZE, 0
+            };
             value = 0;
-            size = 0;
-            offset = 1;
-            state = STATE_SIZE;
+            size = bytesPerType[type];
+            offset = 0;
+            state = type == TYPE_SIZE_T ? STATE_SIZE : STATE_VALUE;
         }
 
         bool ValueParser<SizeT>::ParseValue (Serializer &serializer) {
@@ -64,15 +67,44 @@ namespace thekogans {
                         Reset ();
                         return true;
                     }
-                    valueBuffer[0] = firstByte;
+                    valueBuffer[++offset] = firstByte;
                     state = STATE_VALUE;
                 }
             }
-            if (state == STATE_VALUE) {
+            else {
                 offset += serializer.Read (valueBuffer + offset, size - offset);
                 if (offset == size) {
                     TenantReadBuffer buffer (serializer.endianness, valueBuffer, size);
-                    buffer >> value;
+                    switch (type) {
+                        case TYPE_UI8: {
+                            ui8 _value;
+                            buffer >> _value;
+                            value = _value;
+                            break;
+                        }
+                        case TYPE_UI16: {
+                            ui16 _value;
+                            buffer >> _value;
+                            value = _value;
+                            break;
+                        }
+                        case TYPE_UI32: {
+                            ui32 _value;
+                            buffer >> _value;
+                            value = _value;
+                            break;
+                        }
+                        case TYPE_UI64: {
+                            ui64 _value;
+                            buffer >> _value;
+                            value = _value;
+                            break;
+                        }
+                        case TYPE_SIZE_T: {
+                            buffer >> value;
+                            break;
+                        }
+                    }
                     Reset ();
                     return true;
                 }
@@ -85,7 +117,7 @@ namespace thekogans {
             length = 0;
             lengthParser.Reset ();
             offset = 0;
-            state = type == SIZE_T_STRING ? STATE_LENGTH : STATE_STRING;
+            state = delimiter == 0 ? STATE_LENGTH : STATE_STRING;
         }
 
         bool ValueParser<std::string>::ParseValue (Serializer &serializer) {
@@ -100,7 +132,7 @@ namespace thekogans {
                 }
             }
             if (state == STATE_STRING) {
-                if (type == SIZE_T_STRING) {
+                if (delimiter == 0) {
                     offset += serializer.Read (&value[offset], length - offset);
                     if (offset == length) {
                         Reset ();

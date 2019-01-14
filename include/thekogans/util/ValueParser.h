@@ -138,10 +138,31 @@ namespace thekogans {
 
         template<>
         struct _LIB_THEKOGANS_UTIL_DECL ValueParser<SizeT> {
+            enum Type {
+                /// \brief
+                /// Value is encoded as ui8.
+                TYPE_UI8,
+                /// \brief
+                /// Value is encoded as ui16.
+                TYPE_UI16,
+                /// \brief
+                /// Value is encoded as ui32.
+                TYPE_UI32,
+                /// \brief
+                /// Value is encoded as ui64.
+                TYPE_UI64,
+                /// \brief
+                /// Value is encoded as \see{SizeT}.
+                TYPE_SIZE_T
+            };
+
         private:
             /// \brief
             /// Value to parse.
             SizeT &value;
+            /// \brief
+            /// \see{SizeT} type encoding.
+            Type type;
             /// \brief
             /// Size of serialized \see{SizeT}
             std::size_t size;
@@ -166,8 +187,12 @@ namespace thekogans {
             /// \brief
             /// ctor.
             /// \param[out] value_ Value to parse.
-            explicit ValueParser (SizeT &value_) :
+            /// \param[in] type_ Value type encoding.
+            explicit ValueParser (
+                SizeT &value_,
+                Type type_ = TYPE_SIZE_T) :
                 value (value_),
+                type (type_),
                 size (0),
                 offset (0),
                 state (STATE_SIZE) {}
@@ -191,20 +216,10 @@ namespace thekogans {
 
         template<>
         struct _LIB_THEKOGANS_UTIL_DECL ValueParser<std::string> {
-            enum Type {
-                /// \brief
-                /// String is a \see{SizeT} (Pascal) string.
-                SIZE_T_STRING,
-                /// \brief
-                /// String is delimited (\0, \n, \r\n, ...).
-                DELIMITED_STRING
-            };
-
         private:
             /// \brief
             /// String to parse.
             std::string &value;
-            Type type;
             /// \brief
             /// String delimiter to match.
             const void *delimiter;
@@ -235,23 +250,34 @@ namespace thekogans {
             /// \brief
             /// ctor.
             /// \param[out] value_ Value to parse.
-            /// \param[in] type_ Type of string to parse (SIZE_T_STRING, DELIMITED_STRING).
+            /// \param[in] lengthType See \see{ValueParser<SizeT>Type}.
+            ValueParser (
+                std::string &value_,
+                typename ValueParser<SizeT>::Type lengthType = ValueParser<SizeT>::TYPE_SIZE_T) :
+                value (value_),
+                delimiter (0),
+                delimiterLength (0),
+                length (0),
+                lengthParser (length, lengthType),
+                offset (0),
+                state (STATE_LENGTH) {}
+            /// \brief
+            /// ctor.
+            /// \param[out] value_ Value to parse.
             /// \param[in] delimiter_ If type_ == DELIMITED_STRING, pointer to delimiter.
             /// \param[in] delimiterLength_ Length of delimiter_.
             ValueParser (
                     std::string &value_,
-                    Type type_ = SIZE_T_STRING,
-                    const void *delimiter_ = 0,
-                    std::size_t delimiterLength_ = 0) :
+                    const void *delimiter_,
+                    std::size_t delimiterLength_) :
                     value (value_),
-                    type (type_),
                     delimiter (delimiter_),
                     delimiterLength (delimiterLength_),
                     length (0),
-                    lengthParser (length),
+                    lengthParser (length, ValueParser<SizeT>::TYPE_SIZE_T),
                     offset (0),
-                    state (type == SIZE_T_STRING ? STATE_LENGTH : STATE_STRING) {
-                if (type == DELIMITED_STRING && (delimiter == 0 || delimiterLength == 0)) {
+                    state (STATE_STRING) {
+                if (delimiter == 0 || delimiterLength == 0) {
                     THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
                         THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
                 }
