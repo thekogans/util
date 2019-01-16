@@ -94,7 +94,7 @@ namespace thekogans {
                 LockGuard<SpinLock> guard (spinLock);
                 if (thread == Thread::GetCurrThreadHandle () && --count == 0) {
                     lock.Relese ();
-                    thread = 0;
+                    thread = THEKOGANS_UTIL_INVALID_THREAD_HANDLE_VALUE;
                 }
             }
 
