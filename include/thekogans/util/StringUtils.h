@@ -243,6 +243,13 @@ namespace thekogans {
             char **end = 0,
             i32 base = 10);
         /// \brief
+        /// Convert a string value to a boolean.
+        /// \param[in] value Value to convert.
+        /// \return true if value == "true", false if value == "false".
+        _LIB_THEKOGANS_UTIL_DECL bool _LIB_THEKOGANS_UTIL_API stringTobool (
+            const char *value,
+            char **end = 0);
+        /// \brief
         /// Parse a i16 represented by a given string.
         /// \param[in] value Pointer to the beginning of the string.
         /// \param[out] end On return will hold a pointer where parsing

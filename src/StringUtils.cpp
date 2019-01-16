@@ -117,51 +117,57 @@ namespace thekogans {
 
         _LIB_THEKOGANS_UTIL_DECL const ui8 * _LIB_THEKOGANS_UTIL_API IsUTF8String (
                 const ui8 *str) {
-            while (*str != 0) {
-                if (*str < 0x80) {
-                    // 0xxxxxxx
-                    ++str;
-                }
-                else if ((str[0] & 0xe0) == 0xc0) {
-                    // 110XXXXx 10xxxxxx
-                    if ((str[1] & 0xc0) != 0x80 || (str[0] & 0xfe) == 0xc0) { // overlong?
-                        return str;
+            if (str != 0) {
+                while (*str != 0) {
+                    if (*str < 0x80) {
+                        // 0xxxxxxx
+                        ++str;
+                    }
+                    else if ((str[0] & 0xe0) == 0xc0) {
+                        // 110XXXXx 10xxxxxx
+                        if ((str[1] & 0xc0) != 0x80 || (str[0] & 0xfe) == 0xc0) { // overlong?
+                            return str;
+                        }
+                        else {
+                            str += 2;
+                        }
+                    }
+                    else if ((str[0] & 0xf0) == 0xe0) {
+                        // 1110XXXX 10Xxxxxx 10xxxxxx
+                        if ((str[1] & 0xc0) != 0x80 ||
+                                (str[2] & 0xc0) != 0x80 ||
+                                (str[0] == 0xe0 && (str[1] & 0xe0) == 0x80) || // overlong?
+                                (str[0] == 0xed && (str[1] & 0xe0) == 0xa0) || // surrogate?
+                                (str[0] == 0xef && str[1] == 0xbf && (str[2] & 0xfe) == 0xbe)) { // U+FFFE or U+FFFF?
+                            return str;
+                        }
+                        else {
+                            str += 3;
+                        }
+                    }
+                    else if ((str[0] & 0xf8) == 0xf0) {
+                        // 11110XXX 10XXxxxx 10xxxxxx 10xxxxxx
+                        if ((str[1] & 0xc0) != 0x80 ||
+                                (str[2] & 0xc0) != 0x80 ||
+                                (str[3] & 0xc0) != 0x80 ||
+                                (str[0] == 0xf0 && (str[1] & 0xf0) == 0x80) || // overlong? */
+                                (str[0] == 0xf4 && str[1] > 0x8f) || str[0] > 0xf4) { // > U+10FFFF?
+                            return str;
+                        }
+                        else {
+                            str += 4;
+                        }
                     }
                     else {
-                        str += 2;
-                    }
-                }
-                else if ((str[0] & 0xf0) == 0xe0) {
-                    // 1110XXXX 10Xxxxxx 10xxxxxx
-                    if ((str[1] & 0xc0) != 0x80 ||
-                            (str[2] & 0xc0) != 0x80 ||
-                            (str[0] == 0xe0 && (str[1] & 0xe0) == 0x80) || // overlong?
-                            (str[0] == 0xed && (str[1] & 0xe0) == 0xa0) || // surrogate?
-                            (str[0] == 0xef && str[1] == 0xbf && (str[2] & 0xfe) == 0xbe)) { // U+FFFE or U+FFFF?
                         return str;
                     }
-                    else {
-                        str += 3;
-                    }
                 }
-                else if ((str[0] & 0xf8) == 0xf0) {
-                    // 11110XXX 10XXxxxx 10xxxxxx 10xxxxxx
-                    if ((str[1] & 0xc0) != 0x80 ||
-                            (str[2] & 0xc0) != 0x80 ||
-                            (str[3] & 0xc0) != 0x80 ||
-                            (str[0] == 0xf0 && (str[1] & 0xf0) == 0x80) || // overlong? */
-                            (str[0] == 0xf4 && str[1] > 0x8f) || str[0] > 0xf4) { // > U+10FFFF?
-                        return str;
-                    }
-                    else {
-                        str += 4;
-                    }
-                }
-                else {
-                    return str;
-                }
+                return 0;
             }
-            return 0;
+            else {
+                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
+            }
         }
 
         namespace {
@@ -338,90 +344,190 @@ namespace thekogans {
                 const char *value,
                 char **end,
                 i32 base) {
-        #if defined (TOOLCHAIN_ARCH_i386)
-            return (std::size_t)strtoul (value, end, base);
-        #elif defined (TOOLCHAIN_ARCH_x86_64)
-            return (std::size_t)strtoull (value, end, base);
-        #else // defined (TOOLCHAIN_ARCH_i386)
-            #error "Unknown architecture."
-        #endif // defined (TOOLCHAIN_ARCH_i386)
+            if (value != 0) {
+            #if defined (TOOLCHAIN_ARCH_i386)
+                return (std::size_t)strtoul (value, end, base);
+            #elif defined (TOOLCHAIN_ARCH_x86_64)
+                return (std::size_t)strtoull (value, end, base);
+            #else // defined (TOOLCHAIN_ARCH_i386)
+                #error "Unknown architecture."
+            #endif // defined (TOOLCHAIN_ARCH_i386)
+            }
+            else {
+                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
+            }
+        }
+
+        _LIB_THEKOGANS_UTIL_DECL bool _LIB_THEKOGANS_UTIL_API stringTobool (
+                const char *value,
+                char **end) {
+            if (value != 0) {
+                // Skip leading whitespace.
+                while  (*value != 0 && isspace (*value)) {
+                    ++value;
+                }
+                bool result = false;
+                if (value[0] == 't' &&
+                        value[1] == 'r' &&
+                        value[2] == 'u' &&
+                        value[3] == 'e') {
+                    value += 4;
+                    result = true;
+                }
+                else if (value[0] == 'f' &&
+                        value[1] == 'a' &&
+                        value[2] == 'l' &&
+                        value[3] == 's' &&
+                        value[4] == 'e') {
+                    value += 5;
+                }
+                if (end != 0) {
+                    *end = (char *)value;
+                }
+                return result;
+            }
+            else {
+                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
+            }
         }
 
         _LIB_THEKOGANS_UTIL_DECL i16 _LIB_THEKOGANS_UTIL_API stringToi16 (
                 const char *value,
                 char **end,
                 i32 base) {
-            return (i16)strtol (value, end, base);
+            if (value != 0) {
+                return (i16)strtol (value, end, base);
+            }
+            else {
+                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
+            }
         }
 
         _LIB_THEKOGANS_UTIL_DECL ui16 _LIB_THEKOGANS_UTIL_API stringToui16 (
                 const char *value,
                 char **end,
                 i32 base) {
-            return (ui16)strtoul (value, end, base);
+            if (value != 0) {
+                return (ui16)strtoul (value, end, base);
+            }
+            else {
+                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
+            }
         }
 
         _LIB_THEKOGANS_UTIL_DECL i32 _LIB_THEKOGANS_UTIL_API stringToi32 (
                 const char *value,
                 char **end,
                 i32 base) {
-            return (i32)strtol (value, end, base);
+            if (value != 0) {
+                return (i32)strtol (value, end, base);
+            }
+            else {
+                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
+            }
         }
 
         _LIB_THEKOGANS_UTIL_DECL ui32 _LIB_THEKOGANS_UTIL_API stringToui32 (
                 const char *value,
                 char **end,
                 i32 base) {
-            return (ui32)strtoul (value, end, base);
+            if (value != 0) {
+                return (ui32)strtoul (value, end, base);
+            }
+            else {
+                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
+            }
         }
 
         _LIB_THEKOGANS_UTIL_DECL i64 _LIB_THEKOGANS_UTIL_API stringToi64 (
                 const char *value,
                 char **end,
                 i32 base) {
-            return (i64)strtoll (value, end, base);
+            if (value != 0) {
+                return (i64)strtoll (value, end, base);
+            }
+            else {
+                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
+            }
         }
 
         _LIB_THEKOGANS_UTIL_DECL ui64 _LIB_THEKOGANS_UTIL_API stringToui64 (
                 const char *value,
                 char **end,
                 i32 base) {
-            return (ui64)strtoull (value, end, base);
+            if (value != 0) {
+                return (ui64)strtoull (value, end, base);
+            }
+            else {
+                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
+            }
         }
 
         _LIB_THEKOGANS_UTIL_DECL f32 _LIB_THEKOGANS_UTIL_API stringTof32 (
                 const char *value,
                 char **end) {
-            return (f32)strtod (value, end);
+            if (value != 0) {
+                return (f32)strtod (value, end);
+            }
+            else {
+                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
+            }
         }
 
         _LIB_THEKOGANS_UTIL_DECL f64 _LIB_THEKOGANS_UTIL_API stringTouf64 (
                 const char *value,
                 char **end) {
-            return (f64)strtod (value, end);
+            if (value != 0) {
+                return (f64)strtod (value, end);
+            }
+            else {
+                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
+            }
         }
 
         _LIB_THEKOGANS_UTIL_DECL time_t _LIB_THEKOGANS_UTIL_API stringTotime_t (
                 const char *value,
                 char **end) {
-        #if defined (TOOLCHAIN_ARCH_i386)
-            return (time_t)stringToi32 (value, end);
-        #elif defined (TOOLCHAIN_ARCH_x86_64)
-            return (time_t)stringToi64 (value, end);
-        #else // defined (TOOLCHAIN_ARCH_i386)
-            #error "Unknown architecture."
-        #endif // defined (TOOLCHAIN_ARCH_i386)
+            if (value != 0) {
+            #if defined (TOOLCHAIN_ARCH_i386)
+                return (time_t)stringToi32 (value, end);
+            #elif defined (TOOLCHAIN_ARCH_x86_64)
+                return (time_t)stringToi64 (value, end);
+            #else // defined (TOOLCHAIN_ARCH_i386)
+                #error "Unknown architecture."
+            #endif // defined (TOOLCHAIN_ARCH_i386)
+            }
+            else {
+                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
+            }
         }
 
         _LIB_THEKOGANS_UTIL_DECL THEKOGANS_UTIL_ERROR_CODE _LIB_THEKOGANS_UTIL_API
         stringToTHEKOGANS_UTIL_ERROR_CODE (
                 const char *value,
                 char **end) {
-        #if defined (TOOLCHAIN_OS_Windows)
-            return (THEKOGANS_UTIL_ERROR_CODE)stringToui32 (value, end);
-        #else // defined (TOOLCHAIN_OS_Windows)
-            return (THEKOGANS_UTIL_ERROR_CODE)stringToi32 (value, end);
-        #endif // defined (TOOLCHAIN_OS_Windows)
+            if (value != 0) {
+            #if defined (TOOLCHAIN_OS_Windows)
+                return (THEKOGANS_UTIL_ERROR_CODE)stringToui32 (value, end);
+            #else // defined (TOOLCHAIN_OS_Windows)
+                return (THEKOGANS_UTIL_ERROR_CODE)stringToi32 (value, end);
+            #endif // defined (TOOLCHAIN_OS_Windows)
+            }
+            else {
+                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
+            }
         }
 
         _LIB_THEKOGANS_UTIL_DECL std::string _LIB_THEKOGANS_UTIL_API size_tTostring (
