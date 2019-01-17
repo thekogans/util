@@ -32,7 +32,7 @@ namespace thekogans {
         ///
         /// \brief
         /// ValueParser is a template used to incrementally assemble values from stream
-        /// like \see{thekogans::Serializer}s.
+        /// like \see{Serializer}s.
 
         template<typename T>
         struct ValueParser {
@@ -134,7 +134,8 @@ namespace thekogans {
         /// \struct ValueParser<SizeT> ValueParser.h thekogans/util/SizeT.h
         ///
         /// \brief
-        /// Specialization of ValueParser for \see{SizeT}.
+        /// Specialization of ValueParser for \see{SizeT}. \see{SizeT} can be any unsigned
+        /// type (ui8, ui16, ui32, ui64, SizeT).
 
         template<>
         struct _LIB_THEKOGANS_UTIL_DECL ValueParser<SizeT> {
@@ -188,14 +189,13 @@ namespace thekogans {
             /// ctor.
             /// \param[out] value_ Value to parse.
             /// \param[in] type_ Value type encoding.
-            explicit ValueParser (
-                SizeT &value_,
-                Type type_ = TYPE_SIZE_T) :
-                value (value_),
-                type (type_),
-                size (0),
-                offset (0),
-                state (STATE_SIZE) {}
+            ValueParser (
+                    SizeT &value_,
+                    Type type_ = TYPE_SIZE_T) :
+                    value (value_),
+                    type (type_) {
+                Reset ();
+            }
 
             /// \brief
             /// Rewind size and offset to get them ready for the next value.
@@ -212,7 +212,10 @@ namespace thekogans {
         /// \struct ValueParser<std::string> ValueParser.h thekogans/util/ValueParser.h
         ///
         /// \brief
-        /// Specialization of ValueParser for std::string.
+        /// Specialization of ValueParser for std::string. The string can be encoded as
+        /// length prefixed (Pascal) or delimited (C). The length prefix can be any unsigned
+        /// type (\see{ui8}, \see{ui16}, \see{ui32}, \see{ui64}, \see{SizeT}). The delimiter
+        /// can be of any length.
 
         template<>
         struct _LIB_THEKOGANS_UTIL_DECL ValueParser<std::string> {
@@ -248,7 +251,7 @@ namespace thekogans {
 
         public:
             /// \brief
-            /// ctor.
+            /// ctor for length prefixed (Pascal) strings.
             /// \param[out] value_ Value to parse.
             /// \param[in] lengthType See \see{ValueParser<SizeT>Type}.
             ValueParser (
@@ -262,9 +265,9 @@ namespace thekogans {
                 offset (0),
                 state (STATE_LENGTH) {}
             /// \brief
-            /// ctor.
+            /// ctor for delimited strings.
             /// \param[out] value_ Value to parse.
-            /// \param[in] delimiter_ If type_ == DELIMITED_STRING, pointer to delimiter.
+            /// \param[in] delimiter_ Pointer to the string delimiter.
             /// \param[in] delimiterLength_ Length of delimiter_.
             ValueParser (
                     std::string &value_,
@@ -284,7 +287,7 @@ namespace thekogans {
             }
 
             /// \brief
-            /// Rewind the lengthParser to get it ready for the next value.
+            /// Reset the members to get them ready for the next value.
             void Reset ();
 
             /// \brief
