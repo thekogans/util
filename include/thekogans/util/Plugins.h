@@ -57,15 +57,16 @@ namespace thekogans {
             ///
             /// \brief
             /// Represents a plugin found in the xml file.
-            struct _LIB_THEKOGANS_UTIL_DECL Plugin : public ThreadSafeRefCounted {
+            struct _LIB_THEKOGANS_UTIL_DECL Plugin :
+                    public virtual ThreadSafeRefCounted {
+                /// \brief
+                /// Convenient typedef for ThreadSafeRefCounted::Ptr<Plugin>.
+                typedef ThreadSafeRefCounted::Ptr<Plugin> Ptr;
+
                 /// \brief
                 /// Plugin has a private heap to help with memory
                 /// management, performance, and global heap fragmentation.
                 THEKOGANS_UTIL_DECLARE_HEAP_WITH_LOCK (Plugin, SpinLock)
-
-                /// \brief
-                /// Convenient typedef for ThreadSafeRefCounted::Ptr<Plugin>.
-                typedef ThreadSafeRefCounted::Ptr<Plugin> Ptr;
 
                 /// \brief
                 /// Plugin path relative to the xml file.

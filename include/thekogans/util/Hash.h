@@ -36,7 +36,8 @@ namespace thekogans {
         /// \brief
         /// Base class used to represent an abstract hash generator.
 
-        struct _LIB_THEKOGANS_UTIL_DECL Hash : public ThreadSafeRefCounted {
+        struct _LIB_THEKOGANS_UTIL_DECL Hash :
+                public virtual ThreadSafeRefCounted {
             /// \brief
             /// Convenient typedef for ThreadSafeRefCounted::Ptr<Hash>.
             typedef ThreadSafeRefCounted::Ptr<Hash> Ptr;

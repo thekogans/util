@@ -42,6 +42,8 @@ namespace thekogans {
         /// give class designers finer control over the lifetime management of
         /// their classes. If you need more control over heap placement, that's
         /// what \see{Heap} is for.
+        /// NOTE: When inheriting from RefCounted, consider making it 'public virtual'.
+        /// This will go a long way towards resolving multiple inheritance ambiguities.
 
         template<typename Count>
         struct _LIB_THEKOGANS_UTIL_DECL RefCounted {

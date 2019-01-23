@@ -43,7 +43,8 @@ namespace thekogans {
         /// themselves for dynamic discovery, creation and serializable insertion and
         /// extraction.
 
-        struct _LIB_THEKOGANS_UTIL_DECL Serializable : public ThreadSafeRefCounted {
+        struct _LIB_THEKOGANS_UTIL_DECL Serializable :
+                public virtual ThreadSafeRefCounted {
             /// \brief
             /// Convenient typedef for ThreadSafeRefCounted::Ptr<Serializable>.
             typedef ThreadSafeRefCounted::Ptr<Serializable> Ptr;

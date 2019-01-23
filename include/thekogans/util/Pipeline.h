@@ -47,7 +47,8 @@ namespace thekogans {
         /// architectures perform scalar, and even super-scalar
         /// execution).
 
-        struct _LIB_THEKOGANS_UTIL_DECL Pipeline : public ThreadSafeRefCounted {
+        struct _LIB_THEKOGANS_UTIL_DECL Pipeline :
+                public virtual ThreadSafeRefCounted {
             /// \brief
             /// Convenient typedef for ThreadSafeRefCounted::Ptr<Pipeline>.
             typedef ThreadSafeRefCounted::Ptr<Pipeline> Ptr;

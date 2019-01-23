@@ -57,7 +57,8 @@ namespace thekogans {
         /// \see{SystemRunLoop}. RunLoop allows you to schedule jobs (RunLoop::Job)
         /// to be executed on the thread that's running the run loop.
 
-        struct _LIB_THEKOGANS_UTIL_DECL RunLoop : public ThreadSafeRefCounted {
+        struct _LIB_THEKOGANS_UTIL_DECL RunLoop :
+                public virtual ThreadSafeRefCounted {
             /// \brief
             /// Convenient typedef for ThreadSafeRefCounted::Ptr<RunLoop>.
             typedef ThreadSafeRefCounted::Ptr<RunLoop> Ptr;
@@ -105,7 +106,7 @@ namespace thekogans {
             /// \brief
             /// A RunLoop::Job must, at least, implement the Execute method.
             struct _LIB_THEKOGANS_UTIL_DECL Job :
-                    public ThreadSafeRefCounted,
+                    public virtual ThreadSafeRefCounted,
                     public JobList::Node {
                 /// \brief
                 /// Convenient typedef for ThreadSafeRefCounted::Ptr<Job>.

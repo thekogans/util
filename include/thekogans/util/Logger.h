@@ -37,7 +37,8 @@ namespace thekogans {
         /// and RemoteLogger for concrete implementations of this
         /// interface.
 
-        struct _LIB_THEKOGANS_UTIL_DECL Logger : public ThreadSafeRefCounted {
+        struct _LIB_THEKOGANS_UTIL_DECL Logger :
+                public virtual ThreadSafeRefCounted {
             /// \brief
             /// Convenient typedef for ThreadSafeRefCounted::Ptr<Logger>.
             typedef ThreadSafeRefCounted::Ptr<Logger> Ptr;

@@ -55,7 +55,7 @@ namespace thekogans {
             /// \brief
             /// Base class for information about a future job to be scheduled on
             /// the given \see{RunLoop} or \see{Pipeline}.
-            struct JobInfo : public ThreadSafeRefCounted {
+            struct JobInfo : public virtual ThreadSafeRefCounted {
                 /// \brief
                 /// Convenient typedef for ThreadSafeRefCounted::Ptr<JobInfo>.
                 typedef ThreadSafeRefCounted::Ptr<JobInfo> Ptr;
