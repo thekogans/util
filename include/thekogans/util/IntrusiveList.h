@@ -22,6 +22,7 @@
 #include <cassert>
 #include <utility>
 #include <functional>
+#include "thekogans/util/Types.h"
 
 namespace thekogans {
     namespace util {
