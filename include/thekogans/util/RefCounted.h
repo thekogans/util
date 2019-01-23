@@ -59,7 +59,9 @@ namespace thekogans {
                 count (0) {}
             /// \brief
             /// dtor.
-            virtual ~RefCounted () {}
+            virtual ~RefCounted () {
+                assert (count == 0);
+            }
 
             /// \brief
             /// Increment the reference count.
