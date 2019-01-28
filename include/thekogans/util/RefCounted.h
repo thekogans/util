@@ -84,8 +84,7 @@ namespace thekogans {
                 }
                 else {
                     THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                        "AddRef/Release (%u) mismatch in %s.",
-                        (ui32)count,
+                        "AddRef/Release mismatch in %s.",
                         typeid (*this).name ());
                 }
             }
