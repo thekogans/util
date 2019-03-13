@@ -256,7 +256,7 @@ namespace thekogans {
             /// \param[in] lengthType See \see{ValueParser<SizeT>Type}.
             ValueParser (
                 std::string &value_,
-                typename ValueParser<SizeT>::Type lengthType = ValueParser<SizeT>::TYPE_SIZE_T) :
+                ValueParser<SizeT>::Type lengthType = ValueParser<SizeT>::TYPE_SIZE_T) :
                 value (value_),
                 delimiter (0),
                 delimiterLength (0),
