@@ -266,7 +266,7 @@ namespace thekogans {
         /// \return Converted value.
         template<Endianness from, Endianness to, typename T>
         inline T ByteSwap (T value) {
-            // Ensure the data is only 1, 2, 4 or 8 bytes.
+            // Ensure value is 1, 2, 4 or 8 bytes.
             static_assert (
                 sizeof (T) == I8_SIZE || sizeof (T) == UI8_SIZE ||
                 sizeof (T) == I16_SIZE || sizeof (T) == UI16_SIZE ||
@@ -274,7 +274,7 @@ namespace thekogans {
                 sizeof (T) == I64_SIZE || sizeof (T) == UI64_SIZE ||
                 sizeof (T) == F32_SIZE || sizeof (T) == F64_SIZE,
                 "Template parameter must be the size of an integral type.");
-            // Ensure we're only swapping arithmetic types.
+            // Ensure value is an arithmetic type.
             static_assert (
             #if defined (THEKOGANS_UTIL_HAVE_STD_ATOMIC)
                 std::is_arithmetic<T>::value,
