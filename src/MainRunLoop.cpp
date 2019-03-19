@@ -17,7 +17,11 @@
 
 #include "thekogans/util/Thread.h"
 #include "thekogans/util/DefaultRunLoop.h"
-#if defined (THEKOGANS_OS_OSX)
+#if defined (THEKOGANS_OS_Linux)
+    #if defined (THEKOGANS_UTIL_HAVE_XLIB)
+        #include "thekogans/util/XlibUtils.h"
+    #endif // defined (THEKOGANS_UTIL_HAVE_XLIB)
+#elif defined (THEKOGANS_OS_OSX)
     #include "thekogans/util/Exception.h"
     #include "thekogans/util/OSXUtils.h"
 #endif // defined (THEKOGANS_OS_OSX)
@@ -30,6 +34,19 @@ namespace thekogans {
         RunLoop::Type MainRunLoopCreateInstance::type = RunLoop::TYPE_FIFO;
         ui32 MainRunLoopCreateInstance::maxPendingJobs = UI32_MAX;
         bool MainRunLoopCreateInstance::willCallStart = true;
+
+        void MainRunLoopCreateInstance::Parameterize (
+                const std::string &name_,
+                RunLoop::Type type_,
+                ui32 maxPendingJobs_,
+                bool willCallStart_) {
+            name = name_;
+            type = type_;
+            maxPendingJobs = maxPendingJobs_;
+            willCallStart = willCallStart_;
+            Thread::SetMainThread ();
+        }
+
     #if defined (TOOLCHAIN_OS_Windows)
         SystemRunLoop::EventProcessor MainRunLoopCreateInstance::eventProcessor = 0;
         void *MainRunLoopCreateInstance::userData = 0;
@@ -66,7 +83,8 @@ namespace thekogans {
                 (RunLoop *)new DefaultRunLoop (
                     name,
                     type,
-                    maxPendingJobs);
+                    maxPendingJobs,
+                    willCallStart);
         }
     #elif defined (TOOLCHAIN_OS_Linux)
     #if defined (THEKOGANS_UTIL_HAVE_XLIB)
@@ -74,6 +92,26 @@ namespace thekogans {
         void *MainRunLoopCreateInstance::userData = 0;
         SystemRunLoop::XlibWindow::Ptr MainRunLoopCreateInstance::window;
         std::vector<Display *> MainRunLoopCreateInstance::displays;
+
+        namespace {
+            int ErrorHandler (
+                    Display *display,
+                    XErrorEvent *errorEvent) {
+                char buffer[1024];
+                XGetErrorText (display, errorEvent->error_code, buffer, 1024);
+                THEKOGANS_UTIL_LOG_SUBSYSTEM_ERROR (
+                    THEKOGANS_UTIL,
+                    "%s\n", buffer);
+                return 0;
+            }
+
+            int IOErrorHandler (Display *display) {
+                THEKOGANS_UTIL_LOG_SUBSYSTEM_ERROR (
+                    THEKOGANS_UTIL,
+                    "%s\n", "Fatal IO error.");
+                return 0;
+            }
+        }
 
         void MainRunLoopCreateInstance::Parameterize (
                 const std::string &name_,
@@ -92,11 +130,13 @@ namespace thekogans {
             userData = userData_;
             window = std::move (window_);
             displays = displays_;
+            XInitThreads ();
+            XSetErrorHandler (ErrorHandler);
+            XSetIOErrorHandler (IOErrorHandler);
             Thread::SetMainThread ();
         }
-    #endif // defined (THEKOGANS_UTIL_HAVE_XLIB)
+
         RunLoop *MainRunLoopCreateInstance::operator () () {
-        #if defined (THEKOGANS_UTIL_HAVE_XLIB)
             return eventProcessor != 0 ?
                 (RunLoop *)new SystemRunLoop (
                     name,
@@ -110,15 +150,18 @@ namespace thekogans {
                 (RunLoop *)new DefaultRunLoop (
                     name,
                     type,
-                    maxPendingJobs);
-
-        #else // defined (THEKOGANS_UTIL_HAVE_XLIB)
+                    maxPendingJobs,
+                    willCallStart);
+        }
+    #else // defined (THEKOGANS_UTIL_HAVE_XLIB)
+        RunLoop *MainRunLoopCreateInstance::operator () () {
             return new DefaultRunLoop (
                 name,
                 type,
-                maxPendingJobs);
-        #endif // defined (THEKOGANS_UTIL_HAVE_XLIB)
+                maxPendingJobs,
+                willCallStart);
         }
+    #endif // defined (THEKOGANS_UTIL_HAVE_XLIB)
     #elif defined (TOOLCHAIN_OS_OSX)
         SystemRunLoop::OSXRunLoop::Ptr MainRunLoopCreateInstance::runLoop;
 
@@ -147,7 +190,8 @@ namespace thekogans {
                 (RunLoop *)new DefaultRunLoop (
                     name,
                     type,
-                    maxPendingJobs);
+                    maxPendingJobs,
+                    willCallStart);
         }
     #endif // defined (TOOLCHAIN_OS_Windows)
 

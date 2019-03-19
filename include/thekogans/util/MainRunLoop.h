@@ -224,6 +224,17 @@ namespace thekogans {
         #endif // defined (TOOLCHAIN_OS_Windows)
 
         public:
+            /// \brief
+            /// Call before the first use of MainRunLoop::Instance.
+            /// \param[in] name_ RunLoop name.
+            /// \param[in] type_ RunLoop queue type.
+            /// \param[in] maxPendingJobs_ Max pending run loop jobs.
+            /// \param[in] willCallStart_ true = the main thread will call
+            static void Parameterize (
+                const std::string &name_,
+                RunLoop::Type type_,
+                ui32 maxPendingJobs_,
+                bool willCallStart_);
         #if defined (TOOLCHAIN_OS_Windows)
             /// \brief
             /// Call before the first use of MainRunLoop::Instance.
