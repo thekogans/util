@@ -129,12 +129,13 @@ namespace thekogans {
             /// \param[in] name RunLoop name.
             /// \param[in] type RunLoop queue type.
             /// \param[in] maxPendingJobs Max pending run loop jobs.
-            /// \param[in] workerCallback_ Called to initialize/uninitialize the worker thread.
+            /// \param[in] done true == Must call Start.
             DefaultRunLoop (
                 const std::string &name = std::string (),
                 Type type = TYPE_FIFO,
-                ui32 maxPendingJobs = UI32_MAX) :
-                RunLoop (name, type, maxPendingJobs) {}
+                ui32 maxPendingJobs = UI32_MAX,
+                bool done = true) :
+                RunLoop (name, type, maxPendingJobs, done) {}
 
             /// \brief
             /// Start the run loop. This is a blocking call and will
