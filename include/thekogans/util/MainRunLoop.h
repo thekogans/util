@@ -48,7 +48,7 @@ namespace thekogans {
         /// Call MainRunLoopCreateInstance::Parameterize before the first use of
         /// MainRunLoop::Instance to supply custom arguments to SystemRunLoop ctor.
         /// If you don't call MainRunLoopCreateInstance::Parameterize, MainRunLoop
-        /// will create a \see{DefaultRunLoop} on it's first invocation of Instance.
+        /// will create a \see{ThreadRunLoop} on it's first invocation of Instance.
         ///
         /// VERY IMPORTANT: MainRunLoopCreateInstance::Parameterize performs initialization
         /// (calls Thread::SetMainThread ()) that only makes sense when called from the

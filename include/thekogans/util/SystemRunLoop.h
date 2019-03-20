@@ -112,7 +112,7 @@ namespace thekogans {
         ///             // NOTE: Windows will only deliver HWND events to a thread
         ///             // that created the HWND. It's, therefore, important that
         ///             // SystemRunLoop be created on the thread that will call
-        ///             // Start (unlike \see{DefaultRunLoop}).
+        ///             // Start (unlike \see{ThreadRunLoop}).
         ///             runLoop.Reset (new util::SystemRunLoop);
         ///             runLoop->Start ();
         ///         }

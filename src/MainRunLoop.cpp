@@ -16,7 +16,7 @@
 // along with libthekogans_util. If not, see <http://www.gnu.org/licenses/>.
 
 #include "thekogans/util/Thread.h"
-#include "thekogans/util/DefaultRunLoop.h"
+#include "thekogans/util/ThreadRunLoop.h"
 #if defined (THEKOGANS_OS_Linux)
     #if defined (THEKOGANS_UTIL_HAVE_XLIB)
         #include "thekogans/util/XlibUtils.h"
@@ -80,7 +80,7 @@ namespace thekogans {
                     eventProcessor,
                     userData,
                     std::move (window)) :
-                (RunLoop *)new DefaultRunLoop (
+                (RunLoop *)new ThreadRunLoop (
                     name,
                     type,
                     maxPendingJobs,
@@ -147,7 +147,7 @@ namespace thekogans {
                     userData,
                     std::move (window),
                     displays) :
-                (RunLoop *)new DefaultRunLoop (
+                (RunLoop *)new ThreadRunLoop (
                     name,
                     type,
                     maxPendingJobs,
@@ -155,7 +155,7 @@ namespace thekogans {
         }
     #else // defined (THEKOGANS_UTIL_HAVE_XLIB)
         RunLoop *MainRunLoopCreateInstance::operator () () {
-            return new DefaultRunLoop (
+            return new ThreadRunLoop (
                 name,
                 type,
                 maxPendingJobs,
@@ -187,7 +187,7 @@ namespace thekogans {
                     maxPendingJobs,
                     willCallStart,
                     std::move (runLoop)) :
-                (RunLoop *)new DefaultRunLoop (
+                (RunLoop *)new ThreadRunLoop (
                     name,
                     type,
                     maxPendingJobs,

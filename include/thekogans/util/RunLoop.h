@@ -53,7 +53,7 @@ namespace thekogans {
         /// \struct RunLoop RunLoop.h thekogans/util/RunLoop.h
         ///
         /// \brief
-        /// RunLoop is an abstract base for \see{JobQueue}, \see{DefaultRunLoop} and
+        /// RunLoop is an abstract base for \see{JobQueue}, \see{ThreadRunLoop} and
         /// \see{SystemRunLoop}. RunLoop allows you to schedule jobs (RunLoop::Job)
         /// to be executed on the thread that's running the run loop.
 
@@ -327,8 +327,8 @@ namespace thekogans {
                 /// RunLoop needs acces to protected members.
                 friend struct RunLoop;
                 /// \brief
-                /// DefaultRunLoop needs acces to protected members.
-                friend struct DefaultRunLoop;
+                /// ThreadRunLoop needs acces to protected members.
+                friend struct ThreadRunLoop;
                 /// \brief
                 /// SystemRunLoop needs acces to protected members.
                 friend struct SystemRunLoop;

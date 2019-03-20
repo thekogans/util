@@ -17,12 +17,12 @@
 
 #include "thekogans/util/HRTimer.h"
 #include "thekogans/util/LockGuard.h"
-#include "thekogans/util/DefaultRunLoop.h"
+#include "thekogans/util/ThreadRunLoop.h"
 
 namespace thekogans {
     namespace util {
 
-        void DefaultRunLoop::Start () {
+        void ThreadRunLoop::Start () {
             bool expected = true;
             if (done.compare_exchange_strong (expected, false)) {
                 while (!done) {
@@ -46,13 +46,13 @@ namespace thekogans {
             }
         }
 
-        void DefaultRunLoop::Stop (
+        void ThreadRunLoop::Stop (
                 bool cancelRunningJobs,
                 bool cancelPendingJobs) {
             struct Pauser {
-                DefaultRunLoop &defaultRunLoop;
+                ThreadRunLoop &defaultRunLoop;
                 bool cancelRunningJobs;
-                Pauser (DefaultRunLoop &defaultRunLoop_,
+                Pauser (ThreadRunLoop &defaultRunLoop_,
                         bool cancelRunningJobs_) :
                         defaultRunLoop (defaultRunLoop_),
                         cancelRunningJobs (cancelRunningJobs_) {

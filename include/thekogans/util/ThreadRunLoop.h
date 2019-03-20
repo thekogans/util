@@ -15,8 +15,8 @@
 // You should have received a copy of the GNU General Public License
 // along with libthekogans_util. If not, see <http://www.gnu.org/licenses/>.
 
-#if !defined (__thekogans_util_DefaultRunLoop_h)
-#define __thekogans_util_DefaultRunLoop_h
+#if !defined (__thekogans_util_ThreadRunLoop_h)
+#define __thekogans_util_ThreadRunLoop_h
 
 #include <string>
 #include "thekogans/util/Config.h"
@@ -29,10 +29,10 @@
 namespace thekogans {
     namespace util {
 
-        /// \struct DefaultRunLoop DefaultRunLoop.h thekogans/util/DefaultRunLoop.h
+        /// \struct ThreadRunLoop ThreadRunLoop.h thekogans/util/ThreadRunLoop.h
         ///
         /// \brief
-        /// DefaultRunLoop implements a very simple thread run loop. To use it as your main thread
+        /// ThreadRunLoop implements a very simple thread run loop. To use it as your main thread
         /// run loop, all you need to do is call thekogans::util::MainRunLoop::Instance ().Start ()
         /// from main. If you initialized the \see{Console}, then the ctrl-break handler will call
         /// thekogans::util::MainRunLoop::Instance ().Stop () and your main thread will exit.
@@ -41,7 +41,7 @@ namespace thekogans {
         /// to process UI events, use \see{SystemRunLoop} instead. It's designed to integrate
         /// with various system facilities (Windows: HWND, Linux: Display, OS X: CFRunLoop).
         ///
-        /// To Use a DefaultRunLoop in the main thread (main, WinMain), use the following template:
+        /// To Use a ThreadRunLoop in the main thread (main, WinMain), use the following template:
         ///
         /// On Windows:
         ///
@@ -75,14 +75,14 @@ namespace thekogans {
         /// }
         /// \endcode
         ///
-        /// To Use a DefaultRunLoop in secondary (worker) threads, use the following template:
+        /// To Use a ThreadRunLoop in secondary (worker) threads, use the following template:
         ///
         /// \code{.cpp}
         /// using namespace thekogans;
         ///
         /// struct MyThread : public util::Thread (
         /// private:
-        ///     util::DefaultRunLoop runLoop;
+        ///     util::ThreadRunLoop runLoop;
         ///
         /// public:
         ///     MyThread (
@@ -118,10 +118,10 @@ namespace thekogans {
         /// }
         /// \endcode
 
-        struct _LIB_THEKOGANS_UTIL_DECL DefaultRunLoop : public RunLoop {
+        struct _LIB_THEKOGANS_UTIL_DECL ThreadRunLoop : public RunLoop {
             /// \brief
-            /// Convenient typedef for ThreadSafeRefCounted::Ptr<DefaultRunLoop>.
-            typedef ThreadSafeRefCounted::Ptr<DefaultRunLoop> Ptr;
+            /// Convenient typedef for ThreadSafeRefCounted::Ptr<ThreadRunLoop>.
+            typedef ThreadSafeRefCounted::Ptr<ThreadRunLoop> Ptr;
 
         public:
             /// \brief
@@ -130,7 +130,7 @@ namespace thekogans {
             /// \param[in] type RunLoop queue type.
             /// \param[in] maxPendingJobs Max pending run loop jobs.
             /// \param[in] done true == Must call Start.
-            DefaultRunLoop (
+            ThreadRunLoop (
                 const std::string &name = std::string (),
                 Type type = TYPE_FIFO,
                 ui32 maxPendingJobs = UI32_MAX,
@@ -152,11 +152,11 @@ namespace thekogans {
                 bool cancelPendingJobs = true);
 
             /// \brief
-            /// DefaultRunLoop is neither copy constructable, nor assignable.
-            THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (DefaultRunLoop)
+            /// ThreadRunLoop is neither copy constructable, nor assignable.
+            THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (ThreadRunLoop)
         };
 
     } // namespace util
 } // namespace thekogans
 
-#endif // !defined (__thekogans_util_DefaultRunLoop_h)
+#endif // !defined (__thekogans_util_ThreadRunLoop_h)

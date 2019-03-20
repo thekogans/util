@@ -98,7 +98,6 @@
     <cpp_header>$(organization)/$(project_directory)/CPUInfo.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/CRC32.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/DefaultAllocator.h</cpp_header>
-    <cpp_header>$(organization)/$(project_directory)/DefaultRunLoop.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/Directory.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/DynamicLibrary.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/Event.h</cpp_header>
@@ -175,6 +174,7 @@
     <cpp_header>$(organization)/$(project_directory)/SystemInfo.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/SystemRunLoop.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/Thread.h</cpp_header>
+    <cpp_header>$(organization)/$(project_directory)/ThreadRunLoop.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/TimeSpec.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/Timer.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/Types.h</cpp_header>
@@ -618,7 +618,6 @@
     <cpp_source>CPUInfo.cpp</cpp_source>
     <cpp_source>CRC32.cpp</cpp_source>
     <cpp_source>DefaultAllocator.cpp</cpp_source>
-    <cpp_source>DefaultRunLoop.cpp</cpp_source>
     <cpp_source>Directory.cpp</cpp_source>
     <cpp_source>DynamicLibrary.cpp</cpp_source>
     <cpp_source>Event.cpp</cpp_source>
@@ -679,6 +678,7 @@
     <cpp_source>SystemInfo.cpp</cpp_source>
     <cpp_source>SystemRunLoop.cpp</cpp_source>
     <cpp_source>Thread.cpp</cpp_source>
+    <cpp_source>ThreadRunLoop.cpp</cpp_source>
     <cpp_source>Timer.cpp</cpp_source>
     <cpp_source>TimeSpec.cpp</cpp_source>
     <cpp_source>ValueParser.cpp</cpp_source>
