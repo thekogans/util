@@ -58,6 +58,9 @@ namespace thekogans {
             /// \brief
             /// Host id.
             std::string hostId;
+            /// \brief
+            /// User name.
+            std::string userName;
 
         public:
             /// \brief
@@ -108,6 +111,13 @@ namespace thekogans {
             /// \return Host id.
             inline std::string GetHostId () const {
                 return hostId;
+            }
+
+            /// \brief
+            /// Return user name.
+            /// \return User name.
+            inline std::string GetUserName () const {
+                return userName;
             }
 
             /// \brief

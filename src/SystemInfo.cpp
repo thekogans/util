@@ -35,6 +35,7 @@
         #include <linux/if_packet.h>
         #include <unistd.h>
         #include <climits>
+        #include <pwd.h>
     #elif defined (TOOLCHAIN_OS_OSX)
         #include <net/if_dl.h>
         #include <net/if_types.h>
@@ -247,6 +248,68 @@ namespace thekogans {
                 sha2.Final (digest);
                 return HexEncodeBuffer (digest.data (), digest.size ());
             }
+
+            std::string GetUserNameImpl () {
+                std::string result;
+            #if defined (TOOLCHAIN_OS_Windows)
+                DWORD sessionId = WTSGetActiveConsoleSessionId ();
+                if (sessionId != 0xFFFFFFFF) {
+                    LPSTR data = NULL;
+                    DWORD length = 0;
+                    if (WTSQuerySessionInformationA (
+                            WTS_CURRENT_SERVER_HANDLE,
+                            sessionId,
+                            WTSUserName,
+                            &data,
+                            &length)) {
+                        result = data;
+                        WTSFreeMemory (data);
+                    }
+                    else {
+                        THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                            THEKOGANS_UTIL_OS_ERROR_CODE);
+                    }
+                }
+            #elif defined (TOOLCHAIN_OS_Linux)
+                struct passwd *pw = getpwuid (geteuid ());
+                if (pw != 0) {
+                    result = pw->pw_name;
+                }
+                else {
+                    THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                        THEKOGANS_UTIL_OS_ERROR_CODE);
+                }
+            #elif defined (TOOLCHAIN_OS_OSX)
+                struct CFStringRefDeleter {
+                    void operator () (CFStringRef stringRef) {
+                        if (stringRef != 0) {
+                            CFRelease (stringRef);
+                        }
+                    }
+                };
+                typedef std::unique_ptr<const __CFString, CFStringRefDeleter> CFStringRefPtr;
+                CFStringRefPtr consoleUser (SCDynamicStoreCopyConsoleUser (nullptr, nullptr, nullptr));
+                if (consoleUser.get () != 0) {
+                    struct CFDataRefDeleter {
+                        void operator () (CFDataRef dataRef) {
+                            if (dataRef != 0) {
+                                CFRelease (dataRef);
+                            }
+                        }
+                    };
+                    typedef std::unique_ptr<const __CFData, CFDataRefDeleter> CFDataRefPtr;
+                    CFDataRefPtr UTF8String (
+                        CFStringCreateExternalRepresentation (
+                            nullptr, consoleUser.get (), kCFStringEncodingUTF8, '?'));
+                    if (UTF8String.get () != 0) {
+                        const UInt8 *data = CFDataGetBytePtr (UTF8String.get ());
+                        CFIndex length = CFDataGetLength (UTF8String.get ());
+                        result = std::string (data, data + length);
+                    }
+                }
+            #endif // defined (TOOLCHAIN_OS_Windows)
+                return result;
+            }
         }
 
         SystemInfo::SystemInfo () :
@@ -256,7 +319,8 @@ namespace thekogans {
             memorySize (GetMemorySizeImpl ()),
             processPath (GetProcessPathImpl ()),
             hostName (GetHostNameImpl ()),
-            hostId (GetHostIdImpl ()) {}
+            hostId (GetHostIdImpl ()),
+            userName (GetUserNameImpl ()) {}
 
         void SystemInfo::Dump (std::ostream &stream) const {
             stream << "Endianness: " << (endianness == util::LittleEndian ? "LittleEndian" : "BigEndian") << std::endl;
@@ -266,6 +330,7 @@ namespace thekogans {
             stream << "Process Path: " << processPath << std::endl;
             stream << "Host name: " << hostName << std::endl;
             stream << "Host Id: " << hostId << std::endl;
+            stream << "User name: " << userName << std::endl;
         }
 
     } // namespace util
