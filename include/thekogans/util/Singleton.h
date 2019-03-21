@@ -191,6 +191,14 @@ namespace thekogans {
                 }
             }
 
+            /// \brief
+            /// Return true if instance has been created.
+            /// \return true if instance has been created.
+            static bool IsInstantiated () {
+                LockGuard<Lock> guard (lock);
+                return instance != 0;
+            }
+
         protected:
             /// \brief
             /// The one and only singleton instance.
