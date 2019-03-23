@@ -27,6 +27,32 @@
 namespace thekogans {
     namespace util {
 
+        namespace {
+            int ErrorHandler (
+                    Display *display,
+                    XErrorEvent *errorEvent) {
+                char buffer[1024];
+                XGetErrorText (display, errorEvent->error_code, buffer, 1024);
+                THEKOGANS_UTIL_LOG_SUBSYSTEM_ERROR (
+                    THEKOGANS_UTIL,
+                    "%s\n", buffer);
+                return 0;
+            }
+
+            int IOErrorHandler (Display *display) {
+                THEKOGANS_UTIL_LOG_SUBSYSTEM_ERROR (
+                    THEKOGANS_UTIL,
+                    "%s\n", "Fatal IO error.");
+                return 0;
+            }
+        }
+
+        void XlibInit () {
+            XInitThreads ();
+            XSetErrorHandler (ErrorHandler);
+            XSetIOErrorHandler (IOErrorHandler);
+        }
+
         DisplayGuard::DisplayGuard (Display *display_) :
                 display (display_) {
             if (display != 0) {

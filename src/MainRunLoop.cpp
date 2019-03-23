@@ -17,14 +17,6 @@
 
 #include "thekogans/util/Thread.h"
 #include "thekogans/util/ThreadRunLoop.h"
-#if defined (THEKOGANS_OS_Linux)
-    #if defined (THEKOGANS_UTIL_HAVE_XLIB)
-        #include "thekogans/util/XlibUtils.h"
-    #endif // defined (THEKOGANS_UTIL_HAVE_XLIB)
-#elif defined (THEKOGANS_OS_OSX)
-    #include "thekogans/util/Exception.h"
-    #include "thekogans/util/OSXUtils.h"
-#endif // defined (THEKOGANS_OS_OSX)
 #include "thekogans/util/MainRunLoop.h"
 
 namespace thekogans {
@@ -93,26 +85,6 @@ namespace thekogans {
         SystemRunLoop::XlibWindow::Ptr MainRunLoopCreateInstance::window;
         std::vector<Display *> MainRunLoopCreateInstance::displays;
 
-        namespace {
-            int ErrorHandler (
-                    Display *display,
-                    XErrorEvent *errorEvent) {
-                char buffer[1024];
-                XGetErrorText (display, errorEvent->error_code, buffer, 1024);
-                THEKOGANS_UTIL_LOG_SUBSYSTEM_ERROR (
-                    THEKOGANS_UTIL,
-                    "%s\n", buffer);
-                return 0;
-            }
-
-            int IOErrorHandler (Display *display) {
-                THEKOGANS_UTIL_LOG_SUBSYSTEM_ERROR (
-                    THEKOGANS_UTIL,
-                    "%s\n", "Fatal IO error.");
-                return 0;
-            }
-        }
-
         void MainRunLoopCreateInstance::Parameterize (
                 const std::string &name_,
                 RunLoop::Type type_,
@@ -130,9 +102,6 @@ namespace thekogans {
             userData = userData_;
             window = std::move (window_);
             displays = displays_;
-            XInitThreads ();
-            XSetErrorHandler (ErrorHandler);
-            XSetIOErrorHandler (IOErrorHandler);
             Thread::SetMainThread ();
         }
 

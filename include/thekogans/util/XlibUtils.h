@@ -26,6 +26,12 @@
 namespace thekogans {
     namespace util {
 
+        /// \brief
+        /// Call XInitThreads and setup error handling callbacks.
+        /// IMPORTANT: This method must be called before any other
+        /// calls to Xlib.
+        void XlibInit ();
+
         /// \struct DisplayGuard XlibUtils.h thekogans/util/XlibUtils.h
         ///
         /// \brief
