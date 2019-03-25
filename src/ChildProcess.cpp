@@ -22,6 +22,9 @@
     #include <sys/types.h>
     #include <sys/stat.h>
     #include <pwd.h>
+    #if defined (TOOLCHAIN_OS_OSX)
+        #include <libproc.h>
+    #endif // defined (TOOLCHAIN_OS_OSX)
 #endif // !defined (TOOLCHAIN_OS_Windows)
 #include <cassert>
 #include <cstdlib>
@@ -710,6 +713,59 @@ namespace thekogans {
             }
         }
     #endif // !defined (TOOLCHAIN_OS_Windows)
+
+        _LIB_THEKOGANS_UTIL_DECL std::string _LIB_THEKOGANS_UTIL_API GetProcessPath (
+                THEKOGANS_UTIL_PROCESS_ID processId) {
+        #if defined (TOOLCHAIN_OS_Windows)
+            struct ProcessHandle {
+                HANDLE handle;
+                ProcessHandle (THEKOGANS_UTIL_PROCESS_ID processId) :
+                        handle (
+                            OpenProcess (
+                                SYNCHRONIZE | PROCESS_QUERY_LIMITED_INFORMATION,
+                                FALSE,
+                                processId)) {
+                    if (handle == 0) {
+                        THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                            THEKOGANS_UTIL_OS_ERROR_CODE);
+                    }
+                }
+                ~ProcessHandle () {
+                    CloseHandle (handle);
+                }
+            } process (processId);
+            CHAR path[MAX_PATH] = {};
+            DWORD length = MAX_PATH;
+            if (QueryFullProcessImageNameA (process.handle, 0, path, &length)) {
+                return path;
+            }
+            else {
+                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                    THEKOGANS_UTIL_OS_ERROR_CODE);
+            }
+        #elif defined (TOOLCHAIN_OS_Linux)
+            char path[PATH_MAX + 1] = {0};
+            ssize_t length = readlink (
+                FormatString ("/proc/%d/exe", processId).c_str (), path, sizeof (path));
+            if (length != -1) {
+                path[length] = '\0';
+                return path;
+            }
+            else {
+                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                    THEKOGANS_UTIL_OS_ERROR_CODE);
+            }
+        #elif defined (TOOLCHAIN_OS_OSX)
+            char path[PROC_PIDPATHINFO_MAXSIZE] = {};
+            if (proc_pidpath (processId, path, sizeof (path)) != -1) {
+                return path;
+            }
+            else {
+                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                    THEKOGANS_UTIL_OS_ERROR_CODE);
+            }
+        #endif // defined (TOOLCHAIN_OS_Windows)
+        }
 
     } // namespace util
 } // namespace thekogans

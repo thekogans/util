@@ -463,6 +463,13 @@ namespace thekogans {
             i32 waitForChild = 3);
     #endif // !defined (TOOLCHAIN_OS_Windows)
 
+        /// \brief
+        /// Given process id, return it's executable file path.
+        /// \param[in] processId Process id whose executable file path to return.
+        /// \rerurn Process executable file path.
+        _LIB_THEKOGANS_UTIL_DECL std::string _LIB_THEKOGANS_UTIL_API GetProcessPath (
+            THEKOGANS_UTIL_PROCESS_ID processId);
+
     } // namespace util
 } // namespace thekogans
 
