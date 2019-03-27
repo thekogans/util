@@ -33,7 +33,6 @@
     #include "thekogans/util/WindowsUtils.h"
 #endif // defined (TOOLCHAIN_OS_Windows)
 #include "thekogans/util/Flags.h"
-#include "thekogans/util/Path.h"
 #include "thekogans/util/LoggerMgr.h"
 #include "thekogans/util/Exception.h"
 #include "thekogans/util/File.h"
@@ -615,6 +614,25 @@ namespace thekogans {
                 Wait (timeSpec);
             }
             return buffer;
+        }
+
+        LockFile::LockFile (const std::string &path_) :
+                path (path_) {
+            if (!path.IsEmpty ()) {
+                if (!path.Exists ()) {
+                    File::Touch (path_);
+                }
+                else {
+                    THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
+                        "Lock file (%s) found.\n", path_.c_str ());
+                }
+            }
+        }
+
+        LockFile::~LockFile () {
+            if (path.Exists ()) {
+                path.Delete ();
+            }
         }
 
     #if !defined (TOOLCHAIN_OS_Windows)

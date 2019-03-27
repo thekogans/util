@@ -40,6 +40,7 @@
 #include "thekogans/util/TimeSpec.h"
 #include "thekogans/util/RunLoop.h"
 #include "thekogans/util/Buffer.h"
+#include "thekogans/util/Path.h"
 
 namespace thekogans {
     namespace util {
@@ -423,6 +424,30 @@ namespace thekogans {
             /// \brief
             /// ChildProcess is neither copy constructable, nor assignable.
             THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (ChildProcess)
+        };
+
+        /// \struct LockFile ChildProcess.h thekogans/util/ChildProcess.h
+        ///
+        /// \brief
+        /// LockFile provides a simple file based semaphore used to restrict
+        /// programs to single instance. It checks the existence of the file
+        /// in the ctor, and if present, throws an exception. It deletes the
+        /// lock file in the dtor allowing new instance of the program to run.
+        /// Instantiate one of these in your main to prevent multiple instances
+        /// of your program running.
+
+        struct _LIB_THEKOGANS_UTIL_DECL LockFile {
+            /// \brief
+            /// Lock file path.
+            Path path;
+
+            /// \brief
+            /// ctor.
+            /// \param[in] path_ Lock file path.
+            explicit LockFile (const std::string &path_);
+            /// \brief
+            /// dtor.
+            ~LockFile ();
         };
 
     #if !defined (TOOLCHAIN_OS_Windows)
