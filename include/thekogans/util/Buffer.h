@@ -217,14 +217,7 @@ namespace thekogans {
             /// \brief
             /// Return the serialized size of this buffer.
             /// \return Serialized size of this buffer.
-            inline std::size_t Size () const {
-                return
-                    Serializer::Size () +
-                    Serializer::Size (length) +
-                    Serializer::Size (readOffset) +
-                    Serializer::Size (writeOffset) +
-                    length;
-            }
+            std::size_t Size () const;
 
             /// \brief
             /// Return true if there is no more data available for reading.

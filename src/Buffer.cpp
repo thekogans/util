@@ -191,6 +191,26 @@ namespace thekogans {
             }
         }
 
+        namespace {
+            std::string GetSerializedAllocatorName (const Buffer &buffer) {
+                std::string allocatorName = buffer.allocator->GetName ();
+                if (Allocator::Get (allocatorName) == 0) {
+                    allocatorName = DefaultAllocator::Global.GetName ();
+                }
+                return allocatorName;
+            }
+        }
+
+        std::size_t Buffer::Size () const {
+            return
+                Serializer::Size () +
+                Serializer::Size (length) +
+                Serializer::Size (readOffset) +
+                Serializer::Size (writeOffset) +
+                Serializer::Size (GetSerializedAllocatorName (*this)) +
+                length;
+        }
+
         std::size_t Buffer::AdvanceReadOffset (std::size_t advance) {
             if (advance > 0) {
                 std::size_t availableForReading = GetDataAvailableForReading ();
@@ -448,16 +468,12 @@ namespace thekogans {
         _LIB_THEKOGANS_UTIL_DECL Serializer & _LIB_THEKOGANS_UTIL_API operator << (
                 Serializer &serializer,
                 const Buffer &buffer) {
-            std::string allocatorName = buffer.allocator->GetName ();
-            if (Allocator::Get (allocatorName) == 0) {
-                allocatorName = DefaultAllocator::Global.GetName ();
-            }
             serializer <<
                 buffer.endianness <<
                 buffer.length <<
                 buffer.readOffset <<
                 buffer.writeOffset <<
-                allocatorName;
+                GetSerializedAllocatorName (buffer);
             if (buffer.length > 0) {
                 std::size_t bytesWritten = serializer.Write (buffer.data, buffer.length);
                 if (buffer.length != bytesWritten) {
