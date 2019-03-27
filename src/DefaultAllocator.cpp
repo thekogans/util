@@ -22,6 +22,8 @@
 namespace thekogans {
     namespace util {
 
+        THEKOGANS_UTIL_IMPLEMENT_ALLOCATOR (DefaultAllocator)
+
         DefaultAllocator DefaultAllocator::Global;
 
         void *DefaultAllocator::Alloc (std::size_t size) {

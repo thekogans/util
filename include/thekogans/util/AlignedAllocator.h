@@ -91,6 +91,13 @@ namespace thekogans {
                 std::size_t alignment_);
 
             /// \brief
+            /// Return allocator name.
+            /// \return Allocator name.
+            virtual const char *GetName () const {
+                return "AlignedAllocator";
+            }
+
+            /// \brief
             /// Use Allocator to allocate a block, and align it to the
             /// requested boundary.
             /// \param[in] size Block size to allocate.\n

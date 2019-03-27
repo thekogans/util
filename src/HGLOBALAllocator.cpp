@@ -33,6 +33,8 @@
 namespace thekogans {
     namespace util {
 
+        THEKOGANS_UTIL_IMPLEMENT_ALLOCATOR (HGLOBALAllocator)
+
         HGLOBALAllocator HGLOBALAllocator::Global;
 
         void *HGLOBALAllocator::Alloc (std::size_t size) {

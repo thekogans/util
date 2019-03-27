@@ -23,6 +23,10 @@ namespace thekogans {
 
         NullAllocator NullAllocator::Global;
 
+        const char *NullAllocator::GetName () const {
+            return "NullAllocator";
+        }
+
         void *NullAllocator::Alloc (std::size_t size) {
             if (size > 0) {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (

@@ -34,6 +34,11 @@ namespace thekogans {
 
         struct _LIB_THEKOGANS_UTIL_DECL DefaultAllocator : public Allocator {
             /// \brief
+            /// DefaultAllocator participates in the \see{Allocator} dynamic
+            /// discovery and creation.
+            THEKOGANS_UTIL_DECLARE_ALLOCATOR (DefaultAllocator)
+
+            /// \brief
             /// Global DefaultAllocator. Used by default in \see{Heap} and \see{Buffer}.
             static DefaultAllocator Global;
 

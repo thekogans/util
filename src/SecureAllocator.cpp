@@ -34,6 +34,8 @@
 namespace thekogans {
     namespace util {
 
+        THEKOGANS_UTIL_IMPLEMENT_ALLOCATOR (SecureAllocator)
+
         SecureAllocator SecureAllocator::Global;
 
         void SecureAllocator::ReservePages (

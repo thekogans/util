@@ -298,6 +298,13 @@ namespace thekogans {
             }
 
             /// \brief
+            /// Return allocator name.
+            /// \return Allocator name.
+            virtual const char *GetName () const {
+                return "SharedAllocator";
+            }
+
+            /// \brief
             /// Allocate a shared block.
             /// \param[in] size Size of block to allocate.
             /// \return Pointer to the allocated block (0 if out of memory).

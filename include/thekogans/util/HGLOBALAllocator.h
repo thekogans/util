@@ -37,6 +37,11 @@ namespace thekogans {
 
         struct _LIB_THEKOGANS_UTIL_DECL HGLOBALAllocator : public Allocator {
             /// \brief
+            /// HGLOBALAllocator participates in the \see{Allocator} dynamic
+            /// discovery and creation.
+            THEKOGANS_UTIL_DECLARE_ALLOCATOR (HGLOBALAllocator)
+
+            /// \brief
             /// Global HGLOBALAllocator. Used by default in \see{Heap} and \see{Buffer}.
             static HGLOBALAllocator Global;
 

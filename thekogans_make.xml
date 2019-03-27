@@ -2,8 +2,8 @@
                 project = "util"
                 project_type = "library"
                 major_version = "0"
-                minor_version = "29"
-                patch_version = "3"
+                minor_version = "30"
+                patch_version = "0"
                 guid = "e541acd69d9d020f7eac98d5bf9e0d7a"
                 schema_version = "2">
   <features>
@@ -607,6 +607,7 @@
   </if>
   <cpp_sources prefix = "src">
     <cpp_source>AlignedAllocator.cpp</cpp_source>
+    <cpp_source>Allocator.cpp</cpp_source>
     <cpp_source>Barrier.cpp</cpp_source>
     <cpp_source>Base64.cpp</cpp_source>
     <cpp_source>BitSet.cpp</cpp_source>

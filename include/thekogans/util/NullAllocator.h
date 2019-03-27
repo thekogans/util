@@ -41,6 +41,11 @@ namespace thekogans {
             static NullAllocator Global;
 
             /// \brief
+            /// Return allocator name.
+            /// \return Allocator name.
+            virtual const char *GetName () const;
+
+            /// \brief
             /// Allocate a block.
             /// \param[in] size Size of block to allocate.
             /// \return 0.
