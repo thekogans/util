@@ -31,9 +31,16 @@ namespace thekogans {
         /// \struct ConsoleLogger ConsoleLogger.h thekogans/util/ConsoleLogger.h
         ///
         /// \brief
-        /// A pluggable Logger instance used to dump log entries to
-        /// stderr. ConsoleLogger uses a color scheme to color code the
-        /// entries based on their log level.
+        /// A pluggable Logger instance used to dump log entries to Console::StdStream.
+        /// ConsoleLogger uses a color scheme to color code the entries based on their
+        /// log level.
+        /// VERY IMPORTANT: By instantiating a ConsoleLogger, I assume that the application
+        /// is \see{Console} based. Because \see{Console} performs important initialization
+        /// in it's ctor (See \see{ConsoleCreateInstance}) that's required by \see{MainRunLoop}
+        /// and \see{ChildProcess}. ConsoleLogger ctor explicitly creates the \see{Console}
+        /// \see{Singleton}. If you need to supply custom \see{Console} ctor parameters you
+        /// need to call \see{ConsoleCreateInstance::Parameterize} before instantiating a
+        /// ConsoleLogger.
 
         struct _LIB_THEKOGANS_UTIL_DECL ConsoleLogger : public Logger {
             /// \struct ConsoleLogger::ColorScheme ConsoleLogger.h thekogans/util/ConsoleLogger.h
@@ -71,24 +78,33 @@ namespace thekogans {
 
         private:
             /// \brief
+            /// Where to print the log entry.
+            Console::StdStream stream;
+            /// \brief
             /// Current color scheme.
             ColorScheme::UniquePtr colorScheme;
 
         public:
             /// \ brief
             /// ctor.
+            /// \param[in] stream_ Where to print the log entry.
             /// \param[in] colorScheme_ Color scheme to use to color the log entries.
             /// \param[in] level \see{LoggerMgr::level} this logger will log up to.
             ConsoleLogger (
-                ColorScheme::UniquePtr colorScheme_ =
-                    ColorScheme::UniquePtr (new DefaultColorScheme),
-                ui32 level = UI32_MAX) :
-                Logger (level),
-                colorScheme (std::move (colorScheme_)) {}
+                    Console::StdStream stream_ = Console::StdErr,
+                    ColorScheme::UniquePtr colorScheme_ =
+                        ColorScheme::UniquePtr (new DefaultColorScheme),
+                    ui32 level = UI32_MAX) :
+                    Logger (level),
+                    stream (stream_),
+                    colorScheme (std::move (colorScheme_)) {
+                // This will create the \see{Console} singleton.
+                Flush ();
+            }
 
             // Logger
             /// \brief
-            /// Dump an entry to stderr using appropriate color.
+            /// Dump an entry to Console::StdStream using appropriate color.
             /// \param[in] subsystem Entry subsystem.
             /// \param[in] level Entry log level (used to get appropriate color).
             /// \param[in] header Entry header.
