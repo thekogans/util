@@ -62,6 +62,10 @@ namespace thekogans {
         /// (readOffset and writeOffset). It allows you to continue
         /// filling the buffer without disturbing the current read
         /// position. This is very useful in streaming operations.
+        /// The following diagram represents the various buffer regions:
+        ///
+        /// |--- consumed ---+--- available for reading ---+--- available for writing ---|
+        /// 0            readOffset                   writeOffset                     length
 
         struct _LIB_THEKOGANS_UTIL_DECL Buffer : public Serializer {
             /// \brief
@@ -236,6 +240,12 @@ namespace thekogans {
             }
 
             /// \brief
+            /// Return number of bytes read from the buffer.
+            /// \return Number of bytes read from the buffer.
+            inline std::size_t GetDataConsumed () const {
+                return readOffset;
+            }
+            /// \brief
             /// Return number of bytes available for reading.
             /// \return Number of bytes available for reading.
             inline std::size_t GetDataAvailableForReading () const {
@@ -247,6 +257,13 @@ namespace thekogans {
             inline std::size_t GetDataAvailableForWriting () const {
                 return length > writeOffset ? length - writeOffset : 0;
             }
+            /// \brief
+            /// Return total buffer length.
+            /// \return Total buffer length.
+            inline std::size_t GetLength () const {
+                return length;
+            }
+
             /// \brief
             /// Return the current data read position.
             /// \return The current data read position.
