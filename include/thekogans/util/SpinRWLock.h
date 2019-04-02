@@ -35,8 +35,14 @@ namespace thekogans {
         struct _LIB_THEKOGANS_UTIL_DECL SpinRWLock {
         private:
             /// \brief
+            /// Default max pause iterations before giving up the time slice.
+            static const ui32 DEFAULT_MAX_PAUSE_BEFORE_YIELD = 16;
+            /// \brief
             /// Flag indicating the presence of a writer.
             static const ui32 WRITER = 1;
+            /// \brief
+            /// \see{Thread::Backoff} parameter.
+            ui32 maxPauseBeforeYield;
             /// \brief
             /// Flag indicating that a writer is waiting
             /// for the readers to exit.
@@ -57,7 +63,9 @@ namespace thekogans {
         public:
             /// \brief
             /// ctor. Initialize to unlocked.
-            SpinRWLock () :
+            /// \param[in] maxPauseBeforeYield_ \see{Thread::Backoff} parameter.
+            SpinRWLock (ui32 maxPauseBeforeYield_ = DEFAULT_MAX_PAUSE_BEFORE_YIELD) :
+                maxPauseBeforeYield (maxPauseBeforeYield_),
                 state (0) {}
 
             /// \brief

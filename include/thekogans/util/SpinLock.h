@@ -19,6 +19,7 @@
 #define __thekogans_util_SpinLock_h
 
 #include "thekogans/util/Config.h"
+#include "thekogans/util/Types.h"
 
 namespace thekogans {
     namespace util {
@@ -34,24 +35,30 @@ namespace thekogans {
 
         struct _LIB_THEKOGANS_UTIL_DECL SpinLock {
         private:
+            /// \brief
+            /// Default max pause iterations before giving up the time slice.
+            static const ui32 DEFAULT_MAX_PAUSE_BEFORE_YIELD = 16;
+            /// \brief
+            /// \see{Thread::Backoff} parameter.
+            ui32 maxPauseBeforeYield;
             /// \enum
             /// SpinLock state type.
-            enum State {
-                /// \brief
-                /// Unlocked.
-                Unlocked,
-                /// \brief
-                /// Locked.
-                Locked
-            };
+            /// \brief
+            /// Unlocked.
+            static const ui32 Unlocked = 0;
+            /// \brief
+            /// Locked.
+            static const ui32 Locked = 1;
             /// \brief
             /// SpinLock state.
-            THEKOGANS_UTIL_ATOMIC<State> state;
+            THEKOGANS_UTIL_ATOMIC<ui32> state;
 
         public:
             /// \brief
             /// Default ctor. Initialize to unlocked.
-            SpinLock () :
+            /// \param[in] maxPauseBeforeYield_ \see{Thread::Backoff} parameter.
+            SpinLock (ui32 maxPauseBeforeYield_ = DEFAULT_MAX_PAUSE_BEFORE_YIELD) :
+                maxPauseBeforeYield (maxPauseBeforeYield_),
                 state (Unlocked) {}
 
             /// \brief

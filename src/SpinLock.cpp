@@ -42,7 +42,7 @@ namespace thekogans {
                 // line invalidations and better performance.
                 // This code was adapted from the ideas found here:
                 // https://geidav.wordpress.com/tag/exponential-back-off/
-                Thread::Backoff backoff;
+                Thread::Backoff backoff (maxPauseBeforeYield);
                 while (state.load (memory_order_relaxed) == Locked) {
                     backoff.Pause ();
                 }

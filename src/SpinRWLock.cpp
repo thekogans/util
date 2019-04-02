@@ -54,7 +54,7 @@ namespace thekogans {
 
         void SpinRWLock::Acquire (bool read) {
             if (read) {
-                for (Thread::Backoff backoff;; backoff.Pause ()) {
+                for (Thread::Backoff backoff (maxPauseBeforeYield);; backoff.Pause ()) {
                     ui32 currState = state.load (memory_order_acquire);
                     if (!(currState & (WRITER | WRITER_PENDING))) {
                         ui32 newState = state.fetch_add (ONE_READER, memory_order_release);
@@ -66,7 +66,7 @@ namespace thekogans {
                 }
             }
             else {
-                for (Thread::Backoff backoff;; backoff.Pause ()) {
+                for (Thread::Backoff backoff (maxPauseBeforeYield);; backoff.Pause ()) {
                     ui32 currState = state.load (memory_order_acquire);
                     if (!(currState & BUSY)) {
                         if (state.compare_exchange_strong (currState, WRITER)) {
