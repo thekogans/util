@@ -408,6 +408,20 @@ namespace thekogans {
             return (T)(x1 + t * (x2 - x1));
         }
 
+        /// \brief
+        /// Exchange the given object with the new value and return the old value.
+        /// \param[in, out] object Object whose value to excahnge.
+        /// \param[in] newValue Value to set the object to.
+        /// \return Old value.
+        template<typename T>
+        T EXCHANGE (
+                T &object,
+                const T &newValue) {
+            T oldValue = object;
+            object = newValue;
+            return oldValue;
+        }
+
     } // namespace util
 } // namespace thekogans
 
