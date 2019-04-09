@@ -281,6 +281,7 @@ namespace thekogans {
             inline ui8 *GetWritePtrEnd () const {
                 return GetWritePtr () + GetDataAvailableForWriting ();
             }
+
             /// \brief
             /// Advance the read offset taking care not to overflow.
             /// NOTE: If advance == 0, the call is a silent noop.

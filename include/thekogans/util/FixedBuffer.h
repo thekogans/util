@@ -18,12 +18,24 @@
 #if !defined (__thekogans_util_FixedBuffer_h)
 #define __thekogans_util_FixedBuffer_h
 
+#if defined (TOOLCHAIN_OS_Windows)
+    #if !defined (_WINDOWS_)
+        #if !defined (WIN32_LEAN_AND_MEAN)
+            #define WIN32_LEAN_AND_MEAN
+        #endif // !defined (WIN32_LEAN_AND_MEAN)
+        #if !defined (NOMINMAX)
+            #define NOMINMAX
+        #endif // !defined (NOMINMAX)
+        #include <windows.h>
+    #endif // !defined (_WINDOWS_)
+#endif // defined (TOOLCHAIN_OS_Windows)
 #include "thekogans/util/Config.h"
 #include "thekogans/util/Types.h"
 #include "thekogans/util/Constants.h"
 #include "thekogans/util/SizeT.h"
 #include "thekogans/util/Serializer.h"
 #include "thekogans/util/Exception.h"
+#include "thekogans/util/SecureAllocator.h"
 
 namespace thekogans {
     namespace util {
@@ -177,6 +189,12 @@ namespace thekogans {
             }
 
             /// \brief
+            /// Return number of bytes read from the buffer.
+            /// \return Number of bytes read from the buffer.
+            inline std::size_t GetDataConsumed () const {
+                return readOffset;
+            }
+            /// \brief
             /// Return number of bytes available for reading.
             /// \return Number of bytes available for reading.
             inline std::size_t GetDataAvailableForReading () const {
@@ -188,6 +206,13 @@ namespace thekogans {
             inline std::size_t GetDataAvailableForWriting () const {
                 return length > writeOffset ? length - writeOffset : 0;
             }
+            /// \brief
+            /// Return total buffer length.
+            /// \return Total buffer length.
+            inline std::size_t GetLength () const {
+                return length;
+            }
+
             /// \brief
             /// Return the current read data position.
             /// \return The current read data position.
@@ -212,6 +237,7 @@ namespace thekogans {
             inline ui8 *GetWritePtrEnd () const {
                 return GetWritePtr () + GetDataAvailableForWriting ();
             }
+
             /// \brief
             /// Advance the read offset taking care not to overflow.
             /// \param[in] advance Amount to advance the readOffset.
@@ -240,10 +266,65 @@ namespace thekogans {
             /// \brief
             /// Reset the readOffset and the writeOffset to prepare the
             /// buffer for reuse.
-            inline void Rewind () {
+            /// \param[in] readOnly true == Reset for reading only.
+            inline void Rewind (bool readOnly = false) {
                 readOffset = 0;
-                writeOffset = 0;
+                if (!readOnly) {
+                    writeOffset = 0;
+                }
             }
+
+            /// \brief
+            /// Convert the buffer to a std::string.
+            /// \return std::string containing the buffers contents.
+            inline std::string Tostring () const {
+                return GetDataAvailableForReading () > 0 ?
+                    std::string (GetReadPtr (), GetReadPtrEnd ()) :
+                    std::string ();
+            }
+
+            /// \brief
+            /// Convert the buffer to a std::vector.
+            /// \return std::vector containing the buffers contents.
+            inline std::vector<ui8> Tovector () const {
+                return GetDataAvailableForReading () > 0 ?
+                    std::vector<ui8> (GetReadPtr (), GetReadPtrEnd ()) :
+                    std::vector<ui8> ();
+            }
+
+            /// \brief
+            /// Convert the buffer to a SecureVector.
+            /// \return SecureVector containing the buffers contents.
+            inline SecureVector<ui8> ToSecureVector () const {
+                return GetDataAvailableForReading () > 0 ?
+                    SecureVector<ui8> (GetReadPtr (), GetReadPtrEnd ()) :
+                    SecureVector<ui8> ();
+            }
+
+        #if defined (TOOLCHAIN_OS_Windows)
+            /// \brief
+            /// Convert the buffer to a Windows HGLOBAL.
+            /// \param[in] flags GlobalAlloc flags.
+            /// \return HGLOBAL containing the buffers contents.
+            inline HGLOBAL ToHGLOBAL (UINT flags = GMEM_MOVEABLE) const {
+                HGLOBAL global = 0;
+                if (GetDataAvailableForReading () > 0) {
+                    global = GlobalAlloc (flags, GetDataAvailableForReading ());
+                    if (global != 0) {
+                        memcpy (
+                            GlobalLock (global),
+                            GetReadPtr (),
+                            GetDataAvailableForReading ());
+                        GlobalUnlock (global);
+                    }
+                    else {
+                        THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                            THEKOGANS_UTIL_OS_ERROR_CODE);
+                    }
+                }
+                return global;
+            }
+        #endif // defined (TOOLCHAIN_OS_Windows)
         };
 
         /// \brief
