@@ -45,7 +45,11 @@ namespace thekogans {
         /// \brief
         /// FixedBuffer is a convenient in memory fixed length serializer. It's strength
         /// comes from it's ability to be 1. Defined inline and 2. Constructed like any
-        /// other first class object (unlike c arrays).
+        /// other first class object (unlike c arrays). The following diagram represents
+        /// the various buffer regions:
+        ///
+        /// |--- consumed ---+--- available for reading ---+--- available for writing ---|
+        /// 0            readOffset                   writeOffset                     length
 
         template<std::size_t length>
         struct FixedBuffer : public Serializer {
