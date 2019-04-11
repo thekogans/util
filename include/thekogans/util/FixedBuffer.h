@@ -71,7 +71,7 @@ namespace thekogans {
             /// \param[in] clearUnused Clear unused array elements to 0.
             FixedBuffer (
                     Endianness endianness = HostEndian,
-                    const ui8 *data_ = 0,
+                    const void *data_ = 0,
                     std::size_t length_ = 0,
                     bool clearUnused = false) :
                     Serializer (endianness),
@@ -98,12 +98,12 @@ namespace thekogans {
             /// \param[in] clearUnused Clear unused array elements to 0.
             FixedBuffer (
                     Endianness endianness,
-                    const ui8 *begin,
-                    const ui8 *end,
+                    const void *begin,
+                    const void *end,
                     bool clearUnused = false) :
                     Serializer (endianness),
                     readOffset (0),
-                    writeOffset (end - begin) {
+                    writeOffset ((const ui8 *)end - (const ui8 *)begin) {
                 if (writeOffset <= length) {
                     if (writeOffset > 0) {
                         memcpy (data, begin, writeOffset);

@@ -129,7 +129,13 @@ namespace thekogans {
                 std::size_t length_,
                 std::size_t readOffset_ = 0,
                 std::size_t writeOffset_ = 0,
-                Allocator *allocator_ = &DefaultAllocator::Global);
+                Allocator *allocator_ = &DefaultAllocator::Global) :
+                Serializer (endianness),
+                data ((ui8 *)allocator_->Alloc (length_)),
+                length (length_),
+                readOffset (readOffset_),
+                writeOffset (writeOffset_),
+                allocator (allocator_) {}
             /// \brief
             /// ctor for creating a buffer from a given range.
             /// \param[in] endianness Specifies how multi-byte values are stored.
@@ -140,8 +146,8 @@ namespace thekogans {
             /// \param[in] allocator_ Allocator used for memory management.
             Buffer (
                 Endianness endianness,
-                const ui8 *begin,
-                const ui8 *end,
+                const void *begin,
+                const void *end,
                 std::size_t readOffset_ = 0,
                 std::size_t writeOffset_ = SIZE_T_MAX,
                 Allocator *allocator_ = &DefaultAllocator::Global);

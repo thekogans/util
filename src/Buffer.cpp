@@ -27,28 +27,15 @@ namespace thekogans {
     namespace util {
 
         Buffer::Buffer (
-            Endianness endianness,
-            std::size_t length_,
-            std::size_t readOffset_,
-            std::size_t writeOffset_,
-            Allocator *allocator_) :
-            Serializer (endianness),
-            data ((ui8 *)allocator_->Alloc (length_)),
-            length (length_),
-            readOffset (readOffset_),
-            writeOffset (writeOffset_),
-            allocator (allocator_) {}
-
-        Buffer::Buffer (
                 Endianness endianness,
-                const ui8 *begin,
-                const ui8 *end,
+                const void *begin,
+                const void *end,
                 std::size_t readOffset_,
                 std::size_t writeOffset_,
                 Allocator *allocator_) :
                 Serializer (endianness),
-                data ((ui8 *)allocator_->Alloc (end - begin)),
-                length (end - begin),
+                data ((ui8 *)allocator_->Alloc ((const ui8 *)end - (const ui8 *)begin)),
+                length ((const ui8 *)end - (const ui8 *)begin),
                 readOffset (readOffset_),
                 writeOffset (writeOffset_ == SIZE_T_MAX ? length.value : writeOffset_),
                 allocator (allocator_) {
