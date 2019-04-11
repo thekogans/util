@@ -82,6 +82,12 @@ namespace thekogans {
             std::string ToUnixPathSeparator () const;
 
             /// \brief
+            /// Implicit typecast operator.
+            inline operator std::string () const {
+                return path;
+            }
+
+            /// \brief
             /// Return true if path is empty.
             /// \return true == path is empty, false == path is not empty.
             inline bool IsEmpty () const {
