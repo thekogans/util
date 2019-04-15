@@ -30,6 +30,8 @@
 #include "thekogans/util/RefCounted.h"
 #include "thekogans/util/Serializer.h"
 #include "thekogans/util/Buffer.h"
+#include "thekogans/util/SpinLock.h"
+#include "thekogans/util/LockGuard.h"
 #include "thekogans/util/ValueParser.h"
 
 namespace thekogans {
@@ -336,11 +338,17 @@ namespace thekogans {
             THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_COMMON (\
                 type, version, lock, minSerializablesInPage, allocator)\
             void type::StaticInit () {\
-                std::pair<Map::iterator, bool> result =\
-                    GetMap ().insert (Map::value_type (#type, type::Create));\
-                if (!result.second) {\
-                    THEKOGANS_UTIL_THROW_STRING_EXCEPTION (\
-                        "'%s' is already registered.", #type);\
+                static volatile bool registered = false;\
+                static thekogans::util::SpinLock spinLock;\
+                thekogans::util::LockGuard<thekogans::util::SpinLock> guard (spinLock);\
+                if (!registered) {\
+                    std::pair<Map::iterator, bool> result =\
+                        GetMap ().insert (Map::value_type (#type, type::Create));\
+                    if (!result.second) {\
+                        THEKOGANS_UTIL_THROW_STRING_EXCEPTION (\
+                            "'%s' is already registered.", #type);\
+                    }\
+                    registered = true;\
                 }\
             }
     #else // defined (THEKOGANS_UTIL_TYPE_Static)

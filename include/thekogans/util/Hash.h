@@ -27,6 +27,8 @@
 #include "thekogans/util/Types.h"
 #include "thekogans/util/RefCounted.h"
 #include "thekogans/util/Exception.h"
+#include "thekogans/util/SpinLock.h"
+#include "thekogans/util/LockGuard.h"
 
 namespace thekogans {
     namespace util {
@@ -198,11 +200,17 @@ namespace thekogans {
                 return thekogans::util::Hash::Ptr (new type);\
             }\
             static void StaticInit () {\
-                std::pair<Map::iterator, bool> result =\
-                    GetMap ().insert (Map::value_type (#type, type::Create));\
-                if (!result.second) {\
-                    THEKOGANS_UTIL_THROW_STRING_EXCEPTION (\
-                        "'%s' is already registered.", #type);\
+                static volatile bool registered = false;\
+                static thekogans::util::SpinLock spinLock;\
+                thekogans::util::LockGuard<thekogans::util::SpinLock> guard (spinLock);\
+                if (!registered) {\
+                    std::pair<Map::iterator, bool> result =\
+                        GetMap ().insert (Map::value_type (#type, type::Create));\
+                    if (!result.second) {\
+                        THEKOGANS_UTIL_THROW_STRING_EXCEPTION (\
+                            "'%s' is already registered.", #type);\
+                    }\
+                    registered = true;\
                 }\
             }
 

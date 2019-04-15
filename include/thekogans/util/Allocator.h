@@ -25,6 +25,8 @@
 #include <map>
 #include "thekogans/util/Config.h"
 #include "thekogans/util/Exception.h"
+#include "thekogans/util/SpinLock.h"
+#include "thekogans/util/LockGuard.h"
 
 namespace thekogans {
     namespace util {
@@ -127,11 +129,17 @@ namespace thekogans {
                 return &Global;\
             }\
             static void StaticInit () {\
-                std::pair<Map::iterator, bool> result =\
-                    GetMap ().insert (Map::value_type (#type, type::Create));\
-                if (!result.second) {\
-                    THEKOGANS_UTIL_THROW_STRING_EXCEPTION (\
-                        "'%s' is already registered.", #type);\
+                static volatile bool registered = false;\
+                static thekogans::util::SpinLock spinLock;\
+                thekogans::util::LockGuard<thekogans::util::SpinLock> guard (spinLock);\
+                if (!registered) {\
+                    std::pair<Map::iterator, bool> result =\
+                        GetMap ().insert (Map::value_type (#type, type::Create));\
+                    if (!result.second) {\
+                        THEKOGANS_UTIL_THROW_STRING_EXCEPTION (\
+                            "'%s' is already registered.", #type);\
+                    }\
+                    registered = true;\
                 }\
             }\
             virtual const char *GetName () const {\
