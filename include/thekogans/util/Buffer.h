@@ -264,6 +264,12 @@ namespace thekogans {
             }
 
             /// \brief
+            /// Return the data pointer.
+            /// \return The data pointer.
+            inline ui8 *GetDataPtr () const {
+                return data;
+            }
+            /// \brief
             /// Return the current data read position.
             /// \return The current data read position.
             inline const ui8 *GetReadPtr () const {
