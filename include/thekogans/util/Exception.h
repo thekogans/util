@@ -42,13 +42,10 @@
 #include <list>
 #include <exception>
 #include <ostream>
-#if defined (THEKOGANS_UTIL_HAVE_PUGIXML)
-    #include <pugixml.hpp>
-#endif // defined (THEKOGANS_UTIL_HAVE_PUGIXML)
+#include "pugixml/pugixml.hpp"
 #include "thekogans/util/Config.h"
 #include "thekogans/util/Types.h"
 #include "thekogans/util/Mutex.h"
-#include "thekogans/util/Serializer.h"
 #include "thekogans/util/StringUtils.h"
 #if defined (TOOLCHAIN_OS_OSX)
     #include "thekogans/util/OSXUtils.h"
@@ -56,6 +53,8 @@
 
 namespace thekogans {
     namespace util {
+
+        struct Serializer;
 
         /// \struct Exception Exception.h thekogans/util/Exception.h
         ///
@@ -155,14 +154,12 @@ namespace thekogans {
                     function (function_),
                     line (line_),
                     buildTime (buildTime_) {}
-            #if defined (THEKOGANS_UTIL_HAVE_PUGIXML)
                 /// \brief
                 /// ctor.
                 /// \param[in] node pugi::xml_node representing the Location.
                 Location (const pugi::xml_node &node) {
                     Parse (node);
                 }
-            #endif // defined (THEKOGANS_UTIL_HAVE_PUGIXML)
 
                 /// \brief
                 /// "Location"
@@ -183,15 +180,8 @@ namespace thekogans {
                 /// \brief
                 /// Return location serialized size.
                 /// \return Location serialized size.
-                inline std::size_t Size () const {
-                    return
-                        Serializer::Size (file) +
-                        Serializer::Size (function) +
-                        Serializer::Size (line) +
-                        Serializer::Size (buildTime);
-                }
+                std::size_t Size () const;
 
-            #if defined (THEKOGANS_UTIL_HAVE_PUGIXML)
                 /// \brief
                 /// Given an pugi::xml_node, parse the
                 /// location it represents. The Location has
@@ -202,7 +192,6 @@ namespace thekogans {
                 ///          BuildTime = "Module build date and time"/>
                 /// \param[in] node pugi::xml_node representing the location.
                 void Parse (const pugi::xml_node &node);
-            #endif // defined (THEKOGANS_UTIL_HAVE_PUGIXML)
                 /// \brief
                 /// Serialize the Location parameters in to an XML string.
                 /// \param[in] indentationLevel Pretty print parameter. If
@@ -252,7 +241,6 @@ namespace thekogans {
                 errorCode (errorCode_),
                 message (message_),
                 traceback (1, Location (file, function, line, buildTime)) {}
-        #if defined (THEKOGANS_UTIL_HAVE_PUGIXML)
             /// \brief
             /// ctor.
             /// \param[in] node XML encoded exception.
@@ -268,7 +256,6 @@ namespace thekogans {
             explicit Exception (const pugi::xml_node &node) {
                 Parse (node);
             }
-        #endif // defined (THEKOGANS_UTIL_HAVE_PUGIXML)
             /// \brief
             /// Virtual dtor.
             virtual ~Exception () throw () {}
@@ -276,12 +263,7 @@ namespace thekogans {
             /// \brief
             /// Return exception serialized size.
             /// \return Exception serialized size.
-            inline std::size_t Size () const {
-                return
-                    Serializer::Size (errorCode) +
-                    Serializer::Size (message) +
-                    Serializer::Size (traceback);
-            }
+            std::size_t Size () const;
 
             /// \brief
             /// Return exception error code.
@@ -382,7 +364,6 @@ namespace thekogans {
             /// \return A formated message and traceback suitable for logging.
             std::string Report () const;
 
-        #if defined (THEKOGANS_UTIL_HAVE_PUGIXML)
             /// \brief
             /// Parse an xml encoded exception.
             /// \param[in] node XML encoded exception.
@@ -396,7 +377,6 @@ namespace thekogans {
             ///     ...
             /// </Exception>
             void Parse (const pugi::xml_node &node);
-        #endif // defined (THEKOGANS_UTIL_HAVE_PUGIXML)
             /// \brief
             /// Encode an xml exception.
             /// \param[in] indentationLevel Number of '\t' to insert before each line.
@@ -1170,58 +1150,36 @@ namespace thekogans {
         /// \param[in] serializer Where to write the given guid.
         /// \param[in] location Exception::Location to write.
         /// \return serializer.
-        inline Serializer &operator << (
-                Serializer &serializer,
-                const Exception::Location &location) {
-            return serializer <<
-                location.file <<
-                location.function <<
-                location.line <<
-                location.buildTime;
-        }
+        _LIB_THEKOGANS_UTIL_DECL Serializer & _LIB_THEKOGANS_UTIL_API operator << (
+            Serializer &serializer,
+            const Exception::Location &location);
 
         /// \brief
         /// Read an Exception::Location from the given serializer.
         /// \param[in] serializer Where to read the guid from.
         /// \param[out] location Exception::Location to read.
         /// \return serializer.
-        inline Serializer &operator >> (
-                Serializer &serializer,
-                Exception::Location &location) {
-            return serializer >>
-                location.file >>
-                location.function >>
-                location.line >>
-                location.buildTime;
-        }
+        _LIB_THEKOGANS_UTIL_DECL Serializer & _LIB_THEKOGANS_UTIL_API operator >> (
+            Serializer &serializer,
+            Exception::Location &location);
 
         /// \brief
         /// Write the given exception to the given serializer.
         /// \param[in] serializer Where to write the given guid.
         /// \param[in] exception Exception to write.
         /// \return serializer.
-        inline Serializer &operator << (
-                Serializer &serializer,
-                const Exception &exception) {
-            return serializer <<
-                exception.errorCode <<
-                exception.message <<
-                exception.traceback;
-        }
+        _LIB_THEKOGANS_UTIL_DECL Serializer & _LIB_THEKOGANS_UTIL_API operator << (
+            Serializer &serializer,
+            const Exception &exception);
 
         /// \brief
         /// Read an Exception from the given serializer.
         /// \param[in] serializer Where to read the guid from.
         /// \param[out] exception Exception to read.
         /// \return serializer.
-        inline Serializer &operator >> (
-                Serializer &serializer,
-                Exception &exception) {
-            return serializer >>
-                exception.errorCode >>
-                exception.message >>
-                exception.traceback;
-        }
+        _LIB_THEKOGANS_UTIL_DECL Serializer & _LIB_THEKOGANS_UTIL_API operator >> (
+            Serializer &serializer,
+            Exception &exception);
 
     } // namespace util
 } // namespace thekogans
