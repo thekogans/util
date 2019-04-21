@@ -145,6 +145,37 @@ namespace thekogans {
             return *this;
         }
 
+        Serializer &Serializer::operator << (const SecureString &value) {
+            *this << SizeT (value.size ());
+            if (value.size () > 0) {
+                if (Write (value.c_str (), value.size ()) != value.size ()) {
+                    THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
+                        "Write (value.c_str (), " THEKOGANS_UTIL_SIZE_T_FORMAT ") != " THEKOGANS_UTIL_SIZE_T_FORMAT,
+                        value.size (),
+                        value.size ());
+                }
+            }
+            return *this;
+        }
+
+        Serializer &Serializer::operator >> (SecureString &value) {
+            SizeT length;
+            *this >> length;
+            if (length > 0) {
+                value.resize (length);
+                if (Read (&value[0], length) != length) {
+                    THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
+                        "Read (&value[0], " THEKOGANS_UTIL_SIZE_T_FORMAT ") != " THEKOGANS_UTIL_SIZE_T_FORMAT,
+                        length,
+                        length);
+                }
+            }
+            else {
+                value.clear ();
+            }
+            return *this;
+        }
+
         Serializer &Serializer::operator << (i8 value) {
             if (Write (&value, I8_SIZE) != I8_SIZE) {
                 THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
@@ -397,9 +428,9 @@ namespace thekogans {
             *this << SizeT (value.size ());
             if (value.size () > 0) {
                 std::size_t size = value.size () * I8_SIZE;
-                if (Write (&value[0], size) != size) {
+                if (Write (value.data (), size) != size) {
                     THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                        "Write (&value[0], " THEKOGANS_UTIL_SIZE_T_FORMAT ") != " THEKOGANS_UTIL_SIZE_T_FORMAT,
+                        "Write (value.data (), " THEKOGANS_UTIL_SIZE_T_FORMAT ") != " THEKOGANS_UTIL_SIZE_T_FORMAT,
                         size,
                         size);
                 }
@@ -413,9 +444,9 @@ namespace thekogans {
             if (length > 0) {
                 value.resize (length);
                 std::size_t size = length * I8_SIZE;
-                if (Read (&value[0], size) != size) {
+                if (Read (value.data (), size) != size) {
                     THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                        "Read (&value[0], " THEKOGANS_UTIL_SIZE_T_FORMAT ") != " THEKOGANS_UTIL_SIZE_T_FORMAT,
+                        "Read (value.data (), " THEKOGANS_UTIL_SIZE_T_FORMAT ") != " THEKOGANS_UTIL_SIZE_T_FORMAT,
                         size,
                         size);
                 }
@@ -430,9 +461,9 @@ namespace thekogans {
             *this << SizeT (value.size ());
             if (value.size () > 0) {
                 std::size_t size = value.size () * UI8_SIZE;
-                if (Write (&value[0], size) != size) {
+                if (Write (value.data (), size) != size) {
                     THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                        "Write (&value[0], " THEKOGANS_UTIL_SIZE_T_FORMAT ") != " THEKOGANS_UTIL_SIZE_T_FORMAT,
+                        "Write (value.data (), " THEKOGANS_UTIL_SIZE_T_FORMAT ") != " THEKOGANS_UTIL_SIZE_T_FORMAT,
                         size,
                         size);
                 }
@@ -446,9 +477,75 @@ namespace thekogans {
             if (length > 0) {
                 value.resize (length);
                 std::size_t size = length * UI8_SIZE;
-                if (Read (&value[0], size) != size) {
+                if (Read (value.data (), size) != size) {
                     THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                        "Read (&value[0], " THEKOGANS_UTIL_SIZE_T_FORMAT ") != " THEKOGANS_UTIL_SIZE_T_FORMAT,
+                        "Read (value.data (), " THEKOGANS_UTIL_SIZE_T_FORMAT ") != " THEKOGANS_UTIL_SIZE_T_FORMAT,
+                        size,
+                        size);
+                }
+            }
+            else {
+                value.clear ();
+            }
+            return *this;
+        }
+
+        Serializer &Serializer::operator << (const SecureVector<i8> &value) {
+            *this << SizeT (value.size ());
+            if (value.size () > 0) {
+                std::size_t size = value.size () * I8_SIZE;
+                if (Write (value.data (), size) != size) {
+                    THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
+                        "Write (value.data (), " THEKOGANS_UTIL_SIZE_T_FORMAT ") != " THEKOGANS_UTIL_SIZE_T_FORMAT,
+                        size,
+                        size);
+                }
+            }
+            return *this;
+        }
+
+        Serializer &Serializer::operator >> (SecureVector<i8> &value) {
+            SizeT length;
+            *this >> length;
+            if (length > 0) {
+                value.resize (length);
+                std::size_t size = length * I8_SIZE;
+                if (Read (value.data (), size) != size) {
+                    THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
+                        "Read (value.data (), " THEKOGANS_UTIL_SIZE_T_FORMAT ") != " THEKOGANS_UTIL_SIZE_T_FORMAT,
+                        size,
+                        size);
+                }
+            }
+            else {
+                value.clear ();
+            }
+            return *this;
+        }
+
+        Serializer &Serializer::operator << (const SecureVector<ui8> &value) {
+            *this << SizeT (value.size ());
+            if (value.size () > 0) {
+                std::size_t size = value.size () * UI8_SIZE;
+                if (Write (value.data (), size) != size) {
+                    THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
+                        "Write (value.data (), " THEKOGANS_UTIL_SIZE_T_FORMAT ") != " THEKOGANS_UTIL_SIZE_T_FORMAT,
+                        size,
+                        size);
+                }
+            }
+            return *this;
+        }
+
+        Serializer &Serializer::operator >> (SecureVector<ui8> &value) {
+            SizeT length;
+            *this >> length;
+            if (length > 0) {
+                value.resize (length);
+                std::size_t size = length * UI8_SIZE;
+                if (Read (value.data (), size) != size) {
+                    THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
+                        "Read (value.data (), " THEKOGANS_UTIL_SIZE_T_FORMAT ") != " THEKOGANS_UTIL_SIZE_T_FORMAT,
                         size,
                         size);
                 }

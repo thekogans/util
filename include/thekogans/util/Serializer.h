@@ -26,6 +26,7 @@
 #include "thekogans/util/Types.h"
 #include "thekogans/util/ByteSwap.h"
 #include "thekogans/util/SizeT.h"
+#include "thekogans/util/SecureAllocator.h"
 
 namespace thekogans {
     namespace util {
@@ -161,6 +162,24 @@ namespace thekogans {
             /// \param[out] value Where to place the extracted value.
             /// \return *this.
             Serializer &operator >> (std::string &value);
+
+            /// \brief
+            /// Return serialized size of const SecureString &.
+            /// \return Serialized size of const SecureString &.
+            static std::size_t Size (const SecureString &value) {
+                return SizeT (value.size ()).Size () + value.size ();
+            }
+
+            /// \brief
+            /// Serialize a SecureString.
+            /// \param[in] value Value to serialize.
+            /// \return *this.
+            Serializer &operator << (const SecureString &value);
+            /// \brief
+            /// Extract a SecureString.
+            /// \param[out] value Where to place the extracted value.
+            /// \return *this.
+            Serializer &operator >> (SecureString &value);
 
             /// \brief
             /// Return serialized size of i8.
@@ -441,6 +460,90 @@ namespace thekogans {
             /// \param[out] value Where to place the extracted value.
             /// \return *this.
             Serializer &operator >> (std::vector<ui8> &value);
+
+            /// \brief
+            /// Return serialized size of const \see{SecureVector}<T> &.
+            /// \return Serialized size of const \see{SecureVector}<T> &.
+            template<typename T>
+            static std::size_t Size (const SecureVector<T> &value) {
+                std::size_t size = SizeT (value.size ()).Size ();
+                for (std::size_t i = 0, count = value.size (); i < count; ++i) {
+                    size += Size (value[i]);
+                }
+                return size;
+            }
+
+            /// \brief
+            /// Serialize a const \see{SecureVector}<T>. endianness is used to properly
+            /// convert between serializer and host byte order.
+            /// \param[in] value Value to serialize.
+            /// \return *this.
+            template<typename T>
+            inline Serializer &operator << (const SecureVector<T> &value) {
+                *this << SizeT (value.size ());
+                for (std::size_t i = 0, count = value.size (); i < count; ++i) {
+                    *this << value[i];
+                }
+                return *this;
+            }
+            /// \brief
+            /// Extract a \see{SecureVector}<T>. endianness is used to properly
+            /// convert between serializer and host byte order.
+            /// \param[out] value Where to place the extracted value.
+            /// \return *this.
+            template<typename T>
+            inline Serializer &operator >> (SecureVector<T> &value) {
+                SizeT count;
+                *this >> count;
+                SecureVector<T> temp (count);
+                for (std::size_t i = 0; i < count; ++i) {
+                    *this >> temp[i];
+                }
+                value.swap (temp);
+                return *this;
+            }
+
+            /// \brief
+            /// NOTE: The following two specializations (i8, ui8) are for
+            /// performance. Since these vector elements are of uniform
+            /// size and don't need to be byte swapped, we can read and
+            /// write them as a vector.
+
+            /// \brief
+            /// Return serialized size of const \see{SecureVector}<i8> &.
+            /// \return Serialized size of const \see{SecureVector}<i8> &.
+            static std::size_t Size (const SecureVector<i8> &value) {
+                return SizeT (value.size ()).Size () + value.size ();
+            }
+
+            /// \brief
+            /// Serialize a const \see{SecureVector}<i8>.
+            /// \param[in] value Value to serialize.
+            /// \return *this.
+            Serializer &operator << (const SecureVector<i8> &value);
+            /// \brief
+            /// Extract a \see{SecureVector}<i8>.
+            /// \param[out] value Where to place the extracted value.
+            /// \return *this.
+            Serializer &operator >> (SecureVector<i8> &value);
+
+            /// \brief
+            /// Return serialized size of const \see{SecureVector}<ui8> &.
+            /// \return Serialized size of const \see{SecureVector}<ui8> &.
+            static std::size_t Size (const SecureVector<ui8> &value) {
+                return SizeT (value.size ()).Size () + value.size ();
+            }
+
+            /// \brief
+            /// Serialize a const \see{SecureVector}<ui8>.
+            /// \param[in] value Value to serialize.
+            /// \return *this.
+            Serializer &operator << (const SecureVector<ui8> &value);
+            /// \brief
+            /// Extract a \see{SecureVector}<ui8>.
+            /// \param[out] value Where to place the extracted value.
+            /// \return *this.
+            Serializer &operator >> (SecureVector<ui8> &value);
 
             /// \brief
             /// Return serialized size of const std::list<T> &.
