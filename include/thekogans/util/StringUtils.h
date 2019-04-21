@@ -141,6 +141,16 @@ namespace thekogans {
         /// Decode a previously hex encoded buffer.
         /// \param[in] hexBuffer Pointer to buffer to be hex decoded.
         /// \param[in] length Length of buffer.
+        /// \param[out] buffer Where to write decoded data.
+        /// \return Number of bytes written to buffer.
+        _LIB_THEKOGANS_UTIL_DECL std::size_t _LIB_THEKOGANS_UTIL_API HexDecodeBuffer (
+            const char *hexBuffer,
+            std::size_t length,
+            void *buffer);
+        /// \brief
+        /// Decode a previously hex encoded buffer.
+        /// \param[in] hexBuffer Pointer to buffer to be hex decoded.
+        /// \param[in] length Length of buffer.
         /// \return Original buffer.
         _LIB_THEKOGANS_UTIL_DECL std::vector<ui8> _LIB_THEKOGANS_UTIL_API HexDecodeBuffer (
             const char *hexBuffer,
@@ -151,6 +161,14 @@ namespace thekogans {
         /// \return Hex encoded string.
         _LIB_THEKOGANS_UTIL_DECL std::string _LIB_THEKOGANS_UTIL_API HexEncodestring (
             const std::string &str);
+        /// \brief
+        /// Decode a previously hex encoded string.
+        /// \param[in] hexString previously hex encoded string.
+        /// \param[out] buffer Where to write decoded data.
+        /// \return Number of bytes written to buffer.
+        _LIB_THEKOGANS_UTIL_DECL std::size_t _LIB_THEKOGANS_UTIL_API HexDecodestring (
+            const std::string &hexString,
+            void *buffer);
         /// \brief
         /// Decode a previously hex encoded string.
         /// \param[in] hexString previously hex encoded string.

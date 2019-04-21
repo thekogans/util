@@ -177,8 +177,8 @@ namespace thekogans {
         _LIB_THEKOGANS_UTIL_DECL std::string _LIB_THEKOGANS_UTIL_API HexEncodeBuffer (
                 const void *buffer,
                 std::size_t length) {
-            std::string hexString;
             if (buffer != 0 && length > 0) {
+                std::string hexString;
                 hexString.resize (length * 2);
                 char *ptr1 = &hexString[0];
                 const char *ptr2 = (const char *)buffer;
@@ -186,37 +186,66 @@ namespace thekogans {
                     *ptr1++ = hexTable[(ptr2[i] & 0xf0) >> 4];
                     *ptr1++ = hexTable[ptr2[i] & 0x0f];
                 }
+                return hexString;
             }
-            return hexString;
+            else {
+                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
+            }
         }
 
         namespace {
+            inline char IsHexChar (char hexChar) {
+                return
+                    (hexChar >= '0' && hexChar <= '9') ||
+                    (hexChar >= 'a' && hexChar <= 'f') ||
+                    (hexChar >= 'A' && hexChar <= 'F');
+            }
+
             inline char DecodeHexChar (char hexChar) {
-                return (hexChar >= '0' && hexChar <= '9') ? hexChar - '0' :
+                return
+                    (hexChar >= '0' && hexChar <= '9') ? hexChar - '0' :
                     (hexChar >= 'a' && hexChar <= 'f') ? hexChar - 'a' + 10 :
                     (hexChar >= 'A' && hexChar <= 'F') ? hexChar - 'A' + 10 : -1;
+            }
+        }
+
+        _LIB_THEKOGANS_UTIL_DECL std::size_t _LIB_THEKOGANS_UTIL_API HexDecodeBuffer (
+                const char *hexBuffer,
+                std::size_t length,
+                void *buffer) {
+            if (hexBuffer != 0 && length > 0 && (length & 1) == 0 && buffer != 0) {
+                ui8 *ptr = (ui8 *)buffer;
+                for (std::size_t i = 0; i < length; i += 2) {
+                    if (IsHexChar (hexBuffer[i]) && IsHexChar (hexBuffer[i + 1])) {
+                        *ptr++ = (DecodeHexChar (hexBuffer[i]) << 4) |
+                            DecodeHexChar (hexBuffer[i + 1]);
+                    }
+                    else {
+                        THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
+                            "%s", "hexBuffer is not a hex encoded buffer.");
+                    }
+                }
+                return length / 2;
+            }
+            else {
+                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
             }
         }
 
         _LIB_THEKOGANS_UTIL_DECL std::vector<ui8> _LIB_THEKOGANS_UTIL_API HexDecodeBuffer (
                 const char *hexBuffer,
                 std::size_t length) {
-            std::vector<ui8> buffer;
-            if (hexBuffer != 0 && length > 0) {
-                if ((length & 1) == 0) {
-                    buffer.resize (length / 2);
-                    ui8 *ptr = &buffer[0];
-                    for (std::size_t i = 0; i < length; i += 2) {
-                        *ptr++ = (DecodeHexChar (hexBuffer[i]) << 4) |
-                            DecodeHexChar (hexBuffer[i + 1]);
-                    }
-                }
-                else {
-                    THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                        "%s", "hexBuffer lenght must be even.");
-                }
+            if (hexBuffer != 0 && length > 0 && (length & 1) == 0) {
+                std::vector<ui8> buffer (length / 2);
+                HexDecodeBuffer (hexBuffer, length, buffer.data ());
+                return buffer;
             }
-            return buffer;
+            else {
+                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
+            }
         }
 
         _LIB_THEKOGANS_UTIL_DECL std::string _LIB_THEKOGANS_UTIL_API HexEncodestring (
@@ -227,6 +256,12 @@ namespace thekogans {
         _LIB_THEKOGANS_UTIL_DECL std::vector<ui8> _LIB_THEKOGANS_UTIL_API HexDecodestring (
                 const std::string &hexString) {
             return HexDecodeBuffer (hexString.c_str (), hexString.size ());
+        }
+
+        _LIB_THEKOGANS_UTIL_DECL std::size_t _LIB_THEKOGANS_UTIL_API HexDecodestring (
+                const std::string &hexString,
+                void *buffer) {
+            return HexDecodeBuffer (hexString.c_str (), hexString.size (), buffer);
         }
 
         namespace {
@@ -265,8 +300,8 @@ namespace thekogans {
         _LIB_THEKOGANS_UTIL_DECL std::string _LIB_THEKOGANS_UTIL_API HexFormatBuffer (
                 const void *buffer,
                 std::size_t length) {
-            std::ostringstream stream;
             if (buffer != 0 && length > 0) {
+                std::ostringstream stream;
                 const ui8 *ptr = (const ui8 *)buffer;
                 const std::size_t charsPerRow = 16;
                 std::size_t rows = length / charsPerRow;
@@ -281,8 +316,12 @@ namespace thekogans {
                     stream << std::string ((charsPerRow - remainder) * 3, ' ');
                     ASCIIFormatRow (stream, ptr, remainder);
                 }
+                return stream.str ();
             }
-            return stream.str ();
+            else {
+                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
+            }
         }
 
         _LIB_THEKOGANS_UTIL_DECL std::string _LIB_THEKOGANS_UTIL_API HexFormatstring (
@@ -299,7 +338,6 @@ namespace thekogans {
             }
             return hash % hashTableSize;
         }
-
 
         _LIB_THEKOGANS_UTIL_DECL std::string _LIB_THEKOGANS_UTIL_API GetLongestCommonPrefix (
                 const std::list<std::string> &strings) {
