@@ -25,8 +25,6 @@
 #include "thekogans/util/Config.h"
 #include "thekogans/util/Types.h"
 #include "thekogans/util/Allocator.h"
-#include "thekogans/util/Exception.h"
-#include "thekogans/util/Serializer.h"
 
 namespace thekogans {
     namespace util {
@@ -260,7 +258,9 @@ namespace thekogans {
             /// C++11 provides variadic templates.
             /// \param[in] ptr Where to place the object.
             /// \param[in] args Variable ctor parameters.
-            template<typename _U, typename... Args>
+            template<
+                typename _U,
+                typename... Args>
             void construct (
                     _U *ptr,
                     Args &&... args) {
@@ -281,7 +281,9 @@ namespace thekogans {
         /// \param[in] allocator1 First allocator to compare.
         /// \param[in] allocator2 Second allocator to compare.
         /// \return true
-        template<typename T, typename _U>
+        template<
+            typename T,
+            typename _U>
         inline bool operator == (
                 const stdSecureAllocator<T> & /*allocator1*/,
                 const stdSecureAllocator<_U> & /*allocator2*/) {
@@ -292,7 +294,9 @@ namespace thekogans {
         /// \param[in] allocator1 First allocator to compare.
         /// \param[in] allocator2 Second allocator to compare.
         /// \return false
-        template<typename T, typename _U>
+        template<
+            typename T,
+            typename _U>
         inline bool operator != (
                 const stdSecureAllocator<T> & /*allocator1*/,
                 const stdSecureAllocator<_U> & /*allocator2*/) {
@@ -373,7 +377,7 @@ namespace thekogans {
             /// \brief
             /// ctor.
             /// \param[in] secureVector SecureVector to copy.
-            SecureVector (const SecureVector &secureVector) :
+            SecureVector (const SecureVector<T> &secureVector) :
                 Base (secureVector) {}
         };
     #else // __cplusplus < 201103L
