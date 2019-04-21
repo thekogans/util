@@ -21,22 +21,20 @@
 namespace thekogans {
     namespace util {
 
-        const char * const Serializable::Header::TAG_HEADER = "Header";
-        const char * const Serializable::Header::ATTR_MAGIC = "Magic";
-        const char * const Serializable::Header::ATTR_TYPE = "Type";
-        const char * const Serializable::Header::ATTR_VERSION = "Version";
-        const char * const Serializable::Header::ATTR_SIZE = "Size";
+        const char * const Serializable::BinHeader::TAG_BIN_HEADER = "BinHeader";
+        const char * const Serializable::BinHeader::ATTR_MAGIC = "Magic";
+        const char * const Serializable::BinHeader::ATTR_TYPE = "Type";
+        const char * const Serializable::BinHeader::ATTR_VERSION = "Version";
+        const char * const Serializable::BinHeader::ATTR_SIZE = "Size";
 
-    #if defined (THEKOGANS_UTIL_HAVE_PUGIXML)
-        void Serializable::Header::Parse (const pugi::xml_node &node) {
+        void Serializable::BinHeader::Parse (const pugi::xml_node &node) {
             magic = stringToui32 (node.attribute (ATTR_MAGIC).value ());
             type = Decodestring (node.attribute (ATTR_TYPE).value ());
             version = stringToui16 (node.attribute (ATTR_VERSION).value ());
             size = stringToui64 (node.attribute (ATTR_SIZE).value ());
         }
-    #endif // defined (THEKOGANS_UTIL_HAVE_PUGIXML)
 
-        std::string Serializable::Header::ToString (
+        std::string Serializable::BinHeader::ToString (
                 std::size_t indentationLevel,
                 const char *tagName) const {
             Attributes attributes;
@@ -47,6 +45,9 @@ namespace thekogans {
             return OpenTag (0, tagName, attributes, true, true);
         }
 
+        const char * const Serializable::TextHeader::ATTR_TYPE = "Type";
+        const char * const Serializable::TextHeader::ATTR_VERSION = "Version";
+
         Serializable::Map &Serializable::GetMap () {
             static Map map;
             return map;
@@ -54,9 +55,9 @@ namespace thekogans {
 
         Serializable::MapInitializer::MapInitializer (
                 const std::string &type,
-                Factory factory) {
+                Factories factories) {
             std::pair<Map::iterator, bool> result =
-                GetMap ().insert (Map::value_type (type, factory));
+                GetMap ().insert (Map::value_type (type, factories));
             if (!result.second) {
                 THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
                     "'%s' is already registered.", type.c_str ());
@@ -68,68 +69,14 @@ namespace thekogans {
         }
 
         std::size_t Serializable::Size (const Serializable &serializable) {
-            Header header (
+            BinHeader header (
                 serializable.Type (),
                 serializable.Version (),
                 serializable.Size ());
             return header.Size () + header.size;
         }
 
-        std::size_t Serializable::Serialize (ui8 *buffer) const {
-            if (buffer != 0) {
-                Header header (Type (), Version (), Size ());
-                TenantWriteBuffer buffer_ (
-                    NetworkEndian,
-                    buffer,
-                    header.Size () + header.size);
-                buffer_ << header;
-                Write (buffer_);
-                return buffer_.GetDataAvailableForReading ();
-            }
-            else {
-                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
-            }
-        }
-
-        Buffer Serializable::Serialize () const {
-            Header header (Type (), Version (), Size ());
-            Buffer buffer (
-                NetworkEndian,
-                header.Size () + header.size);
-            buffer << header;
-            Write (buffer);
-            return buffer;
-        }
-
-        Serializable::Ptr Serializable::Deserialize (
-                const Header &header,
-                Serializer &serializer) {
-            if (header.magic == MAGIC32) {
-                Map::iterator it = GetMap ().find (header.type);
-                if (it != GetMap ().end ()) {
-                    return it->second (header, serializer);
-                }
-                else {
-                    THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                        "No registered factory for serializable '%s'.",
-                        header.type.c_str ());
-                }
-            }
-            else {
-                THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                    "Corrupt serializable '%s' header.",
-                    header.type.c_str () );
-            }
-        }
-
-        Serializable::Ptr Serializable::Deserialize (Serializer &serializer) {
-            Header header;
-            serializer >> header;
-            return Deserialize (header, serializer);
-        }
-
-        void ValueParser<Serializable::Header>::Reset () {
+        void ValueParser<Serializable::BinHeader>::Reset () {
             magicParser.Reset ();
             typeParser.Reset ();
             versionParser.Reset ();
@@ -137,7 +84,7 @@ namespace thekogans {
             state = STATE_MAGIC;
         }
 
-        bool ValueParser<Serializable::Header>::ParseValue (Serializer &serializer) {
+        bool ValueParser<Serializable::BinHeader>::ParseValue (Serializer &serializer) {
             if (state == STATE_MAGIC) {
                 if (magicParser.ParseValue (serializer)) {
                     if (value.magic == MAGIC32) {

@@ -20,9 +20,8 @@
 
 #include <cstddef>
 #include <string>
-#if defined (THEKOGANS_UTIL_HAVE_PUGIXML)
-    #include <pugixml.hpp>
-#endif // defined (THEKOGANS_UTIL_HAVE_PUGIXML)
+#include <ostream>
+#include "pugixml/pugixml.hpp"
 #include "thekogans/util/Config.h"
 #include "thekogans/util/Types.h"
 #include "thekogans/util/Constants.h"
@@ -32,6 +31,7 @@
 #include "thekogans/util/Buffer.h"
 #include "thekogans/util/SpinLock.h"
 #include "thekogans/util/LockGuard.h"
+#include "thekogans/util/StringUtils.h"
 #include "thekogans/util/ValueParser.h"
 
 namespace thekogans {
@@ -43,7 +43,8 @@ namespace thekogans {
         /// Serializable is an abstract base for all supported serializable types (See
         /// \see{Serializer}). It exposes machinery used by descendants to register
         /// themselves for dynamic discovery, creation and serializable insertion and
-        /// extraction.
+        /// extraction. Serializable has built in support for binary, XML and JSON
+        /// serialization and de-serialization.
 
         struct _LIB_THEKOGANS_UTIL_DECL Serializable :
                 public virtual ThreadSafeRefCounted {
@@ -51,11 +52,11 @@ namespace thekogans {
             /// Convenient typedef for ThreadSafeRefCounted::Ptr<Serializable>.
             typedef ThreadSafeRefCounted::Ptr<Serializable> Ptr;
 
-            /// \struct Serializable::Header Serializable.h thekogans/util/Serializable.h
+            /// \struct Serializable::BinHeader Serializable.h thekogans/util/Serializable.h
             ///
             /// \brief
-            /// Header containing enough info to deserialize the serializable instance.
-            struct Header {
+            /// Binary header containing enough info to deserialize the serializable instance.
+            struct BinHeader {
                 /// \brief
                 /// MAGIC32
                 ui32 magic;
@@ -71,7 +72,7 @@ namespace thekogans {
 
                 /// \brief
                 /// ctor.
-                Header () :
+                BinHeader () :
                     magic (0),
                     version (0),
                     size (0) {}
@@ -80,7 +81,7 @@ namespace thekogans {
                 /// \param[in] type_ Serializable type (it's class name).
                 /// \param[in] version_ Serializable version.
                 /// \param[in] size_ Serializable size in bytes (not including the header).
-                Header (
+                BinHeader (
                     const char *type_,
                     ui16 version_,
                     std::size_t size_) :
@@ -91,7 +92,7 @@ namespace thekogans {
 
                 /// \brief
                 /// Return the header size.
-                /// \return Header size.
+                /// \return BinHeader size.
                 inline std::size_t Size () const {
                     return
                         Serializer::Size (magic) +
@@ -101,8 +102,8 @@ namespace thekogans {
                 }
 
                 /// \brief
-                /// "Header"
-                static const char * const TAG_HEADER;
+                /// "BinHeader"
+                static const char * const TAG_BIN_HEADER;
                 /// \brief
                 /// "Magic"
                 static const char * const ATTR_MAGIC;
@@ -116,7 +117,6 @@ namespace thekogans {
                 /// "Size"
                 static const char * const ATTR_SIZE;
 
-            #if defined (THEKOGANS_UTIL_HAVE_PUGIXML)
                 /// \brief
                 /// Parse the header from an xml dom that looks like this;
                 /// <Header Magic = "FARS"
@@ -126,7 +126,6 @@ namespace thekogans {
                 ///         ...>
                 /// \param[in] node DOM representation of a header.
                 void Parse (const pugi::xml_node &node);
-            #endif // defined (THEKOGANS_UTIL_HAVE_PUGIXML)
                 /// \brief
                 /// Return the XML representation of a header.
                 /// \param[in] indentationLevel How far to indent the leading tag.
@@ -134,18 +133,68 @@ namespace thekogans {
                 /// \return XML representation of a header.
                 std::string ToString (
                     std::size_t indentationLevel = 0,
-                    const char *tagName = TAG_HEADER) const;
+                    const char *tagName = TAG_BIN_HEADER) const;
             };
 
-        protected:
+            /// \struct Serializable::TextHeader Serializable.h thekogans/util/Serializable.h
+            ///
             /// \brief
-            /// typedef for the Serializable factory function.
-            typedef Ptr (*Factory) (
-                const Header & /*header*/,
+            /// TextHeader containing enough info to deserialize the serializable instance.
+            struct TextHeader {
+                /// \brief
+                /// Serializable type (it's class name).
+                std::string type;
+                /// \brief
+                /// Serializable version.
+                ui16 version;
+
+                /// \brief
+                /// ctor.
+                TextHeader () :
+                    version (0) {}
+                /// \brief
+                /// ctor.
+                /// \param[in] type_ Serializable type (it's class name).
+                /// \param[in] version_ Serializable version.
+                TextHeader (
+                    const char *type_,
+                    ui16 version_) :
+                    type (type_),
+                    version (version_) {}
+
+                /// \brief
+                /// "Type"
+                static const char * const ATTR_TYPE;
+                /// \brief
+                /// "Version"
+                static const char * const ATTR_VERSION;
+
+                /// \brief
+                /// Read header attributes from an xml dom.
+                /// \param[in] node Node containing header attributes.
+                void Read (const pugi::xml_node &node);
+                /// \brief
+                /// Write a header to the xml dom.
+                /// \param[out] node Node that will recieve the header attributes.
+                void Write (pugi::xml_node &node) const;
+            };
+
+            /// \brief
+            /// typedef for the Serializable binary factory function.
+            typedef Ptr (*BinFactory) (
+                const BinHeader & /*header*/,
                 Serializer & /*serializer*/);
             /// \brief
+            /// typedef for the Serializable XML factory function.
+            typedef Ptr (*XMLFactory) (
+                const TextHeader & /*header*/,
+                const pugi::xml_node & /*node*/);
+            /// \brief
+            /// typedef for Serializable factories.
+            typedef std::pair<BinFactory, XMLFactory> Factories;
+            /// \brief
             /// typedef for the Serializable map.
-            typedef std::map<std::string, Factory> Map;
+            typedef std::map<std::string, Factories> Map;
             /// \brief
             /// Controls Map's lifetime.
             /// \return Serializable map.
@@ -165,13 +214,12 @@ namespace thekogans {
                 /// ctor. Add serializable of type, and factory for creating it
                 /// to the Serializable::map
                 /// \param[in] type Serializable type (it's class name).
-                /// \param[in] factory Serializable creation factory.
+                /// \param[in] factories Serializable creation factories.
                 MapInitializer (
                     const std::string &type,
-                    Factory factory);
+                    Factories factory);
             };
 
-        public:
             /// \brief
             /// dtor.
             virtual ~Serializable () {}
@@ -187,29 +235,6 @@ namespace thekogans {
             /// (below) is protected.
             /// \return Size of the serializable including the header.
             static std::size_t Size (const Serializable &serializable);
-            /// \brief
-            /// Serialize the Serializable.
-            /// \param[in] buffer Where to serialize the Serializable.
-            /// \return Number of bytes written to buffer.
-            std::size_t Serialize (ui8 *buffer) const;
-            /// \brief
-            /// Serialize the Serializable.
-            /// \return \see{Buffer} containing the serializable.
-            Buffer Serialize () const;
-            /// \brief
-            /// Deserialize and return a Serializable from the given \see{Header}
-            /// and \see{Serializer}.
-            /// \param[in] header \see{Header} containg Serializable metadata.
-            /// \param[in] serializer \see{Serializer} containing the Serializable data.
-            /// \return A deserialized serializable.
-            static Ptr Deserialize (
-                const Header &header,
-                Serializer &serializer);
-            /// \brief
-            /// Deserialize and return a Serializable from the given \see{Serializer}.
-            /// \param[in] serializer \see{Serializer} containing the Serializable.
-            /// \return A deserialized serializable.
-            static Ptr Deserialize (Serializer &serializer);
 
             /// \brief
             /// Return Serializable type.
@@ -239,7 +264,7 @@ namespace thekogans {
             /// \param[in] header
             /// \param[in] serializer Serializer to read the serializable from.
             virtual void Read (
-                const Header & /*header*/,
+                const BinHeader & /*header*/,
                 Serializer & /*serializer*/) = 0;
             /// \brief
             /// Write the serializable to the given serializer.
@@ -247,19 +272,45 @@ namespace thekogans {
             virtual void Write (Serializer & /*serializer*/) const = 0;
 
             /// \brief
-            /// Needs access to Header.
+            /// Read a Serializable from an XML DOM.
+            /// \param[in] node XML DOM representation of a Serializable.
+            virtual void Read (
+                const TextHeader & /*header*/,
+                const pugi::xml_node & /*node*/) = 0;
+            /// \brief
+            /// Write a Serializable to the XML DOM.
+            /// \param[out] node Parent node.
+            virtual void Write (pugi::xml_node & /*node*/) const = 0;
+
+            /// \brief
+            /// Needs access to BinHeader.
             friend Serializer &operator << (
                 Serializer &serializer,
-                const Header &header);
+                const BinHeader &header);
             /// \brief
-            /// Needs access to Header.
+            /// Needs access to BinHeader.
             friend Serializer &operator >> (
                 Serializer &serializer,
-                Header &header);
+                BinHeader &header);
             /// \brief
-            /// Needs access to Header and Write.
+            /// Needs access to TextHeader.
+            friend pugi::xml_node &operator << (
+                pugi::xml_node &node,
+                const TextHeader &header);
+            /// \brief
+            /// Needs access to TextHeader.
+            friend const pugi::xml_node &operator >> (
+                const pugi::xml_node &node,
+                TextHeader &header);
+            /// \brief
+            /// Needs access to TextHeader and Write.
             friend Serializer &operator << (
                 Serializer &serializer,
+                const Serializable &serializable);
+            /// \brief
+            /// Needs access to TextHeader and Write.
+            friend pugi::xml_node &operator << (
+                pugi::xml_node &node,
                 const Serializable &serializable);
         };
 
@@ -271,15 +322,26 @@ namespace thekogans {
         protected:\
             THEKOGANS_UTIL_DECLARE_HEAP_WITH_LOCK (type, lock)\
             type (\
-                    const thekogans::util::Serializable::Header &header,\
+                    const thekogans::util::Serializable::BinHeader &header,\
                     thekogans::util::Serializer &serializer) {\
                 Read (header, serializer);\
             }\
-            static thekogans::util::Serializable::Ptr Create (\
-                    const thekogans::util::Serializable::Header &header,\
+            type (\
+                    const thekogans::util::Serializable::TextHeader &header,\
+                    const pugi::xml_node &node) {\
+                Read (header, node);\
+            }\
+            static thekogans::util::Serializable::Ptr BinCreate (\
+                    const thekogans::util::Serializable::BinHeader &header,\
                     thekogans::util::Serializer &serializer) {\
                 return thekogans::util::Serializable::Ptr (\
                     new type (header, serializer));\
+            }\
+            static thekogans::util::Serializable::Ptr XMLCreate (\
+                    const thekogans::util::Serializable::TextHeader &header,\
+                    const pugi::xml_node &node) {\
+                return thekogans::util::Serializable::Ptr (\
+                    new type (header, node));\
             }\
         public:\
             static const char *TYPE;\
@@ -343,7 +405,10 @@ namespace thekogans {
                 thekogans::util::LockGuard<thekogans::util::SpinLock> guard (spinLock);\
                 if (!registered) {\
                     std::pair<Map::iterator, bool> result =\
-                        GetMap ().insert (Map::value_type (#type, type::Create));\
+                        GetMap ().insert (\
+                            Map::value_type (\
+                                #type,\
+                                thekogans::util::Serializable::Factories (type::BinCreate, type::XMLCreate)));\
                     if (!result.second) {\
                         THEKOGANS_UTIL_THROW_STRING_EXCEPTION (\
                             "'%s' is already registered.", #type);\
@@ -384,17 +449,18 @@ namespace thekogans {
             THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_COMMON (\
                 type, version, lock, minSerializablesInPage, allocator)\
             const thekogans::util::Serializable::MapInitializer type::mapInitializer (\
-                #type, type::Create);
+                #type,\
+                thekogans::util::Serializable::Factories (type::BinCreate, type::XMLCreate));
     #endif // defined (THEKOGANS_UTIL_TYPE_Static)
 
         /// \brief
-        /// Serializable::Header insertion operator.
+        /// Serializable::BinHeader insertion operator.
         /// \param[in] serializer Where to serialize the serializable header.
-        /// \param[in] header Serializable::Header to serialize.
+        /// \param[in] header Serializable::BinHeader to serialize.
         /// \return serializer.
         inline Serializer &operator << (
                 Serializer &serializer,
-                const Serializable::Header &header) {
+                const Serializable::BinHeader &header) {
             serializer <<
                 header.magic <<
                 header.type <<
@@ -404,13 +470,13 @@ namespace thekogans {
         }
 
         /// \brief
-        /// Serializable::Header extraction operator.
+        /// Serializable::BinHeader extraction operator.
         /// \param[in] serializer Where to deserialize the serializable header.
-        /// \param[in] header Serializable::Header to deserialize.
+        /// \param[in] header Serializable::BinHeader to deserialize.
         /// \return serializer.
         inline Serializer &operator >> (
                 Serializer &serializer,
-                Serializable::Header &header) {
+                Serializable::BinHeader &header) {
             serializer >>
                 header.magic >>
                 header.type >>
@@ -419,44 +485,44 @@ namespace thekogans {
             return serializer;
         }
 
-        /// \struct ValueParser<Serializable::Header> Serializable.h thekogans/util/Serializable.h
+        /// \struct ValueParser<Serializable::BinHeader> Serializable.h thekogans/util/Serializable.h
         ///
         /// \brief
-        /// Specialization of ValueParser for \see{Serializable::Header}.
+        /// Specialization of ValueParser for \see{Serializable::BinHeader}.
 
         template<>
-        struct _LIB_THEKOGANS_UTIL_DECL ValueParser<Serializable::Header> {
+        struct _LIB_THEKOGANS_UTIL_DECL ValueParser<Serializable::BinHeader> {
         private:
             /// \brief
-            /// \see{Serializable::Header} to parse.
-            Serializable::Header &value;
+            /// \see{Serializable::BinHeader} to parse.
+            Serializable::BinHeader &value;
             /// \brief
-            /// Parses \see{Serializable::Header::magic}.
+            /// Parses \see{Serializable::BinHeader::magic}.
             ValueParser<ui32> magicParser;
             /// \brief
-            /// Parses \see{Serializable::Header::type}.
+            /// Parses \see{Serializable::BinHeader::type}.
             ValueParser<std::string> typeParser;
             /// \brief
-            /// Parses \see{Serializable::Header::version}.
+            /// Parses \see{Serializable::BinHeader::version}.
             ValueParser<ui16> versionParser;
             /// \brief
-            /// Parses \see{Serializable::Header::size}.
+            /// Parses \see{Serializable::BinHeader::size}.
             ValueParser<SizeT> sizeParser;
             /// \enum
-            /// \see{Serializable::Header} parser is a state machine.
+            /// \see{Serializable::BinHeader} parser is a state machine.
             /// These are it's various states.
             enum {
                 /// \brief
-                /// Next value is \see{Serializable::Header::magic}.
+                /// Next value is \see{Serializable::BinHeader::magic}.
                 STATE_MAGIC,
                 /// \brief
-                /// Next value is \see{Serializable::Header::type}.
+                /// Next value is \see{Serializable::BinHeader::type}.
                 STATE_TYPE,
                 /// \brief
-                /// Next value is \see{Serializable::Header::version}.
+                /// Next value is \see{Serializable::BinHeader::version}.
                 STATE_VERSION,
                 /// \brief
-                /// Next value is \see{Serializable::Header::size}.
+                /// Next value is \see{Serializable::BinHeader::size}.
                 STATE_SIZE
             } state;
 
@@ -464,7 +530,7 @@ namespace thekogans {
             /// \brief
             /// ctor.
             /// \param[out] value_ Value to parse.
-            explicit ValueParser (Serializable::Header &value_) :
+            explicit ValueParser (Serializable::BinHeader &value_) :
                 value (value_),
                 magicParser (value.magic),
                 typeParser (value.type),
@@ -477,12 +543,38 @@ namespace thekogans {
             void Reset ();
 
             /// \brief
-            /// Try to parse a \see{Serializable::Header} from the given serializer.
-            /// \param[in] serializer Contains a complete or partial \see{Serializable::Header}.
-            /// \return true == \see{Serializable::Header} was successfully parsed,
+            /// Try to parse a \see{Serializable::BinHeader} from the given serializer.
+            /// \param[in] serializer Contains a complete or partial \see{Serializable::BinHeader}.
+            /// \return true == \see{Serializable::BinHeader} was successfully parsed,
             /// false == call back with more data.
             bool ParseValue (Serializer &serializer);
         };
+
+        /// \brief
+        /// Serializable::TextHeader insertion operator.
+        /// \param[in] node Where to serialize the serializable header.
+        /// \param[in] header Serializable::TextHeader to serialize.
+        /// \return node.
+        inline pugi::xml_node &operator << (
+                pugi::xml_node &node,
+                const Serializable::TextHeader &header) {
+            node.append_attribute (Serializable::TextHeader::ATTR_TYPE).set_value (header.type.c_str ());
+            node.append_attribute (Serializable::TextHeader::ATTR_VERSION).set_value (ui32Tostring (header.version).c_str ());
+            return node;
+        }
+
+        /// \brief
+        /// Serializable::TextHeader extraction operator.
+        /// \param[in] serializer Where to deserialize the serializable header.
+        /// \param[in] header Serializable::TextHeader to deserialize.
+        /// \return node.
+        inline const pugi::xml_node &operator >> (
+                const pugi::xml_node &node,
+                Serializable::TextHeader &header) {
+            header.type = node.attribute (Serializable::TextHeader::ATTR_TYPE).value ();
+            header.version = stringToui16 (node.attribute (Serializable::TextHeader::ATTR_VERSION).value ());
+            return node;
+        }
 
         /// \brief
         /// Serializable insertion operator.
@@ -493,7 +585,7 @@ namespace thekogans {
                 Serializer &serializer,
                 const Serializable &serializable) {
             serializer <<
-                Serializable::Header (
+                Serializable::BinHeader (
                     serializable.Type (),
                     serializable.Version (),
                     serializable.Size ());
@@ -501,21 +593,74 @@ namespace thekogans {
             return serializer;
         }
 
-        /// \def THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_EXTRACTION_OPERATOR(type)
-        /// Implement Serializable extraction operator.
-        #define THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_EXTRACTION_OPERATOR(type)\
+        /// \brief
+        /// Serializable insertion operator.
+        /// \param[in] node Where to serialize the serializable.
+        /// \param[in] serializable Serializable to serialize.
+        /// \return node.
+        inline pugi::xml_node &operator << (
+                pugi::xml_node &node,
+                const Serializable &serializable) {
+            node <<
+                Serializable::TextHeader (
+                    serializable.Type (),
+                    serializable.Version ());
+            serializable.Write (node);
+            return node;
+        }
+
+        /// \def THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_EXTRACTION_OPERATORS(type)
+        /// Implement Serializable extraction operators.
+        #define THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_EXTRACTION_OPERATORS(_T)\
             inline thekogans::util::Serializer &operator >> (\
                     thekogans::util::Serializer &serializer,\
-                    type::Ptr &serializable) {\
-                serializable =\
-                    thekogans::util::dynamic_refcounted_pointer_cast<type> (\
-                        thekogans::util::Serializable::Deserialize (serializer));\
-                return serializer;\
+                    _T::Ptr &serializable) {\
+                thekogans::util::Serializable::BinHeader header;\
+                serializer >> header;\
+                if (header.magic == thekogans::util::MAGIC32) {\
+                    thekogans::util::Serializable::Map::iterator it =\
+                        thekogans::util::Serializable::GetMap ().find (header.type);\
+                    if (it != thekogans::util::Serializable::GetMap ().end ()) {\
+                        serializable =\
+                            thekogans::util::dynamic_refcounted_pointer_cast<_T> (\
+                                it->second.first (header, serializer));\
+                        return serializer;\
+                    }\
+                    else {\
+                        THEKOGANS_UTIL_THROW_STRING_EXCEPTION (\
+                            "No registered factory for serializable '%s'.",\
+                            header.type.c_str ());\
+                    }\
+                }\
+                else {\
+                    THEKOGANS_UTIL_THROW_STRING_EXCEPTION (\
+                        "Corrupt serializable '%s' header.",\
+                        header.type.c_str () );\
+                }\
+            }\
+            inline const pugi::xml_node &operator >> (\
+                    const pugi::xml_node &node,\
+                    _T::Ptr &serializable) {\
+                thekogans::util::Serializable::TextHeader header;\
+                node >> header;\
+                thekogans::util::Serializable::Map::iterator it =\
+                    thekogans::util::Serializable::GetMap ().find (header.type);\
+                if (it != thekogans::util::Serializable::GetMap ().end ()) {\
+                    serializable =\
+                        thekogans::util::dynamic_refcounted_pointer_cast<_T> (\
+                            it->second.second (header, node));\
+                    return node;\
+                }\
+                else {\
+                    THEKOGANS_UTIL_THROW_STRING_EXCEPTION (\
+                        "No registered factory for serializable '%s'.",\
+                        header.type.c_str ());\
+                }\
             }
 
         /// \brief
-        /// Implement Serializable extraction operator.
-        THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_EXTRACTION_OPERATOR (Serializable)
+        /// Implement Serializable extraction operators.
+        THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_EXTRACTION_OPERATORS (Serializable)
 
     } // namespace util
 } // namespace thekogans
