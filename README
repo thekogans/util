@@ -112,7 +112,6 @@ SystemConfiguration, Cocoa.
 libthekogans_util has the following optional dependencies:
 
 if -DTHEKOGANS_UTIL_HAVE_BOOST_ATOMIC is specified, boost_atomic.
-if -DTHEKOGANS_UTIL_HAVE_PUGIXML is specified, pugixml.
 if -DTHEKOGANS_UTIL_HAVE_XERCES is specified, xerces.
 if -DTHEKOGANS_UTIL_HAVE_ZLIB is specified, zlib.
 if -DTHEKOGANS_UTIL_HAVE_TESTS is specified, CppUnitXLite.

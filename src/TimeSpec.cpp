@@ -140,12 +140,10 @@ namespace thekogans {
         const char * const TimeSpec::ATTR_SECONDS = "Seconds";
         const char * const TimeSpec::ATTR_NANOSECONDS = "Nanoseconds";
 
-    #if defined (THEKOGANS_UTIL_HAVE_PUGIXML)
         void TimeSpec::Parse (const pugi::xml_node &node) {
             seconds = stringToui64 (node.attribute (ATTR_SECONDS).value ());
             nanoseconds = stringToi32 (node.attribute (ATTR_NANOSECONDS).value ());
         }
-    #endif // defined (THEKOGANS_UTIL_HAVE_PUGIXML)
 
         std::string TimeSpec::ToString (
                 std::size_t indentationLevel,

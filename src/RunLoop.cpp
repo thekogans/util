@@ -115,14 +115,12 @@ namespace thekogans {
             totalTime = 0;
         }
 
-    #if defined (THEKOGANS_UTIL_HAVE_PUGIXML)
         void RunLoop::Stats::Job::Parse (const pugi::xml_node &node) {
             id = node.attribute (ATTR_ID).value ();
             startTime = stringToui64 (node.attribute (ATTR_START_TIME).value ());
             endTime = stringToui64 (node.attribute (ATTR_END_TIME).value ());
             totalTime = stringToui64 (node.attribute (ATTR_TOTAL_TIME).value ());
         }
-    #endif // defined (THEKOGANS_UTIL_HAVE_PUGIXML)
 
         std::string RunLoop::Stats::Job::ToString (
                 std::size_t indentationLevel,
@@ -151,7 +149,6 @@ namespace thekogans {
             maxJob.Reset ();
         }
 
-    #if defined (THEKOGANS_UTIL_HAVE_PUGIXML)
         void RunLoop::Stats::Parse (const pugi::xml_node &node) {
             name = Decodestring (node.attribute (ATTR_NAME).value ());
             totalJobs = stringToui32 (node.attribute (ATTR_TOTAL_JOBS).value ());
@@ -172,7 +169,6 @@ namespace thekogans {
                 }
             }
         }
-    #endif // defined (THEKOGANS_UTIL_HAVE_PUGIXML)
 
         std::string RunLoop::Stats::ToString (
                 std::size_t indentationLevel,

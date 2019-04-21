@@ -383,7 +383,6 @@ namespace thekogans {
             return 0;
         }
 
-    #if defined (THEKOGANS_UTIL_HAVE_PUGIXML)
         void Variant::Parse (const pugi::xml_node &node) {
             Clear ();
             for (pugi::xml_node child = node.first_child ();
@@ -442,7 +441,6 @@ namespace thekogans {
                 }
             }
         }
-    #endif // defined (THEKOGANS_UTIL_HAVE_PUGIXML)
 
         std::string Variant::ToString (
                 std::size_t indentationLevel,
@@ -504,7 +502,6 @@ namespace thekogans {
             return stream.str ();
         }
 
-    #if defined (THEKOGANS_UTIL_HAVE_PUGIXML)
         void Variant::ParseWithAttributes (const pugi::xml_node &node) {
             Clear ();
             type = StringToType (node.attribute (ATTR_TYPE).value ());
@@ -553,7 +550,6 @@ namespace thekogans {
                     break;
             }
         }
-    #endif // defined (THEKOGANS_UTIL_HAVE_PUGIXML)
 
         std::string Variant::ToStringWithAttributes (
                 std::size_t indentationLevel,

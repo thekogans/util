@@ -651,7 +651,6 @@ namespace thekogans {
                 type == VALUE_LINK ? Link : Invalid;
         }
 
-    #if defined (THEKOGANS_UTIL_HAVE_PUGIXML)
         void Directory::Entry::Parse (const pugi::xml_node &node) {
             fileSystem = stringTofileSystem (node.attribute (ATTR_FILE_SYSTEM).value ());
             type = stringTotype (node.attribute (ATTR_TYPE).value ());
@@ -668,7 +667,6 @@ namespace thekogans {
             lastModifiedDate = stringToi64 (node.attribute (ATTR_LAST_MODIFIED_DATE).value ());
             size = stringToui64 (node.attribute (ATTR_SIZE).value ());
         }
-    #endif // defined (THEKOGANS_UTIL_HAVE_PUGIXML)
 
         std::string Directory::Entry::ToString (
                 std::size_t indentationLevel,

@@ -33,9 +33,7 @@
 #include <memory>
 #include <string>
 #include <list>
-#if defined (THEKOGANS_UTIL_HAVE_PUGIXML)
-    #include <pugixml.hpp>
-#endif // defined (THEKOGANS_UTIL_HAVE_PUGIXML)
+#include "pugixml/pugixml.hpp"
 #include "thekogans/util/Config.h"
 #include "thekogans/util/Types.h"
 #include "thekogans/util/RefCounted.h"
@@ -451,7 +449,6 @@ namespace thekogans {
                     /// Reset the job stats.
                     void Reset ();
 
-                #if defined (THEKOGANS_UTIL_HAVE_PUGIXML)
                     /// \brief
                     /// Parse a job from an xml dom that looks like this;
                     /// <Job Id = ""
@@ -460,7 +457,6 @@ namespace thekogans {
                     ///      TotalTime = ""/>
                     /// \param[in] node DOM representation of an job.
                     void Parse (const pugi::xml_node &node);
-                #endif // defined (THEKOGANS_UTIL_HAVE_PUGIXML)
                     /// \brief
                     /// Return the XML representation of the Job stats.
                     /// \param[in] indentationLevel Pretty print parameter. If
@@ -495,7 +491,6 @@ namespace thekogans {
                 /// Reset the RunLoop stats.
                 void Reset ();
 
-            #if defined (THEKOGANS_UTIL_HAVE_PUGIXML)
                 /// \brief
                 /// Parse run loop stats from an xml dom that looks like this;
                 /// <RunLoop Name = ""
@@ -507,7 +502,6 @@ namespace thekogans {
                 /// </RunLoop>
                 /// \param[in] node DOM representation of run loop stats.
                 void Parse (const pugi::xml_node &node);
-            #endif // defined (THEKOGANS_UTIL_HAVE_PUGIXML)
                 /// \brief
                 /// Return the XML representation of the Stats.
                 /// \param[in] indentationLevel Pretty print parameter. If

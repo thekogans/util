@@ -38,9 +38,7 @@
 #endif // defined (TOOLCHAIN_OS_Windows)
 #include <cctype>
 #include <string>
-#if defined (THEKOGANS_UTIL_HAVE_PUGIXML)
-    #include <pugixml.hpp>
-#endif // defined (THEKOGANS_UTIL_HAVE_PUGIXML)
+#include "pugixml/pugixml.hpp"
 #include "thekogans/util/Config.h"
 #include "thekogans/util/Types.h"
 #include "thekogans/util/SizeT.h"
@@ -519,7 +517,6 @@ namespace thekogans {
                         size == entry.size;
                 }
 
-            #if defined (THEKOGANS_UTIL_HAVE_PUGIXML)
                 /// \brief
                 /// Parse entry info from an xml dom that looks like this;
                 /// <Entry FileSystem = "Windows | POSIX"
@@ -538,7 +535,6 @@ namespace thekogans {
                 ///        Size = ""/>
                 /// \param[in] node DOM representation of an entry.
                 void Parse (const pugi::xml_node &node);
-            #endif // defined (THEKOGANS_UTIL_HAVE_PUGIXML)
                 /// \brief
                 /// Encode the entry as an xml string.
                 /// Take care to encode all xml char entities properly.

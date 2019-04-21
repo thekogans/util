@@ -152,13 +152,11 @@ namespace thekogans {
         const char * const Fraction::VALUE_POSITIVE = "Positive";
         const char * const Fraction::VALUE_NEGATIVE = "Negative";
 
-    #if defined (THEKOGANS_UTIL_HAVE_PUGIXML)
         void Fraction::Parse (const pugi::xml_node &node) {
             numerator = stringToui32 (node.attribute (ATTR_NUMERATOR).value ());
             denominator = stringToui32 (node.attribute (ATTR_DENOMINATOR).value ());
             sign = stringTosign (node.attribute (ATTR_SIGN).value ());
         }
-    #endif // defined (THEKOGANS_UTIL_HAVE_PUGIXML)
 
         std::string Fraction::ToString (
                 std::size_t indentationLevel,

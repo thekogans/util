@@ -15,8 +15,6 @@
 // You should have received a copy of the GNU General Public License
 // along with libthekogans_util. If not, see <http://www.gnu.org/licenses/>.
 
-#if defined (THEKOGANS_UTIL_HAVE_PUGIXML)
-
 #include <fstream>
 #include "thekogans/util/Exception.h"
 #include "thekogans/util/Path.h"
@@ -307,5 +305,3 @@ namespace thekogans {
 
     } // namespace util
 } // namespace thekogans
-
-#endif // defined (THEKOGANS_UTIL_HAVE_PUGIXML)

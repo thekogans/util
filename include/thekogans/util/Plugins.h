@@ -18,13 +18,11 @@
 #if !defined (__thekogans_util_Plugins_h)
 #define __thekogans_util_Plugins_h
 
-#if defined (THEKOGANS_UTIL_HAVE_PUGIXML)
-
 #include <memory>
 #include <string>
 #include <set>
 #include <map>
-#include <pugixml.hpp>
+#include "pugixml/pugixml.hpp"
 #include "thekogans/util/Config.h"
 #include "thekogans/util/RefCounted.h"
 #include "thekogans/util/Heap.h"
@@ -252,7 +250,5 @@ namespace thekogans {
 
     } // namespace util
 } // namespace thekogans
-
-#endif // defined (THEKOGANS_UTIL_HAVE_PUGIXML)
 
 #endif // !defined (__thekogans_util_Plugins_h)

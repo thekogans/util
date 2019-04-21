@@ -19,9 +19,7 @@
 #define __thekogans_util_Variant_h
 
 #include <string>
-#if defined (THEKOGANS_UTIL_HAVE_PUGIXML)
-    #include <pugixml.hpp>
-#endif // defined (THEKOGANS_UTIL_HAVE_PUGIXML)
+#include "pugixml/pugixml.hpp"
 #include "thekogans/util/Config.h"
 #include "thekogans/util/Types.h"
 #include "thekogans/util/GUID.h"
@@ -358,7 +356,6 @@ namespace thekogans {
             /// \return <0 = less, =0 = equal, >0 = greater.
             i32 PrefixCompare (const Variant &variant) const;
 
-        #if defined (THEKOGANS_UTIL_HAVE_PUGIXML)
             /// \brief
             /// Parse variant state from an xml node.
             /// NOTE: The xml node should look like this:
@@ -368,7 +365,6 @@ namespace thekogans {
             /// </tagName>
             /// \param[in] node XML node to parse state.
             void Parse (const pugi::xml_node &node);
-        #endif // defined (THEKOGANS_UTIL_HAVE_PUGIXML)
             /// \brief
             /// Serialize the variant to an xml node.
             /// \param[in] indentationLevel How far to indent the leading tag.
@@ -378,7 +374,6 @@ namespace thekogans {
                 std::size_t indentationLevel = 0,
                 const char *tagName = TAG_VARIANT) const;
 
-        #if defined (THEKOGANS_UTIL_HAVE_PUGIXML)
             /// \brief
             /// Parse variant state from an xml node.
             /// NOTE: The XML node should look like this:
@@ -386,7 +381,6 @@ namespace thekogans {
             ///          Value = ""/>
             /// \param[in] node XML node to parse state.
             void ParseWithAttributes (const pugi::xml_node &node);
-        #endif // defined (THEKOGANS_UTIL_HAVE_PUGIXML)
             /// \brief
             /// Serialize the variant to an xml node.
             /// \param[in] indentationLevel How far to indent the leading tag.

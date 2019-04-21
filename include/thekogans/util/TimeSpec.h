@@ -33,9 +33,7 @@
     #include <mach/clock_types.h>
 #endif // defined (TOOLCHAIN_OS_Windows)
 #include <ctime>
-#if defined (THEKOGANS_UTIL_HAVE_PUGIXML)
-    #include <pugixml.hpp>
-#endif // defined (THEKOGANS_UTIL_HAVE_PUGIXML)
+#include "pugixml/pugixml.hpp"
 #include "thekogans/util/Config.h"
 #include "thekogans/util/Types.h"
 #include "thekogans/util/Constants.h"
@@ -111,14 +109,12 @@ namespace thekogans {
             /// ctor.
             /// \param[in] timeVal POSIX timeval to initialize to.
             TimeSpec (const timeval &timeVal);
-        #if defined (THEKOGANS_UTIL_HAVE_PUGIXML)
             /// \brief
             /// ctor.
             /// \param[in] node pugi::xml_node representing the TimeSpec.
             TimeSpec (const pugi::xml_node &node) {
                 Parse (node);
             }
-        #endif // defined (THEKOGANS_UTIL_HAVE_PUGIXML)
 
             /// \brief
             /// Zero
@@ -323,7 +319,6 @@ namespace thekogans {
             /// "Nanoseconds"
             static const char * const ATTR_NANOSECONDS;
 
-        #if defined (THEKOGANS_UTIL_HAVE_PUGIXML)
             /// \brief
             /// Given an pugi::xml_node, parse the
             /// TimeSpec it represents. The TimeSpec has
@@ -332,7 +327,6 @@ namespace thekogans {
             ///          Nanoseconds = "nanoseconds"/>
             /// \param[in] node pugi::xml_node representing the TimeSpec.
             void Parse (const pugi::xml_node &node);
-        #endif // defined (THEKOGANS_UTIL_HAVE_PUGIXML)
             /// \brief
             /// Serialize the TimeSpec parameters in to an XML string.
             /// \param[in] indentationLevel Pretty print parameter. If
