@@ -397,23 +397,23 @@ namespace thekogans {
 
             /// \brief
             /// operator << needs access to Location.
-            friend Serializer &operator << (
+            friend _LIB_THEKOGANS_UTIL_DECL Serializer & _LIB_THEKOGANS_UTIL_API operator << (
                 Serializer &serializer,
                 const Location &location);
             /// \brief
             /// operator >> needs access to Location.
-            friend Serializer &operator >> (
+            friend _LIB_THEKOGANS_UTIL_DECL Serializer & _LIB_THEKOGANS_UTIL_API operator >> (
                 Serializer &serializer,
                 Location &location);
 
             /// \brief
             /// operator << needs access to provate members.
-            friend Serializer &operator << (
+            friend _LIB_THEKOGANS_UTIL_DECL Serializer & _LIB_THEKOGANS_UTIL_API operator << (
                 Serializer &serializer,
                 const Exception &exception);
             /// \brief
             /// operator >> needs access to provate members.
-            friend Serializer &operator >> (
+            friend _LIB_THEKOGANS_UTIL_DECL Serializer & _LIB_THEKOGANS_UTIL_API operator >> (
                 Serializer &serializer,
                 Exception &exception);
         };
