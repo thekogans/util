@@ -139,6 +139,7 @@ namespace thekogans {
             std::size_t length);
         /// \brief
         /// Decode a previously hex encoded buffer.
+        /// NOTE: The given hexBuffer must be even bytes long and contain only valid hex chars.
         /// \param[in] hexBuffer Pointer to buffer to be hex decoded.
         /// \param[in] length Length of buffer.
         /// \param[out] buffer Where to write decoded data.
@@ -149,6 +150,7 @@ namespace thekogans {
             void *buffer);
         /// \brief
         /// Decode a previously hex encoded buffer.
+        /// NOTE: The given hexBuffer must be even bytes long and contain only valid hex chars.
         /// \param[in] hexBuffer Pointer to buffer to be hex decoded.
         /// \param[in] length Length of buffer.
         /// \return Original buffer.
@@ -163,6 +165,7 @@ namespace thekogans {
             const std::string &str);
         /// \brief
         /// Decode a previously hex encoded string.
+        /// NOTE: The given hexString must be even bytes long and contain only valid hex chars.
         /// \param[in] hexString previously hex encoded string.
         /// \param[out] buffer Where to write decoded data.
         /// \return Number of bytes written to buffer.
@@ -171,6 +174,7 @@ namespace thekogans {
             void *buffer);
         /// \brief
         /// Decode a previously hex encoded string.
+        /// NOTE: The given hexString must be even bytes long and contain only valid hex chars.
         /// \param[in] hexString previously hex encoded string.
         /// \return Original string.
         _LIB_THEKOGANS_UTIL_DECL std::vector<ui8> _LIB_THEKOGANS_UTIL_API HexDecodestring (
