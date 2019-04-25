@@ -35,7 +35,7 @@ namespace thekogans {
 
         THEKOGANS_UTIL_IMPLEMENT_HEAP_WITH_LOCK_EX (LoggerMgr::Entry, SpinLock, 5)
 
-        void LoggerMgr::GetLogLevels (std::list<ui32> &levels) {
+        void LoggerMgr::GetLevels (std::list<ui32> &levels) {
             levels.push_back (Error);
             levels.push_back (Warning);
             levels.push_back (Info);
@@ -57,6 +57,24 @@ namespace thekogans {
                 level == "Info" ? Info :
                 level == "Debug" ? Debug :
                 level == "Development" ? Development : Invalid;
+        }
+
+        void LoggerMgr::GetDecorations (std::list<ui32> &decorations) {
+            decorations.push_back (NoDecorations);
+            decorations.push_back (EntrySeparator);
+            decorations.push_back (Subsystem);
+            decorations.push_back (Level);
+            decorations.push_back (DateTime);
+            decorations.push_back (HRTime);
+            decorations.push_back (HRElapsedTime);
+            decorations.push_back (HostName);
+            decorations.push_back (ProcessPath);
+            decorations.push_back (ProcessId);
+            decorations.push_back (ThreadId);
+            decorations.push_back (Location);
+            decorations.push_back (Multiline);
+            decorations.push_back (All);
+            decorations.push_back (SubsystemAll);
         }
 
         std::string LoggerMgr::decorationsTostring (ui32 decorations) {

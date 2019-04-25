@@ -370,7 +370,7 @@ namespace thekogans {
 
             /// \brief
             /// Get the list of logging levels.
-            static void GetLogLevels (std::list<ui32> &levels);
+            static void GetLevels (std::list<ui32> &levels);
             /// \brief
             /// Convert an integral level to it's string equivalent.
             /// \param[in] level Invalid, Error, Warning, Info, Debug, Development.
@@ -382,6 +382,9 @@ namespace thekogans {
             /// \return Invalid, Error, Warning, Info, Debug, Development.
             static ui32 stringTolevel (const std::string &level);
 
+            /// \brief
+            /// Get the list of logging decorations.
+            static void GetDecorations (std::list<ui32> &decorations);
             /// \brief
             /// Convert an integral form of decorations
             /// flags in to '|' separated list of strings.
