@@ -215,7 +215,7 @@ namespace thekogans {
             ui32 value = 0;
             std::string::size_type lastPipe = 0;
             std::string::size_type currPipe = decorations.find_first_of ('|', 0);
-            for (; currPipe == std::string::npos;
+            for (; currPipe != std::string::npos;
                     lastPipe = ++currPipe,
                     currPipe = decorations.find_first_of ('|', currPipe)) {
                 value |= stringTodecoration (
