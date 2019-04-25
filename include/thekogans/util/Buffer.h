@@ -106,13 +106,13 @@ namespace thekogans {
             /// \param[in] allocator_ Allocator used for memory management.
             Buffer (
                 Endianness endianness = HostEndian,
-                ui8 *data_ = 0,
+                void *data_ = 0,
                 std::size_t length_ = 0,
                 std::size_t readOffset_ = 0,
                 std::size_t writeOffset_ = 0,
                 Allocator *allocator_ = &DefaultAllocator::Global) :
                 Serializer (endianness),
-                data (data_),
+                data ((ui8 *)data_),
                 length (length_),
                 readOffset (readOffset_),
                 writeOffset (writeOffset_),
@@ -513,12 +513,12 @@ namespace thekogans {
             /// \param[in] readOffset Offset at which to read.
             TenantReadBuffer (
                 Endianness endianness,
-                const ui8 *data,
+                const void *data,
                 std::size_t length,
                 std::size_t readOffset = 0) :
                 Buffer (
                     endianness,
-                    const_cast<ui8 *> (data),
+                    const_cast<void *> (data),
                     length,
                     readOffset,
                     length,
@@ -557,7 +557,7 @@ namespace thekogans {
             /// \param[in] writeOffset Offset at which to write.
             TenantWriteBuffer (
                 Endianness endianness,
-                ui8 *data,
+                void *data,
                 std::size_t length,
                 std::size_t writeOffset = 0) :
                 Buffer (
