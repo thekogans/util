@@ -28,6 +28,7 @@
 #include "thekogans/util/Heap.h"
 #include "thekogans/util/RefCounted.h"
 #include "thekogans/util/Serializer.h"
+#include "thekogans/util/JSON.h"
 #include "thekogans/util/Buffer.h"
 #include "thekogans/util/SpinLock.h"
 #include "thekogans/util/LockGuard.h"
@@ -190,8 +191,13 @@ namespace thekogans {
                 const TextHeader & /*header*/,
                 const pugi::xml_node & /*node*/);
             /// \brief
+            /// typedef for the Serializable JSON factory function.
+            typedef Ptr (*JSONFactory) (
+                const TextHeader & /*header*/,
+                const JSON::Object & /*object*/);
+            /// \brief
             /// typedef for Serializable factories.
-            typedef std::pair<BinFactory, XMLFactory> Factories;
+            typedef std::tuple<BinFactory, XMLFactory, JSONFactory> Factories;
             /// \brief
             /// typedef for the Serializable map.
             typedef std::map<std::string, Factories> Map;
@@ -283,6 +289,17 @@ namespace thekogans {
             virtual void Write (pugi::xml_node & /*node*/) const = 0;
 
             /// \brief
+            /// Read a Serializable from an JSON DOM.
+            /// \param[in] node JSON DOM representation of a Serializable.
+            virtual void Read (
+                const TextHeader & /*header*/,
+                const JSON::Object & /*object*/) = 0;
+            /// \brief
+            /// Write a Serializable to the JSON DOM.
+            /// \param[out] node Parent node.
+            virtual void Write (JSON::Object & /*object*/) const = 0;
+
+            /// \brief
             /// Needs access to BinHeader.
             friend Serializer &operator << (
                 Serializer &serializer,
@@ -312,6 +329,11 @@ namespace thekogans {
             friend pugi::xml_node &operator << (
                 pugi::xml_node &node,
                 const Serializable &serializable);
+            /// \brief
+            /// Needs access to TextHeader and Write.
+            friend JSON::Object &operator << (
+                JSON::Object &object,
+                const Serializable &serializable);
         };
 
         /// \def THEKOGANS_UTIL_DECLARE_SERIALIZABLE_COMMON(type, lock)
@@ -331,6 +353,11 @@ namespace thekogans {
                     const pugi::xml_node &node) {\
                 Read (header, node);\
             }\
+            type (\
+                    const thekogans::util::Serializable::TextHeader &header,\
+                    const thekogans::util::JSON::Object &object) {\
+                Read (header, object);\
+            }\
             static thekogans::util::Serializable::Ptr BinCreate (\
                     const thekogans::util::Serializable::BinHeader &header,\
                     thekogans::util::Serializer &serializer) {\
@@ -342,6 +369,12 @@ namespace thekogans {
                     const pugi::xml_node &node) {\
                 return thekogans::util::Serializable::Ptr (\
                     new type (header, node));\
+            }\
+            static thekogans::util::Serializable::Ptr JSONCreate (\
+                    const thekogans::util::Serializable::TextHeader &header,\
+                    const thekogans::util::JSON::Object &object) {\
+                return thekogans::util::Serializable::Ptr (\
+                    new type (header, object));\
             }\
         public:\
             static const char *TYPE;\
@@ -408,7 +441,10 @@ namespace thekogans {
                         GetMap ().insert (\
                             Map::value_type (\
                                 #type,\
-                                thekogans::util::Serializable::Factories (type::BinCreate, type::XMLCreate)));\
+                                thekogans::util::Serializable::Factories (\
+                                    type::BinCreate,\
+                                    type::XMLCreate,\
+                                    type::JSONCreate)));\
                     if (!result.second) {\
                         THEKOGANS_UTIL_THROW_STRING_EXCEPTION (\
                             "'%s' is already registered.", #type);\
@@ -450,7 +486,10 @@ namespace thekogans {
                 type, version, lock, minSerializablesInPage, allocator)\
             const thekogans::util::Serializable::MapInitializer type::mapInitializer (\
                 #type,\
-                thekogans::util::Serializable::Factories (type::BinCreate, type::XMLCreate));
+                thekogans::util::Serializable::Factories (\
+                    type::BinCreate,\
+                    type::XMLCreate,\
+                    type::JSONCreate));
     #endif // defined (THEKOGANS_UTIL_TYPE_Static)
 
         /// \brief
@@ -512,6 +551,36 @@ namespace thekogans {
         }
 
         /// \brief
+        /// Serializable::TextHeader insertion operator.
+        /// \param[in] object Where to serialize the serializable header.
+        /// \param[in] header Serializable::TextHeader to serialize.
+        /// \return node.
+        inline JSON::Object &operator << (
+                JSON::Object &object,
+                const Serializable::TextHeader &header) {
+            object.AddValue (
+                JSON::Value::Ptr (new JSON::String (Serializable::TextHeader::ATTR_TYPE)),
+                JSON::Value::Ptr (new JSON::String (header.type)));
+            object.AddValue (
+                JSON::Value::Ptr (new JSON::String (Serializable::TextHeader::ATTR_VERSION)),
+                JSON::Value::Ptr (new JSON::Number (header.version)));
+            return object;
+        }
+
+        /// \brief
+        /// Serializable::TextHeader extraction operator.
+        /// \param[in] serializer Where to deserialize the serializable header.
+        /// \param[in] header Serializable::TextHeader to deserialize.
+        /// \return node.
+        inline const JSON::Object &operator >> (
+                const JSON::Object &object,
+                Serializable::TextHeader &header) {
+            header.type = object.GetValue (Serializable::TextHeader::ATTR_TYPE)->ToString ();
+            header.version = (ui16)object.GetValue (Serializable::TextHeader::ATTR_VERSION)->ToNumber ();
+            return object;
+        }
+
+        /// \brief
         /// Serializable insertion operator.
         /// \param[in] serializer Where to serialize the serializable.
         /// \param[in] serializable Serializable to serialize.
@@ -542,6 +611,22 @@ namespace thekogans {
                     serializable.Version ());
             serializable.Write (node);
             return node;
+        }
+
+        /// \brief
+        /// Serializable insertion operator.
+        /// \param[in] object Where to serialize the serializable.
+        /// \param[in] serializable Serializable to serialize.
+        /// \return node.
+        inline JSON::Object &operator << (
+                JSON::Object &object,
+                const Serializable &serializable) {
+            object <<
+                Serializable::TextHeader (
+                    serializable.Type (),
+                    serializable.Version ());
+            serializable.Write (object);
+            return object;
         }
 
         /// \struct ValueParser<Serializable::BinHeader> Serializable.h thekogans/util/Serializable.h
@@ -623,7 +708,7 @@ namespace thekogans {
                     if (it != thekogans::util::Serializable::GetMap ().end ()) {\
                         serializable =\
                             thekogans::util::dynamic_refcounted_pointer_cast<_T> (\
-                                it->second.first (header, serializer));\
+                                std::get<0> (it->second) (header, serializer));\
                         return serializer;\
                     }\
                     else {\
@@ -648,8 +733,27 @@ namespace thekogans {
                 if (it != thekogans::util::Serializable::GetMap ().end ()) {\
                     serializable =\
                         thekogans::util::dynamic_refcounted_pointer_cast<_T> (\
-                            it->second.second (header, node));\
+                            std::get<1> (it->second) (header, node)); \
                     return node;\
+                }\
+                else {\
+                    THEKOGANS_UTIL_THROW_STRING_EXCEPTION (\
+                        "No registered factory for serializable '%s'.",\
+                        header.type.c_str ());\
+                }\
+            }\
+            inline const thekogans::util::JSON::Object &operator >> (   \
+                    const thekogans::util::JSON::Object &object,\
+                    _T::Ptr &serializable) {\
+                thekogans::util::Serializable::TextHeader header;\
+                object >> header;\
+                thekogans::util::Serializable::Map::iterator it =\
+                    thekogans::util::Serializable::GetMap ().find (header.type);\
+                if (it != thekogans::util::Serializable::GetMap ().end ()) {\
+                    serializable =\
+                        thekogans::util::dynamic_refcounted_pointer_cast<_T> (\
+                            std::get<2> (it->second) (header, object)); \
+                    return object;\
                 }\
                 else {\
                     THEKOGANS_UTIL_THROW_STRING_EXCEPTION (\
@@ -727,7 +831,7 @@ namespace thekogans {
                                 THEKOGANS_UTIL_TRY {\
                                     value =\
                                         thekogans::util::dynamic_refcounted_pointer_cast<_T> (\
-                                            it->second.first (header, payload));\
+                                            std::get<0> (it->second) (header, payload));\
                                     Reset ();\
                                     return true;\
                                 }\

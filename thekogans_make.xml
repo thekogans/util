@@ -113,6 +113,7 @@
     <cpp_header>$(organization)/$(project_directory)/Hash.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/Heap.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/IntrusiveList.h</cpp_header>
+    <cpp_header>$(organization)/$(project_directory)/JSON.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/JobQueue.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/JobQueuePool.h</cpp_header>
     <if condition = "$(TOOLCHAIN_OS) == 'Linux'">
@@ -635,6 +636,7 @@
     <cpp_source>HRTimerMgr.cpp</cpp_source>
     <cpp_source>Hash.cpp</cpp_source>
     <cpp_source>Heap.cpp</cpp_source>
+    <cpp_source>JSON.cpp</cpp_source>
     <cpp_source>JobQueue.cpp</cpp_source>
     <cpp_source>JobQueuePool.cpp</cpp_source>
     <cpp_source>LoggerMgr.cpp</cpp_source>

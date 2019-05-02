@@ -324,14 +324,15 @@ namespace thekogans {
             userName (GetUserNameImpl ()) {}
 
         void SystemInfo::Dump (std::ostream &stream) const {
-            stream << "Endianness: " << (endianness == util::LittleEndian ? "LittleEndian" : "BigEndian") << std::endl;
-            stream << "CPU count: " << cpuCount << std::endl;
-            stream << "Page size: " << pageSize << std::endl;
-            stream << "Memory size: " << memorySize << std::endl;
-            stream << "Process Path: " << processPath << std::endl;
-            stream << "Host name: " << hostName << std::endl;
-            stream << "Host Id: " << hostId << std::endl;
-            stream << "User name: " << userName << std::endl;
+            stream <<
+                "Endianness: " << (endianness == util::LittleEndian ? "LittleEndian" : "BigEndian") << std::endl <<
+                "CPU count: " << cpuCount << std::endl <<
+                "Page size: " << pageSize << std::endl <<
+                "Memory size: " << memorySize << std::endl <<
+                "Process Path: " << processPath << std::endl <<
+                "Host name: " << hostName << std::endl <<
+                "Host Id: " << hostId << std::endl <<
+                "User name: " << userName << std::endl;
         }
 
     } // namespace util
