@@ -57,7 +57,7 @@ namespace thekogans {
             ///
             /// \brief
             /// Binary header containing enough info to deserialize the serializable instance.
-            struct BinHeader {
+            struct _LIB_THEKOGANS_UTIL_DECL BinHeader {
                 /// \brief
                 /// MAGIC32
                 ui32 magic;
@@ -141,7 +141,7 @@ namespace thekogans {
             ///
             /// \brief
             /// TextHeader containing enough info to deserialize the serializable instance.
-            struct TextHeader {
+            struct _LIB_THEKOGANS_UTIL_DECL TextHeader {
                 /// \brief
                 /// Serializable type (it's class name).
                 std::string type;
