@@ -360,7 +360,7 @@ namespace thekogans {
         /// has stopped (due to error?). It will be set to NULL if the
         /// entire value was consumed.
         /// \return f64 represented by a given string.
-        _LIB_THEKOGANS_UTIL_DECL f64 _LIB_THEKOGANS_UTIL_API stringTouf64 (
+        _LIB_THEKOGANS_UTIL_DECL f64 _LIB_THEKOGANS_UTIL_API stringTof64 (
             const char *value,
             char **end = 0);
         /// \brief

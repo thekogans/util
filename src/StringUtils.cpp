@@ -521,7 +521,7 @@ namespace thekogans {
             }
         }
 
-        _LIB_THEKOGANS_UTIL_DECL f64 _LIB_THEKOGANS_UTIL_API stringTouf64 (
+        _LIB_THEKOGANS_UTIL_DECL f64 _LIB_THEKOGANS_UTIL_API stringTof64 (
                 const char *value,
                 char **end) {
             if (value != 0) {
