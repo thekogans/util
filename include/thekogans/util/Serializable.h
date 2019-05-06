@@ -559,10 +559,10 @@ namespace thekogans {
                 JSON::Object &object,
                 const Serializable::TextHeader &header) {
             object.AddValue (
-                JSON::Value::Ptr (new JSON::String (Serializable::TextHeader::ATTR_TYPE)),
+                Serializable::TextHeader::ATTR_TYPE,
                 JSON::Value::Ptr (new JSON::String (header.type)));
             object.AddValue (
-                JSON::Value::Ptr (new JSON::String (Serializable::TextHeader::ATTR_VERSION)),
+                Serializable::TextHeader::ATTR_VERSION,
                 JSON::Value::Ptr (new JSON::Number (header.version)));
             return object;
         }
