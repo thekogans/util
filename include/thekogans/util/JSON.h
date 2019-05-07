@@ -435,7 +435,7 @@ namespace thekogans {
             /// \return Formatted value.
             static std::string FormatValue (
                 Value::Ptr value,
-                std::size_t indentationLevel);
+                std::size_t indentationLevel = 0);
         };
 
     } // namespace util

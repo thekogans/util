@@ -697,7 +697,7 @@ namespace thekogans {
                 if (value.Get () != 0) {
                     switch (value->GetType ()) {
                         case JSON::Value::JSON_VALUE_TYPE_BOOL: {
-                            stream << (value->ToBool () ? "true" : "false");
+                            stream << (value->ToBool () ? XML_TRUE : XML_FALSE);
                             break;
                         }
                         case JSON::Value::JSON_VALUE_TYPE_NULL: {
@@ -718,7 +718,8 @@ namespace thekogans {
                             if (!array->values.empty ()) {
                                 stream << "\n" << std::string (indentationLevel * 4, ' ');
                                 for (std::size_t i = 0, count = array->values.size (); i < count; ++i) {
-                                    FormatValueHelper (stream, array->values[i], indentationLevel + 1);
+                                    stream << "    ";
+                                    FormatValueHelper (stream, array->values[i], indentationLevel + 2);
                                     if (i < count - 1) {
                                         stream << ",";
                                     }
@@ -734,7 +735,9 @@ namespace thekogans {
                             if (!object->values.empty ()) {
                                 stream << "\n" << std::string (indentationLevel * 4, ' ');
                                 for (std::size_t i = 0, count = object->values.size (); i < count; ++i) {
-                                    stream << object->values[i].first->ToString () << " : ";
+                                    stream << "    ";
+                                    FormatString (stream, object->values[i].first->ToString ().c_str ());
+                                    stream << " : ";
                                     FormatValueHelper (stream, object->values[i].second, indentationLevel + 1);
                                     if (i < count - 1) {
                                         stream << ",";
@@ -749,7 +752,7 @@ namespace thekogans {
                             THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
                                 "Unknown value type: %s (%s)",
                                 JSON::Value::typeTostring (value->GetType ()).c_str (),
-                                JSON::Value::NAME);
+                                value->GetName ());
                     }
                 }
                 else {
