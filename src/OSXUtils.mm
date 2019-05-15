@@ -19,6 +19,7 @@
 
 #include <AppKit/AppKit.h>
 #include <Foundation/Foundation.h>
+#include <Security/Security.h>
 #include <sys/types.h>
 #include <sys/event.h>
 #include <sys/time.h>
@@ -67,6 +68,26 @@ namespace thekogans {
             [NSApp postEvent: event atStart: NO];
         }
 
+        namespace {
+            struct CFStringRefDeleter {
+                void operator () (CFStringRef stringRef) {
+                    if (stringRef != 0) {
+                        CFRelease (stringRef);
+                    }
+                }
+            };
+            typedef std::unique_ptr<const __CFString, CFStringRefDeleter> CFStringRefPtr;
+        }
+
+        std::string DescriptionFromSecOSStatus (OSStatus errorCode) {
+            CFStringRefPtr description (SecCopyErrorMessageString (errorCode, 0));
+            const char *str = 0;
+            if (description.get () != 0) {
+                str = CFStringGetCStringPtr (description.get (), kCFStringEncodingUTF8);
+            }
+            return str != 0 ? str : "Unknown error.";
+        }
+
         std::string DescriptionFromOSStatus (OSStatus errorCode) {
             std::string UTF8String;
             NSError *error = [NSError errorWithDomain: NSOSStatusErrorDomain code: errorCode userInfo: nil];
@@ -84,17 +105,6 @@ namespace thekogans {
             }
             return !UTF8String.empty () ? UTF8String :
                 FormatString ("[0x%x:%d - Unknown error.]", errorCode, errorCode);
-        }
-
-        namespace {
-            struct CFStringRefDeleter {
-                void operator () (CFStringRef stringRef) {
-                    if (stringRef != 0) {
-                        CFRelease (stringRef);
-                    }
-                }
-            };
-            typedef std::unique_ptr<const __CFString, CFStringRefDeleter> CFStringRefPtr;
         }
 
         std::string DescriptionFromCFErrorRef (CFErrorRef error) {

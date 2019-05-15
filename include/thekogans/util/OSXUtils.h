@@ -52,6 +52,12 @@ namespace thekogans {
     namespace util {
 
         /// \brief
+        /// Return security framework error description from the given OSStatus.
+        /// \param[in] errorCode Security framework OSStatus to return description for.
+        /// \return Error description from the given Security framework OSStatus.
+        std::string DescriptionFromSecOSStatus (OSStatus errorCode);
+
+        /// \brief
         /// Return error description from the given OSStatus.
         /// \param[in] errorCode OSStatus to return description for.
         /// \return Error description from the given OSStatus.
