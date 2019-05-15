@@ -183,13 +183,13 @@ namespace thekogans {
                         GAA_FLAG_SKIP_DNS_SERVER |
                         GAA_FLAG_SKIP_FRIENDLY_NAME,
                         0,
-                        (PIP_ADAPTER_ADDRESSES)(size > 0 ? &buffer[0] : 0),
+                        (PIP_ADAPTER_ADDRESSES)(size > 0 ? buffer.data () : 0),
                         &size);
                 } while (rc == ERROR_BUFFER_OVERFLOW && size > 0);
                 if (rc == ERROR_SUCCESS) {
                     if (size > 0) {
                         for (PIP_ADAPTER_ADDRESSES
-                                ipAdapterAddresses = (PIP_ADAPTER_ADDRESSES)&buffer[0];
+                                ipAdapterAddresses = (PIP_ADAPTER_ADDRESSES)buffer.data ();
                                 ipAdapterAddresses != 0; ipAdapterAddresses = ipAdapterAddresses->Next) {
                             if (ipAdapterAddresses->PhysicalAddressLength == MAX_ADAPTER_ADDRESS_LENGTH) {
                                 macs.insert (

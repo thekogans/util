@@ -326,7 +326,7 @@ namespace thekogans {
                 }
                 while (!done) {
                     std::vector<epoll_event> events (DEFAULT_MAX_SIZE);
-                    int count = epoll_wait (epoll.handle, &events[0], DEFAULT_MAX_SIZE, -1);
+                    int count = epoll_wait (epoll.handle, events.data (), DEFAULT_MAX_SIZE, -1);
                     if (count < 0) {
                         THEKOGANS_UTIL_ERROR_CODE errorCode = THEKOGANS_UTIL_OS_ERROR_CODE;
                         // EINTR means a signal interrupted our wait.
