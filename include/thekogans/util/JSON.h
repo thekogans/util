@@ -264,6 +264,27 @@ namespace thekogans {
                 /// ctor.
                 Array () :
                     Value (JSON_VALUE_TYPE_ARRAY, NAME) {}
+                /// \brief
+                /// ctor. Create an array by breaking up the given string on delimiter boundary.
+                /// \param[in] str String to break up.
+                /// \param[in] delimiter Delimiter.
+                /// \param[in] delimiterLength Delimiter length.
+                Array (
+                    const std::string &str,
+                    const void *delimiter = "\n",
+                    std::size_t delimiterLength = 1);
+
+                /// \brief
+                /// JSON's string handling is fucking abysmal (and that's putting it mildly).
+                /// This function together with the ctor above ease the pain by storing and
+                /// reconstituting a multi-line string in an array object.
+                /// NOTE: Array must only contain String entries.
+                /// \param[in] delimiter Delimiter.
+                /// \param[in] delimiterLength Delimiter length.
+                /// \return std::string containing array entries separated by the delimiter.
+                std::string ToString (
+                    const void *delimiter = "\n",
+                    std::size_t delimiterLength = 1);
 
                 /// \brief
                 /// Append the given value to the array.
@@ -432,10 +453,12 @@ namespace thekogans {
             /// Format the given value.
             /// \param[in] value The value to format.
             /// \param[in] indentationLevel Pretty print parameter.
+            /// \param[in] indentationWidth Pretty print parameter.
             /// \return Formatted value.
             static std::string FormatValue (
-                Value::Ptr value,
-                std::size_t indentationLevel = 0);
+                const Value &value,
+                std::size_t indentationLevel = 0,
+                std::size_t indentationWidth = 2);
         };
 
     } // namespace util
