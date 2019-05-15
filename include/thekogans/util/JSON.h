@@ -359,8 +359,8 @@ namespace thekogans {
                 static const char *NAME;
 
                 /// \brief
-                /// Convenient typedef for std::pair<Value::Ptr, Value::Ptr>.
-                typedef std::pair<Value::Ptr, Value::Ptr> NameValue;
+                /// Convenient typedef for std::pair<std::string, Value::Ptr>.
+                typedef std::pair<std::string, Value::Ptr> NameValue;
                 /// \brief
                 /// Array of name/value pairs.
                 std::vector<NameValue> values;

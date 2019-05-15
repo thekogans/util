@@ -195,10 +195,7 @@ namespace thekogans {
                 const std::string &name,
                 Value::Ptr value) {
             if (!name.empty () && value.Get () != 0) {
-                values.push_back (
-                    NameValue (
-                        Value::Ptr (new String (name)),
-                        value));
+                values.push_back (NameValue (name, value));
             }
             else {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
@@ -210,10 +207,7 @@ namespace thekogans {
                 const std::string &name,
                 bool value) {
             if (!name.empty ()) {
-                values.push_back (
-                    NameValue (
-                        Value::Ptr (new String (name)),
-                        Value::Ptr (new Bool (value))));
+                values.push_back (NameValue (name, Value::Ptr (new Bool (value))));
             }
             else {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
@@ -223,10 +217,7 @@ namespace thekogans {
 
         void JSON::Object::AddNull (const std::string &name) {
             if (!name.empty ()) {
-                values.push_back (
-                    NameValue (
-                        Value::Ptr (new String (name)),
-                        Value::Ptr (new Null)));
+                values.push_back (NameValue (name, Value::Ptr (new Null)));
             }
             else {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
@@ -238,10 +229,7 @@ namespace thekogans {
                 const std::string &name,
                 f64 value) {
             if (!name.empty ()) {
-                values.push_back (
-                    NameValue (
-                        Value::Ptr (new String (name)),
-                        Value::Ptr (new Number (value))));
+                values.push_back (NameValue (name, Value::Ptr (new Number (value))));
             }
             else {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
@@ -253,10 +241,7 @@ namespace thekogans {
                 const std::string &name,
                 const std::string &value) {
             if (!name.empty ()) {
-                values.push_back (
-                    NameValue (
-                        Value::Ptr (new String (name)),
-                        Value::Ptr (new String (value))));
+                values.push_back (NameValue (name, Value::Ptr (new String (value))));
             }
             else {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
@@ -268,10 +253,7 @@ namespace thekogans {
                 const std::string &name,
                 Array::Ptr value) {
             if (!name.empty ()) {
-                values.push_back (
-                    NameValue (
-                        Value::Ptr (new String (name)),
-                        Value::Ptr (value.Get ())));
+                values.push_back (NameValue (name, Value::Ptr (value.Get ())));
             }
             else {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
@@ -283,10 +265,7 @@ namespace thekogans {
                 const std::string &name,
                 Object::Ptr value) {
             if (!name.empty ()) {
-                values.push_back (
-                    NameValue (
-                        Value::Ptr (new String (name)),
-                        Value::Ptr (value.Get ())));
+                values.push_back (NameValue (name, Value::Ptr (value.Get ())));
             }
             else {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
@@ -296,7 +275,7 @@ namespace thekogans {
 
         JSON::Value::Ptr JSON::Object::GetValue (const std::string &name) const {
             for (std::size_t i = 0, count = values.size (); i < count; ++i) {
-                if (values[i].first->ToString () == name) {
+                if (values[i].first == name) {
                     return values[i].second;
                 }
             }
@@ -305,7 +284,7 @@ namespace thekogans {
 
         JSON::Array::Ptr JSON::Object::GetArray (const std::string &name) const {
             for (std::size_t i = 0, count = values.size (); i < count; ++i) {
-                if (values[i].first->ToString () == name) {
+                if (values[i].first == name) {
                     return dynamic_refcounted_pointer_cast<Array> (values[i].second);
                 }
             }
@@ -314,7 +293,7 @@ namespace thekogans {
 
         JSON::Object::Ptr JSON::Object::GetObject (const std::string &name) const {
             for (std::size_t i = 0, count = values.size (); i < count; ++i) {
-                if (values[i].first->ToString () == name) {
+                if (values[i].first == name) {
                     return dynamic_refcounted_pointer_cast<Object> (values[i].second);
                 }
             }
@@ -634,21 +613,42 @@ namespace thekogans {
             void ParseArray (
                     Tokenizer &tokenizer,
                     JSON::Array::Ptr array) {
+                bool expectValue = false;
+                bool expectComma = false;
                 while (1) {
                     JSON::Value::Ptr value = ParseValueHelper (tokenizer);
                     if (value.Get () != 0) {
-                        array->AddValue (value);
-                    }
-                    Token token = tokenizer.GetToken ();
-                    if (token.type == Token::TYPE_COMMA) {
-                        if (value.Get () == 0) {
+                        if (!expectComma) {
+                            array->AddValue (value);
+                            expectValue = false;
+                            expectComma = true;
+                        }
+                        else {
                             THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
                                 "%s", "Expecting value.");
                         }
-                        continue;
                     }
-                    else if (token.type == Token::TYPE_ARRAY_END) {
-                        break;
+                    Token token = tokenizer.GetToken ();
+                    if (token.type == Token::TYPE_ARRAY_END) {
+                        if (!expectValue) {
+                            break;
+                        }
+                        else {
+                            THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
+                                "Unexpected token '%s'. Expecting value.",
+                                token.value.c_str ());
+                        }
+                    }
+                    else if (token.type == Token::TYPE_COMMA) {
+                        if (expectComma) {
+                            expectValue = true;
+                            expectComma = false;
+                        }
+                        else {
+                            THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
+                                "Unexpected token '%s'. Expecting ','.",
+                                token.value.c_str ());
+                        }
                     }
                     else {
                         THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
@@ -661,15 +661,19 @@ namespace thekogans {
             void ParseObject (
                     Tokenizer &tokenizer,
                     JSON::Object::Ptr object) {
+                bool expectNameValue = false;
+                bool expectComma = false;
                 while (1) {
-                    JSON::Value::Ptr name = ParseValueHelper (tokenizer);
-                    if (name.Get () != 0) {
-                        if (name->GetType () == JSON::Value::JSON_VALUE_TYPE_STRING) {
-                            Token token = tokenizer.GetToken ();
-                            if (token.type == Token::TYPE_COLON) {
+                    Token token = tokenizer.GetToken ();
+                    if (token.type == Token::TYPE_STRING) {
+                        if (!expectComma) {
+                            Token colon = tokenizer.GetToken ();
+                            if (colon.type == Token::TYPE_COLON) {
                                 JSON::Value::Ptr value = ParseValueHelper (tokenizer);
                                 if (value.Get () != 0) {
-                                    object->AddValue (name->ToString (), value);
+                                    object->AddValue (token.value, value);
+                                    expectNameValue = false;
+                                    expectComma = true;
                                 }
                                 else {
                                     THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
@@ -684,21 +688,30 @@ namespace thekogans {
                         }
                         else {
                             THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                                "Unexpected value type '%s'. Expecting '%s'.",
-                                JSON::Value::typeTostring (name->GetType ()).c_str (),
-                                JSON::String::NAME);
+                                "Unexpected token '%s'. Expecting ','.",
+                                token.value.c_str ());
                         }
-                    }
-                    Token token = tokenizer.GetToken ();
-                    if (token.type == Token::TYPE_COMMA) {
-                        if (name.Get () == 0) {
-                            THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                                "%s", "Expecting name : value.");
-                        }
-                        continue;
                     }
                     else if (token.type == Token::TYPE_OBJECT_END) {
-                        break;
+                        if (!expectNameValue) {
+                            break;
+                        }
+                        else {
+                            THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
+                                "Unexpected token '%s'. Expecting \"name\".",
+                                token.value.c_str ());
+                        }
+                    }
+                    else if (token.type == Token::TYPE_COMMA) {
+                        if (expectComma) {
+                            expectNameValue = true;
+                            expectComma = false;
+                        }
+                        else {
+                            THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
+                                "Unexpected token '%s'. Expecting ','.",
+                                token.value.c_str ());
+                        }
                     }
                     else {
                         THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
@@ -800,7 +813,7 @@ namespace thekogans {
                             stream << "\n" << std::string (indentationLevel * indentationWidth, SPACE);
                             for (std::size_t i = 0, count = object.values.size (); i < count; ++i) {
                                 stream << std::string (indentationWidth, SPACE);
-                                FormatString (stream, object.values[i].first->ToString ().c_str ());
+                                FormatString (stream, object.values[i].first.c_str ());
                                 stream << ": ";
                                 FormatValueHelper (
                                     stream,
