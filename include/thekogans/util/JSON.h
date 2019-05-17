@@ -34,7 +34,8 @@ namespace thekogans {
         /// \brief
         /// JSON provides the DOM and parsing/serialization facilities to read and
         /// write JSON formatted values. It's used by \see{Serializable} as one of it's
-        /// serialization/deserialization methods.
+        /// serialization/deserialization methods. JSON::Array implements multi-line
+        /// string handling by providing an appropriate ctor and ToString method.
 
         struct _LIB_THEKOGANS_UTIL_DECL JSON {
             struct Bool;
