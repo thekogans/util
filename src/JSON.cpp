@@ -795,7 +795,7 @@ namespace thekogans {
                                 FormatValueHelper (
                                     stream,
                                     *array.values[i],
-                                    indentationLevel + 2,
+                                    indentationLevel + 1,
                                     indentationWidth);
                                 if (i < count - 1) {
                                     stream << ",";
