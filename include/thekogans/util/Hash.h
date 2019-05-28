@@ -103,12 +103,12 @@ namespace thekogans {
             /// Convert a given digest to it's string representation.
             /// \param[in] digest Digest to convert.
             /// \return Digest's string representation.
-            static std::string DigestToString (const Digest &digest);
+            static std::string DigestTostring (const Digest &digest);
             /// \brief
             /// Convert a given digest string representation to digest.
             /// \param[in] digest Digest string to convert.
             /// \return Digest.
-            static Digest StringToDigest (const std::string &digest);
+            static Digest stringToDigest (const std::string &digest);
 
             /// \brief
             /// Return hasher name.

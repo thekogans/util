@@ -61,7 +61,7 @@ namespace thekogans {
             /// ctor. Parse the GUID out of a string representation.
             /// NOTE: The guid must only contain hexadecimal (0 - 9, a - f) digits.
             /// \param[in] guid String representation of a guid to parse.
-            /// \param[in] windowsGUID true = guid is in Windows GUID format (4-2-2-2-6),
+            /// \param[in] windowsGUID true == guid is in Windows GUID format (4-2-2-2-6),
             /// false = guid is a string of SIZE * 2 hexadecimal digits.
             explicit GUID (
                 const std::string &guid,

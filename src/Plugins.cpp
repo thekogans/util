@@ -33,7 +33,7 @@ namespace thekogans {
             Hash::Digest digest;
             SHA2 hasher;
             hasher.FromFile (pluginPath, SHA2::DIGEST_SIZE_256, digest);
-            if (Hash::DigestToString (digest) == SHA2_256) {
+            if (Hash::DigestTostring (digest) == SHA2_256) {
                 dynamicLibrary.Load (pluginPath);
                 GetPluginInterfaceProc GetPluginInterface =
                     (GetPluginInterfaceProc)dynamicLibrary.GetProc ("GetPluginInterface");

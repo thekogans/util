@@ -77,11 +77,11 @@ namespace thekogans {
         }
     #endif // defined (THEKOGANS_UTIL_TYPE_Static)
 
-        std::string Hash::DigestToString (const Digest &digest) {
+        std::string Hash::DigestTostring (const Digest &digest) {
             return HexEncodeBuffer (digest.data (), digest.size ());
         }
 
-        Hash::Digest Hash::StringToDigest (const std::string &digest) {
+        Hash::Digest Hash::stringToDigest (const std::string &digest) {
             return HexDecodeBuffer (digest.c_str (), digest.size ());
         }
 
