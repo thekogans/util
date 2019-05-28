@@ -19,10 +19,9 @@
 #define __thekogans_util_Fraction_h
 
 #include <cassert>
-#include "pugixml/pugixml.hpp"
 #include "thekogans/util/Config.h"
 #include "thekogans/util/Types.h"
-#include "thekogans/util/Serializer.h"
+#include "thekogans/util/Serializable.h"
 
 namespace thekogans {
     namespace util {
@@ -40,7 +39,11 @@ namespace thekogans {
         /// be fine. If you manipulate numerator and/or denominator directly,
         /// it is your responsibility to call Fraction::Reduce () after.
 
-        struct _LIB_THEKOGANS_UTIL_DECL Fraction {
+        struct _LIB_THEKOGANS_UTIL_DECL Fraction : public Serializable {
+            /// \brief
+            /// Fraction is a \see{Serializable}.
+            THEKOGANS_UTIL_DECLARE_SERIALIZABLE (Fraction, SpinLock)
+
             /// \brief
             /// Fraction numerator.
             ui32 numerator;
@@ -94,12 +97,6 @@ namespace thekogans {
                 numerator (fraction.numerator),
                 denominator (fraction.denominator),
                 sign (fraction.sign) {}
-            /// \brief
-            /// ctor.
-            /// \param[in] node pugi::xml_node representing the Fraction.
-            Fraction (const pugi::xml_node &node) {
-                Parse (node);
-            }
 
             /// \brief
             /// Convert an integral sign to it's string equivalent.
@@ -111,16 +108,6 @@ namespace thekogans {
             /// \param[in] sign "Positive", "Negative".
             /// \return Positive, Negative.
             static Sign stringTosign (const std::string &sign);
-
-            /// \brief
-            /// Return the serialized size of this fraction.
-            /// \return Serialized size of this fraction.
-            inline std::size_t Size () const {
-                return
-                    Serializer::Size (numerator) +
-                    Serializer::Size (denominator) +
-                    UI8_SIZE;
-            }
 
             /// \brief
             /// Assignment operator.
@@ -161,6 +148,25 @@ namespace thekogans {
                 return sign == Positive ? value : -value;
             }
 
+        protected:
+            // Serializable
+            /// \brief
+            /// Return the serialized key size.
+            /// \return Serialized key size.
+            virtual std::size_t Size () const;
+
+            /// \brief
+            /// Read the key from the given serializer.
+            /// \param[in] header \see{Serializable::BinHeader}.
+            /// \param[in] serializer \see{Serializer} to read the key from.
+            virtual void Read (
+                const BinHeader & /*header*/,
+                Serializer &serializer);
+            /// \brief
+            /// Write the key to the given serializer.
+            /// \param[out] serializer \see{Serializer} to write the key to.
+            virtual void Write (Serializer &serializer) const;
+
             /// \brief
             /// "Fraction"
             static const char * const TAG_FRACTION;
@@ -180,32 +186,29 @@ namespace thekogans {
             /// "Negative"
             static const char * const VALUE_NEGATIVE;
 
+            /// \brief
+            /// Read the Serializable from an XML DOM.
+            /// \param[in] header \see{Serializable::TextHeader}.
+            /// \param[in] node XML DOM representation of a Serializable.
+            virtual void Read (
+                const TextHeader & /*header*/,
+                const pugi::xml_node &node);
+            /// \brief
+            /// Write the Serializable to the XML DOM.
+            /// \param[out] node Parent node.
+            virtual void Write (pugi::xml_node &node) const;
 
             /// \brief
-            /// Given an pugi::xml_node, parse the
-            /// fraction it represents. The Fraction has
-            /// the following format:
-            /// <tagName Numerator = "Fraction numerator"
-            ///          Denominator = "Fraction denominator"
-            ///          Sign = "Fraction sign"/>
-            /// \param[in] node pugi::xml_node representing the fraction.
-            void Parse (const pugi::xml_node &node);
+            /// Read a Serializable from an JSON DOM.
+            /// \param[in] node JSON DOM representation of a Serializable.
+            virtual void Read (
+                const TextHeader & /*header*/,
+                const JSON::Object &object);
             /// \brief
-            /// Serialize the Fraction parameters in to an XML string.
-            /// \param[in] indentationLevel Pretty print parameter. If
-            /// the resulting tag is to be included in a larger structure
-            /// you might want to provide a value that will embed it in
-            /// the structure.
-            /// \param[in] tagName Openning tag name.
-            /// \return The XML reprentation of the Fraction.
-            std::string ToString (
-                std::size_t indentationLevel,
-                const char *tagName = TAG_FRACTION) const;
+            /// Write a Serializable to the JSON DOM.
+            /// \param[out] node Parent node.
+            virtual void Write (JSON::Object &object) const;
         };
-
-        /// \brief
-        /// Serialized Fraction size.
-        const std::size_t FRACTION_SIZE = UI32_SIZE + UI32_SIZE + UI8_SIZE;
 
         /// \brief
         /// Multiply the fraction by an int.
@@ -297,7 +300,7 @@ namespace thekogans {
         /// Compare two fraction for equality.
         /// \param[in] fraction1 First fraction to compare.
         /// \param[in] fraction2 Second fraction to compare.
-        /// \return true = same, false = different.
+        /// \return true == same, false == different.
         inline bool operator == (
                 const Fraction &fraction1,
                 const Fraction &fraction2) {
@@ -310,7 +313,7 @@ namespace thekogans {
         /// Compare two fraction for inequality.
         /// \param[in] fraction1 First fraction to compare.
         /// \param[in] fraction2 Second fraction to compare.
-        /// \return true = different, false = same.
+        /// \return true == different, false == same.
         inline bool operator != (
                 const Fraction &fraction1,
                 const Fraction &fraction2) {
@@ -323,7 +326,7 @@ namespace thekogans {
         /// Compare two fraction for order.
         /// \param[in] fraction1 First fraction to compare.
         /// \param[in] fraction2 Second fraction to compare.
-        /// \return true = fraction1 < fraction2, false = fraction1 >= fraction2.
+        /// \return true == fraction1 < fraction2, false == fraction1 >= fraction2.
         inline bool operator < (
                 const Fraction &fraction1,
                 const Fraction &fraction2) {
@@ -343,7 +346,7 @@ namespace thekogans {
         /// Compare two fraction for order.
         /// \param[in] fraction1 First fraction to compare.
         /// \param[in] fraction2 Second fraction to compare.
-        /// \return true = fraction1 <= fraction2, false = fraction1 > fraction2.
+        /// \return true == fraction1 <= fraction2, false == fraction1 > fraction2.
         inline bool operator <= (
                 const Fraction &fraction1,
                 const Fraction &fraction2) {
@@ -363,7 +366,7 @@ namespace thekogans {
         /// Compare two fraction for order.
         /// \param[in] fraction1 First fraction to compare.
         /// \param[in] fraction2 Second fraction to compare.
-        /// \return true = fraction1 > fraction2, false = fraction1 <= fraction2.
+        /// \return true == fraction1 > fraction2, false == fraction1 <= fraction2.
         inline bool operator > (
                 const Fraction &fraction1,
                 const Fraction &fraction2) {
@@ -383,7 +386,7 @@ namespace thekogans {
         /// Compare two fraction for order.
         /// \param[in] fraction1 First fraction to compare.
         /// \param[in] fraction2 Second fraction to compare.
-        /// \return true = fraction1 >= fraction2, false = fraction1 < fraction2.
+        /// \return true == fraction1 >= fraction2, false == fraction1 < fraction2.
         inline bool operator >= (
                 const Fraction &fraction1,
                 const Fraction &fraction2) {
@@ -400,32 +403,12 @@ namespace thekogans {
         }
 
         /// \brief
-        /// Write the given fraction to the given serializer.
-        /// \param[in] serializer Where to write the given guid.
-        /// \param[in] fraction Fraction to write.
-        /// \return serializer.
-        inline Serializer &operator << (
-                Serializer &serializer,
-                const Fraction &fraction) {
-            return serializer <<
-                fraction.numerator <<
-                fraction.denominator <<
-                (ui8)fraction.sign;
-        }
+        /// Implement Fraction extraction operators.
+        THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_EXTRACTION_OPERATORS (Fraction)
 
         /// \brief
-        /// Read a fraction from the given serializer.
-        /// \param[in] serializer Where to read the guid from.
-        /// \param[in] fraction Fraction to read.
-        /// \return serializer.
-        inline Serializer &operator >> (
-                Serializer &serializer,
-                Fraction &fraction) {
-            return serializer >>
-                fraction.numerator >>
-                fraction.denominator >>
-                (ui8 &)fraction.sign;
-        }
+        /// Implement Fraction value parser.
+        THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_VALUE_PARSER (Fraction)
 
     } // namespace util
 } // namespace thekogans

@@ -314,12 +314,12 @@ namespace thekogans {
             /// Convert integral type value to it's string equivalent.
             /// \param[in] type Intergal type value to convert.
             /// \return Type string equivalent.
-            static std::string TypeToString (Type type);
+            static std::string TypeTostring (Type type);
             /// \brief
             /// Convert string type value to it's integral equivalent.
             /// \param[in] type String type value to convert.
             /// \return Type intergal equivalent.
-            static Type StringToType (const std::string &type);
+            static Type stringToType (const std::string &type);
 
             /// \brief
             /// Return true if type != Invalid

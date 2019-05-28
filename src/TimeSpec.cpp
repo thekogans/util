@@ -34,6 +34,17 @@
 namespace thekogans {
     namespace util {
 
+        #if !defined (THEKOGANS_UTIL_MIN_TIME_SPECS_IN_PAGE)
+            #define THEKOGANS_UTIL_MIN_TIME_SPECS_IN_PAGE 64
+        #endif // !defined (THEKOGANS_UTIL_MIN_TIME_SPECS_IN_PAGE)
+
+        THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE (
+            TimeSpec,
+            1,
+            SpinLock,
+            THEKOGANS_UTIL_MIN_TIME_SPECS_IN_PAGE,
+            DefaultAllocator::Global)
+
         TimeSpec::TimeSpec (
                 i64 seconds_,
                 i64 nanoseconds_) {
@@ -102,6 +113,14 @@ namespace thekogans {
         const TimeSpec TimeSpec::Zero (0, 0);
         const TimeSpec TimeSpec::Infinite (-1, -1);
 
+        TimeSpec &TimeSpec::operator = (const TimeSpec &timeSpec) {
+            if (&timeSpec != this) {
+                seconds = timeSpec.seconds;
+                nanoseconds = timeSpec.nanoseconds;
+            }
+            return *this;
+        }
+
         TimeSpec &TimeSpec::operator += (const TimeSpec &timeSpec) {
             *this = *this + timeSpec;
             return *this;
@@ -136,22 +155,46 @@ namespace thekogans {
             return *this + FromNanoseconds (nanoseconds);
         }
 
+        std::size_t TimeSpec::Size () const {
+            return Serializer::Size (seconds) + Serializer::Size (nanoseconds);
+        }
+
+        void TimeSpec::Read (
+                const BinHeader & /*header*/,
+                Serializer &serializer) {
+            serializer >> seconds >> nanoseconds;
+        }
+
+        void TimeSpec::Write (Serializer &serializer) const {
+            serializer << seconds << nanoseconds;
+        }
+
         const char * const TimeSpec::TAG_TIME_SPEC = "TimeSpec";
         const char * const TimeSpec::ATTR_SECONDS = "Seconds";
         const char * const TimeSpec::ATTR_NANOSECONDS = "Nanoseconds";
 
-        void TimeSpec::Parse (const pugi::xml_node &node) {
+        void TimeSpec::Read (
+                const TextHeader & /*header*/,
+                const pugi::xml_node &node) {
             seconds = stringToui64 (node.attribute (ATTR_SECONDS).value ());
             nanoseconds = stringToi32 (node.attribute (ATTR_NANOSECONDS).value ());
         }
 
-        std::string TimeSpec::ToString (
-                std::size_t indentationLevel,
-                const char *tagName) const {
-            Attributes attributes;
-            attributes.push_back (Attribute (ATTR_SECONDS, i64Tostring (seconds)));
-            attributes.push_back (Attribute (ATTR_NANOSECONDS, i32Tostring (nanoseconds)));
-            return OpenTag (indentationLevel, tagName, attributes, true, true);
+        void TimeSpec::Write (pugi::xml_node &node) const {
+            node.append_attribute (ATTR_SECONDS).set_value (i64Tostring (seconds).c_str ());
+            node.append_attribute (ATTR_NANOSECONDS).set_value (i32Tostring (nanoseconds).c_str ());
+        }
+
+        void TimeSpec::Read (
+                const TextHeader & /*header*/,
+                const JSON::Object &object) {
+            seconds = (i64)object.GetValue (ATTR_SECONDS)->ToNumber ();
+            nanoseconds = (i32)object.GetValue (ATTR_NANOSECONDS)->ToNumber ();
+        }
+
+        void TimeSpec::Write (JSON::Object &object) const {
+            object.AddNumber (ATTR_SECONDS, seconds);
+            object.AddNumber (ATTR_NANOSECONDS, nanoseconds);
         }
 
     #if defined (THEKOGANS_UTIL_CONFIG_Debug)

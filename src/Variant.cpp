@@ -153,7 +153,7 @@ namespace thekogans {
             return *this;
         }
 
-        std::string Variant::TypeToString (Type type) {
+        std::string Variant::TypeTostring (Type type) {
             return
                 type == TYPE_bool ? VALUE_BOOL :
                 type == TYPE_i8 ? VALUE_I8 :
@@ -170,7 +170,7 @@ namespace thekogans {
                 type == TYPE_GUID ? VALUE_GUID : VALUE_INVALID;
         }
 
-        Variant::Type Variant::StringToType (const std::string &type) {
+        Variant::Type Variant::stringToType (const std::string &type) {
             return
                 type == VALUE_BOOL ? TYPE_bool :
                 type == VALUE_I8 ? TYPE_i8 :
@@ -390,7 +390,7 @@ namespace thekogans {
                 if (child.type () == pugi::node_element) {
                     std::string childName = child.name ();
                     if (childName == TAG_TYPE) {
-                        type = StringToType (child.text ().get ());
+                        type = stringToType (child.text ().get ());
                     }
                     else if (childName == TAG_VALUE) {
                         switch (type) {
@@ -493,7 +493,7 @@ namespace thekogans {
             stream <<
                 OpenTag (indentationLevel, tagName) <<
                     OpenTag (indentationLevel + 1, TAG_TYPE) <<
-                        TypeToString (type) <<
+                        TypeTostring (type) <<
                     CloseTag (indentationLevel + 1, TAG_TYPE) <<
                     OpenTag (indentationLevel + 1, TAG_VALUE) <<
                         str <<
@@ -504,7 +504,7 @@ namespace thekogans {
 
         void Variant::ParseWithAttributes (const pugi::xml_node &node) {
             Clear ();
-            type = StringToType (node.attribute (ATTR_TYPE).value ());
+            type = stringToType (node.attribute (ATTR_TYPE).value ());
             std::string value_ = node.attribute (ATTR_VALUE).value ();
             switch (type) {
                 case Variant::TYPE_Invalid:
@@ -599,7 +599,7 @@ namespace thekogans {
                     break;
             }
             Attributes attributes;
-            attributes.push_back (Attribute (ATTR_TYPE, TypeToString (type)));
+            attributes.push_back (Attribute (ATTR_TYPE, TypeTostring (type)));
             attributes.push_back (Attribute (ATTR_VALUE, str));
             return OpenTag (indentationLevel, tagName, attributes, false, true);
         }

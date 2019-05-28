@@ -16,12 +16,24 @@
 // along with libthekogans_util. If not, see <http://www.gnu.org/licenses/>.
 
 #include "thekogans/util/Types.h"
+#include "thekogans/util/SpinLock.h"
+#include "thekogans/util/DefaultAllocator.h"
 #include "thekogans/util/StringUtils.h"
-#include "thekogans/util/XMLUtils.h"
 #include "thekogans/util/Fraction.h"
 
 namespace thekogans {
     namespace util {
+
+        #if !defined (THEKOGANS_UTIL_MIN_FRACTIONS_IN_PAGE)
+            #define THEKOGANS_UTIL_MIN_FRACTIONS_IN_PAGE 64
+        #endif // !defined (THEKOGANS_UTIL_MIN_FRACTIONS_IN_PAGE)
+
+        THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE (
+            Fraction,
+            1,
+            SpinLock,
+            THEKOGANS_UTIL_MIN_FRACTIONS_IN_PAGE,
+            DefaultAllocator::Global)
 
         const Fraction Fraction::Zero (0, 1);
         const Fraction Fraction::One (1, 1);
@@ -145,6 +157,20 @@ namespace thekogans {
             denominator /= gcd;
         }
 
+        std::size_t Fraction::Size () const {
+            return UI32_SIZE + UI32_SIZE + UI8_SIZE;
+        }
+
+        void Fraction::Read (
+                const BinHeader & /*header*/,
+                Serializer &serializer) {
+            serializer >> numerator >> denominator >> (ui8 &)sign;
+        }
+
+        void Fraction::Write (Serializer &serializer) const {
+            serializer << numerator << denominator << (ui8)sign;
+        }
+
         const char * const Fraction::TAG_FRACTION = "Fraction";
         const char * const Fraction::ATTR_NUMERATOR = "Numerator";
         const char * const Fraction::ATTR_DENOMINATOR = "Denominator";
@@ -152,20 +178,32 @@ namespace thekogans {
         const char * const Fraction::VALUE_POSITIVE = "Positive";
         const char * const Fraction::VALUE_NEGATIVE = "Negative";
 
-        void Fraction::Parse (const pugi::xml_node &node) {
+        void Fraction::Read (
+                const TextHeader & /*header*/,
+                const pugi::xml_node &node) {
             numerator = stringToui32 (node.attribute (ATTR_NUMERATOR).value ());
             denominator = stringToui32 (node.attribute (ATTR_DENOMINATOR).value ());
             sign = stringTosign (node.attribute (ATTR_SIGN).value ());
         }
 
-        std::string Fraction::ToString (
-                std::size_t indentationLevel,
-                const char *tagName) const {
-            Attributes attributes;
-            attributes.push_back (Attribute (ATTR_NUMERATOR, ui32Tostring (numerator)));
-            attributes.push_back (Attribute (ATTR_DENOMINATOR, ui32Tostring (denominator)));
-            attributes.push_back (Attribute (ATTR_SIGN, signTostring (sign)));
-            return OpenTag (indentationLevel, tagName, attributes, true, true);
+        void Fraction::Write (pugi::xml_node &node) const {
+            node.append_attribute (ATTR_NUMERATOR).set_value (ui32Tostring (numerator).c_str ());
+            node.append_attribute (ATTR_DENOMINATOR).set_value (ui32Tostring (denominator).c_str ());
+            node.append_attribute (ATTR_SIGN).set_value (signTostring (sign).c_str ());
+        }
+
+        void Fraction::Read (
+                const TextHeader & /*header*/,
+                const JSON::Object &object) {
+            numerator = (ui32)object.GetValue (ATTR_NUMERATOR)->ToNumber ();
+            denominator = (ui32)object.GetValue (ATTR_DENOMINATOR)->ToNumber ();
+            sign = stringTosign (object.GetValue (ATTR_SIGN)->ToString ());
+        }
+
+        void Fraction::Write (JSON::Object &object) const {
+            object.AddNumber (ATTR_NUMERATOR, numerator);
+            object.AddNumber (ATTR_DENOMINATOR, denominator);
+            object.AddString (ATTR_SIGN, signTostring (sign));
         }
 
         _LIB_THEKOGANS_UTIL_DECL Fraction _LIB_THEKOGANS_UTIL_API operator + (

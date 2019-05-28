@@ -197,5 +197,15 @@ namespace thekogans {
             return DecodeURI (str);
         }
 
+        _LIB_THEKOGANS_UTIL_DECL std::string _LIB_THEKOGANS_UTIL_API
+        FormatNode (
+                const pugi::xml_node &node,
+                std::size_t indentationLevel,
+                std::size_t indentationWidth) {
+            // FIXME: implement
+            assert (0);
+            return std::string ();
+        }
+
     } // namespace util
 } // namespace thekogans

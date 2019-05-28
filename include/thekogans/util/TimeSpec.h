@@ -37,7 +37,7 @@
 #include "thekogans/util/Config.h"
 #include "thekogans/util/Types.h"
 #include "thekogans/util/Constants.h"
-#include "thekogans/util/Serializer.h"
+#include "thekogans/util/Serializable.h"
 #include "thekogans/util/Exception.h"
 
 namespace thekogans {
@@ -75,7 +75,11 @@ namespace thekogans {
         /// infinity   |    0     | infinity
         /// < infinity |    0     | < infinity
 
-        struct _LIB_THEKOGANS_UTIL_DECL TimeSpec {
+        struct _LIB_THEKOGANS_UTIL_DECL TimeSpec : public Serializable {
+            /// \brief
+            /// TimeSpec is a \see{Serializable}.
+            THEKOGANS_UTIL_DECLARE_SERIALIZABLE (TimeSpec, SpinLock)
+
             /// \brief
             /// Seconds value.
             i64 seconds;
@@ -111,10 +115,10 @@ namespace thekogans {
             TimeSpec (const timeval &timeVal);
             /// \brief
             /// ctor.
-            /// \param[in] node pugi::xml_node representing the TimeSpec.
-            TimeSpec (const pugi::xml_node &node) {
-                Parse (node);
-            }
+            /// \param[in] timeSpec TimeSpec to copy..
+            TimeSpec (const TimeSpec &timeSpec) :
+                seconds (timeSpec.seconds),
+                nanoseconds (timeSpec.nanoseconds) {}
 
             /// \brief
             /// Zero
@@ -195,13 +199,10 @@ namespace thekogans {
             }
 
             /// \brief
-            /// Return the serialized size of this time spec.
-            /// \return Serialized size of this time spec.
-            inline std::size_t Size () const {
-                return
-                    Serializer::Size (seconds) +
-                    Serializer::Size (nanoseconds);
-            }
+            /// Assignment operator.
+            /// \param[in] timeSpec TimeSpec to assign.
+            /// \return *this
+            TimeSpec &operator = (const TimeSpec &timeSpec);
 
             /// \brief
             /// Add and assign operator.
@@ -309,6 +310,25 @@ namespace thekogans {
             /// \return *this + FromNanoseconds (nanoseconds).
             TimeSpec AddNanoseconds (i64 nanoseconds) const;
 
+        protected:
+            // Serializable
+            /// \brief
+            /// Return the serialized key size.
+            /// \return Serialized key size.
+            virtual std::size_t Size () const;
+
+            /// \brief
+            /// Read the key from the given serializer.
+            /// \param[in] header \see{Serializable::BinHeader}.
+            /// \param[in] serializer \see{Serializer} to read the key from.
+            virtual void Read (
+                const BinHeader & /*header*/,
+                Serializer &serializer);
+            /// \brief
+            /// Write the key to the given serializer.
+            /// \param[out] serializer \see{Serializer} to write the key to.
+            virtual void Write (Serializer &serializer) const;
+
             /// \brief
             /// "TimeSpec"
             static const char * const TAG_TIME_SPEC;
@@ -320,24 +340,27 @@ namespace thekogans {
             static const char * const ATTR_NANOSECONDS;
 
             /// \brief
-            /// Given an pugi::xml_node, parse the
-            /// TimeSpec it represents. The TimeSpec has
-            /// the following format:
-            /// <tagName Seconds = "seconds"
-            ///          Nanoseconds = "nanoseconds"/>
-            /// \param[in] node pugi::xml_node representing the TimeSpec.
-            void Parse (const pugi::xml_node &node);
+            /// Read the Serializable from an XML DOM.
+            /// \param[in] header \see{Serializable::TextHeader}.
+            /// \param[in] node XML DOM representation of a Serializable.
+            virtual void Read (
+                const TextHeader & /*header*/,
+                const pugi::xml_node &node);
             /// \brief
-            /// Serialize the TimeSpec parameters in to an XML string.
-            /// \param[in] indentationLevel Pretty print parameter. If
-            /// the resulting tag is to be included in a larger structure
-            /// you might want to provide a value that will embed it in
-            /// the structure.
-            /// \param[in] tagName Openning tag name.
-            /// \return The XML reprentation of the TimeSpec.
-            std::string ToString (
-                std::size_t indentationLevel,
-                const char *tagName = TAG_TIME_SPEC) const;
+            /// Write the Serializable to the XML DOM.
+            /// \param[out] node Parent node.
+            virtual void Write (pugi::xml_node &node) const;
+
+            /// \brief
+            /// Read a Serializable from an JSON DOM.
+            /// \param[in] node JSON DOM representation of a Serializable.
+            virtual void Read (
+                const TextHeader & /*header*/,
+                const JSON::Object &object);
+            /// \brief
+            /// Write a Serializable to the JSON DOM.
+            /// \param[out] node Parent node.
+            virtual void Write (JSON::Object &object) const;
         };
 
         /// \brief
@@ -426,28 +449,6 @@ namespace thekogans {
             const TimeSpec &timeSpec2);
 
         /// \brief
-        /// Write the given timeSpec to the given serializer.
-        /// \param[in] serializer Where to write the given guid.
-        /// \param[in] timeSpec TimeSpec to write.
-        /// \return serializer.
-        inline Serializer &operator << (
-                Serializer &serializer,
-                const TimeSpec &timeSpec) {
-            return serializer << timeSpec.seconds << timeSpec.nanoseconds;
-        }
-
-        /// \brief
-        /// Read a timeSpec from the given serializer.
-        /// \param[in] serializer Where to read the guid from.
-        /// \param[in] timeSpec TimeSpec to read.
-        /// \return serializer.
-        inline Serializer &operator >> (
-                Serializer &serializer,
-                TimeSpec &timeSpec) {
-            return serializer >> timeSpec.seconds >> timeSpec.nanoseconds;
-        }
-
-        /// \brief
         /// Get current system time.
         /// \return Current system time.
         _LIB_THEKOGANS_UTIL_DECL TimeSpec _LIB_THEKOGANS_UTIL_API GetCurrentTime ();
@@ -456,6 +457,14 @@ namespace thekogans {
         /// \param[in] timeSpec How long to sleep for.
         /// IMPORTANT: timeSpec is a relative value.
         _LIB_THEKOGANS_UTIL_DECL void _LIB_THEKOGANS_UTIL_API Sleep (const TimeSpec &timeSpec);
+
+        /// \brief
+        /// Implement TimeSpec extraction operators.
+        THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_EXTRACTION_OPERATORS (TimeSpec)
+
+        /// \brief
+        /// Implement TimeSpec value parser.
+        THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_VALUE_PARSER (TimeSpec)
 
     } // namespace util
 } // namespace thekogans

@@ -20,6 +20,7 @@
 
 #include <string>
 #include <list>
+#include "pugixml/pugixml.hpp"
 #include "thekogans/util/Config.h"
 #include "thekogans/util/Types.h"
 #include "thekogans/util/StringUtils.h"
@@ -129,6 +130,18 @@ namespace thekogans {
         /// \return Decoded string.
         _LIB_THEKOGANS_UTIL_DECL std::string _LIB_THEKOGANS_UTIL_API
             Decodestring (const std::string &str);
+
+        /// \brief
+        /// Format the given node.
+        /// \param[in] node The node to format.
+        /// \param[in] indentationLevel Pretty print parameter.
+        /// \param[in] indentationWidth Pretty print parameter.
+        /// \return Formatted node.
+        _LIB_THEKOGANS_UTIL_DECL std::string _LIB_THEKOGANS_UTIL_API
+            FormatNode (
+                const pugi::xml_node &node,
+                std::size_t indentationLevel = 0,
+                std::size_t indentationWidth = 2);
 
     } // namespace util
 } // namespace thekogans
