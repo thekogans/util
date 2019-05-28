@@ -523,23 +523,16 @@ namespace thekogans {
             }
         }
 
-        const char * const Directory::Entry::TAG_ENTRY = "Entry";
-        const char * const Directory::Entry::ATTR_FILE_SYSTEM = "FileSystem";
-        const char * const Directory::Entry::VALUE_WINDOWS = "Windows";
-        const char * const Directory::Entry::VALUE_POSIX = "POSIX";
-        const char * const Directory::Entry::ATTR_TYPE = "Type";
-        const char * const Directory::Entry::VALUE_INVALID = "invalid";
-        const char * const Directory::Entry::VALUE_FILE = "file";
-        const char * const Directory::Entry::VALUE_FOLDER = "folder";
-        const char * const Directory::Entry::VALUE_LINK = "link";
-        const char * const Directory::Entry::ATTR_NAME = "Name";
-        const char * const Directory::Entry::ATTR_ATTRIBUTES = "Attributes";
-        const char * const Directory::Entry::ATTR_CREATION_DATE = "CreationDate";
-        const char * const Directory::Entry::ATTR_MODE = "Mode";
-        const char * const Directory::Entry::ATTR_LAST_STATUS_DATE = "LastStatusDate";
-        const char * const Directory::Entry::ATTR_LAST_ACCESSED_DATE = "LastAccessedDate";
-        const char * const Directory::Entry::ATTR_LAST_MODIFIED_DATE = "LastModifiedDate";
-        const char * const Directory::Entry::ATTR_SIZE = "Size";
+        #if !defined (THEKOGANS_UTIL_MIN_DIRECORY_ENTRY_IN_PAGE)
+            #define THEKOGANS_UTIL_MIN_DIRECORY_ENTRY_IN_PAGE 64
+        #endif // !defined (THEKOGANS_UTIL_MIN_DIRECORY_ENTRY_IN_PAGE)
+
+        THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE (
+            Directory::Entry,
+            1,
+            SpinLock,
+            THEKOGANS_UTIL_MIN_DIRECORY_ENTRY_IN_PAGE,
+            DefaultAllocator::Global)
 
     #if defined (TOOLCHAIN_OS_Windows)
         namespace {
@@ -629,6 +622,43 @@ namespace thekogans {
         }
     #endif // defined (TOOLCHAIN_OS_Windows)
 
+        Directory::Entry::Entry (const Entry &entry) {
+            fileSystem = entry.fileSystem;
+            type = entry.type;
+            name = entry.name;
+            if (fileSystem == Windows) {
+                attributes = entry.attributes;
+                creationDate = entry.creationDate;
+            }
+            else {
+                mode = entry.mode;
+                lastStatusDate = entry.lastStatusDate;
+            }
+            lastAccessedDate = entry.lastAccessedDate;
+            lastModifiedDate = entry.lastModifiedDate;
+            size = entry.size;
+        }
+
+        Directory::Entry &Directory::Entry::operator = (const Entry &entry) {
+            if (&entry != this) {
+                fileSystem = entry.fileSystem;
+                type = entry.type;
+                name = entry.name;
+                if (fileSystem == Windows) {
+                    attributes = entry.attributes;
+                    creationDate = entry.creationDate;
+                }
+                else {
+                    mode = entry.mode;
+                    lastStatusDate = entry.lastStatusDate;
+                }
+                lastAccessedDate = entry.lastAccessedDate;
+                lastModifiedDate = entry.lastModifiedDate;
+                size = entry.size;
+            }
+            return *this;
+        }
+
         const Directory::Entry Directory::Entry::Empty;
 
         std::string Directory::Entry::fileSystemTostring (ui8 fileSystem) {
@@ -651,7 +681,66 @@ namespace thekogans {
                 type == VALUE_LINK ? Link : Invalid;
         }
 
-        void Directory::Entry::Parse (const pugi::xml_node &node) {
+        std::size_t Directory::Entry::Size () const {
+            return
+                Serializer::Size (fileSystem) +
+                Serializer::Size (type) +
+                Serializer::Size (name) +
+                (fileSystem == Windows ?
+                    Serializer::Size (attributes) +
+                    Serializer::Size (creationDate) :
+                    Serializer::Size (mode) +
+                    Serializer::Size (lastStatusDate)) +
+                Serializer::Size (lastAccessedDate) +
+                Serializer::Size (lastModifiedDate) +
+                Serializer::Size (size);
+        }
+
+        void Directory::Entry::Read (
+                const BinHeader & /*header*/,
+                Serializer &serializer) {
+            serializer >> fileSystem >> type >> name;
+            if (fileSystem == Windows) {
+                serializer >> attributes >> creationDate;
+            }
+            else {
+                serializer >> mode >> lastStatusDate;
+            }
+            serializer >> lastAccessedDate >> lastModifiedDate >> size;
+        }
+
+        void Directory::Entry::Write (Serializer &serializer) const {
+            serializer << fileSystem << type << name;
+            if (fileSystem == Windows) {
+                serializer << attributes << creationDate;
+            }
+            else {
+                serializer << mode << lastStatusDate;
+            }
+            serializer << lastAccessedDate << lastModifiedDate << size;
+        }
+
+        const char * const Directory::Entry::TAG_ENTRY = "Entry";
+        const char * const Directory::Entry::ATTR_FILE_SYSTEM = "FileSystem";
+        const char * const Directory::Entry::VALUE_WINDOWS = "Windows";
+        const char * const Directory::Entry::VALUE_POSIX = "POSIX";
+        const char * const Directory::Entry::ATTR_TYPE = "Type";
+        const char * const Directory::Entry::VALUE_INVALID = "invalid";
+        const char * const Directory::Entry::VALUE_FILE = "file";
+        const char * const Directory::Entry::VALUE_FOLDER = "folder";
+        const char * const Directory::Entry::VALUE_LINK = "link";
+        const char * const Directory::Entry::ATTR_NAME = "Name";
+        const char * const Directory::Entry::ATTR_ATTRIBUTES = "Attributes";
+        const char * const Directory::Entry::ATTR_CREATION_DATE = "CreationDate";
+        const char * const Directory::Entry::ATTR_MODE = "Mode";
+        const char * const Directory::Entry::ATTR_LAST_STATUS_DATE = "LastStatusDate";
+        const char * const Directory::Entry::ATTR_LAST_ACCESSED_DATE = "LastAccessedDate";
+        const char * const Directory::Entry::ATTR_LAST_MODIFIED_DATE = "LastModifiedDate";
+        const char * const Directory::Entry::ATTR_SIZE = "Size";
+
+        void Directory::Entry::Read (
+                const TextHeader & /*header*/,
+                const pugi::xml_node &node) {
             fileSystem = stringTofileSystem (node.attribute (ATTR_FILE_SYSTEM).value ());
             type = stringTotype (node.attribute (ATTR_TYPE).value ());
             name = Decodestring (node.attribute (ATTR_NAME).value ());
@@ -668,25 +757,57 @@ namespace thekogans {
             size = stringToui64 (node.attribute (ATTR_SIZE).value ());
         }
 
-        std::string Directory::Entry::ToString (
-                std::size_t indentationLevel,
-                const char *tagName) const {
-            Attributes attributes;
-            attributes.push_back (Attribute (ATTR_FILE_SYSTEM, fileSystemTostring (fileSystem)));
-            attributes.push_back (Attribute (ATTR_TYPE, typeTostring (type)));
-            attributes.push_back (Attribute (ATTR_NAME, Encodestring (name)));
+        void Directory::Entry::Write (pugi::xml_node &node) const {
+            node.append_attribute (ATTR_FILE_SYSTEM).set_value (fileSystemTostring (fileSystem).c_str ());
+            node.append_attribute (ATTR_TYPE).set_value (typeTostring (type).c_str ());
+            node.append_attribute (ATTR_NAME).set_value (Encodestring (name).c_str ());
             if (fileSystem == Windows) {
-                attributes.push_back (Attribute (ATTR_ATTRIBUTES, ui32Tostring (this->attributes)));
-                attributes.push_back (Attribute (ATTR_CREATION_DATE, i64Tostring (creationDate)));
+                node.append_attribute (ATTR_ATTRIBUTES).set_value (ui32Tostring (this->attributes).c_str ());
+                node.append_attribute (ATTR_CREATION_DATE).set_value (i64Tostring (creationDate).c_str ());
             }
             else {
-                attributes.push_back (Attribute (ATTR_MODE, i32Tostring (mode)));
-                attributes.push_back (Attribute (ATTR_LAST_STATUS_DATE, i64Tostring (lastStatusDate)));
+                node.append_attribute (ATTR_MODE).set_value (i32Tostring (mode).c_str ());
+                node.append_attribute (ATTR_LAST_STATUS_DATE).set_value (i64Tostring (lastStatusDate).c_str ());
             }
-            attributes.push_back (Attribute (ATTR_LAST_ACCESSED_DATE, i64Tostring (lastAccessedDate)));
-            attributes.push_back (Attribute (ATTR_LAST_MODIFIED_DATE, i64Tostring (lastModifiedDate)));
-            attributes.push_back (Attribute (ATTR_SIZE, ui64Tostring (size)));
-            return OpenTag (indentationLevel, tagName, attributes, true, true);
+            node.append_attribute (ATTR_LAST_ACCESSED_DATE).set_value (i64Tostring (lastAccessedDate).c_str ());
+            node.append_attribute (ATTR_LAST_MODIFIED_DATE).set_value (i64Tostring (lastModifiedDate).c_str ());
+            node.append_attribute (ATTR_SIZE).set_value (ui64Tostring (size).c_str ());
+        }
+
+        void Directory::Entry::Read (
+                const TextHeader & /*header*/,
+                const JSON::Object &object) {
+            fileSystem = stringTofileSystem (object.GetValue (ATTR_FILE_SYSTEM)->ToString ());
+            type = stringTotype (object.GetValue (ATTR_TYPE)->ToString ());
+            name = object.GetValue (ATTR_NAME)->ToString ();
+            if (fileSystem == Windows) {
+                attributes = (ui32)object.GetValue (ATTR_ATTRIBUTES)->ToNumber ();
+                creationDate = (i64)object.GetValue (ATTR_CREATION_DATE)->ToNumber ();
+            }
+            else {
+                mode = (i32)object.GetValue (ATTR_MODE)->ToNumber ();
+                lastStatusDate = (i64)object.GetValue (ATTR_LAST_STATUS_DATE)->ToNumber ();
+            }
+            lastAccessedDate = (i64)object.GetValue (ATTR_LAST_ACCESSED_DATE)->ToNumber ();
+            lastModifiedDate = (i64)object.GetValue (ATTR_LAST_MODIFIED_DATE)->ToNumber ();
+            size = (i64)object.GetValue (ATTR_SIZE)->ToNumber ();
+        }
+
+        void Directory::Entry::Write (JSON::Object &object) const {
+            object.AddString (ATTR_FILE_SYSTEM, fileSystemTostring (fileSystem));
+            object.AddString (ATTR_TYPE, typeTostring (type));
+            object.AddString (ATTR_NAME, name);
+            if (fileSystem == Windows) {
+                object.AddNumber (ATTR_ATTRIBUTES, attributes);
+                object.AddNumber (ATTR_CREATION_DATE, creationDate);
+            }
+            else {
+                object.AddNumber (ATTR_MODE, mode);
+                object.AddNumber (ATTR_LAST_STATUS_DATE, lastStatusDate);
+            }
+            object.AddNumber (ATTR_LAST_ACCESSED_DATE, lastAccessedDate);
+            object.AddNumber (ATTR_LAST_MODIFIED_DATE, lastModifiedDate);
+            object.AddNumber (ATTR_SIZE, size);
         }
 
     #if defined (TOOLCHAIN_OS_Windows)

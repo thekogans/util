@@ -47,7 +47,7 @@
 #include "thekogans/util/Singleton.h"
 #include "thekogans/util/SpinLock.h"
 #include "thekogans/util/Thread.h"
-#include "thekogans/util/Serializer.h"
+#include "thekogans/util/Serializable.h"
 
 namespace thekogans {
     namespace util {
@@ -76,8 +76,10 @@ namespace thekogans {
         ///         }
         ///     }
         ///     else {
+        ///         pugi::xml_node node;
+        ///         node << entry;
         ///         THEKOGANS_UTIL_LOG_ERROR ("Malformed directory entry: '%s'\n",
-        ///             entry.ToString (0).c_str ());
+        ///             FormatNode (node).c_str ());
         ///     }
         /// }
         /// \endcode
@@ -317,58 +319,10 @@ namespace thekogans {
             ///
             /// \brief
             /// Represents a directory entry.
-            struct _LIB_THEKOGANS_UTIL_DECL Entry {
+            struct _LIB_THEKOGANS_UTIL_DECL Entry : public Serializable {
                 /// \brief
-                /// "Entry"
-                static const char * const TAG_ENTRY;
-                /// \brief
-                /// "FileSystem"
-                static const char * const ATTR_FILE_SYSTEM;
-                /// \brief
-                /// "Windows"
-                static const char * const VALUE_WINDOWS;
-                /// \brief
-                /// "POSIX"
-                static const char * const VALUE_POSIX;
-                /// \brief
-                /// "Type"
-                static const char * const ATTR_TYPE;
-                /// \brief
-                /// "invalid"
-                static const char * const VALUE_INVALID;
-                /// \brief
-                /// "file"
-                static const char * const VALUE_FILE;
-                /// \brief
-                /// "folder"
-                static const char * const VALUE_FOLDER;
-                /// \brief
-                /// "link"
-                static const char * const VALUE_LINK;
-                /// \brief
-                /// "Name"
-                static const char * const ATTR_NAME;
-                /// \brief
-                /// "Attributes"
-                static const char * const ATTR_ATTRIBUTES;
-                /// \brief
-                /// "CreationDate"
-                static const char * const ATTR_CREATION_DATE;
-                /// \brief
-                /// "Mode"
-                static const char * const ATTR_MODE;
-                /// \brief
-                /// "LastStatusDate"
-                static const char * const ATTR_LAST_STATUS_DATE;
-                /// \brief
-                /// "LastAccessedDate"
-                static const char * const ATTR_LAST_ACCESSED_DATE;
-                /// \brief
-                /// "LastModifiedDate"
-                static const char * const ATTR_LAST_MODIFIED_DATE;
-                /// \brief
-                /// "Size"
-                static const char * const ATTR_SIZE;
+                /// Entry is a \see{Serializable}.
+                THEKOGANS_UTIL_DECLARE_SERIALIZABLE (Entry, SpinLock)
 
                 /// \brief
                 /// The file system this entry came from.
@@ -452,6 +406,10 @@ namespace thekogans {
                 /// ctor. Read entry info from file system.
                 /// \param[in] path File system path to get entry info from.
                 explicit Entry (const std::string &path);
+                /// \brief
+                /// Copy ctor.
+                /// \param[in] entry Entry to copy.
+                Entry (const Entry &entry);
 
                 /// \brief
                 /// Empty entry. Use this const to compare against empty entries.
@@ -480,29 +438,17 @@ namespace thekogans {
                 static ui8 stringTotype (const std::string &type);
 
                 /// \brief
-                /// Return the serialized size of this entry.
-                /// \return Serialized size of this entry.
-                inline std::size_t Size () const {
-                    return
-                        Serializer::Size (fileSystem) +
-                        Serializer::Size (type) +
-                        Serializer::Size (name) +
-                        (fileSystem == Windows ?
-                            Serializer::Size (attributes) +
-                            Serializer::Size (creationDate) :
-                            Serializer::Size (mode) +
-                            Serializer::Size (lastStatusDate)) +
-                        Serializer::Size (lastAccessedDate) +
-                        Serializer::Size (lastModifiedDate) +
-                        Serializer::Size (size);
-                }
+                /// Assignment operator.
+                /// \param[in] entry Entry to assign.
+                /// \return *this.
+                Entry &operator = (const Entry &entry);
 
                 /// \brief
                 /// Compare two entries irrespective of lastAccessedDate.
                 /// This timestamp is updated on every access (including reads),
                 /// and doesn't give a true measure of difference.
                 /// \param[in] entry Entry to compare to.
-                /// \return true = equal, false = different
+                /// \return true == equal, false == different
                 inline bool CompareWeakly (const Entry &entry) const {
                     return
                         fileSystem == entry.fileSystem &&
@@ -517,51 +463,117 @@ namespace thekogans {
                         size == entry.size;
                 }
 
+            protected:
+                // Serializable
                 /// \brief
-                /// Parse entry info from an xml dom that looks like this;
-                /// <Entry FileSystem = "Windows | POSIX"
-                ///        Type = "Invalid | File | Folder | Link"
-                ///        Name = ""
-                ///    if (fileSystem == Windows) {
-                ///        Attributes = ""
-                ///        CreationDate = ""
-                ///    }
-                ///    else {
-                ///        Mode = ""
-                ///        LastStatusDate = ""
-                ///    }
-                ///        LastAccessedDate = ""
-                ///        LastModifiedDate = ""
-                ///        Size = ""/>
-                /// \param[in] node DOM representation of an entry.
-                void Parse (const pugi::xml_node &node);
+                /// Return the serialized key size.
+                /// \return Serialized key size.
+                virtual std::size_t Size () const;
+
                 /// \brief
-                /// Encode the entry as an xml string.
-                /// Take care to encode all xml char entities properly.
-                /// \param[in] indentationLevel Number of '\t' to preceed the entry with.
-                /// \param[in] tagName Openning tag name.
-                /// \return encoded xml string.
-                std::string ToString (
-                    std::size_t indentationLevel,
-                    const char *tagName = TAG_ENTRY) const;
+                /// Read the key from the given serializer.
+                /// \param[in] header \see{Serializable::BinHeader}.
+                /// \param[in] serializer \see{Serializer} to read the key from.
+                virtual void Read (
+                    const BinHeader & /*header*/,
+                    Serializer &serializer);
+                /// \brief
+                /// Write the key to the given serializer.
+                /// \param[out] serializer \see{Serializer} to write the key to.
+                virtual void Write (Serializer &serializer) const;
+
+                /// \brief
+                /// "Entry"
+                static const char * const TAG_ENTRY;
+                /// \brief
+                /// "FileSystem"
+                static const char * const ATTR_FILE_SYSTEM;
+                /// \brief
+                /// "Windows"
+                static const char * const VALUE_WINDOWS;
+                /// \brief
+                /// "POSIX"
+                static const char * const VALUE_POSIX;
+                /// \brief
+                /// "Type"
+                static const char * const ATTR_TYPE;
+                /// \brief
+                /// "invalid"
+                static const char * const VALUE_INVALID;
+                /// \brief
+                /// "file"
+                static const char * const VALUE_FILE;
+                /// \brief
+                /// "folder"
+                static const char * const VALUE_FOLDER;
+                /// \brief
+                /// "link"
+                static const char * const VALUE_LINK;
+                /// \brief
+                /// "Name"
+                static const char * const ATTR_NAME;
+                /// \brief
+                /// "Attributes"
+                static const char * const ATTR_ATTRIBUTES;
+                /// \brief
+                /// "CreationDate"
+                static const char * const ATTR_CREATION_DATE;
+                /// \brief
+                /// "Mode"
+                static const char * const ATTR_MODE;
+                /// \brief
+                /// "LastStatusDate"
+                static const char * const ATTR_LAST_STATUS_DATE;
+                /// \brief
+                /// "LastAccessedDate"
+                static const char * const ATTR_LAST_ACCESSED_DATE;
+                /// \brief
+                /// "LastModifiedDate"
+                static const char * const ATTR_LAST_MODIFIED_DATE;
+                /// \brief
+                /// "Size"
+                static const char * const ATTR_SIZE;
+
+                /// \brief
+                /// Read the Serializable from an XML DOM.
+                /// \param[in] header \see{Serializable::TextHeader}.
+                /// \param[in] node XML DOM representation of a Serializable.
+                virtual void Read (
+                    const TextHeader & /*header*/,
+                    const pugi::xml_node &node);
+                /// \brief
+                /// Write the Serializable to the XML DOM.
+                /// \param[out] node Parent node.
+                virtual void Write (pugi::xml_node &node) const;
+
+                /// \brief
+                /// Read a Serializable from an JSON DOM.
+                /// \param[in] node JSON DOM representation of a Serializable.
+                virtual void Read (
+                    const TextHeader & /*header*/,
+                    const JSON::Object &object);
+                /// \brief
+                /// Write a Serializable to the JSON DOM.
+                /// \param[out] node Parent node.
+                virtual void Write (JSON::Object &object) const;
             };
 
             /// \brief
             /// Return the first entry in the directory.
             /// \param[out] entry Where the first entry info will be placed.
-            /// \return true = got entry, false = directory is empty.
+            /// \return true == got entry, false == directory is empty.
             bool GetFirstEntry (Entry &entry);
             /// \brief
             /// Return the next entry in the directory.
             /// \param[out] entry Where the next entry info will be placed.
-            /// \return true = got entry, false = no more entries.
+            /// \return true == got entry, false == no more entries.
             bool GetNextEntry (Entry &entry);
 
         #if defined (TOOLCHAIN_OS_Windows)
             /// \brief
             /// Create a new directory, optionally creating it's ancestry.
             /// \param[in] path New directory path.
-            /// \param[in] createAncestry true = create encestry (if it does not exist),
+            /// \param[in] createAncestry true == create encestry (if it does not exist),
             /// false = create only the final directory.
             /// \param[in] lpSecurityAttributes Windows security
             /// atributes of the new directory.
@@ -573,7 +585,7 @@ namespace thekogans {
             /// \brief
             /// Create a new directory, optionally creating it's ancestry.
             /// \param[in] path New directory path
-            /// \param[in] createAncestry true = create encestry (if it does not exist),
+            /// \param[in] createAncestry true == create encestry (if it does not exist),
             /// false = create only the final directory.
             /// \param[in] mode UNIX permission flags.
             static void Create (
@@ -585,7 +597,7 @@ namespace thekogans {
             /// Delete an existing directory, optionally deleting
             /// the branch rooted at the given directory.
             /// \param[in] path Directory path to delete.
-            /// \param[in] recursive true = delete branch,
+            /// \param[in] recursive true == delete branch,
             /// false = delete only the specified directory.
             static void Delete (
                 const std::string &path,
@@ -618,7 +630,7 @@ namespace thekogans {
         /// Compare two directory entries for equality.
         /// \param[in] entry1 First entry to compare.
         /// \param[in] entry2 Second entry to compare.
-        /// \return true = equal, false = different.
+        /// \return true == equal, false == different.
         inline bool operator == (
                 const Directory::Entry &entry1,
                 const Directory::Entry &entry2) {
@@ -640,7 +652,7 @@ namespace thekogans {
         /// Compare two directory entries for inequality.
         /// \param[in] entry1 First entry to compare.
         /// \param[in] entry2 Second entry to compare.
-        /// \return true = different, false = equal.
+        /// \return true == different, false == equal.
         inline bool operator != (
                 const Directory::Entry &entry1,
                 const Directory::Entry &entry2) {
@@ -659,69 +671,19 @@ namespace thekogans {
         }
 
         /// \brief
-        /// Write the given entry to the given serializer.
-        /// \param[in] serializer Where to write the given entry.
-        /// \param[in] entry \see{Directory::Entry} to write.
-        /// \return serializer.
-        inline Serializer &operator << (
-                Serializer &serializer,
-                const Directory::Entry &entry) {
-            serializer <<
-                entry.fileSystem <<
-                entry.type <<
-                entry.name;
-            if (entry.fileSystem == Directory::Entry::Windows) {
-                serializer <<
-                    entry.attributes <<
-                    entry.creationDate;
-            }
-            else {
-                serializer <<
-                    entry.mode <<
-                    entry.lastStatusDate;
-            }
-            serializer <<
-                entry.lastAccessedDate <<
-                entry.lastModifiedDate <<
-                entry.size;
-            return serializer;
-        }
-
-        /// \brief
-        /// Read an entry from the given serializer.
-        /// \param[in] serializer Where to read the entry from.
-        /// \param[in] entry \see{Directory::Entry} to read.
-        /// \return serializer.
-        inline Serializer &operator >> (
-                Serializer &serializer,
-                Directory::Entry &entry) {
-            serializer >>
-                entry.fileSystem >>
-                entry.type >>
-                entry.name;
-            if (entry.fileSystem == Directory::Entry::Windows) {
-                serializer >>
-                    entry.attributes >>
-                    entry.creationDate;
-            }
-            else {
-                serializer >>
-                    entry.mode >>
-                    entry.lastStatusDate;
-            }
-            serializer >>
-                entry.lastAccessedDate >>
-                entry.lastModifiedDate >>
-                entry.size;
-            return serializer;
-        }
-
-        /// \brief
         /// Return true if name points to '.' or '..'
         inline bool IsDotOrDotDot (const char *name) {
             return name != 0 && name[0] == '.' &&
                 (name[1] == '\0' || (name[1] == '.' && name[2] == '\0'));
         }
+
+        /// \brief
+        /// Implement Directory::Entry extraction operators.
+        THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_EXTRACTION_OPERATORS (Directory::Entry)
+
+        /// \brief
+        /// Implement Directory::Entry value parser.
+        THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_VALUE_PARSER (Directory::Entry)
 
     } // namespace util
 } // namespace thekogans
