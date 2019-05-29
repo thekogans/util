@@ -102,7 +102,7 @@ namespace thekogans {
                 type (type_),
                 maxPendingJobs (maxPendingJobs_),
                 done (true),
-                stats (name_),
+                stats (id, name),
                 jobsNotEmpty (jobsMutex),
                 idle (jobsMutex),
                 paused (false),

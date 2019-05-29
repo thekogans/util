@@ -376,6 +376,17 @@ namespace thekogans {
                 return thekogans::util::Serializable::Ptr (\
                     new type (header, object));\
             }\
+            friend thekogans::util::Serializer &operator >> (\
+                thekogans::util::Serializer &serializer,\
+                type &serializable);\
+            friend const pugi::xml_node &operator >> (\
+                const pugi::xml_node &node,\
+                type &serializable);\
+            friend const thekogans::util::JSON::Object &operator >> (\
+                const thekogans::util::JSON::Object &object,\
+                type &serializable);\
+            template<typename>\
+            friend struct thekogans::util::ValueParser;\
         public:\
             static const char *TYPE;\
             static const thekogans::util::ui16 VERSION;\
@@ -694,9 +705,62 @@ namespace thekogans {
             bool ParseValue (Serializer &serializer);
         };
 
-        /// \def THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_EXTRACTION_OPERATORS(_T)
+        /// \def THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_REF_EXTRACTION_OPERATORS(_T)
         /// Implement \see{Serializable} extraction operators.
-        #define THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_EXTRACTION_OPERATORS(_T)\
+        #define THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_REF_EXTRACTION_OPERATORS(_T)\
+            inline thekogans::util::Serializer &operator >> (\
+                    thekogans::util::Serializer &serializer,\
+                    _T &serializable) {\
+                thekogans::util::Serializable::BinHeader header;\
+                serializer >> header;\
+                if (header.magic == thekogans::util::MAGIC32 &&\
+                        header.type == serializable.GetType ()) {\
+                    serializable.Read (header, serializer);\
+                    return serializer;\
+                }\
+                else {\
+                    THEKOGANS_UTIL_THROW_STRING_EXCEPTION (\
+                        "Corrupt serializable header. Got %s, expecting %s.",\
+                        header.type.c_str (),\
+                        serializable.GetType ().c_str ());\
+                }\
+            }\
+            inline const pugi::xml_node &operator >> (\
+                    const pugi::xml_node &node,\
+                    _T &serializable) {\
+                thekogans::util::Serializable::TextHeader header;\
+                node >> header;\
+                if (header.type == serializable.GetType ()) {\
+                    serializable.Read (header, node);\
+                    return node;\
+                }\
+                else {\
+                    THEKOGANS_UTIL_THROW_STRING_EXCEPTION (\
+                        "Corrupt serializable header. Got %s, expecting %s.",\
+                        header.type.c_str (),\
+                        serializable.GetType ().c_str ());\
+                }\
+            }\
+            inline const thekogans::util::JSON::Object &operator >> (\
+                    const thekogans::util::JSON::Object &object,\
+                    _T &serializable) {\
+                thekogans::util::Serializable::TextHeader header;\
+                object >> header;\
+                if (header.type == serializable.GetType ()) {\
+                    serializable.Read (header, object);\
+                    return object;\
+                }\
+                else {\
+                    THEKOGANS_UTIL_THROW_STRING_EXCEPTION (\
+                        "Corrupt serializable header. Got %s, expecting %s.",\
+                        header.type.c_str (),\
+                        serializable.GetType ().c_str ());\
+                }\
+            }
+
+        /// \def THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_PTR_EXTRACTION_OPERATORS(_T)
+        /// Implement \see{Serializable::Ptr} extraction operators.
+        #define THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_PTR_EXTRACTION_OPERATORS(_T)\
             inline thekogans::util::Serializer &operator >> (\
                     thekogans::util::Serializer &serializer,\
                     _T::Ptr &serializable) {\
@@ -720,7 +784,7 @@ namespace thekogans {
                 else {\
                     THEKOGANS_UTIL_THROW_STRING_EXCEPTION (\
                         "Corrupt serializable '%s' header.",\
-                        header.type.c_str () );\
+                        header.type.c_str ());\
                 }\
             }\
             inline const pugi::xml_node &operator >> (\
@@ -742,7 +806,7 @@ namespace thekogans {
                         header.type.c_str ());\
                 }\
             }\
-            inline const thekogans::util::JSON::Object &operator >> (   \
+            inline const thekogans::util::JSON::Object &operator >> (\
                     const thekogans::util::JSON::Object &object,\
                     _T::Ptr &serializable) {\
                 thekogans::util::Serializable::TextHeader header;\
@@ -762,13 +826,87 @@ namespace thekogans {
                 }\
             }
 
+        /// \def THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_EXTRACTION_OPERATORS(_T)
+        /// Implement \see{Serializable} extraction operators.
+        #define THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_EXTRACTION_OPERATORS(_T)\
+            THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_REF_EXTRACTION_OPERATORS(_T)\
+            THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_PTR_EXTRACTION_OPERATORS(_T)
+
         /// \brief
         /// Implement \see{Serializable} extraction operators.
-        THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_EXTRACTION_OPERATORS (Serializable)
+        THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_PTR_EXTRACTION_OPERATORS (Serializable)
 
-        /// \def THEKOGANS_UTIL_IMPLEMENT_VALUE_PARSER(_T)
+        /// \def THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_REF_VALUE_PARSER(_T)
         /// Implement \see{Serializable} \see{ValueParser}.
-        #define THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_VALUE_PARSER(_T)\
+        #define THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_REF_VALUE_PARSER(_T)\
+            template<>\
+            struct thekogans::util::ValueParser<_T> {\
+            private:\
+                _T &value;\
+                enum {\
+                    DEFAULT_MAX_SERIALIZABLE_SIZE = 2 * 1024 * 1024\
+                };\
+                const std::size_t maxSerializableSize;\
+                thekogans::util::Serializable::BinHeader header;\
+                thekogans::util::Buffer payload;\
+                thekogans::util::ValueParser<thekogans::util::Serializable::BinHeader> headerParser;\
+                enum {\
+                    STATE_BIN_HEADER,\
+                    STATE_SERIALIZABLE\
+                } state;\
+            public:\
+                ValueParser (\
+                    _T &value_,\
+                    std::size_t maxSerializableSize_ = DEFAULT_MAX_SERIALIZABLE_SIZE) :\
+                    value (value_),\
+                    maxSerializableSize (maxSerializableSize_),\
+                    payload (NetworkEndian),\
+                    headerParser (header),\
+                    state (STATE_BIN_HEADER) {}\
+                inline void Reset () {\
+                    payload.Resize (0);\
+                    headerParser.Reset ();\
+                    state = STATE_BIN_HEADER;\
+                }\
+                inline bool ParseValue (thekogans::util::Serializer &serializer) {\
+                    if (state == STATE_BIN_HEADER) {\
+                        if (headerParser.ParseValue (serializer)) {\
+                            if (header.size > 0 && header.size <= maxSerializableSize) {\
+                                THEKOGANS_UTIL_TRY {\
+                                    payload.Resize (header.size);\
+                                    state = STATE_SERIALIZABLE;\
+                                }\
+                                THEKOGANS_UTIL_CATCH (thekogans::util::Exception) {\
+                                    Reset ();\
+                                    THEKOGANS_UTIL_RETHROW_EXCEPTION (exception);\
+                                }\
+                            }\
+                            else {\
+                                Reset ();\
+                                THEKOGANS_UTIL_THROW_STRING_EXCEPTION (\
+                                    "Invalid serializable length: %u.",\
+                                    header.size);\
+                            }\
+                        }\
+                    }\
+                    if (state == STATE_SERIALIZABLE) {\
+                        payload.AdvanceWriteOffset (\
+                            serializer.Read (\
+                                payload.GetWritePtr (),\
+                                payload.GetDataAvailableForWriting ()));\
+                        if (payload.IsFull ()) {\
+                            value.Read (header, payload);\
+                            Reset ();\
+                            return true;\
+                        }\
+                    }\
+                    return false;\
+                }\
+            };
+
+        /// \def THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_PTR_VALUE_PARSER(_T)
+        /// Implement \see{Serializable::Ptr} \see{ValueParser}.
+        #define THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_PTR_VALUE_PARSER(_T)\
             template<>\
             struct thekogans::util::ValueParser<_T::Ptr> {\
             private:\
@@ -852,9 +990,15 @@ namespace thekogans {
                 }\
             };
 
+        /// \def THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_VALUE_PARSER(_T)
+        /// Implement \see{Serializable} \see{ValueParser}.
+        #define THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_VALUE_PARSER(_T)\
+            THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_REF_VALUE_PARSER(_T)\
+            THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_PTR_VALUE_PARSER(_T)
+
         /// \brief
         /// Implement \see{Serializable} \see{ValueParser}.
-        THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_VALUE_PARSER (Serializable)
+        THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_PTR_VALUE_PARSER (Serializable)
 
     } // namespace util
 } // namespace thekogans

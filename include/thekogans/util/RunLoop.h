@@ -36,6 +36,7 @@
 #include "pugixml/pugixml.hpp"
 #include "thekogans/util/Config.h"
 #include "thekogans/util/Types.h"
+#include "thekogans/util/Serializable.h"
 #include "thekogans/util/RefCounted.h"
 #include "thekogans/util/IntrusiveList.h"
 #include "thekogans/util/GUID.h"
@@ -357,29 +358,14 @@ namespace thekogans {
             /// last - Last job.\n
             /// min - Fastest job.\n
             /// max - Slowest job.\n
-            struct _LIB_THEKOGANS_UTIL_DECL Stats {
+            struct _LIB_THEKOGANS_UTIL_DECL Stats : public Serializable {
                 /// \brief
-                /// "RunLoop"
-                static const char * const TAG_RUN_LOOP;
-                /// \brief
-                /// "Name"
-                static const char * const ATTR_NAME;
-                /// \brief
-                /// "TotalJobs"
-                static const char * const ATTR_TOTAL_JOBS;
-                /// \brief
-                /// "TotalJobTime"
-                static const char * const ATTR_TOTAL_JOB_TIME;
-                /// \brief
-                /// "LastJob"
-                static const char * const TAG_LAST_JOB;
-                /// \brief
-                /// "MinJob"
-                static const char * const TAG_MIN_JOB;
-                /// \brief
-                /// "MaxJob"
-                static const char * const TAG_MAX_JOB;
+                /// RunLoop::Stats is a \see{Serializable}.
+                THEKOGANS_UTIL_DECLARE_SERIALIZABLE (Stats, SpinLock)
 
+                /// \brief
+                /// Run loop id.
+                RunLoop::Id id;
                 /// \brief
                 /// Run loop name.
                 std::string name;
@@ -393,22 +379,10 @@ namespace thekogans {
                 ///
                 /// \brief
                 /// Job stats.
-                struct _LIB_THEKOGANS_UTIL_DECL Job {
+                struct _LIB_THEKOGANS_UTIL_DECL Job : public Serializable {
                     /// \brief
-                    /// "Job"
-                    static const char * const TAG_JOB;
-                    /// \brief
-                    /// "Id"
-                    static const char * const ATTR_ID;
-                    /// \brief
-                    /// "StartTime"
-                    static const char * const ATTR_START_TIME;
-                    /// \brief
-                    /// "EndTime"
-                    static const char * const ATTR_END_TIME;
-                    /// \brief
-                    /// "TotalTime"
-                    static const char * const ATTR_TOTAL_TIME;
+                    /// RunLoop::Stats::Job is a \see{Serializable}.
+                    THEKOGANS_UTIL_DECLARE_SERIALIZABLE (Job, SpinLock)
 
                     /// \brief
                     /// Job id.
@@ -444,30 +418,84 @@ namespace thekogans {
                         startTime (startTime_),
                         endTime (endTime_),
                         totalTime (totalTime_) {}
+                    /// \brief
+                    /// ctor.
+                    /// \param[in] job Job to copy.
+                    Job (const Job &job) :
+                        id (job.id),
+                        startTime (job.startTime),
+                        endTime (job.endTime),
+                        totalTime (job.totalTime) {}
+
+                    /// \brief
+                    /// Assignment operator.
+                    /// \param[in] job Job to assign.
+                    /// \retunr *this.
+                    Job &operator = (const Job &job);
 
                     /// \brief
                     /// Reset the job stats.
                     void Reset ();
 
+                protected:
+                    // Serializable
                     /// \brief
-                    /// Parse a job from an xml dom that looks like this;
-                    /// <Job Id = ""
-                    ///      StartTime = ""
-                    ///      EndTime = ""
-                    ///      TotalTime = ""/>
-                    /// \param[in] node DOM representation of an job.
-                    void Parse (const pugi::xml_node &node);
+                    /// Return the serialized key size.
+                    /// \return Serialized key size.
+                    virtual std::size_t Size () const;
+
                     /// \brief
-                    /// Return the XML representation of the Job stats.
-                    /// \param[in] indentationLevel Pretty print parameter. If
-                    /// the resulting tag is to be included in a larger structure
-                    /// you might want to provide a value that will embed it in
-                    /// the structure.
-                    /// \param[in] tagName Job stats name.
-                    /// \return The XML reprentation of the Job stats.
-                    std::string ToString (
-                        std::size_t indentationLevel,
-                        const char *tagName = TAG_JOB) const;
+                    /// Read the key from the given serializer.
+                    /// \param[in] header \see{Serializable::BinHeader}.
+                    /// \param[in] serializer \see{Serializer} to read the key from.
+                    virtual void Read (
+                        const BinHeader & /*header*/,
+                        Serializer &serializer);
+                    /// \brief
+                    /// Write the key to the given serializer.
+                    /// \param[out] serializer \see{Serializer} to write the key to.
+                    virtual void Write (Serializer &serializer) const;
+
+                    /// \brief
+                    /// "Job"
+                    static const char * const TAG_JOB;
+                    /// \brief
+                    /// "Id"
+                    static const char * const ATTR_ID;
+                    /// \brief
+                    /// "StartTime"
+                    static const char * const ATTR_START_TIME;
+                    /// \brief
+                    /// "EndTime"
+                    static const char * const ATTR_END_TIME;
+                    /// \brief
+                    /// "TotalTime"
+                    static const char * const ATTR_TOTAL_TIME;
+
+                    /// \brief
+                    /// Read the Serializable from an XML DOM.
+                    /// \param[in] header \see{Serializable::TextHeader}.
+                    /// \param[in] node XML DOM representation of a Serializable.
+                    virtual void Read (
+                        const TextHeader & /*header*/,
+                        const pugi::xml_node &node);
+                    /// \brief
+                    /// Write the Serializable to the XML DOM.
+                    /// \param[out] node Parent node.
+                    virtual void Write (pugi::xml_node &node) const;
+
+                    /// \brief
+                    /// Read a Serializable from an JSON DOM.
+                    /// \param[in] node JSON DOM representation of a Serializable.
+                    virtual void Read (
+                        const TextHeader & /*header*/,
+                        const JSON::Object &object);
+                    /// \brief
+                    /// Write a Serializable to the JSON DOM.
+                    /// \param[out] node Parent node.
+                    virtual void Write (JSON::Object &object) const;
+
+                    friend struct Stats;
                 };
                 /// \brief
                 /// Last job stats.
@@ -481,38 +509,103 @@ namespace thekogans {
 
                 /// \brief
                 /// ctor.
+                /// \param[in] id_ Run loop id.
                 /// \param[in] name_ Run loop name.
-                explicit Stats (const std::string &name_) :
+                Stats (
+                    const RunLoop::Id &id_,
+                    const std::string &name_) :
+                    id (id_),
                     name (name_),
                     totalJobs (0),
                     totalJobTime (0) {}
+                /// brief
+                /// ctor.
+                /// \parma[in] stats Stats to copy.
+                Stats (const Stats &stats) :
+                    id (stats.id),
+                    name (stats.name),
+                    totalJobs (stats.totalJobs),
+                    totalJobTime (stats.totalJobTime),
+                    lastJob (stats.lastJob),
+                    minJob (stats.minJob),
+                    maxJob (stats.maxJob) {}
+
+                /// \brief
+                /// Assignment operator.
+                /// \param[in] stats Stats to assign.
+                /// \retunr *this.
+                Stats &operator = (const Stats &stats);
 
                 /// \brief
                 /// Reset the RunLoop stats.
                 void Reset ();
 
+            protected:
+                // Serializable
                 /// \brief
-                /// Parse run loop stats from an xml dom that looks like this;
-                /// <RunLoop Name = ""
-                ///          TotalJobs = ""
-                ///          TotalJobTime = "">
-                ///     <LastJob .../>
-                ///     <MinJob .../>
-                ///     <MaxJob .../>
-                /// </RunLoop>
-                /// \param[in] node DOM representation of run loop stats.
-                void Parse (const pugi::xml_node &node);
+                /// Return the serialized key size.
+                /// \return Serialized key size.
+                virtual std::size_t Size () const;
+
                 /// \brief
-                /// Return the XML representation of the Stats.
-                /// \param[in] indentationLevel Pretty print parameter. If
-                /// the resulting tag is to be included in a larger structure
-                /// you might want to provide a value that will embed it in
-                /// the structure.
-                /// \param[in] tagName Root tag name.
-                /// \return The XML reprentation of the Stats.
-                std::string ToString (
-                    std::size_t indentationLevel,
-                    const char *tagName = TAG_RUN_LOOP) const;
+                /// Read the key from the given serializer.
+                /// \param[in] header \see{Serializable::BinHeader}.
+                /// \param[in] serializer \see{Serializer} to read the key from.
+                virtual void Read (
+                    const BinHeader & /*header*/,
+                    Serializer &serializer);
+                /// \brief
+                /// Write the key to the given serializer.
+                /// \param[out] serializer \see{Serializer} to write the key to.
+                virtual void Write (Serializer &serializer) const;
+
+                /// \brief
+                /// "RunLoop"
+                static const char * const TAG_RUN_LOOP;
+                /// \brief
+                /// "Id"
+                static const char * const ATTR_ID;
+                /// \brief
+                /// "Name"
+                static const char * const ATTR_NAME;
+                /// \brief
+                /// "TotalJobs"
+                static const char * const ATTR_TOTAL_JOBS;
+                /// \brief
+                /// "TotalJobTime"
+                static const char * const ATTR_TOTAL_JOB_TIME;
+                /// \brief
+                /// "LastJob"
+                static const char * const TAG_LAST_JOB;
+                /// \brief
+                /// "MinJob"
+                static const char * const TAG_MIN_JOB;
+                /// \brief
+                /// "MaxJob"
+                static const char * const TAG_MAX_JOB;
+
+                /// \brief
+                /// Read the Serializable from an XML DOM.
+                /// \param[in] header \see{Serializable::TextHeader}.
+                /// \param[in] node XML DOM representation of a Serializable.
+                virtual void Read (
+                    const TextHeader & /*header*/,
+                    const pugi::xml_node &node);
+                /// \brief
+                /// Write the Serializable to the XML DOM.
+                /// \param[out] node Parent node.
+                virtual void Write (pugi::xml_node &node) const;
+
+                /// \brief
+                /// Read a Serializable from an JSON DOM.
+                /// \param[in] node JSON DOM representation of a Serializable.
+                virtual void Read (
+                    const TextHeader & /*header*/,
+                    const JSON::Object &object);
+                /// \brief
+                /// Write a Serializable to the JSON DOM.
+                /// \param[out] node Parent node.
+                virtual void Write (JSON::Object &object) const;
 
             private:
                 /// \brief
@@ -737,8 +830,8 @@ namespace thekogans {
             /// Stop the run loop and in all likelihood exit the thread hosting it.
             /// Obviously, this function needs to be called from a different thread
             /// than the one that called Start.
-            /// \param[in] cancelRunningJobs true = Cancel all running jobs.
-            /// \param[in] cancelPendingJobs true = Cancel all pending jobs.
+            /// \param[in] cancelRunningJobs true == Cancel all running jobs.
+            /// \param[in] cancelPendingJobs true == Cancel all pending jobs.
             virtual void Stop (
                 bool /*cancelRunningJobs*/ = true,
                 bool /*cancelPendingJobs*/ = true) = 0;
@@ -916,7 +1009,7 @@ namespace thekogans {
             /// \brief
             /// Return true if there are no running or pending jobs.
             /// IMPORTANT: See VERY IMPORTANT comment in \see{Pause} (above).
-            /// \return true = idle, false = busy.
+            /// \return true == idle, false == busy.
             virtual bool IsIdle ();
 
         protected:
@@ -936,6 +1029,22 @@ namespace thekogans {
                 ui64 start,
                 ui64 end);
         };
+
+        /// \brief
+        /// Implement RunLoop::Stats::Job extraction operators.
+        THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_EXTRACTION_OPERATORS (RunLoop::Stats::Job)
+
+        /// \brief
+        /// Implement RunLoop::Stats::Job value parser.
+        THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_VALUE_PARSER (RunLoop::Stats::Job)
+
+        /// \brief
+        /// Implement RunLoop::Stats extraction operators.
+        THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_EXTRACTION_OPERATORS (RunLoop::Stats)
+
+        /// \brief
+        /// Implement RunLoop::Stats value parser.
+        THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_VALUE_PARSER (RunLoop::Stats)
 
     } // namespace util
 } // namespace thekogans
