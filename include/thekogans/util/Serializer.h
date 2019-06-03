@@ -27,6 +27,7 @@
 #include "thekogans/util/ByteSwap.h"
 #include "thekogans/util/SizeT.h"
 #include "thekogans/util/SecureAllocator.h"
+#include "thekogans/util/XMLUtils.h"
 
 namespace thekogans {
     namespace util {
@@ -92,62 +93,66 @@ namespace thekogans {
             }
 
             /// \brief
-            /// Return serialized size of bool.
-            /// \return Serialized size of bool.
+            /// Return serialized size of an \see{Endianness}.
+            /// \param[in] value \see{Endianness} whose size to return.
+            /// \return Serialized size of \see{Endianness}.
             static std::size_t Size (Endianness /*value*/) {
                 return ENDIANNESS_SIZE;
             }
 
             /// \brief
-            /// Serialize a endianness. It will be written as a single ui8.
-            /// \param[in] value Value to serialize.
+            /// Serialize an \see{Endianness}. It will be written as a single \see{ui8}.
+            /// \param[in] value \see{Endianness} to serialize.
             /// \return *this.
             Serializer &operator << (Endianness value);
             /// \brief
-            /// Extract a endianness. It will be read as a single ui8.
-            /// \param[out] value Where to place the extracted value.
+            /// Extract an \see{Endianness}. It will be read as a single \see{ui8}.
+            /// \param[out] value Where to place the extracted \see{Endianness}.
             /// \return *this.
             Serializer &operator >> (Endianness &value);
 
             /// \brief
             /// Return serialized size of bool.
+            /// \param[in] value bool whose size to return.
             /// \return Serialized size of bool.
             static std::size_t Size (bool /*value*/) {
                 return BOOL_SIZE;
             }
 
             /// \brief
-            /// Serialize a bool. It will be written as a single ui8.
+            /// Serialize a bool. It will be written as a single \see{ui8}.
             /// 1 = true, 0 = false.
-            /// \param[in] value Value to serialize.
+            /// \param[in] value bool to serialize.
             /// \return *this.
             Serializer &operator << (bool value);
             /// \brief
-            /// Extract a bool. It will be read as a single ui8.
+            /// Extract a bool. It will be read as a single \see{ui8}.
             /// 1 = true, 0 = false.
-            /// \param[out] value Where to place the extracted value.
+            /// \param[out] value Where to place the extracted bool.
             /// \return *this.
             Serializer &operator >> (bool &value);
 
             /// \brief
-            /// Return serialized size of const char *.
-            /// \return Serialized size of const char *.
+            /// Return serialized size of c-string.
+            /// \param[in] value c-string whose size to return.
+            /// \return Serialized size of c-string.
             static std::size_t Size (const char *value);
 
             /// \brief
             /// Serialize a c-string.
-            /// \param[in] value Value to serialize.
+            /// \param[in] value c-string to serialize.
             /// \return *this.
             Serializer &operator << (const char *value);
             /// \brief
             /// Extract a c-string.
-            /// \param[out] value Where to place the extracted value.
+            /// \param[out] value Where to place the extracted c-string.
             /// \return *this.
             Serializer &operator >> (char *value);
 
             /// \brief
-            /// Return serialized size of const std::string &.
-            /// \return Serialized size of const std::string &.
+            /// Return serialized size of std::string.
+            /// \param[in] value std::string whose size to return.
+            /// \return Serialized size of std::string.
             static std::size_t Size (const std::string &value) {
                 return SizeT (value.size ()).Size () + value.size ();
             }
@@ -159,223 +164,253 @@ namespace thekogans {
             Serializer &operator << (const std::string &value);
             /// \brief
             /// Extract a std::string.
-            /// \param[out] value Where to place the extracted value.
+            /// \param[out] value Where to place the extracted std::string.
             /// \return *this.
             Serializer &operator >> (std::string &value);
 
             /// \brief
-            /// Return serialized size of const SecureString &.
-            /// \return Serialized size of const SecureString &.
+            /// Return serialized size of \see{SecureString}.
+            /// \param[in] value \see{SecureString} whose size to return.
+            /// \return Serialized size of \see{SecureString}.
             static std::size_t Size (const SecureString &value) {
                 return SizeT (value.size ()).Size () + value.size ();
             }
 
             /// \brief
-            /// Serialize a SecureString.
-            /// \param[in] value Value to serialize.
+            /// Serialize a \see{SecureString}.
+            /// \param[in] value \see{SecureString} to serialize.
             /// \return *this.
             Serializer &operator << (const SecureString &value);
             /// \brief
-            /// Extract a SecureString.
-            /// \param[out] value Where to place the extracted value.
+            /// Extract a \see{SecureString}.
+            /// \param[out] value Where to place the extracted \see{SecureString}.
             /// \return *this.
             Serializer &operator >> (SecureString &value);
 
             /// \brief
-            /// Return serialized size of i8.
-            /// \return Serialized size of i8.
+            /// Return serialized size of \see{i8}.
+            /// \param[in] value \see{i8} whose size to return.
+            /// \return Serialized size of \see{i8}.
             static std::size_t Size (i8 /*value*/) {
                 return I8_SIZE;
             }
 
             /// \brief
-            /// Serialize an i8.
-            /// \param[in] value Value to serialize.
+            /// Serialize an \see{i8}.
+            /// \param[in] value \see{i8} to serialize.
             /// \return *this.
             Serializer &operator << (i8 value);
             /// \brief
-            /// Extract an i8.
-            /// \param[out] value Where to place the extracted value.
+            /// Extract an \see{i8}.
+            /// \param[out] value Where to place the extracted \see{i8}.
             /// \return *this.
             Serializer &operator >> (i8 &value);
 
             /// \brief
-            /// Return serialized size of ui8.
-            /// \return Serialized size of ui8.
+            /// Return serialized size of \see{ui8}.
+            /// \param[in] value \see{ui8} whose size to return.
+            /// \return Serialized size of \see{ui8}.
             static std::size_t Size (ui8 /*value*/) {
                 return UI8_SIZE;
             }
 
             /// \brief
-            /// Serialize an ui8.
-            /// \param[in] value Value to serialize.
+            /// Serialize an \see{ui8}.
+            /// \param[in] value \see{ui8} to serialize.
             /// \return *this.
             Serializer &operator << (ui8 value);
             /// \brief
-            /// Extract an ui8.
-            /// \param[out] value Where to place the extracted value.
+            /// Extract an \see{ui8}.
+            /// \param[out] value Where to place the extracted \see{ui8}.
             /// \return *this.
             Serializer &operator >> (ui8 &value);
 
             /// \brief
-            /// Return serialized size of i16.
-            /// \return Serialized size of i16.
+            /// Return serialized size of \see{i16}.
+            /// \param[in] value \see{i16} whose size to return.
+            /// \return Serialized size of \see{i16}.
             static std::size_t Size (i16 /*value*/) {
                 return I16_SIZE;
             }
 
             /// \brief
-            /// Serialize an i16. endianness is used to properly
+            /// Serialize an \see{i16}. endianness is used to properly
             /// convert between serializer and host byte order.
-            /// \param[in] value Value to serialize.
+            /// \param[in] value \see{i16} to serialize.
             /// \return *this.
             Serializer &operator << (i16 value);
             /// \brief
-            /// Extract an i16. endianness is used to properly
+            /// Extract an \see{i16}. endianness is used to properly
             /// convert between serializer and host byte order.
-            /// \param[out] value Where to place the extracted value.
+            /// \param[out] value Where to place the extracted \see{i16}.
             /// \return *this.
             Serializer &operator >> (i16 &value);
 
             /// \brief
-            /// Return serialized size of ui16.
-            /// \return Serialized size of ui16.
+            /// Return serialized size of \see{ui16}.
+            /// \param[in] value \see{ui16} whose size to return.
+            /// \return Serialized size of \see{ui16}.
             static std::size_t Size (ui16 /*value*/) {
                 return UI16_SIZE;
             }
 
             /// \brief
-            /// Serialize an ui16. endianness is used to properly
+            /// Serialize an \see{ui16}. endianness is used to properly
             /// convert between serializer and host byte order.
-            /// \param[in] value Value to serialize.
+            /// \param[in] value \see{ui16} to serialize.
             /// \return *this.
             Serializer &operator << (ui16 value);
             /// \brief
-            /// Extract an ui16. endianness is used to properly
+            /// Extract an \see{ui16}. endianness is used to properly
             /// convert between serializer and host byte order.
-            /// \param[out] value Where to place the extracted value.
+            /// \param[out] value Where to place the extracted \see{ui16}.
             /// \return *this.
             Serializer &operator >> (ui16 &value);
 
             /// \brief
-            /// Return serialized size of i32.
-            /// \return Serialized size of i32.
+            /// Return serialized size of \see{i32}.
+            /// \param[in] value \see{i32} whose size to return.
+            /// \return Serialized size of \see{i32}.
             static std::size_t Size (i32 /*value*/) {
                 return I32_SIZE;
             }
 
             /// \brief
-            /// Serialize an i32. endianness is used to properly
+            /// Serialize an \see{i32}. endianness is used to properly
             /// convert between serializer and host byte order.
-            /// \param[in] value Value to serialize.
+            /// \param[in] value \see{i32} to serialize.
             /// \return *this.
             Serializer &operator << (i32 value);
             /// \brief
-            /// Extract an i32. endianness is used to properly
+            /// Extract an \see{i32}. endianness is used to properly
             /// convert between serializer and host byte order.
-            /// \param[out] value Where to place the extracted value.
+            /// \param[out] value Where to place the extracted \see{i32}.
             /// \return *this.
             Serializer &operator >> (i32 &value);
 
             /// \brief
-            /// Return serialized size of ui32.
-            /// \return Serialized size of ui32.
+            /// Return serialized size of \see{ui32}.
+            /// \param[in] value \see{ui32} whose size to return.
+            /// \return Serialized size of \see{ui32}.
             static std::size_t Size (ui32 /*value*/) {
                 return UI32_SIZE;
             }
 
             /// \brief
-            /// Serialize an ui32. endianness is used to properly
+            /// Serialize an \see{ui32}. endianness is used to properly
             /// convert between serializer and host byte order.
-            /// \param[in] value Value to serialize.
+            /// \param[in] value \see{ui32} to serialize.
             /// \return *this.
             Serializer &operator << (ui32 value);
             /// \brief
-            /// Extract an ui32. endianness is used to properly
+            /// Extract an \see{ui32}. endianness is used to properly
             /// convert between serializer and host byte order.
-            /// \param[out] value Where to place the extracted value.
+            /// \param[out] value Where to place the extracted \see{ui32}.
             /// \return *this.
             Serializer &operator >> (ui32 &value);
 
             /// \brief
-            /// Return serialized size of i64.
-            /// \return Serialized size of i64.
+            /// Return serialized size of \see{i64}.
+            /// \param[in] value \see{i64} whose size to return.
+            /// \return Serialized size of \see{i64}.
             static std::size_t Size (i64 /*value*/) {
                 return I64_SIZE;
             }
 
             /// \brief
-            /// Serialize an i64. endianness is used to properly
+            /// Serialize an \see{i64}. endianness is used to properly
             /// convert between serializer and host byte order.
-            /// \param[in] value Value to serialize.
+            /// \param[in] value \see{i64} to serialize.
             /// \return *this.
             Serializer &operator << (i64 value);
             /// \brief
-            /// Extract an i64. endianness is used to properly
+            /// Extract an \see{i64}. endianness is used to properly
             /// convert between serializer and host byte order.
-            /// \param[out] value Where to place the extracted value.
+            /// \param[out] value Where to place the extracted \see{i64}.
             /// \return *this.
             Serializer &operator >> (i64 &value);
 
             /// \brief
-            /// Return serialized size of ui64.
-            /// \return Serialized size of ui64.
+            /// Return serialized size of \see{ui64}.
+            /// \param[in] value \see{ui64} whose size to return.
+            /// \return Serialized size of \see{ui64}.
             static std::size_t Size (ui64 /*value*/) {
                 return UI64_SIZE;
             }
 
             /// \brief
-            /// Serialize an ui64. endianness is used to properly
+            /// Serialize an \see{ui64}. endianness is used to properly
             /// convert between serializer and host byte order.
-            /// \param[in] value Value to serialize.
+            /// \param[in] value \see{ui64} to serialize.
             /// \return *this.
             Serializer &operator << (ui64 value);
             /// \brief
-            /// Extract an ui64. endianness is used to properly
+            /// Extract an \see{ui64}. endianness is used to properly
             /// convert between serializer and host byte order.
-            /// \param[out] value Where to place the extracted value.
+            /// \param[out] value Where to place the extracted \see{ui64}.
             /// \return *this.
             Serializer &operator >> (ui64 &value);
 
             /// \brief
-            /// Return serialized size of f32.
-            /// \return Serialized size of f32.
+            /// Return serialized size of \see{f32}.
+            /// \param[in] value \see{f32} whose size to return.
+            /// \return Serialized size of \see{f32}.
             static std::size_t Size (f32 /*value*/) {
                 return F32_SIZE;
             }
 
             /// \brief
-            /// Serialize an f32. endianness is used to properly
+            /// Serialize an \see{f32}. endianness is used to properly
             /// convert between serializer and host byte order.
-            /// \param[in] value Value to serialize.
+            /// \param[in] value \see{f32} to serialize.
             /// \return *this.
             Serializer &operator << (f32 value);
             /// \brief
-            /// Extract an f32. endianness is used to properly
+            /// Extract an \see{f32}. endianness is used to properly
             /// convert between serializer and host byte order.
-            /// \param[out] value Where to place the extracted value.
+            /// \param[out] value Where to place the extracted \see{f32}.
             /// \return *this.
             Serializer &operator >> (f32 &value);
 
             /// \brief
-            /// Return serialized size of f64.
-            /// \return Serialized size of f64.
+            /// Return serialized size of \see{f64}.
+            /// \param[in] value \see{f64} whose size to return.
+            /// \return Serialized size of see{f64}.
             static std::size_t Size (f64 /*value*/) {
                 return F64_SIZE;
             }
 
             /// \brief
-            /// Serialize an f64. endianness is used to properly
+            /// Serialize an \see{f64}. endianness is used to properly
             /// convert between serializer and host byte order.
-            /// \param[in] value Value to serialize.
+            /// \param[in] value \see{f64} to serialize.
             /// \return *this.
             Serializer &operator << (f64 value);
             /// \brief
-            /// Extract an f64. endianness is used to properly
+            /// Extract an \see{f64}. endianness is used to properly
             /// convert between serializer and host byte order.
-            /// \param[out] value Where to place the extracted value.
+            /// \param[out] value Where to place the extracted \see{f64}.
             /// \return *this.
             Serializer &operator >> (f64 &value);
+
+            /// \brief
+            /// Return serialized size of an \see{Attribute}.
+            /// \param[in] value \see{Attribute} whose size to return.
+            /// \return Serialized size of \see{Attribute}.
+            static std::size_t Size (const Attribute &value) {
+                return Size (value.first) + Size (value.second);
+            }
+
+            /// \brief
+            /// Serialize an \see{Attribute}.
+            /// \param[in] value \see{Attribute} to serialize.
+            /// \return *this.
+            Serializer &operator << (const Attribute &value);
+            /// \brief
+            /// Extract an \see{Attribute}.
+            /// \param[out] value Where to place the extracted \see{Attribute}.
+            /// \return *this.
+            Serializer &operator >> (Attribute &value);
 
             /// \brief
             /// Return serialized size of const std::vector<T> &.

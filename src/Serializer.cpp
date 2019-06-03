@@ -424,6 +424,16 @@ namespace thekogans {
             return *this;
         }
 
+        Serializer &Serializer::operator << (const Attribute &value) {
+            *this << value.first << value.second;
+            return *this;
+        }
+
+        Serializer &Serializer::operator >> (Attribute &value) {
+            *this >> value.first >> value.second;
+            return *this;
+        }
+
         Serializer &Serializer::operator << (const std::vector<i8> &value) {
             *this << SizeT (value.size ());
             if (value.size () > 0) {

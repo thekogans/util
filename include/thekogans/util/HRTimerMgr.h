@@ -27,10 +27,10 @@
 #include "thekogans/util/Heap.h"
 #include "thekogans/util/Serializable.h"
 #include "thekogans/util/SpinLock.h"
-#include "thekogans/util/OwnerList.h"
 #include "thekogans/util/LoggerMgr.h"
 #include "thekogans/util/HRTimer.h"
 #include "thekogans/util/XMLUtils.h"
+#include "thekogans/util/JSON.h"
 
 namespace thekogans {
     namespace util {
@@ -151,18 +151,21 @@ namespace thekogans {
         /// };
         /// \endcode
 
-        struct _LIB_THEKOGANS_UTIL_DECL HRTimerMgr {
-        private:
+        struct _LIB_THEKOGANS_UTIL_DECL HRTimerMgr : public Serializable {
+            /// \brief
+            /// HRTimerMgr is a \see{Serializable}.
+            THEKOGANS_UTIL_DECLARE_SERIALIZABLE (HRTimerMgr, SpinLock)
+
             /// \struct HRTimerMgr::TimerInfoBase HRTimerMgr.h thekogans/util/HRTimerMgr.h
             ///
             /// \brief
             /// TimerInfoBase is the base class for \see{TimerInfo} and
             /// \see{ScopeInfo}. It exposes the api by which the HRTimerMgr
             /// collects the statistics from various scopes.
-            struct _LIB_THEKOGANS_UTIL_DECL TimerInfoBase {
+            struct _LIB_THEKOGANS_UTIL_DECL TimerInfoBase : public Serializable {
                 /// \brief
-                /// Convenient typedef for std::unique_ptr<TimerInfoBase>.
-                typedef std::unique_ptr<TimerInfoBase> UniquePtr;
+                /// Convenient typedef for ThreadSafeRefCounted::Ptr<TimerInfoBase>.
+                typedef ThreadSafeRefCounted::Ptr<TimerInfoBase> Ptr;
 
                 /// \btief
                 /// Label by which this TimerInfoBase is identified.
@@ -175,7 +178,7 @@ namespace thekogans {
                 /// \brief
                 /// ctor.
                 /// \param[in] name_ TimerInfoBase name.
-                explicit TimerInfoBase (const std::string &name_) :
+                TimerInfoBase (const std::string &name_ = std::string ()) :
                     name (name_) {}
                 /// \brief
                 /// dtor.
@@ -194,14 +197,6 @@ namespace thekogans {
                     ui64 & /*max*/,
                     ui64 & /*average*/,
                     ui64 & /*total*/) const = 0;
-                /// \brief
-                /// Format an XML string from TimerInfoBase parameters
-                /// and attributes.
-                /// \param[in] indentationLevel 4 * indentationLevel
-                /// spaces to add to the beginning of the string.
-                /// \return An XML string from TimerInfoBase parameters
-                /// and attributes.
-                virtual std::string ToString (std::size_t /*indentationLevel*/) const = 0;
 
                 /// \brief
                 /// Add a used defined key/value pair to be included
@@ -211,7 +206,63 @@ namespace thekogans {
                 inline void AddAttribute (const Attribute &attribute) {
                     attributes.push_back (attribute);
                 }
+
+            protected:
+                // Serializable
+                /// \brief
+                /// Return the serializable size.
+                /// \return Serializable size.
+                virtual std::size_t Size () const;
+
+                /// \brief
+                /// Read the serializable from the given serializer.
+                /// \param[in] header \see{Serializable::BinHeader}.
+                /// \param[in] serializer \see{Serializer} to read the serializable from.
+                virtual void Read (
+                    const BinHeader & /*header*/,
+                    Serializer &serializer);
+                /// \brief
+                /// Write the serializable to the given serializer.
+                /// \param[out] serializer \see{Serializer} to write the serializable to.
+                virtual void Write (Serializer &serializer) const;
+
+                /// \brief
+                /// "Attributes"
+                static const char * const TAG_ATTRIBUTES;
+                /// \brief
+                /// "Attribute"
+                static const char * const TAG_ATTRIBUTE;
+                /// \brief
+                /// "Name"
+                static const char * const ATTR_NAME;
+                /// \brief
+                /// "Value"
+                static const char * const ATTR_VALUE;
+
+                /// \brief
+                /// Read the Serializable from an XML DOM.
+                /// \param[in] header \see{Serializable::TextHeader}.
+                /// \param[in] node XML DOM representation of a Serializable.
+                virtual void Read (
+                    const TextHeader & /*header*/,
+                    const pugi::xml_node &node);
+                /// \brief
+                /// Write the Serializable to the XML DOM.
+                /// \param[out] node Parent node.
+                virtual void Write (pugi::xml_node &node) const;
+
+                /// \brief
+                /// Read a Serializable from an JSON DOM.
+                /// \param[in] node JSON DOM representation of a Serializable.
+                virtual void Read (
+                    const TextHeader & /*header*/,
+                    const JSON::Object &object);
+                /// \brief
+                /// Write a Serializable to the JSON DOM.
+                /// \param[out] node Parent node.
+                virtual void Write (JSON::Object &object) const;
             };
+
             /// \struct HRTimerMgr::TimerInfo HRTimerMgr.h thekogans/util/HRTimerMgr.h
             ///
             /// \brief
@@ -219,25 +270,8 @@ namespace thekogans {
             /// of code.
             struct _LIB_THEKOGANS_UTIL_DECL TimerInfo : public TimerInfoBase {
                 /// \brief
-                /// TimerInfo has a private heap to help with memory
-                /// management, performance, and global heap fragmentation.
-                THEKOGANS_UTIL_DECLARE_HEAP_WITH_LOCK (TimerInfo, SpinLock)
-
-                /// \brief
-                /// "Timer"
-                static const char * const TAG_TIMER;
-                /// \brief
-                /// "Name"
-                static const char * const ATTR_NAME;
-                /// \brief
-                /// "Start"
-                static const char * const ATTR_START;
-                /// \brief
-                /// "Stop"
-                static const char * const ATTR_STOP;
-                /// \brief
-                /// "Elapsed"
-                static const char * const ATTR_ELAPSED;
+                /// TimerInfo is a \see{Serializable}.
+                THEKOGANS_UTIL_DECLARE_SERIALIZABLE (TimerInfo, SpinLock)
 
                 /// \brief
                 /// Start time.
@@ -249,7 +283,7 @@ namespace thekogans {
                 /// \brief
                 /// ctor.
                 /// \param[in] name Name of this TimerInfo.
-                explicit TimerInfo (const std::string &name) :
+                TimerInfo (const std::string &name = std::string ()) :
                     TimerInfoBase (name),
                     start (0),
                     stop (0) {}
@@ -267,18 +301,6 @@ namespace thekogans {
                     ui64 &max,
                     ui64 &average,
                     ui64 &total) const;
-                /// \brief
-                /// Format an XML string from TimerInfo parameters
-                /// and attributes. The string will look like this:
-                /// <Timer Name = "name"
-                ///        Start = "start"
-                ///        Stop = "stop"
-                ///        Elapsed = "stop - start"/>
-                /// \param[in] indentationLevel 4 * indentationLevel
-                /// spaces to add to the beginning of the string.
-                /// \return An XML string from TimerInfo parameters
-                /// and attributes.
-                virtual std::string ToString (std::size_t indentationLevel) const;
 
                 /// \brief
                 /// Record the current time as the start time.
@@ -286,7 +308,60 @@ namespace thekogans {
                 /// \brief
                 /// Record the current time as the stop time.
                 void Stop ();
+
+            protected:
+                // Serializable
+                /// \brief
+                /// Return the serialized key size.
+                /// \return Serialized key size.
+                virtual std::size_t Size () const;
+
+                /// \brief
+                /// Read the key from the given serializer.
+                /// \param[in] header \see{Serializable::BinHeader}.
+                /// \param[in] serializer \see{Serializer} to read the key from.
+                virtual void Read (
+                    const BinHeader &header,
+                    Serializer &serializer);
+                /// \brief
+                /// Write the key to the given serializer.
+                /// \param[out] serializer \see{Serializer} to write the key to.
+                virtual void Write (Serializer &serializer) const;
+
+                /// \brief
+                /// "Timer"
+                static const char * const TAG_TIMER;
+                /// \brief
+                /// "Start"
+                static const char * const ATTR_START;
+                /// \brief
+                /// "Stop"
+                static const char * const ATTR_STOP;
+
+                /// \brief
+                /// Read the Serializable from an XML DOM.
+                /// \param[in] header \see{Serializable::TextHeader}.
+                /// \param[in] node XML DOM representation of a Serializable.
+                virtual void Read (
+                    const TextHeader &header,
+                    const pugi::xml_node &node);
+                /// \brief
+                /// Write the Serializable to the XML DOM.
+                /// \param[out] node Parent node.
+                virtual void Write (pugi::xml_node &node) const;
+
+                /// \brief
+                /// Read a Serializable from an JSON DOM.
+                /// \param[in] node JSON DOM representation of a Serializable.
+                virtual void Read (
+                    const TextHeader &header,
+                    const JSON::Object &object);
+                /// \brief
+                /// Write a Serializable to the JSON DOM.
+                /// \param[out] node Parent node.
+                virtual void Write (JSON::Object &object) const;
             };
+
             /// \struct HRTimerMgr::ScopeInfo HRTimerMgr.h thekogans/util/HRTimerMgr.h
             ///
             /// \brief
@@ -294,43 +369,20 @@ namespace thekogans {
             /// TimerInfo stats.
             struct _LIB_THEKOGANS_UTIL_DECL ScopeInfo : public TimerInfoBase {
                 /// \brief
-                /// ScopeInfo has a private heap to help with memory
-                /// management, performance, and global heap fragmentation.
-                THEKOGANS_UTIL_DECLARE_HEAP_WITH_LOCK (ScopeInfo, SpinLock)
-
-                /// \brief
-                /// "Scope"
-                static const char * const TAG_SCOPE;
-                /// \brief
-                /// "Name"
-                static const char * const ATTR_NAME;
-                /// \brief
-                /// "Count"
-                static const char * const ATTR_COUNT;
-                /// \brief
-                /// "Min"
-                static const char * const ATTR_MIN;
-                /// \brief
-                /// "Max"
-                static const char * const ATTR_MAX;
-                /// \brief
-                /// "Average"
-                static const char * const ATTR_AVERAGE;
-                /// \brief
-                /// "Total"
-                static const char * const ATTR_TOTAL;
+                /// ScopeInfo is a \see{Serializable}.
+                THEKOGANS_UTIL_DECLARE_SERIALIZABLE (ScopeInfo, SpinLock)
 
                 /// \brief
                 /// A stack of open scopes.
-                OwnerList<TimerInfoBase> open;
+                std::list<TimerInfoBase::Ptr> open;
                 /// \brief
                 /// A list of closed scopes.
-                OwnerList<TimerInfoBase> closed;
+                std::list<TimerInfoBase::Ptr> closed;
 
                 /// \brief
                 /// ctor.
                 /// \param[in] name Name of this ScopeInfo.
-                explicit ScopeInfo (const std::string &name) :
+                ScopeInfo (const std::string &name = std::string ()) :
                     TimerInfoBase (name) {}
 
                 /// \brief
@@ -346,22 +398,6 @@ namespace thekogans {
                     ui64 &max,
                     ui64 &average,
                     ui64 &total) const;
-                /// \brief
-                /// Format an XML string from ScopeInfo parameters
-                /// and attributes. The string will look like this:
-                /// <Scope Name = "name"
-                ///        Count = ""
-                ///        Min = ""
-                ///        Max = ""
-                ///        Average = ""
-                ///        Total = "">
-                ///     sub-scopes and timers.
-                /// </Scope>
-                /// \param[in] indentationLevel 4 * indentationLevel
-                /// spaces to add to the beginning of the string.
-                /// \return An XML string from TimerInfo parameters
-                /// and attributes.
-                virtual std::string ToString (std::size_t indentationLevel) const;
 
                 /// \brief
                 /// Start a new sub-scope.
@@ -380,26 +416,83 @@ namespace thekogans {
                 /// \brief
                 /// End the current sub-timer.
                 void StopTimer ();
+
+            protected:
+                // Serializable
+                /// \brief
+                /// Return the serialized key size.
+                /// \return Serialized key size.
+                virtual std::size_t Size () const;
+
+                /// \brief
+                /// Read the key from the given serializer.
+                /// \param[in] header \see{Serializable::BinHeader}.
+                /// \param[in] serializer \see{Serializer} to read the key from.
+                virtual void Read (
+                    const BinHeader &header,
+                    Serializer &serializer);
+                /// \brief
+                /// Write the key to the given serializer.
+                /// \param[out] serializer \see{Serializer} to write the key to.
+                virtual void Write (Serializer &serializer) const;
+
+                /// \brief
+                /// "Scope"
+                static const char * const TAG_SCOPE;
+                /// \brief
+                /// "Count"
+                static const char * const ATTR_COUNT;
+                /// \brief
+                /// "Min"
+                static const char * const ATTR_MIN;
+                /// \brief
+                /// "Max"
+                static const char * const ATTR_MAX;
+                /// \brief
+                /// "Average"
+                static const char * const ATTR_AVERAGE;
+                /// \brief
+                /// "Total"
+                static const char * const ATTR_TOTAL;
+
+                /// \brief
+                /// Read the Serializable from an XML DOM.
+                /// \param[in] header \see{Serializable::TextHeader}.
+                /// \param[in] node XML DOM representation of a Serializable.
+                virtual void Read (
+                    const TextHeader &header,
+                    const pugi::xml_node &node);
+                /// \brief
+                /// Write the Serializable to the XML DOM.
+                /// \param[out] node Parent node.
+                virtual void Write (pugi::xml_node &node) const;
+
+                /// \brief
+                /// Read a Serializable from an JSON DOM.
+                /// \param[in] node JSON DOM representation of a Serializable.
+                virtual void Read (
+                    const TextHeader &header,
+                    const JSON::Object &object);
+                /// \brief
+                /// Write a Serializable to the JSON DOM.
+                /// \param[out] node Parent node.
+                virtual void Write (JSON::Object &object) const;
             };
+
+        private:
             /// \brief
             /// The root of the scope hierarchy.
             ScopeInfo root;
+            /// \brief
+            /// Stack of open scopes.
             std::list<ScopeInfo *> scopes;
 
         public:
             /// \brief
             /// ctor.
             /// \param[in] name Root scope name.
-            explicit HRTimerMgr (const std::string &name) :
+            HRTimerMgr (const std::string &name = std::string ()) :
                 root (name) {}
-            /// \brief
-            /// dtor. Dump the stats to the log.
-            ~HRTimerMgr () {
-                THEKOGANS_UTIL_LOG_DEBUG (
-                    "Profiling results for: %s\n\n%s",
-                    root.name.c_str (),
-                    ToString (0).c_str ());
-            }
 
             /// \brief
             /// Return root scope.
@@ -561,29 +654,80 @@ namespace thekogans {
                 root.AddAttribute (attribute);
             }
 
+        protected:
+            // Serializable
             /// \brief
-            /// Format an XML string from root scope parameters
-            /// and attributes. The string will look like this:
-            /// <Scope Name = "name"
-            ///        Count = ""
-            ///        Min = ""
-            ///        Max = ""
-            ///        Average = ""
-            ///        Total = "">
-            ///     sub-scopes and timers.
-            /// </Scope>
-            /// \param[in] indentationLevel 4 * indentationLevel
-            /// spaces to add to the beginning of the string.
-            /// \return An XML string from root scope parameters
-            /// and attributes.
-            inline std::string ToString (std::size_t indentationLevel) const {
-                return root.ToString (indentationLevel);
-            }
+            /// Return the serialized key size.
+            /// \return Serialized key size.
+            virtual std::size_t Size () const;
+
+            /// \brief
+            /// Read the key from the given serializer.
+            /// \param[in] header \see{Serializable::BinHeader}.
+            /// \param[in] serializer \see{Serializer} to read the key from.
+            virtual void Read (
+                const BinHeader & /*header*/,
+                Serializer &serializer);
+            /// \brief
+            /// Write the key to the given serializer.
+            /// \param[out] serializer \see{Serializer} to write the key to.
+            virtual void Write (Serializer &serializer) const;
+
+            /// \brief
+            /// Read the Serializable from an XML DOM.
+            /// \param[in] header \see{Serializable::TextHeader}.
+            /// \param[in] node XML DOM representation of a Serializable.
+            virtual void Read (
+                const TextHeader & /*header*/,
+                const pugi::xml_node &node);
+            /// \brief
+            /// Write the Serializable to the XML DOM.
+            /// \param[out] node Parent node.
+            virtual void Write (pugi::xml_node &node) const;
+
+            /// \brief
+            /// Read a Serializable from an JSON DOM.
+            /// \param[in] node JSON DOM representation of a Serializable.
+            virtual void Read (
+                const TextHeader & /*header*/,
+                const JSON::Object &object);
+            /// \brief
+            /// Write a Serializable to the JSON DOM.
+            /// \param[out] node Parent node.
+            virtual void Write (JSON::Object &object) const;
 
             /// \brief
             /// HRTimerMgr is neither copy constructable, nor assignable.
             THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (HRTimerMgr)
         };
+
+        /// \brief
+        /// Implement HRTimerMgr::TimerInfoBase extraction operators.
+        THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_PTR_EXTRACTION_OPERATORS (HRTimerMgr::TimerInfoBase)
+
+        /// \brief
+        /// Implement HRTimerMgr::TimerInfo extraction operators.
+        THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_EXTRACTION_OPERATORS (HRTimerMgr::TimerInfo)
+
+        /// \brief
+        /// Implement HRTimerMgr::TimerInfo value parser.
+        THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_VALUE_PARSER (HRTimerMgr::TimerInfo)
+
+        /// \brief
+        /// Implement HRTimerMgr::ScopeInfo extraction operators.
+        THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_EXTRACTION_OPERATORS (HRTimerMgr::ScopeInfo)
+
+        /// \brief
+        /// Implement HRTimerMgr::ScopeInfo value parser.
+        THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_VALUE_PARSER (HRTimerMgr::ScopeInfo)
+
+        /// \brief
+        /// Implement HRTimerMgr extraction operators.
+        THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_EXTRACTION_OPERATORS (HRTimerMgr)
+
+        /// \brief
+        /// Implement HRTimerMgr value parser.
+        THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_VALUE_PARSER (HRTimerMgr)
 
         #if defined (THEKOGANS_UTIL_USE_HRTIMER_MGR)
             /// \def THEKOGANS_UTIL_HRTIMER_MGR(name, ...)
@@ -668,13 +812,30 @@ namespace thekogans {
             /// take multiple parameters and a comma is
             /// required after HRTimerMgr.
             #define THEKOGANS_UTIL_HRTIMER_MGR_GET_COMMA timerMgr,
-            /// \def THEKOGANS_UTIL_HRTIMER_MGR_LOG(level)
-            /// Dump the state of the HRTimerMgr currently
-            /// in scope to the log.
+            /// \def THEKOGANS_UTIL_HRTIMER_MGR_LOG_XML(level)
+            /// Dump the HRTimerMgr state to log.
             /// \param[in] level Log level for the report.
-            #define THEKOGANS_UTIL_HRTIMER_MGR_LOG(level)\
-                THEKOGANS_UTIL_LOG (level, "Profiling results for: %s\n\n%s",\
-                    timerMgr.GetRootScope ().name.c_str (), timerMgr.ToString (0).c_str ())
+            #define THEKOGANS_UTIL_HRTIMER_MGR_LOG_XML(level) {\
+                pugi::xml_node node;\
+                node << root;\
+                THEKOGANS_UTIL_LOG (\
+                    level,\
+                    "Profiling results for: %s\n\n%s",\
+                    timerMgr.GetRootScope ()->name.c_str (),\
+                    FormatNode (node).c_str ());\
+            }
+            /// \def THEKOGANS_UTIL_HRTIMER_MGR_LOG_JSON(level)
+            /// Dump the HRTimerMgr state to log.
+            /// \param[in] level Log level for the report.
+            #define THEKOGANS_UTIL_HRTIMER_MGR_LOG_JSON(level) {\
+                JSON::Object object;\
+                object << root;\
+                THEKOGANS_UTIL_LOG (\
+                    level,\
+                    "Profiling results for: %s\n\n%s",\
+                    timerMgr.GetRootScope ()->name.c_str (),\
+                    JSON::FormatValue (object).c_str ());\
+            }
         #else // defined (THEKOGANS_UTIL_USE_HRTIMER_MGR)
             #define THEKOGANS_UTIL_HRTIMER_MGR(name, ...)
             #define THEKOGANS_UTIL_HRTIMER_MGR_ADD_ATTRIBUTE(attribute)
@@ -688,7 +849,8 @@ namespace thekogans {
             #define THEKOGANS_UTIL_HRTIMER_MGR_GET
             #define THEKOGANS_UTIL_HRTIMER_MGR_PROTO_COMMA
             #define THEKOGANS_UTIL_HRTIMER_MGR_GET_COMMA
-            #define THEKOGANS_UTIL_HRTIMER_MGR_LOG(level)
+            #define THEKOGANS_UTIL_HRTIMER_MGR_LOG_XML(level)
+            #define THEKOGANS_UTIL_HRTIMER_MGR_LOG_JSON(level)
         #endif // defined (THEKOGANS_UTIL_USE_HRTIMER_MGR)
 
     } // namespace util

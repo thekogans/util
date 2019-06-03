@@ -24,6 +24,7 @@
 #endif // defined (TOOLCHAIN_OS_Windows)
 #include "thekogans/util/Config.h"
 #include "thekogans/util/Variant.h"
+#include "thekogans/util/StringUtils.h"
 #include "thekogans/util/XMLUtils.h"
 
 namespace thekogans {
@@ -44,6 +45,7 @@ namespace thekogans {
         const char * const Variant::VALUE_UI64 = "ui64";
         const char * const Variant::VALUE_F32 = "f32";
         const char * const Variant::VALUE_F64 = "f64";
+        const char * const Variant::VALUE_size_t = "size_t";
         const char * const Variant::VALUE_STRING = "string";
         const char * const Variant::VALUE_GUID = "guid";
         const char * const Variant::TAG_VALUE = "Value";
@@ -88,6 +90,9 @@ namespace thekogans {
                     break;
                 case Variant::TYPE_f64:
                     value._f64 = variant.value._f64;
+                    break;
+                case Variant::TYPE_size_t:
+                    value._size_t = variant.value._size_t;
                     break;
                 case Variant::TYPE_string: {
                     value._string = new std::string (*variant.value._string);
@@ -140,6 +145,9 @@ namespace thekogans {
                     case Variant::TYPE_f64:
                         value._f64 = variant.value._f64;
                         break;
+                    case Variant::TYPE_size_t:
+                        value._size_t = variant.value._size_t;
+                        break;
                     case Variant::TYPE_string: {
                         value._string = new std::string (*variant.value._string);
                         break;
@@ -166,6 +174,7 @@ namespace thekogans {
                 type == TYPE_ui64 ? VALUE_UI64 :
                 type == TYPE_f32 ? VALUE_F32 :
                 type == TYPE_f64 ? VALUE_F64 :
+                type == TYPE_size_t ? VALUE_size_t :
                 type == TYPE_string ? VALUE_STRING :
                 type == TYPE_GUID ? VALUE_GUID : VALUE_INVALID;
         }
@@ -183,6 +192,7 @@ namespace thekogans {
                 type == VALUE_UI64 ? TYPE_ui64 :
                 type == VALUE_F32 ? TYPE_f32 :
                 type == VALUE_F64 ? TYPE_f64 :
+                type == VALUE_size_t ? TYPE_size_t :
                 type == VALUE_STRING ? TYPE_string :
                 type == VALUE_GUID ? TYPE_GUID : TYPE_Invalid;
         }
@@ -225,6 +235,9 @@ namespace thekogans {
                 case Variant::TYPE_f64:
                     size += F64_SIZE;
                     break;
+                case Variant::TYPE_size_t:
+                    size += SizeT (value._size_t).Size ();
+                    break;
                 case Variant::TYPE_string: {
                     assert (value._string != 0);
                     size += Serializer::Size (*value._string);
@@ -264,6 +277,8 @@ namespace thekogans {
                     return (std::size_t)fmod (value._f32, (f32)radix);
                 case Variant::TYPE_f64:
                     return (std::size_t)fmod (value._f64, (f64)radix);
+                case Variant::TYPE_size_t:
+                    return value._size_t % radix;
                 case Variant::TYPE_string:
                     return HashString (*value._string, radix);
                 case Variant::TYPE_GUID:
@@ -323,6 +338,9 @@ namespace thekogans {
                 case Variant::TYPE_f64:
                     return value._f64 < variant.value._f64 ?
                         -1 : value._f64 > variant.value._f64 ? 1 : 0;
+                case Variant::TYPE_size_t:
+                    return value._size_t < variant.value._size_t ?
+                        -1 : value._size_t > variant.value._size_t ? 1 : 0;
                 case Variant::TYPE_string:
                     return strcasecmp (value._string->c_str (),
                         variant.value._string->c_str ());
@@ -372,6 +390,9 @@ namespace thekogans {
                 case Variant::TYPE_f64:
                     return value._f64 < variant.value._f64 ?
                         -1 : value._f64 > variant.value._f64 ? 1 : 0;
+                case Variant::TYPE_size_t:
+                    return value._size_t < variant.value._size_t ?
+                        -1 : value._size_t > variant.value._size_t ? 1 : 0;
                 case Variant::TYPE_string:
                     return strncasecmp (value._string->c_str (),
                         variant.value._string->c_str (), value._string->size ());
@@ -385,66 +406,59 @@ namespace thekogans {
 
         void Variant::Parse (const pugi::xml_node &node) {
             Clear ();
-            for (pugi::xml_node child = node.first_child ();
-                    !child.empty (); child = child.next_sibling ()) {
-                if (child.type () == pugi::node_element) {
-                    std::string childName = child.name ();
-                    if (childName == TAG_TYPE) {
-                        type = stringToType (child.text ().get ());
-                    }
-                    else if (childName == TAG_VALUE) {
-                        switch (type) {
-                            case Variant::TYPE_Invalid:
-                                break;
-                            case Variant::TYPE_bool:
-                                value._bool =
-                                    std::string (child.text ().get ()) == XML_TRUE;
-                                break;
-                            case Variant::TYPE_i8:
-                                value._i8 = (i8)strtol (child.text ().get (), 0, 10);
-                                break;
-                            case Variant::TYPE_ui8:
-                                value._ui8 = (ui8)strtoul (child.text ().get (), 0, 10);
-                                break;
-                            case Variant::TYPE_i16:
-                                value._i16 = (i16)strtol (child.text ().get (), 0, 10);
-                                break;
-                            case Variant::TYPE_ui16:
-                                value._ui16 = (ui16)strtoul (child.text ().get (), 0, 10);
-                                break;
-                            case Variant::TYPE_i32:
-                                value._i32 = (i32)strtol (child.text ().get (), 0, 10);
-                                break;
-                            case Variant::TYPE_ui32:
-                                value._ui32 = (ui32)strtoul (child.text ().get (), 0, 10);
-                                break;
-                            case Variant::TYPE_i64:
-                                value._i64 = (i64)strtoll (child.text ().get (), 0, 10);
-                                break;
-                            case Variant::TYPE_ui64:
-                                value._ui64 = (ui64)strtoull (child.text ().get (), 0, 10);
-                                break;
-                            case Variant::TYPE_f32:
-                                value._f32 = (f32)strtof (child.text ().get (), 0);
-                                break;
-                            case Variant::TYPE_f64:
-                                value._f64 = strtod (child.text ().get (), 0);
-                                break;
-                            case Variant::TYPE_string:
-                                value._string = new std::string (child.text ().get ());
-                                break;
-                            case Variant::TYPE_GUID:
-                                value._guid = new GUID (child.text ().get ());
-                                break;
-                        }
-                    }
-                }
+            type = stringToType (node.attribute (ATTR_TYPE).value ());
+            switch (type) {
+                case Variant::TYPE_Invalid:
+                    break;
+                case Variant::TYPE_bool:
+                    value._bool = std::string (node.attribute (ATTR_VALUE).value ()) == XML_TRUE;
+                    break;
+                case Variant::TYPE_i8:
+                    value._i8 = stringToi8 (node.attribute (ATTR_VALUE).value ());
+                    break;
+                case Variant::TYPE_ui8:
+                    value._ui8 = stringToui8 (node.attribute (ATTR_VALUE).value ());
+                    break;
+                case Variant::TYPE_i16:
+                    value._i16 = stringToi16 (node.attribute (ATTR_VALUE).value ());
+                    break;
+                case Variant::TYPE_ui16:
+                    value._ui16 = stringToui16 (node.attribute (ATTR_VALUE).value ());
+                    break;
+                case Variant::TYPE_i32:
+                    value._i32 = stringToi32 (node.attribute (ATTR_VALUE).value ());
+                    break;
+                case Variant::TYPE_ui32:
+                    value._ui32 = stringToui32 (node.attribute (ATTR_VALUE).value ());
+                    break;
+                case Variant::TYPE_i64:
+                    value._i64 = stringToi64 (node.attribute (ATTR_VALUE).value ());
+                    break;
+                case Variant::TYPE_ui64:
+                    value._ui64 = stringToui64 (node.attribute (ATTR_VALUE).value ());
+                    break;
+                case Variant::TYPE_f32:
+                    value._f32 = stringTof32 (node.attribute (ATTR_VALUE).value ());
+                    break;
+                case Variant::TYPE_f64:
+                    value._f64 = stringTof64 (node.attribute (ATTR_VALUE).value ());
+                    break;
+                case Variant::TYPE_size_t:
+                    value._size_t = stringTosize_t (node.attribute (ATTR_VALUE).value ());
+                    break;
+                case Variant::TYPE_string:
+                    value._string = new std::string (node.attribute (ATTR_VALUE).value ());
+                    break;
+                case Variant::TYPE_GUID:
+                    value._guid = new GUID (node.attribute (ATTR_VALUE).value ());
+                    break;
             }
         }
 
         std::string Variant::ToString (
+                const char *tagName,
                 std::size_t indentationLevel,
-                const char *tagName) const {
+                std::size_t indentationWidth) const {
             std::string str;
             switch (type) {
                 case Variant::TYPE_Invalid:
@@ -482,114 +496,8 @@ namespace thekogans {
                 case Variant::TYPE_f64:
                     str = f64Tostring (value._f64);
                     break;
-                case Variant::TYPE_string:
-                    str = Encodestring (*value._string);
-                    break;
-                case Variant::TYPE_GUID:
-                    str = value._guid->ToString ();
-                    break;
-            }
-            std::stringstream stream;
-            stream <<
-                OpenTag (indentationLevel, tagName) <<
-                    OpenTag (indentationLevel + 1, TAG_TYPE) <<
-                        TypeTostring (type) <<
-                    CloseTag (indentationLevel + 1, TAG_TYPE) <<
-                    OpenTag (indentationLevel + 1, TAG_VALUE) <<
-                        str <<
-                    CloseTag (indentationLevel + 1, TAG_VALUE) <<
-                CloseTag (indentationLevel, tagName);
-            return stream.str ();
-        }
-
-        void Variant::ParseWithAttributes (const pugi::xml_node &node) {
-            Clear ();
-            type = stringToType (node.attribute (ATTR_TYPE).value ());
-            std::string value_ = node.attribute (ATTR_VALUE).value ();
-            switch (type) {
-                case Variant::TYPE_Invalid:
-                    break;
-                case Variant::TYPE_bool:
-                    value._bool = value_ == XML_TRUE;
-                    break;
-                case Variant::TYPE_i8:
-                    value._i8 = (i8)strtol (value_.c_str (), 0, 10);
-                    break;
-                case Variant::TYPE_ui8:
-                    value._ui8 = (ui8)strtoul (value_.c_str (), 0, 10);
-                    break;
-                case Variant::TYPE_i16:
-                    value._i16 = (i16)strtol (value_.c_str (), 0, 10);
-                    break;
-                case Variant::TYPE_ui16:
-                    value._ui16 = (ui16)strtoul (value_.c_str (), 0, 10);
-                    break;
-                case Variant::TYPE_i32:
-                    value._i32 = (i32)strtol (value_.c_str (), 0, 10);
-                    break;
-                case Variant::TYPE_ui32:
-                    value._ui32 = (ui32)strtoul (value_.c_str (), 0, 10);
-                    break;
-                case Variant::TYPE_i64:
-                    value._i64 = (i64)strtoll (value_.c_str (), 0, 10);
-                    break;
-                case Variant::TYPE_ui64:
-                    value._ui64 = (ui64)strtoull (value_.c_str (), 0, 10);
-                    break;
-                case Variant::TYPE_f32:
-                    value._f32 = (f32)strtof (value_.c_str (), 0);
-                    break;
-                case Variant::TYPE_f64:
-                    value._f64 = strtod (value_.c_str (), 0);
-                    break;
-                case Variant::TYPE_string:
-                    value._string = new std::string (value_);
-                    break;
-                case Variant::TYPE_GUID:
-                    value._guid = new GUID (value_);
-                    break;
-            }
-        }
-
-        std::string Variant::ToStringWithAttributes (
-                std::size_t indentationLevel,
-                const char *tagName) const {
-            std::string str;
-            switch (type) {
-                case Variant::TYPE_Invalid:
-                    break;
-                case Variant::TYPE_bool:
-                    str = value._bool ? XML_TRUE : XML_FALSE;
-                    break;
-                case Variant::TYPE_i8:
-                    str = i32Tostring (value._i8);
-                    break;
-                case Variant::TYPE_ui8:
-                    str = ui32Tostring (value._ui8);
-                    break;
-                case Variant::TYPE_i16:
-                    str = i32Tostring (value._i16);
-                    break;
-                case Variant::TYPE_ui16:
-                    str = ui32Tostring (value._ui16);
-                    break;
-                case Variant::TYPE_i32:
-                    str = i32Tostring (value._i32);
-                    break;
-                case Variant::TYPE_ui32:
-                    str = ui32Tostring (value._ui32);
-                    break;
-                case Variant::TYPE_i64:
-                    str = i64Tostring (value._i64);
-                    break;
-                case Variant::TYPE_ui64:
-                    str = ui64Tostring (value._ui64);
-                    break;
-                case Variant::TYPE_f32:
-                    str = f32Tostring (value._f32);
-                    break;
-                case Variant::TYPE_f64:
-                    str = f64Tostring (value._f64);
+                case Variant::TYPE_size_t:
+                    str = size_tTostring (value._size_t);
                     break;
                 case Variant::TYPE_string:
                     str = Encodestring (*value._string);
@@ -665,6 +573,9 @@ namespace thekogans {
                 case Variant::TYPE_f64:
                     serializer << variant.value._f64;
                     break;
+                case Variant::TYPE_size_t:
+                    serializer << SizeT (variant.value._size_t);
+                    break;
                 case Variant::TYPE_string:
                     assert (variant.value._string != 0);
                     serializer << *variant.value._string;
@@ -720,6 +631,12 @@ namespace thekogans {
                 case Variant::TYPE_f64:
                     serializer >> variant.value._f64;
                     break;
+                case Variant::TYPE_size_t: {
+                    SizeT size_t;
+                    serializer >> size_t;
+                    variant.value._size_t = size_t;
+                    break;
+                }
                 case Variant::TYPE_string: {
                     variant.value._string = new std::string ();
                     serializer >> *variant.value._string;

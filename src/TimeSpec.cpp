@@ -188,13 +188,13 @@ namespace thekogans {
         void TimeSpec::Read (
                 const TextHeader & /*header*/,
                 const JSON::Object &object) {
-            seconds = (i64)object.GetValue (ATTR_SECONDS)->ToNumber ();
-            nanoseconds = (i32)object.GetValue (ATTR_NANOSECONDS)->ToNumber ();
+            seconds = object.Get<JSON::Number> (ATTR_SECONDS)->To<i64> ();
+            nanoseconds = object.Get<JSON::Number> (ATTR_NANOSECONDS)->To<i32> ();
         }
 
         void TimeSpec::Write (JSON::Object &object) const {
-            object.AddNumber (ATTR_SECONDS, seconds);
-            object.AddNumber (ATTR_NANOSECONDS, nanoseconds);
+            object.Add (ATTR_SECONDS, seconds);
+            object.Add (ATTR_NANOSECONDS, nanoseconds);
         }
 
     #if defined (THEKOGANS_UTIL_CONFIG_Debug)

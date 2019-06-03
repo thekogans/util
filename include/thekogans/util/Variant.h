@@ -23,6 +23,7 @@
 #include "thekogans/util/Config.h"
 #include "thekogans/util/Types.h"
 #include "thekogans/util/GUID.h"
+#include "thekogans/util/Exception.h"
 #include "thekogans/util/Serializer.h"
 
 namespace thekogans {
@@ -82,6 +83,9 @@ namespace thekogans {
             /// "f64"
             static const char * const VALUE_F64;
             /// \brief
+            /// "size_t"
+            static const char * const VALUE_size_t;
+            /// \brief
             /// "string"
             static const char * const VALUE_STRING;
             /// \brief
@@ -133,6 +137,9 @@ namespace thekogans {
                 /// \brief
                 /// f64
                 TYPE_f64,
+                /// \brief
+                /// std::size_t
+                TYPE_size_t,
                 /// \brief
                 /// std::string *
                 TYPE_string,
@@ -187,6 +194,9 @@ namespace thekogans {
                 /// \brief
                 /// f64
                 f64 _f64;
+                /// \brief
+                /// std::size_t
+                std::size_t _size_t;
                 /// \brief
                 /// std::String *
                 std::string *_string;
@@ -281,6 +291,13 @@ namespace thekogans {
                 value._f64 = value_;
             }
             /// \brief
+            /// std::size_t ctor.
+            /// \param[in] value_ Value to assign.
+            explicit Variant (std::size_t value_) :
+                    type (TYPE_size_t) {
+                value._size_t = value_;
+            }
+            /// \brief
             /// std::string ctor.
             /// \param[in] value_ Value to assign.
             explicit Variant (const std::string &value_) :
@@ -322,7 +339,15 @@ namespace thekogans {
             static Type stringToType (const std::string &type);
 
             /// \brief
-            /// Return true if type != Invalid
+            /// Return the variant type.
+            /// \return the variant type.
+            inline Type GetType () const {
+                return type;
+            }
+
+            /// \brief
+            /// Return true if type != Invalid.
+            /// \return true if type != Invalid.
             inline bool IsValid () const {
                 return type != TYPE_Invalid;
             }
@@ -357,12 +382,45 @@ namespace thekogans {
             i32 PrefixCompare (const Variant &variant) const;
 
             /// \brief
+            /// Numerical type conversion template.
+            /// \return Number cast to appropriate type.
+            template<typename T>
+            T To () const {
+                switch (type) {
+                    case Variant::TYPE_i8:
+                        return (T)value._i8;
+                    case Variant::TYPE_ui8:
+                        return (T)value._ui8;
+                    case Variant::TYPE_i16:
+                        return (T)value._i16;
+                    case Variant::TYPE_ui16:
+                        return (T)value._ui16;
+                    case Variant::TYPE_i32:
+                        return (T)value._i32;
+                    case Variant::TYPE_ui32:
+                        return (T)value._ui32;
+                    case Variant::TYPE_i64:
+                        return (T)value._i64;
+                    case Variant::TYPE_ui64:
+                        return (T)value._ui64;
+                    case Variant::TYPE_f32:
+                        return (T)value._f32;
+                    case Variant::TYPE_f64:
+                        return (T)value._f64;
+                    case Variant::TYPE_size_t:
+                        return (T)value._size_t;
+                    default:
+                        THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
+                            "Varint type (%s) is not a number.",
+                            TypeTostring (type).c_str ());
+                }
+            }
+
+            /// \brief
             /// Parse variant state from an xml node.
-            /// NOTE: The xml node should look like this:
-            /// <tagName>
-            ///     <Type>type</Type>
-            ///     <Value>value</Value>
-            /// </tagName>
+            /// NOTE: The XML node should look like this:
+            /// <tagName Type = ""
+            ///          Value = ""/>
             /// \param[in] node XML node to parse state.
             void Parse (const pugi::xml_node &node);
             /// \brief
@@ -371,24 +429,9 @@ namespace thekogans {
             /// \param[in] tagName The name of the leading tag.
             /// \return Serialized XML representation of the variant.
             std::string ToString (
+                const char *tagName = TAG_VARIANT,
                 std::size_t indentationLevel = 0,
-                const char *tagName = TAG_VARIANT) const;
-
-            /// \brief
-            /// Parse variant state from an xml node.
-            /// NOTE: The XML node should look like this:
-            /// <tagName Type = ""
-            ///          Value = ""/>
-            /// \param[in] node XML node to parse state.
-            void ParseWithAttributes (const pugi::xml_node &node);
-            /// \brief
-            /// Serialize the variant to an xml node.
-            /// \param[in] indentationLevel How far to indent the leading tag.
-            /// \param[in] tagName The name of the leading tag.
-            /// \return Serialized XML representation of the variant.
-            std::string ToStringWithAttributes (
-                std::size_t indentationLevel = 0,
-                const char *tagName = TAG_VARIANT) const;
+                std::size_t indentationWidth = 2) const;
         };
 
         /// \brief

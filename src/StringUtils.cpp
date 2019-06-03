@@ -431,6 +431,32 @@ namespace thekogans {
             }
         }
 
+        _LIB_THEKOGANS_UTIL_DECL i8 _LIB_THEKOGANS_UTIL_API stringToi8 (
+                const char *value,
+                char **end,
+                i32 base) {
+            if (value != 0) {
+                return (i8)strtol (value, end, base);
+            }
+            else {
+                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
+            }
+        }
+
+        _LIB_THEKOGANS_UTIL_DECL ui8 _LIB_THEKOGANS_UTIL_API stringToui8 (
+                const char *value,
+                char **end,
+                i32 base) {
+            if (value != 0) {
+                return (ui8)strtoul (value, end, base);
+            }
+            else {
+                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
+            }
+        }
+
         _LIB_THEKOGANS_UTIL_DECL i16 _LIB_THEKOGANS_UTIL_API stringToi16 (
                 const char *value,
                 char **end,

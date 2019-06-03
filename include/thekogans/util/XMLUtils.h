@@ -19,7 +19,7 @@
 #define __thekogans_util_XMLUtils_h
 
 #include <string>
-#include <list>
+#include <vector>
 #include "pugixml/pugixml.hpp"
 #include "thekogans/util/Config.h"
 #include "thekogans/util/Types.h"
@@ -66,7 +66,7 @@ namespace thekogans {
         typedef std::pair<std::string, std::string> Attribute;
         /// \brief
         /// A convenient typedef for std::list<Attribute>.
-        typedef std::list<Attribute> Attributes;
+        typedef std::vector<Attribute> Attributes;
 
         /// \brief
         /// Format an XML open tag (i.e. <tag>).

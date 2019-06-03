@@ -22,6 +22,8 @@
 #include <vector>
 #include "thekogans/util/Config.h"
 #include "thekogans/util/Types.h"
+#include "thekogans/util/Variant.h"
+#include "thekogans/util/SizeT.h"
 #include "thekogans/util/RefCounted.h"
 #include "thekogans/util/Heap.h"
 #include "thekogans/util/SpinLock.h"
@@ -32,60 +34,22 @@ namespace thekogans {
         /// \struct JSON JSON.h thekogans/util/JSON.h
         ///
         /// \brief
-        /// JSON provides the DOM and parsing/serialization facilities to read and
+        /// JSON provides the classes and parsing/serialization facilities to read and
         /// write JSON formatted values. It's used by \see{Serializable} as one of it's
         /// serialization/deserialization methods. JSON::Array implements multi-line
         /// string handling by providing an appropriate ctor and ToString method.
 
         struct _LIB_THEKOGANS_UTIL_DECL JSON {
-            struct Bool;
-            struct Null;
-            struct Number;
-            struct String;
-            struct Array;
-            struct Object;
-
             /// \struct JSON::Value JSON.h thekogans/util/JSON.h
             ///
             /// \brief
-            /// Base for all JSON DOM types.
+            /// Base for all JSON value types.
             struct _LIB_THEKOGANS_UTIL_DECL Value : public ThreadSafeRefCounted {
                 /// \brief
                 /// Convenient typedef for ThreadSafeRefCounted::Ptr<Value>.
                 typedef ThreadSafeRefCounted::Ptr<Value> Ptr;
 
-                /// \enum
-                /// Value type.
-                enum Type {
-                    JSON_VALUE_TYPE_VALUE,
-                    JSON_VALUE_TYPE_BOOL,
-                    JSON_VALUE_TYPE_NULL,
-                    JSON_VALUE_TYPE_NUMBER,
-                    JSON_VALUE_TYPE_STRING,
-                    JSON_VALUE_TYPE_ARRAY,
-                    JSON_VALUE_TYPE_OBJECT
-                };
-
-            protected:
-                /// \brief
-                /// Value type.
-                Type  type;
-                /// \brief
-                /// Value name.
-                const char *name;
-
             public:
-                /// \brief
-                /// "Value"
-                static const char *NAME;
-
-                /// \brief
-                /// Convert type to it's string equivalent.
-                static std::string typeTostring (Type type);
-                /// \brief
-                /// Convert string to it's type equivalent.
-                static Type stringToType (const std::string &type);
-
                 /// \brief
                 /// dtor.
                 virtual ~Value () {}
@@ -93,42 +57,27 @@ namespace thekogans {
                 /// \brief
                 /// Return value type.
                 /// \return Value type.
-                inline Type GetType () const {
-                    return type;
-                }
-                /// \brief
-                /// Return value name.
-                /// \return Value name.
-                inline const char *GetName () const {
-                    return name;
-                }
+                virtual const char *GetType () const = 0;
 
                 /// \brief
-                /// Return Bool value (throw if type is not Bool).
-                /// \return Bool value.
-                bool ToBool () const;
-                /// \brief
-                /// Return Number value (throw if type is not Number).
-                /// \return Number value.
-                f64 ToNumber () const;
-                /// \brief
-                /// Return String value (throw if type is not String).
-                /// \return String value.
-                std::string ToString () const;
-
-            protected:
-                /// \brief
-                /// ctor.
-                /// NOTE: protected because Value should not be instantiated.
-                /// Use a concrete Value type below.
-                /// \param[in] type_ Value type.
-                /// \param[in] name_ Value name.
-                Value (
-                    Type type_,
-                    const char *name_) :
-                    type (type_),
-                    name (name_) {}
+                /// Convert Bool, Number or String to bool, one of the
+                /// integral types (Types.h) or std::string.
+                template<typename T>
+                T To () const;
             };
+
+            #define THEKOGANS_UTIL_JSON_DECLARE_VALUE(type)\
+            public:\
+                typedef ThreadSafeRefCounted::Ptr<type> Ptr;\
+                THEKOGANS_UTIL_DECLARE_HEAP_WITH_LOCK (type, SpinLock)\
+                static const char * const TYPE;\
+                virtual const char *GetType () const {\
+                    return TYPE;\
+                }
+
+            #define THEKOGANS_UTIL_JSON_IMPLEMENT_VALUE(type)\
+                THEKOGANS_UTIL_IMPLEMENT_HEAP_WITH_LOCK (JSON::type, SpinLock)\
+                const char * const JSON::type::TYPE = #type;
 
             /// \struct JSON::Bool JSON.h thekogans/util/JSON.h
             ///
@@ -136,16 +85,8 @@ namespace thekogans {
             /// Represents a JSON bool (true/false) value.
             struct _LIB_THEKOGANS_UTIL_DECL Bool : public Value {
                 /// \brief
-                /// Convenient typedef for ThreadSafeRefCounted::Ptr<Bool>.
-                typedef ThreadSafeRefCounted::Ptr<Bool> Ptr;
-
-                /// \brief
-                /// Bool has a private heap to help with memory management.
-                THEKOGANS_UTIL_DECLARE_HEAP_WITH_LOCK (Bool, SpinLock)
-
-                /// \brief
-                /// "Bool"
-                static const char *NAME;
+                /// Bool is a value.
+                THEKOGANS_UTIL_JSON_DECLARE_VALUE (Bool)
 
                 /// \brief
                 /// Bool value.
@@ -155,7 +96,6 @@ namespace thekogans {
                 /// ctor.
                 /// \param[in] value_ Bool value.
                 Bool (bool value_ = false) :
-                    Value (JSON_VALUE_TYPE_BOOL, NAME),
                     value (value_) {}
             };
 
@@ -165,21 +105,12 @@ namespace thekogans {
             /// Represents a JSON null value.
             struct _LIB_THEKOGANS_UTIL_DECL Null : public Value {
                 /// \brief
-                /// Convenient typedef for ThreadSafeRefCounted::Ptr<Null>.
-                typedef ThreadSafeRefCounted::Ptr<Null> Ptr;
-
-                /// \brief
-                /// Null has a private heap to help with memory management.
-                THEKOGANS_UTIL_DECLARE_HEAP_WITH_LOCK (Null, SpinLock)
-
-                /// \brief
-                /// "Null"
-                static const char *NAME;
+                /// Null is a value.
+                THEKOGANS_UTIL_JSON_DECLARE_VALUE (Null)
 
                 /// \brief
                 /// ctor.
-                Null () :
-                    Value (JSON_VALUE_TYPE_NULL, NAME) {}
+                Null () {}
             };
 
             /// \struct JSON::Number JSON.h thekogans/util/JSON.h
@@ -188,26 +119,17 @@ namespace thekogans {
             /// Represents a JSON number value.
             struct _LIB_THEKOGANS_UTIL_DECL Number : public Value {
                 /// \brief
-                /// Convenient typedef for ThreadSafeRefCounted::Ptr<Number>.
-                typedef ThreadSafeRefCounted::Ptr<Number> Ptr;
-
-                /// \brief
-                /// Number has a private heap to help with memory management.
-                THEKOGANS_UTIL_DECLARE_HEAP_WITH_LOCK (Number, SpinLock)
-
-                /// \brief
-                /// "Number"
-                static const char *NAME;
+                /// Number is a value.
+                THEKOGANS_UTIL_JSON_DECLARE_VALUE (Number)
 
                 /// \brief
                 /// Number value.
-                f64 value;
+                Variant value;
 
                 /// \brief
                 /// ctor.
                 /// \param[in] value_ Number value.
-                Number (f64 value_ = 0.0) :
-                    Value (JSON_VALUE_TYPE_NUMBER, NAME),
+                Number (const Variant value_ = Variant::Empty) :
                     value (value_) {}
             };
 
@@ -217,16 +139,8 @@ namespace thekogans {
             /// Represents a JSON string value.
             struct _LIB_THEKOGANS_UTIL_DECL String : public Value {
                 /// \brief
-                /// Convenient typedef for ThreadSafeRefCounted::Ptr<String>.
-                typedef ThreadSafeRefCounted::Ptr<String> Ptr;
-
-                /// \brief
-                /// String has a private heap to help with memory management.
-                THEKOGANS_UTIL_DECLARE_HEAP_WITH_LOCK (String, SpinLock)
-
-                /// \brief
-                /// "String"
-                static const char *NAME;
+                /// String is a value.
+                THEKOGANS_UTIL_JSON_DECLARE_VALUE (String)
 
                 /// \brief
                 /// String value.
@@ -236,7 +150,6 @@ namespace thekogans {
                 /// ctor.
                 /// \param[in] value_ String value.
                 String (const std::string &value_ = std::string ()) :
-                    Value (JSON_VALUE_TYPE_STRING, NAME),
                     value (value_) {}
             };
 
@@ -246,16 +159,8 @@ namespace thekogans {
             /// Represents a JSON array value.
             struct _LIB_THEKOGANS_UTIL_DECL Array : public Value {
                 /// \brief
-                /// Convenient typedef for ThreadSafeRefCounted::Ptr<Array>.
-                typedef ThreadSafeRefCounted::Ptr<Array> Ptr;
-
-                /// \brief
-                /// Array has a private heap to help with memory management.
-                THEKOGANS_UTIL_DECLARE_HEAP_WITH_LOCK (Array, SpinLock)
-
-                /// \brief
-                /// "Array"
-                static const char *NAME;
+                /// Array is a value.
+                THEKOGANS_UTIL_JSON_DECLARE_VALUE (Array)
 
                 /// \brief
                 /// Array of values.
@@ -263,8 +168,7 @@ namespace thekogans {
 
                 /// \brief
                 /// ctor.
-                Array () :
-                    Value (JSON_VALUE_TYPE_ARRAY, NAME) {}
+                Array () {}
                 /// \brief
                 /// ctor. Create an array by breaking up the given string on delimiter boundary.
                 /// \param[in] str String to break up.
@@ -288,58 +192,45 @@ namespace thekogans {
                     std::size_t delimiterLength = 1);
 
                 /// \brief
-                /// Append the given value to the array.
-                /// \param[in] value Value to append.
-                void AddValue (Value::Ptr value);
-                /// \brief
-                /// Append the given bool to the array.
-                /// \param[in] value Bool to append.
-                void AddBool (bool value);
-                /// \brief
-                /// Append a null to the array.
-                void AddNull ();
-                /// \brief
-                /// Append the given number to the array.
-                /// \param[in] value Number to append.
-                void AddNumber (f64 value);
-                /// \brief
-                /// Append the given string to the array.
-                /// \param[in] value String to append.
-                void AddString (const std::string &value);
-                /// \brief
-                /// Append the given array to the array.
-                /// \param[in] value Array to append.
-                void AddArray (Array::Ptr value);
-                /// \brief
-                /// Append the given object to the array.
-                /// \param[in] value Object to append.
-                void AddObject (ThreadSafeRefCounted::Ptr<Object> value);
-
-                /// \brief
                 /// Return count of values in the array.
                 /// \return Count of values in the array.
                 inline std::size_t GetValueCount () const {
                     return values.size ();
                 }
+
                 /// \brief
                 /// Return the value at the given index.
-                /// \param[in] index Index whose value to retrieve.
-                /// \return Value at the given index.
-                Value::Ptr GetValue (std::size_t index) const;
+                /// \paramp[in] index Index whose value to retrieve.
+                /// \return Value at index.
+                template<typename T>
+                typename T::Ptr Get (std::size_t index) const {
+                    if (index < values.size ()) {
+                        return dynamic_refcounted_pointer_cast<T> (values[index]);
+                    }
+                    else {
+                        THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                            THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
+                    }
+                }
+
                 /// \brief
-                /// Return the array at the given index.
-                /// NOTE: If the type at index is not an Array,
-                //// Array::Ptr () will be returned.
-                /// \param[in] index Index whose array to retrieve.
-                /// \return Array at the given index.
-                Array::Ptr GetArray (std::size_t index) const;
+                /// Add the given value to the end of the array.
+                /// \param[in] value Vale to add.
+                template<typename T>
+                void Add (T value) {
+                    if (value.Get () != 0) {
+                        values.push_back (Value::Ptr (value.Get ()));
+                    }
+                    else {
+                        THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                            THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
+                    }
+                }
+
                 /// \brief
-                /// Return the object at the given index.
-                /// NOTE: If the type at index is not an Object,
-                /// Object::Ptr () will be returned.
-                /// \param[in] index Index whose object to retrieve.
-                /// \return Object at the given index.
-                ThreadSafeRefCounted::Ptr<Object> GetObject (std::size_t index) const;
+                /// Remove value at the given index.
+                /// \param[in] index Index whose value to remove.
+                void Remove (std::size_t index);
             };
 
             /// \struct JSON::Object JSON.h thekogans/util/JSON.h
@@ -348,16 +239,8 @@ namespace thekogans {
             /// Represents a JSON object value.
             struct _LIB_THEKOGANS_UTIL_DECL Object : public Value {
                 /// \brief
-                /// Convenient typedef for ThreadSafeRefCounted::Ptr<Object>.
-                typedef ThreadSafeRefCounted::Ptr<Object> Ptr;
-
-                /// \brief
-                /// Object has a private heap to help with memory management.
-                THEKOGANS_UTIL_DECLARE_HEAP_WITH_LOCK (Object, SpinLock)
-
-                /// \brief
-                /// "Object"
-                static const char *NAME;
+                /// Object is a value.
+                THEKOGANS_UTIL_JSON_DECLARE_VALUE (Object)
 
                 /// \brief
                 /// Convenient typedef for std::pair<std::string, Value::Ptr>.
@@ -368,55 +251,7 @@ namespace thekogans {
 
                 /// \brief
                 /// ctor.
-                Object () :
-                    Value (JSON_VALUE_TYPE_OBJECT, NAME) {}
-
-                /// \brief
-                /// Add a named value to the object.
-                /// \param[in] name A value name.
-                /// \param[in] value A value associated with the name.
-                void AddValue (
-                    const std::string &name,
-                    Value::Ptr value);
-                /// \brief
-                /// Append the given bool to the object.
-                /// \param[in] name A bool name.
-                /// \param[in] value A bool value associated with the name.
-                void AddBool (
-                    const std::string &name,
-                    bool value);
-                /// \brief
-                /// Append the given null to the object.
-                /// \param[in] name A null name.
-                void AddNull (const std::string &name);
-                /// \brief
-                /// Append the given number to the object.
-                /// \param[in] name A number name.
-                /// \param[in] value A number value associated with the name.
-                void AddNumber (
-                    const std::string &name,
-                    f64 value);
-                /// \brief
-                /// Append the given string to the object.
-                /// \param[in] name A string name.
-                /// \param[in] value A string value associated with the name.
-                void AddString (
-                    const std::string &name,
-                    const std::string &value);
-                /// \brief
-                /// Append the given array to the object.
-                /// \param[in] name A array name.
-                /// \param[in] value A array value associated with the name.
-                void AddArray (
-                    const std::string &name,
-                    Array::Ptr value);
-                /// \brief
-                /// Append the given object to the object.
-                /// \param[in] name A object name.
-                /// \param[in] value A object value associated with the name.
-                void AddObject (
-                    const std::string &name,
-                    Object::Ptr value);
+                Object () {}
 
                 /// \brief
                 /// Return count of name/values in the object.
@@ -424,31 +259,48 @@ namespace thekogans {
                 inline std::size_t GetValueCount () const {
                     return values.size ();
                 }
+
                 /// \brief
-                /// Return the value associated with the given name.
-                /// \param[in] name Name whose value to retrieve.
-                /// \return Value associated with the given name.
-                Value::Ptr GetValue (const std::string &name) const;
+                /// Return the value with the given name.
+                /// \paramp[in] name Name whose value to retrieve.
+                /// \return Value with the given name.
+                template<typename T>
+                typename T::Ptr Get (const std::string &name) const {
+                    for (std::size_t i = 0, count = values.size (); i < count; ++i) {
+                        if (values[i].first == name) {
+                            return dynamic_refcounted_pointer_cast<T> (values[i].second);
+                        }
+                    }
+                    return typename T::Ptr (new T);
+                }
+
                 /// \brief
-                /// Return the array associated with the given name.
-                /// NOTE: If the type at name is not an Array,
-                /// Array::Ptr () will be returned.
-                /// \param[in] name Name whose array to retrieve.
-                /// \return Array associated with the given name.
-                Array::Ptr GetArray (const std::string &name) const;
+                /// Add a named value to the object.
+                /// \param[in] name A value name.
+                /// \param[in] value A value associated with the name.
+                template<typename T>
+                void Add (
+                        const std::string &name,
+                        T value) {
+                    if (!name.empty () && value.Get () != 0) {
+                        values.push_back (NameValue (name, Value::Ptr (value.Get ())));
+                    }
+                    else {
+                        THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                            THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
+                    }
+                }
+
                 /// \brief
-                /// Return the object associated with the given name.
-                /// NOTE: If the type at name is not an Object,
-                /// Object::Ptr () will be returned.
-                /// \param[in] name Name whose object to retrieve.
-                /// \return Object associated with the given name.
-                Object::Ptr GetObject (const std::string &name) const;
+                /// Remove value associated with the given name.
+                /// \param[in] name Name whose value to remove.
+                void Remove (const std::string &name);
             };
 
             /// \brief
-            /// Parse a JSON value to DOM.
-            /// \param[in] value JSON formatted value.
-            /// \retunr DOM representation of the given value.
+            /// Parse a JSON formatted string.
+            /// \param[in] value JSON formatted string.
+            /// \retunr Value representation of the given JSON string.
             static Value::Ptr ParseValue (const std::string &value);
             /// \brief
             /// Format the given value.
@@ -461,6 +313,451 @@ namespace thekogans {
                 std::size_t indentationLevel = 0,
                 std::size_t indentationWidth = 2);
         };
+
+        template<>
+        inline bool JSON::Value::To<bool> () const {
+            if (GetType () == Bool::TYPE) {
+                return static_cast<const Bool *> (this)->value;
+            }
+            else {
+                THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
+                    "Value type %s is not %s.",
+                    GetType (),
+                    Bool::TYPE);
+            }
+        }
+
+        template<>
+        inline i8 JSON::Value::To<i8> () const {
+            if (GetType () == Number::TYPE) {
+                return static_cast<const Number *> (this)->value.To<i8> ();
+            }
+            else {
+                THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
+                    "Value type %s is not %s.",
+                    GetType (),
+                    Number::TYPE);
+            }
+        }
+
+        template<>
+        inline ui8 JSON::Value::To<ui8> () const {
+            if (GetType () == Number::TYPE) {
+                return static_cast<const Number *> (this)->value.To<ui8> ();
+            }
+            else {
+                THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
+                    "Value type %s is not %s.",
+                    GetType (),
+                    Number::TYPE);
+            }
+        }
+
+        template<>
+        inline i16 JSON::Value::To<i16> () const {
+            if (GetType () == Number::TYPE) {
+                return static_cast<const Number *> (this)->value.To<i16> ();
+            }
+            else {
+                THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
+                    "Value type %s is not %s.",
+                    GetType (),
+                    Number::TYPE);
+            }
+        }
+
+        template<>
+        inline ui16 JSON::Value::To<ui16> () const {
+            if (GetType () == Number::TYPE) {
+                return static_cast<const Number *> (this)->value.To<ui16> ();
+            }
+            else {
+                THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
+                    "Value type %s is not %s.",
+                    GetType (),
+                    Number::TYPE);
+            }
+        }
+
+        template<>
+        inline i32 JSON::Value::To<i32> () const {
+            if (GetType () == Number::TYPE) {
+                return static_cast<const Number *> (this)->value.To<i32> ();
+            }
+            else {
+                THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
+                    "Value type %s is not %s.",
+                    GetType (),
+                    Number::TYPE);
+            }
+        }
+
+        template<>
+        inline ui32 JSON::Value::To<ui32> () const {
+            if (GetType () == Number::TYPE) {
+                return static_cast<const Number *> (this)->value.To<ui32> ();
+            }
+            else {
+                THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
+                    "Value type %s is not %s.",
+                    GetType (),
+                    Number::TYPE);
+            }
+        }
+
+        template<>
+        inline i64 JSON::Value::To<i64> () const {
+            if (GetType () == Number::TYPE) {
+                return static_cast<const Number *> (this)->value.To<i64> ();
+            }
+            else {
+                THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
+                    "Value type %s is not %s.",
+                    GetType (),
+                    Number::TYPE);
+            }
+        }
+
+        template<>
+        inline ui64 JSON::Value::To<ui64> () const {
+            if (GetType () == Number::TYPE) {
+                return static_cast<const Number *> (this)->value.To<ui64> ();
+            }
+            else {
+                THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
+                    "Value type %s is not %s.",
+                    GetType (),
+                    Number::TYPE);
+            }
+        }
+
+        template<>
+        inline f32 JSON::Value::To<f32> () const {
+            if (GetType () == Number::TYPE) {
+                return static_cast<const Number *> (this)->value.To<f32> ();
+            }
+            else {
+                THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
+                    "Value type %s is not %s.",
+                    GetType (),
+                    Number::TYPE);
+            }
+        }
+
+        template<>
+        inline f64 JSON::Value::To<f64> () const {
+            if (GetType () == Number::TYPE) {
+                return static_cast<const Number *> (this)->value.To<f64> ();
+            }
+            else {
+                THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
+                    "Value type %s is not %s.",
+                    GetType (),
+                    Number::TYPE);
+            }
+        }
+
+        template<>
+        inline std::size_t JSON::Value::To<std::size_t> () const {
+            if (GetType () == Number::TYPE) {
+                return static_cast<const Number *> (this)->value.To<size_t> ();
+            }
+            else {
+                THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
+                    "Value type %s is not %s.",
+                    GetType (),
+                    Number::TYPE);
+            }
+        }
+
+        template<>
+        inline std::string JSON::Value::To<std::string> () const {
+            if (GetType () == String::TYPE) {
+                return static_cast<const String *> (this)->value;
+            }
+            else {
+                THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
+                    "Value type %s is not %s.",
+                    GetType (),
+                    String::TYPE);
+            }
+        }
+
+        template<>
+        inline void JSON::Array::Add<bool> (bool value) {
+            values.push_back (Value::Ptr (new Bool (value)));
+        }
+
+        template<>
+        inline void JSON::Array::Add<i8> (i8 value) {
+            values.push_back (Value::Ptr (new Number (Variant (value))));
+        }
+
+        template<>
+        inline void JSON::Array::Add<ui8> (ui8 value) {
+            values.push_back (Value::Ptr (new Number (Variant (value))));
+        }
+
+        template<>
+        inline void JSON::Array::Add<i16> (i16 value) {
+            values.push_back (Value::Ptr (new Number (Variant (value))));
+        }
+
+        template<>
+        inline void JSON::Array::Add<ui16> (ui16 value) {
+            values.push_back (Value::Ptr (new Number (Variant (value))));
+        }
+
+        template<>
+        inline void JSON::Array::Add<i32> (i32 value) {
+            values.push_back (Value::Ptr (new Number (Variant (value))));
+        }
+
+        template<>
+        inline void JSON::Array::Add<ui32> (ui32 value) {
+            values.push_back (Value::Ptr (new Number (Variant (value))));
+        }
+
+        template<>
+        inline void JSON::Array::Add<i64> (i64 value) {
+            values.push_back (Value::Ptr (new Number (Variant (value))));
+        }
+
+        template<>
+        inline void JSON::Array::Add<ui64> (ui64 value) {
+            values.push_back (Value::Ptr (new Number (Variant (value))));
+        }
+
+        template<>
+        inline void JSON::Array::Add<f32> (f32 value) {
+            values.push_back (Value::Ptr (new Number (Variant (value))));
+        }
+
+        template<>
+        inline void JSON::Array::Add<f64> (f64 value) {
+            values.push_back (Value::Ptr (new Number (Variant (value))));
+        }
+
+        template<>
+        inline void JSON::Array::Add<std::size_t> (std::size_t value) {
+            values.push_back (Value::Ptr (new Number (Variant (value))));
+        }
+
+        template<>
+        inline void JSON::Array::Add<SizeT> (SizeT value) {
+            values.push_back (Value::Ptr (new Number (Variant (value.value))));
+        }
+
+        template<>
+        inline void JSON::Array::Add<std::string> (std::string value) {
+            values.push_back (Value::Ptr (new String (value)));
+        }
+
+        template<>
+        inline void JSON::Array::Add<const char *> (const char *value) {
+            if (value != 0) {
+                values.push_back (Value::Ptr (new String (value)));
+            }
+            else {
+                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
+            }
+        }
+
+        template<>
+        inline void JSON::Object::Add<bool> (
+                const std::string &name,
+                bool value) {
+            if (!name.empty ()) {
+                values.push_back (NameValue (name, Value::Ptr (new Bool (value))));
+            }
+            else {
+                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
+            }
+        }
+
+        template<>
+        inline void JSON::Object::Add<i8> (
+                const std::string &name,
+                i8 value) {
+            if (!name.empty ()) {
+                values.push_back (NameValue (name, Value::Ptr (new Number (Variant (value)))));
+            }
+            else {
+                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
+            }
+        }
+
+        template<>
+        inline void JSON::Object::Add<ui8> (
+                const std::string &name,
+                ui8 value) {
+            if (!name.empty ()) {
+                values.push_back (NameValue (name, Value::Ptr (new Number (Variant (value)))));
+            }
+            else {
+                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
+            }
+        }
+
+        template<>
+        inline void JSON::Object::Add<i16> (
+                const std::string &name,
+                i16 value) {
+            if (!name.empty ()) {
+                values.push_back (NameValue (name, Value::Ptr (new Number (Variant (value)))));
+            }
+            else {
+                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
+            }
+        }
+
+        template<>
+        inline void JSON::Object::Add<ui16> (
+                const std::string &name,
+                ui16 value) {
+            if (!name.empty ()) {
+                values.push_back (NameValue (name, Value::Ptr (new Number (Variant (value)))));
+            }
+            else {
+                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
+            }
+        }
+
+        template<>
+        inline void JSON::Object::Add<i32> (
+                const std::string &name,
+                i32 value) {
+            if (!name.empty ()) {
+                values.push_back (NameValue (name, Value::Ptr (new Number (Variant (value)))));
+            }
+            else {
+                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
+            }
+        }
+
+        template<>
+        inline void JSON::Object::Add<ui32> (
+                const std::string &name,
+                ui32 value) {
+            if (!name.empty ()) {
+                values.push_back (NameValue (name, Value::Ptr (new Number (Variant (value)))));
+            }
+            else {
+                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
+            }
+        }
+
+        template<>
+        inline void JSON::Object::Add<i64> (
+                const std::string &name,
+                i64 value) {
+            if (!name.empty ()) {
+                values.push_back (NameValue (name, Value::Ptr (new Number (Variant (value)))));
+            }
+            else {
+                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
+            }
+        }
+
+        template<>
+        inline void JSON::Object::Add<ui64> (
+                const std::string &name,
+                ui64 value) {
+            if (!name.empty ()) {
+                values.push_back (NameValue (name, Value::Ptr (new Number (Variant (value)))));
+            }
+            else {
+                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
+            }
+        }
+
+        template<>
+        inline void JSON::Object::Add<f32> (
+                const std::string &name,
+                f32 value) {
+            if (!name.empty ()) {
+                values.push_back (NameValue (name, Value::Ptr (new Number (Variant (value)))));
+            }
+            else {
+                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
+            }
+        }
+
+        template<>
+        inline void JSON::Object::Add<f64> (
+                const std::string &name,
+                f64 value) {
+            if (!name.empty ()) {
+                values.push_back (NameValue (name, Value::Ptr (new Number (Variant (value)))));
+            }
+            else {
+                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
+            }
+        }
+
+        template<>
+        inline void JSON::Object::Add<std::size_t> (
+                const std::string &name,
+                std::size_t value) {
+            if (!name.empty ()) {
+                values.push_back (NameValue (name, Value::Ptr (new Number (Variant (value)))));
+            }
+            else {
+                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
+            }
+        }
+
+        template<>
+        inline void JSON::Object::Add<SizeT> (
+                const std::string &name,
+                SizeT value) {
+            if (!name.empty ()) {
+                values.push_back (NameValue (name, Value::Ptr (new Number (Variant (value.value)))));
+            }
+            else {
+                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
+            }
+        }
+
+        template<>
+        inline void JSON::Object::Add<std::string> (
+                const std::string &name,
+                std::string value) {
+            if (!name.empty ()) {
+                values.push_back (NameValue (name, Value::Ptr (new String (value))));
+            }
+            else {
+                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
+            }
+        }
+
+        template<>
+        inline void JSON::Object::Add<const char *> (
+                const std::string &name,
+                const char *value) {
+            if (!name.empty () && value != 0) {
+                values.push_back (NameValue (name, Value::Ptr (new String (value))));
+            }
+            else {
+                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
+            }
+        }
 
     } // namespace util
 } // namespace thekogans

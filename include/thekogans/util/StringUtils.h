@@ -272,6 +272,30 @@ namespace thekogans {
             const char *value,
             char **end = 0);
         /// \brief
+        /// Parse a i8 represented by a given string.
+        /// \param[in] value Pointer to the beginning of the string.
+        /// \param[out] end On return will hold a pointer where parsing
+        /// has stopped (due to error?). It will be set to NULL if the
+        /// entire value was consumed.
+        /// \param[in] base Radix base of the number represented by value.
+        /// \return i8 represented by a given string.
+        _LIB_THEKOGANS_UTIL_DECL i8 _LIB_THEKOGANS_UTIL_API stringToi8 (
+            const char *value,
+            char **end = 0,
+            i32 base = 10);
+        /// \brief
+        /// Parse a ui8 represented by a given string.
+        /// \param[in] value Pointer to the beginning of the string.
+        /// \param[out] end On return will hold a pointer where parsing
+        /// has stopped (due to error?). It will be set to NULL if the
+        /// entire value was consumed.
+        /// \param[in] base Radix base of the number represented by value.
+        /// \return ui8 represented by a given string.
+        _LIB_THEKOGANS_UTIL_DECL ui8 _LIB_THEKOGANS_UTIL_API stringToui8 (
+            const char *value,
+            char **end = 0,
+            i32 base = 10);
+        /// \brief
         /// Parse a i16 represented by a given string.
         /// \param[in] value Pointer to the beginning of the string.
         /// \param[out] end On return will hold a pointer where parsing

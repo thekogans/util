@@ -25,75 +25,27 @@
 namespace thekogans {
     namespace util {
 
-        std::string JSON::Value::typeTostring (Type type) {
-            return type == JSON_VALUE_TYPE_BOOL ? Bool::NAME :
-                type == JSON_VALUE_TYPE_NULL ? Null::NAME :
-                type == JSON_VALUE_TYPE_NUMBER ? Number::NAME :
-                type == JSON_VALUE_TYPE_STRING ? String::NAME :
-                type == JSON_VALUE_TYPE_ARRAY ? Array::NAME :
-                type == JSON_VALUE_TYPE_OBJECT ? Object::NAME : NAME;
-        }
-
-        JSON::Value::Type JSON::Value::stringToType (const std::string &type) {
-            return type == Bool::NAME ? JSON_VALUE_TYPE_BOOL :
-                type == Null::NAME ? JSON_VALUE_TYPE_NULL :
-                type == Number::NAME ? JSON_VALUE_TYPE_NUMBER :
-                type == String::NAME ? JSON_VALUE_TYPE_STRING  :
-                type == Array::NAME ? JSON_VALUE_TYPE_ARRAY :
-                type == Object::NAME ? JSON_VALUE_TYPE_OBJECT : JSON_VALUE_TYPE_VALUE;
-        }
-
-        bool JSON::Value::ToBool () const {
-            if (type == JSON_VALUE_TYPE_BOOL) {
-                return static_cast<const Bool *> (this)->value;
-            }
-            else {
-                THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                    "Value is not %s (%s).",
-                    typeTostring (type).c_str (),
-                    Bool::NAME);
-            }
-        }
-
-        f64 JSON::Value::ToNumber () const {
-            if (type == JSON_VALUE_TYPE_NUMBER) {
-                return static_cast<const Number *> (this)->value;
-            }
-            else {
-                THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                    "Value is not %s (%s).",
-                    typeTostring (type).c_str (),
-                    Number::NAME);
-            }
-        }
-
-        std::string JSON::Value::ToString () const {
-            if (type == JSON_VALUE_TYPE_STRING) {
-                return static_cast<const String *> (this)->value;
-            }
-            else {
-                THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                    "Value is not %s (%s).",
-                    typeTostring (type).c_str (),
-                    String::NAME);
-            }
-        }
+        THEKOGANS_UTIL_JSON_IMPLEMENT_VALUE (Bool)
+        THEKOGANS_UTIL_JSON_IMPLEMENT_VALUE (Null)
+        THEKOGANS_UTIL_JSON_IMPLEMENT_VALUE (Number)
+        THEKOGANS_UTIL_JSON_IMPLEMENT_VALUE (String)
+        THEKOGANS_UTIL_JSON_IMPLEMENT_VALUE (Array)
+        THEKOGANS_UTIL_JSON_IMPLEMENT_VALUE (Object)
 
         JSON::Array::Array (
                 const std::string &str,
                 const void *delimiter,
-                std::size_t delimiterLength) :
-                Value (JSON_VALUE_TYPE_ARRAY, NAME) {
+                std::size_t delimiterLength) {
             if (delimiter != 0 && delimiterLength > 0) {
                 std::string::size_type start = 0;
                 std::string::size_type end = str.find ((const char *)delimiter, start, delimiterLength);
                 while (end != std::string::npos) {
-                    AddString (str.substr (start, end - start));
+                    Add (str.substr (start, end - start));
                     start = end + delimiterLength;
                     end = str.find ((const char *)delimiter, start, delimiterLength);
                 }
                 if (start < str.size ()) {
-                    AddString (str.substr (start));
+                    Add (str.substr (start));
                 }
             }
             else {
@@ -111,8 +63,8 @@ namespace thekogans {
                     (const char *)delimiter + delimiterLength);
                 std::string str;
                 for (std::size_t i = 0, count = values.size (); i < count; ++i) {
-                    if (values[i]->GetType () == JSON_VALUE_TYPE_STRING) {
-                        str += values[i]->ToString () + _delimiter;
+                    if (values[i]->GetType () == String::TYPE) {
+                        str += values[i]->To<std::string> () + _delimiter;
                     }
                     else {
                         THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
@@ -127,43 +79,9 @@ namespace thekogans {
             }
         }
 
-        void JSON::Array::AddValue (Value::Ptr value) {
-            if (value.Get () != 0) {
-                values.push_back (value);
-            }
-            else {
-                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
-            }
-        }
-
-        void JSON::Array::AddBool (bool value) {
-            values.push_back (Value::Ptr (new Bool (value)));
-        }
-
-        void JSON::Array::AddNull () {
-            values.push_back (Value::Ptr (new Null));
-        }
-
-        void JSON::Array::AddNumber (f64 value) {
-            values.push_back (Value::Ptr (new Number (value)));
-        }
-
-        void JSON::Array::AddString (const std::string &value) {
-            values.push_back (Value::Ptr (new String (value)));
-        }
-
-        void JSON::Array::AddArray (Array::Ptr value) {
-            values.push_back (Value::Ptr (value.Get ()));
-        }
-
-        void JSON::Array::AddObject (Object::Ptr value) {
-            values.push_back (Value::Ptr (value.Get ()));
-        }
-
-        JSON::Value::Ptr JSON::Array::GetValue (std::size_t index) const {
+        void JSON::Array::Remove (std::size_t index) {
             if (index < values.size ()) {
-                return values[index];
+                values.erase (values.begin () + index);
             }
             else {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
@@ -171,149 +89,14 @@ namespace thekogans {
             }
         }
 
-        JSON::Array::Ptr JSON::Array::GetArray (std::size_t index) const {
-            if (index < values.size ()) {
-                return dynamic_refcounted_pointer_cast<Array> (values[index]);
-            }
-            else {
-                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
-            }
-        }
-
-        JSON::Object::Ptr JSON::Array::GetObject (std::size_t index) const {
-            if (index < values.size ()) {
-                return dynamic_refcounted_pointer_cast<Object> (values[index]);
-            }
-            else {
-                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
-            }
-        }
-
-        void JSON::Object::AddValue (
-                const std::string &name,
-                Value::Ptr value) {
-            if (!name.empty () && value.Get () != 0) {
-                values.push_back (NameValue (name, value));
-            }
-            else {
-                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
-            }
-        }
-
-        void JSON::Object::AddBool (
-                const std::string &name,
-                bool value) {
-            if (!name.empty ()) {
-                values.push_back (NameValue (name, Value::Ptr (new Bool (value))));
-            }
-            else {
-                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
-            }
-        }
-
-        void JSON::Object::AddNull (const std::string &name) {
-            if (!name.empty ()) {
-                values.push_back (NameValue (name, Value::Ptr (new Null)));
-            }
-            else {
-                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
-            }
-        }
-
-        void JSON::Object::AddNumber (
-                const std::string &name,
-                f64 value) {
-            if (!name.empty ()) {
-                values.push_back (NameValue (name, Value::Ptr (new Number (value))));
-            }
-            else {
-                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
-            }
-        }
-
-        void JSON::Object::AddString (
-                const std::string &name,
-                const std::string &value) {
-            if (!name.empty ()) {
-                values.push_back (NameValue (name, Value::Ptr (new String (value))));
-            }
-            else {
-                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
-            }
-        }
-
-        void JSON::Object::AddArray (
-                const std::string &name,
-                Array::Ptr value) {
-            if (!name.empty ()) {
-                values.push_back (NameValue (name, Value::Ptr (value.Get ())));
-            }
-            else {
-                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
-            }
-        }
-
-        void JSON::Object::AddObject (
-                const std::string &name,
-                Object::Ptr value) {
-            if (!name.empty ()) {
-                values.push_back (NameValue (name, Value::Ptr (value.Get ())));
-            }
-            else {
-                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
-            }
-        }
-
-        JSON::Value::Ptr JSON::Object::GetValue (const std::string &name) const {
+        void JSON::Object::Remove (const std::string &name) {
             for (std::size_t i = 0, count = values.size (); i < count; ++i) {
                 if (values[i].first == name) {
-                    return values[i].second;
+                    values.erase (values.begin () + i);
+                    break;
                 }
             }
-            return Value::Ptr ();
         }
-
-        JSON::Array::Ptr JSON::Object::GetArray (const std::string &name) const {
-            for (std::size_t i = 0, count = values.size (); i < count; ++i) {
-                if (values[i].first == name) {
-                    return dynamic_refcounted_pointer_cast<Array> (values[i].second);
-                }
-            }
-            return Array::Ptr ();
-        }
-
-        JSON::Object::Ptr JSON::Object::GetObject (const std::string &name) const {
-            for (std::size_t i = 0, count = values.size (); i < count; ++i) {
-                if (values[i].first == name) {
-                    return dynamic_refcounted_pointer_cast<Object> (values[i].second);
-                }
-            }
-            return Object::Ptr ();
-        }
-
-        THEKOGANS_UTIL_IMPLEMENT_HEAP_WITH_LOCK (JSON::Bool, SpinLock)
-        THEKOGANS_UTIL_IMPLEMENT_HEAP_WITH_LOCK (JSON::Null, SpinLock)
-        THEKOGANS_UTIL_IMPLEMENT_HEAP_WITH_LOCK (JSON::Number, SpinLock)
-        THEKOGANS_UTIL_IMPLEMENT_HEAP_WITH_LOCK (JSON::String, SpinLock)
-        THEKOGANS_UTIL_IMPLEMENT_HEAP_WITH_LOCK (JSON::Array, SpinLock)
-        THEKOGANS_UTIL_IMPLEMENT_HEAP_WITH_LOCK (JSON::Object, SpinLock)
-
-        const char *JSON::Value::NAME = "Value";
-        const char *JSON::Bool::NAME = "Bool";
-        const char *JSON::Null::NAME = "Null";
-        const char *JSON::Number::NAME = "Number";
-        const char *JSON::String::NAME = "String";
-        const char *JSON::Array::NAME = "Array";
-        const char *JSON::Object::NAME = "Obbject";
 
         namespace {
             struct Token {
@@ -332,20 +115,20 @@ namespace thekogans {
                     TYPE_COMMA
                 } type;
                 std::string value;
-                f64 number;
+                Variant number;
 
                 Token (Type type_ = TYPE_END) :
                     type (type_),
-                    number (0.0) {}
+                    number (Variant::Empty) {}
                 Token (
                     Type type_,
                     const std::string &value_) :
                     type (type_),
                     value (value_),
-                    number (0.0) {}
+                    number (Variant::Empty) {}
                 Token (
                     const std::string &value_,
-                    f64 number_) :
+                    const Variant &number_) :
                     type (TYPE_NUMBER),
                     value (value_),
                     number (number_) {}
@@ -363,7 +146,17 @@ namespace thekogans {
             };
 
             inline bool isdelim (char c) {
-                return c == COMMA || c == COLON || c == ARRAY_END || c == OBJECT_END || isspace (c) || c == 0;
+                return c == COMMA || c == COLON || c == ARRAY_END || c == OBJECT_END || isspace (c) || c == '\0';
+            }
+
+            // Numbers can have the following format:
+            // [+ | -][0..9]*[.][0..9]*[[E | e][+ | -][0..9]+]
+            // NaN
+            // [+ | -]Inf[inity]
+            inline Variant ParseNumber (
+                    const char *start,
+                    const char **end) {
+                return Variant (stringTof64 (start, (char **)end));
             }
 
             struct Tokenizer {
@@ -449,29 +242,6 @@ namespace thekogans {
                                 else {
                                     THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
                                         "Invalid token: %s", json);
-                                }
-                            }
-                            case '-':
-                            case '+':
-                            case '.':
-                            case '0':
-                            case '1':
-                            case '2':
-                            case '3':
-                            case '4':
-                            case '5':
-                            case '6':
-                            case '7':
-                            case '8':
-                            case '9': {
-                                const char *start = json;
-                                f64 number = stringTof64 (json, (char **)&json);
-                                if (isdelim (*json)) {
-                                    return Token (std::string (start, json), number);
-                                }
-                                else {
-                                    THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                                        "Invalid number: %s", json);
                                 }
                             }
                             case QUOTE: {
@@ -561,8 +331,16 @@ namespace thekogans {
                                 return Token (Token::TYPE_STRING, value);
                             }
                             default: {
-                                THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                                    "Invalid json: %s", json);
+                                // It's not any of the well defined tokens. Try parsing a number.
+                                const char *start = json;
+                                Variant number = ParseNumber (json, &json);
+                                if (json > start && isdelim (*json)) {
+                                    return Token (std::string (start, json), number);
+                                }
+                                else {
+                                    THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
+                                        "Invalid json: %s", json);
+                                }
                             }
                         }
                     }
@@ -619,7 +397,7 @@ namespace thekogans {
                     JSON::Value::Ptr value = ParseValueHelper (tokenizer);
                     if (value.Get () != 0) {
                         if (!expectComma) {
-                            array->AddValue (value);
+                            array->Add (value);
                             expectValue = false;
                             expectComma = true;
                         }
@@ -671,7 +449,7 @@ namespace thekogans {
                             if (colon.type == Token::TYPE_COLON) {
                                 JSON::Value::Ptr value = ParseValueHelper (tokenizer);
                                 if (value.Get () != 0) {
-                                    object->AddValue (token.value, value);
+                                    object->Add (token.value, value);
                                     expectNameValue = false;
                                     expectComma = true;
                                 }
@@ -768,72 +546,64 @@ namespace thekogans {
                     const JSON::Value &value,
                     std::size_t indentationLevel,
                     std::size_t indentationWidth) {
-                switch (value.GetType ()) {
-                    case JSON::Value::JSON_VALUE_TYPE_BOOL: {
-                        stream << (value.ToBool () ? XML_TRUE : XML_FALSE);
-                        break;
-                    }
-                    case JSON::Value::JSON_VALUE_TYPE_NULL: {
-                        stream << "null";
-                        break;
-                    }
-                    case JSON::Value::JSON_VALUE_TYPE_NUMBER: {
-                        stream << value.ToNumber ();
-                        break;
-                    }
-                    case JSON::Value::JSON_VALUE_TYPE_STRING: {
-                        FormatString (stream, value.ToString ().c_str ());
-                        break;
-                    }
-                    case JSON::Value::JSON_VALUE_TYPE_ARRAY: {
-                        stream << "[";
-                        const JSON::Array &array = dynamic_cast<const JSON::Array &> (value);
-                        if (!array.values.empty ()) {
-                            stream << "\n" << std::string (indentationLevel * indentationWidth, SPACE);
-                            for (std::size_t i = 0, count = array.values.size (); i < count; ++i) {
-                                stream << std::string (indentationWidth, SPACE);
-                                FormatValueHelper (
-                                    stream,
-                                    *array.values[i],
-                                    indentationLevel + 1,
-                                    indentationWidth);
-                                if (i < count - 1) {
-                                    stream << ",";
-                                }
-                                stream << "\n" << std::string (indentationLevel * indentationWidth, SPACE);
+                if (value.GetType () == JSON::Bool::TYPE) {
+                    stream << (value.To<bool> () ? XML_TRUE : XML_FALSE);
+                }
+                else if (value.GetType () == JSON::Null::TYPE) {
+                    stream << "null";
+                }
+                else if (value.GetType () == JSON::Number::TYPE) {
+                    stream << value.To<f64> ();
+                }
+                else if (value.GetType () == JSON::String::TYPE) {
+                    FormatString (stream, value.To<std::string> ().c_str ());
+                }
+                else if (value.GetType () == JSON::Array::TYPE) {
+                    stream << "[";
+                    const JSON::Array &array = dynamic_cast<const JSON::Array &> (value);
+                    if (!array.values.empty ()) {
+                        stream << "\n" << std::string (indentationLevel * indentationWidth, SPACE);
+                        for (std::size_t i = 0, count = array.values.size (); i < count; ++i) {
+                            stream << std::string (indentationWidth, SPACE);
+                            FormatValueHelper (
+                                stream,
+                                *array.values[i],
+                                indentationLevel + 1,
+                                indentationWidth);
+                            if (i < count - 1) {
+                                stream << ",";
                             }
-                        }
-                        stream << "]";
-                        break;
-                    }
-                    case JSON::Value::JSON_VALUE_TYPE_OBJECT: {
-                        stream << "{";
-                        const JSON::Object &object = dynamic_cast<const JSON::Object &> (value);
-                        if (!object.values.empty ()) {
                             stream << "\n" << std::string (indentationLevel * indentationWidth, SPACE);
-                            for (std::size_t i = 0, count = object.values.size (); i < count; ++i) {
-                                stream << std::string (indentationWidth, SPACE);
-                                FormatString (stream, object.values[i].first.c_str ());
-                                stream << ": ";
-                                FormatValueHelper (
-                                    stream,
-                                    *object.values[i].second,
-                                    indentationLevel + 1,
-                                    indentationWidth);
-                                if (i < count - 1) {
-                                    stream << ",";
-                                }
-                                stream << "\n" << std::string (indentationLevel * indentationWidth, SPACE);
-                            }
                         }
-                        stream << "}";
-                        break;
                     }
-                    default:
-                        THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                            "Unknown value type: %s (%s)",
-                            JSON::Value::typeTostring (value.GetType ()).c_str (),
-                            value.GetName ());
+                    stream << "]";
+                }
+                else if (value.GetType () == JSON::Object::TYPE) {
+                    stream << "{";
+                    const JSON::Object &object = dynamic_cast<const JSON::Object &> (value);
+                    if (!object.values.empty ()) {
+                        stream << "\n" << std::string (indentationLevel * indentationWidth, SPACE);
+                        for (std::size_t i = 0, count = object.values.size (); i < count; ++i) {
+                            stream << std::string (indentationWidth, SPACE);
+                            FormatString (stream, object.values[i].first.c_str ());
+                            stream << ": ";
+                            FormatValueHelper (
+                                stream,
+                                *object.values[i].second,
+                                indentationLevel + 1,
+                                indentationWidth);
+                            if (i < count - 1) {
+                                stream << ",";
+                            }
+                            stream << "\n" << std::string (indentationLevel * indentationWidth, SPACE);
+                        }
+                    }
+                    stream << "}";
+                }
+                else {
+                    THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
+                        "Unknown value type %s.",
+                        value.GetType ());
                 }
             }
         }

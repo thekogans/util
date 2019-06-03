@@ -195,15 +195,15 @@ namespace thekogans {
         void Fraction::Read (
                 const TextHeader & /*header*/,
                 const JSON::Object &object) {
-            numerator = (ui32)object.GetValue (ATTR_NUMERATOR)->ToNumber ();
-            denominator = (ui32)object.GetValue (ATTR_DENOMINATOR)->ToNumber ();
-            sign = stringTosign (object.GetValue (ATTR_SIGN)->ToString ());
+            numerator = object.Get<JSON::Number> (ATTR_NUMERATOR)->To<ui32> ();
+            denominator = object.Get<JSON::Number> (ATTR_DENOMINATOR)->To<ui32> ();
+            sign = stringTosign (object.Get<JSON::String> (ATTR_SIGN)->value);
         }
 
         void Fraction::Write (JSON::Object &object) const {
-            object.AddNumber (ATTR_NUMERATOR, numerator);
-            object.AddNumber (ATTR_DENOMINATOR, denominator);
-            object.AddString (ATTR_SIGN, signTostring (sign));
+            object.Add (ATTR_NUMERATOR, numerator);
+            object.Add (ATTR_DENOMINATOR, denominator);
+            object.Add (ATTR_SIGN, signTostring (sign));
         }
 
         _LIB_THEKOGANS_UTIL_DECL Fraction _LIB_THEKOGANS_UTIL_API operator + (

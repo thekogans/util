@@ -172,17 +172,17 @@ namespace thekogans {
         void RunLoop::Stats::Job::Read (
                 const TextHeader & /*header*/,
                 const JSON::Object &object) {
-            id = object.GetValue (ATTR_ID)->ToString ();
-            startTime = (ui64)object.GetValue (ATTR_START_TIME)->ToNumber ();
-            endTime = (ui64)object.GetValue (ATTR_END_TIME)->ToNumber ();
-            totalTime = (ui64)object.GetValue (ATTR_TOTAL_TIME)->ToNumber ();
+            id = object.Get<JSON::String> (ATTR_ID)->value;
+            startTime = object.Get<JSON::Number> (ATTR_START_TIME)->To<ui64> ();
+            endTime = object.Get<JSON::Number> (ATTR_END_TIME)->To<ui64> ();
+            totalTime = object.Get<JSON::Number> (ATTR_TOTAL_TIME)->To<ui64> ();
         }
 
         void RunLoop::Stats::Job::Write (JSON::Object &object) const {
-            object.AddString (ATTR_ID, id);
-            object.AddNumber (ATTR_START_TIME, startTime);
-            object.AddNumber (ATTR_END_TIME, endTime);
-            object.AddNumber (ATTR_TOTAL_TIME, totalTime);
+            object.Add (ATTR_ID, id);
+            object.Add (ATTR_START_TIME, startTime);
+            object.Add (ATTR_END_TIME, endTime);
+            object.Add (ATTR_TOTAL_TIME, totalTime);
         }
 
         #if !defined (THEKOGANS_UTIL_MIN_RUN_LOOP_STATS_IN_PAGE)
@@ -222,9 +222,9 @@ namespace thekogans {
                 Serializer::Size (name) +
                 Serializer::Size (totalJobs) +
                 Serializer::Size (totalJobTime) +
-                lastJob.Size () +
-                minJob.Size () +
-                maxJob.Size ();
+                Serializable::Size (lastJob) +
+                Serializable::Size (minJob) +
+                Serializable::Size (maxJob);
         }
 
         void RunLoop::Stats::Read (
@@ -292,17 +292,17 @@ namespace thekogans {
         void RunLoop::Stats::Read (
                 const TextHeader & /*header*/,
                 const JSON::Object &object) {
-            id = object.GetValue (ATTR_ID)->ToString ();
-            name = object.GetValue (ATTR_NAME)->ToString ();
-            totalJobs = (ui64)object.GetValue (ATTR_TOTAL_JOBS)->ToNumber ();
-            totalJobTime = (ui64)object.GetValue (ATTR_TOTAL_JOB_TIME)->ToNumber ();
+            id = object.Get<JSON::String> (ATTR_ID)->value;
+            name = object.Get<JSON::Number> (ATTR_NAME)->To<std::string> ();
+            totalJobs = object.Get<JSON::Number> (ATTR_TOTAL_JOBS)->To<ui64> ();
+            totalJobTime = object.Get<JSON::Number> (ATTR_TOTAL_JOB_TIME)->To<ui64> ();
         }
 
         void RunLoop::Stats::Write (JSON::Object &object) const {
-            object.AddString (ATTR_ID, id);
-            object.AddString (ATTR_NAME, name);
-            object.AddNumber (ATTR_TOTAL_JOBS, totalJobs);
-            object.AddNumber (ATTR_TOTAL_JOB_TIME, totalJobTime);
+            object.Add (ATTR_ID, id);
+            object.Add (ATTR_NAME, name);
+            object.Add (ATTR_TOTAL_JOBS, totalJobs);
+            object.Add (ATTR_TOTAL_JOB_TIME, totalJobTime);
         }
 
         void RunLoop::Stats::Update (

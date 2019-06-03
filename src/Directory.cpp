@@ -777,37 +777,37 @@ namespace thekogans {
         void Directory::Entry::Read (
                 const TextHeader & /*header*/,
                 const JSON::Object &object) {
-            fileSystem = stringTofileSystem (object.GetValue (ATTR_FILE_SYSTEM)->ToString ());
-            type = stringTotype (object.GetValue (ATTR_TYPE)->ToString ());
-            name = object.GetValue (ATTR_NAME)->ToString ();
+            fileSystem = stringTofileSystem (object.Get<JSON::String> (ATTR_FILE_SYSTEM)->value);
+            type = stringTotype (object.Get<JSON::String> (ATTR_TYPE)->value);
+            name = object.Get<JSON::String> (ATTR_NAME)->value;
             if (fileSystem == Windows) {
-                attributes = (ui32)object.GetValue (ATTR_ATTRIBUTES)->ToNumber ();
-                creationDate = (i64)object.GetValue (ATTR_CREATION_DATE)->ToNumber ();
+                attributes = object.Get<JSON::Number> (ATTR_ATTRIBUTES)->To<ui32> ();
+                creationDate = object.Get<JSON::Number> (ATTR_CREATION_DATE)->To<i64> ();
             }
             else {
-                mode = (i32)object.GetValue (ATTR_MODE)->ToNumber ();
-                lastStatusDate = (i64)object.GetValue (ATTR_LAST_STATUS_DATE)->ToNumber ();
+                mode = object.Get<JSON::Number> (ATTR_MODE)->To<i32> ();
+                lastStatusDate = object.Get<JSON::Number> (ATTR_LAST_STATUS_DATE)->To<i64> ();
             }
-            lastAccessedDate = (i64)object.GetValue (ATTR_LAST_ACCESSED_DATE)->ToNumber ();
-            lastModifiedDate = (i64)object.GetValue (ATTR_LAST_MODIFIED_DATE)->ToNumber ();
-            size = (i64)object.GetValue (ATTR_SIZE)->ToNumber ();
+            lastAccessedDate = object.Get<JSON::Number> (ATTR_LAST_ACCESSED_DATE)->To<i64> ();
+            lastModifiedDate = object.Get<JSON::Number> (ATTR_LAST_MODIFIED_DATE)->To<i64> ();
+            size = object.Get<JSON::Number> (ATTR_SIZE)->To<i64> ();
         }
 
         void Directory::Entry::Write (JSON::Object &object) const {
-            object.AddString (ATTR_FILE_SYSTEM, fileSystemTostring (fileSystem));
-            object.AddString (ATTR_TYPE, typeTostring (type));
-            object.AddString (ATTR_NAME, name);
+            object.Add (ATTR_FILE_SYSTEM, fileSystemTostring (fileSystem));
+            object.Add (ATTR_TYPE, typeTostring (type));
+            object.Add (ATTR_NAME, name);
             if (fileSystem == Windows) {
-                object.AddNumber (ATTR_ATTRIBUTES, attributes);
-                object.AddNumber (ATTR_CREATION_DATE, creationDate);
+                object.Add (ATTR_ATTRIBUTES, attributes);
+                object.Add (ATTR_CREATION_DATE, creationDate);
             }
             else {
-                object.AddNumber (ATTR_MODE, mode);
-                object.AddNumber (ATTR_LAST_STATUS_DATE, lastStatusDate);
+                object.Add (ATTR_MODE, mode);
+                object.Add (ATTR_LAST_STATUS_DATE, lastStatusDate);
             }
-            object.AddNumber (ATTR_LAST_ACCESSED_DATE, lastAccessedDate);
-            object.AddNumber (ATTR_LAST_MODIFIED_DATE, lastModifiedDate);
-            object.AddNumber (ATTR_SIZE, size);
+            object.Add (ATTR_LAST_ACCESSED_DATE, lastAccessedDate);
+            object.Add (ATTR_LAST_MODIFIED_DATE, lastModifiedDate);
+            object.Add (ATTR_SIZE, size);
         }
 
     #if defined (TOOLCHAIN_OS_Windows)

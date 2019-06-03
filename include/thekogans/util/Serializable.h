@@ -569,12 +569,12 @@ namespace thekogans {
         inline JSON::Object &operator << (
                 JSON::Object &object,
                 const Serializable::TextHeader &header) {
-            object.AddValue (
+            object.Add (
                 Serializable::TextHeader::ATTR_TYPE,
-                JSON::Value::Ptr (new JSON::String (header.type)));
-            object.AddValue (
+                header.type);
+            object.Add (
                 Serializable::TextHeader::ATTR_VERSION,
-                JSON::Value::Ptr (new JSON::Number (header.version)));
+                header.version);
             return object;
         }
 
@@ -586,8 +586,8 @@ namespace thekogans {
         inline const JSON::Object &operator >> (
                 const JSON::Object &object,
                 Serializable::TextHeader &header) {
-            header.type = object.GetValue (Serializable::TextHeader::ATTR_TYPE)->ToString ();
-            header.version = (ui16)object.GetValue (Serializable::TextHeader::ATTR_VERSION)->ToNumber ();
+            header.type = object.Get<JSON::String> (Serializable::TextHeader::ATTR_TYPE)->value;
+            header.version = object.Get<JSON::Number> (Serializable::TextHeader::ATTR_VERSION)->To<ui16> ();
             return object;
         }
 
