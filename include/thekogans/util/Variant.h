@@ -380,6 +380,11 @@ namespace thekogans {
             /// \return <0 = less, =0 = equal, >0 = greater.
             i32 PrefixCompare (const Variant &variant) const;
 
+        #if defined (_MSC_VER)
+            #pragma warning (push)
+            #pragma warning (disable : 4244)
+        #endif // defined (_MSC_VER)
+
             /// \brief
             /// Numerical type conversion template.
             /// \return Number cast to appropriate type.
@@ -414,6 +419,10 @@ namespace thekogans {
                             TypeTostring (type).c_str ());
                 }
             }
+
+        #if defined (_MSC_VER)
+            #pragma warning (pop)
+        #endif // defined (_MSC_VER)
 
             /// \brief
             /// Parse variant state from an xml node.
