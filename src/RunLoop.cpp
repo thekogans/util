@@ -294,7 +294,7 @@ namespace thekogans {
                 const JSON::Object &object) {
             id = object.Get<JSON::String> (ATTR_ID)->value;
             name = object.Get<JSON::Number> (ATTR_NAME)->To<std::string> ();
-            totalJobs = object.Get<JSON::Number> (ATTR_TOTAL_JOBS)->To<ui64> ();
+            totalJobs = object.Get<JSON::Number> (ATTR_TOTAL_JOBS)->To<ui32> ();
             totalJobTime = object.Get<JSON::Number> (ATTR_TOTAL_JOB_TIME)->To<ui64> ();
         }
 
