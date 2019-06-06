@@ -23,6 +23,8 @@
 #endif // defined (TOOLCHAIN_OS_Windows)
 #include "thekogans/util/Config.h"
 #include "thekogans/util/Types.h"
+#include "thekogans/util/Heap.h"
+#include "thekogans/util/SpinLock.h"
 
 namespace thekogans {
     namespace util {
@@ -36,6 +38,11 @@ namespace thekogans {
         /// serializable std::size_t.
 
         struct _LIB_THEKOGANS_UTIL_DECL SizeT {
+            /// \brief
+            /// SizeT has a private heap to help with memory
+            /// management, performance, and global heap fragmentation.
+            THEKOGANS_UTIL_DECLARE_HEAP_WITH_LOCK (SizeT, SpinLock)
+
             enum {
                 /// \brief
                 /// Min serialized SizeT size.

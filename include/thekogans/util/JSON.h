@@ -458,9 +458,9 @@ namespace thekogans {
         }
 
         template<>
-        inline std::size_t JSON::Value::To<std::size_t> () const {
+        inline SizeT JSON::Value::To<SizeT> () const {
             if (GetType () == Number::TYPE) {
-                return static_cast<const Number *> (this)->value.To<size_t> ();
+                return static_cast<const Number *> (this)->value.To<SizeT> ();
             }
             else {
                 THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
@@ -535,11 +535,6 @@ namespace thekogans {
 
         template<>
         inline void JSON::Array::Add<f64> (f64 value) {
-            values.push_back (Value::Ptr (new Number (Variant (value))));
-        }
-
-        template<>
-        inline void JSON::Array::Add<std::size_t> (std::size_t value) {
             values.push_back (Value::Ptr (new Number (Variant (value))));
         }
 
@@ -698,19 +693,6 @@ namespace thekogans {
         inline void JSON::Object::Add<f64> (
                 const std::string &name,
                 f64 value) {
-            if (!name.empty ()) {
-                values.push_back (NameValue (name, Value::Ptr (new Number (Variant (value)))));
-            }
-            else {
-                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
-            }
-        }
-
-        template<>
-        inline void JSON::Object::Add<std::size_t> (
-                const std::string &name,
-                std::size_t value) {
             if (!name.empty ()) {
                 values.push_back (NameValue (name, Value::Ptr (new Number (Variant (value)))));
             }

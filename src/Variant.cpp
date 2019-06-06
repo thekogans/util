@@ -45,9 +45,9 @@ namespace thekogans {
         const char * const Variant::VALUE_UI64 = "ui64";
         const char * const Variant::VALUE_F32 = "f32";
         const char * const Variant::VALUE_F64 = "f64";
-        const char * const Variant::VALUE_size_t = "size_t";
+        const char * const Variant::VALUE_SizeT = "SizeT";
         const char * const Variant::VALUE_STRING = "string";
-        const char * const Variant::VALUE_GUID = "guid";
+        const char * const Variant::VALUE_GUID = "GUID";
         const char * const Variant::TAG_VALUE = "Value";
         const char * const Variant::ATTR_VALUE = "Value";
 
@@ -91,8 +91,8 @@ namespace thekogans {
                 case Variant::TYPE_f64:
                     value._f64 = variant.value._f64;
                     break;
-                case Variant::TYPE_size_t:
-                    value._size_t = variant.value._size_t;
+                case Variant::TYPE_SizeT:
+                    value._SizeT = new SizeT (*variant.value._SizeT);
                     break;
                 case Variant::TYPE_string: {
                     value._string = new std::string (*variant.value._string);
@@ -145,8 +145,8 @@ namespace thekogans {
                     case Variant::TYPE_f64:
                         value._f64 = variant.value._f64;
                         break;
-                    case Variant::TYPE_size_t:
-                        value._size_t = variant.value._size_t;
+                    case Variant::TYPE_SizeT:
+                        value._SizeT = new SizeT (*variant.value._SizeT);
                         break;
                     case Variant::TYPE_string: {
                         value._string = new std::string (*variant.value._string);
@@ -174,7 +174,7 @@ namespace thekogans {
                 type == TYPE_ui64 ? VALUE_UI64 :
                 type == TYPE_f32 ? VALUE_F32 :
                 type == TYPE_f64 ? VALUE_F64 :
-                type == TYPE_size_t ? VALUE_size_t :
+                type == TYPE_SizeT ? VALUE_SizeT :
                 type == TYPE_string ? VALUE_STRING :
                 type == TYPE_GUID ? VALUE_GUID : VALUE_INVALID;
         }
@@ -192,7 +192,7 @@ namespace thekogans {
                 type == VALUE_UI64 ? TYPE_ui64 :
                 type == VALUE_F32 ? TYPE_f32 :
                 type == VALUE_F64 ? TYPE_f64 :
-                type == VALUE_size_t ? TYPE_size_t :
+                type == VALUE_SizeT ? TYPE_SizeT :
                 type == VALUE_STRING ? TYPE_string :
                 type == VALUE_GUID ? TYPE_GUID : TYPE_Invalid;
         }
@@ -235,8 +235,9 @@ namespace thekogans {
                 case Variant::TYPE_f64:
                     size += F64_SIZE;
                     break;
-                case Variant::TYPE_size_t:
-                    size += SizeT (value._size_t).Size ();
+                case Variant::TYPE_SizeT:
+                    assert (value._SizeT != 0);
+                    size += Serializer::Size (*value._SizeT);
                     break;
                 case Variant::TYPE_string: {
                     assert (value._string != 0);
@@ -277,8 +278,8 @@ namespace thekogans {
                     return (std::size_t)fmod (value._f32, (f32)radix);
                 case Variant::TYPE_f64:
                     return (std::size_t)fmod (value._f64, (f64)radix);
-                case Variant::TYPE_size_t:
-                    return value._size_t % radix;
+                case Variant::TYPE_SizeT:
+                    return *value._SizeT % radix;
                 case Variant::TYPE_string:
                     return HashString (*value._string, radix);
                 case Variant::TYPE_GUID:
@@ -289,6 +290,10 @@ namespace thekogans {
         }
 
         void Variant::Clear () {
+            if (type == TYPE_SizeT) {
+                delete value._SizeT;
+                value._SizeT = 0;
+            }
             if (type == TYPE_string) {
                 delete value._string;
                 value._string = 0;
@@ -338,9 +343,9 @@ namespace thekogans {
                 case Variant::TYPE_f64:
                     return value._f64 < variant.value._f64 ?
                         -1 : value._f64 > variant.value._f64 ? 1 : 0;
-                case Variant::TYPE_size_t:
-                    return value._size_t < variant.value._size_t ?
-                        -1 : value._size_t > variant.value._size_t ? 1 : 0;
+                case Variant::TYPE_SizeT:
+                    return *value._SizeT < *variant.value._SizeT ?
+                        -1 : *value._SizeT > *variant.value._SizeT ? 1 : 0;
                 case Variant::TYPE_string:
                     return strcasecmp (value._string->c_str (),
                         variant.value._string->c_str ());
@@ -390,9 +395,9 @@ namespace thekogans {
                 case Variant::TYPE_f64:
                     return value._f64 < variant.value._f64 ?
                         -1 : value._f64 > variant.value._f64 ? 1 : 0;
-                case Variant::TYPE_size_t:
-                    return value._size_t < variant.value._size_t ?
-                        -1 : value._size_t > variant.value._size_t ? 1 : 0;
+                case Variant::TYPE_SizeT:
+                    return *value._SizeT < *variant.value._SizeT ?
+                        -1 : *value._SizeT > *variant.value._SizeT ? 1 : 0;
                 case Variant::TYPE_string:
                     return strncasecmp (value._string->c_str (),
                         variant.value._string->c_str (), value._string->size ());
@@ -443,8 +448,8 @@ namespace thekogans {
                 case Variant::TYPE_f64:
                     value._f64 = stringTof64 (node.attribute (ATTR_VALUE).value ());
                     break;
-                case Variant::TYPE_size_t:
-                    value._size_t = stringTosize_t (node.attribute (ATTR_VALUE).value ());
+                case Variant::TYPE_SizeT:
+                    value._SizeT = new SizeT (stringTosize_t (node.attribute (ATTR_VALUE).value ()));
                     break;
                 case Variant::TYPE_string:
                     value._string = new std::string (node.attribute (ATTR_VALUE).value ());
@@ -496,8 +501,8 @@ namespace thekogans {
                 case Variant::TYPE_f64:
                     str = f64Tostring (value._f64);
                     break;
-                case Variant::TYPE_size_t:
-                    str = size_tTostring (value._size_t);
+                case Variant::TYPE_SizeT:
+                    str = size_tTostring (*value._SizeT);
                     break;
                 case Variant::TYPE_string:
                     str = Encodestring (*value._string);
@@ -573,8 +578,8 @@ namespace thekogans {
                 case Variant::TYPE_f64:
                     serializer << variant.value._f64;
                     break;
-                case Variant::TYPE_size_t:
-                    serializer << SizeT (variant.value._size_t);
+                case Variant::TYPE_SizeT:
+                    serializer << *variant.value._SizeT;
                     break;
                 case Variant::TYPE_string:
                     assert (variant.value._string != 0);
@@ -631,19 +636,18 @@ namespace thekogans {
                 case Variant::TYPE_f64:
                     serializer >> variant.value._f64;
                     break;
-                case Variant::TYPE_size_t: {
-                    SizeT size_t;
-                    serializer >> size_t;
-                    variant.value._size_t = size_t;
+                case Variant::TYPE_SizeT: {
+                    variant.value._SizeT = new SizeT;
+                    serializer >> *variant.value._SizeT;
                     break;
                 }
                 case Variant::TYPE_string: {
-                    variant.value._string = new std::string ();
+                    variant.value._string = new std::string;
                     serializer >> *variant.value._string;
                     break;
                 }
                 case Variant::TYPE_GUID: {
-                    variant.value._guid = new GUID ();
+                    variant.value._guid = new GUID;
                     serializer >> *variant.value._guid;
                     break;
                 }

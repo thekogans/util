@@ -83,13 +83,13 @@ namespace thekogans {
             /// "f64"
             static const char * const VALUE_F64;
             /// \brief
-            /// "size_t"
-            static const char * const VALUE_size_t;
+            /// "SizeT"
+            static const char * const VALUE_SizeT;
             /// \brief
             /// "string"
             static const char * const VALUE_STRING;
             /// \brief
-            /// "guid"
+            /// "GUID"
             static const char * const VALUE_GUID;
             /// \brief
             /// "Value"
@@ -138,8 +138,8 @@ namespace thekogans {
                 /// f64
                 TYPE_f64,
                 /// \brief
-                /// std::size_t
-                TYPE_size_t,
+                /// SizeT
+                TYPE_SizeT,
                 /// \brief
                 /// std::string *
                 TYPE_string,
@@ -154,7 +154,6 @@ namespace thekogans {
                 //TYPE_Fraction
                 //TYPE_Exception
                 //TYPE_Flags
-                //TYPE_SizeT
                 //TYPE_TimeSpec
                 //TYPE_Version
             } type;
@@ -195,8 +194,8 @@ namespace thekogans {
                 /// f64
                 f64 _f64;
                 /// \brief
-                /// std::size_t
-                std::size_t _size_t;
+                /// SizeT
+                SizeT *_SizeT;
                 /// \brief
                 /// std::String *
                 std::string *_string;
@@ -291,11 +290,11 @@ namespace thekogans {
                 value._f64 = value_;
             }
             /// \brief
-            /// std::size_t ctor.
+            /// SizeT ctor.
             /// \param[in] value_ Value to assign.
-            explicit Variant (std::size_t value_) :
-                    type (TYPE_size_t) {
-                value._size_t = value_;
+            explicit Variant (const SizeT &value_) :
+                    type (TYPE_SizeT) {
+                value._SizeT = new SizeT (value_);
             }
             /// \brief
             /// std::string ctor.
@@ -407,8 +406,8 @@ namespace thekogans {
                         return (T)value._f32;
                     case Variant::TYPE_f64:
                         return (T)value._f64;
-                    case Variant::TYPE_size_t:
-                        return (T)value._size_t;
+                    case Variant::TYPE_SizeT:
+                        return (T)*value._SizeT;
                     default:
                         THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
                             "Varint type (%s) is not a number.",
