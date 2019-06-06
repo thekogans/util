@@ -387,27 +387,27 @@ namespace thekogans {
             T To () const {
                 switch (type) {
                     case Variant::TYPE_i8:
-                        return (T)value._i8;
+                        return static_cast<T> (value._i8);
                     case Variant::TYPE_ui8:
-                        return (T)value._ui8;
+                        return static_cast<T> (value._ui8);
                     case Variant::TYPE_i16:
-                        return (T)value._i16;
+                        return static_cast<T> (value._i16);
                     case Variant::TYPE_ui16:
-                        return (T)value._ui16;
+                        return static_cast<T> (value._ui16);
                     case Variant::TYPE_i32:
-                        return (T)value._i32;
+                        return static_cast<T> (value._i32);
                     case Variant::TYPE_ui32:
-                        return (T)value._ui32;
+                        return static_cast<T> (value._ui32);
                     case Variant::TYPE_i64:
-                        return (T)value._i64;
+                        return static_cast<T> (value._i64);
                     case Variant::TYPE_ui64:
-                        return (T)value._ui64;
+                        return static_cast<T> (value._ui64);
                     case Variant::TYPE_f32:
-                        return (T)value._f32;
+                        return static_cast<T> (value._f32);
                     case Variant::TYPE_f64:
-                        return (T)value._f64;
+                        return static_cast<T> (value._f64);
                     case Variant::TYPE_SizeT:
-                        return (T)*value._SizeT;
+                        return static_cast<T> (*value._SizeT);
                     default:
                         THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
                             "Varint type (%s) is not a number.",
