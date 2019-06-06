@@ -16,6 +16,7 @@
 // along with libthekogans_util. If not, see <http://www.gnu.org/licenses/>.
 
 #include <cctype>
+#include <limits>
 #include <sstream>
 #include "thekogans/util/Exception.h"
 #include "thekogans/util/StringUtils.h"
@@ -147,16 +148,6 @@ namespace thekogans {
 
             inline bool isdelim (char c) {
                 return c == COMMA || c == COLON || c == ARRAY_END || c == OBJECT_END || isspace (c) || c == '\0';
-            }
-
-            // Numbers can have the following format:
-            // [+ | -][0..9]*[.][0..9]*[[E | e][+ | -][0..9]+]
-            // NaN
-            // [+ | -]Inf[inity]
-            inline Variant ParseNumber (
-                    const char *start,
-                    const char **end) {
-                return Variant (stringTof64 (start, (char **)end));
             }
 
             struct Tokenizer {
@@ -332,10 +323,47 @@ namespace thekogans {
                             }
                             default: {
                                 // It's not any of the well defined tokens. Try parsing a number.
+                                // Numbers can have the following format:
+                                // [+ | -][0..9]*[.][0..9]*[[E | e][+ | -][0..9]+]
+                                // NaN
+                                // [+ | -]Inf[inity]
                                 const char *start = json;
-                                Variant number = ParseNumber (json, &json);
+                                // Check for NaN.
+                                if (json[0] == 'N' && json[1] == 'a' && json[2] == 'N' && isdelim (json[3])) {
+                                    json += 3;
+                                    return Token (
+                                        std::string (start, json),
+                                        Variant (std::numeric_limits<f64>::quiet_NaN ()));
+                                }
+                                // First, parse out the sign.
+                                bool minus = false;
+                                if (*json == '-') {
+                                    minus = true;
+                                    ++json;
+                                }
+                                else if (*json == '+') {
+                                    // Leading '+' is harmless.
+                                    ++json;
+                                }
+                                // Check for [+ | -]Inf.
+                                if (json[0] == 'I' && json[1] == 'n' && json[2] == 'f' && isdelim (json[3])) {
+                                    json += 3;
+                                    f64 inf = std::numeric_limits<f64>::infinity ();
+                                    if (minus) {
+                                        inf = -inf;
+                                    }
+                                    return Token (std::string (start, json), Variant (inf));
+                                }
+                                // Skip over the integer part.
+                                while (isdigit (*json)) {
+                                    ++json;
+                                }
+                                // Create proper variant type based on the format of the number.
+                                Variant value ((*json == '.' || *json == 'e' || *json == 'E') ?
+                                    stringTof64 (start, (char **)&json) : minus ?
+                                    stringToi64 (start, (char **)&json) : stringToui64 (start, (char **)&json));
                                 if (json > start && isdelim (*json)) {
-                                    return Token (std::string (start, json), number);
+                                    return Token (std::string (start, json), value);
                                 }
                                 else {
                                     THEKOGANS_UTIL_THROW_STRING_EXCEPTION (

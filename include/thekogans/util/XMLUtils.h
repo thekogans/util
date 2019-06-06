@@ -132,15 +132,16 @@ namespace thekogans {
             Decodestring (const std::string &str);
 
         /// \brief
-        /// Format the given node.
-        /// \param[in] node The node to format.
-        /// \param[in] indentationLevel Pretty print parameter.
+        /// Format the given document.
+        /// \param[in] document The document to format.
+        /// \param[in] indentationLevel Pretty print parameter
+        /// (Currently unused due to the limitations of pugixml).
         /// \param[in] indentationWidth Pretty print parameter.
-        /// \return Formatted node.
+        /// \return Formatted document.
         _LIB_THEKOGANS_UTIL_DECL std::string _LIB_THEKOGANS_UTIL_API
-            FormatNode (
-                const pugi::xml_node &node,
-                std::size_t indentationLevel = 0,
+            FormatDocument (
+                const pugi::xml_document &document,
+                std::size_t /*indentationLevel*/ = 0,
                 std::size_t indentationWidth = 2);
 
     } // namespace util

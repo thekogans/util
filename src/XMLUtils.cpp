@@ -198,13 +198,18 @@ namespace thekogans {
         }
 
         _LIB_THEKOGANS_UTIL_DECL std::string _LIB_THEKOGANS_UTIL_API
-        FormatNode (
-                const pugi::xml_node &node,
-                std::size_t indentationLevel,
+        FormatDocument (
+                const pugi::xml_document &document,
+                std::size_t /*indentationLevel*/,
                 std::size_t indentationWidth) {
-            // FIXME: implement
-            assert (0);
-            return std::string ();
+            std::stringstream stream;
+            pugi::xml_writer_stream writer (stream);
+            document.save (
+                writer,
+                std::string (indentationWidth, ' ').c_str (),
+                pugi::format_indent | pugi::format_indent_attributes,
+                pugi::encoding_utf8);
+            return stream.str ();
         }
 
     } // namespace util

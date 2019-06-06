@@ -185,6 +185,18 @@ namespace thekogans {
                 virtual ~TimerInfoBase () {}
 
                 /// \brief
+                /// Add a used defined key/value pair to be included
+                /// in the XML string. This feature give you the ability
+                /// to add app specific attributes to your timer data.
+                /// \param[in] attribute Attribute to add.
+                inline void AddAttribute (const Attribute &attribute) {
+                    attributes.push_back (attribute);
+                }
+
+                virtual void ToXML (pugi::xml_node &node) const = 0;
+                virtual void ToJSON (JSON::Object &object) const = 0;
+
+                /// \brief
                 /// Return stats accumulated by this TimerInfoBase.
                 /// \param[out] count Number of times this block was hit.
                 /// \param[out] min Minimum time spent in the block.
@@ -197,15 +209,6 @@ namespace thekogans {
                     ui64 & /*max*/,
                     ui64 & /*average*/,
                     ui64 & /*total*/) const = 0;
-
-                /// \brief
-                /// Add a used defined key/value pair to be included
-                /// in the XML string. This feature give you the ability
-                /// to add app specific attributes to your timer data.
-                /// \param[in] attribute Attribute to add.
-                inline void AddAttribute (const Attribute &attribute) {
-                    attributes.push_back (attribute);
-                }
 
             protected:
                 // Serializable
@@ -289,6 +292,17 @@ namespace thekogans {
                     stop (0) {}
 
                 /// \brief
+                /// Record the current time as the start time.
+                void Start ();
+                /// \brief
+                /// Record the current time as the stop time.
+                void Stop ();
+
+                virtual void ToXML (pugi::xml_node &node) const;
+                virtual void ToJSON (JSON::Object &object) const;
+
+                // TimerInfoBase
+                /// \brief
                 /// Return stats accumulated by this TimerInfo.
                 /// \param[out] count 1.
                 /// \param[out] min start.
@@ -301,13 +315,6 @@ namespace thekogans {
                     ui64 &max,
                     ui64 &average,
                     ui64 &total) const;
-
-                /// \brief
-                /// Record the current time as the start time.
-                void Start ();
-                /// \brief
-                /// Record the current time as the stop time.
-                void Stop ();
 
             protected:
                 // Serializable
@@ -386,20 +393,6 @@ namespace thekogans {
                     TimerInfoBase (name) {}
 
                 /// \brief
-                /// Return stats accumulated by this ScopeInfo.
-                /// \param[out] count Aggregate count of all child scope and timers.
-                /// \param[out] min Minimum time spent by a child scope or timer.
-                /// \param[out] max Maximum time spent by a child scope or timer.
-                /// \param[out] average Average time spent by child scope and timers.
-                /// \param[out] total Aggregate time spent in the block.
-                virtual void GetStats (
-                    ui32 &count,
-                    ui64 &min,
-                    ui64 &max,
-                    ui64 &average,
-                    ui64 &total) const;
-
-                /// \brief
                 /// Start a new sub-scope.
                 /// \param[in] name Name of the new sub-scope.
                 /// \return The new sub-scope.
@@ -416,6 +409,24 @@ namespace thekogans {
                 /// \brief
                 /// End the current sub-timer.
                 void StopTimer ();
+
+                virtual void ToXML (pugi::xml_node &node) const;
+                virtual void ToJSON (JSON::Object &object) const;
+
+                // TimerInfoBase
+                /// \brief
+                /// Return stats accumulated by this ScopeInfo.
+                /// \param[out] count Aggregate count of all child scope and timers.
+                /// \param[out] min Minimum time spent by a child scope or timer.
+                /// \param[out] max Maximum time spent by a child scope or timer.
+                /// \param[out] average Average time spent by child scope and timers.
+                /// \param[out] total Aggregate time spent in the block.
+                virtual void GetStats (
+                    ui32 &count,
+                    ui64 &min,
+                    ui64 &max,
+                    ui64 &average,
+                    ui64 &total) const;
 
             protected:
                 // Serializable
@@ -440,20 +451,17 @@ namespace thekogans {
                 /// "Scope"
                 static const char * const TAG_SCOPE;
                 /// \brief
-                /// "Count"
-                static const char * const ATTR_COUNT;
+                /// "OpenScopes"
+                static const char * const TAG_OPEN_SCOPES;
                 /// \brief
-                /// "Min"
-                static const char * const ATTR_MIN;
+                /// "OpenScope"
+                static const char * const TAG_OPEN_SCOPE;
                 /// \brief
-                /// "Max"
-                static const char * const ATTR_MAX;
+                /// "ClosedScopes"
+                static const char * const TAG_CLOSED_SCOPES;
                 /// \brief
-                /// "Average"
-                static const char * const ATTR_AVERAGE;
-                /// \brief
-                /// "Total"
-                static const char * const ATTR_TOTAL;
+                /// "ClosedScope"
+                static const char * const TAG_CLOSED_SCOPE;
 
                 /// \brief
                 /// Read the Serializable from an XML DOM.
@@ -629,30 +637,18 @@ namespace thekogans {
             }
 
             /// \brief
-            /// Aggregate and return the current stats.
-            /// \param[out] count Aggregate number of times this block was hit.
-            /// \param[out] min Aggregate minimum time spent in the block.
-            /// \param[out] max Aggregate maximum time spent in the block.
-            /// \param[out] average Aggregate average time spent in the block.
-            /// \param[out] total Aggregate total time spent in the block.
-            inline void GetStats (
-                    ui32 &count,
-                    ui64 &min,
-                    ui64 &max,
-                    ui64 &average,
-                    ui64 &total) const {
-                count = 0;
-                min = UI64_MAX;
-                max = average = total = 0;
-                root.GetStats (count, min, max, average, total);
-            }
-
-            /// \brief
             /// Add a user defind attribute to the root scope.
             /// \param[in] attribute Used defined key/value pair.
             inline void AddAttribute (const Attribute &attribute) {
                 root.AddAttribute (attribute);
             }
+
+            std::string ToXMLString (
+                std::size_t indentationLevel = 0,
+                std::size_t indentationWidth = 2) const;
+            std::string ToJSONString (
+                std::size_t indentationLevel = 0,
+                std::size_t indentationWidth = 2) const;
 
         protected:
             // Serializable
@@ -704,6 +700,10 @@ namespace thekogans {
         /// \brief
         /// Implement HRTimerMgr::TimerInfoBase extraction operators.
         THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_PTR_EXTRACTION_OPERATORS (HRTimerMgr::TimerInfoBase)
+
+        /// \brief
+        /// Implement HRTimerMgr::TimerInfoBase value parser.
+        THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_PTR_VALUE_PARSER (HRTimerMgr::TimerInfoBase)
 
         /// \brief
         /// Implement HRTimerMgr::TimerInfo extraction operators.
@@ -816,25 +816,21 @@ namespace thekogans {
             /// Dump the HRTimerMgr state to log.
             /// \param[in] level Log level for the report.
             #define THEKOGANS_UTIL_HRTIMER_MGR_LOG_XML(level) {\
-                pugi::xml_node node;\
-                node << root;\
                 THEKOGANS_UTIL_LOG (\
                     level,\
                     "Profiling results for: %s\n\n%s",\
                     timerMgr.GetRootScope ()->name.c_str (),\
-                    FormatNode (node).c_str ());\
+                    timerMgr.ToXMLString ().c_str ());\
             }
             /// \def THEKOGANS_UTIL_HRTIMER_MGR_LOG_JSON(level)
             /// Dump the HRTimerMgr state to log.
             /// \param[in] level Log level for the report.
             #define THEKOGANS_UTIL_HRTIMER_MGR_LOG_JSON(level) {\
-                JSON::Object object;\
-                object << root;\
                 THEKOGANS_UTIL_LOG (\
                     level,\
                     "Profiling results for: %s\n\n%s",\
                     timerMgr.GetRootScope ()->name.c_str (),\
-                    JSON::FormatValue (object).c_str ());\
+                    timerMgr.ToJSONString ().c_str ());\
             }
         #else // defined (THEKOGANS_UTIL_USE_HRTIMER_MGR)
             #define THEKOGANS_UTIL_HRTIMER_MGR(name, ...)
