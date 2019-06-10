@@ -308,11 +308,11 @@ namespace thekogans {
                 object.Add (attributes[i].first, attributes[i].second);
             }
             if (!closed.empty ()) {
-                JSON::Array::Ptr scopes (new JSON::Array::Array);
+                JSON::Array::Ptr scopes (new JSON::Array);
                 object.Add (TAG_CLOSED_SCOPES, scopes);
                 for (std::list<TimerInfoBase::Ptr>::const_iterator it = closed.begin (),
                         end = closed.end (); it != end; ++it) {
-                    JSON::Object::Ptr scope (new JSON::Object::Object);
+                    JSON::Object::Ptr scope (new JSON::Object);
                     (*it)->ToJSON (*scope);
                     scopes->Add (scope);
                 }
