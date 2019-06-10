@@ -324,9 +324,9 @@ namespace thekogans {
                             default: {
                                 // It's not any of the well defined tokens. Try parsing a number.
                                 // Numbers can have the following format:
-                                // [+ | -][0..9]*[.][0..9]*[[E | e][+ | -][0..9]+]
                                 // NaN
                                 // [+ | -]Inf[inity]
+                                // [+ | -][0..9]*[.][0..9]*[[E | e][+ | -][0..9]+]
                                 const char *start = json;
                                 // Check for NaN.
                                 if (json[0] == 'N' && json[1] == 'a' && json[2] == 'N' && isdelim (json[3])) {
@@ -345,14 +345,23 @@ namespace thekogans {
                                     // Leading '+' is harmless.
                                     ++json;
                                 }
-                                // Check for [+ | -]Inf.
-                                if (json[0] == 'I' && json[1] == 'n' && json[2] == 'f' && isdelim (json[3])) {
+                                // Check for [+ | -]Inf[inity].
+                                if (json[0] == 'I' && json[1] == 'n' && json[2] == 'f') {
                                     json += 3;
-                                    f64 inf = std::numeric_limits<f64>::infinity ();
-                                    if (minus) {
-                                        inf = -inf;
+                                    if (json[0] == 'i' && json[1] == 'n' && json[2] == 'i' && json[3] == 't' && json[4] == 'y') {
+                                        json += 5;
                                     }
-                                    return Token (std::string (start, json), Variant (inf));
+                                    if (isdelim (*json)) {
+                                        f64 inf = std::numeric_limits<f64>::infinity ();
+                                        if (minus) {
+                                            inf = -inf;
+                                        }
+                                        return Token (std::string (start, json), Variant (inf));
+                                    }
+                                    else {
+                                        THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
+                                            "Invalid json: %s", json);
+                                    }
                                 }
                                 // Skip over the integer part.
                                 while (isdigit (*json)) {

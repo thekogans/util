@@ -282,21 +282,41 @@ namespace thekogans {
                     Encodestring (attributes[i].second).c_str ());
             }
             if (!closed.empty ()) {
+                pugi::xml_node scopes = node.append_child (TAG_CLOSED_SCOPES);
                 for (std::list<TimerInfoBase::Ptr>::const_iterator it = closed.begin (),
                         end = closed.end (); it != end; ++it) {
-                }
-                pugi::xml_node closedScopes = node.append_child (TAG_CLOSED_SCOPES);
-                for (std::list<TimerInfoBase::Ptr>::const_iterator it = closed.begin (),
-                        end = closed.end (); it != end; ++it) {
-                    pugi::xml_node closedScope = closedScopes.append_child (TAG_CLOSED_SCOPE);
-                    closedScope << **it;
+                    pugi::xml_node scope = scopes.append_child (pugi::node_element);
+                    (*it)->ToXML (scope);
                 }
             }
         }
 
         void HRTimerMgr::ScopeInfo::ToJSON (JSON::Object &object) const {
-            // FIXME: implement
-            assert (0);
+            ui32 count = 0;
+            ui64 min = UI64_MAX;
+            ui64 max = 0;
+            ui64 average = 0;
+            ui64 total = 0;
+            GetStats (count, min, max, average, total);
+            object.Add (ATTR_NAME, name);
+            object.Add (ATTR_COUNT, count);
+            object.Add (ATTR_MIN, HRTimer::ToSeconds (min));
+            object.Add (ATTR_MAX, HRTimer::ToSeconds (max));
+            object.Add (ATTR_AVERAGE, HRTimer::ToSeconds (average));
+            object.Add (ATTR_TOTAL, HRTimer::ToSeconds (total));
+            for (std::size_t i = 0, count = attributes.size (); i < count; ++i) {
+                object.Add (attributes[i].first, attributes[i].second);
+            }
+            if (!closed.empty ()) {
+                JSON::Array::Ptr scopes (new JSON::Array::Array);
+                object.Add (TAG_CLOSED_SCOPES, scopes);
+                for (std::list<TimerInfoBase::Ptr>::const_iterator it = closed.begin (),
+                        end = closed.end (); it != end; ++it) {
+                    JSON::Object::Ptr scope (new JSON::Object::Object);
+                    (*it)->ToJSON (*scope);
+                    scopes->Add (scope);
+                }
+            }
         }
 
         void HRTimerMgr::ScopeInfo::GetStats (
@@ -393,9 +413,7 @@ namespace thekogans {
 
         const char * const HRTimerMgr::ScopeInfo::TAG_SCOPE = "Scope";
         const char * const HRTimerMgr::ScopeInfo::TAG_OPEN_SCOPES = "OpenScopes";
-        const char * const HRTimerMgr::ScopeInfo::TAG_OPEN_SCOPE = "OpenScope";
         const char * const HRTimerMgr::ScopeInfo::TAG_CLOSED_SCOPES = "ClosedScopes";
-        const char * const HRTimerMgr::ScopeInfo::TAG_CLOSED_SCOPE = "ClosedScope";
 
         void HRTimerMgr::ScopeInfo::Read (
                 const TextHeader &header,
@@ -408,7 +426,7 @@ namespace thekogans {
                         !child.empty (); child = child.next_sibling ()) {
                     if (child.type () == pugi::node_element) {
                         std::string childName = child.name ();
-                        if (childName == TAG_OPEN_SCOPE) {
+                        if (childName == TAG_SCOPE) {
                             TimerInfoBase::Ptr timerInfo;
                             child >> timerInfo;
                             open.push_back (timerInfo);
@@ -423,7 +441,7 @@ namespace thekogans {
                         !child.empty (); child = child.next_sibling ()) {
                     if (child.type () == pugi::node_element) {
                         std::string childName = child.name ();
-                        if (childName == TAG_CLOSED_SCOPE) {
+                        if (childName == TAG_SCOPE) {
                             TimerInfoBase::Ptr timerInfo;
                             child >> timerInfo;
                             closed.push_back (timerInfo);
@@ -439,7 +457,7 @@ namespace thekogans {
                 pugi::xml_node openScopes = node.append_child (TAG_OPEN_SCOPES);
                 for (std::list<TimerInfoBase::Ptr>::const_iterator it = open.begin (),
                         end = open.end (); it != end; ++it) {
-                    pugi::xml_node openScope = openScopes.append_child (TAG_OPEN_SCOPE);
+                    pugi::xml_node openScope = openScopes.append_child (TAG_SCOPE);
                     openScope << **it;
                 }
             }
@@ -447,7 +465,7 @@ namespace thekogans {
                 pugi::xml_node closedScopes = node.append_child (TAG_CLOSED_SCOPES);
                 for (std::list<TimerInfoBase::Ptr>::const_iterator it = closed.begin (),
                         end = closed.end (); it != end; ++it) {
-                    pugi::xml_node closedScope = closedScopes.append_child (TAG_CLOSED_SCOPE);
+                    pugi::xml_node closedScope = closedScopes.append_child (TAG_SCOPE);
                     closedScope << **it;
                 }
             }

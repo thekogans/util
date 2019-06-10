@@ -193,7 +193,13 @@ namespace thekogans {
                     attributes.push_back (attribute);
                 }
 
+                /// \brief
+                /// Populate the given XML node with stats.
+                /// \param[out] node The node to which to add attributes and tags.
                 virtual void ToXML (pugi::xml_node &node) const = 0;
+                /// \brief
+                /// Populate the given JSON object with stats.
+                /// \param[out] object The JSON object to which to add name/value pairs.
                 virtual void ToJSON (JSON::Object &object) const = 0;
 
                 /// \brief
@@ -298,7 +304,13 @@ namespace thekogans {
                 /// Record the current time as the stop time.
                 void Stop ();
 
+                /// \brief
+                /// Populate the given XML node with stats.
+                /// \param[out] node The node to which to add attributes and tags.
                 virtual void ToXML (pugi::xml_node &node) const;
+                /// \brief
+                /// Populate the given JSON object with stats.
+                /// \param[out] object The JSON object to which to add name/value pairs.
                 virtual void ToJSON (JSON::Object &object) const;
 
                 // TimerInfoBase
@@ -410,7 +422,13 @@ namespace thekogans {
                 /// End the current sub-timer.
                 void StopTimer ();
 
+                /// \brief
+                /// Populate the given XML node with stats.
+                /// \param[out] node The node to which to add attributes and tags.
                 virtual void ToXML (pugi::xml_node &node) const;
+                /// \brief
+                /// Populate the given JSON object with stats.
+                /// \param[out] object The JSON object to which to add name/value pairs.
                 virtual void ToJSON (JSON::Object &object) const;
 
                 // TimerInfoBase
@@ -454,14 +472,8 @@ namespace thekogans {
                 /// "OpenScopes"
                 static const char * const TAG_OPEN_SCOPES;
                 /// \brief
-                /// "OpenScope"
-                static const char * const TAG_OPEN_SCOPE;
-                /// \brief
                 /// "ClosedScopes"
                 static const char * const TAG_CLOSED_SCOPES;
-                /// \brief
-                /// "ClosedScope"
-                static const char * const TAG_CLOSED_SCOPE;
 
                 /// \brief
                 /// Read the Serializable from an XML DOM.
@@ -643,9 +655,17 @@ namespace thekogans {
                 root.AddAttribute (attribute);
             }
 
+            /// \brief
+            /// Aggregate and format stats in to an XML DOM.
+            /// \param[in] indentationLevel Pretty print parameter.
+            /// \param[in] indentationWidth Pretty print parameter.
             std::string ToXMLString (
                 std::size_t indentationLevel = 0,
                 std::size_t indentationWidth = 2) const;
+            /// \brief
+            /// Aggregate and format stats in to a JSON  DOM.
+            /// \param[in] indentationLevel Pretty print parameter.
+            /// \param[in] indentationWidth Pretty print parameter.
             std::string ToJSONString (
                 std::size_t indentationLevel = 0,
                 std::size_t indentationWidth = 2) const;

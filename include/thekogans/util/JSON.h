@@ -66,6 +66,8 @@ namespace thekogans {
                 T To () const;
             };
 
+            /// \def THEKOGANS_UTIL_JSON_DECLARE_VALUE(type)
+            /// Common declarations used by all Value derivatives.
             #define THEKOGANS_UTIL_JSON_DECLARE_VALUE(type)\
             public:\
                 typedef ThreadSafeRefCounted::Ptr<type> Ptr;\
@@ -75,6 +77,8 @@ namespace thekogans {
                     return TYPE;\
                 }
 
+            /// \def THEKOGANS_UTIL_JSON_IMPLEMENT_VALUE(type)
+            /// Common implementations used by all Value derivatives.
             #define THEKOGANS_UTIL_JSON_IMPLEMENT_VALUE(type)\
                 THEKOGANS_UTIL_IMPLEMENT_HEAP_WITH_LOCK (JSON::type, SpinLock)\
                 const char * const JSON::type::TYPE = #type;
@@ -314,6 +318,9 @@ namespace thekogans {
                 std::size_t indentationWidth = 2);
         };
 
+        /// \brief
+        /// Specialization of Value::To for bool.
+        /// \return Value cast to bool.
         template<>
         inline bool JSON::Value::To<bool> () const {
             if (GetType () == Bool::TYPE) {
@@ -327,6 +334,9 @@ namespace thekogans {
             }
         }
 
+        /// \brief
+        /// Specialization of Value::To for i8.
+        /// \return Value cast to i8.
         template<>
         inline i8 JSON::Value::To<i8> () const {
             if (GetType () == Number::TYPE) {
@@ -340,6 +350,9 @@ namespace thekogans {
             }
         }
 
+        /// \brief
+        /// Specialization of Value::To for ui8.
+        /// \return Value cast to ui8.
         template<>
         inline ui8 JSON::Value::To<ui8> () const {
             if (GetType () == Number::TYPE) {
@@ -353,6 +366,9 @@ namespace thekogans {
             }
         }
 
+        /// \brief
+        /// Specialization of Value::To for i16.
+        /// \return Value cast to i16.
         template<>
         inline i16 JSON::Value::To<i16> () const {
             if (GetType () == Number::TYPE) {
@@ -366,6 +382,9 @@ namespace thekogans {
             }
         }
 
+        /// \brief
+        /// Specialization of Value::To for ui16.
+        /// \return Value cast to ui16.
         template<>
         inline ui16 JSON::Value::To<ui16> () const {
             if (GetType () == Number::TYPE) {
@@ -379,6 +398,9 @@ namespace thekogans {
             }
         }
 
+        /// \brief
+        /// Specialization of Value::To for i32.
+        /// \return Value cast to i32.
         template<>
         inline i32 JSON::Value::To<i32> () const {
             if (GetType () == Number::TYPE) {
@@ -392,6 +414,9 @@ namespace thekogans {
             }
         }
 
+        /// \brief
+        /// Specialization of Value::To for ui32.
+        /// \return Value cast to ui32.
         template<>
         inline ui32 JSON::Value::To<ui32> () const {
             if (GetType () == Number::TYPE) {
@@ -405,6 +430,9 @@ namespace thekogans {
             }
         }
 
+        /// \brief
+        /// Specialization of Value::To for i64.
+        /// \return Value cast to i64.
         template<>
         inline i64 JSON::Value::To<i64> () const {
             if (GetType () == Number::TYPE) {
@@ -418,6 +446,9 @@ namespace thekogans {
             }
         }
 
+        /// \brief
+        /// Specialization of Value::To for ui64.
+        /// \return Value cast to ui64.
         template<>
         inline ui64 JSON::Value::To<ui64> () const {
             if (GetType () == Number::TYPE) {
@@ -431,6 +462,9 @@ namespace thekogans {
             }
         }
 
+        /// \brief
+        /// Specialization of Value::To for f32.
+        /// \return Value cast to f32.
         template<>
         inline f32 JSON::Value::To<f32> () const {
             if (GetType () == Number::TYPE) {
@@ -444,6 +478,9 @@ namespace thekogans {
             }
         }
 
+        /// \brief
+        /// Specialization of Value::To for f64.
+        /// \return Value cast to f64.
         template<>
         inline f64 JSON::Value::To<f64> () const {
             if (GetType () == Number::TYPE) {
@@ -457,6 +494,9 @@ namespace thekogans {
             }
         }
 
+        /// \brief
+        /// Specialization of Value::To for SizeT.
+        /// \return Value cast to SizeT.
         template<>
         inline SizeT JSON::Value::To<SizeT> () const {
             if (GetType () == Number::TYPE) {
@@ -470,6 +510,9 @@ namespace thekogans {
             }
         }
 
+        /// \brief
+        /// Specialization of Value::To for std::string.
+        /// \return Value cast to std::string.
         template<>
         inline std::string JSON::Value::To<std::string> () const {
             if (GetType () == String::TYPE) {
@@ -483,71 +526,113 @@ namespace thekogans {
             }
         }
 
+        /// \brief
+        /// Specialization of Array::Add for bool.
+        /// \param[in] value bool value to add to Array.
         template<>
         inline void JSON::Array::Add<bool> (bool value) {
             values.push_back (Value::Ptr (new Bool (value)));
         }
 
+        /// \brief
+        /// Specialization of Array::Add for i8.
+        /// \param[in] value i8 value to add to Array.
         template<>
         inline void JSON::Array::Add<i8> (i8 value) {
             values.push_back (Value::Ptr (new Number (Variant (value))));
         }
 
+        /// \brief
+        /// Specialization of Array::Add for ui8.
+        /// \param[in] value ui8 value to add to Array.
         template<>
         inline void JSON::Array::Add<ui8> (ui8 value) {
             values.push_back (Value::Ptr (new Number (Variant (value))));
         }
 
+        /// \brief
+        /// Specialization of Array::Add for i16.
+        /// \param[in] value i16 value to add to Array.
         template<>
         inline void JSON::Array::Add<i16> (i16 value) {
             values.push_back (Value::Ptr (new Number (Variant (value))));
         }
 
+        /// \brief
+        /// Specialization of Array::Add for ui16.
+        /// \param[in] value ui16 value to add to Array.
         template<>
         inline void JSON::Array::Add<ui16> (ui16 value) {
             values.push_back (Value::Ptr (new Number (Variant (value))));
         }
 
+        /// \brief
+        /// Specialization of Array::Add for i32.
+        /// \param[in] value i32 value to add to Array.
         template<>
         inline void JSON::Array::Add<i32> (i32 value) {
             values.push_back (Value::Ptr (new Number (Variant (value))));
         }
 
+        /// \brief
+        /// Specialization of Array::Add for ui32.
+        /// \param[in] value ui32 value to add to Array.
         template<>
         inline void JSON::Array::Add<ui32> (ui32 value) {
             values.push_back (Value::Ptr (new Number (Variant (value))));
         }
 
+        /// \brief
+        /// Specialization of Array::Add for i64.
+        /// \param[in] value i64 value to add to Array.
         template<>
         inline void JSON::Array::Add<i64> (i64 value) {
             values.push_back (Value::Ptr (new Number (Variant (value))));
         }
 
+        /// \brief
+        /// Specialization of Array::Add for ui64.
+        /// \param[in] value ui64 value to add to Array.
         template<>
         inline void JSON::Array::Add<ui64> (ui64 value) {
             values.push_back (Value::Ptr (new Number (Variant (value))));
         }
 
+        /// \brief
+        /// Specialization of Array::Add for f32.
+        /// \param[in] value f32 value to add to Array.
         template<>
         inline void JSON::Array::Add<f32> (f32 value) {
             values.push_back (Value::Ptr (new Number (Variant (value))));
         }
 
+        /// \brief
+        /// Specialization of Array::Add for f64.
+        /// \param[in] value f64 value to add to Array.
         template<>
         inline void JSON::Array::Add<f64> (f64 value) {
             values.push_back (Value::Ptr (new Number (Variant (value))));
         }
 
+        /// \brief
+        /// Specialization of Array::Add for SizeT.
+        /// \param[in] value SizeT value to add to Array.
         template<>
         inline void JSON::Array::Add<SizeT> (SizeT value) {
             values.push_back (Value::Ptr (new Number (Variant (value.value))));
         }
 
+        /// \brief
+        /// Specialization of Array::Add for std::string.
+        /// \param[in] value std::string value to add to Array.
         template<>
         inline void JSON::Array::Add<std::string> (std::string value) {
             values.push_back (Value::Ptr (new String (value)));
         }
 
+        /// \brief
+        /// Specialization of Array::Add for const char *.
+        /// \param[in] value const char * value to add to Array.
         template<>
         inline void JSON::Array::Add<const char *> (const char *value) {
             if (value != 0) {
@@ -559,6 +644,10 @@ namespace thekogans {
             }
         }
 
+        /// \brief
+        /// Specialization of Object::Add for bool.
+        /// \param[in] name Name of value.
+        /// \param[in] value bool value to add to Object.
         template<>
         inline void JSON::Object::Add<bool> (
                 const std::string &name,
@@ -572,6 +661,10 @@ namespace thekogans {
             }
         }
 
+        /// \brief
+        /// Specialization of Object::Add for i8.
+        /// \param[in] name Name of value.
+        /// \param[in] value i8 value to add to Object.
         template<>
         inline void JSON::Object::Add<i8> (
                 const std::string &name,
@@ -585,6 +678,10 @@ namespace thekogans {
             }
         }
 
+        /// \brief
+        /// Specialization of Object::Add for ui8.
+        /// \param[in] name Name of value.
+        /// \param[in] value ui8 value to add to Object.
         template<>
         inline void JSON::Object::Add<ui8> (
                 const std::string &name,
@@ -598,6 +695,10 @@ namespace thekogans {
             }
         }
 
+        /// \brief
+        /// Specialization of Object::Add for i16.
+        /// \param[in] name Name of value.
+        /// \param[in] value i16 value to add to Object.
         template<>
         inline void JSON::Object::Add<i16> (
                 const std::string &name,
@@ -611,6 +712,10 @@ namespace thekogans {
             }
         }
 
+        /// \brief
+        /// Specialization of Object::Add for ui16.
+        /// \param[in] name Name of value.
+        /// \param[in] value ui16 value to add to Object.
         template<>
         inline void JSON::Object::Add<ui16> (
                 const std::string &name,
@@ -624,6 +729,10 @@ namespace thekogans {
             }
         }
 
+        /// \brief
+        /// Specialization of Object::Add for i32.
+        /// \param[in] name Name of value.
+        /// \param[in] value i32 value to add to Object.
         template<>
         inline void JSON::Object::Add<i32> (
                 const std::string &name,
@@ -637,6 +746,10 @@ namespace thekogans {
             }
         }
 
+        /// \brief
+        /// Specialization of Object::Add for ui32.
+        /// \param[in] name Name of value.
+        /// \param[in] value ui32 value to add to Object.
         template<>
         inline void JSON::Object::Add<ui32> (
                 const std::string &name,
@@ -650,6 +763,10 @@ namespace thekogans {
             }
         }
 
+        /// \brief
+        /// Specialization of Object::Add for i64.
+        /// \param[in] name Name of value.
+        /// \param[in] value i64 value to add to Object.
         template<>
         inline void JSON::Object::Add<i64> (
                 const std::string &name,
@@ -663,6 +780,10 @@ namespace thekogans {
             }
         }
 
+        /// \brief
+        /// Specialization of Object::Add for ui64.
+        /// \param[in] name Name of value.
+        /// \param[in] value ui64 value to add to Object.
         template<>
         inline void JSON::Object::Add<ui64> (
                 const std::string &name,
@@ -676,6 +797,10 @@ namespace thekogans {
             }
         }
 
+        /// \brief
+        /// Specialization of Object::Add for f32.
+        /// \param[in] name Name of value.
+        /// \param[in] value f32 value to add to Object.
         template<>
         inline void JSON::Object::Add<f32> (
                 const std::string &name,
@@ -689,6 +814,10 @@ namespace thekogans {
             }
         }
 
+        /// \brief
+        /// Specialization of Object::Add for f64.
+        /// \param[in] name Name of value.
+        /// \param[in] value f64 value to add to Object.
         template<>
         inline void JSON::Object::Add<f64> (
                 const std::string &name,
@@ -702,6 +831,10 @@ namespace thekogans {
             }
         }
 
+        /// \brief
+        /// Specialization of Object::Add for SizeT.
+        /// \param[in] name Name of value.
+        /// \param[in] value SizeT value to add to Object.
         template<>
         inline void JSON::Object::Add<SizeT> (
                 const std::string &name,
@@ -715,6 +848,10 @@ namespace thekogans {
             }
         }
 
+        /// \brief
+        /// Specialization of Object::Add for std::string.
+        /// \param[in] name Name of value.
+        /// \param[in] value std::string value to add to Object.
         template<>
         inline void JSON::Object::Add<std::string> (
                 const std::string &name,
@@ -728,6 +865,10 @@ namespace thekogans {
             }
         }
 
+        /// \brief
+        /// Specialization of Object::Add for const char *.
+        /// \param[in] name Name of value.
+        /// \param[in] value const char * value to add to Object.
         template<>
         inline void JSON::Object::Add<const char *> (
                 const std::string &name,
