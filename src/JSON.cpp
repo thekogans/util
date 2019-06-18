@@ -41,12 +41,12 @@ namespace thekogans {
                 std::string::size_type start = 0;
                 std::string::size_type end = str.find ((const char *)delimiter, start, delimiterLength);
                 while (end != std::string::npos) {
-                    Add (str.substr (start, end - start));
+                    Add<const std::string &> (str.substr (start, end - start));
                     start = end + delimiterLength;
                     end = str.find ((const char *)delimiter, start, delimiterLength);
                 }
                 if (start < str.size ()) {
-                    Add (str.substr (start));
+                    Add<const std::string &> (str.substr (start));
                 }
             }
             else {
@@ -329,11 +329,17 @@ namespace thekogans {
                                 // [+ | -][0..9]*[.][0..9]*[[E | e][+ | -][0..9]+]
                                 const char *start = json;
                                 // Check for NaN.
-                                if (json[0] == 'N' && json[1] == 'a' && json[2] == 'N' && isdelim (json[3])) {
+                                if (json[0] == 'N' && json[1] == 'a' && json[2] == 'N') {
                                     json += 3;
-                                    return Token (
-                                        std::string (start, json),
-                                        Variant (std::numeric_limits<f64>::quiet_NaN ()));
+                                    if (isdelim (*json)) {
+                                        return Token (
+                                            std::string (start, json),
+                                            Variant (std::numeric_limits<f64>::quiet_NaN ()));
+                                    }
+                                    else {
+                                        THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
+                                            "Invalid json: %s", json);
+                                    }
                                 }
                                 // First, parse out the sign.
                                 bool minus = false;

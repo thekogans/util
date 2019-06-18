@@ -64,7 +64,8 @@ namespace thekogans {
             decorations.push_back (EntrySeparator);
             decorations.push_back (Subsystem);
             decorations.push_back (Level);
-            decorations.push_back (DateTime);
+            decorations.push_back (Date);
+            decorations.push_back (Time);
             decorations.push_back (HRTime);
             decorations.push_back (HRElapsedTime);
             decorations.push_back (HostName);
@@ -103,11 +104,17 @@ namespace thekogans {
                 }
                 value += "Level";
             }
-            else if (Flags32 (decorations).Test (DateTime)) {
+            else if (Flags32 (decorations).Test (Date)) {
                 if (!value.empty ()) {
                     value += " | ";
                 }
-                value += "DateTime";
+                value += "Date";
+            }
+            else if (Flags32 (decorations).Test (Time)) {
+                if (!value.empty ()) {
+                    value += " | ";
+                }
+                value += "Time";
             }
             else if (Flags32 (decorations).Test (HRTime)) {
                 if (!value.empty ()) {
@@ -171,8 +178,11 @@ namespace thekogans {
                 else if (decoration == "Level") {
                     return LoggerMgr::Level;
                 }
-                else if (decoration == "DateTime") {
-                    return LoggerMgr::DateTime;
+                else if (decoration == "Date") {
+                    return LoggerMgr::Date;
+                }
+                else if (decoration == "Time") {
+                    return LoggerMgr::Time;
                 }
                 else if (decoration == "HRTime") {
                     return LoggerMgr::HRTime;
@@ -333,19 +343,31 @@ namespace thekogans {
                     header += levelTostring (level);
                     header += " ";
                 }
-                if (decorations.Test (DateTime)) {
-                    char tmp[101] = {0};
+                if (decorations.Test (Date)) {
+                    char date[101] = {0};
                     time_t rawTime;
                     time (&rawTime);
-                #if defined (TOOLCHAIN_OS_Windows)
                     struct tm tm;
+                #if defined (TOOLCHAIN_OS_Windows)
                     localtime_s (&tm, &rawTime);
-                    strftime (tmp, 100, "%b %d %X", &tm);
                 #else // defined (TOOLCHAIN_OS_Windows)
-                    strftime (tmp, 100, "%b %d %T", localtime (&rawTime));
+                    localtime_r (&rawTime, &tm);
                 #endif // defined (TOOLCHAIN_OS_Windows)
-                    header += tmp;
-                    header += " ";
+                    strftime (date, 100, "%a %b %d %Y ", &tm);
+                    header += date;
+                }
+                if (decorations.Test (Time)) {
+                    TimeSpec timeSpec = GetCurrentTime ();
+                    char _time[101] = {0};
+                    time_t rawTime = (time_t)timeSpec.seconds;
+                    struct tm tm;
+                #if defined (TOOLCHAIN_OS_Windows)
+                    localtime_s (&tm, &rawTime);
+                #else // defined (TOOLCHAIN_OS_Windows)
+                    localtime_r (&rawTime, &tm);
+                #endif // defined (TOOLCHAIN_OS_Windows)
+                    strftime (_time, 100, "%X", &tm);
+                    header += FormatString ("%s.%u ", _time, timeSpec.nanoseconds / 1000000);
                 }
                 if (decorations.Test (HRTime)) {
                     header += FormatString (
@@ -367,30 +389,27 @@ namespace thekogans {
                 }
                 if (decorations.Test (ProcessId | ThreadId)) {
                 #if defined (TOOLCHAIN_OS_Windows)
-                    header += FormatString ("[%u:%05u]",
+                    header += FormatString ("[%u:%05u] ",
                         GetCurrentProcessId (), GetCurrentThreadId ());
                 #else // defined (TOOLCHAIN_OS_Windows)
-                    header += FormatString ("[%u:%p]",
+                    header += FormatString ("[%u:%p] ",
                         getpid (), (void *)pthread_self ());
                 #endif // defined (TOOLCHAIN_OS_Windows)
-                    header += " ";
                 }
                 else {
                     if (decorations.Test (ProcessId)) {
                     #if defined (TOOLCHAIN_OS_Windows)
-                        header += FormatString ("[%u]", GetCurrentProcessId ());
+                        header += FormatString ("[%u] ", GetCurrentProcessId ());
                     #else // defined (TOOLCHAIN_OS_Windows)
-                        header += FormatString ("[%u]", getpid ());
+                        header += FormatString ("[%u] ", getpid ());
                     #endif // defined (TOOLCHAIN_OS_Windows)
-                        header += " ";
                     }
                     else if (decorations.Test (ThreadId)) {
                     #if defined (TOOLCHAIN_OS_Windows)
-                        header += FormatString ("[%05u]", GetCurrentThreadId ());
+                        header += FormatString ("[%05u] ", GetCurrentThreadId ());
                     #else // defined (TOOLCHAIN_OS_Windows)
-                        header += FormatString ("[%p]", (void *)pthread_self ());
+                        header += FormatString ("[%p] ", (void *)pthread_self ());
                     #endif // defined (TOOLCHAIN_OS_Windows)
-                        header += " ";
                     }
                 }
                 if (!header.empty () && decorations.Test (Multiline)) {

@@ -179,7 +179,7 @@ namespace thekogans {
         }
 
         void RunLoop::Stats::Job::Write (JSON::Object &object) const {
-            object.Add (ATTR_ID, id);
+            object.Add<const std::string &> (ATTR_ID, id);
             object.Add (ATTR_START_TIME, startTime);
             object.Add (ATTR_END_TIME, endTime);
             object.Add (ATTR_TOTAL_TIME, totalTime);
@@ -299,8 +299,8 @@ namespace thekogans {
         }
 
         void RunLoop::Stats::Write (JSON::Object &object) const {
-            object.Add (ATTR_ID, id);
-            object.Add (ATTR_NAME, name);
+            object.Add<const std::string &> (ATTR_ID, id);
+            object.Add<const std::string &> (ATTR_NAME, name);
             object.Add (ATTR_TOTAL_JOBS, totalJobs);
             object.Add (ATTR_TOTAL_JOB_TIME, totalJobTime);
         }

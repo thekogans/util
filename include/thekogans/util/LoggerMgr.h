@@ -169,37 +169,41 @@ namespace thekogans {
                 /// Add a log level to log entries.
                 Level = 4,
                 /// \brief
-                /// Add a date and time to log entries.
-                DateTime = 8,
+                /// Add a date to log entries.
+                Date = 8,
+                /// \brief
+                /// Add a time to log entries.
+                Time = 16,
                 /// \brief
                 /// Add a high resolution timer to log entries.
-                HRTime = 16,
+                HRTime = 32,
                 /// \brief
                 /// Add a high resolution timer since process start to log entries.
-                HRElapsedTime = 32,
+                HRElapsedTime = 64,
                 /// \brief
                 /// Add a host name to log entries.
-                HostName = 64,
+                HostName = 128,
                 /// \brief
                 /// Add a process path to log entries.
-                ProcessPath = 128,
+                ProcessPath = 256,
                 /// \brief
                 /// Add a process id to log entries.
-                ProcessId = 256,
+                ProcessId = 512,
                 /// \brief
                 /// Add a thread id to log entries.
-                ThreadId = 512,
+                ThreadId = 1024,
                 /// \brief
                 /// Add a location to log entries.
-                Location = 1024,
+                Location = 2048,
                 /// \brief
                 /// Format log entries accross multiple lines.
-                Multiline = 2048,
+                Multiline = 4096,
                 /// \brief
                 /// Add every decoration to log entries.
                 All = EntrySeparator |
                     Level |
-                    DateTime |
+                    Date |
+                    Time |
                     HRTime |
                     HRElapsedTime |
                     HostName |

@@ -790,13 +790,13 @@ namespace thekogans {
             }
             lastAccessedDate = object.Get<JSON::Number> (ATTR_LAST_ACCESSED_DATE)->To<i64> ();
             lastModifiedDate = object.Get<JSON::Number> (ATTR_LAST_MODIFIED_DATE)->To<i64> ();
-            size = object.Get<JSON::Number> (ATTR_SIZE)->To<i64> ();
+            size = object.Get<JSON::Number> (ATTR_SIZE)->To<ui64> ();
         }
 
         void Directory::Entry::Write (JSON::Object &object) const {
-            object.Add (ATTR_FILE_SYSTEM, fileSystemTostring (fileSystem));
-            object.Add (ATTR_TYPE, typeTostring (type));
-            object.Add (ATTR_NAME, name);
+            object.Add<const std::string &> (ATTR_FILE_SYSTEM, fileSystemTostring (fileSystem));
+            object.Add<const std::string &> (ATTR_TYPE, typeTostring (type));
+            object.Add<const std::string &> (ATTR_NAME, name);
             if (fileSystem == Windows) {
                 object.Add (ATTR_ATTRIBUTES, attributes);
                 object.Add (ATTR_CREATION_DATE, creationDate);
@@ -807,7 +807,7 @@ namespace thekogans {
             }
             object.Add (ATTR_LAST_ACCESSED_DATE, lastAccessedDate);
             object.Add (ATTR_LAST_MODIFIED_DATE, lastModifiedDate);
-            object.Add (ATTR_SIZE, size);
+            object.Add<const SizeT &> (ATTR_SIZE, size);
         }
 
     #if defined (TOOLCHAIN_OS_Windows)

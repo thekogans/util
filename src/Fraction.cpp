@@ -203,7 +203,7 @@ namespace thekogans {
         void Fraction::Write (JSON::Object &object) const {
             object.Add (ATTR_NUMERATOR, numerator);
             object.Add (ATTR_DENOMINATOR, denominator);
-            object.Add (ATTR_SIGN, signTostring (sign));
+            object.Add<const std::string &> (ATTR_SIGN, signTostring (sign));
         }
 
         _LIB_THEKOGANS_UTIL_DECL Fraction _LIB_THEKOGANS_UTIL_API operator + (

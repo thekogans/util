@@ -121,6 +121,12 @@ namespace thekogans {
             ///
             /// \brief
             /// Represents a JSON number value.
+            /// NOTE: The parser will scan the number to determine the
+            /// best type for variant. To that end, anything with a
+            /// '.' or '[e|E]' will be treated as f64. If the number
+            /// is negative it will be represented by i64. Otherwise,
+            /// it will be stored in ui64. Use Value::To to cast the
+            /// stored representation to whatever type is appropriate.
             struct _LIB_THEKOGANS_UTIL_DECL Number : public Value {
                 /// \brief
                 /// Number is a value.
@@ -618,7 +624,7 @@ namespace thekogans {
         /// Specialization of Array::Add for SizeT.
         /// \param[in] value SizeT value to add to Array.
         template<>
-        inline void JSON::Array::Add<SizeT> (SizeT value) {
+        inline void JSON::Array::Add<const SizeT &> (const SizeT &value) {
             values.push_back (Value::Ptr (new Number (Variant (value.value))));
         }
 
@@ -626,7 +632,7 @@ namespace thekogans {
         /// Specialization of Array::Add for std::string.
         /// \param[in] value std::string value to add to Array.
         template<>
-        inline void JSON::Array::Add<std::string> (std::string value) {
+        inline void JSON::Array::Add<const std::string &> (const std::string &value) {
             values.push_back (Value::Ptr (new String (value)));
         }
 
@@ -836,9 +842,9 @@ namespace thekogans {
         /// \param[in] name Name of value.
         /// \param[in] value SizeT value to add to Object.
         template<>
-        inline void JSON::Object::Add<SizeT> (
+        inline void JSON::Object::Add<const SizeT &> (
                 const std::string &name,
-                SizeT value) {
+                const SizeT &value) {
             if (!name.empty ()) {
                 values.push_back (NameValue (name, Value::Ptr (new Number (Variant (value.value)))));
             }
@@ -853,9 +859,9 @@ namespace thekogans {
         /// \param[in] name Name of value.
         /// \param[in] value std::string value to add to Object.
         template<>
-        inline void JSON::Object::Add<std::string> (
+        inline void JSON::Object::Add<const std::string &> (
                 const std::string &name,
-                std::string value) {
+                const std::string &value) {
             if (!name.empty ()) {
                 values.push_back (NameValue (name, Value::Ptr (new String (value))));
             }

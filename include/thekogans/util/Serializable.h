@@ -569,7 +569,7 @@ namespace thekogans {
         inline JSON::Object &operator << (
                 JSON::Object &object,
                 const Serializable::TextHeader &header) {
-            object.Add (
+            object.Add<const std::string &> (
                 Serializable::TextHeader::ATTR_TYPE,
                 header.type);
             object.Add (

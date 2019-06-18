@@ -87,13 +87,13 @@ namespace thekogans {
         }
 
         void HRTimerMgr::TimerInfoBase::Write (JSON::Object &object) const {
-            object.Add (ATTR_NAME, name);
+            object.Add<const std::string &> (ATTR_NAME, name);
             if (!attributes.empty ()) {
                 util::JSON::Array::Ptr attributesArray (new util::JSON::Array);
                 for (std::size_t i = 0, count = attributes.size (); i < count; ++i) {
                     util::JSON::Object::Ptr attributeObject (new util::JSON::Object);
-                    attributeObject->Add (ATTR_NAME, attributes[i].first);
-                    attributeObject->Add (ATTR_VALUE, attributes[i].second);
+                    attributeObject->Add<const std::string &> (ATTR_NAME, attributes[i].first);
+                    attributeObject->Add<const std::string &> (ATTR_VALUE, attributes[i].second);
                     attributesArray->Add (attributeObject);
                 }
                 object.Add (TAG_ATTRIBUTES, attributesArray);
@@ -141,15 +141,17 @@ namespace thekogans {
         }
 
         void HRTimerMgr::TimerInfo::ToJSON (JSON::Object &object) const {
-            object.Add (ATTR_NAME, name);
+            object.Add<const std::string &> (ATTR_NAME, name);
             object.Add (ATTR_START, start);
             object.Add (ATTR_STOP, stop);
-            object.Add (ATTR_ELAPSED,
+            object.Add<const std::string &> (ATTR_ELAPSED,
                 f64Tostring (
                     HRTimer::ToSeconds (
                         HRTimer::ComputeElapsedTime (start, stop))));
             for (std::size_t i = 0, count = attributes.size (); i < count; ++i) {
-                object.Add (attributes[i].first, Encodestring (attributes[i].second));
+                object.Add<const std::string &> (
+                    attributes[i].first,
+                    Encodestring (attributes[i].second));
             }
         }
 
@@ -298,14 +300,14 @@ namespace thekogans {
             ui64 average = 0;
             ui64 total = 0;
             GetStats (count, min, max, average, total);
-            object.Add (ATTR_NAME, name);
+            object.Add<const std::string &> (ATTR_NAME, name);
             object.Add (ATTR_COUNT, count);
             object.Add (ATTR_MIN, HRTimer::ToSeconds (min));
             object.Add (ATTR_MAX, HRTimer::ToSeconds (max));
             object.Add (ATTR_AVERAGE, HRTimer::ToSeconds (average));
             object.Add (ATTR_TOTAL, HRTimer::ToSeconds (total));
             for (std::size_t i = 0, count = attributes.size (); i < count; ++i) {
-                object.Add (attributes[i].first, attributes[i].second);
+                object.Add<const std::string &> (attributes[i].first, attributes[i].second);
             }
             if (!closed.empty ()) {
                 JSON::Array::Ptr scopes (new JSON::Array);
