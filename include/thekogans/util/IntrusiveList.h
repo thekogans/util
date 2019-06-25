@@ -332,17 +332,22 @@ namespace thekogans {
             /// \brief
             /// Remove all nodes from the list.
             /// \param[in] callback Callback to be called for every node in the list.
-            inline void clear (Callback &callback = defaultCallback) {
+            /// \return true == List is cleared. false == callback returned false.
+            inline bool clear (Callback &callback = defaultCallback) {
                 for (T *node = head; node != 0;) {
                     // After callback returns, we might not be able to call next (node).
                     T *temp = next (node);
                     prev (node) = next (node) = 0;
                     contains (node) = false;
-                    callback (node);
+                    if (!callback (node)) {
+                        head = node;
+                        return false;
+                    }
                     node = temp;
                 }
                 head = tail = 0;
                 count = 0;
+                return true;
             }
 
             /// \brief
