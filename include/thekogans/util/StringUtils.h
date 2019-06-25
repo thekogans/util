@@ -133,6 +133,16 @@ namespace thekogans {
         /// Hex encode a given buffer.
         /// \param[in] buffer Pointer to buffer to be hex encoded.
         /// \param[in] length Length of buffer.
+        /// \param[out] hexBuffer Where to write enecoded data.
+        /// \return Number of bytes written to hexBuffer.
+        _LIB_THEKOGANS_UTIL_DECL std::size_t _LIB_THEKOGANS_UTIL_API HexEncodeBuffer (
+            const void *buffer,
+            std::size_t length,
+            char *hexBuffer);
+        /// \brief
+        /// Hex encode a given buffer.
+        /// \param[in] buffer Pointer to buffer to be hex encoded.
+        /// \param[in] length Length of buffer.
         /// \return Hex encoded buffer.
         _LIB_THEKOGANS_UTIL_DECL std::string _LIB_THEKOGANS_UTIL_API HexEncodeBuffer (
             const void *buffer,
