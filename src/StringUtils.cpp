@@ -174,18 +174,32 @@ namespace thekogans {
             const char *hexTable = "0123456789abcdef";
         }
 
+        _LIB_THEKOGANS_UTIL_DECL std::size_t _LIB_THEKOGANS_UTIL_API HexEncodeBuffer (
+                const void *buffer,
+                std::size_t length,
+                char *hexBuffer) {
+            if (buffer != 0 && length > 0 && hexBuffer != 0) {
+                const char *ptr = (const char *)buffer;
+                for (std::size_t i = 0; i < length; ++i) {
+                    *hexBuffer++ = hexTable[(ptr[i] & 0xf0) >> 4];
+                    *hexBuffer++ = hexTable[ptr[i] & 0x0f];
+                }
+                return length * 2;
+            }
+            else {
+                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
+            }
+        }
+
+
         _LIB_THEKOGANS_UTIL_DECL std::string _LIB_THEKOGANS_UTIL_API HexEncodeBuffer (
                 const void *buffer,
                 std::size_t length) {
             if (buffer != 0 && length > 0) {
                 std::string hexString;
                 hexString.resize (length * 2);
-                char *ptr1 = &hexString[0];
-                const char *ptr2 = (const char *)buffer;
-                for (std::size_t i = 0; i < length; ++i) {
-                    *ptr1++ = hexTable[(ptr2[i] & 0xf0) >> 4];
-                    *ptr1++ = hexTable[ptr2[i] & 0x0f];
-                }
+                HexEncodeBuffer (buffer, length, &hexString[0]);
                 return hexString;
             }
             else {
