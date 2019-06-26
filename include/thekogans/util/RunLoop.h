@@ -814,7 +814,12 @@ namespace thekogans {
             /// VERY IMPORTANT: A paused run loop does NOT imply idle. If you pause a
             /// run loop that has pending jobs, \see{IsIdle} (below) will return false.
             /// \param[in] cancelRunningJobs true == Cancel running jobs.
-            virtual void Pause (bool cancelRunningJobs = false);
+            /// \param[in] timeSpec How long to wait for the run loop to pause.
+            /// IMPORTANT: timeSpec is a relative value.
+            /// \return true == Run loop paused. false == timed out.
+            virtual bool Pause (
+                bool cancelRunningJobs = false,
+                const TimeSpec &timeSpec = TimeSpec::Infinite);
             /// \brief
             /// Continue the run loop execution. If the run loop is not paused, noop.
             virtual void Continue ();
@@ -832,9 +837,13 @@ namespace thekogans {
             /// than the one that called Start.
             /// \param[in] cancelRunningJobs true == Cancel all running jobs.
             /// \param[in] cancelPendingJobs true == Cancel all pending jobs.
-            virtual void Stop (
+            /// \param[in] timeSpec How long to wait for the run loop to stop.
+            /// IMPORTANT: timeSpec is a relative value.
+            /// \return true == Run loop stopped. false == timed out.
+            virtual bool Stop (
                 bool /*cancelRunningJobs*/ = true,
-                bool /*cancelPendingJobs*/ = true) = 0;
+                bool /*cancelPendingJobs*/ = true,
+                const TimeSpec & /*timeSpec*/ = TimeSpec::Infinite) = 0;
 
             /// \brief
             /// Enqueue a job to be performed on the run loop thread.

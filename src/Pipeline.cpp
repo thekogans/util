@@ -164,7 +164,9 @@ namespace thekogans {
             }
         }
 
-        void Pipeline::Pause (bool cancelRunningJobs) {
+        bool Pipeline::Pause (
+                bool cancelRunningJobs,
+                const TimeSpec &timeSpec) {
             struct GetRunningJobsCallback : public JobList::Callback {
                 typedef JobList::Callback::result_type result_type;
                 typedef JobList::Callback::argument_type argument_type;
@@ -188,7 +190,7 @@ namespace thekogans {
                     jobsNotEmpty.SignalAll ();
                 }
             }
-            WaitForJobs (getRunningJobsCallback.runningJobs, TimeSpec::Infinite);
+            return WaitForJobs (getRunningJobsCallback.runningJobs, timeSpec);
         }
 
         void Pipeline::Continue () {
@@ -221,78 +223,80 @@ namespace thekogans {
         }
 
         void Pipeline::Start () {
-            for (std::size_t i = 0, count = stages.size (); i < count; ++i) {
-                stages[i]->Start ();
-            }
-            {
-                LockGuard<Mutex> guard (workersMutex);
-                bool expected = true;
-                if (done.compare_exchange_strong (expected, false)) {
-                    for (ui32 i = 0; i < workerCount; ++i) {
-                        std::string workerName;
-                        if (!name.empty ()) {
-                            if (workerCount > 1) {
-                                workerName = FormatString ("%s-%u", name.c_str (), i);
-                            }
-                            else {
-                                workerName = name;
-                            }
+            LockGuard<Mutex> guard (workersMutex);
+            bool expected = true;
+            if (done.compare_exchange_strong (expected, false)) {
+                for (std::size_t i = 0, count = stages.size (); i < count; ++i) {
+                    stages[i]->Start ();
+                }
+                for (std::size_t i = workers.size (); i < workerCount; ++i) {
+                    std::string workerName;
+                    if (!name.empty ()) {
+                        if (workerCount > 1) {
+                            workerName = FormatString ("%s-%u", name.c_str (), i);
                         }
-                        workers.push_back (
-                            new Worker (
-                                *this,
-                                workerName,
-                                workerPriority,
-                                workerAffinity));
+                        else {
+                            workerName = name;
+                        }
                     }
+                    workers.push_back (
+                        new Worker (
+                            *this,
+                            workerName,
+                            workerPriority,
+                            workerAffinity));
                 }
             }
         }
 
-        void Pipeline::Stop (
+        bool Pipeline::Stop (
                 bool cancelRunningJobs,
-                bool cancelPendingJobs) {
-            struct Pauser {
-                Pipeline &pipeline;
-                bool cancelRunningJobs;
-                Pauser (Pipeline &pipeline_,
-                        bool cancelRunningJobs_) :
-                        pipeline (pipeline_),
-                        cancelRunningJobs (cancelRunningJobs_) {
-                    pipeline.Pause (cancelRunningJobs);
+                bool cancelPendingJobs,
+                const TimeSpec &timeSpec) {
+            LockGuard<Mutex> guard (workersMutex);
+            if (IsRunning ()) {
+                if (!Pause (cancelRunningJobs, timeSpec)) {
+                    return false;
                 }
-                ~Pauser () {
-                    pipeline.Continue ();
+                // At this point there should be no more running jobs.
+                assert (runningJobs.empty ());
+                if (cancelPendingJobs) {
+                    // CancelPendingJobs does not block.
+                    CancelPendingJobs ();
+                    // This Continue is necessary to wake up from
+                    // Pause above so that WaitForIdle can do it's
+                    // job.
+                    Continue ();
+                    // Since there are no more runningJobs, and
+                    // pendingJobs have been cancelled, WaitForIdle
+                    // should complete quickly.
+                    WaitForIdle ();
                 }
-            } pauser (*this, cancelRunningJobs);
-            if (cancelPendingJobs) {
-                CancelPendingJobs ();
+                done = true;
+                // This Continue is necessary in case cancelPendingJobs == false.
+                // If cancelPendingJobs == true, it's harmless.
                 Continue ();
-                WaitForIdle ();
-            }
-            {
-                LockGuard<Mutex> guard (workersMutex);
-                bool expected = false;
-                if (done.compare_exchange_strong (expected, true)) {
-                    jobsNotEmpty.SignalAll ();
-                    struct Callback : public WorkerList::Callback {
-                        typedef WorkerList::Callback::result_type result_type;
-                        typedef WorkerList::Callback::argument_type argument_type;
-                        virtual result_type operator () (argument_type worker) {
-                            // Join the worker thread before deleting it to
-                            // let it's thread function finish it's tear down.
-                            worker->Wait ();
-                            delete worker;
-                            return true;
-                        }
-                    } callback;
-                    workers.clear (callback);
-                    assert (runningJobs.empty ());
+                jobsNotEmpty.SignalAll ();
+                struct Callback : public WorkerList::Callback {
+                    typedef WorkerList::Callback::result_type result_type;
+                    typedef WorkerList::Callback::argument_type argument_type;
+                    virtual result_type operator () (argument_type worker) {
+                        // Join the worker thread before deleting it to
+                        // let it's thread function finish it's teardown.
+                        worker->Wait ();
+                        delete worker;
+                        return true;
+                    }
+                } callback;
+                // Since there are no more jobs (running or pending)
+                // and done == true, workers.clear should complete
+                // quickly.
+                workers.clear (callback);
+                for (std::size_t i = 0, count = stages.size (); i < count; ++i) {
+                    stages[i]->Stop (false, false);
                 }
             }
-            for (std::size_t i = 0, count = stages.size (); i < count; ++i) {
-                stages[i]->Stop (cancelRunningJobs, cancelPendingJobs);
-            }
+            return true;
         }
 
         bool Pipeline::EnqJob (

@@ -34,31 +34,24 @@ namespace thekogans {
             }
         }
 
-        void Scheduler::JobQueue::Stop (
+        bool Scheduler::JobQueue::Stop (
                 bool cancelRunningJobs,
-                bool cancelPendingJobs) {
-            struct Pauser {
-                JobQueue &jobQueue;
-                bool cancelRunningJobs;
-                Pauser (JobQueue &jobQueue_,
-                        bool cancelRunningJobs_) :
-                        jobQueue (jobQueue_),
-                        cancelRunningJobs (cancelRunningJobs_) {
-                    jobQueue.Pause (cancelRunningJobs);
+                bool cancelPendingJobs,
+                const TimeSpec &timeSpec) {
+            if (IsRunning ()) {
+                if (!Pause (cancelRunningJobs, timeSpec)) {
+                    return false;
                 }
-                ~Pauser () {
-                    jobQueue.Continue ();
+                if (cancelPendingJobs) {
+                    CancelPendingJobs ();
+                    Continue ();
+                    WaitForIdle ();
                 }
-            } pauser (*this, cancelRunningJobs);
-            if (cancelPendingJobs) {
-                CancelPendingJobs ();
+                done = true;
                 Continue ();
-                WaitForIdle ();
-            }
-            bool expected = false;
-            if (done.compare_exchange_strong (expected, true)) {
                 scheduler.DeleteJobQueue (this);
             }
+            return true;
         }
 
         void Scheduler::JobQueue::Continue () {

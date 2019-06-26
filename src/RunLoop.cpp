@@ -401,7 +401,9 @@ namespace thekogans {
             }
         }
 
-        void RunLoop::Pause (bool cancelRunningJobs) {
+        bool RunLoop::Pause (
+                bool cancelRunningJobs,
+                const TimeSpec &timeSpec) {
             struct GetRunningJobsCallback : public JobList::Callback {
                 typedef JobList::Callback::result_type result_type;
                 typedef JobList::Callback::argument_type argument_type;
@@ -425,7 +427,7 @@ namespace thekogans {
                     jobsNotEmpty.SignalAll ();
                 }
             }
-            WaitForJobs (getRunningJobsCallback.runningJobs, TimeSpec::Infinite);
+            return WaitForJobs (getRunningJobsCallback.runningJobs, timeSpec);
         }
 
         void RunLoop::Continue () {

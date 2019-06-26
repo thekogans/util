@@ -46,31 +46,24 @@ namespace thekogans {
             }
         }
 
-        void ThreadRunLoop::Stop (
+        bool ThreadRunLoop::Stop (
                 bool cancelRunningJobs,
-                bool cancelPendingJobs) {
-            struct Pauser {
-                ThreadRunLoop &defaultRunLoop;
-                bool cancelRunningJobs;
-                Pauser (ThreadRunLoop &defaultRunLoop_,
-                        bool cancelRunningJobs_) :
-                        defaultRunLoop (defaultRunLoop_),
-                        cancelRunningJobs (cancelRunningJobs_) {
-                    defaultRunLoop.Pause (cancelRunningJobs);
+                bool cancelPendingJobs,
+                const TimeSpec &timeSpec) {
+            if (IsRunning ()) {
+                if (!Pause (cancelRunningJobs, timeSpec)) {
+                    return false;
                 }
-                ~Pauser () {
-                    defaultRunLoop.Continue ();
+                if (cancelPendingJobs) {
+                    CancelPendingJobs ();
+                    Continue ();
+                    WaitForIdle ();
                 }
-            } pauser (*this, cancelRunningJobs);
-            if (cancelPendingJobs) {
-                CancelPendingJobs ();
+                done = true;
                 Continue ();
-                WaitForIdle ();
-            }
-            bool expected = false;
-            if (done.compare_exchange_strong (expected, true)) {
                 jobsNotEmpty.Signal ();
             }
+            return true;
         }
 
     } // namespace util

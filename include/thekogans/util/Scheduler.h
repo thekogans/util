@@ -146,9 +146,13 @@ namespace thekogans {
                 /// Scheduler job queue stops when there are no more jobs to execute.
                 /// \param[in] cancelRunningJobs true = Cancel all running jobs.
                 /// \param[in] cancelPendingJobs true = Cancel all pending jobs.
-                virtual void Stop (
+                /// \param[in] timeSpec How long to wait for the job queue to stop.
+                /// IMPORTANT: timeSpec is a relative value.
+                /// \return true == Job queue stopped. false == timed out.
+                virtual bool Stop (
                     bool cancelRunningJobs = true,
-                    bool cancelPendingJobs = true);
+                    bool cancelPendingJobs = true,
+                    const TimeSpec &timeSpec = TimeSpec::Infinite);
 
                 /// \brief
                 /// Continue the job queue execution. If the job queue is not paused, noop.

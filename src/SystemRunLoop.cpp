@@ -370,29 +370,21 @@ namespace thekogans {
             }
         }
 
-        void SystemRunLoop::Stop (
+        bool SystemRunLoop::Stop (
                 bool cancelRunningJobs,
-                bool cancelPendingJobs) {
-            struct Pauser {
-                SystemRunLoop &systemRunLoop;
-                bool cancelRunningJobs;
-                Pauser (SystemRunLoop &systemRunLoop_,
-                        bool cancelRunningJobs_) :
-                        systemRunLoop (systemRunLoop_),
-                        cancelRunningJobs (cancelRunningJobs_) {
-                    systemRunLoop.Pause (cancelRunningJobs);
+                bool cancelPendingJobs,
+                const TimeSpec &timeSpec) {
+            if (IsRunning ()) {
+                if (!Pause (cancelRunningJobs, timeSpec)) {
+                    return false;
                 }
-                ~Pauser () {
-                    systemRunLoop.Continue ();
+                if (cancelPendingJobs) {
+                    CancelPendingJobs ();
+                    Continue ();
+                    WaitForIdle ();
                 }
-            } pauser (*this, cancelRunningJobs);
-            if (cancelPendingJobs) {
-                CancelPendingJobs ();
+                done = true;
                 Continue ();
-                WaitForIdle ();
-            }
-            bool expected = false;
-            if (done.compare_exchange_strong (expected, true)) {
             #if defined (TOOLCHAIN_OS_Windows)
                 PostMessage (window->wnd, WM_CLOSE, 0, 0);
             #elif defined (TOOLCHAIN_OS_Linux)
@@ -401,6 +393,7 @@ namespace thekogans {
                 runLoop->Stop ();
             #endif // defined (TOOLCHAIN_OS_Windows)
             }
+            return true;
         }
 
         bool SystemRunLoop::EnqJob (

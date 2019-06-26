@@ -147,9 +147,13 @@ namespace thekogans {
             /// to return.
             /// \param[in] cancelRunningJobs true = Cancel all running jobs.
             /// \param[in] cancelPendingJobs true = Cancel all pending jobs.
-            virtual void Stop (
+            /// \param[in] timeSpec How long to wait for the run loop to stop.
+            /// IMPORTANT: timeSpec is a relative value.
+            /// \return true == Run loop stopped. false == timed out.
+            virtual bool Stop (
                 bool cancelRunningJobs = true,
-                bool cancelPendingJobs = true);
+                bool cancelPendingJobs = true,
+                const TimeSpec &timeSpec = TimeSpec::Infinite);
 
             /// \brief
             /// ThreadRunLoop is neither copy constructable, nor assignable.

@@ -78,7 +78,7 @@ namespace thekogans {
             LockGuard<Mutex> guard (workersMutex);
             bool expected = true;
             if (done.compare_exchange_strong (expected, false)) {
-                for (ui32 i = 0; i < workerCount; ++i) {
+                for (std::size_t i = workers.size (); i < workerCount; ++i) {
                     std::string workerName;
                     if (!name.empty ()) {
                         if (workerCount > 1) {
@@ -98,47 +98,42 @@ namespace thekogans {
             }
         }
 
-        void JobQueue::Stop (
+        bool JobQueue::Stop (
                 bool cancelRunningJobs,
-                bool cancelPendingJobs) {
-            struct Pauser {
-                JobQueue &jobQueue;
-                bool cancelRunningJobs;
-                Pauser (JobQueue &jobQueue_,
-                        bool cancelRunningJobs_) :
-                        jobQueue (jobQueue_),
-                        cancelRunningJobs (cancelRunningJobs_) {
-                    jobQueue.Pause (cancelRunningJobs);
+                bool cancelPendingJobs,
+                const TimeSpec &timeSpec) {
+            LockGuard<Mutex> guard (workersMutex);
+            if (IsRunning ()) {
+                if (!Pause (cancelRunningJobs, timeSpec)) {
+                    return false;
                 }
-                ~Pauser () {
-                    jobQueue.Continue ();
+                if (cancelPendingJobs) {
+                    CancelPendingJobs ();
+                    // This Continue is necessary to wake up from
+                    // Pause above so that WaitForIdle can do it's
+                    // job.
+                    Continue ();
+                    WaitForIdle ();
                 }
-            } pauser (*this, cancelRunningJobs);
-            if (cancelPendingJobs) {
-                CancelPendingJobs ();
+                done = true;
+                // This Continue is necessary in case cancelPendingJobs == false.
+                // If cancelPendingJobs == true, it's harmless.
                 Continue ();
-                WaitForIdle ();
+                jobsNotEmpty.SignalAll ();
+                struct Callback : public WorkerList::Callback {
+                    typedef WorkerList::Callback::result_type result_type;
+                    typedef WorkerList::Callback::argument_type argument_type;
+                    virtual result_type operator () (argument_type worker) {
+                        // Join the worker thread before deleting it to
+                        // let it's thread function finish it's teardown.
+                        worker->Wait ();
+                        delete worker;
+                        return true;
+                    }
+                } callback;
+                workers.clear (callback);
             }
-            {
-                LockGuard<Mutex> guard (workersMutex);
-                bool expected = false;
-                if (done.compare_exchange_strong (expected, true)) {
-                    jobsNotEmpty.SignalAll ();
-                    struct Callback : public WorkerList::Callback {
-                        typedef WorkerList::Callback::result_type result_type;
-                        typedef WorkerList::Callback::argument_type argument_type;
-                        virtual result_type operator () (argument_type worker) {
-                            // Join the worker thread before deleting it to
-                            // let it's thread function finish it's teardown.
-                            worker->Wait ();
-                            delete worker;
-                            return true;
-                        }
-                    } callback;
-                    workers.clear (callback);
-                    assert (runningJobs.empty ());
-                }
-            }
+            return true;
         }
 
         std::string GlobalJobQueueCreateInstance::name = std::string ();

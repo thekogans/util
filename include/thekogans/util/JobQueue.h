@@ -163,9 +163,13 @@ namespace thekogans {
             /// your jobs should pay close attention to the state of done.
             /// \param[in] cancelRunningJobs true = Cancel all running jobs.
             /// \param[in] cancelPendingJobs true = Cancel all pending jobs.
-            virtual void Stop (
+            /// \param[in] timeSpec How long to wait for the job queue to stop.
+            /// IMPORTANT: timeSpec is a relative value.
+            /// \return true == Job queue stopped. false == timed out waiting for worker to stop.
+            virtual bool Stop (
                 bool cancelRunningJobs = true,
-                bool cancelPendingJobs = true);
+                bool cancelPendingJobs = true,
+                const TimeSpec &timeSpec = TimeSpec::Infinite);
 
             /// \brief
             /// JobQueue is neither copy constructable, nor assignable.

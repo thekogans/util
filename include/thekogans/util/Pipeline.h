@@ -403,13 +403,18 @@ namespace thekogans {
             /// VERY IMPORTANT: A paused pipeline does NOT imply idle. If you pause a
             /// pipeline that has pending jobs, \see{IsIdle} (below) will return false.
             /// \param[in] cancelRunningJobs true == Cancel running jobs.
-            void Pause (bool cancelRunningJobs = false);
+            /// \param[in] timeSpec How long to wait for the pipeline to pause.
+            /// IMPORTANT: timeSpec is a relative value.
+            /// \return true == Pipeline paused. false == timed out.
+            bool Pause (
+                bool cancelRunningJobs = false,
+                const TimeSpec &timeSpec = TimeSpec::Infinite);
             /// \brief
             /// Continue the pipeline execution. If the pipeline is not paused, noop.
             void Continue ();
             /// \brief
             /// Return true if the pipeline is paused.
-            /// \return true == the pipeline is paused.
+            /// \return true == Pipeline is paused.
             bool IsPaused ();
 
             /// \brief
@@ -428,9 +433,13 @@ namespace thekogans {
             /// Stop the pipeline and it's stages.
             /// \param[in] cancelRunningJobs true = Cancel all running jobs.
             /// \param[in] cancelPendingJobs true = Cancel all pending jobs.
-            void Stop (
+            /// \param[in] timeSpec How long to wait for the job queue to stop.
+            /// IMPORTANT: timeSpec is a relative value.
+            /// \return true == Job queue stopped. false == timed out waiting for worker to stop.
+            bool Stop (
                 bool cancelRunningJobs = true,
-                bool cancelPendingJobs = true);
+                bool cancelPendingJobs = true,
+                const TimeSpec &timeSpec = TimeSpec::Infinite);
 
             /// \brief
             /// Enqueue a job on the pipeline.
