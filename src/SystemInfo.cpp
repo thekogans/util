@@ -35,8 +35,8 @@
         #include <net/if_arp.h>
         #include <linux/if_packet.h>
         #include <unistd.h>
-        #include <climits>
         #include <pwd.h>
+        #include <climits>
     #elif defined (TOOLCHAIN_OS_OSX)
         #include <net/if_dl.h>
         #include <net/if_types.h>
@@ -46,6 +46,7 @@
 #endif // defined (TOOLCHAIN_OS_Windows)
 #include <string>
 #include <set>
+#include "thekogans/util/Path.h"
 #include "thekogans/util/Exception.h"
 #include "thekogans/util/SHA2.h"
 #include "thekogans/util/StringUtils.h"
@@ -313,6 +314,8 @@ namespace thekogans {
             }
         }
 
+        std::string SystemInfo::processStartDirectory = Path::GetCurrDirectory ();
+
         SystemInfo::SystemInfo () :
             endianness (GetEndiannessImpl ()),
             cpuCount (GetCPUCountImpl ()),
@@ -329,7 +332,8 @@ namespace thekogans {
                 "CPU count: " << cpuCount << std::endl <<
                 "Page size: " << pageSize << std::endl <<
                 "Memory size: " << memorySize << std::endl <<
-                "Process Path: " << processPath << std::endl <<
+                "Process path: " << processPath << std::endl <<
+                "Process start directory: " << processStartDirectory << std::endl <<
                 "Host name: " << hostName << std::endl <<
                 "Host Id: " << hostId << std::endl <<
                 "User name: " << userName << std::endl;

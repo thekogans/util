@@ -53,6 +53,9 @@ namespace thekogans {
             /// Process path.
             std::string processPath;
             /// \brief
+            /// Process start directory.
+            static std::string processStartDirectory;
+            /// \brief
             /// Host name.
             std::string hostName;
             /// \brief
@@ -97,6 +100,13 @@ namespace thekogans {
             /// \return Process path.
             inline std::string GetProcessPath () const {
                 return processPath;
+            }
+
+            /// \brief
+            /// Return process start directory.
+            /// \return Process start directory.
+            inline std::string GetProcessStartDirectory () const {
+                return processStartDirectory;
             }
 
             /// \brief
