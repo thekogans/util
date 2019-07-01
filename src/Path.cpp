@@ -76,13 +76,21 @@ namespace thekogans {
         }
 
         std::string Path::GetCurrDirectory () {
+            std::string path;
         #if defined (TOOLCHAIN_OS_Windows)
-            char path[MAX_PATH];
-            return _getcwd (path, MAX_PATH);
+            char *buffer = _getcwd (0, 0);
         #else // defined (TOOLCHAIN_OS_Windows)
-            char path[PATH_MAX];
-            return getcwd (path, PATH_MAX);
+            char *buffer = getcwd (0, 0);
         #endif // defined (TOOLCHAIN_OS_Windows)
+            if (buffer != 0) {
+                path = buffer;
+                free (buffer);
+            }
+            else {
+                THEKOGANS_UTIL_THROW_POSIX_ERROR_CODE_EXCEPTION (
+                    THEKOGANS_UTIL_POSIX_OS_ERROR_CODE);
+            }
+            return path;
         }
 
         std::string Path::GetTempDirectory () {
@@ -92,8 +100,8 @@ namespace thekogans {
                 return tempDirectory;
             }
             else {
-                THEKOGANS_UTIL_THROW_POSIX_ERROR_CODE_EXCEPTION (
-                    THEKOGANS_UTIL_POSIX_OS_ERROR_CODE);
+                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                    THEKOGANS_UTIL_OS_ERROR_CODE);
             }
         #else // defined (TOOLCHAIN_OS_Windows)
             std::string tempDirectory = GetEnvironmentVariable ("TMPDIR");

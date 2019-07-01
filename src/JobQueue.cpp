@@ -102,18 +102,27 @@ namespace thekogans {
                 bool cancelRunningJobs,
                 bool cancelPendingJobs,
                 const TimeSpec &timeSpec) {
+            TimeSpec deadline = GetCurrentTime () + timeSpec;
             LockGuard<Mutex> guard (workersMutex);
             if (IsRunning ()) {
-                if (!Pause (cancelRunningJobs, timeSpec)) {
+                if (!Pause (cancelRunningJobs, deadline - GetCurrentTime ())) {
                     return false;
                 }
+                // At this point there should be no more running jobs.
+                assert (runningJobs.empty ());
                 if (cancelPendingJobs) {
+                    // CancelPendingJobs does not block.
                     CancelPendingJobs ();
                     // This Continue is necessary to wake up from
                     // Pause above so that WaitForIdle can do it's
                     // job.
                     Continue ();
-                    WaitForIdle ();
+                    // Since there are no more runningJobs, and
+                    // pendingJobs have been cancelled, WaitForIdle
+                    // should complete quickly.
+                    if (!WaitForIdle (deadline - GetCurrentTime ())) {
+                        return false;
+                    }
                 }
                 done = true;
                 // This Continue is necessary in case cancelPendingJobs == false.
@@ -123,15 +132,25 @@ namespace thekogans {
                 struct Callback : public WorkerList::Callback {
                     typedef WorkerList::Callback::result_type result_type;
                     typedef WorkerList::Callback::argument_type argument_type;
+                    const TimeSpec &deadline;
+                    explicit Callback (const TimeSpec &deadline_) :
+                        deadline (deadline_) {}
                     virtual result_type operator () (argument_type worker) {
                         // Join the worker thread before deleting it to
                         // let it's thread function finish it's teardown.
-                        worker->Wait ();
+                        if (!worker->Wait (deadline - GetCurrentTime ())) {
+                            return false;
+                        }
                         delete worker;
                         return true;
                     }
-                } callback;
-                workers.clear (callback);
+                } callback (deadline);
+                // Since there are no more jobs (running or pending)
+                // and done == true, workers.clear should complete
+                // quickly.
+                if (!workers.clear (callback)) {
+                    return false;
+                }
             }
             return true;
         }

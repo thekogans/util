@@ -367,7 +367,7 @@ namespace thekogans {
                 bool callStart = true);
             /// \brief
             /// dtor. Stop the pipeline.
-            virtual ~Pipeline () {
+            ~Pipeline () {
                 Stop ();
             }
 
@@ -385,7 +385,7 @@ namespace thekogans {
             }
 
             /// \brief
-            /// Wait until the given pipeline is created the and it starts running.
+            /// Wait until the given pipeline is created and it starts running.
             /// \param[in] pipeline Pipeline to wait for.
             /// \param[in] sleepTimeSpec How long to sleep between tries.
             /// \param[in] waitTimeSpec Total time to wait.
