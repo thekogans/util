@@ -74,10 +74,7 @@ namespace thekogans {
                             path.c_str (),
                             archiveNumber--);
                     if (Path (archivePath).Exists ()) {
-                        if (unlink (archivePath.c_str ()) < 0) {
-                            THEKOGANS_UTIL_THROW_POSIX_ERROR_CODE_EXCEPTION (
-                                THEKOGANS_UTIL_POSIX_OS_ERROR_CODE);
-                        }
+                        File::Delete (archivePath);
                     }
                     while (archiveNumber > 0) {
                         std::string archivePath =

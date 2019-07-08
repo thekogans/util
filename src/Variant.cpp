@@ -347,7 +347,7 @@ namespace thekogans {
                     return *value._SizeT < *variant.value._SizeT ?
                         -1 : *value._SizeT > *variant.value._SizeT ? 1 : 0;
                 case Variant::TYPE_string:
-                    return strcasecmp (value._string->c_str (),
+                    return StringCompareIgnoreCase (value._string->c_str (),
                         variant.value._string->c_str ());
                 case Variant::TYPE_GUID:
                     return *value._guid < *variant.value._guid ?
@@ -399,7 +399,7 @@ namespace thekogans {
                     return *value._SizeT < *variant.value._SizeT ?
                         -1 : *value._SizeT > *variant.value._SizeT ? 1 : 0;
                 case Variant::TYPE_string:
-                    return strncasecmp (value._string->c_str (),
+                    return StringCompareIgnoreCase (value._string->c_str (),
                         variant.value._string->c_str (), value._string->size ());
                 case Variant::TYPE_GUID:
                     return *value._guid < *variant.value._guid ?

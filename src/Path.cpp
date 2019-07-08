@@ -49,6 +49,7 @@
     #include "thekogans/util/OSXUtils.h"
 #endif // defined (TOOLCHAIN_OS_Windows)
 #include "thekogans/util/Directory.h"
+#include "thekogans/util/File.h"
 #include "thekogans/util/Path.h"
 
 namespace thekogans {
@@ -312,10 +313,7 @@ namespace thekogans {
             }
             else if (entry.type == Directory::Entry::File ||
                     entry.type == Directory::Entry::Link) {
-                if (unlink (path.c_str ()) < 0) {
-                    THEKOGANS_UTIL_THROW_POSIX_ERROR_CODE_EXCEPTION (
-                        THEKOGANS_UTIL_POSIX_OS_ERROR_CODE);
-                }
+                File::Delete (path);
             }
         }
 

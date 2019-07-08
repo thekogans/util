@@ -29,22 +29,6 @@
     #endif // !defined (NOMINMAX)
     #include <windows.h>
 #endif // !defined (_WINDOWS_)
-#if defined (_MSC_VER)
-    #include <direct.h>
-    #include <cstdlib>
-    #include <cstring>
-    #include <cstdio>
-
-    #define atoll(str) _strtoui64 (str, 0, 10)
-    #define strtoll _strtoi64
-    #define strtoull _strtoui64
-    #define strcasecmp _stricmp
-    #define strncasecmp _strnicmp
-    #define snprintf sprintf_s
-    #define vsnprintf vsprintf_s
-    #define unlink _unlink
-    #define rmdir _rmdir
-#endif // defined (_MSC_VER)
 #include <memory>
 #include <string>
 #include "thekogans/util/Config.h"

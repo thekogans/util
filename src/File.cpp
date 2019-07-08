@@ -15,6 +15,9 @@
 // You should have received a copy of the GNU General Public License
 // along with libthekogans_util. If not, see <http://www.gnu.org/licenses/>.
 
+#if defined (TOOLCHAIN_OS_Windows)
+    #include <direct.h>
+#endif // defined (TOOLCHAIN_OS_Windows)
 #include <errno.h>
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -312,6 +315,17 @@ namespace thekogans {
             buffer << zero << inode;
             return guid;
         #endif // defined (TOOLCHAIN_OS_Windows)
+        }
+
+        void File::Delete (const std::string &path) {
+        #if defined (TOOLCHAIN_OS_Windows)
+            if (_unlink (path.c_str ()) < 0) {
+        #else // defined (TOOLCHAIN_OS_Windows)
+            if (unlink (path.c_str ()) < 0) {
+        #endif // defined (TOOLCHAIN_OS_Windows)
+                THEKOGANS_UTIL_THROW_POSIX_ERROR_CODE_AND_MESSAGE_EXCEPTION (
+                    errno, " (%s)", path.c_str ());
+            }
         }
 
         void File::Touch (const std::string &path) {

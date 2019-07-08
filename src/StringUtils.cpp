@@ -115,6 +115,27 @@ namespace thekogans {
             return lower;
         }
 
+        _LIB_THEKOGANS_UTIL_DECL int _LIB_THEKOGANS_UTIL_API StringCompareIgnoreCase (
+                const char *str1,
+                const char *str2) {
+        #if defined (TOOLCHAIN_OS_Windows)
+            return _stricmp (str1, str2);
+        #else // defined (TOOLCHAIN_OS_Windows)
+            return strcasecmp (str1, str2);
+        #endif // defined (TOOLCHAIN_OS_Windows)
+        }
+
+        _LIB_THEKOGANS_UTIL_DECL int _LIB_THEKOGANS_UTIL_API StringCompareIgnoreCase (
+                const char *str1,
+                const char *str2,
+                std::size_t count) {
+        #if defined (TOOLCHAIN_OS_Windows)
+            return _strnicmp (str1, str2, count);
+        #else // defined (TOOLCHAIN_OS_Windows)
+            return strncasecmp (str1, str2, count);
+        #endif // defined (TOOLCHAIN_OS_Windows)
+        }
+
         _LIB_THEKOGANS_UTIL_DECL const ui8 * _LIB_THEKOGANS_UTIL_API IsUTF8String (
                 const ui8 *str) {
             if (str != 0) {
@@ -528,7 +549,11 @@ namespace thekogans {
                 char **end,
                 i32 base) {
             if (value != 0) {
+            #if defined (TOOLCHAIN_OS_Windows)
+                return (i64)_strtoi64 (value, end, base);
+            #else // defined (TOOLCHAIN_OS_Windows)
                 return (i64)strtoll (value, end, base);
+            #endif // defined (TOOLCHAIN_OS_Windows)
             }
             else {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
@@ -541,7 +566,11 @@ namespace thekogans {
                 char **end,
                 i32 base) {
             if (value != 0) {
+            #if defined (TOOLCHAIN_OS_Windows)
+                return (ui64)_strtoui64 (value, end, base);
+            #else // defined (TOOLCHAIN_OS_Windows)
                 return (ui64)strtoull (value, end, base);
+            #endif // defined (TOOLCHAIN_OS_Windows)
             }
             else {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
@@ -683,7 +712,11 @@ namespace thekogans {
                 int size = _vscprintf (format, argptr);
                 if (size > 0) {
                     str.resize (size + 1);
+                #if defined (TOOLCHAIN_OS_Windows)
+                    vsprintf_s (&str[0], size + 1, format, argptr);
+                #else // defined (TOOLCHAIN_OS_Windows)
                     vsnprintf (&str[0], size + 1, format, argptr);
+                #endif // defined (TOOLCHAIN_OS_Windows)
                     str.resize (size);
                 }
                 return str;

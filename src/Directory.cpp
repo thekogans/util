@@ -20,6 +20,7 @@
         #define _WIN32_WINNT 0x0600
         #include <ioapiset.h>
     #endif // defined (__GNUC__)
+    #include <direct.h>
 #elif defined (TOOLCHAIN_OS_Linux)
     #include <cstdio>
     #include <sys/types.h>
@@ -51,6 +52,7 @@
 #include "thekogans/util/Exception.h"
 #include "thekogans/util/LoggerMgr.h"
 #include "thekogans/util/XMLUtils.h"
+#include "thekogans/util/File.h"
 #include "thekogans/util/Directory.h"
 
 namespace thekogans {
@@ -1119,10 +1121,7 @@ namespace thekogans {
                         }
                         else if (entry.type == Directory::Entry::File ||
                                 entry.type == Directory::Entry::Link) {
-                            if (unlink (entryPath.c_str ()) != 0) {
-                                THEKOGANS_UTIL_THROW_POSIX_ERROR_CODE_AND_MESSAGE_EXCEPTION (
-                                    errno, " (%s)", entryPath.c_str ());
-                            }
+                            File::Delete (entryPath);
                         }
                         else {
                             THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
@@ -1136,7 +1135,11 @@ namespace thekogans {
                     }
                 }
             }
+        #if defined (TOOLCHAIN_OS_Windows)
+            if (_rmdir (path.c_str ()) != 0) {
+        #else // defined (TOOLCHAIN_OS_Windows)
             if (rmdir (path.c_str ()) != 0) {
+        #endif // defined (TOOLCHAIN_OS_Windows)
                 THEKOGANS_UTIL_THROW_POSIX_ERROR_CODE_AND_MESSAGE_EXCEPTION (
                     errno, " (%s)", path.c_str ());
             }

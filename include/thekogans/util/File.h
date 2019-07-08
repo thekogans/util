@@ -235,6 +235,10 @@ namespace thekogans {
             GUID GetId () const;
 
             /// \brief
+            /// Delete the file at the given path.
+            /// \param[in] path File to delete.
+            static void Delete (const std::string &path);
+            /// \brief
             /// Update the last modified time. If the given
             /// file does not exist, create it.
             /// \param[in] path File to touch.
