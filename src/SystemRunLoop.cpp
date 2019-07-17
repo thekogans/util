@@ -38,11 +38,10 @@ namespace thekogans {
                 const std::string &name,
                 Type type,
                 std::size_t maxPendingJobs,
-                bool done,
                 EventProcessor eventProcessor_,
                 void *userData_,
                 Window::Ptr window_) :
-                RunLoop (name, type, maxPendingJobs, done),
+                RunLoop (name, type, maxPendingJobs),
                 eventProcessor (eventProcessor_),
                 userData (userData_),
                 window (std::move (window_)) {
@@ -178,12 +177,11 @@ namespace thekogans {
                 const std::string &name,
                 Type type,
                 std::size_t maxPendingJobs,
-                bool done,
                 EventProcessor eventProcessor_,
                 void *userData_,
                 XlibWindow::Ptr window_,
                 const std::vector<Display *> &displays_) :
-                RunLoop (name, type, maxPendingJobs, done),
+                RunLoop (name, type, maxPendingJobs),
                 eventProcessor (eventProcessor_),
                 userData (userData_),
                 window (std::move (window_)),
@@ -257,9 +255,8 @@ namespace thekogans {
                 const std::string &name,
                 Type type,
                 std::size_t maxPendingJobs,
-                bool done,
                 OSXRunLoop::Ptr runLoop_) :
-                RunLoop (name, type, maxPendingJobs, done),
+                RunLoop (name, type, maxPendingJobs),
                 runLoop (std::move (runLoop_)) {
             if (maxPendingJobs == 0 || runLoop.get () == 0) {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
@@ -269,130 +266,137 @@ namespace thekogans {
     #endif // defined (TOOLCHAIN_OS_Windows)
 
         void SystemRunLoop::Start () {
-            bool expected = true;
-            if (done.compare_exchange_strong (expected, false)) {
-                ExecuteJobs ();
-            #if defined (TOOLCHAIN_OS_Windows)
-                BOOL result;
-                MSG msg;
-                while ((result = GetMessage (&msg, 0, 0, 0)) != 0) {
-                    if (result != -1) {
-                        TranslateMessage (&msg);
-                        DispatchMessage (&msg);
-                    }
-                    else {
+            ExecuteJobs ();
+        #if defined (TOOLCHAIN_OS_Windows)
+            BOOL result;
+            MSG msg;
+            while ((result = GetMessage (&msg, 0, 0, 0)) != 0) {
+                if (result != -1) {
+                    TranslateMessage (&msg);
+                    DispatchMessage (&msg);
+                }
+                else {
+                    THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                        THEKOGANS_UTIL_OS_ERROR_CODE);
+                }
+            }
+        #elif defined (TOOLCHAIN_OS_Linux)
+            enum {
+                DEFAULT_MAX_SIZE = 256
+            };
+            struct epoll {
+                THEKOGANS_UTIL_HANDLE handle;
+                explicit epoll (ui32 maxSize) :
+                        handle (epoll_create (maxSize)) {
+                    if (handle == THEKOGANS_UTIL_INVALID_HANDLE_VALUE) {
                         THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
                             THEKOGANS_UTIL_OS_ERROR_CODE);
                     }
                 }
-            #elif defined (TOOLCHAIN_OS_Linux)
-                enum {
-                    DEFAULT_MAX_SIZE = 256
-                };
-                struct epoll {
-                    THEKOGANS_UTIL_HANDLE handle;
-                    explicit epoll (ui32 maxSize) :
-                            handle (epoll_create (maxSize)) {
-                        if (handle == THEKOGANS_UTIL_INVALID_HANDLE_VALUE) {
-                            THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                                THEKOGANS_UTIL_OS_ERROR_CODE);
-                        }
-                    }
-                    ~epoll () {
-                        close (handle);
-                    }
-                } epoll (DEFAULT_MAX_SIZE);
-                {
+                ~epoll () {
+                    close (handle);
+                }
+            } epoll (DEFAULT_MAX_SIZE);
+            {
+                epoll_event event = {0};
+                event.events = EPOLLIN;
+                event.data.ptr = window->display.display;
+                if (epoll_ctl (epoll.handle, EPOLL_CTL_ADD,
+                        ConnectionNumber (window->display.display), &event) < 0) {
+                    THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                        THEKOGANS_UTIL_OS_ERROR_CODE);
+                }
+            }
+            for (std::size_t i = 0, count = displays.size (); i < count; ++i) {
+                if (displays[i] != window->display.display) {
                     epoll_event event = {0};
                     event.events = EPOLLIN;
-                    event.data.ptr = window->display.display;
+                    event.data.ptr = displays[i];
                     if (epoll_ctl (epoll.handle, EPOLL_CTL_ADD,
-                            ConnectionNumber (window->display.display), &event) < 0) {
+                            ConnectionNumber (displays[i]), &event) < 0) {
                         THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
                             THEKOGANS_UTIL_OS_ERROR_CODE);
                     }
                 }
-                for (std::size_t i = 0, count = displays.size (); i < count; ++i) {
-                    if (displays[i] != window->display.display) {
-                        epoll_event event = {0};
-                        event.events = EPOLLIN;
-                        event.data.ptr = displays[i];
-                        if (epoll_ctl (epoll.handle, EPOLL_CTL_ADD,
-                                ConnectionNumber (displays[i]), &event) < 0) {
-                            THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                                THEKOGANS_UTIL_OS_ERROR_CODE);
-                        }
+            }
+            while (!done) {
+                std::vector<epoll_event> events (DEFAULT_MAX_SIZE);
+                int count = epoll_wait (epoll.handle, events.data (), DEFAULT_MAX_SIZE, -1);
+                if (count < 0) {
+                    THEKOGANS_UTIL_ERROR_CODE errorCode = THEKOGANS_UTIL_OS_ERROR_CODE;
+                    // EINTR means a signal interrupted our wait.
+                    if (errorCode != EINTR) {
+                        THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (errorCode);
                     }
                 }
-                while (!done) {
-                    std::vector<epoll_event> events (DEFAULT_MAX_SIZE);
-                    int count = epoll_wait (epoll.handle, events.data (), DEFAULT_MAX_SIZE, -1);
-                    if (count < 0) {
-                        THEKOGANS_UTIL_ERROR_CODE errorCode = THEKOGANS_UTIL_OS_ERROR_CODE;
-                        // EINTR means a signal interrupted our wait.
-                        if (errorCode != EINTR) {
-                            THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (errorCode);
-                        }
-                    }
-                    else {
-                        for (int i = 0; i < count; ++i) {
-                            Display *display = (Display *)events[i].data.ptr;
-                            if (display != 0) {
-                                if (events[i].events & EPOLLERR) {
-                                    THEKOGANS_UTIL_ERROR_CODE errorCode = 0;
-                                    socklen_t length = sizeof (errorCode);
-                                    if (getsockopt (
-                                            ConnectionNumber (display),
-                                            SOL_SOCKET,
-                                            SO_ERROR,
-                                            &errorCode,
-                                            &length) == -1) {
-                                        THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                                            THEKOGANS_UTIL_OS_ERROR_CODE);
-                                    }
-                                    THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (errorCode);
+                else {
+                    for (int i = 0; i < count; ++i) {
+                        Display *display = (Display *)events[i].data.ptr;
+                        if (display != 0) {
+                            if (events[i].events & EPOLLERR) {
+                                THEKOGANS_UTIL_ERROR_CODE errorCode = 0;
+                                socklen_t length = sizeof (errorCode);
+                                if (getsockopt (
+                                        ConnectionNumber (display),
+                                        SOL_SOCKET,
+                                        SO_ERROR,
+                                        &errorCode,
+                                        &length) == -1) {
+                                    THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                                        THEKOGANS_UTIL_OS_ERROR_CODE);
                                 }
-                                else if (events[i].events & EPOLLIN) {
-                                    XEvent event;
-                                    while (GetEvent (display, event)) {
-                                        if (!DispatchEvent (display, event)) {
-                                            break;
-                                        }
+                                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (errorCode);
+                            }
+                            else if (events[i].events & EPOLLIN) {
+                                XEvent event;
+                                while (GetEvent (display, event)) {
+                                    if (!DispatchEvent (display, event)) {
+                                        break;
                                     }
                                 }
                             }
                         }
                     }
                 }
-            #elif defined (TOOLCHAIN_OS_OSX)
-                runLoop->Start ();
-            #endif // defined (TOOLCHAIN_OS_Windows)
             }
+        #elif defined (TOOLCHAIN_OS_OSX)
+            runLoop->Start ();
+        #endif // defined (TOOLCHAIN_OS_Windows)
         }
 
         bool SystemRunLoop::Stop (
                 bool cancelRunningJobs,
                 bool cancelPendingJobs,
                 const TimeSpec &timeSpec) {
-            if (IsRunning ()) {
-                if (!Pause (cancelRunningJobs, timeSpec)) {
+            TimeSpec deadline = GetCurrentTime () + timeSpec;
+            if (!Pause (cancelRunningJobs, deadline - GetCurrentTime ())) {
+                return false;
+            }
+            if (cancelPendingJobs) {
+                CancelPendingJobs ();
+                Continue ();
+                if (!WaitForIdle (deadline - GetCurrentTime ())) {
                     return false;
                 }
-                if (cancelPendingJobs) {
-                    CancelPendingJobs ();
-                    Continue ();
-                    WaitForIdle ();
-                }
-                done = true;
-                Continue ();
-            #if defined (TOOLCHAIN_OS_Windows)
-                PostMessage (window->wnd, WM_CLOSE, 0, 0);
-            #elif defined (TOOLCHAIN_OS_Linux)
-                window->PostEvent (XlibWindow::ID_STOP);
-            #elif defined (TOOLCHAIN_OS_OSX)
-                runLoop->Stop ();
-            #endif // defined (TOOLCHAIN_OS_Windows)
             }
+            struct ToggleDone {
+                THEKOGANS_UTIL_ATOMIC<bool> &done;
+                ToggleDone (THEKOGANS_UTIL_ATOMIC<bool> &done_) :
+                        done (done_) {
+                    done = true;
+                }
+                ~ToggleDone () {
+                    done = false;
+                }
+            } toggleDone (done);
+            Continue ();
+        #if defined (TOOLCHAIN_OS_Windows)
+            PostMessage (window->wnd, WM_CLOSE, 0, 0);
+        #elif defined (TOOLCHAIN_OS_Linux)
+            window->PostEvent (XlibWindow::ID_STOP);
+        #elif defined (TOOLCHAIN_OS_OSX)
+            runLoop->Stop ();
+        #endif // defined (TOOLCHAIN_OS_Windows)
             return true;
         }
 

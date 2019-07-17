@@ -26,11 +26,8 @@ namespace thekogans {
         THEKOGANS_UTIL_IMPLEMENT_HEAP_WITH_LOCK (Scheduler::JobQueue, SpinLock)
 
         void Scheduler::JobQueue::Start () {
-            bool expected = true;
-            if (done.compare_exchange_strong (expected, false)) {
-                if (GetPendingJobCount () != 0) {
-                    scheduler.AddJobQueue (this);
-                }
+            if (GetPendingJobCount () != 0) {
+                scheduler.AddJobQueue (this);
             }
         }
 
@@ -38,19 +35,29 @@ namespace thekogans {
                 bool cancelRunningJobs,
                 bool cancelPendingJobs,
                 const TimeSpec &timeSpec) {
-            if (IsRunning ()) {
-                if (!Pause (cancelRunningJobs, timeSpec)) {
+            TimeSpec deadline = GetCurrentTime () + timeSpec;
+            if (!Pause (cancelRunningJobs, deadline - GetCurrentTime ())) {
+                return false;
+            }
+            if (cancelPendingJobs) {
+                CancelPendingJobs ();
+                Continue ();
+                if (!WaitForIdle (deadline - GetCurrentTime ())) {
                     return false;
                 }
-                if (cancelPendingJobs) {
-                    CancelPendingJobs ();
-                    Continue ();
-                    WaitForIdle ();
-                }
-                done = true;
-                Continue ();
-                scheduler.DeleteJobQueue (this);
             }
+            struct ToggleDone {
+                THEKOGANS_UTIL_ATOMIC<bool> &done;
+                ToggleDone (THEKOGANS_UTIL_ATOMIC<bool> &done_) :
+                        done (done_) {
+                    done = true;
+                }
+                ~ToggleDone () {
+                    done = false;
+                }
+            } toggleDone (done);
+            Continue ();
+            scheduler.DeleteJobQueue (this);
             return true;
         }
 
@@ -102,7 +109,11 @@ namespace thekogans {
             if (jobQueue != 0) {
                 {
                     LockGuard<SpinLock> guard (spinLock);
-                    if (!jobQueue->IsRunning () || jobQueue->inFlight) {
+                    // In flight job queues are the ones executing
+                    // currently executing jobs. They add themselves
+                    // to the back of the priority queue after the job
+                    // is done.
+                    if (jobQueue->inFlight) {
                         return;
                     }
                     // NOTE: It's okay for push_back to fail. It simply means

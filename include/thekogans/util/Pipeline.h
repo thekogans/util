@@ -353,7 +353,6 @@ namespace thekogans {
             /// \param[in] workerAffinity_ Worker thread processor affinity.
             /// \param[in] workerCallback_ Called to initialize/uninitialize
             /// the worker thread.
-            /// \param[in] callStart true == Call Start.
             Pipeline (
                 const Stage *begin,
                 const Stage *end,
@@ -363,8 +362,7 @@ namespace thekogans {
                 std::size_t workerCount_ = 1,
                 i32 workerPriority_ = THEKOGANS_UTIL_NORMAL_THREAD_PRIORITY,
                 ui32 workerAffinity_ = THEKOGANS_UTIL_MAX_THREAD_AFFINITY,
-                RunLoop::WorkerCallback *workerCallback_ = 0,
-                bool callStart = true);
+                RunLoop::WorkerCallback *workerCallback_ = 0);
             /// \brief
             /// dtor. Stop the pipeline.
             ~Pipeline () {
@@ -383,18 +381,6 @@ namespace thekogans {
             inline const std::string &GetName () const {
                 return name;
             }
-
-            /// \brief
-            /// Wait until the given pipeline is created and it starts running.
-            /// \param[in] pipeline Pipeline to wait for.
-            /// \param[in] sleepTimeSpec How long to sleep between tries.
-            /// \param[in] waitTimeSpec Total time to wait.
-            /// \return true == the given pipeline is running.
-            /// false == timed out waiting for the pipeline to start.
-            static bool WaitForStart (
-                Ptr &pipeline,
-                const TimeSpec &sleepTimeSpec = TimeSpec::FromMilliseconds (50),
-                const TimeSpec &waitTimeSpec = TimeSpec::FromSeconds (3));
 
             /// \brief
             /// Pause pipeline execution. Currently running jobs are allowed to finish,
@@ -590,10 +576,6 @@ namespace thekogans {
             void ResetStats ();
 
             /// \brief
-            /// Return true if Start was called.
-            /// \return true if Start was called.
-            bool IsRunning ();
-            /// \brief
             /// Return true if there are no running jobs and the
             /// stages are idle.
             /// IMPORTANT: See VERY IMPORTANT comment in \see{Pause} (above).
@@ -659,9 +641,6 @@ namespace thekogans {
             /// \brief
             /// Called to initialize/uninitialize the worker thread.
             static RunLoop::WorkerCallback *workerCallback;
-            /// \brief
-            /// Call Start.
-            static bool callStart;
 
         public:
             /// \brief
@@ -677,7 +656,6 @@ namespace thekogans {
             /// \param[in] workerPriority_ Worker thread priority.
             /// \param[in] workerAffinity_ Worker thread processor affinity.
             /// \param[in] workerCallback_ Called to initialize/uninitialize the worker thread.
-            /// \param[in] callStart_ Call Start.
             static void Parameterize (
                 const Pipeline::Stage *begin_,
                 const Pipeline::Stage *end_,
@@ -687,8 +665,7 @@ namespace thekogans {
                 std::size_t workerCount_ = 1,
                 i32 workerPriority_ = THEKOGANS_UTIL_NORMAL_THREAD_PRIORITY,
                 ui32 workerAffinity_ = THEKOGANS_UTIL_MAX_THREAD_AFFINITY,
-                RunLoop::WorkerCallback *workerCallback_ = 0,
-                bool callStart_ = true);
+                RunLoop::WorkerCallback *workerCallback_ = 0);
 
             /// \brief
             /// Create a global pipeline with custom ctor arguments.

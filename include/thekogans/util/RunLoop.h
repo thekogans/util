@@ -764,12 +764,10 @@ namespace thekogans {
             /// \param[in] name_ RunLoop name.
             /// \param[in] type_ RunLoop type.
             /// \param[in] maxPendingJobs_ Max pending run loop jobs.
-            /// \param[in] done_ true == Must call Start.
             RunLoop (
                 const std::string &name_ = std::string (),
                 Type type_ = TYPE_FIFO,
-                std::size_t maxPendingJobs_ = SIZE_T_MAX,
-                bool done_ = true);
+                std::size_t maxPendingJobs_ = SIZE_T_MAX);
             /// \brief
             /// dtor.
             virtual ~RunLoop ();
@@ -795,18 +793,6 @@ namespace thekogans {
             /// Return the running job count.
             /// \return Running job count.
             std::size_t GetRunningJobCount ();
-
-            /// \brief
-            /// Wait until the given run loop is created and it starts running.
-            /// \param[in] runLoop RunLoop to wait for.
-            /// \param[in] sleepTimeSpec How long to sleep between tries.
-            /// \param[in] waitTimeSpec Total time to wait.
-            /// \return true == the given run loop is running.
-            /// false == timed out waiting for the run loop to start.
-            static bool WaitForStart (
-                Ptr &runLoop,
-                const TimeSpec &sleepTimeSpec = TimeSpec::FromMilliseconds (50),
-                const TimeSpec &waitTimeSpec = TimeSpec::FromSeconds (3));
 
             /// \brief
             /// Pause run loop execution. Currently running jobs are allowed to finish,
@@ -1012,10 +998,6 @@ namespace thekogans {
             /// Reset the run loop stats.
             virtual void ResetStats ();
 
-            /// \brief
-            /// Return true if Start was called.
-            /// \return true if Start was called.
-            virtual bool IsRunning ();
             /// \brief
             /// Return true if there are no running or pending jobs.
             /// IMPORTANT: See VERY IMPORTANT comment in \see{Pause} (above).

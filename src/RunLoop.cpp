@@ -330,13 +330,12 @@ namespace thekogans {
         RunLoop::RunLoop (
                 const std::string &name_,
                 Type type_,
-                std::size_t maxPendingJobs_,
-                bool done_) :
+                std::size_t maxPendingJobs_) :
                 id (GUID::FromRandom ().ToString ()),
                 name (name_),
                 type (type_),
                 maxPendingJobs (maxPendingJobs_),
-                done (done_),
+                done (false),
                 stats (id, name),
                 jobsNotEmpty (jobsMutex),
                 idle (jobsMutex),
@@ -372,33 +371,6 @@ namespace thekogans {
         std::size_t RunLoop::GetRunningJobCount () {
             LockGuard<Mutex> guard (jobsMutex);
             return runningJobs.size ();
-        }
-
-        bool RunLoop::WaitForStart (
-                Ptr &runLoop,
-                const TimeSpec &sleepTimeSpec,
-                const TimeSpec &waitTimeSpec) {
-            if (sleepTimeSpec != TimeSpec::Infinite) {
-                if (waitTimeSpec == TimeSpec::Infinite) {
-                    while (runLoop.Get () == 0 || !runLoop->IsRunning ()) {
-                        Sleep (sleepTimeSpec);
-                    }
-                }
-                else {
-                    TimeSpec now = GetCurrentTime ();
-                    TimeSpec deadline = now + waitTimeSpec;
-                    while ((runLoop.Get () == 0 || !runLoop->IsRunning ()) &&
-                            deadline > now) {
-                        Sleep (sleepTimeSpec);
-                        now = GetCurrentTime ();
-                    }
-                }
-                return runLoop.Get () != 0 && runLoop->IsRunning ();
-            }
-            else {
-                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
-            }
         }
 
         bool RunLoop::Pause (
@@ -624,14 +596,14 @@ namespace thekogans {
                 const TimeSpec &timeSpec) {
             if (job.Get () != 0 && job->GetRunLoopId () == id) {
                 if (timeSpec == TimeSpec::Infinite) {
-                    while (IsRunning () && !job->IsCompleted ()) {
+                    while (!job->IsCompleted ()) {
                         job->Wait ();
                     }
                 }
                 else {
                     TimeSpec now = GetCurrentTime ();
                     TimeSpec deadline = now + timeSpec;
-                    while (IsRunning () && !job->IsCompleted () && deadline > now) {
+                    while (!job->IsCompleted () && deadline > now) {
                         job->Wait (deadline - now);
                         now = GetCurrentTime ();
                     }
@@ -710,16 +682,17 @@ namespace thekogans {
         bool RunLoop::WaitForIdle (const TimeSpec &timeSpec) {
             LockGuard<Mutex> guard (jobsMutex);
             if (timeSpec == TimeSpec::Infinite) {
-                while (IsRunning () && (!pendingJobs.empty () || !runningJobs.empty ())) {
+                while (!pendingJobs.empty () || !runningJobs.empty ()) {
                     idle.Wait ();
                 }
             }
             else {
                 TimeSpec now = GetCurrentTime ();
                 TimeSpec deadline = now + timeSpec;
-                while (IsRunning () && (!pendingJobs.empty () || !runningJobs.empty ()) &&
-                        deadline > now) {
-                    idle.Wait (deadline - now);
+                while ((!pendingJobs.empty () || !runningJobs.empty ()) && deadline > now) {
+                    if (!idle.Wait (deadline - now)) {
+                        return false;
+                    }
                     now = GetCurrentTime ();
                 }
             }
@@ -822,10 +795,6 @@ namespace thekogans {
             stats.Reset ();
         }
 
-        bool RunLoop::IsRunning () {
-            return !done;
-        }
-
         bool RunLoop::IsIdle () {
             LockGuard<Mutex> guard (jobsMutex);
             return pendingJobs.empty () && runningJobs.empty ();
@@ -833,14 +802,14 @@ namespace thekogans {
 
         RunLoop::Job *RunLoop::DeqJob (bool wait) {
             LockGuard<Mutex> guard (jobsMutex);
-            while (IsRunning () && paused && wait) {
+            while (!done && paused && wait) {
                 notPaused.Wait ();
             }
-            while (IsRunning () && pendingJobs.empty () && wait) {
+            while (!done && pendingJobs.empty () && wait) {
                 jobsNotEmpty.Wait ();
             }
             Job *job = 0;
-            if (IsRunning () && !paused && !pendingJobs.empty ()) {
+            if (!done && !paused && !pendingJobs.empty ()) {
                 job = pendingJobs.pop_front ();
                 runningJobs.push_back (job);
             }

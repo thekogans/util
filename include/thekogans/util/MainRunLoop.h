@@ -191,7 +191,6 @@ namespace thekogans {
             static std::size_t maxPendingJobs;
             /// \brief
             /// true = the main thread will call MainRunLoop::Instance ().Start ().
-            static bool willCallStart;
         #if defined (TOOLCHAIN_OS_Windows)
             /// \brief
             /// Callback to process Windows HWND events.
@@ -229,19 +228,16 @@ namespace thekogans {
             /// \param[in] name_ RunLoop name.
             /// \param[in] type_ RunLoop queue type.
             /// \param[in] maxPendingJobs_ Max pending run loop jobs.
-            /// \param[in] willCallStart_ true = the main thread will call
             static void Parameterize (
                 const std::string &name_,
                 RunLoop::Type type_,
-                std::size_t maxPendingJobs_,
-                bool willCallStart_);
+                std::size_t maxPendingJobs_);
         #if defined (TOOLCHAIN_OS_Windows)
             /// \brief
             /// Call before the first use of MainRunLoop::Instance.
             /// \param[in] name_ RunLoop name.
             /// \param[in] type_ RunLoop queue type.
             /// \param[in] maxPendingJobs_ Max pending run loop jobs.
-            /// \param[in] willCallStart_ true = the main thread will call
             /// \param[in] eventProcessor_ Callback to process Windows HWND events.
             /// \param[in] userData_ Optional user data passed to eventProcessor.
             /// \param[in] window_ Windows window.
@@ -249,7 +245,6 @@ namespace thekogans {
                 const std::string &name_,
                 RunLoop::Type type_,
                 std::size_t maxPendingJobs_,
-                bool willCallStart_,
                 SystemRunLoop::EventProcessor eventProcessor_,
                 void *userData_,
                 Window::Ptr window_);
@@ -260,7 +255,6 @@ namespace thekogans {
             /// \param[in] name_ RunLoop name.
             /// \param[in] type_ RunLoop queue type.
             /// \param[in] maxPendingJobs_ Max pending run loop jobs.
-            /// \param[in] willCallStart_ true = the main thread will call
             /// \param[in] eventProcessor_ Callback to process Xlib XEvent events.
             /// \param[in] userData_ Optional user data passed to eventProcessor.
             /// \param[in] window_ Xlib server window.
@@ -269,7 +263,6 @@ namespace thekogans {
                 const std::string &name_,
                 RunLoop::Type type_,
                 std::size_t maxPendingJobs_,
-                bool willCallStart_,
                 SystemRunLoop::EventProcessor eventProcessor_,
                 void *userData_,
                 SystemRunLoop::XlibWindow::Ptr window_,
@@ -281,13 +274,11 @@ namespace thekogans {
             /// \param[in] name_ RunLoop name.
             /// \param[in] type_ RunLoop queue type.
             /// \param[in] maxPendingJobs_ Max pending run loop jobs.
-            /// \param[in] willCallStart_ true = the main thread will call
             /// \param[in] runLoop_ OS X run loop object.
             static void Parameterize (
                 const std::string &name_,
                 RunLoop::Type type_,
                 std::size_t maxPendingJobs_,
-                bool willCallStart_,
                 SystemRunLoop::OSXRunLoop::Ptr runLoop_);
         #endif // defined (TOOLCHAIN_OS_Windows)
 

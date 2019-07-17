@@ -23,25 +23,22 @@ namespace thekogans {
     namespace util {
 
         void ThreadRunLoop::Start () {
-            bool expected = true;
-            if (done.compare_exchange_strong (expected, false)) {
-                while (!done) {
-                    Job *job = DeqJob ();
-                    if (job != 0) {
-                        ui64 start = 0;
-                        ui64 end = 0;
-                        // Short circuit cancelled pending jobs.
-                        if (!job->ShouldStop (done)) {
-                            start = HRTimer::Click ();
-                            job->SetState (Job::Running);
-                            job->Prologue (done);
-                            job->Execute (done);
-                            job->Epilogue (done);
-                            job->Succeed (done);
-                            end = HRTimer::Click ();
-                        }
-                        FinishedJob (job, start, end);
+            while (!done) {
+                Job *job = DeqJob ();
+                if (job != 0) {
+                    ui64 start = 0;
+                    ui64 end = 0;
+                    // Short circuit cancelled pending jobs.
+                    if (!job->ShouldStop (done)) {
+                        start = HRTimer::Click ();
+                        job->SetState (Job::Running);
+                        job->Prologue (done);
+                        job->Execute (done);
+                        job->Epilogue (done);
+                        job->Succeed (done);
+                        end = HRTimer::Click ();
                     }
+                    FinishedJob (job, start, end);
                 }
             }
         }
@@ -50,19 +47,29 @@ namespace thekogans {
                 bool cancelRunningJobs,
                 bool cancelPendingJobs,
                 const TimeSpec &timeSpec) {
-            if (IsRunning ()) {
-                if (!Pause (cancelRunningJobs, timeSpec)) {
+            TimeSpec deadline = GetCurrentTime () + timeSpec;
+            if (!Pause (cancelRunningJobs, deadline - GetCurrentTime ())) {
+                return false;
+            }
+            if (cancelPendingJobs) {
+                CancelPendingJobs ();
+                Continue ();
+                if (!WaitForIdle (deadline - GetCurrentTime ())) {
                     return false;
                 }
-                if (cancelPendingJobs) {
-                    CancelPendingJobs ();
-                    Continue ();
-                    WaitForIdle ();
-                }
-                done = true;
-                Continue ();
-                jobsNotEmpty.Signal ();
             }
+            struct ToggleDone {
+                THEKOGANS_UTIL_ATOMIC<bool> &done;
+                ToggleDone (THEKOGANS_UTIL_ATOMIC<bool> &done_) :
+                        done (done_) {
+                    done = true;
+                }
+                ~ToggleDone () {
+                    done = false;
+                }
+            } toggleDone (done);
+            Continue ();
+            jobsNotEmpty.Signal ();
             return true;
         }
 

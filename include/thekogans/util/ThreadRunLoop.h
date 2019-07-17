@@ -95,9 +95,14 @@ namespace thekogans {
         ///         Create (priority, affinity);
         ///     }
         ///
-        ///     void Stop () {
-        ///         runLoop.Stop ();
-        ///         Wait ();
+        ///     bool Stop (
+        ///             bool cancelRunningJobs = true,
+        ///             bool cancelPendingJobs = true,
+        ///             const TimeSpec &timeSpec = TimeSpec::Infinite) {
+        ///         TimeSpec deadline = GetCurrentTime () + timeSpec;
+        ///         retunr
+        ///             runLoop.Stop (cancelRunningJobs, cancelPendingJobs, timeSpec) &&
+        ///             Wait (deadline - GetCurrentTime ());
         ///     }
         ///
         ///     bool EnqJob (
@@ -129,13 +134,11 @@ namespace thekogans {
             /// \param[in] name RunLoop name.
             /// \param[in] type RunLoop queue type.
             /// \param[in] maxPendingJobs Max pending run loop jobs.
-            /// \param[in] done true == Must call Start.
             ThreadRunLoop (
                 const std::string &name = std::string (),
                 Type type = TYPE_FIFO,
-                std::size_t maxPendingJobs = SIZE_T_MAX,
-                bool done = true) :
-                RunLoop (name, type, maxPendingJobs, done) {}
+                std::size_t maxPendingJobs = SIZE_T_MAX) :
+                RunLoop (name, type, maxPendingJobs) {}
 
             /// \brief
             /// Start the run loop. This is a blocking call and will

@@ -95,13 +95,12 @@ namespace thekogans {
                 std::size_t workerCount_,
                 i32 workerPriority_,
                 ui32 workerAffinity_,
-                RunLoop::WorkerCallback *workerCallback_,
-                bool callStart) :
+                RunLoop::WorkerCallback *workerCallback_) :
                 id (GUID::FromRandom ().ToString ()),
                 name (name_),
                 type (type_),
                 maxPendingJobs (maxPendingJobs_),
-                done (true),
+                done (false),
                 stats (id, name),
                 jobsNotEmpty (jobsMutex),
                 idle (jobsMutex),
@@ -124,39 +123,9 @@ namespace thekogans {
                                 begin->workerCount,
                                 begin->workerPriority,
                                 begin->workerAffinity,
-                                begin->workerCallback,
-                                false)));
+                                begin->workerCallback)));
                 }
-                if (callStart) {
-                    Start ();
-                }
-            }
-            else {
-                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
-            }
-        }
-
-        bool Pipeline::WaitForStart (
-                Ptr &pipeline,
-                const TimeSpec &sleepTimeSpec,
-                const TimeSpec &waitTimeSpec) {
-            if (sleepTimeSpec != TimeSpec::Infinite) {
-                if (waitTimeSpec == TimeSpec::Infinite) {
-                    while (pipeline.Get () == 0 || !pipeline->IsRunning ()) {
-                        Sleep (sleepTimeSpec);
-                    }
-                }
-                else {
-                    TimeSpec now = GetCurrentTime ();
-                    TimeSpec deadline = now + waitTimeSpec;
-                    while ((pipeline.Get () == 0 || !pipeline->IsRunning ()) &&
-                            deadline > now) {
-                        Sleep (sleepTimeSpec);
-                        now = GetCurrentTime ();
-                    }
-                }
-                return pipeline.Get () != 0 && pipeline->IsRunning ();
+                Start ();
             }
             else {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
@@ -224,28 +193,25 @@ namespace thekogans {
 
         void Pipeline::Start () {
             LockGuard<Mutex> guard (workersMutex);
-            bool expected = true;
-            if (done.compare_exchange_strong (expected, false)) {
-                for (std::size_t i = 0, count = stages.size (); i < count; ++i) {
-                    stages[i]->Start ();
-                }
-                for (std::size_t i = workers.size (); i < workerCount; ++i) {
-                    std::string workerName;
-                    if (!name.empty ()) {
-                        if (workerCount > 1) {
-                            workerName = FormatString ("%s-%u", name.c_str (), i);
-                        }
-                        else {
-                            workerName = name;
-                        }
+            for (std::size_t i = 0, count = stages.size (); i < count; ++i) {
+                stages[i]->Start ();
+            }
+            for (std::size_t i = workers.size (); i < workerCount; ++i) {
+                std::string workerName;
+                if (!name.empty ()) {
+                    if (workerCount > 1) {
+                        workerName = FormatString ("%s-" THEKOGANS_UTIL_SIZE_T_FORMAT, name.c_str (), i);
                     }
-                    workers.push_back (
-                        new Worker (
-                            *this,
-                            workerName,
-                            workerPriority,
-                            workerAffinity));
+                    else {
+                        workerName = name;
+                    }
                 }
+                workers.push_back (
+                    new Worker (
+                        *this,
+                        workerName,
+                        workerPriority,
+                        workerAffinity));
             }
         }
 
@@ -253,59 +219,66 @@ namespace thekogans {
                 bool cancelRunningJobs,
                 bool cancelPendingJobs,
                 const TimeSpec &timeSpec) {
-            TimeSpec deadline = GetCurrentTime () + timeSpec;
             LockGuard<Mutex> guard (workersMutex);
-            if (IsRunning ()) {
-                if (!Pause (cancelRunningJobs, deadline - GetCurrentTime ())) {
-                    return false;
-                }
-                // At this point there should be no more running jobs.
-                assert (runningJobs.empty ());
-                if (cancelPendingJobs) {
-                    // CancelPendingJobs does not block.
-                    CancelPendingJobs ();
-                    // This Continue is necessary to wake up from
-                    // Pause above so that WaitForIdle can do it's
-                    // job.
-                    Continue ();
-                    // Since there are no more runningJobs, and
-                    // pendingJobs have been cancelled, WaitForIdle
-                    // should complete quickly.
-                    if (!WaitForIdle (deadline - GetCurrentTime ())) {
-                        return false;
-                    }
-                }
-                done = true;
-                // This Continue is necessary in case cancelPendingJobs == false.
-                // If cancelPendingJobs == true, it's harmless.
+            TimeSpec deadline = GetCurrentTime () + timeSpec;
+            if (!Pause (cancelRunningJobs, deadline - GetCurrentTime ())) {
+                return false;
+            }
+            // At this point there should be no more running jobs.
+            assert (runningJobs.empty ());
+            if (cancelPendingJobs) {
+                // CancelPendingJobs does not block.
+                CancelPendingJobs ();
+                // This Continue is necessary to wake up from
+                // Pause above so that WaitForIdle can do it's
+                // job.
                 Continue ();
-                jobsNotEmpty.SignalAll ();
-                struct Callback : public WorkerList::Callback {
-                    typedef WorkerList::Callback::result_type result_type;
-                    typedef WorkerList::Callback::argument_type argument_type;
-                    const TimeSpec &deadline;
-                    explicit Callback (const TimeSpec &deadline_) :
-                        deadline (deadline_) {}
-                    virtual result_type operator () (argument_type worker) {
-                        // Join the worker thread before deleting it to
-                        // let it's thread function finish it's teardown.
-                        if (!worker->Wait (deadline - GetCurrentTime ())) {
-                            return false;
-                        }
-                        delete worker;
-                        return true;
-                    }
-                } callback (deadline);
-                // Since there are no more jobs (running or pending)
-                // and done == true, workers.clear should complete
-                // quickly.
-                if (!workers.clear (callback)) {
+                // Since there are no more runningJobs, and
+                // pendingJobs have been cancelled, WaitForIdle
+                // should complete quickly.
+                if (!WaitForIdle (deadline - GetCurrentTime ())) {
                     return false;
                 }
-                for (std::size_t i = 0, count = stages.size (); i < count; ++i) {
-                    if (!stages[i]->Stop (cancelRunningJobs, cancelPendingJobs, deadline - GetCurrentTime ())) {
+            }
+            struct ToggleDone {
+                THEKOGANS_UTIL_ATOMIC<bool> &done;
+                ToggleDone (THEKOGANS_UTIL_ATOMIC<bool> &done_) :
+                        done (done_) {
+                    done = true;
+                }
+                ~ToggleDone () {
+                    done = false;
+                }
+            } toggleDone (done);
+            // This Continue is necessary in case cancelPendingJobs == false.
+            // If cancelPendingJobs == true, it's harmless.
+            Continue ();
+            jobsNotEmpty.SignalAll ();
+            struct Callback : public WorkerList::Callback {
+                typedef WorkerList::Callback::result_type result_type;
+                typedef WorkerList::Callback::argument_type argument_type;
+                const TimeSpec &deadline;
+                explicit Callback (const TimeSpec &deadline_) :
+                    deadline (deadline_) {}
+                virtual result_type operator () (argument_type worker) {
+                    // Join the worker thread before deleting it to
+                    // let it's thread function finish it's teardown.
+                    if (!worker->Wait (deadline - GetCurrentTime ())) {
                         return false;
                     }
+                    delete worker;
+                    return true;
+                }
+            } callback (deadline);
+            // Since there are no more jobs (running or pending)
+            // and done == true, workers.clear should complete
+            // quickly.
+            if (!workers.clear (callback)) {
+                return false;
+            }
+            for (std::size_t i = 0, count = stages.size (); i < count; ++i) {
+                if (!stages[i]->Stop (cancelRunningJobs, cancelPendingJobs, deadline - GetCurrentTime ())) {
+                    return false;
                 }
             }
             return true;
@@ -492,14 +465,14 @@ namespace thekogans {
                 const TimeSpec &timeSpec) {
             if (job.Get () != 0 && job->GetPipelineId () == id) {
                 if (timeSpec == TimeSpec::Infinite) {
-                    while (IsRunning () && !job->IsCompleted ()) {
+                    while (!job->IsCompleted ()) {
                         job->Wait ();
                     }
                 }
                 else {
                     TimeSpec now = GetCurrentTime ();
                     TimeSpec deadline = now + timeSpec;
-                    while (IsRunning () && !job->IsCompleted () && deadline > now) {
+                    while (!job->IsCompleted () && deadline > now) {
                         job->Wait (deadline - now);
                         now = GetCurrentTime ();
                     }
@@ -578,15 +551,14 @@ namespace thekogans {
         bool Pipeline::WaitForIdle (const TimeSpec &timeSpec) {
             LockGuard<Mutex> guard (jobsMutex);
             if (timeSpec == TimeSpec::Infinite) {
-                while (IsRunning () && (!pendingJobs.empty () || !runningJobs.empty ())) {
+                while (!pendingJobs.empty () || !runningJobs.empty ()) {
                     idle.Wait ();
                 }
             }
             else {
                 TimeSpec now = GetCurrentTime ();
                 TimeSpec deadline = now + timeSpec;
-                while (IsRunning () && (!pendingJobs.empty () || !runningJobs.empty ()) &&
-                        deadline > now) {
+                while ((!pendingJobs.empty () || !runningJobs.empty ()) && deadline > now) {
                     idle.Wait (deadline - now);
                     now = GetCurrentTime ();
                 }
@@ -695,10 +667,6 @@ namespace thekogans {
             }
         }
 
-        bool Pipeline::IsRunning () {
-            return !done;
-        }
-
         bool Pipeline::IsIdle () {
             LockGuard<Mutex> guard (jobsMutex);
             return pendingJobs.empty () && runningJobs.empty ();
@@ -706,14 +674,14 @@ namespace thekogans {
 
         Pipeline::Job *Pipeline::DeqJob (bool wait) {
             LockGuard<Mutex> guard (jobsMutex);
-            while (IsRunning () && paused && wait) {
+            while (!done && paused && wait) {
                 notPaused.Wait ();
             }
-            while (IsRunning () && pendingJobs.empty () && wait) {
+            while (!done && pendingJobs.empty () && wait) {
                 jobsNotEmpty.Wait ();
             }
             Job *job = 0;
-            if (IsRunning () && !paused && !pendingJobs.empty ()) {
+            if (!done && !paused && !pendingJobs.empty ()) {
                 job = pendingJobs.pop_front ();
                 runningJobs.push_back (job);
             }
@@ -744,7 +712,6 @@ namespace thekogans {
         i32 GlobalPipelineCreateInstance::workerPriority = THEKOGANS_UTIL_NORMAL_THREAD_PRIORITY;
         ui32 GlobalPipelineCreateInstance::workerAffinity = THEKOGANS_UTIL_MAX_THREAD_AFFINITY;
         RunLoop::WorkerCallback *GlobalPipelineCreateInstance::workerCallback = 0;
-        bool GlobalPipelineCreateInstance::callStart = true;
 
         void GlobalPipelineCreateInstance::Parameterize (
                 const Pipeline::Stage *begin_,
@@ -755,8 +722,7 @@ namespace thekogans {
                 std::size_t workerCount_,
                 i32 workerPriority_,
                 ui32 workerAffinity_,
-                RunLoop::WorkerCallback *workerCallback_,
-                bool callStart_) {
+                RunLoop::WorkerCallback *workerCallback_) {
             if (begin_ != 0 && end_ != 0) {
                 begin = begin_;
                 end = end_;
@@ -767,7 +733,6 @@ namespace thekogans {
                 workerPriority = workerPriority_;
                 workerAffinity = workerAffinity_;
                 workerCallback = workerCallback_;
-                callStart = callStart_;
             }
             else {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
@@ -786,8 +751,7 @@ namespace thekogans {
                     workerCount,
                     workerPriority,
                     workerAffinity,
-                    workerCallback,
-                    callStart);
+                    workerCallback);
             }
             else {
                 THEKOGANS_UTIL_THROW_STRING_EXCEPTION ("%s",

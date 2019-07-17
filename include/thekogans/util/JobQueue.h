@@ -127,7 +127,6 @@ namespace thekogans {
             /// \param[in] workerAffinity_ Worker thread processor affinity.
             /// \param[in] workerCallback_ Called to initialize/uninitialize
             /// the worker thread.
-            /// \param[in] callStart true == Call Start.
             JobQueue (
                 const std::string &name = std::string (),
                 Type type = TYPE_FIFO,
@@ -135,8 +134,7 @@ namespace thekogans {
                 std::size_t workerCount_ = 1,
                 i32 workerPriority_ = THEKOGANS_UTIL_NORMAL_THREAD_PRIORITY,
                 ui32 workerAffinity_ = THEKOGANS_UTIL_MAX_THREAD_AFFINITY,
-                WorkerCallback *workerCallback_ = 0,
-                bool callStart = true);
+                WorkerCallback *workerCallback_ = 0);
             /// \brief
             /// dtor. Stop the queue.
             virtual ~JobQueue () {
@@ -205,9 +203,6 @@ namespace thekogans {
             /// \brief
             /// Called to initialize/uninitialize the worker thread.
             static RunLoop::WorkerCallback *workerCallback;
-            /// \brief
-            /// Call Start.
-            static bool callStart;
 
         public:
             /// \brief
@@ -221,7 +216,6 @@ namespace thekogans {
             /// \param[in] workerPriority_ Worker thread priority.
             /// \param[in] workerAffinity_ Worker thread processor affinity.
             /// \param[in] workerCallback_ Called to initialize/uninitialize the worker thread.
-            /// \param[in] callStart_ Call Start.
             static void Parameterize (
                 const std::string &name_ = std::string (),
                 RunLoop::Type type_ = RunLoop::TYPE_FIFO,
@@ -229,8 +223,7 @@ namespace thekogans {
                 std::size_t workerCount_ = 1,
                 i32 workerPriority_ = THEKOGANS_UTIL_NORMAL_THREAD_PRIORITY,
                 ui32 workerAffinity_ = THEKOGANS_UTIL_MAX_THREAD_AFFINITY,
-                RunLoop::WorkerCallback *workerCallback_ = 0,
-                bool callStart_ = true);
+                RunLoop::WorkerCallback *workerCallback_ = 0);
 
             /// \brief
             /// Create a global job queue with custom ctor arguments.
