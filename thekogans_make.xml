@@ -92,7 +92,7 @@
     <cpp_header>$(organization)/$(project_directory)/Console.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/ConsoleLogger.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/Constants.h</cpp_header>
-    <cpp_header>$(organization)/$(project_directory)/CPUInfo.h</cpp_header>
+    <cpp_header>$(organization)/$(project_directory)/CPU.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/CRC32.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/DefaultAllocator.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/Directory.h</cpp_header>
@@ -619,7 +619,7 @@
     <cpp_source>Condition.cpp</cpp_source>
     <cpp_source>Console.cpp</cpp_source>
     <cpp_source>ConsoleLogger.cpp</cpp_source>
-    <cpp_source>CPUInfo.cpp</cpp_source>
+    <cpp_source>CPU.cpp</cpp_source>
     <cpp_source>CRC32.cpp</cpp_source>
     <cpp_source>DefaultAllocator.cpp</cpp_source>
     <cpp_source>Directory.cpp</cpp_source>

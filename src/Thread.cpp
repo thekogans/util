@@ -28,7 +28,7 @@
 #include "thekogans/util/Exception.h"
 #include "thekogans/util/LoggerMgr.h"
 #include "thekogans/util/TimeSpec.h"
-#include "thekogans/util/CPUInfo.h"
+#include "thekogans/util/CPU.h"
 #if defined (TOOLCHAIN_OS_Linux) || defined (TOOLCHAIN_OS_OSX)
     #include "thekogans/util/LockGuard.h"
 #if defined (TOOLCHAIN_OS_OSX)
@@ -378,7 +378,7 @@ namespace thekogans {
         }
 
         void Thread::Pause () {
-            CPUInfo::Instance ().Pause ();
+            CPU::Instance ().Pause ();
         }
 
         void Thread::YieldSlice () {

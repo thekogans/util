@@ -27,7 +27,7 @@
 #endif // defined (TOOLCHAIN_OS_Windows)
 #include <cstring>
 #include "thekogans/util/FixedArray.h"
-#include "thekogans/util/CPUInfo.h"
+#include "thekogans/util/CPU.h"
 
 namespace thekogans {
     namespace util {
@@ -160,7 +160,7 @@ namespace thekogans {
         }
 
     #if defined (TOOLCHAIN_ARCH_i386) || defined (TOOLCHAIN_ARCH_x86_64)
-        CPUInfo::CPUInfo () :
+        CPU::CPU () :
                 isIntel (false),
                 isAMD (false),
                 l1CacheLineSize (0),
@@ -244,7 +244,7 @@ namespace thekogans {
             }
         }
     #elif defined (TOOLCHAIN_ARCH_ppc) || defined (TOOLCHAIN_ARCH_ppc64)
-        CPUInfo::CPUInfo () :
+        CPU::CPU () :
             isAltiVec (HaveAltiVec ()) {}
     #endif // defined (TOOLCHAIN_ARCH_i386) || defined (TOOLCHAIN_ARCH_x86_64)
 
@@ -327,15 +327,15 @@ namespace thekogans {
         #endif // defined (__arm__)
     #endif // defined (_MSC_VER)
 
-        void CPUInfo::Pause () {
+        void CPU::Pause () {
             YieldProcessor ();
         }
 
-        void CPUInfo::Barrier () {
+        void CPU::Barrier () {
             MemoryBarrier ();
         }
 
-        void CPUInfo::Dump (std::ostream &stream) const {
+        void CPU::Dump (std::ostream &stream) const {
             auto Supported = [&stream] (
                     const std::string &feature,
                     bool supported) {

@@ -15,8 +15,8 @@
 // You should have received a copy of the GNU General Public License
 // along with libthekogans_util. If not, see <http://www.gnu.org/licenses/>.
 
-#if !defined (__thekogans_util_CPUInfo_h)
-#define __thekogans_util_CPUInfo_h
+#if !defined (__thekogans_util_CPU_h)
+#define __thekogans_util_CPU_h
 
 #include <string>
 #include "thekogans/util/Config.h"
@@ -28,15 +28,15 @@
 namespace thekogans {
     namespace util {
 
-        /// \struct CPUInfo CPUInfo.h thekogans/util/CPUInfo.h
+        /// \struct CPU CPU.h thekogans/util/CPU.h
         ///
         /// \brief
-        /// CPUInfo is a system wide singleton that provides available
+        /// CPU is a system wide singleton that provides available
         /// cpu features in a platform independent manner.
 
         // This class was heavily borrowed from: https://msdn.microsoft.com/en-us/library/hskdteyh.aspx
 
-        struct _LIB_THEKOGANS_UTIL_DECL CPUInfo : public Singleton<CPUInfo, SpinLock> {
+        struct _LIB_THEKOGANS_UTIL_DECL CPU : public Singleton<CPU, SpinLock> {
         private:
         #if defined (TOOLCHAIN_ARCH_i386) || defined (TOOLCHAIN_ARCH_x86_64)
             /// \brief
@@ -81,7 +81,7 @@ namespace thekogans {
         public:
             /// \brief
             /// ctor.
-            CPUInfo ();
+            CPU ();
 
         #if defined (TOOLCHAIN_ARCH_i386) || defined (TOOLCHAIN_ARCH_x86_64)
             /// \brief
@@ -465,11 +465,11 @@ namespace thekogans {
             void Dump (std::ostream &stream = std::cout) const;
 
             /// \brief
-            /// CPUInfo is neither copy constructable, nor assignable.
-            THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (CPUInfo)
+            /// CPU is neither copy constructable, nor assignable.
+            THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (CPU)
         };
 
     } // namespace util
 } // namespace thekogans
 
-#endif // !defined (__thekogans_util_CPUInfo_h)
+#endif // !defined (__thekogans_util_CPU_h)

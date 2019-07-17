@@ -21,7 +21,7 @@
 #include "thekogans/util/Types.h"
 #include "thekogans/util/Exception.h"
 #include "thekogans/util/LockGuard.h"
-#include "thekogans/util/CPUInfo.h"
+#include "thekogans/util/CPU.h"
 #include "thekogans/util/RandomSource.h"
 
 namespace thekogans {
@@ -54,7 +54,7 @@ namespace thekogans {
                     void *buffer,
                     std::size_t count) {
             #if defined (TOOLCHAIN_ARCH_i386) || defined (TOOLCHAIN_ARCH_x86_64)
-                if (CPUInfo::Instance ().RDRAND ()) {
+                if (CPU::Instance ().RDRAND ()) {
                     // This function was inspired by an answer from:
                     // https://stackoverflow.com/questions/11407103/how-i-can-get-the-random-number-from-intels-processor-with-assembler
                     std::size_t ui32Count = count >> 2;
@@ -149,7 +149,7 @@ namespace thekogans {
                 std::size_t count) {
             if (buffer != 0 && count > 0) {
             #if defined (TOOLCHAIN_ARCH_i386) || defined (TOOLCHAIN_ARCH_x86_64)
-                if (CPUInfo::Instance ().RDSEED ()) {
+                if (CPU::Instance ().RDSEED ()) {
                     LockGuard<SpinLock> guard (spinLock);
                     // This function was inspired by an answer from:
                     // https://stackoverflow.com/questions/11407103/how-i-can-get-the-random-number-from-intels-processor-with-assembler
