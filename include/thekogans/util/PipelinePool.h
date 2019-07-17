@@ -78,10 +78,10 @@ namespace thekogans {
         private:
             /// \brief
             /// Minimum number of pipelines to keep in the pool.
-            const ui32 minPipelines;
+            const std::size_t minPipelines;
             /// \brief
             /// Maximum number of pipelines allowed in the pool.
-            const ui32 maxPipelines;
+            const std::size_t maxPipelines;
             /// \brief
             /// Pointer to the beginning of the \see{Pipeline::Stage} array.
             const util::Pipeline::Stage *begin;
@@ -96,10 +96,10 @@ namespace thekogans {
             const RunLoop::Type type;
             /// \brief
             /// \see{Pipeline} max pending jobs.
-            const ui32 maxPendingJobs;
+            const std::size_t maxPendingJobs;
             /// \brief
             /// Number of worker threads servicing the \see{Pipeline}.
-            const ui32 workerCount;
+            const std::size_t workerCount;
             /// \brief
             /// \see{Pipeline} worker thread priority.
             const i32 workerPriority;
@@ -160,8 +160,8 @@ namespace thekogans {
                     const util::Pipeline::Stage *end,
                     const std::string &name,
                     RunLoop::Type type,
-                    ui32 maxPendingJobs,
-                    ui32 workerCount,
+                    std::size_t maxPendingJobs,
+                    std::size_t workerCount,
                     i32 workerPriority,
                     ui32 workerAffinity,
                     RunLoop::WorkerCallback *workerCallback,
@@ -205,7 +205,7 @@ namespace thekogans {
             /// each \see{Pipeline} created by this pool
             /// will have the following name:
             /// FormatString ("%s-%u", name.c_str (), ++idPool);
-            THEKOGANS_UTIL_ATOMIC<ui32> idPool;
+            THEKOGANS_UTIL_ATOMIC<std::size_t> idPool;
             /// \brief
             /// Synchronization mutex.
             Mutex mutex;
@@ -229,14 +229,14 @@ namespace thekogans {
             /// \param[in] workerCallback_ Called to initialize/uninitialize the \see{Pipeline}
             /// worker thread.
             PipelinePool (
-                ui32 minPipelines_,
-                ui32 maxPipelines_,
+                std::size_t minPipelines_,
+                std::size_t maxPipelines_,
                 const util::Pipeline::Stage *begin_,
                 const util::Pipeline::Stage *end_,
                 const std::string &name_ = std::string (),
                 RunLoop::Type type_ = RunLoop::TYPE_FIFO,
-                ui32 maxPendingJobs_ = UI32_MAX,
-                ui32 workerCount_ = 1,
+                std::size_t maxPendingJobs_ = SIZE_T_MAX,
+                std::size_t workerCount_ = 1,
                 i32 workerPriority_ = THEKOGANS_UTIL_NORMAL_THREAD_PRIORITY,
                 ui32 workerAffinity_ = THEKOGANS_UTIL_MAX_THREAD_AFFINITY,
                 RunLoop::WorkerCallback *workerCallback_ = 0);
@@ -252,7 +252,7 @@ namespace thekogans {
             /// IMPORTANT: timeSpec is a relative value.
             /// \return A \see{Pipeline} from the pool (Pipeline::Ptr () if pool is exhausted).
             util::Pipeline::Ptr GetPipeline (
-                ui32 retries = 1,
+                std::size_t retries = 1,
                 const TimeSpec &timeSpec = TimeSpec::FromMilliseconds (100));
 
             /// \brief
@@ -316,10 +316,10 @@ namespace thekogans {
         private:
             /// \brief
             /// Minimum number of \see{Pipeline}s to keep in the pool.
-            static ui32 minPipelines;
+            static std::size_t minPipelines;
             /// \brief
             /// Maximum number of \see{Pipeline}s allowed in the pool.
-            static ui32 maxPipelines;
+            static std::size_t maxPipelines;
             /// \brief
             /// Pointer to the beginning of the \see{Pipeline::Stage} array.
             static const Pipeline::Stage *begin;
@@ -334,10 +334,10 @@ namespace thekogans {
             static RunLoop::Type type;
             /// \brief
             /// Max pending \see{Pipeline} jobs.
-            static ui32 maxPendingJobs;
+            static std::size_t maxPendingJobs;
             /// \brief
             /// Number of worker threads servicing the \see{Pipeline}.
-            static ui32 workerCount;
+            static std::size_t workerCount;
             /// \brief
             /// \see{Pipeline} worker thread priority.
             static i32 workerPriority;
@@ -364,14 +364,14 @@ namespace thekogans {
             /// \param[in] workerCallback_ Called to initialize/uninitialize the \see{Pipeline}
             /// thread.
             static void Parameterize (
-                ui32 minPipelines_,
-                ui32 maxPipelines_,
+                std::size_t minPipelines_,
+                std::size_t maxPipelines_,
                 const Pipeline::Stage *begin_,
                 const Pipeline::Stage *end_,
                 const std::string &name_ = std::string (),
                 RunLoop::Type type_ = RunLoop::TYPE_FIFO,
-                ui32 maxPendingJobs_ = UI32_MAX,
-                ui32 workerCount_ = 1,
+                std::size_t maxPendingJobs_ = SIZE_T_MAX,
+                std::size_t workerCount_ = 1,
                 i32 workerPriority_ = THEKOGANS_UTIL_NORMAL_THREAD_PRIORITY,
                 ui32 workerAffinity_ = THEKOGANS_UTIL_MAX_THREAD_AFFINITY,
                 RunLoop::WorkerCallback *workerCallback_ = 0);

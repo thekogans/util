@@ -36,6 +36,7 @@
 #include "pugixml/pugixml.hpp"
 #include "thekogans/util/Config.h"
 #include "thekogans/util/Types.h"
+#include "thekogans/util/SizeT.h"
 #include "thekogans/util/Serializable.h"
 #include "thekogans/util/RefCounted.h"
 #include "thekogans/util/IntrusiveList.h"
@@ -371,7 +372,7 @@ namespace thekogans {
                 std::string name;
                 /// \brief
                 /// Total jobs processed.
-                ui32 totalJobs;
+                SizeT totalJobs;
                 /// \brief
                 /// Total time taken to process totalJobs.
                 ui64 totalJobTime;
@@ -728,7 +729,7 @@ namespace thekogans {
             const Type type;
             /// \brief
             /// Max pending jobs.
-            const ui32 maxPendingJobs;
+            const std::size_t maxPendingJobs;
             /// \brief
             /// Flag to signal the worker thread(s).
             THEKOGANS_UTIL_ATOMIC<bool> done;
@@ -767,7 +768,7 @@ namespace thekogans {
             RunLoop (
                 const std::string &name_ = std::string (),
                 Type type_ = TYPE_FIFO,
-                ui32 maxPendingJobs_ = UI32_MAX,
+                std::size_t maxPendingJobs_ = SIZE_T_MAX,
                 bool done_ = true);
             /// \brief
             /// dtor.

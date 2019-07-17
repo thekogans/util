@@ -366,7 +366,7 @@ namespace thekogans {
             SystemRunLoop (
                 const std::string &name = std::string (),
                 Type type = TYPE_FIFO,
-                ui32 maxPendingJobs = UI32_MAX,
+                std::size_t maxPendingJobs = SIZE_T_MAX,
                 bool done = true,
                 EventProcessor eventProcessor_ = 0,
                 void *userData_ = 0,
@@ -396,7 +396,7 @@ namespace thekogans {
             SystemRunLoop (
                 const std::string &name = std::string (),
                 Type type = TYPE_FIFO,
-                ui32 maxPendingJobs = UI32_MAX,
+                std::size_t maxPendingJobs = SIZE_T_MAX,
                 bool done = true,
                 EventProcessor eventProcessor_ = 0,
                 void *userData_ = 0,
@@ -434,7 +434,7 @@ namespace thekogans {
             SystemRunLoop (
                 const std::string &name = std::string (),
                 Type type = TYPE_FIFO,
-                ui32 maxPendingJobs = UI32_MAX,
+                std::size_t maxPendingJobs = SIZE_T_MAX,
                 bool done = true,
                 OSXRunLoop::Ptr runLoop_ = OSXRunLoop::Ptr (new CFOSXRunLoop));
 

@@ -51,7 +51,7 @@ namespace thekogans {
         protected:
             /// \brief
             /// Number of workers servicing the queue.
-            const ui32 workerCount;
+            const std::size_t workerCount;
             /// \brief
             /// \Worker thread priority.
             const i32 workerPriority;
@@ -131,8 +131,8 @@ namespace thekogans {
             JobQueue (
                 const std::string &name = std::string (),
                 Type type = TYPE_FIFO,
-                ui32 maxPendingJobs = UI32_MAX,
-                ui32 workerCount_ = 1,
+                std::size_t maxPendingJobs = SIZE_T_MAX,
+                std::size_t workerCount_ = 1,
                 i32 workerPriority_ = THEKOGANS_UTIL_NORMAL_THREAD_PRIORITY,
                 ui32 workerAffinity_ = THEKOGANS_UTIL_MAX_THREAD_AFFINITY,
                 WorkerCallback *workerCallback_ = 0,
@@ -192,10 +192,10 @@ namespace thekogans {
             static RunLoop::Type type;
             /// \brief
             /// Max pending jobs.
-            static ui32 maxPendingJobs;
+            static std::size_t maxPendingJobs;
             /// \brief
             /// Number of workers servicing the queue.
-            static ui32 workerCount;
+            static std::size_t workerCount;
             /// \brief
             /// Worker thread priority.
             static i32 workerPriority;
@@ -225,8 +225,8 @@ namespace thekogans {
             static void Parameterize (
                 const std::string &name_ = std::string (),
                 RunLoop::Type type_ = RunLoop::TYPE_FIFO,
-                ui32 maxPendingJobs_ = UI32_MAX,
-                ui32 workerCount_ = 1,
+                std::size_t maxPendingJobs_ = SIZE_T_MAX,
+                std::size_t workerCount_ = 1,
                 i32 workerPriority_ = THEKOGANS_UTIL_NORMAL_THREAD_PRIORITY,
                 ui32 workerAffinity_ = THEKOGANS_UTIL_MAX_THREAD_AFFINITY,
                 RunLoop::WorkerCallback *workerCallback_ = 0,

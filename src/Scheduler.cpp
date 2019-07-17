@@ -223,23 +223,23 @@ namespace thekogans {
             return jobQueue;
         }
 
-        ui32 GlobalSchedulerCreateInstance::minJobQueues = SystemInfo::Instance ().GetCPUCount ();
-        ui32 GlobalSchedulerCreateInstance::maxJobQueues = SystemInfo::Instance ().GetCPUCount () * 2;
+        std::size_t GlobalSchedulerCreateInstance::minJobQueues = SystemInfo::Instance ().GetCPUCount ();
+        std::size_t GlobalSchedulerCreateInstance::maxJobQueues = SystemInfo::Instance ().GetCPUCount () * 2;
         std::string GlobalSchedulerCreateInstance::name = std::string ();
         RunLoop::Type GlobalSchedulerCreateInstance::type = RunLoop::TYPE_FIFO;
-        ui32 GlobalSchedulerCreateInstance::maxPendingJobs = UI32_MAX;
-        ui32 GlobalSchedulerCreateInstance::workerCount = 1;
+        std::size_t GlobalSchedulerCreateInstance::maxPendingJobs = SIZE_T_MAX;
+        std::size_t GlobalSchedulerCreateInstance::workerCount = 1;
         i32 GlobalSchedulerCreateInstance::workerPriority = THEKOGANS_UTIL_NORMAL_THREAD_PRIORITY;
         ui32 GlobalSchedulerCreateInstance::workerAffinity = THEKOGANS_UTIL_MAX_THREAD_AFFINITY;
         RunLoop::WorkerCallback *GlobalSchedulerCreateInstance::workerCallback = 0;
 
         void GlobalSchedulerCreateInstance::Parameterize (
-                ui32 minJobQueues_,
-                ui32 maxJobQueues_,
+                std::size_t minJobQueues_,
+                std::size_t maxJobQueues_,
                 const std::string &name_,
                 RunLoop::Type type_,
-                ui32 maxPendingJobs_,
-                ui32 workerCount_,
+                std::size_t maxPendingJobs_,
+                std::size_t workerCount_,
                 i32 workerPriority_,
                 ui32 workerAffinity_,
                 RunLoop::WorkerCallback *workerCallback_) {

@@ -37,7 +37,7 @@ namespace thekogans {
         SystemRunLoop::SystemRunLoop (
                 const std::string &name,
                 Type type,
-                ui32 maxPendingJobs,
+                std::size_t maxPendingJobs,
                 bool done,
                 EventProcessor eventProcessor_,
                 void *userData_,
@@ -177,7 +177,7 @@ namespace thekogans {
         SystemRunLoop::SystemRunLoop (
                 const std::string &name,
                 Type type,
-                ui32 maxPendingJobs,
+                std::size_t maxPendingJobs,
                 bool done,
                 EventProcessor eventProcessor_,
                 void *userData_,
@@ -256,7 +256,7 @@ namespace thekogans {
         SystemRunLoop::SystemRunLoop (
                 const std::string &name,
                 Type type,
-                ui32 maxPendingJobs,
+                std::size_t maxPendingJobs,
                 bool done,
                 OSXRunLoop::Ptr runLoop_) :
                 RunLoop (name, type, maxPendingJobs, done),

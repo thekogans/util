@@ -251,7 +251,7 @@ namespace thekogans {
                 const pugi::xml_node &node) {
             id = node.attribute (ATTR_ID).value ();
             name = Decodestring (node.attribute (ATTR_NAME).value ());
-            totalJobs = stringToui32 (node.attribute (ATTR_TOTAL_JOBS).value ());
+            totalJobs = stringTosize_t (node.attribute (ATTR_TOTAL_JOBS).value ());
             totalJobTime = stringToui64 (node.attribute (ATTR_TOTAL_JOB_TIME).value ());
             for (pugi::xml_node child = node.first_child ();
                     !child.empty (); child = child.next_sibling ()) {
@@ -273,7 +273,7 @@ namespace thekogans {
         void RunLoop::Stats::Write (pugi::xml_node &node) const {
             node.append_attribute (ATTR_ID).set_value (id.c_str ());
             node.append_attribute (ATTR_NAME).set_value (Encodestring (name).c_str ());
-            node.append_attribute (ATTR_TOTAL_JOBS).set_value (ui32Tostring (totalJobs).c_str ());
+            node.append_attribute (ATTR_TOTAL_JOBS).set_value (size_tTostring (totalJobs).c_str ());
             node.append_attribute (ATTR_TOTAL_JOB_TIME).set_value (ui64Tostring (totalJobTime).c_str ());
             {
                 pugi::xml_node child = node.append_child (TAG_LAST_JOB);
@@ -293,15 +293,15 @@ namespace thekogans {
                 const TextHeader & /*header*/,
                 const JSON::Object &object) {
             id = object.Get<JSON::String> (ATTR_ID)->value;
-            name = object.Get<JSON::Number> (ATTR_NAME)->To<std::string> ();
-            totalJobs = object.Get<JSON::Number> (ATTR_TOTAL_JOBS)->To<ui32> ();
+            name = object.Get<JSON::String> (ATTR_NAME)->value;
+            totalJobs = object.Get<JSON::Number> (ATTR_TOTAL_JOBS)->To<SizeT> ();
             totalJobTime = object.Get<JSON::Number> (ATTR_TOTAL_JOB_TIME)->To<ui64> ();
         }
 
         void RunLoop::Stats::Write (JSON::Object &object) const {
             object.Add<const std::string &> (ATTR_ID, id);
             object.Add<const std::string &> (ATTR_NAME, name);
-            object.Add (ATTR_TOTAL_JOBS, totalJobs);
+            object.Add<const SizeT &> (ATTR_TOTAL_JOBS, totalJobs);
             object.Add (ATTR_TOTAL_JOB_TIME, totalJobTime);
         }
 
@@ -330,7 +330,7 @@ namespace thekogans {
         RunLoop::RunLoop (
                 const std::string &name_,
                 Type type_,
-                ui32 maxPendingJobs_,
+                std::size_t maxPendingJobs_,
                 bool done_) :
                 id (GUID::FromRandom ().ToString ()),
                 name (name_),
@@ -450,7 +450,7 @@ namespace thekogans {
             if (job.Get () != 0 && job->IsCompleted ()) {
                 {
                     LockGuard<Mutex> guard (jobsMutex);
-                    if (pendingJobs.size () < (std::size_t)maxPendingJobs) {
+                    if (pendingJobs.size () < maxPendingJobs) {
                         job->Reset (id);
                         if (type == TYPE_FIFO) {
                             pendingJobs.push_back (job.Get ());

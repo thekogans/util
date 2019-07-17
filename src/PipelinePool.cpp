@@ -28,14 +28,14 @@ namespace thekogans {
         THEKOGANS_UTIL_IMPLEMENT_HEAP_WITH_LOCK (PipelinePool::Pipeline, SpinLock)
 
         PipelinePool::PipelinePool (
-                ui32 minPipelines_,
-                ui32 maxPipelines_,
+                std::size_t minPipelines_,
+                std::size_t maxPipelines_,
                 const util::Pipeline::Stage *begin_,
                 const util::Pipeline::Stage *end_,
                 const std::string &name_,
                 RunLoop::Type type_,
-                ui32 maxPendingJobs_,
-                ui32 workerCount_,
+                std::size_t maxPendingJobs_,
+                std::size_t workerCount_,
                 i32 workerPriority_,
                 ui32 workerAffinity_,
                 RunLoop::WorkerCallback *workerCallback_) :
@@ -57,7 +57,7 @@ namespace thekogans {
             // that we avoid the deadlock associated with trying to
             // delete the Pipeline being released.
             if (0 < minPipelines && minPipelines <= maxPipelines) {
-                for (ui32 i = 0; i < minPipelines; ++i) {
+                for (std::size_t i = 0; i < minPipelines; ++i) {
                     std::string pipelineName;
                     if (!name.empty ()) {
                         pipelineName = FormatString (
@@ -100,7 +100,7 @@ namespace thekogans {
         }
 
         Pipeline::Ptr PipelinePool::GetPipeline (
-                ui32 retries,
+                std::size_t retries,
                 const TimeSpec &timeSpec) {
             Pipeline *pipeline = AcquirePipeline ();
             while (pipeline == 0 && retries-- > 0) {
@@ -243,27 +243,27 @@ namespace thekogans {
             }
         }
 
-        ui32 GlobalPipelinePoolCreateInstance::minPipelines = 0;
-        ui32 GlobalPipelinePoolCreateInstance::maxPipelines = 0;
+        std::size_t GlobalPipelinePoolCreateInstance::minPipelines = 0;
+        std::size_t GlobalPipelinePoolCreateInstance::maxPipelines = 0;
         const Pipeline::Stage *GlobalPipelinePoolCreateInstance::begin = 0;
         const Pipeline::Stage *GlobalPipelinePoolCreateInstance::end = 0;
         std::string GlobalPipelinePoolCreateInstance::name = std::string ();
         RunLoop::Type GlobalPipelinePoolCreateInstance::type = RunLoop::TYPE_FIFO;
-        ui32 GlobalPipelinePoolCreateInstance::maxPendingJobs = UI32_MAX;
-        ui32 GlobalPipelinePoolCreateInstance::workerCount = 1;
+        std::size_t GlobalPipelinePoolCreateInstance::maxPendingJobs = SIZE_T_MAX;
+        std::size_t GlobalPipelinePoolCreateInstance::workerCount = 1;
         i32 GlobalPipelinePoolCreateInstance::workerPriority = THEKOGANS_UTIL_NORMAL_THREAD_PRIORITY;
         ui32 GlobalPipelinePoolCreateInstance::workerAffinity = THEKOGANS_UTIL_MAX_THREAD_AFFINITY;
         RunLoop::WorkerCallback *GlobalPipelinePoolCreateInstance::workerCallback = 0;
 
         void GlobalPipelinePoolCreateInstance::Parameterize (
-                ui32 minPipelines_,
-                ui32 maxPipelines_,
+                std::size_t minPipelines_,
+                std::size_t maxPipelines_,
                 const Pipeline::Stage *begin_,
                 const Pipeline::Stage *end_,
                 const std::string &name_,
                 RunLoop::Type type_,
-                ui32 maxPendingJobs_,
-                ui32 workerCount_,
+                std::size_t maxPendingJobs_,
+                std::size_t workerCount_,
                 i32 workerPriority_,
                 ui32 workerAffinity_,
                 RunLoop::WorkerCallback *workerCallback_) {

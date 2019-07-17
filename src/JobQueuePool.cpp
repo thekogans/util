@@ -28,12 +28,12 @@ namespace thekogans {
         THEKOGANS_UTIL_IMPLEMENT_HEAP_WITH_LOCK (JobQueuePool::JobQueue, SpinLock)
 
         JobQueuePool::JobQueuePool (
-                ui32 minJobQueues_,
-                ui32 maxJobQueues_,
+                std::size_t minJobQueues_,
+                std::size_t maxJobQueues_,
                 const std::string &name_,
                 RunLoop::Type type_,
-                ui32 maxPendingJobs_,
-                ui32 workerCount_,
+                std::size_t maxPendingJobs_,
+                std::size_t workerCount_,
                 i32 workerPriority_,
                 ui32 workerAffinity_,
                 RunLoop::WorkerCallback *workerCallback_) :
@@ -53,7 +53,7 @@ namespace thekogans {
             // that we avoid the deadlock associated with trying to
             // delete the JobQueue being released.
             if (0 < minJobQueues && minJobQueues <= maxJobQueues) {
-                for (ui32 i = 0; i < minJobQueues; ++i) {
+                for (std::size_t i = 0; i < minJobQueues; ++i) {
                     std::string jobQueueName;
                     if (!name.empty ()) {
                         jobQueueName = FormatString (
@@ -94,7 +94,7 @@ namespace thekogans {
         }
 
         JobQueue::Ptr JobQueuePool::GetJobQueue (
-                ui32 retries,
+                std::size_t retries,
                 const TimeSpec &timeSpec) {
             JobQueue *jobQueue = AcquireJobQueue ();
             while (jobQueue == 0 && retries-- > 0) {
@@ -235,23 +235,23 @@ namespace thekogans {
             }
         }
 
-        ui32 GlobalJobQueuePoolCreateInstance::minJobQueues = 0;
-        ui32 GlobalJobQueuePoolCreateInstance::maxJobQueues = 0;
+        std::size_t GlobalJobQueuePoolCreateInstance::minJobQueues = 0;
+        std::size_t GlobalJobQueuePoolCreateInstance::maxJobQueues = 0;
         std::string GlobalJobQueuePoolCreateInstance::name = std::string ();
         RunLoop::Type GlobalJobQueuePoolCreateInstance::type = RunLoop::TYPE_FIFO;
-        ui32 GlobalJobQueuePoolCreateInstance::maxPendingJobs = UI32_MAX;
-        ui32 GlobalJobQueuePoolCreateInstance::workerCount = 1;
+        std::size_t GlobalJobQueuePoolCreateInstance::maxPendingJobs = SIZE_T_MAX;
+        std::size_t GlobalJobQueuePoolCreateInstance::workerCount = 1;
         i32 GlobalJobQueuePoolCreateInstance::workerPriority = THEKOGANS_UTIL_NORMAL_THREAD_PRIORITY;
         ui32 GlobalJobQueuePoolCreateInstance::workerAffinity = THEKOGANS_UTIL_MAX_THREAD_AFFINITY;
         RunLoop::WorkerCallback *GlobalJobQueuePoolCreateInstance::workerCallback = 0;
 
         void GlobalJobQueuePoolCreateInstance::Parameterize (
-                ui32 minJobQueues_,
-                ui32 maxJobQueues_,
+                std::size_t minJobQueues_,
+                std::size_t maxJobQueues_,
                 const std::string &name_,
                 RunLoop::Type type_,
-                ui32 maxPendingJobs_,
-                ui32 workerCount_,
+                std::size_t maxPendingJobs_,
+                std::size_t workerCount_,
                 i32 workerPriority_,
                 ui32 workerAffinity_,
                 RunLoop::WorkerCallback *workerCallback_) {

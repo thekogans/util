@@ -69,7 +69,7 @@ namespace thekogans {
         ///         jobQueue (
         ///             "IdleProcessor",
         ///             util::RunLoop::TYPE_FIFO,
-        ///             util::UI32_MAX,
+        ///             util::SIZE_T_MAX,
         ///             1,
         ///             THEKOGANS_UTIL_LOW_THREAD_PRIORITY) {}
         ///
@@ -133,10 +133,10 @@ namespace thekogans {
             private:
                 /// \brief
                 /// Minimum number of \see{JobQueue}s to keep in the pool.
-                static ui32 minJobQueues;
+                static std::size_t minJobQueues;
                 /// \brief
                 /// Maximum number of \see{JobQueue}s allowed in the pool.
-                static ui32 maxJobQueues;
+                static std::size_t maxJobQueues;
 
             public:
                 /// \brief
@@ -144,8 +144,8 @@ namespace thekogans {
                 /// \param[in] minJobQueues_ Minimum \see{JobQueue}s to keep in the pool.
                 /// \param[in] maxJobQueues_ Maximum \see{JobQueue}s to allow the pool to grow to.
                 static void Parameterize (
-                    ui32 minJobQueues_,
-                    ui32 maxJobQueues_);
+                    std::size_t minJobQueues_,
+                    std::size_t maxJobQueues_);
 
                 /// \brief
                 /// Create a Timer \see{JobQueuePool} with custom ctor arguments.

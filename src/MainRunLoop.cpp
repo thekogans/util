@@ -24,13 +24,13 @@ namespace thekogans {
 
         std::string MainRunLoopCreateInstance::name = "Main Thread";
         RunLoop::Type MainRunLoopCreateInstance::type = RunLoop::TYPE_FIFO;
-        ui32 MainRunLoopCreateInstance::maxPendingJobs = UI32_MAX;
+        std::size_t MainRunLoopCreateInstance::maxPendingJobs = SIZE_T_MAX;
         bool MainRunLoopCreateInstance::willCallStart = true;
 
         void MainRunLoopCreateInstance::Parameterize (
                 const std::string &name_,
                 RunLoop::Type type_,
-                ui32 maxPendingJobs_,
+                std::size_t maxPendingJobs_,
                 bool willCallStart_) {
             name = name_;
             type = type_;
@@ -47,7 +47,7 @@ namespace thekogans {
         void MainRunLoopCreateInstance::Parameterize (
                 const std::string &name_,
                 RunLoop::Type type_,
-                ui32 maxPendingJobs_,
+                std::size_t maxPendingJobs_,
                 bool willCallStart_,
                 SystemRunLoop::EventProcessor eventProcessor_,
                 void *userData_,
@@ -88,7 +88,7 @@ namespace thekogans {
         void MainRunLoopCreateInstance::Parameterize (
                 const std::string &name_,
                 RunLoop::Type type_,
-                ui32 maxPendingJobs_,
+                std::size_t maxPendingJobs_,
                 bool willCallStart_,
                 SystemRunLoop::EventProcessor eventProcessor_,
                 void *userData_,
@@ -137,7 +137,7 @@ namespace thekogans {
         void MainRunLoopCreateInstance::Parameterize (
                 const std::string &name_,
                 RunLoop::Type type_,
-                ui32 maxPendingJobs_,
+                std::size_t maxPendingJobs_,
                 bool willCallStart_,
                 SystemRunLoop::OSXRunLoop::Ptr runLoop_) {
             name = name_;

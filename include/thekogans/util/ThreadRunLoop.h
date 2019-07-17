@@ -133,7 +133,7 @@ namespace thekogans {
             ThreadRunLoop (
                 const std::string &name = std::string (),
                 Type type = TYPE_FIFO,
-                ui32 maxPendingJobs = UI32_MAX,
+                std::size_t maxPendingJobs = SIZE_T_MAX,
                 bool done = true) :
                 RunLoop (name, type, maxPendingJobs, done) {}
 

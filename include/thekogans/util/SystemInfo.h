@@ -42,10 +42,10 @@ namespace thekogans {
             Endianness endianness;
             /// \brief
             /// Host cpu count.
-            ui32 cpuCount;
+            std::size_t cpuCount;
             /// \brief
             /// Memory page size.
-            ui32 pageSize;
+            std::size_t pageSize;
             /// \brief
             /// Total size of physical memory.
             ui64 memorySize;
@@ -79,13 +79,13 @@ namespace thekogans {
             /// \brief
             /// Return CPU count.
             /// \return CPU count.
-            inline ui32 GetCPUCount () const {
+            inline std::size_t GetCPUCount () const {
                 return cpuCount;
             }
             /// \brief
             /// Return memory page size.
             /// \return Memory page size.
-            inline ui32 GetPageSize () const {
+            inline std::size_t GetPageSize () const {
                 return pageSize;
             }
             /// \brief

@@ -91,8 +91,8 @@ namespace thekogans {
                 const Stage *end,
                 const std::string &name_,
                 RunLoop::Type type_,
-                ui32 maxPendingJobs_,
-                ui32 workerCount_,
+                std::size_t maxPendingJobs_,
+                std::size_t workerCount_,
                 i32 workerPriority_,
                 ui32 workerAffinity_,
                 RunLoop::WorkerCallback *workerCallback_,
@@ -739,8 +739,8 @@ namespace thekogans {
         const Pipeline::Stage *GlobalPipelineCreateInstance::end = 0;
         std::string GlobalPipelineCreateInstance::name = std::string ();
         RunLoop::Type GlobalPipelineCreateInstance::type = RunLoop::TYPE_FIFO;
-        ui32 GlobalPipelineCreateInstance::maxPendingJobs = UI32_MAX;
-        ui32 GlobalPipelineCreateInstance::workerCount = 1;
+        std::size_t GlobalPipelineCreateInstance::maxPendingJobs = SIZE_T_MAX;
+        std::size_t GlobalPipelineCreateInstance::workerCount = 1;
         i32 GlobalPipelineCreateInstance::workerPriority = THEKOGANS_UTIL_NORMAL_THREAD_PRIORITY;
         ui32 GlobalPipelineCreateInstance::workerAffinity = THEKOGANS_UTIL_MAX_THREAD_AFFINITY;
         RunLoop::WorkerCallback *GlobalPipelineCreateInstance::workerCallback = 0;
@@ -751,8 +751,8 @@ namespace thekogans {
                 const Pipeline::Stage *end_,
                 const std::string &name_,
                 RunLoop::Type type_,
-                ui32 maxPendingJobs_,
-                ui32 workerCount_,
+                std::size_t maxPendingJobs_,
+                std::size_t workerCount_,
                 i32 workerPriority_,
                 ui32 workerAffinity_,
                 RunLoop::WorkerCallback *workerCallback_,

@@ -33,12 +33,12 @@
 namespace thekogans {
     namespace util {
 
-        ui32 Timer::JobQueuePoolCreateInstance::minJobQueues = Timer::DEFAULT_MIN_JOB_QUEUE_POOL_JOB_QUEUES;
-        ui32 Timer::JobQueuePoolCreateInstance::maxJobQueues = Timer::DEFAULT_MAX_JOB_QUEUE_POOL_JOB_QUEUES;
+        std::size_t Timer::JobQueuePoolCreateInstance::minJobQueues = Timer::DEFAULT_MIN_JOB_QUEUE_POOL_JOB_QUEUES;
+        std::size_t Timer::JobQueuePoolCreateInstance::maxJobQueues = Timer::DEFAULT_MAX_JOB_QUEUE_POOL_JOB_QUEUES;
 
         void Timer::JobQueuePoolCreateInstance::Parameterize (
-                ui32 minJobQueues_,
-                ui32 maxJobQueues_) {
+                std::size_t minJobQueues_,
+                std::size_t maxJobQueues_) {
             if (minJobQueues_ != 0 && maxJobQueues_ != 0 && minJobQueues_ <= maxJobQueues_) {
                 minJobQueues = minJobQueues_;
                 maxJobQueues = maxJobQueues_;

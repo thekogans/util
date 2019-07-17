@@ -126,7 +126,7 @@ namespace thekogans {
                         Priority priority_ = PRIORITY_NORMAL,
                         const std::string &name = std::string (),
                         Type type = TYPE_FIFO,
-                        ui32 maxPendingJobs = UI32_MAX) :
+                        std::size_t maxPendingJobs = SIZE_T_MAX) :
                         RunLoop (name, type, maxPendingJobs),
                         scheduler (scheduler_),
                         priority (priority_),
@@ -214,12 +214,12 @@ namespace thekogans {
             /// \param[in] workerAffinity JobQueue thread processor affinity.
             /// \param[in] workerCallback Called to initialize/uninitialize the worker thread.
             Scheduler (
-                ui32 minJobQueues = SystemInfo::Instance ().GetCPUCount (),
-                ui32 maxJobQueues = SystemInfo::Instance ().GetCPUCount () * 2,
+                std::size_t minJobQueues = SystemInfo::Instance ().GetCPUCount (),
+                std::size_t maxJobQueues = SystemInfo::Instance ().GetCPUCount () * 2,
                 const std::string name = std::string (),
                 RunLoop::Type type = RunLoop::TYPE_FIFO,
-                ui32 maxPendingJobs = UI32_MAX,
-                ui32 workerCount = 1,
+                std::size_t maxPendingJobs = SIZE_T_MAX,
+                std::size_t workerCount = 1,
                 i32 workerPriority = THEKOGANS_UTIL_NORMAL_THREAD_PRIORITY,
                 ui32 workerAffinity = THEKOGANS_UTIL_MAX_THREAD_AFFINITY,
                 RunLoop::WorkerCallback *workerCallback = 0) :
@@ -284,10 +284,10 @@ namespace thekogans {
         private:
             /// \brief
             /// Minimum worker count to keep in the pool.
-            static ui32 minJobQueues;
+            static std::size_t minJobQueues;
             /// \brief
             /// Maximum worker count to allow the pool to grow to.
-            static ui32 maxJobQueues;
+            static std::size_t maxJobQueues;
             /// \brief
             /// JobQueue thread name.
             static std::string name;
@@ -296,10 +296,10 @@ namespace thekogans {
             static RunLoop::Type type;
             /// \brief
             /// JobQueue queue max pending jobs.
-            static ui32 maxPendingJobs;
+            static std::size_t maxPendingJobs;
             /// \brief
             /// Number of worker threads servicing the queue.
-            static ui32 workerCount;
+            static std::size_t workerCount;
             /// \brief
             /// JobQueue thread priority.
             static i32 workerPriority;
@@ -323,12 +323,12 @@ namespace thekogans {
             /// \param[in] workerAffinity_ JobQueue thread processor affinity.
             /// \param[in] workerCallback_ Called to initialize/uninitialize the worker thread.
             static void Parameterize (
-                ui32 minJobQueues_ = SystemInfo::Instance ().GetCPUCount (),
-                ui32 maxJobQueues_ = SystemInfo::Instance ().GetCPUCount () * 2,
+                std::size_t minJobQueues_ = SystemInfo::Instance ().GetCPUCount (),
+                std::size_t maxJobQueues_ = SystemInfo::Instance ().GetCPUCount () * 2,
                 const std::string &name_ = std::string (),
                 RunLoop::Type type_ = RunLoop::TYPE_FIFO,
-                ui32 maxPendingJobs_ = UI32_MAX,
-                ui32 workerCount_ = 1,
+                std::size_t maxPendingJobs_ = SIZE_T_MAX,
+                std::size_t workerCount_ = 1,
                 i32 workerPriority_ = THEKOGANS_UTIL_NORMAL_THREAD_PRIORITY,
                 ui32 workerAffinity_ = THEKOGANS_UTIL_MAX_THREAD_AFFINITY,
                 RunLoop::WorkerCallback *workerCallback_ = 0);

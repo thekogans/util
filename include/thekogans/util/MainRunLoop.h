@@ -71,7 +71,7 @@ namespace thekogans {
         ///     util::MainRunLoopCreateInstance::Parameterize (
         ///         "MainRunLoop",
         ///         util::RunLoop::TYPE_FIFO,
-        ///         util::UI32_MAX,
+        ///         util::SIZE_T_MAX,
         ///         false,
         ///         0,
         ///         0,
@@ -93,7 +93,7 @@ namespace thekogans {
         ///     util::MainRunLoopCreateInstance::Parameterize (
         ///         "MainRunLoop",
         ///         util::RunLoop::TYPE_FIFO,
-        ///         util::UI32_MAX,
+        ///         util::SIZE_T_MAX,
         ///         true,
         ///         0,
         ///         0,
@@ -117,7 +117,7 @@ namespace thekogans {
         ///     util::MainRunLoopCreateInstance::Parameterize (
         ///         "MainRunLoop",
         ///         util::RunLoop::TYPE_FIFO,
-        ///         util::UI32_MAX,
+        ///         util::SIZE_T_MAX,
         ///         false,
         ///         0,
         ///         0,
@@ -136,7 +136,7 @@ namespace thekogans {
         ///     util::MainRunLoopCreateInstance::Parameterize (
         ///         "MainRunLoop",
         ///         util::RunLoop::TYPE_FIFO,
-        ///         util::UI32_MAX,
+        ///         util::SIZE_T_MAX,
         ///         true,
         ///         0,
         ///         0,
@@ -165,7 +165,7 @@ namespace thekogans {
         ///     util::MainRunLoopCreateInstance::Parameterize (
         ///         "MainRunLoop",
         ///         util::RunLoop::TYPE_FIFO,
-        ///         util::UI32_MAX,
+        ///         util::SIZE_T_MAX,
         ///         true,
         ///         SystemRunLoop::OSXRunLoop::Ptr (
         ///             new SystemRunLoop::CocoaOSXRunLoop
@@ -188,7 +188,7 @@ namespace thekogans {
             static RunLoop::Type type;
             /// \brief
             /// Max pending jobs.
-            static ui32 maxPendingJobs;
+            static std::size_t maxPendingJobs;
             /// \brief
             /// true = the main thread will call MainRunLoop::Instance ().Start ().
             static bool willCallStart;
@@ -233,7 +233,7 @@ namespace thekogans {
             static void Parameterize (
                 const std::string &name_,
                 RunLoop::Type type_,
-                ui32 maxPendingJobs_,
+                std::size_t maxPendingJobs_,
                 bool willCallStart_);
         #if defined (TOOLCHAIN_OS_Windows)
             /// \brief
@@ -248,7 +248,7 @@ namespace thekogans {
             static void Parameterize (
                 const std::string &name_,
                 RunLoop::Type type_,
-                ui32 maxPendingJobs_,
+                std::size_t maxPendingJobs_,
                 bool willCallStart_,
                 SystemRunLoop::EventProcessor eventProcessor_,
                 void *userData_,
@@ -268,7 +268,7 @@ namespace thekogans {
             static void Parameterize (
                 const std::string &name_,
                 RunLoop::Type type_,
-                ui32 maxPendingJobs_,
+                std::size_t maxPendingJobs_,
                 bool willCallStart_,
                 SystemRunLoop::EventProcessor eventProcessor_,
                 void *userData_,
@@ -286,7 +286,7 @@ namespace thekogans {
             static void Parameterize (
                 const std::string &name_,
                 RunLoop::Type type_,
-                ui32 maxPendingJobs_,
+                std::size_t maxPendingJobs_,
                 bool willCallStart_,
                 SystemRunLoop::OSXRunLoop::Ptr runLoop_);
         #endif // defined (TOOLCHAIN_OS_Windows)
