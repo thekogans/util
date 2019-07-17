@@ -28,6 +28,7 @@
 #include "thekogans/util/Exception.h"
 #include "thekogans/util/LoggerMgr.h"
 #include "thekogans/util/TimeSpec.h"
+#include "thekogans/util/CPUInfo.h"
 #if defined (TOOLCHAIN_OS_Linux) || defined (TOOLCHAIN_OS_OSX)
     #include "thekogans/util/LockGuard.h"
 #if defined (TOOLCHAIN_OS_OSX)
@@ -377,11 +378,7 @@ namespace thekogans {
         }
 
         void Thread::Pause () {
-        #if defined (TOOLCHAIN_OS_Windows)
-            YieldProcessor ();
-        #else // defined (TOOLCHAIN_OS_Windows)
-            asm ("pause");
-        #endif // defined (TOOLCHAIN_OS_Windows)
+            CPUInfo::Instance ().Pause ();
         }
 
         void Thread::YieldSlice () {

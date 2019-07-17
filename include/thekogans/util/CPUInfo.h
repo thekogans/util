@@ -36,8 +36,7 @@ namespace thekogans {
 
         // This class was heavily borrowed from: https://msdn.microsoft.com/en-us/library/hskdteyh.aspx
 
-        struct _LIB_THEKOGANS_UTIL_DECL CPUInfo :
-                public Singleton<CPUInfo, SpinLock> {
+        struct _LIB_THEKOGANS_UTIL_DECL CPUInfo : public Singleton<CPUInfo, SpinLock> {
         private:
         #if defined (TOOLCHAIN_ARCH_i386) || defined (TOOLCHAIN_ARCH_x86_64)
             /// \brief
@@ -449,6 +448,16 @@ namespace thekogans {
                 return isAltiVec;
             }
         #endif // defined (TOOLCHAIN_ARCH_i386) || defined (TOOLCHAIN_ARCH_x86_64)
+
+            /// \brief
+            /// Pause the calling thread.
+            void Pause ();
+            /// \brief
+            /// Creates a hardware memory barrier (fence) that
+            /// prevents the CPU from re-ordering read and write
+            /// operations. It may also prevent the compiler from
+            /// re-ordering read and write operations.
+            void Barrier ();
 
             /// \brief
             /// Dump CPU info to std::ostream.
