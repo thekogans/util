@@ -250,12 +250,12 @@ namespace thekogans {
 
     #if defined (_MSC_VER)
     #if defined (_ARM_)
-        __forceinline void YieldProcessor () { }
+        __forceinline void YieldProcessor () {}
         extern "C" void __emit (const unsigned __int32 opcode);
         #pragma intrinsic (__emit)
         #define MemoryBarrier() {\
-            __emit(0xF3BF);\
-            __emit(0x8F5F);\
+            __emit (0xF3BF);\
+            __emit (0x8F5F);\
         }
     #elif defined (_ARM64_)
         extern "C" void __yield (void);
@@ -269,25 +269,33 @@ namespace thekogans {
             __dmb (_ARM64_BARRIER_SY);\
         }
     #elif defined (_AMD64_)
-        extern "C" void _mm_pause (void);
-        extern "C" void _mm_mfence (void);
-        #pragma intrinsic (_mm_pause)
-        #pragma intrinsic (_mm_mfence)
-        #define YieldProcessor _mm_pause
-        #define MemoryBarrier _mm_mfence
+        #if !defined (YieldProcessor)
+            extern "C" void _mm_pause (void);
+            #pragma intrinsic (_mm_pause)
+            #define YieldProcessor _mm_pause
+        #endif // !defined (YieldProcessor)
+        #if !defined (MemoryBarrier)
+            extern "C" void _mm_mfence (void);
+            #pragma intrinsic (_mm_mfence)
+            #define MemoryBarrier _mm_mfence
+        #endif // !defined (MemoryBarrier)
     #elif defined (_X86_)
-        #define YieldProcessor() __asm {rep nop}
-        #define MemoryBarrier() MemoryBarrierImpl ()
-        __forceinline void MemoryBarrierImpl () {
-            int32_t Barrier;
-            __asm {
-                xchg Barrier, eax
+        #if !defined (YieldProcessor)
+            #define YieldProcessor() __asm {rep nop}
+        #endif // !defined (YieldProcessor)
+        #if !defined (MemoryBarrier)
+            #define MemoryBarrier() MemoryBarrierImpl ()
+            __forceinline void MemoryBarrierImpl () {
+                int32_t Barrier;
+                __asm {
+                    xchg Barrier, eax
+                }
             }
-        }
-    #else // !_ARM_ && !_AMD64_ && !_X86_
+        #endif // !defined (MemoryBarrier)
+    #else // defined (_ARM_)
         #error Unsupported architecture
-    #endif
-    #else // _MSC_VER
+    #endif // defined (_ARM_)
+    #else // defined (_MSC_VER)
     // Only clang defines __has_builtin, so we first test for a GCC define
     // before using __has_builtin.
     #if defined (__i386__) || defined (__x86_64__)
@@ -302,22 +310,22 @@ namespace thekogans {
             #define MemoryBarrier __builtin_ia32_mfence
         #endif // __has_builtin (__builtin_ia32_mfence)
         // If we don't have intrinsics, we can do some inline asm instead.
-        #ifndef YieldProcessor
+        #if !defined (YieldProcessor)
              #define YieldProcessor() asm volatile ("pause")
-        #endif // YieldProcessor
-        #ifndef MemoryBarrier
+        #endif // !defined (YieldProcessor)
+        #if !defined (MemoryBarrier)
              #define MemoryBarrier() asm volatile ("mfence")
-        #endif // MemoryBarrier
+        #endif // !defined (MemoryBarrier)
     #endif // defined (__i386__) || defined (__x86_64__)
-        #ifdef __aarch64__
+        #if defined (__aarch64__)
              #define YieldProcessor() asm volatile ("yield")
              #define MemoryBarrier __sync_synchronize
-        #endif // __aarch64__
-        #ifdef __arm__
+        #endif // defined (__aarch64__)
+        #if defined (__arm__)
              #define YieldProcessor()
              #define MemoryBarrier __sync_synchronize
-        #endif // __arm__
-    #endif // _MSC_VER
+        #endif // defined (__arm__)
+    #endif // defined (_MSC_VER)
 
         void CPUInfo::Pause () {
             YieldProcessor ();

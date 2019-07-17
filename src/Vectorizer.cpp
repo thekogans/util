@@ -25,7 +25,7 @@ namespace thekogans {
     namespace util {
 
         Vectorizer::Vectorizer (
-                ui32 workerCount_,
+                std::size_t workerCount_,
                 i32 workerPriority) :
                 done (false),
                 barrier (workerCount_),
@@ -41,7 +41,7 @@ namespace thekogans {
                 Thread::SetThreadAffinity (Thread::GetCurrThreadHandle (), 0);
                 // We are the first thread. Create workerCount_ - 1
                 // additional worker threads.
-                for (ui32 i = 1; i < workerCount_; ++i) {
+                for (std::size_t i = 1; i < workerCount_; ++i) {
                     Worker::UniquePtr worker (
                         new Worker (*this, i, FormatString ("Vectorizer-%u", i), workerPriority));
                     workers.push_back (worker.get ());
@@ -168,11 +168,11 @@ namespace thekogans {
             }
         }
 
-        ui32 GlobalVectorizerCreateInstance::workerCount = SystemInfo::Instance ().GetCPUCount ();
+        std::size_t GlobalVectorizerCreateInstance::workerCount = SystemInfo::Instance ().GetCPUCount ();
         i32 GlobalVectorizerCreateInstance::workerPriority = THEKOGANS_UTIL_NORMAL_THREAD_PRIORITY;
 
         void GlobalVectorizerCreateInstance::Parameterize (
-                ui32 workerCount_,
+                std::size_t workerCount_,
                 i32 workerPriority_) {
             workerCount = workerCount_;
             workerPriority = workerPriority_;

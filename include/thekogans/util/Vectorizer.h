@@ -142,7 +142,7 @@ namespace thekogans {
             /// \param[in] workerCount_ The width of the vector.
             /// \param[in] workerPriority Worker thread priority.
             Vectorizer (
-                ui32 workerCount_ = SystemInfo::Instance ().GetCPUCount (),
+                std::size_t workerCount_ = SystemInfo::Instance ().GetCPUCount (),
                 i32 workerPriority = THEKOGANS_UTIL_NORMAL_THREAD_PRIORITY);
             /// \brief
             /// dtor.
@@ -237,7 +237,7 @@ namespace thekogans {
         private:
             /// \brief
             /// The width of the vector.
-            static ui32 workerCount;
+        static std::size_t workerCount;
             /// \brief
             /// Worker thread priority.
             static i32 workerPriority;
@@ -248,7 +248,7 @@ namespace thekogans {
             /// \param[in] workerCount_ The width of the vector.
             /// \param[in] workerPriority_ Worker thread priority.
             static void Parameterize (
-                ui32 workerCount_ = SystemInfo::Instance ().GetCPUCount (),
+                std::size_t workerCount_ = SystemInfo::Instance ().GetCPUCount (),
                 i32 workerPriority_ = THEKOGANS_UTIL_NORMAL_THREAD_PRIORITY);
 
             /// \brief
