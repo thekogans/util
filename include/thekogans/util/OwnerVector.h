@@ -34,6 +34,13 @@ namespace thekogans {
         template<typename T>
         struct OwnerVector : public std::vector<T *> {
             /// \brief
+            /// Convenient typedef to reduce code clutter.
+            typedef THEKOGANS_UTIL_TYPENAME std::vector<T *>::iterator iterator;
+            /// \brief
+            /// Convenient typedef to reduce code clutter.
+            typedef THEKOGANS_UTIL_TYPENAME std::vector<T *>::const_iterator const_iterator;
+
+            /// \brief
             /// Default ctor.
             OwnerVector () {}
             /// \brief
@@ -66,14 +73,35 @@ namespace thekogans {
             }
 
             /// \brief
+            /// Delete the element pointed to by the iterator,
+            /// and erase the iterator from the vector.
+            /// \param[in] p Itrator to element to delete and erase.
+            /// \return Next element in the vector.
+            iterator deleteAndErase (const_iterator p) {
+                delete *p;
+                return erase (p);
+            }
+
+            /// \brief
+            /// Delete a range of elements,
+            /// and erase them from the list.
+            /// \param[in] p1 Itrator to beginning of range.
+            /// \param[in] p2 Itrator to end of range.
+            /// \return Next element in the list.
+            iterator deleteAndErase (
+                    const_iterator p1,
+                    const_iterator p2) {
+                for (const_iterator it = p1; it != p2; ++it) {
+                    delete *it;
+                }
+                return this->erase (p1, p2);
+            }
+
+            /// \brief
             /// Delete all elements, and clear the vector.
             /// After calling this method, the vector is empty.
             void deleteAndClear () {
-                typedef THEKOGANS_UTIL_TYPENAME OwnerVector::iterator iterator;
-                for (iterator p = this->begin (); p != this->end (); ++p) {
-                    delete *p;
-                }
-                OwnerVector::clear ();
+                deleteAndErase (this->begin (), this->end ());
             }
         };
 

@@ -20,6 +20,7 @@
 
 #include <memory>
 #include <string>
+#include <vector>
 #include "thekogans/util/Config.h"
 #include "thekogans/util/Types.h"
 #include "thekogans/util/Heap.h"
@@ -83,11 +84,8 @@ namespace thekogans {
             /// Maximum number of pipelines allowed in the pool.
             const std::size_t maxPipelines;
             /// \brief
-            /// Pointer to the beginning of the \see{Pipeline::Stage} array.
-            const util::Pipeline::Stage *begin;
-            /// \brief
-            /// Pointer to the end of the \see{Pipeline::Stage} array.
-            const util::Pipeline::Stage *end;
+            /// \see{Pipeline::Stage} array.
+            const std::vector<util::Pipeline::Stage> stages;
             /// \brief
             /// \see{Pipeline} name.
             const std::string name;
@@ -321,11 +319,8 @@ namespace thekogans {
             /// Maximum number of \see{Pipeline}s allowed in the pool.
             static std::size_t maxPipelines;
             /// \brief
-            /// Pointer to the beginning of the \see{Pipeline::Stage} array.
-            static const Pipeline::Stage *begin;
-            /// \brief
-            /// Pointer to the end of the \see{Pipeline::Stage} array.
-            static const Pipeline::Stage *end;
+            /// \see{Pipeline::Stage} array.
+            static std::vector<Pipeline::Stage> stages;
             /// \brief
             /// \see{Pipeline} name.
             static std::string name;

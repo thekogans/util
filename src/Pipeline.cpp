@@ -703,8 +703,7 @@ namespace thekogans {
             }
         }
 
-        const Pipeline::Stage *GlobalPipelineCreateInstance::begin = 0;
-        const Pipeline::Stage *GlobalPipelineCreateInstance::end = 0;
+        std::vector<Pipeline::Stage> GlobalPipelineCreateInstance::stages;
         std::string GlobalPipelineCreateInstance::name = std::string ();
         RunLoop::Type GlobalPipelineCreateInstance::type = RunLoop::TYPE_FIFO;
         std::size_t GlobalPipelineCreateInstance::maxPendingJobs = SIZE_T_MAX;
@@ -723,9 +722,10 @@ namespace thekogans {
                 i32 workerPriority_,
                 ui32 workerAffinity_,
                 RunLoop::WorkerCallback *workerCallback_) {
-            if (begin_ != 0 && end_ != 0) {
-                begin = begin_;
-                end = end_;
+            if (begin_ != 0 && end_ != 0 &&
+                    (type_ == RunLoop::TYPE_FIFO || type_ == RunLoop::TYPE_LIFO) &&
+                    maxPendingJobs_ > 0 && workerCount_ > 0) {
+                stages = std::vector<Pipeline::Stage> (begin_, end_);
                 name = name_;
                 type = type_;
                 maxPendingJobs = maxPendingJobs_;
@@ -741,10 +741,10 @@ namespace thekogans {
         }
 
         Pipeline *GlobalPipelineCreateInstance::operator () () {
-            if (begin != 0 && end != 0) {
+            if (!stages.empty ()) {
                 return new Pipeline (
-                    begin,
-                    end,
+                    stages.data (),
+                    stages.data () + stages.size (),
                     name,
                     type,
                     maxPendingJobs,

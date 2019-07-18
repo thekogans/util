@@ -89,9 +89,8 @@ namespace thekogans {
             iterator deleteAndErase (
                     const_iterator p1,
                     const_iterator p2) {
-                while (p1 != p2) {
-                    delete p1->second;
-                    ++p1;
+                for (const_iterator it = p1; it != p2; ++it) {
+                    delete it->second;
                 }
                 return this->erase (p1, p2);
             }
@@ -100,11 +99,7 @@ namespace thekogans {
             /// Delete all elements, and clear the map.
             /// After calling this method, the map is empty.
             void deleteAndClear () {
-                for (const_iterator p = this->begin (),
-                        end = this->end (); p != end; ++p) {
-                    delete p->second;
-                }
-                OwnerMap::clear ();
+                deleteAndErase (this->begin (), this->end ());
             }
         };
 

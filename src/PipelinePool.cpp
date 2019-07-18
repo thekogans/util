@@ -41,8 +41,7 @@ namespace thekogans {
                 RunLoop::WorkerCallback *workerCallback_) :
                 minPipelines (minPipelines_),
                 maxPipelines (maxPipelines_),
-                begin (begin_),
-                end (end_),
+                stages (begin_, end_),
                 name (name_),
                 type (type_),
                 maxPendingJobs (maxPendingJobs_),
@@ -56,7 +55,7 @@ namespace thekogans {
             // with the logic in ReleasePipeline below, we guarantee
             // that we avoid the deadlock associated with trying to
             // delete the Pipeline being released.
-            if (0 < minPipelines && minPipelines <= maxPipelines) {
+            if (minPipelines != 0 && maxPipelines >= minPipelines && !stages.empty ()) {
                 for (std::size_t i = 0; i < minPipelines; ++i) {
                     std::string pipelineName;
                     if (!name.empty ()) {
@@ -67,8 +66,8 @@ namespace thekogans {
                     }
                     availablePipelines.push_back (
                         new Pipeline (
-                            begin,
-                            end,
+                            stages.data (),
+                            stages.data () + stages.size (),
                             pipelineName,
                             type,
                             maxPendingJobs,
@@ -199,8 +198,8 @@ namespace thekogans {
                             ++idPool);
                     }
                     pipeline = new Pipeline (
-                        begin,
-                        end,
+                        stages.data (),
+                        stages.data () + stages.size (),
                         pipelineName,
                         type,
                         maxPendingJobs,
@@ -245,8 +244,7 @@ namespace thekogans {
 
         std::size_t GlobalPipelinePoolCreateInstance::minPipelines = 0;
         std::size_t GlobalPipelinePoolCreateInstance::maxPipelines = 0;
-        const Pipeline::Stage *GlobalPipelinePoolCreateInstance::begin = 0;
-        const Pipeline::Stage *GlobalPipelinePoolCreateInstance::end = 0;
+        std::vector<Pipeline::Stage> GlobalPipelinePoolCreateInstance::stages;
         std::string GlobalPipelinePoolCreateInstance::name = std::string ();
         RunLoop::Type GlobalPipelinePoolCreateInstance::type = RunLoop::TYPE_FIFO;
         std::size_t GlobalPipelinePoolCreateInstance::maxPendingJobs = SIZE_T_MAX;
@@ -271,8 +269,7 @@ namespace thekogans {
                     begin_ != 0 && end_ != 0) {
                 minPipelines = minPipelines_;
                 maxPipelines = maxPipelines_;
-                begin = begin_;
-                end = end_;
+                stages = std::vector<Pipeline::Stage> (begin_, end_);
                 name = name_;
                 type = type_;
                 maxPendingJobs = maxPendingJobs_;
@@ -288,13 +285,12 @@ namespace thekogans {
         }
 
         PipelinePool *GlobalPipelinePoolCreateInstance::operator () () {
-            if (minPipelines != 0 && maxPipelines != 0 &&
-                    begin != 0 && end != 0) {
+            if (minPipelines != 0 && maxPipelines >= minPipelines && !stages.empty ()) {
                 return new PipelinePool (
                     minPipelines,
                     maxPipelines,
-                    begin,
-                    end,
+                    stages.data (),
+                    stages.data () + stages.size (),
                     name,
                     type,
                     maxPendingJobs,

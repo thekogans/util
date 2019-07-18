@@ -616,10 +616,7 @@ namespace thekogans {
         private:
             /// \brief
             /// Pointer to the beginning of the Pipeline::Stage array.
-            static const Pipeline::Stage *begin;
-            /// \brief
-            /// Pointer to the end of the Pipeline::Stage array.
-            static const Pipeline::Stage *end;
+            static std::vector<Pipeline::Stage> stages;
             /// \brief
             /// Pipeline name. If set, \see{Pipeline::Worker} threads will be named name-%d.
             static std::string name;
