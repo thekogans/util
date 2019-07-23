@@ -1011,7 +1011,7 @@ namespace thekogans {
             /// \return The next job to execute.
             Job *DeqJob (bool wait = true);
             /// \brief
-            /// Called by worker(s) after each job is done.
+            /// Called by worker(s) after each job is completed.
             /// Used to update state and \see{RunLoop::Stats}.
             /// \param[in] job Completed job.
             /// \param[in] start Completed job start time.

@@ -28,6 +28,23 @@
         #endif // !defined (NOMINMAX)
         #include <windows.h>
     #endif // !defined (_WINDOWS_)
+#elif defined (TOOLCHAIN_OS_Linux) || defined (TOOLCHAIN_OS_OSX)
+    #include <unistd.h>
+    #include <pthread.h>
+    #include <sched.h>
+#endif // defined (TOOLCHAIN_OS_Windows)
+#include <memory>
+#include "thekogans/util/Config.h"
+#include "thekogans/util/Types.h"
+#include "thekogans/util/StringUtils.h"
+#include "thekogans/util/Constants.h"
+#include "thekogans/util/TimeSpec.h"
+#include "thekogans/util/SpinLock.h"
+
+#if defined (TOOLCHAIN_OS_Windows)
+    /// \brief
+    /// Window specific thread handle type.
+    typedef THEKOGANS_UTIL_HANDLE THEKOGANS_UTIL_THREAD_HANDLE;
     /// \def THEKOGANS_UTIL_IDLE_THREAD_PRIORITY
     /// Idle thread priority.
     #define THEKOGANS_UTIL_IDLE_THREAD_PRIORITY THREAD_PRIORITY_IDLE
@@ -49,10 +66,10 @@
     /// \def THEKOGANS_UTIL_REAL_TIME_THREAD_PRIORITY
     /// Real time thread priority.
     #define THEKOGANS_UTIL_REAL_TIME_THREAD_PRIORITY THREAD_PRIORITY_TIME_CRITICAL
-#elif defined (TOOLCHAIN_OS_Linux) || defined (TOOLCHAIN_OS_OSX)
-    #include <unistd.h>
-    #include <pthread.h>
-    #include <sched.h>
+#else // defined (TOOLCHAIN_OS_Windows)
+    /// \brief
+    /// POSIX specific thread handle type.
+    typedef pthread_t THEKOGANS_UTIL_THREAD_HANDLE;
     /// \brief
     /// This is a virtual priority range. When you call
     /// Thread::SetThreadPriority, it gets adjusted to a
@@ -78,23 +95,6 @@
     /// \def THEKOGANS_UTIL_REAL_TIME_THREAD_PRIORITY
     /// Real time thread priority.
     #define THEKOGANS_UTIL_REAL_TIME_THREAD_PRIORITY 30
-#endif // defined (TOOLCHAIN_OS_Windows)
-#include <memory>
-#include "thekogans/util/Config.h"
-#include "thekogans/util/Types.h"
-#include "thekogans/util/StringUtils.h"
-#include "thekogans/util/Constants.h"
-#include "thekogans/util/TimeSpec.h"
-#include "thekogans/util/SpinLock.h"
-
-#if defined (TOOLCHAIN_OS_Windows)
-    /// \brief
-    /// Window specific thread handle type.
-    typedef THEKOGANS_UTIL_HANDLE THEKOGANS_UTIL_THREAD_HANDLE;
-#else // defined (TOOLCHAIN_OS_Windows)
-    /// \brief
-    /// POSIX specific thread handle type.
-    typedef pthread_t THEKOGANS_UTIL_THREAD_HANDLE;
 #endif // defined (TOOLCHAIN_OS_Windows)
 /// \def THEKOGANS_UTIL_INVALID_THREAD_HANDLE_VALUE
 /// \see{THEKOGANS_UTIL_THREAD_HANDLE} initialization sentinal.
