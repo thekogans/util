@@ -156,10 +156,10 @@ int main (
                 hash->FromFile (options.path, *jt, digest);
                 if (!options.naked) {
                     std::cout << hash->GetName (*jt)  << ": " <<
-                        util::Hash::DigestToString (digest) << std::endl;
+                        util::Hash::DigestTostring (digest) << std::endl;
                 }
                 else {
-                    std::cout << util::Hash::DigestToString (digest);
+                    std::cout << util::Hash::DigestTostring (digest);
                 }
             }
             THEKOGANS_UTIL_CATCH_AND_LOG

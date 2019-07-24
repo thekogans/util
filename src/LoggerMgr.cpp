@@ -260,7 +260,7 @@ namespace thekogans {
                 new JobQueue (
                     name,
                     RunLoop::TYPE_FIFO,
-                    UI32_MAX,
+                    SIZE_T_MAX,
                     1,
                     priority,
                     affinity) : 0);

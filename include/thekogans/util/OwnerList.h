@@ -89,7 +89,7 @@ namespace thekogans {
                 for (const_iterator it = p1; it != p2; ++it) {
                     delete *it;
                 }
-                return erase (p1, p2);
+                return this->erase (p1, p2);
             }
 
             /// \brief

@@ -18,7 +18,7 @@
 #include <iostream>
 #include "thekogans/util/Flags.h"
 #include "thekogans/util/SystemInfo.h"
-#include "thekogans/util/CPUInfo.h"
+#include "thekogans/util/CPU.h"
 
 using namespace thekogans;
 
@@ -27,7 +27,7 @@ int main (
         const char * /*argv*/ []) {
     std::cout << "SystemInfo:" << std::endl;
     util::SystemInfo::Instance ().Dump ();
-    std::cout << std::endl << "CPUInfo:" << std::endl;
-    util::CPUInfo::Instance ().Dump ();
+    std::cout << std::endl << "CPU:" << std::endl;
+    util::CPU::Instance ().Dump ();
     return 0;
 }
