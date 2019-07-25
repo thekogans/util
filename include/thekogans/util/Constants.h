@@ -172,6 +172,10 @@ namespace thekogans {
     #endif // defined (TOOLCHAIN_ARCH_i386)
 
         /// \brief
+        /// Ethernet MAC length.
+        const std::size_t MAC_LENGTH = 6;
+
+        /// \brief
         /// Fudge factor. Every routine which compares
         /// two f32s takes an eps parameter. eps defaults
         /// to EPSILON.

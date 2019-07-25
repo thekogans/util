@@ -46,6 +46,7 @@
 #endif // defined (TOOLCHAIN_OS_Windows)
 #include <string>
 #include <set>
+#include "thekogans/util/Constants.h"
 #include "thekogans/util/Path.h"
 #include "thekogans/util/Exception.h"
 #include "thekogans/util/SHA2.h"
@@ -192,7 +193,7 @@ namespace thekogans {
                         for (PIP_ADAPTER_ADDRESSES
                                 ipAdapterAddresses = (PIP_ADAPTER_ADDRESSES)buffer.data ();
                                 ipAdapterAddresses != 0; ipAdapterAddresses = ipAdapterAddresses->Next) {
-                            if (ipAdapterAddresses->PhysicalAddressLength == MAX_ADAPTER_ADDRESS_LENGTH) {
+                            if (ipAdapterAddresses->PhysicalAddressLength == MAC_LENGTH) {
                                 macs.insert (
                                     HexEncodeBuffer (
                                         ipAdapterAddresses->PhysicalAddress,
@@ -220,14 +221,14 @@ namespace thekogans {
                     #if defined (TOOLCHAIN_OS_Linux)
                         if (curr->ifa_addr->sa_family == AF_PACKET) {
                             const sockaddr_ll *addr = (const sockaddr_ll *)curr->ifa_addr;
-                            if (addr->sll_hatype == ARPHRD_ETHER && addr->sll_halen == ETH_ALEN) {
+                            if (addr->sll_hatype == ARPHRD_ETHER && addr->sll_halen == MAC_LENGTH) {
                                 macs.insert (HexEncodeBuffer (addr->sll_addr, addr->sll_halen));
                             }
                         }
                     #else // defined (TOOLCHAIN_OS_Linux)
                         if (curr->ifa_addr->sa_family == AF_LINK) {
                             const sockaddr_dl *addr = (const sockaddr_dl *)curr->ifa_addr;
-                            if (addr->sdl_type == IFT_ETHER && addr->sdl_alen == ETHER_ADDR_LEN) {
+                            if (addr->sdl_type == IFT_ETHER && addr->sdl_alen == MAC_LENGTH) {
                                 macs.insert (HexEncodeBuffer (LLADDR (addr), addr->sdl_alen));
                             }
                         }
