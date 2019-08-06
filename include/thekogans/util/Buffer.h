@@ -393,7 +393,7 @@ namespace thekogans {
             /// \param[in] writeOffset Offset at which to write.
             SecureBuffer (
                 Endianness endianness = HostEndian,
-                ui8 *data = 0,
+                void *data = 0,
                 std::size_t length = 0,
                 std::size_t readOffset = 0,
                 std::size_t writeOffset = 0) :
@@ -430,8 +430,8 @@ namespace thekogans {
             /// \param[in] writeOffset Offset at which to write.
             SecureBuffer (
                 Endianness endianness,
-                const ui8 *begin,
-                const ui8 *end,
+                const void *begin,
+                const void *end,
                 std::size_t readOffset = 0,
                 std::size_t writeOffset = SIZE_T_MAX) :
                 Buffer (
