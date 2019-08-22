@@ -302,6 +302,12 @@ namespace thekogans {
                 }
 
                 /// \brief
+                /// Return true if a value with the given name exists.
+                /// \param[in] name Name of value to check existence.
+                /// \return true == a value with the given name exists.
+                bool Contains (const std::string &name) const;
+
+                /// \brief
                 /// Remove value associated with the given name.
                 /// \param[in] name Name whose value to remove.
                 void Remove (const std::string &name);

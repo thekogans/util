@@ -90,6 +90,15 @@ namespace thekogans {
             }
         }
 
+        bool JSON::Object::Contains (const std::string &name) const {
+            for (std::size_t i = 0, count = values.size (); i < count; ++i) {
+                if (values[i].first == name) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
         void JSON::Object::Remove (const std::string &name) {
             for (std::size_t i = 0, count = values.size (); i < count; ++i) {
                 if (values[i].first == name) {
