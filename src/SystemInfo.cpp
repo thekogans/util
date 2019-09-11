@@ -313,6 +313,12 @@ namespace thekogans {
             #endif // defined (TOOLCHAIN_OS_Windows)
                 return result;
             }
+
+            std::string osTostring (ui8 os) {
+                return os == SystemInfo::Windows ? "Windows" :
+                    os == SystemInfo::Linux ? "Linux" :
+                    os == SystemInfo::OSX ? "OS X" : "Unknown";
+            }
         }
 
         std::string SystemInfo::processStartDirectory = Path::GetCurrDirectory ();
@@ -325,7 +331,16 @@ namespace thekogans {
             processPath (GetProcessPathImpl ()),
             hostName (GetHostNameImpl ()),
             hostId (GetHostIdImpl ()),
-            userName (GetUserNameImpl ()) {}
+            userName (GetUserNameImpl ()),
+        #if defined (TOOLCHAIN_OS_Windows)
+            os (Windows) {}
+        #elif defined (TOOLCHAIN_OS_Linux)
+            os (Linux) {}
+        #elif defined (TOOLCHAIN_OS_OSX)
+            os (OSX) {}
+        #else // defined (TOOLCHAIN_OS_Windows)
+            os (Unknown) {}
+        #endif // defined (TOOLCHAIN_OS_Windows)
 
         void SystemInfo::Dump (std::ostream &stream) const {
             stream <<
@@ -337,7 +352,8 @@ namespace thekogans {
                 "Process start directory: " << processStartDirectory << std::endl <<
                 "Host name: " << hostName << std::endl <<
                 "Host Id: " << hostId << std::endl <<
-                "User name: " << userName << std::endl;
+                "User name: " << userName << std::endl <<
+                "OS: " << osTostring (os)  << std::endl;
         }
 
     } // namespace util

@@ -36,6 +36,21 @@ namespace thekogans {
 
         struct _LIB_THEKOGANS_UTIL_DECL SystemInfo :
                 public Singleton<SystemInfo, SpinLock> {
+            enum : ui8 {
+                /// \brief
+                /// Unknown OS.
+                Unknown = 0,
+                /// \brief
+                /// We're running on Windows.
+                Windows = 1,
+                /// \brief
+                /// We're running on Linux.
+                Linux = 2,
+                /// \brief
+                /// We're running on OS X.
+                OSX = 3
+            };
+
         private:
             /// \brief
             /// Host endianness.
@@ -64,6 +79,9 @@ namespace thekogans {
             /// \brief
             /// User name.
             std::string userName;
+            /// \brief
+            /// OS type we're running on (Windows, Linux or OSX).
+            ui8 os;
 
         public:
             /// \brief
@@ -98,36 +116,68 @@ namespace thekogans {
             /// \brief
             /// Return process path.
             /// \return Process path.
-            inline std::string GetProcessPath () const {
+            inline const std::string &GetProcessPath () const {
                 return processPath;
             }
 
             /// \brief
             /// Return process start directory.
             /// \return Process start directory.
-            inline std::string GetProcessStartDirectory () const {
+            inline const std::string &GetProcessStartDirectory () const {
                 return processStartDirectory;
             }
 
             /// \brief
             /// Return host name.
             /// \return Host name.
-            inline std::string GetHostName () const {
+            inline const std::string &GetHostName () const {
                 return hostName;
+            }
+            /// \brief
+            /// Set host name that will be returned by GetHostName above.
+            /// NOTE: Call this method to set the name you want returned
+            /// when calling GetHostName. While it's not necessary (GetHostName
+            /// will query the OS to get the host name), it's sometimes
+            /// beneficial because host names (especially on the mac) can
+            /// vary depending on the network.
+            /// \param[in] hostName_ Host name to set.
+            inline void SetHostName (const std::string &hostName_) {
+                hostName = hostName_;
             }
 
             /// \brief
             /// Return host id.
             /// \return Host id.
-            inline std::string GetHostId () const {
+            inline const std::string &GetHostId () const {
                 return hostId;
+            }
+            /// \brief
+            /// Set host id that will be returned by GetHostId above.
+            /// NOTE: This call exists for similar reasons to SetHostName.
+            /// \param[in] hostId_ Host id to set.
+            inline void SetHostId (const std::string &hostId_) {
+                hostId = hostId_;
             }
 
             /// \brief
             /// Return user name.
             /// \return User name.
-            inline std::string GetUserName () const {
+            inline const std::string &GetUserName () const {
                 return userName;
+            }
+            /// \brief
+            /// Set user name that will be returned by GetUserName above.
+            /// NOTE: This call exists for similar reasons to SetHostName.
+            /// \param[in] userName_ User name to set.
+            inline void SetUserName (const std::string &userName_) {
+                userName = userName_;
+            }
+
+            /// \brief
+            /// Return OS we're running on (Windows, Linux or OS X).
+            /// \return OS we're running on.
+            inline ui8 GetOS () const {
+                return os;
             }
 
             /// \brief

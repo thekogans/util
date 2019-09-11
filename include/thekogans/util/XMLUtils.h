@@ -117,15 +117,13 @@ namespace thekogans {
         _LIB_THEKOGANS_UTIL_DECL std::string _LIB_THEKOGANS_UTIL_API
             DecodeURI (const std::string &uri);
         /// \brief
-        /// Wrapper for EncodeURI. If THEKOGANS_UTIL_USE_ENCODE_STRING
-        /// is defined, call EncodeURI, otherwise return the string.
+        /// Wrapper for EncodeURI.
         /// \param[in] str String to encode.
         /// \return Encoded string.
         _LIB_THEKOGANS_UTIL_DECL std::string _LIB_THEKOGANS_UTIL_API
             Encodestring (const std::string &str);
         /// \brief
-        /// Wrapper for DecodeURI. If THEKOGANS_UTIL_USE_ENCODE_STRING
-        /// is defined, call DecodeURI, otherwise return the string.
+        /// Wrapper for DecodeURI.
         /// \param[in] str String to decode.
         /// \return Decoded string.
         _LIB_THEKOGANS_UTIL_DECL std::string _LIB_THEKOGANS_UTIL_API
