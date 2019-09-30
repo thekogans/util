@@ -39,6 +39,10 @@ namespace thekogans {
             if (!header.empty () || !message.empty ()) {
                 THEKOGANS_UTIL_TRY {
                     ArchiveLog ();
+                    // Deal with our log file being moved in the middle of execution.
+                    if (!Path (path).Exists ()) {
+                        file.Open (path, SimpleFile::ReadWrite | SimpleFile::Create);
+                    }
                     if (!header.empty ()) {
                         file.Write (header.c_str (), header.size ());
                     }
@@ -99,7 +103,7 @@ namespace thekogans {
                         THEKOGANS_UTIL_THROW_POSIX_ERROR_CODE_EXCEPTION (
                             THEKOGANS_UTIL_POSIX_OS_ERROR_CODE);
                     }
-                    file.Open (path, SimpleFile::ReadWrite | SimpleFile::Create | SimpleFile::Append);
+                    file.Open (path, SimpleFile::ReadWrite | SimpleFile::Create);
                 }
             }
         }

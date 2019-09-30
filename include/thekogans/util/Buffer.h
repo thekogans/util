@@ -341,6 +341,15 @@ namespace thekogans {
             }
 
             /// \brief
+            /// Convert the buffer to a \see{SecureString}.
+            /// \return see{SecureString} containing the buffers contents.
+            inline SecureString ToSecureString () const {
+                return GetDataAvailableForReading () > 0 ?
+                    SecureString (GetReadPtr (), GetReadPtrEnd ()) :
+                    SecureString ();
+            }
+
+            /// \brief
             /// Convert the buffer to a std::vector.
             /// \return std::vector containing the buffers contents.
             inline std::vector<ui8> Tovector () const {
