@@ -854,7 +854,7 @@ namespace thekogans {
             /// Heap name.
             const char *name;
             /// \brief
-            /// Heap minimum item in page.
+            /// Heap minimum items in page.
             const std::size_t minItemsInPage;
             /// \brief
             /// Heap minimum page size.
