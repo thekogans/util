@@ -133,6 +133,7 @@
     </if>
     <cpp_header>$(organization)/$(project_directory)/NullAllocator.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/NullLock.h</cpp_header>
+    <cpp_header>$(organization)/$(project_directory)/NullLogger.h</cpp_header>
     <if condition = "$(TOOLCHAIN_OS) == 'Windows'">
       <cpp_header>$(organization)/$(project_directory)/OutputDebugStringLogger.h</cpp_header>
     </if>
@@ -651,6 +652,7 @@
     </if>
     <cpp_source>NullAllocator.cpp</cpp_source>
     <cpp_source>NullLock.cpp</cpp_source>
+    <cpp_source>NullLogger.cpp</cpp_source>
     <if condition = "$(TOOLCHAIN_OS) == 'Windows'">
       <cpp_source>OutputDebugStringLogger.cpp</cpp_source>
     </if>
