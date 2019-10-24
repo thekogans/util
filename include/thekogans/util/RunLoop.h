@@ -725,7 +725,7 @@ namespace thekogans {
             /// RunLoop name.
             const std::string name;
             /// \brief
-            /// RunLoop type (TIPE_FIFO or TYPE_LIFO)
+            /// RunLoop type (TYPE_FIFO or TYPE_LIFO)
             const Type type;
             /// \brief
             /// Max pending jobs.

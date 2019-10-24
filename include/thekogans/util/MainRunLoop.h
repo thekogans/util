@@ -184,7 +184,7 @@ namespace thekogans {
             /// \see{RunLoop} name.
             static std::string name;
             /// \brief
-            /// JobQueue type (TIPE_FIFO or TYPE_LIFO)
+            /// JobQueue type (TYPE_FIFO or TYPE_LIFO)
             static RunLoop::Type type;
             /// \brief
             /// Max pending jobs.

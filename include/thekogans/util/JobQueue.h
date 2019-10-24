@@ -186,7 +186,7 @@ namespace thekogans {
             /// JobQueue name. If set, \see{JobQueue::Worker} threads will be named name-%d.
             static std::string name;
             /// \brief
-            /// JobQueue type (TIPE_FIFO or TYPE_LIFO)
+            /// JobQueue type (TYPE_FIFO or TYPE_LIFO)
             static RunLoop::Type type;
             /// \brief
             /// Max pending jobs.

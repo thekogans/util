@@ -239,7 +239,7 @@ namespace thekogans {
             /// Pipeline name.
             const std::string name;
             /// \brief
-            /// Pipeline type (TIPE_FIFO or TYPE_LIFO)
+            /// Pipeline type (TYPE_FIFO or TYPE_LIFO)
             const RunLoop::Type type;
             /// \brief
             /// Max pending jobs.
@@ -621,7 +621,7 @@ namespace thekogans {
             /// Pipeline name. If set, \see{Pipeline::Worker} threads will be named name-%d.
             static std::string name;
             /// \brief
-            /// Pipeline type (RunLoop::TIPE_FIFO or RunLoop::TYPE_LIFO)
+            /// Pipeline type (RunLoop::TYPE_FIFO or RunLoop::TYPE_LIFO)
             static RunLoop::Type type;
             /// \brief
             /// Max pending jobs.
