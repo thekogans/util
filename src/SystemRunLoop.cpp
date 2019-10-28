@@ -36,12 +36,11 @@ namespace thekogans {
     #if defined (TOOLCHAIN_OS_Windows)
         SystemRunLoop::SystemRunLoop (
                 const std::string &name,
-                Type type,
-                std::size_t maxPendingJobs,
+                JobExecutionPolicy::Ptr jobExecutionPolicy,
                 EventProcessor eventProcessor_,
                 void *userData_,
                 Window::Ptr window_) :
-                RunLoop (name, type, maxPendingJobs),
+                RunLoop (name, jobExecutionPolicy),
                 eventProcessor (eventProcessor_),
                 userData (userData_),
                 window (std::move (window_)) {
@@ -175,13 +174,12 @@ namespace thekogans {
 
         SystemRunLoop::SystemRunLoop (
                 const std::string &name,
-                Type type,
-                std::size_t maxPendingJobs,
+                JobExecutionPolicy::Ptr jobExecutionPolicy,
                 EventProcessor eventProcessor_,
                 void *userData_,
                 XlibWindow::Ptr window_,
                 const std::vector<Display *> &displays_) :
-                RunLoop (name, type, maxPendingJobs),
+                RunLoop (name, jobExecutionPolicy),
                 eventProcessor (eventProcessor_),
                 userData (userData_),
                 window (std::move (window_)),
@@ -253,12 +251,11 @@ namespace thekogans {
 
         SystemRunLoop::SystemRunLoop (
                 const std::string &name,
-                Type type,
-                std::size_t maxPendingJobs,
+                JobExecutionPolicy::Ptr jobExecutionPolicy,
                 OSXRunLoop::Ptr runLoop_) :
-                RunLoop (name, type, maxPendingJobs),
+                RunLoop (name, jobExecutionPolicy),
                 runLoop (std::move (runLoop_)) {
-            if (maxPendingJobs == 0 || runLoop.get () == 0) {
+            if (runLoop.get () == 0) {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
                     THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
             }

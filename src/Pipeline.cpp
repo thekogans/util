@@ -25,6 +25,70 @@
 namespace thekogans {
     namespace util {
 
+        Pipeline::JobExecutionPolicy::JobExecutionPolicy (std::size_t maxJobs_) :
+                maxJobs (maxJobs_) {
+            if (maxJobs == 0) {
+                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
+            }
+        }
+
+        void Pipeline::FIFOJobExecutionPolicy::EnqJob (
+                Pipeline &pipeline,
+                Job *job) {
+            if (pipeline.pendingJobs.size () < maxJobs) {
+                pipeline.pendingJobs.push_back (job);
+            }
+            else {
+                THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
+                    "Pipeline (%s) max jobs (%u) reached.",
+                    !pipeline.name.empty () ? pipeline.name.c_str () : "no name",
+                    maxJobs);
+            }
+        }
+
+        void Pipeline::FIFOJobExecutionPolicy::EnqJobFront (
+                Pipeline &pipeline,
+                Job *job) {
+            if (pipeline.pendingJobs.size () < maxJobs) {
+                pipeline.pendingJobs.push_front (job);
+            }
+            else {
+                THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
+                    "Pipeline (%s) max jobs (%u) reached.",
+                    !pipeline.name.empty () ? pipeline.name.c_str () : "no name",
+                    maxJobs);
+            }
+        }
+
+        Pipeline::Job *Pipeline::FIFOJobExecutionPolicy::DeqJob (Pipeline &pipeline) {
+            return !pipeline.pendingJobs.empty () ? pipeline.pendingJobs.pop_front () : 0;
+        }
+
+        void Pipeline::LIFOJobExecutionPolicy::EnqJob (
+                Pipeline &pipeline,
+                Job *job) {
+            if (pipeline.pendingJobs.size () < maxJobs) {
+                pipeline.pendingJobs.push_front (job);
+            }
+            else {
+                THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
+                    "Pipeline (%s) max jobs (%u) reached.",
+                    !pipeline.name.empty () ? pipeline.name.c_str () : "no name",
+                    maxJobs);
+            }
+        }
+
+        void Pipeline::LIFOJobExecutionPolicy::EnqJobFront (
+                Pipeline &pipeline,
+                Job *job) {
+            EnqJob (pipeline, job);
+        }
+
+        Pipeline::Job *Pipeline::LIFOJobExecutionPolicy::DeqJob (Pipeline &pipeline) {
+            return !pipeline.pendingJobs.empty () ? pipeline.pendingJobs.pop_front () : 0;
+        }
+
         void Pipeline::Job::Reset (const RunLoop::Id &runLoopId_) {
             RunLoop::Job::Reset (runLoopId_);
             if (runLoopId_ == pipeline.GetId ()) {
@@ -90,16 +154,14 @@ namespace thekogans {
                 const Stage *begin,
                 const Stage *end,
                 const std::string &name_,
-                RunLoop::Type type_,
-                std::size_t maxPendingJobs_,
+                JobExecutionPolicy::Ptr jobExecutionPolicy_,
                 std::size_t workerCount_,
                 i32 workerPriority_,
                 ui32 workerAffinity_,
                 RunLoop::WorkerCallback *workerCallback_) :
                 id (GUID::FromRandom ().ToString ()),
                 name (name_),
-                type (type_),
-                maxPendingJobs (maxPendingJobs_),
+                jobExecutionPolicy (jobExecutionPolicy_),
                 done (false),
                 stats (id, name),
                 jobsNotEmpty (jobsMutex),
@@ -110,16 +172,13 @@ namespace thekogans {
                 workerPriority (workerPriority_),
                 workerAffinity (workerAffinity_),
                 workerCallback (workerCallback_) {
-            if (begin != 0 && end != 0 &&
-                    (type == RunLoop::TYPE_FIFO || type == RunLoop::TYPE_LIFO) &&
-                    maxPendingJobs > 0 && workerCount > 0) {
+            if (begin != 0 && end != 0 && jobExecutionPolicy.Get () != 0 && workerCount > 0) {
                 for (; begin != end; ++begin) {
                     stages.push_back (
                         JobQueue::Ptr (
                             new JobQueue (
                                 begin->name,
-                                begin->type,
-                                begin->maxPendingJobs,
+                                begin->jobExecutionPolicy,
                                 begin->workerCount,
                                 begin->workerPriority,
                                 begin->workerAffinity,
@@ -291,23 +350,10 @@ namespace thekogans {
             if (job.Get () != 0 && job->IsCompleted () && job->GetPipelineId () == id) {
                 {
                     LockGuard<Mutex> guard (jobsMutex);
-                    if (pendingJobs.size () < (std::size_t)maxPendingJobs) {
-                        job->Reset (id);
-                        if (type == RunLoop::TYPE_FIFO) {
-                            pendingJobs.push_back (job.Get ());
-                        }
-                        else {
-                            pendingJobs.push_front (job.Get ());
-                        }
-                        job->AddRef ();
-                        jobsNotEmpty.Signal ();
-                    }
-                    else {
-                        THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                            "RunLoop (%s) max jobs (%u) reached.",
-                            !name.empty () ? name.c_str () : "no name",
-                            maxPendingJobs);
-                    }
+                    jobExecutionPolicy->EnqJob (*this, job.Get ());
+                    job->Reset (id);
+                    job->AddRef ();
+                    jobsNotEmpty.Signal ();
                 }
                 return !wait || WaitForJob (job, timeSpec);
             }
@@ -324,18 +370,10 @@ namespace thekogans {
             if (job.Get () != 0 && job->IsCompleted ()) {
                 {
                     LockGuard<Mutex> guard (jobsMutex);
-                    if (pendingJobs.size () < (std::size_t)maxPendingJobs) {
-                        job->Reset (id);
-                        pendingJobs.push_front (job.Get ());
-                        job->AddRef ();
-                        jobsNotEmpty.Signal ();
-                    }
-                    else {
-                        THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                            "RunLoop (%s) max jobs (%u) reached.",
-                            !name.empty () ? name.c_str () : "no name",
-                            maxPendingJobs);
-                    }
+                    jobExecutionPolicy->EnqJobFront (*this, job.Get ());
+                    job->Reset (id);
+                    job->AddRef ();
+                    jobsNotEmpty.Signal ();
                 }
                 return !wait || WaitForJob (job, timeSpec);
             }
@@ -682,7 +720,7 @@ namespace thekogans {
             }
             Job *job = 0;
             if (!done && !paused && !pendingJobs.empty ()) {
-                job = pendingJobs.pop_front ();
+                job = jobExecutionPolicy->DeqJob (*this);
                 runningJobs.push_back (job);
             }
             return job;
@@ -705,8 +743,8 @@ namespace thekogans {
 
         std::vector<Pipeline::Stage> GlobalPipelineCreateInstance::stages;
         std::string GlobalPipelineCreateInstance::name = std::string ();
-        RunLoop::Type GlobalPipelineCreateInstance::type = RunLoop::TYPE_FIFO;
-        std::size_t GlobalPipelineCreateInstance::maxPendingJobs = SIZE_T_MAX;
+        Pipeline::JobExecutionPolicy::Ptr GlobalPipelineCreateInstance::jobExecutionPolicy =
+            Pipeline::JobExecutionPolicy::Ptr (new Pipeline::FIFOJobExecutionPolicy);
         std::size_t GlobalPipelineCreateInstance::workerCount = 1;
         i32 GlobalPipelineCreateInstance::workerPriority = THEKOGANS_UTIL_NORMAL_THREAD_PRIORITY;
         ui32 GlobalPipelineCreateInstance::workerAffinity = THEKOGANS_UTIL_MAX_THREAD_AFFINITY;
@@ -716,19 +754,15 @@ namespace thekogans {
                 const Pipeline::Stage *begin_,
                 const Pipeline::Stage *end_,
                 const std::string &name_,
-                RunLoop::Type type_,
-                std::size_t maxPendingJobs_,
+                Pipeline::JobExecutionPolicy::Ptr jobExecutionPolicy_,
                 std::size_t workerCount_,
                 i32 workerPriority_,
                 ui32 workerAffinity_,
                 RunLoop::WorkerCallback *workerCallback_) {
-            if (begin_ != 0 && end_ != 0 &&
-                    (type_ == RunLoop::TYPE_FIFO || type_ == RunLoop::TYPE_LIFO) &&
-                    maxPendingJobs_ > 0 && workerCount_ > 0) {
+            if (begin_ != 0 && end_ != 0 && jobExecutionPolicy_.Get () != 0 && workerCount_ > 0) {
                 stages = std::vector<Pipeline::Stage> (begin_, end_);
                 name = name_;
-                type = type_;
-                maxPendingJobs = maxPendingJobs_;
+                jobExecutionPolicy = jobExecutionPolicy_;
                 workerCount = workerCount_;
                 workerPriority = workerPriority_;
                 workerAffinity = workerAffinity_;
@@ -746,8 +780,7 @@ namespace thekogans {
                     stages.data (),
                     stages.data () + stages.size (),
                     name,
-                    type,
-                    maxPendingJobs,
+                    jobExecutionPolicy,
                     workerCount,
                     workerPriority,
                     workerAffinity,

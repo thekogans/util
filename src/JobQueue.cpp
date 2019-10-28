@@ -51,13 +51,12 @@ namespace thekogans {
 
         JobQueue::JobQueue (
                 const std::string &name,
-                Type type,
-                std::size_t maxPendingJobs,
+                JobExecutionPolicy::Ptr jobExecutionPolicy,
                 std::size_t workerCount_,
                 i32 workerPriority_,
                 ui32 workerAffinity_,
                 WorkerCallback *workerCallback_) :
-                RunLoop (name, type, maxPendingJobs),
+                RunLoop (name, jobExecutionPolicy),
                 workerCount (workerCount_),
                 workerPriority (workerPriority_),
                 workerAffinity (workerAffinity_),
@@ -153,9 +152,10 @@ namespace thekogans {
             return workers.clear (callback);
         }
 
-        std::string GlobalJobQueueCreateInstance::name = std::string ();
-        RunLoop::Type GlobalJobQueueCreateInstance::type = RunLoop::TYPE_FIFO;
-        std::size_t GlobalJobQueueCreateInstance::maxPendingJobs = SIZE_T_MAX;
+        const char *GlobalJobQueueCreateInstance::GLOBAL_JOB_QUEUE_NAME = "GlobalJobQueue";
+        std::string GlobalJobQueueCreateInstance::name = GlobalJobQueueCreateInstance::GLOBAL_JOB_QUEUE_NAME;
+        RunLoop::JobExecutionPolicy::Ptr GlobalJobQueueCreateInstance::jobExecutionPolicy =
+            RunLoop::JobExecutionPolicy::Ptr (new RunLoop::FIFOJobExecutionPolicy);
         std::size_t GlobalJobQueueCreateInstance::workerCount = 1;
         i32 GlobalJobQueueCreateInstance::workerPriority = THEKOGANS_UTIL_NORMAL_THREAD_PRIORITY;
         ui32 GlobalJobQueueCreateInstance::workerAffinity = THEKOGANS_UTIL_MAX_THREAD_AFFINITY;
@@ -163,15 +163,13 @@ namespace thekogans {
 
         void GlobalJobQueueCreateInstance::Parameterize (
                 const std::string &name_,
-                RunLoop::Type type_,
-                std::size_t maxPendingJobs_,
+                RunLoop::JobExecutionPolicy::Ptr jobExecutionPolicy_,
                 std::size_t workerCount_,
                 i32 workerPriority_,
                 ui32 workerAffinity_,
                 RunLoop::WorkerCallback *workerCallback_) {
             name = name_;
-            type = type_;
-            maxPendingJobs = maxPendingJobs_;
+            jobExecutionPolicy = jobExecutionPolicy_;
             workerCount = workerCount_;
             workerPriority = workerPriority_;
             workerAffinity = workerAffinity_;
@@ -181,8 +179,7 @@ namespace thekogans {
         JobQueue *GlobalJobQueueCreateInstance::operator () () {
             return new JobQueue (
                 name,
-                type,
-                maxPendingJobs,
+                jobExecutionPolicy,
                 workerCount,
                 workerPriority,
                 workerAffinity,

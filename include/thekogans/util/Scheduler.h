@@ -119,15 +119,14 @@ namespace thekogans {
                 /// \param[in] scheduler_ Scheduler this JobQueue belongs to.
                 /// \param[in] priority_ JobQueue priority.
                 /// \param[in] name JobQueue name.
-                /// \param[in] type JobQueue type.
-                /// \param[in] maxPendingJobs Max pending queue jobs.
+                /// \param[in] jobExecutionPolicy JobQueue \see{JobExecutionPolicy}.
                 JobQueue (
                         Scheduler &scheduler_,
                         Priority priority_ = PRIORITY_NORMAL,
                         const std::string &name = std::string (),
-                        Type type = TYPE_FIFO,
-                        std::size_t maxPendingJobs = SIZE_T_MAX) :
-                        RunLoop (name, type, maxPendingJobs),
+                        JobExecutionPolicy::Ptr jobExecutionPolicy =
+                            JobExecutionPolicy::Ptr (new FIFOJobExecutionPolicy)) :
+                        RunLoop (name, jobExecutionPolicy),
                         scheduler (scheduler_),
                         priority (priority_),
                         inFlight (false) {
@@ -207,8 +206,7 @@ namespace thekogans {
             /// \param[in] minJobQueues Minimum worker count to keep in the pool.
             /// \param[in] maxJobQueues Maximum worker count to allow the pool to grow to.
             /// \param[in] name JobQueue thread name.
-            /// \param[in] type JobQueue queue type.
-            /// \param[in] maxPendingJobs Max pending queue jobs.
+            /// \param[in] jobExecutionPolicy JobQueue \see{JobExecutionPolicy}.
             /// \param[in] workerCount Number of worker threads servicing the queue.
             /// \param[in] workerPriority JobQueue thread priority.
             /// \param[in] workerAffinity JobQueue thread processor affinity.
@@ -217,8 +215,8 @@ namespace thekogans {
                 std::size_t minJobQueues = SystemInfo::Instance ().GetCPUCount (),
                 std::size_t maxJobQueues = SystemInfo::Instance ().GetCPUCount () * 2,
                 const std::string name = std::string (),
-                RunLoop::Type type = RunLoop::TYPE_FIFO,
-                std::size_t maxPendingJobs = SIZE_T_MAX,
+                RunLoop::JobExecutionPolicy::Ptr jobExecutionPolicy =
+                    RunLoop::JobExecutionPolicy::Ptr (new RunLoop::FIFOJobExecutionPolicy),
                 std::size_t workerCount = 1,
                 i32 workerPriority = THEKOGANS_UTIL_NORMAL_THREAD_PRIORITY,
                 ui32 workerAffinity = THEKOGANS_UTIL_MAX_THREAD_AFFINITY,
@@ -227,8 +225,7 @@ namespace thekogans {
                     minJobQueues,
                     maxJobQueues,
                     name,
-                    type,
-                    maxPendingJobs,
+                    jobExecutionPolicy,
                     workerCount,
                     workerPriority,
                     workerAffinity,
@@ -292,11 +289,8 @@ namespace thekogans {
             /// JobQueue thread name.
             static std::string name;
             /// \brief
-            /// JobQueue queue type.
-            static RunLoop::Type type;
-            /// \brief
-            /// JobQueue queue max pending jobs.
-            static std::size_t maxPendingJobs;
+            /// JobQueue \see{RunLoop::JobExecutionPolicy}.
+            static RunLoop::JobExecutionPolicy::Ptr jobExecutionPolicy;
             /// \brief
             /// Number of worker threads servicing the queue.
             static std::size_t workerCount;
@@ -316,8 +310,7 @@ namespace thekogans {
             /// \param[in] minJobQueues_ Minimum worker count to keep in the pool.
             /// \param[in] maxJobQueues_ Maximum worker count to allow the pool to grow to.
             /// \param[in] name_ JobQueue thread name.
-            /// \param[in] type_ JobQueue queue type.
-            /// \param[in] maxPendingJobs_ Max pending queue jobs.
+            /// \param[in] jobExecutionPolicy_ JobQueue \see{RunLoop::JobExecutionPolicy}.
             /// \param[in] workerCount_ Number of worker threads servicing the queue.
             /// \param[in] workerPriority_ JobQueue thread priority.
             /// \param[in] workerAffinity_ JobQueue thread processor affinity.
@@ -326,8 +319,8 @@ namespace thekogans {
                 std::size_t minJobQueues_ = SystemInfo::Instance ().GetCPUCount (),
                 std::size_t maxJobQueues_ = SystemInfo::Instance ().GetCPUCount () * 2,
                 const std::string &name_ = std::string (),
-                RunLoop::Type type_ = RunLoop::TYPE_FIFO,
-                std::size_t maxPendingJobs_ = SIZE_T_MAX,
+                RunLoop::JobExecutionPolicy::Ptr jobExecutionPolicy_ =
+                    RunLoop::JobExecutionPolicy::Ptr (new RunLoop::FIFOJobExecutionPolicy),
                 std::size_t workerCount_ = 1,
                 i32 workerPriority_ = THEKOGANS_UTIL_NORMAL_THREAD_PRIORITY,
                 ui32 workerAffinity_ = THEKOGANS_UTIL_MAX_THREAD_AFFINITY,

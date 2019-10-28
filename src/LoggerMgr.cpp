@@ -259,8 +259,7 @@ namespace thekogans {
             jobQueue.Reset (!blocking ?
                 new JobQueue (
                     name,
-                    RunLoop::TYPE_FIFO,
-                    SIZE_T_MAX,
+                    RunLoop::JobExecutionPolicy::Ptr (new RunLoop::FIFOJobExecutionPolicy),
                     1,
                     priority,
                     affinity) : 0);

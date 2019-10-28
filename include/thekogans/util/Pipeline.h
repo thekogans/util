@@ -53,60 +53,6 @@ namespace thekogans {
             /// Convenient typedef for ThreadSafeRefCounted::Ptr<Pipeline>.
             typedef ThreadSafeRefCounted::Ptr<Pipeline> Ptr;
 
-            /// \struct Pipeline::Stage Pipeline.h thekogans/util/Pipeline.h
-            ///
-            /// \brief
-            /// Used to specify stage (\see{JobQueue}) ctor parameters.
-            struct _LIB_THEKOGANS_UTIL_DECL Stage {
-                /// \brief
-                /// Stage \see{JobQueue} name.
-                std::string name;
-                /// \brief
-                /// Type of stage (TYPE_FIFO or TYPE_LIFO).
-                RunLoop::Type type;
-                /// \brief
-                /// Max pending jobs.
-                std::size_t maxPendingJobs;
-                /// \brief
-                /// Count of workers servicing this stage.
-                std::size_t workerCount;
-                /// \brief
-                /// Worker thread priority.
-                i32 workerPriority;
-                /// \brief
-                /// Worker thread processor affinity.
-                ui32 workerAffinity;
-                /// \brief
-                /// Called to initialize/uninitialize the worker thread.
-                RunLoop::WorkerCallback *workerCallback;
-
-                /// \brief
-                /// ctor.
-                /// \param[in] name_ Stage \see{JobQueue} name.
-                /// \param[in] type_ Stage \see{JobQueue} type.
-                /// \param[in] maxPendingJobs_ Max pending stage jobs.
-                /// \param[in] workerCount_ Number of workers servicing this stage.
-                /// \param[in] workerPriority_ Stage worker thread priority.
-                /// \param[in] workerAffinity_ Stage worker thread processor affinity.
-                /// \param[in] workerCallback_ Called to initialize/uninitialize the
-                /// stage worker thread(s).
-                Stage (
-                    const std::string &name_ = std::string (),
-                    RunLoop::Type type_ = RunLoop::TYPE_FIFO,
-                    std::size_t maxPendingJobs_ = SIZE_T_MAX,
-                    std::size_t workerCount_ = 1,
-                    i32 workerPriority_ = THEKOGANS_UTIL_NORMAL_THREAD_PRIORITY,
-                    ui32 workerAffinity_ = THEKOGANS_UTIL_MAX_THREAD_AFFINITY,
-                    RunLoop::WorkerCallback *workerCallback_ = 0) :
-                    name (name_),
-                    type (type_),
-                    maxPendingJobs (maxPendingJobs_),
-                    workerCount (workerCount_),
-                    workerPriority (workerPriority_),
-                    workerAffinity (workerAffinity_),
-                    workerCallback (workerCallback_) {}
-            };
-
             /// \brief
             /// Forward declaration of Job.
             struct Job;
@@ -121,6 +67,119 @@ namespace thekogans {
             /// \brief
             /// Convenient typedef for IntrusiveList<Job, JOB_LIST_ID>.
             typedef IntrusiveList<Job, JOB_LIST_ID> JobList;
+
+            /// \struct Pipeline::JobExecutionPolicy Pipeline.h thekogans/util/Pipeline.h
+            ///
+            /// \brief
+            /// JobExecutionPolicy allows the user of the run loop to
+            /// specify the order in which jobs will be executed.
+            struct _LIB_THEKOGANS_UTIL_DECL JobExecutionPolicy : public ThreadSafeRefCounted {
+                /// \brief
+                /// Convenient typedef for ThreadSafeRefCounted::Ptr<JobExecutionPolicy>.
+                typedef ThreadSafeRefCounted::Ptr<JobExecutionPolicy> Ptr;
+
+                /// \brief
+                /// Max pending run loop jobs.
+                const std::size_t maxJobs;
+
+                /// \brief
+                /// ctor.
+                /// \param[in] maxJobs_ Max pending run loop jobs.
+                JobExecutionPolicy (std::size_t maxJobs_ = SIZE_T_MAX);
+                /// \brief
+                /// dtor.
+                virtual ~JobExecutionPolicy () {}
+
+                /// \brief
+                /// Enqueue a job on the given Pipelines pendingJobs to be performed
+                /// on the run loop thread.
+                /// \param[in] pipeline Pipeline on which to enqueue the given job.
+                /// \param[in] job Job to enqueue.
+                virtual void EnqJob (
+                    Pipeline &pipeline,
+                    Job *job) = 0;
+                /// \brief
+                /// Enqueue a job on the given Pipelines pendingJobs to be performed
+                /// next on the run loop thread.
+                /// \param[in] pipeline Pipeline on which to enqueue the given job.
+                /// \param[in] job Job to enqueue.
+                virtual void EnqJobFront (
+                    Pipeline &pipeline,
+                    Job *job) = 0;
+                /// \brief
+                /// Dequeue the next job to be executed on the run loop thread.
+                /// \param[in] pipeline Pipeline from which to dequeue the next job.
+                /// \return The next job to execute (0 if no more pending jobs).
+                virtual Job *DeqJob (Pipeline &pipeline) = 0;
+            };
+
+            /// \struct Pipeline::FIFOJobExecutionPolicy Pipeline.h thekogans/util/Pipeline.h
+            ///
+            /// \brief
+            /// First In, First Out execution policy.
+            struct _LIB_THEKOGANS_UTIL_DECL FIFOJobExecutionPolicy : public JobExecutionPolicy {
+                /// \brief
+                /// ctor.
+                /// \param[in] maxJobs Max pending run loop jobs.
+                FIFOJobExecutionPolicy (std::size_t maxJobs = SIZE_T_MAX) :
+                    JobExecutionPolicy (maxJobs) {}
+
+                /// \brief
+                /// Enqueue a job on the given Pipelines pendingJobs to be performed
+                /// on the run loop thread.
+                /// \param[in] pipeline Pipeline on which to enqueue the given job.
+                /// \param[in] job Job to enqueue.
+                virtual void EnqJob (
+                    Pipeline &pipeline,
+                    Job *job);
+                /// \brief
+                /// Enqueue a job on the given Pipelines pendingJobs to be performed
+                /// next on the run loop thread.
+                /// \param[in] pipeline Pipeline on which to enqueue the given job.
+                /// \param[in] job Job to enqueue.
+                virtual void EnqJobFront (
+                    Pipeline &pipeline,
+                    Job *job);
+                /// \brief
+                /// Dequeue the next job to be executed on the run loop thread.
+                /// \param[in] pipeline Pipeline from which to dequeue the next job.
+                /// \return The next job to execute (0 if no more pending jobs).
+                virtual Job *DeqJob (Pipeline &pipeline);
+            };
+
+            /// \struct Pipeline::LIFOJobExecutionPolicy Pipeline.h thekogans/util/Pipeline.h
+            ///
+            /// \brief
+            /// Last In, First Out execution policy.
+            struct _LIB_THEKOGANS_UTIL_DECL LIFOJobExecutionPolicy : public JobExecutionPolicy {
+                /// \brief
+                /// ctor.
+                /// \param[in] maxJobs Max pending run loop jobs.
+                LIFOJobExecutionPolicy (std::size_t maxJobs = SIZE_T_MAX) :
+                    JobExecutionPolicy (maxJobs) {}
+
+                /// \brief
+                /// Enqueue a job on the given Pipelines pendingJobs to be performed
+                /// on the run loop thread.
+                /// \param[in] pipeline Pipeline on which to enqueue the given job.
+                /// \param[in] job Job to enqueue.
+                virtual void EnqJob (
+                    Pipeline &pipeline,
+                    Job *job);
+                /// \brief
+                /// Enqueue a job on the given Pipelines pendingJobs to be performed
+                /// next on the run loop thread.
+                /// \param[in] pipeline Pipeline on which to enqueue the given job.
+                /// \param[in] job Job to enqueue.
+                virtual void EnqJobFront (
+                    Pipeline &pipeline,
+                    Job *job);
+                /// \brief
+                /// Dequeue the next job to be executed on the run loop thread.
+                /// \param[in] pipeline Pipeline from which to dequeue the next job.
+                /// \return The next job to execute (0 if no more pending jobs).
+                virtual Job *DeqJob (Pipeline &pipeline);
+            };
 
         #if defined (_MSC_VER)
             #pragma warning (push)
@@ -231,6 +290,54 @@ namespace thekogans {
             #pragma warning (pop)
         #endif // defined (_MSC_VER)
 
+            /// \struct Pipeline::Stage Pipeline.h thekogans/util/Pipeline.h
+            ///
+            /// \brief
+            /// Used to specify stage (\see{JobQueue}) ctor parameters.
+            struct _LIB_THEKOGANS_UTIL_DECL Stage {
+                /// \brief
+                /// Stage \see{JobQueue} name.
+                std::string name;
+                /// \brief
+                /// Stage \see{JobQueue} \see{RunLoop::JobExecutionPolicy}.
+                RunLoop::JobExecutionPolicy::Ptr jobExecutionPolicy;
+                /// \brief
+                /// Count of workers servicing this stage.
+                std::size_t workerCount;
+                /// \brief
+                /// Worker thread priority.
+                i32 workerPriority;
+                /// \brief
+                /// Worker thread processor affinity.
+                ui32 workerAffinity;
+                /// \brief
+                /// Called to initialize/uninitialize the worker thread.
+                RunLoop::WorkerCallback *workerCallback;
+
+                /// \brief
+                /// ctor.
+                /// \param[in] name_ Stage \see{JobQueue} name.
+                /// \param[in] jobExecutionPolicy_ Stage \see{JobQueue} \see{RunLoop::JobExecutionPolicy}.
+                /// \param[in] workerCount_ Number of workers servicing this stage.
+                /// \param[in] workerPriority_ Stage worker thread priority.
+                /// \param[in] workerAffinity_ Stage worker thread processor affinity.
+                /// \param[in] workerCallback_ Called to initialize/uninitialize the stage worker thread(s).
+                Stage (
+                    const std::string &name_ = std::string (),
+                    RunLoop::JobExecutionPolicy::Ptr jobExecutionPolicy_ =
+                        RunLoop::JobExecutionPolicy::Ptr (new RunLoop::FIFOJobExecutionPolicy),
+                    std::size_t workerCount_ = 1,
+                    i32 workerPriority_ = THEKOGANS_UTIL_NORMAL_THREAD_PRIORITY,
+                    ui32 workerAffinity_ = THEKOGANS_UTIL_MAX_THREAD_AFFINITY,
+                    RunLoop::WorkerCallback *workerCallback_ = 0) :
+                    name (name_),
+                    jobExecutionPolicy (jobExecutionPolicy_),
+                    workerCount (workerCount_),
+                    workerPriority (workerPriority_),
+                    workerAffinity (workerAffinity_),
+                    workerCallback (workerCallback_) {}
+            };
+
         private:
             /// \brief
             /// Pipeline id.
@@ -239,11 +346,8 @@ namespace thekogans {
             /// Pipeline name.
             const std::string name;
             /// \brief
-            /// Pipeline type (TYPE_FIFO or TYPE_LIFO)
-            const RunLoop::Type type;
-            /// \brief
-            /// Max pending jobs.
-            const std::size_t maxPendingJobs;
+            /// Pipeline job execution policy.
+            JobExecutionPolicy::Ptr jobExecutionPolicy;
             /// \brief
             /// Flag to signal the stage thread(s).
             THEKOGANS_UTIL_ATOMIC<bool> done;
@@ -346,8 +450,7 @@ namespace thekogans {
             /// \param[in] begin Pointer to the beginning of the Stage array.
             /// \param[in] end Pointer to the end of the Stage array.
             /// \param[in] name_ Pipeline name.
-            /// \param[in] type_ Pipeline type.
-            /// \param[in] maxPendingJobs_ Max pending pipeline jobs.
+            /// \param[in] jobExecutionPolicy_ Pipeline \see{JobExecutionPolicy}.
             /// \param[in] workerCount_ Max workers to service the pipeline.
             /// \param[in] workerPriority_ Worker thread priority.
             /// \param[in] workerAffinity_ Worker thread processor affinity.
@@ -357,8 +460,8 @@ namespace thekogans {
                 const Stage *begin,
                 const Stage *end,
                 const std::string &name_ = std::string (),
-                RunLoop::Type type_ = RunLoop::TYPE_FIFO,
-                std::size_t maxPendingJobs_ = SIZE_T_MAX,
+                JobExecutionPolicy::Ptr jobExecutionPolicy_ =
+                    JobExecutionPolicy::Ptr (new FIFOJobExecutionPolicy),
                 std::size_t workerCount_ = 1,
                 i32 workerPriority_ = THEKOGANS_UTIL_NORMAL_THREAD_PRIORITY,
                 ui32 workerAffinity_ = THEKOGANS_UTIL_MAX_THREAD_AFFINITY,
@@ -621,11 +724,8 @@ namespace thekogans {
             /// Pipeline name. If set, \see{Pipeline::Worker} threads will be named name-%d.
             static std::string name;
             /// \brief
-            /// Pipeline type (RunLoop::TYPE_FIFO or RunLoop::TYPE_LIFO)
-            static RunLoop::Type type;
-            /// \brief
-            /// Max pending jobs.
-            static std::size_t maxPendingJobs;
+            /// \see{Pipeline} \see{Pipeline::JobExecutionPolicy}.
+            static Pipeline::JobExecutionPolicy::Ptr jobExecutionPolicy;
             /// \brief
             /// Number of workers servicing the pipeline.
             static std::size_t workerCount;
@@ -647,8 +747,7 @@ namespace thekogans {
             /// \param[in] end_ Pointer to the end of the Pipeline::Stage array.
             /// \param[in] name_ Pipeline name. If set, \see{Pipeline::Worker}
             /// threads will be named name-%d.
-            /// \param[in] type_ Pipeline type.
-            /// \param[in] maxPendingJobs_ Max pending pipeline jobs.
+            /// \param[in] jobExecutionPolicy_ Pipeline \see{Pipeline::JobExecutionPolicy}.
             /// \param[in] workerCount_ Max workers to service the pipeline.
             /// \param[in] workerPriority_ Worker thread priority.
             /// \param[in] workerAffinity_ Worker thread processor affinity.
@@ -657,8 +756,8 @@ namespace thekogans {
                 const Pipeline::Stage *begin_,
                 const Pipeline::Stage *end_,
                 const std::string &name_ = std::string (),
-                RunLoop::Type type_ = RunLoop::TYPE_FIFO,
-                std::size_t maxPendingJobs_ = SIZE_T_MAX,
+                Pipeline::JobExecutionPolicy::Ptr jobExecutionPolicy_ =
+                    Pipeline::JobExecutionPolicy::Ptr (new Pipeline::FIFOJobExecutionPolicy),
                 std::size_t workerCount_ = 1,
                 i32 workerPriority_ = THEKOGANS_UTIL_NORMAL_THREAD_PRIORITY,
                 ui32 workerAffinity_ = THEKOGANS_UTIL_MAX_THREAD_AFFINITY,

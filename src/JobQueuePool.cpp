@@ -31,8 +31,7 @@ namespace thekogans {
                 std::size_t minJobQueues_,
                 std::size_t maxJobQueues_,
                 const std::string &name_,
-                RunLoop::Type type_,
-                std::size_t maxPendingJobs_,
+                RunLoop::JobExecutionPolicy::Ptr jobExecutionPolicy_,
                 std::size_t workerCount_,
                 i32 workerPriority_,
                 ui32 workerAffinity_,
@@ -40,8 +39,7 @@ namespace thekogans {
                 minJobQueues (minJobQueues_),
                 maxJobQueues (maxJobQueues_),
                 name (name_),
-                type (type_),
-                maxPendingJobs (maxPendingJobs_),
+                jobExecutionPolicy (jobExecutionPolicy_),
                 workerCount (workerCount_),
                 workerPriority (workerPriority_),
                 workerAffinity (workerAffinity_),
@@ -57,15 +55,14 @@ namespace thekogans {
                     std::string jobQueueName;
                     if (!name.empty ()) {
                         jobQueueName = FormatString (
-                            "%s-%u",
+                            "%s-" THEKOGANS_UTIL_SIZE_T_FORMAT,
                             name.c_str (),
                             ++idPool);
                     }
                     availableJobQueues.push_back (
                         new JobQueue (
                             jobQueueName,
-                            type,
-                            maxPendingJobs,
+                            jobExecutionPolicy,
                             workerCount,
                             workerPriority,
                             workerAffinity,
@@ -188,14 +185,13 @@ namespace thekogans {
                     std::string jobQueueName;
                     if (!name.empty ()) {
                         jobQueueName = FormatString (
-                            "%s-%u",
+                            "%s-" THEKOGANS_UTIL_SIZE_T_FORMAT,
                             name.c_str (),
                             ++idPool);
                     }
                     jobQueue = new JobQueue (
                         jobQueueName,
-                        type,
-                        maxPendingJobs,
+                        jobExecutionPolicy,
                         workerCount,
                         workerPriority,
                         workerAffinity,
@@ -238,8 +234,8 @@ namespace thekogans {
         std::size_t GlobalJobQueuePoolCreateInstance::minJobQueues = 0;
         std::size_t GlobalJobQueuePoolCreateInstance::maxJobQueues = 0;
         std::string GlobalJobQueuePoolCreateInstance::name = std::string ();
-        RunLoop::Type GlobalJobQueuePoolCreateInstance::type = RunLoop::TYPE_FIFO;
-        std::size_t GlobalJobQueuePoolCreateInstance::maxPendingJobs = SIZE_T_MAX;
+        RunLoop::JobExecutionPolicy::Ptr GlobalJobQueuePoolCreateInstance::jobExecutionPolicy =
+            RunLoop::JobExecutionPolicy::Ptr (new RunLoop::FIFOJobExecutionPolicy);
         std::size_t GlobalJobQueuePoolCreateInstance::workerCount = 1;
         i32 GlobalJobQueuePoolCreateInstance::workerPriority = THEKOGANS_UTIL_NORMAL_THREAD_PRIORITY;
         ui32 GlobalJobQueuePoolCreateInstance::workerAffinity = THEKOGANS_UTIL_MAX_THREAD_AFFINITY;
@@ -249,18 +245,16 @@ namespace thekogans {
                 std::size_t minJobQueues_,
                 std::size_t maxJobQueues_,
                 const std::string &name_,
-                RunLoop::Type type_,
-                std::size_t maxPendingJobs_,
+                RunLoop::JobExecutionPolicy::Ptr jobExecutionPolicy_,
                 std::size_t workerCount_,
                 i32 workerPriority_,
                 ui32 workerAffinity_,
                 RunLoop::WorkerCallback *workerCallback_) {
-            if (minJobQueues_ != 0 && maxJobQueues_ != 0) {
+            if (minJobQueues_ != 0 && maxJobQueues_ != 0 && minJobQueues_ <= maxJobQueues_) {
                 minJobQueues = minJobQueues_;
                 maxJobQueues = maxJobQueues_;
                 name = name_;
-                type = type_;
-                maxPendingJobs = maxPendingJobs_;
+                jobExecutionPolicy = jobExecutionPolicy_;
                 workerCount = workerCount_;
                 workerPriority = workerPriority_;
                 workerAffinity = workerAffinity_;
@@ -278,8 +272,7 @@ namespace thekogans {
                     minJobQueues,
                     maxJobQueues,
                     name,
-                    type,
-                    maxPendingJobs,
+                    jobExecutionPolicy,
                     workerCount,
                     workerPriority,
                     workerAffinity,

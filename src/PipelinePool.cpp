@@ -33,8 +33,7 @@ namespace thekogans {
                 const util::Pipeline::Stage *begin_,
                 const util::Pipeline::Stage *end_,
                 const std::string &name_,
-                RunLoop::Type type_,
-                std::size_t maxPendingJobs_,
+                Pipeline::JobExecutionPolicy::Ptr jobExecutionPolicy_,
                 std::size_t workerCount_,
                 i32 workerPriority_,
                 ui32 workerAffinity_,
@@ -43,8 +42,7 @@ namespace thekogans {
                 maxPipelines (maxPipelines_),
                 stages (begin_, end_),
                 name (name_),
-                type (type_),
-                maxPendingJobs (maxPendingJobs_),
+                jobExecutionPolicy (jobExecutionPolicy_),
                 workerCount (workerCount_),
                 workerPriority (workerPriority_),
                 workerAffinity (workerAffinity_),
@@ -69,8 +67,7 @@ namespace thekogans {
                             stages.data (),
                             stages.data () + stages.size (),
                             pipelineName,
-                            type,
-                            maxPendingJobs,
+                            jobExecutionPolicy,
                             workerCount,
                             workerPriority,
                             workerAffinity,
@@ -201,8 +198,7 @@ namespace thekogans {
                         stages.data (),
                         stages.data () + stages.size (),
                         pipelineName,
-                        type,
-                        maxPendingJobs,
+                        jobExecutionPolicy,
                         workerCount,
                         workerPriority,
                         workerAffinity,
@@ -246,8 +242,8 @@ namespace thekogans {
         std::size_t GlobalPipelinePoolCreateInstance::maxPipelines = 0;
         std::vector<Pipeline::Stage> GlobalPipelinePoolCreateInstance::stages;
         std::string GlobalPipelinePoolCreateInstance::name = std::string ();
-        RunLoop::Type GlobalPipelinePoolCreateInstance::type = RunLoop::TYPE_FIFO;
-        std::size_t GlobalPipelinePoolCreateInstance::maxPendingJobs = SIZE_T_MAX;
+        Pipeline::JobExecutionPolicy::Ptr GlobalPipelinePoolCreateInstance::jobExecutionPolicy =
+            Pipeline::JobExecutionPolicy::Ptr (new Pipeline::FIFOJobExecutionPolicy);
         std::size_t GlobalPipelinePoolCreateInstance::workerCount = 1;
         i32 GlobalPipelinePoolCreateInstance::workerPriority = THEKOGANS_UTIL_NORMAL_THREAD_PRIORITY;
         ui32 GlobalPipelinePoolCreateInstance::workerAffinity = THEKOGANS_UTIL_MAX_THREAD_AFFINITY;
@@ -259,8 +255,7 @@ namespace thekogans {
                 const Pipeline::Stage *begin_,
                 const Pipeline::Stage *end_,
                 const std::string &name_,
-                RunLoop::Type type_,
-                std::size_t maxPendingJobs_,
+                Pipeline::JobExecutionPolicy::Ptr jobExecutionPolicy_,
                 std::size_t workerCount_,
                 i32 workerPriority_,
                 ui32 workerAffinity_,
@@ -271,8 +266,7 @@ namespace thekogans {
                 maxPipelines = maxPipelines_;
                 stages = std::vector<Pipeline::Stage> (begin_, end_);
                 name = name_;
-                type = type_;
-                maxPendingJobs = maxPendingJobs_;
+                jobExecutionPolicy = jobExecutionPolicy_;
                 workerCount = workerCount_;
                 workerPriority = workerPriority_;
                 workerAffinity = workerAffinity_;
@@ -292,8 +286,7 @@ namespace thekogans {
                     stages.data (),
                     stages.data () + stages.size (),
                     name,
-                    type,
-                    maxPendingJobs,
+                    jobExecutionPolicy,
                     workerCount,
                     workerPriority,
                     workerAffinity,

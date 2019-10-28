@@ -22,17 +22,17 @@
 namespace thekogans {
     namespace util {
 
-        std::string MainRunLoopCreateInstance::name = "Main Thread";
-        RunLoop::Type MainRunLoopCreateInstance::type = RunLoop::TYPE_FIFO;
-        std::size_t MainRunLoopCreateInstance::maxPendingJobs = SIZE_T_MAX;
+        const char * MainRunLoopCreateInstance::MAIN_RUN_LOOP_NAME = "MainRunLoop";
+
+        std::string MainRunLoopCreateInstance::name = MainRunLoopCreateInstance::MAIN_RUN_LOOP_NAME;
+        RunLoop::JobExecutionPolicy::Ptr MainRunLoopCreateInstance::jobExecutionPolicy =
+            RunLoop::JobExecutionPolicy::Ptr (new RunLoop::FIFOJobExecutionPolicy);
 
         void MainRunLoopCreateInstance::Parameterize (
                 const std::string &name_,
-                RunLoop::Type type_,
-                std::size_t maxPendingJobs_) {
+                RunLoop::JobExecutionPolicy::Ptr jobExecutionPolicy_) {
             name = name_;
-            type = type_;
-            maxPendingJobs = maxPendingJobs_;
+            jobExecutionPolicy = jobExecutionPolicy_;
             Thread::SetMainThread ();
         }
 
@@ -43,14 +43,12 @@ namespace thekogans {
 
         void MainRunLoopCreateInstance::Parameterize (
                 const std::string &name_,
-                RunLoop::Type type_,
-                std::size_t maxPendingJobs_,
+                RunLoop::JobExecutionPolicy::Ptr jobExecutionPolicy_,
                 SystemRunLoop::EventProcessor eventProcessor_,
                 void *userData_,
                 Window::Ptr window_) {
             name = name_;
-            type = type_;
-            maxPendingJobs = maxPendingJobs_;
+            jobExecutionPolicy = jobExecutionPolicy_;
             eventProcessor = eventProcessor_;
             userData = userData_;
             window = std::move (window_);
@@ -61,15 +59,13 @@ namespace thekogans {
             return window.get () != 0 ?
                 (RunLoop *)new SystemRunLoop (
                     name,
-                    type,
-                    maxPendingJobs,
+                    jobExecutionPolicy,
                     eventProcessor,
                     userData,
                     std::move (window)) :
                 (RunLoop *)new ThreadRunLoop (
                     name,
-                    type,
-                    maxPendingJobs);
+                    jobExecutionPolicy);
         }
     #elif defined (TOOLCHAIN_OS_Linux)
     #if defined (THEKOGANS_UTIL_HAVE_XLIB)
@@ -80,15 +76,13 @@ namespace thekogans {
 
         void MainRunLoopCreateInstance::Parameterize (
                 const std::string &name_,
-                RunLoop::Type type_,
-                std::size_t maxPendingJobs_,
+                RunLoop::JobExecutionPolicy::Ptr jobExecutionPolicy_,
                 SystemRunLoop::EventProcessor eventProcessor_,
                 void *userData_,
                 SystemRunLoop::XlibWindow::Ptr window_,
                 const std::vector<Display *> &displays_) {
             name = name_;
-            type = type_;
-            maxPendingJobs = maxPendingJobs_;
+            jobExecutionPolicy = jobExecutionPolicy_;
             eventProcessor = eventProcessor_;
             userData = userData_;
             window = std::move (window_);
@@ -100,23 +94,20 @@ namespace thekogans {
             return eventProcessor != 0 ?
                 (RunLoop *)new SystemRunLoop (
                     name,
-                    type,
-                    maxPendingJobs,
+                    jobExecutionPolicy,
                     eventProcessor,
                     userData,
                     std::move (window),
                     displays) :
                 (RunLoop *)new ThreadRunLoop (
                     name,
-                    type,
-                    maxPendingJobs);
+                    jobExecutionPolicy);
         }
     #else // defined (THEKOGANS_UTIL_HAVE_XLIB)
         RunLoop *MainRunLoopCreateInstance::operator () () {
             return new ThreadRunLoop (
                 name,
-                type,
-                maxPendingJobs);
+                jobExecutionPolicy);
         }
     #endif // defined (THEKOGANS_UTIL_HAVE_XLIB)
     #elif defined (TOOLCHAIN_OS_OSX)
@@ -124,12 +115,10 @@ namespace thekogans {
 
         void MainRunLoopCreateInstance::Parameterize (
                 const std::string &name_,
-                RunLoop::Type type_,
-                std::size_t maxPendingJobs_,
+                RunLoop::JobExecutionPolicy::Ptr jobExecutionPolicy_,
                 SystemRunLoop::OSXRunLoop::Ptr runLoop_) {
             name = name_;
-            type = type_;
-            maxPendingJobs = maxPendingJobs_;
+            jobExecutionPolicy = jobExecutionPolicy_;
             runLoop = std::move (runLoop_);
             Thread::SetMainThread ();
         }
@@ -138,13 +127,11 @@ namespace thekogans {
             return runLoop.get () != 0 ?
                 (RunLoop *)new SystemRunLoop (
                     name,
-                    type,
-                    maxPendingJobs,
+                    jobExecutionPolicy,
                     std::move (runLoop)) :
                 (RunLoop *)new ThreadRunLoop (
                     name,
-                    type,
-                    maxPendingJobs);
+                    jobExecutionPolicy);
         }
     #endif // defined (TOOLCHAIN_OS_Windows)
 

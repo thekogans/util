@@ -357,15 +357,14 @@ namespace thekogans {
             /// \brief
             /// ctor.
             /// \param[in] name RunLoop name.
-            /// \param[in] type RunLoop queue type.
-            /// \param[in] maxPendingJobs Max pending run loop jobs.
+            /// \param[in] jobExecutionPolicy RunLoop \see{JobExecutionPolicy}.
             /// \param[in] eventProcessor_ Callback to process window events.
             /// \param[in] userData_ Optional user data passed to eventProcessor.
             /// \param[in] window_ Windows window.
             SystemRunLoop (
                 const std::string &name = std::string (),
-                Type type = TYPE_FIFO,
-                std::size_t maxPendingJobs = SIZE_T_MAX,
+                JobExecutionPolicy::Ptr jobExecutionPolicy =
+                    JobExecutionPolicy::Ptr (new FIFOJobExecutionPolicy),
                 EventProcessor eventProcessor_ = 0,
                 void *userData_ = 0,
                 Window::Ptr window_ = CreateThreadWindow ());
@@ -384,16 +383,15 @@ namespace thekogans {
             /// \brief
             /// ctor.
             /// \param[in] name RunLoop name.
-            /// \param[in] type RunLoop queue type.
-            /// \param[in] maxPendingJobs Max pending run loop jobs.
+            /// \param[in] jobExecutionPolicy RunLoop \see{JobExecutionPolicy}.
             /// \param[in] eventProcessor_ Callback to process Xlib XEvent events.
             /// \param[in] userData_ Optional user data passed to eventProcessor.
             /// \param[in] window_ Xlib window.
             /// \param[in] displays_ A list of displays to listen to.
             SystemRunLoop (
                 const std::string &name = std::string (),
-                Type type = TYPE_FIFO,
-                std::size_t maxPendingJobs = SIZE_T_MAX,
+                JobExecutionPolicy::Ptr jobExecutionPolicy =
+                    JobExecutionPolicy::Ptr (new FIFOJobExecutionPolicy),
                 EventProcessor eventProcessor_ = 0,
                 void *userData_ = 0,
                 XlibWindow::Ptr window_ = CreateThreadWindow (0),
@@ -423,13 +421,12 @@ namespace thekogans {
             /// \brief
             /// ctor.
             /// \param[in] name RunLoop name.
-            /// \param[in] type RunLoop queue type.
-            /// \param[in] maxPendingJobs Max pending run loop jobs.
+            /// \param[in] jobExecutionPolicy RunLoop \see{JobExecutionPolicy}.
             /// \param[in] runLoop_ OS X run loop object.
             SystemRunLoop (
                 const std::string &name = std::string (),
-                Type type = TYPE_FIFO,
-                std::size_t maxPendingJobs = SIZE_T_MAX,
+                JobExecutionPolicy::Ptr jobExecutionPolicy =
+                    JobExecutionPolicy::Ptr (new FIFOJobExecutionPolicy),
                 OSXRunLoop::Ptr runLoop_ = OSXRunLoop::Ptr (new CFOSXRunLoop));
 
             /// \brief

@@ -237,8 +237,8 @@ namespace thekogans {
         std::size_t GlobalSchedulerCreateInstance::minJobQueues = SystemInfo::Instance ().GetCPUCount ();
         std::size_t GlobalSchedulerCreateInstance::maxJobQueues = SystemInfo::Instance ().GetCPUCount () * 2;
         std::string GlobalSchedulerCreateInstance::name = std::string ();
-        RunLoop::Type GlobalSchedulerCreateInstance::type = RunLoop::TYPE_FIFO;
-        std::size_t GlobalSchedulerCreateInstance::maxPendingJobs = SIZE_T_MAX;
+        RunLoop::JobExecutionPolicy::Ptr GlobalSchedulerCreateInstance::jobExecutionPolicy =
+            RunLoop::JobExecutionPolicy::Ptr (new RunLoop::FIFOJobExecutionPolicy);
         std::size_t GlobalSchedulerCreateInstance::workerCount = 1;
         i32 GlobalSchedulerCreateInstance::workerPriority = THEKOGANS_UTIL_NORMAL_THREAD_PRIORITY;
         ui32 GlobalSchedulerCreateInstance::workerAffinity = THEKOGANS_UTIL_MAX_THREAD_AFFINITY;
@@ -248,8 +248,7 @@ namespace thekogans {
                 std::size_t minJobQueues_,
                 std::size_t maxJobQueues_,
                 const std::string &name_,
-                RunLoop::Type type_,
-                std::size_t maxPendingJobs_,
+                RunLoop::JobExecutionPolicy::Ptr jobExecutionPolicy_,
                 std::size_t workerCount_,
                 i32 workerPriority_,
                 ui32 workerAffinity_,
@@ -257,8 +256,7 @@ namespace thekogans {
             minJobQueues = minJobQueues_;
             maxJobQueues = maxJobQueues_;
             name = name_;
-            type = type_;
-            maxPendingJobs = maxPendingJobs_;
+            jobExecutionPolicy = jobExecutionPolicy_;
             workerCount = workerCount_;
             workerPriority = workerPriority_;
             workerAffinity = workerAffinity_;
@@ -270,8 +268,7 @@ namespace thekogans {
                 minJobQueues,
                 maxJobQueues,
                 name,
-                type,
-                maxPendingJobs,
+                jobExecutionPolicy,
                 workerCount,
                 workerPriority,
                 workerAffinity,

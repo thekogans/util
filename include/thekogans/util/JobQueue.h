@@ -120,7 +120,7 @@ namespace thekogans {
             /// ctor.
             /// \param[in] name JobQueue name. If set, \see{Worker}
             /// threads will be named name-%d.
-            /// \param[in] type JobQueue type.
+            /// \param[in] jobExecutionPolicy JobQueue \see{RunLoop::JobExecutionPolicy}.
             /// \param[in] maxPendingJobs Max pending queue jobs.
             /// \param[in] workerCount_ Max workers to service the queue.
             /// \param[in] workerPriority_ Worker thread priority.
@@ -129,8 +129,8 @@ namespace thekogans {
             /// the worker thread.
             JobQueue (
                 const std::string &name = std::string (),
-                Type type = TYPE_FIFO,
-                std::size_t maxPendingJobs = SIZE_T_MAX,
+                JobExecutionPolicy::Ptr jobExecutionPolicy =
+                    JobExecutionPolicy::Ptr (new FIFOJobExecutionPolicy),
                 std::size_t workerCount_ = 1,
                 i32 workerPriority_ = THEKOGANS_UTIL_NORMAL_THREAD_PRIORITY,
                 ui32 workerAffinity_ = THEKOGANS_UTIL_MAX_THREAD_AFFINITY,
@@ -181,16 +181,17 @@ namespace thekogans {
         /// GlobalJobQueue::Instance to supply custom arguments to GlobalJobQueue ctor.
 
         struct _LIB_THEKOGANS_UTIL_DECL GlobalJobQueueCreateInstance {
+            /// \brief
+            /// "GlobalJobQueue"
+            static const char *GLOBAL_JOB_QUEUE_NAME;
+
         private:
             /// \brief
             /// JobQueue name. If set, \see{JobQueue::Worker} threads will be named name-%d.
             static std::string name;
             /// \brief
-            /// JobQueue type (TYPE_FIFO or TYPE_LIFO)
-            static RunLoop::Type type;
-            /// \brief
-            /// Max pending jobs.
-            static std::size_t maxPendingJobs;
+            /// JobQueue \see{RunLoop::JobExecutionPolicy}.
+            static RunLoop::JobExecutionPolicy::Ptr jobExecutionPolicy;
             /// \brief
             /// Number of workers servicing the queue.
             static std::size_t workerCount;
@@ -210,16 +211,15 @@ namespace thekogans {
             /// custom ctor arguments to GlobalJobQueue.
             /// \param[in] name_ JobQueue name. If set, \see{JobQueue::Worker}
             /// threads will be named name-%d.
-            /// \param[in] type_ Queue type.
-            /// \param[in] maxPendingJobs_ Max pending queue jobs.
+            /// \param[in] jobExecutionPolicy_ JobQueue \see{RunLoop::JobExecutionPolicy}.
             /// \param[in] workerCount_ Max workers to service the queue.
             /// \param[in] workerPriority_ Worker thread priority.
             /// \param[in] workerAffinity_ Worker thread processor affinity.
             /// \param[in] workerCallback_ Called to initialize/uninitialize the worker thread.
             static void Parameterize (
-                const std::string &name_ = std::string (),
-                RunLoop::Type type_ = RunLoop::TYPE_FIFO,
-                std::size_t maxPendingJobs_ = SIZE_T_MAX,
+                const std::string &name_ = GLOBAL_JOB_QUEUE_NAME,
+                RunLoop::JobExecutionPolicy::Ptr jobExecutionPolicy_ =
+                    RunLoop::JobExecutionPolicy::Ptr (new RunLoop::FIFOJobExecutionPolicy),
                 std::size_t workerCount_ = 1,
                 i32 workerPriority_ = THEKOGANS_UTIL_NORMAL_THREAD_PRIORITY,
                 ui32 workerAffinity_ = THEKOGANS_UTIL_MAX_THREAD_AFFINITY,

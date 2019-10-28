@@ -179,16 +179,17 @@ namespace thekogans {
         /// \endcode
 
         struct _LIB_THEKOGANS_UTIL_DECL MainRunLoopCreateInstance {
+            /// \brief
+            /// "MainRunLoop"
+            static const char * MAIN_RUN_LOOP_NAME;
+
         private:
             /// \brief
             /// \see{RunLoop} name.
             static std::string name;
             /// \brief
-            /// JobQueue type (TYPE_FIFO or TYPE_LIFO)
-            static RunLoop::Type type;
-            /// \brief
-            /// Max pending jobs.
-            static std::size_t maxPendingJobs;
+            /// JobQueue \see{RunLoop::JobExecutionPolicy}.
+            static RunLoop::JobExecutionPolicy::Ptr jobExecutionPolicy;
             /// \brief
             /// true = the main thread will call MainRunLoop::Instance ().Start ().
         #if defined (TOOLCHAIN_OS_Windows)
@@ -226,25 +227,21 @@ namespace thekogans {
             /// \brief
             /// Call before the first use of MainRunLoop::Instance.
             /// \param[in] name_ RunLoop name.
-            /// \param[in] type_ RunLoop queue type.
-            /// \param[in] maxPendingJobs_ Max pending run loop jobs.
+            /// \param[in] jobExecutionPolicy_ JobQueue \see{RunLoop::JobExecutionPolicy}.
             static void Parameterize (
                 const std::string &name_,
-                RunLoop::Type type_,
-                std::size_t maxPendingJobs_);
+                RunLoop::JobExecutionPolicy::Ptr jobExecutionPolicy_);
         #if defined (TOOLCHAIN_OS_Windows)
             /// \brief
             /// Call before the first use of MainRunLoop::Instance.
             /// \param[in] name_ RunLoop name.
-            /// \param[in] type_ RunLoop queue type.
-            /// \param[in] maxPendingJobs_ Max pending run loop jobs.
+            /// \param[in] jobExecutionPolicy_ JobQueue \see{RunLoop::JobExecutionPolicy}.
             /// \param[in] eventProcessor_ Callback to process Windows HWND events.
             /// \param[in] userData_ Optional user data passed to eventProcessor.
             /// \param[in] window_ Windows window.
             static void Parameterize (
                 const std::string &name_,
-                RunLoop::Type type_,
-                std::size_t maxPendingJobs_,
+                RunLoop::JobExecutionPolicy::Ptr jobExecutionPolicy_,
                 SystemRunLoop::EventProcessor eventProcessor_,
                 void *userData_,
                 Window::Ptr window_);
@@ -253,16 +250,14 @@ namespace thekogans {
             /// \brief
             /// Call before the first use of MainRunLoop::Instance.
             /// \param[in] name_ RunLoop name.
-            /// \param[in] type_ RunLoop queue type.
-            /// \param[in] maxPendingJobs_ Max pending run loop jobs.
+            /// \param[in] jobExecutionPolicy_ JobQueue \see{RunLoop::JobExecutionPolicy}.
             /// \param[in] eventProcessor_ Callback to process Xlib XEvent events.
             /// \param[in] userData_ Optional user data passed to eventProcessor.
             /// \param[in] window_ Xlib server window.
             /// \param[in] displays_ A list of displays to listen to.
             static void Parameterize (
                 const std::string &name_,
-                RunLoop::Type type_,
-                std::size_t maxPendingJobs_,
+                RunLoop::JobExecutionPolicy::Ptr jobExecutionPolicy_,
                 SystemRunLoop::EventProcessor eventProcessor_,
                 void *userData_,
                 SystemRunLoop::XlibWindow::Ptr window_,
@@ -272,13 +267,11 @@ namespace thekogans {
             /// \brief
             /// Call before the first use of MainRunLoop::Instance.
             /// \param[in] name_ RunLoop name.
-            /// \param[in] type_ RunLoop queue type.
-            /// \param[in] maxPendingJobs_ Max pending run loop jobs.
+            /// \param[in] jobExecutionPolicy_ JobQueue \see{RunLoop::JobExecutionPolicy}.
             /// \param[in] runLoop_ OS X run loop object.
             static void Parameterize (
                 const std::string &name_,
-                RunLoop::Type type_,
-                std::size_t maxPendingJobs_,
+                RunLoop::JobExecutionPolicy::Ptr jobExecutionPolicy_,
                 SystemRunLoop::OSXRunLoop::Ptr runLoop_);
         #endif // defined (TOOLCHAIN_OS_Windows)
 

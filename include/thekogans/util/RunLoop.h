@@ -67,19 +67,6 @@ namespace thekogans {
             /// Convenient typedef for std::string.
             typedef std::string Id;
 
-            /// \enum
-            /// The order in which pending jobs are processed;
-            /// First In, First Out (TYPE_FIFO), or Last In,
-            /// First Out (TYPE_LIFO).
-            enum Type {
-                /// \brief
-                /// First in first out.
-                TYPE_FIFO,
-                /// \brief
-                /// Last in first out.
-                TYPE_LIFO,
-            };
-
             /// \brief
             /// Forward declaration of Job.
             struct Job;
@@ -345,6 +332,119 @@ namespace thekogans {
         #if defined (_MSC_VER)
             #pragma warning (pop)
         #endif // defined (_MSC_VER)
+
+            /// \struct RunLoop::JobExecutionPolicy RunLoop.h thekogans/util/RunLoop.h
+            ///
+            /// \brief
+            /// JobExecutionPolicy allows the user of the run loop to
+            /// specify the order in which jobs will be executed.
+            struct _LIB_THEKOGANS_UTIL_DECL JobExecutionPolicy : public ThreadSafeRefCounted {
+                /// \brief
+                /// Convenient typedef for ThreadSafeRefCounted::Ptr<JobExecutionPolicy>.
+                typedef ThreadSafeRefCounted::Ptr<JobExecutionPolicy> Ptr;
+
+                /// \brief
+                /// Max pending run loop jobs.
+                const std::size_t maxJobs;
+
+                /// \brief
+                /// ctor.
+                /// \param[in] maxJobs_ Max pending run loop jobs.
+                JobExecutionPolicy (std::size_t maxJobs_ = SIZE_T_MAX);
+                /// \brief
+                /// dtor.
+                virtual ~JobExecutionPolicy () {}
+
+                /// \brief
+                /// Enqueue a job on the given RunLoops pendingJobs to be performed
+                /// on the run loop thread.
+                /// \param[in] runLoop RunLoop on which to enqueue the given job.
+                /// \param[in] job Job to enqueue.
+                virtual void EnqJob (
+                    RunLoop &runLoop,
+                    Job *job) = 0;
+                /// \brief
+                /// Enqueue a job on the given RunLoops pendingJobs to be performed
+                /// next on the run loop thread.
+                /// \param[in] runLoop RunLoop on which to enqueue the given job.
+                /// \param[in] job Job to enqueue.
+                virtual void EnqJobFront (
+                    RunLoop &runLoop,
+                    Job *job) = 0;
+                /// \brief
+                /// Dequeue the next job to be executed on the run loop thread.
+                /// \param[in] runLoop RunLoop from which to dequeue the next job.
+                /// \return The next job to execute (0 if no more pending jobs).
+                virtual Job *DeqJob (RunLoop &runLoop) = 0;
+            };
+
+            /// \struct RunLoop::FIFOJobExecutionPolicy RunLoop.h thekogans/util/RunLoop.h
+            ///
+            /// \brief
+            /// First In, First Out execution policy.
+            struct _LIB_THEKOGANS_UTIL_DECL FIFOJobExecutionPolicy : public JobExecutionPolicy {
+                /// \brief
+                /// ctor.
+                /// \param[in] maxJobs Max pending run loop jobs.
+                FIFOJobExecutionPolicy (std::size_t maxJobs = SIZE_T_MAX) :
+                    JobExecutionPolicy (maxJobs) {}
+
+                /// \brief
+                /// Enqueue a job on the given RunLoops pendingJobs to be performed
+                /// on the run loop thread.
+                /// \param[in] runLoop RunLoop on which to enqueue the given job.
+                /// \param[in] job Job to enqueue.
+                virtual void EnqJob (
+                    RunLoop &runLoop,
+                    Job *job);
+                /// \brief
+                /// Enqueue a job on the given RunLoops pendingJobs to be performed
+                /// next on the run loop thread.
+                /// \param[in] runLoop RunLoop on which to enqueue the given job.
+                /// \param[in] job Job to enqueue.
+                virtual void EnqJobFront (
+                    RunLoop &runLoop,
+                    Job *job);
+                /// \brief
+                /// Dequeue the next job to be executed on the run loop thread.
+                /// \param[in] runLoop RunLoop from which to dequeue the next job.
+                /// \return The next job to execute (0 if no more pending jobs).
+                virtual Job *DeqJob (RunLoop &runLoop);
+            };
+
+            /// \struct RunLoop::LIFOJobExecutionPolicy RunLoop.h thekogans/util/RunLoop.h
+            ///
+            /// \brief
+            /// Last In, First Out execution policy.
+            struct _LIB_THEKOGANS_UTIL_DECL LIFOJobExecutionPolicy : public JobExecutionPolicy {
+                /// \brief
+                /// ctor.
+                /// \param[in] maxJobs Max pending run loop jobs.
+                LIFOJobExecutionPolicy (std::size_t maxJobs = SIZE_T_MAX) :
+                    JobExecutionPolicy (maxJobs) {}
+
+                /// \brief
+                /// Enqueue a job on the given RunLoops pendingJobs to be performed
+                /// on the run loop thread.
+                /// \param[in] runLoop RunLoop on which to enqueue the given job.
+                /// \param[in] job Job to enqueue.
+                virtual void EnqJob (
+                    RunLoop &runLoop,
+                    Job *job);
+                /// \brief
+                /// Enqueue a job on the given RunLoops pendingJobs to be performed
+                /// next on the run loop thread.
+                /// \param[in] runLoop RunLoop on which to enqueue the given job.
+                /// \param[in] job Job to enqueue.
+                virtual void EnqJobFront (
+                    RunLoop &runLoop,
+                    Job *job);
+                /// \brief
+                /// Dequeue the next job to be executed on the run loop thread.
+                /// \param[in] runLoop RunLoop from which to dequeue the next job.
+                /// \return The next job to execute (0 if no more pending jobs).
+                virtual Job *DeqJob (RunLoop &runLoop);
+            };
 
             /// \brief
             /// Convenient typedef for std::list<Job::Ptr>.
@@ -725,11 +825,8 @@ namespace thekogans {
             /// RunLoop name.
             const std::string name;
             /// \brief
-            /// RunLoop type (TYPE_FIFO or TYPE_LIFO)
-            const Type type;
-            /// \brief
-            /// Max pending jobs.
-            const std::size_t maxPendingJobs;
+            /// RunLoop \see{JobExecutionPolicy}.
+            JobExecutionPolicy::Ptr jobExecutionPolicy;
             /// \brief
             /// Flag to signal the worker thread(s).
             THEKOGANS_UTIL_ATOMIC<bool> done;
@@ -762,12 +859,11 @@ namespace thekogans {
             /// \brief
             /// ctor.
             /// \param[in] name_ RunLoop name.
-            /// \param[in] type_ RunLoop type.
-            /// \param[in] maxPendingJobs_ Max pending run loop jobs.
+            /// \param[in] jobExecutionPolicy_ RunLoop \see{JobExecutionPolicy}.
             RunLoop (
                 const std::string &name_ = std::string (),
-                Type type_ = TYPE_FIFO,
-                std::size_t maxPendingJobs_ = SIZE_T_MAX);
+                JobExecutionPolicy::Ptr jobExecutionPolicy_ =
+                    JobExecutionPolicy::Ptr (new FIFOJobExecutionPolicy));
             /// \brief
             /// dtor.
             virtual ~RunLoop ();

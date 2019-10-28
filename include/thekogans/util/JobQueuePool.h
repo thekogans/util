@@ -86,11 +86,8 @@ namespace thekogans {
             /// \see{JobQueue} name.
             const std::string name;
             /// \brief
-            /// \see{JobQueue} type.
-            const RunLoop::Type type;
-            /// \brief
-            /// \see{JobQueue} max pending jobs.
-            const std::size_t maxPendingJobs;
+            /// JobQueue \see{RunLoop::JobExecutionPolicy}.
+            RunLoop::JobExecutionPolicy::Ptr jobExecutionPolicy;
             /// \brief
             /// Number of worker threads servicing the \see{JobQueue}.
             const std::size_t workerCount;
@@ -139,8 +136,7 @@ namespace thekogans {
                 /// \brief
                 /// ctor.
                 /// \param[in] name \see{JobQueue} name.
-                /// \param[in] type \see{JobQueue} type.
-                /// \param[in] maxPendingJobs \see{JobQueue} max pending jobs.
+                /// \param[in] jobExecutionPolicy \see{JobQueue} \see{RunLoop::JobExecutionPolicy}.
                 /// \param[in] workerCount Number of worker threads servicing the \see{JobQueue}.
                 /// \param[in] workerPriority \see{JobQueue} worker thread priority.
                 /// \param[in] workerAffinity \see{JobQueue} worker thread processor affinity.
@@ -149,8 +145,7 @@ namespace thekogans {
                 /// \param[in] jobQueuePool_ JobQueuePool to which this jobQueue belongs.
                 JobQueue (
                     const std::string &name,
-                    Type type,
-                    std::size_t maxPendingJobs,
+                    JobExecutionPolicy::Ptr jobExecutionPolicy,
                     std::size_t workerCount,
                     i32 workerPriority,
                     ui32 workerAffinity,
@@ -158,8 +153,7 @@ namespace thekogans {
                     JobQueuePool &jobQueuePool_) :
                     util::JobQueue (
                         name,
-                        type,
-                        maxPendingJobs,
+                        jobExecutionPolicy,
                         workerCount,
                         workerPriority,
                         workerAffinity,
@@ -192,7 +186,7 @@ namespace thekogans {
             /// \see{JobQueue} id pool. If !name.empty (),
             /// each \see{JobQueue} created by this pool
             /// will have the following name:
-            /// FormatString ("%s-%u", name.c_str (), ++idPool);
+            /// FormatString ("%s-" THEKOGANS_UTIL_SIZE_T_FORMAT, name.c_str (), ++idPool);
             THEKOGANS_UTIL_ATOMIC<std::size_t> idPool;
             /// \brief
             /// Synchronization mutex.
@@ -207,8 +201,7 @@ namespace thekogans {
             /// \param[in] minJobQueues_ Minimum \see{JobQueue}s to keep in the pool.
             /// \param[in] maxJobQueues_ Maximum \see{JobQueue}s to allow the pool to grow to.
             /// \param[in] name_ \see{JobQueue} name.
-            /// \param[in] type_ \see{JobQueue} type.
-            /// \param[in] maxPendingJobs_ Max pending \see{JobQueue} jobs.
+            /// \param[in] jobExecutionPolicy_ \see{JobQueue} \see{RunLoop::JobExecutionPolicy}.
             /// \param[in] workerCount_ Number of worker threads servicing the \see{JobQueue}.
             /// \param[in] workerPriority_ \see{JobQueue} worker thread priority.
             /// \param[in] workerAffinity_ \see{JobQueue} worker thread processor affinity.
@@ -218,8 +211,8 @@ namespace thekogans {
                 std::size_t minJobQueues_,
                 std::size_t maxJobQueues_,
                 const std::string &name_ = std::string (),
-                RunLoop::Type type_ = RunLoop::TYPE_FIFO,
-                std::size_t maxPendingJobs_ = SIZE_T_MAX,
+                RunLoop::JobExecutionPolicy::Ptr jobExecutionPolicy_ =
+                    RunLoop::JobExecutionPolicy::Ptr (new RunLoop::FIFOJobExecutionPolicy),
                 std::size_t workerCount_ = 1,
                 i32 workerPriority_ = THEKOGANS_UTIL_NORMAL_THREAD_PRIORITY,
                 ui32 workerAffinity_ = THEKOGANS_UTIL_MAX_THREAD_AFFINITY,
@@ -307,11 +300,8 @@ namespace thekogans {
             /// \see{JobQueue} name.
             static std::string name;
             /// \brief
-            /// \see{JobQueue} type.
-            static RunLoop::Type type;
-            /// \brief
-            /// Max pending \see{JobQueue} jobs.
-            static std::size_t maxPendingJobs;
+            /// \see{JobQueue} \see{RunLoop::JobExecutionPolicy}.
+            static RunLoop::JobExecutionPolicy::Ptr jobExecutionPolicy;
             /// \brief
             /// Number of worker threads servicing each \see{JobQueue} in the pool.
             static std::size_t workerCount;
@@ -331,8 +321,7 @@ namespace thekogans {
             /// \param[in] minJobQueues_ Minimum \see{JobQueue}s to keep in the pool.
             /// \param[in] maxJobQueues_ Maximum \see{JobQueue}s to allow the pool to grow to.
             /// \param[in] name_ \see{JobQueue} name.
-            /// \param[in] type_ \see{JobQueue} type.
-            /// \param[in] maxPendingJobs_ Max pending \see{JobQueue} jobs.
+            /// \param[in] jobExecutionPolicy_ \see{JobQueue} \see{RunLoop::JobExecutionPolicy}.
             /// \param[in] workerCount_ Number of worker threads servicing the \see{JobQueue}.
             /// \param[in] workerPriority_ \see{JobQueue} worker thread priority.
             /// \param[in] workerAffinity_ \see{JobQueue} worker thread processor affinity.
@@ -342,8 +331,8 @@ namespace thekogans {
                 std::size_t minJobQueues_,
                 std::size_t maxJobQueues_,
                 const std::string &name_ = std::string (),
-                RunLoop::Type type_ = RunLoop::TYPE_FIFO,
-                std::size_t maxPendingJobs_ = SIZE_T_MAX,
+                RunLoop::JobExecutionPolicy::Ptr jobExecutionPolicy_ =
+                    RunLoop::JobExecutionPolicy::Ptr (new RunLoop::FIFOJobExecutionPolicy),
                 std::size_t workerCount_ = 1,
                 i32 workerPriority_ = THEKOGANS_UTIL_NORMAL_THREAD_PRIORITY,
                 ui32 workerAffinity_ = THEKOGANS_UTIL_MAX_THREAD_AFFINITY,

@@ -102,6 +102,70 @@ namespace thekogans {
         }
     #endif // defined (TOOLCHAIN_OS_Windows)
 
+        RunLoop::JobExecutionPolicy::JobExecutionPolicy (std::size_t maxJobs_) :
+                maxJobs (maxJobs_) {
+            if (maxJobs == 0) {
+                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
+            }
+        }
+
+        void RunLoop::FIFOJobExecutionPolicy::EnqJob (
+                RunLoop &runLoop,
+                Job *job) {
+            if (runLoop.pendingJobs.size () < maxJobs) {
+                runLoop.pendingJobs.push_back (job);
+            }
+            else {
+                THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
+                    "RunLoop (%s) max jobs (%u) reached.",
+                    !runLoop.name.empty () ? runLoop.name.c_str () : "no name",
+                    maxJobs);
+            }
+        }
+
+        void RunLoop::FIFOJobExecutionPolicy::EnqJobFront (
+                RunLoop &runLoop,
+                Job *job) {
+            if (runLoop.pendingJobs.size () < maxJobs) {
+                runLoop.pendingJobs.push_front (job);
+            }
+            else {
+                THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
+                    "RunLoop (%s) max jobs (%u) reached.",
+                    !runLoop.name.empty () ? runLoop.name.c_str () : "no name",
+                    maxJobs);
+            }
+        }
+
+        RunLoop::Job *RunLoop::FIFOJobExecutionPolicy::DeqJob (RunLoop &runLoop) {
+            return !runLoop.pendingJobs.empty () ? runLoop.pendingJobs.pop_front () : 0;
+        }
+
+        void RunLoop::LIFOJobExecutionPolicy::EnqJob (
+                RunLoop &runLoop,
+                Job *job) {
+            if (runLoop.pendingJobs.size () < maxJobs) {
+                runLoop.pendingJobs.push_front (job);
+            }
+            else {
+                THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
+                    "RunLoop (%s) max jobs (%u) reached.",
+                    !runLoop.name.empty () ? runLoop.name.c_str () : "no name",
+                    maxJobs);
+            }
+        }
+
+        void RunLoop::LIFOJobExecutionPolicy::EnqJobFront (
+                RunLoop &runLoop,
+                Job *job) {
+            EnqJob (runLoop, job);
+        }
+
+        RunLoop::Job *RunLoop::LIFOJobExecutionPolicy::DeqJob (RunLoop &runLoop) {
+            return !runLoop.pendingJobs.empty () ? runLoop.pendingJobs.pop_front () : 0;
+        }
+
         #if !defined (THEKOGANS_UTIL_MIN_RUN_LOOP_STATS_JOBS_IN_PAGE)
             #define THEKOGANS_UTIL_MIN_RUN_LOOP_STATS_JOBS_IN_PAGE 64
         #endif // !defined (THEKOGANS_UTIL_MIN_RUN_LOOP_STATS_JOBS_IN_PAGE)
@@ -329,20 +393,17 @@ namespace thekogans {
 
         RunLoop::RunLoop (
                 const std::string &name_,
-                Type type_,
-                std::size_t maxPendingJobs_) :
+                JobExecutionPolicy::Ptr jobExecutionPolicy_) :
                 id (GUID::FromRandom ().ToString ()),
                 name (name_),
-                type (type_),
-                maxPendingJobs (maxPendingJobs_),
+                jobExecutionPolicy (jobExecutionPolicy_),
                 done (false),
                 stats (id, name),
                 jobsNotEmpty (jobsMutex),
                 idle (jobsMutex),
                 paused (false),
                 notPaused (jobsMutex) {
-            if ((type != TYPE_FIFO && type != TYPE_LIFO) ||
-                    maxPendingJobs == 0) {
+            if (jobExecutionPolicy.Get () == 0) {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
                     THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
             }
@@ -422,23 +483,10 @@ namespace thekogans {
             if (job.Get () != 0 && job->IsCompleted ()) {
                 {
                     LockGuard<Mutex> guard (jobsMutex);
-                    if (pendingJobs.size () < maxPendingJobs) {
-                        job->Reset (id);
-                        if (type == TYPE_FIFO) {
-                            pendingJobs.push_back (job.Get ());
-                        }
-                        else {
-                            pendingJobs.push_front (job.Get ());
-                        }
-                        job->AddRef ();
-                        jobsNotEmpty.Signal ();
-                    }
-                    else {
-                        THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                            "RunLoop (%s) max jobs (%u) reached.",
-                            !name.empty () ? name.c_str () : "no name",
-                            maxPendingJobs);
-                    }
+                    jobExecutionPolicy->EnqJob (*this, job.Get ());
+                    job->Reset (id);
+                    job->AddRef ();
+                    jobsNotEmpty.Signal ();
                 }
                 return !wait || WaitForJob (job, timeSpec);
             }
@@ -455,18 +503,10 @@ namespace thekogans {
             if (job.Get () != 0 && job->IsCompleted ()) {
                 {
                     LockGuard<Mutex> guard (jobsMutex);
-                    if (pendingJobs.size () < (std::size_t)maxPendingJobs) {
-                        job->Reset (id);
-                        pendingJobs.push_front (job.Get ());
-                        job->AddRef ();
-                        jobsNotEmpty.Signal ();
-                    }
-                    else {
-                        THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                            "RunLoop (%s) max jobs (%u) reached.",
-                            !name.empty () ? name.c_str () : "no name",
-                            maxPendingJobs);
-                    }
+                    jobExecutionPolicy->EnqJobFront (*this, job.Get ());
+                    job->Reset (id);
+                    job->AddRef ();
+                    jobsNotEmpty.Signal ();
                 }
                 return !wait || WaitForJob (job, timeSpec);
             }
@@ -810,7 +850,7 @@ namespace thekogans {
             }
             Job *job = 0;
             if (!done && !paused && !pendingJobs.empty ()) {
-                job = pendingJobs.pop_front ();
+                job = jobExecutionPolicy->DeqJob (*this);
                 runningJobs.push_back (job);
             }
             return job;

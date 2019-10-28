@@ -90,11 +90,8 @@ namespace thekogans {
             /// \see{Pipeline} name.
             const std::string name;
             /// \brief
-            /// \see{Pipeline} type.
-            const RunLoop::Type type;
-            /// \brief
-            /// \see{Pipeline} max pending jobs.
-            const std::size_t maxPendingJobs;
+            /// \see{Pipeline} \see{Pipeline::JobExecutionPolicy}.
+            Pipeline::JobExecutionPolicy::Ptr jobExecutionPolicy;
             /// \brief
             /// Number of worker threads servicing the \see{Pipeline}.
             const std::size_t workerCount;
@@ -145,8 +142,7 @@ namespace thekogans {
                 /// \param[in] begin Pointer to the beginning of the \see{Pipeline::Stage} array.
                 /// \param[in] end Pointer to the end of the \see{Pipeline::Stage} array.
                 /// \param[in] name \see{Pipeline} name.
-                /// \param[in] type \see{Pipeline} type.
-                /// \param[in] maxPendingJobs \see{Pipeline} max pending jobs.
+                /// \param[in] jobExecutionPolicy \see{Pipeline} \see{Pipeline::JobExecutionPolicy}.
                 /// \param[in] workerCount Number of worker threads servicing the \see{Pipeline}.
                 /// \param[in] workerPriority \see{Pipeline} worker thread priority.
                 /// \param[in] workerAffinity \see{Pipeline} worker thread processor affinity.
@@ -157,8 +153,7 @@ namespace thekogans {
                     const util::Pipeline::Stage *begin,
                     const util::Pipeline::Stage *end,
                     const std::string &name,
-                    RunLoop::Type type,
-                    std::size_t maxPendingJobs,
+                    Pipeline::JobExecutionPolicy::Ptr jobExecutionPolicy,
                     std::size_t workerCount,
                     i32 workerPriority,
                     ui32 workerAffinity,
@@ -168,8 +163,7 @@ namespace thekogans {
                         begin,
                         end,
                         name,
-                        type,
-                        maxPendingJobs,
+                        jobExecutionPolicy,
                         workerCount,
                         workerPriority,
                         workerAffinity,
@@ -219,8 +213,7 @@ namespace thekogans {
             /// \param[in] begin_ Pointer to the beginning of the \see{Pipeline::Stage} array.
             /// \param[in] end_ Pointer to the end of the \see{Pipeline::Stage} array.
             /// \param[in] name_ \see{Pipeline} name.
-            /// \param[in] type_ \see{Pipeline} type.
-            /// \param[in] maxPendingJobs_ Max pending \see{Pipeline} jobs.
+            /// \param[in] jobExecutionPolicy_ \see{Pipeline} \see{Pipeline::JobExecutionPolicy}.
             /// \param[in] workerCount_ Number of worker threads servicing the \see{Pipeline}.
             /// \param[in] workerPriority_ \see{Pipeline} worker thread priority.
             /// \param[in] workerAffinity_ \see{Pipeline} worker thread processor affinity.
@@ -232,8 +225,8 @@ namespace thekogans {
                 const util::Pipeline::Stage *begin_,
                 const util::Pipeline::Stage *end_,
                 const std::string &name_ = std::string (),
-                RunLoop::Type type_ = RunLoop::TYPE_FIFO,
-                std::size_t maxPendingJobs_ = SIZE_T_MAX,
+                Pipeline::JobExecutionPolicy::Ptr jobExecutionPolicy_ =
+                    Pipeline::JobExecutionPolicy::Ptr (new Pipeline::FIFOJobExecutionPolicy),
                 std::size_t workerCount_ = 1,
                 i32 workerPriority_ = THEKOGANS_UTIL_NORMAL_THREAD_PRIORITY,
                 ui32 workerAffinity_ = THEKOGANS_UTIL_MAX_THREAD_AFFINITY,
@@ -325,11 +318,8 @@ namespace thekogans {
             /// \see{Pipeline} name.
             static std::string name;
             /// \brief
-            /// \see{Pipeline} type.
-            static RunLoop::Type type;
-            /// \brief
-            /// Max pending \see{Pipeline} jobs.
-            static std::size_t maxPendingJobs;
+            /// \see{Pipeline} \see{Pipeline::JobExecutionPolicy}.
+            static Pipeline::JobExecutionPolicy::Ptr jobExecutionPolicy;
             /// \brief
             /// Number of worker threads servicing the \see{Pipeline}.
             static std::size_t workerCount;
@@ -351,8 +341,7 @@ namespace thekogans {
             /// \param[in] begin_ Pointer to the beginning of the \see{Pipeline::Stage} array.
             /// \param[in] end_ Pointer to the end of the \see{Pipeline::Stage} array.
             /// \param[in] name_ \see{Pipeline} name.
-            /// \param[in] type_ \see{Pipeline} type.
-            /// \param[in] maxPendingJobs_ Max pending \see{Pipeline} jobs.
+            /// \param[in] jobExecutionPolicy_ \see{Pipeline} \see{Pipeline::JobExecutionPolicy}.
             /// \param[in] workerCount_ Number of worker threads servicing the \see{Pipeline}.
             /// \param[in] workerPriority_ \see{Pipeline} worker thread priority.
             /// \param[in] workerAffinity_ \see{Pipeline} worker thread processor affinity.
@@ -364,8 +353,8 @@ namespace thekogans {
                 const Pipeline::Stage *begin_,
                 const Pipeline::Stage *end_,
                 const std::string &name_ = std::string (),
-                RunLoop::Type type_ = RunLoop::TYPE_FIFO,
-                std::size_t maxPendingJobs_ = SIZE_T_MAX,
+                Pipeline::JobExecutionPolicy::Ptr jobExecutionPolicy_ =
+                    Pipeline::JobExecutionPolicy::Ptr (new Pipeline::FIFOJobExecutionPolicy),
                 std::size_t workerCount_ = 1,
                 i32 workerPriority_ = THEKOGANS_UTIL_NORMAL_THREAD_PRIORITY,
                 ui32 workerAffinity_ = THEKOGANS_UTIL_MAX_THREAD_AFFINITY,

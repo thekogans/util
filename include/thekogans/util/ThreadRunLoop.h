@@ -132,13 +132,12 @@ namespace thekogans {
             /// \brief
             /// ctor.
             /// \param[in] name RunLoop name.
-            /// \param[in] type RunLoop queue type.
-            /// \param[in] maxPendingJobs Max pending run loop jobs.
+            /// \param[in] jobExecutionPolicy RunLoop \see{JobExecutionPolicy}.
             ThreadRunLoop (
                 const std::string &name = std::string (),
-                Type type = TYPE_FIFO,
-                std::size_t maxPendingJobs = SIZE_T_MAX) :
-                RunLoop (name, type, maxPendingJobs) {}
+                JobExecutionPolicy::Ptr jobExecutionPolicy =
+                    JobExecutionPolicy::Ptr (new FIFOJobExecutionPolicy)) :
+                RunLoop (name, jobExecutionPolicy) {}
 
             /// \brief
             /// Start the run loop. This is a blocking call and will
