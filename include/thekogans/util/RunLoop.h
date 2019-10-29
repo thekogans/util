@@ -338,6 +338,18 @@ namespace thekogans {
             /// \brief
             /// JobExecutionPolicy allows the user of the run loop to
             /// specify the order in which jobs will be executed.
+            /// **********************************************************
+            /// IMPORTANT: JobExecutionPolicy api is designed to take
+            /// a RunLoop and not a job list on which to enqueue (or
+            /// from which to dequeue) the given job. This is done so
+            /// that the various functions can access RunLoop state if
+            /// they need it. It's important that they enqueue/dequeue
+            /// these jobs to the pendingJobs list of the given RunLoop
+            /// as other RunLoop apis rely on this list to contain the
+            /// pending jobs. The various policies are welcome to maintain
+            /// a map in to this list to speed up location and retrieval
+            /// of the next job to dequeue.
+            /// **********************************************************
             struct _LIB_THEKOGANS_UTIL_DECL JobExecutionPolicy : public ThreadSafeRefCounted {
                 /// \brief
                 /// Convenient typedef for ThreadSafeRefCounted::Ptr<JobExecutionPolicy>.

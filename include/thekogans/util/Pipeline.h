@@ -71,20 +71,32 @@ namespace thekogans {
             /// \struct Pipeline::JobExecutionPolicy Pipeline.h thekogans/util/Pipeline.h
             ///
             /// \brief
-            /// JobExecutionPolicy allows the user of the run loop to
+            /// JobExecutionPolicy allows the user of the pipeline to
             /// specify the order in which jobs will be executed.
+            /// **********************************************************
+            /// IMPORTANT: JobExecutionPolicy api is designed to take
+            /// a Pipeline and not a job list on which to enqueue (or
+            /// from which to dequeue) the given job. This is done so
+            /// that the various functions can access Pipeline state if
+            /// they need it. It's important that they enqueue/dequeue
+            /// these jobs to the pendingJobs list of the given Pipeline
+            /// as other Pipeline apis rely on this list to contain the
+            /// pending jobs. The various policies are welcome to maintain
+            /// a map in to this list to speed up location and retrieval
+            /// of the next job to dequeue.
+            /// **********************************************************
             struct _LIB_THEKOGANS_UTIL_DECL JobExecutionPolicy : public ThreadSafeRefCounted {
                 /// \brief
                 /// Convenient typedef for ThreadSafeRefCounted::Ptr<JobExecutionPolicy>.
                 typedef ThreadSafeRefCounted::Ptr<JobExecutionPolicy> Ptr;
 
                 /// \brief
-                /// Max pending run loop jobs.
+                /// Max pending pipeline jobs.
                 const std::size_t maxJobs;
 
                 /// \brief
                 /// ctor.
-                /// \param[in] maxJobs_ Max pending run loop jobs.
+                /// \param[in] maxJobs_ Max pending pipeline jobs.
                 JobExecutionPolicy (std::size_t maxJobs_ = SIZE_T_MAX);
                 /// \brief
                 /// dtor.
@@ -92,7 +104,7 @@ namespace thekogans {
 
                 /// \brief
                 /// Enqueue a job on the given Pipelines pendingJobs to be performed
-                /// on the run loop thread.
+                /// on the pipeline thread.
                 /// \param[in] pipeline Pipeline on which to enqueue the given job.
                 /// \param[in] job Job to enqueue.
                 virtual void EnqJob (
@@ -100,14 +112,14 @@ namespace thekogans {
                     Job *job) = 0;
                 /// \brief
                 /// Enqueue a job on the given Pipelines pendingJobs to be performed
-                /// next on the run loop thread.
+                /// next on the pipeline thread.
                 /// \param[in] pipeline Pipeline on which to enqueue the given job.
                 /// \param[in] job Job to enqueue.
                 virtual void EnqJobFront (
                     Pipeline &pipeline,
                     Job *job) = 0;
                 /// \brief
-                /// Dequeue the next job to be executed on the run loop thread.
+                /// Dequeue the next job to be executed on the pipeline thread.
                 /// \param[in] pipeline Pipeline from which to dequeue the next job.
                 /// \return The next job to execute (0 if no more pending jobs).
                 virtual Job *DeqJob (Pipeline &pipeline) = 0;
@@ -120,13 +132,13 @@ namespace thekogans {
             struct _LIB_THEKOGANS_UTIL_DECL FIFOJobExecutionPolicy : public JobExecutionPolicy {
                 /// \brief
                 /// ctor.
-                /// \param[in] maxJobs Max pending run loop jobs.
+                /// \param[in] maxJobs Max pending pipeline jobs.
                 FIFOJobExecutionPolicy (std::size_t maxJobs = SIZE_T_MAX) :
                     JobExecutionPolicy (maxJobs) {}
 
                 /// \brief
                 /// Enqueue a job on the given Pipelines pendingJobs to be performed
-                /// on the run loop thread.
+                /// on the pipeline thread.
                 /// \param[in] pipeline Pipeline on which to enqueue the given job.
                 /// \param[in] job Job to enqueue.
                 virtual void EnqJob (
@@ -134,14 +146,14 @@ namespace thekogans {
                     Job *job);
                 /// \brief
                 /// Enqueue a job on the given Pipelines pendingJobs to be performed
-                /// next on the run loop thread.
+                /// next on the pipeline thread.
                 /// \param[in] pipeline Pipeline on which to enqueue the given job.
                 /// \param[in] job Job to enqueue.
                 virtual void EnqJobFront (
                     Pipeline &pipeline,
                     Job *job);
                 /// \brief
-                /// Dequeue the next job to be executed on the run loop thread.
+                /// Dequeue the next job to be executed on the pipeline thread.
                 /// \param[in] pipeline Pipeline from which to dequeue the next job.
                 /// \return The next job to execute (0 if no more pending jobs).
                 virtual Job *DeqJob (Pipeline &pipeline);
@@ -154,13 +166,13 @@ namespace thekogans {
             struct _LIB_THEKOGANS_UTIL_DECL LIFOJobExecutionPolicy : public JobExecutionPolicy {
                 /// \brief
                 /// ctor.
-                /// \param[in] maxJobs Max pending run loop jobs.
+                /// \param[in] maxJobs Max pending pipeline jobs.
                 LIFOJobExecutionPolicy (std::size_t maxJobs = SIZE_T_MAX) :
                     JobExecutionPolicy (maxJobs) {}
 
                 /// \brief
                 /// Enqueue a job on the given Pipelines pendingJobs to be performed
-                /// on the run loop thread.
+                /// on the pipeline thread.
                 /// \param[in] pipeline Pipeline on which to enqueue the given job.
                 /// \param[in] job Job to enqueue.
                 virtual void EnqJob (
@@ -168,14 +180,14 @@ namespace thekogans {
                     Job *job);
                 /// \brief
                 /// Enqueue a job on the given Pipelines pendingJobs to be performed
-                /// next on the run loop thread.
+                /// next on the pipeline thread.
                 /// \param[in] pipeline Pipeline on which to enqueue the given job.
                 /// \param[in] job Job to enqueue.
                 virtual void EnqJobFront (
                     Pipeline &pipeline,
                     Job *job);
                 /// \brief
-                /// Dequeue the next job to be executed on the run loop thread.
+                /// Dequeue the next job to be executed on the pipeline thread.
                 /// \param[in] pipeline Pipeline from which to dequeue the next job.
                 /// \return The next job to execute (0 if no more pending jobs).
                 virtual Job *DeqJob (Pipeline &pipeline);
@@ -190,10 +202,10 @@ namespace thekogans {
             /// \brief
             /// A pipeline job. Since a pipeline is a collection
             /// of \see{JobQueue}s, the Pipeline::Job derives form
-            /// RunLoop::Job. RunLoop::Job::SetState is used to
-            /// shepherd the job down the pipeline. Pipeline::Job
-            /// Begin and End are provided to perform one time
-            /// initialization/tear down.
+            /// \see{RunLoop::Job}. \see{RunLoop::Job::SetState}
+            /// is used to shepherd the job down the pipeline.
+            /// Pipeline::Job Begin and End are provided to perform
+            /// one time initialization/tear down.
             struct _LIB_THEKOGANS_UTIL_DECL Job :
                     public RunLoop::Job,
                     public JobList::Node {
@@ -240,12 +252,12 @@ namespace thekogans {
 
             protected:
                 /// \brief
-                /// Used internally by RunLoop to set the RunLoop id and reset
+                /// Used internally by Pipeline to set the RunLoop id and reset
                 /// the state, disposition and completed.
-                /// \param[in] runLoopId_ RunLoop id to which this job belongs.
+                /// \param[in] runLoopId_ Pipeline id to which this job belongs.
                 virtual void Reset (const RunLoop::Id &runLoopId_);
                 /// \brief
-                /// Used internally by RunLoop and it's derivatives to set the
+                /// Used internally by Pipeline and it's derivatives to set the
                 /// job state.
                 /// \param[in] state_ New job state.
                 virtual void SetState (State state_);

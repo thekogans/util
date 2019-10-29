@@ -152,7 +152,7 @@ namespace thekogans {
                         linePad,
                         encoded.GetWritePtr ()));
                 // If you ever catch this, it means that my buffer
-                // length calculations above are wrong.
+                // length calculations (GetEncodedLength) above are wrong.
                 if (encoded.writeOffset > encoded.length) {
                     THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
                         "Buffer overflow! (" THEKOGANS_UTIL_SIZE_T_FORMAT ", " THEKOGANS_UTIL_SIZE_T_FORMAT ")",
