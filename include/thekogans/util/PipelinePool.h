@@ -153,7 +153,7 @@ namespace thekogans {
                     const util::Pipeline::Stage *begin,
                     const util::Pipeline::Stage *end,
                     const std::string &name,
-                    Pipeline::JobExecutionPolicy::Ptr jobExecutionPolicy,
+                    util::Pipeline::JobExecutionPolicy::Ptr jobExecutionPolicy,
                     std::size_t workerCount,
                     i32 workerPriority,
                     ui32 workerAffinity,

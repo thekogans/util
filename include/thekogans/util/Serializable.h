@@ -217,13 +217,13 @@ namespace thekogans {
             /// and THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE to it's definition.
             struct _LIB_THEKOGANS_UTIL_DECL MapInitializer {
                 /// \brief
-                /// ctor. Add serializable of type, and factory for creating it
+                /// ctor. Add serializable of type, and factories for creating it
                 /// to the Serializable::map
                 /// \param[in] type Serializable type (it's class name).
                 /// \param[in] factories Serializable creation factories.
                 MapInitializer (
                     const std::string &type,
-                    Factories factory);
+                    Factories factories);
             };
 
             /// \brief

@@ -145,7 +145,7 @@ namespace thekogans {
                 /// \param[in] jobQueuePool_ JobQueuePool to which this jobQueue belongs.
                 JobQueue (
                     const std::string &name,
-                    JobExecutionPolicy::Ptr jobExecutionPolicy,
+                    RunLoop::JobExecutionPolicy::Ptr jobExecutionPolicy,
                     std::size_t workerCount,
                     i32 workerPriority,
                     ui32 workerAffinity,

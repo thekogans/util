@@ -415,7 +415,7 @@ namespace thekogans {
             assert (runningJobs.empty ());
             // Cancel remaining pending jobs to unblock waiters.
             while (!pendingJobs.empty ()) {
-                Job *job = pendingJobs.pop_front ();
+                Job *job = jobExecutionPolicy->DeqJob (*this);
                 if (job != 0) {
                     runningJobs.push_back (job);
                     job->Cancel ();
