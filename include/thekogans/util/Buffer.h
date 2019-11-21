@@ -88,12 +88,12 @@ namespace thekogans {
             /// Move ctor.
             /// \param[in,out] other Buffer to move.
             Buffer (Buffer &&other) :
-                    Serializer (other.endianness),
+                    Serializer (HostEndian),
                     data (0),
                     length (0),
                     readOffset (0),
                     writeOffset (0),
-                    allocator (other.allocator) {
+                    allocator (&DefaultAllocator::Global) {
                 swap (other);
             }
             /// \brief
