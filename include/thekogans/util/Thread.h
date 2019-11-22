@@ -168,6 +168,7 @@ namespace thekogans {
             /// \brief
             /// ctor.
             /// \param[in] name_ Thread name.
+            /// \param[in] joinable_ A dummy param meant to make Windows and POSIX implementations identical.
             Thread (
                 const std::string &name_ = std::string (),
                 bool /*joinable_*/ = true) :

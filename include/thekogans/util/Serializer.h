@@ -78,6 +78,13 @@ namespace thekogans {
                 return ENDIANNESS_SIZE;
             }
 
+            /// \brief
+            /// std::swap for Serializer.
+            /// \param[in,out] other Serializer to swap.
+            inline void swap (Serializer &other) {
+                std::swap (endianness, other.endianness);
+            }
+
             // Binary Insertion/Extraction API.
 
             /// \brief

@@ -53,7 +53,7 @@ namespace thekogans {
         }
 
         void Buffer::swap (Buffer &other) {
-            std::swap (endianness, other.endianness);
+            Serializer::swap (other);
             std::swap (data, other.data);
             std::swap (length, other.length);
             std::swap (readOffset, other.readOffset);
