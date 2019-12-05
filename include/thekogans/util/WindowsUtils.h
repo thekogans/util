@@ -60,6 +60,81 @@ namespace thekogans {
         /// \return Converted i64.
         _LIB_THEKOGANS_UTIL_DECL i64 _LIB_THEKOGANS_UTIL_API FILETIMEToi64 (const FILETIME &value);
 
+        /// \struct HGLOBALPtr WindowsUtils.h thekogans/util/WindowsUtils.h
+        ///
+        /// \brief
+        /// A helper used to hide Windows HGLOBAL api.
+
+        struct HGLOBALPtr {
+            HGLOBAL hglobal;
+            bool owner;
+            void *ptr;
+
+            /// \brief
+            /// Move ctor.
+            /// \param[in,out] other HGLOBALPtr to move.
+            HGLOBALPtr (HGLOBALPtr &&other) :
+                    hglobal (0),
+                    owner (false),
+                    ptr (0) {
+                swap (other);
+            }
+            /// \brief
+            /// ctor.
+            /// \param[in] hglobal_ HGLOBAL to attach to.
+            /// \param[in] owner true == call GlobalFree when done.
+            HGLOBALPtr (
+                    HGLOBAL hglobal_ = 0,
+                    bool owner_ = true) :
+                    hglobal (0),
+                    owner (false),
+                    ptr (0) {
+                Attach (hglobal_, owner_);
+            }
+            /// \brief
+            /// dtor.
+            ~HGLOBALPtr () {
+                Reset ();
+            }
+
+            /// \brief
+            /// Move assignment operator.
+            /// \param[in,out] other Buffer to move.
+            /// \return *this.
+            HGLOBALPtr &operator = (HGLOBALPtr &&other);
+
+            /// \brief
+            /// std::swap for HGLOBALPtr.
+            /// \param[in,out] other HGLOBALPtr to swap.
+            void swap (HGLOBALPtr &other);
+
+            /// \brief
+            /// Type cast operator template.
+            template<typename T>
+            inline operator T * () {
+                return (T *)ptr;
+            }
+
+            /// \brief
+            /// Release and (if owner) free the contained HGLOBAL.
+            void Reset ();
+            /// \brief
+            /// Reset the contained HGLOBAL and attach to the given one.
+            /// \param[in] hglobal_ HGLOBAL to attach to.
+            /// \param[in] owner true == call GlobalFree when done.
+            void Attach (
+                HGLOBAL hglobal_,
+                bool_ owner);
+            /// \brief
+            /// Release and return the contained HGLOBAL.
+            /// \return Contained HGLOBAL.
+            HGLOBAL Release ();
+
+            /// \brief
+            /// HGLOBALPtr is neither copy constructable, nor assignable.
+            THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (HGLOBALPtr)
+        };
+
         /// \struct WindowClass WindowsUtils.h thekogans/util/WindowsUtils.h
         ///
         /// \brief

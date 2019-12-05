@@ -83,6 +83,55 @@ namespace thekogans {
                 THEKOGANS_UTIL_UI64_LITERAL (11644473600);
         }
 
+        HGLOBALPtr &HGLOBALPtr::operator = (HGLOBALPtr &&other) {
+            if (this != &other) {
+                HGLOBALPtr temp (std::move (other));
+                swap (temp);
+            }
+            return *this;
+        }
+
+        void HGLOBALPtr::swap (HGLOBALPtr &other) {
+            std::swap (hglobal, other.hglobal);
+            std::swap (owner, other.owner);
+            std::swap (ptr, other.ptr);
+        }
+
+        void HGLOBALPtr::Reset () {
+            if (hglobal != 0) {
+                GlobalUnlock (hglobal);
+                if (owner) {
+                    GlobalFree (hglobal);
+                }
+            }
+            hglobal = 0;
+            owner = false;
+            ptr = 0;
+        }
+
+        void HGLOBALPtr::Attach (
+            HGLOBAL hglobal_,
+            bool_ owner) {
+            Reset ();
+            hglobal = hglobal_;
+            owner = owner_;
+            if (hglobal != 0) {
+                ptr = GlobalLock (hglobal);
+            }
+        }
+
+        HGLOBAL HGLOBALPtr::Release () {
+            HGLOBAL result = 0;
+            if (hglobal != 0) {
+                result = hglobal;
+                GlobalUnlock (hglobal);
+                hglobal = 0;
+                owner = false;
+                ptr = 0;
+            }
+            return result;
+        }
+
         WindowClass::WindowClass (
                 const std::string &name_,
                 WNDPROC wndProc,
