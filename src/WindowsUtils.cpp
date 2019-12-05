@@ -111,7 +111,7 @@ namespace thekogans {
 
         void HGLOBALPtr::Attach (
             HGLOBAL hglobal_,
-            bool_ owner) {
+            bool owner_) {
             Reset ();
             hglobal = hglobal_;
             owner = owner_;

@@ -124,7 +124,7 @@ namespace thekogans {
             /// \param[in] owner true == call GlobalFree when done.
             void Attach (
                 HGLOBAL hglobal_,
-                bool_ owner);
+                bool owner_);
             /// \brief
             /// Release and return the contained HGLOBAL.
             /// \return Contained HGLOBAL.
