@@ -66,8 +66,14 @@ namespace thekogans {
         /// A helper used to hide Windows HGLOBAL api.
 
         struct HGLOBALPtr {
+            /// \brief
+            /// Contained HGLOBAL.
             HGLOBAL hglobal;
+            /// \brief
+            /// true == call GlobalFree when done.
             bool owner;
+            /// \brief
+            /// Result of GlobalLock.
             void *ptr;
 
             /// \brief
