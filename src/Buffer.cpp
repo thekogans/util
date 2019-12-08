@@ -21,6 +21,9 @@
 #if defined (THEKOGANS_UTIL_HAVE_ZLIB)
     #include <zlib.h>
 #endif // defined (THEKOGANS_UTIL_HAVE_ZLIB)
+#if defined (TOOLCHAIN_OS_Windows)
+    #include "thekogans/util/WindowsUtils.h"
+#endif // defined (TOOLCHAIN_OS_Windows)
 #include "thekogans/util/Buffer.h"
 
 namespace thekogans {
@@ -374,22 +377,21 @@ namespace thekogans {
 
     #if defined (TOOLCHAIN_OS_Windows)
         HGLOBAL Buffer::ToHGLOBAL (UINT flags) const {
-            HGLOBAL global = 0;
             if (GetDataAvailableForReading () > 0) {
-                global = GlobalAlloc (flags, GetDataAvailableForReading ());
+                HGLOBALPtr global (GlobalAlloc (flags, GetDataAvailableForReading ()));
                 if (global != 0) {
                     memcpy (
-                        GlobalLock (global),
+                        global,
                         GetReadPtr (),
                         GetDataAvailableForReading ());
-                    GlobalUnlock (global);
+                    return global.Release ();
                 }
                 else {
                     THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
                         THEKOGANS_UTIL_OS_ERROR_CODE);
                 }
             }
-            return global;
+            return 0;
         }
     #endif // defined (TOOLCHAIN_OS_Windows)
 
