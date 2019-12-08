@@ -93,8 +93,19 @@ namespace thekogans {
             }
             /// \brief
             /// ctor.
+            /// \param[in] flags GlobalAlloc flags.
+            /// \param[in] length_ GlobalAlloc dwBytes.
+            HGLOBALPtr (
+                UINT flags,
+                SIZE_T length_) :
+                hglobal (GlobalAlloc (flags, length_)),
+                owner (hglobal != 0),
+                ptr (owner ? GloblaLock (hglobal) : 0),
+                length (owner ? length_ : 0) {}
+            /// \brief
+            /// ctor.
             /// \param[in] hglobal_ HGLOBAL to attach to.
-            /// \param[in] owner true == call GlobalFree when done.
+            /// \param[in] owner_ true == call GlobalFree when done.
             HGLOBALPtr (
                     HGLOBAL hglobal_ = 0,
                     bool owner_ = true) :

@@ -379,7 +379,7 @@ namespace thekogans {
         HGLOBAL Buffer::ToHGLOBAL (UINT flags) const {
             if (GetDataAvailableForReading () > 0) {
                 HGLOBALPtr global (GlobalAlloc (flags, GetDataAvailableForReading ()));
-                if (global != 0) {
+                if (global.Get () != 0) {
                     memcpy (
                         global,
                         GetReadPtr (),
