@@ -378,7 +378,7 @@ namespace thekogans {
     #if defined (TOOLCHAIN_OS_Windows)
         HGLOBAL Buffer::ToHGLOBAL (UINT flags) const {
             if (GetDataAvailableForReading () > 0) {
-                HGLOBALPtr global (GlobalAlloc (flags, GetDataAvailableForReading ()));
+                HGLOBALPtr global (flags, GetDataAvailableForReading ());
                 if (global.Get () != 0) {
                     memcpy (
                         global,

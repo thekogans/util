@@ -100,7 +100,7 @@ namespace thekogans {
                 SIZE_T length_) :
                 hglobal (GlobalAlloc (flags, length_)),
                 owner (hglobal != 0),
-                ptr (owner ? GloblaLock (hglobal) : 0),
+                ptr (owner ? GlobalLock (hglobal) : 0),
                 length (owner ? length_ : 0) {}
             /// \brief
             /// ctor.
