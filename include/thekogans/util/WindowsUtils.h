@@ -63,9 +63,10 @@ namespace thekogans {
         /// \struct HGLOBALPtr WindowsUtils.h thekogans/util/WindowsUtils.h
         ///
         /// \brief
-        /// A helper used to hide Windows HGLOBAL api.
+        /// A helper used to make dealing with Windows HGLOBAL api easier.
 
         struct HGLOBALPtr {
+        private:
             /// \brief
             /// Contained HGLOBAL.
             HGLOBAL hglobal;
@@ -75,14 +76,19 @@ namespace thekogans {
             /// \brief
             /// Result of GlobalLock.
             void *ptr;
+            /// \brief
+            /// Length of HGLOBAL block.
+            std::size_t length;
 
+        public:
             /// \brief
             /// Move ctor.
             /// \param[in,out] other HGLOBALPtr to move.
             HGLOBALPtr (HGLOBALPtr &&other) :
                     hglobal (0),
                     owner (false),
-                    ptr (0) {
+                    ptr (0),
+                    length (0) {
                 swap (other);
             }
             /// \brief
@@ -94,13 +100,14 @@ namespace thekogans {
                     bool owner_ = true) :
                     hglobal (0),
                     owner (false),
-                    ptr (0) {
+                    ptr (0),
+                    length (0) {
                 Attach (hglobal_, owner_);
             }
             /// \brief
             /// dtor.
             ~HGLOBALPtr () {
-                Reset ();
+                Attach (0, false);
             }
 
             /// \brief
@@ -117,13 +124,22 @@ namespace thekogans {
             /// \brief
             /// Type cast operator template.
             template<typename T>
-            inline operator T * () {
+            inline operator T * () const {
                 return (T *)ptr;
             }
 
             /// \brief
-            /// Release and (if owner) free the contained HGLOBAL.
-            void Reset ();
+            /// Return the length of HGLOBAL block.
+            inline std::size_t GetLength () const {
+                return length;
+            }
+
+            /// \brief
+            /// Return the contained HGLOBAL.
+            /// \return Contained HGLOBAL.
+            inline HGLOBAL Get () const {
+                return hglobal;
+            }
             /// \brief
             /// Reset the contained HGLOBAL and attach to the given one.
             /// \param[in] hglobal_ HGLOBAL to attach to.

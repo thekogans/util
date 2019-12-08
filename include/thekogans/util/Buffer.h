@@ -339,6 +339,14 @@ namespace thekogans {
                     std::string (GetReadPtr (), GetReadPtrEnd ()) :
                     std::string ();
             }
+            /// \brief
+            /// Convert the buffer to a std::wstring.
+            /// \return std::wstring containing the buffers contents.
+            inline std::wstring Towstring () const {
+                return GetDataAvailableForReading () > 0 ?
+                    std::wstring (GetReadPtr (), GetReadPtrEnd ()) :
+                    std::wstring ();
+            }
 
             /// \brief
             /// Convert the buffer to a \see{SecureString}.

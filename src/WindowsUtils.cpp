@@ -95,28 +95,32 @@ namespace thekogans {
             std::swap (hglobal, other.hglobal);
             std::swap (owner, other.owner);
             std::swap (ptr, other.ptr);
+            std::swap (length, other.length);
         }
 
-        void HGLOBALPtr::Reset () {
+        void HGLOBALPtr::Attach (
+                HGLOBAL hglobal_,
+                bool owner_) {
             if (hglobal != 0) {
                 GlobalUnlock (hglobal);
                 if (owner) {
                     GlobalFree (hglobal);
+                    owner = false;
                 }
+                ptr = 0;
+                length = 0;
             }
-            hglobal = 0;
-            owner = false;
-            ptr = 0;
-        }
-
-        void HGLOBALPtr::Attach (
-            HGLOBAL hglobal_,
-            bool owner_) {
-            Reset ();
             hglobal = hglobal_;
             owner = owner_;
             if (hglobal != 0) {
                 ptr = GlobalLock (hglobal);
+                if (ptr != 0) {
+                    length = GlobalSize (hglobal);
+                }
+                else {
+                    THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                        THEKOGANS_UTIL_OS_ERROR_CODE);
+                }
             }
         }
 
@@ -128,6 +132,7 @@ namespace thekogans {
                 hglobal = 0;
                 owner = false;
                 ptr = 0;
+                length = 0;
             }
             return result;
         }
