@@ -134,14 +134,15 @@ namespace thekogans {
         Semaphore::Semaphore (
                 ui32 maxCount,
                 ui32 initialCount,
-                const char *name) :
+                const std::string &name) :
             #if defined (TOOLCHAIN_OS_Windows)
-                handle (CreateSemaphore (0, initialCount, maxCount, name)) {
+                handle (CreateSemaphoreW (0, initialCount, maxCount,
+                    !name.empty () ? UTF8ToUTF16 (name).c_str () : 0)) {
             #else // defined (TOOLCHAIN_OS_Windows)
-                semaphore (name == 0 ?
+                semaphore (name.empty () ?
                     new SemaphoreImpl (maxCount, initialCount) :
                     (SemaphoreImpl *)SharedObject::Create (
-                        name,
+                        name.c_str (),
                         sizeof (SemaphoreImpl),
                         false,
                         SemaphoreImplConstructor (maxCount, initialCount))) {

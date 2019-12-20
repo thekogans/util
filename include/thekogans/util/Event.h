@@ -18,6 +18,7 @@
 #if !defined (__thekogans_util_Event_h)
 #define __thekogans_util_Event_h
 
+#include <string>
 #include "thekogans/util/Config.h"
 #if defined (TOOLCHAIN_OS_Windows)
     #include "thekogans/util/Types.h"
@@ -116,7 +117,7 @@ namespace thekogans {
             Event (
                 bool manualReset = true,
                 State initialState = NotSignalled,
-                const char *name = 0);
+                const std::string &name = std::string ());
             /// \brief
             /// dtor.
             ~Event ();

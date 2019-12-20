@@ -118,7 +118,7 @@ namespace thekogans {
                     directory (directory_),
                     eventSink (eventSink_),
                 #if defined (TOOLCHAIN_OS_Windows)
-                    handle (CreateFile (directory.c_str (),
+                    handle (CreateFileW (UTF8ToUTF16 (directory).c_str (),
                         FILE_LIST_DIRECTORY,
                         FILE_SHARE_READ |
                         FILE_SHARE_WRITE |
@@ -359,12 +359,10 @@ namespace thekogans {
                                 do {
                                     notify = (PFILE_NOTIFY_INFORMATION)&buffer[offset];
                                     offset += notify->NextEntryOffset;
-                                    char entryName[MAX_PATH];
-                                    int count = WideCharToMultiByte (
-                                        CP_ACP, 0, notify->FileName,
-                                        notify->FileNameLength / sizeof (WCHAR),
-                                        entryName, MAX_PATH - 1, 0, 0);
-                                    entryName[count] = '\0';
+                                    std:string entryName =
+                                        UTF16ToUTF8 (
+                                            notify->FileName,
+                                            notify->FileNameLength / sizeof (WCHAR));
                                     switch (notify->Action) {
                                         case FILE_ACTION_RENAMED_NEW_NAME:
                                         case FILE_ACTION_ADDED: {
@@ -579,7 +577,7 @@ namespace thekogans {
 
         Directory::Entry::Entry (const std::string &path) {
             WIN32_FILE_ATTRIBUTE_DATA attributeData;
-            if (GetFileAttributesEx (path.c_str (),
+            if (GetFileAttributesExW (UTF8ToUTF16 (path).c_str (),
                     GetFileExInfoStandard, &attributeData) == TRUE) {
                 fileSystem = Windows;
                 type = systemTotype (attributeData.dwFileAttributes);
@@ -821,7 +819,7 @@ namespace thekogans {
                 lastAccessedDate (-1),
                 lastModifiedDate (-1) {
             WIN32_FILE_ATTRIBUTE_DATA attributeData;
-            if (GetFileAttributesEx (path.c_str (),
+            if (GetFileAttributesExW (UTF8ToUTF16 (path).c_str (),
                     GetFileExInfoStandard, &attributeData) == TRUE) {
                 attributes = attributeData.dwFileAttributes;
                 creationDate = FILETIMEToi64 (attributeData.ftCreationTime);
@@ -843,8 +841,9 @@ namespace thekogans {
 
         bool Directory::GetFirstEntry (Entry &entry) {
             Close ();
-            WIN32_FIND_DATA findData;
-            handle = FindFirstFile (MakePath (path, "*").c_str (), &findData);
+            std::string findPath = MakePath (path, "*");
+            WIN32_FIND_DATAW findData;
+            handle = FindFirstFileW (UTF8ToUTF16 (findPath).c_str (), &findData);
             if (handle != THEKOGANS_UTIL_INVALID_HANDLE_VALUE) {
                 GetEntry (findData, entry);
                 return true;
@@ -860,8 +859,8 @@ namespace thekogans {
 
         bool Directory::GetNextEntry (Entry &entry) {
             if (handle != THEKOGANS_UTIL_INVALID_HANDLE_VALUE) {
-                WIN32_FIND_DATA findData;
-                if (FindNextFile (handle, &findData)) {
+                WIN32_FIND_DATAW findData;
+                if (FindNextFileW (handle, &findData)) {
                     GetEntry (findData, entry);
                     return true;
                 }
@@ -888,11 +887,11 @@ namespace thekogans {
         }
 
         void Directory::GetEntry (
-                const WIN32_FIND_DATA &findData,
+                const WIN32_FIND_DATAW &findData,
                 Entry &entry) const {
             entry.fileSystem = Entry::Windows;
             entry.type = systemTotype (findData.dwFileAttributes);
-            entry.name = findData.cFileName;
+            entry.name = UTF16ToUTF8 (findData.cFileName, wcslen (findData.cFileName));
             entry.attributes = findData.dwFileAttributes;
             entry.creationDate = FILETIMEToi64 (findData.ftCreationTime);
             entry.lastAccessedDate = FILETIMEToi64 (findData.ftLastAccessTime);
@@ -934,7 +933,9 @@ namespace thekogans {
                             ancestors.push_back (*it);
                             std::string currenPath = MakePath (ancestors, true);
                             if (!Path (currenPath).Exists () &&
-                                    !CreateDirectory (currenPath.c_str (), lpSecurityAttributes)) {
+                                    !CreateDirectoryW (
+                                        UTF8ToUTF16 (currenPath).c_str (),
+                                        lpSecurityAttributes)) {
                                 THEKOGANS_UTIL_THROW_ERROR_CODE_AND_MESSAGE_EXCEPTION (
                                     THEKOGANS_UTIL_OS_ERROR_CODE, " (%s)", currenPath.c_str ());
                             }
@@ -1136,7 +1137,7 @@ namespace thekogans {
                 }
             }
         #if defined (TOOLCHAIN_OS_Windows)
-            if (_rmdir (path.c_str ()) != 0) {
+            if (RemoveDirectoryW (UTF8ToUTF16 (path).c_str ()) != 0) {
         #else // defined (TOOLCHAIN_OS_Windows)
             if (rmdir (path.c_str ()) != 0) {
         #endif // defined (TOOLCHAIN_OS_Windows)

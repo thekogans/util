@@ -60,6 +60,38 @@ namespace thekogans {
         /// \return Converted i64.
         _LIB_THEKOGANS_UTIL_DECL i64 _LIB_THEKOGANS_UTIL_API FILETIMEToi64 (const FILETIME &value);
 
+        /// \brief
+        /// Convert the given UTF8 string to UTF16.
+        /// \param[in] utf8 UTF8 string to convert.
+        /// \param[in] length Length (in bytes) of the given UTF8 string.
+        /// \return std::wstring UTF16 representation of the given UTF8 string.
+        _LIB_THEKOGANS_UTIL_DECL std::wstring _LIB_THEKOGANS_UTIL_API UTF8ToUTF16 (
+            const char *utf8,
+            std::size_t length);
+        /// \brief
+        /// Convert the given UTF8 string to UTF16.
+        /// \param[in] utf8 UTF8 string to convert.
+        /// \return std::wstring UTF16 representation of the given UTF8 string.
+        inline std::wstring UTF8ToUTF16 (const std::string &utf8) {
+            return UTF8ToUTF16 (utf8.data (), utf8.size ());
+        }
+        /// \brief
+        /// Convert the given UTF16 string to UTF8.
+        /// \param[in] utf16 UTF16 string to convert.
+        /// \param[in] length Length (in sizeof (wchar_t)) of the given UTF16 string.
+        /// \return std::string UTF8 representation of the given UTF16 string.
+        _LIB_THEKOGANS_UTIL_DECL std::string _LIB_THEKOGANS_UTIL_API UTF16ToUTF8 (
+            const wchar_t *utf16,
+            std::size_t length);
+        /// \brief
+        /// Convert the given UTF16 string to UTF8.
+        /// \param[in] utf16 UTF16 string to convert.
+        /// \param[in] length Length (in sizeof (wchar_t)) of the given UTF16 string.
+        /// \return std::string UTF8 representation of the given UTF16 string.
+        inline std::string UTF16ToUTF8 (const std::wstring &utf16) {
+            return UTF16ToUTF8 (utf16.data (), utf16.size ());
+        }
+
         /// \struct HGLOBALPtr WindowsUtils.h thekogans/util/WindowsUtils.h
         ///
         /// \brief

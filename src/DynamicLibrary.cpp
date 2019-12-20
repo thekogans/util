@@ -35,6 +35,9 @@
 #include "thekogans/util/Config.h"
 #include "thekogans/util/Types.h"
 #include "thekogans/util/Exception.h"
+#if defined (TOOLCHAIN_OS_Windows)
+    #include "thekogans/util/WindowsUtils.h"
+#endif // defined (TOOLCHAIN_OS_Windows)
 #include "thekogans/util/DynamicLibrary.h"
 
 namespace thekogans {
@@ -45,7 +48,7 @@ namespace thekogans {
                 Unload ();
             }
         #if defined (TOOLCHAIN_OS_Windows)
-            library = LoadLibraryEx (path.c_str (), 0, LOAD_WITH_ALTERED_SEARCH_PATH);
+            library = LoadLibraryExW (UTF8ToUTF16 (path).c_str (), 0, LOAD_WITH_ALTERED_SEARCH_PATH);
             if (library == 0) {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (THEKOGANS_UTIL_OS_ERROR_CODE);
             }
@@ -98,22 +101,25 @@ namespace thekogans {
     #endif // !defined (TOOLCHAIN_OS_Windows)
 
         std::string DynamicLibrary::GetPathName () const {
-            if (library == 0) {
+            if (library != 0) {
+            #if defined (TOOLCHAIN_OS_Windows)
+                wchar_t pathName[MAX_PATH];
+                if (GetModuleFileNameW ((HMODULE)library, pathName, MAX_PATH) == 0) {
+                    THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                        THEKOGANS_UTIL_OS_ERROR_CODE);
+                }
+                return UTF16ToUTF8 (pathName, wcslen (pathName));
+            #else // defined (TOOLCHAIN_OS_Windows)
+                Dl_info info;
+                if (dladdr (&dladdrDummySymbol, &info) == 0) {
+                    THEKOGANS_UTIL_THROW_STRING_EXCEPTION ("%s", dlerror ());
+                }
+                return info.dli_fname;
+            #endif // defined (TOOLCHAIN_OS_Windows)
+            }
+            else {
                 THEKOGANS_UTIL_THROW_STRING_EXCEPTION ("%s", "library == 0");
             }
-        #if defined (TOOLCHAIN_OS_Windows)
-            char pathName[MAX_PATH];
-            if (GetModuleFileName ((HMODULE)library, pathName, MAX_PATH)) {
-                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (THEKOGANS_UTIL_OS_ERROR_CODE);
-            }
-            return pathName;
-        #else // defined (TOOLCHAIN_OS_Windows)
-            Dl_info info;
-            if (dladdr (&dladdrDummySymbol, &info) == 0) {
-                THEKOGANS_UTIL_THROW_STRING_EXCEPTION ("%s", dlerror ());
-            }
-            return info.dli_fname;
-        #endif // defined (TOOLCHAIN_OS_Windows)
         }
 
     } // namespace util

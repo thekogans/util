@@ -128,7 +128,7 @@ namespace thekogans {
             std::size_t count);
         /// \brief
         /// The IsUTF8String () function scans the '\0'-terminated string starting
-        /// at str. It returns a pointer to the first byte of the first malformed
+        /// at utf8. It returns a pointer to the first byte of the first malformed
         /// or overlong UTF-8 sequence found, or NULL if the string contains
         /// only correct UTF-8. It also spots UTF-8 sequences that could cause
         /// trouble if converted to UTF-16, namely surrogate characters
@@ -143,10 +143,39 @@ namespace thekogans {
         ///
         /// Markus Kuhn <http://www.cl.cam.ac.uk/~mgk25/> -- 2005-03-30
         /// License: http://www.cl.cam.ac.uk/~mgk25/short-license.html
-        /// \param[in] str Pointer to UTF-8 encoded string to test.
+        /// \param[in] utf8 Pointer to UTF-8 encoded string to test.
+        /// \param[in] length Length (in bytes) of UTF-8 encoded string to test.
+        /// \param[out] utf8Length Optional. Will receive the UTF8 length if the given string is valid.
         /// \return If invalid, pointer to first malformed sequence, 0 if valid UTF-8.
-        _LIB_THEKOGANS_UTIL_DECL const ui8 * _LIB_THEKOGANS_UTIL_API IsUTF8String (
-            const ui8 *str);
+        _LIB_THEKOGANS_UTIL_DECL const char * _LIB_THEKOGANS_UTIL_API IsUTF8String (
+            const char *utf8,
+            std::size_t length,
+            std::size_t *utf8Length = 0);
+        /// \brief
+        /// Check if the given string is valid UTF8.
+        /// \param[in] utf8 String to check.
+        /// \return If invalid, pointer to first malformed sequence, 0 if valid UTF-8.
+        inline const char *IsUTF8String (const std::string &utf8) {
+            return IsUTF8String (utf8.data (), utf8.size ());
+        }
+        /// \brief
+        /// Return the length (in UTF8 characters) of the given UTF8 string.
+        /// \param[in] utf UTF8 string whose length to return.
+        /// \param[in] length Length (in bytes) of the given string.
+        /// \return The length (in UTF8 characters) of the given UTF8 string.
+        inline std::size_t UTF8StringLength (
+                const char *utf8,
+                std::size_t length) {
+            std::size_t utf8Length = 0;
+            return IsUTF8String (utf8, length, &utf8Length) == 0 ? utf8Length : 0;
+        }
+        /// \brief
+        /// Return the length (in UTF8 characters) of the given UTF8 string.
+        /// \param[in] utf UTF8 string whose length to return.
+        /// \return The length (in UTF8 characters) of the given UTF8 string.
+        inline std::size_t UTF8StringLength (const std::string &utf8) {
+            return UTF8StringLength (utf8.data (), utf8.size ());
+        }
         /// \brief
         /// Hex encode a given buffer.
         /// \param[in] buffer Pointer to buffer to be hex encoded.

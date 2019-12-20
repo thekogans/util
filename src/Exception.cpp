@@ -113,8 +113,8 @@ namespace thekogans {
                     FreeLibrary (handle);
                 }
 
-                DWORD FormatMessage (DWORD errorCode, char **buffer) {
-                    return handle != 0 ? ::FormatMessage(
+                DWORD FormatMessage (DWORD errorCode, wchar_t **buffer) {
+                    return handle != 0 ? ::FormatMessageW (
                         FORMAT_MESSAGE_ALLOCATE_BUFFER |
                         FORMAT_MESSAGE_FROM_SYSTEM |
                         FORMAT_MESSAGE_IGNORE_INSERTS |
@@ -123,7 +123,7 @@ namespace thekogans {
                         handle,
                         errorCode,
                         MAKELANGID (LANG_NEUTRAL, SUBLANG_DEFAULT),
-                        (char *)buffer,
+                        (wchar_t *)buffer,
                         0,
                         0) : 0;
                 }
@@ -134,8 +134,8 @@ namespace thekogans {
         std::string Exception::FromErrorCode (THEKOGANS_UTIL_ERROR_CODE errorCode) {
             std::string message;
         #if defined (TOOLCHAIN_OS_Windows)
-            char *buffer = 0;
-            FormatMessage (
+            wchar_t *buffer = 0;
+            FormatMessageW (
                 FORMAT_MESSAGE_ALLOCATE_BUFFER |
                 FORMAT_MESSAGE_FROM_SYSTEM |
                 FORMAT_MESSAGE_IGNORE_INSERTS |
@@ -143,22 +143,22 @@ namespace thekogans {
                 0,
                 errorCode,
                 MAKELANGID (LANG_NEUTRAL, SUBLANG_DEFAULT),
-                (char *)&buffer,
+                (wchar_t *)&buffer,
                 0,
                 0);
             if (buffer == 0) {
                 NTDll::Instance ().FormatMessage (errorCode, &buffer);
             }
-            if (buffer == 0) {
-                message = FormatString (
-                    "[0x%x:%d - Unable to find message text]",
-                    errorCode, errorCode);
-            }
-            else {
+            if (buffer != 0) {
                 message = FormatString (
                     "[0x%x:%d - %s]",
                     errorCode, errorCode, buffer);
                 LocalFree (buffer);
+            }
+            else {
+                message = FormatString (
+                    "[0x%x:%d - Unable to find message text]",
+                    errorCode, errorCode);
             }
         #else // defined (TOOLCHAIN_OS_Windows)
             message = FromPOSIXErrorCode (errorCode);

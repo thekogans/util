@@ -15,9 +15,6 @@
 // You should have received a copy of the GNU General Public License
 // along with libthekogans_util. If not, see <http://www.gnu.org/licenses/>.
 
-#if defined (TOOLCHAIN_OS_Windows)
-    #include "thekogans/util/WindowsUtils.h"
-#endif // defined (TOOLCHAIN_OS_Windows)
 #include "thekogans/util/Exception.h"
 #include "thekogans/util/Version.h"
 

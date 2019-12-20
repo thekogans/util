@@ -18,6 +18,7 @@
 #if !defined (__thekogans_util_Semaphore_h)
 #define __thekogans_util_Semaphore_h
 
+#include <string>
 #include "thekogans/util/Config.h"
 #include "thekogans/util/Types.h"
 #include "thekogans/util/TimeSpec.h"
@@ -61,7 +62,7 @@ namespace thekogans {
             Semaphore (
                 ui32 maxCount = 1,
                 ui32 initialCount = 1,
-                const char *name = 0);
+                const std::string &name = std::string ());
             /// \brief
             /// dtor.
             ~Semaphore ();

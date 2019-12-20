@@ -179,19 +179,19 @@ namespace thekogans {
         Event::Event (
                 bool manualReset,
                 State initialState,
-                const char *name) :
+                const std::string &name) :
         #if defined (TOOLCHAIN_OS_Windows)
-                handle (CreateEvent (0, manualReset ? TRUE : FALSE,
-                    initialState == Signalled ? TRUE : FALSE, name)) {
+                handle (CreateEventW (0, manualReset ? TRUE : FALSE,
+                    initialState == Signalled ? TRUE : FALSE, !name.empty () ? UTF8ToUTF16 (name).c_str () : 0)) {
             if (handle == THEKOGANS_UTIL_INVALID_HANDLE_VALUE) {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
                     THEKOGANS_UTIL_OS_ERROR_CODE);
             }
         #else // defined (TOOLCHAIN_OS_Windows)
-                event (name == 0 ?
+                event (name.empty () ?
                     new EventImpl (manualReset, initialState) :
                     (EventImpl *)SharedObject::Create (
-                        name,
+                        name.c_str (),
                         sizeof (EventImpl),
                         false,
                         EventImplConstructor (manualReset, initialState))) {

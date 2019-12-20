@@ -322,7 +322,7 @@ namespace thekogans {
             }
             commandLine = "\"" + path + "\"";
             for (std::list<std::string>::const_iterator it = arguments.begin (),
-                     end = arguments.end (); it != end; ++it) {
+                    end = arguments.end (); it != end; ++it) {
                 commandLine += " " + *it;
             }
             environment.clear ();
@@ -345,10 +345,10 @@ namespace thekogans {
                 startInfo.hStdError = stdIO->errPipe[1];
             }
             ClearProcessInformation (processInformation);
-            if (!CreateProcess (0, (LPSTR)commandLine.data (), 0, 0, TRUE,
+            if (!CreateProcessW (0, UTF8ToUTF16 (commandLine).c_str (), 0, 0, TRUE,
                     detached ? DETACHED_PROCESS : 0,
-                    !environment.empty () ? (LPVOID)environment.data () : 0,
-                    !startupDirectory.empty () ? startupDirectory.c_str () : 0,
+                    !environment.empty () ? (LPVOID)environment.c_str () : 0,
+                    !startupDirectory.empty () ? UTF8ToUTF16 (startupDirectory).c_str () : 0,
                     &startInfo,
                     &processInformation)) {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (

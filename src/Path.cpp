@@ -96,9 +96,9 @@ namespace thekogans {
 
         std::string Path::GetTempDirectory () {
         #if defined (TOOLCHAIN_OS_Windows)
-            char tempDirectory[MAX_PATH + 1];
-            if (GetTempPath (MAX_PATH, tempDirectory) != 0) {
-                return tempDirectory;
+            wchar_t tempDirectory[MAX_PATH + 1];
+            if (GetTempPathW (MAX_PATH, tempDirectory) != 0) {
+                return UTF16ToUTF8 (tempDirectory, wcslen (tempDirectory));
             }
             else {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
@@ -189,6 +189,13 @@ namespace thekogans {
             std::string absolutePath;
             {
             #if defined (TOOLCHAIN_OS_Windows)
+//                 wchar_t
+//                 GetFullPathNameW (UTF8ToUTF16 (path).c_str ()
+//   LPCWSTR lpFileName,
+//   DWORD   nBufferLength,
+//   LPWSTR  lpBuffer,
+//   LPWSTR  *lpFilePart
+// );
                 char *result = _fullpath (0, path.c_str (), 0);
             #else // defined (TOOLCHAIN_OS_Windows)
                 char *result = realpath (path.c_str (), 0);
@@ -285,7 +292,7 @@ namespace thekogans {
         bool Path::Exists () const {
         #if defined (TOOLCHAIN_OS_Windows)
             WIN32_FILE_ATTRIBUTE_DATA attributeData;
-            return GetFileAttributesEx (path.c_str (),
+            return GetFileAttributesExW (UTF8ToUTF16 (path).c_str (),
                 GetFileExInfoStandard, &attributeData) == TRUE;
         #else // defined (TOOLCHAIN_OS_Windows)
             STAT_STRUCT buf;

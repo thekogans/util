@@ -613,7 +613,7 @@ namespace thekogans {
             /// \param[in] findData Windows FindFirstFile/FindNextFile data.
             /// \param[out] entry Entry info.
             void GetEntry (
-                const WIN32_FIND_DATA &findData,
+                const WIN32_FIND_DATAW &findData,
                 Entry &entry) const;
         #else // defined (TOOLCHAIN_OS_Windows)
             /// \brief

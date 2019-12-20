@@ -17,6 +17,7 @@
 
 #if defined (TOOLCHAIN_OS_Windows)
 
+#include "thekogans/util/Buffer.h"
 #include "thekogans/util/StringUtils.h"
 #include "thekogans/util/Exception.h"
 #include "thekogans/util/WindowsUtils.h"
@@ -81,6 +82,42 @@ namespace thekogans {
             ul.HighPart = value.dwHighDateTime;
             return ul.QuadPart / THEKOGANS_UTIL_UI64_LITERAL (10000000) -
                 THEKOGANS_UTIL_UI64_LITERAL (11644473600);
+        }
+
+        _LIB_THEKOGANS_UTIL_DECL std::wstring _LIB_THEKOGANS_UTIL_API UTF8ToUTF16 (
+                const char *utf8,
+                std::size_t length) {
+            if (utf8 != 0 && length > 0) {
+                std::wstring utf16;
+                int utf16Length = MultiByteToWideChar (CP_UTF8, 0, utf8, length, 0, 0);
+                if (utf16Length > 0) {
+                    utf16.resize (utf16Length);
+                    MultiByteToWideChar (CP_UTF8, 0, utf8, length, (LPWSTR)utf16.data (), (int)utf16.size ());
+                }
+                return utf16;
+            }
+            else {
+                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
+            }
+        }
+
+        _LIB_THEKOGANS_UTIL_DECL std::string _LIB_THEKOGANS_UTIL_API UTF16ToUTF8 (
+                const wchar_t *utf16,
+                std::size_t length) {
+            if (utf16 != 0 && length > 0) {
+                std::string utf8;
+                int utf8Length = WideCharToMultiByte (CP_UTF8, 0, utf16, length, 0, 0, 0, 0);
+                if (utf8Length > 0) {
+                    utf8.resize (utf8Length);
+                    WideCharToMultiByte (CP_UTF8, 0, utf16, length, (LPSTR)utf8.data (), (int)utf8.size (), 0, 0);
+                }
+                return utf8;
+            }
+            else {
+                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
+            }
         }
 
         HGLOBALPtr &HGLOBALPtr::operator = (HGLOBALPtr &&other) {

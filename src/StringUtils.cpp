@@ -136,52 +136,62 @@ namespace thekogans {
         #endif // defined (TOOLCHAIN_OS_Windows)
         }
 
-        _LIB_THEKOGANS_UTIL_DECL const ui8 * _LIB_THEKOGANS_UTIL_API IsUTF8String (
-                const ui8 *str) {
-            if (str != 0) {
-                while (*str != 0) {
-                    if (*str < 0x80) {
+        _LIB_THEKOGANS_UTIL_DECL const char * _LIB_THEKOGANS_UTIL_API IsUTF8String (
+                const char *utf8,
+                std::size_t length,
+                std::size_t *utf8Length) {
+            if (utf8 != 0 && length > 0) {
+                std::size_t utf8Length_ = 0;
+                for (const char *end = utf8 + length; utf8 < end;) {
+                    if (utf8[0] < 0x80) {
                         // 0xxxxxxx
-                        ++str;
+                        ++utf8;
+                        ++utf8Length_;
                     }
-                    else if ((str[0] & 0xe0) == 0xc0) {
+                    else if ((utf8[0] & 0xe0) == 0xc0) {
                         // 110XXXXx 10xxxxxx
-                        if ((str[1] & 0xc0) != 0x80 || (str[0] & 0xfe) == 0xc0) { // overlong?
-                            return str;
+                        if ((utf8[1] & 0xc0) != 0x80 || (utf8[0] & 0xfe) == 0xc0) { // overlong?
+                            return (const char *)utf8;
                         }
                         else {
-                            str += 2;
+                            utf8 += 2;
+                            ++utf8Length_;
                         }
                     }
-                    else if ((str[0] & 0xf0) == 0xe0) {
+                    else if ((utf8[0] & 0xf0) == 0xe0) {
                         // 1110XXXX 10Xxxxxx 10xxxxxx
-                        if ((str[1] & 0xc0) != 0x80 ||
-                                (str[2] & 0xc0) != 0x80 ||
-                                (str[0] == 0xe0 && (str[1] & 0xe0) == 0x80) || // overlong?
-                                (str[0] == 0xed && (str[1] & 0xe0) == 0xa0) || // surrogate?
-                                (str[0] == 0xef && str[1] == 0xbf && (str[2] & 0xfe) == 0xbe)) { // U+FFFE or U+FFFF?
-                            return str;
+                        if ((utf8[1] & 0xc0) != 0x80 ||
+                                (utf8[2] & 0xc0) != 0x80 ||
+                                (utf8[0] == 0xe0 && (utf8[1] & 0xe0) == 0x80) || // overlong?
+                                (utf8[0] == 0xed && (utf8[1] & 0xe0) == 0xa0) || // surrogate?
+                                (utf8[0] == 0xef && utf8[1] == 0xbf && (utf8[2] & 0xfe) == 0xbe)) { // U+FFFE or U+FFFF?
+                            return utf8;
                         }
                         else {
-                            str += 3;
+                            utf8 += 3;
+                            ++utf8Length_;
                         }
                     }
-                    else if ((str[0] & 0xf8) == 0xf0) {
+                    else if ((utf8[0] & 0xf8) == 0xf0) {
                         // 11110XXX 10XXxxxx 10xxxxxx 10xxxxxx
-                        if ((str[1] & 0xc0) != 0x80 ||
-                                (str[2] & 0xc0) != 0x80 ||
-                                (str[3] & 0xc0) != 0x80 ||
-                                (str[0] == 0xf0 && (str[1] & 0xf0) == 0x80) || // overlong? */
-                                (str[0] == 0xf4 && str[1] > 0x8f) || str[0] > 0xf4) { // > U+10FFFF?
-                            return str;
+                        if ((utf8[1] & 0xc0) != 0x80 ||
+                                (utf8[2] & 0xc0) != 0x80 ||
+                                (utf8[3] & 0xc0) != 0x80 ||
+                                (utf8[0] == 0xf0 && (utf8[1] & 0xf0) == 0x80) || // overlong? */
+                                (utf8[0] == 0xf4 && utf8[1] > 0x8f) || utf8[0] > 0xf4) { // > U+10FFFF?
+                            return utf8;
                         }
                         else {
-                            str += 4;
+                            utf8 += 4;
+                            ++utf8Length_;
                         }
                     }
                     else {
-                        return str;
+                        return utf8;
                     }
+                }
+                if (utf8Length != 0) {
+                    *utf8Length = utf8Length_;
                 }
                 return 0;
             }

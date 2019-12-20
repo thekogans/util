@@ -151,16 +151,20 @@ namespace thekogans {
                 #if defined (TOOLCHAIN_OS_Windows)
                     struct ColorSetter {
                         DWORD stdHandle;
+                        UINT codePage;
                         CONSOLE_SCREEN_BUFFER_INFO consoleScreenBufferInfo;
                         ColorSetter (
                                 DWORD stdHandle_,
                                 const Console::ColorType color) :
-                                stdHandle (stdHandle_) {
+                                stdHandle (stdHandle_),
+                                codePage (GetConsoleOutputCP ()) {
+                            SetConsoleOutputCP (CP_UTF8);
                             HANDLE handle = GetStdHandle (stdHandle);
                             GetConsoleScreenBufferInfo (handle, &consoleScreenBufferInfo);
                             SetConsoleTextAttribute (handle, color | FOREGROUND_INTENSITY);
                         }
                         ~ColorSetter () {
+                            SetConsoleOutputCP (codePage);
                             SetConsoleTextAttribute (GetStdHandle (stdHandle),
                                 consoleScreenBufferInfo.wAttributes);
                         }
