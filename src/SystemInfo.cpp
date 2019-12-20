@@ -51,6 +51,9 @@
 #include "thekogans/util/Exception.h"
 #include "thekogans/util/SHA2.h"
 #include "thekogans/util/StringUtils.h"
+#if defined (TOOLCHAIN_OS_Windows)
+    #include "thekogans/util/WindowsUtils.h"
+#endif // defined (TOOLCHAIN_OS_Windows)
 #include "thekogans/util/SystemInfo.h"
 
 namespace thekogans {

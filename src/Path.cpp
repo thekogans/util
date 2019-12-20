@@ -188,7 +188,8 @@ namespace thekogans {
         std::string Path::MakeAbsolute () const {
         #if defined (TOOLCHAIN_OS_Windows)
             wchar_t fullPath[32767];
-            std::size_t length = GetFullPathNameW (UTF8ToUTF16 (path).c_str (), fullPath, 32767, 0);
+            std::size_t length = GetFullPathNameW (
+                UTF8ToUTF16 (path).c_str (), 32767, fullPath, 0);
             if (length > 0) {
                 return UTF16ToUTF8 (fullPath, length);
             }
