@@ -27,6 +27,7 @@
     #include <windows.h>
 #endif // !defined (_WINDOWS_)
 #include "thekogans/util/StringUtils.h"
+#include "thekogans/util/WindowsUtils.h"
 #include "thekogans/util/OutputDebugStringLogger.h"
 
 namespace thekogans {

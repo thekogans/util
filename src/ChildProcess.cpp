@@ -334,9 +334,9 @@ namespace thekogans {
                 }
                 environment += '\0';
             }
-            STARTUPINFO startInfo;
+            STARTUPINFOW startInfo;
             ZeroMemory (&startInfo, sizeof (STARTUPINFO));
-            startInfo.cb = sizeof (STARTUPINFO);
+            startInfo.cb = sizeof (STARTUPINFOW);
             if (hookStdIO != HOOK_NONE) {
                 stdIO.reset (new StdIO (hookStdIO));
                 startInfo.dwFlags |= STARTF_USESTDHANDLES;
@@ -345,7 +345,7 @@ namespace thekogans {
                 startInfo.hStdError = stdIO->errPipe[1];
             }
             ClearProcessInformation (processInformation);
-            if (!CreateProcessW (0, UTF8ToUTF16 (commandLine).c_str (), 0, 0, TRUE,
+            if (!CreateProcessW (0, (LPWSTR)UTF8ToUTF16 (commandLine).data (), 0, 0, TRUE,
                     detached ? DETACHED_PROCESS : 0,
                     !environment.empty () ? (LPVOID)environment.c_str () : 0,
                     !startupDirectory.empty () ? UTF8ToUTF16 (startupDirectory).c_str () : 0,

@@ -27,11 +27,13 @@
 #include "thekogans/util/Path.h"
 #include "thekogans/util/Exception.h"
 #include "thekogans/util/LoggerMgr.h"
-#if defined (TOOLCHAIN_OS_Linux)
+#if defined (TOOLCHAIN_OS_Windows)
+    #include "thekogans/util/WindowsUtils.h"
+#elif defined (TOOLCHAIN_OS_Linux)
     #include "thekogans/util/LinuxUtils.h"
 #elif defined (TOOLCHAIN_OS_OSX)
     #include "thekogans/util/OSXUtils.h"
-#endif // defined (TOOLCHAIN_OS_Linux)
+#endif // defined (TOOLCHAIN_OS_Windows)
 #include "thekogans/util/File.h"
 
 namespace thekogans {

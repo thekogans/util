@@ -359,7 +359,7 @@ namespace thekogans {
                                 do {
                                     notify = (PFILE_NOTIFY_INFORMATION)&buffer[offset];
                                     offset += notify->NextEntryOffset;
-                                    std:string entryName =
+                                    std::string entryName =
                                         UTF16ToUTF8 (
                                             notify->FileName,
                                             notify->FileNameLength / sizeof (WCHAR));
