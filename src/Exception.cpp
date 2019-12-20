@@ -113,7 +113,9 @@ namespace thekogans {
                     FreeLibrary (handle);
                 }
 
-                DWORD FormatMessage (DWORD errorCode, wchar_t **buffer) {
+                DWORD FormatMessage (
+                        DWORD errorCode,
+                        wchar_t **buffer) {
                     return handle != 0 ? ::FormatMessageW (
                         FORMAT_MESSAGE_ALLOCATE_BUFFER |
                         FORMAT_MESSAGE_FROM_SYSTEM |
@@ -152,7 +154,7 @@ namespace thekogans {
             if (buffer != 0) {
                 message = FormatString (
                     "[0x%x:%d - %s]",
-                    errorCode, errorCode, buffer);
+                    errorCode, errorCode, UTF16ToUTF8 (buffer).c_str ());
                 LocalFree (buffer);
             }
             else {
@@ -180,8 +182,10 @@ namespace thekogans {
 
     #if defined (TOOLCHAIN_OS_Windows)
         std::string Exception::FromHRESULTErrorCode (HRESULT errorCode) {
+        #define _UNICODE
             _com_error comError (errorCode);
-            return comError.ErrorMessage ();
+            return UTF16ToUTF8 (comError.ErrorMessage ());
+        #undef _UNICODE
         }
 
         std::string Exception::FromHRESULTErrorCodeAndMessage (
@@ -198,26 +202,24 @@ namespace thekogans {
     #endif // defined (TOOLCHAIN_OS_Windows)
 
         std::string Exception::FromPOSIXErrorCode (int errorCode) {
-            std::string message;
-            const char *buffer;
         #if defined (TOOLCHAIN_OS_Windows)
-            char errorString[200];
-            strerror_s (errorString, 200, errorCode);
-            buffer = errorString;
+            wchar_t errorString[200];
+            if (_wstrerror_s (errorString, 200, errorCode)) {
+                return UTF16ToUTF8 (errorString);
+            }
         #else // defined (TOOLCHAIN_OS_Windows)
-            buffer = strerror (errorCode);
-        #endif // defined (TOOLCHAIN_OS_Windows)
+            const char *buffer = strerror (errorCode);
             if (buffer != 0) {
-                message = FormatString (
+                return FormatString (
                     "[0x%x:%d - %s]",
                     errorCode, errorCode, buffer);
             }
+        #endif // defined (TOOLCHAIN_OS_Windows)
             else {
-                message = FormatString (
+                return FormatString (
                     "[0x%x:%d - Unable to find message text]",
                     errorCode, errorCode);
             }
-            return message;
         }
 
         std::string Exception::FromPOSIXErrorCodeAndMessage (
@@ -283,11 +285,6 @@ namespace thekogans {
             return stream.str ();
         }
 
-        /// \brief
-        /// Write the given Exception::Location to the given serializer.
-        /// \param[in] serializer Where to write the given guid.
-        /// \param[in] location Exception::Location to write.
-        /// \return serializer.
         _LIB_THEKOGANS_UTIL_DECL Serializer & _LIB_THEKOGANS_UTIL_API operator << (
                 Serializer &serializer,
                 const Exception::Location &location) {
@@ -298,11 +295,6 @@ namespace thekogans {
                 location.buildTime;
         }
 
-        /// \brief
-        /// Read an Exception::Location from the given serializer.
-        /// \param[in] serializer Where to read the guid from.
-        /// \param[out] location Exception::Location to read.
-        /// \return serializer.
         _LIB_THEKOGANS_UTIL_DECL Serializer & _LIB_THEKOGANS_UTIL_API operator >> (
                 Serializer &serializer,
                 Exception::Location &location) {
@@ -313,11 +305,6 @@ namespace thekogans {
                 location.buildTime;
         }
 
-        /// \brief
-        /// Write the given exception to the given serializer.
-        /// \param[in] serializer Where to write the given guid.
-        /// \param[in] exception Exception to write.
-        /// \return serializer.
         _LIB_THEKOGANS_UTIL_DECL Serializer & _LIB_THEKOGANS_UTIL_API operator << (
                 Serializer &serializer,
                 const Exception &exception) {
@@ -327,11 +314,6 @@ namespace thekogans {
                 exception.traceback;
         }
 
-        /// \brief
-        /// Read an Exception from the given serializer.
-        /// \param[in] serializer Where to read the guid from.
-        /// \param[out] exception Exception to read.
-        /// \return serializer.
         _LIB_THEKOGANS_UTIL_DECL Serializer & _LIB_THEKOGANS_UTIL_API operator >> (
                 Serializer &serializer,
                 Exception &exception) {

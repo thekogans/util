@@ -142,52 +142,52 @@ namespace thekogans {
                 std::size_t *utf8Length) {
             if (utf8 != 0 && length > 0) {
                 std::size_t utf8Length_ = 0;
-                for (const char *end = utf8 + length; utf8 < end;) {
-                    if (utf8[0] < 0x80) {
+                for (const ui8 *start = (const ui8 *)utf8, *end = start + length; start < end;) {
+                    if (start[0] < 0x80) {
                         // 0xxxxxxx
-                        ++utf8;
+                        ++start;
                         ++utf8Length_;
                     }
-                    else if ((utf8[0] & 0xe0) == 0xc0) {
+                    else if ((start[0] & 0xe0) == 0xc0) {
                         // 110XXXXx 10xxxxxx
-                        if ((utf8[1] & 0xc0) != 0x80 || (utf8[0] & 0xfe) == 0xc0) { // overlong?
-                            return (const char *)utf8;
+                        if ((start[1] & 0xc0) != 0x80 || (start[0] & 0xfe) == 0xc0) { // overlong?
+                            return (const char *)start;
                         }
                         else {
-                            utf8 += 2;
+                            start += 2;
                             ++utf8Length_;
                         }
                     }
-                    else if ((utf8[0] & 0xf0) == 0xe0) {
+                    else if ((start[0] & 0xf0) == 0xe0) {
                         // 1110XXXX 10Xxxxxx 10xxxxxx
-                        if ((utf8[1] & 0xc0) != 0x80 ||
-                                (utf8[2] & 0xc0) != 0x80 ||
-                                (utf8[0] == 0xe0 && (utf8[1] & 0xe0) == 0x80) || // overlong?
-                                (utf8[0] == 0xed && (utf8[1] & 0xe0) == 0xa0) || // surrogate?
-                                (utf8[0] == 0xef && utf8[1] == 0xbf && (utf8[2] & 0xfe) == 0xbe)) { // U+FFFE or U+FFFF?
-                            return utf8;
+                        if ((start[1] & 0xc0) != 0x80 ||
+                                (start[2] & 0xc0) != 0x80 ||
+                                (start[0] == 0xe0 && (start[1] & 0xe0) == 0x80) || // overlong?
+                                (start[0] == 0xed && (start[1] & 0xe0) == 0xa0) || // surrogate?
+                                (start[0] == 0xef && start[1] == 0xbf && (start[2] & 0xfe) == 0xbe)) { // U+FFFE or U+FFFF?
+                            return (const char *)start;
                         }
                         else {
-                            utf8 += 3;
+                            start += 3;
                             ++utf8Length_;
                         }
                     }
-                    else if ((utf8[0] & 0xf8) == 0xf0) {
+                    else if ((start[0] & 0xf8) == 0xf0) {
                         // 11110XXX 10XXxxxx 10xxxxxx 10xxxxxx
-                        if ((utf8[1] & 0xc0) != 0x80 ||
-                                (utf8[2] & 0xc0) != 0x80 ||
-                                (utf8[3] & 0xc0) != 0x80 ||
-                                (utf8[0] == 0xf0 && (utf8[1] & 0xf0) == 0x80) || // overlong? */
-                                (utf8[0] == 0xf4 && utf8[1] > 0x8f) || utf8[0] > 0xf4) { // > U+10FFFF?
-                            return utf8;
+                        if ((start[1] & 0xc0) != 0x80 ||
+                                (start[2] & 0xc0) != 0x80 ||
+                                (start[3] & 0xc0) != 0x80 ||
+                                (start[0] == 0xf0 && (start[1] & 0xf0) == 0x80) || // overlong? */
+                                (start[0] == 0xf4 && start[1] > 0x8f) || start[0] > 0xf4) { // > U+10FFFF?
+                            return (const char *)start;
                         }
                         else {
-                            utf8 += 4;
+                            start += 4;
                             ++utf8Length_;
                         }
                     }
                     else {
-                        return utf8;
+                        return (const char *)start;
                     }
                 }
                 if (utf8Length != 0) {
@@ -763,23 +763,23 @@ namespace thekogans {
         }
 
         _LIB_THEKOGANS_UTIL_DECL std::string _LIB_THEKOGANS_UTIL_API GetEnvironmentVariable (
-                const char *name) {
-            if (name != 0) {
+                const std::string &name) {
+            if (!name.empty ()) {
             #if defined (TOOLCHAIN_OS_Windows)
-                size_t requiredSize;
-                getenv_s (&requiredSize, 0, 0, name);
-                if (requiredSize > 0) {
-                    Array<char> value (requiredSize);
-                    if (getenv_s (&requiredSize, value, requiredSize, name) == 0) {
-                        return value.array;
-                    }
-                    else {
-                        THEKOGANS_UTIL_THROW_POSIX_ERROR_CODE_EXCEPTION (
-                            THEKOGANS_UTIL_POSIX_OS_ERROR_CODE);
+                // Windows limit on value length.
+                wchar_t value[32767];
+                DWORD length = GetEnvironmentVariableW (UTF8ToUTF16 (name).c_str (), value, 32767);
+                if (length > 0) {
+                    return UTF16ToUTF8 (value, length);
+                }
+                else {
+                    THEKOGANS_UTIL_ERROR_CODE errorCode = THEKOGANS_UTIL_OS_ERROR_CODE;
+                    if (errorCode != ERROR_ENVVAR_NOT_FOUND) {
+                        THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (errorCode);
                     }
                 }
             #else // defined (TOOLCHAIN_OS_Windows)
-                const char *value = getenv (name);
+                const char *value = getenv (name.c_str ());
                 if (value != 0) {
                     return value;
                 }

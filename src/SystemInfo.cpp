@@ -115,16 +115,19 @@ namespace thekogans {
 
             std::string GetProcessPathImpl () {
             #if defined (TOOLCHAIN_OS_Windows)
-                char path[MAX_PATH];
-                if (GetModuleFileName (0, path, sizeof (path)) == 0) {
+                wchar_t path[MAX_PATH];
+                std::size_t length = GetModuleFileNameW (0, path, MAX_PATH);
+                if (length > 0) {
+                    return UTF16ToUTF8 (path, length);
+                }
+                else {
                     THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
                         THEKOGANS_UTIL_OS_ERROR_CODE);
                 }
-                return path;
             #elif defined (TOOLCHAIN_OS_Linux)
                 char path[PATH_MAX];
                 ssize_t count =
-                    readlink (FormatString ("/proc/%d/exe", getpid ()).c_str (), path, sizeof (path));
+                    readlink (FormatString ("/proc/%d/exe", getpid ()).c_str (), path, PATH_MAX);
                 if (count < 0) {
                     THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
                         THEKOGANS_UTIL_OS_ERROR_CODE);
@@ -133,7 +136,7 @@ namespace thekogans {
                 return path;
             #elif defined (TOOLCHAIN_OS_OSX)
                 char path[PROC_PIDPATHINFO_MAXSIZE];
-                if (proc_pidpath (getpid (), path, sizeof (path)) <= 0) {
+                if (proc_pidpath (getpid (), path, PROC_PIDPATHINFO_MAXSIZE) <= 0) {
                     THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
                         THEKOGANS_UTIL_OS_ERROR_CODE);
                 }
@@ -152,17 +155,24 @@ namespace thekogans {
                         WSACleanup ();
                     }
                 } winSockInit;
-            #endif // defined (TOOLCHAIN_OS_Windows)
-                char name[256] = {0};
-                if (gethostname (name, 256) != 0) {
-                #if defined (TOOLCHAIN_OS_Windows)
-                    THEKOGANS_UTIL_ERROR_CODE errorCode = WSAGetLastError ();
-                #else // defined (TOOLCHAIN_OS_Windows)
-                    THEKOGANS_UTIL_ERROR_CODE errorCode = THEKOGANS_UTIL_OS_ERROR_CODE;
-                #endif // defined (TOOLCHAIN_OS_Windows)
-                    THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (errorCode);
+                wchar_t name[256] = {0};
+                if (GetHostNameW (name, 256) == 0) {
+                    return UTF16ToUTF8 (name);
                 }
-                return name;
+                else {
+                    THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                        WSAGetLastError ());
+                }
+            #else // defined (TOOLCHAIN_OS_Windows)
+                char name[256] = {0};
+                if (gethostname (name, 256) == 0) {
+                    return name;
+                }
+                else {
+                    THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                        THEKOGANS_UTIL_OS_ERROR_CODE);
+                }
+            #endif // defined (TOOLCHAIN_OS_Windows)
             }
 
             std::string GetHostIdImpl () {
@@ -257,15 +267,15 @@ namespace thekogans {
             #if defined (TOOLCHAIN_OS_Windows)
                 DWORD sessionId = WTSGetActiveConsoleSessionId ();
                 if (sessionId != 0xFFFFFFFF) {
-                    LPSTR data = NULL;
+                    LPWSTR data = 0;
                     DWORD length = 0;
-                    if (WTSQuerySessionInformationA (
+                    if (WTSQuerySessionInformationW (
                             WTS_CURRENT_SERVER_HANDLE,
                             sessionId,
                             WTSUserName,
                             &data,
                             &length)) {
-                        result = data;
+                        result = UTF16ToUTF8 (data, length);
                         WTSFreeMemory (data);
                     }
                     else {

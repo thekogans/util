@@ -186,30 +186,32 @@ namespace thekogans {
         }
 
         std::string Path::MakeAbsolute () const {
-            std::string absolutePath;
-            {
-            #if defined (TOOLCHAIN_OS_Windows)
-//                 wchar_t
-//                 GetFullPathNameW (UTF8ToUTF16 (path).c_str ()
-//   LPCWSTR lpFileName,
-//   DWORD   nBufferLength,
-//   LPWSTR  lpBuffer,
-//   LPWSTR  *lpFilePart
-// );
-                char *result = _fullpath (0, path.c_str (), 0);
-            #else // defined (TOOLCHAIN_OS_Windows)
-                char *result = realpath (path.c_str (), 0);
-            #endif // defined (TOOLCHAIN_OS_Windows)
-                if (result != 0) {
-                    absolutePath = result;
-                    free (result);
-                }
-                else {
-                    THEKOGANS_UTIL_THROW_POSIX_ERROR_CODE_EXCEPTION (
-                        THEKOGANS_UTIL_POSIX_OS_ERROR_CODE);
-                }
+        #if defined (TOOLCHAIN_OS_Windows)
+            wchar_t fullPath[32767];
+            std::size_t length = GetFullPathNameW (UTF8ToUTF16 (path).c_str (), fullPath, 32767, 0);
+            if (length > 0) {
+                return UTF16ToUTF8 (fullPath, length);
             }
-            return absolutePath;
+            else {
+                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                    THEKOGANS_UTIL_OS_ERROR_CODE);
+            }
+        #else // defined (TOOLCHAIN_OS_Windows)
+            struct FullPath {
+                char *fullPath;
+                FullPath (const std::string &path) :
+                        fullPath (realpath (path.c_str (), 0)) {
+                    if (fullPath == 0) {
+                        THEKOGANS_UTIL_THROW_POSIX_ERROR_CODE_EXCEPTION (
+                            THEKOGANS_UTIL_POSIX_OS_ERROR_CODE);
+                    }
+                }
+                ~FullPath () {
+                    free (fullPath);
+                }
+            } fullPath (path);
+            return fullPath.fullPath;
+        #endif // defined (TOOLCHAIN_OS_Windows)
         }
 
         bool Path::GetComponents (std::list<std::string> &components) const {

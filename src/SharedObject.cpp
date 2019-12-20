@@ -21,11 +21,13 @@
 #endif // !defined (TOOLCHAIN_OS_Windows)
 #include <cstring>
 #include "thekogans/util/Exception.h"
-#if defined (TOOLCHAIN_OS_Linux)
+#if defined (TOOLCHAIN_OS_Windows)
+    #include "thekogans/util/WindowsUtils.h"
+#elif defined (TOOLCHAIN_OS_Linux)
     #include "thekogans/util/LinuxUtils.h"
 #elif defined (TOOLCHAIN_OS_OSX)
     #include "thekogans/util/OSXUtils.h"
-#endif // defined (TOOLCHAIN_OS_Linux)
+#endif // defined (TOOLCHAIN_OS_Windows)
 #include "thekogans/util/FixedArray.h"
 #include "thekogans/util/SharedObject.h"
 
@@ -113,13 +115,13 @@ namespace thekogans {
                             ui64 size,
                             LPSECURITY_ATTRIBUTES securityAttributes) :
                             handle (
-                                CreateFileMapping (
+                                CreateFileMappingW (
                                     INVALID_HANDLE_VALUE,
                                     securityAttributes,
                                     PAGE_READWRITE,
                                     THEKOGANS_UTIL_UI64_GET_UI32_AT_INDEX (size, 0),
                                     THEKOGANS_UTIL_UI64_GET_UI32_AT_INDEX (size, 1),
-                                    name)),
+                                    UTF8ToUTF16 (name).c_str ())),
                             errorCode (THEKOGANS_UTIL_OS_ERROR_CODE),
                             created (errorCode != ERROR_ALREADY_EXISTS) {
                         if (handle == 0) {
@@ -297,9 +299,9 @@ namespace thekogans {
                 const TimeSpec &timeSpec) :
             #if defined (TOOLCHAIN_OS_Windows)
                 handle (
-                    CreateFileMapping (
+                    CreateFileMappingW (
                         INVALID_HANDLE_VALUE, securityAttributes,
-                        PAGE_READWRITE, 0, 1, GetName (name_).c_str ())) {
+                        PAGE_READWRITE, 0, 1, UTF8ToUTF16 (GetName (name_)).c_str ())) {
             #else // defined (TOOLCHAIN_OS_Windows)
                 name (GetName (name_)),
                 handle (shm_open (name.c_str (), O_RDWR | O_CREAT | O_EXCL, mode)) {
@@ -311,9 +313,9 @@ namespace thekogans {
                 if (errorCode == ERROR_ALREADY_EXISTS) {
                     CloseHandle (handle);
                     Sleep (timeSpec);
-                    handle = CreateFileMapping (
+                    handle = CreateFileMappingW (
                         INVALID_HANDLE_VALUE, securityAttributes,
-                        PAGE_READWRITE, 0, 1, GetName (name_).c_str ());
+                        PAGE_READWRITE, 0, 1, UTF8ToUTF16 (GetName (name_)).c_str ());
                 }
                 else {
                     THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (errorCode);

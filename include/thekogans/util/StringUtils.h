@@ -557,7 +557,7 @@ namespace thekogans {
         /// \param[in] name Name of variable whose value to return.
         /// \return Value of variable, empty string if not found.
         _LIB_THEKOGANS_UTIL_DECL std::string _LIB_THEKOGANS_UTIL_API GetEnvironmentVariable (
-            const char *name);
+            const std::string &name);
 
     } // namespace util
 } // namespace thekogans
