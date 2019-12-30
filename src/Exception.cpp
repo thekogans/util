@@ -19,7 +19,6 @@
     #if defined (__GNUC__)
         #include <sec_api/stdio_s.h>
     #endif // defined (__GNUC__)
-    #include <comdef.h>
 #endif // defined (TOOLCHAIN_OS_Windows)
 #include <cstdarg>
 #include <cstring>
@@ -27,8 +26,11 @@
 #include "thekogans/util/Singleton.h"
 #include "thekogans/util/SpinLock.h"
 #include "thekogans/util/XMLUtils.h"
-#include "thekogans/util/Exception.h"
 #include "thekogans/util/Serializer.h"
+#if defined (TOOLCHAIN_OS_Windows)
+    #include "thekogans/util/WindowsUtils.h"
+#endif // defined (TOOLCHAIN_OS_Windows)
+#include "thekogans/util/Exception.h"
 
 namespace thekogans {
     namespace util {
@@ -104,6 +106,22 @@ namespace thekogans {
 
     #if defined (TOOLCHAIN_OS_Windows)
         namespace {
+            std::string GetErrorCodeMessage (
+                    DWORD flags,
+                    LPCVOID source,
+                    DWORD errorCode) {
+            wchar_t buffer[4096];
+            return
+                FormatMessageW (
+                    flags,
+                    source,
+                    errorCode,
+                    MAKELANGID (LANG_NEUTRAL, SUBLANG_NEUTRAL),
+                    buffer,
+                    _countof (buffer),
+                    0) != 0 ? UTF16ToUTF8 (buffer) : std::string ();
+            }
+
             struct NTDll : public Singleton<NTDll, SpinLock> {
                 HMODULE handle;
 
@@ -113,59 +131,42 @@ namespace thekogans {
                     FreeLibrary (handle);
                 }
 
-                DWORD FormatMessage (
-                        DWORD errorCode,
-                        wchar_t **buffer) {
-                    return handle != 0 ? ::FormatMessageW (
-                        FORMAT_MESSAGE_ALLOCATE_BUFFER |
-                        FORMAT_MESSAGE_FROM_SYSTEM |
-                        FORMAT_MESSAGE_IGNORE_INSERTS |
-                        FORMAT_MESSAGE_MAX_WIDTH_MASK |
-                        FORMAT_MESSAGE_FROM_HMODULE,
-                        handle,
-                        errorCode,
-                        MAKELANGID (LANG_NEUTRAL, SUBLANG_DEFAULT),
-                        (wchar_t *)buffer,
-                        0,
-                        0) : 0;
+                std::string FormatMessage (DWORD errorCode) {
+                    return handle != 0 ?
+                        GetErrorCodeMessage (
+                            FORMAT_MESSAGE_FROM_SYSTEM |
+                            FORMAT_MESSAGE_IGNORE_INSERTS |
+                            FORMAT_MESSAGE_MAX_WIDTH_MASK |
+                            FORMAT_MESSAGE_FROM_HMODULE,
+                            handle,
+                            errorCode) :
+                        std::string ();
                 }
             };
         }
     #endif // defined (TOOLCHAIN_OS_Windows)
 
         std::string Exception::FromErrorCode (THEKOGANS_UTIL_ERROR_CODE errorCode) {
-            std::string message;
         #if defined (TOOLCHAIN_OS_Windows)
-            wchar_t *buffer = 0;
-            FormatMessageW (
-                FORMAT_MESSAGE_ALLOCATE_BUFFER |
+            std::string message = GetErrorCodeMessage (
                 FORMAT_MESSAGE_FROM_SYSTEM |
                 FORMAT_MESSAGE_IGNORE_INSERTS |
                 FORMAT_MESSAGE_MAX_WIDTH_MASK,
                 0,
-                errorCode,
-                MAKELANGID (LANG_NEUTRAL, SUBLANG_DEFAULT),
-                (wchar_t *)&buffer,
-                0,
-                0);
-            if (buffer == 0) {
-                NTDll::Instance ().FormatMessage (errorCode, &buffer);
+                errorCode);
+            if (message.empty ()) {
+                message = NTDll::Instance ().FormatMessage (errorCode);
             }
-            if (buffer != 0) {
-                message = FormatString (
+            return !message.empty () ?
+                FormatString (
                     "[0x%x:%d - %s]",
-                    errorCode, errorCode, UTF16ToUTF8 (buffer).c_str ());
-                LocalFree (buffer);
-            }
-            else {
-                message = FormatString (
+                    errorCode, errorCode, message.c_str ()) :
+                FormatString (
                     "[0x%x:%d - Unable to find message text]",
                     errorCode, errorCode);
-            }
         #else // defined (TOOLCHAIN_OS_Windows)
-            message = FromPOSIXErrorCode (errorCode);
+            return FromPOSIXErrorCode (errorCode);
         #endif // defined (TOOLCHAIN_OS_Windows)
-            return message;
         }
 
         std::string Exception::FromErrorCodeAndMessage (
@@ -182,10 +183,7 @@ namespace thekogans {
 
     #if defined (TOOLCHAIN_OS_Windows)
         std::string Exception::FromHRESULTErrorCode (HRESULT errorCode) {
-        #define _UNICODE
-            _com_error comError (errorCode);
-            return UTF16ToUTF8 (comError.ErrorMessage ());
-        #undef _UNICODE
+            return GetErrorCodeMessage (FORMAT_MESSAGE_FROM_SYSTEM, 0, errorCode);
         }
 
         std::string Exception::FromHRESULTErrorCodeAndMessage (
@@ -204,7 +202,7 @@ namespace thekogans {
         std::string Exception::FromPOSIXErrorCode (int errorCode) {
         #if defined (TOOLCHAIN_OS_Windows)
             wchar_t errorString[200];
-            if (_wstrerror_s (errorString, 200, errorCode)) {
+            if (_wcserror_s (errorString, 200, errorCode)) {
                 return UTF16ToUTF8 (errorString);
             }
         #else // defined (TOOLCHAIN_OS_Windows)
