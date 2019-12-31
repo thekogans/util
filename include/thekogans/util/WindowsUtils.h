@@ -80,6 +80,11 @@ namespace thekogans {
                 DWORD flags = MB_ERR_INVALID_CHARS) {
             return UTF8ToUTF16 (utf8.data (), utf8.size (), flags);
         }
+
+        #if !defined (WC_ERR_INVALID_CHARS)
+            #define WC_ERR_INVALID_CHARS 0x00000080
+        #endif // !defined (WC_ERR_INVALID_CHARS)
+
         /// \brief
         /// Convert the given UTF16 string to UTF8.
         /// \param[in] utf16 UTF16 string to convert.
@@ -89,7 +94,7 @@ namespace thekogans {
         _LIB_THEKOGANS_UTIL_DECL std::string _LIB_THEKOGANS_UTIL_API UTF16ToUTF8 (
             const wchar_t *utf16,
             std::size_t length,
-            DWORD flags = WC_ERR_INVALID_CHARS);
+            DWORD flags = WC_ERR_INVALID_CHARS | WC_NO_BEST_FIT_CHARS);
         /// \brief
         /// Convert the given UTF16 string to UTF8.
         /// \param[in] utf16 UTF16 string to convert.
@@ -98,7 +103,7 @@ namespace thekogans {
         /// \return std::string UTF8 representation of the given UTF16 string.
         inline std::string UTF16ToUTF8 (
                 const std::wstring &utf16,
-                DWORD flags = WC_ERR_INVALID_CHARS) {
+                DWORD flags = WC_ERR_INVALID_CHARS | WC_NO_BEST_FIT_CHARS) {
             return UTF16ToUTF8 (utf16.data (), utf16.size (), flags);
         }
 

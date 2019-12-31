@@ -90,10 +90,10 @@ namespace thekogans {
                 DWORD flags) {
             if (utf8 != 0 && length > 0) {
                 std::wstring utf16;
-                int utf16Length = MultiByteToWideChar (CP_UTF8, flags, utf8, length, 0, 0);
+                int utf16Length = MultiByteToWideChar (CP_UTF8, flags, utf8, (int)length, 0, 0);
                 if (utf16Length > 0) {
                     utf16.resize (utf16Length);
-                    MultiByteToWideChar (CP_UTF8, flags, utf8, length, (LPWSTR)utf16.data (), (int)utf16.size ());
+                    MultiByteToWideChar (CP_UTF8, flags, utf8, (int)length, (LPWSTR)utf16.data (), (int)utf16.size ());
                     return utf16;
                 }
                 else {
@@ -113,10 +113,10 @@ namespace thekogans {
                 DWORD flags) {
             if (utf16 != 0 && length > 0) {
                 std::string utf8;
-                int utf8Length = WideCharToMultiByte (CP_UTF8, flags, utf16, length, 0, 0, 0, 0);
+                int utf8Length = WideCharToMultiByte (CP_UTF8, flags, utf16, (int)length, 0, 0, 0, 0);
                 if (utf8Length > 0) {
                     utf8.resize (utf8Length);
-                    WideCharToMultiByte (CP_UTF8, flags, utf16, length, (LPSTR)utf8.data (), (int)utf8.size (), 0, 0);
+                    WideCharToMultiByte (CP_UTF8, flags, utf16, (int)length, (LPSTR)utf8.data (), (int)utf8.size (), 0, 0);
                     return utf8;
                 }
                 else {
