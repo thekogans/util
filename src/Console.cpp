@@ -146,25 +146,33 @@ namespace thekogans {
                     const std::string &str,
                     Console::StdStream where,
                     const Console::ColorType color) {
+            #if defined (TOOLCHAIN_OS_Windows)
+                struct CodePageSetter {
+                    UINT codePage;
+                    CodePageSetter () :
+                            codePage (GetConsoleOutputCP ()) {
+                        SetConsoleOutputCP (CP_UTF8);
+                    }
+                    ~CodePageSetter () {
+                        SetConsoleOutputCP (codePage);
+                    }
+                } codePageSetter;
+            #endif // defined (TOOLCHAIN_OS_Windows)
                 std::ostream &stream = where == Console::StdOut ? std::cout : std::cerr;
                 if (color != 0) {
                 #if defined (TOOLCHAIN_OS_Windows)
                     struct ColorSetter {
                         DWORD stdHandle;
-                        UINT codePage;
                         CONSOLE_SCREEN_BUFFER_INFO consoleScreenBufferInfo;
                         ColorSetter (
                                 DWORD stdHandle_,
                                 const Console::ColorType color) :
-                                stdHandle (stdHandle_),
-                                codePage (GetConsoleOutputCP ()) {
-                            SetConsoleOutputCP (CP_UTF8);
+                                stdHandle (stdHandle_) {
                             HANDLE handle = GetStdHandle (stdHandle);
                             GetConsoleScreenBufferInfo (handle, &consoleScreenBufferInfo);
                             SetConsoleTextAttribute (handle, color | FOREGROUND_INTENSITY);
                         }
                         ~ColorSetter () {
-                            SetConsoleOutputCP (codePage);
                             SetConsoleTextAttribute (GetStdHandle (stdHandle),
                                 consoleScreenBufferInfo.wAttributes);
                         }

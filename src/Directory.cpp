@@ -362,7 +362,8 @@ namespace thekogans {
                                     std::string entryName =
                                         UTF16ToUTF8 (
                                             notify->FileName,
-                                            notify->FileNameLength / sizeof (WCHAR));
+                                            notify->FileNameLength / sizeof (WCHAR),
+                                            WC_ERR_INVALID_CHARS);
                                     switch (notify->Action) {
                                         case FILE_ACTION_RENAMED_NEW_NAME:
                                         case FILE_ACTION_ADDED: {

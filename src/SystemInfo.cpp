@@ -278,7 +278,7 @@ namespace thekogans {
                             WTSUserName,
                             &data,
                             &length)) {
-                        result = UTF16ToUTF8 (data, length);
+                        result = UTF16ToUTF8 (data, length, WC_ERR_INVALID_CHARS);
                         WTSFreeMemory (data);
                     }
                     else {
