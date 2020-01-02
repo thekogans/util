@@ -195,12 +195,11 @@ namespace thekogans {
                     } colorSetter (stream, color);
                 #endif // defined (TOOLCHAIN_OS_Windows)
                     stream << str;
-                    stream.flush ();
                 }
                 else {
                     stream << str;
-                    stream.flush ();
                 }
+                stream.flush ();
             }
         }
 
