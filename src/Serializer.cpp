@@ -147,13 +147,16 @@ namespace thekogans {
 
         Serializer &Serializer::operator << (const std::wstring &value) {
             *this << SizeT (value.size ());
-            if (value.size () > 0) {
-                std::size_t size = value.size () * sizeof (wchar_t);
-                if (Write (value.c_str (), size) != size) {
+            for (std::size_t i = 0, count = value.size (); i < count; ++i) {
+                wchar_t ch = value[i];
+                if (endianness != HostEndian) {
+                    ch = ByteSwap<LittleEndian, BigEndian> (ch);
+                }
+                if (Write (&ch, WCHAR_T_SIZE) != WCHAR_T_SIZE) {
                     THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                        "Write (value.c_str (), " THEKOGANS_UTIL_SIZE_T_FORMAT ") != " THEKOGANS_UTIL_SIZE_T_FORMAT,
-                        size,
-                        size);
+                        "Write (&ch, " THEKOGANS_UTIL_SIZE_T_FORMAT ") != " THEKOGANS_UTIL_SIZE_T_FORMAT,
+                        WCHAR_T_SIZE,
+                        WCHAR_T_SIZE);
                 }
             }
             return *this;
@@ -164,12 +167,18 @@ namespace thekogans {
             *this >> length;
             if (length > 0) {
                 value.resize (length);
-                std::size_t size = length * sizeof (wchar_t);
-                if (Read (&value[0], size) != size) {
-                    THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                        "Read (&value[0], " THEKOGANS_UTIL_SIZE_T_FORMAT ") != " THEKOGANS_UTIL_SIZE_T_FORMAT,
-                        size,
-                        size);
+                for (std::size_t i = 0; i < length; ++i) {
+                    wchar_t ch;
+                    if (Read (&ch, WCHAR_T_SIZE) != WCHAR_T_SIZE) {
+                        THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
+                            "Read (&ch, " THEKOGANS_UTIL_SIZE_T_FORMAT ") != " THEKOGANS_UTIL_SIZE_T_FORMAT,
+                            WCHAR_T_SIZE,
+                            WCHAR_T_SIZE);
+                    }
+                    if (endianness != HostEndian) {
+                        ch = ByteSwap<LittleEndian, BigEndian> (ch);
+                    }
+                    value[i] = ch;
                 }
             }
             else {

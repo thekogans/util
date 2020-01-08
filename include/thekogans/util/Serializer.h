@@ -180,7 +180,7 @@ namespace thekogans {
             /// \param[in] value std::wstring whose size to return.
             /// \return Serialized size of std::wstring.
             static std::size_t Size (const std::wstring &value) {
-                return SizeT (value.size ()).Size () + value.size ();
+                return SizeT (value.size ()).Size () + value.size () * WCHAR_T_SIZE;
             }
 
             /// \brief

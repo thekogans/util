@@ -266,6 +266,9 @@ namespace thekogans {
         /// \brief
         /// std::size_t type size.
         const std::size_t SIZE_T_SIZE = sizeof (std::size_t);
+        /// \brief
+        /// wchar_t type size.
+        const std::size_t WCHAR_T_SIZE = sizeof (wchar_t);
 
         /// \def THEKOGANS_UTIL_IS_ODD(value)
         /// Evaluates to true if the given value is odd.
