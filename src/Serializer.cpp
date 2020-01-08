@@ -145,6 +145,39 @@ namespace thekogans {
             return *this;
         }
 
+        Serializer &Serializer::operator << (const std::wstring &value) {
+            *this << SizeT (value.size ());
+            if (value.size () > 0) {
+                std::size_t size = value.size () * sizeof (wchar_t);
+                if (Write (value.c_str (), size) != size) {
+                    THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
+                        "Write (value.c_str (), " THEKOGANS_UTIL_SIZE_T_FORMAT ") != " THEKOGANS_UTIL_SIZE_T_FORMAT,
+                        size,
+                        size);
+                }
+            }
+            return *this;
+        }
+
+        Serializer &Serializer::operator >> (std::wstring &value) {
+            SizeT length;
+            *this >> length;
+            if (length > 0) {
+                value.resize (length);
+                std::size_t size = length * sizeof (wchar_t);
+                if (Read (&value[0], size) != size) {
+                    THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
+                        "Read (&value[0], " THEKOGANS_UTIL_SIZE_T_FORMAT ") != " THEKOGANS_UTIL_SIZE_T_FORMAT,
+                        size,
+                        size);
+                }
+            }
+            else {
+                value.clear ();
+            }
+            return *this;
+        }
+
         Serializer &Serializer::operator << (const SecureString &value) {
             *this << SizeT (value.size ());
             if (value.size () > 0) {

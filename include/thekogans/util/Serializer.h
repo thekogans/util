@@ -176,6 +176,25 @@ namespace thekogans {
             Serializer &operator >> (std::string &value);
 
             /// \brief
+            /// Return serialized size of std::wstring.
+            /// \param[in] value std::wstring whose size to return.
+            /// \return Serialized size of std::wstring.
+            static std::size_t Size (const std::wstring &value) {
+                return SizeT (value.size ()).Size () + value.size ();
+            }
+
+            /// \brief
+            /// Serialize a std::wstring.
+            /// \param[in] value Value to serialize.
+            /// \return *this.
+            Serializer &operator << (const std::wstring &value);
+            /// \brief
+            /// Extract a std::wstring.
+            /// \param[out] value Where to place the extracted std::wstring.
+            /// \return *this.
+            Serializer &operator >> (std::wstring &value);
+
+            /// \brief
             /// Return serialized size of \see{SecureString}.
             /// \param[in] value \see{SecureString} whose size to return.
             /// \return Serialized size of \see{SecureString}.

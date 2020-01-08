@@ -270,21 +270,29 @@ namespace thekogans {
             #if defined (TOOLCHAIN_OS_Windows)
                 DWORD sessionId = WTSGetActiveConsoleSessionId ();
                 if (sessionId != 0xFFFFFFFF) {
-                    LPWSTR data = 0;
-                    DWORD length = 0;
-                    if (WTSQuerySessionInformationW (
-                            WTS_CURRENT_SERVER_HANDLE,
-                            sessionId,
-                            WTSUserName,
-                            &data,
-                            &length)) {
-                        result = UTF16ToUTF8 (data, length, WC_ERR_INVALID_CHARS);
-                        WTSFreeMemory (data);
-                    }
-                    else {
-                        THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                            THEKOGANS_UTIL_OS_ERROR_CODE);
-                    }
+                    struct UserName {
+                        LPWSTR data;
+                        DWORD length;
+                        UserName () :
+                                data (0),
+                                length (0) {
+                            if (!WTSQuerySessionInformationW (
+                                    WTS_CURRENT_SERVER_HANDLE,
+                                    sessionId,
+                                    WTSUserName,
+                                    &data,
+                                    &length)) {
+                                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                                    THEKOGANS_UTIL_OS_ERROR_CODE);
+                            }
+                        }
+                        ~UserName () {
+                            if (data != 0) {
+                                WTSFreeMemory (data);
+                            }
+                        }
+                    } userName;
+                    result = UTF16ToUTF8 (std::wstring (userName.data), WC_ERR_INVALID_CHARS);
                 }
             #elif defined (TOOLCHAIN_OS_Linux)
                 struct passwd *pw = getpwuid (geteuid ());
