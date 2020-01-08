@@ -273,7 +273,7 @@ namespace thekogans {
                     struct UserName {
                         LPWSTR data;
                         DWORD length;
-                        UserName () :
+                        explicit UserName (DWORD sessionId) :
                                 data (0),
                                 length (0) {
                             if (!WTSQuerySessionInformationW (
@@ -291,7 +291,7 @@ namespace thekogans {
                                 WTSFreeMemory (data);
                             }
                         }
-                    } userName;
+                    } userName (sessionId);
                     result = UTF16ToUTF8 (std::wstring (userName.data), WC_ERR_INVALID_CHARS);
                 }
             #elif defined (TOOLCHAIN_OS_Linux)
