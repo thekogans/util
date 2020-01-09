@@ -363,7 +363,7 @@ namespace thekogans {
                                         UTF16ToUTF8 (
                                             notify->FileName,
                                             notify->FileNameLength / sizeof (WCHAR),
-                                            WC_ERR_INVALID_CHARS);
+                                            WC_ERR_INVALID_CHARS | WC_NO_BEST_FIT_CHARS);
                                     switch (notify->Action) {
                                         case FILE_ACTION_RENAMED_NEW_NAME:
                                         case FILE_ACTION_ADDED: {

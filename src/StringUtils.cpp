@@ -770,7 +770,7 @@ namespace thekogans {
                 wchar_t value[32767];
                 DWORD length = GetEnvironmentVariableW (UTF8ToUTF16 (name).c_str (), value, 32767);
                 if (length > 0) {
-                    return UTF16ToUTF8 (value, length, WC_ERR_INVALID_CHARS);
+                    return UTF16ToUTF8 (value, length);
                 }
                 else {
                     THEKOGANS_UTIL_ERROR_CODE errorCode = THEKOGANS_UTIL_OS_ERROR_CODE;
