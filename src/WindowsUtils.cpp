@@ -88,16 +88,22 @@ namespace thekogans {
                 const char *utf8,
                 std::size_t length,
                 DWORD flags) {
-            if (utf8 != 0 && length > 0) {
-                int utf16Length = MultiByteToWideChar (CP_UTF8, flags, utf8, (int)length, 0, 0);
-                if (utf16Length > 0) {
-                    std::wstring utf16 (utf16Length, L'?');
-                    MultiByteToWideChar (CP_UTF8, flags, utf8, (int)length, (LPWSTR)utf16.data (), (int)utf16.size ());
-                    return utf16;
+            if (length > 0) {
+                if (utf8 != 0) {
+                    int utf16Length = MultiByteToWideChar (CP_UTF8, flags, utf8, (int)length, 0, 0);
+                    if (utf16Length > 0) {
+                        std::wstring utf16 (utf16Length, L'?');
+                        MultiByteToWideChar (CP_UTF8, flags, utf8, (int)length, (LPWSTR)utf16.data (), (int)utf16.size ());
+                        return utf16;
+                    }
+                    else {
+                        THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                            THEKOGANS_UTIL_OS_ERROR_CODE);
+                    }
                 }
                 else {
                     THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                        THEKOGANS_UTIL_OS_ERROR_CODE);
+                        THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
                 }
             }
             return std::wstring ();
@@ -107,16 +113,22 @@ namespace thekogans {
                 const wchar_t *utf16,
                 std::size_t length,
                 DWORD flags) {
-            if (utf16 != 0 && length > 0) {
-                int utf8Length = WideCharToMultiByte (CP_UTF8, flags, utf16, (int)length, 0, 0, 0, 0);
-                if (utf8Length > 0) {
-                    std::string utf8 (utf8Length, '?');
-                    WideCharToMultiByte (CP_UTF8, flags, utf16, (int)length, (LPSTR)utf8.data (), (int)utf8.size (), 0, 0);
-                    return utf8;
+            if (length > 0) {
+                if (utf16 != 0) {
+                    int utf8Length = WideCharToMultiByte (CP_UTF8, flags, utf16, (int)length, 0, 0, 0, 0);
+                    if (utf8Length > 0) {
+                        std::string utf8 (utf8Length, '?');
+                        WideCharToMultiByte (CP_UTF8, flags, utf16, (int)length, (LPSTR)utf8.data (), (int)utf8.size (), 0, 0);
+                        return utf8;
+                    }
+                    else {
+                        THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                            THEKOGANS_UTIL_OS_ERROR_CODE);
+                    }
                 }
                 else {
                     THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                        THEKOGANS_UTIL_OS_ERROR_CODE);
+                        THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
                 }
             }
             return std::string ();

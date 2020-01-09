@@ -289,10 +289,11 @@ namespace thekogans {
                             WTSFreeMemory (data);
                         }
                     }
+                    operator std::string () {
+                        return data != 0 ? UTF16ToUTF8 (std::wstring (data)) : std::string ();
+                    }
                 } userName;
-                if (userName.data != 0 && userName.length > 0) {
-                    result = UTF16ToUTF8 (std::wstring (userName.data));
-                }
+                result = userName;
             #elif defined (TOOLCHAIN_OS_Linux)
                 struct passwd *pw = getpwuid (geteuid ());
                 if (pw != 0) {

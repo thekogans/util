@@ -62,6 +62,11 @@ namespace thekogans {
 
         /// \brief
         /// Convert the given UTF8 string to UTF16.
+        /// NOTE: The following is allowed and will result in std::wstring ():
+        /// utf8 == 0 && length == 0
+        /// utf8 != 0 && length == 0
+        /// The following will result in THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL being thrown:
+        /// utf8 == 0 && length > 0
         /// \param[in] utf8 UTF8 string to convert.
         /// \param[in] length Length (in bytes) of the given UTF8 string.
         /// \param[in] flags Various MB_* flags to control the behavior of MultiByteToWideChar.
@@ -87,6 +92,11 @@ namespace thekogans {
 
         /// \brief
         /// Convert the given UTF16 string to UTF8.
+        /// NOTE: The following is allowed and will result in std::string ():
+        /// utf16 == 0 && length == 0
+        /// utf16 != 0 && length == 0
+        /// The following will result in THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL being thrown:
+        /// utf16 == 0 && length > 0
         /// \param[in] utf16 UTF16 string to convert.
         /// \param[in] length Length (in sizeof (wchar_t)) of the given UTF16 string.
         /// \param[in] flags Various WC_* flags to control the behavior of WideCharToMultiByte.
