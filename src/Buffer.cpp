@@ -19,6 +19,7 @@
 #include <cstring>
 #include <algorithm>
 #if defined (THEKOGANS_UTIL_HAVE_ZLIB)
+    #include <vector>
     #include <zlib.h>
 #endif // defined (THEKOGANS_UTIL_HAVE_ZLIB)
 #if defined (TOOLCHAIN_OS_Windows)
@@ -226,8 +227,6 @@ namespace thekogans {
 
     #if defined (THEKOGANS_UTIL_HAVE_ZLIB)
         namespace {
-            const std::size_t BUFFER_SIZE = 16384;
-
             struct OutBuffer {
                 Allocator *allocator;
                 ui8 *data;
@@ -256,15 +255,15 @@ namespace thekogans {
                     const ui8 *data,
                     std::size_t length,
                     OutBuffer &outBuffer) {
-                ui8 tmpOutBuffer[BUFFER_SIZE];
+                std::vector<ui8> tmpOutBuffer (length);
                 z_stream zStream;
                 zStream.zalloc = 0;
                 zStream.zfree = 0;
                 zStream.opaque = 0;
                 zStream.next_in = (Bytef *)data;
                 zStream.avail_in = (uInt)length;
-                zStream.next_out = tmpOutBuffer;
-                zStream.avail_out = BUFFER_SIZE;
+                zStream.next_out = tmpOutBuffer.data ();
+                zStream.avail_out = length;
                 deflateInit (&zStream, Z_BEST_COMPRESSION);
                 while (zStream.avail_in != 0) {
                     int result = deflate (&zStream, Z_NO_FLUSH);
@@ -279,22 +278,22 @@ namespace thekogans {
                         }
                     }
                     if (zStream.avail_out == 0) {
-                        outBuffer.Write (tmpOutBuffer, BUFFER_SIZE);
-                        zStream.next_out = tmpOutBuffer;
-                        zStream.avail_out = BUFFER_SIZE;
+                        outBuffer.Write (tmpOutBuffer.data (), length);
+                        zStream.next_out = tmpOutBuffer.data ();
+                        zStream.avail_out = length;
                     }
                 }
                 int result = Z_OK;
                 while (result == Z_OK) {
                     if (zStream.avail_out == 0) {
-                        outBuffer.Write (tmpOutBuffer, BUFFER_SIZE);
-                        zStream.next_out = tmpOutBuffer;
-                        zStream.avail_out = BUFFER_SIZE;
+                        outBuffer.Write (tmpOutBuffer.data (), length);
+                        zStream.next_out = tmpOutBuffer.data ();
+                        zStream.avail_out = length;
                     }
                     result = deflate (&zStream, Z_FINISH);
                 }
                 assert (result == Z_STREAM_END);
-                outBuffer.Write (tmpOutBuffer, BUFFER_SIZE - zStream.avail_out);
+                outBuffer.Write (tmpOutBuffer.data (), length - zStream.avail_out);
                 deflateEnd (&zStream);
             }
 
@@ -302,13 +301,13 @@ namespace thekogans {
                     const ui8 *data,
                     std::size_t length,
                     OutBuffer &outBuffer) {
-                ui8 tmpOutBuffer[BUFFER_SIZE];
+                std::vector<ui8> tmpOutBuffer (length * 2);
                 z_stream zStream;
                 zStream.zalloc = 0;
                 zStream.zfree = 0;
                 zStream.opaque = 0;
                 zStream.next_in = (Bytef *)data;
-                zStream.avail_in = (uInt)length;
+                zStream.avail_in = (uInt)tmpOutBuffer.size ();
                 int result = inflateInit (&zStream);
                 if (result != Z_OK) {
                     if (zStream.msg != 0) {
@@ -321,11 +320,11 @@ namespace thekogans {
                     }
                 }
                 do {
-                    zStream.next_out = tmpOutBuffer;
-                    zStream.avail_out = BUFFER_SIZE;
+                    zStream.next_out = tmpOutBuffer.data ();
+                    zStream.avail_out = tmpOutBuffer.size ();
                     result = inflate (&zStream, Z_NO_FLUSH);
                     assert (result != Z_STREAM_ERROR);
-                    outBuffer.Write (tmpOutBuffer, BUFFER_SIZE - zStream.avail_out);
+                    outBuffer.Write (tmpOutBuffer.data (), tmpOutBuffer.size () - zStream.avail_out);
                 } while (zStream.avail_out == 0);
                 result = inflateEnd (&zStream);
                 assert (result == Z_OK);
