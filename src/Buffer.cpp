@@ -263,7 +263,7 @@ namespace thekogans {
                 zStream.next_in = (Bytef *)data;
                 zStream.avail_in = (uInt)length;
                 zStream.next_out = tmpOutBuffer.data ();
-                zStream.avail_out = length;
+                zStream.avail_out = (uInt)length;
                 deflateInit (&zStream, Z_BEST_COMPRESSION);
                 while (zStream.avail_in != 0) {
                     int result = deflate (&zStream, Z_NO_FLUSH);
@@ -280,7 +280,7 @@ namespace thekogans {
                     if (zStream.avail_out == 0) {
                         outBuffer.Write (tmpOutBuffer.data (), length);
                         zStream.next_out = tmpOutBuffer.data ();
-                        zStream.avail_out = length;
+                        zStream.avail_out = (uInt)length;
                     }
                 }
                 int result = Z_OK;
@@ -288,7 +288,7 @@ namespace thekogans {
                     if (zStream.avail_out == 0) {
                         outBuffer.Write (tmpOutBuffer.data (), length);
                         zStream.next_out = tmpOutBuffer.data ();
-                        zStream.avail_out = length;
+                        zStream.avail_out = (uInt)length;
                     }
                     result = deflate (&zStream, Z_FINISH);
                 }
@@ -321,7 +321,7 @@ namespace thekogans {
                 }
                 do {
                     zStream.next_out = tmpOutBuffer.data ();
-                    zStream.avail_out = tmpOutBuffer.size ();
+                    zStream.avail_out = (uInt)tmpOutBuffer.size ();
                     result = inflate (&zStream, Z_NO_FLUSH);
                     assert (result != Z_STREAM_ERROR);
                     outBuffer.Write (tmpOutBuffer.data (), tmpOutBuffer.size () - zStream.avail_out);
