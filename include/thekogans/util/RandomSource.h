@@ -103,7 +103,7 @@ namespace thekogans {
             /// https://software.intel.com/en-us/blogs/2012/11/17/the-difference-between-rdrand-and-rdseed,
             /// use of rdseed should be limited to seeding a prng.
             /// IMPORTANT: Unlike GetBytes above, this method will not fall back
-            /// on software implementation and will only deliver true random
+            /// on software a implementation and will only deliver true random
             /// bytes. Depending on your use case, there is a very good chance
             /// that the number of bytes returned will be less than what you
             /// asked for. This is on purpose. If you're using this routine,
@@ -156,6 +156,11 @@ namespace thekogans {
             /// Substitute for system rand function.
             /// \return A random ui64.
             ui64 Getui64 ();
+
+            /// \brief
+            /// Substitute for system rand function.
+            /// \return A random std::size_t.
+            std::size_t Getsize_t ();
 
             /// \brief
             /// RandomSource is neither copy constructable, nor assignable.

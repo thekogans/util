@@ -140,6 +140,25 @@ namespace thekogans {
             Serializer &operator >> (bool &value);
 
             /// \brief
+            /// Return serialized size of wchar_t.
+            /// \param[in] value wchar_t whose size to return.
+            /// \return Serialized size of wchar_t.
+            static std::size_t Size (wchar_t /*value*/) {
+                return WCHAR_T_SIZE;
+            }
+
+            /// \brief
+            /// Serialize a wchar_t.
+            /// \param[in] value wchar_t to serialize.
+            /// \return *this.
+            Serializer &operator << (wchar_t value);
+            /// \brief
+            /// Extract a wchar_t.
+            /// \param[out] value Where to place the extracted wchar_t.
+            /// \return *this.
+            Serializer &operator >> (wchar_t &value);
+
+            /// \brief
             /// Return serialized size of c-string.
             /// \param[in] value c-string whose size to return.
             /// \return Serialized size of c-string.
@@ -174,6 +193,23 @@ namespace thekogans {
             /// \param[out] value Where to place the extracted std::string.
             /// \return *this.
             Serializer &operator >> (std::string &value);
+
+            /// \brief
+            /// Return serialized size of wide c-string.
+            /// \param[in] value Wide c-string whose size to return.
+            /// \return Serialized size of wide c-string.
+            static std::size_t Size (const wchar_t *value);
+
+            /// \brief
+            /// Serialize a wide c-string.
+            /// \param[in] value Wide c-string to serialize.
+            /// \return *this.
+            Serializer &operator << (const wchar_t *value);
+            /// \brief
+            /// Extract a wide c-string.
+            /// \param[out] value Where to place the extracted wide c-string.
+            /// \return *this.
+            Serializer &operator >> (wchar_t *value);
 
             /// \brief
             /// Return serialized size of std::wstring.

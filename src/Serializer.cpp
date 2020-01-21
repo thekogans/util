@@ -16,6 +16,7 @@
 // along with libthekogans_util. If not, see <http://www.gnu.org/licenses/>.
 
 #include <cassert>
+#include <cwchar>
 #include "thekogans/util/Exception.h"
 #include "thekogans/util/Serializer.h"
 
@@ -62,6 +63,33 @@ namespace thekogans {
                     BOOL_SIZE);
             }
             value = b == 1;
+            return *this;
+        }
+
+
+        Serializer &Serializer::operator << (wchar_t value) {
+            if (endianness != HostEndian) {
+                value = ByteSwap<LittleEndian, BigEndian> (value);
+            }
+            if (Write (&value, I16_SIZE) != WCHAR_T_SIZE) {
+                THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
+                    "Write (&value, " THEKOGANS_UTIL_SIZE_T_FORMAT ") != " THEKOGANS_UTIL_SIZE_T_FORMAT,
+                    WCHAR_T_SIZE,
+                    WCHAR_T_SIZE);
+            }
+            return *this;
+        }
+
+        Serializer &Serializer::operator >> (wchar_t &value) {
+            if (Read (&value, WCHAR_T_SIZE) != WCHAR_T_SIZE) {
+                THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
+                    "Read (&value, " THEKOGANS_UTIL_SIZE_T_FORMAT ") != " THEKOGANS_UTIL_SIZE_T_FORMAT,
+                    WCHAR_T_SIZE,
+                    WCHAR_T_SIZE);
+            }
+            if (endianness != HostEndian) {
+                value = ByteSwap<LittleEndian, BigEndian> (value);
+            }
             return *this;
         }
 
@@ -143,6 +171,46 @@ namespace thekogans {
                 value.clear ();
             }
             return *this;
+        }
+
+        std::size_t Serializer::Size (const wchar_t *value) {
+            if (value != 0) {
+                return wcslen (value) + 1;
+            }
+            else {
+                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
+            }
+        }
+
+        Serializer &Serializer::operator << (const wchar_t *value) {
+            if (value != 0) {
+                for (std::size_t i = 0, size = Size (value); i <= size; ++i) {
+                    *this << value[i];
+                }
+                return *this;
+            }
+            else {
+                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
+            }
+        }
+
+        Serializer &Serializer::operator >> (wchar_t *value) {
+            if (value != 0) {
+                for (;;) {
+                    *this >> *value;
+                    if (*value == 0) {
+                        break;
+                    }
+                    ++value;
+                }
+                return *this;
+            }
+            else {
+                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
+            }
         }
 
         Serializer &Serializer::operator << (const std::wstring &value) {

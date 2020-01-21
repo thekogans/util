@@ -225,11 +225,28 @@ namespace thekogans {
 
                 /// \brief
                 /// Add the given value to the end of the array.
-                /// \param[in] value Vale to add.
+                /// \param[in] value Value to add.
                 template<typename T>
                 void Add (T value) {
                     if (value.Get () != 0) {
                         values.push_back (Value::Ptr (value.Get ()));
+                    }
+                    else {
+                        THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                            THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
+                    }
+                }
+
+                /// \brief
+                /// Insert the given value at the given index.
+                /// \param[in] value Value to insert.
+                /// \param[in] index Index where the new value will reside.
+                template<typename T>
+                void Insert (
+                       T value,
+                       std::size_t index) {
+                    if (value.Get () != 0 && index <= values.size ()) {
+                        values.insert (values.begin () + index, Value::Ptr (value.Get ()));
                     }
                     else {
                         THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
@@ -294,6 +311,27 @@ namespace thekogans {
                         T value) {
                     if (!name.empty () && value.Get () != 0) {
                         values.push_back (NameValue (name, Value::Ptr (value.Get ())));
+                    }
+                    else {
+                        THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                            THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
+                    }
+                }
+
+                /// \brief
+                /// Insert a named value at the given index.
+                /// \param[in] name A value name.
+                /// \param[in] value A value associated with the name.
+                /// \param[in] index Where the new named value will reside.
+                template<typename T>
+                void Insert (
+                        const std::string &name,
+                        T value,
+                        std::size_t index) {
+                    if (!name.empty () && value.Get () != 0 && index <= values.size ()) {
+                        values.insert (
+                            values.begin () + index,
+                            NameValue (name, Value::Ptr (value.Get ())));
                     }
                     else {
                         THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
@@ -657,6 +695,166 @@ namespace thekogans {
         }
 
         /// \brief
+        /// Specialization of Array::Insert for bool.
+        /// \param[in] value bool value to insert into Array.
+        /// \param[in] index Index where the new value will reside.
+        template<>
+        inline void JSON::Array::Insert (
+                bool value,
+                std::size_t index) {
+            values.insert (values.begin () + index, Value::Ptr (new Bool (value)));
+        }
+
+        /// \brief
+        /// Specialization of Array::Insert for i8.
+        /// \param[in] value i8 value to insert into Array.
+        /// \param[in] index Index where the new value will reside.
+        template<>
+        inline void JSON::Array::Insert (
+                i8 value,
+                std::size_t index) {
+            values.insert (values.begin () + index, Value::Ptr (new Number (Variant (value))));
+        }
+
+        /// \brief
+        /// Specialization of Array::Insert for ui8.
+        /// \param[in] value ui8 value to insert into Array.
+        /// \param[in] index Index where the new value will reside.
+        template<>
+        inline void JSON::Array::Insert (
+                ui8 value,
+                std::size_t index) {
+            values.insert (values.begin () + index, Value::Ptr (new Number (Variant (value))));
+        }
+
+        /// \brief
+        /// Specialization of Array::Insert for i16.
+        /// \param[in] value i16 value to insert into Array.
+        /// \param[in] index Index where the new value will reside.
+        template<>
+        inline void JSON::Array::Insert (
+                i16 value,
+                std::size_t index) {
+            values.insert (values.begin () + index, Value::Ptr (new Number (Variant (value))));
+        }
+
+        /// \brief
+        /// Specialization of Array::Insert for ui16.
+        /// \param[in] value ui16 value to insert into Array.
+        /// \param[in] index Index where the new value will reside.
+        template<>
+        inline void JSON::Array::Insert (
+                ui16 value,
+                std::size_t index) {
+            values.insert (values.begin () + index, Value::Ptr (new Number (Variant (value))));
+        }
+
+        /// \brief
+        /// Specialization of Array::Insert for i32.
+        /// \param[in] value i32 value to insert into Array.
+        /// \param[in] index Index where the new value will reside.
+        template<>
+        inline void JSON::Array::Insert (
+                i32 value,
+                std::size_t index) {
+            values.insert (values.begin () + index, Value::Ptr (new Number (Variant (value))));
+        }
+
+        /// \brief
+        /// Specialization of Array::Insert for ui32.
+        /// \param[in] value ui32 value to insert into Array.
+        /// \param[in] index Index where the new value will reside.
+        template<>
+        inline void JSON::Array::Insert (
+                ui32 value,
+                std::size_t index) {
+            values.insert (values.begin () + index, Value::Ptr (new Number (Variant (value))));
+        }
+
+        /// \brief
+        /// Specialization of Array::Insert for i64.
+        /// \param[in] value i64 value to insert into Array.
+        /// \param[in] index Index where the new value will reside.
+        template<>
+        inline void JSON::Array::Insert (
+                i64 value,
+                std::size_t index) {
+            values.insert (values.begin () + index, Value::Ptr (new Number (Variant (value))));
+        }
+
+        /// \brief
+        /// Specialization of Array::Insert for ui64.
+        /// \param[in] value ui64 value to insert into Array.
+        /// \param[in] index Index where the new value will reside.
+        template<>
+        inline void JSON::Array::Insert (
+                ui64 value,
+                std::size_t index) {
+            values.insert (values.begin () + index, Value::Ptr (new Number (Variant (value))));
+        }
+
+        /// \brief
+        /// Specialization of Array::Insert for f32.
+        /// \param[in] value f32 value to insert into Array.
+        /// \param[in] index Index where the new value will reside.
+        template<>
+        inline void JSON::Array::Insert (
+                f32 value,
+                std::size_t index) {
+            values.insert (values.begin () + index, Value::Ptr (new Number (Variant (value))));
+        }
+
+        /// \brief
+        /// Specialization of Array::Insert for f64.
+        /// \param[in] value f64 value to insert into Array.
+        /// \param[in] index Index where the new value will reside.
+        template<>
+        inline void JSON::Array::Insert (
+                f64 value,
+                std::size_t index) {
+            values.insert (values.begin () + index, Value::Ptr (new Number (Variant (value))));
+        }
+
+        /// \brief
+        /// Specialization of Array::Insert for const SizeT &.
+        /// \param[in] value const SizeT & value to insert into Array.
+        /// \param[in] index Index where the new value will reside.
+        template<>
+        inline void JSON::Array::Insert (
+                const SizeT &value,
+                std::size_t index) {
+            values.insert (values.begin () + index, Value::Ptr (new Number (Variant (value))));
+        }
+
+        /// \brief
+        /// Specialization of Array::Insert for const std::string &.
+        /// \param[in] value const std::string & value to insert into Array.
+        /// \param[in] index Index where the new value will reside.
+        template<>
+        inline void JSON::Array::Insert (
+                const std::string &value,
+                std::size_t index) {
+            values.insert (values.begin () + index, Value::Ptr (new String (value)));
+        }
+
+        /// \brief
+        /// Specialization of Array::Insert for const char *.
+        /// \param[in] value const char * value to insert into Array.
+        /// \param[in] index Index where the new value will reside.
+        template<>
+        inline void JSON::Array::Insert (
+                const char *value,
+                std::size_t index) {
+            if (value != 0) {
+                values.insert (values.begin () + index, Value::Ptr (new String (value)));
+            }
+            else {
+                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
+            }
+        }
+
+        /// \brief
         /// Specialization of Object::Add for bool.
         /// \param[in] name Name of value.
         /// \param[in] value bool value to add to Object.
@@ -887,6 +1085,300 @@ namespace thekogans {
                 const char *value) {
             if (!name.empty () && value != 0) {
                 values.push_back (NameValue (name, Value::Ptr (new String (value))));
+            }
+            else {
+                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
+            }
+        }
+
+        /// \brief
+        /// Specialization of Object::Insert for bool.
+        /// \param[in] name Name of value.
+        /// \param[in] value bool value to insert into Object.
+        /// \param[in] index Index where the new value will reside.
+        template<>
+        inline void JSON::Object::Insert (
+                const std::string &name,
+                bool value,
+                std::size_t index) {
+            if (!name.empty ()) {
+                values.insert (
+                    values.begin () + index,
+                    NameValue (name, Value::Ptr (new Bool (value))));
+            }
+            else {
+                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
+            }
+        }
+
+        /// \brief
+        /// Specialization of Object::Insert for i8.
+        /// \param[in] name Name of value.
+        /// \param[in] value i8 value to insert into Object.
+        /// \param[in] index Index where the new value will reside.
+        template<>
+        inline void JSON::Object::Insert (
+                const std::string &name,
+                i8 value,
+                std::size_t index) {
+            if (!name.empty ()) {
+                values.insert (
+                    values.begin () + index,
+                    NameValue (name, Value::Ptr (new Number (Variant (value)))));
+            }
+            else {
+                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
+            }
+        }
+
+        /// \brief
+        /// Specialization of Object::Insert for ui8.
+        /// \param[in] name Name of value.
+        /// \param[in] value ui8 value to insert into Object.
+        /// \param[in] index Index where the new value will reside.
+        template<>
+        inline void JSON::Object::Insert (
+                const std::string &name,
+                ui8 value,
+                std::size_t index) {
+            if (!name.empty ()) {
+                values.insert (
+                    values.begin () + index,
+                    NameValue (name, Value::Ptr (new Number (Variant (value)))));
+            }
+            else {
+                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
+            }
+        }
+
+        /// \brief
+        /// Specialization of Object::Insert for i16.
+        /// \param[in] name Name of value.
+        /// \param[in] value i16 value to insert into Object.
+        /// \param[in] index Index where the new value will reside.
+        template<>
+        inline void JSON::Object::Insert (
+                const std::string &name,
+                i16 value,
+                std::size_t index) {
+            if (!name.empty ()) {
+                values.insert (
+                    values.begin () + index,
+                    NameValue (name, Value::Ptr (new Number (Variant (value)))));
+            }
+            else {
+                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
+            }
+        }
+
+        /// \brief
+        /// Specialization of Object::Insert for ui16.
+        /// \param[in] name Name of value.
+        /// \param[in] value ui16 value to insert into Object.
+        /// \param[in] index Index where the new value will reside.
+        template<>
+        inline void JSON::Object::Insert (
+                const std::string &name,
+                ui16 value,
+                std::size_t index) {
+            if (!name.empty ()) {
+                values.insert (
+                    values.begin () + index,
+                    NameValue (name, Value::Ptr (new Number (Variant (value)))));
+            }
+            else {
+                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
+            }
+        }
+
+        /// \brief
+        /// Specialization of Object::Insert for i32.
+        /// \param[in] name Name of value.
+        /// \param[in] value i32 value to insert into Object.
+        /// \param[in] index Index where the new value will reside.
+        template<>
+        inline void JSON::Object::Insert (
+                const std::string &name,
+                i32 value,
+                std::size_t index) {
+            if (!name.empty ()) {
+                values.insert (
+                    values.begin () + index,
+                    NameValue (name, Value::Ptr (new Number (Variant (value)))));
+            }
+            else {
+                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
+            }
+        }
+
+        /// \brief
+        /// Specialization of Object::Insert for ui32.
+        /// \param[in] name Name of value.
+        /// \param[in] value ui32 value to insert into Object.
+        /// \param[in] index Index where the new value will reside.
+        template<>
+        inline void JSON::Object::Insert (
+                const std::string &name,
+                ui32 value,
+                std::size_t index) {
+            if (!name.empty ()) {
+                values.insert (
+                    values.begin () + index,
+                    NameValue (name, Value::Ptr (new Number (Variant (value)))));
+            }
+            else {
+                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
+            }
+        }
+
+        /// \brief
+        /// Specialization of Object::Insert for i64.
+        /// \param[in] name Name of value.
+        /// \param[in] value i64 value to insert into Object.
+        /// \param[in] index Index where the new value will reside.
+        template<>
+        inline void JSON::Object::Insert (
+                const std::string &name,
+                i64 value,
+                std::size_t index) {
+            if (!name.empty ()) {
+                values.insert (
+                    values.begin () + index,
+                    NameValue (name, Value::Ptr (new Number (Variant (value)))));
+            }
+            else {
+                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
+            }
+        }
+
+        /// \brief
+        /// Specialization of Object::Insert for ui64.
+        /// \param[in] name Name of value.
+        /// \param[in] value ui64 value to insert into Object.
+        /// \param[in] index Index where the new value will reside.
+        template<>
+        inline void JSON::Object::Insert (
+                const std::string &name,
+                ui64 value,
+                std::size_t index) {
+            if (!name.empty ()) {
+                values.insert (
+                    values.begin () + index,
+                    NameValue (name, Value::Ptr (new Number (Variant (value)))));
+            }
+            else {
+                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
+            }
+        }
+
+        /// \brief
+        /// Specialization of Object::Insert for f32.
+        /// \param[in] name Name of value.
+        /// \param[in] value f32 value to insert into Object.
+        /// \param[in] index Index where the new value will reside.
+        template<>
+        inline void JSON::Object::Insert (
+                const std::string &name,
+                f32 value,
+                std::size_t index) {
+            if (!name.empty ()) {
+                values.insert (
+                    values.begin () + index,
+                    NameValue (name, Value::Ptr (new Number (Variant (value)))));
+            }
+            else {
+                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
+            }
+        }
+
+        /// \brief
+        /// Specialization of Object::Insert for f64.
+        /// \param[in] name Name of value.
+        /// \param[in] value f64 value to insert into Object.
+        /// \param[in] index Index where the new value will reside.
+        template<>
+        inline void JSON::Object::Insert (
+                const std::string &name,
+                f64 value,
+                std::size_t index) {
+            if (!name.empty ()) {
+                values.insert (
+                    values.begin () + index,
+                    NameValue (name, Value::Ptr (new Number (Variant (value)))));
+            }
+            else {
+                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
+            }
+        }
+
+        /// \brief
+        /// Specialization of Object::Insert for SizeT.
+        /// \param[in] name Name of value.
+        /// \param[in] value SizeT value to insert into Object.
+        /// \param[in] index Index where the new value will reside.
+        template<>
+        inline void JSON::Object::Insert (
+                const std::string &name,
+                const SizeT &value,
+                std::size_t index) {
+            if (!name.empty ()) {
+                values.insert (
+                    values.begin () + index,
+                    NameValue (name, Value::Ptr (new Number (Variant (value)))));
+            }
+            else {
+                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
+            }
+        }
+
+        /// \brief
+        /// Specialization of Object::Insert for const std::string &.
+        /// \param[in] name Name of value.
+        /// \param[in] value const std::string & value to insert into Object.
+        /// \param[in] index Index where the new value will reside.
+        template<>
+        inline void JSON::Object::Insert (
+                const std::string &name,
+                const std::string &value,
+                std::size_t index) {
+            if (!name.empty ()) {
+                values.insert (
+                    values.begin () + index,
+                    NameValue (name, Value::Ptr (new String (value))));
+            }
+            else {
+                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
+            }
+        }
+
+        /// \brief
+        /// Specialization of Object::Insert for const char *.
+        /// \param[in] name Name of value.
+        /// \param[in] value const char * value to insert into Object.
+        /// \param[in] index Index where the new value will reside.
+        template<>
+        inline void JSON::Object::Insert (
+                const std::string &name,
+                const char *value,
+                std::size_t index) {
+            if (!name.empty () && value != 0) {
+                values.insert (
+                    values.begin () + index,
+                    NameValue (name, Value::Ptr (new String (value))));
             }
             else {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (

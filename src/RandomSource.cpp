@@ -235,5 +235,17 @@ namespace thekogans {
             }
         }
 
+        std::size_t RandomSource::Getsize_t () {
+            std::size_t value;
+            if (GetBytes (&value, SIZE_T_SIZE) == SIZE_T_SIZE) {
+                return value;
+            }
+            else {
+                THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
+                    "Unable to get " THEKOGANS_UTIL_SIZE_T_FORMAT " random bytes for value.",
+                    SIZE_T_SIZE);
+            }
+        }
+
     } // namespace util
 } // namespace thekogans
