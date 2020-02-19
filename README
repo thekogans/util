@@ -3,7 +3,19 @@ program. It contains a lot of reusable, cross-platform code designed
 to hide platform specific details from other, higher level libraries
 and programs. The library is developed, and tested on Windows, Linux,
 and OS X, in both 32 and 64 bit modes, and on little and big endian
-architectures (x86, MIPS, ARM…). Here is a complete feature list:
+architectures (x86, MIPS, ARM…). A lot of effort has been made to make
+sure libthekogans_util is semantically equivalent on all supported
+platforms.
+
+libthekogans_util is fully UTF8 compliant (the only Unicode format
+that makes any sense IMHO). All methods that accept a std::string
+will internally convert them to UTF16 on Windows and call 'W' APIs.
+When receiving strings from Windows, again, 'W' are used and the
+results are converted to UTF8 before being returned to the caller.
+libthekogans_util is completely _UNICODE ambivalent (it will behave
+the same whether the macro is defined or not).
+
+Here is a complete feature list:
 
     - A type system (Types.h, Constants.h) to hide platform specific
       types.
