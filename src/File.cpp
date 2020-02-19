@@ -330,30 +330,43 @@ namespace thekogans {
             }
         }
 
-        void File::Touch (const std::string &path) {
+        void File::Touch (
+                const std::string &path,
+                TouchType touchType,
+                const TimeSpec &lastAccessTime,
+                const TimeSpec &lastWriteTime) {
             if (Path (path).Exists ()) {
             #if defined (TOOLCHAIN_OS_Windows)
-                SYSTEMTIME systemTime;
-                GetSystemTime (&systemTime);
-                FILETIME fileTime;
-                if (!SystemTimeToFileTime (&systemTime, &fileTime)) {
-                    THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                        THEKOGANS_UTIL_OS_ERROR_CODE);
-                }
                 File file (HostEndian, path, FILE_WRITE_ATTRIBUTES,
                     FILE_SHARE_READ | FILE_SHARE_WRITE, OPEN_EXISTING);
-                if (!SetFileTime (file.handle, 0, 0, &fileTime)) {
+                FILETIME fileLastAccessTime = lastAccessTime.ToFILETIME ();
+                FILETIME fileLastWriteTime = lastWriteTime.ToFILETIME ();
+                if (!SetFileTime (file.handle, 0,
+                        (touchType & TOUCH_ACCESS_TIME) == TOUCH_ACCESS_TIME ? &fileLastAccessTime : 0,
+                        (touchType & TOUCH_WRITE_TIME) == TOUCH_WRITE_TIME ? &fileLastWriteTime : 0)) {
                     THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
                         THEKOGANS_UTIL_OS_ERROR_CODE);
                 }
             #else // defined (TOOLCHAIN_OS_Windows)
-                if (utimes (path.c_str (), 0) != 0) {
+                STAT_STRUCT buf;
+                if (LSTAT_FUNC (path.c_str (), &buf) < 0) {
+                    THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                        THEKOGANS_UTIL_OS_ERROR_CODE);
+                }
+                const timeval times[2] = {
+                    (touchType & TOUCH_ACCESS_TIME) == TOUCH_ACCESS_TIME ?
+                        lastAccessTime.Totimeval () : TimeSpec (buf.st_atime).Totimeval (),
+                    (touchType & TOUCH_WRITE_TIME) == TOUCH_WRITE_TIME ?
+                        lastWriteTime.Totimeval () : TimeSpec (buf.st_mtime).Totimeval (),
+                };
+                if (utimes (path.c_str (), times) != 0) {
                     THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
                         THEKOGANS_UTIL_OS_ERROR_CODE);
                 }
             #endif // defined (TOOLCHAIN_OS_Windows)
             }
             else {
+                // The file does not exist, just create it.
                 File file (HostEndian, path);
             }
         }

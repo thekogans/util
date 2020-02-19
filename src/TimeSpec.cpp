@@ -62,7 +62,14 @@ namespace thekogans {
             }
         }
 
-    #if !defined (TOOLCHAIN_OS_Windows)
+    #if defined (TOOLCHAIN_OS_Windows)
+        TimeSpec::TimeSpec (const SYSTEMTIME &systemTime) {
+            FILETIME fileTime;
+            SystemTimeToFileTime (&systemTime, &fileTime);
+            seconds = FILETIMEToi64 (fileTime);
+            nanoseconds = (i32)(systemTime.wMilliseconds * 1000);
+        }
+    #else // defined (TOOLCHAIN_OS_Windows)
         TimeSpec::TimeSpec (const timespec &timeSpec) {
             if (timeSpec.tv_sec == -1 && timeSpec.tv_nsec == -1) {
                 seconds = timeSpec.tv_sec;
@@ -93,7 +100,7 @@ namespace thekogans {
             }
         }
     #endif // defined (TOOLCHAIN_OS_OSX)
-    #endif // !defined (TOOLCHAIN_OS_Windows)
+    #endif // defined (TOOLCHAIN_OS_Windows)
 
         TimeSpec::TimeSpec (const timeval &timeVal) {
             if (timeVal.tv_sec == -1 && timeVal.tv_usec == -1) {
@@ -331,17 +338,8 @@ namespace thekogans {
         _LIB_THEKOGANS_UTIL_DECL TimeSpec _LIB_THEKOGANS_UTIL_API GetCurrentTime () {
         #if defined (TOOLCHAIN_OS_Windows)
             SYSTEMTIME systemTime;
-            union {
-                ui64 ul;
-                FILETIME fileTime;
-            } now;
             GetSystemTime (&systemTime);
-            SystemTimeToFileTime (&systemTime, &now.fileTime);
-            // re-bias to 1/1/1970
-            now.ul -= THEKOGANS_UTIL_UI64_LITERAL (116444736000000000);
-            return TimeSpec (
-                (i64)(now.ul / THEKOGANS_UTIL_UI64_LITERAL (10000000)),
-                (i32)(systemTime.wMilliseconds * 1000));
+            return TimeSpec (systemTime);
         #elif defined (TOOLCHAIN_OS_Linux)
             timespec timeSpec;
             if (clock_gettime (CLOCK_REALTIME, &timeSpec) != 0) {

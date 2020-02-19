@@ -39,6 +39,9 @@
 #include "thekogans/util/Constants.h"
 #include "thekogans/util/Serializable.h"
 #include "thekogans/util/Exception.h"
+#if defined (TOOLCHAIN_OS_Windows)
+    #include "thekogans/util/WindowsUtils.h"
+#endif // defined (TOOLCHAIN_OS_Windows)
 
 namespace thekogans {
     namespace util {
@@ -57,6 +60,7 @@ namespace thekogans {
         /// it's important that we can handle future time. DWORD does
         /// not have enough bits to handle absolute time.
         ///
+        /// IMPORTANT: TimeSpec (0, 0) = midnight 1/1/1970.
         /// IMPORTANT: TimeSpec's domain is:
         /// [TimeSpec::Zero, TimeSpec::Infinity].
         /// To maintain that, the operators + and - (below),
@@ -97,7 +101,18 @@ namespace thekogans {
             explicit TimeSpec (
                 i64 seconds_ = -1,
                 i64 nanoseconds_ = -1);
-        #if !defined (TOOLCHAIN_OS_Windows)
+        #if defined (TOOLCHAIN_OS_Windows)
+            /// \brief
+            /// ctor.
+            /// \param[in] fimeTime Windows FILETIME to initialize to.
+            TimeSpec (const FILETIME &fimeTime) :
+                seconds (FILETIMEToi64 (fimeTime)),
+                nanoseconds (0) {}
+            /// \brief
+            /// ctor.
+            /// \param[in] systemTime Windows SYSTEMTIME to initialize to.
+            TimeSpec (const SYSTEMTIME &systemTime);
+        #else // defined (TOOLCHAIN_OS_Windows)
             /// \brief
             /// ctor.
             /// \param[in] timeSpec POSIX timespec to initialize to.
@@ -108,7 +123,7 @@ namespace thekogans {
             /// \param[in] timeSpec OS X Mach timespec to initialize to.
             TimeSpec (const mach_timespec_t &timeSpec);
         #endif // defined (TOOLCHAIN_OS_OSX)
-        #endif // !defined (TOOLCHAIN_OS_Windows)
+        #endif // defined (TOOLCHAIN_OS_Windows)
             /// \brief
             /// ctor.
             /// \param[in] timeVal POSIX timeval to initialize to.
@@ -237,7 +252,28 @@ namespace thekogans {
                     I64_MAX : seconds * 1000000000 + nanoseconds;
             }
 
-        #if !defined (TOOLCHAIN_OS_Windows)
+        #if defined (TOOLCHAIN_OS_Windows)
+            /// \brief
+            /// Convert this TimeSpec to Windows FILETIME.
+            /// IMPORTANT: This function is lossy (doesn't use nanoseconds).
+            /// \return TimeSpec as FILETIME.
+            inline FILETIME ToFILETIME () const {
+                return i64ToFILETIME (seconds);
+            }
+            /// \brief
+            /// Convert this TimeSpec to Windows SYSTEMTIME.
+            /// \return TimeSpec as SYSTEMTIME.
+            inline SYSTEMTIME ToSYSTEMTIME () const {
+                FILETIME fileTime = i64ToFILETIME (seconds);
+                SYSTEMTIME systemTime;
+                if (!FileTimeToSystemTime (&fileTime, &systemTime)) {
+                    THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                        THEKOGANS_UTIL_OS_ERROR_CODE);
+                }
+                systemTime.wMilliseconds = nanoseconds / 1000000;
+                return systemTime;
+            }
+        #else // defined (TOOLCHAIN_OS_Windows)
             /// \brief
             /// Convert this TimeSpec to timespec.
             /// \return TimeSpec as timespec.
@@ -247,7 +283,7 @@ namespace thekogans {
                 timeSpec.tv_nsec = (long)nanoseconds;
                 return timeSpec;
             }
-        #endif // !defined (TOOLCHAIN_OS_Windows)
+        #endif // defined (TOOLCHAIN_OS_Windows)
 
             /// \brief
             /// Convert this TimeSpec to timeval.

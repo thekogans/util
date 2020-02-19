@@ -45,6 +45,7 @@
 #include <string>
 #include "thekogans/util/Config.h"
 #include "thekogans/util/Types.h"
+#include "thekogans/util/TimeSpec.h"
 #include "thekogans/util/Serializer.h"
 #include "thekogans/util/Buffer.h"
 #include "thekogans/util/GUID.h"
@@ -238,11 +239,29 @@ namespace thekogans {
             /// Delete the file at the given path.
             /// \param[in] path File to delete.
             static void Delete (const std::string &path);
+            enum TouchType {
+                /// \brief
+                /// Update last accessed time.
+                TOUCH_ACCESS_TIME = 1,
+                /// \brief
+                /// Update last modified time.
+                TOUCH_WRITE_TIME = 2,
+                /// \brief
+                /// Update both las accessed and last modified times.
+                TOUCH_BOTH = 3
+            };
             /// \brief
-            /// Update the last modified time. If the given
+            /// Update the last accessed and modified times. If the given
             /// file does not exist, create it.
             /// \param[in] path File to touch.
-            static void Touch (const std::string &path);
+            /// \param[in] touchType What to touch.
+            /// \param[in] lastAccessTime Files new last accessed time.
+            /// \param[in] lastWriteTime Files new last modified time.
+            static void Touch (
+                const std::string &path,
+                TouchType touchType = TOUCH_BOTH,
+                const TimeSpec &lastAccessTime = GetCurrentTime (),
+                const TimeSpec &lastWriteTime = GetCurrentTime ());
 
         private:
             /// \brief
