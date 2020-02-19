@@ -18,6 +18,7 @@
 #include <iostream>
 #include "thekogans/util/CommandLineOptions.h"
 #include "thekogans/util/GUID.h"
+#include "thekogans/util/SystemInfo.h"
 #include "thekogans/util/StringUtils.h"
 
 using namespace thekogans;
@@ -26,12 +27,14 @@ int main (
         int argc,
         const char *argv[]) {
     struct Options : public util::CommandLineOptions {
+        bool help;
         util::ui32 count;
         bool windows;
         bool upperCase;
         bool newLine;
 
         Options () :
+            help (false),
             count (1),
             windows (false),
             upperCase (false),
@@ -41,6 +44,9 @@ int main (
                 char option,
                 const std::string &value) {
             switch (option) {
+                case 'h':
+                    help = true;
+                    break;
                 case 'c':
                     count = util::stringToi32 (value.c_str ());
                     break;
@@ -56,17 +62,29 @@ int main (
             }
         }
     } options;
-    options.Parse (argc, argv, "cwun");
-    for (util::ui32 i = 0; i < options.count; ++i) {
-        util::GUID guid = util::GUID::FromRandom ();
-        if (options.windows) {
-            std::cout << guid.ToWindowsGUIDString (options.upperCase);
-        }
-        else {
-            std::cout << guid.ToString (options.upperCase);
-        }
-        if (options.count > 1 || options.newLine) {
-            std::cout << std::endl;
+    options.Parse (argc, argv, "hcwun");
+    if (options.help) {
+        std::cout << util::FormatString (
+            "%s [-h] [-c:'guid count'] [-w] [-u] [-n]\n\n"
+            "h - Display this help message.\n"
+            "c - Number of guids to generate (default 1).\n"
+            "w - Generate using Windows guid format (XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX) (default false).\n"
+            "u - Use uppercase for hex chars (default false).\n"
+            "n - Emmit a newline (\\n) char (default false).\n",
+            util::SystemInfo::Instance ().GetProcessPath ().c_str ());
+    }
+    else {
+        for (util::ui32 i = 0; i < options.count; ++i) {
+            util::GUID guid = util::GUID::FromRandom ();
+            if (options.windows) {
+                std::cout << guid.ToWindowsGUIDString (options.upperCase);
+            }
+            else {
+                std::cout << guid.ToString (options.upperCase);
+            }
+            if (options.count > 1 || options.newLine) {
+                std::cout << std::endl;
+            }
         }
     }
     return 0;
