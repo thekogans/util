@@ -456,6 +456,7 @@ namespace thekogans {
         /// After it returns the process is a daemon.
         /// \param[in] userName Optional user name to run the daemon as.
         /// \param[in] directory Optional directory to change to upon daemonization.
+        /// NOTE: If none is provided, '/' will be used.
         /// \param[in] lockFilePath Optional lock file to limit the daemon process
         /// to a single instance.
         /// \param[in] waitForChild How long should the parent process wait for

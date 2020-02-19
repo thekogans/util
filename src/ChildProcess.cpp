@@ -360,8 +360,7 @@ namespace thekogans {
                 stdIO.reset (new StdIO (hookStdIO));
             }
             std::vector<const char *> argv;
-            std::string name = Path (path).GetFullFileName ();
-            argv.push_back (name.c_str ());
+            argv.push_back (path.c_str ());
             for (std::list<std::string>::const_iterator
                     it = arguments.begin (),
                     end = arguments.end (); it != end; ++it) {
@@ -404,18 +403,18 @@ namespace thekogans {
                 if (!envp.empty ()) {
                 #if defined (TOOLCHAIN_OS_OSX)
                     execve (
-                        path.c_str (),
+                        argv[0],
                         (char * const *)argv.data (),
                         (char * const *)envp.data ());
                 #else // defined (TOOLCHAIN_OS_OSX)
                     execvpe (
-                        path.c_str (),
+                        argv[0],
                         (char * const *)argv.data (),
                         (char * const *)envp.data ());
                 #endif // defined (TOOLCHAIN_OS_OSX)
                 }
                 else {
-                    execvp (path.c_str (), (char * const *)argv.data ());
+                    execvp (argv[0], (char * const *)argv.data ());
                 }
                 // If we got here that means execv... failed.
                 // Return the error code to the parent.
@@ -714,7 +713,10 @@ namespace thekogans {
             }
             // Change the current working directory. This prevents the current
             // directory from being locked; hence not being able to remove it.
-            if (directory != 0 && chdir (directory) < 0) {
+            if (directory == 0) {
+                directory = "/";
+            }
+            if (chdir (directory) < 0) {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
                     THEKOGANS_UTIL_OS_ERROR_CODE);
             }
@@ -729,6 +731,7 @@ namespace thekogans {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
                     THEKOGANS_UTIL_OS_ERROR_CODE);
             }
+            // From here we're in the daemon...
         }
     #endif // !defined (TOOLCHAIN_OS_Windows)
 
