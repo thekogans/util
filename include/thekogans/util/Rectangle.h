@@ -71,6 +71,13 @@ namespace thekogans {
                 };
 
                 /// \brief
+                /// Return the size of Extents.
+                /// \return Size of Extents.
+                inline std::size_t Size () const {
+                    return SIZE;
+                }
+
+                /// \brief
                 /// Scale self to aspect fit in to given extents.
                 /// Return the scale factor used to acomplish the feat.
                 /// \param[in] extents Extents to aspect fit to.
@@ -124,6 +131,13 @@ namespace thekogans {
                 /// Serialized rectangle size.
                 SIZE = Point::SIZE + Extents::SIZE
             };
+
+            /// \brief
+            /// Return the size of Rectangle.
+            /// \return Size of Rectangle.
+            inline std::size_t Size () const {
+                return SIZE;
+            }
 
             /// \brief
             /// Return true if rectangle has zero area.

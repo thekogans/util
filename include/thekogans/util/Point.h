@@ -64,6 +64,13 @@ namespace thekogans {
             };
 
             /// \brief
+            /// Return the size of Point.
+            /// \return Size of Point.
+            inline std::size_t Size () const {
+                return SIZE;
+            }
+
+            /// \brief
             /// Unary minus operator.
             /// \return Negated point.
             inline Point operator - () const {
