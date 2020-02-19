@@ -100,5 +100,15 @@ namespace thekogans {
             return jobInfo->job->GetId ();
         }
 
+        const char *GlobalRunLoopSchedulerCreateInstance::GLOBAL_RUN_LOOP_SCHEDULER_NAME = "GlobalRunLoopScheduler";
+
+        void GlobalRunLoopSchedulerCreateInstance::Parameterize (const std::string &name_) {
+            name = name_;
+        }
+
+        RunLoopScheduler *GlobalRunLoopSchedulerCreateInstance::operator () () {
+            return new RunLoopScheduler (name);
+        }
+
     } // namespace util
 } // namespace thekogans

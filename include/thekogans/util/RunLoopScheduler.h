@@ -223,8 +223,12 @@ namespace thekogans {
         public:
             /// \brief
             /// ctor.
-            RunLoopScheduler () :
-                timer (*this, "RunLoopScheduler") {}
+            /// \param[in] name Optional name to use with timer thread.
+            /// NOTE: If you use multiple RunLoopSchedulers, you can pass
+            /// different names to the ctor to distinguish their threads
+            /// in the debugger.
+            RunLoopScheduler (const std::string &name = "RunLoopScheduler") :
+                timer (*this, name) {}
             /// \brief
             /// dtor.
             ~RunLoopScheduler () {
@@ -307,12 +311,41 @@ namespace thekogans {
             THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (RunLoopScheduler)
         };
 
+        /// \struct GlobalRunLoopSchedulerCreateInstance RunLoopScheduler.h thekogans/util/RunLoopScheduler.h
+        ///
+        /// \brief
+        /// Call GlobalRunLoopSchedulerCreateInstance::Parameterize before the first use of
+        /// GlobalRunLoopScheduler::Instance to supply custom arguments to GlobalRunLoopScheduler ctor.
+
+        struct _LIB_THEKOGANS_UTIL_DECL GlobalRunLoopSchedulerCreateInstance {
+            /// \brief
+            /// "GlobalRunLoopScheduler"
+            static const char *GLOBAL_RUN_LOOP_SCHEDULER_NAME;
+
+        private:
+            /// \brief
+            /// RunLoopScheduler name. If set, \see{RunLoopScheduler::Worker} threads will be named name-%d.
+            static std::string name;
+
+        public:
+            /// \brief
+            /// Call before the first use of GlobalRunLoopScheduler::Instance to provide
+            /// custom ctor arguments to GlobalRunLoopScheduler.
+            /// \param[in] name_ RunLoopScheduler name.
+            static void Parameterize (const std::string &name_ = GLOBAL_RUN_LOOP_SCHEDULER_NAME);
+
+            /// \brief
+            /// Create a global run loop scheduler with custom ctor arguments.
+            /// \return A global run loop scheduler with custom ctor arguments.
+            RunLoopScheduler *operator () ();
+        };
+
         /// \struct GlobalRunLoopScheduler RunLoopScheduler.h thekogans/util/RunLoopScheduler.h
         ///
         /// \brief
-        /// A global job queue scheduler instance.
+        /// A global run loop scheduler instance.
         struct _LIB_THEKOGANS_UTIL_DECL GlobalRunLoopScheduler :
-            public Singleton<RunLoopScheduler, SpinLock> {};
+            public Singleton<RunLoopScheduler, SpinLock, GlobalRunLoopSchedulerCreateInstance> {};
 
     } // namespace util
 } // namespace thekogans
