@@ -51,6 +51,7 @@ namespace thekogans {
 
         /// \brief
         /// Convert a given i64 value to Windows FILETIME.
+        /// NOTE: value = 0 -> midnight 1/1/1970.
         /// \param[in] value i64 value to convert.
         /// \return Converted FILETIME.
         _LIB_THEKOGANS_UTIL_DECL FILETIME _LIB_THEKOGANS_UTIL_API i64ToFILETIME (i64 value);
