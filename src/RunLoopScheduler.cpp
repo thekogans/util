@@ -101,6 +101,7 @@ namespace thekogans {
         }
 
         const char *GlobalRunLoopSchedulerCreateInstance::GLOBAL_RUN_LOOP_SCHEDULER_NAME = "GlobalRunLoopScheduler";
+        std::string GlobalRunLoopSchedulerCreateInstance::name = GlobalRunLoopSchedulerCreateInstance::GLOBAL_RUN_LOOP_SCHEDULER_NAME;
 
         void GlobalRunLoopSchedulerCreateInstance::Parameterize (const std::string &name_) {
             name = name_;
