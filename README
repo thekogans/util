@@ -10,8 +10,8 @@ platforms.
 libthekogans_util is fully UTF8 compliant (the only Unicode format
 that makes any sense IMHO). All methods that accept a std::string
 will internally convert them to UTF16 on Windows and call 'W' APIs.
-When receiving strings from Windows, again, 'W' are used and the
-results are converted to UTF8 before being returned to the caller.
+When receiving strings from Windows, again, 'W' APIs are used and
+the results are converted to UTF8 before being returned to the caller.
 libthekogans_util is completely _UNICODE ambivalent (it will behave
 the same whether the macro is defined or not).
 
@@ -19,6 +19,10 @@ Here is a complete feature list:
 
     - A type system (Types.h, Constants.h) to hide platform specific
       types.
+
+    - A full featured JSON parser/formatter (JSON.h). Supports Variant
+      for numbers (f64, i64, ui64). Supports multiline text through a
+      clever Array ctor.
 
     - A collection of useful, simple, and lightweight types (Flags.h,
       Variant.h, GUID.h, Fraction.h, Array.h, FixedArray.h, BitSet.h).
