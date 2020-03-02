@@ -113,6 +113,17 @@ namespace thekogans {
                 std::size_t size) = 0;
         };
 
+        /// \def THEKOGANS_UTIL_DECLARE_ALLOCATOR_COMMON(type)
+        /// Common dynamic discovery macro.
+        #define THEKOGANS_UTIL_DECLARE_ALLOCATOR_COMMON(type)\
+        public:\
+            static thekogans::util::Allocator *Create () {\
+                return &Global;\
+            }\
+            virtual const char *GetName () const {\
+                return #type;\
+            }
+
     #if defined (THEKOGANS_UTIL_TYPE_Static)
         /// \def THEKOGANS_UTIL_DECLARE_ALLOCATOR(type)
         /// Dynamic discovery macro. Add this to your class declaration.
@@ -125,9 +136,7 @@ namespace thekogans {
         /// \endcode
         #define THEKOGANS_UTIL_DECLARE_ALLOCATOR(type)\
         public:\
-            static thekogans::util::Allocator *Create () {\
-                return &Global;\
-            }\
+            THEKOGANS_UTIL_DECLARE_ALLOCATOR_COMMON (type)\
             static void StaticInit () {\
                 static volatile bool registered = false;\
                 static thekogans::util::SpinLock spinLock;\
@@ -141,9 +150,6 @@ namespace thekogans {
                     }\
                     registered = true;\
                 }\
-            }\
-            virtual const char *GetName () const {\
-                return #type;\
             }
 
         /// \def THEKOGANS_UTIL_IMPLEMENT_ALLOCATOR(type)
@@ -165,13 +171,8 @@ namespace thekogans {
         /// \endcode
         #define THEKOGANS_UTIL_DECLARE_ALLOCATOR(type)\
         public:\
+            THEKOGANS_UTIL_DECLARE_ALLOCATOR_COMMON (type)\
             static const thekogans::util::Allocator::MapInitializer mapInitializer;\
-            static thekogans::util::Allocator *Create () {\
-                return &Global;\
-            }\
-            virtual const char *GetName () const {\
-                return #type;\
-            }
 
         /// \def THEKOGANS_UTIL_IMPLEMENT_ALLOCATOR(type)
         /// Dynamic discovery macro. Instantiate one of these in the class cpp file.

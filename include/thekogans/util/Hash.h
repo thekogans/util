@@ -184,6 +184,14 @@ namespace thekogans {
                 memcmp (&digest1[0], &digest2[0], digest1.size ()) != 0;
         }
 
+        /// \def THEKOGANS_UTIL_DECLARE_HASH_COMMON(type)
+        /// Common dynamic discovery macro.
+        #define THEKOGANS_UTIL_DECLARE_HASH_COMMON(type)\
+        public:\
+            static thekogans::util::Hash::Ptr Create () {\
+                return thekogans::util::Hash::Ptr (new type);\
+            }
+
     #if defined (THEKOGANS_UTIL_TYPE_Static)
         /// \def THEKOGANS_UTIL_DECLARE_HASH(type)
         /// Dynamic discovery macro. Add this to your class declaration.
@@ -196,9 +204,7 @@ namespace thekogans {
         /// \endcode
         #define THEKOGANS_UTIL_DECLARE_HASH(type)\
         public:\
-            static thekogans::util::Hash::Ptr Create () {\
-                return thekogans::util::Hash::Ptr (new type);\
-            }\
+            THEKOGANS_UTIL_DECLARE_HASH_COMMON (type)\
             static void StaticInit () {\
                 static volatile bool registered = false;\
                 static thekogans::util::SpinLock spinLock;\
@@ -233,10 +239,8 @@ namespace thekogans {
         /// \endcode
         #define THEKOGANS_UTIL_DECLARE_HASH(type)\
         public:\
-            static const thekogans::util::Hash::MapInitializer mapInitializer;\
-            static thekogans::util::Hash::Ptr Create () {\
-                return thekogans::util::Hash::Ptr (new type);\
-            }
+            THEKOGANS_UTIL_DECLARE_HASH_COMMON (type)\
+            static const thekogans::util::Hash::MapInitializer mapInitializer;
 
         /// \def THEKOGANS_UTIL_IMPLEMENT_HASH(type)
         /// Dynamic discovery macro. Instantiate one of these in the class cpp file.
