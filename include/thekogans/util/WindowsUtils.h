@@ -109,7 +109,6 @@ namespace thekogans {
         /// \brief
         /// Convert the given UTF16 string to UTF8.
         /// \param[in] utf16 UTF16 string to convert.
-        /// \param[in] length Length (in sizeof (wchar_t)) of the given UTF16 string.
         /// \param[in] flags Various WC_* flags to control the behavior of WideCharToMultiByte.
         /// \return std::string UTF8 representation of the given UTF16 string.
         inline std::string UTF16ToUTF8 (

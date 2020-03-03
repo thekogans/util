@@ -59,6 +59,15 @@ namespace thekogans {
             /// \param[in] type Hash type (it's name).
             /// \return A Hash based on the passed in type.
             static Ptr Get (const std::string &type);
+        #if defined (THEKOGANS_UTIL_TYPE_Static)
+            /// \brief
+            /// Because Hash uses dynamic initialization, when using
+            /// it in static builds call this method to have the Hash
+            /// explicitly include all internal hash types. Without
+            /// calling this api, the only hashers that will be available
+            /// to your application are the ones you explicitly link to.
+            static void StaticInit ();
+        #else // defined (THEKOGANS_UTIL_TYPE_Static)
             /// \struct Hash::MapInitializer Hash.h thekogans/util/Hash.h
             ///
             /// \brief
@@ -79,18 +88,10 @@ namespace thekogans {
                     const std::string &type,
                     Factory factory);
             };
+        #endif // defined (THEKOGANS_UTIL_TYPE_Static)
             /// \brief
             /// Get the list of all hashers registered with the map.
             static void GetHashers (std::list<std::string> &hashers);
-        #if defined (THEKOGANS_UTIL_TYPE_Static)
-            /// \brief
-            /// Because Hash uses dynamic initialization, when using
-            /// it in static builds call this method to have the Hash
-            /// explicitly include all internal hash types. Without
-            /// calling this api, the only hashers that will be available
-            /// to your application are the ones you explicitly link to.
-            static void StaticInit ();
-        #endif // defined (THEKOGANS_UTIL_TYPE_Static)
 
             /// \brief
             /// Virtual dtor.

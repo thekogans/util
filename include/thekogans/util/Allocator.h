@@ -54,6 +54,15 @@ namespace thekogans {
             /// \param[in] type Allocator type (it's name).
             /// \return A Allocator based on the passed in type.
             static Allocator *Get (const std::string &type);
+        #if defined (THEKOGANS_UTIL_TYPE_Static)
+            /// \brief
+            /// Because Allocator uses dynamic initialization, when using
+            /// it in static builds call this method to have the Allocator
+            /// explicitly include all internal allocator types. Without
+            /// calling this api, the only allocatorers that will be available
+            /// to your application are the ones you explicitly link to.
+            static void StaticInit ();
+        #else // defined (THEKOGANS_UTIL_TYPE_Static)
             /// \struct Allocator::MapInitializer Allocator.h thekogans/util/Allocator.h
             ///
             /// \brief
@@ -74,18 +83,10 @@ namespace thekogans {
                     const std::string &type,
                     Factory factory);
             };
+        #endif // defined (THEKOGANS_UTIL_TYPE_Static)
             /// \brief
             /// Get the list of all allocators registered with the map.
             static void GetAllocators (std::list<std::string> &allocators);
-        #if defined (THEKOGANS_UTIL_TYPE_Static)
-            /// \brief
-            /// Because Allocator uses dynamic initialization, when using
-            /// it in static builds call this method to have the Allocator
-            /// explicitly include all internal allocator types. Without
-            /// calling this api, the only allocatorers that will be available
-            /// to your application are the ones you explicitly link to.
-            static void StaticInit ();
-        #endif // defined (THEKOGANS_UTIL_TYPE_Static)
 
             /// \brief
             /// dtor.
