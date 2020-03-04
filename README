@@ -3,8 +3,8 @@ program. It contains a lot of reusable, cross-platform code designed
 to hide platform specific details from other, higher level libraries
 and programs. The library is developed, and tested on Windows, Linux,
 and OS X, in both 32 and 64 bit modes, and on little and big endian
-architectures (x86, MIPS, ARM…). A lot of effort has been made to make
-sure libthekogans_util is semantically equivalent on all supported
+architectures (x86, MIPS, ARM...). A lot of effort has been made to
+make sure libthekogans_util is semantically equivalent on all supported
 platforms.
 
 libthekogans_util is fully UTF8 compliant (the only Unicode format

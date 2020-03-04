@@ -44,6 +44,26 @@ namespace thekogans {
             return it != GetMap ().end () ? it->second () : 0;
         }
 
+    #if defined (THEKOGANS_UTIL_TYPE_Static)
+        void Allocator::StaticInit () {
+            static volatile bool registered = false;
+            static SpinLock spinLock;
+            if (!registered) {
+                LockGuard<SpinLock> guard (spinLock);
+                if (!registered) {
+                    DefaultAllocator::StaticInit ();
+                    SecureAllocator::StaticInit ();
+                #if defined (TOOLCHAIN_OS_Windows)
+                    HGLOBALAllocator::StaticInit ();
+                #endif // defined (TOOLCHAIN_OS_Windows)
+                    //AlignedAllocator::StaticInit ();
+                    //SharedAllocator::StaticInit ();
+                    //NullAllocator::StaticInit ();
+                    registered = true;
+                }
+            }
+        }
+    #else // defined (THEKOGANS_UTIL_TYPE_Static)
         Allocator::MapInitializer::MapInitializer (
                 const std::string &type,
                 Factory factory) {
@@ -55,6 +75,7 @@ namespace thekogans {
                     "%s is already registered.", type.c_str ());
             }
         }
+    #endif // defined (THEKOGANS_UTIL_TYPE_Static)
 
         void Allocator::GetAllocators (std::list<std::string> &allocators) {
             for (Map::const_iterator it = GetMap ().begin (),
@@ -62,25 +83,6 @@ namespace thekogans {
                 allocators.push_back (it->first);
             }
         }
-
-    #if defined (THEKOGANS_UTIL_TYPE_Static)
-        void Allocator::StaticInit () {
-            static volatile bool registered = false;
-            static SpinLock spinLock;
-            LockGuard<SpinLock> guard (spinLock);
-            if (!registered) {
-                DefaultAllocator::StaticInit ();
-                SecureAllocator::StaticInit ();
-            #if defined (TOOLCHAIN_OS_Windows)
-                HGLOBALAllocator::StaticInit ();
-            #endif // defined (TOOLCHAIN_OS_Windows)
-                //AlignedAllocator::StaticInit ();
-                //SharedAllocator::StaticInit ();
-                //NullAllocator::StaticInit ();
-                registered = true;
-            }
-        }
-    #endif // defined (THEKOGANS_UTIL_TYPE_Static)
 
     } // namespace util
 } // namespace thekogans
