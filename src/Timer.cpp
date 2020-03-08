@@ -81,9 +81,11 @@ namespace thekogans {
 
         Timer::Timer (
                 Callback &callback_,
-                const std::string &name_) :
+                const std::string &name_,
+                bool reentrantAlarm_) :
                 callback (callback_),
                 name (name_),
+                reentrantAlarm (reentrantAlarm_),
                 timer (0) {
         #if defined (TOOLCHAIN_OS_Windows)
             timer = CreateThreadpoolTimer (TimerCallback, this, 0);
@@ -211,7 +213,9 @@ namespace thekogans {
             // RunLoop::Job
             virtual void SetState (State state) {
                 if (state == Pending) {
-                    LockGuard<SpinLock> guard (timer.spinLock);
+                    // Don't grab the lock here as SetState (Pending)
+                    // will be called from JobQueue::EnqJob which is
+                    // protected by QueueJob below.
                     timer.jobs.push_back (this);
                 }
                 else if (state == Completed) {
@@ -260,22 +264,31 @@ namespace thekogans {
         }
 
         void Timer::QueueJob () {
-            // Try to acquire a job queue from the pool. Note the
-            // retry count == 0. Delivering timer alarms on time
-            // is more important then delivering them at all. It's
-            // better to log a warning to let the developer adjust
-            // available/max queue count (JobQueuePoolCreateInstance).
-            JobQueue::Ptr jobQueue = JobQueuePool::Instance ().GetJobQueue (0);
-            if (jobQueue.Get () != 0) {
-                THEKOGANS_UTIL_TRY {
-                    jobQueue->EnqJob (Job::Ptr (new Job (jobQueue, *this)));
+            LockGuard<SpinLock> guard (spinLock);
+            if (reentrantAlarm || jobs.empty ()) {
+                // Try to acquire a job queue from the pool. Note the
+                // retry count == 0. Delivering timer alarms on time
+                // is more important then delivering them at all. It's
+                // better to log a warning to let the developer adjust
+                // available/max queue count (JobQueuePoolCreateInstance).
+                JobQueue::Ptr jobQueue = JobQueuePool::Instance ().GetJobQueue (0);
+                if (jobQueue.Get () != 0) {
+                    THEKOGANS_UTIL_TRY {
+                        jobQueue->EnqJob (Job::Ptr (new Job (jobQueue, *this)));
+                    }
+                    THEKOGANS_UTIL_CATCH_AND_LOG_SUBSYSTEM (THEKOGANS_UTIL)
                 }
-                THEKOGANS_UTIL_CATCH_AND_LOG_SUBSYSTEM (THEKOGANS_UTIL)
+                else {
+                    THEKOGANS_UTIL_LOG_SUBSYSTEM_WARNING (
+                        THEKOGANS_UTIL,
+                        "Unable to acquire a '%s' worker, skipping Alarm call.\n",
+                        name.c_str ());
+                }
             }
             else {
                 THEKOGANS_UTIL_LOG_SUBSYSTEM_WARNING (
                     THEKOGANS_UTIL,
-                    "Unable to acquire a '%s' worker, skipping Alarm call.\n",
+                    "Supressing non re-entrant Alarm call in '%s'.\n",
                     name.c_str ());
             }
         }

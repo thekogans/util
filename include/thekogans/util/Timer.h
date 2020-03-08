@@ -175,6 +175,9 @@ namespace thekogans {
             /// \brief
             /// Timer name.
             std::string name;
+            /// \brief
+            /// true == Alarm can be called more then once.
+            bool reentrantAlarm;
         #if defined (TOOLCHAIN_OS_Windows)
             /// \brief
             /// Windows native timer object.
@@ -209,9 +212,11 @@ namespace thekogans {
             /// identify the timer that fired. This way a single callback
             /// can process multiple timers and be able to distinguish
             /// between them.
+            /// \param[in] reentrantAlarm_ true == Alarm can be called more then once.
             Timer (
                 Callback &callback_,
-                const std::string &name_ = std::string ());
+                const std::string &name_ = std::string (),
+                bool reentrantAlarm_ = true);
             /// \brief
             /// dtor.
             ~Timer ();
