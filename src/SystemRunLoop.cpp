@@ -263,6 +263,7 @@ namespace thekogans {
     #endif // defined (TOOLCHAIN_OS_Windows)
 
         void SystemRunLoop::Start () {
+            done = false;
             ExecuteJobs ();
         #if defined (TOOLCHAIN_OS_Windows)
             BOOL result;
@@ -376,16 +377,7 @@ namespace thekogans {
                     return false;
                 }
             }
-            struct ToggleDone {
-                THEKOGANS_UTIL_ATOMIC<bool> &done;
-                ToggleDone (THEKOGANS_UTIL_ATOMIC<bool> &done_) :
-                        done (done_) {
-                    done = true;
-                }
-                ~ToggleDone () {
-                    done = false;
-                }
-            } toggleDone (done);
+            done = true;
             Continue ();
         #if defined (TOOLCHAIN_OS_Windows)
             PostMessage (window->wnd, WM_CLOSE, 0, 0);

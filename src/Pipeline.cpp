@@ -252,6 +252,7 @@ namespace thekogans {
 
         void Pipeline::Start () {
             LockGuard<Mutex> guard (workersMutex);
+            done = false;
             for (std::size_t i = 0, count = stages.size (); i < count; ++i) {
                 stages[i]->Start ();
             }
@@ -299,16 +300,7 @@ namespace thekogans {
                     return false;
                 }
             }
-            struct ToggleDone {
-                THEKOGANS_UTIL_ATOMIC<bool> &done;
-                ToggleDone (THEKOGANS_UTIL_ATOMIC<bool> &done_) :
-                        done (done_) {
-                    done = true;
-                }
-                ~ToggleDone () {
-                    done = false;
-                }
-            } toggleDone (done);
+            done = true;
             // This Continue is necessary in case cancelPendingJobs == false.
             // If cancelPendingJobs == true, it's harmless.
             Continue ();

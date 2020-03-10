@@ -26,6 +26,7 @@ namespace thekogans {
         THEKOGANS_UTIL_IMPLEMENT_HEAP_WITH_LOCK (Scheduler::JobQueue, SpinLock)
 
         void Scheduler::JobQueue::Start () {
+            done = false;
             if (GetPendingJobCount () != 0) {
                 scheduler.AddJobQueue (this);
             }
@@ -46,16 +47,7 @@ namespace thekogans {
                     return false;
                 }
             }
-            struct ToggleDone {
-                THEKOGANS_UTIL_ATOMIC<bool> &done;
-                ToggleDone (THEKOGANS_UTIL_ATOMIC<bool> &done_) :
-                        done (done_) {
-                    done = true;
-                }
-                ~ToggleDone () {
-                    done = false;
-                }
-            } toggleDone (done);
+            done = true;
             Continue ();
             scheduler.DeleteJobQueue (this);
             return true;

@@ -23,6 +23,7 @@ namespace thekogans {
     namespace util {
 
         void ThreadRunLoop::Start () {
+            done = false;
             while (!done) {
                 Job *job = DeqJob ();
                 if (job != 0) {
@@ -58,16 +59,7 @@ namespace thekogans {
                     return false;
                 }
             }
-            struct ToggleDone {
-                THEKOGANS_UTIL_ATOMIC<bool> &done;
-                ToggleDone (THEKOGANS_UTIL_ATOMIC<bool> &done_) :
-                        done (done_) {
-                    done = true;
-                }
-                ~ToggleDone () {
-                    done = false;
-                }
-            } toggleDone (done);
+            done = true;
             Continue ();
             jobsNotEmpty.Signal ();
             return true;

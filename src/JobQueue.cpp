@@ -72,6 +72,7 @@ namespace thekogans {
 
         void JobQueue::Start () {
             LockGuard<Mutex> guard (workersMutex);
+            done = false;
             for (std::size_t i = workers.size (); i < workerCount; ++i) {
                 std::string workerName;
                 if (!name.empty ()) {
@@ -116,16 +117,7 @@ namespace thekogans {
                     return false;
                 }
             }
-            struct ToggleDone {
-                THEKOGANS_UTIL_ATOMIC<bool> &done;
-                ToggleDone (THEKOGANS_UTIL_ATOMIC<bool> &done_) :
-                        done (done_) {
-                    done = true;
-                }
-                ~ToggleDone () {
-                    done = false;
-                }
-            } toggleDone (done);
+            done = true;
             // This Continue is necessary in case cancelPendingJobs == false.
             // If cancelPendingJobs == true, it's harmless.
             Continue ();
