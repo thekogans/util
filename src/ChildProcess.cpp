@@ -335,7 +335,7 @@ namespace thekogans {
                 environment += '\0';
             }
             STARTUPINFOW startInfo;
-            ZeroMemory (&startInfo, sizeof (STARTUPINFO));
+            ZeroMemory (&startInfo, sizeof (STARTUPINFOW));
             startInfo.cb = sizeof (STARTUPINFOW);
             if (hookStdIO != HOOK_NONE) {
                 stdIO.reset (new StdIO (hookStdIO));
@@ -345,7 +345,8 @@ namespace thekogans {
                 startInfo.hStdError = stdIO->errPipe[1];
             }
             ClearProcessInformation (processInformation);
-            if (!CreateProcessW (0, (LPWSTR)UTF8ToUTF16 (commandLine).data (), 0, 0, TRUE,
+            std::wstring wcommandLine = UTF8ToUTF16 (commandLine);
+            if (!CreateProcessW (0, &wcommandLine[0], 0, 0, TRUE,
                     detached ? DETACHED_PROCESS : 0,
                     !environment.empty () ? (LPVOID)environment.c_str () : 0,
                     !startupDirectory.empty () ? UTF8ToUTF16 (startupDirectory).c_str () : 0,

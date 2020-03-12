@@ -130,7 +130,7 @@ namespace thekogans {
         void Timer::Start (
                 const TimeSpec &timeSpec,
                 bool periodic) {
-            if (timeSpec != TimeSpec::Zero && timeSpec != TimeSpec::Infinite) {
+            if (timeSpec != TimeSpec::Infinite) {
             #if defined (TOOLCHAIN_OS_Windows)
                 ULARGE_INTEGER largeInteger;
                 largeInteger.QuadPart = timeSpec.ToMilliseconds ();

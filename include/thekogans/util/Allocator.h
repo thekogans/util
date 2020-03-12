@@ -24,9 +24,7 @@
 #include <list>
 #include <map>
 #include "thekogans/util/Config.h"
-#include "thekogans/util/Exception.h"
-#include "thekogans/util/SpinLock.h"
-#include "thekogans/util/LockGuard.h"
+#include "thekogans/util/DynamicCreatable.h"
 
 namespace thekogans {
     namespace util {
@@ -138,20 +136,7 @@ namespace thekogans {
         #define THEKOGANS_UTIL_DECLARE_ALLOCATOR(type)\
         public:\
             THEKOGANS_UTIL_DECLARE_ALLOCATOR_COMMON (type)\
-            static void StaticInit () {\
-                static volatile bool registered = false;\
-                static thekogans::util::SpinLock spinLock;\
-                thekogans::util::LockGuard<thekogans::util::SpinLock> guard (spinLock);\
-                if (!registered) {\
-                    std::pair<Map::iterator, bool> result =\
-                        GetMap ().insert (Map::value_type (#type, type::Create));\
-                    if (!result.second) {\
-                        THEKOGANS_UTIL_THROW_STRING_EXCEPTION (\
-                            "'%s' is already registered.", #type);\
-                    }\
-                    registered = true;\
-                }\
-            }
+            THEKOGANS_UTIL_STATIC_INIT (type)
 
         /// \def THEKOGANS_UTIL_IMPLEMENT_ALLOCATOR(type)
         /// Dynamic discovery macro. Instantiate one of these in the class cpp file.

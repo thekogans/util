@@ -96,6 +96,7 @@
     <cpp_header>$(organization)/$(project_directory)/CRC32.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/DefaultAllocator.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/Directory.h</cpp_header>
+    <cpp_header>$(organization)/$(project_directory)/DynamicCreatable.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/DynamicLibrary.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/Event.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/Exception.h</cpp_header>
@@ -624,6 +625,7 @@
     <cpp_source>CRC32.cpp</cpp_source>
     <cpp_source>DefaultAllocator.cpp</cpp_source>
     <cpp_source>Directory.cpp</cpp_source>
+    <cpp_source>DynamicCreatable.cpp</cpp_source>
     <cpp_source>DynamicLibrary.cpp</cpp_source>
     <cpp_source>Event.cpp</cpp_source>
     <cpp_source>Exception.cpp</cpp_source>

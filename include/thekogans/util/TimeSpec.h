@@ -60,7 +60,7 @@ namespace thekogans {
         /// it's important that we can handle future time. DWORD does
         /// not have enough bits to handle absolute time.
         ///
-        /// IMPORTANT: TimeSpec (0, 0) = midnight 1/1/1970.
+        /// IMPORTANT: TimeSpec (0, 0) = TimeSpec::Zero = midnight 1/1/1970.
         /// IMPORTANT: TimeSpec's domain is:
         /// [TimeSpec::Zero, TimeSpec::Infinity].
         /// To maintain that, the operators + and - (below),
@@ -104,9 +104,9 @@ namespace thekogans {
         #if defined (TOOLCHAIN_OS_Windows)
             /// \brief
             /// ctor.
-            /// \param[in] fimeTime Windows FILETIME to initialize to.
-            TimeSpec (const FILETIME &fimeTime) :
-                seconds (FILETIMEToi64 (fimeTime)),
+            /// \param[in] fileTime Windows FILETIME to initialize to.
+            TimeSpec (const FILETIME &fileTime) :
+                seconds (FILETIMEToi64 (fileTime)),
                 nanoseconds (0) {}
             /// \brief
             /// ctor.
