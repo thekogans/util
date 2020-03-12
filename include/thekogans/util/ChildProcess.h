@@ -395,7 +395,7 @@ namespace thekogans {
             /// using namespace thekogans;
             ///
             /// util::ChildProcess lsProcess ("ls");
-            /// util::MainRunLoop::Instance ().Enq (lsProcess.CreateSpawnJob (), true);
+            /// util::MainRunLoop::Instance ().EnqJob (lsProcess.CreateSpawnJob (), true);
             /// if (lsProcess.GetProcessId () != THEKOGANS_UTIL_INVALID_PROCESS_ID_VALUE) {
             ///     util::Buffer::UniquePtr lsOutput = ls.CollectOutput (ls.GetOutPipe ());
             /// }
