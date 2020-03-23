@@ -215,7 +215,7 @@ namespace thekogans {
                 if (state == Pending) {
                     // Don't grab the lock here as SetState (Pending)
                     // will be called from JobQueue::EnqJob which is
-                    // protected by QueueJob below.
+                    // protected in QueueJob below.
                     timer.jobs.push_back (this);
                 }
                 else if (state == Completed) {

@@ -69,7 +69,7 @@ Here is a complete feature list:
       a uniform api on top of pthreads, and Windows specific
       threading api.
 
-    - A run loop framework (RunLoop.h, DefaultRunLoop.h, SystemRunLoop.h
+    - A run loop framework (RunLoop.h, ThreadRunLoop.h, SystemRunLoop.h
       MainRunLoop.h, JobQueue.h) for executing RunLoop::Jobs on any thread,
       including main.
 

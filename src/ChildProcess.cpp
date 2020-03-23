@@ -346,9 +346,10 @@ namespace thekogans {
             }
             ClearProcessInformation (processInformation);
             std::wstring wcommandLine = UTF8ToUTF16 (commandLine);
+            std::wstring wenvironment = UTF8ToUTF16 (environment);
             if (!CreateProcessW (0, &wcommandLine[0], 0, 0, TRUE,
-                    detached ? DETACHED_PROCESS : 0,
-                    !environment.empty () ? (LPVOID)environment.c_str () : 0,
+                    CREATE_UNICODE_ENVIRONMENT | (detached ? DETACHED_PROCESS : 0),
+                    !wenvironment.empty () ? &wenvironment[0] : 0,
                     !startupDirectory.empty () ? UTF8ToUTF16 (startupDirectory).c_str () : 0,
                     &startInfo,
                     &processInformation)) {
