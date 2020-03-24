@@ -70,9 +70,8 @@ namespace thekogans {
         ///     ...
         ///     util::MainRunLoopCreateInstance::Parameterize (
         ///         "MainRunLoop",
-        ///         util::RunLoop::TYPE_FIFO,
-        ///         util::SIZE_T_MAX,
-        ///         false,
+        ///         util::RunLoop::JobExecutionPolicy::Ptr (
+        ///             new util::RunLoop::FIFOJobExecutionPolicy),
         ///         0,
         ///         0,
         ///         util::SystemRunLoop::CreateThreadWindow ());
@@ -90,15 +89,6 @@ namespace thekogans {
         ///         }
         ///     }
         ///     or
-        ///     util::MainRunLoopCreateInstance::Parameterize (
-        ///         "MainRunLoop",
-        ///         util::RunLoop::TYPE_FIFO,
-        ///         util::SIZE_T_MAX,
-        ///         true,
-        ///         0,
-        ///         0,
-        ///         util::SystemRunLoop::CreateThreadWindow ());
-        ///     ...
         ///     util::MainRunLoop::Instance ().Start ();
         ///     ...
         ///     return 0;
@@ -116,13 +106,11 @@ namespace thekogans {
         ///     ...
         ///     util::MainRunLoopCreateInstance::Parameterize (
         ///         "MainRunLoop",
-        ///         util::RunLoop::TYPE_FIFO,
-        ///         util::SIZE_T_MAX,
-        ///         false,
+        ///         util::RunLoop::JobExecutionPolicy::Ptr (
+        ///             new util::RunLoop::FIFOJobExecutionPolicy),
         ///         0,
         ///         0,
-        ///         util::SystemRunLoop::CreateThreadWindow (),
-        ///         displayList);
+        ///         util::SystemRunLoop::CreateThreadWindow ());
         ///     ...
         ///     Display *display = XOpenDisplay (0);
         ///     while (1) {
@@ -133,16 +121,6 @@ namespace thekogans {
         ///         }
         ///     }
         ///     or
-        ///     util::MainRunLoopCreateInstance::Parameterize (
-        ///         "MainRunLoop",
-        ///         util::RunLoop::TYPE_FIFO,
-        ///         util::SIZE_T_MAX,
-        ///         true,
-        ///         0,
-        ///         0,
-        ///         util::SystemRunLoop::CreateThreadWindow (),
-        ///         displayList);
-        ///     ...
         ///     util::MainRunLoop::Instance ().Start ();
         ///     ...
         ///     return 0;
@@ -164,9 +142,8 @@ namespace thekogans {
         ///     ...
         ///     util::MainRunLoopCreateInstance::Parameterize (
         ///         "MainRunLoop",
-        ///         util::RunLoop::TYPE_FIFO,
-        ///         util::SIZE_T_MAX,
-        ///         true,
+        ///         util::RunLoop::JobExecutionPolicy::Ptr (
+        ///             new util::RunLoop::FIFOJobExecutionPolicy),
         ///         SystemRunLoop::OSXRunLoop::Ptr (
         ///             new SystemRunLoop::CocoaOSXRunLoop
         ///             or

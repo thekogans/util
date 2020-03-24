@@ -68,8 +68,8 @@ namespace thekogans {
         ///         timer ("IdleProcessor"),
         ///         jobQueue (
         ///             "IdleProcessor",
-        ///             util::RunLoop::TYPE_FIFO,
-        ///             util::SIZE_T_MAX,
+        ///             util::RunLoop::JobExecutionPolicy::Ptr (
+        ///                 new util::RunLoop::FIFOJobExecutionPolicy),
         ///             1,
         ///             THEKOGANS_UTIL_LOW_THREAD_PRIORITY) {}
         ///
@@ -80,10 +80,12 @@ namespace thekogans {
         ///         timer.Stop ();
         ///     }
         ///
-        ///     inline void CancelPendingJobs (bool waitForIdle = true) {
+        ///     inline void CancelPendingJobs (
+        ///             bool waitForIdle = true,
+        ///             const util::TimeSpec &timeSpec = util::TimeSpec::Infinite) {
         ///         jobQueue.CancelAllJobs ();
         ///         if (waitForIdle) {
-        ///             jobQueue.WaitForIdle ();
+        ///             jobQueue.WaitForIdle (timeSpec);
         ///         }
         ///     }
         ///
@@ -107,8 +109,9 @@ namespace thekogans {
         ///
         /// NOTE: Timer is designed to have the same semantics on all supported
         /// platforms. To that end if you're using a periodic timer and it fires
-        /// while Timer::Callback::Alarm is in progress, that event will be silently
-        /// dropped and that cycle will be missed. There are no 'catchup' events.
+        /// while Timer::Callback::Alarm is in progress, and reentrantAlarm == false,
+        /// that event will be silently dropped and that cycle will be missed.
+        /// There are no 'catchup' events.
         ///
         /// NOTE: IdleProcessor demonstrates the canonical way of using Timer.
         /// By coupling the lifetime of the timer to the lifetime of the callback
@@ -208,11 +211,17 @@ namespace thekogans {
             /// \brief
             /// ctor.
             /// \param[in] callback_ Callback to notify of timer events.
+            /// NOTE: We're holding on to a reference to callback. That
+            /// means it's lifetime has to be >= lifetime of the timer.
             /// \param[in] name_ Timer name. Use this parameter to help
             /// identify the timer that fired. This way a single callback
             /// can process multiple timers and be able to distinguish
             /// between them.
             /// \param[in] reentrantAlarm_ true == Alarm can be called more then once.
+            /// NOTE: If this parameter is false and your Callback::Alarm
+            /// takes longer to finish than the timer period you will loose
+            /// notifications as further invocations of Callback::Alarm will
+            /// be suppressed until it returns.
             Timer (
                 Callback &callback_,
                 const std::string &name_ = std::string (),
@@ -285,7 +294,7 @@ namespace thekogans {
             SpinLock spinLock;
 
             /// \brief
-            /// Used internally to queue up a Job.
+            /// Used internally to queue up a Callback::Alorm Job.
             void QueueJob ();
 
             /// \brief

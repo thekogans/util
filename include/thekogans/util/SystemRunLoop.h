@@ -395,7 +395,7 @@ namespace thekogans {
                 EventProcessor eventProcessor_ = 0,
                 void *userData_ = 0,
                 XlibWindow::Ptr window_ = CreateThreadWindow (0),
-                const std::vector<Display *> &displays_ = std::vector<Display *> ());
+                const std::vector<Display *> &displays_ = EnumerateDisplays ());
 
             /// \brief
             /// Create a run loop window to service job requests.

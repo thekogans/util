@@ -348,35 +348,29 @@ namespace thekogans {
             }
             return TimeSpec (timeSpec);
         #elif defined (TOOLCHAIN_OS_OSX)
-            struct ClockServer : public Singleton<ClockServer, SpinLock> {
-                clock_serv_t calendarClockService;
-                ClockServer () {
+            struct MachClock {
+            private:
+                clock_serv_t serv;
+            public:
+                explicit MachClock (clock_id_t id) {
                     kern_return_t errorCode =
-                        host_get_clock_service (
-                            mach_host_self (),
-                            CALENDAR_CLOCK,
-                            &calendarClockService);
+                        host_get_clock_service (mach_host_self (), id, &serv);
                     if (errorCode != KERN_SUCCESS) {
                         THEKOGANS_UTIL_THROW_MACH_ERROR_CODE_EXCEPTION (errorCode);
                     }
                 }
-                ~ClockServer () {
-                    // For completeness only. Since ClockServer is a
-                    // private singleton, it's dtor should never be
-                    // called.
-                    assert (0);
-                    mach_port_deallocate (mach_task_self (), calendarClockService);
+                ~MachClock () {
+                    mach_port_deallocate (mach_task_self (), serv);
                 }
                 void GetTime (mach_timespec_t &machTimeSpec) {
-                    kern_return_t errorCode =
-                        clock_get_time (calendarClockService, &machTimeSpec);
+                    kern_return_t errorCode = clock_get_time (serv, &machTimeSpec);
                     if (errorCode != KERN_SUCCESS) {
                         THEKOGANS_UTIL_THROW_MACH_ERROR_CODE_EXCEPTION (errorCode);
                     }
                 }
-            };
+            } machClock (CALENDAR_CLOCK);
             mach_timespec_t machTimeSpec;
-            ClockServer::Instance ().GetTime (machTimeSpec);
+            machClock.GetTime (machTimeSpec);
             return TimeSpec (machTimeSpec.tv_sec, machTimeSpec.tv_nsec);
         #endif // defined (TOOLCHAIN_OS_Windows)
         }

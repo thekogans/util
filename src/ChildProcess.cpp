@@ -394,32 +394,46 @@ namespace thekogans {
             }
             else {
                 // child process
-                if ((detached && setsid () < 0) ||
-                        (!startupDirectory.empty () && chdir (startupDirectory.c_str ()) < 0)) {
-                    exit (EXIT_FAILURE);
+                THEKOGANS_UTIL_TRY {
+                    if ((detached && setsid () < 0) ||
+                            (!startupDirectory.empty () && chdir (startupDirectory.c_str ()) < 0)) {
+                        THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                            THEKOGANS_UTIL_OS_ERROR_CODE);
+                    }
+                    if (hookStdIO != HOOK_NONE) {
+                        assert (stdIO.get () != 0);
+                        stdIO->SetupChild ();
+                    }
+                    if (!envp.empty ()) {
+                    #if defined (TOOLCHAIN_OS_OSX)
+                        if (execve (
+                                argv[0],
+                                (char * const *)argv.data (),
+                                (char * const *)envp.data ()) < 0) {
+                            THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                                THEKOGANS_UTIL_OS_ERROR_CODE);
+                        }
+                    #else // defined (TOOLCHAIN_OS_OSX)
+                        if (execvpe (
+                                argv[0],
+                                (char * const *)argv.data (),
+                                (char * const *)envp.data ()) < 0) {
+                            THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                                THEKOGANS_UTIL_OS_ERROR_CODE);
+                        }
+                    #endif // defined (TOOLCHAIN_OS_OSX)
+                    }
+                    else {
+                        if (execvp (argv[0], (char * const *)argv.data ()) < 0) {
+                            THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                                THEKOGANS_UTIL_OS_ERROR_CODE);
+                        }
+                    }
                 }
-                if (hookStdIO != HOOK_NONE) {
-                    assert (stdIO.get () != 0);
-                    stdIO->SetupChild ();
-                }
-                if (!envp.empty ()) {
-                #if defined (TOOLCHAIN_OS_OSX)
-                    execve (
-                        argv[0],
-                        (char * const *)argv.data (),
-                        (char * const *)envp.data ());
-                #else // defined (TOOLCHAIN_OS_OSX)
-                    execvpe (
-                        argv[0],
-                        (char * const *)argv.data (),
-                        (char * const *)envp.data ());
-                #endif // defined (TOOLCHAIN_OS_OSX)
-                }
-                else {
-                    execvp (argv[0], (char * const *)argv.data ());
-                }
+                THEKOGANS_UTIL_CATCH_AND_LOG_SUBSYSTEM (THEKOGANS_UTIL)
                 // If we got here that means execv... failed.
-                // Return the error code to the parent.
+                // The best we can do here is log the error
+                // and return it to the parent.
                 exit (THEKOGANS_UTIL_OS_ERROR_CODE);
             }
             return pid;

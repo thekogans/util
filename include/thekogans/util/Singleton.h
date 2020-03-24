@@ -41,22 +41,20 @@ namespace thekogans {
         /// \code{.cpp}
         /// struct GlobalJobQueueCreateInstance {
         ///     static std::string name;
-        ///     static RunLoop::Type type;
-        ///     static std::size_t maxPendingJobs;
+        ///     static RunLoop::JobExecutionPolicy::Ptr jobExecutionPolicy;
         ///     static std::size_t workerCount;
         ///     static i32 workerPriority;
         ///     static ui32 workerAffinity;
         ///
         ///     static void Parameterize (
         ///             const std::string &name_ = std::string (),
-        ///             RunLoop::Type type_ = RunLoop::TYPE_FIFO,
-        ///             std::size_t maxPendingJobs_ = SIZE_T_MAX,
+        ///             RunLoop::JobExecutionPolicy::Ptr jobExecutionPolicy_ =
+        ///                 RunLoop::JobExecutionPolicy::Ptr (new RunLoop::FIFOJobExecutionPolicy),
         ///             std::size_t workerCount_ = 1,
         ///             i32 workerPriority_ = THEKOGANS_UTIL_NORMAL_THREAD_PRIORITY,
         ///             ui32 workerAffinity_ = THEKOGANS_UTIL_MAX_THREAD_AFFINITY) {
         ///         name = name_;
-        ///         type = type_;
-        ///         maxPendingJobs = maxPendingJobs_;
+        ///         jobExecutionPolicy = jobExecutionPolicy_;
         ///         workerCount = workerCount_;
         ///         workerPriority = workerPriority_;
         ///         workerAffinity = workerAffinity_;
@@ -65,8 +63,7 @@ namespace thekogans {
         ///     JobQueue *operator () () {
         ///         return new JobQueue (
         ///             name,
-        ///             type,
-        ///             maxPendingJobs,
+        ///             jobExecutionPolicy,
         ///             workerCount,
         ///             workerPriority,
         ///             workerAffinity);
