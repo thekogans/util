@@ -190,7 +190,7 @@ namespace thekogans {
             static VOID CALLBACK TimerCallback (
                 PTP_CALLBACK_INSTANCE /*Instance*/,
                 PVOID Context,
-                PTP_TIMER /*Timer*/);
+                PTP_TIMER Timer_);
         #elif defined (TOOLCHAIN_OS_Linux)
             /// \brief
             /// Linux native timer object.
@@ -206,6 +206,9 @@ namespace thekogans {
             /// OS X timer callback.
             static void TimerCallback (void *userData);
         #endif // defined (TOOLCHAIN_OS_Windows)
+            /// \brief
+            /// true == Start (..., true);
+            bool periodic;
 
         public:
             /// \brief

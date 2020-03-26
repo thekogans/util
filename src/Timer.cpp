@@ -57,9 +57,12 @@ namespace thekogans {
         VOID CALLBACK Timer::TimerCallback (
                 PTP_CALLBACK_INSTANCE /*Instance*/,
                 PVOID Context,
-                PTP_TIMER /*Timer*/) {
+                PTP_TIMER Timer_) {
             Timer *timer = static_cast<Timer *> (Context);
             if (timer != 0) {
+                if (!timer->periodic) {
+                    SetThreadpoolTimer (Timer_, 0, 0, 0);
+                }
                 timer->QueueJob ();
             }
         }
@@ -86,7 +89,8 @@ namespace thekogans {
                 callback (callback_),
                 name (name_),
                 reentrantAlarm (reentrantAlarm_),
-                timer (0) {
+                timer (0),
+                periodic (false) {
         #if defined (TOOLCHAIN_OS_Windows)
             timer = CreateThreadpoolTimer (TimerCallback, this, 0);
             if (timer == 0) {
@@ -154,6 +158,7 @@ namespace thekogans {
             #elif defined (TOOLCHAIN_OS_OSX)
                 StartKQueueTimer (timer, timeSpec, periodic);
             #endif // defined (TOOLCHAIN_OS_Windows)
+                this->periodic = periodic;
             }
             else {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
@@ -175,6 +180,7 @@ namespace thekogans {
         #elif defined (TOOLCHAIN_OS_OSX)
             StopKQueueTimer (timer);
         #endif // defined (TOOLCHAIN_OS_Windows)
+            periodic = false;
         }
 
         bool Timer::IsRunning () {
