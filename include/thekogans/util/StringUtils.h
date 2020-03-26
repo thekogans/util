@@ -459,6 +459,12 @@ namespace thekogans {
                 char **end = 0);
 
         /// \brief
+        /// Format a const void *.
+        /// \param[in] value const void * to format.
+        /// \return A string representing a formatted const void *.
+        _LIB_THEKOGANS_UTIL_DECL std::string _LIB_THEKOGANS_UTIL_API PointerTostring (
+            const void *value);
+        /// \brief
         /// Format a std::size_t.
         /// \param[in] value std::size_t to format.
         /// \param[in] format Format string.

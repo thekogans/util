@@ -647,6 +647,11 @@ namespace thekogans {
             }
         }
 
+        _LIB_THEKOGANS_UTIL_DECL std::string _LIB_THEKOGANS_UTIL_API PointerTostring (
+                const void *value) {
+            return FormatString ("%p", value);
+        }
+
         _LIB_THEKOGANS_UTIL_DECL std::string _LIB_THEKOGANS_UTIL_API size_tTostring (
                 std::size_t value,
                 const char *format) {
