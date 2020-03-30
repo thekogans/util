@@ -328,9 +328,6 @@ namespace thekogans {
                         for (int i = 0; i < count; ++i) {
                             KQueueTimer *timer = (KQueueTimer *)kqueueEvents[i].udata;
                             if (timer != 0) {
-                                if (!timer->periodic) {
-                                    StopTimer (timer);
-                                }
                                 timer->timerCallback (timer->userData);
                             }
                         }

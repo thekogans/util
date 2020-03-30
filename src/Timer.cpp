@@ -70,6 +70,9 @@ namespace thekogans {
         void Timer::TimerCallback (union sigval val) {
             Timer *timer = static_cast<Timer *> (val.sival_ptr);
             if (timer != 0) {
+                if (!timer->periodic) {
+                    timer->Stop ();
+                }
                 timer->QueueJob ();
             }
         }
@@ -77,6 +80,9 @@ namespace thekogans {
         void Timer::TimerCallback (void *userData) {
             Timer *timer = static_cast<Timer *> (userData);
             if (timer != 0) {
+                if (!timer->periodic) {
+                    timer->Stop ();
+                }
                 timer->QueueJob ();
             }
         }

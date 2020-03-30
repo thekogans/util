@@ -242,18 +242,10 @@ namespace thekogans {
             /// IMPORTANT: timeSpec is a relative value.
             /// \param[in] runLoop \see{RunLoop} that will execute the job.
             /// \return RunLoop::Job::Id which can be used in a call to CancelJob.
-            inline RunLoop::Job::Id ScheduleRunLoopJob (
-                    RunLoop::Job::Ptr job,
-                    const TimeSpec &timeSpec,
-                    RunLoop &runLoop = MainRunLoop::Instance ()) {
-                return ScheduleJobInfo (
-                    JobInfo::Ptr (
-                        new RunLoopJobInfo (
-                            job,
-                            GetCurrentTime () + timeSpec,
-                            runLoop)),
-                    timeSpec);
-            }
+            RunLoop::Job::Id ScheduleRunLoopJob (
+                RunLoop::Job::Ptr job,
+                const TimeSpec &timeSpec,
+                RunLoop &runLoop = MainRunLoop::Instance ());
             /// \brief
             /// Schedule a job to be performed in the future.
             /// \param[in] job \see{Pipeline::Job} to execute.
@@ -261,18 +253,10 @@ namespace thekogans {
             /// IMPORTANT: timeSpec is a relative value.
             /// \param[in] pipeline \see{Pipeline} that will execute the job.
             /// \return RunLoop::Job::Id which can be used in a call to CancelJob.
-            inline Pipeline::Job::Id SchedulePipelineJob (
-                    Pipeline::Job::Ptr job,
-                    const TimeSpec &timeSpec,
-                    Pipeline &pipeline) {
-                return ScheduleJobInfo (
-                    JobInfo::Ptr (
-                        new PipelineJobInfo (
-                            job,
-                            GetCurrentTime () + timeSpec,
-                            pipeline)),
-                    timeSpec);
-            }
+            Pipeline::Job::Id SchedulePipelineJob (
+                Pipeline::Job::Ptr job,
+                const TimeSpec &timeSpec,
+                Pipeline &pipeline = GlobalPipeline::Instance ());
 
             /// \brief
             /// Cancel the job associated with the given job id.

@@ -43,6 +43,44 @@ namespace thekogans {
             }
         }
 
+        RunLoop::Job::Id RunLoopScheduler::ScheduleRunLoopJob (
+                RunLoop::Job::Ptr job,
+                const TimeSpec &timeSpec,
+                RunLoop &runLoop = MainRunLoop::Instance ()) {
+            if (job.Get () != 0 && timeSpec != TimeSpec::Infinite) {
+                return ScheduleJobInfo (
+                    JobInfo::Ptr (
+                        new RunLoopJobInfo (
+                            job,
+                            GetCurrentTime () + timeSpec,
+                            runLoop)),
+                    timeSpec);
+            }
+            else {
+                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
+            }
+        }
+
+        Pipeline::Job::Id RunLoopScheduler::SchedulePipelineJob (
+                Pipeline::Job::Ptr job,
+                const TimeSpec &timeSpec,
+                Pipeline &pipeline) {
+            if (job.Get () != 0 && timeSpec != TimeSpec::Infinite) {
+                return ScheduleJobInfo (
+                    JobInfo::Ptr (
+                        new PipelineJobInfo (
+                            job,
+                            GetCurrentTime () + timeSpec,
+                            pipeline)),
+                    timeSpec);
+            }
+            else {
+                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
+            }
+        }
+
         void RunLoopScheduler::CancelJob (const RunLoop::Job::Id &id) {
             LockGuard<SpinLock> guard (spinLock);
             if (!queue.empty ()) {
