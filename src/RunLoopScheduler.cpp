@@ -46,7 +46,7 @@ namespace thekogans {
         RunLoop::Job::Id RunLoopScheduler::ScheduleRunLoopJob (
                 RunLoop::Job::Ptr job,
                 const TimeSpec &timeSpec,
-                RunLoop &runLoop = MainRunLoop::Instance ()) {
+                RunLoop &runLoop) {
             if (job.Get () != 0 && timeSpec != TimeSpec::Infinite) {
                 return ScheduleJobInfo (
                     JobInfo::Ptr (
