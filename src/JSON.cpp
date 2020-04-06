@@ -384,8 +384,8 @@ namespace thekogans {
                                 }
                                 // Create proper variant type based on the format of the number.
                                 Variant value ((*json == '.' || *json == 'e' || *json == 'E') ?
-                                    stringTof64 (start, (char **)&json) : minus ?
-                                    stringToi64 (start, (char **)&json) : stringToui64 (start, (char **)&json));
+                                    stringTof64 (start, (char **)&json) :
+                                    minus ? stringToi64 (start, (char **)&json) : stringToui64 (start, (char **)&json));
                                 if (json > start && isdelim (*json)) {
                                     return Token (std::string (start, json), value);
                                 }

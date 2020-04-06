@@ -30,6 +30,7 @@
 #if defined (TOOLCHAIN_OS_Linux)
     #include <pwd.h>
 #endif // defined (TOOLCHAIN_OS_Linux)
+    #include <sys/xattr.h>
     #include <sys/stat.h>
     #include <climits>
     #include <cstdio>
@@ -46,6 +47,7 @@
 #elif defined (TOOLCHAIN_OS_Linux)
     #include "thekogans/util/LinuxUtils.h"
 #elif defined (TOOLCHAIN_OS_OSX)
+    #include "thekogans/util/Array.h"
     #include "thekogans/util/OSXUtils.h"
 #endif // defined (TOOLCHAIN_OS_Windows)
 #include "thekogans/util/Directory.h"
@@ -169,6 +171,115 @@ namespace thekogans {
     #if defined (TOOLCHAIN_OS_Windows)
         char Path::GetDrive () const {
             return path.size () > 1 && path[1] == DRIVE_LETTER_DELIMITER ? path[0] : -1;
+        }
+    #else // defined (TOOLCHAIN_OS_Windows)
+        std::string Path::GetExtendedAttributeValue (const std::string &name) const {
+            int size = 0;
+            std::string value;
+            do {
+                if (size > 0) {
+                    value.resize (size);
+                }
+            #if defined (TOOLCHAIN_OS_Linux)
+                size = getxattr (path.c_str (), name.c_str (), size > 0 ? &value[0] : 0, size, 0);
+            #else // defined (TOOLCHAIN_OS_Linux)
+                size = getxattr (path.c_str (), name.c_str (), size > 0 ? &value[0] : 0, size, 0, 0);
+            #endif // defined (TOOLCHAIN_OS_Linux)
+            } while (size < 0 && THEKOGANS_UTIL_POSIX_OS_ERROR_CODE == ERANGE);
+            if (size < 0) {
+                THEKOGANS_UTIL_THROW_POSIX_ERROR_CODE_EXCEPTION (
+                    THEKOGANS_UTIL_POSIX_OS_ERROR_CODE);
+            }
+            return value;
+        }
+
+        Attributes Path::GetExtendedAttributeValues () const {
+            Attributes attributes;
+            int size = 0;
+            std::vector<char> buffer;
+            do {
+                if (size > 0) {
+                    buffer.resize (size);
+                }
+                size = listxattr (path.c_str (), size > 0 ? buffer.data () : 0, size, 0);
+            } while (size < 0 && THEKOGANS_UTIL_POSIX_OS_ERROR_CODE == ERANGE);
+            if (size > 0) {
+                for (int i = 0; i < size; i += strlen (buffer.data () + i) + 1) {
+                    attributes.push_back (
+                        Attribute (
+                            buffer.data () + i,
+                            GetExtendedAttributeValue (buffer.data () + i)));
+                }
+            }
+            else if (size < 0) {
+                THEKOGANS_UTIL_THROW_POSIX_ERROR_CODE_EXCEPTION (
+                    THEKOGANS_UTIL_POSIX_OS_ERROR_CODE);
+            }
+            return attributes;
+        }
+
+        std::vector<std::string> Path::GetExtendedAttributeNames () const {
+            std::vector<std::string> names;
+            int size = 0;
+            std::vector<char> buffer;
+            do {
+                if (size > 0) {
+                    buffer.resize (size);
+                }
+                size = listxattr (path.c_str (), size > 0 ? buffer.data () : 0, size, 0);
+            } while (size < 0 && THEKOGANS_UTIL_POSIX_OS_ERROR_CODE == ERANGE);
+            if (size > 0) {
+                for (int i = 0; i < size; i += strlen (buffer.data () + i) + 1) {
+                    names.push_back (buffer.data () + i);
+                }
+            }
+            else if (size < 0) {
+                THEKOGANS_UTIL_THROW_POSIX_ERROR_CODE_EXCEPTION (
+                    THEKOGANS_UTIL_POSIX_OS_ERROR_CODE);
+            }
+            return names;
+        }
+
+        void Path::AddExtendedAttribute (
+                const Attribute &attribute,
+                int flags) const {
+        #if defined (TOOLCHAIN_OS_Linux)
+            if (setxattr (path.c_str (), attribute.first.c_str (),
+                    attribute.second.c_str (), attribute.second.size (), flags) < 0) {
+        #else // defined (TOOLCHAIN_OS_Linux)
+            if (setxattr (path.c_str (), attribute.first.c_str (),
+                    attribute.second.c_str (), attribute.second.size (), 0, flags) < 0) {
+        #endif // defined (TOOLCHAIN_OS_Linux)
+                THEKOGANS_UTIL_THROW_POSIX_ERROR_CODE_EXCEPTION (
+                    THEKOGANS_UTIL_POSIX_OS_ERROR_CODE);
+            }
+        }
+
+        void Path::DeleteExtendedAttribute (const std::string &name) const {
+            if (removexattr (path.c_str (), name.c_str (), 0) < 0) {
+                THEKOGANS_UTIL_THROW_POSIX_ERROR_CODE_EXCEPTION (
+                    THEKOGANS_UTIL_POSIX_OS_ERROR_CODE);
+            }
+        }
+
+        void Path::DeleteExtendedAttributes () const {
+            int size = 0;
+            std::vector<char> buffer;
+            do {
+                if (size > 0) {
+                    buffer.resize (size);
+                }
+                size = listxattr (path.c_str (), size > 0 ? buffer.data () : 0, size, 0);
+            } while (size < 0 && THEKOGANS_UTIL_POSIX_OS_ERROR_CODE == ERANGE);
+            if (size > 0) {
+                for (int i = 0; i < size; i += strlen (buffer.data () + i) + 1) {
+                    DeleteExtendedAttribute (buffer.data () + i);
+                }
+            }
+            else if (size < 0) {
+                THEKOGANS_UTIL_THROW_POSIX_ERROR_CODE_EXCEPTION (
+                    THEKOGANS_UTIL_POSIX_OS_ERROR_CODE);
+            }
         }
     #endif // defined (TOOLCHAIN_OS_Windows)
 
@@ -324,6 +435,10 @@ namespace thekogans {
             else if (entry.type == Directory::Entry::File ||
                     entry.type == Directory::Entry::Link) {
                 File::Delete (path);
+            }
+            else {
+                THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
+                    "Unknown path type: %s", path.c_str ());
             }
         }
 

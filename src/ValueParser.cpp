@@ -51,7 +51,6 @@ namespace thekogans {
             static const std::size_t bytesPerType[] = {
                 UI8_SIZE, UI16_SIZE, UI32_SIZE, UI64_SIZE, 0
             };
-            value = 0;
             size = bytesPerType[type];
             offset = 0;
             state = type == TYPE_SIZE_T ? STATE_SIZE : STATE_VALUE;
@@ -113,7 +112,6 @@ namespace thekogans {
         }
 
         void ValueParser<std::string>::Reset () {
-            value.clear ();
             length = 0;
             lengthParser.Reset ();
             offset = 0;

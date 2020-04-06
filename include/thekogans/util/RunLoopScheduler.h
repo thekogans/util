@@ -228,7 +228,7 @@ namespace thekogans {
             /// different names to the ctor to distinguish their threads
             /// in the debugger.
             RunLoopScheduler (const std::string &name = "RunLoopScheduler") :
-                timer (*this, name) {}
+                timer (*this, name, true) {}
             /// \brief
             /// dtor.
             ~RunLoopScheduler () {

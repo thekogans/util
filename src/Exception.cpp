@@ -202,15 +202,17 @@ namespace thekogans {
         std::string Exception::FromPOSIXErrorCode (int errorCode) {
         #if defined (TOOLCHAIN_OS_Windows)
             wchar_t errorString[200];
-            if (_wcserror_s (errorString, 200, errorCode)) {
-                return UTF16ToUTF8 (errorString);
-            }
-        #else // defined (TOOLCHAIN_OS_Windows)
-            const char *buffer = strerror (errorCode);
-            if (buffer != 0) {
+            if (_wcserror_s (errorString, 200, errorCode) == 0) {
                 return FormatString (
                     "[0x%x:%d - %s]",
-                    errorCode, errorCode, buffer);
+                    errorCode, errorCode, UTF16ToUTF8 (errorString).c_str ());
+            }
+        #else // defined (TOOLCHAIN_OS_Windows)
+            char errorString[200];
+            if (strerror_r (errorCode, errorString, 200) == 0) {
+                return FormatString (
+                    "[0x%x:%d - %s]",
+                    errorCode, errorCode, errorString);
             }
         #endif // defined (TOOLCHAIN_OS_Windows)
             else {
