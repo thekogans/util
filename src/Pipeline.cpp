@@ -293,11 +293,22 @@ namespace thekogans {
                 // Pause above so that WaitForIdle can do it's
                 // job.
                 Continue ();
-                // Since there are no more runningJobs, and
-                // pendingJobs have been cancelled, WaitForIdle
-                // should complete quickly.
-                if (!WaitForIdle (deadline - GetCurrentTime ())) {
-                    return false;
+                if (!workers.empty ()) {
+                    // Since there are no more runningJobs, and
+                    // pendingJobs have been cancelled, WaitForIdle
+                    // should complete quickly.
+                    if (!WaitForIdle (deadline - GetCurrentTime ())) {
+                        return false;
+                    }
+                }
+                else {
+                    // The queue has no worker threads. Simulate what
+                    // they would do to make sure anyone waiting on
+                    // pending jobs gets notified.
+                    Job *job;
+                    while ((job = DeqJob (false)) != 0) {
+                        FinishedJob (job, 0, 0);
+                    }
                 }
             }
             done = true;
