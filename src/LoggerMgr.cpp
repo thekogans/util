@@ -35,6 +35,17 @@ namespace thekogans {
 
         THEKOGANS_UTIL_IMPLEMENT_HEAP_WITH_LOCK_EX (LoggerMgr::Entry, SpinLock, 5)
 
+        LoggerMgr::~LoggerMgr () {
+            THEKOGANS_UTIL_TRY {
+                Flush ();
+            }
+            THEKOGANS_UTIL_CATCH_ANY {
+                // Not much we can do here. Try a last-ditch effort to
+                // let the engineer know that the log was not flushed.
+                std::cerr << "~LoggerMgr could not flush the log." << std::endl;
+            }
+        }
+
         void LoggerMgr::GetLevels (std::list<ui32> &levels) {
             levels.push_back (Error);
             levels.push_back (Warning);

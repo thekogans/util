@@ -36,7 +36,10 @@ namespace thekogans {
 
         THEKOGANS_UTIL_IMPLEMENT_ALLOCATOR (SecureAllocator)
 
-        SecureAllocator SecureAllocator::Global;
+        SecureAllocator &SecureAllocator::Instance () {
+            static SecureAllocator instance;
+            return instance;
+        }
 
         void SecureAllocator::ReservePages (
                 ui64 minWorkingSetSize,

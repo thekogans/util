@@ -117,7 +117,7 @@ namespace thekogans {
         #define THEKOGANS_UTIL_DECLARE_ALLOCATOR_COMMON(type)\
         public:\
             static thekogans::util::Allocator *Create () {\
-                return &Global;\
+                return &Instance ();\
             }\
             virtual const char *GetName () const {\
                 return #type;\

@@ -38,7 +38,7 @@ namespace thekogans {
         struct _LIB_THEKOGANS_UTIL_DECL NullAllocator : public Allocator {
             /// \brief
             /// Global NullAllocator. Used in \see{TenantReadBuffer} and \see{TenantWriteBuffer}.
-            static NullAllocator Global;
+            static NullAllocator &Instance ();
 
             /// \brief
             /// Return allocator name.
@@ -64,13 +64,13 @@ namespace thekogans {
         #define THEKOGANS_UTIL_IMPLEMENT_NULL_ALLOCATOR_FUNCTIONS(type)\
         void *type::operator new (std::size_t size) {\
             assert (size == sizeof (type));\
-            return thekogans::util::NullAllocator::Global.Alloc (size);\
+            return thekogans::util::NullAllocator::Instance ().Alloc (size);\
         }\
         void *type::operator new (\
                 std::size_t size,\
                 std::nothrow_t) throw () {\
             assert (size == sizeof (type));\
-            return thekogans::util::NullAllocator::Global.Alloc (size);\
+            return thekogans::util::NullAllocator::Instance ().Alloc (size);\
         }\
         void *type::operator new (\
                 std::size_t size,\
@@ -79,12 +79,12 @@ namespace thekogans {
             return ptr;\
         }\
         void type::operator delete (void *ptr) {\
-            thekogans::util::NullAllocator::Global.Free (ptr, sizeof (type));\
+            thekogans::util::NullAllocator::Instance ().Free (ptr, sizeof (type));\
         }\
         void type::operator delete (\
                 void *ptr,\
                 std::nothrow_t) throw () {\
-            thekogans::util::NullAllocator::Global.Free (ptr, sizeof (type));\
+            thekogans::util::NullAllocator::Instance ().Free (ptr, sizeof (type));\
         }\
         void type::operator delete (\
             void *,\

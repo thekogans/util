@@ -21,7 +21,10 @@
 namespace thekogans {
     namespace util {
 
-        NullAllocator NullAllocator::Global;
+        NullAllocator &NullAllocator::Instance () {
+            static NullAllocator instance;
+            return instance;
+        }
 
         const char *NullAllocator::GetName () const {
             return "NullAllocator";

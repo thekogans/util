@@ -187,7 +187,7 @@ namespace thekogans {
             std::string GetSerializedAllocatorName (const Buffer &buffer) {
                 std::string allocatorName = buffer.allocator->GetName ();
                 if (Allocator::Get (allocatorName) == 0) {
-                    allocatorName = DefaultAllocator::Global.GetName ();
+                    allocatorName = DefaultAllocator::Instance ().GetName ();
                 }
                 return allocatorName;
             }
@@ -405,7 +405,7 @@ namespace thekogans {
         void SecureBuffer::Resize (
                 std::size_t length,
                 Allocator * /*allocator*/) {
-            Buffer::Resize (length, &SecureAllocator::Global);
+            Buffer::Resize (length, &SecureAllocator::Instance ());
         }
 
         Buffer SecureBuffer::Clone (Allocator * /*allocator*/) const {
@@ -421,13 +421,13 @@ namespace thekogans {
                 std::size_t offset,
                 std::size_t count,
                 Allocator * /*allocator*/) const {
-            return Buffer::Subset (offset, count, &SecureAllocator::Global);
+            return Buffer::Subset (offset, count, &SecureAllocator::Instance ());
         }
 
     #if defined (THEKOGANS_UTIL_HAVE_ZLIB)
         Buffer SecureBuffer::Deflate (Allocator * /*allocator*/) {
             if (GetDataAvailableForReading () != 0) {
-                OutBuffer outBuffer (&SecureAllocator::Global);
+                OutBuffer outBuffer (&SecureAllocator::Instance ());
                 DeflateHelper (GetReadPtr (), GetDataAvailableForReading (), outBuffer);
                 return SecureBuffer (
                     endianness,
@@ -441,7 +441,7 @@ namespace thekogans {
 
         Buffer SecureBuffer::Inflate (Allocator * /*allocator*/) {
             if (GetDataAvailableForReading () != 0) {
-                OutBuffer outBuffer (&SecureAllocator::Global);
+                OutBuffer outBuffer (&SecureAllocator::Instance ());
                 InflateHelper (GetReadPtr (), GetDataAvailableForReading (), outBuffer);
                 return SecureBuffer (
                     endianness,
@@ -486,7 +486,7 @@ namespace thekogans {
             serializer >> endianness >> length >> readOffset >> writeOffset >> allocatorName;
             Allocator *allocator = Allocator::Get (allocatorName);
             if (allocator == 0) {
-                allocator = &DefaultAllocator::Global;
+                allocator = &DefaultAllocator::Instance ();
             }
             buffer.Resize (length, allocator);
             if (length > 0) {

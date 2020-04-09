@@ -532,7 +532,7 @@ namespace thekogans {
             1,
             SpinLock,
             THEKOGANS_UTIL_MIN_DIRECORY_ENTRY_IN_PAGE,
-            DefaultAllocator::Global)
+            DefaultAllocator::Instance ())
 
     #if defined (TOOLCHAIN_OS_Windows)
         namespace {

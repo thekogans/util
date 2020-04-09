@@ -111,7 +111,7 @@ namespace thekogans {
             1,
             SpinLock,
             THEKOGANS_UTIL_MIN_TIMER_INFOS_IN_PAGE,
-            DefaultAllocator::Global)
+            DefaultAllocator::Instance ())
 
         void HRTimerMgr::TimerInfo::Start () {
             start = HRTimer::Click ();
@@ -226,7 +226,7 @@ namespace thekogans {
             1,
             SpinLock,
             THEKOGANS_UTIL_MIN_SCOPE_INFOS_IN_PAGE,
-            DefaultAllocator::Global)
+            DefaultAllocator::Instance ())
 
         HRTimerMgr::ScopeInfo *HRTimerMgr::ScopeInfo::BeginScope (
                 const std::string &name) {
@@ -540,7 +540,7 @@ namespace thekogans {
             1,
             SpinLock,
             THEKOGANS_UTIL_MIN_HR_TIMER_MGR_IN_PAGE,
-            DefaultAllocator::Global)
+            DefaultAllocator::Instance ())
 
 
         std::string HRTimerMgr::ToXMLString (

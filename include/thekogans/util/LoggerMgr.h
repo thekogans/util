@@ -363,9 +363,7 @@ namespace thekogans {
                         affinity) : 0) {}
             /// \brief
             /// dtor.
-            ~LoggerMgr () {
-                Flush ();
-            }
+            ~LoggerMgr ();
 
             /// \brief
             /// Global sub-system name.

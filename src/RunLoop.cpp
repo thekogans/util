@@ -175,7 +175,7 @@ namespace thekogans {
             1,
             SpinLock,
             THEKOGANS_UTIL_MIN_RUN_LOOP_STATS_JOBS_IN_PAGE,
-            DefaultAllocator::Global)
+            DefaultAllocator::Instance ())
 
         RunLoop::Stats::Job &RunLoop::Stats::Job::operator = (const Job &job) {
             if (&job != this) {
@@ -258,7 +258,7 @@ namespace thekogans {
             1,
             SpinLock,
             THEKOGANS_UTIL_MIN_RUN_LOOP_STATS_IN_PAGE,
-            DefaultAllocator::Global)
+            DefaultAllocator::Instance ())
 
         RunLoop::Stats &RunLoop::Stats::operator = (const Stats &stats) {
             if (&stats != this) {

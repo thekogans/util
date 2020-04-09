@@ -33,7 +33,7 @@ namespace thekogans {
             1,
             SpinLock,
             THEKOGANS_UTIL_MIN_FRACTIONS_IN_PAGE,
-            DefaultAllocator::Global)
+            DefaultAllocator::Instance ())
 
         const Fraction Fraction::Zero (0, 1);
         const Fraction Fraction::One (1, 1);

@@ -43,7 +43,7 @@ namespace thekogans {
             1,
             SpinLock,
             THEKOGANS_UTIL_MIN_TIME_SPECS_IN_PAGE,
-            DefaultAllocator::Global)
+            DefaultAllocator::Instance ())
 
         TimeSpec::TimeSpec (
                 i64 seconds_,

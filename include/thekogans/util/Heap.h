@@ -196,7 +196,7 @@ namespace thekogans {
         ///              subsumed in to SecureAllocator.
         /// 08/05/2015 - version 2.4.0
         ///              Replaced the Allocator template parameter with a
-        ///              ctor parameter defaulted to DefaultAllocator::Global.
+        ///              ctor parameter defaulted to DefaultAllocator::Instance ().
         ///              Reworked the affected *_IMPLEMENT_* macros to
         ///              reflect the change. Heap is now usable in situations
         ///              that call for Allocators that have a non trivial
@@ -889,7 +889,7 @@ namespace thekogans {
             Heap (const char *name_ = 0,
                     std::size_t minItemsInPage_ =
                         THEKOGANS_UTIL_HEAP_DEFAULT_MIN_ITEMS_IN_PAGE,
-                    Allocator &allocator_ = DefaultAllocator::Global) :
+                    Allocator &allocator_ = DefaultAllocator::Instance ()) :
                     name (name_),
                     minItemsInPage (minItemsInPage_),
                     minPageSize (Align (sizeof (Page) +

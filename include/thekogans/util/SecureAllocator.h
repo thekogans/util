@@ -50,12 +50,12 @@ namespace thekogans {
         ///
         /// THEKOGANS_UTIL_IMPLEMENT_HEAP_WITH_ALLOCATOR (
         ///     SecureObject,
-        ///     thekogans::util::SecureAllocator::Global)
+        ///     thekogans::util::SecureAllocator::Instance ())
         /// or
         /// THEKOGANS_UTIL_IMPLEMENT_HEAP_WITH_LOCK_AND_ALLOCATOR (
         ///     SecureObject,
         ///     thekogans::util::SpinLock,
-        ///     thekogans::util::SecureAllocator::Global)
+        ///     thekogans::util::SecureAllocator::Instance ())
         /// \endcode
         ///
         /// NOTE: Don't forget to call SecureAllocator::ReservePages to
@@ -70,7 +70,7 @@ namespace thekogans {
 
             /// \brief
             /// Global SecureAllocator. Used by default in \see{SecureBuffer}.
-            static SecureAllocator Global;
+            static SecureAllocator &Instance ();
 
             /// \brief
             /// Call this method during process initialization to reserve
@@ -101,13 +101,13 @@ namespace thekogans {
         #define THEKOGANS_UTIL_IMPLEMENT_SECURE_ALLOCATOR_FUNCTIONS(type)\
         void *type::operator new (std::size_t size) {\
             assert (size == sizeof (type));\
-            return thekogans::util::SecureAllocator::Global.Alloc (size);\
+            return thekogans::util::SecureAllocator::Instance ().Alloc (size); \
         }\
         void *type::operator new (\
                 std::size_t size,\
                 std::nothrow_t) throw () {\
             assert (size == sizeof (type));\
-            return thekogans::util::SecureAllocator::Global.Alloc (size);\
+            return thekogans::util::SecureAllocator::Instance ().Alloc (size);\
         }\
         void *type::operator new (\
                 std::size_t size,\
@@ -116,12 +116,12 @@ namespace thekogans {
             return ptr;\
         }\
         void type::operator delete (void *ptr) {\
-            thekogans::util::SecureAllocator::Global.Free (ptr, sizeof (type));\
+            thekogans::util::SecureAllocator::Instance ().Free (ptr, sizeof (type));\
         }\
         void type::operator delete (\
                 void *ptr,\
                 std::nothrow_t) throw () {\
-            thekogans::util::SecureAllocator::Global.Free (ptr, sizeof (type));\
+            thekogans::util::SecureAllocator::Instance ().Free (ptr, sizeof (type));\
         }\
         void type::operator delete (\
             void *,\
@@ -130,7 +130,7 @@ namespace thekogans {
         /// \struct stdSecureAllocator SecureAllocator.h thekogans/util/SecureAllocator.h
         ///
         /// \brief
-        /// Implementation of a std::allocator which uses SecureAllocator::Global. Many standard
+        /// Implementation of a std::allocator which uses SecureAllocator::Instance (). Many standard
         /// template containers have an allocator parameter. Use this allocator to have the items
         /// be allocated from a secure heap.
         /// This implementation was borrowed heavily from: https://botan.randombit.net/
@@ -196,7 +196,7 @@ namespace thekogans {
             pointer allocate (
                     size_type count,
                     const void * /*hint*/ = 0) {
-                return (pointer)SecureAllocator::Global.Alloc (count * sizeof (T));
+                return (pointer)SecureAllocator::Instance ().Alloc (count * sizeof (T));
             }
             /// \brief
             /// Free a previously allocated buffer.
@@ -205,7 +205,7 @@ namespace thekogans {
             void deallocate (
                     pointer ptr,
                     size_type count) {
-                SecureAllocator::Global.Free (ptr, count * sizeof (T));
+                SecureAllocator::Instance ().Free (ptr, count * sizeof (T));
             }
 
             /// \brief

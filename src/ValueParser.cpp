@@ -70,7 +70,7 @@ namespace thekogans {
                     state = STATE_VALUE;
                 }
             }
-            else {
+            if (state == STATE_VALUE) {
                 offset += serializer.Read (valueBuffer + offset, size - offset);
                 if (offset == size) {
                     TenantReadBuffer buffer (serializer.endianness, valueBuffer, size);

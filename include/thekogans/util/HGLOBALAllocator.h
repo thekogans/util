@@ -43,7 +43,7 @@ namespace thekogans {
 
             /// \brief
             /// Global HGLOBALAllocator. Used by default in \see{Heap} and \see{Buffer}.
-            static HGLOBALAllocator Global;
+            static HGLOBALAllocator &Instance ();
 
             /// \brief
             /// Allocate a block from system heap (GMEM_FIXED).
@@ -73,13 +73,13 @@ namespace thekogans {
         #define THEKOGANS_UTIL_IMPLEMENT_HGLOBAL_ALLOCATOR_FUNCTIONS(type)\
         void *type::operator new (std::size_t size) {\
             assert (size == sizeof (type));\
-            return thekogans::util::HGLOBALAllocator::Global.Alloc (size);\
+            return thekogans::util::HGLOBALAllocator::Instance ().Alloc (size);\
         }\
         void *type::operator new (\
                 std::size_t size,\
                 std::nothrow_t) throw () {\
             assert (size == sizeof (type));\
-            return thekogans::util::HGLOBALAllocator::Global.Alloc (size);\
+            return thekogans::util::HGLOBALAllocator::Instance ().Alloc (size);\
         }\
         void *type::operator new (\
                 std::size_t size,\
@@ -88,12 +88,12 @@ namespace thekogans {
             return ptr;\
         }\
         void type::operator delete (void *ptr) {\
-            thekogans::util::HGLOBALAllocator::Global.Free (ptr, sizeof (type));\
+            thekogans::util::HGLOBALAllocator::Instance ().Free (ptr, sizeof (type));\
         }\
         void type::operator delete (\
                 void *ptr,\
                 std::nothrow_t) throw () {\
-            thekogans::util::HGLOBALAllocator::Global.Free (ptr, sizeof (type));\
+            thekogans::util::HGLOBALAllocator::Instance ().Free (ptr, sizeof (type));\
         }\
         void type::operator delete (\
             void *,\

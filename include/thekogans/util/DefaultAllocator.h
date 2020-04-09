@@ -40,7 +40,7 @@ namespace thekogans {
 
             /// \brief
             /// Global DefaultAllocator. Used by default in \see{Heap} and \see{Buffer}.
-            static DefaultAllocator Global;
+            static DefaultAllocator &Instance ();
 
             /// \brief
             /// Allocate a block from system heap.
@@ -61,13 +61,13 @@ namespace thekogans {
         #define THEKOGANS_UTIL_IMPLEMENT_DEFAULT_ALLOCATOR_FUNCTIONS(type)\
         void *type::operator new (std::size_t size) {\
             assert (size == sizeof (type));\
-            return thekogans::util::DefaultAllocator::Global.Alloc (size);\
+            return thekogans::util::DefaultAllocator::Instance ().Alloc (size);\
         }\
         void *type::operator new (\
                 std::size_t size,\
                 std::nothrow_t) throw () {\
             assert (size == sizeof (type));\
-            return thekogans::util::DefaultAllocator::Global.Alloc (size);\
+            return thekogans::util::DefaultAllocator::Instance ().Alloc (size);\
         }\
         void *type::operator new (\
                 std::size_t size,\
@@ -76,12 +76,12 @@ namespace thekogans {
             return ptr;\
         }\
         void type::operator delete (void *ptr) {\
-            thekogans::util::DefaultAllocator::Global.Free (ptr, sizeof (type));\
+            thekogans::util::DefaultAllocator::Instance ().Free (ptr, sizeof (type));\
         }\
         void type::operator delete (\
                 void *ptr,\
                 std::nothrow_t) throw () {\
-            thekogans::util::DefaultAllocator::Global.Free (ptr, sizeof (type));\
+            thekogans::util::DefaultAllocator::Instance ().Free (ptr, sizeof (type));\
         }\
         void type::operator delete (\
             void *,\

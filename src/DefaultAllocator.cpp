@@ -24,7 +24,10 @@ namespace thekogans {
 
         THEKOGANS_UTIL_IMPLEMENT_ALLOCATOR (DefaultAllocator)
 
-        DefaultAllocator DefaultAllocator::Global;
+        DefaultAllocator &DefaultAllocator::Instance () {
+            static DefaultAllocator instance;
+            return instance;
+        }
 
         void *DefaultAllocator::Alloc (std::size_t size) {
             void *ptr = 0;
