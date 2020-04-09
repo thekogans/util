@@ -66,7 +66,7 @@ namespace thekogans {
                         Reset ();
                         return true;
                     }
-                    valueBuffer[++offset] = firstByte;
+                    valueBuffer[offset++] = firstByte;
                     state = STATE_VALUE;
                 }
             }
