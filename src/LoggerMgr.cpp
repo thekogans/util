@@ -35,6 +35,16 @@ namespace thekogans {
 
         THEKOGANS_UTIL_IMPLEMENT_HEAP_WITH_LOCK_EX (LoggerMgr::Entry, SpinLock, 5)
 
+        namespace {
+            // By defining this destroyer after the heap, it destroys
+            // GlobalLoggerMgr while the heap is still alive.
+            struct GlobalLoggerMgrDestroyer {
+                ~GlobalLoggerMgrDestroyer () {
+                    GlobalLoggerMgr::Destroy ();
+                }
+            } globalLoggerMgrDestroyer;
+        }
+
         LoggerMgr::~LoggerMgr () {
             THEKOGANS_UTIL_TRY {
                 Flush ();
