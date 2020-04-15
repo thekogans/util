@@ -235,7 +235,7 @@ namespace thekogans {
         /// is being declared (same as struct/class type).
         #define THEKOGANS_UTIL_DECLARE_HEAP(type)\
         private:\
-            static thekogans::util::Heap<type > heap;\
+            static thekogans::util::Heap<type> &GetHeap ();\
             THEKOGANS_UTIL_DECLARE_HEAP_FUNCTIONS
 
         /// \def THEKOGANS_UTIL_DECLARE_HEAP_WITH_LOCK(type, lock)
@@ -246,7 +246,7 @@ namespace thekogans {
         /// \param[in] lock Custom heap protection lock \see{NullLock}.
         #define THEKOGANS_UTIL_DECLARE_HEAP_WITH_LOCK(type, lock)\
         private:\
-            static thekogans::util::Heap<type, lock > heap;\
+            static thekogans::util::Heap<type, lock> &GetHeap ();\
             THEKOGANS_UTIL_DECLARE_HEAP_FUNCTIONS
 
         /// \brief
@@ -259,13 +259,13 @@ namespace thekogans {
         #define THEKOGANS_UTIL_IMPLEMENT_HEAP_FUNCTIONS(type)\
         void *type::operator new (std::size_t size) {\
             assert (size == sizeof (type));\
-            return heap.Alloc (false);\
+            return GetHeap ().Alloc (false);\
         }\
         void *type::operator new (\
                 std::size_t size,\
                 std::nothrow_t) throw () {\
             assert (size == sizeof (type));\
-            return heap.Alloc (true);\
+            return GetHeap ().Alloc (true);\
         }\
         void *type::operator new (\
                 std::size_t size,\
@@ -274,12 +274,12 @@ namespace thekogans {
             return ptr;\
         }\
         void type::operator delete (void *ptr) {\
-            heap.Free (ptr, false);\
+            GetHeap ().Free (ptr, false);\
         }\
         void type::operator delete (\
                 void *ptr,\
                 std::nothrow_t) throw () {\
-            heap.Free (ptr, true);\
+            GetHeap ().Free (ptr, true);\
         }\
         void type::operator delete (\
             void *,\
@@ -294,8 +294,11 @@ namespace thekogans {
         /// \param[in] minItemsInPage Minimum items per page.
         #define THEKOGANS_UTIL_IMPLEMENT_HEAP_EX(\
             type, minItemsInPage)\
-        thekogans::util::Heap<type > type::heap (\
-            #type, minItemsInPage);\
+        thekogans::util::Heap<type> &type::GetHeap () {\
+            static thekogans::util::Heap<type> heap (\
+                #type, minItemsInPage);\
+            return heap;\
+        }\
         THEKOGANS_UTIL_IMPLEMENT_HEAP_FUNCTIONS (type)
 
         /// \def THEKOGANS_UTIL_IMPLEMENT_HEAP_EX_WITH_ALLOCATOR(
@@ -309,8 +312,11 @@ namespace thekogans {
         /// \param[in] allocator Custom page allocator \see{Allocator}.
         #define THEKOGANS_UTIL_IMPLEMENT_HEAP_EX_WITH_ALLOCATOR(\
             type, minItemsInPage, allocator)\
-        thekogans::util::Heap<type > type::heap (\
-            #type, minItemsInPage, allocator);\
+        thekogans::util::Heap<type> &type::GetHeap () {\
+            static thekogans::util::Heap<type> heap (\
+                #type, minItemsInPage, allocator);\
+            return heap;\
+        }\
         THEKOGANS_UTIL_IMPLEMENT_HEAP_FUNCTIONS (type)
 
         /// \def THEKOGANS_UTIL_IMPLEMENT_HEAP_WITH_LOCK_EX(
@@ -324,8 +330,11 @@ namespace thekogans {
         /// \param[in] minItemsInPage Minimum items per page.
         #define THEKOGANS_UTIL_IMPLEMENT_HEAP_WITH_LOCK_EX(\
             type, lock, minItemsInPage)\
-        thekogans::util::Heap<type, lock > type::heap (\
-            #type, minItemsInPage);\
+        thekogans::util::Heap<type, lock> &type::GetHeap () {\
+            static thekogans::util::Heap<type, lock> heap (\
+                #type, minItemsInPage);\
+            return heap;\
+        }\
         THEKOGANS_UTIL_IMPLEMENT_HEAP_FUNCTIONS (type)
 
         /// \def THEKOGANS_UTIL_IMPLEMENT_HEAP_WITH_LOCK_EX_AND_ALLOCATOR(
@@ -340,8 +349,11 @@ namespace thekogans {
         /// \param[in] allocator Custom page allocator \see{tAllocator}.
         #define THEKOGANS_UTIL_IMPLEMENT_HEAP_WITH_LOCK_EX_AND_ALLOCATOR(\
             type, lock, minItemsInPage, allocator)\
-        thekogans::util::Heap<type, lock > type::heap (\
-            #type, minItemsInPage, allocator);\
+        thekogans::util::Heap<type, lock> &type::GetHeap () {\
+            static thekogans::util::Heap<type, lock> heap (\
+                #type, minItemsInPage, allocator);\
+            return heap;\
+        }\
         THEKOGANS_UTIL_IMPLEMENT_HEAP_FUNCTIONS (type)
 
         /// \def THEKOGANS_UTIL_IMPLEMENT_HEAP(type)
@@ -400,14 +412,14 @@ namespace thekogans {
         template<>\
         THEKOGANS_UTIL_EXPORT void *type::operator new (std::size_t size) {\
             assert (size == sizeof (type));\
-            return heap.Alloc (false);\
+            return GetHeap ().Alloc (false);\
         }\
         template<>\
         THEKOGANS_UTIL_EXPORT void *type::operator new (\
                 std::size_t size,\
                 std::nothrow_t) throw () {\
             assert (size == sizeof (type));\
-            return heap.Alloc (true);\
+            return GetHeap ().Alloc (true);\
         }\
         template<>\
         THEKOGANS_UTIL_EXPORT void *type::operator new (\
@@ -418,13 +430,13 @@ namespace thekogans {
         }\
         template<>\
         THEKOGANS_UTIL_EXPORT void type::operator delete (void *ptr) {\
-            heap.Free (ptr, false);\
+            GetHeap ().Free (ptr, false);\
         }\
         template<>\
         THEKOGANS_UTIL_EXPORT void type::operator delete (\
                 void *ptr,\
                 std::nothrow_t) throw () {\
-            heap.Free (ptr, true);\
+            GetHeap ().Free (ptr, true);\
         }\
         template<>\
         THEKOGANS_UTIL_EXPORT void type::operator delete (\
@@ -441,7 +453,7 @@ namespace thekogans {
         #define THEKOGANS_UTIL_IMPLEMENT_HEAP_EX_T(\
             type, minItemsInPage)\
         template<>\
-        thekogans::util::Heap<type > type::heap (\
+        thekogans::util::Heap<type> type::heap (\
             #type, minItemsInPage);\
         THEKOGANS_UTIL_IMPLEMENT_HEAP_FUNCTIONS_T (type)
 
@@ -457,7 +469,7 @@ namespace thekogans {
         #define THEKOGANS_UTIL_IMPLEMENT_HEAP_EX_WITH_ALLOCATOR_T(\
             type, minItemsInPage, allocator)\
         template<>\
-        thekogans::util::Heap<type > type::heap (\
+        thekogans::util::Heap<type> type::heap (\
             #type, minItemsInPage, allocator);\
         THEKOGANS_UTIL_IMPLEMENT_HEAP_FUNCTIONS_T (type)
 
@@ -473,7 +485,7 @@ namespace thekogans {
         #define THEKOGANS_UTIL_IMPLEMENT_HEAP_WITH_LOCK_EX_T(\
             type, lock, minItemsInPage)\
         template<>\
-        thekogans::util::Heap<type, lock >\
+        thekogans::util::Heap<type, lock>\
             type::heap (#type, minItemsInPage);\
         THEKOGANS_UTIL_IMPLEMENT_HEAP_FUNCTIONS_T (type)
 
@@ -490,7 +502,7 @@ namespace thekogans {
         #define THEKOGANS_UTIL_IMPLEMENT_HEAP_WITH_LOCK_EX_AND_ALLOCATOR_T(\
             type, lock, minItemsInPage, allocator)\
         template<>\
-        thekogans::util::Heap<type, lock > type::heap (\
+        thekogans::util::Heap<type, lock> type::heap (\
             #type, minItemsInPage, allocator);\
         THEKOGANS_UTIL_IMPLEMENT_HEAP_FUNCTIONS_T (type)
 
