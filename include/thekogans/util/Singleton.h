@@ -209,9 +209,7 @@ namespace thekogans {
             Singleton () {}
             /// \brief
             /// dtor.
-            virtual ~Singleton () {
-                Destroy ();
-            }
+            virtual ~Singleton () {}
 
             /// \brief
             /// Singleton is neither copy constructable, nor assignable.
