@@ -301,37 +301,37 @@ namespace thekogans {
 
             /// \brief
             /// Needs access to BinHeader.
-            friend Serializer &operator << (
+            friend Serializer & _LIB_THEKOGANS_UTIL_API operator << (
                 Serializer &serializer,
                 const BinHeader &header);
             /// \brief
             /// Needs access to BinHeader.
-            friend Serializer &operator >> (
+            friend Serializer & _LIB_THEKOGANS_UTIL_API operator >> (
                 Serializer &serializer,
                 BinHeader &header);
             /// \brief
             /// Needs access to TextHeader.
-            friend pugi::xml_node &operator << (
+            friend pugi::xml_node & _LIB_THEKOGANS_UTIL_API operator << (
                 pugi::xml_node &node,
                 const TextHeader &header);
             /// \brief
             /// Needs access to TextHeader.
-            friend const pugi::xml_node &operator >> (
+            friend const pugi::xml_node & _LIB_THEKOGANS_UTIL_API operator >> (
                 const pugi::xml_node &node,
                 TextHeader &header);
             /// \brief
             /// Needs access to TextHeader and Write.
-            friend Serializer &operator << (
+            friend Serializer & _LIB_THEKOGANS_UTIL_API operator << (
                 Serializer &serializer,
                 const Serializable &serializable);
             /// \brief
             /// Needs access to TextHeader and Write.
-            friend pugi::xml_node &operator << (
+            friend pugi::xml_node & _LIB_THEKOGANS_UTIL_API operator << (
                 pugi::xml_node &node,
                 const Serializable &serializable);
             /// \brief
             /// Needs access to TextHeader and Write.
-            friend JSON::Object &operator << (
+            friend JSON::Object & _LIB_THEKOGANS_UTIL_API operator << (
                 JSON::Object &object,
                 const Serializable &serializable);
         };
@@ -376,13 +376,13 @@ namespace thekogans {
                 return thekogans::util::Serializable::Ptr (\
                     new type (header, object));\
             }\
-            friend thekogans::util::Serializer &operator >> (\
+            friend thekogans::util::Serializer & _LIB_THEKOGANS_UTIL_API operator >> (\
                 thekogans::util::Serializer &serializer,\
                 type &serializable);\
-            friend const pugi::xml_node &operator >> (\
+            friend const pugi::xml_node & _LIB_THEKOGANS_UTIL_API operator >> (\
                 const pugi::xml_node &node,\
                 type &serializable);\
-            friend const thekogans::util::JSON::Object &operator >> (\
+            friend const thekogans::util::JSON::Object & _LIB_THEKOGANS_UTIL_API operator >> (\
                 const thekogans::util::JSON::Object &object,\
                 type &serializable);\
             template<typename>\
@@ -510,7 +510,7 @@ namespace thekogans {
         /// \param[in] serializer Where to serialize the serializable header.
         /// \param[in] header Serializable::BinHeader to serialize.
         /// \return serializer.
-        inline Serializer &operator << (
+        inline Serializer & _LIB_THEKOGANS_UTIL_API operator << (
                 Serializer &serializer,
                 const Serializable::BinHeader &header) {
             serializer <<
@@ -526,7 +526,7 @@ namespace thekogans {
         /// \param[in] serializer Where to deserialize the serializable header.
         /// \param[in] header Serializable::BinHeader to deserialize.
         /// \return serializer.
-        inline Serializer &operator >> (
+        inline Serializer & _LIB_THEKOGANS_UTIL_API operator >> (
                 Serializer &serializer,
                 Serializable::BinHeader &header) {
             serializer >>
@@ -542,7 +542,7 @@ namespace thekogans {
         /// \param[in] node Where to serialize the serializable header.
         /// \param[in] header Serializable::TextHeader to serialize.
         /// \return node.
-        inline pugi::xml_node &operator << (
+        inline pugi::xml_node & _LIB_THEKOGANS_UTIL_API operator << (
                 pugi::xml_node &node,
                 const Serializable::TextHeader &header) {
             node.append_attribute (Serializable::TextHeader::ATTR_TYPE).set_value (header.type.c_str ());
@@ -555,7 +555,7 @@ namespace thekogans {
         /// \param[in] serializer Where to deserialize the serializable header.
         /// \param[in] header Serializable::TextHeader to deserialize.
         /// \return node.
-        inline const pugi::xml_node &operator >> (
+        inline const pugi::xml_node & _LIB_THEKOGANS_UTIL_API operator >> (
                 const pugi::xml_node &node,
                 Serializable::TextHeader &header) {
             header.type = node.attribute (Serializable::TextHeader::ATTR_TYPE).value ();
@@ -568,7 +568,7 @@ namespace thekogans {
         /// \param[in] object Where to serialize the serializable header.
         /// \param[in] header Serializable::TextHeader to serialize.
         /// \return node.
-        inline JSON::Object &operator << (
+        inline JSON::Object & _LIB_THEKOGANS_UTIL_API operator << (
                 JSON::Object &object,
                 const Serializable::TextHeader &header) {
             object.Add<const std::string &> (
@@ -585,7 +585,7 @@ namespace thekogans {
         /// \param[in] serializer Where to deserialize the serializable header.
         /// \param[in] header Serializable::TextHeader to deserialize.
         /// \return node.
-        inline const JSON::Object &operator >> (
+        inline const JSON::Object & _LIB_THEKOGANS_UTIL_API operator >> (
                 const JSON::Object &object,
                 Serializable::TextHeader &header) {
             header.type = object.Get<JSON::String> (Serializable::TextHeader::ATTR_TYPE)->value;
@@ -598,7 +598,7 @@ namespace thekogans {
         /// \param[in] serializer Where to serialize the serializable.
         /// \param[in] serializable Serializable to serialize.
         /// \return serializer.
-        inline Serializer &operator << (
+        inline Serializer & _LIB_THEKOGANS_UTIL_API operator << (
                 Serializer &serializer,
                 const Serializable &serializable) {
             serializer <<
@@ -615,7 +615,7 @@ namespace thekogans {
         /// \param[in] node Where to serialize the serializable.
         /// \param[in] serializable Serializable to serialize.
         /// \return node.
-        inline pugi::xml_node &operator << (
+        inline pugi::xml_node & _LIB_THEKOGANS_UTIL_API operator << (
                 pugi::xml_node &node,
                 const Serializable &serializable) {
             node <<
@@ -631,7 +631,7 @@ namespace thekogans {
         /// \param[in] object Where to serialize the serializable.
         /// \param[in] serializable Serializable to serialize.
         /// \return node.
-        inline JSON::Object &operator << (
+        inline JSON::Object & _LIB_THEKOGANS_UTIL_API operator << (
                 JSON::Object &object,
                 const Serializable &serializable) {
             object <<
@@ -710,7 +710,7 @@ namespace thekogans {
         /// \def THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_REF_EXTRACTION_OPERATORS(_T)
         /// Implement \see{Serializable} extraction operators.
         #define THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_REF_EXTRACTION_OPERATORS(_T)\
-            inline thekogans::util::Serializer &operator >> (\
+            inline thekogans::util::Serializer & _LIB_THEKOGANS_UTIL_API operator >> (\
                     thekogans::util::Serializer &serializer,\
                     _T &serializable) {\
                 thekogans::util::Serializable::BinHeader header;\
@@ -727,7 +727,7 @@ namespace thekogans {
                         serializable.GetType ().c_str ());\
                 }\
             }\
-            inline const pugi::xml_node &operator >> (\
+            inline const pugi::xml_node & _LIB_THEKOGANS_UTIL_API operator >> (\
                     const pugi::xml_node &node,\
                     _T &serializable) {\
                 thekogans::util::Serializable::TextHeader header;\
@@ -763,7 +763,7 @@ namespace thekogans {
         /// \def THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_PTR_EXTRACTION_OPERATORS(_T)
         /// Implement \see{Serializable::Ptr} extraction operators.
         #define THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_PTR_EXTRACTION_OPERATORS(_T)\
-            inline thekogans::util::Serializer &operator >> (\
+            inline thekogans::util::Serializer & _LIB_THEKOGANS_UTIL_API operator >> (\
                     thekogans::util::Serializer &serializer,\
                     _T::Ptr &serializable) {\
                 thekogans::util::Serializable::BinHeader header;\
@@ -789,7 +789,7 @@ namespace thekogans {
                         header.type.c_str ());\
                 }\
             }\
-            inline const pugi::xml_node &operator >> (\
+            inline const pugi::xml_node & _LIB_THEKOGANS_UTIL_API operator >> (\
                     const pugi::xml_node &node,\
                     _T::Ptr &serializable) {\
                 thekogans::util::Serializable::TextHeader header;\
@@ -808,7 +808,7 @@ namespace thekogans {
                         header.type.c_str ());\
                 }\
             }\
-            inline const thekogans::util::JSON::Object &operator >> (\
+            inline const thekogans::util::JSON::Object & _LIB_THEKOGANS_UTIL_API operator >> (\
                     const thekogans::util::JSON::Object &object,\
                     _T::Ptr &serializable) {\
                 thekogans::util::Serializable::TextHeader header;\

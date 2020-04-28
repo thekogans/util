@@ -284,7 +284,7 @@ namespace thekogans {
         template<
             typename T,
             typename _U>
-        inline bool operator == (
+        inline bool _LIB_THEKOGANS_UTIL_API operator == (
                 const stdSecureAllocator<T> & /*allocator1*/,
                 const stdSecureAllocator<_U> & /*allocator2*/) {
             return true;
@@ -297,7 +297,7 @@ namespace thekogans {
         template<
             typename T,
             typename _U>
-        inline bool operator != (
+        inline bool _LIB_THEKOGANS_UTIL_API operator != (
                 const stdSecureAllocator<T> & /*allocator1*/,
                 const stdSecureAllocator<_U> & /*allocator2*/) {
             return false;

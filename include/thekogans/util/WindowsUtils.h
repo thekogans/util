@@ -62,6 +62,24 @@ namespace thekogans {
         _LIB_THEKOGANS_UTIL_DECL i64 _LIB_THEKOGANS_UTIL_API FILETIMEToi64 (const FILETIME &value);
 
         /// \brief
+        /// Convert the given multibyte string to UTF16.
+        /// NOTE: The following is allowed and will result in std::wstring ():
+        /// multiByte == 0 && length == 0
+        /// multiByte != 0 && length == 0
+        /// The following will result in THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL being thrown:
+        /// multiByte == 0 && length > 0
+        /// \param[in] codePage Code page to use in performing the conversion.
+        /// \param[in] multiByte Multibyte string to convert.
+        /// \param[in] length Length (in bytes) of the given UTF8 string.
+        /// \param[in] flags Various MB_* flags to control the behavior of MultiByteToWideChar.
+        /// \return std::wstring UTF16 representation of the given UTF8 string.
+        _LIB_THEKOGANS_UTIL_DECL std::wstring _LIB_THEKOGANS_UTIL_API MultiByteToUTF16 (
+            UINT codePage,
+            const char *multiByte,
+            std::size_t length,
+            DWORD flags = MB_ERR_INVALID_CHARS);
+
+        /// \brief
         /// Convert the given UTF8 string to UTF16.
         /// NOTE: The following is allowed and will result in std::wstring ():
         /// utf8 == 0 && length == 0
@@ -72,19 +90,45 @@ namespace thekogans {
         /// \param[in] length Length (in bytes) of the given UTF8 string.
         /// \param[in] flags Various MB_* flags to control the behavior of MultiByteToWideChar.
         /// \return std::wstring UTF16 representation of the given UTF8 string.
-        _LIB_THEKOGANS_UTIL_DECL std::wstring _LIB_THEKOGANS_UTIL_API UTF8ToUTF16 (
-            const char *utf8,
-            std::size_t length,
-            DWORD flags = MB_ERR_INVALID_CHARS);
+        inline std::wstring _LIB_THEKOGANS_UTIL_API UTF8ToUTF16 (
+                const char *utf8,
+                std::size_t length,
+                DWORD flags = MB_ERR_INVALID_CHARS) {
+            return MultiByteToUTF16 (CP_UTF8, utf8, length, flags);
+        }
+
         /// \brief
         /// Convert the given UTF8 string to UTF16.
         /// \param[in] utf8 UTF8 string to convert.
         /// \param[in] flags Various MB_* flags to control the behavior of MultiByteToWideChar.
         /// \return std::wstring UTF16 representation of the given UTF8 string.
-        inline std::wstring UTF8ToUTF16 (
+        inline std::wstring _LIB_THEKOGANS_UTIL_API UTF8ToUTF16 (
                 const std::string &utf8,
                 DWORD flags = MB_ERR_INVALID_CHARS) {
             return UTF8ToUTF16 (utf8.data (), utf8.size (), flags);
+        }
+
+        /// \brief
+        /// Convert the given ACP string to UTF16.
+        /// \param[in] acp ACP string to convert.
+        /// \param[in] length Length (in bytes) of the given ACP string.
+        /// \param[in] flags Various MB_* flags to control the behavior of MultiByteToWideChar.
+        /// \return std::wstring UTF16 representation of the given ACP string.
+        inline std::wstring _LIB_THEKOGANS_UTIL_API ACPToUTF16 (
+                const char *acp,
+                std::size_t length,
+                DWORD flags = MB_ERR_INVALID_CHARS) {
+            return MBToUTF16 (CP_ACP, acp, length, flags);
+        }
+        /// \brief
+        /// Convert the given ACP string to UTF16.
+        /// \param[in] acp ACP string to convert.
+        /// \param[in] flags Various MB_* flags to control the behavior of MultiByteToWideChar.
+        /// \return std::wstring UTF16 representation of the given ACP string.
+        inline std::wstring _LIB_THEKOGANS_UTIL_API ACPToUTF16(
+                const std::string &acp,
+                DWORD flags = MB_ERR_INVALID_CHARS) {
+            return ACPToUTF16 (acp.data (), acp.size (), flags);
         }
 
         #if !defined (WC_ERR_INVALID_CHARS)
@@ -111,7 +155,7 @@ namespace thekogans {
         /// \param[in] utf16 UTF16 string to convert.
         /// \param[in] flags Various WC_* flags to control the behavior of WideCharToMultiByte.
         /// \return std::string UTF8 representation of the given UTF16 string.
-        inline std::string UTF16ToUTF8 (
+        inline std::string _LIB_THEKOGANS_UTIL_API UTF16ToUTF8 (
                 const std::wstring &utf16,
                 DWORD flags = WC_ERR_INVALID_CHARS) {
             return UTF16ToUTF8 (utf16.data (), utf16.size (), flags);
@@ -122,7 +166,7 @@ namespace thekogans {
         /// \brief
         /// A helper used to make dealing with Windows HGLOBAL api easier.
 
-        struct HGLOBALPtr {
+        struct _LIB_THEKOGANS_UTIL_DECL HGLOBALPtr {
         private:
             /// \brief
             /// Contained HGLOBAL.

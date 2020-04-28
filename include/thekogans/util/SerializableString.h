@@ -32,7 +32,7 @@ namespace thekogans {
         /// SerializableString bridges the gap between std::string serialization and deserialization.
         /// Regular \see{Serializer}::operator << (const std::string &) uses \see{SizeT} to serialize
         /// string length. There are times when you need to control that. SerializableString allows
-        /// you to specify the type that will be used to serialize string length.
+        /// you to specify the type that will be used to serialize/deserialize string length.
         /// NOTE: SerializableString is not meant to be a replacement for std::string and as such
         /// only provides ctors for string serialization and deserialization.
 

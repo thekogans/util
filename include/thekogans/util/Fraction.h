@@ -215,7 +215,7 @@ namespace thekogans {
         /// \param[in] value int value to multiply the fraction by.
         /// \param[in] fraction Fraction to multiply.
         /// \return Integer part of the fraction.
-        inline i32 operator * (
+        inline i32 _LIB_THEKOGANS_UTIL_API operator * (
                 i32 value,
                 const Fraction &fraction) {
             i32 result = value * fraction.numerator / fraction.denominator;
@@ -229,7 +229,7 @@ namespace thekogans {
         /// \param[in] fraction Fraction to multiply.
         /// \param[in] value int value to multiply the fraction by.
         /// \return Integer part of the fraction.
-        inline i32 operator * (
+        inline i32 _LIB_THEKOGANS_UTIL_API operator * (
                 const Fraction &fraction,
                 i32 value) {
             return value * fraction;
@@ -239,7 +239,7 @@ namespace thekogans {
         /// Negate the fraction.
         /// \param[in] fraction Fraction to negate.
         /// \return Negated fraction.
-        inline Fraction operator - (const Fraction &fraction) {
+        inline Fraction _LIB_THEKOGANS_UTIL_API operator - (const Fraction &fraction) {
             // Because we call Reduce in the ctor above, and because this
             // operator is used heavily in the code, we eschew the RVO for
             // the performance gain of not calling Reduce.
@@ -273,7 +273,7 @@ namespace thekogans {
         /// \param[in] fraction1 First fraction to multiply.
         /// \param[in] fraction2 Second fraction to multiply.
         /// \return The product of fraction1 and fraction2.
-        inline Fraction operator * (
+        inline Fraction _LIB_THEKOGANS_UTIL_API operator * (
                 const Fraction &fraction1,
                 const Fraction &fraction2) {
             return Fraction (fraction1.numerator * fraction2.numerator,
@@ -287,7 +287,7 @@ namespace thekogans {
         /// \param[in] fraction1 Numerator fraction.
         /// \param[in] fraction2 Denominator fraction.
         /// \return The quotient of fraction1 and fraction2.
-        inline Fraction operator / (
+        inline Fraction _LIB_THEKOGANS_UTIL_API operator / (
                 const Fraction &fraction1,
                 const Fraction &fraction2) {
             return Fraction (fraction1.numerator * fraction2.denominator,
@@ -301,7 +301,7 @@ namespace thekogans {
         /// \param[in] fraction1 First fraction to compare.
         /// \param[in] fraction2 Second fraction to compare.
         /// \return true == same, false == different.
-        inline bool operator == (
+        inline bool _LIB_THEKOGANS_UTIL_API operator == (
                 const Fraction &fraction1,
                 const Fraction &fraction2) {
             return fraction1.numerator == fraction2.numerator &&
@@ -314,7 +314,7 @@ namespace thekogans {
         /// \param[in] fraction1 First fraction to compare.
         /// \param[in] fraction2 Second fraction to compare.
         /// \return true == different, false == same.
-        inline bool operator != (
+        inline bool _LIB_THEKOGANS_UTIL_API operator != (
                 const Fraction &fraction1,
                 const Fraction &fraction2) {
             return fraction1.numerator != fraction2.numerator ||
@@ -327,7 +327,7 @@ namespace thekogans {
         /// \param[in] fraction1 First fraction to compare.
         /// \param[in] fraction2 Second fraction to compare.
         /// \return true == fraction1 < fraction2, false == fraction1 >= fraction2.
-        inline bool operator < (
+        inline bool _LIB_THEKOGANS_UTIL_API operator < (
                 const Fraction &fraction1,
                 const Fraction &fraction2) {
             if (fraction1.sign == Fraction::Negative &&
@@ -347,7 +347,7 @@ namespace thekogans {
         /// \param[in] fraction1 First fraction to compare.
         /// \param[in] fraction2 Second fraction to compare.
         /// \return true == fraction1 <= fraction2, false == fraction1 > fraction2.
-        inline bool operator <= (
+        inline bool _LIB_THEKOGANS_UTIL_API operator <= (
                 const Fraction &fraction1,
                 const Fraction &fraction2) {
             if (fraction1.sign == Fraction::Negative &&
@@ -367,7 +367,7 @@ namespace thekogans {
         /// \param[in] fraction1 First fraction to compare.
         /// \param[in] fraction2 Second fraction to compare.
         /// \return true == fraction1 > fraction2, false == fraction1 <= fraction2.
-        inline bool operator > (
+        inline bool _LIB_THEKOGANS_UTIL_API operator > (
                 const Fraction &fraction1,
                 const Fraction &fraction2) {
             if (fraction1.sign == Fraction::Positive &&
@@ -387,7 +387,7 @@ namespace thekogans {
         /// \param[in] fraction1 First fraction to compare.
         /// \param[in] fraction2 Second fraction to compare.
         /// \return true == fraction1 >= fraction2, false == fraction1 < fraction2.
-        inline bool operator >= (
+        inline bool _LIB_THEKOGANS_UTIL_API operator >= (
                 const Fraction &fraction1,
                 const Fraction &fraction2) {
             if (fraction1.sign == Fraction::Positive &&

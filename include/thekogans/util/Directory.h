@@ -631,7 +631,7 @@ namespace thekogans {
         /// \param[in] entry1 First entry to compare.
         /// \param[in] entry2 Second entry to compare.
         /// \return true == equal, false == different.
-        inline bool operator == (
+        inline bool _LIB_THEKOGANS_UTIL_API operator == (
                 const Directory::Entry &entry1,
                 const Directory::Entry &entry2) {
             return
@@ -653,7 +653,7 @@ namespace thekogans {
         /// \param[in] entry1 First entry to compare.
         /// \param[in] entry2 Second entry to compare.
         /// \return true == different, false == equal.
-        inline bool operator != (
+        inline bool _LIB_THEKOGANS_UTIL_API operator != (
                 const Directory::Entry &entry1,
                 const Directory::Entry &entry2) {
             return

@@ -245,7 +245,7 @@ namespace thekogans {
         template<
             typename To,
             typename From>
-        inline ThreadSafeRefCounted::Ptr<To> static_refcounted_pointer_cast (
+        inline ThreadSafeRefCounted::Ptr<To> _LIB_THEKOGANS_UTIL_API static_refcounted_pointer_cast (
                 const ThreadSafeRefCounted::Ptr<From> &from) throw () {
             return ThreadSafeRefCounted::Ptr<To> (static_cast<To *> (from.Get ()));
         }
@@ -257,7 +257,7 @@ namespace thekogans {
         template<
             typename To,
             typename From>
-        inline ThreadSafeRefCounted::Ptr<To> dynamic_refcounted_pointer_cast (
+        inline ThreadSafeRefCounted::Ptr<To> _LIB_THEKOGANS_UTIL_API dynamic_refcounted_pointer_cast (
                 const ThreadSafeRefCounted::Ptr<From> &from) throw () {
             return ThreadSafeRefCounted::Ptr<To> (dynamic_cast<To *> (from.Get ()));
         }
@@ -269,7 +269,7 @@ namespace thekogans {
         template<
             typename To,
             typename From>
-        inline ThreadSafeRefCounted::Ptr<To> const_refcounted_pointer_cast (
+        inline ThreadSafeRefCounted::Ptr<To> _LIB_THEKOGANS_UTIL_API const_refcounted_pointer_cast (
                 ThreadSafeRefCounted::Ptr<From> &from) throw () {
             return ThreadSafeRefCounted::Ptr<To> (const_cast<To *> (from.Get ()));
         }
@@ -281,7 +281,7 @@ namespace thekogans {
         template<
             typename To,
             typename From>
-        inline ThreadSafeRefCounted::Ptr<To> reinterpret_refcounted_pointer_cast (
+        inline ThreadSafeRefCounted::Ptr<To> _LIB_THEKOGANS_UTIL_API reinterpret_refcounted_pointer_cast (
                 ThreadSafeRefCounted::Ptr<From> &from) throw () {
             return ThreadSafeRefCounted::Ptr<To> (reinterpret_cast<To *> (from.Get ()));
         }
@@ -293,7 +293,7 @@ namespace thekogans {
         template<
             typename To,
             typename From>
-        inline SingleThreadedRefCounted::Ptr<To> static_refcounted_pointer_cast (
+        inline SingleThreadedRefCounted::Ptr<To> _LIB_THEKOGANS_UTIL_API static_refcounted_pointer_cast (
                 const SingleThreadedRefCounted::Ptr<From> &from) throw () {
             return SingleThreadedRefCounted::Ptr<To> (static_cast<To *> (from.Get ()));
         }
@@ -305,7 +305,7 @@ namespace thekogans {
         template<
             typename To,
             typename From>
-        inline SingleThreadedRefCounted::Ptr<To> dynamic_refcounted_pointer_cast (
+        inline SingleThreadedRefCounted::Ptr<To> _LIB_THEKOGANS_UTIL_API dynamic_refcounted_pointer_cast (
                 const SingleThreadedRefCounted::Ptr<From> &from) throw () {
             return SingleThreadedRefCounted::Ptr<To> (dynamic_cast<To *> (from.Get ()));
         }
@@ -317,7 +317,7 @@ namespace thekogans {
         template<
             typename To,
             typename From>
-        inline SingleThreadedRefCounted::Ptr<To> const_refcounted_pointer_cast (
+        inline SingleThreadedRefCounted::Ptr<To> _LIB_THEKOGANS_UTIL_API const_refcounted_pointer_cast (
                 SingleThreadedRefCounted::Ptr<From> &from) throw () {
             return SingleThreadedRefCounted::Ptr<To> (const_cast<To *> (from.Get ()));
         }
@@ -329,7 +329,7 @@ namespace thekogans {
         template<
             typename To,
             typename From>
-        inline SingleThreadedRefCounted::Ptr<To> reinterpret_refcounted_pointer_cast (
+        inline SingleThreadedRefCounted::Ptr<To> _LIB_THEKOGANS_UTIL_API reinterpret_refcounted_pointer_cast (
                 SingleThreadedRefCounted::Ptr<From> &from) throw () {
             return SingleThreadedRefCounted::Ptr<To> (reinterpret_cast<To *> (from.Get ()));
         }
@@ -340,7 +340,7 @@ namespace thekogans {
         /// \param[in] item2 Second pointer to compare.
         /// \return true == Same object, false == Different objects.
         template<typename T>
-        inline bool operator == (
+        inline bool _LIB_THEKOGANS_UTIL_API operator == (
                 const ThreadSafeRefCounted::Ptr<T> &item1,
                 const ThreadSafeRefCounted::Ptr<T> &item2) throw () {
             return item1.Get () == item2.Get ();
@@ -352,7 +352,7 @@ namespace thekogans {
         /// \param[in] item2 Second pointer to compare.
         /// \return true == Different objects, false == Same object.
         template<typename T>
-        inline bool operator != (
+        inline bool _LIB_THEKOGANS_UTIL_API operator != (
                 const ThreadSafeRefCounted::Ptr<T> &item1,
                 const ThreadSafeRefCounted::Ptr<T> &item2) throw () {
             return item1.Get () != item2.Get ();
@@ -364,7 +364,7 @@ namespace thekogans {
         /// \param[in] item2 Second pointer to compare.
         /// \return true == item1 < item2.
         template<typename T>
-        inline bool operator < (
+        inline bool _LIB_THEKOGANS_UTIL_API operator < (
                 const ThreadSafeRefCounted::Ptr<T> &item1,
                 const ThreadSafeRefCounted::Ptr<T> &item2) throw () {
             return item1.Get () < item2.Get ();
@@ -376,7 +376,7 @@ namespace thekogans {
         /// \param[in] item2 Second pointer to compare.
         /// \return true == item1 <= item2.
         template<typename T>
-        inline bool operator <= (
+        inline bool _LIB_THEKOGANS_UTIL_API operator <= (
                 const ThreadSafeRefCounted::Ptr<T> &item1,
                 const ThreadSafeRefCounted::Ptr<T> &item2) throw () {
             return item1.Get () <= item2.Get ();
@@ -388,7 +388,7 @@ namespace thekogans {
         /// \param[in] item2 Second pointer to compare.
         /// \return true == item1 > item2.
         template<typename T>
-        inline bool operator > (
+        inline bool _LIB_THEKOGANS_UTIL_API operator > (
                 const ThreadSafeRefCounted::Ptr<T> &item1,
                 const ThreadSafeRefCounted::Ptr<T> &item2) throw () {
             return item1.Get () > item2.Get ();
@@ -400,7 +400,7 @@ namespace thekogans {
         /// \param[in] item2 Second pointer to compare.
         /// \return true == item1 >= item2.
         template<typename T>
-        inline bool operator >= (
+        inline bool _LIB_THEKOGANS_UTIL_API operator >= (
                 const ThreadSafeRefCounted::Ptr<T> &item1,
                 const ThreadSafeRefCounted::Ptr<T> &item2) throw () {
             return item1.Get () >= item2.Get ();
@@ -412,7 +412,7 @@ namespace thekogans {
         /// \param[in] item2 Second pointer to compare.
         /// \return true == Same object, false == Different objects.
         template<typename T>
-        inline bool operator == (
+        inline bool _LIB_THEKOGANS_UTIL_API operator == (
                 const SingleThreadedRefCounted::Ptr<T> &item1,
                 const SingleThreadedRefCounted::Ptr<T> &item2) throw () {
             return item1.Get () == item2.Get ();
@@ -424,7 +424,7 @@ namespace thekogans {
         /// \param[in] item2 Second pointer to compare.
         /// \return true == Different objects, false == Same object.
         template<typename T>
-        inline bool operator != (
+        inline bool _LIB_THEKOGANS_UTIL_API operator != (
                 const SingleThreadedRefCounted::Ptr<T> &item1,
                 const SingleThreadedRefCounted::Ptr<T> &item2) throw () {
             return item1.Get () != item2.Get ();
@@ -436,7 +436,7 @@ namespace thekogans {
         /// \param[in] item2 Second pointer to compare.
         /// \return true == item1 < item2.
         template<typename T>
-        inline bool operator < (
+        inline bool _LIB_THEKOGANS_UTIL_API operator < (
                 const SingleThreadedRefCounted::Ptr<T> &item1,
                 const SingleThreadedRefCounted::Ptr<T> &item2) throw () {
             return item1.Get () < item2.Get ();
@@ -448,7 +448,7 @@ namespace thekogans {
         /// \param[in] item2 Second pointer to compare.
         /// \return true == item1 <= item2.
         template<typename T>
-        inline bool operator <= (
+        inline bool _LIB_THEKOGANS_UTIL_API operator <= (
                 const SingleThreadedRefCounted::Ptr<T> &item1,
                 const SingleThreadedRefCounted::Ptr<T> &item2) throw () {
             return item1.Get () <= item2.Get ();
@@ -460,7 +460,7 @@ namespace thekogans {
         /// \param[in] item2 Second pointer to compare.
         /// \return true == item1 > item2.
         template<typename T>
-        inline bool operator > (
+        inline bool _LIB_THEKOGANS_UTIL_API operator > (
                 const SingleThreadedRefCounted::Ptr<T> &item1,
                 const SingleThreadedRefCounted::Ptr<T> &item2) throw () {
             return item1.Get () > item2.Get ();
@@ -472,7 +472,7 @@ namespace thekogans {
         /// \param[in] item2 Second pointer to compare.
         /// \return true == item1 >= item2.
         template<typename T>
-        inline bool operator >= (
+        inline bool _LIB_THEKOGANS_UTIL_API operator >= (
                 const SingleThreadedRefCounted::Ptr<T> &item1,
                 const SingleThreadedRefCounted::Ptr<T> &item2) throw () {
             return item1.Get () >= item2.Get ();

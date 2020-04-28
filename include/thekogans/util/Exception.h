@@ -449,7 +449,7 @@ namespace thekogans {
         /// \param[in] stream Stream to dump to.
         /// \param[in] exception Exception to dump.
         /// \return stream.
-        inline std::ostream &operator << (
+        inline std::ostream & _LIB_THEKOGANS_UTIL_API operator << (
                 std::ostream &stream,
                 const Exception &exception) {
             stream << exception.Report ();

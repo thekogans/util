@@ -224,7 +224,7 @@ namespace thekogans {
         /// \paran[in] extents1 First extents to compare.
         /// \paran[in] extents2 Second extents to compare.
         /// \return true = equal, false = not equal.
-        inline bool operator == (
+        inline bool _LIB_THEKOGANS_UTIL_API operator == (
                 const Rectangle::Extents &extents1,
                 const Rectangle::Extents &extents2) {
             return extents1.width == extents2.width &&
@@ -236,7 +236,7 @@ namespace thekogans {
         /// \paran[in] extents1 First extents to compare.
         /// \paran[in] extents2 Second extents to compare.
         /// \return true = not equal, false = equal.
-        inline bool operator != (
+        inline bool _LIB_THEKOGANS_UTIL_API operator != (
                 const Rectangle::Extents &extents1,
                 const Rectangle::Extents &extents2) {
             return extents1.width != extents2.width ||
@@ -248,7 +248,7 @@ namespace thekogans {
         /// \paran[in] extents Rectangle extents to scale.
         /// \paran[in] scale Factor to scale the extents by.
         /// \return Scaled rectangle extents.
-        inline Rectangle::Extents operator * (
+        inline Rectangle::Extents _LIB_THEKOGANS_UTIL_API operator * (
                 const Rectangle::Extents &extents,
                 f32 scale) {
             return Rectangle::Extents (
@@ -261,7 +261,7 @@ namespace thekogans {
         /// \paran[in] rectangle1 First rectangle to compare.
         /// \paran[in] rectangle2 Second rectangle to compare.
         /// \return true = equal, false = not equal.
-        inline bool operator == (
+        inline bool _LIB_THEKOGANS_UTIL_API operator == (
                 const Rectangle &rectangle1,
                 const Rectangle &rectangle2) {
             return rectangle1.origin == rectangle2.origin &&
@@ -273,7 +273,7 @@ namespace thekogans {
         /// \paran[in] rectangle1 First rectangle to compare.
         /// \paran[in] rectangle2 Second rectangle to compare.
         /// \return true = not equal, false = equal.
-        inline bool operator != (
+        inline bool _LIB_THEKOGANS_UTIL_API operator != (
                 const Rectangle &rectangle1,
                 const Rectangle &rectangle2) {
             return rectangle1.origin != rectangle2.origin ||
@@ -285,7 +285,7 @@ namespace thekogans {
         /// \paran[in] rectangle Rectangle to scale.
         /// \paran[in] scale Factor to scale the rectangle by.
         /// \return Scaled rectangle.
-        inline Rectangle operator * (
+        inline Rectangle _LIB_THEKOGANS_UTIL_API operator * (
                 const Rectangle &rectangle,
                 f32 scale) {
             return Rectangle (rectangle.origin, rectangle.extents * scale);
@@ -296,7 +296,7 @@ namespace thekogans {
         /// \paran[in] rectangle Rectangle to translate.
         /// \paran[in] offset How much to translate by.
         /// \return Translated rectangle.
-        inline Rectangle operator + (
+        inline Rectangle _LIB_THEKOGANS_UTIL_API operator + (
                 const Rectangle &rectangle,
                 const Point &offset) {
             return Rectangle (rectangle.origin + offset, rectangle.extents);
@@ -307,7 +307,7 @@ namespace thekogans {
         /// \paran[in] rectangle Rectangle to translate.
         /// \paran[in] offset How much to translate by.
         /// \return Translated rectangle.
-        inline Rectangle operator - (
+        inline Rectangle _LIB_THEKOGANS_UTIL_API operator - (
                 const Rectangle &rectangle,
                 const Point &offset) {
             return Rectangle (rectangle.origin - offset, rectangle.extents);
@@ -318,7 +318,7 @@ namespace thekogans {
         /// \param[in] serializer Where to write the given rectangle extents.
         /// \param[in] extents Rectangle extents to write.
         /// \return serializer.
-        inline Serializer &operator << (
+        inline Serializer & _LIB_THEKOGANS_UTIL_API operator << (
                 Serializer &serializer,
                 const Rectangle::Extents &extents) {
             serializer << extents.width << extents.height;
@@ -329,7 +329,7 @@ namespace thekogans {
         /// \param[in] serializer Where to read the rectangle extents.
         /// \param[in] extents Rectangle extents to read.
         /// \return serializer.
-        inline Serializer &operator >> (
+        inline Serializer & _LIB_THEKOGANS_UTIL_API operator >> (
                 Serializer &serializer,
                 Rectangle::Extents &extents) {
             serializer >> extents.width >> extents.height;
@@ -341,7 +341,7 @@ namespace thekogans {
         /// \param[in] serializer Where to write the given rectangle.
         /// \param[in] rectangle Rectangle to write.
         /// \return serializer.
-        inline Serializer &operator << (
+        inline Serializer & _LIB_THEKOGANS_UTIL_API operator << (
                 Serializer &serializer,
                 const Rectangle &rectangle) {
             serializer << rectangle.origin << rectangle.extents;
@@ -352,7 +352,7 @@ namespace thekogans {
         /// \param[in] serializer Where to read the rectangle.
         /// \param[in] rectangle Rectangle to read.
         /// \return serializer.
-        inline Serializer &operator >> (
+        inline Serializer & _LIB_THEKOGANS_UTIL_API operator >> (
                 Serializer &serializer,
                 Rectangle &rectangle) {
             serializer >> rectangle.origin >> rectangle.extents;

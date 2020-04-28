@@ -28,6 +28,7 @@
     #include <winsock2.h>
     #include <iphlpapi.h>
     #include <wtsapi32.h>
+    #include <VersionHelpers.h>
 #elif defined (TOOLCHAIN_OS_Linux) || defined (TOOLCHAIN_OS_OSX)
     #include <ifaddrs.h>
     #include <net/ethernet.h>
@@ -158,13 +159,50 @@ namespace thekogans {
                         WSACleanup ();
                     }
                 } winSockInit;
-                wchar_t name[256] = {0};
-                if (GetHostNameW (name, 256) == 0) {
-                    return UTF16ToUTF8 (name);
+                if (IsWindows8OrGreater ()) {
+                    // Get WinSock module handle that is already
+                    // mapped into process virtual space, find a
+                    // routine entry address and call it.
+                    const HMODULE hmodule = GetModuleHandleW (L"WS2_32.DLL");
+                    if (hmodule != 0) {
+                        typedef int (WINAPI *GetHostNameWProc) (
+                            PWSTR name,
+                            int namelen);
+                        const GetHostNameWProc getHostNameW = reinterpret_cast<GetHostNameWProc> (
+                            GetProcAddress (hmodule, "GetHostNameW"));
+                        if (getHostNameW != 0) {
+                            wchar_t name[256] = {0};
+                            if (getHostNameW (name, 256) == 0) {
+                                return UTF16ToUTF8 (name);
+                            }
+                            else {
+                                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                                    WSAGetLastError ());
+                            }
+                        }
+                        else {
+                            THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                                THEKOGANS_UTIL_OS_ERROR_CODE);
+                        }
+                    }
+                    else {
+                        THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                            THEKOGANS_UTIL_OS_ERROR_CODE);
+                    }
                 }
                 else {
-                    THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                        WSAGetLastError ());
+                    // Pre-Windows 8 host name is always ACP encoded.
+                    char name[256] = {0};
+                    if (gethostname (name, 256) == 0) {
+                        // There is no direct way to convert ACP into
+                        // UTF-8, so perform the conversion in two
+                        // steps.
+                        return UTF16ToUTF8 (ACPToUTF16 (name));
+                    }
+                    else {
+                        THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                            WSAGetLastError ());
+                    }
                 }
             #else // defined (TOOLCHAIN_OS_Windows)
                 char name[256] = {0};

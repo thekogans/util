@@ -117,7 +117,7 @@ namespace thekogans {
         /// \param[in] guid1 GUID to test for less than.
         /// \param[in] guid2 GUID to test for against.
         /// \return true = guid1 < guid2, false guid1 >= guid2
-        inline bool operator < (
+        inline bool _LIB_THEKOGANS_UTIL_API operator < (
                 const GUID &guid1,
                 const GUID &guid2) {
             return memcmp (guid1.data, guid2.data, GUID::SIZE) < 0;
@@ -128,7 +128,7 @@ namespace thekogans {
         /// \param[in] guid1 GUID to test for greater than.
         /// \param[in] guid2 GUID to test for against.
         /// \return true = guid1 > guid2, false guid1 <= guid2
-        inline bool operator > (
+        inline bool _LIB_THEKOGANS_UTIL_API operator > (
                 const GUID &guid1,
                 const GUID &guid2) {
             return memcmp (guid1.data, guid2.data, GUID::SIZE) > 0;
@@ -139,7 +139,7 @@ namespace thekogans {
         /// \param[in] guid1 First GUID to compare.
         /// \param[in] guid2 Second GUID to compare.
         /// \return true = guid1 == guid2, false guid1 != guid2
-        inline bool operator == (
+        inline bool _LIB_THEKOGANS_UTIL_API operator == (
                 const GUID &guid1,
                 const GUID &guid2) {
             return memcmp (guid1.data, guid2.data, GUID::SIZE) == 0;
@@ -150,7 +150,7 @@ namespace thekogans {
         /// \param[in] guid1 First GUID to compare.
         /// \param[in] guid2 Second GUID to compare.
         /// \return true = guid1 != guid2, false guid1 == guid2
-        inline bool operator != (
+        inline bool _LIB_THEKOGANS_UTIL_API operator != (
                 const GUID &guid1,
                 const GUID &guid2) {
             return memcmp (guid1.data, guid2.data, GUID::SIZE) != 0;
@@ -161,7 +161,7 @@ namespace thekogans {
         /// \param[in] stream Stream to dump to.
         /// \param[in] guid GIUD to dump.
         /// \return stream
-        inline std::ostream &operator << (
+        inline std::ostream & _LIB_THEKOGANS_UTIL_API operator << (
                 std::ostream &stream,
                 const GUID &guid) {
             return stream << guid.ToString ();
@@ -172,7 +172,7 @@ namespace thekogans {
         /// \param[in] serializer Where to write the given guid.
         /// \param[in] guid GUID to write.
         /// \return serializer.
-        inline Serializer &operator << (
+        inline Serializer & _LIB_THEKOGANS_UTIL_API operator << (
                 Serializer &serializer,
                 const GUID &guid) {
             if (serializer.Write (guid.data, GUID_SIZE) != GUID_SIZE) {
@@ -189,7 +189,7 @@ namespace thekogans {
         /// \param[in] serializer Where to read the guid from.
         /// \param[out] guid GUID to read.
         /// \return serializer.
-        inline Serializer &operator >> (
+        inline Serializer & _LIB_THEKOGANS_UTIL_API operator >> (
                 Serializer &serializer,
                 GUID &guid) {
             if (serializer.Read (guid.data, GUID_SIZE) != GUID_SIZE) {

@@ -190,7 +190,7 @@ namespace thekogans {
         /// \param[in] serializer Where to write the given version.
         /// \param[in] version Version to write.
         /// \return serializer.
-        inline Serializer &operator << (
+        inline Serializer & _LIB_THEKOGANS_UTIL_API operator << (
                 Serializer &serializer,
                 const Version &version) {
             return serializer <<
@@ -204,7 +204,7 @@ namespace thekogans {
         /// \param[in] serializer Where to read the version from.
         /// \param[out] version Version to read.
         /// \return serializer.
-        inline Serializer &operator >> (
+        inline Serializer & _LIB_THEKOGANS_UTIL_API operator >> (
                 Serializer &serializer,
                 Version &version) {
             return serializer >>

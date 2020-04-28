@@ -408,7 +408,7 @@ namespace thekogans {
         /// \param[in] timeSpec1 First TimeSpec to compare.
         /// \param[in] timeSpec2 Second TimeSpec to compare.
         /// \return true = equal, false = different
-        inline bool operator == (
+        inline bool _LIB_THEKOGANS_UTIL_API operator == (
                 const TimeSpec &timeSpec1,
                 const TimeSpec &timeSpec2) {
             return
@@ -421,7 +421,7 @@ namespace thekogans {
         /// \param[in] timeSpec1 First TimeSpec to compare.
         /// \param[in] timeSpec2 Second TimeSpec to compare.
         /// \return true = different, false = equal
-        inline bool operator != (
+        inline bool _LIB_THEKOGANS_UTIL_API operator != (
                 const TimeSpec &timeSpec1,
                 const TimeSpec &timeSpec2) {
             return
@@ -442,7 +442,7 @@ namespace thekogans {
         /// \param[in] timeSpec1 First TimeSpec to compare.
         /// \param[in] timeSpec2 Second TimeSpec to compare.
         /// \return true = timeSpec1 <= timeSpec2, false = timeSpec1 > timeSpec2
-        inline bool operator <= (
+        inline bool _LIB_THEKOGANS_UTIL_API operator <= (
                 const TimeSpec &timeSpec1,
                 const TimeSpec &timeSpec2) {
             return timeSpec1 < timeSpec2 || timeSpec1 == timeSpec2;
@@ -461,7 +461,7 @@ namespace thekogans {
         /// \param[in] timeSpec1 First TimeSpec to compare.
         /// \param[in] timeSpec2 Second TimeSpec to compare.
         /// \return true = timeSpec1 >= timeSpec2, false = timeSpec1 < timeSpec2
-        inline bool operator >= (
+        inline bool _LIB_THEKOGANS_UTIL_API operator >= (
                 const TimeSpec &timeSpec1,
                 const TimeSpec &timeSpec2) {
             return timeSpec1 > timeSpec2 || timeSpec1 == timeSpec2;

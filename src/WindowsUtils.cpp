@@ -84,25 +84,26 @@ namespace thekogans {
                 THEKOGANS_UTIL_UI64_LITERAL (11644473600);
         }
 
-        _LIB_THEKOGANS_UTIL_DECL std::wstring _LIB_THEKOGANS_UTIL_API UTF8ToUTF16 (
-                const char *utf8,
+        _LIB_THEKOGANS_UTIL_DECL std::wstring _LIB_THEKOGANS_UTIL_API MultiByteToUTF16 (
+                UINT codePage,
+                const char *multiByte,
                 std::size_t length,
                 DWORD flags) {
             if (length > 0) {
-                if (utf8 != 0) {
+                if (multiByte != 0) {
                     int utf16Length = MultiByteToWideChar (
-                        CP_UTF8,
+                        codePage,
                         flags,
-                        utf8,
+                        multiByte,
                         (int)length,
                         0,
                         0);
                     if (utf16Length > 0) {
                         std::wstring utf16 (utf16Length, L'?');
                         MultiByteToWideChar (
-                            CP_UTF8,
+                            codePage,
                             flags,
-                            utf8,
+                            multiByte,
                             (int)length,
                             (LPWSTR)utf16.data (),
                             (int)utf16.size ());

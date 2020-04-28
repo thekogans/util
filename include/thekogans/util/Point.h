@@ -126,7 +126,7 @@ namespace thekogans {
         /// \param[in] point1 First point to check.
         /// \param[in] point2 Second point to check.
         /// \return true = point1 == point2, false = point1 != point2.
-        inline bool operator == (
+        inline bool _LIB_THEKOGANS_UTIL_API operator == (
                 const Point &point1,
                 const Point &point2) {
             return point1.x == point2.x && point1.y == point2.y;
@@ -137,7 +137,7 @@ namespace thekogans {
         /// \param[in] point1 First point to check.
         /// \param[in] point2 Second point to check.
         /// \return true = point1 != point2, false = point1 == point2.
-        inline bool operator != (
+        inline bool _LIB_THEKOGANS_UTIL_API operator != (
                 const Point &point1,
                 const Point &point2) {
             return point1.x != point2.x || point1.y != point2.y;
@@ -148,7 +148,7 @@ namespace thekogans {
         /// \param[in] point1 First point in sum.
         /// \param[in] point2 Second point in sum.
         /// \return point1 + point2.
-        inline Point operator + (
+        inline Point _LIB_THEKOGANS_UTIL_API operator + (
                 const Point &point1,
                 const Point &point2) {
             return Point (point1.x + point2.x, point1.y + point2.y);
@@ -159,7 +159,7 @@ namespace thekogans {
         /// \param[in] point1 First point in difference.
         /// \param[in] point2 Second point in difference.
         /// \return point1 - point2.
-        inline Point operator - (
+        inline Point _LIB_THEKOGANS_UTIL_API operator - (
                 const Point &point1,
                 const Point &point2) {
             return Point (point1.x - point2.x, point1.y - point2.y);
@@ -170,7 +170,7 @@ namespace thekogans {
         /// \param[in] point Point to scale.
         /// \param[in] scale Factor to scale the point by.
         /// \return point * scale.
-        inline Point operator * (
+        inline Point _LIB_THEKOGANS_UTIL_API operator * (
                 const Point &point,
                 f32 scale) {
             return Point (
@@ -183,7 +183,7 @@ namespace thekogans {
         /// \param[in] serializer Where to write the point.
         /// \param[in] point Point to serialize.
         /// \return serializer.
-        inline Serializer &operator << (
+        inline Serializer & _LIB_THEKOGANS_UTIL_API operator << (
                 Serializer &serializer,
                 const Point &point) {
             serializer << point.x << point.y;
@@ -194,7 +194,7 @@ namespace thekogans {
         /// \param[in] serializer Where to read the point.
         /// \param[in] point Point to deserialize.
         /// \return serializer.
-        inline Serializer &operator >> (
+        inline Serializer & _LIB_THEKOGANS_UTIL_API operator >> (
                 Serializer &serializer,
                 Point &point) {
             serializer >> point.x >> point.y;

@@ -164,7 +164,7 @@ namespace thekogans {
         /// \param[in] digest1 First digest to compare.
         /// \param[in] digest2 Second digest to compare.
         /// \return true = equal, false = not equal.
-        inline bool operator == (
+        inline bool _LIB_THEKOGANS_UTIL_API operator == (
                 const Hash::Digest &digest1,
                 const Hash::Digest &digest2) {
             return digest1.size () == digest2.size () &&
@@ -176,7 +176,7 @@ namespace thekogans {
         /// \param[in] digest1 First digest to compare.
         /// \param[in] digest2 Second digest to compare.
         /// \return true = not equal, false = equal.
-        inline bool operator != (
+        inline bool _LIB_THEKOGANS_UTIL_API operator != (
                 const Hash::Digest &digest1,
                 const Hash::Digest &digest2) {
             return digest1.size () != digest2.size () ||

@@ -258,7 +258,7 @@ namespace thekogans {
         /// \param[in] bitSet1 First bit set to and.
         /// \param[in] bitSet2 Second bit set to and.
         /// \return bitSet1 & bitSet2.
-        inline BitSet operator & (
+        inline BitSet _LIB_THEKOGANS_UTIL_API operator & (
                 const BitSet &bitSet1,
                 const BitSet &bitSet2) {
             BitSet temp = bitSet1;
@@ -270,7 +270,7 @@ namespace thekogans {
         /// \param[in] bitSet1 First bit set to or.
         /// \param[in] bitSet2 Second bit set to or.
         /// \return bitSet1 | bitSet2.
-        inline BitSet operator | (
+        inline BitSet _LIB_THEKOGANS_UTIL_API operator | (
                 const BitSet &bitSet1,
                 const BitSet &bitSet2) {
             BitSet temp = bitSet1;
@@ -282,7 +282,7 @@ namespace thekogans {
         /// \param[in] bitSet1 First bit set to xor.
         /// \param[in] bitSet2 Second bit set to xor.
         /// \return bitSet1 ^ bitSet2.
-        inline BitSet operator ^ (
+        inline BitSet _LIB_THEKOGANS_UTIL_API operator ^ (
                 const BitSet &bitSet1,
                 const BitSet &bitSet2) {
             BitSet temp = bitSet1;
@@ -308,7 +308,7 @@ namespace thekogans {
         /// \param[in] serializer Where to write the given bit set.
         /// \param[in] bitSet BitSet to write.
         /// \return serializer.
-        inline Serializer &operator << (
+        inline Serializer & _LIB_THEKOGANS_UTIL_APIoperator << (
                 Serializer &serializer,
                 const BitSet &bitSet) {
             serializer << bitSet.bits << bitSet.size;
@@ -320,7 +320,7 @@ namespace thekogans {
         /// \param[in] serializer Where to read the bit set from.
         /// \param[out] bitSet BitSet to read.
         /// \return serializer.
-        inline Serializer &operator >> (
+        inline Serializer & _LIB_THEKOGANS_UTIL_APIoperator >> (
                 Serializer &serializer,
                 BitSet &bitSet) {
             serializer >> bitSet.bits >> bitSet.size;

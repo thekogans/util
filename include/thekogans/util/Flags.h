@@ -207,7 +207,7 @@ namespace thekogans {
         /// \param[in] flags Flags<T> to serialize.
         /// \return serializer.
         template<typename T>
-        inline Serializer &operator << (
+        inline Serializer & _LIB_THEKOGANS_UTIL_API operator << (
                 Serializer &serializer,
                 const Flags<T> &flags) {
             return serializer << (const T)flags;
@@ -220,7 +220,7 @@ namespace thekogans {
         /// \param[out] value Where to place the extracted value.
         /// \return serializer.
         template<typename T>
-        inline Serializer &operator >> (
+        inline Serializer & _LIB_THEKOGANS_UTIL_API operator >> (
                 Serializer &serializer,
                 Flags<T> &flags) {
             T t;

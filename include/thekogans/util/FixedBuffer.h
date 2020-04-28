@@ -343,7 +343,7 @@ namespace thekogans {
         /// \param[in] fixedbuffer FixedBuffer<length> to serialize.
         /// \return serializer.
         template<std::size_t length>
-        Serializer &operator << (
+        Serializer & _LIB_THEKOGANS_UTIL_API operator << (
                 Serializer &serializer,
                 const FixedBuffer<length> &fixedBuffer) {
             serializer <<
@@ -365,7 +365,7 @@ namespace thekogans {
         /// \param[out] fixedBuffer Where to place the extracted FixedBuffer<length>.
         /// \return serializer.
         template<std::size_t length>
-        Serializer &operator >> (
+        Serializer & _LIB_THEKOGANS_UTIL_API operator >> (
                 Serializer &serializer,
                 FixedBuffer<length> &fixedBuffer) {
             serializer >>
