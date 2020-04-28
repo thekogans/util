@@ -155,6 +155,10 @@ namespace thekogans {
             return workers.clear (callback);
         }
 
+        bool JobQueue::IsRunning () {
+            return !workers.empty ();
+        }
+
         const char *GlobalJobQueueCreateInstance::GLOBAL_JOB_QUEUE_NAME = "GlobalJobQueue";
         std::string GlobalJobQueueCreateInstance::name = GlobalJobQueueCreateInstance::GLOBAL_JOB_QUEUE_NAME;
         RunLoop::JobExecutionPolicy::Ptr GlobalJobQueueCreateInstance::jobExecutionPolicy =

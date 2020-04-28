@@ -143,7 +143,6 @@ namespace thekogans {
             /// Start the run loop. This is a blocking call and will
             /// only complete when Stop is called.
             virtual void Start ();
-
             /// \brief
             /// Stop the run loop. Calling this function will cause the Start call
             /// to return.
@@ -156,6 +155,10 @@ namespace thekogans {
                 bool cancelRunningJobs = true,
                 bool cancelPendingJobs = true,
                 const TimeSpec &timeSpec = TimeSpec::Infinite);
+            /// \brief
+            /// Return true is the run loop is running (Start was called).
+            /// \return true is the run loop is running (Start was called).
+            virtual bool IsRunning ();
 
             /// \brief
             /// ThreadRunLoop is neither copy constructable, nor assignable.

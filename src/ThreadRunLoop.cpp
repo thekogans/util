@@ -65,5 +65,9 @@ namespace thekogans {
             return true;
         }
 
+        bool ThreadRunLoop::IsRunning () {
+            return !done;
+        }
+
     } // namespace util
 } // namespace thekogans

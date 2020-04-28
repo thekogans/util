@@ -389,6 +389,10 @@ namespace thekogans {
             return true;
         }
 
+        bool SystemRunLoop::IsRunning () {
+            return !done;
+        }
+
         bool SystemRunLoop::EnqJob (
                 Job::Ptr job,
                 bool wait,

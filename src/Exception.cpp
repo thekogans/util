@@ -27,9 +27,6 @@
 #include "thekogans/util/SpinLock.h"
 #include "thekogans/util/XMLUtils.h"
 #include "thekogans/util/Serializer.h"
-#if defined (TOOLCHAIN_OS_Windows)
-    #include "thekogans/util/WindowsUtils.h"
-#endif // defined (TOOLCHAIN_OS_Windows)
 #include "thekogans/util/Exception.h"
 
 namespace thekogans {
@@ -106,12 +103,42 @@ namespace thekogans {
 
     #if defined (TOOLCHAIN_OS_Windows)
         namespace {
+            // Use a none throwing version here to prevent infinite recursion.
+            std::string UTF16ToUTF8 (
+                    const wchar_t *utf16,
+                    std::size_t length) {
+                if (utf16 != 0 && length > 0) {
+                    int utf8Length = WideCharToMultiByte (
+                        CP_UTF8,
+                        0,
+                        utf16,
+                        (int)length,
+                        0,
+                        0,
+                        0,
+                        0);
+                    if (utf8Length > 0) {
+                        std::string utf8 (utf8Length, '?');
+                        WideCharToMultiByte (
+                            CP_UTF8,
+                            0,
+                            utf16,
+                            (int)length,
+                            (LPSTR)utf8.data (),
+                            (int)utf8.size (),
+                            0,
+                            0);
+                        return utf8;
+                    }
+                }
+                return std::string ();
+            }
+
             std::string GetErrorCodeMessage (
                     DWORD flags,
                     LPCVOID source,
                     DWORD errorCode) {
-            wchar_t buffer[4096];
-            return
+                wchar_t buffer[4096] = {0};
                 FormatMessageW (
                     flags,
                     source,
@@ -119,7 +146,8 @@ namespace thekogans {
                     MAKELANGID (LANG_NEUTRAL, SUBLANG_NEUTRAL),
                     buffer,
                     _countof (buffer),
-                    0) != 0 ? UTF16ToUTF8 (buffer) : std::string ();
+                    0);
+                return UTF16ToUTF8 (buffer, wcslen (buffer));
             }
 
             struct NTDll : public Singleton<NTDll, SpinLock> {
@@ -201,14 +229,16 @@ namespace thekogans {
 
         std::string Exception::FromPOSIXErrorCode (int errorCode) {
         #if defined (TOOLCHAIN_OS_Windows)
-            wchar_t errorString[200];
+            wchar_t errorString[200] = {0};
             if (_wcserror_s (errorString, 200, errorCode) == 0) {
                 return FormatString (
                     "[0x%x:%d - %s]",
-                    errorCode, errorCode, UTF16ToUTF8 (errorString).c_str ());
+                    errorCode,
+                    errorCode,
+                    UTF16ToUTF8 (errorString, wcslen (errorString)).c_str ());
             }
         #else // defined (TOOLCHAIN_OS_Windows)
-            char errorString[200];
+            char errorString[200] = {0};
             if (strerror_r (errorCode, errorString, 200) == 0) {
                 return FormatString (
                     "[0x%x:%d - %s]",

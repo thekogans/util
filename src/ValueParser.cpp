@@ -15,6 +15,7 @@
 // You should have received a copy of the GNU General Public License
 // along with libthekogans_util. If not, see <http://www.gnu.org/licenses/>.
 
+#include "thekogans/util/Exception.h"
 #include "thekogans/util/ValueParser.h"
 
 namespace thekogans {
@@ -109,6 +110,23 @@ namespace thekogans {
                 }
             }
             return false;
+        }
+
+        ValueParser<std::string>::ValueParser (
+                std::string &value_,
+                const void *delimiter_,
+                std::size_t delimiterLength_) :
+                value (value_),
+                delimiter (delimiter_),
+                delimiterLength (delimiterLength_),
+                length (0),
+                lengthParser (length, ValueParser<SizeT>::TYPE_SIZE_T),
+                offset (0),
+                state (STATE_STRING) {
+            if (delimiter == 0 || delimiterLength == 0) {
+                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
+            }
         }
 
         void ValueParser<std::string>::Reset () {

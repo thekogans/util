@@ -591,8 +591,7 @@ namespace thekogans {
         };
 
         /// \brief
-        /// Write the given buffer to the given serializer.
-        /// NOTE: Insertion does not save the buffer's allocator.
+        /// Write the given buffer to the given \see{Serializer}.
         /// \param[in] serializer Where to write the given buffer.
         /// \param[in] buffer Buffer to write.
         /// \return serializer.
@@ -601,10 +600,7 @@ namespace thekogans {
             const Buffer &buffer);
 
         /// \brief
-        /// Read a Buffer from the given \see{Serializer}.
-        /// NOTE: Extraction does not preserve the buffer's allocator.
-        /// After this function completes, the buffer's data will have
-        /// been allocated using DefaultAllocator::Instance ().
+        /// Read a buffer from the given \see{Serializer}.
         /// \param[in] serializer Where to read the buffer from.
         /// \param[out] buffer Buffer to read.
         /// \return serializer.

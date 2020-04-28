@@ -20,10 +20,9 @@
 
 #include "thekogans/util/Config.h"
 #include "thekogans/util/Types.h"
-#include "thekogans/util/Serializer.h"
 #include "thekogans/util/Buffer.h"
+#include "thekogans/util/Serializer.h"
 #include "thekogans/util/SizeT.h"
-#include "thekogans/util/Exception.h"
 
 namespace thekogans {
     namespace util {
@@ -270,21 +269,9 @@ namespace thekogans {
             /// \param[in] delimiter_ Pointer to the string delimiter.
             /// \param[in] delimiterLength_ Length of delimiter_.
             ValueParser (
-                    std::string &value_,
-                    const void *delimiter_,
-                    std::size_t delimiterLength_) :
-                    value (value_),
-                    delimiter (delimiter_),
-                    delimiterLength (delimiterLength_),
-                    length (0),
-                    lengthParser (length, ValueParser<SizeT>::TYPE_SIZE_T),
-                    offset (0),
-                    state (STATE_STRING) {
-                if (delimiter == 0 || delimiterLength == 0) {
-                    THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                        THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
-                }
-            }
+                std::string &value_,
+                const void *delimiter_,
+                std::size_t delimiterLength_);
 
             /// \brief
             /// Reset the members to get them ready for the next value.

@@ -158,6 +158,7 @@
     <cpp_header>$(organization)/$(project_directory)/SecureAllocator.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/Semaphore.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/Serializable.h</cpp_header>
+    <cpp_header>$(organization)/$(project_directory)/SerializableString.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/Serializer.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/SHA1.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/SHA2.h</cpp_header>
@@ -672,6 +673,7 @@
     <cpp_source>SecureAllocator.cpp</cpp_source>
     <cpp_source>Semaphore.cpp</cpp_source>
     <cpp_source>Serializable.cpp</cpp_source>
+    <cpp_source>SerializableString.cpp</cpp_source>
     <cpp_source>Serializer.cpp</cpp_source>
     <cpp_source>SHA1.cpp</cpp_source>
     <cpp_source>SHA2.cpp</cpp_source>
