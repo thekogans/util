@@ -65,12 +65,12 @@ namespace thekogans {
 
             /// \brief
             /// Needs access to lengthType.
-            friend Serializer & _LIB_THEKOGANS_UTIL_API operator << (
+            friend _LIB_THEKOGANS_UTIL_DECL Serializer & _LIB_THEKOGANS_UTIL_API operator << (
                 Serializer &serializer,
                 const SerializableString &serializableString);
             /// \brief
             /// Needs access to lengthType.
-            friend Serializer & _LIB_THEKOGANS_UTIL_API operator >> (
+            friend _LIB_THEKOGANS_UTIL_DECL Serializer & _LIB_THEKOGANS_UTIL_API operator >> (
                 Serializer &serializer,
                 SerializableString &serializableString);
             /// \brief

@@ -118,7 +118,7 @@ namespace thekogans {
                 const char *acp,
                 std::size_t length,
                 DWORD flags = MB_ERR_INVALID_CHARS) {
-            return MBToUTF16 (CP_ACP, acp, length, flags);
+            return MultiByteToUTF16 (CP_ACP, acp, length, flags);
         }
         /// \brief
         /// Convert the given ACP string to UTF16.

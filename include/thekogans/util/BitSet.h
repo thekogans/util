@@ -308,7 +308,7 @@ namespace thekogans {
         /// \param[in] serializer Where to write the given bit set.
         /// \param[in] bitSet BitSet to write.
         /// \return serializer.
-        inline Serializer & _LIB_THEKOGANS_UTIL_APIoperator << (
+        inline Serializer & _LIB_THEKOGANS_UTIL_API operator << (
                 Serializer &serializer,
                 const BitSet &bitSet) {
             serializer << bitSet.bits << bitSet.size;
@@ -320,7 +320,7 @@ namespace thekogans {
         /// \param[in] serializer Where to read the bit set from.
         /// \param[out] bitSet BitSet to read.
         /// \return serializer.
-        inline Serializer & _LIB_THEKOGANS_UTIL_APIoperator >> (
+        inline Serializer & _LIB_THEKOGANS_UTIL_API operator >> (
                 Serializer &serializer,
                 BitSet &bitSet) {
             serializer >> bitSet.bits >> bitSet.size;
