@@ -743,7 +743,7 @@ namespace thekogans {
                         serializable.GetType ().c_str ());\
                 }\
             }\
-            inline const thekogans::util::JSON::Object &operator >> (\
+            inline const thekogans::util::JSON::Object & _LIB_THEKOGANS_UTIL_API operator >> (\
                     const thekogans::util::JSON::Object &object,\
                     _T &serializable) {\
                 thekogans::util::Serializable::TextHeader header;\
