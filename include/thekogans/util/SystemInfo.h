@@ -68,6 +68,9 @@ namespace thekogans {
             /// Process path.
             std::string processPath;
             /// \brief
+            /// Process id.
+            THEKOGANS_UTIL_PROCESS_ID processId;
+            /// \brief
             /// Process start directory.
             static std::string processStartDirectory;
             /// \brief
@@ -94,18 +97,21 @@ namespace thekogans {
             inline Endianness GetEndianness () const {
                 return endianness;
             }
+
             /// \brief
             /// Return CPU count.
             /// \return CPU count.
             inline std::size_t GetCPUCount () const {
                 return cpuCount;
             }
+
             /// \brief
             /// Return memory page size.
             /// \return Memory page size.
             inline std::size_t GetPageSize () const {
                 return pageSize;
             }
+
             /// \brief
             /// Return physical memory size.
             /// \return Physical memory size.
@@ -118,6 +124,13 @@ namespace thekogans {
             /// \return Process path.
             inline const std::string &GetProcessPath () const {
                 return processPath;
+            }
+
+            /// \brief
+            /// Return process id.
+            /// \return Process id.
+            inline THEKOGANS_UTIL_PROCESS_ID GetProcessId () const {
+                return processId;
             }
 
             /// \brief

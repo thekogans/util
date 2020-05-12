@@ -148,6 +148,15 @@ namespace thekogans {
             #endif // defined (TOOLCHAIN_OS_Windows)
             }
 
+            THEKOGANS_UTIL_PROCESS_ID GetProcessIdImpl () {
+                return static_cast<THEKOGANS_UTIL_PROCESS_ID> (
+                #if defined (TOOLCHAIN_OS_Windows)
+                    GetCurrentProcessId ());
+                #else // defined (TOOLCHAIN_OS_Windows)
+                    getpid ());
+                #endif // defined (TOOLCHAIN_OS_Windows)
+            }
+
             std::string GetHostNameImpl () {
             #if defined (TOOLCHAIN_OS_Windows)
                 struct WinSockInit {
@@ -195,8 +204,7 @@ namespace thekogans {
                     char name[256] = {0};
                     if (gethostname (name, 256) == 0) {
                         // There is no direct way to convert ACP into
-                        // UTF-8, so perform the conversion in two
-                        // steps.
+                        // UTF8, so perform the conversion in two steps.
                         return UTF16ToUTF8 (ACPToUTF16 (name));
                     }
                     else {
@@ -388,6 +396,7 @@ namespace thekogans {
             pageSize (GetPageSizeImpl ()),
             memorySize (GetMemorySizeImpl ()),
             processPath (GetProcessPathImpl ()),
+            processId (GetProcessIdImpl ()),
             hostName (GetHostNameImpl ()),
             hostId (GetHostIdImpl ()),
             userName (GetUserNameImpl ()),
