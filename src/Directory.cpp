@@ -69,7 +69,7 @@ namespace thekogans {
         #if defined (TOOLCHAIN_OS_Windows)
             OVERLAPPED overlapped;
             enum {
-                BUFFER_SIZE = 8092
+                BUFFER_SIZE = 8 * 1024
             };
             ui8 buffer[BUFFER_SIZE];
         #elif defined (TOOLCHAIN_OS_OSX)
