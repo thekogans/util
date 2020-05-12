@@ -771,10 +771,10 @@ namespace thekogans {
                     CloseHandle (handle);
                 }
             } process (processId);
-            CHAR path[MAX_PATH] = {};
+            wchar_t path[MAX_PATH] = {};
             DWORD length = MAX_PATH;
-            if (QueryFullProcessImageNameA (process.handle, 0, path, &length)) {
-                return path;
+            if (QueryFullProcessImageNameW (process.handle, 0, path, &length)) {
+                return UTF16ToUTF8 (path, length, WC_ERR_INVALID_CHARS);
             }
             else {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
