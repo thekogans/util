@@ -517,10 +517,15 @@ namespace thekogans {
         /// \brief
         /// Convert thread handle to string representation.
         /// \param[in] thread Handle to convert.
+        /// \param[in] format Conversion format.
         /// \return String representation of the thread handle.
-        inline std::string FormatThreadHandle (THEKOGANS_UTIL_THREAD_HANDLE thread) {
-            return HexFormatBuffer (&thread, sizeof (thread));
-        }
+        _LIB_THEKOGANS_UTIL_DECL std::string _LIB_THEKOGANS_UTIL_API FormatThreadHandle (
+            THEKOGANS_UTIL_THREAD_HANDLE thread,
+        #if defined (TOOLCHAIN_OS_Windows)
+            const char *format = "%05u");
+        #else // defined (TOOLCHAIN_OS_Windows)
+            const char *format = "%p");
+        #endif // defined (TOOLCHAIN_OS_Windows)
 
     } // namespace util
 } // namespace thekogans

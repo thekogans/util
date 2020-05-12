@@ -456,5 +456,17 @@ namespace thekogans {
             }
         }
 
+        _LIB_THEKOGANS_UTIL_DECL std::string _LIB_THEKOGANS_UTIL_API FormatThreadHandle (
+                THEKOGANS_UTIL_THREAD_HANDLE thread,
+                const char *format) {
+            if (format != 0) {
+                return FormatString (format, thread);
+            }
+            else {
+                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
+            }
+        }
+
     } // namespace util
 } // namespace thekogans
