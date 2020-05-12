@@ -99,8 +99,9 @@ namespace thekogans {
         std::string Path::GetTempDirectory () {
         #if defined (TOOLCHAIN_OS_Windows)
             wchar_t tempDirectory[MAX_PATH + 1];
-            if (GetTempPathW (MAX_PATH, tempDirectory) != 0) {
-                return UTF16ToUTF8 (tempDirectory, wcslen (tempDirectory));
+            DWORD length = GetTempPathW (MAX_PATH, tempDirectory);
+            if (length != 0) {
+                return UTF16ToUTF8 (tempDirectory, length, WC_ERR_INVALID_CHARS);
             }
             else {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
@@ -122,6 +123,10 @@ namespace thekogans {
             #endif // defined (P_tmpdir)
             }
         #endif // defined (P_tmpdir) || defined (_PATH_TMP)
+            if (tempDirectory.empty ()) {
+                // If all else fails, return the system temp directory.
+                tempDirectory = "/tmp";
+            }
             return tempDirectory;
         #endif // defined (TOOLCHAIN_OS_Windows)
         }
