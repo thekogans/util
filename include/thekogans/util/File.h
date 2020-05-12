@@ -114,6 +114,13 @@ namespace thekogans {
             /// Close the file.
             virtual ~File ();
 
+            /// \brief
+            /// Return true if file is open.
+            /// \return true == file is open.
+            inline bool IsOpen () const {
+                return handle != THEKOGANS_UTIL_INVALID_HANDLE_VALUE;
+            }
+
         #if defined (TOOLCHAIN_OS_Windows)
             /// \brief
             /// Open the file.
@@ -289,6 +296,16 @@ namespace thekogans {
         /// the created file use File instead.
 
         struct _LIB_THEKOGANS_UTIL_DECL SimpleFile : public File {
+            /// \brief
+            /// Default ctor.
+            /// \param[in] endianness File endianness.
+            /// \param[in] handle OS file handle.
+            /// \param[in] path File path.
+            SimpleFile (
+                Endianness endianness = HostEndian,
+                THEKOGANS_UTIL_HANDLE handle = THEKOGANS_UTIL_INVALID_HANDLE_VALUE,
+                const std::string &path = std::string ()) :
+                File (endianness, handle, path) {}
             enum {
                 /// \brief
                 /// Open for reading.
