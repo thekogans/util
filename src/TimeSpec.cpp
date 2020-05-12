@@ -397,5 +397,26 @@ namespace thekogans {
             }
         }
 
+        _LIB_THEKOGANS_UTIL_DECL std::string _LIB_THEKOGANS_UTIL_API FormatTimeSpec (
+                const TimeSpec &timeSpec,
+                const char *format) {
+            if (format != 0) {
+                time_t rawTime = (time_t)timeSpec.seconds;
+                struct tm tm;
+            #if defined (TOOLCHAIN_OS_Windows)
+                localtime_s (&tm, &rawTime);
+            #else // defined (TOOLCHAIN_OS_Windows)
+                localtime_r (&rawTime, &tm);
+            #endif // defined (TOOLCHAIN_OS_Windows)
+                char dateTime[101] = {0};
+                strftime (dateTime, 100, format, &tm);
+                return dateTime;
+            }
+            else {
+                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
+            }
+        }
+
     } // namespace util
 } // namespace thekogans

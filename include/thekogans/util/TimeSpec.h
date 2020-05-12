@@ -502,6 +502,18 @@ namespace thekogans {
         /// Implement TimeSpec value parser.
         THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_VALUE_PARSER (TimeSpec)
 
+        /// \brief
+        /// Convert TimeSpec to string representation.
+        /// NOTE: FormatTimeSpec uses localtime and strftime
+        /// to do the heavy lifting and therefore will ignore
+        /// the timeSpec.nanoseconds.
+        /// \param[in] timeSpec TimeSpec to convert.
+        /// \param[in] format Conversion format.
+        /// \return String representation of the TimeSpec.
+        _LIB_THEKOGANS_UTIL_DECL std::string _LIB_THEKOGANS_UTIL_API FormatTimeSpec (
+            const TimeSpec &timeSpec,
+            const char *format = "%c");
+
     } // namespace util
 } // namespace thekogans
 
