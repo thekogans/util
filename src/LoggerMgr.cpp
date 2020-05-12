@@ -398,28 +398,18 @@ namespace thekogans {
                     header += " ";
                 }
                 if (decorations.Test (ProcessId | ThreadId)) {
-                #if defined (TOOLCHAIN_OS_Windows)
-                    header += FormatString ("[%u:%05u] ",
-                        GetCurrentProcessId (), GetCurrentThreadId ());
-                #else // defined (TOOLCHAIN_OS_Windows)
-                    header += FormatString ("[%u:%p] ",
-                        getpid (), (void *)pthread_self ());
-                #endif // defined (TOOLCHAIN_OS_Windows)
+                    header += FormatString ("[%u:%s] ",
+                        SystemInfo::Instance ().GetProcessId (),
+                        FormatThreadHandle (Thread::GetCurrThreadHandle ()).c_str ());
                 }
                 else {
                     if (decorations.Test (ProcessId)) {
-                    #if defined (TOOLCHAIN_OS_Windows)
-                        header += FormatString ("[%u] ", GetCurrentProcessId ());
-                    #else // defined (TOOLCHAIN_OS_Windows)
-                        header += FormatString ("[%u] ", getpid ());
-                    #endif // defined (TOOLCHAIN_OS_Windows)
+                        header += FormatString ("[%u] ",
+                            SystemInfo::Instance ().GetProcessId ());
                     }
                     else if (decorations.Test (ThreadId)) {
-                    #if defined (TOOLCHAIN_OS_Windows)
-                        header += FormatString ("[%05u] ", GetCurrentThreadId ());
-                    #else // defined (TOOLCHAIN_OS_Windows)
-                        header += FormatString ("[%p] ", (void *)pthread_self ());
-                    #endif // defined (TOOLCHAIN_OS_Windows)
+                        header += FormatString ("[%s] ",
+                            FormatThreadHandle (Thread::GetCurrThreadHandle ()).c_str ());
                     }
                 }
                 if (!header.empty () && decorations.Test (Multiline)) {
