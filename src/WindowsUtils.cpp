@@ -205,9 +205,8 @@ namespace thekogans {
         }
 
         HGLOBAL HGLOBALPtr::Release () {
-            HGLOBAL result = 0;
+            HGLOBAL result = hglobal;
             if (hglobal != 0) {
-                result = hglobal;
                 GlobalUnlock (hglobal);
                 hglobal = 0;
                 owner = false;
