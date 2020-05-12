@@ -78,13 +78,7 @@ namespace thekogans {
                 Logger (level),
                 path (path_),
                 archive (archive_),
-                maxLogFileSize (maxLogFileSize_),
-                file (
-                    HostEndian,
-                    path,
-                    SimpleFile::ReadWrite |
-                    SimpleFile::Create |
-                    SimpleFile::Append) {}
+                maxLogFileSize (maxLogFileSize_) {}
 
             // Logger
             /// \brief
@@ -111,6 +105,10 @@ namespace thekogans {
             /// \brief
             /// If archive == true, rotate the log.
             void ArchiveLog ();
+
+            /// \brief
+            /// (Re)Open the log file. Create the directory path if it doesn't exist.
+            void OpenFile ();
 
             /// \brief
             /// FileLogger is neither copy constructable, nor assignable.

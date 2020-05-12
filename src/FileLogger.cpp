@@ -39,10 +39,7 @@ namespace thekogans {
             if (!header.empty () || !message.empty ()) {
                 THEKOGANS_UTIL_TRY {
                     ArchiveLog ();
-                    // Deal with our log file being moved in the middle of execution.
-                    if (!Path (path).Exists ()) {
-                        file.Open (path, SimpleFile::ReadWrite | SimpleFile::Create);
-                    }
+                    OpenFile ();
                     if (!header.empty ()) {
                         file.Write (header.c_str (), header.size ());
                     }
@@ -105,6 +102,17 @@ namespace thekogans {
                     }
                     file.Open (path, SimpleFile::ReadWrite | SimpleFile::Create);
                 }
+            }
+        }
+
+        void FileLogger::OpenFile () {
+            // Deal with our log file being moved in the middle of execution.
+            if (!Path (path).Exists ()) {
+                file.Close ();
+                Directory::Create (Path (path).GetDirectory ());
+            }
+            if (!file.IsOpen ()) {
+                file.Open (path, SimpleFile::ReadWrite | SimpleFile::Create | SimpleFile::Append);
             }
         }
 
