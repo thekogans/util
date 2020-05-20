@@ -229,7 +229,7 @@ namespace thekogans {
                 instance (instance_),
                 atom (0) {
             if (!name.empty () && wndProc != 0 && instance != 0) {
-                WNDCLASSEX wndClassEx;
+                WNDCLASSEXW wndClassEx;
                 wndClassEx.cbSize = sizeof (WNDCLASSEX);
                 wndClassEx.style = style;
                 wndClassEx.lpfnWndProc = wndProc;
@@ -240,9 +240,10 @@ namespace thekogans {
                 wndClassEx.hCursor = cursor;
                 wndClassEx.hbrBackground = background;
                 wndClassEx.lpszMenuName = menu;
-                wndClassEx.lpszClassName = name.c_str ();
+                std::wstring wname = UTF8ToUTF16 (name);
+                wndClassEx.lpszClassName = wname.c_str ();
                 wndClassEx.hIconSm = 0;
-                atom = RegisterClassEx (&wndClassEx);
+                atom = RegisterClassExW (&wndClassEx);
                 if (atom == 0) {
                     THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
                         THEKOGANS_UTIL_OS_ERROR_CODE);
@@ -255,7 +256,7 @@ namespace thekogans {
         }
 
         WindowClass::~WindowClass () {
-            UnregisterClass (name.c_str (), instance);
+            UnregisterClassW (UTF8ToUTF16 (name).c_str (), instance);
         }
 
         Window::Window (
@@ -268,10 +269,10 @@ namespace thekogans {
                 HMENU menu,
                 void *userInfo) :
                 wnd (
-                    CreateWindowEx (
+                    CreateWindowExW (
                         extendedStyle,
-                        windowClass.name.c_str (),
-                        name.c_str (),
+                        UTF8ToUTF16 (windowClass.name).c_str (),
+                        UTF8ToUTF16 (name).c_str (),
                         style,
                         rectangle.origin.x,
                         rectangle.origin.y,

@@ -353,31 +353,12 @@ namespace thekogans {
                     header += levelTostring (level);
                     header += " ";
                 }
+                TimeSpec timeSpec = GetCurrentTime ();
                 if (decorations.Test (Date)) {
-                    char date[101] = {0};
-                    time_t rawTime;
-                    time (&rawTime);
-                    struct tm tm;
-                #if defined (TOOLCHAIN_OS_Windows)
-                    localtime_s (&tm, &rawTime);
-                #else // defined (TOOLCHAIN_OS_Windows)
-                    localtime_r (&rawTime, &tm);
-                #endif // defined (TOOLCHAIN_OS_Windows)
-                    strftime (date, 100, "%a %b %d %Y ", &tm);
-                    header += date;
+                    header += FormatTimeSpec (timeSpec, "%a %b %d %Y ");
                 }
                 if (decorations.Test (Time)) {
-                    TimeSpec timeSpec = GetCurrentTime ();
-                    char _time[101] = {0};
-                    time_t rawTime = (time_t)timeSpec.seconds;
-                    struct tm tm;
-                #if defined (TOOLCHAIN_OS_Windows)
-                    localtime_s (&tm, &rawTime);
-                #else // defined (TOOLCHAIN_OS_Windows)
-                    localtime_r (&rawTime, &tm);
-                #endif // defined (TOOLCHAIN_OS_Windows)
-                    strftime (_time, 100, "%X", &tm);
-                    header += FormatString ("%s.%u ", _time, timeSpec.nanoseconds / 1000000);
+                    header += FormatTimeSpec (timeSpec, "%X");
                 }
                 if (decorations.Test (HRTime)) {
                     header += FormatString (

@@ -154,7 +154,7 @@ namespace thekogans {
                 HMODULE handle;
 
                 NTDll () :
-                    handle (LoadLibrary ("NTDLL.DLL")) {}
+                    handle (LoadLibraryW (L"NTDLL.DLL")) {}
                 ~NTDll () {
                     FreeLibrary (handle);
                 }

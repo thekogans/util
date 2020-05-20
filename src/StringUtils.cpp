@@ -773,7 +773,7 @@ namespace thekogans {
             #if defined (TOOLCHAIN_OS_Windows)
                 // Windows limit on value length.
                 wchar_t value[32767];
-                std::size_t length = GetEnvironmentVariableW (UTF8ToUTF16 (name).c_str (), value, 32767);
+                std::size_t length = ::GetEnvironmentVariableW (UTF8ToUTF16 (name).c_str (), value, 32767);
                 if (length > 0) {
                     return UTF16ToUTF8 (value, length);
                 }

@@ -31,27 +31,27 @@ namespace thekogans {
         /// \brief
         /// SerializableString bridges the gap between std::string serialization and deserialization.
         /// Regular \see{Serializer}::operator << (const std::string &) uses \see{SizeT} to serialize
-        /// string length. There are times when you need to control that. SerializableString allows
-        /// you to specify the type that will be used to serialize/deserialize string length.
+        /// std::string length. There are times when you need to control that. SerializableString allows
+        /// you to specify the type that will be used to serialize/deserialize std::string length.
         /// NOTE: SerializableString is not meant to be a replacement for std::string and as such
-        /// only provides ctors for string serialization and deserialization.
+        /// only provides ctors for std::string serialization and deserialization.
 
         struct _LIB_THEKOGANS_UTIL_DECL SerializableString : public std::string {
         private:
             /// \brief
-            /// String length type.
+            /// Length type to use to (de)serialize the std::string.
             ValueParser<SizeT>::Type lengthType;
 
         public:
             /// \brief
             /// ctor. Used for deserialization.
-            /// \param[in] lengthType_ String length type.
+            /// \param[in] lengthType_ std::string length type to expect from \see{Serializer}.
             explicit SerializableString (ValueParser<SizeT>::Type lengthType_) :
                 lengthType (lengthType_) {}
             /// \brief
             /// ctor. Used for serialization.
             /// \param[in] value_ String to serialize.
-            /// \param[in] lengthType_ String length type.
+            /// \param[in] lengthType_ std::string length type to use to serialize the given std::string.
             SerializableString (
                 const std::string &value,
                 ValueParser<SizeT>::Type lengthType_) :
@@ -99,7 +99,7 @@ namespace thekogans {
         /// \struct ValueParser<SerializableString> SerializableString.h thekogans/util/SerializableString.h
         ///
         /// \brief
-        /// Specialization of ValueParser for SerializableString.
+        /// Specialization of \see{ValueParser} for SerializableString.
 
         template<>
         struct _LIB_THEKOGANS_UTIL_DECL ValueParser<SerializableString> {

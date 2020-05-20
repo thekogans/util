@@ -339,7 +339,7 @@ namespace thekogans {
                         for (ULONG i = 0; i < count; ++i) {
                             std::string directory;
                             EventSink *eventSink = 0;
-                            WatchId watchId;
+                            WatchId watchId = 0;
                             ui8 buffer[Watch::BUFFER_SIZE];
                             {
                                 LockGuard<SpinLock> guard (spinLock);
