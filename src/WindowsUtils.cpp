@@ -239,7 +239,13 @@ namespace thekogans {
                 wndClassEx.hIcon = icon;
                 wndClassEx.hCursor = cursor;
                 wndClassEx.hbrBackground = background;
-                wndClassEx.lpszMenuName = menu;
+                if (menu != 0) {
+                    std::wstring wmenu = UTF8ToUTF16 (menu, strlen (menu));
+                    wndClassEx.lpszMenuName = wmenu.c_str ();
+                }
+                else {
+                    wndClassEx.lpszMenuName = 0;
+                }
                 std::wstring wname = UTF8ToUTF16 (name);
                 wndClassEx.lpszClassName = wname.c_str ();
                 wndClassEx.hIconSm = 0;
