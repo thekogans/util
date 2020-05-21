@@ -230,11 +230,10 @@ namespace thekogans {
                 atom (0) {
             if (!name.empty () && wndProc != 0 && instance != 0) {
                 WNDCLASSEXW wndClassEx;
-                wndClassEx.cbSize = sizeof (WNDCLASSEX);
+                memset (&wndClassEx, 0, sizeof (WNDCLASSEXW));
+                wndClassEx.cbSize = sizeof (WNDCLASSEXW);
                 wndClassEx.style = style;
                 wndClassEx.lpfnWndProc = wndProc;
-                wndClassEx.cbClsExtra = 0;
-                wndClassEx.cbWndExtra = 0;
                 wndClassEx.hInstance = instance;
                 wndClassEx.hIcon = icon;
                 wndClassEx.hCursor = cursor;
@@ -243,12 +242,8 @@ namespace thekogans {
                     std::wstring wmenu = UTF8ToUTF16 (menu, strlen (menu));
                     wndClassEx.lpszMenuName = wmenu.c_str ();
                 }
-                else {
-                    wndClassEx.lpszMenuName = 0;
-                }
                 std::wstring wname = UTF8ToUTF16 (name);
                 wndClassEx.lpszClassName = wname.c_str ();
-                wndClassEx.hIconSm = 0;
                 atom = RegisterClassExW (&wndClassEx);
                 if (atom == 0) {
                     THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
