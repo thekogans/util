@@ -147,7 +147,7 @@ namespace thekogans {
         }
 
         bool BitSet::All () const {
-            return Count () == Size ();
+            return Count () == BitSize ();
         }
 
         BitSet::Proxy BitSet::operator [] (std::size_t bit) {

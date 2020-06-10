@@ -72,7 +72,7 @@ namespace thekogans {
         /// \code{.cpp}
         /// using namespace thekogans;
         ///
-        /// struct MyThread : public util::Thread (
+        /// struct MyThread : public util::Thread {
         /// private:
         ///     util::RunLoop::Ptr runLoop;
         ///

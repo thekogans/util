@@ -101,7 +101,7 @@ namespace thekogans {
         /// In your code you can now write:
         ///
         /// \code{.cpp}
-        /// IdleProcessor::Instance ().StartTimer (TimeSpec::FromSeconds (30));
+        /// IdleProcessor::Instance ().StartTimer (util::TimeSpec::FromSeconds (30));
         /// \endcode
         ///
         /// This will arm the IdleProcessor timer to fire after 30 seconds.
@@ -173,7 +173,7 @@ namespace thekogans {
 
         private:
             /// \brief
-            /// Receiver of the alarm notofocations.
+            /// Receiver of the alarm notifications.
             Callback &callback;
             /// \brief
             /// Timer name.

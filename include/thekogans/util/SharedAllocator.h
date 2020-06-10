@@ -67,8 +67,8 @@ namespace thekogans {
         /// \see{AlignedAllocator} adaptor.
         ///
         /// NOTE: On Windows, if secure == true, you might need to call
-        /// SetProcessWorkingSetSize to ensure your process has enough
-        /// physical pages.
+        /// \see{SecureAllocator::ReservePages} to ensure your process
+        /// has enough physical pages.
 
         struct _LIB_THEKOGANS_UTIL_DECL SharedAllocator : public Allocator {
         protected:
@@ -116,6 +116,10 @@ namespace thekogans {
                         freeList (SIZE),
                         rootObject (0) {
                     // Create the first block.
+                    // NOTE: Theoretically, the block should be destructed in the
+                    // dtor (rootBlock->~SharedAllocator::Block ();). We forgo this
+                    // step because Block's dtor is trivial. If that ever changes in
+                    // the future, we need to revisit this.
                     new ((ui8 *)ptr + freeList) SharedAllocator::Block (size - SIZE);
                 }
 
@@ -329,9 +333,9 @@ namespace thekogans {
             /// static const util::ui64 blockTable[] = {
             ///     // list of block sizes.
             /// };
-            /// static const util::ui64 blockTableSize = THEKOGANS_UTIL_ARRAY_SIZE (blockTable);
+            /// static const std::size_t blockTableSize = THEKOGANS_UTIL_ARRAY_SIZE (blockTable);
             /// util::ui64 sharedRegionSize = SharedAllocator::GetAllocatorOverhead ();
-            /// for (util::ui64 i = 0; i < blockTableSize; ++i) {
+            /// for (std::size_t i = 0; i < blockTableSize; ++i) {
             ///     sharedRegionSize += SharedAllocator::GetAllocationOverhead () +
             ///         std::max (blockTable[i], SharedAllocator::GetSmallestBlockSize ());
             /// }

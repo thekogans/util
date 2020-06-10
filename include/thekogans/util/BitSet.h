@@ -53,9 +53,21 @@ namespace thekogans {
             }
 
             /// \brief
-            /// Return the size of the bit set.
-            /// \return Size of the bit set.
+            /// Return the size of the bit set in bytes.
+            /// \return Size of the bit set in bytes.
+            /// NOTE: The function Size has a special place in thekogans_util.
+            /// It's used by the \see{Serializer} to calculate the size of
+            /// objects (in bytes) for serialization. BitSet::Size honors this
+            /// convention by returning the size in bytes. If you need the size
+            /// of this bitset in bits, call BitSize below.
             inline std::size_t Size () const {
+                return (size + 7) / 8;
+            }
+
+            /// \brief
+            /// Return the size of the bit set in bits.
+            /// \return Size of the bit set in bits.
+            inline std::size_t BitSize () const {
                 return size;
             }
 

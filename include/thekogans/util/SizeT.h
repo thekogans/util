@@ -80,6 +80,8 @@ namespace thekogans {
 
             /// \brief
             /// Implicit typecast operator.
+            /// WARNING: On some systems (notably i386), std::size_t == ui32. Casting
+            /// the ui64 value to std::size_t on those systems runs the risk of truncation.
             inline operator std::size_t () const {
                 return (std::size_t)value;
             }
