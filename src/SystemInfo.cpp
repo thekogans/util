@@ -117,6 +117,22 @@ namespace thekogans {
             #endif // defined (TOOLCHAIN_OS_Windows)
             }
 
+            THEKOGANS_UTIL_SESSION_ID GetSessionIdImpl () {
+            #if defined (TOOLCHAIN_OS_Windows)
+                DWORD sessionId;
+                if (!ProcessIdToSessionId (GetCurrentProcessId (), &sessionId)) {
+                    THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                        THEKOGANS_UTIL_OS_ERROR_CODE);
+                }
+            #endif // defined (TOOLCHAIN_OS_Windows)
+                return static_cast<THEKOGANS_UTIL_SESSION_ID> (
+                #if defined (TOOLCHAIN_OS_Windows)
+                    sessionId);
+                #else // defined (TOOLCHAIN_OS_Windows)
+                    getsid (0));
+                #endif // defined (TOOLCHAIN_OS_Windows)
+            }
+
             std::string GetProcessPathImpl () {
             #if defined (TOOLCHAIN_OS_Windows)
                 wchar_t path[MAX_PATH];
@@ -395,6 +411,7 @@ namespace thekogans {
             cpuCount (GetCPUCountImpl ()),
             pageSize (GetPageSizeImpl ()),
             memorySize (GetMemorySizeImpl ()),
+            sessionId (GetSessionIdImpl ()),
             processPath (GetProcessPathImpl ()),
             processId (GetProcessIdImpl ()),
             hostName (GetHostNameImpl ()),
@@ -416,7 +433,9 @@ namespace thekogans {
                 "CPU count: " << cpuCount << std::endl <<
                 "Page size: " << pageSize << std::endl <<
                 "Memory size: " << memorySize << std::endl <<
+                "Session id: " << sessionId << std::endl <<
                 "Process path: " << processPath << std::endl <<
+                "Process id: " << processId << std::endl <<
                 "Process start directory: " << processStartDirectory << std::endl <<
                 "Host name: " << hostName << std::endl <<
                 "Host Id: " << hostId << std::endl <<

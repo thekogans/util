@@ -65,6 +65,9 @@ namespace thekogans {
             /// Total size of physical memory.
             ui64 memorySize;
             /// \brief
+            /// Session id.
+            THEKOGANS_UTIL_SESSION_ID sessionId;
+            /// \brief
             /// Process path.
             std::string processPath;
             /// \brief
@@ -117,6 +120,13 @@ namespace thekogans {
             /// \return Physical memory size.
             inline ui64 GetMemorySize () const {
                 return memorySize;
+            }
+
+            /// \brief
+            /// Return session id.
+            /// \return Session id.
+            inline THEKOGANS_UTIL_SESSION_ID GetSessionId () const {
+                return sessionId;
             }
 
             /// \brief

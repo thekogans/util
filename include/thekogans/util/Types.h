@@ -195,6 +195,13 @@ namespace thekogans {
         /// Invalid process id value.
         #define THEKOGANS_UTIL_INVALID_PROCESS_ID_VALUE 0xffffffff
         /// \brief
+        /// Session id type.
+        /// See NOTE for THEKOGANS_UTIL_ERROR_CODE.
+        #define THEKOGANS_UTIL_SESSION_ID thekogans::util::ui32
+        /// \brief
+        /// Invalid session id value.
+        #define THEKOGANS_UTIL_INVALID_SESSION_ID_VALUE 0xffffffff
+        /// \brief
         /// For compatibility only.
         #if defined (TOOLCHAIN_ARCH_i386)
             typedef long ssize_t;
@@ -222,6 +229,12 @@ namespace thekogans {
         /// \brief
         /// Invalid process id value.
         #define THEKOGANS_UTIL_INVALID_PROCESS_ID_VALUE -1
+        /// \brief
+        /// Session id type.
+        #define THEKOGANS_UTIL_SESSION_ID pid_t
+        /// \brief
+        /// Invalid session id value.
+        #define THEKOGANS_UTIL_INVALID_SESSION_ID_VALUE -1
     #endif // defined (TOOLCHAIN_OS_Windows)
 
         /// \brief
