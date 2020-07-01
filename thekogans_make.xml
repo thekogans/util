@@ -23,6 +23,11 @@
       <feature>THEKOGANS_UTIL_HAVE_XLIB</feature>
     </if>
     <feature>THEKOGANS_UTIL_HAVE_TESTS</feature>
+    <!-- Uncomment this feature to use windows WTS functionality.
+        <if condition = "$(TOOLCHAIN_OS) == 'Windows'">
+          <feature>THEKOGANS_UTIL_HAVE_WTS</feature>
+        </if>
+    -->
   </features>
   <dependencies>
     <if condition = "$(have_feature -f:THEKOGANS_UTIL_HAVE_BOOST_ATOMIC)">
@@ -47,6 +52,9 @@
         <library>Iphlpapi.lib</library>
         <library>mpr.lib</library>
         <library>Wtsapi32.lib</library>
+        <if condition = "!$(have_feature -f:THEKOGANS_UTIL_HAVE_WTS)">
+          <library>Advapi32.lib</library>
+        </if>
       </when>
       <when condition = "$(TOOLCHAIN_OS) == 'Linux'">
         <library>pthread</library>

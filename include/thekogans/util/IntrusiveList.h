@@ -290,17 +290,34 @@ namespace thekogans {
                 return false;
             }
 
+            /// \struct IntrusiveList::unary_function IntrusiveList.h thekogans/stream/IntrusiveList.h
+            ///
+            /// \brief
+            /// Since this simple template has been deprecated (and now removed) from the standard library,
+            /// we recreate it here as a dependency of \see{Callback} below.
+            template<
+                typename ArgumentType,
+                typename ResultType>
+            struct unary_function {
+                /// \brief
+                /// Expose ArgumentType template argument for derivatives to use.
+                typedef ArgumentType argument_type;
+                /// \brief
+                /// Expose ResultType template argument for derivatives to use.
+                typedef ResultType result_type;
+            };
+
             /// \struct IntrusiveList::Callback IntrusiveList.h thekogans/stream/IntrusiveList.h
             ///
             /// \brief
             /// Base class for callbacks passed to clear and for_each.
-            struct Callback : public std::unary_function<T *, bool> {
+            struct Callback : public unary_function<T *, bool> {
                 /// \brief
-                /// Convenient typedef for std::unary_function<T *, bool>::result_type.
-                typedef typename std::unary_function<T *, bool>::result_type result_type;
+                /// Convenient typedef for unary_function<T *, bool>::result_type.
+                typedef typename unary_function<T *, bool>::result_type result_type;
                 /// \brief
-                /// Convenient typedef for std::unary_function<T *, bool>::argument_type.
-                typedef typename std::unary_function<T *, bool>::argument_type argument_type;
+                /// Convenient typedef for unary_function<T *, bool>::argument_type.
+                typedef typename unary_function<T *, bool>::argument_type argument_type;
                 /// \brief
                 /// dtor.
                 virtual ~Callback () {}

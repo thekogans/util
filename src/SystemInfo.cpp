@@ -330,32 +330,44 @@ namespace thekogans {
             std::string GetUserNameImpl () {
                 std::string result;
             #if defined (TOOLCHAIN_OS_Windows)
+            #if defined (THEKOGANS_UTIL_HAVE_WTS)
                 struct UserName {
-                    LPWSTR data;
+                    LPWSTR name;
                     DWORD length;
                     UserName () :
-                            data (0),
+                            name (0),
                             length (0) {
                         if (!WTSQuerySessionInformationW (
                                 WTS_CURRENT_SERVER_HANDLE,
                                 WTS_CURRENT_SESSION,
                                 WTSUserName,
-                                &data,
+                                &name,
                                 &length)) {
                             THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
                                 THEKOGANS_UTIL_OS_ERROR_CODE);
                         }
                     }
                     ~UserName () {
-                        if (data != 0) {
-                            WTSFreeMemory (data);
+                        if (name != 0) {
+                            WTSFreeMemory (name);
                         }
                     }
                     operator std::string () {
-                        return data != 0 ? UTF16ToUTF8 (std::wstring (data)) : std::string ();
+                        return name != 0 ? UTF16ToUTF8 (std::wstring (name)) : std::string ();
                     }
                 } userName;
                 result = userName;
+            #else // defined (THEKOGANS_UTIL_HAVE_WTS)
+                WCHAR name[UNLEN + 1];
+                DWORD length = UNLEN + 1;
+                if (GetUserNameW (name, &length)) {
+                    result = UTF16ToUTF8 (std::wstring (name));
+                }
+                else {
+                    THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                        THEKOGANS_UTIL_OS_ERROR_CODE);
+                }
+            #endif // defined (THEKOGANS_UTIL_HAVE_WTS)
             #elif defined (TOOLCHAIN_OS_Linux)
                 struct passwd *pw = getpwuid (geteuid ());
                 if (pw != 0) {
