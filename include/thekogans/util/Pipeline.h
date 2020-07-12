@@ -302,6 +302,44 @@ namespace thekogans {
             #pragma warning (pop)
         #endif // defined (_MSC_VER)
 
+            /// \struct Pipeline::LambdaJob Pipeline.h thekogans/util/Pipeline.h
+            ///
+            /// \brief
+            /// A helper class used to execute lambda (function) jobs.
+
+            struct _LIB_THEKOGANS_UTIL_DECL LambdaJob : public Job {
+                /// \brief
+                /// Convenient typedef for std::function<void ()>.
+                typedef std::function<void ()> Function;
+
+            private:
+                /// \brief
+                /// Lambdas to execute.
+                std::vector<Function> functions;
+
+            public:
+                /// \brief
+                /// ctor.
+                /// \param[in] pipeline Pipeline that will execute this job.
+                /// \param[in] begin First lambda in the array.
+                /// \param[in] end Just past the last lambda in the array.
+                LambdaJob (
+                    Pipeline &pipeline,
+                    const Function *&begin,
+                    const Function *&end) :
+                    Job (pipeline),
+                    functions (begin, end) {}
+
+                /// \brief
+                /// If our run loop is still running, execute the lambda function.
+                /// \param[in] done true == The run loop is done and nothing can be executed on it.
+                virtual void Execute (const THEKOGANS_UTIL_ATOMIC<bool> &done) throw () {
+                    if (!ShouldStop (done) && functions[stage] != 0) {
+                        functions[stage] ();
+                    }
+                }
+            };
+
             /// \struct Pipeline::Stage Pipeline.h thekogans/util/Pipeline.h
             ///
             /// \brief
@@ -554,6 +592,24 @@ namespace thekogans {
                 bool wait = false,
                 const TimeSpec &timeSpec = TimeSpec::Infinite);
             /// \brief
+            /// Enqueue a lambda (function) to be performed by the pipeline stages.
+            /// \param[in] begin First lambda in the array.
+            /// \param[in] end Just past the last lambda in the array.
+            /// \param[in] wait Wait for job to finish. Used for synchronous job execution.
+            /// \param[in] timeSpec How long to wait for the job to complete.
+            /// IMPORTANT: timeSpec is a relative value.
+            /// NOTE: Same constraint applies to EnqJob as Stop. Namely, you can't call EnqJob
+            /// from the same thread that called Start.
+            /// \return LambdaJob::Id.
+            inline Job::Id EnqJob (
+                    const LambdaJob::Function *&begin,
+                    const LambdaJob::Function *&end,
+                    bool wait = false,
+                    const TimeSpec &timeSpec = TimeSpec::Infinite) {
+                Job::Ptr job (new LambdaJob (*this, begin, end));
+                return EnqJob (job, wait, timeSpec) ? job->GetId () : Job::Id ();
+            }
+            /// \brief
             /// Enqueue a job to be performed next on the pipeline.
             /// \param[in] job Job to enqueue.
             /// \param[in] wait Wait for job to finish. Used for synchronous job execution.
@@ -564,6 +620,24 @@ namespace thekogans {
                 Job::Ptr job,
                 bool wait = false,
                 const TimeSpec &timeSpec = TimeSpec::Infinite);
+            /// \brief
+            /// Enqueue a lambda (function) to be performed next by the pipeline stages.
+            /// \param[in] begin First lambda in the array.
+            /// \param[in] end Just past the last lambda in the array.
+            /// \param[in] wait Wait for job to finish. Used for synchronous job execution.
+            /// \param[in] timeSpec How long to wait for the job to complete.
+            /// IMPORTANT: timeSpec is a relative value.
+            /// NOTE: Same constraint applies to EnqJob as Stop. Namely, you can't call EnqJob
+            /// from the same thread that called Start.
+            /// \return LambdaJob::Id.
+            inline Job::Id EnqJobFront (
+                    const LambdaJob::Function *&begin,
+                    const LambdaJob::Function *&end,
+                    bool wait = false,
+                    const TimeSpec &timeSpec = TimeSpec::Infinite) {
+                Job::Ptr job (new LambdaJob (*this, begin, end));
+                return EnqJobFront (job, wait, timeSpec) ? job->GetId () : Job::Id ();
+            }
 
             /// \brief
             /// Get a running or a pending job with the given id.

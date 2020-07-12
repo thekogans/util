@@ -273,6 +273,24 @@ namespace thekogans {
                 Pipeline::Job::Ptr job,
                 const TimeSpec &timeSpec,
                 Pipeline &pipeline = GlobalPipeline::Instance ());
+            /// \brief
+            /// Schedule a set of lambdas (functions) to be performed in the future at each pipeline stage.
+            /// \param[in] begin First lambda in the array.
+            /// \param[in] end Just past the last lambda in the array.
+            /// \param[in] timeSpec When in the future to execute the given job.
+            /// IMPORTANT: timeSpec is a relative value.
+            /// \param[in] runLoop \see{RunLoop} that will execute the job.
+            /// \return Pipeline::Job::Id which can be used in a call to CancelJob.
+            inline Pipeline::Job::Id ScheduleRunLoopJob (
+                    const RunLoop::LambdaJob::Function *&begin,
+                    const RunLoop::LambdaJob::Function *&end,
+                    const TimeSpec &timeSpec,
+                    Pipeline &pipeline = GlobalPipeline::Instance ()) {
+                return SchedulePipelineJob (
+                    Pipeline::Job::Ptr (new Pipeline::LambdaJob (pipeline, begin, end)),
+                    timeSpec,
+                    pipeline);
+            }
 
             /// \brief
             /// Cancel the job associated with the given job id.
