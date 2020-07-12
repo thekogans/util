@@ -237,7 +237,7 @@ namespace thekogans {
 
             /// \brief
             /// Schedule a job to be performed in the future.
-            /// \param[in] job \see{RunLoop::Job} to execute.
+            /// \param[in] job \see{RunLoop::Job} to execute in the future.
             /// \param[in] timeSpec When in the future to execute the given job.
             /// IMPORTANT: timeSpec is a relative value.
             /// \param[in] runLoop \see{RunLoop} that will execute the job.
@@ -247,8 +247,24 @@ namespace thekogans {
                 const TimeSpec &timeSpec,
                 RunLoop &runLoop = MainRunLoop::Instance ());
             /// \brief
+            /// Schedule a lambda (function) to be performed in the future.
+            /// \param[in] function Lambda to execute in the future.
+            /// \param[in] timeSpec When in the future to execute the given job.
+            /// IMPORTANT: timeSpec is a relative value.
+            /// \param[in] runLoop \see{RunLoop} that will execute the job.
+            /// \return RunLoop::Job::Id which can be used in a call to CancelJob.
+            inline RunLoop::Job::Id ScheduleRunLoopJob (
+                    const RunLoop::LambdaJob::Function &function,
+                    const TimeSpec &timeSpec,
+                    RunLoop &runLoop = MainRunLoop::Instance ()) {
+                return ScheduleRunLoopJob (
+                    RunLoop::Job::Ptr (new RunLoop::LambdaJob (function)),
+                    timeSpec,
+                    runLoop);
+            }
+            /// \brief
             /// Schedule a job to be performed in the future.
-            /// \param[in] job \see{Pipeline::Job} to execute.
+            /// \param[in] job \see{Pipeline::Job} to execute in the future.
             /// \param[in] timeSpec When in the future to execute the given job.
             /// IMPORTANT: timeSpec is a relative value.
             /// \param[in] pipeline \see{Pipeline} that will execute the job.

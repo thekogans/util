@@ -33,6 +33,7 @@
 #include <memory>
 #include <string>
 #include <list>
+#include <functional>
 #include "pugixml/pugixml.hpp"
 #include "thekogans/util/Config.h"
 #include "thekogans/util/Types.h"
@@ -55,7 +56,8 @@ namespace thekogans {
         /// \brief
         /// RunLoop is an abstract base for \see{JobQueue}, \see{ThreadRunLoop} and
         /// \see{SystemRunLoop}. RunLoop allows you to schedule jobs (RunLoop::Job)
-        /// to be executed on the thread that's running the run loop.
+        /// and c++ closures (lambdas) to be executed on the thread that's running
+        /// the run loop.
 
         struct _LIB_THEKOGANS_UTIL_DECL RunLoop :
                 public virtual ThreadSafeRefCounted {
@@ -332,6 +334,38 @@ namespace thekogans {
         #if defined (_MSC_VER)
             #pragma warning (pop)
         #endif // defined (_MSC_VER)
+
+            /// \struct RunLoop::LambdaJob RunLoop.h thekogans/util/RunLoop.h
+            ///
+            /// \brief
+            /// A helper class used to execute lambda (function) jobs.
+
+            struct _LIB_THEKOGANS_UTIL_DECL LambdaJob : public Job {
+                /// \brief
+                /// Convenient typedef for std::function<void ()>.
+                typedef std::function<void ()> Function;
+
+            private:
+                /// \brief
+                /// Lambda to execute.
+                Function function;
+
+            public:
+                /// \brief
+                /// ctor.
+                /// \param[in] function_ Lambda to execute.
+                explicit LambdaJob (const Function &function_) :
+                    function (function_) {}
+
+                /// \brief
+                /// If our run loop is still running, execute the lambda function.
+                /// \param[in] done true == The run loop is done and nothing can be executed on it.
+                virtual void Execute (const THEKOGANS_UTIL_ATOMIC<bool> &done) throw () {
+                    if (!ShouldStop (done)) {
+                        function ();
+                    }
+                }
+            };
 
             /// \struct RunLoop::JobExecutionPolicy RunLoop.h thekogans/util/RunLoop.h
             ///
@@ -952,11 +986,27 @@ namespace thekogans {
             /// IMPORTANT: timeSpec is a relative value.
             /// NOTE: Same constraint applies to EnqJob as Stop. Namely, you can't call EnqJob
             /// from the same thread that called Start.
-            /// \return true == !wait || WaitForJob (...)
+            /// \return LambdaJob::Id.
             virtual bool EnqJob (
                 Job::Ptr job,
                 bool wait = false,
                 const TimeSpec &timeSpec = TimeSpec::Infinite);
+            /// \brief
+            /// Enqueue a lambda (function) to be performed on the run loop thread.
+            /// \param[in] function Lambda to enqueue.
+            /// \param[in] wait Wait for job to finish. Used for synchronous job execution.
+            /// \param[in] timeSpec How long to wait for the job to complete.
+            /// IMPORTANT: timeSpec is a relative value.
+            /// NOTE: Same constraint applies to EnqJob as Stop. Namely, you can't call EnqJob
+            /// from the same thread that called Start.
+            /// \return LambdaJob::Id.
+            inline Job::Id EnqJob (
+                    const LambdaJob::Function &function,
+                    bool wait = false,
+                    const TimeSpec &timeSpec = TimeSpec::Infinite) {
+                Job::Ptr job (new LambdaJob (function));
+                return EnqJob (job, wait, timeSpec) ? job->GetId () : Job::Id ();
+            }
             /// \brief
             /// Enqueue a job to be performed next on the run loop thread.
             /// \param[in] job Job to enqueue.
@@ -970,6 +1020,22 @@ namespace thekogans {
                 Job::Ptr job,
                 bool wait = false,
                 const TimeSpec &timeSpec = TimeSpec::Infinite);
+            /// \brief
+            /// Enqueue a lambda (function) to be performed next on the run loop thread.
+            /// \param[in] function Lambda to enqueue.
+            /// \param[in] wait Wait for job to finish. Used for synchronous job execution.
+            /// \param[in] timeSpec How long to wait for the job to complete.
+            /// IMPORTANT: timeSpec is a relative value.
+            /// NOTE: Same constraint applies to EnqJob as Stop. Namely, you can't call EnqJob
+            /// from the same thread that called Start.
+            /// \return true == !wait || WaitForJob (...)
+            inline Job::Id EnqJobFront (
+                    const LambdaJob::Function &function,
+                    bool wait = false,
+                    const TimeSpec &timeSpec = TimeSpec::Infinite) {
+                Job::Ptr job (new LambdaJob (function));
+                return EnqJobFront (job, wait, timeSpec) ? job->GetId () : Job::Id ();
+            }
 
             /// \struct RunLoop::EqualityTest RunLoop.h thekogans/util/RunLoop.h
             ///
