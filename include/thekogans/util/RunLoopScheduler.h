@@ -282,8 +282,8 @@ namespace thekogans {
             /// \param[in] runLoop \see{RunLoop} that will execute the job.
             /// \return Pipeline::Job::Id which can be used in a call to CancelJob.
             inline Pipeline::Job::Id ScheduleRunLoopJob (
-                    const RunLoop::LambdaJob::Function *&begin,
-                    const RunLoop::LambdaJob::Function *&end,
+                    const Pipeline::LambdaJob::Function *&begin,
+                    const Pipeline::LambdaJob::Function *&end,
                     const TimeSpec &timeSpec,
                     Pipeline &pipeline = GlobalPipeline::Instance ()) {
                 return SchedulePipelineJob (

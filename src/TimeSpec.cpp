@@ -52,7 +52,7 @@ namespace thekogans {
                 seconds = seconds_;
                 nanoseconds = (i32)nanoseconds_;
             }
-            else if (seconds_ != -1 && nanoseconds_ != -1) {
+            else if (seconds_ >= 0 && nanoseconds_ >= 0) {
                 seconds = seconds_ + nanoseconds_ / 1000000000;
                 nanoseconds = (i32)(nanoseconds_ % 1000000000);
             }
@@ -75,7 +75,7 @@ namespace thekogans {
                 seconds = timeSpec.tv_sec;
                 nanoseconds = (i32)timeSpec.tv_nsec;
             }
-            else if (timeSpec.tv_sec != -1 && timeSpec.tv_nsec != -1) {
+            else if (timeSpec.tv_sec >= 0 && timeSpec.tv_nsec >= 0) {
                 seconds = timeSpec.tv_sec + timeSpec.tv_nsec / 1000000000;
                 nanoseconds = (i32)(timeSpec.tv_nsec % 1000000000);
             }
@@ -90,7 +90,7 @@ namespace thekogans {
                 seconds = timeSpec.tv_sec;
                 nanoseconds = (i32)timeSpec.tv_nsec;
             }
-            else if (timeSpec.tv_sec != -1 && timeSpec.tv_nsec != -1) {
+            else if (timeSpec.tv_sec >= 0 && timeSpec.tv_nsec >= 0) {
                 seconds = timeSpec.tv_sec + timeSpec.tv_nsec / 1000000000;
                 nanoseconds = (i32)(timeSpec.tv_nsec % 1000000000);
             }
@@ -107,7 +107,7 @@ namespace thekogans {
                 seconds = (i64)timeVal.tv_sec;
                 nanoseconds = (i32)timeVal.tv_usec;
             }
-            else if (timeVal.tv_sec != -1 && timeVal.tv_usec != -1) {
+            else if (timeVal.tv_sec >=0 && timeVal.tv_usec >= 0) {
                 seconds = (i64)(timeVal.tv_sec + timeVal.tv_usec / 1000000);
                 nanoseconds = (i32)((timeVal.tv_usec % 1000000) * 1000);
             }

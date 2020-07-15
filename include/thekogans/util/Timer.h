@@ -65,7 +65,7 @@ namespace thekogans {
         ///
         /// public:
         ///     IdleProcessor () :
-        ///         timer ("IdleProcessor"),
+        ///         timer (*this, "IdleProcessor"),
         ///         jobQueue (
         ///             "IdleProcessor",
         ///             util::RunLoop::JobExecutionPolicy::Ptr (

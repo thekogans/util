@@ -305,12 +305,16 @@ namespace thekogans {
             /// \struct Pipeline::LambdaJob Pipeline.h thekogans/util/Pipeline.h
             ///
             /// \brief
-            /// A helper class used to execute lambda (function) jobs.
+            /// A helper class used to execute lambda (function) jobs. If you want to
+            /// skip a stage, pass \see{RunLoop::LambdaJob::Function} () instead of a
+            /// closure for that slot.
 
             struct _LIB_THEKOGANS_UTIL_DECL LambdaJob : public Job {
                 /// \brief
-                /// Convenient typedef for std::function<void ()>.
-                typedef std::function<void ()> Function;
+                /// Convenient typedef for std::function<void (Job & /*job*/, const THEKOGANS_UTIL_ATOMIC<bool> & /*done*/)>.
+                /// \param[in] job Job that is executing the lambda.
+                /// \param[in] done Call job.ShouldStop (done) to respond to cancel requests and termination events.
+                typedef std::function<void (Job & /*job*/, const THEKOGANS_UTIL_ATOMIC<bool> & /*done*/)> Function;
 
             private:
                 /// \brief
@@ -335,7 +339,7 @@ namespace thekogans {
                 /// \param[in] done true == The run loop is done and nothing can be executed on it.
                 virtual void Execute (const THEKOGANS_UTIL_ATOMIC<bool> &done) throw () {
                     if (!ShouldStop (done) && functions[stage] != 0) {
-                        functions[stage] ();
+                        functions[stage] (*this, done);
                     }
                 }
             };

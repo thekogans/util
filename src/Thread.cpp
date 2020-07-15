@@ -251,7 +251,7 @@ namespace thekogans {
                 if (timeSpec != 0) {
                     Waiter waiter (thread, result);
                     waiter.Create (THEKOGANS_UTIL_NORMAL_THREAD_PRIORITY);
-                    if (!waiter.condition.Wait (*timeSpec)) {
+                    if (!waiter.condition.Wait (TimeSpec (*timeSpec))) {
                         waiter.Cancel ();
                     }
                     waiter.Wait ();

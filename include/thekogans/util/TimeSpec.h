@@ -105,29 +105,29 @@ namespace thekogans {
             /// \brief
             /// ctor.
             /// \param[in] fileTime Windows FILETIME to initialize to.
-            TimeSpec (const FILETIME &fileTime) :
+            explicit TimeSpec (const FILETIME &fileTime) :
                 seconds (FILETIMEToi64 (fileTime)),
                 nanoseconds (0) {}
             /// \brief
             /// ctor.
             /// \param[in] systemTime Windows SYSTEMTIME to initialize to.
-            TimeSpec (const SYSTEMTIME &systemTime);
+            explicit TimeSpec (const SYSTEMTIME &systemTime);
         #else // defined (TOOLCHAIN_OS_Windows)
             /// \brief
             /// ctor.
             /// \param[in] timeSpec POSIX timespec to initialize to.
-            TimeSpec (const timespec &timeSpec);
+            explicit TimeSpec (const timespec &timeSpec);
         #if defined (TOOLCHAIN_OS_OSX)
             /// \brief
             /// ctor.
             /// \param[in] timeSpec OS X Mach timespec to initialize to.
-            TimeSpec (const mach_timespec_t &timeSpec);
+            explicit TimeSpec (const mach_timespec_t &timeSpec);
         #endif // defined (TOOLCHAIN_OS_OSX)
         #endif // defined (TOOLCHAIN_OS_Windows)
             /// \brief
             /// ctor.
             /// \param[in] timeVal POSIX timeval to initialize to.
-            TimeSpec (const timeval &timeVal);
+            explicit TimeSpec (const timeval &timeVal);
             /// \brief
             /// ctor.
             /// \param[in] timeSpec TimeSpec to copy..
