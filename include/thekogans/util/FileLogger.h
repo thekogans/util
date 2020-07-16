@@ -98,7 +98,9 @@ namespace thekogans {
             /// \param[in] timeSpec How long to wait for logger to complete.
             /// IMPORTANT: timeSpec is a relative value.
             virtual void Flush (const TimeSpec & /*timeSpec*/ = TimeSpec::Infinite) {
-                file.Flush ();
+                if (file.IsOpen ()) {
+                    file.Flush ();
+                }
             }
 
         private:
