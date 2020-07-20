@@ -366,6 +366,17 @@ namespace thekogans {
             }
         }
 
+        std::pair<Pipeline::Job::Ptr, bool> Pipeline::EnqJob (
+                const LambdaJob::Function *&begin,
+                const LambdaJob::Function *&end,
+                bool wait,
+                const TimeSpec &timeSpec) {
+            std::pair<Job::Ptr, bool> result;
+            result.first.Reset (new LambdaJob (*this, begin, end));
+            result.second = EnqJob (result.first, wait, timeSpec);
+            return result;
+        }
+
         bool Pipeline::EnqJobFront (
                 Job::Ptr job,
                 bool wait,
@@ -384,6 +395,17 @@ namespace thekogans {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
                     THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
             }
+        }
+
+        std::pair<Pipeline::Job::Ptr, bool> Pipeline::EnqJobFront (
+                const LambdaJob::Function *&begin,
+                const LambdaJob::Function *&end,
+                bool wait,
+                const TimeSpec &timeSpec) {
+            std::pair<Job::Ptr, bool> result;
+            result.first.Reset (new LambdaJob (*this, begin, end));
+            result.second = EnqJobFront (result.first, wait, timeSpec);
+            return result;
         }
 
         Pipeline::Job::Ptr Pipeline::GetJob (const Job::Id &jobId) {

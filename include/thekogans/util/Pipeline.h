@@ -604,15 +604,12 @@ namespace thekogans {
             /// IMPORTANT: timeSpec is a relative value.
             /// NOTE: Same constraint applies to EnqJob as Stop. Namely, you can't call EnqJob
             /// from the same thread that called Start.
-            /// \return LambdaJob::Id.
-            inline Job::Id EnqJob (
-                    const LambdaJob::Function *&begin,
-                    const LambdaJob::Function *&end,
-                    bool wait = false,
-                    const TimeSpec &timeSpec = TimeSpec::Infinite) {
-                Job::Ptr job (new LambdaJob (*this, begin, end));
-                return EnqJob (job, wait, timeSpec) ? job->GetId () : Job::Id ();
-            }
+            /// \return std::pair<Job::Ptr, bool> containing the LambdaJob and the EnqJob return.
+            std::pair<Job::Ptr, bool> EnqJob (
+                const LambdaJob::Function *&begin,
+                const LambdaJob::Function *&end,
+                bool wait = false,
+                const TimeSpec &timeSpec = TimeSpec::Infinite);
             /// \brief
             /// Enqueue a job to be performed next on the pipeline.
             /// \param[in] job Job to enqueue.
@@ -633,15 +630,12 @@ namespace thekogans {
             /// IMPORTANT: timeSpec is a relative value.
             /// NOTE: Same constraint applies to EnqJob as Stop. Namely, you can't call EnqJob
             /// from the same thread that called Start.
-            /// \return LambdaJob::Id.
-            inline Job::Id EnqJobFront (
-                    const LambdaJob::Function *&begin,
-                    const LambdaJob::Function *&end,
-                    bool wait = false,
-                    const TimeSpec &timeSpec = TimeSpec::Infinite) {
-                Job::Ptr job (new LambdaJob (*this, begin, end));
-                return EnqJobFront (job, wait, timeSpec) ? job->GetId () : Job::Id ();
-            }
+            /// \return std::pair<Job::Ptr, bool> containing the LambdaJob and the EnqJobFront return.
+            std::pair<Job::Ptr, bool> EnqJobFront (
+                const LambdaJob::Function *&begin,
+                const LambdaJob::Function *&end,
+                bool wait = false,
+                const TimeSpec &timeSpec = TimeSpec::Infinite);
 
             /// \brief
             /// Get a running or a pending job with the given id.

@@ -496,6 +496,16 @@ namespace thekogans {
             }
         }
 
+        std::pair<RunLoop::Job::Ptr, bool> RunLoop::EnqJob (
+                const LambdaJob::Function &function,
+                bool wait,
+                const TimeSpec &timeSpec) {
+            std::pair<Job::Ptr, bool> result;
+            result.first.Reset (new LambdaJob (function));
+            result.second = EnqJob (result.first, wait, timeSpec);
+            return result;
+        }
+
         bool RunLoop::EnqJobFront (
                 Job::Ptr job,
                 bool wait,
@@ -514,6 +524,16 @@ namespace thekogans {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
                     THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
             }
+        }
+
+        std::pair<RunLoop::Job::Ptr, bool> RunLoop::EnqJobFront (
+                const LambdaJob::Function &function,
+                bool wait,
+                const TimeSpec &timeSpec) {
+            std::pair<Job::Ptr, bool> result;
+            result.first.Reset (new LambdaJob (function));
+            result.second = EnqJobFront (result.first, wait, timeSpec);
+            return result;
         }
 
         RunLoop::Job::Ptr RunLoop::GetJob (const Job::Id &jobId) {

@@ -993,7 +993,7 @@ namespace thekogans {
             /// IMPORTANT: timeSpec is a relative value.
             /// NOTE: Same constraint applies to EnqJob as Stop. Namely, you can't call EnqJob
             /// from the same thread that called Start.
-            /// \return LambdaJob::Id.
+            /// \return true == !wait || WaitForJob (...)
             virtual bool EnqJob (
                 Job::Ptr job,
                 bool wait = false,
@@ -1006,14 +1006,11 @@ namespace thekogans {
             /// IMPORTANT: timeSpec is a relative value.
             /// NOTE: Same constraint applies to EnqJob as Stop. Namely, you can't call EnqJob
             /// from the same thread that called Start.
-            /// \return LambdaJob::Id.
-            inline Job::Id EnqJob (
-                    const LambdaJob::Function &function,
-                    bool wait = false,
-                    const TimeSpec &timeSpec = TimeSpec::Infinite) {
-                Job::Ptr job (new LambdaJob (function));
-                return EnqJob (job, wait, timeSpec) ? job->GetId () : Job::Id ();
-            }
+            /// \return std::pair<Job::Ptr, bool> containing the LambdaJob and the EnqJob return.
+            std::pair<Job::Ptr, bool> EnqJob (
+                const LambdaJob::Function &function,
+                bool wait = false,
+                const TimeSpec &timeSpec = TimeSpec::Infinite);
             /// \brief
             /// Enqueue a job to be performed next on the run loop thread.
             /// \param[in] job Job to enqueue.
@@ -1035,14 +1032,11 @@ namespace thekogans {
             /// IMPORTANT: timeSpec is a relative value.
             /// NOTE: Same constraint applies to EnqJob as Stop. Namely, you can't call EnqJob
             /// from the same thread that called Start.
-            /// \return true == !wait || WaitForJob (...)
-            inline Job::Id EnqJobFront (
-                    const LambdaJob::Function &function,
-                    bool wait = false,
-                    const TimeSpec &timeSpec = TimeSpec::Infinite) {
-                Job::Ptr job (new LambdaJob (function));
-                return EnqJobFront (job, wait, timeSpec) ? job->GetId () : Job::Id ();
-            }
+            /// \return std::pair<Job::Ptr, bool> containing the LambdaJob and the EnqJobFront return.
+            std::pair<Job::Ptr, bool> EnqJobFront (
+                const LambdaJob::Function &function,
+                bool wait = false,
+                const TimeSpec &timeSpec = TimeSpec::Infinite);
 
             /// \struct RunLoop::EqualityTest RunLoop.h thekogans/util/RunLoop.h
             ///
