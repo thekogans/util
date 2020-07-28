@@ -21,11 +21,7 @@
 #include <cstddef>
 #include <climits>
 #include <cfloat>
-#if defined (THEKOGANS_UTIL_HAVE_STD_ATOMIC)
-    #include <type_traits>
-#else // defined (THEKOGANS_UTIL_HAVE_STD_ATOMIC)
-    #include <boost/type_traits.hpp>
-#endif // defined (THEKOGANS_UTIL_HAVE_STD_ATOMIC)
+#include <type_traits>
 #include "thekogans/util/Config.h"
 #include "thekogans/util/Types.h"
 
@@ -439,11 +435,7 @@ namespace thekogans {
         bool IS_EVEN (T value) {
             // Ensure value is an arithmetic type.
             static_assert (
-            #if defined (THEKOGANS_UTIL_HAVE_STD_ATOMIC)
                 std::is_arithmetic<T>::value,
-            #else // defined (THEKOGANS_UTIL_HAVE_STD_ATOMIC)
-                boost::is_arithmetic<T>::value,
-            #endif // defined (THEKOGANS_UTIL_HAVE_STD_ATOMIC)
                 "Template parameter must be an arithmetic type.");
             return (value % 2) == 0;
         }
@@ -456,11 +448,7 @@ namespace thekogans {
         bool IS_ODD (T value) {
             // Ensure value is an arithmetic type.
             static_assert (
-            #if defined (THEKOGANS_UTIL_HAVE_STD_ATOMIC)
                 std::is_arithmetic<T>::value,
-            #else // defined (THEKOGANS_UTIL_HAVE_STD_ATOMIC)
-                boost::is_arithmetic<T>::value,
-            #endif // defined (THEKOGANS_UTIL_HAVE_STD_ATOMIC)
                 "Template parameter must be an arithmetic type.");
             return (value % 2) == 1;
         }

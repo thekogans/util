@@ -15,11 +15,51 @@
 // You should have received a copy of the GNU General Public License
 // along with libthekogans_util. If not, see <http://www.gnu.org/licenses/>.
 
-#include "thekogans/util/Heap.h"
+#include "thekogans/util/LoggerMgr.h"
+#include "thekogans/util/StringUtils.h"
 #include "thekogans/util/LockGuard.h"
+#include "thekogans/util/Heap.h"
 
 namespace thekogans {
     namespace util {
+
+        _LIB_THEKOGANS_UTIL_DECL void Log (
+                unsigned int decorations,
+                const char *subsystem,
+                unsigned int level,
+                const char *file,
+                const char *function,
+                unsigned int line,
+                const char *buildTime,
+                const char *format,
+                ...) {
+            std::string header = GlobalLoggerMgr::Instance ().FormatHeader (
+                decorations,
+                subsystem,
+                level,
+                file,
+                function,
+                line,
+                buildTime);
+            va_list argptr;
+            va_start (argptr, format);
+            std::string message = FormatStringHelper (format, argptr);
+            va_end (argptr);
+            Log (subsystem, level, header, message);
+        }
+
+        _LIB_THEKOGANS_UTIL_DECL void _LIB_THEKOGANS_UTIL_API Log (
+                const char *subsystem,
+                unsigned int level,
+                const std::string &header,
+                const std::string &message) {
+            GlobalLoggerMgr::Instance ().Log (subsystem, level, header, message);
+            // This function is usually called right before the
+            // process exits. In case the user forgot to call flush,
+            // we do it here so that this important error message is
+            // written to the logs.
+            GlobalLoggerMgr::Instance ().Flush ();
+        }
 
         void HeapRegistry::AddHeap (
                 const std::string &name,

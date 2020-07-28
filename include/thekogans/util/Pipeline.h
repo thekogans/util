@@ -22,6 +22,7 @@
 #include <memory>
 #include <string>
 #include <vector>
+#include <atomic>
 #include "thekogans/util/Config.h"
 #include "thekogans/util/Types.h"
 #include "thekogans/util/RefCounted.h"
@@ -281,14 +282,14 @@ namespace thekogans {
                 /// global level.
                 /// \param[in] done If true, this flag indicates that
                 /// the job should stop what it's doing, and exit.
-                virtual void Begin (const THEKOGANS_UTIL_ATOMIC<bool> &done) throw () {}
+                virtual void Begin (const std::atomic<bool> &done) throw () {}
                 /// \brief
                 /// Provides the same functionality as
                 /// Job::Epilogue, except at pipeline
                 /// global level.
                 /// \param[in] done If true, this flag indicates that
                 /// the job should stop what it's doing, and exit.
-                virtual void End (const THEKOGANS_UTIL_ATOMIC<bool> &done) throw () {}
+                virtual void End (const std::atomic<bool> &done) throw () {}
 
                 /// \brief
                 /// Pipeline uses Reset.
@@ -311,10 +312,10 @@ namespace thekogans {
 
             struct _LIB_THEKOGANS_UTIL_DECL LambdaJob : public Job {
                 /// \brief
-                /// Convenient typedef for std::function<void (Job & /*job*/, const THEKOGANS_UTIL_ATOMIC<bool> & /*done*/)>.
+                /// Convenient typedef for std::function<void (Job & /*job*/, const std::atomic<bool> & /*done*/)>.
                 /// \param[in] job Job that is executing the lambda.
                 /// \param[in] done Call job.ShouldStop (done) to respond to cancel requests and termination events.
-                typedef std::function<void (Job & /*job*/, const THEKOGANS_UTIL_ATOMIC<bool> & /*done*/)> Function;
+                typedef std::function<void (Job & /*job*/, const std::atomic<bool> & /*done*/)> Function;
 
             private:
                 /// \brief
@@ -337,7 +338,7 @@ namespace thekogans {
                 /// \brief
                 /// If our run loop is still running, execute the lambda function.
                 /// \param[in] done true == The run loop is done and nothing can be executed on it.
-                virtual void Execute (const THEKOGANS_UTIL_ATOMIC<bool> &done) throw () {
+                virtual void Execute (const std::atomic<bool> &done) throw () {
                     if (!ShouldStop (done) && functions[stage] != 0) {
                         functions[stage] (*this, done);
                     }
@@ -404,7 +405,7 @@ namespace thekogans {
             JobExecutionPolicy::Ptr jobExecutionPolicy;
             /// \brief
             /// Flag to signal the stage thread(s).
-            THEKOGANS_UTIL_ATOMIC<bool> done;
+            std::atomic<bool> done;
             /// \brief
             /// Queue of pending jobs.
             JobList pendingJobs;

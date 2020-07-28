@@ -141,7 +141,7 @@ namespace thekogans {
                             jobQueue (jobQueue_),
                             scheduler (scheduler_) {}
 
-                        virtual void Execute (const THEKOGANS_UTIL_ATOMIC<bool> &done) throw () {
+                        virtual void Execute (const std::atomic<bool> &done) throw () {
                             JobQueue *jobQueue;
                             while (!ShouldStop (done) && (jobQueue = scheduler.GetNextJobQueue ()) != 0) {
                                 RunLoop::Job *job;

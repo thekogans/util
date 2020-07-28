@@ -77,6 +77,9 @@ namespace thekogans {
             /// Process start directory.
             static std::string processStartDirectory;
             /// \brief
+            /// Process start time.
+            static ui64 processStartTime;
+            /// \brief
             /// Host name.
             std::string hostName;
             /// \brief
@@ -148,6 +151,13 @@ namespace thekogans {
             /// \return Process start directory.
             inline const std::string &GetProcessStartDirectory () const {
                 return processStartDirectory;
+            }
+
+            /// \brief
+            /// Return process start time.
+            /// \return Process start time.
+            inline ui64 GetProcessStartTime () const {
+                return processStartTime;
             }
 
             /// \brief

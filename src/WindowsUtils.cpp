@@ -24,7 +24,7 @@
 
 _LIB_THEKOGANS_UTIL_DECL int _LIB_THEKOGANS_UTIL_API pipe (
         THEKOGANS_UTIL_HANDLE fildes[2]) {
-    static THEKOGANS_UTIL_ATOMIC<ULONG> serialNumber (1);
+    static std::atomic<ULONG> serialNumber (1);
     std::string name =
         thekogans::util::FormatString (
             "\\\\.\\Pipe\\thekogans_util.%08x.%08x",

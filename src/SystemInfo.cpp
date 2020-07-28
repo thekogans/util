@@ -49,6 +49,7 @@
 #include <set>
 #include "thekogans/util/Constants.h"
 #include "thekogans/util/Path.h"
+#include "thekogans/util/HRTimer.h"
 #include "thekogans/util/Exception.h"
 #include "thekogans/util/SHA2.h"
 #include "thekogans/util/StringUtils.h"
@@ -417,6 +418,7 @@ namespace thekogans {
         }
 
         std::string SystemInfo::processStartDirectory = Path::GetCurrDirectory ();
+        ui64 SystemInfo::processStartTime = HRTimer::Click ();
 
         SystemInfo::SystemInfo () :
             endianness (GetEndiannessImpl ()),
@@ -449,6 +451,7 @@ namespace thekogans {
                 "Process path: " << processPath << std::endl <<
                 "Process id: " << processId << std::endl <<
                 "Process start directory: " << processStartDirectory << std::endl <<
+                "Process start time: " << processStartTime << std::endl <<
                 "Host name: " << hostName << std::endl <<
                 "Host Id: " << hostId << std::endl <<
                 "User name: " << userName << std::endl <<

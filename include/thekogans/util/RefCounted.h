@@ -18,11 +18,12 @@
 #if !defined (__thekogans_util_RefCounted_h)
 #define __thekogans_util_RefCounted_h
 
-#include <cassert>
 #include <typeinfo>
+#include <atomic>
 #include "thekogans/util/Config.h"
 #include "thekogans/util/Types.h"
 #include "thekogans/util/Exception.h"
+#include "thekogans/util/StringUtils.h"
 
 namespace thekogans {
     namespace util {
@@ -60,7 +61,25 @@ namespace thekogans {
             /// \brief
             /// dtor.
             virtual ~RefCounted () {
-                assert (count == 0);
+                // We're going out of scope. If there are still
+                // references remaining, we have a problem.
+                if (count != 0) {
+                    // Here we both log the problem and assert to give the
+                    // engineer the best chance of figuring out what happened.
+                    std::string message =
+                        FormatString ("%s : %u", typeid (*this).name (), (ui32)count);
+                    Log (
+                        SubsystemAll,
+                        THEKOGANS_UTIL,
+                        Error,
+                        __FILE__,
+                        __FUNCTION__,
+                        __LINE__,
+                        __DATE__ " " __TIME__,
+                        "%s",
+                        message.c_str ());
+                    THEKOGANS_UTIL_ASSERT (count == 0, message);
+                }
             }
 
             /// \brief
@@ -226,14 +245,32 @@ namespace thekogans {
             /// compulsory, as they were never 'allocated' to
             /// begin with.
             virtual void Harakiri () {
-                assert (count == 0);
+                // We're going out of scope. If there are still
+                // references remaining, we have a problem.
+                if (count != 0) {
+                    // Here we both log the problem and assert to give the
+                    // engineer the best chance of figuring out what happened.
+                    std::string message =
+                        FormatString ("%s : %u", typeid (*this).name (), (ui32)count);
+                    Log (
+                        SubsystemAll,
+                        THEKOGANS_UTIL,
+                        Error,
+                        __FILE__,
+                        __FUNCTION__,
+                        __LINE__,
+                        __DATE__ " " __TIME__,
+                        "%s",
+                        message.c_str ());
+                    THEKOGANS_UTIL_ASSERT (count == 0, message);
+                }
                 delete this;
             }
         };
 
         /// \brief
-        /// Convenient typedef for RefCounted<THEKOGANS_UTIL_ATOMIC<ui32>>.
-        typedef RefCounted<THEKOGANS_UTIL_ATOMIC<ui32>> ThreadSafeRefCounted;
+        /// Convenient typedef for RefCounted<std::atomic<ui32>>.
+        typedef RefCounted<std::atomic<ui32>> ThreadSafeRefCounted;
         /// \brief
         /// Convenient typedef for RefCounted<ui32>.
         typedef RefCounted<ui32> SingleThreadedRefCounted;

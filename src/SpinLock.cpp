@@ -21,36 +21,26 @@
 namespace thekogans {
     namespace util {
 
-    #if defined (THEKOGANS_UTIL_HAVE_STD_ATOMIC)
-        #define memory_order_acquire std::memory_order_acquire
-        #define memory_order_release std::memory_order_release
-        #define memory_order_relaxed std::memory_order_relaxed
-    #else // defined (THEKOGANS_UTIL_HAVE_STD_ATOMIC)
-        #define memory_order_acquire boost::memory_order_acquire
-        #define memory_order_release boost::memory_order_release
-        #define memory_order_relaxed boost::memory_order_relaxed
-    #endif // defined (THEKOGANS_UTIL_HAVE_STD_ATOMIC)
-
         bool SpinLock::TryAcquire () {
-            return state.exchange (Locked, memory_order_acquire) == Unlocked;
+            return state.exchange (Locked, std::memory_order_acquire) == Unlocked;
         }
 
         void SpinLock::Acquire () {
-            while (state.exchange (Locked, memory_order_acquire) == Locked) {
+            while (state.exchange (Locked, std::memory_order_acquire) == Locked) {
                 // Wait for lock to become free with exponential back-off.
                 // In a heavily contested lock, this leads to fewer cache
                 // line invalidations and better performance.
                 // This code was adapted from the ideas found here:
                 // https://geidav.wordpress.com/tag/exponential-back-off/
                 Thread::Backoff backoff (maxPauseBeforeYield);
-                while (state.load (memory_order_relaxed) == Locked) {
+                while (state.load (std::memory_order_relaxed) == Locked) {
                     backoff.Pause ();
                 }
             }
         }
 
         void SpinLock::Release () {
-            state.store (Unlocked, memory_order_release);
+            state.store (Unlocked, std::memory_order_release);
         }
 
     } // namespace util

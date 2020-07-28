@@ -18,6 +18,7 @@
 #if !defined (__thekogans_util_SpinRWLock_h)
 #define __thekogans_util_SpinRWLock_h
 
+#include <atomic>
 #include "thekogans/util/Config.h"
 #include "thekogans/util/Types.h"
 
@@ -58,7 +59,7 @@ namespace thekogans {
             static const ui32 BUSY = WRITER | READERS;
             /// \brief
             /// Lock state.
-            THEKOGANS_UTIL_ATOMIC<ui32> state;
+            std::atomic<ui32> state;
 
         public:
             /// \brief

@@ -53,7 +53,7 @@ namespace thekogans {
             exception = exception_;
         }
 
-        void RunLoop::Job::Succeed (const THEKOGANS_UTIL_ATOMIC<bool> &done) {
+        void RunLoop::Job::Succeed (const std::atomic<bool> &done) {
             if (disposition == Unknown) {
                 disposition = !done ? Succeeded : Cancelled;
             }

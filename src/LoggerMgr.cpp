@@ -78,10 +78,10 @@ namespace thekogans {
             decorations.push_back (Date);
             decorations.push_back (Time);
             decorations.push_back (HRTime);
-            decorations.push_back (HRElapsedTime);
             decorations.push_back (HostName);
-            decorations.push_back (ProcessPath);
             decorations.push_back (ProcessId);
+            decorations.push_back (ProcessPath);
+            decorations.push_back (ProcessUpTime);
             decorations.push_back (ThreadId);
             decorations.push_back (Location);
             decorations.push_back (Multiline);
@@ -133,17 +133,17 @@ namespace thekogans {
                 }
                 value += "HRTime";
             }
-            else if (Flags32 (decorations).Test (HRElapsedTime)) {
-                if (!value.empty ()) {
-                    value += " | ";
-                }
-                value += "HRElapsedTime";
-            }
             else if (Flags32 (decorations).Test (HostName)) {
                 if (!value.empty ()) {
                     value += " | ";
                 }
                 value += "HostName";
+            }
+            else if (Flags32 (decorations).Test (ProcessId)) {
+                if (!value.empty ()) {
+                    value += " | ";
+                }
+                value += "ProcessId";
             }
             else if (Flags32 (decorations).Test (ProcessPath)) {
                 if (!value.empty ()) {
@@ -151,11 +151,11 @@ namespace thekogans {
                 }
                 value += "ProcessPath";
             }
-            else if (Flags32 (decorations).Test (ProcessId)) {
+            else if (Flags32 (decorations).Test (ProcessUpTime)) {
                 if (!value.empty ()) {
                     value += " | ";
                 }
-                value += "ProcessId";
+                value += "ProcessUpTime";
             }
             else if (Flags32 (decorations).Test (ThreadId)) {
                 if (!value.empty ()) {
@@ -198,17 +198,17 @@ namespace thekogans {
                 else if (decoration == "HRTime") {
                     return LoggerMgr::HRTime;
                 }
-                else if (decoration == "HRElapsedTime") {
-                    return LoggerMgr::HRElapsedTime;
-                }
                 else if (decoration == "HostName") {
                     return LoggerMgr::HostName;
+                }
+                else if (decoration == "ProcessId") {
+                    return LoggerMgr::ProcessId;
                 }
                 else if (decoration == "ProcessPath") {
                     return LoggerMgr::ProcessPath;
                 }
-                else if (decoration == "ProcessId") {
-                    return LoggerMgr::ProcessId;
+                else if (decoration == "ProcessUpTime") {
+                    return LoggerMgr::ProcessUpTime;
                 }
                 else if (decoration == "ThreadId") {
                     return LoggerMgr::ThreadId;
@@ -257,23 +257,29 @@ namespace thekogans {
                 const std::string &name,
                 i32 priority,
                 ui32 affinity) {
-            Flush ();
-            LockGuard<Mutex> guard (mutex);
-            level = level_;
-            decorations = decorations_;
-            if (Flags32 (flags).Test (ClearLoggers)) {
-                loggerMap.clear ();
+            if (level_ > Invalid && level_ <= MaxLevel && decorations_ <= SubsystemAll) {
+                Flush ();
+                LockGuard<Mutex> guard (mutex);
+                level = level_;
+                decorations = decorations_;
+                if (Flags32 (flags).Test (ClearLoggers)) {
+                    loggerMap.clear ();
+                }
+                if (Flags32 (flags).Test (ClearFilters)) {
+                    filterList.clear ();
+                }
+                jobQueue.Reset (!blocking ?
+                    new JobQueue (
+                        name,
+                        RunLoop::JobExecutionPolicy::Ptr (new RunLoop::FIFOJobExecutionPolicy),
+                        1,
+                        priority,
+                        affinity) : 0);
             }
-            if (Flags32 (flags).Test (ClearFilters)) {
-                filterList.clear ();
+            else {
+                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
             }
-            jobQueue.Reset (!blocking ?
-                new JobQueue (
-                    name,
-                    RunLoop::JobExecutionPolicy::Ptr (new RunLoop::FIFOJobExecutionPolicy),
-                    1,
-                    priority,
-                    affinity) : 0);
         }
 
         void LoggerMgr::AddLogger (
@@ -330,6 +336,95 @@ namespace thekogans {
             }
         }
 
+        std::string LoggerMgr::FormatHeader (
+                ui32 decorations,
+                const char *subsystem,
+                ui32 level,
+                const char *file,
+                const char *function,
+                ui32 line,
+                const char *buildTime) {
+            if (decorations <= SubsystemAll &&
+                    subsystem != 0 &&
+                    level > Invalid && level <= MaxLevel &&
+                    file != 0 &&
+                    function != 0 &&
+                    buildTime != 0) {
+                std::string header;
+                if (decorations != NoDecorations) {
+                    Flags32 flags (decorations);
+                    if (flags.Test (EntrySeparator) && flags.Test (Multiline)) {
+                        header += std::string (80, '*');
+                        header += "\n";
+                    }
+                    if (flags.Test (Subsystem)) {
+                        header += subsystem;
+                        header += " ";
+                    }
+                    if (flags.Test (Level)) {
+                        header += levelTostring (level);
+                        header += " ";
+                    }
+                    TimeSpec timeSpec = GetCurrentTime ();
+                    if (flags.Test (Date)) {
+                        header += FormatTimeSpec (timeSpec, "%a %b %d %Y ");
+                    }
+                    if (flags.Test (Time)) {
+                        header += FormatTimeSpec (timeSpec, "%X");
+                    }
+                    if (flags.Test (HRTime)) {
+                        header += FormatString (
+                            "%011.4f ",
+                            HRTimer::ToSeconds (HRTimer::Click ()));
+                    }
+                    if (flags.Test (HostName)) {
+                        header += SystemInfo::Instance ().GetHostName ();
+                        header += " ";
+                    }
+                    if (flags.Test (ProcessId | ThreadId)) {
+                        header += FormatString ("[%u:%s] ",
+                            SystemInfo::Instance ().GetProcessId (),
+                            FormatThreadHandle (Thread::GetCurrThreadHandle ()).c_str ());
+                    }
+                    else if (flags.Test (ProcessId)) {
+                        header += FormatString ("[%u] ",
+                            SystemInfo::Instance ().GetProcessId ());
+                    }
+                    else if (flags.Test (ThreadId)) {
+                        header += FormatString ("[%s] ",
+                            FormatThreadHandle (Thread::GetCurrThreadHandle ()).c_str ());
+                    }
+                    if (flags.Test (ProcessPath)) {
+                        header += SystemInfo::Instance ().GetProcessPath ();
+                        header += " ";
+                    }
+                    if (flags.Test (ProcessUpTime)) {
+                        header += FormatString (
+                            "%011.4f ",
+                            HRTimer::ToSeconds (
+                                HRTimer::ComputeElapsedTime (
+                                    SystemInfo::Instance ().GetProcessStartTime (),
+                                    HRTimer::Click ())));
+                    }
+                    if (!header.empty () && flags.Test (Multiline)) {
+                        header += "\n";
+                    }
+                    if (flags.Test (Location)) {
+                        header += FormatString (
+                            "%s:%s:%d (%s)", file, function, line, buildTime);
+                        if (flags.Test (Multiline)) {
+                            header += "\n";
+                        }
+                    }
+                }
+                return header;
+            }
+            else {
+                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
+            }
+        }
+
         void LoggerMgr::Log (
                 const char *subsystem,
                 ui32 level,
@@ -339,71 +434,8 @@ namespace thekogans {
                 const char *buildTime,
                 const char *format,
                 ...) {
-            std::string header;
-            if (decorations != NoDecorations) {
-                if (decorations.Test (EntrySeparator) && decorations.Test (Multiline)) {
-                    header += std::string (80, '*');
-                    header += "\n";
-                }
-                if (decorations.Test (Subsystem)) {
-                    header += subsystem;
-                    header += " ";
-                }
-                if (decorations.Test (Level)) {
-                    header += levelTostring (level);
-                    header += " ";
-                }
-                TimeSpec timeSpec = GetCurrentTime ();
-                if (decorations.Test (Date)) {
-                    header += FormatTimeSpec (timeSpec, "%a %b %d %Y ");
-                }
-                if (decorations.Test (Time)) {
-                    header += FormatTimeSpec (timeSpec, "%X");
-                }
-                if (decorations.Test (HRTime)) {
-                    header += FormatString (
-                        "%011.4f ",
-                        HRTimer::ToSeconds (HRTimer::Click ()));
-                }
-                if (decorations.Test (HRElapsedTime)) {
-                    header += FormatString (
-                        "%011.4f ",
-                        HRTimer::ToSeconds (HRTimer::ComputeElapsedTime (startTime, HRTimer::Click ())));
-                }
-                if (decorations.Test (HostName)) {
-                    header += SystemInfo::Instance ().GetHostName ();
-                    header += " ";
-                }
-                if (decorations.Test (ProcessPath)) {
-                    header += SystemInfo::Instance ().GetProcessPath ();
-                    header += " ";
-                }
-                if (decorations.Test (ProcessId | ThreadId)) {
-                    header += FormatString ("[%u:%s] ",
-                        SystemInfo::Instance ().GetProcessId (),
-                        FormatThreadHandle (Thread::GetCurrThreadHandle ()).c_str ());
-                }
-                else {
-                    if (decorations.Test (ProcessId)) {
-                        header += FormatString ("[%u] ",
-                            SystemInfo::Instance ().GetProcessId ());
-                    }
-                    else if (decorations.Test (ThreadId)) {
-                        header += FormatString ("[%s] ",
-                            FormatThreadHandle (Thread::GetCurrThreadHandle ()).c_str ());
-                    }
-                }
-                if (!header.empty () && decorations.Test (Multiline)) {
-                    header += "\n";
-                }
-                if (decorations.Test (Location)) {
-                    header += FormatString (
-                        "%s:%s:%d (%s)", file, function, line, buildTime);
-                    if (decorations.Test (Multiline)) {
-                        header += "\n";
-                    }
-                }
-            }
+            std::string header =
+                FormatHeader (decorations, subsystem, level, file, function, line, buildTime);
             std::string message;
             {
                 va_list argptr;
@@ -452,7 +484,7 @@ namespace thekogans {
                     entry (std::move (entry_)),
                     loggerList (loggerList_) {}
 
-                virtual void Execute (const THEKOGANS_UTIL_ATOMIC<bool> & /*done*/) throw () {
+                virtual void Execute (const std::atomic<bool> & /*done*/) throw () {
                     LogSubsystem (*entry, loggerList);
                 }
             };
@@ -463,24 +495,30 @@ namespace thekogans {
                 ui32 level,
                 const std::string &header,
                 const std::string &message) {
-            Entry::UniquePtr entry (new Entry (subsystem, level, header, message));
-            if (FilterEntry (*entry)) {
-                LockGuard<Mutex> guard (mutex);
-                LoggerMap::iterator it = loggerMap.find (subsystem);
-                if (it != loggerMap.end () || !defaultLoggers.empty ()) {
-                    if (jobQueue.Get () != 0) {
-                        jobQueue->EnqJob (
-                            RunLoop::Job::Ptr (
-                                new LogSubsystemJob (
-                                    std::move (entry),
-                                    it != loggerMap.end () ? it->second : defaultLoggers)));
-                    }
-                    else {
-                        LogSubsystem (
-                            *entry,
-                            it != loggerMap.end () ? it->second : defaultLoggers);
+            if (subsystem != 0 && level > Invalid && level <= MaxLevel) {
+                Entry::UniquePtr entry (new Entry (subsystem, level, header, message));
+                if (FilterEntry (*entry)) {
+                    LockGuard<Mutex> guard (mutex);
+                    LoggerMap::iterator it = loggerMap.find (subsystem);
+                    if (it != loggerMap.end () || !defaultLoggers.empty ()) {
+                        if (jobQueue.Get () != 0) {
+                            jobQueue->EnqJob (
+                                RunLoop::Job::Ptr (
+                                    new LogSubsystemJob (
+                                        std::move (entry),
+                                        it != loggerMap.end () ? it->second : defaultLoggers)));
+                        }
+                        else {
+                            LogSubsystem (
+                                *entry,
+                                it != loggerMap.end () ? it->second : defaultLoggers);
+                        }
                     }
                 }
+            }
+            else {
+                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
             }
         }
 
@@ -537,12 +575,19 @@ namespace thekogans {
                 const std::string &name_,
                 i32 priority_,
                 ui32 affinity_) {
-            level = level_;
-            decorations = decorations_;
-            blocking = blocking_;
-            name = name_;
-            priority = priority_;
-            affinity = affinity_;
+            if (level_ > LoggerMgr::Invalid && level_ <= LoggerMgr::MaxLevel &&
+                    decorations_ <= LoggerMgr::SubsystemAll) {
+                level = level_;
+                decorations = decorations_;
+                blocking = blocking_;
+                name = name_;
+                priority = priority_;
+                affinity = affinity_;
+            }
+            else {
+                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
+            }
         }
 
         LoggerMgr *GlobalLoggerMgrCreateInstance::operator () () {

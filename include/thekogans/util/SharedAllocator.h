@@ -19,9 +19,6 @@
 #define __thekogans_util_SharedAllocator_h
 
 #include <cstddef>
-#include <boost/memory_order.hpp>
-#include <boost/atomic/detail/config.hpp>
-#include <boost/atomic/detail/operations_lockfree.hpp>
 #include "thekogans/util/Config.h"
 #include "thekogans/util/Types.h"
 #include "thekogans/util/Constants.h"
@@ -29,7 +26,6 @@
 #include "thekogans/util/Exception.h"
 #include "thekogans/util/Singleton.h"
 #include "thekogans/util/SpinLock.h"
-#include "thekogans/util/Thread.h"
 #include "thekogans/util/SharedObject.h"
 
 namespace thekogans {
@@ -132,13 +128,6 @@ namespace thekogans {
             /// \brief
             /// A custom \see{SpinLock} whose storage comes from \see{Header::lock}.
             struct Lock {
-                /// \brief
-                /// Convenient typedef for boost::atomics::detail::operations<4u, false>.
-                typedef boost::atomics::detail::operations<4u, false> operations;
-                /// \brief
-                /// Convenient typedef for operations::storage_type.
-                typedef operations::storage_type storage_type;
-
                 /// \enum
                 /// SpinLock state type.
                 typedef enum {
@@ -151,40 +140,24 @@ namespace thekogans {
                 } LockState;
                 /// \brief
                 /// Storage used by this lock.
-                storage_type &storage;
+                ui32 &storage;
 
                 /// \brief
                 /// ctor.
                 /// \param[in] storage_ Pointer to storage used by this lock.
-                explicit Lock (storage_type &storage_) :
+                explicit Lock (ui32 &storage_) :
                     storage (storage_) {}
 
                 /// \brief
                 /// Try to acquire the lock.
                 /// \return true = acquired, false = failed to acquire
-                inline bool TryAcquire () {
-                    return operations::exchange (storage, Locked, boost::memory_order_acquire) == Unlocked;
-                }
+                bool TryAcquire ();
                 /// \brief
                 /// Acquire the lock.
-                inline void Acquire () {
-                    while (operations::exchange (storage, Locked, boost::memory_order_acquire) == Locked) {
-                        // Wait for lock to become free with exponential back-off.
-                        // In a heavily contested lock, this leads to fewer cache
-                        // line invalidations and better performance.
-                        // This code was adapted from the ideas found here:
-                        // https://geidav.wordpress.com/tag/exponential-back-off/
-                        Thread::Backoff backoff;
-                        while (operations::load (storage, boost::memory_order_relaxed) == Locked) {
-                            backoff.Pause ();
-                        }
-                    }
-                }
+                void Acquire ();
                 /// \brief
                 /// Release the lock.
-                inline void Release () {
-                    operations::store (storage, Unlocked, boost::memory_order_release);
-                }
+                void Release ();
 
                 /// \brief
                 /// Lock is neither copy constructable, nor assignable.

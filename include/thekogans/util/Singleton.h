@@ -140,7 +140,7 @@ namespace thekogans {
         /// typedef thekogans::util::Singleton<foo, thekogans::util::SpinLock> FooSingleton;
         /// \endcode
         ///
-        /// FooSingleton will now be a singleton, and it's one and only instance
+        /// FooSingleton will now be a singleton of type foo, and it's one and only instance
         /// can be accessed like this:
         ///
         /// \code{.cpp}

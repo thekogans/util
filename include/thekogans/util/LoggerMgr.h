@@ -129,6 +129,8 @@ namespace thekogans {
         struct _LIB_THEKOGANS_UTIL_DECL LoggerMgr {
             /// \brief
             /// Log levels. Each successive level builds on the previous ones.
+            /// IMPORTANT: These constants are mirrored in Config.h. If we
+            /// change this list, we need to update that one too.
             enum {
                 /// \brief
                 /// Log nothing.
@@ -155,6 +157,8 @@ namespace thekogans {
 
             /// \brief
             /// Log entry decorations.
+            /// IMPORTANT: These constants are mirrored in Config.h. If we
+            /// change this list, we need to update that one too.
             enum {
                 /// \brief
                 /// Log messages only.
@@ -178,17 +182,17 @@ namespace thekogans {
                 /// Add a high resolution timer to log entries.
                 HRTime = 32,
                 /// \brief
-                /// Add a high resolution timer since process start to log entries.
-                HRElapsedTime = 64,
-                /// \brief
                 /// Add a host name to log entries.
-                HostName = 128,
+                HostName = 64,
+                /// \brief
+                /// Add a process id to log entries.
+                ProcessId = 128,
                 /// \brief
                 /// Add a process path to log entries.
                 ProcessPath = 256,
                 /// \brief
-                /// Add a process id to log entries.
-                ProcessId = 512,
+                /// Add a high resolution timer since process start to log entries.
+                ProcessUpTime = 512,
                 /// \brief
                 /// Add a thread id to log entries.
                 ThreadId = 1024,
@@ -205,10 +209,10 @@ namespace thekogans {
                     Date |
                     Time |
                     HRTime |
-                    HRElapsedTime |
                     HostName |
-                    ProcessPath |
                     ProcessId |
+                    ProcessPath |
+                    ProcessUpTime |
                     ThreadId |
                     Location |
                     Multiline,
@@ -309,9 +313,6 @@ namespace thekogans {
             /// Decorations currently in effect.
             Flags32 decorations;
             /// \brief
-            /// Birth time of LoggerMgr.
-            ui64 startTime;
-            /// \brief
             /// Convenient typedef for std::map<std::string, LoggerList>.
             typedef std::map<std::string, LoggerList> LoggerMap;
             /// \brief
@@ -353,7 +354,6 @@ namespace thekogans {
                 ui32 affinity = THEKOGANS_UTIL_MAX_THREAD_AFFINITY) :
                 level (level_),
                 decorations (decorations_),
-                startTime (HRTimer::Click ()),
                 jobQueue (!blocking ?
                     new JobQueue (
                         name,
@@ -404,6 +404,12 @@ namespace thekogans {
             /// \return Current log level.
             inline ui32 GetLevel () const {
                 return level;
+            }
+            /// \brief
+            /// Return the current log header decorations.
+            /// \return Current log header decorations.
+            inline ui32 GetDecorations () const {
+                return decorations;
             }
 
             enum {
@@ -462,10 +468,27 @@ namespace thekogans {
             void AddFilter (Filter::UniquePtr filter);
 
             /// \brief
+            /// Format a log entry header.
+            /// \param[in] decorations Decorations to use to format the header.
+            /// \param[in] subsystem Subsystem to log to.
+            /// \param[in] level Level at which to log.
+            /// \param[in] file Translation unit of this entry.
+            /// \param[in] function Function of the translation unit of this entry.
+            /// \param[in] line Translation unit line number of this entry.
+            /// \param[in] buildTime Translation unit build time of this entry.
+            static std::string FormatHeader (
+                ui32 decorations,
+                const char *subsystem,
+                ui32 level,
+                const char *file,
+                const char *function,
+                ui32 line,
+                const char *buildTime);
+
+            /// \brief
             /// Log an event.
             /// \param[in] subsystem Subsystem to log to.
             /// \param[in] level Level at which to log.
-            /// If LoggerMgr::level < level, entry is not logged.
             /// \param[in] file Translation unit of this entry.
             /// \param[in] function Function of the translation unit of this entry.
             /// \param[in] line Translation unit line number of this entry.

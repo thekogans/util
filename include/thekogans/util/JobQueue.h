@@ -155,10 +155,10 @@ namespace thekogans {
             ///
             /// VERY IMPORTANT: In order to stop the workers, the queue
             /// sets done = true. This is the same done as is passed as
-            /// const THEKOGANS_UTIL_ATOMIC<bool> & to
-            /// Job::Prologue/Execute/Epilog. Therefore, if you want your
-            /// code to be responsive, and the queues to stop quickly,
-            /// your jobs should pay close attention to the state of done.
+            /// const std::atomic<bool> & to Job::Prologue/Execute/Epilog.
+            /// Therefore, if you want your code to be responsive, and the
+            /// queues to stop quickly, your jobs should pay close attention
+            /// to the state of done.
             /// \param[in] cancelRunningJobs true = Cancel all running jobs.
             /// \param[in] cancelPendingJobs true = Cancel all pending jobs.
             /// \param[in] timeSpec How long to wait for the job queue to stop.

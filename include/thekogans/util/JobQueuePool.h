@@ -20,6 +20,7 @@
 
 #include <memory>
 #include <string>
+#include <atomic>
 #include "thekogans/util/Config.h"
 #include "thekogans/util/Types.h"
 #include "thekogans/util/Heap.h"
@@ -58,7 +59,7 @@ namespace thekogans {
         ///             ... {}
         ///
         ///         // util::RunLoop::Job
-        ///         virtual void Execute (const THEKOGANS_UTIL_ATOMIC<bool> &) throw () {
+        ///         virtual void Execute (const std::atomic<bool> &) throw () {
         ///             ...
         ///         }
         ///     };
@@ -187,7 +188,7 @@ namespace thekogans {
             /// each \see{JobQueue} created by this pool
             /// will have the following name:
             /// FormatString ("%s-" THEKOGANS_UTIL_SIZE_T_FORMAT, name.c_str (), ++idPool);
-            THEKOGANS_UTIL_ATOMIC<std::size_t> idPool;
+            std::atomic<std::size_t> idPool;
             /// \brief
             /// Synchronization mutex.
             Mutex mutex;

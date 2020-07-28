@@ -19,6 +19,7 @@
 #define __thekogans_util_Vectorizer_h
 
 #include <cstddef>
+#include <atomic>
 #include "thekogans/util/Config.h"
 #include "thekogans/util/Types.h"
 #include "thekogans/util/Constants.h"
@@ -164,7 +165,7 @@ namespace thekogans {
         private:
             /// \brief
             /// Flag to signal the worker thread.
-            THEKOGANS_UTIL_ATOMIC<bool> done;
+            std::atomic<bool> done;
             /// \brief
             /// Synchronization lock.
             Mutex mutex;

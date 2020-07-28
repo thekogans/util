@@ -21,6 +21,7 @@
 #include "thekogans/util/Config.h"
 #include "thekogans/util/Types.h"
 #include "thekogans/util/Constants.h"
+#include "thekogans/util/TimeSpec.h"
 
 namespace thekogans {
     namespace util {
@@ -66,12 +67,28 @@ namespace thekogans {
                     ui64 stop) {
                 return stop > start ? stop - start : UI64_MAX - (start - stop);
             }
+
+            // NOTE: The following two methods convert a relative
+            // interval (between two invocations of Click). Given
+            // the nature of HRTimer it makes no sense to convert
+            // absolute (single Click) time.
+
             /// \brief
             /// Using the timer frequency, convert ellapsed time to seconds.
             /// \param[in] elapsedTime Value returned by ComputeElapsedTime.
             /// \return Elapsed seconds.
             static f64 ToSeconds (ui64 ellapsedTime) {
                 return (f64)(i64)ellapsedTime / (f64)GetFrequency ();
+            }
+
+            /// \brief
+            /// Using the timer frequency, convert ellapsed time to \see{TimeSpec}.
+            /// \param[in] elapsedTime Value returned by ComputeElapsedTime.
+            /// \return Elapsed \see{TimeSpec}.
+            static TimeSpec ToTimeSpec (ui64 ellapsedTime) {
+                return TimeSpec (
+                    ToSeconds (ellapsedTime),
+                    1000000000 * (ellapsedTime % GetFrequency ()) / GetFrequency ());
             }
         };
 

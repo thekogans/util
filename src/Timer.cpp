@@ -237,7 +237,7 @@ namespace thekogans {
                 RunLoop::Job::SetState (state);
             }
 
-            virtual void Execute (const THEKOGANS_UTIL_ATOMIC<bool> &done) throw () {
+            virtual void Execute (const std::atomic<bool> &done) throw () {
                 if (!ShouldStop (done)) {
                     timer.callback.Alarm (timer);
                 }

@@ -219,7 +219,7 @@ namespace thekogans {
                     public Thread {
             private:
                 THEKOGANS_UTIL_HANDLE handle;
-                THEKOGANS_UTIL_ATOMIC<ui64> idPool;
+                std::atomic<ui64> idPool;
 
             public:
                 TimerKQueue () :

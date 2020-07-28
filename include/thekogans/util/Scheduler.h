@@ -19,6 +19,7 @@
 #define __thekogans_util_Scheduler_h
 
 #include <memory>
+#include <atomic>
 #include "thekogans/util/Config.h"
 #include "thekogans/util/Types.h"
 #include "thekogans/util/Heap.h"
@@ -111,7 +112,7 @@ namespace thekogans {
                 const Priority priority;
                 /// \brief
                 /// true == a job from this JobQueue is being executed.
-                THEKOGANS_UTIL_ATOMIC<bool> inFlight;
+                std::atomic<bool> inFlight;
 
             public:
                 /// \brief

@@ -71,17 +71,23 @@ namespace thekogans {
                     case CTRL_BREAK_EVENT:
                     case CTRL_LOGOFF_EVENT:
                     case CTRL_SHUTDOWN_EVENT:
-                        MainRunLoop::Instance ().Stop ();
+                        if (MainRunLoop::IsInstantiated ()) {
+                            MainRunLoop::Instance ().Stop ();
+                        }
                         return TRUE;
                     case CTRL_CLOSE_EVENT:
-                        MainRunLoop::Instance ().Stop ();
+                        if (MainRunLoop::IsInstantiated ()) {
+                            MainRunLoop::Instance ().Stop ();
+                        }
                         return FALSE;
                 }
                 return FALSE;
             }
         #else // defined (TOOLCHAIN_OS_Windows)
             void CtrlBreakHandler (int /*signal*/) {
-                MainRunLoop::Instance ().Stop ();
+                if (MainRunLoop::IsInstantiated ()) {
+                    MainRunLoop::Instance ().Stop ();
+                }
             }
         #endif // defined (TOOLCHAIN_OS_Windows)
         }
@@ -221,7 +227,7 @@ namespace thekogans {
                         where (where_),
                         color (color_) {}
 
-                    virtual void Execute (const THEKOGANS_UTIL_ATOMIC<bool> &done) throw () {
+                    virtual void Execute (const std::atomic<bool> &done) throw () {
                         if (!ShouldStop (done)) {
                             PrintStringWithColor (str, where, color);
                         }

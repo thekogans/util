@@ -34,6 +34,7 @@
 #include <string>
 #include <list>
 #include <functional>
+#include <atomic>
 #include "pugixml/pugixml.hpp"
 #include "thekogans/util/Config.h"
 #include "thekogans/util/Types.h"
@@ -270,7 +271,7 @@ namespace thekogans {
                 /// job as succeeded execution.
                 /// \param[in] done false == job completed successfully, otherwise
                 /// job was forced to exit Execute because the run loop was stopped.
-                void Succeed (const THEKOGANS_UTIL_ATOMIC<bool> &done);
+                void Succeed (const std::atomic<bool> &done);
 
                 /// \brief
                 /// Return true if the job should stop what it's doing and exit.
@@ -279,7 +280,7 @@ namespace thekogans {
                 /// \param[in] done If true, this flag indicates that
                 /// the job should stop what it's doing, and exit.
                 /// \return true == Job should stop what it's doing and exit.
-                inline bool ShouldStop (const THEKOGANS_UTIL_ATOMIC<bool> &done) const {
+                inline bool ShouldStop (const std::atomic<bool> &done) const {
                     return done || IsCancelled () || IsFailed ();
                 }
 
@@ -298,19 +299,19 @@ namespace thekogans {
                 /// the job to perform one time initialization.
                 /// \param[in] done If true, this flag indicates that
                 /// the job should stop what it's doing, and exit.
-                virtual void Prologue (const THEKOGANS_UTIL_ATOMIC<bool> & /*done*/) throw () {}
+                virtual void Prologue (const std::atomic<bool> & /*done*/) throw () {}
                 /// \brief
                 /// Called to execute the job. This is the only api
                 /// the job MUST implement.
                 /// \param[in] done If true, this flag indicates that
                 /// the job should stop what it's doing, and exit.
-                virtual void Execute (const THEKOGANS_UTIL_ATOMIC<bool> & /*done*/) throw () = 0;
+                virtual void Execute (const std::atomic<bool> & /*done*/) throw () = 0;
                 /// \brief
                 /// Called after the job is executed. Allows
                 /// the job to perform one time cleanup.
                 /// \param[in] done If true, this flag indicates that
                 /// the job should stop what it's doing, and exit.
-                virtual void Epilogue (const THEKOGANS_UTIL_ATOMIC<bool> & /*done*/) throw () {}
+                virtual void Epilogue (const std::atomic<bool> & /*done*/) throw () {}
 
                 /// \brief
                 /// RunLoop needs acces to protected members.
@@ -342,10 +343,10 @@ namespace thekogans {
 
             struct _LIB_THEKOGANS_UTIL_DECL LambdaJob : public Job {
                 /// \brief
-                /// Convenient typedef for std::function<void (Job & /*job*/, const THEKOGANS_UTIL_ATOMIC<bool> & /*done*/)>.
+                /// Convenient typedef for std::function<void (Job & /*job*/, const std::atomic<bool> & /*done*/)>.
                 /// \param[in] job Job that is executing the lambda.
                 /// \param[in] done Call job.ShouldStop (done) to respond to cancel requests and termination events.
-                typedef std::function<void (Job & /*job*/, const THEKOGANS_UTIL_ATOMIC<bool> & /*done*/)> Function;
+                typedef std::function<void (Job & /*job*/, const std::atomic<bool> & /*done*/)> Function;
 
             private:
                 /// \brief
@@ -367,7 +368,7 @@ namespace thekogans {
                 /// \brief
                 /// If our run loop is still running, execute the lambda function.
                 /// \param[in] done true == The run loop is done and nothing can be executed on it.
-                virtual void Execute (const THEKOGANS_UTIL_ATOMIC<bool> &done) throw () {
+                virtual void Execute (const std::atomic<bool> &done) throw () {
                     if (!ShouldStop (done)) {
                         function (*this, done);
                     }
@@ -882,7 +883,7 @@ namespace thekogans {
             JobExecutionPolicy::Ptr jobExecutionPolicy;
             /// \brief
             /// Flag to signal the worker thread(s).
-            THEKOGANS_UTIL_ATOMIC<bool> done;
+            std::atomic<bool> done;
             /// \brief
             /// Queue of pending jobs.
             JobList pendingJobs;

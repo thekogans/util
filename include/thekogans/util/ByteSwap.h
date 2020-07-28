@@ -25,11 +25,7 @@
 #include <cstdlib>
 #include <stdexcept>
 #include <utility>
-#if defined (THEKOGANS_UTIL_HAVE_STD_ATOMIC)
-    #include <type_traits>
-#else // defined (THEKOGANS_UTIL_HAVE_STD_ATOMIC)
-    #include <boost/type_traits.hpp>
-#endif // defined (THEKOGANS_UTIL_HAVE_STD_ATOMIC)
+#include <type_traits>
 #include "thekogans/util/Types.h"
 
 namespace thekogans {
@@ -276,11 +272,7 @@ namespace thekogans {
                 "Template parameter must be the size of an integral type.");
             // Ensure value is an arithmetic type.
             static_assert (
-            #if defined (THEKOGANS_UTIL_HAVE_STD_ATOMIC)
                 std::is_arithmetic<T>::value,
-            #else // defined (THEKOGANS_UTIL_HAVE_STD_ATOMIC)
-                boost::is_arithmetic<T>::value,
-            #endif // defined (THEKOGANS_UTIL_HAVE_STD_ATOMIC)
                 "Template parameter must be an arithmetic type.");
             return detail::DoSwapBytes<from, to, T> () (value);
         }

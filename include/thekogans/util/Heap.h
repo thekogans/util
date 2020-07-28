@@ -919,8 +919,27 @@ namespace thekogans {
             virtual ~Heap () {
                 // We're going out of scope. If there are still
                 // pages remaining, we have a memory leak.
-                THEKOGANS_UTIL_ASSERT (fullPages.empty () && partialPages.empty (),
-                    FormatString ("%s:" THEKOGANS_UTIL_SIZE_T_FORMAT, GetName (), itemCount));
+                if (!fullPages.empty () || !partialPages.empty ()) {
+                    // Here we both log the leak and assert to give the
+                    // engineer the best chance of figuring out what happened.
+                    std::string message =
+                        FormatString (
+                            "%s : %s : " THEKOGANS_UTIL_SIZE_T_FORMAT,
+                            GetName (),
+                            typeid (*this).name (),
+                            itemCount);
+                    Log (
+                        SubsystemAll,
+                        THEKOGANS_UTIL,
+                        Error,
+                        __FILE__,
+                        __FUNCTION__,
+                        __LINE__,
+                        __DATE__ " " __TIME__,
+                        "%s",
+                        message.c_str ());
+                    THEKOGANS_UTIL_ASSERT (fullPages.empty () && partialPages.empty (), message);
+                }
                 // IMPORTANT: Do not uncomment this Flush. It
                 // interferes with static dtors. If you are using a
                 // local temp heap, inherit from this one, and call

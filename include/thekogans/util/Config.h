@@ -38,14 +38,6 @@
 #include <cstdlib>
 #include <iostream>
 
-#if defined (THEKOGANS_UTIL_HAVE_STD_ATOMIC)
-    #include <atomic>
-    #define THEKOGANS_UTIL_ATOMIC std::atomic
-#else // defined (THEKOGANS_UTIL_HAVE_STD_ATOMIC)
-    #include <boost/atomic.hpp>
-    #define THEKOGANS_UTIL_ATOMIC boost::atomic
-#endif // defined (THEKOGANS_UTIL_HAVE_STD_ATOMIC)
-
 #if defined (TOOLCHAIN_OS_Windows)
     #define _LIB_THEKOGANS_UTIL_API __stdcall
     #if defined (THEKOGANS_UTIL_TYPE_Shared)
@@ -118,5 +110,134 @@ private:\
 /// \def THEKOGANS_UTIL
 /// Logging subsystem name.
 #define THEKOGANS_UTIL "thekogans_util"
+
+namespace thekogans {
+    namespace util {
+
+        enum {
+            /// \brief
+            /// Log only errors.
+            Error = 1,
+            /// \brief
+            /// Log errors and warnings.
+            Warning,
+            /// \brief
+            /// Log errors, warnings and info.
+            Info,
+            /// \brief
+            /// Log errors, warnings, info and debug.
+            Debug,
+            /// \brief
+            /// Log errors, warnings, info, debug and development.
+            Development,
+        };
+
+        /// \brief
+        /// Log entry decorations.
+        enum {
+            /// \brief
+            /// Log messages only.
+            NoDecorations = 0,
+            /// \brief
+            /// Add a '*' separator between log entries.
+            EntrySeparator = 1,
+            /// \brief
+            /// Add a sub-system to log entries.
+            Subsystem = 2,
+            /// \brief
+            /// Add a log level to log entries.
+            Level = 4,
+            /// \brief
+            /// Add a date to log entries.
+            Date = 8,
+            /// \brief
+            /// Add a time to log entries.
+            Time = 16,
+            /// \brief
+            /// Add a high resolution timer to log entries.
+            HRTime = 32,
+            /// \brief
+            /// Add a host name to log entries.
+            HostName = 64,
+            /// \brief
+            /// Add a process id to log entries.
+            ProcessId = 128,
+            /// \brief
+            /// Add a process path to log entries.
+            ProcessPath = 256,
+            /// \brief
+            /// Add a high resolution timer since process start to log entries.
+            ProcessUpTime = 512,
+            /// \brief
+            /// Add a thread id to log entries.
+            ThreadId = 1024,
+            /// \brief
+            /// Add a location to log entries.
+            Location = 2048,
+            /// \brief
+            /// Format log entries accross multiple lines.
+            Multiline = 4096,
+            /// \brief
+            /// Add every decoration to log entries.
+            All = EntrySeparator |
+                Level |
+                Date |
+                Time |
+                HRTime |
+                HostName |
+                ProcessId |
+                ProcessPath |
+                ProcessUpTime |
+                ThreadId |
+                Location |
+                Multiline,
+            /// \brief
+            /// Add subsystem to all log entries.
+            SubsystemAll = Subsystem | All
+        };
+
+        /// \brief
+        /// Helper functions to get around circular headers. They mirror the
+        /// two primary log functions in \see{LoggerMgr}. There exist a
+        /// handful of low level classes (\see{Heap}, \see{RefCounted}) that
+        /// greatly benefit from being able to log extended error messages.
+        /// Since \see{LoggerMgr} is higher level (it depends on \see{Heap}
+        /// and \see{RefCounted}) they cannot use it directly.
+
+        /// \brief
+        /// Force log a message to the \see{GlobalLoggerMgr} irrespective of it's level.
+        /// \param[in] decorations Decorations touse to format the entry header.
+        /// \param[in] subsystem Subsystem to log to.
+        /// \param[in] level Level at which to log.
+        /// \param[in] file Translation unit of this entry.
+        /// \param[in] function Function of the translation unit of this entry.
+        /// \param[in] line Translation unit line number of this entry.
+        /// \param[in] buildTime Translation unit build time of this entry.
+        /// \param[in] format A printf format string followed by a
+        /// variable number of arguments.
+        _LIB_THEKOGANS_UTIL_DECL void Log (
+            unsigned int decorations,
+            const char *subsystem,
+            unsigned int level,
+            const char *file,
+            const char *function,
+            unsigned int line,
+            const char *buildTime,
+            const char *format,
+            ...);
+        /// \brief
+        /// Force log a message to the \see{GlobalLoggerMgr} irrespective of it's level.
+        /// \param[in] subsystem Subsystem to log to.
+        /// \param[in] level Level at which to log.
+        /// \param[in] header Entry header.
+        /// \param[in] message Entry message.
+        _LIB_THEKOGANS_UTIL_DECL void _LIB_THEKOGANS_UTIL_API Log (
+            const char *subsystem,
+            unsigned int level,
+            const std::string &header,
+            const std::string &message);
+
+    } // namespace util
+} // namespace thekogans
 
 #endif // !defined (__thekogans_util_Config_h)
