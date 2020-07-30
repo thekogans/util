@@ -523,7 +523,7 @@ namespace thekogans {
                 RunLoop::WorkerCallback *workerCallback_ = 0);
             /// \brief
             /// dtor. Stop the pipeline.
-            ~Pipeline () {
+            virtual ~Pipeline () {
                 Stop ();
             }
 

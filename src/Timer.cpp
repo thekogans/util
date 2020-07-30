@@ -199,7 +199,7 @@ namespace thekogans {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
                     THEKOGANS_UTIL_OS_ERROR_CODE);
             }
-            return spec.it_value != TimeSpec::Zero;
+            return TimeSpec (spec.it_value) != TimeSpec::Zero;
         #elif defined (TOOLCHAIN_OS_OSX)
             return IsKQueueTimerRunning (timer);
         #endif // defined (TOOLCHAIN_OS_Windows)

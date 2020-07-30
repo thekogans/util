@@ -842,7 +842,7 @@ namespace thekogans {
         /// Implement \see{Serializable} \see{ValueParser}.
         #define THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_REF_VALUE_PARSER(_T)\
             template<>\
-            struct thekogans::util::ValueParser<_T> {\
+            struct _LIB_THEKOGANS_UTIL_DECL ValueParser<_T> {\
             private:\
                 _T &value;\
                 enum {\
@@ -910,7 +910,7 @@ namespace thekogans {
         /// Implement \see{Serializable::Ptr} \see{ValueParser}.
         #define THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_PTR_VALUE_PARSER(_T)\
             template<>\
-            struct thekogans::util::ValueParser<_T::Ptr> {\
+            struct _LIB_THEKOGANS_UTIL_DECL ValueParser<_T::Ptr> {\
             private:\
                 _T::Ptr &value;\
                 enum {\

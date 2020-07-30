@@ -19,6 +19,7 @@
     #include <intrin.h>
 #elif defined (TOOLCHAIN_ARCH_ppc) || defined (TOOLCHAIN_ARCH_ppc64)
     #if defined (TOOLCHAIN_OS_Linux)
+        #include <features.h>
         #include <signal.h>
         #include <setjmp.h>
     #elif defined (TOOLCHAIN_OS_OSX)
@@ -296,19 +297,26 @@ namespace thekogans {
         #error Unsupported architecture
     #endif // defined (_ARM_)
     #else // defined (_MSC_VER)
-    // Only clang defines __has_builtin, so we first test for a GCC define
-    // before using __has_builtin.
     #if defined (__i386__) || defined (__x86_64__)
-        #if (__GNUC__ > 4 && __GNUC_MINOR > 7) || __has_builtin (__builtin_ia32_pause)
-            // clang added this intrinsic in 3.8
-            // gcc added this intrinsic by 4.7.1
-             #define YieldProcessor __builtin_ia32_pause
-        #endif // __has_builtin (__builtin_ia32_pause)
-        #if defined (__GNUC__) || __has_builtin (__builtin_ia32_mfence)
-            // clang has had this intrinsic since at least 3.0
-            // gcc has had this intrinsic since forever
-            #define MemoryBarrier __builtin_ia32_mfence
-        #endif // __has_builtin (__builtin_ia32_mfence)
+        #if defined (TOOLCHAIN_OS_Linux)
+            #if (__GNUC__ > 4 && __GNUC_MINOR > 7)
+                // gcc added this intrinsic by 4.7.1
+                #define YieldProcessor __builtin_ia32_pause
+            #endif // (__GNUC__ > 4 && __GNUC_MINOR > 7)
+            #if defined (__GNUC__)
+                // gcc has had this intrinsic since forever
+                #define MemoryBarrier __builtin_ia32_mfence
+            #endif // defined (__GNUC__)
+        #elif defined (TOOLCHAIN_OS_OSX)
+            #if __has_builtin (__builtin_ia32_pause)
+                // clang added this intrinsic in 3.8
+                #define YieldProcessor __builtin_ia32_pause
+            #endif // __has_builtin (__builtin_ia32_pause)
+            #if __has_builtin (__builtin_ia32_mfence)
+                // clang has had this intrinsic since at least 3.0
+                #define MemoryBarrier __builtin_ia32_mfence
+            #endif // __has_builtin (__builtin_ia32_mfence)
+        #endif // defined (TOOLCHAIN_OS_Linux)
         // If we don't have intrinsics, we can do some inline asm instead.
         #if !defined (YieldProcessor)
              #define YieldProcessor() asm volatile ("pause")

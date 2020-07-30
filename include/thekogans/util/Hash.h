@@ -19,6 +19,7 @@
 #define __thekogans_util_Hash_h
 
 #include <cstddef>
+#include <cstring>
 #include <string>
 #include <vector>
 #include <list>
