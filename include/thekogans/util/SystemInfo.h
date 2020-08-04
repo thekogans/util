@@ -21,6 +21,7 @@
 #include <string>
 #include "thekogans/util/Config.h"
 #include "thekogans/util/Types.h"
+#include "thekogans/util/TimeSpec.h"
 #include "thekogans/util/Singleton.h"
 #include "thekogans/util/SpinLock.h"
 #include "thekogans/util/ByteSwap.h"
@@ -78,7 +79,7 @@ namespace thekogans {
             static std::string processStartDirectory;
             /// \brief
             /// Process start time.
-            static ui64 processStartTime;
+            static TimeSpec processStartTime;
             /// \brief
             /// Host name.
             std::string hostName;
@@ -156,7 +157,7 @@ namespace thekogans {
             /// \brief
             /// Return process start time.
             /// \return Process start time.
-            inline ui64 GetProcessStartTime () const {
+            inline TimeSpec GetProcessStartTime () const {
                 return processStartTime;
             }
 

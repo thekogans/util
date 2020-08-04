@@ -192,16 +192,19 @@ namespace thekogans {
                 ProcessPath = 256,
                 /// \brief
                 /// Add a high resolution timer since process start to log entries.
-                ProcessUpTime = 512,
+                ProcessStartTime = 512,
+                /// \brief
+                /// Add a high resolution timer since process start to log entries.
+                ProcessUpTime = 1024,
                 /// \brief
                 /// Add a thread id to log entries.
-                ThreadId = 1024,
+                ThreadId = 2048,
                 /// \brief
                 /// Add a location to log entries.
-                Location = 2048,
+                Location = 4096,
                 /// \brief
                 /// Format log entries accross multiple lines.
-                Multiline = 4096,
+                Multiline = 8192,
                 /// \brief
                 /// Add every decoration to log entries.
                 All = EntrySeparator |
@@ -212,6 +215,7 @@ namespace thekogans {
                     HostName |
                     ProcessId |
                     ProcessPath |
+                    ProcessStartTime |
                     ProcessUpTime |
                     ThreadId |
                     Location |

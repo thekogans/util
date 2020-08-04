@@ -206,7 +206,11 @@ namespace thekogans {
                 if (size > 0) {
                     buffer.resize (size);
                 }
+            #if defined (TOOLCHAIN_OS_Linux)
                 size = listxattr (path.c_str (), size > 0 ? buffer.data () : 0, size);
+            #else // defined (TOOLCHAIN_OS_Linux)
+                size = listxattr (path.c_str (), size > 0 ? buffer.data () : 0, size, 0);
+            #endif // defined (TOOLCHAIN_OS_Linux)
             } while (size < 0 && THEKOGANS_UTIL_POSIX_OS_ERROR_CODE == ERANGE);
             if (size > 0) {
                 for (int i = 0; i < size; i += strlen (buffer.data () + i) + 1) {
@@ -231,7 +235,11 @@ namespace thekogans {
                 if (size > 0) {
                     buffer.resize (size);
                 }
+            #if defined (TOOLCHAIN_OS_Linux)
                 size = listxattr (path.c_str (), size > 0 ? buffer.data () : 0, size);
+            #else // defined (TOOLCHAIN_OS_Linux)
+                size = listxattr (path.c_str (), size > 0 ? buffer.data () : 0, size, 0);
+            #endif // defined (TOOLCHAIN_OS_Linux)
             } while (size < 0 && THEKOGANS_UTIL_POSIX_OS_ERROR_CODE == ERANGE);
             if (size > 0) {
                 for (int i = 0; i < size; i += strlen (buffer.data () + i) + 1) {
@@ -261,7 +269,11 @@ namespace thekogans {
         }
 
         void Path::DeleteExtendedAttribute (const std::string &name) const {
+        #if defined (TOOLCHAIN_OS_Linux)
             if (removexattr (path.c_str (), name.c_str ()) < 0) {
+        #else // defined (TOOLCHAIN_OS_Linux)
+            if (removexattr (path.c_str (), name.c_str (), 0) < 0) {
+        #endif // defined (TOOLCHAIN_OS_Linux)
                 THEKOGANS_UTIL_THROW_POSIX_ERROR_CODE_EXCEPTION (
                     THEKOGANS_UTIL_POSIX_OS_ERROR_CODE);
             }
@@ -274,7 +286,11 @@ namespace thekogans {
                 if (size > 0) {
                     buffer.resize (size);
                 }
+            #if defined (TOOLCHAIN_OS_Linux)
                 size = listxattr (path.c_str (), size > 0 ? buffer.data () : 0, size);
+            #else // defined (TOOLCHAIN_OS_Linux)
+                size = listxattr (path.c_str (), size > 0 ? buffer.data () : 0, size, 0);
+            #endif // defined (TOOLCHAIN_OS_Linux)
             } while (size < 0 && THEKOGANS_UTIL_POSIX_OS_ERROR_CODE == ERANGE);
             if (size > 0) {
                 for (int i = 0; i < size; i += strlen (buffer.data () + i) + 1) {

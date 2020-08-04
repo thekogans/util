@@ -87,8 +87,8 @@ namespace thekogans {
             /// \return Elapsed \see{TimeSpec}.
             static TimeSpec ToTimeSpec (ui64 ellapsedTime) {
                 return TimeSpec (
-                    ToSeconds (ellapsedTime),
-                    1000000000 * (ellapsedTime % GetFrequency ()) / GetFrequency ());
+                    (i64)ToSeconds (ellapsedTime),
+                    (i64)(1000000000 * (ellapsedTime % GetFrequency ()) / GetFrequency ()));
             }
         };
 

@@ -81,6 +81,7 @@ namespace thekogans {
             decorations.push_back (HostName);
             decorations.push_back (ProcessId);
             decorations.push_back (ProcessPath);
+            decorations.push_back (ProcessStartTime);
             decorations.push_back (ProcessUpTime);
             decorations.push_back (ThreadId);
             decorations.push_back (Location);
@@ -151,6 +152,12 @@ namespace thekogans {
                 }
                 value += "ProcessPath";
             }
+            else if (Flags32 (decorations).Test (ProcessStartTime)) {
+                if (!value.empty ()) {
+                    value += " | ";
+                }
+                value += "ProcessStartTime";
+            }
             else if (Flags32 (decorations).Test (ProcessUpTime)) {
                 if (!value.empty ()) {
                     value += " | ";
@@ -206,6 +213,9 @@ namespace thekogans {
                 }
                 else if (decoration == "ProcessPath") {
                     return LoggerMgr::ProcessPath;
+                }
+                else if (decoration == "ProcessStartTime") {
+                    return LoggerMgr::ProcessStartTime;
                 }
                 else if (decoration == "ProcessUpTime") {
                     return LoggerMgr::ProcessUpTime;
@@ -398,13 +408,34 @@ namespace thekogans {
                         header += SystemInfo::Instance ().GetProcessPath ();
                         header += " ";
                     }
+                    if (flags.Test (ProcessStartTime)) {
+                        header += FormatTimeSpec (SystemInfo::Instance ().GetProcessStartTime ());
+                        header += " ";
+                    }
                     if (flags.Test (ProcessUpTime)) {
-                        header += FormatString (
-                            "%011.4f ",
-                            HRTimer::ToSeconds (
-                                HRTimer::ComputeElapsedTime (
-                                    SystemInfo::Instance ().GetProcessStartTime (),
-                                    HRTimer::Click ())));
+                        TimeSpec upTime = timeSpec - SystemInfo::Instance ().GetProcessStartTime ();
+                        i64 days = upTime.seconds / (3600 * 24);
+                        i64 hours = upTime.seconds % (3600 * 24) / 3600;
+                        i64 minutes = upTime.seconds % 3600 / 60;
+                        i64 seconds = upTime.seconds % 60;
+                        i64 milliseconds = upTime.nanoseconds / 1000000;
+                        if (days > 0) {
+                            header = FormatString ("[%dd %dh %dm %ds %dms] ",
+                                days, hours, minutes, seconds, milliseconds);
+                        }
+                        else if (hours > 0) {
+                            header = FormatString ("[%dh %dm %ds %dms] ",
+                                hours, minutes, seconds, milliseconds);
+                        }
+                        else if (minutes > 0) {
+                            header = FormatString ("[%dm %ds %dms] ", minutes, seconds, milliseconds);
+                        }
+                        else if (seconds > 0) {
+                            header = FormatString ("[%ds %dms] ", seconds, milliseconds);
+                        }
+                        else if (milliseconds > 0) {
+                            header = FormatString ("[%dms] ", milliseconds);
+                        }
                     }
                     if (!header.empty () && flags.Test (Multiline)) {
                         header += "\n";

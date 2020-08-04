@@ -27,7 +27,9 @@
     #endif // !defined (_WINDOWS_)
     #include <winsock2.h>
     #include <iphlpapi.h>
-    #include <wtsapi32.h>
+    #if defined (THEKOGANS_UTIL_HAVE_WTS)
+        #include <wtsapi32.h>
+    #endif // defined (THEKOGANS_UTIL_HAVE_WTS)
     #include <VersionHelpers.h>
 #elif defined (TOOLCHAIN_OS_Linux) || defined (TOOLCHAIN_OS_OSX)
     #include <ifaddrs.h>
@@ -49,7 +51,6 @@
 #include <set>
 #include "thekogans/util/Constants.h"
 #include "thekogans/util/Path.h"
-#include "thekogans/util/HRTimer.h"
 #include "thekogans/util/Exception.h"
 #include "thekogans/util/SHA2.h"
 #include "thekogans/util/StringUtils.h"
@@ -418,7 +419,7 @@ namespace thekogans {
         }
 
         std::string SystemInfo::processStartDirectory = Path::GetCurrDirectory ();
-        ui64 SystemInfo::processStartTime = HRTimer::Click ();
+        TimeSpec SystemInfo::processStartTime = GetCurrentTime ();
 
         SystemInfo::SystemInfo () :
             endianness (GetEndiannessImpl ()),
@@ -451,7 +452,7 @@ namespace thekogans {
                 "Process path: " << processPath << std::endl <<
                 "Process id: " << processId << std::endl <<
                 "Process start directory: " << processStartDirectory << std::endl <<
-                "Process start time: " << processStartTime << std::endl <<
+                "Process start time: " << FormatTimeSpec (processStartTime) << std::endl <<
                 "Host name: " << hostName << std::endl <<
                 "Host Id: " << hostId << std::endl <<
                 "User name: " << userName << std::endl <<
