@@ -380,7 +380,7 @@ namespace thekogans {
                         header += FormatTimeSpec (timeSpec, "%a %b %d %Y ");
                     }
                     if (flags.Test (Time)) {
-                        header += FormatTimeSpec (timeSpec, "%X");
+                        header += FormatTimeSpec (timeSpec, "%X ");
                     }
                     if (flags.Test (HRTime)) {
                         header += FormatString (
@@ -420,21 +420,21 @@ namespace thekogans {
                         i64 seconds = upTime.seconds % 60;
                         i64 milliseconds = upTime.nanoseconds / 1000000;
                         if (days > 0) {
-                            header = FormatString ("[%dd %dh %dm %ds %dms] ",
+                            header += FormatString ("[%dd %dh %dm %ds %dms] ",
                                 days, hours, minutes, seconds, milliseconds);
                         }
                         else if (hours > 0) {
-                            header = FormatString ("[%dh %dm %ds %dms] ",
+                            header += FormatString ("[%dh %dm %ds %dms] ",
                                 hours, minutes, seconds, milliseconds);
                         }
                         else if (minutes > 0) {
-                            header = FormatString ("[%dm %ds %dms] ", minutes, seconds, milliseconds);
+                            header += FormatString ("[%dm %ds %dms] ", minutes, seconds, milliseconds);
                         }
                         else if (seconds > 0) {
-                            header = FormatString ("[%ds %dms] ", seconds, milliseconds);
+                            header += FormatString ("[%ds %dms] ", seconds, milliseconds);
                         }
                         else if (milliseconds > 0) {
-                            header = FormatString ("[%dms] ", milliseconds);
+                            header += FormatString ("[%dms] ", milliseconds);
                         }
                     }
                     if (!header.empty () && flags.Test (Multiline)) {
