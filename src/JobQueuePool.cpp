@@ -231,9 +231,10 @@ namespace thekogans {
             }
         }
 
+        const char *GlobalJobQueuePoolCreateInstance::DEFAULT_GLOBAL_JOB_QUEUE_POOL_NAME = "GlobalJobQueuePool";
         std::size_t GlobalJobQueuePoolCreateInstance::minJobQueues = 0;
         std::size_t GlobalJobQueuePoolCreateInstance::maxJobQueues = 0;
-        std::string GlobalJobQueuePoolCreateInstance::name = std::string ();
+        std::string GlobalJobQueuePoolCreateInstance::name = DEFAULT_GLOBAL_JOB_QUEUE_POOL_NAME;
         RunLoop::JobExecutionPolicy::Ptr GlobalJobQueuePoolCreateInstance::jobExecutionPolicy =
             RunLoop::JobExecutionPolicy::Ptr (new RunLoop::FIFOJobExecutionPolicy);
         std::size_t GlobalJobQueuePoolCreateInstance::workerCount = 1;

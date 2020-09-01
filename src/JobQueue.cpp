@@ -152,7 +152,11 @@ namespace thekogans {
             // Since there are no more jobs (running or pending)
             // and done == true, workers.clear should complete
             // quickly.
-            return workers.clear (callback);
+            if (!workers.clear (callback)) {
+                return false;
+            }
+            idle.SignalAll ();
+            return true;
         }
 
         bool JobQueue::IsRunning () {

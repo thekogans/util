@@ -154,17 +154,17 @@ namespace thekogans {
             /// Add a time to log entries.
             Time = 16,
             /// \brief
-            /// Add a high resolution timer to log entries.
-            HRTime = 32,
-            /// \brief
             /// Add a host name to log entries.
-            HostName = 64,
+            HostName = 32,
             /// \brief
             /// Add a process id to log entries.
-            ProcessId = 128,
+            ProcessId = 64,
             /// \brief
             /// Add a process path to log entries.
-            ProcessPath = 256,
+            ProcessPath = 128,
+            /// \brief
+            /// Add a high resolution timer since process start to log entries.
+            ProcessStartTime = 256,
             /// \brief
             /// Add a high resolution timer since process start to log entries.
             ProcessUpTime = 512,
@@ -183,10 +183,10 @@ namespace thekogans {
                 Level |
                 Date |
                 Time |
-                HRTime |
                 HostName |
                 ProcessId |
                 ProcessPath |
+                ProcessStartTime |
                 ProcessUpTime |
                 ThreadId |
                 Location |

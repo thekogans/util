@@ -50,6 +50,7 @@ namespace thekogans {
             done = true;
             Continue ();
             scheduler.DeleteJobQueue (this);
+            idle.SignalAll ();
             return true;
         }
 

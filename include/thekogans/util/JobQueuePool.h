@@ -290,6 +290,10 @@ namespace thekogans {
         /// GlobalJobQueuePool::Instance to supply custom arguments to GlobalJobQueuePool ctor.
 
         struct _LIB_THEKOGANS_UTIL_DECL GlobalJobQueuePoolCreateInstance {
+            /// \brief
+            /// Default GlobalJobQueuePool name.
+            static const char *DEFAULT_GLOBAL_JOB_QUEUE_POOL_NAME;
+
         private:
             /// \brief
             /// Minimum number of \see{JobQueue}s to keep in the pool.
@@ -331,7 +335,7 @@ namespace thekogans {
             static void Parameterize (
                 std::size_t minJobQueues_,
                 std::size_t maxJobQueues_,
-                const std::string &name_ = std::string (),
+                const std::string &name_ = DEFAULT_GLOBAL_JOB_QUEUE_POOL_NAME,
                 RunLoop::JobExecutionPolicy::Ptr jobExecutionPolicy_ =
                     RunLoop::JobExecutionPolicy::Ptr (new RunLoop::FIFOJobExecutionPolicy),
                 std::size_t workerCount_ = 1,

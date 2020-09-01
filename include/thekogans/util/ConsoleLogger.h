@@ -73,7 +73,19 @@ namespace thekogans {
             /// Debug - magenta
             /// Development - white
             struct _LIB_THEKOGANS_UTIL_DECL DefaultColorScheme : public ColorScheme {
-                virtual Console::ColorType GetColor (ui32 level);
+                /// \brief
+                /// Given a log level, return appropriate color.
+                /// \param[in] level Log level.
+                /// \return Color for the provided log level.
+                static Console::ColorType GetColorForLevel (ui32 level);
+
+                /// \brief
+                /// Given a log level, return appropriate color.
+                /// \param[in] level Log level.
+                /// \return Color for the provided log level.
+                virtual Console::ColorType GetColor (ui32 level) {
+                    return GetColorForLevel (level);
+                }
             };
 
         private:

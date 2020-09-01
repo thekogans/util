@@ -238,10 +238,11 @@ namespace thekogans {
             }
         }
 
+        const char *GlobalPipelinePoolCreateInstance::DEFAULT_GLOBAL_PIPELINE_POOL_NAME = "GlobalPipelinePoolCreateInstance";
         std::size_t GlobalPipelinePoolCreateInstance::minPipelines = 0;
         std::size_t GlobalPipelinePoolCreateInstance::maxPipelines = 0;
         std::vector<Pipeline::Stage> GlobalPipelinePoolCreateInstance::stages;
-        std::string GlobalPipelinePoolCreateInstance::name = std::string ();
+        std::string GlobalPipelinePoolCreateInstance::name = DEFAULT_GLOBAL_PIPELINE_POOL_NAME;
         Pipeline::JobExecutionPolicy::Ptr GlobalPipelinePoolCreateInstance::jobExecutionPolicy =
             Pipeline::JobExecutionPolicy::Ptr (new Pipeline::FIFOJobExecutionPolicy);
         std::size_t GlobalPipelinePoolCreateInstance::workerCount = 1;

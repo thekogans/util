@@ -34,7 +34,6 @@
 #include "thekogans/util/Mutex.h"
 #include "thekogans/util/JobQueue.h"
 #include "thekogans/util/Logger.h"
-#include "thekogans/util/HRTimer.h"
 
 namespace thekogans {
     namespace util {
@@ -179,39 +178,35 @@ namespace thekogans {
                 /// Add a time to log entries.
                 Time = 16,
                 /// \brief
-                /// Add a high resolution timer to log entries.
-                HRTime = 32,
-                /// \brief
                 /// Add a host name to log entries.
-                HostName = 64,
+                HostName = 32,
                 /// \brief
                 /// Add a process id to log entries.
-                ProcessId = 128,
+                ProcessId = 64,
                 /// \brief
                 /// Add a process path to log entries.
-                ProcessPath = 256,
+                ProcessPath = 128,
                 /// \brief
                 /// Add a high resolution timer since process start to log entries.
-                ProcessStartTime = 512,
+                ProcessStartTime = 256,
                 /// \brief
                 /// Add a high resolution timer since process start to log entries.
-                ProcessUpTime = 1024,
+                ProcessUpTime = 512,
                 /// \brief
                 /// Add a thread id to log entries.
-                ThreadId = 2048,
+                ThreadId = 1024,
                 /// \brief
                 /// Add a location to log entries.
-                Location = 4096,
+                Location = 2048,
                 /// \brief
                 /// Format log entries accross multiple lines.
-                Multiline = 8192,
+                Multiline = 4096,
                 /// \brief
                 /// Add every decoration to log entries.
                 All = EntrySeparator |
                     Level |
                     Date |
                     Time |
-                    HRTime |
                     HostName |
                     ProcessId |
                     ProcessPath |

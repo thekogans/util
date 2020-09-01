@@ -77,7 +77,6 @@ namespace thekogans {
             decorations.push_back (Level);
             decorations.push_back (Date);
             decorations.push_back (Time);
-            decorations.push_back (HRTime);
             decorations.push_back (HostName);
             decorations.push_back (ProcessId);
             decorations.push_back (ProcessPath);
@@ -127,12 +126,6 @@ namespace thekogans {
                     value += " | ";
                 }
                 value += "Time";
-            }
-            else if (Flags32 (decorations).Test (HRTime)) {
-                if (!value.empty ()) {
-                    value += " | ";
-                }
-                value += "HRTime";
             }
             else if (Flags32 (decorations).Test (HostName)) {
                 if (!value.empty ()) {
@@ -201,9 +194,6 @@ namespace thekogans {
                 }
                 else if (decoration == "Time") {
                     return LoggerMgr::Time;
-                }
-                else if (decoration == "HRTime") {
-                    return LoggerMgr::HRTime;
                 }
                 else if (decoration == "HostName") {
                     return LoggerMgr::HostName;
@@ -381,11 +371,6 @@ namespace thekogans {
                     }
                     if (flags.Test (Time)) {
                         header += FormatTimeSpec (timeSpec, "%X ");
-                    }
-                    if (flags.Test (HRTime)) {
-                        header += FormatString (
-                            "%011.4f ",
-                            HRTimer::ToSeconds (HRTimer::Click ()));
                     }
                     if (flags.Test (HostName)) {
                         header += SystemInfo::Instance ().GetHostName ();

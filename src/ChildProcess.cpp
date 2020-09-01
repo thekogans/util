@@ -395,8 +395,10 @@ namespace thekogans {
             else {
                 // child process
                 THEKOGANS_UTIL_TRY {
-                    if ((detached && setsid () < 0) ||
-                            (!startupDirectory.empty () && chdir (startupDirectory.c_str ()) < 0)) {
+                    if (detached) {
+                        setsid ();
+                    }
+                    if (!startupDirectory.empty () && chdir (startupDirectory.c_str ()) < 0) {
                         THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
                             THEKOGANS_UTIL_OS_ERROR_CODE);
                     }

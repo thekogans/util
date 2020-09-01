@@ -67,7 +67,7 @@ namespace thekogans {
                     // Here we both log the problem and assert to give the
                     // engineer the best chance of figuring out what happened.
                     std::string message =
-                        FormatString ("%s : %u", typeid (*this).name (), (ui32)count);
+                        FormatString ("%s : %u\n", typeid (*this).name (), (ui32)count);
                     Log (
                         SubsystemAll,
                         THEKOGANS_UTIL,

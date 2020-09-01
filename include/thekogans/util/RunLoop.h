@@ -980,8 +980,8 @@ namespace thekogans {
                 bool /*cancelPendingJobs*/ = true,
                 const TimeSpec & /*timeSpec*/ = TimeSpec::Infinite) = 0;
             /// \brief
-            /// Return true is the run loop is running (Start was called).
-            /// \return true is the run loop is running (Start was called).
+            /// Return true if the run loop is running (Start was called).
+            /// \return true if the run loop is running (Start was called).
             virtual bool IsRunning () = 0;
 
             /// \brief

@@ -386,6 +386,7 @@ namespace thekogans {
         #elif defined (TOOLCHAIN_OS_OSX)
             runLoop->Stop ();
         #endif // defined (TOOLCHAIN_OS_Windows)
+            idle.SignalAll ();
             return true;
         }
 

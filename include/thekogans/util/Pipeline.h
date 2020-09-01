@@ -584,6 +584,10 @@ namespace thekogans {
                 bool cancelRunningJobs = true,
                 bool cancelPendingJobs = true,
                 const TimeSpec &timeSpec = TimeSpec::Infinite);
+            /// \brief
+            /// Return true if the pipeline is running (Start was called).
+            /// \return true if the pipeline is running (Start was called).
+            bool IsRunning ();
 
             /// \brief
             /// Enqueue a job on the pipeline.

@@ -343,7 +343,12 @@ namespace thekogans {
                     return false;
                 }
             }
+            idle.SignalAll ();
             return true;
+        }
+
+        bool Pipeline::IsRunning () {
+            return !workers.empty ();
         }
 
         bool Pipeline::EnqJob (
@@ -528,14 +533,14 @@ namespace thekogans {
                 const TimeSpec &timeSpec) {
             if (job.Get () != 0 && job->GetPipelineId () == id) {
                 if (timeSpec == TimeSpec::Infinite) {
-                    while (!job->IsCompleted ()) {
+                    while (IsRunning () && !job->IsCompleted ()) {
                         job->Wait ();
                     }
                 }
                 else {
                     TimeSpec now = GetCurrentTime ();
                     TimeSpec deadline = now + timeSpec;
-                    while (!job->IsCompleted () && deadline > now) {
+                    while (IsRunning () && !job->IsCompleted () && deadline > now) {
                         job->Wait (deadline - now);
                         now = GetCurrentTime ();
                     }
@@ -614,14 +619,14 @@ namespace thekogans {
         bool Pipeline::WaitForIdle (const TimeSpec &timeSpec) {
             LockGuard<Mutex> guard (jobsMutex);
             if (timeSpec == TimeSpec::Infinite) {
-                while (!pendingJobs.empty () || !runningJobs.empty ()) {
+                while (IsRunning () && (!pendingJobs.empty () || !runningJobs.empty ())) {
                     idle.Wait ();
                 }
             }
             else {
                 TimeSpec now = GetCurrentTime ();
                 TimeSpec deadline = now + timeSpec;
-                while ((!pendingJobs.empty () || !runningJobs.empty ()) && deadline > now) {
+                while (IsRunning () && (!pendingJobs.empty () || !runningJobs.empty ()) && deadline > now) {
                     idle.Wait (deadline - now);
                     now = GetCurrentTime ();
                 }

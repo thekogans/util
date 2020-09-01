@@ -305,6 +305,10 @@ namespace thekogans {
         /// GlobalPipelinePool::Instance to supply custom arguments to GlobalPipelinePool ctor.
 
         struct _LIB_THEKOGANS_UTIL_DECL GlobalPipelinePoolCreateInstance {
+            /// \brief
+            /// Default GlobalPipelinePool name.
+            static const char *DEFAULT_GLOBAL_PIPELINE_POOL_NAME;
+
         private:
             /// \brief
             /// Minimum number of \see{Pipeline}s to keep in the pool.
@@ -353,7 +357,7 @@ namespace thekogans {
                 std::size_t maxPipelines_,
                 const Pipeline::Stage *begin_,
                 const Pipeline::Stage *end_,
-                const std::string &name_ = std::string (),
+                const std::string &name_ = DEFAULT_GLOBAL_PIPELINE_POOL_NAME,
                 Pipeline::JobExecutionPolicy::Ptr jobExecutionPolicy_ =
                     Pipeline::JobExecutionPolicy::Ptr (new Pipeline::FIFOJobExecutionPolicy),
                 std::size_t workerCount_ = 1,

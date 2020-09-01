@@ -62,6 +62,7 @@ namespace thekogans {
             done = true;
             Continue ();
             jobsNotEmpty.Signal ();
+            idle.SignalAll ();
             return true;
         }
 

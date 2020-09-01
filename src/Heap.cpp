@@ -18,6 +18,9 @@
 #include "thekogans/util/LoggerMgr.h"
 #include "thekogans/util/StringUtils.h"
 #include "thekogans/util/LockGuard.h"
+#include "thekogans/util/LoggerMgr.h"
+#include "thekogans/util/ConsoleLogger.h"
+#include "thekogans/util/Console.h"
 #include "thekogans/util/Heap.h"
 
 namespace thekogans {
@@ -53,12 +56,23 @@ namespace thekogans {
                 unsigned int level,
                 const std::string &header,
                 const std::string &message) {
-            GlobalLoggerMgr::Instance ().Log (subsystem, level, header, message);
-            // This function is usually called right before the
-            // process exits. In case the user forgot to call flush,
-            // we do it here so that this important error message is
-            // written to the logs.
-            GlobalLoggerMgr::Instance ().Flush ();
+            if (GlobalLoggerMgr::IsInstantiated ()) {
+                GlobalLoggerMgr::Instance ().Log (subsystem, level, header, message);
+                // This function is usually called right before the
+                // process exits. In case the user forgot to call flush,
+                // we do it here so that this important error message is
+                // written to the logs.
+                GlobalLoggerMgr::Instance ().Flush ();
+            }
+            else if (Console::IsInstantiated ()) {
+                Console::Instance ().PrintString (
+                    header + message,
+                    Console::StdErr,
+                    ConsoleLogger::DefaultColorScheme::GetColorForLevel (level));
+            }
+            else {
+                std::cerr << header << message;
+            }
         }
 
         void HeapRegistry::AddHeap (

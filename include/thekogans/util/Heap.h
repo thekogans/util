@@ -924,9 +924,8 @@ namespace thekogans {
                     // engineer the best chance of figuring out what happened.
                     std::string message =
                         FormatString (
-                            "%s : %s : " THEKOGANS_UTIL_SIZE_T_FORMAT,
-                            GetName (),
-                            typeid (*this).name (),
+                            "%s : " THEKOGANS_UTIL_SIZE_T_FORMAT "\n",
+                            name != 0 ? name : typeid (*this).name (),
                             itemCount);
                     Log (
                         SubsystemAll,

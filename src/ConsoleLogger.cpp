@@ -22,7 +22,7 @@
 namespace thekogans {
     namespace util {
 
-        Console::ColorType ConsoleLogger::DefaultColorScheme::GetColor (ui32 level) {
+        Console::ColorType ConsoleLogger::DefaultColorScheme::GetColorForLevel (ui32 level) {
             return
                 level == LoggerMgr::Error ? Console::TEXT_COLOR_RED :
                 level == LoggerMgr::Warning ? Console::TEXT_COLOR_YELLOW :
