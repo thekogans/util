@@ -656,14 +656,12 @@ namespace thekogans {
         namespace {
             void SignalHandler (int signum) {
                 switch (signum) {
+                    case SIGCHLD:
                     case SIGALRM:
                         exit (EXIT_FAILURE);
                         break;
                     case SIGUSR1:
                         exit (EXIT_SUCCESS);
-                        break;
-                    case SIGCHLD:
-                        exit (EXIT_FAILURE);
                         break;
                 }
             }

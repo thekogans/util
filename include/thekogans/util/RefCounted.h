@@ -120,9 +120,12 @@ namespace thekogans {
             /// \brief
             /// RefCounted object smart pointer template.
             /// NOTE: Unlike other ref counted pointers, Ptr is symmetric in the
-            /// way it deals with an objects reference count. It incrementes it in
-            /// it's ctor, and decrements it in it's dtor. In other words, Ptr
+            /// way it deals with an object's reference count. It incrementes it
+            /// in it's ctor, and decrements it in it's dtor. In other words, Ptr
             /// manages it's own reference, not one taken out by someone else.
+            /// This behavior can be modified by passing addRef = false to the
+            /// ctor. This way Ptr can take ownership of an object Release(d) by
+            /// another.
             template<typename T>
             struct Ptr {
             protected:
@@ -134,9 +137,13 @@ namespace thekogans {
                 /// \brief
                 /// \ctor.
                 /// \param[in] object_ Reference counted object.
-                Ptr (T *object_ = 0) :
+                /// \param[in] addRef true == take out a new reference on the passed in object,
+                /// false == this object was probably Release(d) by another Ptr.
+                Ptr (
+                        T *object_ = 0,
+                        bool addRef = true) :
                         object (object_) {
-                    if (object != 0) {
+                    if (object != 0 && addRef) {
                         object->AddRef ();
                     }
                 }
@@ -215,13 +222,17 @@ namespace thekogans {
                 /// \brief
                 /// Replace reference counted object.
                 /// \param[in] object_ New object to point to.
-                void Reset (T *object_ = 0) {
+                /// \param[in] addRef true == take out a new reference on the passed in object,
+                /// false == this object was probably Release(d) by another Ptr.
+                void Reset (
+                        T *object_ = 0,
+                        bool addRef = true) {
                     if (object != object_) {
                         if (object != 0) {
                             object->Release ();
                         }
                         object = object_;
-                        if (object != 0) {
+                        if (object != 0 && addRef) {
                             object->AddRef ();
                         }
                     }
