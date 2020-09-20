@@ -24,6 +24,7 @@
 #include <sys/event.h>
 #include <sys/time.h>
 #include "thekogans/util/Exception.h"
+#include "thekogans/util/LoggerMgr.h"
 #include "thekogans/util/StringUtils.h"
 #include "thekogans/util/RunLoop.h"
 #include "thekogans/util/SystemRunLoop.h"
@@ -34,14 +35,17 @@ namespace thekogans {
     namespace util {
 
         void RunLoop::CocoaInitializer::InitializeWorker () throw () {
-            if (NSApplicationLoad () == YES) {
-                [NSAutoreleasePool new];
-                [NSApplication sharedApplication];
+            THEKOGANS_UTIL_TRY {
+                if (NSApplicationLoad () == YES) {
+                    [NSAutoreleasePool new];
+                    [NSApplication sharedApplication];
+                }
+                else {
+                    THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
+                        "%s", "Failed to initialize Cocoa!\n");
+                }
             }
-            else {
-                THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                    "%s", "Failed to initialize Cocoa!\n");
-            }
+            THEKOGANS_UTIL_CATCH_AND_LOG_SUBSYSTEM (THEKOGANS_UTIL)
         }
 
         void RunLoop::CocoaInitializer::UninitializeWorker () throw () {

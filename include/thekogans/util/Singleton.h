@@ -159,6 +159,33 @@ namespace thekogans {
             typename DestroyInstance = DefaultDestroyInstance<T>>
         struct Singleton {
             /// \brief
+            /// Alternative to using CreateInstance and DestroyInstance.
+            /// Uses modern C++ template facilities to provide singleton
+            /// ctor parameters.
+            /// IMPORTANT: If you're going to use CreateSingleton, do not
+            /// provide a CreateInstance and if you are going to provide
+            /// DestroyInstance, make sure it uses delete.
+            /// \param[in] args Variable length list of parameters to pass
+            /// to singleton instance ctor.
+            template<typename... arg_types>
+            static void CreateSingleton (arg_types... args) {
+                // We implement the double-checked locking pattern here
+                // to allow our singleton instance method to be thread-safe
+                // (i.e. thread-safe singleton construction).
+                if (instance == 0) {
+                    // Here we acquire the lock, check instance again,
+                    // and if it's STILL null, we are the lucky ones,
+                    // we get to create the actual instance!
+                    LockGuard<Lock> guard (lock);
+                    if (instance == 0) {
+                        instance = new T (std::forward<arg_types> (args)...);
+                    }
+                }
+                assert (instance != 0);
+                return *instance;
+            }
+
+            /// \brief
             /// Return the singleton instance. Create if first time accessed.
             /// \return The singleton instance.
             static T &Instance () {
