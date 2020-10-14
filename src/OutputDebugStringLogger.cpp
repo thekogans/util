@@ -39,7 +39,8 @@ namespace thekogans {
                 const std::string &header,
                 const std::string &message) {
             std::string logEntry = FormatString ("%s%s", header.c_str (), message.c_str ());
-            OutputDebugStringW (UTF8ToUTF16 (logEntry).c_str ());
+            // These are log entries. There's no need to for high fidelity conversion.
+            OutputDebugStringW (UTF8ToUTF16 (logEntry, 0).c_str ());
         }
 
     } // namespace util

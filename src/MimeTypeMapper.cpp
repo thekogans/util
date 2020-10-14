@@ -120,10 +120,10 @@ namespace thekogans {
 
         const MimeTypeMapper::ExtensionList &MimeTypeMapper::MimeTypeToExtensions (
                 const std::string &mimeType) const {
-            static const ExtensionList emptyList;
+            static const ExtensionList *emptyList = new ExtensionList;
             MimeTypeMap::const_iterator it =
                 mimeTypeToExtensions.find (ToLower (mimeType));
-            return it == mimeTypeToExtensions.end () ? emptyList : it->second;
+            return it == mimeTypeToExtensions.end () ? *emptyList : it->second;
         }
 
         std::string MimeTypeMapper::ExtensionToMimeType (

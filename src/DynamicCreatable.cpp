@@ -25,8 +25,8 @@ namespace thekogans {
     namespace util {
 
         DynamicCreatable::Map &DynamicCreatable::GetMap () {
-            static DynamicCreatable::Map map;
-            return map;
+            static Map *map = new Map;
+            return *map;
         }
 
         DynamicCreatable::Ptr DynamicCreatable::Get (const std::string &type) {

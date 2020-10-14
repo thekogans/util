@@ -35,8 +35,8 @@ namespace thekogans {
     namespace util {
 
         Allocator::Map &Allocator::GetMap () {
-            static Allocator::Map map;
-            return map;
+            static Map *map = new Map;
+            return *map;
         }
 
         Allocator *Allocator::Get (const std::string &type) {

@@ -295,9 +295,9 @@ namespace thekogans {
         #define THEKOGANS_UTIL_IMPLEMENT_HEAP_EX(\
             type, minItemsInPage)\
         thekogans::util::Heap<type> &type::GetHeap () {\
-            static thekogans::util::Heap<type> heap (\
-                #type, minItemsInPage);\
-            return heap;\
+            static thekogans::util::Heap<type> *heap =\
+                new thekogans::util::Heap<type> (#type, minItemsInPage);\
+            return *heap;\
         }\
         THEKOGANS_UTIL_IMPLEMENT_HEAP_FUNCTIONS (type)
 
@@ -313,9 +313,9 @@ namespace thekogans {
         #define THEKOGANS_UTIL_IMPLEMENT_HEAP_EX_WITH_ALLOCATOR(\
             type, minItemsInPage, allocator)\
         thekogans::util::Heap<type> &type::GetHeap () {\
-            static thekogans::util::Heap<type> heap (\
-                #type, minItemsInPage, allocator);\
-            return heap;\
+            static thekogans::util::Heap<type> *heap =\
+                new thekogans::util::Heap<type> (#type, minItemsInPage, allocator);\
+            return *heap;\
         }\
         THEKOGANS_UTIL_IMPLEMENT_HEAP_FUNCTIONS (type)
 
@@ -331,9 +331,9 @@ namespace thekogans {
         #define THEKOGANS_UTIL_IMPLEMENT_HEAP_WITH_LOCK_EX(\
             type, lock, minItemsInPage)\
         thekogans::util::Heap<type, lock> &type::GetHeap () {\
-            static thekogans::util::Heap<type, lock> heap (\
-                #type, minItemsInPage);\
-            return heap;\
+            static thekogans::util::Heap<type, lock> *heap =\
+                new thekogans::util::Heap<type, lock> (#type, minItemsInPage);\
+            return *heap;\
         }\
         THEKOGANS_UTIL_IMPLEMENT_HEAP_FUNCTIONS (type)
 
@@ -350,9 +350,9 @@ namespace thekogans {
         #define THEKOGANS_UTIL_IMPLEMENT_HEAP_WITH_LOCK_EX_AND_ALLOCATOR(\
             type, lock, minItemsInPage, allocator)\
         thekogans::util::Heap<type, lock> &type::GetHeap () {\
-            static thekogans::util::Heap<type, lock> heap (\
-                #type, minItemsInPage, allocator);\
-            return heap;\
+            static thekogans::util::Heap<type, lock> *heap =\
+                new thekogans::util::Heap<type, lock> (#type, minItemsInPage, allocator);\
+            return *heap;\
         }\
         THEKOGANS_UTIL_IMPLEMENT_HEAP_FUNCTIONS (type)
 

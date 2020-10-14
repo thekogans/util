@@ -86,8 +86,8 @@ namespace thekogans {
         }
 
         Window::Ptr SystemRunLoop::CreateThreadWindow () {
-            static WindowClass windowClass (CLASS_NAME, WndProc);
-            return Window::Ptr (new Window (windowClass, Rectangle (), WINDOW_NAME, WS_POPUP));
+            static WindowClass *windowClass = new WindowClass (CLASS_NAME, WndProc);
+            return Window::Ptr (new Window (*windowClass, Rectangle (), WINDOW_NAME, WS_POPUP));
         }
     #elif defined (TOOLCHAIN_OS_Linux)
         SystemRunLoop::XlibWindow::_Display::_Display (Display *display_) :

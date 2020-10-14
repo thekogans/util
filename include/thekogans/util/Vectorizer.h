@@ -238,7 +238,7 @@ namespace thekogans {
         private:
             /// \brief
             /// The width of the vector.
-        static std::size_t workerCount;
+            static std::size_t workerCount;
             /// \brief
             /// Worker thread priority.
             static i32 workerPriority;

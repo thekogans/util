@@ -654,16 +654,14 @@ namespace thekogans {
 
     #if !defined (TOOLCHAIN_OS_Windows)
         namespace {
-            void SignalHandler (int signum) {
-                switch (signum) {
-                    case SIGCHLD:
-                    case SIGALRM:
-                        exit (EXIT_FAILURE);
-                        break;
-                    case SIGUSR1:
-                        exit (EXIT_SUCCESS);
-                        break;
-                }
+            void SignalHandlerSIGCHLD (int /*signum*/) {
+                exit (EXIT_FAILURE);
+            }
+            void SignalHandlerSIGALRM (int /*signum*/) {
+                exit (EXIT_FAILURE);
+            }
+            void SignalHandlerSIGUSR1 (int /*signum*/) {
+                exit (EXIT_SUCCESS);
             }
         }
 
@@ -694,9 +692,9 @@ namespace thekogans {
                 }
             }
             // Trap signals that we expect to recieve.
-            signal (SIGCHLD, SignalHandler);
-            signal (SIGUSR1, SignalHandler);
-            signal (SIGALRM, SignalHandler);
+            signal (SIGCHLD, SignalHandlerSIGCHLD);
+            signal (SIGALRM, SignalHandlerSIGALRM);
+            signal (SIGUSR1, SignalHandlerSIGUSR1);
             // Fork off the parent process.
             pid_t pid = fork ();
             if (pid < 0) {

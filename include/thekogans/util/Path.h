@@ -54,7 +54,7 @@ namespace thekogans {
             /// \brief
             /// ctor.
             /// \param[in] path_ Path to initialize to.
-            explicit Path (const std::string &path_) :
+            explicit Path (const std::string &path_ = std::string ()) :
                 path (path_) {}
 
             /// \brief
@@ -88,6 +88,25 @@ namespace thekogans {
             /// Implicit typecast operator.
             inline operator std::string () const {
                 return path;
+            }
+
+            /// \brief
+            /// Assignment operator.
+            /// \param[in] path_ Path to assing.
+            /// \return *this.
+            inline Path &operator = (const std::string &path_) {
+                path = path_;
+                return *this;
+            }
+            /// \brief
+            /// Assignment operator.
+            /// \param[in] path_ Path to assing.
+            /// \return *this.
+            inline Path &operator = (const Path &path_) {
+                if (&path_ != this) {
+                    path = path_.path;
+                }
+                return *this;
             }
 
             /// \brief
@@ -201,6 +220,27 @@ namespace thekogans {
         };
 
         /// \brief
+        /// Compare two paths for equality.
+        /// \param[in] path1 First \see{Path} to compare.
+        /// \param[in] path2 Second \see{Path} to compare.
+        /// \return true == path1 == path2.
+        inline bool _LIB_THEKOGANS_UTIL_API operator == (
+                const Path &path1,
+                const Path &path2) {
+            return path1.path == path2.path;
+        }
+        /// \brief
+        /// Compare two paths for inequality.
+        /// \param[in] path1 First \see{Path} to compare.
+        /// \param[in] path2 Second \see{Path} to compare.
+        /// \return true == path1 != path2.
+        inline bool _LIB_THEKOGANS_UTIL_API operator != (
+                const Path &path1,
+                const Path &path2) {
+            return path1.path != path2.path;
+        }
+
+        /// \brief
         /// Create a path from directory and name.
         /// \param[in] directory Directory part of the path.
         /// \param[in] name File/Folder part of the path.
@@ -217,6 +257,21 @@ namespace thekogans {
         _LIB_THEKOGANS_UTIL_DECL std::string _LIB_THEKOGANS_UTIL_API MakePath (
             const std::list<std::string> &components,
             bool absolute = false);
+
+        /// \brief
+        /// Syntactic optimization for \see{MakePath}.
+        /// Instead of writing MakePath (MakePath (p1, p2), p3),
+        /// which could be difficult to read and understand you
+        /// can write p1 / p2 / p3, which is easier to read and
+        /// more intuitive.
+        /// \param[in] path1 Left side of '/'.
+        /// \param[in] path2 Right side of '/'.
+        /// \return Concatenated path.
+        inline Path _LIB_THEKOGANS_UTIL_API operator / (
+                const Path &path1,
+                const Path &path2) {
+            return Path (MakePath (path1.path, path2.path));
+        }
 
     } // namespace util
 } // namespace thekogans

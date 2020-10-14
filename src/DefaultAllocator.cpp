@@ -25,8 +25,8 @@ namespace thekogans {
         THEKOGANS_UTIL_IMPLEMENT_ALLOCATOR (DefaultAllocator)
 
         DefaultAllocator &DefaultAllocator::Instance () {
-            static DefaultAllocator instance;
-            return instance;
+            static DefaultAllocator *instance = new DefaultAllocator;
+            return *instance;
         }
 
         void *DefaultAllocator::Alloc (std::size_t size) {

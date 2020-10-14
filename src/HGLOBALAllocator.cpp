@@ -36,8 +36,8 @@ namespace thekogans {
         THEKOGANS_UTIL_IMPLEMENT_ALLOCATOR (HGLOBALAllocator)
 
         HGLOBALAllocator &HGLOBALAllocator::Instance () {
-            static HGLOBALAllocator instance;
-            return instance;
+            static HGLOBALAllocator *instance = new HGLOBALAllocator;
+            return *instance;
         }
 
         void *HGLOBALAllocator::Alloc (std::size_t size) {

@@ -37,8 +37,8 @@ namespace thekogans {
         THEKOGANS_UTIL_IMPLEMENT_ALLOCATOR (SecureAllocator)
 
         SecureAllocator &SecureAllocator::Instance () {
-            static SecureAllocator instance;
-            return instance;
+            static SecureAllocator *instance = new SecureAllocator;
+            return *instance;
         }
 
         void SecureAllocator::ReservePages (

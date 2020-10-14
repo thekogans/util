@@ -127,11 +127,11 @@ namespace thekogans {
         }
 
         _LIB_THEKOGANS_UTIL_DECL const Version & _LIB_THEKOGANS_UTIL_API GetVersion () {
-            static const Version version (
+            static const Version *version = new Version (
                 THEKOGANS_UTIL_MAJOR_VERSION,
                 THEKOGANS_UTIL_MINOR_VERSION,
                 THEKOGANS_UTIL_PATCH_VERSION);
-            return version;
+            return *version;
         }
 
     } // namespace util

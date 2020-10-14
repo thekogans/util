@@ -300,8 +300,12 @@ namespace thekogans {
             #if defined (TOOLCHAIN_OS_Windows)
                 handle (
                     CreateFileMappingW (
-                        INVALID_HANDLE_VALUE, securityAttributes,
-                        PAGE_READWRITE, 0, 1, UTF8ToUTF16 (GetName (name_)).c_str ())) {
+                        INVALID_HANDLE_VALUE,
+                        securityAttributes,
+                        PAGE_READWRITE,
+                        0,
+                        1,
+                        UTF8ToUTF16 (GetName (name_)).c_str ())) {
             #else // defined (TOOLCHAIN_OS_Windows)
                 name (GetName (name_)),
                 handle (shm_open (name.c_str (), O_RDWR | O_CREAT | O_EXCL, mode)) {
@@ -314,8 +318,12 @@ namespace thekogans {
                     CloseHandle (handle);
                     Sleep (timeSpec);
                     handle = CreateFileMappingW (
-                        INVALID_HANDLE_VALUE, securityAttributes,
-                        PAGE_READWRITE, 0, 1, UTF8ToUTF16 (GetName (name_)).c_str ());
+                        INVALID_HANDLE_VALUE,
+                        securityAttributes,
+                        PAGE_READWRITE,
+                        0,
+                        1,
+                        UTF8ToUTF16 (GetName (name_)).c_str ());
                 }
                 else {
                     THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (errorCode);

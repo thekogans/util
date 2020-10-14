@@ -22,8 +22,8 @@ namespace thekogans {
     namespace util {
 
         NullAllocator &NullAllocator::Instance () {
-            static NullAllocator instance;
-            return instance;
+            static NullAllocator *instance = new NullAllocator;
+            return *instance;
         }
 
         const char *NullAllocator::GetName () const {

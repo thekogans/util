@@ -33,8 +33,8 @@ namespace thekogans {
     namespace util {
 
         Hash::Map &Hash::GetMap () {
-            static Hash::Map map;
-            return map;
+            static Map *map = new Map;
+            return *map;
         }
 
         Hash::Ptr Hash::Get (const std::string &type) {

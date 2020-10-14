@@ -49,8 +49,8 @@ namespace thekogans {
         const char * const Serializable::TextHeader::ATTR_VERSION = "Version";
 
         Serializable::Map &Serializable::GetMap () {
-            static Map map;
-            return map;
+            static Map *map = new Map;
+            return *map;
         }
 
         Serializable::MapInitializer::MapInitializer (
