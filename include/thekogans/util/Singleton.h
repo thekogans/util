@@ -182,7 +182,6 @@ namespace thekogans {
                     }
                 }
                 assert (instance != 0);
-                return *instance;
             }
 
             /// \brief

@@ -36,6 +36,7 @@
 #include "thekogans/util/LoggerMgr.h"
 #include "thekogans/util/Exception.h"
 #include "thekogans/util/File.h"
+#include "thekogans/util/JobQueue.h"
 #include "thekogans/util/ChildProcess.h"
 
 namespace thekogans {
@@ -654,14 +655,49 @@ namespace thekogans {
 
     #if !defined (TOOLCHAIN_OS_Windows)
         namespace {
+            // If you're looking at this and your first reaction is WTF!?!
+            // Fear not, there is a reason. An intermittent crash in the
+            // parent of the child (daemon) process was reported after the
+            // child process sends a SIGUSR1 signal to the parent to let it
+            // know all is well. The crash is random and after doing extensive
+            // digging and research the only thing I can surmise is that there's
+            // a race in the run time cleanup code. If any memory management is
+            // performed by the static object dtors we sometimes get;
+            // BUG IN CLIENT OF LIBPLATFORM: Trying to recursively lock an os_unfair_lock.
+            // This hoop jumping is to avoid any and all memory management in the
+            // context of the signal handler.
+            struct exitJob : public RunLoop::Job {
+                int exitCode;
+                explicit exitJob (int exitCode_) :
+                        exitCode (exitCode_) {
+                    AddRef ();
+                    runLoopId = GUID::FromRandom ().ToString ();
+                }
+            protected:
+                // This duplicates RunLoop::Job::Reset with a minor difference. We
+                // avoid std::string copy (and potential malloc/free) by copying
+                // the RunLoop::Id in place.
+                virtual void Reset (const RunLoop::Id &runLoopId_) {
+                    strncpy (&runLoopId[0], &runLoopId_[0], runLoopId.size ());
+                    SetState (Pending);
+                    disposition = Unknown;
+                    completed.Reset ();
+                }
+                virtual void Execute (const std::atomic<bool> & /*done*/) throw () {
+                    exit (exitCode);
+                }
+            };
+            RunLoop::Job *failureExit = new exitJob (EXIT_FAILURE);
+            RunLoop::Job *successExit = new exitJob (EXIT_SUCCESS);
+
             void SignalHandlerSIGCHLD (int /*signum*/) {
-                exit (EXIT_FAILURE);
+                GlobalJobQueue::Instance ().EnqJob (RunLoop::Job::Ptr (failureExit));
             }
             void SignalHandlerSIGALRM (int /*signum*/) {
-                exit (EXIT_FAILURE);
+                GlobalJobQueue::Instance ().EnqJob (RunLoop::Job::Ptr (failureExit));
             }
             void SignalHandlerSIGUSR1 (int /*signum*/) {
-                exit (EXIT_SUCCESS);
+                GlobalJobQueue::Instance ().EnqJob (RunLoop::Job::Ptr (successExit));
             }
         }
 
@@ -695,6 +731,8 @@ namespace thekogans {
             signal (SIGCHLD, SignalHandlerSIGCHLD);
             signal (SIGALRM, SignalHandlerSIGALRM);
             signal (SIGUSR1, SignalHandlerSIGUSR1);
+            // This hack is necessary to make sure no allocation is done in the signal handler.
+            GlobalJobQueue::CreateSingleton ();
             // Fork off the parent process.
             pid_t pid = fork ();
             if (pid < 0) {
