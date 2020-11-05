@@ -118,42 +118,22 @@ namespace thekogans {
         /// (IdleProcessor), we avoid calling callback through a dangling pointer.
 
         struct _LIB_THEKOGANS_UTIL_DECL Timer {
-            enum {
-                /// \brief
-                /// Default minimum number of \see{JobQueue}s in the pool.
-                DEFAULT_MIN_JOB_QUEUE_POOL_JOB_QUEUES = 1,
-                /// \brief
-                /// Default maximum number of \see{JobQueue}s in the pool.
-                DEFAULT_MAX_JOB_QUEUE_POOL_JOB_QUEUES = 100,
-            };
-
             /// \struct JobQueuePoolCreateInstance Timer.h thekogans/util/Timer.h
             ///
             /// \brief
-            /// Call Timer::JobQueuePoolCreateInstance::Parameterize before the first use of
+            /// Call Timer::JobQueuePool::CreateInstance before the first use of
             /// Timer to supply custom arguments to JobQueuePool ctor.
             struct _LIB_THEKOGANS_UTIL_DECL JobQueuePoolCreateInstance {
-            private:
-                /// \brief
-                /// Minimum number of \see{JobQueue}s to keep in the pool.
-                static std::size_t minJobQueues;
-                /// \brief
-                /// Maximum number of \see{JobQueue}s allowed in the pool.
-                static std::size_t maxJobQueues;
-
-            public:
-                /// \brief
-                /// Call before the first use of Timer.
-                /// \param[in] minJobQueues_ Minimum \see{JobQueue}s to keep in the pool.
-                /// \param[in] maxJobQueues_ Maximum \see{JobQueue}s to allow the pool to grow to.
-                static void Parameterize (
-                    std::size_t minJobQueues_,
-                    std::size_t maxJobQueues_);
-
                 /// \brief
                 /// Create a Timer \see{JobQueuePool} with custom ctor arguments.
+                /// \param[in] minJobQueues Minimum \see{JobQueue}s to keep in the pool.
+                /// \param[in] maxJobQueues Maximum \see{JobQueue}s to allow the pool to grow to.
                 /// \return A Timer \see{JobQueuePool} with custom ctor arguments.
-                util::JobQueuePool *operator () ();
+                util::JobQueuePool *operator () (
+                        std::size_t minJobQueues = 1,
+                        std::size_t maxJobQueues = 100) {
+                    return new util::JobQueuePool (minJobQueues, maxJobQueues, "TimerJobQueuePool");
+                }
             };
 
             /// \struct Timer::Callback Timer.h thekogans/util/Timer.h

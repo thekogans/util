@@ -577,44 +577,5 @@ namespace thekogans {
             return true;
         }
 
-        ui32 GlobalLoggerMgrCreateInstance::level = LoggerMgr::Info;
-        ui32 GlobalLoggerMgrCreateInstance::decorations = LoggerMgr::All;
-        bool GlobalLoggerMgrCreateInstance::blocking = false;
-        std::string GlobalLoggerMgrCreateInstance::name = "GlobalLoggerMgr";
-        i32 GlobalLoggerMgrCreateInstance::priority = THEKOGANS_UTIL_LOW_THREAD_PRIORITY;
-        ui32 GlobalLoggerMgrCreateInstance::affinity = THEKOGANS_UTIL_MAX_THREAD_AFFINITY;
-
-        void GlobalLoggerMgrCreateInstance::Parameterize (
-                ui32 level_,
-                ui32 decorations_,
-                bool blocking_,
-                const std::string &name_,
-                i32 priority_,
-                ui32 affinity_) {
-            if (level_ > LoggerMgr::Invalid && level_ <= LoggerMgr::MaxLevel &&
-                    decorations_ <= LoggerMgr::SubsystemAll) {
-                level = level_;
-                decorations = decorations_;
-                blocking = blocking_;
-                name = name_;
-                priority = priority_;
-                affinity = affinity_;
-            }
-            else {
-                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
-            }
-        }
-
-        LoggerMgr *GlobalLoggerMgrCreateInstance::operator () () {
-            return new LoggerMgr (
-                level,
-                decorations,
-                blocking,
-                name,
-                priority,
-                affinity);
-        }
-
     } // namespace util
 } // namespace thekogans

@@ -275,62 +275,41 @@ namespace thekogans {
         /// \struct GlobalSchedulerCreateInstance Scheduler.h thekogans/util/Scheduler.h
         ///
         /// \brief
-        /// Call GlobalSchedulerCreateInstance::Parameterize before the first use of
+        /// Call GlobalScheduler::CreateInstance before the first use of
         /// GlobalScheduler::Instance to supply custom arguments to GlobalScheduler ctor.
 
         struct _LIB_THEKOGANS_UTIL_DECL GlobalSchedulerCreateInstance {
-        private:
-            /// \brief
-            /// Minimum worker count to keep in the pool.
-            static std::size_t minJobQueues;
-            /// \brief
-            /// Maximum worker count to allow the pool to grow to.
-            static std::size_t maxJobQueues;
-            /// \brief
-            /// JobQueue thread name.
-            static std::string name;
-            /// \brief
-            /// JobQueue \see{RunLoop::JobExecutionPolicy}.
-            static RunLoop::JobExecutionPolicy::Ptr jobExecutionPolicy;
-            /// \brief
-            /// Number of worker threads servicing the queue.
-            static std::size_t workerCount;
-            /// \brief
-            /// JobQueue thread priority.
-            static i32 workerPriority;
-            /// \brief
-            /// JobQueue thread processor affinity.
-            static ui32 workerAffinity;
-            /// \brief
-            /// Called to initialize/uninitialize the worker thread.
-            static RunLoop::WorkerCallback *workerCallback;
-
-        public:
-            /// \brief
-            /// Call before the first use of GlobalScheduler::Instance.
-            /// \param[in] minJobQueues_ Minimum worker count to keep in the pool.
-            /// \param[in] maxJobQueues_ Maximum worker count to allow the pool to grow to.
-            /// \param[in] name_ JobQueue thread name.
-            /// \param[in] jobExecutionPolicy_ JobQueue \see{RunLoop::JobExecutionPolicy}.
-            /// \param[in] workerCount_ Number of worker threads servicing the queue.
-            /// \param[in] workerPriority_ JobQueue thread priority.
-            /// \param[in] workerAffinity_ JobQueue thread processor affinity.
-            /// \param[in] workerCallback_ Called to initialize/uninitialize the worker thread.
-            static void Parameterize (
-                std::size_t minJobQueues_ = SystemInfo::Instance ().GetCPUCount (),
-                std::size_t maxJobQueues_ = SystemInfo::Instance ().GetCPUCount () * 2,
-                const std::string &name_ = std::string (),
-                RunLoop::JobExecutionPolicy::Ptr jobExecutionPolicy_ =
-                    RunLoop::JobExecutionPolicy::Ptr (new RunLoop::FIFOJobExecutionPolicy),
-                std::size_t workerCount_ = 1,
-                i32 workerPriority_ = THEKOGANS_UTIL_NORMAL_THREAD_PRIORITY,
-                ui32 workerAffinity_ = THEKOGANS_UTIL_MAX_THREAD_AFFINITY,
-                RunLoop::WorkerCallback *workerCallback_ = 0);
-
             /// \brief
             /// Create a global scheduler with custom ctor arguments.
+            /// \param[in] minJobQueues Minimum worker count to keep in the pool.
+            /// \param[in] maxJobQueues Maximum worker count to allow the pool to grow to.
+            /// \param[in] name JobQueue thread name.
+            /// \param[in] jobExecutionPolicy JobQueue \see{RunLoop::JobExecutionPolicy}.
+            /// \param[in] workerCount Number of worker threads servicing the queue.
+            /// \param[in] workerPriority JobQueue thread priority.
+            /// \param[in] workerAffinity JobQueue thread processor affinity.
+            /// \param[in] workerCallback Called to initialize/uninitialize the worker thread.
             /// \return A global scheduler with custom ctor arguments.
-            Scheduler *operator () ();
+            Scheduler *operator () (
+                    std::size_t minJobQueues = SystemInfo::Instance ().GetCPUCount (),
+                    std::size_t maxJobQueues = SystemInfo::Instance ().GetCPUCount () * 2,
+                    const std::string &name = "GlobalScheduler",
+                    RunLoop::JobExecutionPolicy::Ptr jobExecutionPolicy =
+                        RunLoop::JobExecutionPolicy::Ptr (new RunLoop::FIFOJobExecutionPolicy),
+                    std::size_t workerCount = 1,
+                    i32 workerPriority = THEKOGANS_UTIL_NORMAL_THREAD_PRIORITY,
+                    ui32 workerAffinity = THEKOGANS_UTIL_MAX_THREAD_AFFINITY,
+                    RunLoop::WorkerCallback *workerCallback = 0) {
+                return new Scheduler (
+                    minJobQueues,
+                    maxJobQueues,
+                    name,
+                    jobExecutionPolicy,
+                    workerCount,
+                    workerPriority,
+                    workerAffinity,
+                    workerCallback);
+            }
         };
 
         /// \struct GlobalScheduler Scheduler.h thekogans/util/Scheduler.h

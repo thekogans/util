@@ -799,63 +799,51 @@ namespace thekogans {
         /// \struct GlobalPipelineCreateInstance Pipeline.h thekogans/util/Pipeline.h
         ///
         /// \brief
-        /// Call GlobalPipelineCreateInstance::Parameterize before the first use of
+        /// Call GlobalPipeline::CreateInstance before the first use of
         /// GlobalPipeline::Instance to supply custom arguments to GlobalPipeline ctor.
-        /// NOTE: The call to GlobalPipelineCreateInstance::Parameterize is NOT optional.
+        /// NOTE: The call to GlobalPipeline::CreateInstance is NOT optional.
         /// You must, at the very least, provide the stages that GlobalPipeline will implement.
 
         struct _LIB_THEKOGANS_UTIL_DECL GlobalPipelineCreateInstance {
-        private:
-            /// \brief
-            /// Pointer to the beginning of the Pipeline::Stage array.
-            static std::vector<Pipeline::Stage> stages;
-            /// \brief
-            /// Pipeline name. If set, \see{Pipeline::Worker} threads will be named name-%d.
-            static std::string name;
-            /// \brief
-            /// \see{Pipeline} \see{Pipeline::JobExecutionPolicy}.
-            static Pipeline::JobExecutionPolicy::Ptr jobExecutionPolicy;
-            /// \brief
-            /// Number of workers servicing the pipeline.
-            static std::size_t workerCount;
-            /// \brief
-            /// Worker thread priority.
-            static i32 workerPriority;
-            /// \brief
-            /// Worker thread processor affinity.
-            static ui32 workerAffinity;
-            /// \brief
-            /// Called to initialize/uninitialize the worker thread.
-            static RunLoop::WorkerCallback *workerCallback;
-
-        public:
-            /// \brief
-            /// Call before the first use of GlobalPipeline::Instance to provide
-            /// custom ctor arguments to GlobalPipeline.
-            /// \param[in] begin_ Pointer to the beginning of the Pipeline::Stage array.
-            /// \param[in] end_ Pointer to the end of the Pipeline::Stage array.
-            /// \param[in] name_ Pipeline name. If set, \see{Pipeline::Worker}
-            /// threads will be named name-%d.
-            /// \param[in] jobExecutionPolicy_ Pipeline \see{Pipeline::JobExecutionPolicy}.
-            /// \param[in] workerCount_ Max workers to service the pipeline.
-            /// \param[in] workerPriority_ Worker thread priority.
-            /// \param[in] workerAffinity_ Worker thread processor affinity.
-            /// \param[in] workerCallback_ Called to initialize/uninitialize the worker thread.
-            static void Parameterize (
-                const Pipeline::Stage *begin_,
-                const Pipeline::Stage *end_,
-                const std::string &name_ = std::string (),
-                Pipeline::JobExecutionPolicy::Ptr jobExecutionPolicy_ =
-                    Pipeline::JobExecutionPolicy::Ptr (new Pipeline::FIFOJobExecutionPolicy),
-                std::size_t workerCount_ = 1,
-                i32 workerPriority_ = THEKOGANS_UTIL_NORMAL_THREAD_PRIORITY,
-                ui32 workerAffinity_ = THEKOGANS_UTIL_MAX_THREAD_AFFINITY,
-                RunLoop::WorkerCallback *workerCallback_ = 0);
-
             /// \brief
             /// Create a global pipeline with custom ctor arguments.
+            /// \param[in] begin Pointer to the beginning of the Pipeline::Stage array.
+            /// \param[in] end Pointer to the end of the Pipeline::Stage array.
+            /// \param[in] name Pipeline name. If set, \see{Pipeline::Worker}
+            /// threads will be named name-%d.
+            /// \param[in] jobExecutionPolicy Pipeline \see{Pipeline::JobExecutionPolicy}.
+            /// \param[in] workerCount Max workers to service the pipeline.
+            /// \param[in] workerPriority Worker thread priority.
+            /// \param[in] workerAffinity Worker thread processor affinity.
+            /// \param[in] workerCallback Called to initialize/uninitialize the worker thread.
             /// \return A global pipeline with custom ctor arguments.
-            Pipeline *operator () ();
+            Pipeline *operator () (
+                    const Pipeline::Stage *begin,
+                    const Pipeline::Stage *end,
+                    const std::string &name = "GlobalPipeline",
+                    Pipeline::JobExecutionPolicy::Ptr jobExecutionPolicy =
+                        Pipeline::JobExecutionPolicy::Ptr (new Pipeline::FIFOJobExecutionPolicy),
+                    std::size_t workerCount = 1,
+                    i32 workerPriority = THEKOGANS_UTIL_NORMAL_THREAD_PRIORITY,
+                    ui32 workerAffinity = THEKOGANS_UTIL_MAX_THREAD_AFFINITY,
+                    RunLoop::WorkerCallback *workerCallback = 0) {
+                if (begin != 0 && end != 0) {
+                    return new Pipeline (
+                        begin,
+                        end,
+                        name,
+                        jobExecutionPolicy,
+                        workerCount,
+                        workerPriority,
+                        workerAffinity,
+                        workerCallback);
+                }
+                else {
+                    THEKOGANS_UTIL_THROW_STRING_EXCEPTION ("%s",
+                        "Must provide GlobalPipeline stages. "
+                        "Call GlobalPipeline::CreateInstance.");
+                }
+            }
         };
 
         /// \struct GlobalPipeline Pipeline.h thekogans/util/Pipeline.h
@@ -871,9 +859,9 @@ namespace thekogans {
         /// exists to aid in that. If all you need is a single pipeline where
         /// you can schedule jobs, then GlobalPipeline::Instance () will do
         /// the trick.
-        /// IMPORTANT: Don't forget to call GlobalPipelineCreateInstance::Parameterize
-        /// before the first call to GlobalPipeline::Instance to provide the global
-        /// pipeline stages.
+        /// IMPORTANT: Don't forget to call GlobalPipeline::CreateInstance
+        /// before the first call to GlobalPipeline::Instance to provide
+        /// the global pipeline stages.
         struct _LIB_THEKOGANS_UTIL_DECL GlobalPipeline :
             public Singleton<Pipeline, SpinLock, GlobalPipelineCreateInstance> {};
 

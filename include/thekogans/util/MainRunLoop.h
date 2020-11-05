@@ -36,8 +36,10 @@
 #include "thekogans/util/Config.h"
 #include "thekogans/util/SpinLock.h"
 #include "thekogans/util/Singleton.h"
+#include "thekogans/util/Thread.h"
 #include "thekogans/util/RunLoop.h"
 #include "thekogans/util/SystemRunLoop.h"
+#include "thekogans/util/ThreadRunLoop.h"
 
 namespace thekogans {
     namespace util {
@@ -45,12 +47,12 @@ namespace thekogans {
         /// \struct MainRunLoopCreateInstance MainRunLoop.h thekogans/util/MainRunLoop.h
         ///
         /// \brief
-        /// Call MainRunLoopCreateInstance::Parameterize before the first use of
+        /// Call MainRunLoop::CreateInstance before the first use of
         /// MainRunLoop::Instance to supply custom arguments to SystemRunLoop ctor.
-        /// If you don't call MainRunLoopCreateInstance::Parameterize, MainRunLoop
+        /// If you don't call MainRunLoop::CreateInstance, MainRunLoop
         /// will create a \see{ThreadRunLoop} on it's first invocation of Instance.
         ///
-        /// VERY IMPORTANT: MainRunLoopCreateInstance::Parameterize performs initialization
+        /// VERY IMPORTANT: MainRunLoop::CreateInstance performs initialization
         /// (calls Thread::SetMainThread ()) that only makes sense when called from the
         /// main thread (main).
         ///
@@ -68,7 +70,7 @@ namespace thekogans {
         ///         LPSTR /*lpCmdLine*/,
         ///         int /*nCmdShow*/) {
         ///     ...
-        ///     util::MainRunLoopCreateInstance::Parameterize (
+        ///     util::MainRunLoop::CreateInstance (
         ///         "MainRunLoop",
         ///         util::RunLoop::JobExecutionPolicy::Ptr (
         ///             new util::RunLoop::FIFOJobExecutionPolicy),
@@ -104,7 +106,7 @@ namespace thekogans {
         ///         int /*argc*/,
         ///         const char * /*argv*/ []) {
         ///     ...
-        ///     util::MainRunLoopCreateInstance::Parameterize (
+        ///     util::MainRunLoop::CreateInstance (
         ///         "MainRunLoop",
         ///         util::RunLoop::JobExecutionPolicy::Ptr (
         ///             new util::RunLoop::FIFOJobExecutionPolicy),
@@ -140,7 +142,7 @@ namespace thekogans {
         ///     //util::RunLoop::CocoaInitializer cocoaInitializer;
         ///     //util::RunLoop::WorkerInitializer workerInitializer (&cocoaInitializer);
         ///     ...
-        ///     util::MainRunLoopCreateInstance::Parameterize (
+        ///     util::MainRunLoop::CreateInstance (
         ///         "MainRunLoop",
         ///         util::RunLoop::JobExecutionPolicy::Ptr (
         ///             new util::RunLoop::FIFOJobExecutionPolicy),
@@ -156,106 +158,103 @@ namespace thekogans {
         /// \endcode
 
         struct _LIB_THEKOGANS_UTIL_DECL MainRunLoopCreateInstance {
-            /// \brief
-            /// "MainRunLoop"
-            static const char * MAIN_RUN_LOOP_NAME;
-
-        private:
-            /// \brief
-            /// \see{RunLoop} name.
-            static std::string name;
-            /// \brief
-            /// JobQueue \see{RunLoop::JobExecutionPolicy}.
-            static RunLoop::JobExecutionPolicy::Ptr jobExecutionPolicy;
-            /// \brief
-            /// true = the main thread will call MainRunLoop::Instance ().Start ().
         #if defined (TOOLCHAIN_OS_Windows)
-            /// \brief
-            /// Callback to process Windows HWND events.
-            static SystemRunLoop::EventProcessor eventProcessor;
-            /// \brief
-            /// Optional user data passed to eventProcessor.
-            static void *userData;
-            /// \brief
-            /// Windows window.
-            static Window::Ptr window;
-        #elif defined (TOOLCHAIN_OS_Linux)
-        #if defined (THEKOGANS_UTIL_HAVE_XLIB)
-            /// \brief
-            /// Callback to process Xlib XEvent events.
-            static SystemRunLoop::EventProcessor eventProcessor;
-            /// \brief
-            /// Optional user data passed to eventProcessor.
-            static void *userData;
-            /// \brief
-            /// Xlib server display name.
-            static SystemRunLoop::XlibWindow::Ptr window;
-            /// \brief
-            /// A list of displays to listen to.
-            static std::vector<Display *> displays;
-        #endif // defined (THEKOGANS_UTIL_HAVE_XLIB)
-        #elif defined (TOOLCHAIN_OS_OSX)
-            /// \brief
-            /// OS X run loop object.
-            static SystemRunLoop::OSXRunLoop::Ptr runLoop;
-        #endif // defined (TOOLCHAIN_OS_Windows)
-
-        public:
-            /// \brief
-            /// Call before the first use of MainRunLoop::Instance.
-            /// \param[in] name_ RunLoop name.
-            /// \param[in] jobExecutionPolicy_ JobQueue \see{RunLoop::JobExecutionPolicy}.
-            static void Parameterize (
-                const std::string &name_,
-                RunLoop::JobExecutionPolicy::Ptr jobExecutionPolicy_);
-        #if defined (TOOLCHAIN_OS_Windows)
-            /// \brief
-            /// Call before the first use of MainRunLoop::Instance.
-            /// \param[in] name_ RunLoop name.
-            /// \param[in] jobExecutionPolicy_ JobQueue \see{RunLoop::JobExecutionPolicy}.
-            /// \param[in] eventProcessor_ Callback to process Windows HWND events.
-            /// \param[in] userData_ Optional user data passed to eventProcessor.
-            /// \param[in] window_ Windows window.
-            static void Parameterize (
-                const std::string &name_,
-                RunLoop::JobExecutionPolicy::Ptr jobExecutionPolicy_,
-                SystemRunLoop::EventProcessor eventProcessor_,
-                void *userData_,
-                Window::Ptr window_);
-        #elif defined (TOOLCHAIN_OS_Linux)
-        #if defined (THEKOGANS_UTIL_HAVE_XLIB)
-            /// \brief
-            /// Call before the first use of MainRunLoop::Instance.
-            /// \param[in] name_ RunLoop name.
-            /// \param[in] jobExecutionPolicy_ JobQueue \see{RunLoop::JobExecutionPolicy}.
-            /// \param[in] eventProcessor_ Callback to process Xlib XEvent events.
-            /// \param[in] userData_ Optional user data passed to eventProcessor.
-            /// \param[in] window_ Xlib server window.
-            /// \param[in] displays_ A list of displays to listen to.
-            static void Parameterize (
-                const std::string &name_,
-                RunLoop::JobExecutionPolicy::Ptr jobExecutionPolicy_,
-                SystemRunLoop::EventProcessor eventProcessor_,
-                void *userData_,
-                SystemRunLoop::XlibWindow::Ptr window_,
-                const std::vector<Display *> &displays_);
-        #endif // defined (THEKOGANS_UTIL_HAVE_XLIB)
-        #elif defined (TOOLCHAIN_OS_OSX)
-            /// \brief
-            /// Call before the first use of MainRunLoop::Instance.
-            /// \param[in] name_ RunLoop name.
-            /// \param[in] jobExecutionPolicy_ JobQueue \see{RunLoop::JobExecutionPolicy}.
-            /// \param[in] runLoop_ OS X run loop object.
-            static void Parameterize (
-                const std::string &name_,
-                RunLoop::JobExecutionPolicy::Ptr jobExecutionPolicy_,
-                SystemRunLoop::OSXRunLoop::Ptr runLoop_);
-        #endif // defined (TOOLCHAIN_OS_Windows)
-
             /// \brief
             /// Create a main thread run loop with custom ctor arguments.
+            /// \param[in] name RunLoop name.
+            /// \param[in] jobExecutionPolicy JobQueue \see{RunLoop::JobExecutionPolicy}.
+            /// \param[in] eventProcessor Callback to process Windows HWND events.
+            /// \param[in] userData Optional user data passed to eventProcessor.
+            /// \param[in] window Windows window.
             /// \return A main thread run loop with custom ctor arguments.
-            RunLoop *operator () ();
+            RunLoop *operator () (
+                    const std::string &name = "MainRunLoop",
+                    RunLoop::JobExecutionPolicy::Ptr jobExecutionPolicy =
+                        RunLoop::JobExecutionPolicy::Ptr (new RunLoop::FIFOJobExecutionPolicy),
+                    SystemRunLoop::EventProcessor eventProcessor = 0,
+                    void *userData = 0,
+                    Window::Ptr window = Window::Ptr (0)) {
+                Thread::SetMainThread ();
+                return window.get () != 0 ?
+                    (RunLoop *)new SystemRunLoop (
+                        name,
+                        jobExecutionPolicy,
+                        eventProcessor,
+                        userData,
+                        std::move (window)) :
+                    (RunLoop *)new ThreadRunLoop (
+                        name,
+                        jobExecutionPolicy);
+            }
+        #elif defined (TOOLCHAIN_OS_Linux)
+        #if defined (THEKOGANS_UTIL_HAVE_XLIB)
+            /// \brief
+            /// Create a main thread run loop with custom ctor arguments.
+            /// \param[in] name RunLoop name.
+            /// \param[in] jobExecutionPolicy JobQueue \see{RunLoop::JobExecutionPolicy}.
+            /// \param[in] eventProcessor Callback to process Xlib XEvent events.
+            /// \param[in] userData Optional user data passed to eventProcessor.
+            /// \param[in] window Xlib server window.
+            /// \param[in] displays A list of displays to listen to.
+            /// \return A main thread run loop with custom ctor arguments.
+            RunLoop *operator () (
+                    const std::string &name = "MainRunLoop",
+                    RunLoop::JobExecutionPolicy::Ptr jobExecutionPolicy =
+                        RunLoop::JobExecutionPolicy::Ptr (new RunLoop::FIFOJobExecutionPolicy),
+                    SystemRunLoop::EventProcessor eventProcessor = 0,
+                    void *userData = 0,
+                    SystemRunLoop::XlibWindow::Ptr window = SystemRunLoop::XlibWindow::Ptr (0),
+                    const std::vector<Display *> &displays = std::vector<Display *> ()) {
+                Thread::SetMainThread ();
+                return eventProcessor != 0 ?
+                    (RunLoop *)new SystemRunLoop (
+                        name,
+                        jobExecutionPolicy,
+                        eventProcessor,
+                        userData,
+                        std::move (window),
+                        displays) :
+                    (RunLoop *)new ThreadRunLoop (
+                        name,
+                        jobExecutionPolicy);
+            }
+        #else // defined (THEKOGANS_UTIL_HAVE_XLIB)
+            /// \brief
+            /// Create a main thread run loop with custom ctor arguments.
+            /// \param[in] name RunLoop name.
+            /// \param[in] jobExecutionPolicy JobQueue \see{RunLoop::JobExecutionPolicy}.
+            /// \return A main thread run loop with custom ctor arguments.
+            RunLoop *operator () (
+                    const std::string &name = "MainRunLoop",
+                    RunLoop::JobExecutionPolicy::Ptr jobExecutionPolicy =
+                        RunLoop::JobExecutionPolicy::Ptr (new RunLoop::FIFOJobExecutionPolicy)) {
+                Thread::SetMainThread ();
+                return (RunLoop *)new ThreadRunLoop (name, jobExecutionPolicy);
+            }
+        #endif // defined (THEKOGANS_UTIL_HAVE_XLIB)
+        #elif defined (TOOLCHAIN_OS_OSX)
+            /// \brief
+            /// Create a main thread run loop with custom ctor arguments.
+            /// \param[in] name RunLoop name.
+            /// \param[in] jobExecutionPolicy JobQueue \see{RunLoop::JobExecutionPolicy}.
+            /// \param[in] runLoop OS X run loop object.
+            /// \return A main thread run loop with custom ctor arguments.
+            RunLoop *operator () (
+                    const std::string &name = "MainRunLoop",
+                    RunLoop::JobExecutionPolicy::Ptr jobExecutionPolicy =
+                        RunLoop::JobExecutionPolicy::Ptr (new RunLoop::FIFOJobExecutionPolicy),
+                    SystemRunLoop::OSXRunLoop::Ptr runLoop = SystemRunLoop::OSXRunLoop::Ptr (0)) {
+                Thread::SetMainThread ();
+                return runLoop.Get () != 0 ?
+                    (RunLoop *)new SystemRunLoop (
+                        name,
+                        jobExecutionPolicy,
+                        runLoop) :
+                    (RunLoop *)new ThreadRunLoop (
+                        name,
+                        jobExecutionPolicy);
+            }
+        #endif // defined (TOOLCHAIN_OS_Windows)
         };
 
         /// \struct MainRunLoop MainRunLoop.h thekogans/util/MainRunLoop.h

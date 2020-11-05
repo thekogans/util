@@ -771,57 +771,5 @@ namespace thekogans {
             }
         }
 
-        std::vector<Pipeline::Stage> GlobalPipelineCreateInstance::stages;
-        std::string GlobalPipelineCreateInstance::name = std::string ();
-        Pipeline::JobExecutionPolicy::Ptr GlobalPipelineCreateInstance::jobExecutionPolicy =
-            Pipeline::JobExecutionPolicy::Ptr (new Pipeline::FIFOJobExecutionPolicy);
-        std::size_t GlobalPipelineCreateInstance::workerCount = 1;
-        i32 GlobalPipelineCreateInstance::workerPriority = THEKOGANS_UTIL_NORMAL_THREAD_PRIORITY;
-        ui32 GlobalPipelineCreateInstance::workerAffinity = THEKOGANS_UTIL_MAX_THREAD_AFFINITY;
-        RunLoop::WorkerCallback *GlobalPipelineCreateInstance::workerCallback = 0;
-
-        void GlobalPipelineCreateInstance::Parameterize (
-                const Pipeline::Stage *begin_,
-                const Pipeline::Stage *end_,
-                const std::string &name_,
-                Pipeline::JobExecutionPolicy::Ptr jobExecutionPolicy_,
-                std::size_t workerCount_,
-                i32 workerPriority_,
-                ui32 workerAffinity_,
-                RunLoop::WorkerCallback *workerCallback_) {
-            if (begin_ != 0 && end_ != 0 && jobExecutionPolicy_.Get () != 0 && workerCount_ > 0) {
-                stages = std::vector<Pipeline::Stage> (begin_, end_);
-                name = name_;
-                jobExecutionPolicy = jobExecutionPolicy_;
-                workerCount = workerCount_;
-                workerPriority = workerPriority_;
-                workerAffinity = workerAffinity_;
-                workerCallback = workerCallback_;
-            }
-            else {
-                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
-            }
-        }
-
-        Pipeline *GlobalPipelineCreateInstance::operator () () {
-            if (!stages.empty ()) {
-                return new Pipeline (
-                    stages.data (),
-                    stages.data () + stages.size (),
-                    name,
-                    jobExecutionPolicy,
-                    workerCount,
-                    workerPriority,
-                    workerAffinity,
-                    workerCallback);
-            }
-            else {
-                THEKOGANS_UTIL_THROW_STRING_EXCEPTION ("%s",
-                    "Must provide GlobalPipeline stages. "
-                    "Call GlobalPipelineCreateInstance::Parameterize.");
-            }
-        }
-
     } // namespace util
 } // namespace thekogans

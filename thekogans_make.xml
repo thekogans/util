@@ -2,7 +2,7 @@
                 project = "util"
                 project_type = "library"
                 major_version = "0"
-                minor_version = "33"
+                minor_version = "34"
                 patch_version = "0"
                 guid = "e541acd69d9d020f7eac98d5bf9e0d7a"
                 schema_version = "2">
@@ -635,7 +635,6 @@
     <cpp_source>JobQueuePool.cpp</cpp_source>
     <cpp_source>LoggerMgr.cpp</cpp_source>
     <cpp_source>MD5.cpp</cpp_source>
-    <cpp_source>MainRunLoop.cpp</cpp_source>
     <cpp_source>MemoryLogger.cpp</cpp_source>
     <cpp_source>MimeTypeMapper.cpp</cpp_source>
     <cpp_source>Mutex.cpp</cpp_source>

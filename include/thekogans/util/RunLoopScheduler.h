@@ -332,30 +332,17 @@ namespace thekogans {
         /// \struct GlobalRunLoopSchedulerCreateInstance RunLoopScheduler.h thekogans/util/RunLoopScheduler.h
         ///
         /// \brief
-        /// Call GlobalRunLoopSchedulerCreateInstance::Parameterize before the first use of
+        /// Call GlobalRunLoopScheduler::CreateInstance before the first use of
         /// GlobalRunLoopScheduler::Instance to supply custom arguments to GlobalRunLoopScheduler ctor.
 
         struct _LIB_THEKOGANS_UTIL_DECL GlobalRunLoopSchedulerCreateInstance {
             /// \brief
-            /// "GlobalRunLoopScheduler"
-            static const char *GLOBAL_RUN_LOOP_SCHEDULER_NAME;
-
-        private:
-            /// \brief
-            /// RunLoopScheduler name. If set, \see{RunLoopScheduler::Worker} threads will be named name-%d.
-            static std::string name;
-
-        public:
-            /// \brief
-            /// Call before the first use of GlobalRunLoopScheduler::Instance to provide
-            /// custom ctor arguments to GlobalRunLoopScheduler.
-            /// \param[in] name_ RunLoopScheduler name.
-            static void Parameterize (const std::string &name_ = GLOBAL_RUN_LOOP_SCHEDULER_NAME);
-
-            /// \brief
             /// Create a global run loop scheduler with custom ctor arguments.
+            /// \param[in] name RunLoopScheduler name.
             /// \return A global run loop scheduler with custom ctor arguments.
-            RunLoopScheduler *operator () ();
+            RunLoopScheduler *operator () (const std::string &name = "GlobalRunLoopScheduler") {
+                return new RunLoopScheduler (name);
+            }
         };
 
         /// \struct GlobalRunLoopScheduler RunLoopScheduler.h thekogans/util/RunLoopScheduler.h

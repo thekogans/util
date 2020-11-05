@@ -247,10 +247,10 @@ namespace thekogans {
             ///
             /// \brief
             /// Base class for OS X based run loop.
-            struct OSXRunLoop {
+            struct OSXRunLoop : public ThreadSafeRefCounted {
                 /// \brief
                 /// Convenient typedef for ThreadSafeRefCounted::Ptr<OSXRunLoop>.
-                typedef std::unique_ptr<OSXRunLoop> Ptr;
+                typedef ThreadSafeRefCounted::Ptr<OSXRunLoop> Ptr;
 
                 /// \brief
                 /// dtor.

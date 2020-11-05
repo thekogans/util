@@ -45,47 +45,24 @@ namespace thekogans {
         /// \struct ConsoleCreateInstance Console.h thekogans/util/Console.h
         ///
         /// \brief
-        /// Call ConsoleCreateInstance::Parameterize before the first use of
+        /// Call Console::CreateInstance before the first use of
         /// Conolse::Instance to supply custom arguments to Console ctor.
 
         struct _LIB_THEKOGANS_UTIL_DECL ConsoleCreateInstance {
-        private:
-            /// \brief
-            /// true == Serialize access to std::cout and std::cerr.
-            static bool threadSafePrintString;
-            /// \brief
-            /// true == Hook CTRL-C to call MainRunLoop::Instance ().Stop ().
-            static bool hookCtrlBreak;
-            /// \brief
-            /// Linux and OS X only. true == Hook SIGCHLD to call wait.
-            /// IMPORTANT: hookChild allows you to reap zombie children
-            /// without waiting for them explicitly. If you use this
-            /// functionality you need to use \see{ChildProcess::Spawn}
-            /// as \see{ChildProcess::Exec} calls wait internally.
-            static bool hookChild;
-            /// \brief
-            /// Linux only. true == Turn on core dump.
-            static bool coreDump;
-
-        public:
-            /// \brief
-            /// Call before the first use of Console::Instance.
-            /// \param[in] threadSafePrintString_ true == Serialize access to std::cout and std::cerr.
-            /// \param[in] hookCtrlBreak_ true == Hook CTRL-C to call MainRunLoop::Instance ().Stop ().
-            /// \param[in] hookChild_ Linux and OS X only. true == Hook SIGCHLD to avoid zombie children.
-            /// NOTE: You should only pass in true for hookChild_ if you're calling \see{ChildProcess::Spawn}
-            /// (instead of \see{ChildProcess::Exec}, and you don't want to reap the zombie children yourself.
-            /// \param[in] coreDump_ Linux only. true == Turn on core dump.
-            static void Parameterize (
-                bool threadSafePrintString_ = true,
-                bool hookCtrlBreak_ = true,
-                bool hookChild_ = false,
-                bool coreDump_ = true);
-
             /// \brief
             /// Create a console with custom ctor arguments.
+            /// \param[in] threadSafePrintString true == Serialize access to std::cout and std::cerr.
+            /// \param[in] hookCtrlBreak true == Hook CTRL-C to call MainRunLoop::Instance ().Stop ().
+            /// \param[in] hookChild Linux and OS X only. true == Hook SIGCHLD to avoid zombie children.
+            /// NOTE: You should only pass in true for hookChild_ if you're calling \see{ChildProcess::Spawn}
+            /// (instead of \see{ChildProcess::Exec}, and you don't want to reap the zombie children yourself.
+            /// \param[in] coreDump Linux only. true == Turn on core dump.
             /// \return A console with custom ctor arguments.
-            Console *operator () ();
+            Console *operator () (
+                    bool threadSafePrintString = true,
+                    bool hookCtrlBreak = true,
+                    bool hookChild = false,
+                    bool coreDump = true);
         };
 
         /// \struct Console Console.h thekogans/util/Console.h

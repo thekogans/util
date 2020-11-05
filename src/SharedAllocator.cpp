@@ -188,23 +188,5 @@ namespace thekogans {
             return header->rootObject != 0 ? GetPtrFromOffset (header->rootObject) : 0;
         }
 
-        const char *GlobalSharedAllocatorCreateInstance::DEFAULT_GLOBAL_SHARED_ALLOCATOR_NAME = "GlobalSharedAllocator";
-        const char *GlobalSharedAllocatorCreateInstance::name = DEFAULT_GLOBAL_SHARED_ALLOCATOR_NAME;
-        ui64 GlobalSharedAllocatorCreateInstance::size = DEFAULT_GLOBAL_SHARED_ALLOCATOR_SIZE;
-        bool GlobalSharedAllocatorCreateInstance::secure = false;
-
-        void GlobalSharedAllocatorCreateInstance::Parameterize (
-                const char *name_,
-                ui64 size_,
-                bool secure_) {
-            name = name_;
-            size = size_;
-            secure = secure_;
-        }
-
-        SharedAllocator *GlobalSharedAllocatorCreateInstance::operator () () {
-            return new SharedAllocator (name, size, secure);
-        }
-
     } // namespace util
 } // namespace thekogans

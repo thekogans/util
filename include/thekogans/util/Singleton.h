@@ -40,27 +40,13 @@ namespace thekogans {
         ///
         /// \code{.cpp}
         /// struct GlobalJobQueueCreateInstance {
-        ///     static std::string name;
-        ///     static RunLoop::JobExecutionPolicy::Ptr jobExecutionPolicy;
-        ///     static std::size_t workerCount;
-        ///     static i32 workerPriority;
-        ///     static ui32 workerAffinity;
-        ///
-        ///     static void Parameterize (
-        ///             const std::string &name_ = std::string (),
-        ///             RunLoop::JobExecutionPolicy::Ptr jobExecutionPolicy_ =
+        ///     JobQueue *operator () (
+        ///             const std::string &name = "GlobalJobQueue",
+        ///             RunLoop::JobExecutionPolicy::Ptr jobExecutionPolicy =
         ///                 RunLoop::JobExecutionPolicy::Ptr (new RunLoop::FIFOJobExecutionPolicy),
-        ///             std::size_t workerCount_ = 1,
-        ///             i32 workerPriority_ = THEKOGANS_UTIL_NORMAL_THREAD_PRIORITY,
-        ///             ui32 workerAffinity_ = THEKOGANS_UTIL_MAX_THREAD_AFFINITY) {
-        ///         name = name_;
-        ///         jobExecutionPolicy = jobExecutionPolicy_;
-        ///         workerCount = workerCount_;
-        ///         workerPriority = workerPriority_;
-        ///         workerAffinity = workerAffinity_;
-        ///     }
-        ///
-        ///     JobQueue *operator () () {
+        ///             std::size_t workerCount = 1,
+        ///             i32 workerPriority = THEKOGANS_UTIL_NORMAL_THREAD_PRIORITY,
+        ///             ui32 workerAffinity = THEKOGANS_UTIL_MAX_THREAD_AFFINITY) {
         ///         return new JobQueue (
         ///             name,
         ///             jobExecutionPolicy,
@@ -73,7 +59,7 @@ namespace thekogans {
         /// struct _LIB_THEKOGANS_UTIL_DECL GlobalJobQueue :
         ///     public Singleton<JobQueue, SpinLock, GlobalJobQueueCreateInstance> {};
         ///
-        /// // Call GlobalJobQueueCreateInstance::Parameterize (...); before calling
+        /// // Call GlobalJobQueue::CreateInstance (...); before calling
         /// // GlobalJobQueue::Instance () and the GlobalJobQueue instance will be
         /// // created with your custom arguments.
         /// \endcode
@@ -83,8 +69,9 @@ namespace thekogans {
             /// \brief
             /// Create a single instance using the default ctor.
             /// \return Singleton instance.
-            inline T *operator () () {
-                return new T;
+            template<typename... arg_types>
+            inline T *operator () (arg_types... args) {
+                return new T (std::forward<arg_types> (args)...);
             }
         };
 
@@ -159,12 +146,8 @@ namespace thekogans {
             typename DestroyInstance = DefaultDestroyInstance<T>>
         struct Singleton {
             /// \brief
-            /// Alternative to using CreateInstance and DestroyInstance.
             /// Uses modern C++ template facilities to provide singleton
             /// ctor parameters.
-            /// IMPORTANT: If you're going to use CreateSingleton, do not
-            /// provide a CreateInstance and if you are going to provide
-            /// DestroyInstance, make sure it uses delete.
             /// \param[in] args Variable length list of parameters to pass
             /// to singleton instance ctor.
             template<typename... arg_types>
@@ -178,7 +161,7 @@ namespace thekogans {
                     // we get to create the actual instance!
                     LockGuard<Lock> guard (lock);
                     if (instance == 0) {
-                        instance = new T (std::forward<arg_types> (args)...);
+                        instance = CreateInstance () (std::forward<arg_types> (args)...);
                     }
                 }
                 assert (instance != 0);

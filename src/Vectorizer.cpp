@@ -168,19 +168,5 @@ namespace thekogans {
             }
         }
 
-        std::size_t GlobalVectorizerCreateInstance::workerCount = SystemInfo::Instance ().GetCPUCount ();
-        i32 GlobalVectorizerCreateInstance::workerPriority = THEKOGANS_UTIL_NORMAL_THREAD_PRIORITY;
-
-        void GlobalVectorizerCreateInstance::Parameterize (
-                std::size_t workerCount_,
-                i32 workerPriority_) {
-            workerCount = workerCount_;
-            workerPriority = workerPriority_;
-        }
-
-        Vectorizer *GlobalVectorizerCreateInstance::operator () () {
-            return new Vectorizer (workerCount, workerPriority);
-        }
-
     } // namespace util
 } // namespace thekogans

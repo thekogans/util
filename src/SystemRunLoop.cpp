@@ -254,8 +254,8 @@ namespace thekogans {
                 JobExecutionPolicy::Ptr jobExecutionPolicy,
                 OSXRunLoop::Ptr runLoop_) :
                 RunLoop (name, jobExecutionPolicy),
-                runLoop (std::move (runLoop_)) {
-            if (runLoop.get () == 0) {
+                runLoop (runLoop_) {
+            if (runLoop.Get () == 0) {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
                     THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
             }

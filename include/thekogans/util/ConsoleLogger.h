@@ -31,7 +31,7 @@ namespace thekogans {
         /// \struct ConsoleLogger ConsoleLogger.h thekogans/util/ConsoleLogger.h
         ///
         /// \brief
-        /// A pluggable Logger instance used to dump log entries to Console::StdStream.
+        /// A pluggable Logger instance used to dump log entries to \see{Console::StdStream}.
         /// ConsoleLogger uses a color scheme to color code the entries based on their
         /// log level.
         /// VERY IMPORTANT: By instantiating a ConsoleLogger, I assume that the application
@@ -39,8 +39,7 @@ namespace thekogans {
         /// in it's ctor (See \see{ConsoleCreateInstance}) that's required by \see{MainRunLoop}
         /// and \see{ChildProcess}. ConsoleLogger ctor explicitly creates the \see{Console}
         /// \see{Singleton}. If you need to supply custom \see{Console} ctor parameters you
-        /// need to call \see{ConsoleCreateInstance::Parameterize} before instantiating a
-        /// ConsoleLogger.
+        /// need to call \see{Console::CreateInstance} before instantiating a \see{Console::Instance}.
 
         struct _LIB_THEKOGANS_UTIL_DECL ConsoleLogger : public Logger {
             /// \struct ConsoleLogger::ColorScheme ConsoleLogger.h thekogans/util/ConsoleLogger.h

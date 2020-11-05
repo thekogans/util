@@ -181,58 +181,36 @@ namespace thekogans {
         /// \struct GlobalJobQueueCreateInstance JobQueue.h thekogans/util/JobQueue.h
         ///
         /// \brief
-        /// Call GlobalJobQueueCreateInstance::Parameterize before the first use of
+        /// Call GlobalJobQueue::CreateInstance before the first use of
         /// GlobalJobQueue::Instance to supply custom arguments to GlobalJobQueue ctor.
 
         struct _LIB_THEKOGANS_UTIL_DECL GlobalJobQueueCreateInstance {
             /// \brief
-            /// "GlobalJobQueue"
-            static const char *GLOBAL_JOB_QUEUE_NAME;
-
-        private:
-            /// \brief
-            /// JobQueue name. If set, \see{JobQueue::Worker} threads will be named name-%d.
-            static std::string name;
-            /// \brief
-            /// JobQueue \see{RunLoop::JobExecutionPolicy}.
-            static RunLoop::JobExecutionPolicy::Ptr jobExecutionPolicy;
-            /// \brief
-            /// Number of workers servicing the queue.
-            static std::size_t workerCount;
-            /// \brief
-            /// Worker thread priority.
-            static i32 workerPriority;
-            /// \brief
-            /// Worker thread processor affinity.
-            static ui32 workerAffinity;
-            /// \brief
-            /// Called to initialize/uninitialize the worker thread.
-            static RunLoop::WorkerCallback *workerCallback;
-
-        public:
-            /// \brief
-            /// Call before the first use of GlobalJobQueue::Instance to provide
-            /// custom ctor arguments to GlobalJobQueue.
-            /// \param[in] name_ JobQueue name. If set, \see{JobQueue::Worker}
-            /// threads will be named name-%d.
-            /// \param[in] jobExecutionPolicy_ JobQueue \see{RunLoop::JobExecutionPolicy}.
-            /// \param[in] workerCount_ Max workers to service the queue.
-            /// \param[in] workerPriority_ Worker thread priority.
-            /// \param[in] workerAffinity_ Worker thread processor affinity.
-            /// \param[in] workerCallback_ Called to initialize/uninitialize the worker thread.
-            static void Parameterize (
-                const std::string &name_ = GLOBAL_JOB_QUEUE_NAME,
-                RunLoop::JobExecutionPolicy::Ptr jobExecutionPolicy_ =
-                    RunLoop::JobExecutionPolicy::Ptr (new RunLoop::FIFOJobExecutionPolicy),
-                std::size_t workerCount_ = 1,
-                i32 workerPriority_ = THEKOGANS_UTIL_NORMAL_THREAD_PRIORITY,
-                ui32 workerAffinity_ = THEKOGANS_UTIL_MAX_THREAD_AFFINITY,
-                RunLoop::WorkerCallback *workerCallback_ = 0);
-
-            /// \brief
             /// Create a global job queue with custom ctor arguments.
+            /// \param[in] name JobQueue name. If set, \see{JobQueue::Worker}
+            /// threads will be named name-%d.
+            /// \param[in] jobExecutionPolicy JobQueue \see{RunLoop::JobExecutionPolicy}.
+            /// \param[in] workerCount Max workers to service the queue.
+            /// \param[in] workerPriority Worker thread priority.
+            /// \param[in] workerAffinity Worker thread processor affinity.
+            /// \param[in] workerCallback Called to initialize/uninitialize the worker thread.
             /// \return A global job queue with custom ctor arguments.
-            JobQueue *operator () ();
+            JobQueue *operator () (
+                    const std::string &name = "GlobalJobQueue",
+                    RunLoop::JobExecutionPolicy::Ptr jobExecutionPolicy =
+                        RunLoop::JobExecutionPolicy::Ptr (new RunLoop::FIFOJobExecutionPolicy),
+                    std::size_t workerCount = 1,
+                    i32 workerPriority = THEKOGANS_UTIL_NORMAL_THREAD_PRIORITY,
+                    ui32 workerAffinity = THEKOGANS_UTIL_MAX_THREAD_AFFINITY,
+                    RunLoop::WorkerCallback *workerCallback = 0) {
+                return new JobQueue (
+                    name,
+                    jobExecutionPolicy,
+                    workerCount,
+                    workerPriority,
+                    workerAffinity,
+                    workerCallback);
+            }
         };
 
         /// \struct GlobalJobQueue JobQueue.h thekogans/util/JobQueue.h

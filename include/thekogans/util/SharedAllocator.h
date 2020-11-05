@@ -420,45 +420,23 @@ namespace thekogans {
         /// \struct GlobalSharedAllocatorCreateInstance SharedAllocator.h thekogans/util/SharedAllocator.h
         ///
         /// \brief
-        /// Call GlobalSharedAllocatorCreateInstance::Parameterize before the first call to
-        /// GlobalSharedAllocator::Instance () to provice custom ctor arguments to the global
-        /// shared allocator instance.
+        /// Call GlobalSharedAllocator::CreateInstance before the first call to
+        /// GlobalSharedAllocator::Instance () to provice custom ctor arguments
+        /// to the global shared allocator instance.
 
         struct _LIB_THEKOGANS_UTIL_DECL GlobalSharedAllocatorCreateInstance {
-        private:
-            /// \brief
-            /// Global name used to identify the shared region.
-            static const char *name;
-            /// \brief
-            /// Size of the shared region.
-            static ui64 size;
-            /// \brief
-            /// Lock the pages in memory to prevent swapping.
-            static bool secure;
-
-        public:
-            /// \brief
-            /// Default GlobalSharedAllocator name.
-            static const char *DEFAULT_GLOBAL_SHARED_ALLOCATOR_NAME;
-            /// \brief
-            /// Default GlobalSharedAllocator size.
-            enum : ui64 {
-                DEFAULT_GLOBAL_SHARED_ALLOCATOR_SIZE = 16 * 1024
-            };
-            /// \brief
-            /// Call before the first use of GlobalSharedAllocator::Instance.
-            /// \param[in] name_ Global name used to identify the shared region.
-            /// \param[in] size_ Size of the shared region.
-            /// \param[in] secure_ Lock the pages in memory to prevent swapping.
-            static void Parameterize (
-                const char *name_ = DEFAULT_GLOBAL_SHARED_ALLOCATOR_NAME,
-                ui64 size_ = DEFAULT_GLOBAL_SHARED_ALLOCATOR_SIZE,
-                bool secure_ = false);
-
             /// \brief
             /// Create a global shared allocator with custom ctor arguments.
+            /// \param[in] name Global name used to identify the shared region.
+            /// \param[in] size Size of the shared region.
+            /// \param[in] secure Lock the pages in memory to prevent swapping.
             /// \return A global shared allocator with custom ctor arguments.
-            SharedAllocator *operator () ();
+            SharedAllocator *operator () (
+                    const char *name = "GlobalSharedAllocator",
+                    ui64 size = 16 * 1024,
+                    bool secure = false) {
+                return new SharedAllocator (name, size, secure);
+            }
         };
 
         /// \struct GlobalSharedAllocator SharedAllocator.h thekogans/util/SharedAllocator.h

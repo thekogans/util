@@ -39,23 +39,11 @@
 namespace thekogans {
     namespace util {
 
-        bool ConsoleCreateInstance::threadSafePrintString = true;
-        bool ConsoleCreateInstance::hookCtrlBreak = true;
-        bool ConsoleCreateInstance::hookChild = false;
-        bool ConsoleCreateInstance::coreDump = true;
-
-        void ConsoleCreateInstance::Parameterize (
-                bool threadSafePrintString_,
-                bool hookCtrlBreak_,
-                bool hookChild_,
-                bool coreDump_) {
-            threadSafePrintString = threadSafePrintString_;
-            hookCtrlBreak = hookCtrlBreak_;
-            hookChild = hookChild_;
-            coreDump = coreDump_;
-        }
-
-        Console *ConsoleCreateInstance::operator () () {
+        Console *ConsoleCreateInstance::operator () (
+                bool threadSafePrintString,
+                bool hookCtrlBreak,
+                bool hookChild,
+                bool coreDump) {
             return new Console (
                 threadSafePrintString,
                 hookCtrlBreak,

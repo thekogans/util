@@ -301,74 +301,55 @@ namespace thekogans {
         /// \struct GlobalPipelinePoolCreateInstance PipelinePool.h thekogans/util/PipelinePool.h
         ///
         /// \brief
-        /// Call GlobalPipelinePoolCreateInstance::Parameterize before the first use of
+        /// Call GlobalPipelinePool::CreateInstance before the first use of
         /// GlobalPipelinePool::Instance to supply custom arguments to GlobalPipelinePool ctor.
 
         struct _LIB_THEKOGANS_UTIL_DECL GlobalPipelinePoolCreateInstance {
             /// \brief
-            /// Default GlobalPipelinePool name.
-            static const char *DEFAULT_GLOBAL_PIPELINE_POOL_NAME;
-
-        private:
-            /// \brief
-            /// Minimum number of \see{Pipeline}s to keep in the pool.
-            static std::size_t minPipelines;
-            /// \brief
-            /// Maximum number of \see{Pipeline}s allowed in the pool.
-            static std::size_t maxPipelines;
-            /// \brief
-            /// \see{Pipeline::Stage} array.
-            static std::vector<Pipeline::Stage> stages;
-            /// \brief
-            /// \see{Pipeline} name.
-            static std::string name;
-            /// \brief
-            /// \see{Pipeline} \see{Pipeline::JobExecutionPolicy}.
-            static Pipeline::JobExecutionPolicy::Ptr jobExecutionPolicy;
-            /// \brief
-            /// Number of worker threads servicing the \see{Pipeline}.
-            static std::size_t workerCount;
-            /// \brief
-            /// \see{Pipeline} worker thread priority.
-            static i32 workerPriority;
-            /// \brief
-            /// \see{Pipeline} worker thread processor affinity.
-            static ui32 workerAffinity;
-            /// \brief
-            /// Called to initialize/uninitialize the \see{Pipeline} worker thread.
-            static RunLoop::WorkerCallback *workerCallback;
-
-        public:
-            /// \brief
-            /// Call before the first use of GlobalPipelinePool::Instance.
-            /// \param[in] minPipelines_ Minimum \see{Pipeline}s to keep in the pool.
-            /// \param[in] maxPipelines_ Maximum \see{Pipeline}s to allow the pool to grow to.
-            /// \param[in] begin_ Pointer to the beginning of the \see{Pipeline::Stage} array.
-            /// \param[in] end_ Pointer to the end of the \see{Pipeline::Stage} array.
-            /// \param[in] name_ \see{Pipeline} name.
-            /// \param[in] jobExecutionPolicy_ \see{Pipeline} \see{Pipeline::JobExecutionPolicy}.
-            /// \param[in] workerCount_ Number of worker threads servicing the \see{Pipeline}.
-            /// \param[in] workerPriority_ \see{Pipeline} worker thread priority.
-            /// \param[in] workerAffinity_ \see{Pipeline} worker thread processor affinity.
-            /// \param[in] workerCallback_ Called to initialize/uninitialize the \see{Pipeline}
-            /// thread.
-            static void Parameterize (
-                std::size_t minPipelines_,
-                std::size_t maxPipelines_,
-                const Pipeline::Stage *begin_,
-                const Pipeline::Stage *end_,
-                const std::string &name_ = DEFAULT_GLOBAL_PIPELINE_POOL_NAME,
-                Pipeline::JobExecutionPolicy::Ptr jobExecutionPolicy_ =
-                    Pipeline::JobExecutionPolicy::Ptr (new Pipeline::FIFOJobExecutionPolicy),
-                std::size_t workerCount_ = 1,
-                i32 workerPriority_ = THEKOGANS_UTIL_NORMAL_THREAD_PRIORITY,
-                ui32 workerAffinity_ = THEKOGANS_UTIL_MAX_THREAD_AFFINITY,
-                RunLoop::WorkerCallback *workerCallback_ = 0);
-
-            /// \brief
             /// Create a global \see{PipelinePool} with custom ctor arguments.
+            /// \param[in] minPipelines Minimum \see{Pipeline}s to keep in the pool.
+            /// \param[in] maxPipelines Maximum \see{Pipeline}s to allow the pool to grow to.
+            /// \param[in] begin Pointer to the beginning of the \see{Pipeline::Stage} array.
+            /// \param[in] end Pointer to the end of the \see{Pipeline::Stage} array.
+            /// \param[in] name \see{Pipeline} name.
+            /// \param[in] jobExecutionPolicy \see{Pipeline} \see{Pipeline::JobExecutionPolicy}.
+            /// \param[in] workerCount Number of worker threads servicing the \see{Pipeline}.
+            /// \param[in] workerPriority \see{Pipeline} worker thread priority.
+            /// \param[in] workerAffinity \see{Pipeline} worker thread processor affinity.
+            /// \param[in] workerCallback Called to initialize/uninitialize the \see{Pipeline}
+            /// thread.
             /// \return A global \see{PipelinePool} with custom ctor arguments.
-            PipelinePool *operator () ();
+            PipelinePool *operator () (
+                    std::size_t minPipelines,
+                    std::size_t maxPipelines,
+                    const Pipeline::Stage *begin,
+                    const Pipeline::Stage *end,
+                    const std::string &name = "GlobalPipelinePoolCreateInstance",
+                    Pipeline::JobExecutionPolicy::Ptr jobExecutionPolicy =
+                        Pipeline::JobExecutionPolicy::Ptr (new Pipeline::FIFOJobExecutionPolicy),
+                    std::size_t workerCount = 1,
+                    i32 workerPriority = THEKOGANS_UTIL_NORMAL_THREAD_PRIORITY,
+                    ui32 workerAffinity = THEKOGANS_UTIL_MAX_THREAD_AFFINITY,
+                    RunLoop::WorkerCallback *workerCallback = 0) {
+                if (minPipelines != 0 && maxPipelines >= minPipelines && begin != 0 && end != 0) {
+                    return new PipelinePool (
+                        minPipelines,
+                        maxPipelines,
+                        begin,
+                        end,
+                        name,
+                        jobExecutionPolicy,
+                        workerCount,
+                        workerPriority,
+                        workerAffinity,
+                        workerCallback);
+                }
+                else {
+                    THEKOGANS_UTIL_THROW_STRING_EXCEPTION ("%s",
+                        "Must provide GlobalPipelinePool minPipelines, maxPipelines, begin and end. "
+                        "Call GlobalPipelinePool::CreateInstance.");
+                }
+            }
         };
 
         /// \struct GlobalPipelinePool PipelinePool.h thekogans/util/PipelinePool.h
@@ -384,9 +365,9 @@ namespace thekogans {
         /// global \see{PipelinePool} then GlobalPipelinePool::Instance () will
         /// do the trick.
         /// IMPORTANT: Unlike some other global objects, you cannot use this one
-        /// without first calling GlobalPipelinePoolCreateInstance::Parameterize
-        /// first. This is because, at the very least, you need to provide the
-        /// stages that will be implemented by the pipelines in this pool.
+        /// without first calling GlobalPipelinePool::CreateInstance first. This
+        /// is because, at the very least, you need to provide the stages that
+        /// will be implemented by the pipelines in this pool.
         struct _LIB_THEKOGANS_UTIL_DECL GlobalPipelinePool :
             public Singleton<PipelinePool, SpinLock, GlobalPipelinePoolCreateInstance> {};
 

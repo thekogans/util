@@ -227,46 +227,5 @@ namespace thekogans {
             return jobQueue;
         }
 
-        std::size_t GlobalSchedulerCreateInstance::minJobQueues = SystemInfo::Instance ().GetCPUCount ();
-        std::size_t GlobalSchedulerCreateInstance::maxJobQueues = SystemInfo::Instance ().GetCPUCount () * 2;
-        std::string GlobalSchedulerCreateInstance::name = std::string ();
-        RunLoop::JobExecutionPolicy::Ptr GlobalSchedulerCreateInstance::jobExecutionPolicy =
-            RunLoop::JobExecutionPolicy::Ptr (new RunLoop::FIFOJobExecutionPolicy);
-        std::size_t GlobalSchedulerCreateInstance::workerCount = 1;
-        i32 GlobalSchedulerCreateInstance::workerPriority = THEKOGANS_UTIL_NORMAL_THREAD_PRIORITY;
-        ui32 GlobalSchedulerCreateInstance::workerAffinity = THEKOGANS_UTIL_MAX_THREAD_AFFINITY;
-        RunLoop::WorkerCallback *GlobalSchedulerCreateInstance::workerCallback = 0;
-
-        void GlobalSchedulerCreateInstance::Parameterize (
-                std::size_t minJobQueues_,
-                std::size_t maxJobQueues_,
-                const std::string &name_,
-                RunLoop::JobExecutionPolicy::Ptr jobExecutionPolicy_,
-                std::size_t workerCount_,
-                i32 workerPriority_,
-                ui32 workerAffinity_,
-                RunLoop::WorkerCallback *workerCallback_) {
-            minJobQueues = minJobQueues_;
-            maxJobQueues = maxJobQueues_;
-            name = name_;
-            jobExecutionPolicy = jobExecutionPolicy_;
-            workerCount = workerCount_;
-            workerPriority = workerPriority_;
-            workerAffinity = workerAffinity_;
-            workerCallback = workerCallback_;
-        }
-
-        Scheduler *GlobalSchedulerCreateInstance::operator () () {
-            return new Scheduler (
-                minJobQueues,
-                maxJobQueues,
-                name,
-                jobExecutionPolicy,
-                workerCount,
-                workerPriority,
-                workerAffinity,
-                workerCallback);
-        }
-
     } // namespace util
 } // namespace thekogans

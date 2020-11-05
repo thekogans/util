@@ -163,39 +163,5 @@ namespace thekogans {
             return !workers.empty ();
         }
 
-        const char *GlobalJobQueueCreateInstance::GLOBAL_JOB_QUEUE_NAME = "GlobalJobQueue";
-        std::string GlobalJobQueueCreateInstance::name = GlobalJobQueueCreateInstance::GLOBAL_JOB_QUEUE_NAME;
-        RunLoop::JobExecutionPolicy::Ptr GlobalJobQueueCreateInstance::jobExecutionPolicy =
-            RunLoop::JobExecutionPolicy::Ptr (new RunLoop::FIFOJobExecutionPolicy);
-        std::size_t GlobalJobQueueCreateInstance::workerCount = 1;
-        i32 GlobalJobQueueCreateInstance::workerPriority = THEKOGANS_UTIL_NORMAL_THREAD_PRIORITY;
-        ui32 GlobalJobQueueCreateInstance::workerAffinity = THEKOGANS_UTIL_MAX_THREAD_AFFINITY;
-        RunLoop::WorkerCallback *GlobalJobQueueCreateInstance::workerCallback = 0;
-
-        void GlobalJobQueueCreateInstance::Parameterize (
-                const std::string &name_,
-                RunLoop::JobExecutionPolicy::Ptr jobExecutionPolicy_,
-                std::size_t workerCount_,
-                i32 workerPriority_,
-                ui32 workerAffinity_,
-                RunLoop::WorkerCallback *workerCallback_) {
-            name = name_;
-            jobExecutionPolicy = jobExecutionPolicy_;
-            workerCount = workerCount_;
-            workerPriority = workerPriority_;
-            workerAffinity = workerAffinity_;
-            workerCallback = workerCallback_;
-        }
-
-        JobQueue *GlobalJobQueueCreateInstance::operator () () {
-            return new JobQueue (
-                name,
-                jobExecutionPolicy,
-                workerCount,
-                workerPriority,
-                workerAffinity,
-                workerCallback);
-        }
-
     } // namespace util
 } // namespace thekogans

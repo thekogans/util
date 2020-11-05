@@ -231,31 +231,20 @@ namespace thekogans {
         /// \struct GlobalVectorizerCreateInstance Vectorizer.h thekogans/util/Vectorizer.h
         ///
         /// \brief
-        /// Call GlobalVectorizerCreateInstance::Parameterize before the first use of
+        /// Call GlobalVectorizer::CreateInstance before the first use of
         /// GlobalVectorizer::Instance to supply custom arguments to GlobalVectorizer ctor.
 
         struct _LIB_THEKOGANS_UTIL_DECL GlobalVectorizerCreateInstance {
-        private:
-            /// \brief
-            /// The width of the vector.
-            static std::size_t workerCount;
-            /// \brief
-            /// Worker thread priority.
-            static i32 workerPriority;
-
-        public:
-            /// \brief
-            /// Call before the first use of GlobalVectorizer::Instance.
-            /// \param[in] workerCount_ The width of the vector.
-            /// \param[in] workerPriority_ Worker thread priority.
-            static void Parameterize (
-                std::size_t workerCount_ = SystemInfo::Instance ().GetCPUCount (),
-                i32 workerPriority_ = THEKOGANS_UTIL_NORMAL_THREAD_PRIORITY);
-
             /// \brief
             /// Create a global vectorizer with custom ctor arguments.
+            /// \param[in] workerCount The width of the vector.
+            /// \param[in] workerPriority Worker thread priority.
             /// \return A global vectorizer with custom ctor arguments.
-            Vectorizer *operator () ();
+            Vectorizer *operator () (
+                    std::size_t workerCount = SystemInfo::Instance ().GetCPUCount (),
+                    i32 workerPriority = THEKOGANS_UTIL_NORMAL_THREAD_PRIORITY) {
+                return new Vectorizer (workerCount, workerPriority);
+            }
         };
 
         /// \struct GlobalVectorizer Vectorizer.h thekogans/util/Vectorizer.h

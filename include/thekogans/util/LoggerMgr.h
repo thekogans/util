@@ -537,51 +537,34 @@ namespace thekogans {
         /// \struct GlobalLoggerMgrCreateInstance LoggerMgr.h thekogans/util/LoggerMgr.h
         ///
         /// \brief
-        /// Call GlobalLoggerMgrCreateInstance::Parameterize before the first use of
+        /// Call GlobalLoggerMgr::CreateInstance before the first use of
         /// GlobalLoggerMgr::Instance to supply custom arguments to GlobalLoggerMgr ctor.
 
         struct _LIB_THEKOGANS_UTIL_DECL GlobalLoggerMgrCreateInstance {
-        private:
-            /// \brief
-            /// Level at which to log.
-            static ui32 level;
-            /// \brief
-            /// Decorations currently in effect.
-            static ui32 decorations;
-            /// \brief
-            /// true = Log entries immediately without the use of a JobQueue.
-            static bool blocking;
-            /// \brief
-            /// \see{JobQueue} name.
-            static std::string name;
-            /// \brief
-            /// \see{JobQueue} worker priority.
-            static i32 priority;
-            /// \brief
-            /// \see{JobQueue} worker affinity.
-            static ui32 affinity;
-
-        public:
-            /// \brief
-            /// Call before the first use of GlobalLoggerMgr::Instance.
-            /// \param[in] level_ Level at which to log.
-            /// \param[in] decorations_ Decorations currently in effect.
-            /// \param[in] blocking_ true = Log entries immediately without the use of a JobQueue.
-            /// \param[in] name_ \see{JobQueue} name.
-            /// \param[in] priority_ \see{JobQueue} worker priority.
-            /// \param[in] affinity_ \see{JobQueue} worker affinity.
-            static void Parameterize (
-                ui32 level_ = LoggerMgr::Info,
-                ui32 decorations_ = LoggerMgr::All,
-                bool blocking_ = false,
-                const std::string &name_ = "GlobalLoggerMgr",
-                i32 priority_ = THEKOGANS_UTIL_LOW_THREAD_PRIORITY,
-                ui32 affinity_ = THEKOGANS_UTIL_MAX_THREAD_AFFINITY);
-
             /// \brief
             /// Create a global job queue with custom ctor arguments.
+            /// \param[in] level Level at which to log.
+            /// \param[in] decorations Decorations currently in effect.
+            /// \param[in] blocking true = Log entries immediately without the use of a JobQueue.
+            /// \param[in] name \see{JobQueue} name.
+            /// \param[in] priority \see{JobQueue} worker priority.
+            /// \param[in] affinity \see{JobQueue} worker affinity.
             /// \return A global job queue with custom ctor arguments.
-            LoggerMgr *operator () ();
+            LoggerMgr *operator () (
+                    ui32 level = LoggerMgr::Info,
+                    ui32 decorations = LoggerMgr::All,
+                    bool blocking = false,
+                    const std::string &name = "GlobalLoggerMgr",
+                    i32 priority = THEKOGANS_UTIL_LOW_THREAD_PRIORITY,
+                    ui32 affinity = THEKOGANS_UTIL_MAX_THREAD_AFFINITY) {
+                return new LoggerMgr (
+                    level,
+                    decorations,
+                    blocking,
+                    name,
+                    priority,
+                    affinity);
+            }
         };
 
         /// \struct GlobalLoggerMgr LoggerMgr.h thekogans/util/LoggerMgr.h
@@ -596,12 +579,12 @@ namespace thekogans {
         /// Parameterize the GlobalLoggerMgr ctor.
         #define THEKOGANS_UTIL_LOG_INIT_EX(\
                 level, decorations, blocking, name, priority, affinity)\
-            thekogans::util::GlobalLoggerMgrCreateInstance::Parameterize (\
+            thekogans::util::GlobalLoggerMgr::CreateInstance (\
                 level, decorations, blocking, name, priority, affinity)
         /// \def THEKOGANS_UTIL_LOG_INIT(level, decorations)
         /// Parameterize the GlobalLoggerMgr ctor.
         #define THEKOGANS_UTIL_LOG_INIT(level, decorations)\
-            thekogans::util::GlobalLoggerMgrCreateInstance::Parameterize (level, decorations)
+            thekogans::util::GlobalLoggerMgr::CreateInstance (level, decorations)
 
         /// \def THEKOGANS_UTIL_LOG_RESET_EX(
         ///          level, decorations, flags, blocking, name, priority, affinity)
