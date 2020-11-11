@@ -799,9 +799,9 @@ namespace thekogans {
         /// \struct GlobalPipelineCreateInstance Pipeline.h thekogans/util/Pipeline.h
         ///
         /// \brief
-        /// Call GlobalPipeline::CreateInstance before the first use of
+        /// Call GlobalPipeline::CreateSingleton before the first use of
         /// GlobalPipeline::Instance to supply custom arguments to GlobalPipeline ctor.
-        /// NOTE: The call to GlobalPipeline::CreateInstance is NOT optional.
+        /// NOTE: The call to GlobalPipeline::CreateSingleton is NOT optional.
         /// You must, at the very least, provide the stages that GlobalPipeline will implement.
 
         struct _LIB_THEKOGANS_UTIL_DECL GlobalPipelineCreateInstance {
@@ -841,7 +841,7 @@ namespace thekogans {
                 else {
                     THEKOGANS_UTIL_THROW_STRING_EXCEPTION ("%s",
                         "Must provide GlobalPipeline stages. "
-                        "Call GlobalPipeline::CreateInstance.");
+                        "Call GlobalPipeline::CreateSingleton.");
                 }
             }
         };
@@ -859,7 +859,7 @@ namespace thekogans {
         /// exists to aid in that. If all you need is a single pipeline where
         /// you can schedule jobs, then GlobalPipeline::Instance () will do
         /// the trick.
-        /// IMPORTANT: Don't forget to call GlobalPipeline::CreateInstance
+        /// IMPORTANT: Don't forget to call GlobalPipeline::CreateSingleton
         /// before the first call to GlobalPipeline::Instance to provide
         /// the global pipeline stages.
         struct _LIB_THEKOGANS_UTIL_DECL GlobalPipeline :

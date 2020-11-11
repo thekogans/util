@@ -47,12 +47,12 @@ namespace thekogans {
         /// \struct MainRunLoopCreateInstance MainRunLoop.h thekogans/util/MainRunLoop.h
         ///
         /// \brief
-        /// Call MainRunLoop::CreateInstance before the first use of
+        /// Call MainRunLoop::CreateSingleton before the first use of
         /// MainRunLoop::Instance to supply custom arguments to SystemRunLoop ctor.
-        /// If you don't call MainRunLoop::CreateInstance, MainRunLoop
+        /// If you don't call MainRunLoop::CreateSingleton, MainRunLoop
         /// will create a \see{ThreadRunLoop} on it's first invocation of Instance.
         ///
-        /// VERY IMPORTANT: MainRunLoop::CreateInstance performs initialization
+        /// VERY IMPORTANT: MainRunLoop::CreateSingleton performs initialization
         /// (calls Thread::SetMainThread ()) that only makes sense when called from the
         /// main thread (main).
         ///
@@ -70,7 +70,7 @@ namespace thekogans {
         ///         LPSTR /*lpCmdLine*/,
         ///         int /*nCmdShow*/) {
         ///     ...
-        ///     util::MainRunLoop::CreateInstance (
+        ///     util::MainRunLoop::CreateSingleton (
         ///         "MainRunLoop",
         ///         util::RunLoop::JobExecutionPolicy::Ptr (
         ///             new util::RunLoop::FIFOJobExecutionPolicy),
@@ -106,7 +106,7 @@ namespace thekogans {
         ///         int /*argc*/,
         ///         const char * /*argv*/ []) {
         ///     ...
-        ///     util::MainRunLoop::CreateInstance (
+        ///     util::MainRunLoop::CreateSingleton (
         ///         "MainRunLoop",
         ///         util::RunLoop::JobExecutionPolicy::Ptr (
         ///             new util::RunLoop::FIFOJobExecutionPolicy),
@@ -142,7 +142,7 @@ namespace thekogans {
         ///     //util::RunLoop::CocoaInitializer cocoaInitializer;
         ///     //util::RunLoop::WorkerInitializer workerInitializer (&cocoaInitializer);
         ///     ...
-        ///     util::MainRunLoop::CreateInstance (
+        ///     util::MainRunLoop::CreateSingleton (
         ///         "MainRunLoop",
         ///         util::RunLoop::JobExecutionPolicy::Ptr (
         ///             new util::RunLoop::FIFOJobExecutionPolicy),

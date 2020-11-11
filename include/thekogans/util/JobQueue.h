@@ -181,7 +181,7 @@ namespace thekogans {
         /// \struct GlobalJobQueueCreateInstance JobQueue.h thekogans/util/JobQueue.h
         ///
         /// \brief
-        /// Call GlobalJobQueue::CreateInstance before the first use of
+        /// Call GlobalJobQueue::CreateSingleton before the first use of
         /// GlobalJobQueue::Instance to supply custom arguments to GlobalJobQueue ctor.
 
         struct _LIB_THEKOGANS_UTIL_DECL GlobalJobQueueCreateInstance {

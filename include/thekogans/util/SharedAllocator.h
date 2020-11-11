@@ -420,7 +420,7 @@ namespace thekogans {
         /// \struct GlobalSharedAllocatorCreateInstance SharedAllocator.h thekogans/util/SharedAllocator.h
         ///
         /// \brief
-        /// Call GlobalSharedAllocator::CreateInstance before the first call to
+        /// Call GlobalSharedAllocator::CreateSingleton before the first call to
         /// GlobalSharedAllocator::Instance () to provice custom ctor arguments
         /// to the global shared allocator instance.
 

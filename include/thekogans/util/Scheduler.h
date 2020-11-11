@@ -275,7 +275,7 @@ namespace thekogans {
         /// \struct GlobalSchedulerCreateInstance Scheduler.h thekogans/util/Scheduler.h
         ///
         /// \brief
-        /// Call GlobalScheduler::CreateInstance before the first use of
+        /// Call GlobalScheduler::CreateSingleton before the first use of
         /// GlobalScheduler::Instance to supply custom arguments to GlobalScheduler ctor.
 
         struct _LIB_THEKOGANS_UTIL_DECL GlobalSchedulerCreateInstance {

@@ -301,7 +301,7 @@ namespace thekogans {
         /// \struct GlobalPipelinePoolCreateInstance PipelinePool.h thekogans/util/PipelinePool.h
         ///
         /// \brief
-        /// Call GlobalPipelinePool::CreateInstance before the first use of
+        /// Call GlobalPipelinePool::CreateSingleton before the first use of
         /// GlobalPipelinePool::Instance to supply custom arguments to GlobalPipelinePool ctor.
 
         struct _LIB_THEKOGANS_UTIL_DECL GlobalPipelinePoolCreateInstance {
@@ -347,7 +347,7 @@ namespace thekogans {
                 else {
                     THEKOGANS_UTIL_THROW_STRING_EXCEPTION ("%s",
                         "Must provide GlobalPipelinePool minPipelines, maxPipelines, begin and end. "
-                        "Call GlobalPipelinePool::CreateInstance.");
+                        "Call GlobalPipelinePool::CreateSingleton.");
                 }
             }
         };
@@ -365,7 +365,7 @@ namespace thekogans {
         /// global \see{PipelinePool} then GlobalPipelinePool::Instance () will
         /// do the trick.
         /// IMPORTANT: Unlike some other global objects, you cannot use this one
-        /// without first calling GlobalPipelinePool::CreateInstance first. This
+        /// without first calling GlobalPipelinePool::CreateSingleton first. This
         /// is because, at the very least, you need to provide the stages that
         /// will be implemented by the pipelines in this pool.
         struct _LIB_THEKOGANS_UTIL_DECL GlobalPipelinePool :

@@ -39,18 +39,6 @@
 namespace thekogans {
     namespace util {
 
-        Console *ConsoleCreateInstance::operator () (
-                bool threadSafePrintString,
-                bool hookCtrlBreak,
-                bool hookChild,
-                bool coreDump) {
-            return new Console (
-                threadSafePrintString,
-                hookCtrlBreak,
-                hookChild,
-                coreDump);
-        }
-
         namespace {
         #if defined (TOOLCHAIN_OS_Windows)
             BOOL WINAPI CtrlBreakHandler (DWORD fdwCtrlType) {

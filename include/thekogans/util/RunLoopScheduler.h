@@ -332,7 +332,7 @@ namespace thekogans {
         /// \struct GlobalRunLoopSchedulerCreateInstance RunLoopScheduler.h thekogans/util/RunLoopScheduler.h
         ///
         /// \brief
-        /// Call GlobalRunLoopScheduler::CreateInstance before the first use of
+        /// Call GlobalRunLoopScheduler::CreateSingleton before the first use of
         /// GlobalRunLoopScheduler::Instance to supply custom arguments to GlobalRunLoopScheduler ctor.
 
         struct _LIB_THEKOGANS_UTIL_DECL GlobalRunLoopSchedulerCreateInstance {

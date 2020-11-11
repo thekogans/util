@@ -286,7 +286,7 @@ namespace thekogans {
         /// \struct GlobalJobQueuePoolCreateInstance JobQueuePool.h thekogans/util/JobQueuePool.h
         ///
         /// \brief
-        /// Call GlobalJobQueuePool::CreateInstance before the first use of
+        /// Call GlobalJobQueuePool::CreateSingleton before the first use of
         /// GlobalJobQueuePool::Instance to supply custom arguments to GlobalJobQueuePool ctor.
 
         struct _LIB_THEKOGANS_UTIL_DECL GlobalJobQueuePoolCreateInstance {
@@ -326,7 +326,7 @@ namespace thekogans {
                 else {
                     THEKOGANS_UTIL_THROW_STRING_EXCEPTION ("%s",
                         "Must provide GlobalJobQueuePool minJobQueues and maxJobQueues. "
-                        "Call GlobalJobQueuePool::CreateInstance.");
+                        "Call GlobalJobQueuePool::CreateSingleton.");
                 }
         }
         };
@@ -344,7 +344,7 @@ namespace thekogans {
         /// global \see{JobQueuePool} then GlobalJobQueuePool::Instance () will
         /// do the trick.
         /// IMPORTANT: Unlike some other global objects, you cannot use this one
-        /// without first calling GlobalJobQueuePool::CreateInstance first. This
+        /// without first calling GlobalJobQueuePool::CreateSingleton first. This
         /// is because you need to provide the min and max \see{JobQueue}s that
         /// this pool will manage.
         struct _LIB_THEKOGANS_UTIL_DECL GlobalJobQueuePool :

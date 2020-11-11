@@ -537,7 +537,7 @@ namespace thekogans {
         /// \struct GlobalLoggerMgrCreateInstance LoggerMgr.h thekogans/util/LoggerMgr.h
         ///
         /// \brief
-        /// Call GlobalLoggerMgr::CreateInstance before the first use of
+        /// Call GlobalLoggerMgr::CreateSingleton before the first use of
         /// GlobalLoggerMgr::Instance to supply custom arguments to GlobalLoggerMgr ctor.
 
         struct _LIB_THEKOGANS_UTIL_DECL GlobalLoggerMgrCreateInstance {
@@ -579,12 +579,12 @@ namespace thekogans {
         /// Parameterize the GlobalLoggerMgr ctor.
         #define THEKOGANS_UTIL_LOG_INIT_EX(\
                 level, decorations, blocking, name, priority, affinity)\
-            thekogans::util::GlobalLoggerMgr::CreateInstance (\
+            thekogans::util::GlobalLoggerMgr::CreateSingleton (\
                 level, decorations, blocking, name, priority, affinity)
         /// \def THEKOGANS_UTIL_LOG_INIT(level, decorations)
         /// Parameterize the GlobalLoggerMgr ctor.
         #define THEKOGANS_UTIL_LOG_INIT(level, decorations)\
-            thekogans::util::GlobalLoggerMgr::CreateInstance (level, decorations)
+            thekogans::util::GlobalLoggerMgr::CreateSingleton (level, decorations)
 
         /// \def THEKOGANS_UTIL_LOG_RESET_EX(
         ///          level, decorations, flags, blocking, name, priority, affinity)

@@ -231,7 +231,7 @@ namespace thekogans {
         /// \struct GlobalVectorizerCreateInstance Vectorizer.h thekogans/util/Vectorizer.h
         ///
         /// \brief
-        /// Call GlobalVectorizer::CreateInstance before the first use of
+        /// Call GlobalVectorizer::CreateSingleton before the first use of
         /// GlobalVectorizer::Instance to supply custom arguments to GlobalVectorizer ctor.
 
         struct _LIB_THEKOGANS_UTIL_DECL GlobalVectorizerCreateInstance {

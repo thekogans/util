@@ -40,31 +40,6 @@
 namespace thekogans {
     namespace util {
 
-        struct Console;
-
-        /// \struct ConsoleCreateInstance Console.h thekogans/util/Console.h
-        ///
-        /// \brief
-        /// Call Console::CreateInstance before the first use of
-        /// Conolse::Instance to supply custom arguments to Console ctor.
-
-        struct _LIB_THEKOGANS_UTIL_DECL ConsoleCreateInstance {
-            /// \brief
-            /// Create a console with custom ctor arguments.
-            /// \param[in] threadSafePrintString true == Serialize access to std::cout and std::cerr.
-            /// \param[in] hookCtrlBreak true == Hook CTRL-C to call MainRunLoop::Instance ().Stop ().
-            /// \param[in] hookChild Linux and OS X only. true == Hook SIGCHLD to avoid zombie children.
-            /// NOTE: You should only pass in true for hookChild_ if you're calling \see{ChildProcess::Spawn}
-            /// (instead of \see{ChildProcess::Exec}, and you don't want to reap the zombie children yourself.
-            /// \param[in] coreDump Linux only. true == Turn on core dump.
-            /// \return A console with custom ctor arguments.
-            Console *operator () (
-                    bool threadSafePrintString = true,
-                    bool hookCtrlBreak = true,
-                    bool hookChild = false,
-                    bool coreDump = true);
-        };
-
         /// \struct Console Console.h thekogans/util/Console.h
         ///
         /// \brief
@@ -72,8 +47,7 @@ namespace thekogans {
         /// colored text output. On Linux and OS X it also turns on core
         /// dumping, and ignores the SIGPIPE.
 
-        struct _LIB_THEKOGANS_UTIL_DECL Console :
-                public Singleton<Console, SpinLock, ConsoleCreateInstance> {
+        struct _LIB_THEKOGANS_UTIL_DECL Console : public Singleton<Console, SpinLock> {
         private:
             /// \brief
             /// Used to synchronize access to std::cout and std::cerr in PrintString.
@@ -85,6 +59,8 @@ namespace thekogans {
             /// \param[in] threadSafePrintString true == Serialize access to std::cout and std::cerr.
             /// \param[in] hookCtrlBreak true == Hook CTRL-C to call MainRunLoop::Instance ().Stop ().
             /// \param[in] hookChild Linux and OS X only. true == Hook SIGCHLD to avoid zombie children.
+            /// NOTE: If you want the Console singleton to be created with custom ctor arguments, call
+            /// Console::CreateSingleton () before the first call to Console::Instance ().
             /// NOTE: You should only pass in true for hookChild if you're calling \see{ChildProcess::Spawn}
             /// (instead of \see{ChildProcess::Exec}, and you don't want to reap the zombie children yourself.
             /// \param[in] coreDump Linux only. true == Turn on core dump.

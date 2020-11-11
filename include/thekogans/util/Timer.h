@@ -121,7 +121,7 @@ namespace thekogans {
             /// \struct JobQueuePoolCreateInstance Timer.h thekogans/util/Timer.h
             ///
             /// \brief
-            /// Call Timer::JobQueuePool::CreateInstance before the first use of
+            /// Call Timer::JobQueuePool::CreateSingleton before the first use of
             /// Timer to supply custom arguments to JobQueuePool ctor.
             struct _LIB_THEKOGANS_UTIL_DECL JobQueuePoolCreateInstance {
                 /// \brief
