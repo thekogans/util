@@ -228,25 +228,6 @@ namespace thekogans {
             std::size_t chunkSize;
         };
 
-        /// \struct GlobalVectorizerCreateInstance Vectorizer.h thekogans/util/Vectorizer.h
-        ///
-        /// \brief
-        /// Call GlobalVectorizer::CreateSingleton before the first use of
-        /// GlobalVectorizer::Instance to supply custom arguments to GlobalVectorizer ctor.
-
-        struct _LIB_THEKOGANS_UTIL_DECL GlobalVectorizerCreateInstance {
-            /// \brief
-            /// Create a global vectorizer with custom ctor arguments.
-            /// \param[in] workerCount The width of the vector.
-            /// \param[in] workerPriority Worker thread priority.
-            /// \return A global vectorizer with custom ctor arguments.
-            Vectorizer *operator () (
-                    std::size_t workerCount = SystemInfo::Instance ().GetCPUCount (),
-                    i32 workerPriority = THEKOGANS_UTIL_NORMAL_THREAD_PRIORITY) {
-                return new Vectorizer (workerCount, workerPriority);
-            }
-        };
-
         /// \struct GlobalVectorizer Vectorizer.h thekogans/util/Vectorizer.h
         ///
         /// \brief
@@ -257,8 +238,19 @@ namespace thekogans {
         /// the most useful) use will have a single vectorizer using the defaults.
         /// This struct exists to aid in that. If all you need is a global
         /// vectorizer then GlobalVectorizer::Instance () will do the trick.
+
         struct _LIB_THEKOGANS_UTIL_DECL GlobalVectorizer :
-            public Singleton<Vectorizer, SpinLock, GlobalVectorizerCreateInstance> {};
+                public Vectorizer,
+                public Singleton<GlobalVectorizer, SpinLock> {
+            /// \brief
+            /// Create a global vectorizer with custom ctor arguments.
+            /// \param[in] workerCount The width of the vector.
+            /// \param[in] workerPriority Worker thread priority.
+            GlobalVectorizer (
+                std::size_t workerCount = SystemInfo::Instance ().GetCPUCount (),
+                i32 workerPriority = THEKOGANS_UTIL_NORMAL_THREAD_PRIORITY) :
+                Vectorizer (workerCount, workerPriority) {}
+        };
 
     } // namespace util
 } // namespace thekogans

@@ -47,12 +47,12 @@ namespace thekogans {
         /// \struct MainRunLoopCreateInstance MainRunLoop.h thekogans/util/MainRunLoop.h
         ///
         /// \brief
-        /// Call MainRunLoop::CreateSingleton before the first use of
+        /// Call MainRunLoop::CreateInstance before the first use of
         /// MainRunLoop::Instance to supply custom arguments to SystemRunLoop ctor.
-        /// If you don't call MainRunLoop::CreateSingleton, MainRunLoop
+        /// If you don't call MainRunLoop::CreateInstance, MainRunLoop
         /// will create a \see{ThreadRunLoop} on it's first invocation of Instance.
         ///
-        /// VERY IMPORTANT: MainRunLoop::CreateSingleton performs initialization
+        /// VERY IMPORTANT: MainRunLoop::CreateInstance performs initialization
         /// (calls Thread::SetMainThread ()) that only makes sense when called from the
         /// main thread (main).
         ///
@@ -70,7 +70,7 @@ namespace thekogans {
         ///         LPSTR /*lpCmdLine*/,
         ///         int /*nCmdShow*/) {
         ///     ...
-        ///     util::MainRunLoop::CreateSingleton (
+        ///     util::MainRunLoop::CreateInstance (
         ///         "MainRunLoop",
         ///         util::RunLoop::JobExecutionPolicy::Ptr (
         ///             new util::RunLoop::FIFOJobExecutionPolicy),
@@ -106,7 +106,7 @@ namespace thekogans {
         ///         int /*argc*/,
         ///         const char * /*argv*/ []) {
         ///     ...
-        ///     util::MainRunLoop::CreateSingleton (
+        ///     util::MainRunLoop::CreateInstance (
         ///         "MainRunLoop",
         ///         util::RunLoop::JobExecutionPolicy::Ptr (
         ///             new util::RunLoop::FIFOJobExecutionPolicy),
@@ -142,7 +142,7 @@ namespace thekogans {
         ///     //util::RunLoop::CocoaInitializer cocoaInitializer;
         ///     //util::RunLoop::WorkerInitializer workerInitializer (&cocoaInitializer);
         ///     ...
-        ///     util::MainRunLoop::CreateSingleton (
+        ///     util::MainRunLoop::CreateInstance (
         ///         "MainRunLoop",
         ///         util::RunLoop::JobExecutionPolicy::Ptr (
         ///             new util::RunLoop::FIFOJobExecutionPolicy),
@@ -157,7 +157,7 @@ namespace thekogans {
         /// }
         /// \endcode
 
-        struct _LIB_THEKOGANS_UTIL_DECL MainRunLoopCreateInstance {
+        struct _LIB_THEKOGANS_UTIL_DECL MainRunLoopInstanceCreator {
         #if defined (TOOLCHAIN_OS_Windows)
             /// \brief
             /// Create a main thread run loop with custom ctor arguments.
@@ -262,7 +262,7 @@ namespace thekogans {
         /// \brief
         /// Main thread run loop.
         struct _LIB_THEKOGANS_UTIL_DECL MainRunLoop :
-            public Singleton<RunLoop, SpinLock, MainRunLoopCreateInstance> {};
+            public Singleton<RunLoop, SpinLock, MainRunLoopInstanceCreator> {};
 
     } // namespace util
 } // namespace thekogans

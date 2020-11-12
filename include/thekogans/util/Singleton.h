@@ -26,46 +26,18 @@
 namespace thekogans {
     namespace util {
 
-        /// \struct DefaultCreateInstance Singleton.h thekogans/util/Singleton.h
+        /// \struct DefaultInstanceCreator Singleton.h thekogans/util/Singleton.h
         ///
         /// \brief
         /// Implements the default singleton creation method. Used to parameterize singleton
-        /// ctors. If your singleton ctor needs arguments, you can package them in a class
+        /// ctors. If your singleton ctor needs custom creation, you can package it in a class
         /// like this and pass it as the third argument to Singleton (below). You can then
         /// call an appropriate ctor inside the class function call operator. All global
         /// singletons take a template parameter like this to allow you to customize their
         /// instance creation before using them.
-        ///
-        /// Example:
-        ///
-        /// \code{.cpp}
-        /// struct GlobalJobQueueCreateInstance {
-        ///     JobQueue *operator () (
-        ///             const std::string &name = "GlobalJobQueue",
-        ///             RunLoop::JobExecutionPolicy::Ptr jobExecutionPolicy =
-        ///                 RunLoop::JobExecutionPolicy::Ptr (new RunLoop::FIFOJobExecutionPolicy),
-        ///             std::size_t workerCount = 1,
-        ///             i32 workerPriority = THEKOGANS_UTIL_NORMAL_THREAD_PRIORITY,
-        ///             ui32 workerAffinity = THEKOGANS_UTIL_MAX_THREAD_AFFINITY) {
-        ///         return new JobQueue (
-        ///             name,
-        ///             jobExecutionPolicy,
-        ///             workerCount,
-        ///             workerPriority,
-        ///             workerAffinity);
-        ///     }
-        /// };
-        ///
-        /// struct _LIB_THEKOGANS_UTIL_DECL GlobalJobQueue :
-        ///     public Singleton<JobQueue, SpinLock, GlobalJobQueueCreateInstance> {};
-        ///
-        /// // Call GlobalJobQueue::CreateSingleton (...); before calling
-        /// // GlobalJobQueue::Instance () and the GlobalJobQueue instance will be
-        /// // created with your custom arguments.
-        /// \endcode
 
         template<typename T>
-        struct DefaultCreateInstance {
+        struct DefaultInstanceCreator {
             /// \brief
             /// Create a single instance using the default ctor.
             /// \return Singleton instance.
@@ -75,13 +47,13 @@ namespace thekogans {
             }
         };
 
-        /// \struct DefaultDestroyInstance Singleton.h thekogans/util/Singleton.h
+        /// \struct DefaultInstanceDestroyer Singleton.h thekogans/util/Singleton.h
         ///
         /// \brief
         /// Implements the default singleton destruction method.
 
         template<typename T>
-        struct DefaultDestroyInstance {
+        struct DefaultInstanceDestroyer {
             /// \brief
             /// Destroy the singleton instance.
             /// \param[in] instance Singleton instance to destroy.
@@ -142,8 +114,8 @@ namespace thekogans {
         template<
             typename T,
             typename Lock = NullLock,
-            typename CreateInstance = DefaultCreateInstance<T>,
-            typename DestroyInstance = DefaultDestroyInstance<T>>
+            typename InstanceCreator = DefaultInstanceCreator<T>,
+            typename InstanceDestroyer = DefaultInstanceDestroyer<T>>
         struct Singleton {
             /// \brief
             /// Uses modern C++ template facilities to provide singleton
@@ -151,7 +123,7 @@ namespace thekogans {
             /// \param[in] args Variable length list of parameters to pass
             /// to singleton instance ctor.
             template<typename... arg_types>
-            static void CreateSingleton (arg_types... args) {
+            static void CreateInstance (arg_types... args) {
                 // We implement the double-checked locking pattern here
                 // to allow our singleton instance method to be thread-safe
                 // (i.e. thread-safe singleton construction).
@@ -161,10 +133,28 @@ namespace thekogans {
                     // we get to create the actual instance!
                     LockGuard<Lock> guard (lock);
                     if (instance == 0) {
-                        instance = CreateInstance () (std::forward<arg_types> (args)...);
+                        instance = InstanceCreator () (std::forward<arg_types> (args)...);
                     }
                 }
                 assert (instance != 0);
+            }
+
+            /// \brief
+            /// Destroy the singleton instance.
+            static void DestroyInstance () {
+                LockGuard<Lock> guard (lock);
+                if (instance != 0) {
+                    InstanceDestroyer () (instance);
+                    instance = 0;
+                }
+            }
+
+            /// \brief
+            /// Return true if instance has been created.
+            /// \return true if instance has been created.
+            static bool IsInstanceCreated () {
+                LockGuard<Lock> guard (lock);
+                return instance != 0;
             }
 
             /// \brief
@@ -180,29 +170,11 @@ namespace thekogans {
                     // we get to create the actual instance!
                     LockGuard<Lock> guard (lock);
                     if (instance == 0) {
-                        instance = CreateInstance () ();
+                        instance = InstanceCreator () ();
                     }
                 }
                 assert (instance != 0);
                 return *instance;
-            }
-
-            /// \brief
-            /// Destroy the singleton instance.
-            static void Destroy () {
-                LockGuard<Lock> guard (lock);
-                if (instance != 0) {
-                    DestroyInstance () (instance);
-                    instance = 0;
-                }
-            }
-
-            /// \brief
-            /// Return true if instance has been created.
-            /// \return true if instance has been created.
-            static bool IsInstantiated () {
-                LockGuard<Lock> guard (lock);
-                return instance != 0;
             }
 
         protected:
@@ -226,22 +198,22 @@ namespace thekogans {
         };
 
         /// \brief
-        /// Definition of the Singleton<T, Lock, CreateInstance, DestroyInstance>::instance.
+        /// Definition of the Singleton<T, Lock, InstanceCreator, InstanceDestroyer>::instance.
         template<
             typename T,
             typename Lock,
-            typename CreateInstance,
-            typename DestroyInstance>
-        T * volatile Singleton<T, Lock, CreateInstance, DestroyInstance>::instance = 0;
+            typename InstanceCreator,
+            typename InstanceDestroyer>
+        T * volatile Singleton<T, Lock, InstanceCreator, InstanceDestroyer>::instance = 0;
 
         /// \brief
-        /// Definition of the Singleton<T, Lock, CreateInstance, DestroyInstance>::lock.
+        /// Definition of the Singleton<T, Lock, InstanceCreator, InstanceDestroyer>::lock.
         template<
             typename T,
             typename Lock,
-            typename CreateInstance,
-            typename DestroyInstance>
-        Lock Singleton<T, Lock, CreateInstance, DestroyInstance>::lock;
+            typename InstanceCreator,
+            typename InstanceDestroyer>
+        Lock Singleton<T, Lock, InstanceCreator, InstanceDestroyer>::lock;
 
     } // namespace util
 } // namespace thekogans

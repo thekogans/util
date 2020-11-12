@@ -670,13 +670,19 @@ namespace thekogans {
                 int exitCode;
                 explicit exitJob (int exitCode_) :
                         exitCode (exitCode_) {
+                    // Take out a reference on ourselves to avoid
+                    // RunLoop::FinishedJob calling Release causing
+                    // memory management.
                     AddRef ();
+                    // Pre-allocate the string to avoid memory
+                    // management in Reset (below).
                     runLoopId = GUID::FromRandom ().ToString ();
                 }
             protected:
-                // This duplicates RunLoop::Job::Reset with a minor difference. We
-                // avoid std::string copy (and potential malloc/free) by copying
-                // the RunLoop::Id in place.
+                // This duplicates RunLoop::Job::Reset with a minor
+                // difference. We avoid std::string copy (and
+                // potential malloc/free) by copying the RunLoop::Id
+                // in place.
                 virtual void Reset (const RunLoop::Id &runLoopId_) {
                     strncpy (&runLoopId[0], &runLoopId_[0], runLoopId.size ());
                     SetState (Pending);
@@ -732,7 +738,7 @@ namespace thekogans {
             signal (SIGALRM, SignalHandlerSIGALRM);
             signal (SIGUSR1, SignalHandlerSIGUSR1);
             // This hack is necessary to make sure no allocation is done in the signal handler.
-            GlobalJobQueue::CreateSingleton ();
+            GlobalJobQueue::CreateInstance ();
             // Fork off the parent process.
             pid_t pid = fork ();
             if (pid < 0) {

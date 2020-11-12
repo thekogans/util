@@ -178,41 +178,6 @@ namespace thekogans {
             THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (JobQueue)
         };
 
-        /// \struct GlobalJobQueueCreateInstance JobQueue.h thekogans/util/JobQueue.h
-        ///
-        /// \brief
-        /// Call GlobalJobQueue::CreateSingleton before the first use of
-        /// GlobalJobQueue::Instance to supply custom arguments to GlobalJobQueue ctor.
-
-        struct _LIB_THEKOGANS_UTIL_DECL GlobalJobQueueCreateInstance {
-            /// \brief
-            /// Create a global job queue with custom ctor arguments.
-            /// \param[in] name JobQueue name. If set, \see{JobQueue::Worker}
-            /// threads will be named name-%d.
-            /// \param[in] jobExecutionPolicy JobQueue \see{RunLoop::JobExecutionPolicy}.
-            /// \param[in] workerCount Max workers to service the queue.
-            /// \param[in] workerPriority Worker thread priority.
-            /// \param[in] workerAffinity Worker thread processor affinity.
-            /// \param[in] workerCallback Called to initialize/uninitialize the worker thread.
-            /// \return A global job queue with custom ctor arguments.
-            JobQueue *operator () (
-                    const std::string &name = "GlobalJobQueue",
-                    RunLoop::JobExecutionPolicy::Ptr jobExecutionPolicy =
-                        RunLoop::JobExecutionPolicy::Ptr (new RunLoop::FIFOJobExecutionPolicy),
-                    std::size_t workerCount = 1,
-                    i32 workerPriority = THEKOGANS_UTIL_NORMAL_THREAD_PRIORITY,
-                    ui32 workerAffinity = THEKOGANS_UTIL_MAX_THREAD_AFFINITY,
-                    RunLoop::WorkerCallback *workerCallback = 0) {
-                return new JobQueue (
-                    name,
-                    jobExecutionPolicy,
-                    workerCount,
-                    workerPriority,
-                    workerAffinity,
-                    workerCallback);
-            }
-        };
-
         /// \struct GlobalJobQueue JobQueue.h thekogans/util/JobQueue.h
         ///
         /// \brief
@@ -225,8 +190,35 @@ namespace thekogans {
         /// using the defaults. This struct exists to aid in that. If all
         /// you need is a background thread where you can schedule jobs,
         /// then GlobalJobQueue::Instance () will do the trick.
+
         struct _LIB_THEKOGANS_UTIL_DECL GlobalJobQueue :
-            public Singleton<JobQueue, SpinLock, GlobalJobQueueCreateInstance> {};
+                public JobQueue,
+                public Singleton<GlobalJobQueue, SpinLock> {
+            /// \brief
+            /// Create a global job queue with custom ctor arguments.
+            /// \param[in] name JobQueue name. If set, \see{JobQueue::Worker}
+            /// threads will be named name-%d.
+            /// \param[in] jobExecutionPolicy JobQueue \see{RunLoop::JobExecutionPolicy}.
+            /// \param[in] workerCount Max workers to service the queue.
+            /// \param[in] workerPriority Worker thread priority.
+            /// \param[in] workerAffinity Worker thread processor affinity.
+            /// \param[in] workerCallback Called to initialize/uninitialize the worker thread.
+            GlobalJobQueue (
+                const std::string &name = "GlobalJobQueue",
+                RunLoop::JobExecutionPolicy::Ptr jobExecutionPolicy =
+                    RunLoop::JobExecutionPolicy::Ptr (new RunLoop::FIFOJobExecutionPolicy),
+                std::size_t workerCount = 1,
+                i32 workerPriority = THEKOGANS_UTIL_NORMAL_THREAD_PRIORITY,
+                ui32 workerAffinity = THEKOGANS_UTIL_MAX_THREAD_AFFINITY,
+                RunLoop::WorkerCallback *workerCallback = 0) :
+                JobQueue (
+                    name,
+                    jobExecutionPolicy,
+                    workerCount,
+                    workerPriority,
+                    workerAffinity,
+                    workerCallback) {}
+        };
 
     } // namespace util
 } // namespace thekogans

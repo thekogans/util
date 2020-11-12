@@ -283,54 +283,6 @@ namespace thekogans {
             THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (JobQueuePool)
         };
 
-        /// \struct GlobalJobQueuePoolCreateInstance JobQueuePool.h thekogans/util/JobQueuePool.h
-        ///
-        /// \brief
-        /// Call GlobalJobQueuePool::CreateSingleton before the first use of
-        /// GlobalJobQueuePool::Instance to supply custom arguments to GlobalJobQueuePool ctor.
-
-        struct _LIB_THEKOGANS_UTIL_DECL GlobalJobQueuePoolCreateInstance {
-            /// \brief
-            /// Create a global \see{JobQueuePool} with custom ctor arguments.
-            /// \param[in] minJobQueues Minimum \see{JobQueue}s to keep in the pool.
-            /// \param[in] maxJobQueues Maximum \see{JobQueue}s to allow the pool to grow to.
-            /// \param[in] name \see{JobQueue} name.
-            /// \param[in] jobExecutionPolicy \see{JobQueue} \see{RunLoop::JobExecutionPolicy}.
-            /// \param[in] workerCount Number of worker threads servicing the \see{JobQueue}.
-            /// \param[in] workerPriority \see{JobQueue} worker thread priority.
-            /// \param[in] workerAffinity \see{JobQueue} worker thread processor affinity.
-            /// \param[in] workerCallback Called to initialize/uninitialize the \see{JobQueue}
-            /// thread.
-            /// \return A global \see{JobQueuePool} with custom ctor arguments.
-            JobQueuePool *operator () (
-                    std::size_t minJobQueues,
-                    std::size_t maxJobQueues,
-                    const std::string &name = "GlobalJobQueuePool",
-                    RunLoop::JobExecutionPolicy::Ptr jobExecutionPolicy =
-                        RunLoop::JobExecutionPolicy::Ptr (new RunLoop::FIFOJobExecutionPolicy),
-                    std::size_t workerCount = 1,
-                    i32 workerPriority = THEKOGANS_UTIL_NORMAL_THREAD_PRIORITY,
-                    ui32 workerAffinity = THEKOGANS_UTIL_MAX_THREAD_AFFINITY,
-                    RunLoop::WorkerCallback *workerCallback = 0) {
-                if (minJobQueues != 0 && maxJobQueues != 0) {
-                    return new JobQueuePool (
-                        minJobQueues,
-                        maxJobQueues,
-                        name,
-                        jobExecutionPolicy,
-                        workerCount,
-                        workerPriority,
-                        workerAffinity,
-                        workerCallback);
-                }
-                else {
-                    THEKOGANS_UTIL_THROW_STRING_EXCEPTION ("%s",
-                        "Must provide GlobalJobQueuePool minJobQueues and maxJobQueues. "
-                        "Call GlobalJobQueuePool::CreateSingleton.");
-                }
-        }
-        };
-
         /// \struct GlobalJobQueuePool JobQueuePool.h thekogans/util/JobQueuePool.h
         ///
         /// \brief
@@ -344,11 +296,44 @@ namespace thekogans {
         /// global \see{JobQueuePool} then GlobalJobQueuePool::Instance () will
         /// do the trick.
         /// IMPORTANT: Unlike some other global objects, you cannot use this one
-        /// without first calling GlobalJobQueuePool::CreateSingleton first. This
+        /// without first calling GlobalJobQueuePool::CreateInstance first. This
         /// is because you need to provide the min and max \see{JobQueue}s that
         /// this pool will manage.
+
         struct _LIB_THEKOGANS_UTIL_DECL GlobalJobQueuePool :
-            public Singleton<JobQueuePool, SpinLock, GlobalJobQueuePoolCreateInstance> {};
+                public JobQueuePool,
+                public Singleton<GlobalJobQueuePool, SpinLock> {
+            /// \brief
+            /// Create a global \see{JobQueuePool} with custom ctor arguments.
+            /// \param[in] minJobQueues Minimum \see{JobQueue}s to keep in the pool.
+            /// \param[in] maxJobQueues Maximum \see{JobQueue}s to allow the pool to grow to.
+            /// \param[in] name \see{JobQueue} name.
+            /// \param[in] jobExecutionPolicy \see{JobQueue} \see{RunLoop::JobExecutionPolicy}.
+            /// \param[in] workerCount Number of worker threads servicing the \see{JobQueue}.
+            /// \param[in] workerPriority \see{JobQueue} worker thread priority.
+            /// \param[in] workerAffinity \see{JobQueue} worker thread processor affinity.
+            /// \param[in] workerCallback Called to initialize/uninitialize the \see{JobQueue}
+            /// thread.
+            GlobalJobQueuePool (
+                std::size_t minJobQueues,
+                std::size_t maxJobQueues,
+                const std::string &name = "GlobalJobQueuePool",
+                RunLoop::JobExecutionPolicy::Ptr jobExecutionPolicy =
+                    RunLoop::JobExecutionPolicy::Ptr (new RunLoop::FIFOJobExecutionPolicy),
+                std::size_t workerCount = 1,
+                i32 workerPriority = THEKOGANS_UTIL_NORMAL_THREAD_PRIORITY,
+                ui32 workerAffinity = THEKOGANS_UTIL_MAX_THREAD_AFFINITY,
+                RunLoop::WorkerCallback *workerCallback = 0) :
+                JobQueuePool (
+                    minJobQueues,
+                    maxJobQueues,
+                    name,
+                    jobExecutionPolicy,
+                    workerCount,
+                    workerPriority,
+                    workerAffinity,
+                    workerCallback) {}
+        };
 
     } // namespace util
 } // namespace thekogans

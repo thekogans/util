@@ -56,7 +56,7 @@ namespace thekogans {
                 unsigned int level,
                 const std::string &header,
                 const std::string &message) {
-            if (GlobalLoggerMgr::IsInstantiated ()) {
+            if (GlobalLoggerMgr::IsInstanceCreated ()) {
                 GlobalLoggerMgr::Instance ().Log (subsystem, level, header, message);
                 // This function is usually called right before the
                 // process exits. In case the user forgot to call flush,
@@ -64,7 +64,7 @@ namespace thekogans {
                 // written to the logs.
                 GlobalLoggerMgr::Instance ().Flush ();
             }
-            else if (Console::IsInstantiated ()) {
+            else if (Console::IsInstanceCreated ()) {
                 Console::Instance ().PrintString (
                     header + message,
                     Console::StdErr,

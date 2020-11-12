@@ -61,7 +61,7 @@ namespace thekogans {
             }
         #else // defined (TOOLCHAIN_OS_Windows)
             void CtrlBreakHandler (int /*signal*/) {
-                if (MainRunLoop::IsInstantiated ()) {
+                if (MainRunLoop::IsInstanceCreated ()) {
                     MainRunLoop::Instance ().Stop ();
                 }
             }

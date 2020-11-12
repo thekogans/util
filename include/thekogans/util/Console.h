@@ -60,7 +60,7 @@ namespace thekogans {
             /// \param[in] hookCtrlBreak true == Hook CTRL-C to call MainRunLoop::Instance ().Stop ().
             /// \param[in] hookChild Linux and OS X only. true == Hook SIGCHLD to avoid zombie children.
             /// NOTE: If you want the Console singleton to be created with custom ctor arguments, call
-            /// Console::CreateSingleton () before the first call to Console::Instance ().
+            /// Console::CreateInstance (...) before the first call to Console::Instance ().
             /// NOTE: You should only pass in true for hookChild if you're calling \see{ChildProcess::Spawn}
             /// (instead of \see{ChildProcess::Exec}, and you don't want to reap the zombie children yourself.
             /// \param[in] coreDump Linux only. true == Turn on core dump.

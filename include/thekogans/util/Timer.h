@@ -118,22 +118,41 @@ namespace thekogans {
         /// (IdleProcessor), we avoid calling callback through a dangling pointer.
 
         struct _LIB_THEKOGANS_UTIL_DECL Timer {
-            /// \struct JobQueuePoolCreateInstance Timer.h thekogans/util/Timer.h
-            ///
             /// \brief
-            /// Call Timer::JobQueuePool::CreateSingleton before the first use of
-            /// Timer to supply custom arguments to JobQueuePool ctor.
-            struct _LIB_THEKOGANS_UTIL_DECL JobQueuePoolCreateInstance {
+            /// Timer has it's own job queue pool to provide custom ctor arguments.
+            struct _LIB_THEKOGANS_UTIL_DECL JobQueuePool :
+                    public util::JobQueuePool,
+                    public Singleton<JobQueuePool, SpinLock> {
                 /// \brief
-                /// Create a Timer \see{JobQueuePool} with custom ctor arguments.
+                /// Create a global \see{JobQueuePool} with custom ctor arguments.
                 /// \param[in] minJobQueues Minimum \see{JobQueue}s to keep in the pool.
                 /// \param[in] maxJobQueues Maximum \see{JobQueue}s to allow the pool to grow to.
-                /// \return A Timer \see{JobQueuePool} with custom ctor arguments.
-                util::JobQueuePool *operator () (
-                        std::size_t minJobQueues = 1,
-                        std::size_t maxJobQueues = 100) {
-                    return new util::JobQueuePool (minJobQueues, maxJobQueues, "TimerJobQueuePool");
-                }
+                /// \param[in] name \see{JobQueue} name.
+                /// \param[in] jobExecutionPolicy \see{JobQueue} \see{RunLoop::JobExecutionPolicy}.
+                /// \param[in] workerCount Number of worker threads servicing the \see{JobQueue}.
+                /// \param[in] workerPriority \see{JobQueue} worker thread priority.
+                /// \param[in] workerAffinity \see{JobQueue} worker thread processor affinity.
+                /// \param[in] workerCallback Called to initialize/uninitialize the \see{JobQueue}
+                /// thread.
+                JobQueuePool (
+                    std::size_t minJobQueues = 1,
+                    std::size_t maxJobQueues = 100,
+                    const std::string &name = "TimerJobQueuePool",
+                    RunLoop::JobExecutionPolicy::Ptr jobExecutionPolicy =
+                        RunLoop::JobExecutionPolicy::Ptr (new RunLoop::FIFOJobExecutionPolicy),
+                    std::size_t workerCount = 1,
+                    i32 workerPriority = THEKOGANS_UTIL_NORMAL_THREAD_PRIORITY,
+                    ui32 workerAffinity = THEKOGANS_UTIL_MAX_THREAD_AFFINITY,
+                    RunLoop::WorkerCallback *workerCallback = 0) :
+                    util::JobQueuePool (
+                        minJobQueues,
+                        maxJobQueues,
+                        name,
+                        jobExecutionPolicy,
+                        workerCount,
+                        workerPriority,
+                        workerAffinity,
+                        workerCallback) {}
             };
 
             /// \struct Timer::Callback Timer.h thekogans/util/Timer.h
@@ -250,9 +269,6 @@ namespace thekogans {
                 bool cancelCallbacks = true);
 
         private:
-            /// \brief
-            /// Convenient typedef for Singleton<util::JobQueuePool, SpinLock, JobQueuePoolCreateInstance>.
-            typedef Singleton<util::JobQueuePool, SpinLock, JobQueuePoolCreateInstance> JobQueuePool;
             /// \brief
             /// Forward declaration of Job.
             struct Job;

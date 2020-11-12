@@ -417,34 +417,24 @@ namespace thekogans {
             THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (SharedAllocator)
         };
 
-        /// \struct GlobalSharedAllocatorCreateInstance SharedAllocator.h thekogans/util/SharedAllocator.h
-        ///
-        /// \brief
-        /// Call GlobalSharedAllocator::CreateSingleton before the first call to
-        /// GlobalSharedAllocator::Instance () to provice custom ctor arguments
-        /// to the global shared allocator instance.
-
-        struct _LIB_THEKOGANS_UTIL_DECL GlobalSharedAllocatorCreateInstance {
-            /// \brief
-            /// Create a global shared allocator with custom ctor arguments.
-            /// \param[in] name Global name used to identify the shared region.
-            /// \param[in] size Size of the shared region.
-            /// \param[in] secure Lock the pages in memory to prevent swapping.
-            /// \return A global shared allocator with custom ctor arguments.
-            SharedAllocator *operator () (
-                    const char *name = "GlobalSharedAllocator",
-                    ui64 size = 16 * 1024,
-                    bool secure = false) {
-                return new SharedAllocator (name, size, secure);
-            }
-        };
-
         /// \struct GlobalSharedAllocator SharedAllocator.h thekogans/util/SharedAllocator.h
         ///
         /// \brief
         /// The one and only global shared allocator instance.
         struct _LIB_THEKOGANS_UTIL_DECL GlobalSharedAllocator :
-            public Singleton<SharedAllocator, SpinLock, GlobalSharedAllocatorCreateInstance> {};
+                public SharedAllocator,
+                public Singleton<GlobalSharedAllocator, SpinLock> {
+            /// \brief
+            /// Create a global shared allocator with custom ctor arguments.
+            /// \param[in] name Global name used to identify the shared region.
+            /// \param[in] size Size of the shared region.
+            /// \param[in] secure Lock the pages in memory to prevent swapping.
+            GlobalSharedAllocator (
+                const char *name = "GlobalSharedAllocator",
+                ui64 size = 16 * 1024,
+                bool secure = false) :
+                SharedAllocator (name, size, secure) {}
+        };
 
         /// \def THEKOGANS_UTIL_IMPLEMENT_SHARED_ALLOCATOR_FUNCTIONS(type)
         /// Macro to implement SharedAllocator functions.

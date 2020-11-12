@@ -329,28 +329,19 @@ namespace thekogans {
             THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (RunLoopScheduler)
         };
 
-        /// \struct GlobalRunLoopSchedulerCreateInstance RunLoopScheduler.h thekogans/util/RunLoopScheduler.h
-        ///
-        /// \brief
-        /// Call GlobalRunLoopScheduler::CreateSingleton before the first use of
-        /// GlobalRunLoopScheduler::Instance to supply custom arguments to GlobalRunLoopScheduler ctor.
-
-        struct _LIB_THEKOGANS_UTIL_DECL GlobalRunLoopSchedulerCreateInstance {
-            /// \brief
-            /// Create a global run loop scheduler with custom ctor arguments.
-            /// \param[in] name RunLoopScheduler name.
-            /// \return A global run loop scheduler with custom ctor arguments.
-            RunLoopScheduler *operator () (const std::string &name = "GlobalRunLoopScheduler") {
-                return new RunLoopScheduler (name);
-            }
-        };
-
         /// \struct GlobalRunLoopScheduler RunLoopScheduler.h thekogans/util/RunLoopScheduler.h
         ///
         /// \brief
         /// A global run loop scheduler instance.
         struct _LIB_THEKOGANS_UTIL_DECL GlobalRunLoopScheduler :
-            public Singleton<RunLoopScheduler, SpinLock, GlobalRunLoopSchedulerCreateInstance> {};
+                public RunLoopScheduler,
+                public Singleton<GlobalRunLoopScheduler, SpinLock> {
+            /// \brief
+            /// Create a global run loop scheduler with custom ctor arguments.
+            /// \param[in] name RunLoopScheduler name.
+            GlobalRunLoopScheduler (const std::string &name = "GlobalRunLoopScheduler") :
+                RunLoopScheduler (name) {}
+        };
 
     } // namespace util
 } // namespace thekogans

@@ -38,7 +38,7 @@ namespace thekogans {
         /// is \see{Console} based. Because \see{Console} performs important initialization
         /// in it's ctor required by \see{MainRunLoop} and \see{ChildProcess}. ConsoleLogger
         /// ctor explicitly creates the \see{Console} \see{Singleton}. If you need to supply
-        /// custom \see{Console} ctor parameters you need to call \see{Console::CreateSingleton}
+        /// custom \see{Console} ctor parameters you need to call \see{Console::CreateInstance}
         /// before instantiating a \see{Console::Instance}.
 
         struct _LIB_THEKOGANS_UTIL_DECL ConsoleLogger : public Logger {

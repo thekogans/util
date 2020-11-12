@@ -42,8 +42,8 @@ namespace thekogans {
         ///
         /// \brief
         /// LoggerMgr is designed to provide uniform, cross-platform logging.
-        /// It accepts pluggable Logger instances which can direct the log
-        /// output to various locations. A number of  Logger instances have
+        /// It accepts pluggable \see{Logger} instances which can direct the log
+        /// output to various locations. A number of  \see{Logger} instances have
         /// been defined: \see{ConsoleLogger}, \see{FileLogger}, \see{MemoryLogger},
         /// \see{NSLogLogger}, \see{OutputDebugStringLogger}. LoggerMgr
         /// supports two distinct use cases. The first, and simplest, is to
@@ -362,7 +362,7 @@ namespace thekogans {
                         affinity) : 0) {}
             /// \brief
             /// dtor.
-            ~LoggerMgr ();
+            virtual ~LoggerMgr ();
 
             /// \brief
             /// Global sub-system name.
@@ -534,13 +534,14 @@ namespace thekogans {
             THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (LoggerMgr)
         };
 
-        /// \struct GlobalLoggerMgrCreateInstance LoggerMgr.h thekogans/util/LoggerMgr.h
+        /// \struct GlobalLoggerMgr LoggerMgr.h thekogans/util/LoggerMgr.h
         ///
         /// \brief
-        /// Call GlobalLoggerMgr::CreateSingleton before the first use of
-        /// GlobalLoggerMgr::Instance to supply custom arguments to GlobalLoggerMgr ctor.
+        /// A global logger manager instance.
 
-        struct _LIB_THEKOGANS_UTIL_DECL GlobalLoggerMgrCreateInstance {
+        struct _LIB_THEKOGANS_UTIL_DECL GlobalLoggerMgr :
+                public LoggerMgr,
+                public Singleton<GlobalLoggerMgr, SpinLock> {
             /// \brief
             /// Create a global job queue with custom ctor arguments.
             /// \param[in] level Level at which to log.
@@ -549,42 +550,33 @@ namespace thekogans {
             /// \param[in] name \see{JobQueue} name.
             /// \param[in] priority \see{JobQueue} worker priority.
             /// \param[in] affinity \see{JobQueue} worker affinity.
-            /// \return A global job queue with custom ctor arguments.
-            LoggerMgr *operator () (
-                    ui32 level = LoggerMgr::Info,
-                    ui32 decorations = LoggerMgr::All,
-                    bool blocking = false,
-                    const std::string &name = "GlobalLoggerMgr",
-                    i32 priority = THEKOGANS_UTIL_LOW_THREAD_PRIORITY,
-                    ui32 affinity = THEKOGANS_UTIL_MAX_THREAD_AFFINITY) {
-                return new LoggerMgr (
+            GlobalLoggerMgr (
+                ui32 level = LoggerMgr::Info,
+                ui32 decorations = LoggerMgr::All,
+                bool blocking = false,
+                const std::string &name = "GlobalLoggerMgr",
+                i32 priority = THEKOGANS_UTIL_LOW_THREAD_PRIORITY,
+                ui32 affinity = THEKOGANS_UTIL_MAX_THREAD_AFFINITY) :
+                LoggerMgr (
                     level,
                     decorations,
                     blocking,
                     name,
                     priority,
-                    affinity);
-            }
+                    affinity) {}
         };
-
-        /// \struct GlobalLoggerMgr LoggerMgr.h thekogans/util/LoggerMgr.h
-        ///
-        /// \brief
-        /// A global logger manager instance.
-        struct _LIB_THEKOGANS_UTIL_DECL GlobalLoggerMgr :
-            public Singleton<LoggerMgr, SpinLock, GlobalLoggerMgrCreateInstance> {};
 
         /// \def THEKOGANS_UTIL_LOG_INIT_EX(
         ///          level, decorations, blocking, name, priority, affinity)
         /// Parameterize the GlobalLoggerMgr ctor.
         #define THEKOGANS_UTIL_LOG_INIT_EX(\
                 level, decorations, blocking, name, priority, affinity)\
-            thekogans::util::GlobalLoggerMgr::CreateSingleton (\
+            thekogans::util::GlobalLoggerMgr::CreateInstance (\
                 level, decorations, blocking, name, priority, affinity)
         /// \def THEKOGANS_UTIL_LOG_INIT(level, decorations)
         /// Parameterize the GlobalLoggerMgr ctor.
         #define THEKOGANS_UTIL_LOG_INIT(level, decorations)\
-            thekogans::util::GlobalLoggerMgr::CreateSingleton (level, decorations)
+            thekogans::util::GlobalLoggerMgr::CreateInstance (level, decorations)
 
         /// \def THEKOGANS_UTIL_LOG_RESET_EX(
         ///          level, decorations, flags, blocking, name, priority, affinity)
