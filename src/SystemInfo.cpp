@@ -41,6 +41,7 @@
         #include <pwd.h>
         #include <climits>
     #elif defined (TOOLCHAIN_OS_OSX)
+        #include <IOKit/IOKitLib.h>
         #include <net/if_dl.h>
         #include <net/if_types.h>
         #include <libproc.h>
@@ -243,90 +244,88 @@ namespace thekogans {
             }
 
             std::string GetHostIdImpl () {
-                std::set<std::string> macs;
             #if defined (TOOLCHAIN_OS_Windows)
-                DWORD size = 0;
-                std::vector<ui8> buffer;
-                DWORD rc;
-                // This loop is necessary to avoid a race between
-                // calls to GetAdaptersAddresses.
-                do {
-                    if (size > 0) {
-                        buffer.resize (size);
+                wchar_t computerName[MAX_COMPUTERNAME_LENGTH + 1];
+                DWORD size = MAX_COMPUTERNAME_LENGTH + 1;
+                if (GetComputerNameW (computerName, &size)) {
+                    DWORD serialNum = 0;
+                    if (GetVolumeInformationW (L"c:\\", 0, 0, &serialNum, 0, 0, 0, 0)) {
+                        Hash::Digest digest;
+                        {
+                            SHA2 sha2;
+                            sha2.Init (SHA2::DIGEST_SIZE_256);
+                            sha2.Update (&computerName[0], size * sizeof (wchar_t));
+                            sha2.Update (&serialNum, sizeof (serialNum));
+                            sha2.Final (digest);
+                        }
+                        return HexEncodeBuffer (digest.data (), digest.size ());
                     }
-                    rc = ::GetAdaptersAddresses (
-                        AF_UNSPEC,
-                        GAA_FLAG_SKIP_UNICAST |
-                        GAA_FLAG_SKIP_ANYCAST |
-                        GAA_FLAG_SKIP_MULTICAST |
-                        GAA_FLAG_SKIP_DNS_SERVER |
-                        GAA_FLAG_SKIP_FRIENDLY_NAME,
-                        0,
-                        (PIP_ADAPTER_ADDRESSES)(size > 0 ? buffer.data () : 0),
-                        &size);
-                } while (rc == ERROR_BUFFER_OVERFLOW && size > 0);
-                if (rc == ERROR_SUCCESS) {
-                    if (size > 0) {
-                        for (PIP_ADAPTER_ADDRESSES
-                                ipAdapterAddresses = (PIP_ADAPTER_ADDRESSES)buffer.data ();
-                                ipAdapterAddresses != 0; ipAdapterAddresses = ipAdapterAddresses->Next) {
-                            if (ipAdapterAddresses->PhysicalAddressLength == MAC_LENGTH) {
-                                macs.insert (
-                                    HexEncodeBuffer (
-                                        ipAdapterAddresses->PhysicalAddress,
-                                        ipAdapterAddresses->PhysicalAddressLength));
-                            }
-                        }
-                    }
-                }
-                else {
-                    THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (rc);
-                }
-            #else // defined (TOOLCHAIN_OS_Windows)
-                struct addrs {
-                    ifaddrs *head;
-                    addrs () :
-                        head (0) {}
-                    ~addrs () {
-                        if (head != 0) {
-                            freeifaddrs (head);
-                        }
-                    }
-                } addrs;
-                if (getifaddrs (&addrs.head) == 0) {
-                    for (ifaddrs *curr = addrs.head; curr != 0; curr = curr->ifa_next) {
-                    #if defined (TOOLCHAIN_OS_Linux)
-                        if (curr->ifa_addr->sa_family == AF_PACKET) {
-                            const sockaddr_ll *addr = (const sockaddr_ll *)curr->ifa_addr;
-                            if (addr->sll_hatype == ARPHRD_ETHER && addr->sll_halen == MAC_LENGTH) {
-                                macs.insert (HexEncodeBuffer (addr->sll_addr, addr->sll_halen));
-                            }
-                        }
-                    #else // defined (TOOLCHAIN_OS_Linux)
-                        if (curr->ifa_addr->sa_family == AF_LINK) {
-                            const sockaddr_dl *addr = (const sockaddr_dl *)curr->ifa_addr;
-                            if (addr->sdl_type == IFT_ETHER && addr->sdl_alen == MAC_LENGTH) {
-                                macs.insert (HexEncodeBuffer (LLADDR (addr), addr->sdl_alen));
-                            }
-                        }
-                    #endif // defined (TOOLCHAIN_OS_Linux)
+                    else {
+                        THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                            THEKOGANS_UTIL_OS_ERROR_CODE);
                     }
                 }
                 else {
                     THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
                         THEKOGANS_UTIL_OS_ERROR_CODE);
                 }
-            #endif // defined (TOOLCHAIN_OS_Windows)
-                SHA2 sha2;
-                sha2.Init (SHA2::DIGEST_SIZE_256);
-                for (std::set<std::string>::const_iterator
-                        it = macs.begin (),
-                        end = macs.end (); it != end; ++it) {
-                    sha2.Update ((*it).c_str (), (*it).size ());
+            #elif defined (TOOLCHAIN_OS_Linux)
+                uuid_t uuid;
+                timespec wait;
+                wait.tv_sec = 0;
+                wait.tv_nsec = 0;
+                if (gethostuuid (uuid, &wait) == 0) {
+                    Hash::Digest digest;
+                    {
+                        SHA2 sha2;
+                        sha2.Init (SHA2::DIGEST_SIZE_256);
+                        sha2.Update (uuid, sizeof (uuid_t));
+                        sha2.Final (digest);
+                    }
+                    return HexEncodeBuffer (digest.data (), digest.size ());
                 }
-                Hash::Digest digest;
-                sha2.Final (digest);
-                return HexEncodeBuffer (digest.data (), digest.size ());
+                else {x
+                    THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                        THEKOGANS_UTIL_OS_ERROR_CODE);
+                }
+            #elif defined (TOOLCHAIN_OS_OSX)
+                struct io_registry_entry_tPtr {
+                    io_registry_entry_t registryEntry;
+                    io_registry_entry_tPtr (io_registry_entry_t registryEntry_) :
+                        registryEntry (registryEntry_) {}
+                    ~io_registry_entry_tPtr () {
+                        IOObjectRelease (registryEntry);
+                    }
+                } ioRegistryRoot (IORegistryEntryFromPath (kIOMasterPortDefault, "IOService:/"));
+                if (ioRegistryRoot.registryEntry != 0) {
+                    CFStringRefPtr uuid (
+                        (CFStringRef)IORegistryEntryCreateCFProperty (
+                            ioRegistryRoot.registryEntry,
+                            CFSTR (kIOPlatformUUIDKey),
+                            kCFAllocatorDefault,
+                            0));
+                    if (uuid != 0) {
+                        char buffer[1024];
+                        CFStringGetCString (uuid.get (), buffer, 1024, kCFStringEncodingMacRoman);
+                        Hash::Digest digest;
+                        {
+                            SHA2 sha2;
+                            sha2.Init (SHA2::DIGEST_SIZE_256);
+                            sha2.Update (buffer, strlen (buffer));
+                            sha2.Final (digest);
+                        }
+                        return HexEncodeBuffer (digest.data (), digest.size ());
+                    }
+                    else {
+                        // FIXME: throw something appropriate
+                        assert (0);
+                    }
+                }
+                else {
+                    // FIXME: throw something appropriate
+                    assert (0);
+                }
+            #endif // defined (TOOLCHAIN_OS_Windows)
             }
 
             std::string GetUserNameImpl () {

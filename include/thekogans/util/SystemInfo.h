@@ -157,7 +157,7 @@ namespace thekogans {
             /// \brief
             /// Return process start time.
             /// \return Process start time.
-            inline TimeSpec GetProcessStartTime () const {
+            inline const TimeSpec &GetProcessStartTime () const {
                 return processStartTime;
             }
 
@@ -181,6 +181,13 @@ namespace thekogans {
 
             /// \brief
             /// Return host id.
+            /// NOTE: This method uses the mac addresses found on the
+            /// host to create a hash that will serve as an id. This
+            /// id can change depending on adapters found on the host.
+            /// It's especially vulnerable to things like VPN and other
+            /// virtual interfaces. It is therefore recommended that if
+            /// you need a permanent host id that you call this method
+            /// once to generate it, store it and use the cache thereafter.
             /// \return Host id.
             inline const std::string &GetHostId () const {
                 return hostId;

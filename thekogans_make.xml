@@ -58,6 +58,7 @@
         <framework>CoreFoundation</framework>
         <framework>CoreServices</framework>
         <framework>SystemConfiguration</framework>
+        <framework>IOKit</framework>
       </when>
     </choose>
   </dependencies>
