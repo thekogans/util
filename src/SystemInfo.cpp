@@ -243,6 +243,7 @@ namespace thekogans {
             #endif // defined (TOOLCHAIN_OS_Windows)
             }
 
+        #if defined (TOOLCHAIN_OS_OSX)
             namespace {
                 struct CFStringRefDeleter {
                     void operator () (CFStringRef stringRef) {
@@ -253,6 +254,7 @@ namespace thekogans {
                 };
                 typedef std::unique_ptr<const __CFString, CFStringRefDeleter> CFStringRefPtr;
             }
+        #endif // defined (TOOLCHAIN_OS_OSX)
 
             std::string GetHostIdImpl () {
             #if defined (TOOLCHAIN_OS_Windows)
