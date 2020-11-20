@@ -243,6 +243,17 @@ namespace thekogans {
             #endif // defined (TOOLCHAIN_OS_Windows)
             }
 
+            namespace {
+                struct CFStringRefDeleter {
+                    void operator () (CFStringRef stringRef) {
+                        if (stringRef != 0) {
+                            CFRelease (stringRef);
+                        }
+                    }
+                };
+                typedef std::unique_ptr<const __CFString, CFStringRefDeleter> CFStringRefPtr;
+            }
+
             std::string GetHostIdImpl () {
             #if defined (TOOLCHAIN_OS_Windows)
                 wchar_t computerName[MAX_COMPUTERNAME_LENGTH + 1];
@@ -284,7 +295,7 @@ namespace thekogans {
                     }
                     return HexEncodeBuffer (digest.data (), digest.size ());
                 }
-                else {x
+                else {
                     THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
                         THEKOGANS_UTIL_OS_ERROR_CODE);
                 }
@@ -317,13 +328,15 @@ namespace thekogans {
                         return HexEncodeBuffer (digest.data (), digest.size ());
                     }
                     else {
-                        // FIXME: throw something appropriate
-                        assert (0);
+                        THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
+                            "Unable to retrieve property: %s",
+                            "kIOPlatformUUIDKey");
                     }
                 }
                 else {
-                    // FIXME: throw something appropriate
-                    assert (0);
+                    THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
+                        "Unable to retrieve registry entry: %s",
+                        "IOService:/");
                 }
             #endif // defined (TOOLCHAIN_OS_Windows)
             }
@@ -379,14 +392,6 @@ namespace thekogans {
                         THEKOGANS_UTIL_OS_ERROR_CODE);
                 }
             #elif defined (TOOLCHAIN_OS_OSX)
-                struct CFStringRefDeleter {
-                    void operator () (CFStringRef stringRef) {
-                        if (stringRef != 0) {
-                            CFRelease (stringRef);
-                        }
-                    }
-                };
-                typedef std::unique_ptr<const __CFString, CFStringRefDeleter> CFStringRefPtr;
                 CFStringRefPtr consoleUser (SCDynamicStoreCopyConsoleUser (nullptr, nullptr, nullptr));
                 if (consoleUser.get () != 0) {
                     struct CFDataRefDeleter {

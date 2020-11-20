@@ -123,11 +123,10 @@ Windows: Ws2_32.lib, mpr.lib, Iphlpapi.lib.
 Linux: pthread, rt, dl.
 
 OS X: pthread, frameworks: Foundation, CoreFoundation, CoreServices,
-SystemConfiguration, Cocoa.
+SystemConfiguration, IOKit, Cocoa.
 
 libthekogans_util has the following optional dependencies:
 
-if -DTHEKOGANS_UTIL_HAVE_BOOST_ATOMIC is specified, boost_atomic.
 if -DTHEKOGANS_UTIL_HAVE_XERCES is specified, xerces.
 if -DTHEKOGANS_UTIL_HAVE_ZLIB is specified, zlib.
 if -DTHEKOGANS_UTIL_HAVE_TESTS is specified, CppUnitXLite.
