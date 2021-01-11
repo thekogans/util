@@ -22,6 +22,9 @@
 #include <atomic>
 #include "thekogans/util/Config.h"
 #include "thekogans/util/Types.h"
+#include "thekogans/util/IntrusiveList.h"
+#include "thekogans/util/SpinLock.h"
+#include "thekogans/util/LockGuard.h"
 #include "thekogans/util/Exception.h"
 #include "thekogans/util/StringUtils.h"
 
@@ -48,10 +51,32 @@ namespace thekogans {
 
         template<typename Count>
         struct _LIB_THEKOGANS_UTIL_DECL RefCounted {
+            /// \brief
+            /// Forward declaration of WeakPtr so that we can define the list below.
+            template<typename T>
+            struct WeakPtr;
+
         private:
             /// \brief
             /// Reference count.
             Count count;
+            enum {
+                /// \brief
+                /// WeakPtrList ID.
+                WEAK_PTR_LIST_ID
+            };
+            /// \brief
+            /// Convenient typedef for WeakPtr<RefCounted<Count>>.
+            typedef WeakPtr<RefCounted<Count>> WeakPtrType;
+            /// \brief
+            /// Convenient typedef for IntrusiveList<WeakPtrType, WEAK_PTR_LIST_ID>.
+            typedef IntrusiveList<WeakPtrType, WEAK_PTR_LIST_ID> WeakPtrList;
+            /// \brief
+            /// List of weak pointers.
+            WeakPtrList weakPtrList;
+            /// \brief
+            /// Access to weakPtrList needs to be protected.
+            SpinLock spinLock;
 
         public:
             /// \brief
@@ -80,6 +105,18 @@ namespace thekogans {
                         message.c_str ());
                     THEKOGANS_UTIL_ASSERT (count == 0, message);
                 }
+                // Invalidate all weak pointers.
+                struct CleaarObjectCallback : public WeakPtrList::Callback {
+                    virtual typename WeakPtrList::Callback::result_type operator () (
+                            typename WeakPtrList::Callback::argument_type weakPtr) {
+                        if (weakPtr != 0) {
+                            weakPtr->Reset ();
+                        }
+                        return true;
+                    }
+                } clearObjectCallback;
+                LockGuard<SpinLock> guard (spinLock);
+                weakPtrList.clear (clearObjectCallback);
             }
 
             /// \brief
@@ -142,26 +179,20 @@ namespace thekogans {
                 Ptr (
                         T *object_ = 0,
                         bool addRef = true) :
-                        object (object_) {
-                    if (object != 0 && addRef) {
-                        object->AddRef ();
-                    }
+                        object (0) {
+                    Reset (object_, addRef);
                 }
                 /// \brief
                 /// copy ctor.
                 /// \param[in] ptr Pointer to copy.
                 Ptr (const Ptr &ptr) :
-                        object (ptr.object) {
-                    if (object != 0) {
-                        object->AddRef ();
-                    }
+                        object (0) {
+                    Reset (ptr.object);
                 }
                 /// \brief
                 /// dtor.
                 ~Ptr () {
-                    if (object != 0) {
-                        object->Release ();
-                    }
+                    Reset ();
                 }
 
                 /// \brief
@@ -246,6 +277,95 @@ namespace thekogans {
                 }
             };
 
+            /// \struct RefCounted::WeakPtr RefCounted.h thekogans/util/RefCounted.h
+            ///
+            /// \brief
+            template<typename T>
+            struct WeakPtr : public WeakPtrList::Node {
+            protected:
+                /// \brief
+                /// Referemce counted object.
+                T *object;
+
+            public:
+                /// \brief
+                /// ctor.
+                /// \param[in] object_ Referemce counted object.
+                WeakPtr (T *object_ = 0) :
+                        object (0) {
+                    Reset (object_);
+                }
+                /// \brief
+                /// dtor.
+                ~WeakPtr () {
+                    Reset ();
+                }
+
+                /// \brief
+                /// Check the pointer for nullness.
+                /// \return true if object != 0.
+                explicit operator bool () const {
+                    return object != 0;
+                }
+
+                /// \brief
+                /// Assignemnet operator.
+                /// \param[in] ptr Pointer to copy.
+                /// \return *this.
+                WeakPtr &operator = (const WeakPtr &ptr) {
+                    if (&ptr != this) {
+                        Reset (ptr.object);
+                    }
+                    return *this;
+                }
+                /// \brief
+                /// Assignemnet operator.
+                /// \param[in] object_ Object to assign.
+                /// \return *this.
+                WeakPtr &operator = (T *object_) {
+                    Reset (object_);
+                    return *this;
+                }
+
+                /// \brief
+                /// Getter.
+                /// \return T *.
+                T *Get () const {
+                    return object;
+                }
+
+                /// \brief
+                /// Replace reference counted object.
+                /// \param[in] object_ New object to point to.
+                void Reset (T *object_ = 0) {
+                    if (object != object_) {
+                        if (object != 0) {
+                            object->RemoveWeakPtr ((WeakPtrType *)this);
+                        }
+                        object = object_;
+                        if (object != 0) {
+                            object->AddWeakPtr ((WeakPtrType *)this);
+                        }
+                    }
+                }
+
+                /// \brief
+                /// Swap objects with the given pointers.
+                /// \param[in] ptr Pointer to swap objects with.
+                void Swap (WeakPtr &ptr) {
+                    T *object_ = object;
+                    Reset (ptr.object);
+                    ptr.Reset (object_);
+                }
+
+                /// \brief
+                /// Convert to Ptr<T>.
+                /// \return Ptr<T>.
+                Ptr<T> GetPtr () const {
+                    return Ptr<T> (object);
+                }
+            };
+
         protected:
             /// \brief
             /// Default method of suicide. Derived classes can
@@ -276,6 +396,21 @@ namespace thekogans {
                     THEKOGANS_UTIL_ASSERT (count == 0, message);
                 }
                 delete this;
+            }
+
+            /// \brief
+            /// Used by WeakPtr above to add itself to the RefCounted::WeakPtrList.
+            /// \param[in] weakPtr WeakPtr to add to the list.
+            inline void AddWeakPtr (WeakPtrType *weakPtr) {
+                LockGuard<SpinLock> guard (spinLock);
+                weakPtrList.push_back (weakPtr);
+            }
+            /// \brief
+            /// Used by WeakPtr above to remove itself from the RefCounted::WeakPtrList.
+            /// \param[in] weakPtr WeakPtr to remove from the list.
+            inline void RemoveWeakPtr (WeakPtrType *weakPtr) {
+                LockGuard<SpinLock> guard (spinLock);
+                weakPtrList.push_back (weakPtr);
             }
         };
 

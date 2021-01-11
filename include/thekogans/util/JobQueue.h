@@ -205,12 +205,12 @@ namespace thekogans {
             /// \param[in] workerCallback Called to initialize/uninitialize the worker thread.
             GlobalJobQueue (
                 const std::string &name = "GlobalJobQueue",
-                RunLoop::JobExecutionPolicy::Ptr jobExecutionPolicy =
-                    RunLoop::JobExecutionPolicy::Ptr (new RunLoop::FIFOJobExecutionPolicy),
+                JobExecutionPolicy::Ptr jobExecutionPolicy =
+                    JobExecutionPolicy::Ptr (new FIFOJobExecutionPolicy),
                 std::size_t workerCount = 1,
                 i32 workerPriority = THEKOGANS_UTIL_NORMAL_THREAD_PRIORITY,
                 ui32 workerAffinity = THEKOGANS_UTIL_MAX_THREAD_AFFINITY,
-                RunLoop::WorkerCallback *workerCallback = 0) :
+                WorkerCallback *workerCallback = 0) :
                 JobQueue (
                     name,
                     jobExecutionPolicy,

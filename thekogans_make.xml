@@ -138,6 +138,7 @@
     <cpp_header>$(organization)/$(project_directory)/PipelinePool.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/Plugins.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/Point.h</cpp_header>
+    <cpp_header>$(organization)/$(project_directory)/Producer.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/RandomSource.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/Rectangle.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/RecursiveLock.h</cpp_header>
@@ -164,6 +165,7 @@
     <cpp_header>$(organization)/$(project_directory)/SpinLock.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/SpinRWLock.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/StringUtils.h</cpp_header>
+    <cpp_header>$(organization)/$(project_directory)/Subscriber.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/SystemInfo.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/SystemRunLoop.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/Thread.h</cpp_header>
