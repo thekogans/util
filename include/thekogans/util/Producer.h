@@ -158,13 +158,10 @@ namespace thekogans {
 
         protected:
             /// \brief
-            /// Convenient typedef for typename Subscriber<T>::WeakPtr.
-            typedef typename Subscriber<T>::WeakPtr SubscriberPtr;
+            /// Convenient typedef for std::pair<typename Subscriber<T>::WeakPtr, EventDeliveryPolicy::Ptr>.
+            typedef std::pair<typename Subscriber<T>::WeakPtr, typename EventDeliveryPolicy::Ptr> SubscriberInfo;
             /// \brief
-            /// Convenient typedef for std::pair<SubscriberPtr, EventDeliveryPolicy::Ptr>.
-            typedef std::pair<SubscriberPtr, typename EventDeliveryPolicy::Ptr> SubscriberInfo;
-            /// \brief
-            /// Convenient typedef for std::list<SubscriberPtr>.
+            /// Convenient typedef for std::list<SubscriberInfo>.
             typedef std::list<SubscriberInfo> Subscribers;
             /// \brief
             /// List of registered subscribers.
@@ -189,7 +186,10 @@ namespace thekogans {
                 typename Subscribers::iterator it = GetSubscriberIterator (subscriber);
                 if (it == subscribers.end ()) {
                     subscribers.push_back (
-                        SubscriberInfo (SubscriberPtr (&subscriber), eventDeliveryPolicy));
+                        SubscriberInfo (typename
+                            Subscriber<T>::WeakPtr (typename Subscriber<T>::Ptr (&subscriber)),
+                            eventDeliveryPolicy));
+                    OnSubscribe (subscriber, eventDeliveryPolicy);
                 }
             }
 
@@ -201,6 +201,7 @@ namespace thekogans {
                 typename Subscribers::iterator it = GetSubscriberIterator (subscriber);
                 if (it != subscribers.end ()) {
                     subscribers.erase (it);
+                    OnUnsubscribe (subscriber);
                 }
             }
 
@@ -210,17 +211,33 @@ namespace thekogans {
             /// \param[in] event Event to deliver to all registered subscribers.
             void Produce (std::function<void (T *)> event) {
                 LockGuard<SpinLock> guard (spinLock);
-                for (typename Subscribers::iterator it = subscribers.begin (), end = subscribers.end (); it != end;) {
+                for (typename Subscribers::iterator it = subscribers.begin (), end = subscribers.end (); it != end; ++it) {
                     typename Subscriber<T>::Ptr subscriber = it->first.GetPtr ();
                     if (subscriber.Get () != 0) {
-                        (it++)->second->DeliverEvent (event, subscriber);
-                    }
-                    else {
-                        // Subscriber has disapeared.
-                        it = subscribers.erase (it);
+                        it->second->DeliverEvent (event, subscriber);
                     }
                 }
             }
+
+            /// \brief
+            /// Return the count of registered subscribers.
+            /// \return The count of registered subscribers.
+            std::size_t GetSubscriberCount () {
+                LockGuard<SpinLock> guard (spinLock);
+                return subscribers.size ();
+            }
+
+            /// \brief
+            /// Overide this methid to react to a new \see{Subscriber.
+            /// \param[in] subscriber \see{Subscriber} to add to the subscribers list.
+            /// \param[in] eventDeliveryPolicy \see{EventDeliveryPolicy} by which events are delivered.
+            virtual void OnSubscribe (
+                Subscriber<T> & /*subscriber*/,
+                typename EventDeliveryPolicy::Ptr /*eventDeliveryPolicy*/) {}
+            /// \brief
+            /// Overide this methid to react to a \see{Subscriber being removed.
+            /// \param[in] subscriber \see{Subscriber} to remove from the subscribers list.
+            virtual void OnUnsubscribe (Subscriber<T> & /*subscriber*/) {}
 
         private:
             /// \brief

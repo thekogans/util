@@ -106,12 +106,22 @@ namespace thekogans {
                     THEKOGANS_UTIL_ASSERT (count == 0, message);
                 }
                 // Invalidate all weak pointers.
+                // WARNING: There exists a subtle race between the
+                // dtor invalidating the weak pointers and the
+                // \see{WeakPtr::Reset} below. Imagine a thread
+                // releases the last reference on this object and
+                // triggering \see{Harakiri} and eventually the call
+                // in to the dtor. While the dtor is invalidating it's
+                // list of weak pointers another thread decides to
+                // copy one of the weak pointers associated with this
+                // object. That weak pointer will either crash for trying
+                // to insert itself in to a deleted object or, will now
+                // hold on to a dangling raw pointer to this object.
                 struct CleaarObjectCallback : public WeakPtrList::Callback {
                     virtual typename WeakPtrList::Callback::result_type operator () (
                             typename WeakPtrList::Callback::argument_type weakPtr) {
-                        if (weakPtr != 0) {
-                            weakPtr->Reset ();
-                        }
+                        assert (weakPtr != 0);
+                        weakPtr->Reset ();
                         return true;
                     }
                 } clearObjectCallback;
@@ -198,7 +208,7 @@ namespace thekogans {
                 /// \brief
                 /// Check the pointer for nullness.
                 /// \return true if object != 0.
-                explicit operator bool () const {
+                operator bool () const {
                     return object != 0;
                 }
 
@@ -280,6 +290,9 @@ namespace thekogans {
             /// \struct RefCounted::WeakPtr RefCounted.h thekogans/util/RefCounted.h
             ///
             /// \brief
+            /// A weak pointer template allowing the user to hold on to a 'smart' raw
+            /// pointer to the object. In order to use the object encapsulated by this pointer
+            /// you must first call WeakPtr::GetPtr to get a ref counted smart pointer.
             template<typename T>
             struct WeakPtr : public WeakPtrList::Node {
             protected:
@@ -290,10 +303,17 @@ namespace thekogans {
             public:
                 /// \brief
                 /// ctor.
-                /// \param[in] object_ Referemce counted object.
-                WeakPtr (T *object_ = 0) :
+                /// \param[in] object_ Ptr to referemce counted object.
+                WeakPtr (Ptr<T> object_ = Ptr<T> ()) :
                         object (0) {
                     Reset (object_);
+                }
+                /// \brief
+                /// ctor.
+                /// \param[in] object_ WeakPtr to referemce counted object.
+                WeakPtr (const WeakPtr &object_ = WeakPtr ()) :
+                        object (0) {
+                    Reset (object_.GetPtr ());
                 }
                 /// \brief
                 /// dtor.
@@ -304,7 +324,7 @@ namespace thekogans {
                 /// \brief
                 /// Check the pointer for nullness.
                 /// \return true if object != 0.
-                explicit operator bool () const {
+                operator bool () const {
                     return object != 0;
                 }
 
@@ -312,18 +332,21 @@ namespace thekogans {
                 /// Assignemnet operator.
                 /// \param[in] ptr Pointer to copy.
                 /// \return *this.
-                WeakPtr &operator = (const WeakPtr &ptr) {
-                    if (&ptr != this) {
-                        Reset (ptr.object);
+                WeakPtr &operator = (Ptr<T> ptr) {
+                    if (ptr.Get () != object) {
+                        Reset (ptr);
                     }
                     return *this;
                 }
+
                 /// \brief
                 /// Assignemnet operator.
-                /// \param[in] object_ Object to assign.
+                /// \param[in] ptr Pointer to copy.
                 /// \return *this.
-                WeakPtr &operator = (T *object_) {
-                    Reset (object_);
+                WeakPtr &operator = (const WeakPtr &ptr) {
+                    if (ptr.Get () != object) {
+                        Reset (ptr.GetPtr ());
+                    }
                     return *this;
                 }
 
@@ -337,25 +360,16 @@ namespace thekogans {
                 /// \brief
                 /// Replace reference counted object.
                 /// \param[in] object_ New object to point to.
-                void Reset (T *object_ = 0) {
-                    if (object != object_) {
+                void Reset (Ptr<T> object_ = Ptr<T> ()) {
+                    if (object != object_.Get ()) {
                         if (object != 0) {
                             object->RemoveWeakPtr ((WeakPtrType *)this);
                         }
-                        object = object_;
+                        object = object_.Get ();
                         if (object != 0) {
                             object->AddWeakPtr ((WeakPtrType *)this);
                         }
                     }
-                }
-
-                /// \brief
-                /// Swap objects with the given pointers.
-                /// \param[in] ptr Pointer to swap objects with.
-                void Swap (WeakPtr &ptr) {
-                    T *object_ = object;
-                    Reset (ptr.object);
-                    ptr.Reset (object_);
                 }
 
                 /// \brief

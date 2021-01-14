@@ -99,7 +99,7 @@ namespace thekogans {
                 typename Producers::iterator it = GetProducerIterator (producer);
                 if (it == producers.end ()) {
                     producer.Subscribe (*this, eventDeliveryPolicy);
-                    producers.push_back (typename Producer<T>::WeakPtr (&producer));
+                    producers.push_back (typename Producer<T>::WeakPtr (typename Producer<T>::Ptr (&producer)));
                 }
             }
 
