@@ -44,12 +44,12 @@ namespace thekogans {
         }
 
         RunLoop::Job::Id RunLoopScheduler::ScheduleRunLoopJob (
-                RunLoop::Job::Ptr job,
+                RunLoop::Job::SharedPtr job,
                 const TimeSpec &timeSpec,
                 RunLoop &runLoop) {
             if (job.Get () != 0 && timeSpec != TimeSpec::Infinite) {
                 return ScheduleJobInfo (
-                    JobInfo::Ptr (
+                    JobInfo::SharedPtr (
                         new RunLoopJobInfo (
                             job,
                             GetCurrentTime () + timeSpec,
@@ -63,12 +63,12 @@ namespace thekogans {
         }
 
         Pipeline::Job::Id RunLoopScheduler::SchedulePipelineJob (
-                Pipeline::Job::Ptr job,
+                Pipeline::Job::SharedPtr job,
                 const TimeSpec &timeSpec,
                 Pipeline &pipeline) {
             if (job.Get () != 0 && timeSpec != TimeSpec::Infinite) {
                 return ScheduleJobInfo (
-                    JobInfo::Ptr (
+                    JobInfo::SharedPtr (
                         new PipelineJobInfo (
                             job,
                             GetCurrentTime () + timeSpec,
@@ -123,7 +123,7 @@ namespace thekogans {
         }
 
         RunLoop::Job::Id RunLoopScheduler::ScheduleJobInfo (
-                JobInfo::Ptr jobInfo,
+                JobInfo::SharedPtr jobInfo,
                 const TimeSpec &timeSpec) {
             LockGuard<SpinLock> guard (spinLock);
             bool startTimer = false;

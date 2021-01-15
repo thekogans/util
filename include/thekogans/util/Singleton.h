@@ -64,6 +64,60 @@ namespace thekogans {
             }
         };
 
+        /// \struct RefCountedInstanceCreator Singleton.h thekogans/util/Singleton.h
+        ///
+        /// \brief
+        /// Implements the \see{RefCounted} singleton creation method. Used to parameterize singleton
+        /// ctors. If your singleton ctor needs custom creation, you can package it in a class
+        /// like this and pass it as the third argument to Singleton (below). You can then
+        /// call an appropriate ctor inside the class function call operator. All global
+        /// singletons take a template parameter like this to allow you to customize their
+        /// instance creation before using them.
+
+        template<typename T>
+        struct RefCountedInstanceCreator {
+            /// \brief
+            /// Create a single instance using the default ctor.
+            /// \return Singleton instance.
+            template<typename... arg_types>
+            inline T *operator () (arg_types... args) {
+                T *instance = new T (std::forward<arg_types> (args)...);
+                instance->AddRef ();
+                return instance;
+            }
+        };
+
+        /// \struct RefCountedInstanceDestroyer Singleton.h thekogans/util/Singleton.h
+        ///
+        /// \brief
+        /// Implements a \see{RefCounted} singleton destruction method.
+        ///
+        /// \code{.cpp}
+        /// // AsyncIoEventQueue is a derived from \see{RefCounted}.
+        /// struct _LIB_THEKOGANS_STREAM_DECL GlobalAsyncIoEventQueue :
+        ///         public AsyncIoEventQueue,
+        ///         public util::Singleton<
+        ///             GlobalAsyncIoEventQueue,
+        ///             util::SpinLock,
+        ///             util::RefCountedInstanceCreator<GlobalAsyncIoEventQueue>,
+        ///             util::RefCountedInstanceDestroyer<GlobalAsyncIoEventQueue>>,
+        ///         ... {
+        ///     ...
+        /// };
+        /// \endcode
+
+        template<typename T>
+        struct RefCountedInstanceDestroyer {
+            /// \brief
+            /// Destroy the singleton instance.
+            /// \param[in] instance Singleton instance to destroy.
+            inline void operator () (T *instance) {
+                if (instance != 0) {
+                    instance->Release ();
+                }
+            }
+        };
+
         /// \struct Singleton Singleton.h thekogans/util/Singleton.h
         ///
         /// \brief

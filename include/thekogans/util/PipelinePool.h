@@ -92,7 +92,7 @@ namespace thekogans {
             const std::string name;
             /// \brief
             /// \see{Pipeline} \see{Pipeline::JobExecutionPolicy}.
-            Pipeline::JobExecutionPolicy::Ptr jobExecutionPolicy;
+            Pipeline::JobExecutionPolicy::SharedPtr jobExecutionPolicy;
             /// \brief
             /// Number of worker threads servicing the \see{Pipeline}.
             const std::size_t workerCount;
@@ -154,7 +154,7 @@ namespace thekogans {
                     const util::Pipeline::Stage *begin,
                     const util::Pipeline::Stage *end,
                     const std::string &name,
-                    util::Pipeline::JobExecutionPolicy::Ptr jobExecutionPolicy,
+                    util::Pipeline::JobExecutionPolicy::SharedPtr jobExecutionPolicy,
                     std::size_t workerCount,
                     i32 workerPriority,
                     ui32 workerAffinity,
@@ -226,8 +226,8 @@ namespace thekogans {
                 const util::Pipeline::Stage *begin_,
                 const util::Pipeline::Stage *end_,
                 const std::string &name_ = std::string (),
-                Pipeline::JobExecutionPolicy::Ptr jobExecutionPolicy_ =
-                    Pipeline::JobExecutionPolicy::Ptr (new Pipeline::FIFOJobExecutionPolicy),
+                Pipeline::JobExecutionPolicy::SharedPtr jobExecutionPolicy_ =
+                    Pipeline::JobExecutionPolicy::SharedPtr (new Pipeline::FIFOJobExecutionPolicy),
                 std::size_t workerCount_ = 1,
                 i32 workerPriority_ = THEKOGANS_UTIL_NORMAL_THREAD_PRIORITY,
                 ui32 workerAffinity_ = THEKOGANS_UTIL_MAX_THREAD_AFFINITY,
@@ -242,8 +242,8 @@ namespace thekogans {
             /// immediately available.
             /// \param[in] timeSpec How long to wait between retries.
             /// IMPORTANT: timeSpec is a relative value.
-            /// \return A \see{Pipeline} from the pool (Pipeline::Ptr () if pool is exhausted).
-            util::Pipeline::Ptr GetPipeline (
+            /// \return A \see{Pipeline} from the pool (Pipeline::SharedPtr () if pool is exhausted).
+            util::Pipeline::SharedPtr GetPipeline (
                 std::size_t retries = 1,
                 const TimeSpec &timeSpec = TimeSpec::FromMilliseconds (100));
 
@@ -337,8 +337,8 @@ namespace thekogans {
                 const util::Pipeline::Stage *begin,
                 const util::Pipeline::Stage *end,
                 const std::string &name = "GlobalPipelinePool",
-                util::Pipeline::JobExecutionPolicy::Ptr jobExecutionPolicy =
-                    util::Pipeline::JobExecutionPolicy::Ptr (new util::Pipeline::FIFOJobExecutionPolicy),
+                util::Pipeline::JobExecutionPolicy::SharedPtr jobExecutionPolicy =
+                    util::Pipeline::JobExecutionPolicy::SharedPtr (new util::Pipeline::FIFOJobExecutionPolicy),
                 std::size_t workerCount = 1,
                 i32 workerPriority = THEKOGANS_UTIL_NORMAL_THREAD_PRIORITY,
                 ui32 workerAffinity = THEKOGANS_UTIL_MAX_THREAD_AFFINITY,

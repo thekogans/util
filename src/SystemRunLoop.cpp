@@ -251,8 +251,8 @@ namespace thekogans {
 
         SystemRunLoop::SystemRunLoop (
                 const std::string &name,
-                JobExecutionPolicy::Ptr jobExecutionPolicy,
-                OSXRunLoop::Ptr runLoop_) :
+                JobExecutionPolicy::SharedPtr jobExecutionPolicy,
+                OSXRunLoop::SharedPtr runLoop_) :
                 RunLoop (name, jobExecutionPolicy),
                 runLoop (runLoop_) {
             if (runLoop.Get () == 0) {
@@ -395,7 +395,7 @@ namespace thekogans {
         }
 
         bool SystemRunLoop::EnqJob (
-                Job::Ptr job,
+                Job::SharedPtr job,
                 bool wait,
                 const TimeSpec &timeSpec) {
             bool result = RunLoop::EnqJob (job);
@@ -419,7 +419,7 @@ namespace thekogans {
         }
 
         bool SystemRunLoop::EnqJobFront (
-                Job::Ptr job,
+                Job::SharedPtr job,
                 bool wait,
                 const TimeSpec &timeSpec) {
             bool result = RunLoop::EnqJobFront (job);

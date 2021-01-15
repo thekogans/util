@@ -51,7 +51,7 @@ namespace thekogans {
 
         JobQueue::JobQueue (
                 const std::string &name,
-                JobExecutionPolicy::Ptr jobExecutionPolicy,
+                JobExecutionPolicy::SharedPtr jobExecutionPolicy,
                 std::size_t workerCount_,
                 i32 workerPriority_,
                 ui32 workerAffinity_,

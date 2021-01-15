@@ -191,12 +191,12 @@ namespace thekogans {
             THEKOGANS_UTIL_DECLARE_HEAP_WITH_LOCK (Job, SpinLock)
 
         private:
-            JobQueue::Ptr jobQueue;
+            JobQueue::SharedPtr jobQueue;
             Timer &timer;
 
         public:
             Job (
-                JobQueue::Ptr jobQueue_,
+                JobQueue::SharedPtr jobQueue_,
                 Timer &timer_) :
                 jobQueue (jobQueue_),
                 timer (timer_) {}
@@ -246,7 +246,7 @@ namespace thekogans {
                         if (cancel) {
                             job->Cancel ();
                         }
-                        jobs.push_back (Job::Ptr (job));
+                        jobs.push_back (Job::SharedPtr (job));
                         return true;
                     }
                 } getJobsCallback (jobs, cancelCallbacks);
@@ -263,10 +263,10 @@ namespace thekogans {
                 // is more important then delivering them at all. It's
                 // better to log a warning to let the developer adjust
                 // available/max queue count (JobQueuePoolCreateInstance).
-                JobQueue::Ptr jobQueue = JobQueuePool::Instance ().GetJobQueue (0);
+                JobQueue::SharedPtr jobQueue = JobQueuePool::Instance ().GetJobQueue (0);
                 if (jobQueue.Get () != 0) {
                     THEKOGANS_UTIL_TRY {
-                        jobQueue->EnqJob (Job::Ptr (new Job (jobQueue, *this)));
+                        jobQueue->EnqJob (Job::SharedPtr (new Job (jobQueue, *this)));
                     }
                     THEKOGANS_UTIL_CATCH_AND_LOG_SUBSYSTEM (THEKOGANS_UTIL)
                 }

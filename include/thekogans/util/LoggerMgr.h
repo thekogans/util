@@ -221,8 +221,8 @@ namespace thekogans {
             };
 
             /// \brief
-            /// Convenient typedef for std::list<Logger::Ptr>.
-            typedef std::list<Logger::Ptr> LoggerList;
+            /// Convenient typedef for std::list<Logger::SharedPtr>.
+            typedef std::list<Logger::SharedPtr> LoggerList;
 
             /// \struct LoggerMgr::Entry LoggerMgr.h thekogans/util/LoggerMgr.h
             ///
@@ -330,7 +330,7 @@ namespace thekogans {
             FilterList filterList;
             /// \brief
             /// Queue to excecute LogSubsystemJob jobs.
-            JobQueue::Ptr jobQueue;
+            JobQueue::SharedPtr jobQueue;
             /// \brief
             /// Synchronization mutex.
             Mutex mutex;
@@ -356,7 +356,7 @@ namespace thekogans {
                 jobQueue (!blocking ?
                     new JobQueue (
                         name,
-                        RunLoop::JobExecutionPolicy::Ptr (new RunLoop::FIFOJobExecutionPolicy),
+                        RunLoop::JobExecutionPolicy::SharedPtr (new RunLoop::FIFOJobExecutionPolicy),
                         1,
                         priority,
                         affinity) : 0) {}
@@ -442,7 +442,7 @@ namespace thekogans {
             /// \param[in] logger Logger to add.
             void AddLogger (
                 const char *subsystem,
-                Logger::Ptr logger);
+                Logger::SharedPtr logger);
             /// \brief
             /// Add a subsystem logger list. It will be called for each subsystem log entry.
             /// \param[in] subsystem Subsystem to add the logger to.
@@ -454,7 +454,7 @@ namespace thekogans {
             /// Add a default logger. All entries for unknown subsystems
             /// will be handled by the loggers in the defaultLoggers list.
             /// \param[in] logger Logger to add.
-            void AddDefaultLogger (Logger::Ptr logger);
+            void AddDefaultLogger (Logger::SharedPtr logger);
             /// \brief
             /// Add a default logger list. All entries for unknown subsystems
             /// will be handled by the loggers in this list.

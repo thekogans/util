@@ -2,7 +2,7 @@
                 project = "util"
                 project_type = "library"
                 major_version = "0"
-                minor_version = "34"
+                minor_version = "35"
                 patch_version = "0"
                 guid = "e541acd69d9d020f7eac98d5bf9e0d7a"
                 schema_version = "2">
@@ -657,6 +657,7 @@
     <cpp_source>Point.cpp</cpp_source>
     <cpp_source>RandomSource.cpp</cpp_source>
     <cpp_source>Rectangle.cpp</cpp_source>
+    <cpp_source>RefCounted.cpp</cpp_source>
     <cpp_source>RunLoop.cpp</cpp_source>
     <cpp_source>RunLoopScheduler.cpp</cpp_source>
     <cpp_source>RWLock.cpp</cpp_source>

@@ -62,7 +62,7 @@ namespace thekogans {
         }
 
         bool Scheduler::JobQueue::EnqJob (
-                Job::Ptr job,
+                Job::SharedPtr job,
                 bool wait,
                 const TimeSpec &timeSpec) {
             bool result = RunLoop::EnqJob (job);
@@ -74,7 +74,7 @@ namespace thekogans {
         }
 
         bool Scheduler::JobQueue::EnqJobFront (
-                Job::Ptr job,
+                Job::SharedPtr job,
                 bool wait,
                 const TimeSpec &timeSpec) {
             bool result = RunLoop::EnqJobFront (job);
@@ -133,11 +133,11 @@ namespace thekogans {
                 }
                 if (scheduleJobQueue) {
                     struct JobQueueJob : public RunLoop::Job {
-                        util::JobQueue::Ptr jobQueue;
+                        util::JobQueue::SharedPtr jobQueue;
                         Scheduler &scheduler;
 
                         JobQueueJob (
-                            util::JobQueue::Ptr jobQueue_,
+                            util::JobQueue::SharedPtr jobQueue_,
                             Scheduler &scheduler_) :
                             jobQueue (jobQueue_),
                             scheduler (scheduler_) {}
@@ -174,10 +174,10 @@ namespace thekogans {
                             }
                         }
                     };
-                    util::JobQueue::Ptr jobQueue = jobQueuePool.GetJobQueue (0);
+                    util::JobQueue::SharedPtr jobQueue = jobQueuePool.GetJobQueue (0);
                     if (jobQueue.Get () != 0) {
                         jobQueue->EnqJob (
-                            RunLoop::Job::Ptr (new JobQueueJob (jobQueue, *this)));
+                            RunLoop::Job::SharedPtr (new JobQueueJob (jobQueue, *this)));
                     }
                 }
             }

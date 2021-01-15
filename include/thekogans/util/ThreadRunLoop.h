@@ -125,8 +125,8 @@ namespace thekogans {
 
         struct _LIB_THEKOGANS_UTIL_DECL ThreadRunLoop : public RunLoop {
             /// \brief
-            /// Convenient typedef for ThreadSafeRefCounted::Ptr<ThreadRunLoop>.
-            typedef ThreadSafeRefCounted::Ptr<ThreadRunLoop> Ptr;
+            /// Convenient typedef for RefCounted::SharedPtr<ThreadRunLoop>.
+            typedef RefCounted::SharedPtr<ThreadRunLoop> SharedPtr;
 
         public:
             /// \brief
@@ -135,8 +135,8 @@ namespace thekogans {
             /// \param[in] jobExecutionPolicy RunLoop \see{JobExecutionPolicy}.
             ThreadRunLoop (
                 const std::string &name = std::string (),
-                JobExecutionPolicy::Ptr jobExecutionPolicy =
-                    JobExecutionPolicy::Ptr (new FIFOJobExecutionPolicy)) :
+                JobExecutionPolicy::SharedPtr jobExecutionPolicy =
+                    JobExecutionPolicy::SharedPtr (new FIFOJobExecutionPolicy)) :
                 RunLoop (name, jobExecutionPolicy) {}
 
             /// \brief

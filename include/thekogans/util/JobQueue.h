@@ -45,8 +45,8 @@ namespace thekogans {
 
         struct _LIB_THEKOGANS_UTIL_DECL JobQueue : public RunLoop {
             /// \brief
-            /// Convenient typedef for ThreadSafeRefCounted::Ptr<JobQueue>.
-            typedef ThreadSafeRefCounted::Ptr<JobQueue> Ptr;
+            /// Convenient typedef for RefCounted::SharedPtr<JobQueue>.
+            typedef RefCounted::SharedPtr<JobQueue> SharedPtr;
 
         protected:
             /// \brief
@@ -129,8 +129,8 @@ namespace thekogans {
             /// the worker thread.
             JobQueue (
                 const std::string &name = std::string (),
-                JobExecutionPolicy::Ptr jobExecutionPolicy =
-                    JobExecutionPolicy::Ptr (new FIFOJobExecutionPolicy),
+                JobExecutionPolicy::SharedPtr jobExecutionPolicy =
+                    JobExecutionPolicy::SharedPtr (new FIFOJobExecutionPolicy),
                 std::size_t workerCount_ = 1,
                 i32 workerPriority_ = THEKOGANS_UTIL_NORMAL_THREAD_PRIORITY,
                 ui32 workerAffinity_ = THEKOGANS_UTIL_MAX_THREAD_AFFINITY,
@@ -193,7 +193,11 @@ namespace thekogans {
 
         struct _LIB_THEKOGANS_UTIL_DECL GlobalJobQueue :
                 public JobQueue,
-                public Singleton<GlobalJobQueue, SpinLock> {
+                public Singleton<
+                    GlobalJobQueue,
+                    SpinLock,
+                    RefCountedInstanceCreator<GlobalJobQueue>,
+                    RefCountedInstanceDestroyer<GlobalJobQueue>> {
             /// \brief
             /// Create a global job queue with custom ctor arguments.
             /// \param[in] name JobQueue name. If set, \see{JobQueue::Worker}
@@ -205,8 +209,8 @@ namespace thekogans {
             /// \param[in] workerCallback Called to initialize/uninitialize the worker thread.
             GlobalJobQueue (
                 const std::string &name = "GlobalJobQueue",
-                JobExecutionPolicy::Ptr jobExecutionPolicy =
-                    JobExecutionPolicy::Ptr (new FIFOJobExecutionPolicy),
+                JobExecutionPolicy::SharedPtr jobExecutionPolicy =
+                    JobExecutionPolicy::SharedPtr (new FIFOJobExecutionPolicy),
                 std::size_t workerCount = 1,
                 i32 workerPriority = THEKOGANS_UTIL_NORMAL_THREAD_PRIORITY,
                 ui32 workerAffinity = THEKOGANS_UTIL_MAX_THREAD_AFFINITY,

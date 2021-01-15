@@ -29,9 +29,9 @@ namespace thekogans {
             return *map;
         }
 
-        DynamicCreatable::Ptr DynamicCreatable::Get (const std::string &type) {
+        DynamicCreatable::SharedPtr DynamicCreatable::Get (const std::string &type) {
             Map::iterator it = GetMap ().find (type);
-            return it != GetMap ().end () ? it->second () : DynamicCreatable::Ptr ();
+            return it != GetMap ().end () ? it->second () : DynamicCreatable::SharedPtr ();
         }
 
     #if defined (THEKOGANS_UTIL_TYPE_Shared)

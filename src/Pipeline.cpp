@@ -114,7 +114,7 @@ namespace thekogans {
                     if (!ShouldStop (pipeline.done) &&
                             ((stage = GetNextStage ()) < pipeline.stages.size ())) {
                         THEKOGANS_UTIL_TRY {
-                            pipeline.stages[stage]->EnqJob (RunLoop::Job::Ptr (this));
+                            pipeline.stages[stage]->EnqJob (RunLoop::Job::SharedPtr (this));
                             return;
                         }
                         THEKOGANS_UTIL_CATCH (Exception) {
@@ -138,7 +138,7 @@ namespace thekogans {
                     if (!job->ShouldStop (pipeline.done) &&
                             ((job->stage = job->GetFirstStage ()) < pipeline.stages.size ())) {
                         THEKOGANS_UTIL_TRY {
-                            pipeline.stages[job->stage]->EnqJob (RunLoop::Job::Ptr (job));
+                            pipeline.stages[job->stage]->EnqJob (RunLoop::Job::SharedPtr (job));
                             continue;
                         }
                         THEKOGANS_UTIL_CATCH (Exception) {
@@ -154,7 +154,7 @@ namespace thekogans {
                 const Stage *begin,
                 const Stage *end,
                 const std::string &name_,
-                JobExecutionPolicy::Ptr jobExecutionPolicy_,
+                JobExecutionPolicy::SharedPtr jobExecutionPolicy_,
                 std::size_t workerCount_,
                 i32 workerPriority_,
                 ui32 workerAffinity_,
@@ -175,7 +175,7 @@ namespace thekogans {
             if (begin != 0 && end != 0 && jobExecutionPolicy.Get () != 0 && workerCount > 0) {
                 for (; begin != end; ++begin) {
                     stages.push_back (
-                        JobQueue::Ptr (
+                        JobQueue::SharedPtr (
                             new JobQueue (
                                 begin->name,
                                 begin->jobExecutionPolicy,
@@ -206,7 +206,7 @@ namespace thekogans {
                     if (cancelRunningJobs) {
                         job->Cancel ();
                     }
-                    runningJobs.push_back (RunLoop::Job::Ptr (job));
+                    runningJobs.push_back (RunLoop::Job::SharedPtr (job));
                     return true;
                 }
             } getRunningJobsCallback (cancelRunningJobs);
@@ -352,7 +352,7 @@ namespace thekogans {
         }
 
         bool Pipeline::EnqJob (
-                Job::Ptr job,
+                Job::SharedPtr job,
                 bool wait,
                 const TimeSpec &timeSpec) {
             if (job.Get () != 0 && job->IsCompleted () && job->GetPipelineId () == id) {
@@ -371,19 +371,19 @@ namespace thekogans {
             }
         }
 
-        std::pair<Pipeline::Job::Ptr, bool> Pipeline::EnqJob (
+        std::pair<Pipeline::Job::SharedPtr, bool> Pipeline::EnqJob (
                 const LambdaJob::Function *&begin,
                 const LambdaJob::Function *&end,
                 bool wait,
                 const TimeSpec &timeSpec) {
-            std::pair<Job::Ptr, bool> result;
+            std::pair<Job::SharedPtr, bool> result;
             result.first.Reset (new LambdaJob (*this, begin, end));
             result.second = EnqJob (result.first, wait, timeSpec);
             return result;
         }
 
         bool Pipeline::EnqJobFront (
-                Job::Ptr job,
+                Job::SharedPtr job,
                 bool wait,
                 const TimeSpec &timeSpec) {
             if (job.Get () != 0 && job->IsCompleted ()) {
@@ -402,24 +402,24 @@ namespace thekogans {
             }
         }
 
-        std::pair<Pipeline::Job::Ptr, bool> Pipeline::EnqJobFront (
+        std::pair<Pipeline::Job::SharedPtr, bool> Pipeline::EnqJobFront (
                 const LambdaJob::Function *&begin,
                 const LambdaJob::Function *&end,
                 bool wait,
                 const TimeSpec &timeSpec) {
-            std::pair<Job::Ptr, bool> result;
+            std::pair<Job::SharedPtr, bool> result;
             result.first.Reset (new LambdaJob (*this, begin, end));
             result.second = EnqJobFront (result.first, wait, timeSpec);
             return result;
         }
 
-        Pipeline::Job::Ptr Pipeline::GetJob (const Job::Id &jobId) {
+        Pipeline::Job::SharedPtr Pipeline::GetJob (const Job::Id &jobId) {
             LockGuard<Mutex> guard (jobsMutex);
             struct GetJobCallback : public JobList::Callback {
                 typedef JobList::Callback::result_type result_type;
                 typedef JobList::Callback::argument_type argument_type;
                 const Job::Id &jobId;
-                Job::Ptr job;
+                Job::SharedPtr job;
                 explicit GetJobCallback (const Job::Id &jobId_) :
                     jobId (jobId_) {}
                 virtual result_type operator () (argument_type job_) {
@@ -529,7 +529,7 @@ namespace thekogans {
         }
 
         bool Pipeline::WaitForJob (
-                Job::Ptr job,
+                Job::SharedPtr job,
                 const TimeSpec &timeSpec) {
             if (job.Get () != 0 && job->GetPipelineId () == id) {
                 if (timeSpec == TimeSpec::Infinite) {
@@ -556,7 +556,7 @@ namespace thekogans {
         bool Pipeline::WaitForJob (
                 const Job::Id &jobId,
                 const TimeSpec &timeSpec) {
-            Job::Ptr job = GetJob (jobId);
+            Job::SharedPtr job = GetJob (jobId);
             return job.Get () != 0 && WaitForJob (job, timeSpec);
         }
 
@@ -603,7 +603,7 @@ namespace thekogans {
                     equalityTest (equalityTest_) {}
                 virtual result_type operator () (argument_type job) {
                     if (equalityTest (*job)) {
-                        jobs.push_back (RunLoop::Job::Ptr (job));
+                        jobs.push_back (RunLoop::Job::SharedPtr (job));
                     }
                     return true;
                 }

@@ -37,10 +37,10 @@ namespace thekogans {
             return *map;
         }
 
-        Hash::Ptr Hash::Get (const std::string &type) {
+        Hash::SharedPtr Hash::Get (const std::string &type) {
             Map::iterator it = GetMap ().find (type);
             return it != GetMap ().end () ?
-                it->second () : Hash::Ptr ();
+                it->second () : Hash::SharedPtr ();
         }
 
     #if defined (THEKOGANS_UTIL_TYPE_Static)

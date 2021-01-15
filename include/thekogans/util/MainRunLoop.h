@@ -175,7 +175,7 @@ namespace thekogans {
                     void *userData = 0,
                     Window::Ptr window = Window::Ptr (0)) {
                 Thread::SetMainThread ();
-                return window.get () != 0 ?
+                RunLoop *runLoop = window.get () != 0 ?
                     (RunLoop *)new SystemRunLoop (
                         name,
                         jobExecutionPolicy,
@@ -185,6 +185,8 @@ namespace thekogans {
                     (RunLoop *)new ThreadRunLoop (
                         name,
                         jobExecutionPolicy);
+                runLoop->AddRef ();
+                return runLoop;
             }
         #elif defined (TOOLCHAIN_OS_Linux)
         #if defined (THEKOGANS_UTIL_HAVE_XLIB)
@@ -206,7 +208,7 @@ namespace thekogans {
                     SystemRunLoop::XlibWindow::Ptr window = SystemRunLoop::XlibWindow::Ptr (0),
                     const std::vector<Display *> &displays = std::vector<Display *> ()) {
                 Thread::SetMainThread ();
-                return eventProcessor != 0 ?
+                RunLoop *runLoop = eventProcessor != 0 ?
                     (RunLoop *)new SystemRunLoop (
                         name,
                         jobExecutionPolicy,
@@ -217,6 +219,8 @@ namespace thekogans {
                     (RunLoop *)new ThreadRunLoop (
                         name,
                         jobExecutionPolicy);
+                runLoop->AdRef ();
+                return runLoop;
             }
         #else // defined (THEKOGANS_UTIL_HAVE_XLIB)
             /// \brief
@@ -226,8 +230,8 @@ namespace thekogans {
             /// \return A main thread run loop with custom ctor arguments.
             RunLoop *operator () (
                     const std::string &name = "MainRunLoop",
-                    RunLoop::JobExecutionPolicy::Ptr jobExecutionPolicy =
-                        RunLoop::JobExecutionPolicy::Ptr (new RunLoop::FIFOJobExecutionPolicy)) {
+                    RunLoop::JobExecutionPolicy::SharedPtr jobExecutionPolicy =
+                        RunLoop::JobExecutionPolicy::SharedPtr (new RunLoop::FIFOJobExecutionPolicy)) {
                 Thread::SetMainThread ();
                 return (RunLoop *)new ThreadRunLoop (name, jobExecutionPolicy);
             }
@@ -241,18 +245,20 @@ namespace thekogans {
             /// \return A main thread run loop with custom ctor arguments.
             RunLoop *operator () (
                     const std::string &name = "MainRunLoop",
-                    RunLoop::JobExecutionPolicy::Ptr jobExecutionPolicy =
-                        RunLoop::JobExecutionPolicy::Ptr (new RunLoop::FIFOJobExecutionPolicy),
-                    SystemRunLoop::OSXRunLoop::Ptr runLoop = SystemRunLoop::OSXRunLoop::Ptr (0)) {
+                    RunLoop::JobExecutionPolicy::SharedPtr jobExecutionPolicy =
+                        RunLoop::JobExecutionPolicy::SharedPtr (new RunLoop::FIFOJobExecutionPolicy),
+                    SystemRunLoop::OSXRunLoop::SharedPtr osxRunLoop = SystemRunLoop::OSXRunLoop::SharedPtr ()) {
                 Thread::SetMainThread ();
-                return runLoop.Get () != 0 ?
+                RunLoop *runLoop = osxRunLoop.Get () != 0 ?
                     (RunLoop *)new SystemRunLoop (
                         name,
                         jobExecutionPolicy,
-                        runLoop) :
+                        osxRunLoop) :
                     (RunLoop *)new ThreadRunLoop (
                         name,
                         jobExecutionPolicy);
+                runLoop->AddRef ();
+                return runLoop;
             }
         #endif // defined (TOOLCHAIN_OS_Windows)
         };
@@ -262,7 +268,11 @@ namespace thekogans {
         /// \brief
         /// Main thread run loop.
         struct _LIB_THEKOGANS_UTIL_DECL MainRunLoop :
-            public Singleton<RunLoop, SpinLock, MainRunLoopInstanceCreator> {};
+            public Singleton<
+                RunLoop,
+                SpinLock,
+                MainRunLoopInstanceCreator,
+                RefCountedInstanceDestroyer<RunLoop>> {};
 
     } // namespace util
 } // namespace thekogans

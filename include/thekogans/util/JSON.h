@@ -44,10 +44,10 @@ namespace thekogans {
             ///
             /// \brief
             /// Base for all JSON value types.
-            struct _LIB_THEKOGANS_UTIL_DECL Value : public ThreadSafeRefCounted {
+            struct _LIB_THEKOGANS_UTIL_DECL Value : public RefCounted {
                 /// \brief
-                /// Convenient typedef for ThreadSafeRefCounted::Ptr<Value>.
-                typedef ThreadSafeRefCounted::Ptr<Value> Ptr;
+                /// Convenient typedef for RefCounted::Ptr<Value>.
+                typedef RefCounted::SharedPtr<Value> SharedPtr;
 
             public:
                 /// \brief
@@ -70,7 +70,7 @@ namespace thekogans {
             /// Common declarations used by all Value derivatives.
             #define THEKOGANS_UTIL_JSON_DECLARE_VALUE(type)\
             public:\
-                typedef ThreadSafeRefCounted::Ptr<type> Ptr;\
+                typedef RefCounted::SharedPtr<type> SharedPtr;\
                 THEKOGANS_UTIL_DECLARE_HEAP_WITH_LOCK (type, SpinLock)\
                 static const char * const TYPE;\
                 virtual const char *GetType () const {\
@@ -174,7 +174,7 @@ namespace thekogans {
 
                 /// \brief
                 /// Array of values.
-                std::vector<Value::Ptr> values;
+                std::vector<Value::SharedPtr> values;
 
                 /// \brief
                 /// ctor.
@@ -213,7 +213,7 @@ namespace thekogans {
                 /// \paramp[in] index Index whose value to retrieve.
                 /// \return Value at index.
                 template<typename T>
-                typename T::Ptr Get (std::size_t index) const {
+                typename T::SharedPtr Get (std::size_t index) const {
                     if (index < values.size ()) {
                         return dynamic_refcounted_pointer_cast<T> (values[index]);
                     }
@@ -229,7 +229,7 @@ namespace thekogans {
                 template<typename T>
                 void Add (T value) {
                     if (value.Get () != 0) {
-                        values.push_back (Value::Ptr (value.Get ()));
+                        values.push_back (Value::SharedPtr (value.Get ()));
                     }
                     else {
                         THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
@@ -246,7 +246,7 @@ namespace thekogans {
                        T value,
                        std::size_t index) {
                     if (value.Get () != 0 && index <= values.size ()) {
-                        values.insert (values.begin () + index, Value::Ptr (value.Get ()));
+                        values.insert (values.begin () + index, Value::SharedPtr (value.Get ()));
                     }
                     else {
                         THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
@@ -270,8 +270,8 @@ namespace thekogans {
                 THEKOGANS_UTIL_JSON_DECLARE_VALUE (Object)
 
                 /// \brief
-                /// Convenient typedef for std::pair<std::string, Value::Ptr>.
-                typedef std::pair<std::string, Value::Ptr> NameValue;
+                /// Convenient typedef for std::pair<std::string, Value::SharedPtr>.
+                typedef std::pair<std::string, Value::SharedPtr> NameValue;
                 /// \brief
                 /// Array of name/value pairs.
                 std::vector<NameValue> values;
@@ -292,13 +292,13 @@ namespace thekogans {
                 /// \paramp[in] name Name whose value to retrieve.
                 /// \return Value with the given name.
                 template<typename T>
-                typename T::Ptr Get (const std::string &name) const {
+                typename T::SharedPtr Get (const std::string &name) const {
                     for (std::size_t i = 0, count = values.size (); i < count; ++i) {
                         if (values[i].first == name) {
                             return dynamic_refcounted_pointer_cast<T> (values[i].second);
                         }
                     }
-                    return typename T::Ptr (new T);
+                    return typename T::SharedPtr (new T);
                 }
 
                 /// \brief
@@ -310,7 +310,7 @@ namespace thekogans {
                         const std::string &name,
                         T value) {
                     if (!name.empty () && value.Get () != 0) {
-                        values.push_back (NameValue (name, Value::Ptr (value.Get ())));
+                        values.push_back (NameValue (name, Value::SharedPtr (value.Get ())));
                     }
                     else {
                         THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
@@ -331,7 +331,7 @@ namespace thekogans {
                     if (!name.empty () && value.Get () != 0 && index <= values.size ()) {
                         values.insert (
                             values.begin () + index,
-                            NameValue (name, Value::Ptr (value.Get ())));
+                            NameValue (name, Value::SharedPtr (value.Get ())));
                     }
                     else {
                         THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
@@ -355,7 +355,7 @@ namespace thekogans {
             /// Parse a JSON formatted string.
             /// \param[in] value JSON formatted string.
             /// \retunr Value representation of the given JSON string.
-            static Value::Ptr ParseValue (const std::string &value);
+            static Value::SharedPtr ParseValue (const std::string &value);
             /// \brief
             /// Format the given value.
             /// \param[in] value The value to format.
@@ -581,7 +581,7 @@ namespace thekogans {
         /// \param[in] value bool value to add to Array.
         template<>
         inline void JSON::Array::Add (bool value) {
-            values.push_back (Value::Ptr (new Bool (value)));
+            values.push_back (Value::SharedPtr (new Bool (value)));
         }
 
         /// \brief
@@ -589,7 +589,7 @@ namespace thekogans {
         /// \param[in] value i8 value to add to Array.
         template<>
         inline void JSON::Array::Add (i8 value) {
-            values.push_back (Value::Ptr (new Number (Variant (value))));
+            values.push_back (Value::SharedPtr (new Number (Variant (value))));
         }
 
         /// \brief
@@ -597,7 +597,7 @@ namespace thekogans {
         /// \param[in] value ui8 value to add to Array.
         template<>
         inline void JSON::Array::Add (ui8 value) {
-            values.push_back (Value::Ptr (new Number (Variant (value))));
+            values.push_back (Value::SharedPtr (new Number (Variant (value))));
         }
 
         /// \brief
@@ -605,7 +605,7 @@ namespace thekogans {
         /// \param[in] value i16 value to add to Array.
         template<>
         inline void JSON::Array::Add (i16 value) {
-            values.push_back (Value::Ptr (new Number (Variant (value))));
+            values.push_back (Value::SharedPtr (new Number (Variant (value))));
         }
 
         /// \brief
@@ -613,7 +613,7 @@ namespace thekogans {
         /// \param[in] value ui16 value to add to Array.
         template<>
         inline void JSON::Array::Add (ui16 value) {
-            values.push_back (Value::Ptr (new Number (Variant (value))));
+            values.push_back (Value::SharedPtr (new Number (Variant (value))));
         }
 
         /// \brief
@@ -621,7 +621,7 @@ namespace thekogans {
         /// \param[in] value i32 value to add to Array.
         template<>
         inline void JSON::Array::Add (i32 value) {
-            values.push_back (Value::Ptr (new Number (Variant (value))));
+            values.push_back (Value::SharedPtr (new Number (Variant (value))));
         }
 
         /// \brief
@@ -629,7 +629,7 @@ namespace thekogans {
         /// \param[in] value ui32 value to add to Array.
         template<>
         inline void JSON::Array::Add (ui32 value) {
-            values.push_back (Value::Ptr (new Number (Variant (value))));
+            values.push_back (Value::SharedPtr (new Number (Variant (value))));
         }
 
         /// \brief
@@ -637,7 +637,7 @@ namespace thekogans {
         /// \param[in] value i64 value to add to Array.
         template<>
         inline void JSON::Array::Add (i64 value) {
-            values.push_back (Value::Ptr (new Number (Variant (value))));
+            values.push_back (Value::SharedPtr (new Number (Variant (value))));
         }
 
         /// \brief
@@ -645,7 +645,7 @@ namespace thekogans {
         /// \param[in] value ui64 value to add to Array.
         template<>
         inline void JSON::Array::Add (ui64 value) {
-            values.push_back (Value::Ptr (new Number (Variant (value))));
+            values.push_back (Value::SharedPtr (new Number (Variant (value))));
         }
 
         /// \brief
@@ -653,7 +653,7 @@ namespace thekogans {
         /// \param[in] value f32 value to add to Array.
         template<>
         inline void JSON::Array::Add (f32 value) {
-            values.push_back (Value::Ptr (new Number (Variant (value))));
+            values.push_back (Value::SharedPtr (new Number (Variant (value))));
         }
 
         /// \brief
@@ -661,7 +661,7 @@ namespace thekogans {
         /// \param[in] value f64 value to add to Array.
         template<>
         inline void JSON::Array::Add (f64 value) {
-            values.push_back (Value::Ptr (new Number (Variant (value))));
+            values.push_back (Value::SharedPtr (new Number (Variant (value))));
         }
 
         /// \brief
@@ -669,7 +669,7 @@ namespace thekogans {
         /// \param[in] value const SizeT & value to add to Array.
         template<>
         inline void JSON::Array::Add (const SizeT &value) {
-            values.push_back (Value::Ptr (new Number (Variant (value))));
+            values.push_back (Value::SharedPtr (new Number (Variant (value))));
         }
 
         /// \brief
@@ -677,7 +677,7 @@ namespace thekogans {
         /// \param[in] value const std::string & value to add to Array.
         template<>
         inline void JSON::Array::Add (const std::string &value) {
-            values.push_back (Value::Ptr (new String (value)));
+            values.push_back (Value::SharedPtr (new String (value)));
         }
 
         /// \brief
@@ -686,7 +686,7 @@ namespace thekogans {
         template<>
         inline void JSON::Array::Add (const char *value) {
             if (value != 0) {
-                values.push_back (Value::Ptr (new String (value)));
+                values.push_back (Value::SharedPtr (new String (value)));
             }
             else {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
@@ -702,7 +702,7 @@ namespace thekogans {
         inline void JSON::Array::Insert (
                 bool value,
                 std::size_t index) {
-            values.insert (values.begin () + index, Value::Ptr (new Bool (value)));
+            values.insert (values.begin () + index, Value::SharedPtr (new Bool (value)));
         }
 
         /// \brief
@@ -713,7 +713,7 @@ namespace thekogans {
         inline void JSON::Array::Insert (
                 i8 value,
                 std::size_t index) {
-            values.insert (values.begin () + index, Value::Ptr (new Number (Variant (value))));
+            values.insert (values.begin () + index, Value::SharedPtr (new Number (Variant (value))));
         }
 
         /// \brief
@@ -724,7 +724,7 @@ namespace thekogans {
         inline void JSON::Array::Insert (
                 ui8 value,
                 std::size_t index) {
-            values.insert (values.begin () + index, Value::Ptr (new Number (Variant (value))));
+            values.insert (values.begin () + index, Value::SharedPtr (new Number (Variant (value))));
         }
 
         /// \brief
@@ -735,7 +735,7 @@ namespace thekogans {
         inline void JSON::Array::Insert (
                 i16 value,
                 std::size_t index) {
-            values.insert (values.begin () + index, Value::Ptr (new Number (Variant (value))));
+            values.insert (values.begin () + index, Value::SharedPtr (new Number (Variant (value))));
         }
 
         /// \brief
@@ -746,7 +746,7 @@ namespace thekogans {
         inline void JSON::Array::Insert (
                 ui16 value,
                 std::size_t index) {
-            values.insert (values.begin () + index, Value::Ptr (new Number (Variant (value))));
+            values.insert (values.begin () + index, Value::SharedPtr (new Number (Variant (value))));
         }
 
         /// \brief
@@ -757,7 +757,7 @@ namespace thekogans {
         inline void JSON::Array::Insert (
                 i32 value,
                 std::size_t index) {
-            values.insert (values.begin () + index, Value::Ptr (new Number (Variant (value))));
+            values.insert (values.begin () + index, Value::SharedPtr (new Number (Variant (value))));
         }
 
         /// \brief
@@ -768,7 +768,7 @@ namespace thekogans {
         inline void JSON::Array::Insert (
                 ui32 value,
                 std::size_t index) {
-            values.insert (values.begin () + index, Value::Ptr (new Number (Variant (value))));
+            values.insert (values.begin () + index, Value::SharedPtr (new Number (Variant (value))));
         }
 
         /// \brief
@@ -779,7 +779,7 @@ namespace thekogans {
         inline void JSON::Array::Insert (
                 i64 value,
                 std::size_t index) {
-            values.insert (values.begin () + index, Value::Ptr (new Number (Variant (value))));
+            values.insert (values.begin () + index, Value::SharedPtr (new Number (Variant (value))));
         }
 
         /// \brief
@@ -790,7 +790,7 @@ namespace thekogans {
         inline void JSON::Array::Insert (
                 ui64 value,
                 std::size_t index) {
-            values.insert (values.begin () + index, Value::Ptr (new Number (Variant (value))));
+            values.insert (values.begin () + index, Value::SharedPtr (new Number (Variant (value))));
         }
 
         /// \brief
@@ -801,7 +801,7 @@ namespace thekogans {
         inline void JSON::Array::Insert (
                 f32 value,
                 std::size_t index) {
-            values.insert (values.begin () + index, Value::Ptr (new Number (Variant (value))));
+            values.insert (values.begin () + index, Value::SharedPtr (new Number (Variant (value))));
         }
 
         /// \brief
@@ -812,7 +812,7 @@ namespace thekogans {
         inline void JSON::Array::Insert (
                 f64 value,
                 std::size_t index) {
-            values.insert (values.begin () + index, Value::Ptr (new Number (Variant (value))));
+            values.insert (values.begin () + index, Value::SharedPtr (new Number (Variant (value))));
         }
 
         /// \brief
@@ -823,7 +823,7 @@ namespace thekogans {
         inline void JSON::Array::Insert (
                 const SizeT &value,
                 std::size_t index) {
-            values.insert (values.begin () + index, Value::Ptr (new Number (Variant (value))));
+            values.insert (values.begin () + index, Value::SharedPtr (new Number (Variant (value))));
         }
 
         /// \brief
@@ -834,7 +834,7 @@ namespace thekogans {
         inline void JSON::Array::Insert (
                 const std::string &value,
                 std::size_t index) {
-            values.insert (values.begin () + index, Value::Ptr (new String (value)));
+            values.insert (values.begin () + index, Value::SharedPtr (new String (value)));
         }
 
         /// \brief
@@ -846,7 +846,7 @@ namespace thekogans {
                 const char *value,
                 std::size_t index) {
             if (value != 0) {
-                values.insert (values.begin () + index, Value::Ptr (new String (value)));
+                values.insert (values.begin () + index, Value::SharedPtr (new String (value)));
             }
             else {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
@@ -863,7 +863,7 @@ namespace thekogans {
                 const std::string &name,
                 bool value) {
             if (!name.empty ()) {
-                values.push_back (NameValue (name, Value::Ptr (new Bool (value))));
+                values.push_back (NameValue (name, Value::SharedPtr (new Bool (value))));
             }
             else {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
@@ -880,7 +880,7 @@ namespace thekogans {
                 const std::string &name,
                 i8 value) {
             if (!name.empty ()) {
-                values.push_back (NameValue (name, Value::Ptr (new Number (Variant (value)))));
+                values.push_back (NameValue (name, Value::SharedPtr (new Number (Variant (value)))));
             }
             else {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
@@ -897,7 +897,7 @@ namespace thekogans {
                 const std::string &name,
                 ui8 value) {
             if (!name.empty ()) {
-                values.push_back (NameValue (name, Value::Ptr (new Number (Variant (value)))));
+                values.push_back (NameValue (name, Value::SharedPtr (new Number (Variant (value)))));
             }
             else {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
@@ -914,7 +914,7 @@ namespace thekogans {
                 const std::string &name,
                 i16 value) {
             if (!name.empty ()) {
-                values.push_back (NameValue (name, Value::Ptr (new Number (Variant (value)))));
+                values.push_back (NameValue (name, Value::SharedPtr (new Number (Variant (value)))));
             }
             else {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
@@ -931,7 +931,7 @@ namespace thekogans {
                 const std::string &name,
                 ui16 value) {
             if (!name.empty ()) {
-                values.push_back (NameValue (name, Value::Ptr (new Number (Variant (value)))));
+                values.push_back (NameValue (name, Value::SharedPtr (new Number (Variant (value)))));
             }
             else {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
@@ -948,7 +948,7 @@ namespace thekogans {
                 const std::string &name,
                 i32 value) {
             if (!name.empty ()) {
-                values.push_back (NameValue (name, Value::Ptr (new Number (Variant (value)))));
+                values.push_back (NameValue (name, Value::SharedPtr (new Number (Variant (value)))));
             }
             else {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
@@ -965,7 +965,7 @@ namespace thekogans {
                 const std::string &name,
                 ui32 value) {
             if (!name.empty ()) {
-                values.push_back (NameValue (name, Value::Ptr (new Number (Variant (value)))));
+                values.push_back (NameValue (name, Value::SharedPtr (new Number (Variant (value)))));
             }
             else {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
@@ -982,7 +982,7 @@ namespace thekogans {
                 const std::string &name,
                 i64 value) {
             if (!name.empty ()) {
-                values.push_back (NameValue (name, Value::Ptr (new Number (Variant (value)))));
+                values.push_back (NameValue (name, Value::SharedPtr (new Number (Variant (value)))));
             }
             else {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
@@ -999,7 +999,7 @@ namespace thekogans {
                 const std::string &name,
                 ui64 value) {
             if (!name.empty ()) {
-                values.push_back (NameValue (name, Value::Ptr (new Number (Variant (value)))));
+                values.push_back (NameValue (name, Value::SharedPtr (new Number (Variant (value)))));
             }
             else {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
@@ -1016,7 +1016,7 @@ namespace thekogans {
                 const std::string &name,
                 f32 value) {
             if (!name.empty ()) {
-                values.push_back (NameValue (name, Value::Ptr (new Number (Variant (value)))));
+                values.push_back (NameValue (name, Value::SharedPtr (new Number (Variant (value)))));
             }
             else {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
@@ -1033,7 +1033,7 @@ namespace thekogans {
                 const std::string &name,
                 f64 value) {
             if (!name.empty ()) {
-                values.push_back (NameValue (name, Value::Ptr (new Number (Variant (value)))));
+                values.push_back (NameValue (name, Value::SharedPtr (new Number (Variant (value)))));
             }
             else {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
@@ -1050,7 +1050,7 @@ namespace thekogans {
                 const std::string &name,
                 const SizeT &value) {
             if (!name.empty ()) {
-                values.push_back (NameValue (name, Value::Ptr (new Number (Variant (value)))));
+                values.push_back (NameValue (name, Value::SharedPtr (new Number (Variant (value)))));
             }
             else {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
@@ -1067,7 +1067,7 @@ namespace thekogans {
                 const std::string &name,
                 const std::string &value) {
             if (!name.empty ()) {
-                values.push_back (NameValue (name, Value::Ptr (new String (value))));
+                values.push_back (NameValue (name, Value::SharedPtr (new String (value))));
             }
             else {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
@@ -1084,7 +1084,7 @@ namespace thekogans {
                 const std::string &name,
                 const char *value) {
             if (!name.empty () && value != 0) {
-                values.push_back (NameValue (name, Value::Ptr (new String (value))));
+                values.push_back (NameValue (name, Value::SharedPtr (new String (value))));
             }
             else {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
@@ -1105,7 +1105,7 @@ namespace thekogans {
             if (!name.empty ()) {
                 values.insert (
                     values.begin () + index,
-                    NameValue (name, Value::Ptr (new Bool (value))));
+                    NameValue (name, Value::SharedPtr (new Bool (value))));
             }
             else {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
@@ -1126,7 +1126,7 @@ namespace thekogans {
             if (!name.empty ()) {
                 values.insert (
                     values.begin () + index,
-                    NameValue (name, Value::Ptr (new Number (Variant (value)))));
+                    NameValue (name, Value::SharedPtr (new Number (Variant (value)))));
             }
             else {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
@@ -1147,7 +1147,7 @@ namespace thekogans {
             if (!name.empty ()) {
                 values.insert (
                     values.begin () + index,
-                    NameValue (name, Value::Ptr (new Number (Variant (value)))));
+                    NameValue (name, Value::SharedPtr (new Number (Variant (value)))));
             }
             else {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
@@ -1168,7 +1168,7 @@ namespace thekogans {
             if (!name.empty ()) {
                 values.insert (
                     values.begin () + index,
-                    NameValue (name, Value::Ptr (new Number (Variant (value)))));
+                    NameValue (name, Value::SharedPtr (new Number (Variant (value)))));
             }
             else {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
@@ -1189,7 +1189,7 @@ namespace thekogans {
             if (!name.empty ()) {
                 values.insert (
                     values.begin () + index,
-                    NameValue (name, Value::Ptr (new Number (Variant (value)))));
+                    NameValue (name, Value::SharedPtr (new Number (Variant (value)))));
             }
             else {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
@@ -1210,7 +1210,7 @@ namespace thekogans {
             if (!name.empty ()) {
                 values.insert (
                     values.begin () + index,
-                    NameValue (name, Value::Ptr (new Number (Variant (value)))));
+                    NameValue (name, Value::SharedPtr (new Number (Variant (value)))));
             }
             else {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
@@ -1231,7 +1231,7 @@ namespace thekogans {
             if (!name.empty ()) {
                 values.insert (
                     values.begin () + index,
-                    NameValue (name, Value::Ptr (new Number (Variant (value)))));
+                    NameValue (name, Value::SharedPtr (new Number (Variant (value)))));
             }
             else {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
@@ -1252,7 +1252,7 @@ namespace thekogans {
             if (!name.empty ()) {
                 values.insert (
                     values.begin () + index,
-                    NameValue (name, Value::Ptr (new Number (Variant (value)))));
+                    NameValue (name, Value::SharedPtr (new Number (Variant (value)))));
             }
             else {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
@@ -1273,7 +1273,7 @@ namespace thekogans {
             if (!name.empty ()) {
                 values.insert (
                     values.begin () + index,
-                    NameValue (name, Value::Ptr (new Number (Variant (value)))));
+                    NameValue (name, Value::SharedPtr (new Number (Variant (value)))));
             }
             else {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
@@ -1294,7 +1294,7 @@ namespace thekogans {
             if (!name.empty ()) {
                 values.insert (
                     values.begin () + index,
-                    NameValue (name, Value::Ptr (new Number (Variant (value)))));
+                    NameValue (name, Value::SharedPtr (new Number (Variant (value)))));
             }
             else {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
@@ -1315,7 +1315,7 @@ namespace thekogans {
             if (!name.empty ()) {
                 values.insert (
                     values.begin () + index,
-                    NameValue (name, Value::Ptr (new Number (Variant (value)))));
+                    NameValue (name, Value::SharedPtr (new Number (Variant (value)))));
             }
             else {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
@@ -1336,7 +1336,7 @@ namespace thekogans {
             if (!name.empty ()) {
                 values.insert (
                     values.begin () + index,
-                    NameValue (name, Value::Ptr (new Number (Variant (value)))));
+                    NameValue (name, Value::SharedPtr (new Number (Variant (value)))));
             }
             else {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
@@ -1357,7 +1357,7 @@ namespace thekogans {
             if (!name.empty ()) {
                 values.insert (
                     values.begin () + index,
-                    NameValue (name, Value::Ptr (new String (value))));
+                    NameValue (name, Value::SharedPtr (new String (value))));
             }
             else {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
@@ -1378,7 +1378,7 @@ namespace thekogans {
             if (!name.empty () && value != 0) {
                 values.insert (
                     values.begin () + index,
-                    NameValue (name, Value::Ptr (new String (value))));
+                    NameValue (name, Value::SharedPtr (new String (value))));
             }
             else {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (

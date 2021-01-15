@@ -126,8 +126,8 @@ namespace thekogans {
 
         struct _LIB_THEKOGANS_UTIL_DECL SystemRunLoop : public RunLoop {
             /// \brief
-            /// Convenient typedef for ThreadSafeRefCounted::Ptr<SystemRunLoop>.
-            typedef ThreadSafeRefCounted::Ptr<SystemRunLoop> Ptr;
+            /// Convenient typedef for RefCounted::Ptr<SystemRunLoop>.
+            typedef RefCounted::SharedPtr<SystemRunLoop> SharedPtr;
 
         #if defined (TOOLCHAIN_OS_Windows)
             /// \brief
@@ -156,7 +156,7 @@ namespace thekogans {
             struct XlibWindow {
                 /// \brief
                 /// Convenient typedef for std::unique_ptr<XlibWindow>.
-                typedef std::unique_ptr<XlibWindow> Ptr;
+                typedef std::unique_ptr<XlibWindow> SharedPtr;
 
                 /// \struct SystemRunLoop::XlibWindow::_Display SystemRunLoop.h thekogans/util/SystemRunLoop.h
                 ///
@@ -247,10 +247,10 @@ namespace thekogans {
             ///
             /// \brief
             /// Base class for OS X based run loop.
-            struct OSXRunLoop : public ThreadSafeRefCounted {
+            struct OSXRunLoop : public RefCounted {
                 /// \brief
-                /// Convenient typedef for ThreadSafeRefCounted::Ptr<OSXRunLoop>.
-                typedef ThreadSafeRefCounted::Ptr<OSXRunLoop> Ptr;
+                /// Convenient typedef for RefCounted::SharedPtr<OSXRunLoop>.
+                typedef RefCounted::SharedPtr<OSXRunLoop> SharedPtr;
 
                 /// \brief
                 /// dtor.
@@ -332,7 +332,7 @@ namespace thekogans {
             void *userData;
             /// \brief
             /// Windows window.
-            Window::Ptr window;
+            Window::SharedPtr window;
         #elif defined (TOOLCHAIN_OS_Linux)
             /// \brief
             /// Callback to process Xlib XEvent events.
@@ -342,14 +342,14 @@ namespace thekogans {
             void *userData;
             /// \brief
             /// Xlib window.
-            XlibWindow::Ptr window;
+            XlibWindow::SharedPtr window;
             /// \brief
             /// A list of displays to listen to.
             std::vector<Display *> displays;
         #elif defined (TOOLCHAIN_OS_OSX)
             /// \brief
             /// OS X run loop object.
-            OSXRunLoop::Ptr runLoop;
+            OSXRunLoop::SharedPtr runLoop;
         #endif // defined (TOOLCHAIN_OS_Windows)
 
         public:
@@ -363,16 +363,16 @@ namespace thekogans {
             /// \param[in] window_ Windows window.
             SystemRunLoop (
                 const std::string &name = std::string (),
-                JobExecutionPolicy::Ptr jobExecutionPolicy =
-                    JobExecutionPolicy::Ptr (new FIFOJobExecutionPolicy),
+                JobExecutionPolicy::SharedPtr jobExecutionPolicy =
+                    JobExecutionPolicy::SharedPtr (new FIFOJobExecutionPolicy),
                 EventProcessor eventProcessor_ = 0,
                 void *userData_ = 0,
-                Window::Ptr window_ = CreateThreadWindow ());
+                Window::SharedPtr window_ = CreateThreadWindow ());
 
             /// \brief
             /// Create a run loop window to service job requests.
             /// \return Window that will process job requests.
-            static Window::Ptr CreateThreadWindow ();
+            static Window::SharedPtr CreateThreadWindow ();
             /// \brief
             /// Return the Windows window associated with this run loop.
             /// \return Windows window associated with this run loop.
@@ -390,18 +390,18 @@ namespace thekogans {
             /// \param[in] displays_ A list of displays to listen to.
             SystemRunLoop (
                 const std::string &name = std::string (),
-                JobExecutionPolicy::Ptr jobExecutionPolicy =
-                    JobExecutionPolicy::Ptr (new FIFOJobExecutionPolicy),
+                JobExecutionPolicy::SharedPtr jobExecutionPolicy =
+                    JobExecutionPolicy::SharedPtr (new FIFOJobExecutionPolicy),
                 EventProcessor eventProcessor_ = 0,
                 void *userData_ = 0,
-                XlibWindow::Ptr window_ = CreateThreadWindow (0),
+                XlibWindow::SharedPtr window_ = CreateThreadWindow (0),
                 const std::vector<Display *> &displays_ = EnumerateDisplays ());
 
             /// \brief
             /// Create a run loop window to service job requests.
             /// \param[in] display Display for which to create the window.
             /// \return Window that will process job requests.
-            static XlibWindow::Ptr CreateThreadWindow (Display *display);
+            static XlibWindow::SharedPtr CreateThreadWindow (Display *display);
             /// \brief
             /// Return the Xlib window associated with this run loop.
             /// \return Xlib window associated with this run loop.
@@ -425,9 +425,9 @@ namespace thekogans {
             /// \param[in] runLoop_ OS X run loop object.
             SystemRunLoop (
                 const std::string &name = std::string (),
-                JobExecutionPolicy::Ptr jobExecutionPolicy =
-                    JobExecutionPolicy::Ptr (new FIFOJobExecutionPolicy),
-                OSXRunLoop::Ptr runLoop_ = OSXRunLoop::Ptr (new CFOSXRunLoop));
+                JobExecutionPolicy::SharedPtr jobExecutionPolicy =
+                    JobExecutionPolicy::SharedPtr (new FIFOJobExecutionPolicy),
+                OSXRunLoop::SharedPtr runLoop_ = OSXRunLoop::SharedPtr (new CFOSXRunLoop));
 
             /// \brief
             /// Return the OS X CFRunLoopRef associated with this run loop.
@@ -469,7 +469,7 @@ namespace thekogans {
             /// from the same thread that called Start.
             /// \return true == !wait || WaitForJob (...)
             virtual bool EnqJob (
-                Job::Ptr job,
+                Job::SharedPtr job,
                 bool wait = false,
                 const TimeSpec &timeSpec = TimeSpec::Infinite);
             /// \brief
@@ -482,7 +482,7 @@ namespace thekogans {
             /// from the same thread that called Start.
             /// \return true == !wait || WaitForJob (...)
             virtual bool EnqJobFront (
-                Job::Ptr job,
+                Job::SharedPtr job,
                 bool wait = false,
                 const TimeSpec &timeSpec = TimeSpec::Infinite);
 

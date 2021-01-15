@@ -31,7 +31,7 @@ namespace thekogans {
                 std::size_t minJobQueues_,
                 std::size_t maxJobQueues_,
                 const std::string &name_,
-                RunLoop::JobExecutionPolicy::Ptr jobExecutionPolicy_,
+                RunLoop::JobExecutionPolicy::SharedPtr jobExecutionPolicy_,
                 std::size_t workerCount_,
                 i32 workerPriority_,
                 ui32 workerAffinity_,
@@ -90,7 +90,7 @@ namespace thekogans {
             borrowedJobQueues.clear (deleteCallback);
         }
 
-        JobQueue::Ptr JobQueuePool::GetJobQueue (
+        JobQueue::SharedPtr JobQueuePool::GetJobQueue (
                 std::size_t retries,
                 const TimeSpec &timeSpec) {
             JobQueue *jobQueue = AcquireJobQueue ();
@@ -98,7 +98,7 @@ namespace thekogans {
                 Sleep (timeSpec);
                 jobQueue = AcquireJobQueue ();
             }
-            return util::JobQueue::Ptr (jobQueue);
+            return util::JobQueue::SharedPtr (jobQueue);
         }
 
         void JobQueuePool::GetJobs (

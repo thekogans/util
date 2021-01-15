@@ -24,7 +24,6 @@
 #include <list>
 #include <map>
 #include "thekogans/util/Config.h"
-#include "thekogans/util/DynamicCreatable.h"
 
 namespace thekogans {
     namespace util {

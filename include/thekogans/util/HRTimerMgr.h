@@ -164,8 +164,8 @@ namespace thekogans {
             /// collects the statistics from various scopes.
             struct _LIB_THEKOGANS_UTIL_DECL TimerInfoBase : public Serializable {
                 /// \brief
-                /// Convenient typedef for ThreadSafeRefCounted::Ptr<TimerInfoBase>.
-                typedef ThreadSafeRefCounted::Ptr<TimerInfoBase> Ptr;
+                /// Convenient typedef for RefCounted::SharedPtr<TimerInfoBase>.
+                typedef RefCounted::SharedPtr<TimerInfoBase> SharedPtr;
 
                 /// \btief
                 /// Label by which this TimerInfoBase is identified.
@@ -393,10 +393,10 @@ namespace thekogans {
 
                 /// \brief
                 /// A stack of open scopes.
-                std::list<TimerInfoBase::Ptr> open;
+                std::list<TimerInfoBase::SharedPtr> open;
                 /// \brief
                 /// A list of closed scopes.
-                std::list<TimerInfoBase::Ptr> closed;
+                std::list<TimerInfoBase::SharedPtr> closed;
 
                 /// \brief
                 /// ctor.

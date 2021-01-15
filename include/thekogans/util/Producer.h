@@ -56,7 +56,11 @@ namespace thekogans {
         /// };
         ///
         /// struct Producer :
-        ///         public Singleton<Producer, SpinLock>,
+        ///         public Singleton<
+        ///             Producer,
+        ///             SpinLock,
+        ///             util::RefCountedInstanceCreator<Producer>,
+        ///             util::RefCountedInstanceDestroyer<Producer>>,
         ///         public util::Producer<Events1>,
         ///         public util::Producer<Events2> {
         ///     void foo () {
@@ -76,23 +80,23 @@ namespace thekogans {
         /// \\endcode
 
         template <typename T>
-        struct Producer : public virtual ThreadSafeRefCounted {
+        struct Producer : public virtual RefCounted {
             /// \brief
-            /// Convenient typedef for ThreadSafeRefCounted::Ptr<Producer<T>>.
-            typedef ThreadSafeRefCounted::Ptr<Producer<T>> Ptr;
+            /// Convenient typedef for RefCounted::SharedPtr<Producer<T>>.
+            typedef RefCounted::SharedPtr<Producer<T>> SharedPtr;
             /// \brief
-            /// Convenient typedef for ThreadSafeRefCounted::WeakPtr<Producer<T>>.
-            typedef ThreadSafeRefCounted::WeakPtr<Producer<T>> WeakPtr;
+            /// Convenient typedef for RefCounted::WeakPtr<Producer<T>>.
+            typedef RefCounted::WeakPtr<Producer<T>> WeakPtr;
 
             /// \struct Producer::EventDeliveryPolicy Producer.h thekogans/util/Producer.h
             ///
             /// \brief
             /// An abstract base class encapsulating the mechanism by which events
             /// are delivered to subscribers.
-            struct EventDeliveryPolicy : public ThreadSafeRefCounted {
+            struct EventDeliveryPolicy : public RefCounted {
                 /// \brief
-                /// Convenient typedef for ThreadSafeRefCounted::Ptr<EventDeliveryPolicy>>.
-                typedef ThreadSafeRefCounted::Ptr<EventDeliveryPolicy> Ptr;
+                /// Convenient typedef for RefCounted::SharedPtr<EventDeliveryPolicy>>.
+                typedef RefCounted::SharedPtr<EventDeliveryPolicy> SharedPtr;
 
                 /// \brief
                 /// dtor.
@@ -105,7 +109,7 @@ namespace thekogans {
                 /// \param[in] subscriber \see{Subscriber} to whom to deliver the event.
                 virtual void DeliverEvent (
                     std::function<void (T *)> event,
-                    typename Subscriber<T>::Ptr subscriber) = 0;
+                    typename Subscriber<T>::SharedPtr subscriber) = 0;
             };
 
             /// \struct Producer::ImmediateEventDeliveryPolicy Producer.h thekogans/util/Producer.h
@@ -120,7 +124,7 @@ namespace thekogans {
                 /// \param[in] subscriber \see{Subscriber} to whom to deliver the event.
                 virtual void DeliverEvent (
                         std::function<void (T *)> event,
-                        typename Subscriber<T>::Ptr subscriber) {
+                        typename Subscriber<T>::SharedPtr subscriber) {
                     event (subscriber.Get ());
                 }
             };
@@ -148,7 +152,7 @@ namespace thekogans {
                 /// \param[in] subscriber \see{Subscriber} to whom to deliver the event.
                 virtual void DeliverEvent (
                         std::function<void (T *)> event,
-                        typename Subscriber<T>::Ptr subscriber) {
+                        typename Subscriber<T>::SharedPtr subscriber) {
                     auto job = [event, subscriber] (RunLoop::Job & /*job*/, const std::atomic<bool> & /*done*/) {
                         event (subscriber.Get ());
                     };
@@ -158,8 +162,10 @@ namespace thekogans {
 
         protected:
             /// \brief
-            /// Convenient typedef for std::pair<typename Subscriber<T>::WeakPtr, EventDeliveryPolicy::Ptr>.
-            typedef std::pair<typename Subscriber<T>::WeakPtr, typename EventDeliveryPolicy::Ptr> SubscriberInfo;
+            /// Convenient typedef for std::pair<typename Subscriber<T>::WeakPtr, EventDeliveryPolicy::SharedPtr>.
+            typedef std::pair<
+                typename Subscriber<T>::WeakPtr,
+                typename EventDeliveryPolicy::SharedPtr> SubscriberInfo;
             /// \brief
             /// Convenient typedef for std::list<SubscriberInfo>.
             typedef std::list<SubscriberInfo> Subscribers;
@@ -181,13 +187,13 @@ namespace thekogans {
             /// \param[in] eventDeliveryPolicy \see{EventDeliveryPolicy} by which events are delivered.
             void Subscribe (
                     Subscriber<T> &subscriber,
-                    typename EventDeliveryPolicy::Ptr eventDeliveryPolicy) {
+                    typename EventDeliveryPolicy::SharedPtr eventDeliveryPolicy) {
                 LockGuard<SpinLock> guard (spinLock);
                 typename Subscribers::iterator it = GetSubscriberIterator (subscriber);
                 if (it == subscribers.end ()) {
                     subscribers.push_back (
                         SubscriberInfo (typename
-                            Subscriber<T>::WeakPtr (typename Subscriber<T>::Ptr (&subscriber)),
+                            Subscriber<T>::WeakPtr (&subscriber),
                             eventDeliveryPolicy));
                     OnSubscribe (subscriber, eventDeliveryPolicy);
                 }
@@ -211,10 +217,14 @@ namespace thekogans {
             /// \param[in] event Event to deliver to all registered subscribers.
             void Produce (std::function<void (T *)> event) {
                 LockGuard<SpinLock> guard (spinLock);
-                for (typename Subscribers::iterator it = subscribers.begin (), end = subscribers.end (); it != end; ++it) {
-                    typename Subscriber<T>::Ptr subscriber = it->first.GetPtr ();
+                for (typename Subscribers::iterator it = subscribers.begin (), end = subscribers.end (); it != end;) {
+                    typename Subscriber<T>::SharedPtr subscriber = it->first.GetSharedPtr ();
                     if (subscriber.Get () != 0) {
                         it->second->DeliverEvent (event, subscriber);
+                        ++it;
+                    }
+                    else {
+                        it = subscribers.erase (it);
                     }
                 }
             }
@@ -233,7 +243,7 @@ namespace thekogans {
             /// \param[in] eventDeliveryPolicy \see{EventDeliveryPolicy} by which events are delivered.
             virtual void OnSubscribe (
                 Subscriber<T> & /*subscriber*/,
-                typename EventDeliveryPolicy::Ptr /*eventDeliveryPolicy*/) {}
+                typename EventDeliveryPolicy::SharedPtr /*eventDeliveryPolicy*/) {}
             /// \brief
             /// Overide this methid to react to a \see{Subscriber being removed.
             /// \param[in] subscriber \see{Subscriber} to remove from the subscribers list.

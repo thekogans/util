@@ -138,8 +138,8 @@ namespace thekogans {
                     std::size_t minJobQueues = 1,
                     std::size_t maxJobQueues = 100,
                     const std::string &name = "TimerJobQueuePool",
-                    RunLoop::JobExecutionPolicy::Ptr jobExecutionPolicy =
-                        RunLoop::JobExecutionPolicy::Ptr (new RunLoop::FIFOJobExecutionPolicy),
+                    RunLoop::JobExecutionPolicy::SharedPtr jobExecutionPolicy =
+                        RunLoop::JobExecutionPolicy::SharedPtr (new RunLoop::FIFOJobExecutionPolicy),
                     std::size_t workerCount = 1,
                     i32 workerPriority = THEKOGANS_UTIL_NORMAL_THREAD_PRIORITY,
                     ui32 workerAffinity = THEKOGANS_UTIL_MAX_THREAD_AFFINITY,

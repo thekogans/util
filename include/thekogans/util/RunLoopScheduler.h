@@ -42,10 +42,6 @@ namespace thekogans {
         /// to be executed in the future.
 
         struct _LIB_THEKOGANS_UTIL_DECL RunLoopScheduler : public Timer::Callback {
-            /// \brief
-            /// Convenient typedef for ThreadSafeRefCounted::Ptr<RunLoopScheduler>.
-            typedef ThreadSafeRefCounted::Ptr<RunLoopScheduler> Ptr;
-
         private:
             /// \brief
             /// \see{Timer} used to schedule future jobs.
@@ -55,14 +51,14 @@ namespace thekogans {
             /// \brief
             /// Base class for information about a future job to be scheduled on
             /// the given \see{RunLoop} or \see{Pipeline}.
-            struct JobInfo : public virtual ThreadSafeRefCounted {
+            struct JobInfo : public virtual RefCounted {
                 /// \brief
-                /// Convenient typedef for ThreadSafeRefCounted::Ptr<JobInfo>.
-                typedef ThreadSafeRefCounted::Ptr<JobInfo> Ptr;
+                /// Convenient typedef for RefCounted::SharedPtr<JobInfo>.
+                typedef RefCounted::SharedPtr<JobInfo> SharedPtr;
 
                 /// \brief
                 /// \see{RunLoop::Job} or \see{Pipeline::Job} that will be scheduled.
-                RunLoop::Job::Ptr job;
+                RunLoop::Job::SharedPtr job;
                 /// \brief
                 /// Absolute time when the job will be scheduled.
                 TimeSpec deadline;
@@ -72,7 +68,7 @@ namespace thekogans {
                 /// \param[in] job_ \see{RunLoop::Job} or \see{Pipeline::Job} that will be scheduled.
                 /// \param[in] deadline_ Absolute time when the job will be scheduled.
                 JobInfo (
-                    RunLoop::Job::Ptr job_,
+                    RunLoop::Job::SharedPtr job_,
                     const TimeSpec &deadline_) :
                     job (job_),
                     deadline (deadline_) {}
@@ -89,8 +85,8 @@ namespace thekogans {
                     /// \param[in] jobInfo2 Second JobInfo to compare.
                     /// \return true if jobInfo1 should come before jobInfo2.
                     inline bool operator () (
-                            const JobInfo::Ptr &jobInfo1,
-                            const JobInfo::Ptr &jobInfo2) {
+                            const JobInfo::SharedPtr &jobInfo1,
+                            const JobInfo::SharedPtr &jobInfo2) {
                         return jobInfo1->deadline > jobInfo2->deadline;
                     }
                 } static compare;
@@ -124,7 +120,7 @@ namespace thekogans {
                 /// \param[in] deadline Absolute time when the job will be scheduled.
                 /// \param[in] runLoop_ \see{RunLoop} the job will be scheduled on.
                 RunLoopJobInfo (
-                    RunLoop::Job::Ptr job,
+                    RunLoop::Job::SharedPtr job,
                     const TimeSpec &deadline,
                     RunLoop &runLoop_) :
                     JobInfo (job, deadline),
@@ -167,10 +163,10 @@ namespace thekogans {
                 /// \param[in] deadline Absolute time when the job will be scheduled.
                 /// \param[in] pipeline_ \see{Pipeline} the job will be scheduled on.
                 PipelineJobInfo (
-                    Pipeline::Job::Ptr job,
+                    Pipeline::Job::SharedPtr job,
                     const TimeSpec &deadline,
                     Pipeline &pipeline_) :
-                    JobInfo (RunLoop::Job::Ptr (job.Get ()), deadline),
+                    JobInfo (RunLoop::Job::SharedPtr (job.Get ()), deadline),
                     pipeline (pipeline_) {}
 
                 /// \brief
@@ -192,10 +188,10 @@ namespace thekogans {
             };
             /// \brief
             /// Convenient typedef for
-            /// std::priority_queue<JobInfo::Ptr, std::vector<JobInfo::Ptr>, JobInfo::Compare>.
+            /// std::priority_queue<JobInfo::SharedPtr, std::vector<JobInfo::SharedPtr>, JobInfo::Compare>.
             typedef std::priority_queue<
-                JobInfo::Ptr,
-                std::vector<JobInfo::Ptr>,
+                JobInfo::SharedPtr,
+                std::vector<JobInfo::SharedPtr>,
                 JobInfo::Compare> QueueType;
             /// \struct RunLoopScheduler::Queue RunLoopScheduler.h thekogans/util/RunLoopScheduler.h
             ///
@@ -243,7 +239,7 @@ namespace thekogans {
             /// \param[in] runLoop \see{RunLoop} that will execute the job.
             /// \return RunLoop::Job::Id which can be used in a call to CancelJob.
             RunLoop::Job::Id ScheduleRunLoopJob (
-                RunLoop::Job::Ptr job,
+                RunLoop::Job::SharedPtr job,
                 const TimeSpec &timeSpec,
                 RunLoop &runLoop = MainRunLoop::Instance ());
             /// \brief
@@ -258,7 +254,7 @@ namespace thekogans {
                     const TimeSpec &timeSpec,
                     RunLoop &runLoop = MainRunLoop::Instance ()) {
                 return ScheduleRunLoopJob (
-                    RunLoop::Job::Ptr (new RunLoop::LambdaJob (function)),
+                    RunLoop::Job::SharedPtr (new RunLoop::LambdaJob (function)),
                     timeSpec,
                     runLoop);
             }
@@ -270,7 +266,7 @@ namespace thekogans {
             /// \param[in] pipeline \see{Pipeline} that will execute the job.
             /// \return RunLoop::Job::Id which can be used in a call to CancelJob.
             Pipeline::Job::Id SchedulePipelineJob (
-                Pipeline::Job::Ptr job,
+                Pipeline::Job::SharedPtr job,
                 const TimeSpec &timeSpec,
                 Pipeline &pipeline = GlobalPipeline::Instance ());
             /// \brief
@@ -287,7 +283,7 @@ namespace thekogans {
                     const TimeSpec &timeSpec,
                     Pipeline &pipeline = GlobalPipeline::Instance ()) {
                 return SchedulePipelineJob (
-                    Pipeline::Job::Ptr (new Pipeline::LambdaJob (pipeline, begin, end)),
+                    Pipeline::Job::SharedPtr (new Pipeline::LambdaJob (pipeline, begin, end)),
                     timeSpec,
                     pipeline);
             }
@@ -321,7 +317,7 @@ namespace thekogans {
             /// IMPORTANT: timeSpec is a relative value.
             /// \return JobInfo::Id which can be used in a call to Cancel.
             RunLoop::Job::Id ScheduleJobInfo (
-                JobInfo::Ptr jobInfo,
+                JobInfo::SharedPtr jobInfo,
                 const TimeSpec &timeSpec);
 
             /// \brief

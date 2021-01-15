@@ -271,7 +271,7 @@ namespace thekogans {
                 jobQueue.Reset (!blocking ?
                     new JobQueue (
                         name,
-                        RunLoop::JobExecutionPolicy::Ptr (new RunLoop::FIFOJobExecutionPolicy),
+                        RunLoop::JobExecutionPolicy::SharedPtr (new RunLoop::FIFOJobExecutionPolicy),
                         1,
                         priority,
                         affinity) : 0);
@@ -284,7 +284,7 @@ namespace thekogans {
 
         void LoggerMgr::AddLogger (
                 const char *subsystem,
-                Logger::Ptr logger) {
+                Logger::SharedPtr logger) {
             if (subsystem != 0 && logger.Get () != 0) {
                 LockGuard<Mutex> guard (mutex);
                 loggerMap[subsystem].push_back (logger);
@@ -311,7 +311,7 @@ namespace thekogans {
             }
         }
 
-        void LoggerMgr::AddDefaultLogger (Logger::Ptr logger) {
+        void LoggerMgr::AddDefaultLogger (Logger::SharedPtr logger) {
             if (logger.Get () != 0) {
                 LockGuard<Mutex> guard (mutex);
                 defaultLoggers.push_back (logger);
@@ -519,7 +519,7 @@ namespace thekogans {
                     if (it != loggerMap.end () || !defaultLoggers.empty ()) {
                         if (jobQueue.Get () != 0) {
                             jobQueue->EnqJob (
-                                RunLoop::Job::Ptr (
+                                RunLoop::Job::SharedPtr (
                                     new LogSubsystemJob (
                                         std::move (entry),
                                         it != loggerMap.end () ? it->second : defaultLoggers)));

@@ -55,11 +55,10 @@ namespace thekogans {
             ///
             /// \brief
             /// Represents a plugin found in the xml file.
-            struct _LIB_THEKOGANS_UTIL_DECL Plugin :
-                    public virtual ThreadSafeRefCounted {
+            struct _LIB_THEKOGANS_UTIL_DECL Plugin : public virtual RefCounted {
                 /// \brief
-                /// Convenient typedef for ThreadSafeRefCounted::Ptr<Plugin>.
-                typedef ThreadSafeRefCounted::Ptr<Plugin> Ptr;
+                /// Convenient typedef for RefCounted::SharedPtr<Plugin>.
+                typedef RefCounted::SharedPtr<Plugin> SharedPtr;
 
                 /// \brief
                 /// Plugin has a private heap to help with memory
@@ -154,8 +153,8 @@ namespace thekogans {
             };
 
             /// \brief
-            /// Convenient typedef std::map<std::string, Plugin::Ptr>.
-            typedef std::map<std::string, Plugin::Ptr> PluginMap;
+            /// Convenient typedef std::map<std::string, Plugin::SharedPtr>.
+            typedef std::map<std::string, Plugin::SharedPtr> PluginMap;
 
         private:
             /// \brief
@@ -194,7 +193,7 @@ namespace thekogans {
             /// Return the plugin with the specified path.
             /// \param[in] path Plugin::path to return.
             /// \return Plugin whose path == path.
-            Plugin::Ptr GetPlugin (const std::string &path) const;
+            Plugin::SharedPtr GetPlugin (const std::string &path) const;
             /// \brief
             /// Add a plugin to the map. If a plugin containing the path already
             /// exists, update version and SHA2_256 if different.

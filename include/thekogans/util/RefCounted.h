@@ -22,7 +22,7 @@
 #include <atomic>
 #include "thekogans/util/Config.h"
 #include "thekogans/util/Types.h"
-#include "thekogans/util/IntrusiveList.h"
+#include "thekogans/util/Heap.h"
 #include "thekogans/util/SpinLock.h"
 #include "thekogans/util/LockGuard.h"
 #include "thekogans/util/Exception.h"
@@ -37,7 +37,7 @@ namespace thekogans {
         /// RefCounted is a base class for reference counted objects.
         /// It's designed to be useful for objects that are heap as well
         /// as stack allocated. On construction, the reference count is
-        /// set to 0. Use RefCounted::Ptr to deal with heap object lifetimes.
+        /// set to 0. Use RefCounted::SharedPtr to deal with heap object lifetimes.
         /// Unlike more complicated reference count classes, I purposely
         /// designed this one not to deal with polymorphism and construction
         /// and destruction issues. The default behavior is: All RefCounted
@@ -49,132 +49,123 @@ namespace thekogans {
         /// NOTE: When inheriting from RefCounted, consider making it 'public virtual'.
         /// This will go a long way towards resolving multiple inheritance ambiguities.
 
-        template<typename Count>
         struct _LIB_THEKOGANS_UTIL_DECL RefCounted {
-            /// \brief
-            /// Forward declaration of WeakPtr so that we can define the list below.
-            template<typename T>
-            struct WeakPtr;
-
         private:
+            /// \struct RefCounted::References RefCounted.h thekogans/util/RefCounted.h
+            ///
             /// \brief
-            /// Reference count.
-            Count count;
-            enum {
+            /// Control block for the lifetime of RefCounted as well as \see{WeakPtr}.
+            struct References {
                 /// \brief
-                /// WeakPtrList ID.
-                WEAK_PTR_LIST_ID
-            };
-            /// \brief
-            /// Convenient typedef for WeakPtr<RefCounted<Count>>.
-            typedef WeakPtr<RefCounted<Count>> WeakPtrType;
-            /// \brief
-            /// Convenient typedef for IntrusiveList<WeakPtrType, WEAK_PTR_LIST_ID>.
-            typedef IntrusiveList<WeakPtrType, WEAK_PTR_LIST_ID> WeakPtrList;
-            /// \brief
-            /// List of weak pointers.
-            WeakPtrList weakPtrList;
-            /// \brief
-            /// Access to weakPtrList needs to be protected.
-            SpinLock spinLock;
+                /// References has a private heap to help with performance and memory fragmentation.
+                THEKOGANS_UTIL_DECLARE_HEAP_WITH_LOCK (References, SpinLock)
+
+            private:
+                /// \brief
+                /// Count of weak references.
+                std::atomic<ui32> weak;
+                /// \brief
+                /// Count of shared references.
+                std::atomic<ui32> shared;
+
+            public:
+                /// \brief
+                /// ctor.
+                References () :
+                    weak (1),
+                    shared (0) {}
+
+                /// \brief
+                /// Increment the weak reference count.
+                /// \return Incremented weak reference count.
+                inline ui32 AddWeakRef () {
+                    return ++weak;
+                }
+                /// \brief
+                /// Decrement the weak reference count, and if 0, call delete.
+                /// \return Decremented weak reference count.
+                inline ui32 ReleaseWeakRef () {
+                    ui32 newWeak = --weak;
+                    if (newWeak == 0) {
+                        delete this;
+                    }
+                    return newWeak;
+                }
+                /// \brief
+                /// Return the count of weak references held.
+                /// \return Count of weak references held.
+                inline ui32 GetWeakCount () const {
+                    return weak;
+                }
+
+                /// \brief
+                /// Increment the shared reference count.
+                /// \return Incremented shared reference count.
+                inline ui32 AddSharedRef () {
+                    return ++shared;
+                }
+                /// \brief
+                /// Decrement the shared reference count, and if 0, call object->Harakiri ().
+                /// \return Decremented shared reference count.
+                inline ui32 ReleaseSharedRef (RefCounted *object) {
+                    ui32 newShared = --shared;
+                    if (newShared == 0) {
+                        object->Harakiri ();
+                    }
+                    return newShared;
+                }
+                /// \brief
+                /// Return the count of shared references held.
+                /// \return Count of shared references held.
+                inline ui32 GetSharedCount () const {
+                    return shared;
+                }
+
+                /// \brief
+                /// References is neither copy constructable, nor assignable.
+                THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (References)
+            } *references;
 
         public:
             /// \brief
             /// ctor.
             RefCounted () :
-                count (0) {}
+                references (new References) {}
             /// \brief
             /// dtor.
-            virtual ~RefCounted () {
-                // We're going out of scope. If there are still
-                // references remaining, we have a problem.
-                if (count != 0) {
-                    // Here we both log the problem and assert to give the
-                    // engineer the best chance of figuring out what happened.
-                    std::string message =
-                        FormatString ("%s : %u\n", typeid (*this).name (), (ui32)count);
-                    Log (
-                        SubsystemAll,
-                        THEKOGANS_UTIL,
-                        Error,
-                        __FILE__,
-                        __FUNCTION__,
-                        __LINE__,
-                        __DATE__ " " __TIME__,
-                        "%s",
-                        message.c_str ());
-                    THEKOGANS_UTIL_ASSERT (count == 0, message);
-                }
-                // Invalidate all weak pointers.
-                // WARNING: There exists a subtle race between the
-                // dtor invalidating the weak pointers and the
-                // \see{WeakPtr::Reset} below. Imagine a thread
-                // releases the last reference on this object and
-                // triggering \see{Harakiri} and eventually the call
-                // in to the dtor. While the dtor is invalidating it's
-                // list of weak pointers another thread decides to
-                // copy one of the weak pointers associated with this
-                // object. That weak pointer will either crash for trying
-                // to insert itself in to a deleted object or, will now
-                // hold on to a dangling raw pointer to this object.
-                struct CleaarObjectCallback : public WeakPtrList::Callback {
-                    virtual typename WeakPtrList::Callback::result_type operator () (
-                            typename WeakPtrList::Callback::argument_type weakPtr) {
-                        assert (weakPtr != 0);
-                        weakPtr->Reset ();
-                        return true;
-                    }
-                } clearObjectCallback;
-                LockGuard<SpinLock> guard (spinLock);
-                weakPtrList.clear (clearObjectCallback);
-            }
+            virtual ~RefCounted ();
 
             /// \brief
-            /// Increment the reference count.
-            /// \return Incremented reference count.
-            ui32 AddRef () {
-                return ++count;
+            /// Increment the shared reference count.
+            /// \return Incremented shared reference count.
+            inline ui32 AddRef () {
+                return references->AddSharedRef ();
             }
             /// \brief
-            /// Decrement the reference count, and if 0, delete the object.
-            /// \return Decremented reference count.
-            ui32 Release () {
-                if (count > 0) {
-                    // We save count in a local variable because after
-                    // Harakiri it wont be there to return.
-                    ui32 newCount = --count;
-                    if (newCount == 0) {
-                        Harakiri ();
-                    }
-                    return newCount;
-                }
-                else {
-                    THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                        "AddRef/Release mismatch in %s.",
-                        typeid (*this).name ());
-                }
+            /// Decrement the shared reference count, and if 0, call Harakiri.
+            /// \return Decremented shared reference count.
+            inline ui32 Release () {
+                return references->ReleaseSharedRef (this);
             }
-
             /// \brief
-            /// Return the count of references held on this object.
-            /// \return The count of references held on this object.
-            ui32 GetRefCount () const {
-                return count;
+            /// Return the count of shared references held on this object.
+            /// \return The count of shared references held on this object.
+            inline ui32 GetRefCount () const {
+                return references->GetSharedCount ();
             }
 
             /// \struct RefCounted::Ptr RefCounted.h thekogans/util/RefCounted.h
             ///
             /// \brief
-            /// RefCounted object smart pointer template.
-            /// NOTE: Unlike other ref counted pointers, Ptr is symmetric in the
-            /// way it deals with an object's reference count. It incrementes it
-            /// in it's ctor, and decrements it in it's dtor. In other words, Ptr
-            /// manages it's own reference, not one taken out by someone else.
-            /// This behavior can be modified by passing addRef = false to the
-            /// ctor. This way Ptr can take ownership of an object Release(d) by
-            /// another.
+            /// RefCounted object shared pointer template.
+            /// NOTE: Unlike other ref counted pointers, SharedPtr is symmetric in the
+            /// way it deals with an object's shared reference count. It incrementes it
+            /// in it's ctor, and decrements it in it's dtor. In other words, SharedPtr
+            /// manages it's own reference, not one taken out by someone else. This behavior
+            /// can be modified by passing addRef = false to the ctor. This way Ptr can
+            /// take ownership of an object Released by another.
             template<typename T>
-            struct Ptr {
+            struct SharedPtr {
             protected:
                 /// \brief
                 /// Reference counted object.
@@ -185,8 +176,8 @@ namespace thekogans {
                 /// \ctor.
                 /// \param[in] object_ Reference counted object.
                 /// \param[in] addRef true == take out a new reference on the passed in object,
-                /// false == this object was probably Release(d) by another Ptr.
-                Ptr (
+                /// false == this object was probably Release(d) by another SharedPtr.
+                SharedPtr (
                         T *object_ = 0,
                         bool addRef = true) :
                         object (0) {
@@ -195,13 +186,13 @@ namespace thekogans {
                 /// \brief
                 /// copy ctor.
                 /// \param[in] ptr Pointer to copy.
-                Ptr (const Ptr &ptr) :
+                SharedPtr (const SharedPtr &ptr) :
                         object (0) {
                     Reset (ptr.object);
                 }
                 /// \brief
                 /// dtor.
-                ~Ptr () {
+                ~SharedPtr () {
                     Reset ();
                 }
 
@@ -216,7 +207,7 @@ namespace thekogans {
                 /// Assignemnet operator.
                 /// \param[in] ptr Pointer to copy.
                 /// \return *this.
-                Ptr &operator = (const Ptr &ptr) {
+                SharedPtr &operator = (const SharedPtr &ptr) {
                     if (&ptr != this) {
                         Reset (ptr.object);
                     }
@@ -226,7 +217,7 @@ namespace thekogans {
                 /// Assignemnet operator.
                 /// \param[in] object_ Object to assign.
                 /// \return *this.
-                Ptr &operator = (T *object_) {
+                SharedPtr &operator = (T *object_) {
                     Reset (object_);
                     return *this;
                 }
@@ -264,7 +255,7 @@ namespace thekogans {
                 /// Replace reference counted object.
                 /// \param[in] object_ New object to point to.
                 /// \param[in] addRef true == take out a new reference on the passed in object,
-                /// false == this object was probably Release(d) by another Ptr.
+                /// false == this object was probably Release(d) by another SharedPtr.
                 void Reset (
                         T *object_ = 0,
                         bool addRef = true) {
@@ -282,7 +273,7 @@ namespace thekogans {
                 /// \brief
                 /// Swap objects with the given pointers.
                 /// \param[in] ptr Pointer to swap objects with.
-                void Swap (Ptr &ptr) {
+                void Swap (SharedPtr &ptr) {
                     std::swap (object, ptr.object);
                 }
             };
@@ -290,30 +281,57 @@ namespace thekogans {
             /// \struct RefCounted::WeakPtr RefCounted.h thekogans/util/RefCounted.h
             ///
             /// \brief
-            /// A weak pointer template allowing the user to hold on to a 'smart' raw
-            /// pointer to the object. In order to use the object encapsulated by this pointer
-            /// you must first call WeakPtr::GetPtr to get a ref counted smart pointer.
+            /// RefCounted object weak pointer template.
+            /// A weak pointer template allows the user to hold on to a 'smart' raw
+            /// pointer to the object. What that means in practice is that the RefCounted
+            /// object the WeakPtr points to can be deleted and it will not result in a
+            /// dangling pointer. In order to use the object encapsulated by the WeakPtr
+            /// you must first call WeakPtr<T>::GetSharedPtr to get a SharedPtr<T>.
+            /// NOTE: The SharedPtr<T> returned by WeakPtr<T>::GetSharedPtr can be null.
+            /// That's why it's important that you use the following pattern;
+            ///
+            /// \code{.cpp}
+            /// ShareDPtr<T> shared = weak.GetSharedPtr ();
+            /// if (shared.Get () != 0) {
+            ///    // Do something productive.
+            /// }
+            /// \endcode
             template<typename T>
-            struct WeakPtr : public WeakPtrList::Node {
+            struct WeakPtr {
             protected:
                 /// \brief
                 /// Referemce counted object.
                 T *object;
+                /// \brief
+                /// WeakPtr takes a reference out on RefCounted::Referemces
+                /// and must hang on to it's own copy of the pointer because
+                /// we cannot relly on the object being there for dereferencing.
+                References *references;
 
             public:
                 /// \brief
                 /// ctor.
-                /// \param[in] object_ Ptr to referemce counted object.
-                WeakPtr (Ptr<T> object_ = Ptr<T> ()) :
-                        object (0) {
+                /// \paramin] object_ Raw pointer to RefCounted object.
+                explicit WeakPtr (T *object_ = 0) :
+                        object (0),
+                        references (0) {
                     Reset (object_);
                 }
                 /// \brief
                 /// ctor.
-                /// \param[in] object_ WeakPtr to referemce counted object.
-                WeakPtr (const WeakPtr &object_ = WeakPtr ()) :
-                        object (0) {
-                    Reset (object_.GetPtr ());
+                /// \param[in] ptr SharedPtr<T> to referemce counted object.
+                explicit WeakPtr (const SharedPtr<T> &ptr = SharedPtr<T> ()) :
+                        object (0),
+                        references (0) {
+                    Reset (ptr.Get ());
+                }
+                /// \brief
+                /// ctor.
+                /// \param[in] ptr WeakPtr<T> to referemce counted object.
+                WeakPtr (const WeakPtr &ptr) :
+                        object (0),
+                        references (0) {
+                    Reset (ptr.GetSharedPtr ().Get ());
                 }
                 /// \brief
                 /// dtor.
@@ -322,61 +340,84 @@ namespace thekogans {
                 }
 
                 /// \brief
-                /// Check the pointer for nullness.
-                /// \return true if object != 0.
-                operator bool () const {
-                    return object != 0;
+                /// Assignemnet operator.
+                /// \param[in] object_ Raw pointer to referemce counted object.
+                /// \return *this.
+                WeakPtr &operator = (T *object_) {
+                    if (object != object_) {
+                        Reset (object_);
+                    }
+                    return *this;
                 }
-
                 /// \brief
                 /// Assignemnet operator.
-                /// \param[in] ptr Pointer to copy.
+                /// \param[in] ptr SharedPtr<T> to referemce counted object.
                 /// \return *this.
-                WeakPtr &operator = (Ptr<T> ptr) {
-                    if (ptr.Get () != object) {
-                        Reset (ptr);
+                WeakPtr &operator = (const SharedPtr<T> &ptr) {
+                    if (object != ptr.Get ()) {
+                        Reset (ptr.Get ());
+                    }
+                    return *this;
+                }
+                /// \brief
+                /// Assignemnet operator.
+                /// \param[in] ptr WeakPtr<T> to referemce counted object.
+                /// \return *this.
+                WeakPtr &operator = (const WeakPtr<T> &ptr) {
+                    if (object != ptr.Get ()) {
+                        Reset (ptr.GetSharedPtr ().Get ());
                     }
                     return *this;
                 }
 
                 /// \brief
-                /// Assignemnet operator.
-                /// \param[in] ptr Pointer to copy.
-                /// \return *this.
-                WeakPtr &operator = (const WeakPtr &ptr) {
-                    if (ptr.Get () != object) {
-                        Reset (ptr.GetPtr ());
-                    }
-                    return *this;
-                }
-
-                /// \brief
-                /// Getter.
-                /// \return T *.
-                T *Get () const {
+                /// Return a raw pointer to the referemce counted object.
+                /// \return A raw pointer to the referemce counted object.
+                inline T *Get () const {
                     return object;
                 }
 
                 /// \brief
-                /// Replace reference counted object.
-                /// \param[in] object_ New object to point to.
-                void Reset (Ptr<T> object_ = Ptr<T> ()) {
-                    if (object != object_.Get ()) {
-                        if (object != 0) {
-                            object->RemoveWeakPtr ((WeakPtrType *)this);
-                        }
-                        object = object_.Get ();
-                        if (object != 0) {
-                            object->AddWeakPtr ((WeakPtrType *)this);
-                        }
+                /// Reset the object htis WeakPtr points to.
+                /// \param[in] object_ New object to encapsulate.
+                void Reset (T *object_ = 0) {
+                    object = object_;
+                    if (references != 0) {
+                        references->ReleaseWeakRef ();
+                    }
+                    references = object != 0 ? object->references : 0;
+                    if (references != 0) {
+                        references->AddWeakRef ();
                     }
                 }
 
                 /// \brief
-                /// Convert to Ptr<T>.
-                /// \return Ptr<T>.
-                Ptr<T> GetPtr () const {
-                    return Ptr<T> (object);
+                /// Swap the contents of this WeakPtr with the one given.
+                /// \param[in,out] ptr WeakPtr with which to swap contents.
+                void Swap (WeakPtr<T> &ptr) {
+                    std::swap (object, ptr.object);
+                    std::swap (references, ptr.references);
+                }
+
+                /// \brief
+                /// Return the count of shared references on the contained object.
+                /// \return Count of shared references on the contained object.
+                inline ui32 SharedCount () const {
+                    return references != 0 ? references->GetSharedCount () : 0;
+                }
+
+                /// \brief
+                /// Return true if the contained object has expired (deleted).
+                /// \return true == the contained object has expired (deleted).
+                inline bool IsExpired () const {
+                    return references != 0 && references->GetSharedCount () == 0;
+                }
+
+                /// \brief
+                /// Convert to SharedPtr<T>.
+                /// \return SharedPtr<T>.
+                inline SharedPtr<T> GetSharedPtr () const {
+                    return SharedPtr<T> (references != 0 && references->GetSharedCount () > 0 ? object : 0);
                 }
             };
 
@@ -385,150 +426,61 @@ namespace thekogans {
             /// Default method of suicide. Derived classes can
             /// override this method to provide whatever means
             /// are appropriate for them.
-            /// IMPORTANT: If you're using Ptr (above) with stack
+            /// IMPORTANT: If you're using SharedPtr (above) with stack
             /// or static RefCounted, overriding this method is
             /// compulsory, as they were never 'allocated' to
             /// begin with.
             virtual void Harakiri () {
-                // We're going out of scope. If there are still
-                // references remaining, we have a problem.
-                if (count != 0) {
-                    // Here we both log the problem and assert to give the
-                    // engineer the best chance of figuring out what happened.
-                    std::string message =
-                        FormatString ("%s : %u", typeid (*this).name (), (ui32)count);
-                    Log (
-                        SubsystemAll,
-                        THEKOGANS_UTIL,
-                        Error,
-                        __FILE__,
-                        __FUNCTION__,
-                        __LINE__,
-                        __DATE__ " " __TIME__,
-                        "%s",
-                        message.c_str ());
-                    THEKOGANS_UTIL_ASSERT (count == 0, message);
-                }
                 delete this;
-            }
-
-            /// \brief
-            /// Used by WeakPtr above to add itself to the RefCounted::WeakPtrList.
-            /// \param[in] weakPtr WeakPtr to add to the list.
-            inline void AddWeakPtr (WeakPtrType *weakPtr) {
-                LockGuard<SpinLock> guard (spinLock);
-                weakPtrList.push_back (weakPtr);
-            }
-            /// \brief
-            /// Used by WeakPtr above to remove itself from the RefCounted::WeakPtrList.
-            /// \param[in] weakPtr WeakPtr to remove from the list.
-            inline void RemoveWeakPtr (WeakPtrType *weakPtr) {
-                LockGuard<SpinLock> guard (spinLock);
-                weakPtrList.push_back (weakPtr);
             }
         };
 
         /// \brief
-        /// Convenient typedef for RefCounted<std::atomic<ui32>>.
-        typedef RefCounted<std::atomic<ui32>> ThreadSafeRefCounted;
-        /// \brief
-        /// Convenient typedef for RefCounted<ui32>.
-        typedef RefCounted<ui32> SingleThreadedRefCounted;
-
-        /// \brief
-        /// \see{ThreadSafeRefCounted::Ptr} static cast operator.
+        /// \see{RefCounted::SharedPtr} static cast operator.
         /// \param[in] from Type to cast from.
         /// \return Pointer to destination type.
         template<
             typename To,
             typename From>
-        inline ThreadSafeRefCounted::Ptr<To> _LIB_THEKOGANS_UTIL_API static_refcounted_pointer_cast (
-                const ThreadSafeRefCounted::Ptr<From> &from) throw () {
-            return ThreadSafeRefCounted::Ptr<To> (static_cast<To *> (from.Get ()));
+        inline RefCounted::SharedPtr<To> _LIB_THEKOGANS_UTIL_API static_refcounted_pointer_cast (
+                const RefCounted::SharedPtr<From> &from) throw () {
+            return RefCounted::SharedPtr<To> (static_cast<To *> (from.Get ()));
         }
 
         /// \brief
-        /// \see{ThreadSafeRefCounted::Ptr} dynamic cast operator.
+        /// \see{RefCounted::SharedPtr} dynamic cast operator.
         /// \param[in] from Type to cast from.
         /// \return Pointer to destination type.
         template<
             typename To,
             typename From>
-        inline ThreadSafeRefCounted::Ptr<To> _LIB_THEKOGANS_UTIL_API dynamic_refcounted_pointer_cast (
-                const ThreadSafeRefCounted::Ptr<From> &from) throw () {
-            return ThreadSafeRefCounted::Ptr<To> (dynamic_cast<To *> (from.Get ()));
+        inline RefCounted::SharedPtr<To> _LIB_THEKOGANS_UTIL_API dynamic_refcounted_pointer_cast (
+                const RefCounted::SharedPtr<From> &from) throw () {
+            return RefCounted::SharedPtr<To> (dynamic_cast<To *> (from.Get ()));
         }
 
         /// \brief
-        /// \see{ThreadSafeRefCounted::Ptr} const cast operator.
+        /// \see{RefCounted::SharedPtr} const cast operator.
         /// \param[in] from Type to cast from.
         /// \return Pointer to destination type.
         template<
             typename To,
             typename From>
-        inline ThreadSafeRefCounted::Ptr<To> _LIB_THEKOGANS_UTIL_API const_refcounted_pointer_cast (
-                ThreadSafeRefCounted::Ptr<From> &from) throw () {
-            return ThreadSafeRefCounted::Ptr<To> (const_cast<To *> (from.Get ()));
+        inline RefCounted::SharedPtr<To> _LIB_THEKOGANS_UTIL_API const_refcounted_pointer_cast (
+                RefCounted::SharedPtr<From> &from) throw () {
+            return RefCounted::SharedPtr<To> (const_cast<To *> (from.Get ()));
         }
 
         /// \brief
-        /// \see{ThreadSafeRefCounted::Ptr} reinterpret cast operator.
+        /// \see{RefCounted::SharedPtr} reinterpret cast operator.
         /// \param[in] from Type to cast from.
         /// \return Pointer to destination type.
         template<
             typename To,
             typename From>
-        inline ThreadSafeRefCounted::Ptr<To> _LIB_THEKOGANS_UTIL_API reinterpret_refcounted_pointer_cast (
-                ThreadSafeRefCounted::Ptr<From> &from) throw () {
-            return ThreadSafeRefCounted::Ptr<To> (reinterpret_cast<To *> (from.Get ()));
-        }
-
-        /// \brief
-        /// \see{SingleThreadedRefCounted::Ptr} static cast operator.
-        /// \param[in] from Type to cast from.
-        /// \return Pointer to destination type.
-        template<
-            typename To,
-            typename From>
-        inline SingleThreadedRefCounted::Ptr<To> _LIB_THEKOGANS_UTIL_API static_refcounted_pointer_cast (
-                const SingleThreadedRefCounted::Ptr<From> &from) throw () {
-            return SingleThreadedRefCounted::Ptr<To> (static_cast<To *> (from.Get ()));
-        }
-
-        /// \brief
-        /// \see{SingleThreadedRefCounted::Ptr} dynamic cast operator.
-        /// \param[in] from Type to cast from.
-        /// \return Pointer to destination type.
-        template<
-            typename To,
-            typename From>
-        inline SingleThreadedRefCounted::Ptr<To> _LIB_THEKOGANS_UTIL_API dynamic_refcounted_pointer_cast (
-                const SingleThreadedRefCounted::Ptr<From> &from) throw () {
-            return SingleThreadedRefCounted::Ptr<To> (dynamic_cast<To *> (from.Get ()));
-        }
-
-        /// \brief
-        /// \see{SingleThreadedRefCounted::Ptr} const cast operator.
-        /// \param[in] from Type to cast from.
-        /// \return Pointer to destination type.
-        template<
-            typename To,
-            typename From>
-        inline SingleThreadedRefCounted::Ptr<To> _LIB_THEKOGANS_UTIL_API const_refcounted_pointer_cast (
-                SingleThreadedRefCounted::Ptr<From> &from) throw () {
-            return SingleThreadedRefCounted::Ptr<To> (const_cast<To *> (from.Get ()));
-        }
-
-        /// \brief
-        /// \see{SingleThreadedRefCounted::Ptr} reinterpret cast operator.
-        /// \param[in] from Type to cast from.
-        /// \return Pointer to destination type.
-        template<
-            typename To,
-            typename From>
-        inline SingleThreadedRefCounted::Ptr<To> _LIB_THEKOGANS_UTIL_API reinterpret_refcounted_pointer_cast (
-                SingleThreadedRefCounted::Ptr<From> &from) throw () {
-            return SingleThreadedRefCounted::Ptr<To> (reinterpret_cast<To *> (from.Get ()));
+        inline RefCounted::SharedPtr<To> _LIB_THEKOGANS_UTIL_API reinterpret_refcounted_pointer_cast (
+                RefCounted::SharedPtr<From> &from) throw () {
+            return RefCounted::SharedPtr<To> (reinterpret_cast<To *> (from.Get ()));
         }
 
         /// \brief
@@ -538,8 +490,8 @@ namespace thekogans {
         /// \return true == Same object, false == Different objects.
         template<typename T>
         inline bool _LIB_THEKOGANS_UTIL_API operator == (
-                const ThreadSafeRefCounted::Ptr<T> &item1,
-                const ThreadSafeRefCounted::Ptr<T> &item2) throw () {
+                const RefCounted::SharedPtr<T> &item1,
+                const RefCounted::SharedPtr<T> &item2) throw () {
             return item1.Get () == item2.Get ();
         }
 
@@ -550,8 +502,8 @@ namespace thekogans {
         /// \return true == Different objects, false == Same object.
         template<typename T>
         inline bool _LIB_THEKOGANS_UTIL_API operator != (
-                const ThreadSafeRefCounted::Ptr<T> &item1,
-                const ThreadSafeRefCounted::Ptr<T> &item2) throw () {
+                const RefCounted::SharedPtr<T> &item1,
+                const RefCounted::SharedPtr<T> &item2) throw () {
             return item1.Get () != item2.Get ();
         }
 
@@ -562,8 +514,8 @@ namespace thekogans {
         /// \return true == item1 < item2.
         template<typename T>
         inline bool _LIB_THEKOGANS_UTIL_API operator < (
-                const ThreadSafeRefCounted::Ptr<T> &item1,
-                const ThreadSafeRefCounted::Ptr<T> &item2) throw () {
+                const RefCounted::SharedPtr<T> &item1,
+                const RefCounted::SharedPtr<T> &item2) throw () {
             return item1.Get () < item2.Get ();
         }
 
@@ -574,8 +526,8 @@ namespace thekogans {
         /// \return true == item1 <= item2.
         template<typename T>
         inline bool _LIB_THEKOGANS_UTIL_API operator <= (
-                const ThreadSafeRefCounted::Ptr<T> &item1,
-                const ThreadSafeRefCounted::Ptr<T> &item2) throw () {
+                const RefCounted::SharedPtr<T> &item1,
+                const RefCounted::SharedPtr<T> &item2) throw () {
             return item1.Get () <= item2.Get ();
         }
 
@@ -586,8 +538,8 @@ namespace thekogans {
         /// \return true == item1 > item2.
         template<typename T>
         inline bool _LIB_THEKOGANS_UTIL_API operator > (
-                const ThreadSafeRefCounted::Ptr<T> &item1,
-                const ThreadSafeRefCounted::Ptr<T> &item2) throw () {
+                const RefCounted::SharedPtr<T> &item1,
+                const RefCounted::SharedPtr<T> &item2) throw () {
             return item1.Get () > item2.Get ();
         }
 
@@ -598,80 +550,8 @@ namespace thekogans {
         /// \return true == item1 >= item2.
         template<typename T>
         inline bool _LIB_THEKOGANS_UTIL_API operator >= (
-                const ThreadSafeRefCounted::Ptr<T> &item1,
-                const ThreadSafeRefCounted::Ptr<T> &item2) throw () {
-            return item1.Get () >= item2.Get ();
-        }
-
-        /// \brief
-        /// Compare two pointers for equality.
-        /// \param[in] item1 First pointer to compare.
-        /// \param[in] item2 Second pointer to compare.
-        /// \return true == Same object, false == Different objects.
-        template<typename T>
-        inline bool _LIB_THEKOGANS_UTIL_API operator == (
-                const SingleThreadedRefCounted::Ptr<T> &item1,
-                const SingleThreadedRefCounted::Ptr<T> &item2) throw () {
-            return item1.Get () == item2.Get ();
-        }
-
-        /// \brief
-        /// Compare two pointers for inequality.
-        /// \param[in] item1 First pointer to compare.
-        /// \param[in] item2 Second pointer to compare.
-        /// \return true == Different objects, false == Same object.
-        template<typename T>
-        inline bool _LIB_THEKOGANS_UTIL_API operator != (
-                const SingleThreadedRefCounted::Ptr<T> &item1,
-                const SingleThreadedRefCounted::Ptr<T> &item2) throw () {
-            return item1.Get () != item2.Get ();
-        }
-
-        /// \brief
-        /// Compare two pointers for order.
-        /// \param[in] item1 First pointer to compare.
-        /// \param[in] item2 Second pointer to compare.
-        /// \return true == item1 < item2.
-        template<typename T>
-        inline bool _LIB_THEKOGANS_UTIL_API operator < (
-                const SingleThreadedRefCounted::Ptr<T> &item1,
-                const SingleThreadedRefCounted::Ptr<T> &item2) throw () {
-            return item1.Get () < item2.Get ();
-        }
-
-        /// \brief
-        /// Compare two pointers for order.
-        /// \param[in] item1 First pointer to compare.
-        /// \param[in] item2 Second pointer to compare.
-        /// \return true == item1 <= item2.
-        template<typename T>
-        inline bool _LIB_THEKOGANS_UTIL_API operator <= (
-                const SingleThreadedRefCounted::Ptr<T> &item1,
-                const SingleThreadedRefCounted::Ptr<T> &item2) throw () {
-            return item1.Get () <= item2.Get ();
-        }
-
-        /// \brief
-        /// Compare two pointers for order.
-        /// \param[in] item1 First pointer to compare.
-        /// \param[in] item2 Second pointer to compare.
-        /// \return true == item1 > item2.
-        template<typename T>
-        inline bool _LIB_THEKOGANS_UTIL_API operator > (
-                const SingleThreadedRefCounted::Ptr<T> &item1,
-                const SingleThreadedRefCounted::Ptr<T> &item2) throw () {
-            return item1.Get () > item2.Get ();
-        }
-
-        /// \brief
-        /// Compare two pointers for order.
-        /// \param[in] item1 First pointer to compare.
-        /// \param[in] item2 Second pointer to compare.
-        /// \return true == item1 >= item2.
-        template<typename T>
-        inline bool _LIB_THEKOGANS_UTIL_API operator >= (
-                const SingleThreadedRefCounted::Ptr<T> &item1,
-                const SingleThreadedRefCounted::Ptr<T> &item2) throw () {
+                const RefCounted::SharedPtr<T> &item1,
+                const RefCounted::SharedPtr<T> &item2) throw () {
             return item1.Get () >= item2.Get ();
         }
 

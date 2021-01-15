@@ -60,10 +60,10 @@ namespace thekogans {
         /// and c++ closures (lambdas) to be executed on the thread that's running
         /// the run loop.
 
-        struct _LIB_THEKOGANS_UTIL_DECL RunLoop : public virtual ThreadSafeRefCounted {
+        struct _LIB_THEKOGANS_UTIL_DECL RunLoop : public virtual RefCounted {
             /// \brief
-            /// Convenient typedef for ThreadSafeRefCounted::Ptr<RunLoop>.
-            typedef ThreadSafeRefCounted::Ptr<RunLoop> Ptr;
+            /// Convenient typedef for RefCounted::Ptr<RunLoop>.
+            typedef RefCounted::SharedPtr<RunLoop> SharedPtr;
 
             /// \brief
             /// Convenient typedef for std::string.
@@ -95,11 +95,11 @@ namespace thekogans {
             /// \brief
             /// A RunLoop::Job must, at least, implement the Execute method.
             struct _LIB_THEKOGANS_UTIL_DECL Job :
-                    public virtual ThreadSafeRefCounted,
+                    public virtual RefCounted,
                     public JobList::Node {
                 /// \brief
-                /// Convenient typedef for ThreadSafeRefCounted::Ptr<Job>.
-                typedef ThreadSafeRefCounted::Ptr<Job> Ptr;
+                /// Convenient typedef for RefCounted::SharedPtr<Job>.
+                typedef RefCounted::SharedPtr<Job> SharedPtr;
 
                 /// \brief
                 /// Convenient typedef for std::string.
@@ -391,10 +391,10 @@ namespace thekogans {
             /// a map in to this list to speed up location and retrieval
             /// of the next job to dequeue.
             /// **********************************************************
-            struct _LIB_THEKOGANS_UTIL_DECL JobExecutionPolicy : public ThreadSafeRefCounted {
+            struct _LIB_THEKOGANS_UTIL_DECL JobExecutionPolicy : public RefCounted {
                 /// \brief
-                /// Convenient typedef for ThreadSafeRefCounted::Ptr<JobExecutionPolicy>.
-                typedef ThreadSafeRefCounted::Ptr<JobExecutionPolicy> Ptr;
+                /// Convenient typedef for RefCounted::SharedPtr<JobExecutionPolicy>.
+                typedef RefCounted::SharedPtr<JobExecutionPolicy> SharedPtr;
 
                 /// \brief
                 /// Max pending run loop jobs.
@@ -500,8 +500,8 @@ namespace thekogans {
             };
 
             /// \brief
-            /// Convenient typedef for std::list<Job::Ptr>.
-            typedef std::list<Job::Ptr> UserJobList;
+            /// Convenient typedef for std::list<Job::SharedPtr>.
+            typedef std::list<Job::SharedPtr> UserJobList;
 
             /// \struct RunLoop::Stats RunLoop.h thekogans/util/RunLoop.h
             ///
@@ -878,7 +878,7 @@ namespace thekogans {
             const std::string name;
             /// \brief
             /// RunLoop \see{JobExecutionPolicy}.
-            JobExecutionPolicy::Ptr jobExecutionPolicy;
+            JobExecutionPolicy::SharedPtr jobExecutionPolicy;
             /// \brief
             /// Flag to signal the worker thread(s).
             std::atomic<bool> done;
@@ -914,8 +914,8 @@ namespace thekogans {
             /// \param[in] jobExecutionPolicy_ RunLoop \see{JobExecutionPolicy}.
             RunLoop (
                 const std::string &name_ = std::string (),
-                JobExecutionPolicy::Ptr jobExecutionPolicy_ =
-                    JobExecutionPolicy::Ptr (new FIFOJobExecutionPolicy));
+                JobExecutionPolicy::SharedPtr jobExecutionPolicy_ =
+                    JobExecutionPolicy::SharedPtr (new FIFOJobExecutionPolicy));
             /// \brief
             /// dtor.
             virtual ~RunLoop ();
@@ -994,7 +994,7 @@ namespace thekogans {
             /// from the same thread that called Start.
             /// \return true == !wait || WaitForJob (...)
             virtual bool EnqJob (
-                Job::Ptr job,
+                Job::SharedPtr job,
                 bool wait = false,
                 const TimeSpec &timeSpec = TimeSpec::Infinite);
             /// \brief
@@ -1005,8 +1005,8 @@ namespace thekogans {
             /// IMPORTANT: timeSpec is a relative value.
             /// NOTE: Same constraint applies to EnqJob as Stop. Namely, you can't call EnqJob
             /// from the same thread that called Start.
-            /// \return std::pair<Job::Ptr, bool> containing the LambdaJob and the EnqJob return.
-            std::pair<Job::Ptr, bool> EnqJob (
+            /// \return std::pair<Job::SharedPtr, bool> containing the LambdaJob and the EnqJob return.
+            std::pair<Job::SharedPtr, bool> EnqJob (
                 const LambdaJob::Function &function,
                 bool wait = false,
                 const TimeSpec &timeSpec = TimeSpec::Infinite);
@@ -1020,7 +1020,7 @@ namespace thekogans {
             /// from the same thread that called Start.
             /// \return true == !wait || WaitForJob (...)
             virtual bool EnqJobFront (
-                Job::Ptr job,
+                Job::SharedPtr job,
                 bool wait = false,
                 const TimeSpec &timeSpec = TimeSpec::Infinite);
             /// \brief
@@ -1031,8 +1031,8 @@ namespace thekogans {
             /// IMPORTANT: timeSpec is a relative value.
             /// NOTE: Same constraint applies to EnqJob as Stop. Namely, you can't call EnqJob
             /// from the same thread that called Start.
-            /// \return std::pair<Job::Ptr, bool> containing the LambdaJob and the EnqJobFront return.
-            std::pair<Job::Ptr, bool> EnqJobFront (
+            /// \return std::pair<Job::SharedPtr, bool> containing the LambdaJob and the EnqJobFront return.
+            std::pair<Job::SharedPtr, bool> EnqJobFront (
                 const LambdaJob::Function &function,
                 bool wait = false,
                 const TimeSpec &timeSpec = TimeSpec::Infinite);
@@ -1057,7 +1057,7 @@ namespace thekogans {
             /// Get a running or a pending job with the given id.
             /// \param[in] jobId Id of job to retrieve.
             /// \return Job matching the given id.
-            virtual Job::Ptr GetJob (const Job::Id &jobId);
+            virtual Job::SharedPtr GetJob (const Job::Id &jobId);
             /// \brief
             /// Get all running and pending jobs matching the given equality test.
             /// \param[in] equalityTest \see{EqualityTest} to query to determine the matching jobs.
@@ -1099,7 +1099,7 @@ namespace thekogans {
             /// IMPORTANT: timeSpec is a relative value.
             /// \return true == completed, false == timed out.
             virtual bool WaitForJob (
-                Job::Ptr job,
+                Job::SharedPtr job,
                 const TimeSpec &timeSpec = TimeSpec::Infinite);
             /// \brief
             /// Wait for a running or a pending job with a given id to complete.

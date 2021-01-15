@@ -36,15 +36,14 @@ namespace thekogans {
         /// \brief
         /// Base class used to represent a dynamically creatable object.
 
-        struct _LIB_THEKOGANS_UTIL_DECL DynamicCreatable :
-                public virtual ThreadSafeRefCounted {
+        struct _LIB_THEKOGANS_UTIL_DECL DynamicCreatable : public virtual RefCounted {
             /// \brief
-            /// Convenient typedef for ThreadSafeRefCounted::Ptr<DynamicCreatable>.
-            typedef ThreadSafeRefCounted::Ptr<DynamicCreatable> Ptr;
+            /// Convenient typedef for RefCounted::Ptr<DynamicCreatable>.
+            typedef RefCounted::SharedPtr<DynamicCreatable> SharedPtr;
 
             /// \brief
             /// typedef for the DynamicCreatable factory function.
-            typedef Ptr (*Factory) ();
+            typedef SharedPtr (*Factory) ();
             /// \brief
             /// typedef for the DynamicCreatable map.
             typedef std::map<std::string, Factory> Map;
@@ -56,7 +55,7 @@ namespace thekogans {
             /// Used for DynamicCreatable dynamic discovery and creation.
             /// \param[in] type DynamicCreatable type (it's name).
             /// \return A DynamicCreatable based on the passed in type.
-            static Ptr Get (const std::string &type);
+            static SharedPtr Get (const std::string &type);
         #if defined (THEKOGANS_UTIL_TYPE_Shared)
             /// \struct DynamicCreatable::MapInitializer DynamicCreatable.h thekogans/util/DynamicCreatable.h
             ///
@@ -92,9 +91,9 @@ namespace thekogans {
         /// Common defines for DynamicCreatable.
         #define THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE_COMMON(type)\
         public:\
-            typedef ThreadSafeRefCounted::Ptr<type> Ptr;\
-            static thekogans::util::DynamicCreatable::Ptr Create () {\
-                return thekogans::util::DynamicCreatable::Ptr (new type);\
+            typedef RefCounted::SharedPtr<type> SharedPtr;\
+            static thekogans::util::DynamicCreatable::SharedPtr Create () {\
+                return thekogans::util::DynamicCreatable::SharedPtr (new type);\
             }\
             virtual const char *GetName () const {\
                 return #type;\

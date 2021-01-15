@@ -88,7 +88,7 @@ namespace thekogans {
             const std::string name;
             /// \brief
             /// JobQueue \see{RunLoop::JobExecutionPolicy}.
-            RunLoop::JobExecutionPolicy::Ptr jobExecutionPolicy;
+            RunLoop::JobExecutionPolicy::SharedPtr jobExecutionPolicy;
             /// \brief
             /// Number of worker threads servicing the \see{JobQueue}.
             const std::size_t workerCount;
@@ -146,7 +146,7 @@ namespace thekogans {
                 /// \param[in] jobQueuePool_ JobQueuePool to which this jobQueue belongs.
                 JobQueue (
                     const std::string &name,
-                    RunLoop::JobExecutionPolicy::Ptr jobExecutionPolicy,
+                    RunLoop::JobExecutionPolicy::SharedPtr jobExecutionPolicy,
                     std::size_t workerCount,
                     i32 workerPriority,
                     ui32 workerAffinity,
@@ -212,8 +212,8 @@ namespace thekogans {
                 std::size_t minJobQueues_,
                 std::size_t maxJobQueues_,
                 const std::string &name_ = std::string (),
-                RunLoop::JobExecutionPolicy::Ptr jobExecutionPolicy_ =
-                    RunLoop::JobExecutionPolicy::Ptr (new RunLoop::FIFOJobExecutionPolicy),
+                RunLoop::JobExecutionPolicy::SharedPtr jobExecutionPolicy_ =
+                    RunLoop::JobExecutionPolicy::SharedPtr (new RunLoop::FIFOJobExecutionPolicy),
                 std::size_t workerCount_ = 1,
                 i32 workerPriority_ = THEKOGANS_UTIL_NORMAL_THREAD_PRIORITY,
                 ui32 workerAffinity_ = THEKOGANS_UTIL_MAX_THREAD_AFFINITY,
@@ -228,8 +228,8 @@ namespace thekogans {
             /// immediately available.
             /// \param[in] timeSpec How long to wait between retries.
             /// IMPORTANT: timeSpec is a relative value.
-            /// \return A \see{JobQueue} from the pool (JobQueue::Ptr () if pool is exhausted).
-            util::JobQueue::Ptr GetJobQueue (
+            /// \return A \see{JobQueue} from the pool (JobQueue::SharedPtr () if pool is exhausted).
+            util::JobQueue::SharedPtr GetJobQueue (
                 std::size_t retries = 1,
                 const TimeSpec &timeSpec = TimeSpec::FromMilliseconds (100));
 
@@ -318,8 +318,8 @@ namespace thekogans {
                 std::size_t minJobQueues,
                 std::size_t maxJobQueues,
                 const std::string &name = "GlobalJobQueuePool",
-                RunLoop::JobExecutionPolicy::Ptr jobExecutionPolicy =
-                    RunLoop::JobExecutionPolicy::Ptr (new RunLoop::FIFOJobExecutionPolicy),
+                RunLoop::JobExecutionPolicy::SharedPtr jobExecutionPolicy =
+                    RunLoop::JobExecutionPolicy::SharedPtr (new RunLoop::FIFOJobExecutionPolicy),
                 std::size_t workerCount = 1,
                 i32 workerPriority = THEKOGANS_UTIL_NORMAL_THREAD_PRIORITY,
                 ui32 workerAffinity = THEKOGANS_UTIL_MAX_THREAD_AFFINITY,

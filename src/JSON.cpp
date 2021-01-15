@@ -406,47 +406,47 @@ namespace thekogans {
 
             void ParseArray (
                 Tokenizer &tokenizer,
-                JSON::Array::Ptr array);
+                JSON::Array::SharedPtr array);
             void ParseObject (
                 Tokenizer &tokenizer,
-                JSON::Object::Ptr object);
+                JSON::Object::SharedPtr object);
 
-            JSON::Value::Ptr ParseValueHelper (Tokenizer &tokenizer) {
+            JSON::Value::SharedPtr ParseValueHelper (Tokenizer &tokenizer) {
                 Token token = tokenizer.GetToken ();
                 switch (token.type) {
                     case Token::TYPE_TRUE:
                     case Token::TYPE_FALSE:
-                        return JSON::Value::Ptr (new JSON::Bool (token.value == XML_TRUE));
+                        return JSON::Value::SharedPtr (new JSON::Bool (token.value == XML_TRUE));
                     case Token::TYPE_NULL:
-                        return JSON::Value::Ptr (new JSON::Null);
+                        return JSON::Value::SharedPtr (new JSON::Null);
                     case Token::TYPE_NUMBER:
-                        return JSON::Value::Ptr (new JSON::Number (token.number));
+                        return JSON::Value::SharedPtr (new JSON::Number (token.number));
                     case Token::TYPE_STRING:
-                        return JSON::Value::Ptr (new JSON::String (token.value));
+                        return JSON::Value::SharedPtr (new JSON::String (token.value));
                     case Token::TYPE_ARRAY_START: {
-                        JSON::Value::Ptr array (new JSON::Array);
+                        JSON::Value::SharedPtr array (new JSON::Array);
                         ParseArray (tokenizer, dynamic_refcounted_pointer_cast<JSON::Array> (array));
                         return array;
                     }
                     case Token::TYPE_OBJECT_START: {
-                        JSON::Value::Ptr object (new JSON::Object);
+                        JSON::Value::SharedPtr object (new JSON::Object);
                         ParseObject (tokenizer, dynamic_refcounted_pointer_cast<JSON::Object> (object));
                         return object;
                     }
                     default: {
                         tokenizer.PushBack (token);
-                        return JSON::Value::Ptr ();
+                        return JSON::Value::SharedPtr ();
                     }
                 }
             }
 
             void ParseArray (
                     Tokenizer &tokenizer,
-                    JSON::Array::Ptr array) {
+                    JSON::Array::SharedPtr array) {
                 bool expectValue = false;
                 bool expectComma = false;
                 while (1) {
-                    JSON::Value::Ptr value = ParseValueHelper (tokenizer);
+                    JSON::Value::SharedPtr value = ParseValueHelper (tokenizer);
                     if (value.Get () != 0) {
                         if (!expectComma) {
                             array->Add (value);
@@ -490,7 +490,7 @@ namespace thekogans {
 
             void ParseObject (
                     Tokenizer &tokenizer,
-                    JSON::Object::Ptr object) {
+                    JSON::Object::SharedPtr object) {
                 bool expectNameValue = false;
                 bool expectComma = false;
                 while (1) {
@@ -499,7 +499,7 @@ namespace thekogans {
                         if (!expectComma) {
                             Token colon = tokenizer.GetToken ();
                             if (colon.type == Token::TYPE_COLON) {
-                                JSON::Value::Ptr value = ParseValueHelper (tokenizer);
+                                JSON::Value::SharedPtr value = ParseValueHelper (tokenizer);
                                 if (value.Get () != 0) {
                                     object->Add (token.value, value);
                                     expectNameValue = false;
@@ -552,7 +552,7 @@ namespace thekogans {
             }
         }
 
-        JSON::Value::Ptr JSON::ParseValue (const std::string &value) {
+        JSON::Value::SharedPtr JSON::ParseValue (const std::string &value) {
             Tokenizer tokenizer (value.c_str ());
             return ParseValueHelper (tokenizer);
         }

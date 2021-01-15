@@ -393,7 +393,7 @@ namespace thekogans {
 
         RunLoop::RunLoop (
                 const std::string &name_,
-                JobExecutionPolicy::Ptr jobExecutionPolicy_) :
+                JobExecutionPolicy::SharedPtr jobExecutionPolicy_) :
                 id (GUID::FromRandom ().ToString ()),
                 name (name_),
                 jobExecutionPolicy (jobExecutionPolicy_),
@@ -448,7 +448,7 @@ namespace thekogans {
                     if (cancelRunningJobs) {
                         job->Cancel ();
                     }
-                    runningJobs.push_back (Job::Ptr (job));
+                    runningJobs.push_back (Job::SharedPtr (job));
                     return true;
                 }
             } getRunningJobsCallback (cancelRunningJobs);
@@ -477,7 +477,7 @@ namespace thekogans {
         }
 
         bool RunLoop::EnqJob (
-                Job::Ptr job,
+                Job::SharedPtr job,
                 bool wait,
                 const TimeSpec &timeSpec) {
             if (job.Get () != 0 && job->IsCompleted ()) {
@@ -496,18 +496,18 @@ namespace thekogans {
             }
         }
 
-        std::pair<RunLoop::Job::Ptr, bool> RunLoop::EnqJob (
+        std::pair<RunLoop::Job::SharedPtr, bool> RunLoop::EnqJob (
                 const LambdaJob::Function &function,
                 bool wait,
                 const TimeSpec &timeSpec) {
-            std::pair<Job::Ptr, bool> result;
+            std::pair<Job::SharedPtr, bool> result;
             result.first.Reset (new LambdaJob (function));
             result.second = EnqJob (result.first, wait, timeSpec);
             return result;
         }
 
         bool RunLoop::EnqJobFront (
-                Job::Ptr job,
+                Job::SharedPtr job,
                 bool wait,
                 const TimeSpec &timeSpec) {
             if (job.Get () != 0 && job->IsCompleted ()) {
@@ -526,23 +526,23 @@ namespace thekogans {
             }
         }
 
-        std::pair<RunLoop::Job::Ptr, bool> RunLoop::EnqJobFront (
+        std::pair<RunLoop::Job::SharedPtr, bool> RunLoop::EnqJobFront (
                 const LambdaJob::Function &function,
                 bool wait,
                 const TimeSpec &timeSpec) {
-            std::pair<Job::Ptr, bool> result;
+            std::pair<Job::SharedPtr, bool> result;
             result.first.Reset (new LambdaJob (function));
             result.second = EnqJobFront (result.first, wait, timeSpec);
             return result;
         }
 
-        RunLoop::Job::Ptr RunLoop::GetJob (const Job::Id &jobId) {
+        RunLoop::Job::SharedPtr RunLoop::GetJob (const Job::Id &jobId) {
             LockGuard<Mutex> guard (jobsMutex);
             struct GetJobCallback : public JobList::Callback {
                 typedef JobList::Callback::result_type result_type;
                 typedef JobList::Callback::argument_type argument_type;
                 const Job::Id &jobId;
-                Job::Ptr job;
+                Job::SharedPtr job;
                 explicit GetJobCallback (const Job::Id &jobId_) :
                     jobId (jobId_) {}
                 virtual result_type operator () (argument_type job_) {
@@ -652,7 +652,7 @@ namespace thekogans {
         }
 
         bool RunLoop::WaitForJob (
-                Job::Ptr job,
+                Job::SharedPtr job,
                 const TimeSpec &timeSpec) {
             if (job.Get () != 0 && job->GetRunLoopId () == id) {
                 if (timeSpec == TimeSpec::Infinite) {
@@ -679,7 +679,7 @@ namespace thekogans {
         bool RunLoop::WaitForJob (
                 const Job::Id &jobId,
                 const TimeSpec &timeSpec) {
-            Job::Ptr job = GetJob (jobId);
+            Job::SharedPtr job = GetJob (jobId);
             return job.Get () != 0 && WaitForJob (job, timeSpec);
         }
 
@@ -726,7 +726,7 @@ namespace thekogans {
                     equalityTest (equalityTest_) {}
                 virtual result_type operator () (argument_type job) {
                     if (equalityTest (*job)) {
-                        jobs.push_back (Job::Ptr (job));
+                        jobs.push_back (Job::SharedPtr (job));
                     }
                     return true;
                 }

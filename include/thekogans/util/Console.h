@@ -51,7 +51,7 @@ namespace thekogans {
         private:
             /// \brief
             /// Used to synchronize access to std::cout and std::cerr in PrintString.
-            JobQueue::Ptr jobQueue;
+            JobQueue::SharedPtr jobQueue;
 
         public:
             /// \brief
@@ -136,7 +136,7 @@ namespace thekogans {
             ///         thekogans::util::LoggerMgr::Debug,
             ///         thekogans::util::LoggerMgr::All);
             ///     THEKOGANS_UTIL_LOG_ADD_LOGGER (
-            ///         thekogans::util::Logger::Ptr (new thekogans::util::ConsoleLogger));
+            ///         thekogans::util::Logger::SharedPtr (new thekogans::util::ConsoleLogger));
             ///     THEKOGANS_UTIL_IMPLEMENT_LOG_FLUSHER;
             ///     THEKOGANS_UTIL_TRY {
             ///         ...

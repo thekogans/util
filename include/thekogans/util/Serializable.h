@@ -47,11 +47,10 @@ namespace thekogans {
         /// extraction. Serializable has built in support for binary, XML and JSON
         /// serialization and de-serialization.
 
-        struct _LIB_THEKOGANS_UTIL_DECL Serializable :
-                public virtual ThreadSafeRefCounted {
+        struct _LIB_THEKOGANS_UTIL_DECL Serializable : public virtual RefCounted {
             /// \brief
-            /// Convenient typedef for ThreadSafeRefCounted::Ptr<Serializable>.
-            typedef ThreadSafeRefCounted::Ptr<Serializable> Ptr;
+            /// Convenient typedef for RefCounted::Ptr<Serializable>.
+            typedef RefCounted::SharedPtr<Serializable> SharedPtr;
 
             /// \struct Serializable::BinHeader Serializable.h thekogans/util/Serializable.h
             ///
@@ -182,17 +181,17 @@ namespace thekogans {
 
             /// \brief
             /// typedef for the Serializable binary factory function.
-            typedef Ptr (*BinFactory) (
+            typedef SharedPtr (*BinFactory) (
                 const BinHeader & /*header*/,
                 Serializer & /*serializer*/);
             /// \brief
             /// typedef for the Serializable XML factory function.
-            typedef Ptr (*XMLFactory) (
+            typedef SharedPtr (*XMLFactory) (
                 const TextHeader & /*header*/,
                 const pugi::xml_node & /*node*/);
             /// \brief
             /// typedef for the Serializable JSON factory function.
-            typedef Ptr (*JSONFactory) (
+            typedef SharedPtr (*JSONFactory) (
                 const TextHeader & /*header*/,
                 const JSON::Object & /*object*/);
             /// \brief
@@ -340,7 +339,7 @@ namespace thekogans {
         /// Common code used by Static and Shared versions THEKOGANS_UTIL_DECLARE_SERIALIZABLE.
         #define THEKOGANS_UTIL_DECLARE_SERIALIZABLE_COMMON(type, lock)\
         public:\
-            typedef thekogans::util::ThreadSafeRefCounted::Ptr<type> Ptr;\
+            typedef thekogans::util::RefCounted::SharedPtr<type> SharedPtr;\
         protected:\
             THEKOGANS_UTIL_DECLARE_HEAP_WITH_LOCK (type, lock)\
             type (\
@@ -358,22 +357,22 @@ namespace thekogans {
                     const thekogans::util::JSON::Object &object) {\
                 Read (header, object);\
             }\
-            static thekogans::util::Serializable::Ptr BinCreate (\
+            static thekogans::util::Serializable::SharedPtr BinCreate (\
                     const thekogans::util::Serializable::BinHeader &header,\
                     thekogans::util::Serializer &serializer) {\
-                return thekogans::util::Serializable::Ptr (\
+                return thekogans::util::Serializable::SharedPtr (\
                     new type (header, serializer));\
             }\
-            static thekogans::util::Serializable::Ptr XMLCreate (\
+            static thekogans::util::Serializable::SharedPtr XMLCreate (\
                     const thekogans::util::Serializable::TextHeader &header,\
                     const pugi::xml_node &node) {\
-                return thekogans::util::Serializable::Ptr (\
+                return thekogans::util::Serializable::SharedPtr (\
                     new type (header, node));\
             }\
-            static thekogans::util::Serializable::Ptr JSONCreate (\
+            static thekogans::util::Serializable::SharedPtr JSONCreate (\
                     const thekogans::util::Serializable::TextHeader &header,\
                     const thekogans::util::JSON::Object &object) {\
-                return thekogans::util::Serializable::Ptr (\
+                return thekogans::util::Serializable::SharedPtr (\
                     new type (header, object));\
             }\
             friend thekogans::util::Serializer & _LIB_THEKOGANS_UTIL_API operator >> (\
@@ -761,11 +760,11 @@ namespace thekogans {
             }
 
         /// \def THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_PTR_EXTRACTION_OPERATORS(_T)
-        /// Implement \see{Serializable::Ptr} extraction operators.
+        /// Implement \see{Serializable::SharedPtr} extraction operators.
         #define THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_PTR_EXTRACTION_OPERATORS(_T)\
             inline thekogans::util::Serializer & _LIB_THEKOGANS_UTIL_API operator >> (\
                     thekogans::util::Serializer &serializer,\
-                    _T::Ptr &serializable) {\
+                    _T::SharedPtr &serializable) {\
                 thekogans::util::Serializable::BinHeader header;\
                 serializer >> header;\
                 if (header.magic == thekogans::util::MAGIC32) {\
@@ -791,7 +790,7 @@ namespace thekogans {
             }\
             inline const pugi::xml_node & _LIB_THEKOGANS_UTIL_API operator >> (\
                     const pugi::xml_node &node,\
-                    _T::Ptr &serializable) {\
+                    _T::SharedPtr &serializable) {\
                 thekogans::util::Serializable::TextHeader header;\
                 node >> header;\
                 thekogans::util::Serializable::Map::iterator it =\
@@ -810,7 +809,7 @@ namespace thekogans {
             }\
             inline const thekogans::util::JSON::Object & _LIB_THEKOGANS_UTIL_API operator >> (\
                     const thekogans::util::JSON::Object &object,\
-                    _T::Ptr &serializable) {\
+                    _T::SharedPtr &serializable) {\
                 thekogans::util::Serializable::TextHeader header;\
                 object >> header;\
                 thekogans::util::Serializable::Map::iterator it =\
@@ -907,12 +906,12 @@ namespace thekogans {
             };
 
         /// \def THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_PTR_VALUE_PARSER(_T)
-        /// Implement \see{Serializable::Ptr} \see{ValueParser}.
+        /// Implement \see{Serializable::SharedPtr} \see{ValueParser}.
         #define THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_PTR_VALUE_PARSER(_T)\
             template<>\
-            struct _LIB_THEKOGANS_UTIL_DECL ValueParser<_T::Ptr> {\
+            struct _LIB_THEKOGANS_UTIL_DECL ValueParser<_T::SharedPtr> {\
             private:\
-                _T::Ptr &value;\
+                _T::SharedPtr &value;\
                 enum {\
                     DEFAULT_MAX_SERIALIZABLE_SIZE = 2 * 1024 * 1024\
                 };\
@@ -926,7 +925,7 @@ namespace thekogans {
                 } state;\
             public:\
                 ValueParser (\
-                    _T::Ptr &value_,\
+                    _T::SharedPtr &value_,\
                     std::size_t maxSerializableSize_ = DEFAULT_MAX_SERIALIZABLE_SIZE) :\
                     value (value_),\
                     maxSerializableSize (maxSerializableSize_),\

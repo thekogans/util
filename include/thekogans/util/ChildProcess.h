@@ -375,11 +375,11 @@ namespace thekogans {
             /// CollectOutput bellow.
             /// \param[in] detached true = detach the child process from the parent,
             /// \return RunLoop::Job representing the spawn job.
-            RunLoop::Job::Ptr CreateSpawnJob (bool detached = false);
+            RunLoop::Job::SharedPtr CreateSpawnJob (bool detached = false);
             /// \brief
             /// Create a ChildProcess exec job to be executed on the \see{MainRunLoop}.
             /// \return RunLoop::Job representing the exec job.
-            RunLoop::Job::Ptr CreateExecJob (ChildStatus &status);
+            RunLoop::Job::SharedPtr CreateExecJob (ChildStatus &status);
 
             enum {
                 /// \brief
@@ -397,7 +397,7 @@ namespace thekogans {
             /// util::ChildProcess lsProcess ("ls");
             /// util::MainRunLoop::Instance ().EnqJob (lsProcess.CreateSpawnJob (), true);
             /// if (lsProcess.GetProcessId () != THEKOGANS_UTIL_INVALID_PROCESS_ID_VALUE) {
-            ///     util::Buffer::UniquePtr lsOutput = ls.CollectOutput (ls.GetOutPipe ());
+            ///     util::Buffer lsOutput = ls.CollectOutput (ls.GetOutPipe ());
             /// }
             /// else {
             ///     // Unable to spawn ls. Handle error.

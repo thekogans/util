@@ -73,10 +73,10 @@ namespace thekogans {
                 const TextHeader & /*header*/,
                 const JSON::Object &object) {
             name = object.Get<JSON::String> (ATTR_NAME)->value;
-            util::JSON::Array::Ptr attributesArray = object.Get<JSON::Array> (TAG_ATTRIBUTES);
+            util::JSON::Array::SharedPtr attributesArray = object.Get<JSON::Array> (TAG_ATTRIBUTES);
             if (attributesArray.Get () != 0) {
                 for (std::size_t i = 0, count = attributesArray->GetValueCount (); i < count; ++i) {
-                    util::JSON::Object::Ptr attributeObject = attributesArray->Get<util::JSON::Object> (i);
+                    util::JSON::Object::SharedPtr attributeObject = attributesArray->Get<util::JSON::Object> (i);
                     std::string name = attributeObject->Get<JSON::String> (ATTR_NAME)->value;
                     std::string value = attributeObject->Get<JSON::String> (ATTR_VALUE)->value;
                     if (!name.empty () && !value.empty ()) {
@@ -89,9 +89,9 @@ namespace thekogans {
         void HRTimerMgr::TimerInfoBase::Write (JSON::Object &object) const {
             object.Add<const std::string &> (ATTR_NAME, name);
             if (!attributes.empty ()) {
-                util::JSON::Array::Ptr attributesArray (new util::JSON::Array);
+                util::JSON::Array::SharedPtr attributesArray (new util::JSON::Array);
                 for (std::size_t i = 0, count = attributes.size (); i < count; ++i) {
-                    util::JSON::Object::Ptr attributeObject (new util::JSON::Object);
+                    util::JSON::Object::SharedPtr attributeObject (new util::JSON::Object);
                     attributeObject->Add<const std::string &> (ATTR_NAME, attributes[i].first);
                     attributeObject->Add<const std::string &> (ATTR_VALUE, attributes[i].second);
                     attributesArray->Add (attributeObject);
@@ -230,7 +230,7 @@ namespace thekogans {
 
         HRTimerMgr::ScopeInfo *HRTimerMgr::ScopeInfo::BeginScope (
                 const std::string &name) {
-            Ptr scope (new ScopeInfo (name));
+            SharedPtr scope (new ScopeInfo (name));
             open.push_back (dynamic_refcounted_pointer_cast<TimerInfoBase> (scope));
             return scope.Get ();
         }
@@ -244,7 +244,7 @@ namespace thekogans {
 
         HRTimerMgr::TimerInfo *HRTimerMgr::ScopeInfo::StartTimer (
                 const std::string &name) {
-            TimerInfo::Ptr timer (new TimerInfo (name));
+            TimerInfo::SharedPtr timer (new TimerInfo (name));
             open.push_back (dynamic_refcounted_pointer_cast<TimerInfoBase> (timer));
             return timer.Get ();
         }
@@ -285,7 +285,7 @@ namespace thekogans {
             }
             if (!closed.empty ()) {
                 pugi::xml_node scopes = node.append_child (TAG_CLOSED_SCOPES);
-                for (std::list<TimerInfoBase::Ptr>::const_iterator it = closed.begin (),
+                for (std::list<TimerInfoBase::SharedPtr>::const_iterator it = closed.begin (),
                         end = closed.end (); it != end; ++it) {
                     pugi::xml_node scope = scopes.append_child (pugi::node_element);
                     (*it)->ToXML (scope);
@@ -310,11 +310,11 @@ namespace thekogans {
                 object.Add<const std::string &> (attributes[i].first, attributes[i].second);
             }
             if (!closed.empty ()) {
-                JSON::Array::Ptr scopes (new JSON::Array);
+                JSON::Array::SharedPtr scopes (new JSON::Array);
                 object.Add (TAG_CLOSED_SCOPES, scopes);
-                for (std::list<TimerInfoBase::Ptr>::const_iterator it = closed.begin (),
+                for (std::list<TimerInfoBase::SharedPtr>::const_iterator it = closed.begin (),
                         end = closed.end (); it != end; ++it) {
-                    JSON::Object::Ptr scope (new JSON::Object);
+                    JSON::Object::SharedPtr scope (new JSON::Object);
                     (*it)->ToJSON (*scope);
                     scopes->Add (scope);
                 }
@@ -327,7 +327,7 @@ namespace thekogans {
                 ui64 &max,
                 ui64 &average,
                 ui64 &total) const {
-            for (std::list<TimerInfoBase::Ptr>::const_iterator it = closed.begin (),
+            for (std::list<TimerInfoBase::SharedPtr>::const_iterator it = closed.begin (),
                     end = closed.end (); it != end; ++it) {
                 ++count;
                 ui32 itemCount = 0;
@@ -354,14 +354,14 @@ namespace thekogans {
             std::size_t size = TimerInfoBase::Size ();
             {
                 size += util::SizeT (open.size ()).Size ();
-                for (std::list<TimerInfoBase::Ptr>::const_iterator it = open.begin (),
+                for (std::list<TimerInfoBase::SharedPtr>::const_iterator it = open.begin (),
                         end = open.end (); it != end; ++it) {
                     size += Serializable::Size (**it);
                 }
             }
             {
                 size += util::SizeT (closed.size ()).Size ();
-                for (std::list<TimerInfoBase::Ptr>::const_iterator it = closed.begin (),
+                for (std::list<TimerInfoBase::SharedPtr>::const_iterator it = closed.begin (),
                         end = closed.end (); it != end; ++it) {
                     size += Serializable::Size (**it);
                 }
@@ -378,7 +378,7 @@ namespace thekogans {
                 serializer >> openCount;
                 open.clear ();
                 while (openCount-- > 0) {
-                    TimerInfoBase::Ptr openInfo;
+                    TimerInfoBase::SharedPtr openInfo;
                     serializer >> openInfo;
                     open.push_back (openInfo);
                 }
@@ -388,7 +388,7 @@ namespace thekogans {
                 serializer >> closedCount;
                 closed.clear ();
                 while (closedCount-- > 0) {
-                    TimerInfoBase::Ptr closedInfo;
+                    TimerInfoBase::SharedPtr closedInfo;
                     serializer >> closedInfo;
                     closed.push_back (closedInfo);
                 }
@@ -399,14 +399,14 @@ namespace thekogans {
             TimerInfoBase::Write (serializer);
             {
                 serializer << util::SizeT (open.size ());
-                for (std::list<TimerInfoBase::Ptr>::const_iterator it = open.begin (),
+                for (std::list<TimerInfoBase::SharedPtr>::const_iterator it = open.begin (),
                         end = open.end (); it != end; ++it) {
                     serializer << **it;
                 }
             }
             {
                 serializer << util::SizeT (closed.size ());
-                for (std::list<TimerInfoBase::Ptr>::const_iterator it = closed.begin (),
+                for (std::list<TimerInfoBase::SharedPtr>::const_iterator it = closed.begin (),
                         end = closed.end (); it != end; ++it) {
                     serializer << **it;
                 }
@@ -429,7 +429,7 @@ namespace thekogans {
                     if (child.type () == pugi::node_element) {
                         std::string childName = child.name ();
                         if (childName == TAG_SCOPE) {
-                            TimerInfoBase::Ptr timerInfo;
+                            TimerInfoBase::SharedPtr timerInfo;
                             child >> timerInfo;
                             open.push_back (timerInfo);
                         }
@@ -444,7 +444,7 @@ namespace thekogans {
                     if (child.type () == pugi::node_element) {
                         std::string childName = child.name ();
                         if (childName == TAG_SCOPE) {
-                            TimerInfoBase::Ptr timerInfo;
+                            TimerInfoBase::SharedPtr timerInfo;
                             child >> timerInfo;
                             closed.push_back (timerInfo);
                         }
@@ -457,7 +457,7 @@ namespace thekogans {
             TimerInfoBase::Write (node);
             {
                 pugi::xml_node openScopes = node.append_child (TAG_OPEN_SCOPES);
-                for (std::list<TimerInfoBase::Ptr>::const_iterator it = open.begin (),
+                for (std::list<TimerInfoBase::SharedPtr>::const_iterator it = open.begin (),
                         end = open.end (); it != end; ++it) {
                     pugi::xml_node openScope = openScopes.append_child (TAG_SCOPE);
                     openScope << **it;
@@ -465,7 +465,7 @@ namespace thekogans {
             }
             {
                 pugi::xml_node closedScopes = node.append_child (TAG_CLOSED_SCOPES);
-                for (std::list<TimerInfoBase::Ptr>::const_iterator it = closed.begin (),
+                for (std::list<TimerInfoBase::SharedPtr>::const_iterator it = closed.begin (),
                         end = closed.end (); it != end; ++it) {
                     pugi::xml_node closedScope = closedScopes.append_child (TAG_SCOPE);
                     closedScope << **it;
@@ -479,12 +479,12 @@ namespace thekogans {
             TimerInfoBase::Read (header, object);
             {
                 open.clear ();
-                util::JSON::Array::Ptr openScopes =
+                util::JSON::Array::SharedPtr openScopes =
                     object.Get<util::JSON::Array> (TAG_OPEN_SCOPES);
                 if (openScopes.Get () != 0) {
                     for (std::size_t i = 0, count = openScopes->GetValueCount (); i < count; ++i) {
-                        util::JSON::Object::Ptr openScope = openScopes->Get<util::JSON::Object> (i);
-                        TimerInfoBase::Ptr timerInfo;
+                        util::JSON::Object::SharedPtr openScope = openScopes->Get<util::JSON::Object> (i);
+                        TimerInfoBase::SharedPtr timerInfo;
                         *openScope >> timerInfo;
                         open.push_back (timerInfo);
                     }
@@ -492,12 +492,12 @@ namespace thekogans {
             }
             {
                 closed.clear ();
-                util::JSON::Array::Ptr closedScopes =
+                util::JSON::Array::SharedPtr closedScopes =
                     object.Get<util::JSON::Array> (TAG_CLOSED_SCOPES);
                 if (closedScopes.Get () != 0) {
                     for (std::size_t i = 0, count = closedScopes->GetValueCount (); i < count; ++i) {
-                        util::JSON::Object::Ptr closedScope = closedScopes->Get<util::JSON::Object> (i);
-                        TimerInfoBase::Ptr timerInfo;
+                        util::JSON::Object::SharedPtr closedScope = closedScopes->Get<util::JSON::Object> (i);
+                        TimerInfoBase::SharedPtr timerInfo;
                         *closedScope >> timerInfo;
                         closed.push_back (timerInfo);
                     }
@@ -508,20 +508,20 @@ namespace thekogans {
         void HRTimerMgr::ScopeInfo::Write (JSON::Object &object) const {
             TimerInfoBase::Write (object);
             {
-                util::JSON::Array::Ptr openScopes (new util::JSON::Array);
-                for (std::list<TimerInfoBase::Ptr>::const_iterator it = open.begin (),
+                util::JSON::Array::SharedPtr openScopes (new util::JSON::Array);
+                for (std::list<TimerInfoBase::SharedPtr>::const_iterator it = open.begin (),
                         end = open.end (); it != end; ++it) {
-                    util::JSON::Object::Ptr openScope (new util::JSON::Object);
+                    util::JSON::Object::SharedPtr openScope (new util::JSON::Object);
                     *openScope << **it;
                     openScopes->Add (openScope);
                 }
                 object.Add (TAG_OPEN_SCOPES, openScopes);
             }
             {
-                util::JSON::Array::Ptr closedScopes (new util::JSON::Array);
-                for (std::list<TimerInfoBase::Ptr>::const_iterator it = closed.begin (),
+                util::JSON::Array::SharedPtr closedScopes (new util::JSON::Array);
+                for (std::list<TimerInfoBase::SharedPtr>::const_iterator it = closed.begin (),
                         end = closed.end (); it != end; ++it) {
-                    util::JSON::Object::Ptr closedScope (new util::JSON::Object);
+                    util::JSON::Object::SharedPtr closedScope (new util::JSON::Object);
                     *closedScope << **it;
                     closedScopes->Add (closedScope);
                 }

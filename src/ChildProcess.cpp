@@ -570,7 +570,7 @@ namespace thekogans {
         #endif // defined (TOOLCHAIN_OS_Windows)
         }
 
-        RunLoop::Job::Ptr ChildProcess::CreateSpawnJob (bool detached) {
+        RunLoop::Job::SharedPtr ChildProcess::CreateSpawnJob (bool detached) {
             struct SpawnJob : public RunLoop::Job {
                 ChildProcess &childProcess;
                 bool detached;
@@ -589,10 +589,10 @@ namespace thekogans {
                     }
                 }
             };
-            return RunLoop::Job::Ptr (new SpawnJob (*this, detached));
+            return RunLoop::Job::SharedPtr (new SpawnJob (*this, detached));
         }
 
-        RunLoop::Job::Ptr ChildProcess::CreateExecJob (ChildStatus &status) {
+        RunLoop::Job::SharedPtr ChildProcess::CreateExecJob (ChildStatus &status) {
             struct ExecJob : public RunLoop::Job {
                 ChildProcess &childProcess;
                 ChildStatus &status;
@@ -611,7 +611,7 @@ namespace thekogans {
                     }
                 }
             };
-            return RunLoop::Job::Ptr (new ExecJob (*this, status));
+            return RunLoop::Job::SharedPtr (new ExecJob (*this, status));
         }
 
         Buffer ChildProcess::CollectOutput (
@@ -697,13 +697,13 @@ namespace thekogans {
             RunLoop::Job *successExit = new exitJob (EXIT_SUCCESS);
 
             void SignalHandlerSIGCHLD (int /*signum*/) {
-                GlobalJobQueue::Instance ().EnqJob (RunLoop::Job::Ptr (failureExit));
+                GlobalJobQueue::Instance ().EnqJob (RunLoop::Job::SharedPtr (failureExit));
             }
             void SignalHandlerSIGALRM (int /*signum*/) {
-                GlobalJobQueue::Instance ().EnqJob (RunLoop::Job::Ptr (failureExit));
+                GlobalJobQueue::Instance ().EnqJob (RunLoop::Job::SharedPtr (failureExit));
             }
             void SignalHandlerSIGUSR1 (int /*signum*/) {
-                GlobalJobQueue::Instance ().EnqJob (RunLoop::Job::Ptr (successExit));
+                GlobalJobQueue::Instance ().EnqJob (RunLoop::Job::SharedPtr (successExit));
             }
         }
 

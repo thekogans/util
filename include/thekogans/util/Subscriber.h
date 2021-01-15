@@ -48,14 +48,14 @@ namespace thekogans {
 
         template <typename T>
         struct Subscriber :
-                public virtual ThreadSafeRefCounted,
+                public virtual RefCounted,
                 public T {
             /// \brief
-            /// Convenient typedef for ThreadSafeRefCounted::Ptr<Subscriber<T>>.
-            typedef ThreadSafeRefCounted::Ptr<Subscriber<T>> Ptr;
+            /// Convenient typedef for RefCounted::SharedPtr<Subscriber<T>>.
+            typedef RefCounted::SharedPtr<Subscriber<T>> SharedPtr;
             /// \brief
-            /// Convenient typedef for ThreadSafeRefCounted::WeakPtr<Subscriber<T>>.
-            typedef ThreadSafeRefCounted::WeakPtr<Subscriber<T>> WeakPtr;
+            /// Convenient typedef for RefCounted::WeakPtr<Subscriber<T>>.
+            typedef RefCounted::WeakPtr<Subscriber<T>> WeakPtr;
 
         private:
             /// \brief
@@ -78,7 +78,7 @@ namespace thekogans {
                 // We're going out of scope, unsubscribe ourselves from our producer's events.
                 LockGuard<SpinLock> guard (spinLock);
                 for (typename Producers::iterator it = producers.begin (), end = producers.end (); it != end; ++it) {
-                    typename Producer<T>::Ptr producer = it->GetPtr ();
+                    typename Producer<T>::SharedPtr producer = it->GetSharedPtr ();
                     if (producer.Get () != 0) {
                         producer->Unsubscribe (*this);
                     }
@@ -92,14 +92,14 @@ namespace thekogans {
             /// \param[in] eventDeliveryPolicy \see{Producer::EventDeliveryPolicy} by which events are delivered.
             void Subscribe (
                     Producer<T> &producer,
-                    typename Producer<T>::EventDeliveryPolicy::Ptr eventDeliveryPolicy =
-                        typename Producer<T>::EventDeliveryPolicy::Ptr (
+                    typename Producer<T>::EventDeliveryPolicy::SharedPtr eventDeliveryPolicy =
+                        typename Producer<T>::EventDeliveryPolicy::SharedPtr (
                             new typename Producer<T>::RunLoopEventDeliveryPolicy)) {
                 LockGuard<SpinLock> guard (spinLock);
                 typename Producers::iterator it = GetProducerIterator (producer);
                 if (it == producers.end ()) {
                     producer.Subscribe (*this, eventDeliveryPolicy);
-                    producers.push_back (typename Producer<T>::WeakPtr (typename Producer<T>::Ptr (&producer)));
+                    producers.push_back (typename Producer<T>::WeakPtr (&producer));
                 }
             }
 

@@ -134,9 +134,9 @@ namespace thekogans {
             }
         }
 
-        Plugins::Plugin::Ptr Plugins::GetPlugin (const std::string &path) const {
+        Plugins::Plugin::SharedPtr Plugins::GetPlugin (const std::string &path) const {
             PluginMap::const_iterator it = plugins.find (path);
-            return it != plugins.end () ? it->second : Plugin::Ptr ();
+            return it != plugins.end () ? it->second : Plugin::SharedPtr ();
         }
 
         void Plugins::AddPlugin (
@@ -144,7 +144,7 @@ namespace thekogans {
                 const std::string &version,
                 const std::string &SHA2_256,
                 const Plugin::Dependencies &dependencies) {
-            Plugin::Ptr plugin = GetPlugin (path);
+            Plugin::SharedPtr plugin = GetPlugin (path);
             if (plugin.Get () == 0) {
                 plugin.Reset (new Plugin (path, version, SHA2_256, dependencies));
                 plugins.insert (PluginMap::value_type (path, plugin));
@@ -256,7 +256,7 @@ namespace thekogans {
                 if (!version.empty ()) {
                     std::string SHA2_256 = node.attribute (ATTR_SHA2_256).value ();
                     if (!SHA2_256.empty ()) {
-                        Plugin::Ptr plugin (new Plugin (path, version, SHA2_256));
+                        Plugin::SharedPtr plugin (new Plugin (path, version, SHA2_256));
                         for (pugi::xml_node child = node.first_child ();
                                 !child.empty (); child = child.next_sibling ()) {
                             if (child.type () == pugi::node_element) {

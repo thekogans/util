@@ -37,15 +37,14 @@ namespace thekogans {
         /// \brief
         /// Base class used to represent an abstract hash generator.
 
-        struct _LIB_THEKOGANS_UTIL_DECL Hash :
-                public virtual ThreadSafeRefCounted {
+        struct _LIB_THEKOGANS_UTIL_DECL Hash : public virtual RefCounted {
             /// \brief
-            /// Convenient typedef for ThreadSafeRefCounted::Ptr<Hash>.
-            typedef ThreadSafeRefCounted::Ptr<Hash> Ptr;
+            /// Convenient typedef for RefCounted::Ptr<Hash>.
+            typedef RefCounted::SharedPtr<Hash> SharedPtr;
 
             /// \brief
             /// typedef for the Hash factory function.
-            typedef Ptr (*Factory) ();
+            typedef SharedPtr (*Factory) ();
             /// \brief
             /// typedef for the Hash map.
             typedef std::map<std::string, Factory> Map;
@@ -57,7 +56,7 @@ namespace thekogans {
             /// Used for Hash dynamic discovery and creation.
             /// \param[in] type Hash type (it's name).
             /// \return A Hash based on the passed in type.
-            static Ptr Get (const std::string &type);
+            static SharedPtr Get (const std::string &type);
         #if defined (THEKOGANS_UTIL_TYPE_Static)
             /// \brief
             /// Because Hash uses dynamic initialization, when using
@@ -188,8 +187,8 @@ namespace thekogans {
         /// Common dynamic discovery macro.
         #define THEKOGANS_UTIL_DECLARE_HASH_COMMON(type)\
         public:\
-            static thekogans::util::Hash::Ptr Create () {\
-                return thekogans::util::Hash::Ptr (new type);\
+            static thekogans::util::Hash::SharedPtr Create () {\
+                return thekogans::util::Hash::SharedPtr (new type);\
             }
 
     #if defined (THEKOGANS_UTIL_TYPE_Static)

@@ -80,8 +80,8 @@ namespace thekogans {
                     public RunLoop,
                     public JobQueueList::Node {
                 /// \brief
-                /// Convenient typedef for ThreadSafeRefCounted::Ptr<JobQueue>.
-                typedef ThreadSafeRefCounted::Ptr<JobQueue> Ptr;
+                /// Convenient typedef for RefCounted::SharedPtr<JobQueue>.
+                typedef RefCounted::SharedPtr<JobQueue> SharedPtr;
 
                 /// \brief
                 /// JobQueue has a private heap to help with memory
@@ -125,8 +125,8 @@ namespace thekogans {
                         Scheduler &scheduler_,
                         Priority priority_ = PRIORITY_NORMAL,
                         const std::string &name = std::string (),
-                        JobExecutionPolicy::Ptr jobExecutionPolicy =
-                            JobExecutionPolicy::Ptr (new FIFOJobExecutionPolicy)) :
+                        JobExecutionPolicy::SharedPtr jobExecutionPolicy =
+                            JobExecutionPolicy::SharedPtr (new FIFOJobExecutionPolicy)) :
                         RunLoop (name, jobExecutionPolicy),
                         scheduler (scheduler_),
                         priority (priority_),
@@ -166,7 +166,7 @@ namespace thekogans {
                 /// IMPORTANT: timeSpec is a relative value.
                 /// \return true == !wait || WaitForJob (...)
                 virtual bool EnqJob (
-                    Job::Ptr job,
+                    Job::SharedPtr job,
                     bool wait = false,
                     const TimeSpec &timeSpec = TimeSpec::Infinite);
                 /// \brief
@@ -184,7 +184,7 @@ namespace thekogans {
                 /// IMPORTANT: timeSpec is a relative value.
                 /// \return true == !wait || WaitForJob (...)
                 virtual bool EnqJobFront (
-                    Job::Ptr job,
+                    Job::SharedPtr job,
                     bool wait = false,
                     const TimeSpec &timeSpec = TimeSpec::Infinite);
 
@@ -216,8 +216,8 @@ namespace thekogans {
                 std::size_t minJobQueues = SystemInfo::Instance ().GetCPUCount (),
                 std::size_t maxJobQueues = SystemInfo::Instance ().GetCPUCount () * 2,
                 const std::string name = std::string (),
-                RunLoop::JobExecutionPolicy::Ptr jobExecutionPolicy =
-                    RunLoop::JobExecutionPolicy::Ptr (new RunLoop::FIFOJobExecutionPolicy),
+                RunLoop::JobExecutionPolicy::SharedPtr jobExecutionPolicy =
+                    RunLoop::JobExecutionPolicy::SharedPtr (new RunLoop::FIFOJobExecutionPolicy),
                 std::size_t workerCount = 1,
                 i32 workerPriority = THEKOGANS_UTIL_NORMAL_THREAD_PRIORITY,
                 ui32 workerAffinity = THEKOGANS_UTIL_MAX_THREAD_AFFINITY,
@@ -301,8 +301,8 @@ namespace thekogans {
                 std::size_t minJobQueues = SystemInfo::Instance ().GetCPUCount (),
                 std::size_t maxJobQueues = SystemInfo::Instance ().GetCPUCount () * 2,
                 const std::string &name = "GlobalScheduler",
-                RunLoop::JobExecutionPolicy::Ptr jobExecutionPolicy =
-                    RunLoop::JobExecutionPolicy::Ptr (new RunLoop::FIFOJobExecutionPolicy),
+                RunLoop::JobExecutionPolicy::SharedPtr jobExecutionPolicy =
+                    RunLoop::JobExecutionPolicy::SharedPtr (new RunLoop::FIFOJobExecutionPolicy),
                 std::size_t workerCount = 1,
                 i32 workerPriority = THEKOGANS_UTIL_NORMAL_THREAD_PRIORITY,
                 ui32 workerAffinity = THEKOGANS_UTIL_MAX_THREAD_AFFINITY,

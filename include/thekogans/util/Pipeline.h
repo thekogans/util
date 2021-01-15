@@ -48,11 +48,10 @@ namespace thekogans {
         /// architectures perform scalar, and even super-scalar
         /// execution).
 
-        struct _LIB_THEKOGANS_UTIL_DECL Pipeline :
-                public virtual ThreadSafeRefCounted {
+        struct _LIB_THEKOGANS_UTIL_DECL Pipeline : public virtual RefCounted {
             /// \brief
-            /// Convenient typedef for ThreadSafeRefCounted::Ptr<Pipeline>.
-            typedef ThreadSafeRefCounted::Ptr<Pipeline> Ptr;
+            /// Convenient typedef for RefCounted::SharedPtr<Pipeline>.
+            typedef RefCounted::SharedPtr<Pipeline> SharedPtr;
 
             /// \brief
             /// Forward declaration of Job.
@@ -86,10 +85,10 @@ namespace thekogans {
             /// a map in to this list to speed up location and retrieval
             /// of the next job to dequeue.
             /// **********************************************************
-            struct _LIB_THEKOGANS_UTIL_DECL JobExecutionPolicy : public ThreadSafeRefCounted {
+            struct _LIB_THEKOGANS_UTIL_DECL JobExecutionPolicy : public RefCounted {
                 /// \brief
-                /// Convenient typedef for ThreadSafeRefCounted::Ptr<JobExecutionPolicy>.
-                typedef ThreadSafeRefCounted::Ptr<JobExecutionPolicy> Ptr;
+                /// Convenient typedef for RefCounted::SharedPtr<JobExecutionPolicy>.
+                typedef RefCounted::SharedPtr<JobExecutionPolicy> SharedPtr;
 
                 /// \brief
                 /// Max pending pipeline jobs.
@@ -211,8 +210,8 @@ namespace thekogans {
                     public RunLoop::Job,
                     public JobList::Node {
                 /// \brief
-                /// Convenient typedef for ThreadSafeRefCounted::Ptr<Job>.
-                typedef ThreadSafeRefCounted::Ptr<Job> Ptr;
+                /// Convenient typedef for RefCounted::SharedPtr<Job>.
+                typedef RefCounted::SharedPtr<Job> SharedPtr;
 
             protected:
                 /// \brief
@@ -355,7 +354,7 @@ namespace thekogans {
                 std::string name;
                 /// \brief
                 /// Stage \see{JobQueue} \see{RunLoop::JobExecutionPolicy}.
-                RunLoop::JobExecutionPolicy::Ptr jobExecutionPolicy;
+                RunLoop::JobExecutionPolicy::SharedPtr jobExecutionPolicy;
                 /// \brief
                 /// Count of workers servicing this stage.
                 std::size_t workerCount;
@@ -379,8 +378,8 @@ namespace thekogans {
                 /// \param[in] workerCallback_ Called to initialize/uninitialize the stage worker thread(s).
                 Stage (
                     const std::string &name_ = std::string (),
-                    RunLoop::JobExecutionPolicy::Ptr jobExecutionPolicy_ =
-                        RunLoop::JobExecutionPolicy::Ptr (new RunLoop::FIFOJobExecutionPolicy),
+                    RunLoop::JobExecutionPolicy::SharedPtr jobExecutionPolicy_ =
+                        RunLoop::JobExecutionPolicy::SharedPtr (new RunLoop::FIFOJobExecutionPolicy),
                     std::size_t workerCount_ = 1,
                     i32 workerPriority_ = THEKOGANS_UTIL_NORMAL_THREAD_PRIORITY,
                     ui32 workerAffinity_ = THEKOGANS_UTIL_MAX_THREAD_AFFINITY,
@@ -402,7 +401,7 @@ namespace thekogans {
             const std::string name;
             /// \brief
             /// Pipeline job execution policy.
-            JobExecutionPolicy::Ptr jobExecutionPolicy;
+            JobExecutionPolicy::SharedPtr jobExecutionPolicy;
             /// \brief
             /// Flag to signal the stage thread(s).
             std::atomic<bool> done;
@@ -494,7 +493,7 @@ namespace thekogans {
             WorkerList workers;
             /// \brief
             /// Pipeline stages.
-            std::vector<JobQueue::Ptr> stages;
+            std::vector<JobQueue::SharedPtr> stages;
             /// \brief
             /// Synchronization mutex.
             Mutex workersMutex;
@@ -515,8 +514,8 @@ namespace thekogans {
                 const Stage *begin,
                 const Stage *end,
                 const std::string &name_ = std::string (),
-                JobExecutionPolicy::Ptr jobExecutionPolicy_ =
-                    JobExecutionPolicy::Ptr (new FIFOJobExecutionPolicy),
+                JobExecutionPolicy::SharedPtr jobExecutionPolicy_ =
+                    JobExecutionPolicy::SharedPtr (new FIFOJobExecutionPolicy),
                 std::size_t workerCount_ = 1,
                 i32 workerPriority_ = THEKOGANS_UTIL_NORMAL_THREAD_PRIORITY,
                 ui32 workerAffinity_ = THEKOGANS_UTIL_MAX_THREAD_AFFINITY,
@@ -597,7 +596,7 @@ namespace thekogans {
             /// IMPORTANT: timeSpec is a relative value.
             /// \return true == !wait || WaitForJob (...)
             bool EnqJob (
-                Job::Ptr job,
+                Job::SharedPtr job,
                 bool wait = false,
                 const TimeSpec &timeSpec = TimeSpec::Infinite);
             /// \brief
@@ -609,8 +608,8 @@ namespace thekogans {
             /// IMPORTANT: timeSpec is a relative value.
             /// NOTE: Same constraint applies to EnqJob as Stop. Namely, you can't call EnqJob
             /// from the same thread that called Start.
-            /// \return std::pair<Job::Ptr, bool> containing the LambdaJob and the EnqJob return.
-            std::pair<Job::Ptr, bool> EnqJob (
+            /// \return std::pair<Job::SharedPtr, bool> containing the LambdaJob and the EnqJob return.
+            std::pair<Job::SharedPtr, bool> EnqJob (
                 const LambdaJob::Function *&begin,
                 const LambdaJob::Function *&end,
                 bool wait = false,
@@ -623,7 +622,7 @@ namespace thekogans {
             /// IMPORTANT: timeSpec is a relative value.
             /// \return true == !wait || WaitForJob (...)
             bool EnqJobFront (
-                Job::Ptr job,
+                Job::SharedPtr job,
                 bool wait = false,
                 const TimeSpec &timeSpec = TimeSpec::Infinite);
             /// \brief
@@ -635,8 +634,8 @@ namespace thekogans {
             /// IMPORTANT: timeSpec is a relative value.
             /// NOTE: Same constraint applies to EnqJob as Stop. Namely, you can't call EnqJob
             /// from the same thread that called Start.
-            /// \return std::pair<Job::Ptr, bool> containing the LambdaJob and the EnqJobFront return.
-            std::pair<Job::Ptr, bool> EnqJobFront (
+            /// \return std::pair<Job::SharedPtr, bool> containing the LambdaJob and the EnqJobFront return.
+            std::pair<Job::SharedPtr, bool> EnqJobFront (
                 const LambdaJob::Function *&begin,
                 const LambdaJob::Function *&end,
                 bool wait = false,
@@ -646,7 +645,7 @@ namespace thekogans {
             /// Get a running or a pending job with the given id.
             /// \param[in] jobId Id of job to retrieve.
             /// \return Job matching the given id.
-            Job::Ptr GetJob (const Job::Id &jobId);
+            Job::SharedPtr GetJob (const Job::Id &jobId);
             /// \brief
             /// Get all running and pending jobs matching the given equality test.
             /// \param[in] equalityTest \see{RunLoop::EqualityTest} to query to determine the matching jobs.
@@ -688,7 +687,7 @@ namespace thekogans {
             /// IMPORTANT: timeSpec is a relative value.
             /// \return true == completed, false == timed out.
             bool WaitForJob (
-                Job::Ptr job,
+                Job::SharedPtr job,
                 const TimeSpec &timeSpec = TimeSpec::Infinite);
             /// \brief
             /// Wait for a running or a pending job with a given id to complete.
@@ -815,7 +814,11 @@ namespace thekogans {
 
         struct _LIB_THEKOGANS_UTIL_DECL GlobalPipeline :
                 public Pipeline,
-                public Singleton<GlobalPipeline, SpinLock> {
+                public Singleton<
+                    GlobalPipeline,
+                    SpinLock,
+                    RefCountedInstanceCreator<GlobalPipeline>,
+                    RefCountedInstanceDestroyer<GlobalPipeline>> {
             /// \brief
             /// Create a global pipeline with custom ctor arguments.
             /// \param[in] begin Pointer to the beginning of the Pipeline::Stage array.
@@ -831,8 +834,8 @@ namespace thekogans {
                 const Pipeline::Stage *begin,
                 const Pipeline::Stage *end,
                 const std::string &name = "GlobalPipeline",
-                Pipeline::JobExecutionPolicy::Ptr jobExecutionPolicy =
-                    Pipeline::JobExecutionPolicy::Ptr (new Pipeline::FIFOJobExecutionPolicy),
+                Pipeline::JobExecutionPolicy::SharedPtr jobExecutionPolicy =
+                    Pipeline::JobExecutionPolicy::SharedPtr (new Pipeline::FIFOJobExecutionPolicy),
                 std::size_t workerCount = 1,
                 i32 workerPriority = THEKOGANS_UTIL_NORMAL_THREAD_PRIORITY,
                 ui32 workerAffinity = THEKOGANS_UTIL_MAX_THREAD_AFFINITY,

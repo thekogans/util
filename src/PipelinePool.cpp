@@ -33,7 +33,7 @@ namespace thekogans {
                 const util::Pipeline::Stage *begin_,
                 const util::Pipeline::Stage *end_,
                 const std::string &name_,
-                Pipeline::JobExecutionPolicy::Ptr jobExecutionPolicy_,
+                Pipeline::JobExecutionPolicy::SharedPtr jobExecutionPolicy_,
                 std::size_t workerCount_,
                 i32 workerPriority_,
                 ui32 workerAffinity_,
@@ -95,7 +95,7 @@ namespace thekogans {
             borrowedPipelines.clear (deleteCallback);
         }
 
-        Pipeline::Ptr PipelinePool::GetPipeline (
+        Pipeline::SharedPtr PipelinePool::GetPipeline (
                 std::size_t retries,
                 const TimeSpec &timeSpec) {
             Pipeline *pipeline = AcquirePipeline ();
@@ -103,7 +103,7 @@ namespace thekogans {
                 Sleep (timeSpec);
                 pipeline = AcquirePipeline ();
             }
-            return util::Pipeline::Ptr (pipeline);
+            return util::Pipeline::SharedPtr (pipeline);
         }
 
         void PipelinePool::GetJobs (
