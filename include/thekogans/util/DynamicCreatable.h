@@ -100,27 +100,6 @@ namespace thekogans {
             }
 
     #if defined (THEKOGANS_UTIL_TYPE_Static)
-        /// \def THEKOGANS_UTIL_STATIC_INIT(type)
-        /// Common dynamic discovery static initializer macro.
-        #define THEKOGANS_UTIL_STATIC_INIT(type)\
-        public:\
-            static void StaticInit () {\
-                static volatile bool registered = false;\
-                static thekogans::util::SpinLock spinLock;\
-                if (!registered) {\
-                    thekogans::util::LockGuard<thekogans::util::SpinLock> guard (spinLock);\
-                    if (!registered) {\
-                        std::pair<Map::iterator, bool> result =\
-                            GetMap ().insert (Map::value_type (#type, type::Create));\
-                        if (!result.second) {\
-                            THEKOGANS_UTIL_THROW_STRING_EXCEPTION (\
-                                "'%s' is already registered.", #type);\
-                        }\
-                        registered = true;\
-                    }\
-                }\
-            }
-
         /// \def THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE(type)
         /// Dynamic discovery macro. Add this to your class declaration.
         /// Example:

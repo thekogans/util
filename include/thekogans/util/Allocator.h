@@ -24,6 +24,9 @@
 #include <list>
 #include <map>
 #include "thekogans/util/Config.h"
+#include "thekogans/util/SpinLock.h"
+#include "thekogans/util/LockGuard.h"
+#include "thekogans/util/Exception.h"
 
 namespace thekogans {
     namespace util {
