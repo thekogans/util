@@ -110,6 +110,10 @@ private:\
 #if defined (THEKOGANS_UTIL_TYPE_Static)
 /// \def THEKOGANS_UTIL_STATIC_INIT(type)
 /// Common dynamic discovery static initializer macro.
+/// NOTE: Because of the circular namture of it's dependencies
+/// (DynamicCreatable and Allocator), I put this macro here.
+/// If you use it, don't forget to include SpinLock.h, LockGuard.h
+/// and Exception.h.
 #define THEKOGANS_UTIL_STATIC_INIT(type)\
     public:\
     static void StaticInit () {\

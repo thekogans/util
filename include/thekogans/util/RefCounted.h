@@ -154,7 +154,7 @@ namespace thekogans {
                 return references->GetSharedCount ();
             }
 
-            /// \struct RefCounted::Ptr RefCounted.h thekogans/util/RefCounted.h
+            /// \struct RefCounted::SharedPtr RefCounted.h thekogans/util/RefCounted.h
             ///
             /// \brief
             /// RefCounted object shared pointer template.
@@ -162,8 +162,8 @@ namespace thekogans {
             /// way it deals with an object's shared reference count. It incrementes it
             /// in it's ctor, and decrements it in it's dtor. In other words, SharedPtr
             /// manages it's own reference, not one taken out by someone else. This behavior
-            /// can be modified by passing addRef = false to the ctor. This way Ptr can
-            /// take ownership of an object Released by another.
+            /// can be modified by passing addRef = false to the ctor. This way SharedPtr
+            /// can take ownership of an object Released by another.
             template<typename T>
             struct SharedPtr {
             protected:
@@ -271,7 +271,7 @@ namespace thekogans {
                 }
 
                 /// \brief
-                /// Swap objects with the given pointers.
+                /// Swap objects with the given pointer.
                 /// \param[in] ptr Pointer to swap objects with.
                 void Swap (SharedPtr &ptr) {
                     std::swap (object, ptr.object);
@@ -291,19 +291,26 @@ namespace thekogans {
             /// That's why it's important that you use the following pattern;
             ///
             /// \code{.cpp}
-            /// ShareDPtr<T> shared = weak.GetSharedPtr ();
+            /// SharedPtr<T> shared = weak.GetSharedPtr ();
             /// if (shared.Get () != 0) {
             ///    // Do something productive.
             /// }
             /// \endcode
+            ///
+            /// IMPORTANT: The Get method provided by this class should not be used to
+            /// dereference the contained object. It's there in case you want to compare
+            /// two raw pointers. Dereferencing the raw pointer returned by Get can lead
+            /// to races and crashes. If you need to dereference the object poonted to
+            /// by the raw pointer, again, you must first call GetSharedPtr and check it's
+            /// value for nullness before using it.
             template<typename T>
             struct WeakPtr {
             protected:
                 /// \brief
-                /// Referemce counted object.
+                /// Reference counted object.
                 T *object;
                 /// \brief
-                /// WeakPtr takes a reference out on RefCounted::Referemces
+                /// WeakPtr takes a reference out on RefCounted::References
                 /// and must hang on to it's own copy of the pointer because
                 /// we cannot relly on the object being there for dereferencing.
                 References *references;
@@ -319,7 +326,7 @@ namespace thekogans {
                 }
                 /// \brief
                 /// ctor.
-                /// \param[in] ptr SharedPtr<T> to referemce counted object.
+                /// \param[in] ptr SharedPtr<T> to reference counted object.
                 explicit WeakPtr (const SharedPtr<T> &ptr = SharedPtr<T> ()) :
                         object (0),
                         references (0) {
@@ -327,7 +334,7 @@ namespace thekogans {
                 }
                 /// \brief
                 /// ctor.
-                /// \param[in] ptr WeakPtr<T> to referemce counted object.
+                /// \param[in] ptr WeakPtr<T> to reference counted object.
                 WeakPtr (const WeakPtr &ptr) :
                         object (0),
                         references (0) {
@@ -341,7 +348,7 @@ namespace thekogans {
 
                 /// \brief
                 /// Assignemnet operator.
-                /// \param[in] object_ Raw pointer to referemce counted object.
+                /// \param[in] object_ Raw pointer to reference counted object.
                 /// \return *this.
                 WeakPtr &operator = (T *object_) {
                     if (object != object_) {
@@ -351,7 +358,7 @@ namespace thekogans {
                 }
                 /// \brief
                 /// Assignemnet operator.
-                /// \param[in] ptr SharedPtr<T> to referemce counted object.
+                /// \param[in] ptr SharedPtr<T> to reference counted object.
                 /// \return *this.
                 WeakPtr &operator = (const SharedPtr<T> &ptr) {
                     if (object != ptr.Get ()) {
@@ -361,7 +368,7 @@ namespace thekogans {
                 }
                 /// \brief
                 /// Assignemnet operator.
-                /// \param[in] ptr WeakPtr<T> to referemce counted object.
+                /// \param[in] ptr WeakPtr<T> to reference counted object.
                 /// \return *this.
                 WeakPtr &operator = (const WeakPtr<T> &ptr) {
                     if (object != ptr.Get ()) {
@@ -371,8 +378,8 @@ namespace thekogans {
                 }
 
                 /// \brief
-                /// Return a raw pointer to the referemce counted object.
-                /// \return A raw pointer to the referemce counted object.
+                /// Return a raw pointer to the reference counted object.
+                /// \return A raw pointer to the reference counted object.
                 inline T *Get () const {
                     return object;
                 }

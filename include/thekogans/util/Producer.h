@@ -213,18 +213,19 @@ namespace thekogans {
 
             /// \brief
             /// Produce an event for subscribers to consume.
-            /// VERY IMPORTANT: Please note that the callbacs are called while holding on to a lock.
             /// \param[in] event Event to deliver to all registered subscribers.
             void Produce (std::function<void (T *)> event) {
-                LockGuard<SpinLock> guard (spinLock);
-                for (typename Subscribers::iterator it = subscribers.begin (), end = subscribers.end (); it != end;) {
+                Subscribers subscribers_;
+                {
+                    LockGuard<SpinLock> guard (spinLock);
+                    subscribers_ = subscribers;
+                }
+                for (typename Subscribers::iterator
+                        it = subscribers_.begin (),
+                        end = subscribers_.end (); it != end; ++it) {
                     typename Subscriber<T>::SharedPtr subscriber = it->first.GetSharedPtr ();
                     if (subscriber.Get () != 0) {
                         it->second->DeliverEvent (event, subscriber);
-                        ++it;
-                    }
-                    else {
-                        it = subscribers.erase (it);
                     }
                 }
             }
