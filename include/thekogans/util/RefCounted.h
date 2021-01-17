@@ -120,6 +120,24 @@ namespace thekogans {
                 inline ui32 GetSharedCount () const {
                     return shared;
                 }
+                /// \brief
+                /// Used by \see{WeakPtr<T>::GetSharedPtr} below to atomically
+                /// take out a reference on a weak pointer.
+                /// \param[in] object RefCounted object to lock.
+                /// \return object if successfuly locked,
+                /// 0 if there are no more shared references (shared == 0).
+                inline RefCounted *LockObject (RefCounted *object) {
+                    // This is a classical lock-free algorithm for shared access.
+                    for (ui32 count = shared; count != 0; count = shared) {
+                        // If compare_exchange_weak failed, it's because between the load
+                        // above and the exchange below, we were interupted by another thread
+                        // that modified the value of shared. Reload and try again.
+                        if (shared.compare_exchange_weak (count, count + 1)) {
+                            return object;
+                        }
+                    }
+                    return 0;
+                }
 
                 /// \brief
                 /// References is neither copy constructable, nor assignable.
@@ -424,7 +442,10 @@ namespace thekogans {
                 /// Convert to SharedPtr<T>.
                 /// \return SharedPtr<T>.
                 inline SharedPtr<T> GetSharedPtr () const {
-                    return SharedPtr<T> (references != 0 && references->GetSharedCount () > 0 ? object : 0);
+                    // We pass false to SharedPtr (..., addRef) because References::LockObject
+                    // takes out a reference on success and on failure we don't care since we're
+                    // passing 0 as object pointer.
+                    return SharedPtr<T> (references != 0 ? references->LockObject (object) : 0, false);
                 }
             };
 
