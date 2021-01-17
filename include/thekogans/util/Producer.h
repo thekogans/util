@@ -217,6 +217,9 @@ namespace thekogans {
             void Produce (std::function<void (T *)> event) {
                 Subscribers subscribers_;
                 {
+                    // Copy the subscribers list in to a local
+                    // variable before delivering the event in case
+                    // they want to unsubscribe while processing it.
                     LockGuard<SpinLock> guard (spinLock);
                     subscribers_ = subscribers;
                 }

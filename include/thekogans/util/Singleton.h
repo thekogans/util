@@ -41,9 +41,9 @@ namespace thekogans {
             /// \brief
             /// Create a single instance using the default ctor.
             /// \return Singleton instance.
-            template<typename... arg_types>
-            inline T *operator () (arg_types... args) {
-                return new T (std::forward<arg_types> (args)...);
+            template<typename... Args>
+            inline T *operator () (Args... args) {
+                return new T (std::forward<Args> (args)...);
             }
         };
 
@@ -79,9 +79,10 @@ namespace thekogans {
             /// \brief
             /// Create a single instance using the default ctor.
             /// \return Singleton instance.
-            template<typename... arg_types>
-            inline T *operator () (arg_types... args) {
-                T *instance = new T (std::forward<arg_types> (args)...);
+            template<typename... Args>
+            inline T *operator () (Args... args) {
+                T *instance = new T (std::forward<Args> (args)...);
+                // The singleton is the owner of the instance.
                 instance->AddRef ();
                 return instance;
             }
@@ -176,8 +177,8 @@ namespace thekogans {
             /// ctor parameters.
             /// \param[in] args Variable length list of parameters to pass
             /// to singleton instance ctor.
-            template<typename... arg_types>
-            static void CreateInstance (arg_types... args) {
+            template<typename... Args>
+            static void CreateInstance (Args... args) {
                 // We implement the double-checked locking pattern here
                 // to allow our singleton instance method to be thread-safe
                 // (i.e. thread-safe singleton construction).
@@ -187,7 +188,7 @@ namespace thekogans {
                     // we get to create the actual instance!
                     LockGuard<Lock> guard (lock);
                     if (instance == 0) {
-                        instance = InstanceCreator () (std::forward<arg_types> (args)...);
+                        instance = InstanceCreator () (std::forward<Args> (args)...);
                     }
                 }
                 assert (instance != 0);

@@ -54,8 +54,17 @@ namespace thekogans {
             /// \brief
             /// Used for DynamicCreatable dynamic discovery and creation.
             /// \param[in] type DynamicCreatable type (it's name).
+            /// \param[in] ... Variable list of arguments to pass to Create.
             /// \return A DynamicCreatable based on the passed in type.
-            static SharedPtr Get (const std::string &type);
+            template<typename... Args>
+            static SharedPtr Get (
+                    const std::string &type,
+                    Args... args) {
+                Map::iterator it = GetMap ().find (type);
+                return it != GetMap ().end () ?
+                    it->second (std::forward<Args> (args)...) :
+                    SharedPtr ();
+            }
         #if defined (THEKOGANS_UTIL_TYPE_Shared)
             /// \struct DynamicCreatable::MapInitializer DynamicCreatable.h thekogans/util/DynamicCreatable.h
             ///
@@ -92,8 +101,10 @@ namespace thekogans {
         #define THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE_COMMON(type)\
         public:\
             typedef RefCounted::SharedPtr<type> SharedPtr;\
-            static thekogans::util::DynamicCreatable::SharedPtr Create () {\
-                return thekogans::util::DynamicCreatable::SharedPtr (new type);\
+            template<typename... Args>\
+            static thekogans::util::DynamicCreatable::SharedPtr Create (Args... args) {\
+                return thekogans::util::DynamicCreatable::SharedPtr (\
+                    new type (std::forward<Args> (args)...));\
             }\
             virtual const char *GetName () const {\
                 return #type;\
