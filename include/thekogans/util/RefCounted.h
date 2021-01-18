@@ -441,11 +441,11 @@ namespace thekogans {
                 /// \brief
                 /// Convert to SharedPtr<T>.
                 /// \return SharedPtr<T>.
-                inline typename SharedPtr<T> GetSharedPtr () const {
+                inline SharedPtr<T> GetSharedPtr () const {
                     // We pass false to SharedPtr (..., addRef) because References::LockObject
                     // takes out a reference on success and on failure we don't care since we're
                     // passing 0 as object pointer.
-                    return typename SharedPtr<T> (dynamic_cast<T *> (references != 0 ? references->LockObject (object) : 0), false);
+                    return SharedPtr<T> (dynamic_cast<T *> (references != 0 ? references->LockObject (object) : 0), false);
                 }
             };
 
