@@ -124,7 +124,7 @@ namespace thekogans {
                 /// Used by \see{WeakPtr<T>::GetSharedPtr} below to atomically
                 /// take out a reference on a weak pointer.
                 /// \param[in] object RefCounted object to lock.
-                /// \return object if successfuly locked,
+                /// \return object if a shared reference was successfuly incremented,
                 /// 0 if there are no more shared references (shared == 0).
                 inline RefCounted *LockObject (RefCounted *object) {
                     // This is a classical lock-free algorithm for shared access.
