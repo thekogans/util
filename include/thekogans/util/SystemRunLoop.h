@@ -332,7 +332,7 @@ namespace thekogans {
             void *userData;
             /// \brief
             /// Windows window.
-            Window::SharedPtr window;
+            Window::Ptr window;
         #elif defined (TOOLCHAIN_OS_Linux)
             /// \brief
             /// Callback to process Xlib XEvent events.
@@ -367,12 +367,12 @@ namespace thekogans {
                     JobExecutionPolicy::SharedPtr (new FIFOJobExecutionPolicy),
                 EventProcessor eventProcessor_ = 0,
                 void *userData_ = 0,
-                Window::SharedPtr window_ = CreateThreadWindow ());
+                Window::Ptr window_ = CreateThreadWindow ());
 
             /// \brief
             /// Create a run loop window to service job requests.
             /// \return Window that will process job requests.
-            static Window::SharedPtr CreateThreadWindow ();
+            static Window::Ptr CreateThreadWindow ();
             /// \brief
             /// Return the Windows window associated with this run loop.
             /// \return Windows window associated with this run loop.

@@ -36,7 +36,7 @@ namespace thekogans {
     #if defined (TOOLCHAIN_OS_Windows)
         SystemRunLoop::SystemRunLoop (
                 const std::string &name,
-                JobExecutionPolicy::Ptr jobExecutionPolicy,
+                JobExecutionPolicy::SharedPtr jobExecutionPolicy,
                 EventProcessor eventProcessor_,
                 void *userData_,
                 Window::Ptr window_) :

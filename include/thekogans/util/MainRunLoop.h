@@ -169,11 +169,11 @@ namespace thekogans {
             /// \return A main thread run loop with custom ctor arguments.
             RunLoop *operator () (
                     const std::string &name = "MainRunLoop",
-                    RunLoop::JobExecutionPolicy::Ptr jobExecutionPolicy =
-                        RunLoop::JobExecutionPolicy::Ptr (new RunLoop::FIFOJobExecutionPolicy),
+                    RunLoop::JobExecutionPolicy::SharedPtr jobExecutionPolicy =
+                        RunLoop::JobExecutionPolicy::SharedPtr (new RunLoop::FIFOJobExecutionPolicy),
                     SystemRunLoop::EventProcessor eventProcessor = 0,
                     void *userData = 0,
-                    Window::Ptr window = Window::Ptr (0)) {
+                    Window::Ptr window = Window::Ptr ()) {
                 Thread::SetMainThread ();
                 RunLoop *runLoop = window.get () != 0 ?
                     (RunLoop *)new SystemRunLoop (

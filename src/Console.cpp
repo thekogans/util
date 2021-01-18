@@ -47,12 +47,12 @@ namespace thekogans {
                     case CTRL_BREAK_EVENT:
                     case CTRL_LOGOFF_EVENT:
                     case CTRL_SHUTDOWN_EVENT:
-                        if (MainRunLoop::IsInstantiated ()) {
+                        if (MainRunLoop::IsInstanceCreated ()) {
                             MainRunLoop::Instance ().Stop ();
                         }
                         return TRUE;
                     case CTRL_CLOSE_EVENT:
-                        if (MainRunLoop::IsInstantiated ()) {
+                        if (MainRunLoop::IsInstanceCreated ()) {
                             MainRunLoop::Instance ().Stop ();
                         }
                         return FALSE;

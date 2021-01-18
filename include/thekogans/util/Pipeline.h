@@ -831,8 +831,8 @@ namespace thekogans {
             /// \param[in] workerAffinity Worker thread processor affinity.
             /// \param[in] workerCallback Called to initialize/uninitialize the worker thread.
             GlobalPipeline (
-                const Pipeline::Stage *begin,
-                const Pipeline::Stage *end,
+                const Pipeline::Stage *begin = 0,
+                const Pipeline::Stage *end = 0,
                 const std::string &name = "GlobalPipeline",
                 Pipeline::JobExecutionPolicy::SharedPtr jobExecutionPolicy =
                     Pipeline::JobExecutionPolicy::SharedPtr (new Pipeline::FIFOJobExecutionPolicy),

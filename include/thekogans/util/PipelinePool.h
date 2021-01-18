@@ -332,10 +332,10 @@ namespace thekogans {
             /// \param[in] workerCallback Called to initialize/uninitialize the \see{Pipeline}
             /// thread.
             GlobalPipelinePool (
-                std::size_t minPipelines,
-                std::size_t maxPipelines,
-                const util::Pipeline::Stage *begin,
-                const util::Pipeline::Stage *end,
+                std::size_t minPipelines = 0,
+                std::size_t maxPipelines = 0,
+                const util::Pipeline::Stage *begin = 0,
+                const util::Pipeline::Stage *end = 0,
                 const std::string &name = "GlobalPipelinePool",
                 util::Pipeline::JobExecutionPolicy::SharedPtr jobExecutionPolicy =
                     util::Pipeline::JobExecutionPolicy::SharedPtr (new util::Pipeline::FIFOJobExecutionPolicy),

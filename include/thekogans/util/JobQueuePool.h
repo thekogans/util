@@ -315,8 +315,8 @@ namespace thekogans {
             /// \param[in] workerCallback Called to initialize/uninitialize the \see{JobQueue}
             /// thread.
             GlobalJobQueuePool (
-                std::size_t minJobQueues,
-                std::size_t maxJobQueues,
+                std::size_t minJobQueues = 0,
+                std::size_t maxJobQueues = 0,
                 const std::string &name = "GlobalJobQueuePool",
                 RunLoop::JobExecutionPolicy::SharedPtr jobExecutionPolicy =
                     RunLoop::JobExecutionPolicy::SharedPtr (new RunLoop::FIFOJobExecutionPolicy),
