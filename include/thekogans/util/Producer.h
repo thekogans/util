@@ -153,7 +153,9 @@ namespace thekogans {
                 virtual void DeliverEvent (
                         std::function<void (T *)> event,
                         typename Subscriber<T>::SharedPtr subscriber) {
-                    auto job = [event, subscriber] (RunLoop::Job & /*job*/, const std::atomic<bool> & /*done*/) {
+                    auto job = [event, subscriber] (
+                            RunLoop::Job & /*job*/,
+                            const std::atomic<bool> & /*done*/) {
                         event (subscriber.Get ());
                     };
                     runLoop.EnqJob (job);

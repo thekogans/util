@@ -19,8 +19,10 @@
 #define __thekogans_util_Singleton_h
 
 #include <cassert>
+#include <typeinfo>
 #include "thekogans/util/Config.h"
 #include "thekogans/util/NullLock.h"
+#include "thekogans/util/SpinLock.h"
 #include "thekogans/util/LockGuard.h"
 
 namespace thekogans {
@@ -119,6 +121,27 @@ namespace thekogans {
             }
         };
 
+        /// \struct SingletonStatics Singleton.h thekogans/util/Singleton.h
+        ///
+        /// \brief
+        /// Move the singleton statics in to a non template base class to
+        /// help with member scope and accessibility. This is especially
+        /// necessary under Windows because of M$ insistance on __declspec(...).
+
+        struct _LIB_THEKOGANS_UTIL_DECL SingletonStatics {
+            /// \brief
+            /// Singleton instance.
+            static void *instance;
+            /// \brief
+            /// Synchronization lock.
+            static SpinLock lock;
+
+        protected:
+            /// \brief
+            /// dtor.
+            virtual ~SingletonStatics () {}
+        };
+
         /// \struct Singleton Singleton.h thekogans/util/Singleton.h
         ///
         /// \brief
@@ -168,10 +191,10 @@ namespace thekogans {
 
         template<
             typename T,
-            typename Lock = NullLock,
+            typename Lock = SpinLock,
             typename InstanceCreator = DefaultInstanceCreator<T>,
             typename InstanceDestroyer = DefaultInstanceDestroyer<T>>
-        struct Singleton {
+        struct Singleton : private SingletonStatics {
             /// \brief
             /// Uses modern C++ template facilities to provide singleton
             /// ctor parameters.
@@ -199,7 +222,7 @@ namespace thekogans {
             static void DestroyInstance () {
                 LockGuard<Lock> guard (lock);
                 if (instance != 0) {
-                    InstanceDestroyer () (instance);
+                    InstanceDestroyer () ((T *)instance);
                     instance = 0;
                 }
             }
@@ -229,46 +252,18 @@ namespace thekogans {
                     }
                 }
                 assert (instance != 0);
-                return *instance;
+                return *(T *)instance;
             }
 
         protected:
             /// \brief
-            /// The one and only singleton instance.
-            static T * volatile instance;
-            /// \brief
-            /// Lock protecting singleton construction.
-            static Lock lock;
-
-            /// \brief
             /// ctor.
             Singleton () {}
-            /// \brief
-            /// dtor.
-            virtual ~Singleton () {}
 
             /// \brief
             /// Singleton is neither copy constructable, nor assignable.
             THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (Singleton)
         };
-
-        /// \brief
-        /// Definition of the Singleton<T, Lock, InstanceCreator, InstanceDestroyer>::instance.
-        template<
-            typename T,
-            typename Lock,
-            typename InstanceCreator,
-            typename InstanceDestroyer>
-        T * volatile Singleton<T, Lock, InstanceCreator, InstanceDestroyer>::instance = 0;
-
-        /// \brief
-        /// Definition of the Singleton<T, Lock, InstanceCreator, InstanceDestroyer>::lock.
-        template<
-            typename T,
-            typename Lock,
-            typename InstanceCreator,
-            typename InstanceDestroyer>
-        Lock Singleton<T, Lock, InstanceCreator, InstanceDestroyer>::lock;
 
     } // namespace util
 } // namespace thekogans

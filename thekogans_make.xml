@@ -3,7 +3,7 @@
                 project_type = "library"
                 major_version = "0"
                 minor_version = "35"
-                patch_version = "1"
+                patch_version = "2"
                 guid = "e541acd69d9d020f7eac98d5bf9e0d7a"
                 schema_version = "2">
   <features>
@@ -674,6 +674,7 @@
     <cpp_source>SHA3.cpp</cpp_source>
     <cpp_source>SharedAllocator.cpp</cpp_source>
     <cpp_source>SharedObject.cpp</cpp_source>
+    <cpp_source>Singleton.cpp</cpp_source>
     <cpp_source>SizeT.cpp</cpp_source>
     <cpp_source>SpinLock.cpp</cpp_source>
     <cpp_source>SpinRWLock.cpp</cpp_source>
