@@ -20,8 +20,6 @@
 namespace thekogans {
     namespace util {
 
-        void *SingletonStatics::instance = 0;
-        SpinLock SingletonStatics::lock;
 
     } // namespace util
 } // namespace thekogans
