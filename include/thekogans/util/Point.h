@@ -18,6 +18,19 @@
 #if !defined (__thekogans_util_Point_h)
 #define __thekogans_util_Point_h
 
+#if defined (TOOLCHAIN_OS_Windows)
+    #if !defined (_WINDOWS_)
+        #if !defined (WIN32_LEAN_AND_MEAN)
+            #define WIN32_LEAN_AND_MEAN
+        #endif // !defined (WIN32_LEAN_AND_MEAN)
+        #if !defined (NOMINMAX)
+            #define NOMINMAX
+        #endif // !defined (NOMINMAX)
+        #include <windows.h>
+    #endif // !defined (_WINDOWS_)
+#elif defined (TOOLCHAIN_OS_OSX)
+    #include <CoreGraphics/CoreGraphics.h>
+#endif // defined (TOOLCHAIN_OS_Windows)
 #include <cassert>
 #include "thekogans/util/Config.h"
 #include "thekogans/util/Types.h"
@@ -52,6 +65,21 @@ namespace thekogans {
                 i32 y_ = 0) :
                 x (x_),
                 y (y_) {}
+        #if defined (TOOLCHAIN_OS_Windows)
+            /// \brief
+            /// ctor.
+            /// \param[in] point Windows POINT to initialize with.
+            Point (const POINT &point) :
+                x (point.x),
+                y (point.y) {}
+        #elif defined (TOOLCHAIN_OS_OSX)
+            /// \brief
+            /// ctor.
+            /// \param[in] point OS X CGPoint to initialize with.
+            Point (const CGPoint &point) :
+                x (point.x),
+                y (point.y) {}
+        #endif // defined (TOOLCHAIN_OS_Windows)
 
             /// \brief
             /// Point (0, 0);

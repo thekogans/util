@@ -173,7 +173,7 @@ namespace thekogans {
             typename Lock = NullLock,
             typename InstanceCreator = DefaultInstanceCreator<T>,
             typename InstanceDestroyer = DefaultInstanceDestroyer<T>>
-        struct Singleton {
+        struct THEKOGANS_UTIL_EXPORT Singleton {
             /// \brief
             /// Uses modern C++ template facilities to provide singleton
             /// ctor parameters.
@@ -201,7 +201,7 @@ namespace thekogans {
             static void DestroyInstance () {
                 LockGuard<Lock> guard (lock);
                 if (instance != 0) {
-                    InstanceDestroyer () ((T *)instance);
+                    InstanceDestroyer () (instance);
                     instance = 0;
                 }
             }
@@ -231,7 +231,7 @@ namespace thekogans {
                     }
                 }
                 assert (instance != 0);
-                return *(T *)instance;
+                return *instance;
             }
 
         protected:

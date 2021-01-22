@@ -57,6 +57,7 @@
         <framework>Cocoa</framework>
         <framework>CoreFoundation</framework>
         <framework>CoreServices</framework>
+        <framework>CoreGraphics</framework>
         <framework>SystemConfiguration</framework>
         <framework>IOKit</framework>
       </when>
@@ -674,7 +675,6 @@
     <cpp_source>SHA3.cpp</cpp_source>
     <cpp_source>SharedAllocator.cpp</cpp_source>
     <cpp_source>SharedObject.cpp</cpp_source>
-    <cpp_source>Singleton.cpp</cpp_source>
     <cpp_source>SizeT.cpp</cpp_source>
     <cpp_source>SpinLock.cpp</cpp_source>
     <cpp_source>SpinRWLock.cpp</cpp_source>

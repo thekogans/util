@@ -18,6 +18,19 @@
 #if !defined (__thekogans_util_Rectangle_h)
 #define __thekogans_util_Rectangle_h
 
+#if defined (TOOLCHAIN_OS_Windows)
+    #if !defined (_WINDOWS_)
+        #if !defined (WIN32_LEAN_AND_MEAN)
+            #define WIN32_LEAN_AND_MEAN
+        #endif // !defined (WIN32_LEAN_AND_MEAN)
+        #if !defined (NOMINMAX)
+            #define NOMINMAX
+        #endif // !defined (NOMINMAX)
+        #include <windows.h>
+    #endif // !defined (_WINDOWS_)
+#elif defined (TOOLCHAIN_OS_OSX)
+    #include <CoreGraphics/CoreGraphics.h>
+#endif // defined (TOOLCHAIN_OS_Windows)
 #include "thekogans/util/Config.h"
 #include "thekogans/util/Types.h"
 #include "thekogans/util/Constants.h"
@@ -121,6 +134,21 @@ namespace thekogans {
                 const Extents &extents_) :
                 origin (origin_),
                 extents (extents_) {}
+        #if defined (TOOLCHAIN_OS_Windows)
+            /// \brief
+            /// ctor.
+            /// \param[in] rect Windows RECT to initialize with.
+            Rectangle (const RECT &rect) :
+                origin (rect.left, rect.bottom),
+                extents (rect.right - rect.left, rect.bottom - rect.top) {}
+        #elif defined (TOOLCHAIN_OS_OSX)
+            /// \brief
+            /// ctor.
+            /// \param[in] point OS X CGRect to initialize with.
+            Rectangle (const CGRect &rect) :
+                origin (rect.origin.x, rect.origin.y),
+                extents (rect.size.width, rect.size.height) {}
+        #endif // defined (TOOLCHAIN_OS_Windows)
 
             /// \brief
             /// Rectangle (0, 0, 0, 0);
