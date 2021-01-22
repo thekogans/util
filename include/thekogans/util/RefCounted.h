@@ -84,13 +84,7 @@ namespace thekogans {
                 /// \brief
                 /// Decrement the weak reference count, and if 0, call delete.
                 /// \return Decremented weak reference count.
-                inline ui32 ReleaseWeakRef () {
-                    ui32 newWeak = --weak;
-                    if (newWeak == 0) {
-                        delete this;
-                    }
-                    return newWeak;
-                }
+                ui32 ReleaseWeakRef ();
                 /// \brief
                 /// Return the count of weak references held.
                 /// \return Count of weak references held.
@@ -107,13 +101,7 @@ namespace thekogans {
                 /// \brief
                 /// Decrement the shared reference count, and if 0, call object->Harakiri ().
                 /// \return Decremented shared reference count.
-                inline ui32 ReleaseSharedRef (RefCounted *object) {
-                    ui32 newShared = --shared;
-                    if (newShared == 0) {
-                        object->Harakiri ();
-                    }
-                    return newShared;
-                }
+                ui32 ReleaseSharedRef (RefCounted *object);
                 /// \brief
                 /// Return the count of shared references held.
                 /// \return Count of shared references held.
@@ -122,22 +110,11 @@ namespace thekogans {
                 }
                 /// \brief
                 /// Used by \see{WeakPtr<T>::GetSharedPtr} below to atomically
-                /// take out a reference on a weak pointer.
+                /// take out a shared reference on a weak pointer.
                 /// \param[in] object RefCounted object to lock.
                 /// \return object if a shared reference was successfuly incremented,
                 /// 0 if there are no more shared references (shared == 0).
-                inline RefCounted *LockObject (RefCounted *object) {
-                    // This is a classical lock-free algorithm for shared access.
-                    for (ui32 count = shared; count != 0; count = shared) {
-                        // If compare_exchange_weak failed, it's because between the load
-                        // above and the exchange below, we were interupted by another thread
-                        // that modified the value of shared. Reload and try again.
-                        if (shared.compare_exchange_weak (count, count + 1)) {
-                            return object;
-                        }
-                    }
-                    return 0;
-                }
+                RefCounted *LockObject (RefCounted *object);
 
                 /// \brief
                 /// References is neither copy constructable, nor assignable.

@@ -22,6 +22,35 @@ namespace thekogans {
 
         THEKOGANS_UTIL_IMPLEMENT_HEAP_WITH_LOCK (RefCounted::References, SpinLock)
 
+        ui32 RefCounted::References::ReleaseWeakRef () {
+            ui32 newWeak = --weak;
+            if (newWeak == 0) {
+                delete this;
+            }
+            return newWeak;
+        }
+
+        ui32 RefCounted::References::ReleaseSharedRef (RefCounted *object) {
+            ui32 newShared = --shared;
+            if (newShared == 0) {
+                object->Harakiri ();
+            }
+            return newShared;
+        }
+
+        RefCounted *RefCounted::References::LockObject (RefCounted *object) {
+            // This is a classical lock-free algorithm for shared access.
+            for (ui32 count = shared; count != 0; count = shared) {
+                // If compare_exchange_weak failed, it's because between the load
+                // above and the exchange below, we were interupted by another thread
+                // that modified the value of shared. Reload and try again.
+                if (shared.compare_exchange_weak (count, count + 1)) {
+                    return object;
+                }
+            }
+            return 0;
+        }
+
         RefCounted::~RefCounted () {
             // We're going out of scope. If there are still
             // shared references remaining, we have a problem.
