@@ -48,6 +48,10 @@ namespace thekogans {
         /// what \see{Heap} is for.
         /// NOTE: When inheriting from RefCounted, consider making it 'public virtual'.
         /// This will go a long way towards resolving multiple inheritance ambiguities.
+        /// VERY IMPORTANT: If you're going to create RefCounted::SharedPtrs on
+        /// stack or static (see \see{Singleton}) objects, it's important that the
+        /// object itself take out a reference in it's ctor. This way the reference
+        /// count will never reach 0 and the object will not try to delete itself.
 
         struct _LIB_THEKOGANS_UTIL_DECL RefCounted {
         private:
@@ -280,8 +284,10 @@ namespace thekogans {
             /// A weak pointer template allows the user to hold on to a 'smart' raw
             /// pointer to the object. What that means in practice is that the RefCounted
             /// object the WeakPtr points to can be deleted and it will not result in a
-            /// dangling pointer. In order to use the object encapsulated by the WeakPtr
-            /// you must first call WeakPtr<T>::GetSharedPtr to get a SharedPtr<T>.
+            /// dangling pointer. Weak pointers are used to break mutual reference cycles
+            /// that can occur when two objects hold on to a shared pointer to one another.
+            /// In order to use the object encapsulated by the WeakPtr you must first call
+            /// WeakPtr<T>::GetSharedPtr to get a SharedPtr<T>.
             /// NOTE: The SharedPtr<T> returned by WeakPtr<T>::GetSharedPtr can be null.
             /// That's why it's important that you use the following pattern;
             ///
@@ -375,6 +381,12 @@ namespace thekogans {
                 /// \brief
                 /// Return a raw pointer to the reference counted object.
                 /// \return A raw pointer to the reference counted object.
+                /// IMPORTANT: You cannot pass on object from one WeakPtr::Get
+                /// to another WeakPtr::ctor or WeakPtr::Reset. There's no
+                /// guarantee that the pointer you get is still dereferencable.
+                /// It's very important that you practice safe WeakPtr access
+                /// method by first calling WeakPtr::GetSharedPtr below, checking
+                /// if it's not null and only then using it.
                 inline T *Get () const {
                     return object;
                 }
@@ -382,6 +394,10 @@ namespace thekogans {
                 /// \brief
                 /// Reset the object htis WeakPtr points to.
                 /// \param[in] object_ New object to encapsulate.
+                /// WARNING: You can't pass an object pointer from one WeakPtr::Get
+                /// to another WeakPtr::Reset. There is no guarantee that there
+                /// are any more shared references left on the object and that
+                /// it's not dangling.
                 void Reset (T *object_ = 0) {
                     object = object_;
                     if (references != 0) {
@@ -412,7 +428,7 @@ namespace thekogans {
                 /// Return true if the contained object has expired (deleted).
                 /// \return true == the contained object has expired (deleted).
                 inline bool IsExpired () const {
-                    return references != 0 && references->GetSharedCount () == 0;
+                    return references == 0 || references->GetSharedCount () == 0;
                 }
 
                 /// \brief

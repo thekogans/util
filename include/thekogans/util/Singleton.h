@@ -179,6 +179,10 @@ namespace thekogans {
             /// ctor parameters.
             /// \param[in] args Variable length list of parameters to pass
             /// to singleton instance ctor.
+            /// NOTE: In order to supply custom ctor arguments you need
+            /// to call this method before the first call to Instance below.
+            /// If you don't, CreateInstance will be a noop as instance will
+            /// have already be created.
             template<typename... Args>
             static void CreateInstance (Args... args) {
                 // We implement the double-checked locking pattern here
