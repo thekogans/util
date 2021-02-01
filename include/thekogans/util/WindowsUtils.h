@@ -318,7 +318,7 @@ namespace thekogans {
         struct _LIB_THEKOGANS_UTIL_DECL Window {
             /// \brief
             /// Convenient typedef for std::unique_ptr<Window>.
-            typedef std::unique_ptr<Window> Ptr;
+            typedef std::unique_ptr<Window> UniquePtr;
 
             /// \brief
             /// Windows window.

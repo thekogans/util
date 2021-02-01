@@ -18,6 +18,7 @@
 #if !defined (__thekogans_util_RefCounted_h)
 #define __thekogans_util_RefCounted_h
 
+#include <memory>
 #include <typeinfo>
 #include <atomic>
 #include "thekogans/util/Config.h"
@@ -165,6 +166,35 @@ namespace thekogans {
             /// can take ownership of an object Released by another.
             template<typename T>
             struct SharedPtr {
+                /// \brief
+                /// There are many times where we interact with system APIs that take a void *userData.
+                /// In a multi-threaded environment passing a raw pointer is dangerous as it can lead
+                /// to dangling pointers which lead to crashes. Use this patern instead to deal with
+                /// object lifetimes;
+                ///
+                /// \code{.cpp}
+                /// struct foo : public thekogans::util::RefCounted {
+                ///     typedef thekogans::util::RefCounted::SharedPtr<foo> SharedPtr;
+                ///     ...
+                ///     void bar ();
+                /// };
+                ///
+                /// foo::SharedPtr::UniquePtr fooPtr (new foo::SharedPtr (&fooInstance));
+                /// if (SomeSystemAPI (..., fooPtr.get ())) {
+                ///     fooPtr.release ();
+                /// }
+                ///
+                /// // If SomeSystemAPI fails, the shared pointer will be deleted when fooPtr dtor
+                /// // is called. When the system calls you back with the userData pointer you passed
+                /// // in above, do the following;
+                ///
+                /// void MyCallback (..., void *userData) {
+                ///     foo::SharedPtr::UniquePtr fooPtr ((foo::SharedPtr *)userData);
+                ///     (*fooPtr)->bar ();
+                /// }
+                /// \endcode
+                typedef std::unique_ptr<SharedPtr<T>> UniquePtr;
+
             protected:
                 /// \brief
                 /// Reference counted object.
@@ -306,6 +336,40 @@ namespace thekogans {
             /// value for nullness before using it.
             template<typename T>
             struct WeakPtr {
+                /// \brief
+                /// There are many times where we interact with system APIs that take a void *userData.
+                /// In a multi-threaded environment passing a raw pointer is dangerous as it can lead
+                /// to dangling pointers which lead to crashes. Use this patern instead to deal with
+                /// object lifetimes;
+                ///
+                /// \code{.cpp}
+                /// struct foo : public thekogans::util::RefCounted {
+                ///     typedef thekogans::util::RefCounted::SharedPtr<foo> SharedPtr;
+                ///     typedef thekogans::util::RefCounted::WeakPtr<foo> WeakPtr;
+                ///     ...
+                ///     void bar ();
+                /// };
+                ///
+                /// foo::WeakPtr::UniquePtr fooPtr (new foo::WeakPtr (&fooInstance));
+                /// if (SomeSystemAPI (..., fooPtr.get ())) {
+                ///     fooPtr.release ();
+                /// }
+                ///
+                /// // If SomeSystemAPI fails, the weak pointer will be deleted when fooPtr dtor
+                /// // is called. When the system calls you back with the userData pointer you passed
+                /// // in above, do the following;
+                ///
+                /// void MyCallback (..., void *userData) {
+                ///     foo::WeakPtr::UniquePtr weakPtr ((foo::WeakPtr *)userData);
+                ///     foo::SharedPtr fooPtr = weakPtr->GetSharedPtr ();
+                ///     // If the object is stil alive, use it.
+                ///     if (fooPtr.Get () != 0) {
+                ///         fooPtr->bar ();
+                ///     }
+                /// }
+                /// \endcode
+                typedef std::unique_ptr<WeakPtr<T>> UniquePtr;
+
             protected:
                 /// \brief
                 /// Reference counted object.

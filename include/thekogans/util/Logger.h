@@ -41,6 +41,9 @@ namespace thekogans {
             /// \brief
             /// Convenient typedef for RefCounted::SharedPtr<Logger>.
             typedef RefCounted::SharedPtr<Logger> SharedPtr;
+            /// \brief
+            /// Convenient typedef for RefCounted::WeakPtr<Logger>.
+            typedef RefCounted::WeakPtr<Logger> WeakPtr;
 
             /// \brief
             /// \see{LoggerMgr::level} this logger will log up to.

@@ -38,7 +38,7 @@ namespace thekogans {
 
         struct _LIB_THEKOGANS_UTIL_DECL DynamicCreatable : public virtual RefCounted {
             /// \brief
-            /// Convenient typedef for RefCounted::Ptr<DynamicCreatable>.
+            /// Convenient typedef for RefCounted::SharedPtr<DynamicCreatable>.
             typedef RefCounted::SharedPtr<DynamicCreatable> SharedPtr;
 
             /// \brief

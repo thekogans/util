@@ -68,7 +68,7 @@ namespace thekogans {
         ///         timer (*this, "IdleProcessor"),
         ///         jobQueue (
         ///             "IdleProcessor",
-        ///             util::RunLoop::JobExecutionPolicy::Ptr (
+        ///             util::RunLoop::JobExecutionPolicy::SharedPtr (
         ///                 new util::RunLoop::FIFOJobExecutionPolicy),
         ///             1,
         ///             THEKOGANS_UTIL_LOW_THREAD_PRIORITY) {}

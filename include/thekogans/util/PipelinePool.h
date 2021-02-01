@@ -51,10 +51,10 @@ namespace thekogans {
         ///
         /// void foo (...) {
         ///     struct Job : public util::Pipeline::Job {
-        ///         util::Pipeline::Ptr pipeline;
+        ///         util::Pipeline::SharedPtr pipeline;
         ///         ...
         ///         Job (
-        ///             util::Pipeline::Ptr pipeline_,
+        ///             util::Pipeline::SharedPtr pipeline_,
         ///             ...) :
         ///             pipeline (pipeline_),
         ///             ... {}
@@ -64,15 +64,15 @@ namespace thekogans {
         ///             ...
         ///         }
         ///     };
-        ///     util::Pipeline::Ptr pipeline = pipelinePool.GetPipeline ();
+        ///     util::Pipeline::SharedPtr pipeline = pipelinePool.GetPipeline ();
         ///     if (pipeline.Get () != 0) {
-        ///         pipeline->EnqJob (Pipeline::Job::Ptr (new Job (pipeline, ...)));
+        ///         pipeline->EnqJob (Pipeline::Job::SharedPtr (new Job (pipeline, ...)));
         ///     }
         /// }
         /// \endcode
         ///
         /// Note how the Job controls the lifetime of the \see{Pipeline}.
-        /// By passing util::Pipeline::Ptr in to the Job's ctor we guarantee
+        /// By passing util::Pipeline::SharedPtr in to the Job's ctor we guarantee
         /// that the \see{Pipeline} will be returned back to the pool as soon
         /// as the Job goes out of scope (as Job will be the last reference).
 

@@ -39,7 +39,7 @@ namespace thekogans {
 
         struct _LIB_THEKOGANS_UTIL_DECL Hash : public virtual RefCounted {
             /// \brief
-            /// Convenient typedef for RefCounted::Ptr<Hash>.
+            /// Convenient typedef for RefCounted::SharedPtr<Hash>.
             typedef RefCounted::SharedPtr<Hash> SharedPtr;
 
             /// \brief

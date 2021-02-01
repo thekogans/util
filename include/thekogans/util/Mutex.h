@@ -49,12 +49,12 @@ namespace thekogans {
         /// all platforms:
         ///
         /// \code{.cpp}
-        /// RunLoop::Job::Ptr JobQueue::Deq () {
+        /// RunLoop::Job::SharedPtr JobQueue::Deq () {
         ///     LockGuard<Mutex> guard (jobsMutex);
         ///     while (jobs.empty ()) {
         ///         notEmpty.Wait ();
         ///     }
-        ///     Job::Ptr job;
+        ///     Job::SharedPtr job;
         ///     assert (!jobs.empty ());
         ///     if (!jobs.empty ()) {
         ///         job.reset (jobs.front ());

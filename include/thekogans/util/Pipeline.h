@@ -52,6 +52,9 @@ namespace thekogans {
             /// \brief
             /// Convenient typedef for RefCounted::SharedPtr<Pipeline>.
             typedef RefCounted::SharedPtr<Pipeline> SharedPtr;
+            /// \brief
+            /// Convenient typedef for RefCounted::WeakPtr<Pipeline>.
+            typedef RefCounted::WeakPtr<Pipeline> WeakPtr;
 
             /// \brief
             /// Forward declaration of Job.
@@ -89,6 +92,9 @@ namespace thekogans {
                 /// \brief
                 /// Convenient typedef for RefCounted::SharedPtr<JobExecutionPolicy>.
                 typedef RefCounted::SharedPtr<JobExecutionPolicy> SharedPtr;
+                /// \brief
+                /// Convenient typedef for RefCounted::WeakPtr<JobExecutionPolicy>.
+                typedef RefCounted::WeakPtr<JobExecutionPolicy> WeakPtr;
 
                 /// \brief
                 /// Max pending pipeline jobs.

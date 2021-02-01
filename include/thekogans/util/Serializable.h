@@ -49,8 +49,11 @@ namespace thekogans {
 
         struct _LIB_THEKOGANS_UTIL_DECL Serializable : public virtual RefCounted {
             /// \brief
-            /// Convenient typedef for RefCounted::Ptr<Serializable>.
+            /// Convenient typedef for RefCounted::SharedPtr<Serializable>.
             typedef RefCounted::SharedPtr<Serializable> SharedPtr;
+            /// \brief
+            /// Convenient typedef for RefCounted::WeakPtr<Serializable>.
+            typedef RefCounted::WeakPtr<Serializable> WeakPtr;
 
             /// \struct Serializable::BinHeader Serializable.h thekogans/util/Serializable.h
             ///

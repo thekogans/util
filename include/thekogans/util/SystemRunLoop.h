@@ -74,7 +74,7 @@ namespace thekogans {
         ///
         /// struct MyThread : public util::Thread {
         /// private:
-        ///     util::RunLoop::Ptr runLoop;
+        ///     util::RunLoop::SharedPtr runLoop;
         ///
         /// public:
         ///     MyThread (
@@ -99,7 +99,7 @@ namespace thekogans {
         ///     }
         ///
         ///     bool EnqJob (
-        ///             util::RunLoop::Job::Ptr job,
+        ///             util::RunLoop::Job::SharedPtr job,
         ///             bool wait = false,
         ///             const TimeSpec &timeSpec = TimeSpec::Infinite) {
         ///         return runLoop->EnqJob (job, wait, timeSpec);
@@ -126,7 +126,7 @@ namespace thekogans {
 
         struct _LIB_THEKOGANS_UTIL_DECL SystemRunLoop : public RunLoop {
             /// \brief
-            /// Convenient typedef for RefCounted::Ptr<SystemRunLoop>.
+            /// Convenient typedef for RefCounted::SharedPtr<SystemRunLoop>.
             typedef RefCounted::SharedPtr<SystemRunLoop> SharedPtr;
 
         #if defined (TOOLCHAIN_OS_Windows)
@@ -156,7 +156,7 @@ namespace thekogans {
             struct XlibWindow {
                 /// \brief
                 /// Convenient typedef for std::unique_ptr<XlibWindow>.
-                typedef std::unique_ptr<XlibWindow> SharedPtr;
+                typedef std::unique_ptr<XlibWindow> UniquePtr;
 
                 /// \struct SystemRunLoop::XlibWindow::_Display SystemRunLoop.h thekogans/util/SystemRunLoop.h
                 ///
@@ -251,6 +251,9 @@ namespace thekogans {
                 /// \brief
                 /// Convenient typedef for RefCounted::SharedPtr<OSXRunLoop>.
                 typedef RefCounted::SharedPtr<OSXRunLoop> SharedPtr;
+                /// \brief
+                /// Convenient typedef for RefCounted::WeakPtr<OSXRunLoop>.
+                typedef RefCounted::WeakPtr<OSXRunLoop> WeakPtr;
 
                 /// \brief
                 /// dtor.
@@ -332,7 +335,7 @@ namespace thekogans {
             void *userData;
             /// \brief
             /// Windows window.
-            Window::Ptr window;
+            Window::UniquePtr window;
         #elif defined (TOOLCHAIN_OS_Linux)
             /// \brief
             /// Callback to process Xlib XEvent events.
@@ -342,7 +345,7 @@ namespace thekogans {
             void *userData;
             /// \brief
             /// Xlib window.
-            XlibWindow::SharedPtr window;
+            XlibWindow::UniquePtr window;
             /// \brief
             /// A list of displays to listen to.
             std::vector<Display *> displays;
@@ -367,12 +370,12 @@ namespace thekogans {
                     JobExecutionPolicy::SharedPtr (new FIFOJobExecutionPolicy),
                 EventProcessor eventProcessor_ = 0,
                 void *userData_ = 0,
-                Window::Ptr window_ = CreateThreadWindow ());
+                Window::UniquePtr window_ = CreateThreadWindow ());
 
             /// \brief
             /// Create a run loop window to service job requests.
             /// \return Window that will process job requests.
-            static Window::Ptr CreateThreadWindow ();
+            static Window::UniquePtr CreateThreadWindow ();
             /// \brief
             /// Return the Windows window associated with this run loop.
             /// \return Windows window associated with this run loop.
@@ -394,14 +397,14 @@ namespace thekogans {
                     JobExecutionPolicy::SharedPtr (new FIFOJobExecutionPolicy),
                 EventProcessor eventProcessor_ = 0,
                 void *userData_ = 0,
-                XlibWindow::SharedPtr window_ = CreateThreadWindow (0),
+                XlibWindow::UniquePtr window_ = CreateThreadWindow (0),
                 const std::vector<Display *> &displays_ = EnumerateDisplays ());
 
             /// \brief
             /// Create a run loop window to service job requests.
             /// \param[in] display Display for which to create the window.
             /// \return Window that will process job requests.
-            static XlibWindow::SharedPtr CreateThreadWindow (Display *display);
+            static XlibWindow::UniquePtr CreateThreadWindow (Display *display);
             /// \brief
             /// Return the Xlib window associated with this run loop.
             /// \return Xlib window associated with this run loop.

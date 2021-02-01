@@ -59,9 +59,9 @@ namespace thekogans {
         ///
         /// THEKOGANS_UTIL_LOG_INIT (log level, "| separated log level list");
         /// THEKOGANS_UTIL_LOG_ADD_LOGGER (
-        ///     util::Logger::Ptr (new util::ConsoleLogger));
+        ///     util::Logger::SharedPtr (new util::ConsoleLogger));
         /// THEKOGANS_UTIL_LOG_ADD_LOGGER (
-        ///     util::Logger::Ptr (
+        ///     util::Logger::SharedPtr (
         ///         new util::FileLogger ("log file path", true));
         /// \endcode
         ///
@@ -80,10 +80,10 @@ namespace thekogans {
         /// THEKOGANS_UTIL_LOG_INIT (log level, "| separated log level list");
         /// THEKOGANS_UTIL_LOG_SUBSYSTEM_ADD_LOGGER (
         ///     "subsystem name",
-        ///     util::Logger::Ptr (new util::ConsoleLogger));
+        ///     util::Logger::SharedPtr (new util::ConsoleLogger));
         /// THEKOGANS_UTIL_LOG_SUBSYSTEM_ADD_LOGGER (
         ///     "subsystem name",
-        ///     util::Logger::Ptr (
+        ///     util::Logger::SharedPtr (
         ///         new util::FileLogger ("log file path", true)));
         /// ...
         /// Continue adding loggers for various application subsystems.

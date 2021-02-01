@@ -50,10 +50,10 @@ namespace thekogans {
         ///
         /// void foo (...) {
         ///     struct Job : public util::RunLoop::Job {
-        ///         util::JobQueue::Ptr jobQueue;
+        ///         util::JobQueue::SharedPtr jobQueue;
         ///         ...
         ///         Job (
-        ///             util::JobQueue::Ptr jobQueue_,
+        ///             util::JobQueue::SharedPtr jobQueue_,
         ///             ...) :
         ///             jobQueue (jobQueue_),
         ///             ... {}
@@ -63,15 +63,15 @@ namespace thekogans {
         ///             ...
         ///         }
         ///     };
-        ///     util::JobQueue::Ptr jobQueue = jobQueuePool.GetJobQueue ();
+        ///     util::JobQueue::SharedPtr jobQueue = jobQueuePool.GetJobQueue ();
         ///     if (jobQueue.Get () != 0) {
-        ///         jobQueue->EnqJob (RunLoop::Job::Ptr (new Job (jobQueue, ...)));
+        ///         jobQueue->EnqJob (RunLoop::Job::SharedPtr (new Job (jobQueue, ...)));
         ///     }
         /// }
         /// \endcode
         ///
         /// Note how the Job controls the lifetime of the \see{JobQueue}.
-        /// By passing util::JobQueue::Ptr in to the Job's ctor we guarantee
+        /// By passing util::JobQueue::SharedPtr in to the Job's ctor we guarantee
         /// that the \see{JobQueue} will be returned back to the pool as soon
         /// as the Job goes out of scope (as Job will be the last reference).
 

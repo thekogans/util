@@ -62,8 +62,11 @@ namespace thekogans {
 
         struct _LIB_THEKOGANS_UTIL_DECL RunLoop : public virtual RefCounted {
             /// \brief
-            /// Convenient typedef for RefCounted::Ptr<RunLoop>.
+            /// Convenient typedef for RefCounted::SharedPtr<RunLoop>.
             typedef RefCounted::SharedPtr<RunLoop> SharedPtr;
+            /// \brief
+            /// Convenient typedef for RefCounted::WeakPtr<RunLoop>.
+            typedef RefCounted::WeakPtr<RunLoop> WeakPtr;
 
             /// \brief
             /// Convenient typedef for std::string.
@@ -100,6 +103,9 @@ namespace thekogans {
                 /// \brief
                 /// Convenient typedef for RefCounted::SharedPtr<Job>.
                 typedef RefCounted::SharedPtr<Job> SharedPtr;
+                /// \brief
+                /// Convenient typedef for RefCounted::WeakPtr<Job>.
+                typedef RefCounted::WeakPtr<Job> WeakPtr;
 
                 /// \brief
                 /// Convenient typedef for std::string.
@@ -391,10 +397,13 @@ namespace thekogans {
             /// a map in to this list to speed up location and retrieval
             /// of the next job to dequeue.
             /// **********************************************************
-            struct _LIB_THEKOGANS_UTIL_DECL JobExecutionPolicy : public RefCounted {
+            struct _LIB_THEKOGANS_UTIL_DECL JobExecutionPolicy : public virtual RefCounted {
                 /// \brief
                 /// Convenient typedef for RefCounted::SharedPtr<JobExecutionPolicy>.
                 typedef RefCounted::SharedPtr<JobExecutionPolicy> SharedPtr;
+                /// \brief
+                /// Convenient typedef for RefCounted::WeakPtr<JobExecutionPolicy>.
+                typedef RefCounted::WeakPtr<JobExecutionPolicy> WeakPtr;
 
                 /// \brief
                 /// Max pending run loop jobs.

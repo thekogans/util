@@ -106,7 +106,7 @@ namespace thekogans {
         ///     }
         ///
         ///     bool EnqJob (
-        ///             util::RunLoop::Job::Ptr job,
+        ///             util::RunLoop::Job::SharedPtr job,
         ///             bool wait = false,
         ///             const TimeSpec &timeSpec = TimeSpec::Infinite) {
         ///         return runLoop.EnqJob (job, wait, timeSpec);

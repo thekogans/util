@@ -39,7 +39,7 @@ namespace thekogans {
                 JobExecutionPolicy::SharedPtr jobExecutionPolicy,
                 EventProcessor eventProcessor_,
                 void *userData_,
-                Window::Ptr window_) :
+                Window::UniquePtr window_) :
                 RunLoop (name, jobExecutionPolicy),
                 eventProcessor (eventProcessor_),
                 userData (userData_),
@@ -85,9 +85,9 @@ namespace thekogans {
             const char * const WINDOW_NAME = "thekogans_util_SystemRunLoop_Window_name";
         }
 
-        Window::Ptr SystemRunLoop::CreateThreadWindow () {
+        Window::UniquePtr SystemRunLoop::CreateThreadWindow () {
             static WindowClass *windowClass = new WindowClass (CLASS_NAME, WndProc);
-            return Window::Ptr (new Window (*windowClass, Rectangle (), WINDOW_NAME, WS_POPUP));
+            return Window::UniquePtr (new Window (*windowClass, Rectangle (), WINDOW_NAME, WS_POPUP));
         }
     #elif defined (TOOLCHAIN_OS_Linux)
         SystemRunLoop::XlibWindow::_Display::_Display (Display *display_) :
@@ -174,10 +174,10 @@ namespace thekogans {
 
         SystemRunLoop::SystemRunLoop (
                 const std::string &name,
-                JobExecutionPolicy::Ptr jobExecutionPolicy,
+                JobExecutionPolicy::SharedPtr jobExecutionPolicy,
                 EventProcessor eventProcessor_,
                 void *userData_,
-                XlibWindow::Ptr window_,
+                XlibWindow::UniquePtr window_,
                 const std::vector<Display *> &displays_) :
                 RunLoop (name, jobExecutionPolicy),
                 eventProcessor (eventProcessor_),
@@ -190,9 +190,9 @@ namespace thekogans {
             }
         }
 
-        SystemRunLoop::XlibWindow::Ptr SystemRunLoop::CreateThreadWindow (
+        SystemRunLoop::XlibWindow::UniquePtr SystemRunLoop::CreateThreadWindow (
                 Display *display) {
-            return XlibWindow::Ptr (new XlibWindow (display));
+            return XlibWindow::UniquePtr (new XlibWindow (display));
         }
 
         bool SystemRunLoop::DispatchEvent (

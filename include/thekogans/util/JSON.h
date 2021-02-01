@@ -46,7 +46,7 @@ namespace thekogans {
             /// Base for all JSON value types.
             struct _LIB_THEKOGANS_UTIL_DECL Value : public RefCounted {
                 /// \brief
-                /// Convenient typedef for RefCounted::Ptr<Value>.
+                /// Convenient typedef for RefCounted::SharedPtr<Value>.
                 typedef RefCounted::SharedPtr<Value> SharedPtr;
 
             public:

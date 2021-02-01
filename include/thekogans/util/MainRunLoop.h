@@ -72,7 +72,7 @@ namespace thekogans {
         ///     ...
         ///     util::MainRunLoop::CreateInstance (
         ///         "MainRunLoop",
-        ///         util::RunLoop::JobExecutionPolicy::Ptr (
+        ///         util::RunLoop::JobExecutionPolicy::SharedPtr (
         ///             new util::RunLoop::FIFOJobExecutionPolicy),
         ///         0,
         ///         0,
@@ -108,7 +108,7 @@ namespace thekogans {
         ///     ...
         ///     util::MainRunLoop::CreateInstance (
         ///         "MainRunLoop",
-        ///         util::RunLoop::JobExecutionPolicy::Ptr (
+        ///         util::RunLoop::JobExecutionPolicy::SharedPtr (
         ///             new util::RunLoop::FIFOJobExecutionPolicy),
         ///         0,
         ///         0,
@@ -144,9 +144,9 @@ namespace thekogans {
         ///     ...
         ///     util::MainRunLoop::CreateInstance (
         ///         "MainRunLoop",
-        ///         util::RunLoop::JobExecutionPolicy::Ptr (
+        ///         util::RunLoop::JobExecutionPolicy::SharedPtr (
         ///             new util::RunLoop::FIFOJobExecutionPolicy),
-        ///         SystemRunLoop::OSXRunLoop::Ptr (
+        ///         SystemRunLoop::OSXRunLoop::SharedPtr (
         ///             new SystemRunLoop::CocoaOSXRunLoop
         ///             or
         ///             new SystemRunLoop::CFOSXRunLoop (CFRunLoopGetMain ())));
@@ -173,7 +173,7 @@ namespace thekogans {
                         RunLoop::JobExecutionPolicy::SharedPtr (new RunLoop::FIFOJobExecutionPolicy),
                     SystemRunLoop::EventProcessor eventProcessor = 0,
                     void *userData = 0,
-                    Window::Ptr window = Window::Ptr ()) {
+                    Window::UniquePtr window = Window::UniquePtr ()) {
                 Thread::SetMainThread ();
                 RunLoop *runLoop = window.get () != 0 ?
                     (RunLoop *)new SystemRunLoop (
@@ -201,11 +201,11 @@ namespace thekogans {
             /// \return A main thread run loop with custom ctor arguments.
             RunLoop *operator () (
                     const std::string &name = "MainRunLoop",
-                    RunLoop::JobExecutionPolicy::Ptr jobExecutionPolicy =
-                        RunLoop::JobExecutionPolicy::Ptr (new RunLoop::FIFOJobExecutionPolicy),
+                    RunLoop::JobExecutionPolicy::SharedPtr jobExecutionPolicy =
+                        RunLoop::JobExecutionPolicy::SharedPtr (new RunLoop::FIFOJobExecutionPolicy),
                     SystemRunLoop::EventProcessor eventProcessor = 0,
                     void *userData = 0,
-                    SystemRunLoop::XlibWindow::Ptr window = SystemRunLoop::XlibWindow::Ptr (0),
+                    SystemRunLoop::XlibWindow::UniquePtr window = SystemRunLoop::XlibWindow::UniquePtr (),
                     const std::vector<Display *> &displays = std::vector<Display *> ()) {
                 Thread::SetMainThread ();
                 RunLoop *runLoop = eventProcessor != 0 ?
