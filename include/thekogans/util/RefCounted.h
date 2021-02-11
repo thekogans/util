@@ -25,9 +25,6 @@
 #include "thekogans/util/Types.h"
 #include "thekogans/util/Heap.h"
 #include "thekogans/util/SpinLock.h"
-#include "thekogans/util/LockGuard.h"
-#include "thekogans/util/Exception.h"
-#include "thekogans/util/StringUtils.h"
 
 namespace thekogans {
     namespace util {
@@ -37,22 +34,25 @@ namespace thekogans {
         /// \brief
         /// RefCounted is a base class for reference counted objects.
         /// It's designed to be useful for objects that are heap as well
-        /// as stack allocated. On construction, the reference count is
-        /// set to 0. Use RefCounted::SharedPtr to deal with heap object lifetimes.
-        /// Unlike more complicated reference count classes, I purposely
-        /// designed this one not to deal with polymorphism and construction
-        /// and destruction issues. The default behavior is: All RefCounted
-        /// objects that are allocated on the heap will be allocated with new,
-        /// and destroyed with delete. I provide a virtual void Harakiri () to
-        /// give class designers finer control over the lifetime management of
-        /// their classes. If you need more control over heap placement, that's
-        /// what \see{Heap} is for.
+        /// as stack or statically allocated. On construction, the shared
+        /// reference count is set to 0. Use RefCounted::SharedPtr to deal
+        /// with heap object lifetimes. Unlike more complicated reference
+        /// count classes, I purposely designed this one not to deal with
+        /// polymorphism and construction and destruction issues. The default
+        /// behavior is: All RefCounted objects that are allocated on the
+        /// heap will be allocated with new, and destroyed with delete. I
+        /// provide a virtual void Harakiri () to give class designers finer
+        /// control over the lifetime management of their classes. If you
+        /// need more control over heap placement, that's what \see{Heap}
+        /// is for.
         /// NOTE: When inheriting from RefCounted, consider making it 'public virtual'.
         /// This will go a long way towards resolving multiple inheritance ambiguities.
         /// VERY IMPORTANT: If you're going to create RefCounted::SharedPtrs on
         /// stack or static (see \see{Singleton}) objects, it's important that the
         /// object itself take out a reference in it's ctor. This way the reference
         /// count will never reach 0 and the object will not try to delete itself.
+        /// For \see{Singleton}s, I provide \see{RefCountedInstanceCreator} and
+        /// \see{RefCountedInstanceDestroyer} that will do just that.
 
         struct _LIB_THEKOGANS_UTIL_DECL RefCounted {
         private:
@@ -333,7 +333,7 @@ namespace thekogans {
             /// two raw pointers. Dereferencing the raw pointer returned by Get can lead
             /// to races and crashes. If you need to dereference the object poonted to
             /// by the raw pointer, again, you must first call GetSharedPtr and check it's
-            /// value for nullness before using it.
+            /// return value for nullness before using it.
             template<typename T>
             struct WeakPtr {
                 /// \brief
@@ -392,7 +392,7 @@ namespace thekogans {
                 /// \brief
                 /// ctor.
                 /// \param[in] ptr SharedPtr<T> to reference counted object.
-                explicit WeakPtr (const SharedPtr<T> &ptr = SharedPtr<T> ()) :
+                explicit WeakPtr (const SharedPtr<T> &ptr) :
                         object (0),
                         references (0) {
                     Reset (ptr.Get ());

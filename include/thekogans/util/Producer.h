@@ -30,7 +30,7 @@ namespace thekogans {
     namespace util {
 
         /// \brief
-        /// Forward declaration of \see{Subscriber}
+        /// Forward declaration of \see{Subscriber}.
         template<typename T>
         struct Subscriber;
 
@@ -137,13 +137,13 @@ namespace thekogans {
             struct RunLoopEventDeliveryPolicy : public EventDeliveryPolicy {
                 /// \brief
                 /// \see{RunLoop} on which to queue the event delivery job.
-                RunLoop &runLoop;
+                RunLoop::WeakPtr runLoop;
 
                 /// \brief
                 /// ctor.
                 /// \param[in] runLoop_ \see{RunLoop} on which to queue the event delivery job.
                 RunLoopEventDeliveryPolicy (RunLoop &runLoop_ = GlobalJobQueue::Instance ()) :
-                    runLoop (runLoop_) {}
+                    runLoop (&runLoop_) {}
 
                 /// \brief
                 /// Deliver the given event to the given subscriber by queueing a job
@@ -153,12 +153,15 @@ namespace thekogans {
                 virtual void DeliverEvent (
                         std::function<void (T *)> event,
                         typename Subscriber<T>::SharedPtr subscriber) {
-                    auto job = [event, subscriber] (
-                            RunLoop::Job & /*job*/,
-                            const std::atomic<bool> & /*done*/) {
-                        event (subscriber.Get ());
-                    };
-                    runLoop.EnqJob (job);
+                    RunLoop::SharedPtr ptr = runLoop.GetSharedPtr ();
+                    if (ptr.Get () != 0) {
+                        auto job = [event, subscriber] (
+                                RunLoop::Job & /*job*/,
+                                const std::atomic<bool> & /*done*/) {
+                            event (subscriber.Get ());
+                        };
+                        ptr->EnqJob (job);
+                    }
                 }
             };
 

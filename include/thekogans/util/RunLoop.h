@@ -605,7 +605,7 @@ namespace thekogans {
                     /// \brief
                     /// Return the serialized key size.
                     /// \return Serialized key size.
-                    virtual std::size_t Size () const;
+                    virtual std::size_t Size () const override;
 
                     /// \brief
                     /// Read the key from the given serializer.
@@ -613,11 +613,11 @@ namespace thekogans {
                     /// \param[in] serializer \see{Serializer} to read the key from.
                     virtual void Read (
                         const BinHeader & /*header*/,
-                        Serializer &serializer);
+                        Serializer &serializer) override;
                     /// \brief
                     /// Write the key to the given serializer.
                     /// \param[out] serializer \see{Serializer} to write the key to.
-                    virtual void Write (Serializer &serializer) const;
+                    virtual void Write (Serializer &serializer) const override;
 
                     /// \brief
                     /// "Job"
@@ -641,22 +641,22 @@ namespace thekogans {
                     /// \param[in] node XML DOM representation of a Serializable.
                     virtual void Read (
                         const TextHeader & /*header*/,
-                        const pugi::xml_node &node);
+                        const pugi::xml_node &node) override;
                     /// \brief
                     /// Write the Serializable to the XML DOM.
                     /// \param[out] node Parent node.
-                    virtual void Write (pugi::xml_node &node) const;
+                    virtual void Write (pugi::xml_node &node) const override;
 
                     /// \brief
                     /// Read a Serializable from an JSON DOM.
                     /// \param[in] node JSON DOM representation of a Serializable.
                     virtual void Read (
                         const TextHeader & /*header*/,
-                        const JSON::Object &object);
+                        const JSON::Object &object) override;
                     /// \brief
                     /// Write a Serializable to the JSON DOM.
                     /// \param[out] node Parent node.
-                    virtual void Write (JSON::Object &object) const;
+                    virtual void Write (JSON::Object &object) const override;
 
                     friend struct Stats;
                 };
@@ -708,7 +708,7 @@ namespace thekogans {
                 /// \brief
                 /// Return the serialized key size.
                 /// \return Serialized key size.
-                virtual std::size_t Size () const;
+                virtual std::size_t Size () const override;
 
                 /// \brief
                 /// Read the key from the given serializer.
@@ -716,11 +716,11 @@ namespace thekogans {
                 /// \param[in] serializer \see{Serializer} to read the key from.
                 virtual void Read (
                     const BinHeader & /*header*/,
-                    Serializer &serializer);
+                    Serializer &serializer) override;
                 /// \brief
                 /// Write the key to the given serializer.
                 /// \param[out] serializer \see{Serializer} to write the key to.
-                virtual void Write (Serializer &serializer) const;
+                virtual void Write (Serializer &serializer) const override;
 
                 /// \brief
                 /// "RunLoop"
@@ -753,22 +753,22 @@ namespace thekogans {
                 /// \param[in] node XML DOM representation of a Serializable.
                 virtual void Read (
                     const TextHeader & /*header*/,
-                    const pugi::xml_node &node);
+                    const pugi::xml_node &node) override;
                 /// \brief
                 /// Write the Serializable to the XML DOM.
                 /// \param[out] node Parent node.
-                virtual void Write (pugi::xml_node &node) const;
+                virtual void Write (pugi::xml_node &node) const override;
 
                 /// \brief
                 /// Read a Serializable from an JSON DOM.
                 /// \param[in] node JSON DOM representation of a Serializable.
                 virtual void Read (
                     const TextHeader & /*header*/,
-                    const JSON::Object &object);
+                    const JSON::Object &object) override;
                 /// \brief
                 /// Write a Serializable to the JSON DOM.
                 /// \param[out] node Parent node.
-                virtual void Write (JSON::Object &object) const;
+                virtual void Write (JSON::Object &object) const override;
 
             private:
                 /// \brief
@@ -843,10 +843,10 @@ namespace thekogans {
                 // WorkerCallback
                 /// \brief
                 /// Called by the worker before entering the job execution loop.
-                virtual void InitializeWorker () throw ();
+                virtual void InitializeWorker () throw () override;
                 /// \brief
                 /// Called by the worker before exiting the thread.
-                virtual void UninitializeWorker () throw ();
+                virtual void UninitializeWorker () throw () override;
             };
 
             /// \struct RunLoop::OLEInitializer RunLoop.h thekogans/util/RunLoop.h
@@ -857,10 +857,10 @@ namespace thekogans {
                 // WorkerCallback
                 /// \brief
                 /// Called by the worker before entering the job execution loop.
-                virtual void InitializeWorker () throw ();
+                virtual void InitializeWorker () throw () override;
                 /// \brief
                 /// Called by the worker before exiting the thread.
-                virtual void UninitializeWorker () throw ();
+                virtual void UninitializeWorker () throw () override;
             };
         #elif defined (TOOLCHAIN_OS_OSX)
             /// \struct RunLoop::CocoaInitializer RunLoop.h thekogans/util/RunLoop.h
@@ -871,10 +871,10 @@ namespace thekogans {
                 // WorkerCallback
                 /// \brief
                 /// Called by the worker before entering the job execution loop.
-                virtual void InitializeWorker () throw ();
+                virtual void InitializeWorker () throw () override;
                 /// \brief
                 /// Called by the worker before exiting the thread.
-                virtual void UninitializeWorker () throw ();
+                virtual void UninitializeWorker () throw () override;
             };
         #endif // defined (TOOLCHAIN_OS_Windows)
 

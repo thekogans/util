@@ -343,6 +343,7 @@ namespace thekogans {
         #define THEKOGANS_UTIL_DECLARE_SERIALIZABLE_COMMON(type, lock)\
         public:\
             typedef thekogans::util::RefCounted::SharedPtr<type> SharedPtr;\
+            typedef thekogans::util::RefCounted::WeakPtr<type> WeakPtr;\
         protected:\
             THEKOGANS_UTIL_DECLARE_HEAP_WITH_LOCK (type, lock)\
             type (\
@@ -393,10 +394,10 @@ namespace thekogans {
             static const char *TYPE;\
             static const thekogans::util::ui16 VERSION;\
         protected:\
-            virtual const char *Type () const {\
+            virtual const char *Type () const override {\
                 return TYPE;\
             }\
-            virtual thekogans::util::ui16 Version () const {\
+            virtual thekogans::util::ui16 Version () const override {\
                 return VERSION;\
             }\
         public:
