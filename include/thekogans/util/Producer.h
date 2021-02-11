@@ -200,7 +200,7 @@ namespace thekogans {
                         SubscriberInfo (typename
                             Subscriber<T>::WeakPtr (&subscriber),
                             eventDeliveryPolicy));
-                    OnSubscribe (subscriber, eventDeliveryPolicy);
+                    OnSubscribe (subscriber, eventDeliveryPolicy, subscribers.size ());
                 }
             }
 
@@ -212,7 +212,7 @@ namespace thekogans {
                 typename Subscribers::iterator it = GetSubscriberIterator (subscriber);
                 if (it != subscribers.end ()) {
                     subscribers.erase (it);
-                    OnUnsubscribe (subscriber);
+                    OnUnsubscribe (subscriber, subscribers.size ());
                 }
             }
 
@@ -250,13 +250,18 @@ namespace thekogans {
             /// Overide this methid to react to a new \see{Subscriber.
             /// \param[in] subscriber \see{Subscriber} to add to the subscribers list.
             /// \param[in] eventDeliveryPolicy \see{EventDeliveryPolicy} by which events are delivered.
+            /// \param[in] subscriberCount Number of \see{Subscriber}s (including this one).
             virtual void OnSubscribe (
                 Subscriber<T> & /*subscriber*/,
-                typename EventDeliveryPolicy::SharedPtr /*eventDeliveryPolicy*/) {}
+                typename EventDeliveryPolicy::SharedPtr /*eventDeliveryPolicy*/,
+                std::size_t /*subscriberCount*/) {}
             /// \brief
             /// Overide this methid to react to a \see{Subscriber being removed.
             /// \param[in] subscriber \see{Subscriber} to remove from the subscribers list.
-            virtual void OnUnsubscribe (Subscriber<T> & /*subscriber*/) {}
+            /// \param[in] subscriberCount Number of \see{Subscriber}s remaining.
+            virtual void OnUnsubscribe (
+                Subscriber<T> & /*subscriber*/,
+                std::size_t /*subscriberCount*/) {}
 
         private:
             /// \brief
