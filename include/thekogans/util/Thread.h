@@ -45,6 +45,9 @@
     /// \brief
     /// Window specific thread handle type.
     typedef THEKOGANS_UTIL_HANDLE THEKOGANS_UTIL_THREAD_HANDLE;
+    /// \brief
+    /// Window specific thread id type.
+    typedef DWORD THEKOGANS_UTIL_THREAD_ID;
     /// \def THEKOGANS_UTIL_IDLE_THREAD_PRIORITY
     /// Idle thread priority.
     #define THEKOGANS_UTIL_IDLE_THREAD_PRIORITY THREAD_PRIORITY_IDLE
@@ -68,8 +71,11 @@
     #define THEKOGANS_UTIL_REAL_TIME_THREAD_PRIORITY THREAD_PRIORITY_TIME_CRITICAL
 #else // defined (TOOLCHAIN_OS_Windows)
     /// \brief
-    /// POSIX specific thread handle type.
+    /// POSIX specific thread id type.
     typedef pthread_t THEKOGANS_UTIL_THREAD_HANDLE;
+    /// \brief
+    /// Window specific thread id type.
+    typedef uint64_t THEKOGANS_UTIL_THREAD_ID;
     /// \brief
     /// This is a virtual priority range. When you call
     /// Thread::SetThreadPriority, it gets adjusted to a
@@ -365,6 +371,19 @@ namespace thekogans {
             }
 
             /// \brief
+            /// Return current thread id.
+            /// \return Current thread id.
+            static THEKOGANS_UTIL_THREAD_ID GetCurrThreadId () {
+            #if defined (TOOLCHAIN_OS_Windows)
+                return GetCurrentThreadId ();
+            #else // defined (TOOLCHAIN_OS_Windows)
+                THEKOGANS_UTIL_THREAD_ID id;
+                pthread_threadid_np (0, &id);
+                return id;
+            #endif // defined (TOOLCHAIN_OS_Windows)
+            }
+
+            /// \brief
             /// Call this function from main () or any other thread you
             /// want to set as main.
             /// NOTE: mainThread is initialized by GetCurrThreadHandle ()
@@ -525,6 +544,19 @@ namespace thekogans {
             const char *format = "%05u");
         #else // defined (TOOLCHAIN_OS_Windows)
             const char *format = "%p");
+        #endif // defined (TOOLCHAIN_OS_Windows)
+
+        /// \brief
+        /// Convert thread id to string representation.
+        /// \param[in] id Id to convert.
+        /// \param[in] format Conversion format.
+        /// \return String representation of the thread id.
+        _LIB_THEKOGANS_UTIL_DECL std::string _LIB_THEKOGANS_UTIL_API FormatThreadId (
+            THEKOGANS_UTIL_THREAD_ID id,
+        #if defined (TOOLCHAIN_OS_Windows)
+            const char *format = "%05u");
+        #else // defined (TOOLCHAIN_OS_Windows)
+            const char *format = THEKOGANS_UTIL_UI64_FORMAT);
         #endif // defined (TOOLCHAIN_OS_Windows)
 
     } // namespace util

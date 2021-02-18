@@ -50,11 +50,8 @@ namespace thekogans {
 
         struct _LIB_THEKOGANS_UTIL_DECL Pipeline : public virtual RefCounted {
             /// \brief
-            /// Convenient typedef for RefCounted::SharedPtr<Pipeline>.
-            typedef RefCounted::SharedPtr<Pipeline> SharedPtr;
-            /// \brief
-            /// Convenient typedef for RefCounted::WeakPtr<Pipeline>.
-            typedef RefCounted::WeakPtr<Pipeline> WeakPtr;
+            /// Declare \see{RefCounted} pointers.
+            THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (Pipeline)
 
             /// \brief
             /// Forward declaration of Job.
@@ -90,11 +87,8 @@ namespace thekogans {
             /// **********************************************************
             struct _LIB_THEKOGANS_UTIL_DECL JobExecutionPolicy : public RefCounted {
                 /// \brief
-                /// Convenient typedef for RefCounted::SharedPtr<JobExecutionPolicy>.
-                typedef RefCounted::SharedPtr<JobExecutionPolicy> SharedPtr;
-                /// \brief
-                /// Convenient typedef for RefCounted::WeakPtr<JobExecutionPolicy>.
-                typedef RefCounted::WeakPtr<JobExecutionPolicy> WeakPtr;
+                /// Declare \see{RefCounted} pointers.
+                THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (JobExecutionPolicy)
 
                 /// \brief
                 /// Max pending pipeline jobs.
@@ -492,7 +486,7 @@ namespace thekogans {
                 // Thread
                 /// \brief
                 /// Worker thread.
-                virtual void Run () throw ();
+                virtual void Run () throw () override;
             };
             /// \brief
             /// List of workers.

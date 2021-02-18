@@ -33,26 +33,6 @@
 namespace thekogans {
     namespace util {
 
-        std::size_t Timer::JobQueuePoolCreateInstance::minJobQueues = Timer::DEFAULT_MIN_JOB_QUEUE_POOL_JOB_QUEUES;
-        std::size_t Timer::JobQueuePoolCreateInstance::maxJobQueues = Timer::DEFAULT_MAX_JOB_QUEUE_POOL_JOB_QUEUES;
-
-        void Timer::JobQueuePoolCreateInstance::Parameterize (
-                std::size_t minJobQueues_,
-                std::size_t maxJobQueues_) {
-            if (minJobQueues_ != 0 && maxJobQueues_ != 0 && minJobQueues_ <= maxJobQueues_) {
-                minJobQueues = minJobQueues_;
-                maxJobQueues = maxJobQueues_;
-            }
-            else {
-                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
-            }
-        }
-
-        util::JobQueuePool *Timer::JobQueuePoolCreateInstance::operator () () {
-            return new util::JobQueuePool (minJobQueues, maxJobQueues, "TimerJobQueuePool");
-        }
-
     #if defined (TOOLCHAIN_OS_Windows)
         VOID CALLBACK Timer::TimerCallback (
                 PTP_CALLBACK_INSTANCE /*Instance*/,

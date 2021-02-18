@@ -233,7 +233,7 @@ namespace thekogans {
                     workerCallback) {}
             /// \brief
             /// dtor.
-            ~Scheduler ();
+            virtual ~Scheduler ();
 
         private:
             /// \brief

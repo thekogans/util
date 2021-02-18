@@ -257,7 +257,7 @@ namespace thekogans {
                 const std::string &name,
                 i32 priority,
                 ui32 affinity) {
-            if (level_ > Invalid && level_ <= MaxLevel && decorations_ <= SubsystemAll) {
+            if (level_ >= Invalid && level_ <= MaxLevel && decorations_ <= SubsystemAll) {
                 Flush ();
                 LockGuard<Mutex> guard (mutex);
                 level = level_;
@@ -379,7 +379,7 @@ namespace thekogans {
                     if (flags.Test (ProcessId | ThreadId)) {
                         header += FormatString ("[%u:%s] ",
                             SystemInfo::Instance ().GetProcessId (),
-                            FormatThreadHandle (Thread::GetCurrThreadHandle ()).c_str ());
+                            FormatThreadId (Thread::GetCurrThreadId ()).c_str ());
                     }
                     else if (flags.Test (ProcessId)) {
                         header += FormatString ("[%u] ",
@@ -387,7 +387,7 @@ namespace thekogans {
                     }
                     else if (flags.Test (ThreadId)) {
                         header += FormatString ("[%s] ",
-                            FormatThreadHandle (Thread::GetCurrThreadHandle ()).c_str ());
+                            FormatThreadId (Thread::GetCurrThreadId ()).c_str ());
                     }
                     if (flags.Test (ProcessPath)) {
                         header += SystemInfo::Instance ().GetProcessPath ();

@@ -62,11 +62,8 @@ namespace thekogans {
 
         struct _LIB_THEKOGANS_UTIL_DECL RunLoop : public virtual RefCounted {
             /// \brief
-            /// Convenient typedef for RefCounted::SharedPtr<RunLoop>.
-            typedef RefCounted::SharedPtr<RunLoop> SharedPtr;
-            /// \brief
-            /// Convenient typedef for RefCounted::WeakPtr<RunLoop>.
-            typedef RefCounted::WeakPtr<RunLoop> WeakPtr;
+            /// Declare \see{RefCounted} pointers.
+            THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (RunLoop)
 
             /// \brief
             /// Convenient typedef for std::string.
@@ -101,11 +98,8 @@ namespace thekogans {
                     public virtual RefCounted,
                     public JobList::Node {
                 /// \brief
-                /// Convenient typedef for RefCounted::SharedPtr<Job>.
-                typedef RefCounted::SharedPtr<Job> SharedPtr;
-                /// \brief
-                /// Convenient typedef for RefCounted::WeakPtr<Job>.
-                typedef RefCounted::WeakPtr<Job> WeakPtr;
+                /// Declare \see{RefCounted} pointers.
+                THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (Job)
 
                 /// \brief
                 /// Convenient typedef for std::string.
@@ -399,11 +393,8 @@ namespace thekogans {
             /// **********************************************************
             struct _LIB_THEKOGANS_UTIL_DECL JobExecutionPolicy : public virtual RefCounted {
                 /// \brief
-                /// Convenient typedef for RefCounted::SharedPtr<JobExecutionPolicy>.
-                typedef RefCounted::SharedPtr<JobExecutionPolicy> SharedPtr;
-                /// \brief
-                /// Convenient typedef for RefCounted::WeakPtr<JobExecutionPolicy>.
-                typedef RefCounted::WeakPtr<JobExecutionPolicy> WeakPtr;
+                /// Declare \see{RefCounted} pointers.
+                THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (JobExecutionPolicy)
 
                 /// \brief
                 /// Max pending run loop jobs.

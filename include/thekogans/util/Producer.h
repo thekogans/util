@@ -82,11 +82,8 @@ namespace thekogans {
         template <typename T>
         struct Producer : public virtual RefCounted {
             /// \brief
-            /// Convenient typedef for RefCounted::SharedPtr<Producer<T>>.
-            typedef RefCounted::SharedPtr<Producer<T>> SharedPtr;
-            /// \brief
-            /// Convenient typedef for RefCounted::WeakPtr<Producer<T>>.
-            typedef RefCounted::WeakPtr<Producer<T>> WeakPtr;
+            /// Declare \see{RefCounted} pointers.
+            THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (Producer<T>)
 
             /// \struct Producer::EventDeliveryPolicy Producer.h thekogans/util/Producer.h
             ///
@@ -190,6 +187,11 @@ namespace thekogans {
             /// Called by \see{Subscriber} to add itself to the subscribers list.
             /// \param[in] subscriber \see{Subscriber} to add to the subscribers list.
             /// \param[in] eventDeliveryPolicy \see{EventDeliveryPolicy} by which events are delivered.
+            /// NOTE: We respect the fact that some producers are designed for lazy initialization
+            /// by waiting for the first subscriber before commiting potentially expensive resources.
+            /// That's why we call OnSubscribe under lock to make sure the count they get acurately
+            /// reflects that fact. It's important that you don't call back in to the Producer as
+            /// deadlock will occur.
             void Subscribe (
                     Subscriber<T> &subscriber,
                     typename EventDeliveryPolicy::SharedPtr eventDeliveryPolicy) {
@@ -207,6 +209,11 @@ namespace thekogans {
             /// \brief
             /// Called by \see{Subscriber} to remove itself from the subscribers list.
             /// \param[in] subscriber \see{Subscriber} to remove from the subscribers list.
+            /// NOTE: We respect the fact that some producers are designed for lazy cleanup
+            /// by waiting for the last subscriber to unsubscribe before deallocating resources.
+            /// That's why we call OnUnsubscribe under lock to make sure the count they get acurately
+            /// reflects that fact. It's important that you don't call back in to the Producer as
+            /// deadlock will occur.
             void Unsubscribe (Subscriber<T> &subscriber) {
                 LockGuard<SpinLock> guard (spinLock);
                 typename Subscribers::iterator it = GetSubscriberIterator (subscriber);
@@ -231,6 +238,12 @@ namespace thekogans {
                 for (typename Subscribers::iterator
                         it = subscribers_.begin (),
                         end = subscribers_.end (); it != end; ++it) {
+                    // NOTE: If we get a NULL pointer here it simply means that that particular subscriber
+                    // is in the porocess of deallocating. It just hasn't removed itself from our subscriber
+                    // list (~Subscriber) in time for us to include it in subscribers_ above.
+                    // This race is unavoidable but harmless. We want to preserve the right of
+                    // the \see{Subscriber} to be able to call back in to the producer while
+                    // processing a particular event.
                     typename Subscriber<T>::SharedPtr subscriber = it->first.GetSharedPtr ();
                     if (subscriber.Get () != 0) {
                         it->second->DeliverEvent (event, subscriber);
@@ -270,7 +283,9 @@ namespace thekogans {
             /// \return Subscribers iterator corresponding to the given subscriber,
             /// subscribers.end () if the given subscriber is not found in the list.
             typename Subscribers::iterator GetSubscriberIterator (Subscriber<T> &subscriber) {
-                for (typename Subscribers::iterator it = subscribers.begin (), end = subscribers.end (); it != end; ++it) {
+                for (typename Subscribers::iterator
+                        it = subscribers.begin (),
+                        end = subscribers.end (); it != end; ++it) {
                     if (it->first.Get () == &subscriber) {
                         return it;
                     }

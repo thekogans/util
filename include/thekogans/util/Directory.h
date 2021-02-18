@@ -273,7 +273,7 @@ namespace thekogans {
                 /// \brief
                 /// Thread override to listen for and dispatch
                 /// change notifications.
-                virtual void Run () throw ();
+                virtual void Run () throw () override;
             };
 
             /// \brief

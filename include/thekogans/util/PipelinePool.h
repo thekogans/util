@@ -234,7 +234,7 @@ namespace thekogans {
                 RunLoop::WorkerCallback *workerCallback_ = 0);
             /// \brief
             /// dtor.
-            ~PipelinePool ();
+            virtual ~PipelinePool ();
 
             /// \brief
             /// Acquire a \see{Pipeline} from the pool.
@@ -311,9 +311,9 @@ namespace thekogans {
         /// global \see{PipelinePool} then GlobalPipelinePool::Instance () will
         /// do the trick.
         /// IMPORTANT: Unlike some other global objects, you cannot use this one
-        /// without first calling GlobalPipelinePool::CreateInstance first. This
-        /// is because, at the very least, you need to provide the stages that
-        /// will be implemented by the pipelines in this pool.
+        /// without first calling GlobalPipelinePool::CreateInstance. This is
+        /// because, at the very least, you need to provide the stages that will
+        /// be implemented by the pipelines in this pool.
 
         struct _LIB_THEKOGANS_UTIL_DECL GlobalPipelinePool :
                 public PipelinePool,

@@ -39,11 +39,8 @@ namespace thekogans {
 
         struct _LIB_THEKOGANS_UTIL_DECL Logger : public virtual RefCounted {
             /// \brief
-            /// Convenient typedef for RefCounted::SharedPtr<Logger>.
-            typedef RefCounted::SharedPtr<Logger> SharedPtr;
-            /// \brief
-            /// Convenient typedef for RefCounted::WeakPtr<Logger>.
-            typedef RefCounted::WeakPtr<Logger> WeakPtr;
+            /// Declare \see{RefCounted} pointers.
+            THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (Logger)
 
             /// \brief
             /// \see{LoggerMgr::level} this logger will log up to.

@@ -249,11 +249,8 @@ namespace thekogans {
             /// Base class for OS X based run loop.
             struct OSXRunLoop : public RefCounted {
                 /// \brief
-                /// Convenient typedef for RefCounted::SharedPtr<OSXRunLoop>.
-                typedef RefCounted::SharedPtr<OSXRunLoop> SharedPtr;
-                /// \brief
-                /// Convenient typedef for RefCounted::WeakPtr<OSXRunLoop>.
-                typedef RefCounted::WeakPtr<OSXRunLoop> WeakPtr;
+                /// Declare \see{RefCounted} pointers.
+                THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (OSXRunLoop)
 
                 /// \brief
                 /// dtor.

@@ -51,11 +51,8 @@ namespace thekogans {
                 public virtual RefCounted,
                 public T {
             /// \brief
-            /// Convenient typedef for RefCounted::SharedPtr<Subscriber<T>>.
-            typedef RefCounted::SharedPtr<Subscriber<T>> SharedPtr;
-            /// \brief
-            /// Convenient typedef for RefCounted::WeakPtr<Subscriber<T>>.
-            typedef RefCounted::WeakPtr<Subscriber<T>> WeakPtr;
+            /// Declare \see{RefCounted} pointers.
+            THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (Subscriber<T>)
 
         private:
             /// \brief

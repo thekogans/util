@@ -220,7 +220,7 @@ namespace thekogans {
                 RunLoop::WorkerCallback *workerCallback_ = 0);
             /// \brief
             /// dtor.
-            ~JobQueuePool ();
+            virtual ~JobQueuePool ();
 
             /// \brief
             /// Acquire a \see{JobQueue} from the pool.

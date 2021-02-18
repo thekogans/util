@@ -147,7 +147,7 @@ namespace thekogans {
                 i32 workerPriority = THEKOGANS_UTIL_NORMAL_THREAD_PRIORITY);
             /// \brief
             /// dtor.
-            ~Vectorizer ();
+            virtual ~Vectorizer ();
 
             /// \brief
             /// In order to provide fine grained control over job
@@ -211,7 +211,7 @@ namespace thekogans {
                 // Thread
                 /// \brief
                 /// Worker thread.
-                virtual void Run () throw ();
+                virtual void Run () throw () override;
             };
             /// \brief
             /// Vectorizer workers.

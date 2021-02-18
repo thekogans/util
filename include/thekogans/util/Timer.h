@@ -127,33 +127,44 @@ namespace thekogans {
                 DEFAULT_MAX_JOB_QUEUE_POOL_JOB_QUEUES = 100,
             };
 
-            /// \struct JobQueuePoolCreateInstance Timer.h thekogans/util/Timer.h
+            /// \struct Timer::JobQueuePool Timer.h thekogans/util/Timer.h
             ///
             /// \brief
-            /// Call Timer::JobQueuePoolCreateInstance::Parameterize before the first use of
+            /// Call Timer::JobQueuePool::CreateSingleton before the first use of
             /// Timer to supply custom arguments to JobQueuePool ctor.
-            struct _LIB_THEKOGANS_UTIL_DECL JobQueuePoolCreateInstance {
-            private:
-                /// \brief
-                /// Minimum number of \see{JobQueue}s to keep in the pool.
-                static std::size_t minJobQueues;
-                /// \brief
-                /// Maximum number of \see{JobQueue}s allowed in the pool.
-                static std::size_t maxJobQueues;
-
-            public:
-                /// \brief
-                /// Call before the first use of Timer.
-                /// \param[in] minJobQueues_ Minimum \see{JobQueue}s to keep in the pool.
-                /// \param[in] maxJobQueues_ Maximum \see{JobQueue}s to allow the pool to grow to.
-                static void Parameterize (
-                    std::size_t minJobQueues_,
-                    std::size_t maxJobQueues_);
-
+            struct _LIB_THEKOGANS_UTIL_DECL JobQueuePool :
+                    public util::JobQueuePool,
+                    public Singleton<JobQueuePool, SpinLock> {
                 /// \brief
                 /// Create a Timer \see{JobQueuePool} with custom ctor arguments.
-                /// \return A Timer \see{JobQueuePool} with custom ctor arguments.
-                util::JobQueuePool *operator () ();
+                /// \param[in] minJobQueues Minimum \see{JobQueue}s to keep in the pool.
+                /// \param[in] maxJobQueues Maximum \see{JobQueue}s to allow the pool to grow to.
+                /// \param[in] name \see{JobQueue} name.
+                /// \param[in] jobExecutionPolicy \see{JobQueue} \see{RunLoop::JobExecutionPolicy}.
+                /// \param[in] workerCount Number of worker threads servicing the \see{JobQueue}.
+                /// \param[in] workerPriority \see{JobQueue} worker thread priority.
+                /// \param[in] workerAffinity \see{JobQueue} worker thread processor affinity.
+                /// \param[in] workerCallback Called to initialize/uninitialize the \see{JobQueue}
+                /// thread.
+                JobQueuePool (
+                    std::size_t minJobQueues = DEFAULT_MIN_JOB_QUEUE_POOL_JOB_QUEUES,
+                    std::size_t maxJobQueues = DEFAULT_MAX_JOB_QUEUE_POOL_JOB_QUEUES,
+                    const std::string &name = "TimerJobQueuePool",
+                    RunLoop::JobExecutionPolicy::SharedPtr jobExecutionPolicy =
+                        RunLoop::JobExecutionPolicy::SharedPtr (new RunLoop::FIFOJobExecutionPolicy),
+                    std::size_t workerCount = 1,
+                    i32 workerPriority = THEKOGANS_UTIL_NORMAL_THREAD_PRIORITY,
+                    ui32 workerAffinity = THEKOGANS_UTIL_MAX_THREAD_AFFINITY,
+                    RunLoop::WorkerCallback *workerCallback = 0) :
+                    util::JobQueuePool (
+                        minJobQueues,
+                        maxJobQueues,
+                        name,
+                        jobExecutionPolicy,
+                        workerCount,
+                        workerPriority,
+                        workerAffinity,
+                        workerCallback) {}
             };
 
             /// \struct Timer::Callback Timer.h thekogans/util/Timer.h
@@ -270,9 +281,6 @@ namespace thekogans {
                 bool cancelCallbacks = true);
 
         private:
-            /// \brief
-            /// Convenient typedef for Singleton<util::JobQueuePool, SpinLock, JobQueuePoolCreateInstance>.
-            typedef Singleton<util::JobQueuePool, SpinLock, JobQueuePoolCreateInstance> JobQueuePool;
             /// \brief
             /// Forward declaration of Job.
             struct Job;

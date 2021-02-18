@@ -106,7 +106,7 @@ namespace thekogans {
                 // Thread
                 /// \brief
                 /// Worker thread.
-                virtual void Run () throw ();
+                virtual void Run () throw () override;
             };
             /// \brief
             /// List of workers.

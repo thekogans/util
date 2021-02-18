@@ -522,6 +522,12 @@ namespace thekogans {
             }
         };
 
+        /// \def THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS(type)
+        /// Use this macro inside a \see{RefCounted} derived class to declare the pointers.
+        #define THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS(type)\
+            typedef thekogans::util::RefCounted::SharedPtr<type> SharedPtr;\
+            typedef thekogans::util::RefCounted::WeakPtr<type> WeakPtr;
+
         /// \brief
         /// \see{RefCounted::SharedPtr} static cast operator.
         /// \param[in] from Type to cast from.

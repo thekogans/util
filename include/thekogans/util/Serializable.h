@@ -49,11 +49,8 @@ namespace thekogans {
 
         struct _LIB_THEKOGANS_UTIL_DECL Serializable : public virtual RefCounted {
             /// \brief
-            /// Convenient typedef for RefCounted::SharedPtr<Serializable>.
-            typedef RefCounted::SharedPtr<Serializable> SharedPtr;
-            /// \brief
-            /// Convenient typedef for RefCounted::WeakPtr<Serializable>.
-            typedef RefCounted::WeakPtr<Serializable> WeakPtr;
+            /// Declare \see{RefCounted} pointers.
+            THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (Serializable)
 
             /// \struct Serializable::BinHeader Serializable.h thekogans/util/Serializable.h
             ///
@@ -342,8 +339,7 @@ namespace thekogans {
         /// Common code used by Static and Shared versions THEKOGANS_UTIL_DECLARE_SERIALIZABLE.
         #define THEKOGANS_UTIL_DECLARE_SERIALIZABLE_COMMON(type, lock)\
         public:\
-            typedef thekogans::util::RefCounted::SharedPtr<type> SharedPtr;\
-            typedef thekogans::util::RefCounted::WeakPtr<type> WeakPtr;\
+            THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (type)\
         protected:\
             THEKOGANS_UTIL_DECLARE_HEAP_WITH_LOCK (type, lock)\
             type (\
