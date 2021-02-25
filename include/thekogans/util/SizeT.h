@@ -207,7 +207,7 @@ namespace thekogans {
 
     #if defined (TOOLCHAIN_OS_Windows)
         private:
-        #if defined (TOOLCHAIN_ARCH_i386)
+        #if defined (TOOLCHAIN_ARCH_i386) || defined (TOOLCHAIN_ARCH_ppc) || defined (TOOLCHAIN_ARCH_arm)
             /// \brief
             /// Emulate __builtin_clzll on Windows.
             /// \param[in] value Value whose leading zero count to return.
@@ -224,7 +224,7 @@ namespace thekogans {
                 }
                 return 63 - mostSignificantOneBit;
             }
-        #elif defined (TOOLCHAIN_ARCH_x86_64)
+        #elif defined (TOOLCHAIN_ARCH_x86_64) || defined (TOOLCHAIN_ARCH_ppc64) || defined (TOOLCHAIN_ARCH_arm64)
             /// \brief
             /// Emulate __builtin_clzll on Windows.
             /// \param[in] value Value whose leading zero count to return.
@@ -234,9 +234,9 @@ namespace thekogans {
                 _BitScanReverse64 (&mostSignificantOneBit, value);
                 return 63 - mostSignificantOneBit;
             }
-        #else // defined (TOOLCHAIN_ARCH_i386)
+        #else // defined (TOOLCHAIN_ARCH_i386) || defined (TOOLCHAIN_ARCH_ppc) || defined (TOOLCHAIN_ARCH_arm)
             #error Unknown TOOLCHAIN_ARCH.
-        #endif // defined (TOOLCHAIN_ARCH_i386)
+        #endif // defined (TOOLCHAIN_ARCH_i386) || defined (TOOLCHAIN_ARCH_ppc) || defined (TOOLCHAIN_ARCH_arm)
 
             /// \brief
             /// Emulate __builtin_ctz on Windows.

@@ -89,13 +89,13 @@ namespace thekogans {
         typedef double f64;
         /// \brief
         /// Architecture dependent natural word type.
-    #if defined (TOOLCHAIN_ARCH_i386)
+    #if defined (TOOLCHAIN_ARCH_i386) || defined (TOOLCHAIN_ARCH_ppc) || defined (TOOLCHAIN_ARCH_arm)
         typedef ui32 MachineWord;
-    #elif defined (TOOLCHAIN_ARCH_x86_64)
+    #elif defined (TOOLCHAIN_ARCH_x86_64) || defined (TOOLCHAIN_ARCH_ppc64) || defined (TOOLCHAIN_ARCH_arm64)
         typedef ui64 MachineWord;
-    #else // defined (TOOLCHAIN_ARCH_x86_64)
+    #else // defined (TOOLCHAIN_ARCH_x86_64) || defined (TOOLCHAIN_ARCH_ppc64) || defined (TOOLCHAIN_ARCH_arm64)
         #error Unknown TOOLCHAIN_ARCH.
-    #endif // defined (TOOLCHAIN_ARCH_i386)
+    #endif // defined (TOOLCHAIN_ARCH_i386) || defined (TOOLCHAIN_ARCH_ppc) || defined (TOOLCHAIN_ARCH_arm)
 
         /// \brief
         /// Validate assumptions about integral types sizes.
@@ -143,19 +143,47 @@ namespace thekogans {
             /// i386.
             i386,
             /// \brief
-            /// x86_86.
-            x86_86,
+            /// x86_64.
+            x86_64,
+            /// \brief
+            /// ppc.
+            ppc,
+            /// \brief
+            /// ppc64.
+            ppc64,
+            /// \brief
+            /// arm.
+            arm,
+            /// \brief
+            /// arm64.
+            arm64,
         #if defined (TOOLCHAIN_ARCH_i386)
             /// \brief
             /// Host Arch is i386.
             HostArch = i386
         #elif defined (TOOLCHAIN_ARCH_x86_64)
             /// \brief
-            /// Host Arch is x86_86.
-            HostArch = x86_86
-        #else // defined (TOOLCHAIN_ENDIAN_Big)
+            /// Host Arch is x86_64.
+            HostArch = x86_64
+        #elif defined (TOOLCHAIN_ARCH_ppc)
+            /// \brief
+            /// Host Arch is ppc.
+            HostArch = ppc
+        #elif defined (TOOLCHAIN_ARCH_ppc64)
+            /// \brief
+            /// Host Arch is ppc64.
+            HostArch = ppc64
+        #elif defined (TOOLCHAIN_ARCH_arm)
+            /// \brief
+            /// Host Arch is arm.
+            HostArch = arm
+        #elif defined (TOOLCHAIN_ARCH_arm64)
+            /// \brief
+            /// Host Arch is arm64.
+            HostArch = arm64
+        #else // defined (TOOLCHAIN_ARCH_i386)
             #error Unknown TOOLCHAIN_ARCH.
-        #endif // defined (TOOLCHAIN_ENDIAN_Little)
+        #endif // defined (TOOLCHAIN_ARCH_i386)
         };
 
         /// \brief

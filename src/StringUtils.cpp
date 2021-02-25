@@ -428,13 +428,13 @@ namespace thekogans {
                 char **end,
                 i32 base) {
             if (value != 0) {
-            #if defined (TOOLCHAIN_ARCH_i386)
+            #if defined (TOOLCHAIN_ARCH_i386) || defined (TOOLCHAIN_ARCH_ppc) || defined (TOOLCHAIN_ARCH_arm)
                 return (std::size_t)strtoul (value, end, base);
-            #elif defined (TOOLCHAIN_ARCH_x86_64)
+            #elif defined (TOOLCHAIN_ARCH_x86_64) || defined (TOOLCHAIN_ARCH_ppc64) || defined (TOOLCHAIN_ARCH_arm64)
                 return (std::size_t)strtoull (value, end, base);
-            #else // defined (TOOLCHAIN_ARCH_i386)
+            #else // defined (TOOLCHAIN_ARCH_i386) || defined (TOOLCHAIN_ARCH_ppc) || defined (TOOLCHAIN_ARCH_arm)
                 #error "Unknown architecture."
-            #endif // defined (TOOLCHAIN_ARCH_i386)
+            #endif // defined (TOOLCHAIN_ARCH_i386) || defined (TOOLCHAIN_ARCH_ppc) || defined (TOOLCHAIN_ARCH_arm)
             }
             else {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
@@ -616,13 +616,13 @@ namespace thekogans {
                 const char *value,
                 char **end) {
             if (value != 0) {
-            #if defined (TOOLCHAIN_ARCH_i386)
+            #if defined (TOOLCHAIN_ARCH_i386) || defined (TOOLCHAIN_ARCH_ppc) || defined (TOOLCHAIN_ARCH_arm)
                 return (time_t)stringToi32 (value, end);
-            #elif defined (TOOLCHAIN_ARCH_x86_64)
+            #elif defined (TOOLCHAIN_ARCH_x86_64) || defined (TOOLCHAIN_ARCH_ppc64) || defined (TOOLCHAIN_ARCH_arm64)
                 return (time_t)stringToi64 (value, end);
-            #else // defined (TOOLCHAIN_ARCH_i386)
+            #else // defined (TOOLCHAIN_ARCH_i386) || defined (TOOLCHAIN_ARCH_ppc) || defined (TOOLCHAIN_ARCH_arm)
                 #error "Unknown architecture."
-            #endif // defined (TOOLCHAIN_ARCH_i386)
+            #endif // defined (TOOLCHAIN_ARCH_i386) || defined (TOOLCHAIN_ARCH_ppc) || defined (TOOLCHAIN_ARCH_arm)
             }
             else {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
