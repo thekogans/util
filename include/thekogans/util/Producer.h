@@ -134,13 +134,13 @@ namespace thekogans {
             struct RunLoopEventDeliveryPolicy : public EventDeliveryPolicy {
                 /// \brief
                 /// \see{RunLoop} on which to queue the event delivery job.
-                RunLoop::WeakPtr runLoop;
+                RunLoop &runLoop;
 
                 /// \brief
                 /// ctor.
                 /// \param[in] runLoop_ \see{RunLoop} on which to queue the event delivery job.
                 RunLoopEventDeliveryPolicy (RunLoop &runLoop_ = GlobalJobQueue::Instance ()) :
-                    runLoop (&runLoop_) {}
+                    runLoop (runLoop_) {}
 
                 /// \brief
                 /// Deliver the given event to the given subscriber by queueing a job
@@ -150,15 +150,12 @@ namespace thekogans {
                 virtual void DeliverEvent (
                         std::function<void (T *)> event,
                         typename Subscriber<T>::SharedPtr subscriber) {
-                    RunLoop::SharedPtr ptr = runLoop.GetSharedPtr ();
-                    if (ptr.Get () != 0) {
-                        auto job = [event, subscriber] (
-                                RunLoop::Job & /*job*/,
-                                const std::atomic<bool> & /*done*/) {
-                            event (subscriber.Get ());
-                        };
-                        ptr->EnqJob (job);
-                    }
+                    auto job = [event, subscriber] (
+                            RunLoop::Job & /*job*/,
+                            const std::atomic<bool> & /*done*/) {
+                        event (subscriber.Get ());
+                    };
+                    runLoop.EnqJob (job);
                 }
             };
 
@@ -166,7 +163,7 @@ namespace thekogans {
             /// \brief
             /// Convenient typedef for std::pair<typename Subscriber<T>::WeakPtr, EventDeliveryPolicy::SharedPtr>.
             typedef std::pair<
-                typename Subscriber<T>::WeakPtr,
+                typename Subscriber<T>::WeakPtr *,
                 typename EventDeliveryPolicy::SharedPtr> SubscriberInfo;
             /// \brief
             /// Convenient typedef for std::list<SubscriberInfo>.
@@ -199,8 +196,11 @@ namespace thekogans {
                 typename Subscribers::iterator it = GetSubscriberIterator (subscriber);
                 if (it == subscribers.end ()) {
                     subscribers.push_back (
-                        SubscriberInfo (typename
-                            Subscriber<T>::WeakPtr (&subscriber),
+                        SubscriberInfo (
+                            // NOTE: We store a WeakPtr pointer because we can't risk a WeakPtr
+                            // copy ctor being called. It uses GetSharedPtr and that will be
+                            // problematic for for objects subscribing in their ctors.
+                            new typename Subscriber<T>::WeakPtr (&subscriber),
                             eventDeliveryPolicy));
                     OnSubscribe (subscriber, eventDeliveryPolicy, subscribers.size ());
                 }
@@ -218,6 +218,7 @@ namespace thekogans {
                 LockGuard<SpinLock> guard (spinLock);
                 typename Subscribers::iterator it = GetSubscriberIterator (subscriber);
                 if (it != subscribers.end ()) {
+                    delete it->first;
                     subscribers.erase (it);
                     OnUnsubscribe (subscriber, subscribers.size ());
                 }
@@ -244,7 +245,7 @@ namespace thekogans {
                     // This race is unavoidable but harmless. We want to preserve the right of
                     // the \see{Subscriber} to be able to call back in to the producer while
                     // processing a particular event.
-                    typename Subscriber<T>::SharedPtr subscriber = it->first.GetSharedPtr ();
+                    typename Subscriber<T>::SharedPtr subscriber = it->first->GetSharedPtr ();
                     if (subscriber.Get () != 0) {
                         it->second->DeliverEvent (event, subscriber);
                     }
@@ -286,7 +287,7 @@ namespace thekogans {
                 for (typename Subscribers::iterator
                         it = subscribers.begin (),
                         end = subscribers.end (); it != end; ++it) {
-                    if (it->first.Get () == &subscriber) {
+                    if (it->first->Get () == &subscriber) {
                         return it;
                     }
                 }

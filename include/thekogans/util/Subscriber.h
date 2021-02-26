@@ -57,7 +57,7 @@ namespace thekogans {
         private:
             /// \brief
             /// Convenient typedef for std::list<typename Producer<T>::WeakPtr>.
-            typedef std::list<typename Producer<T>::WeakPtr> Producers;
+            typedef std::list<typename Producer<T>::WeakPtr *> Producers;
             /// \brief
             /// List of producers whos events we subscribe to.
             Producers producers;
@@ -75,9 +75,10 @@ namespace thekogans {
                 // We're going out of scope, unsubscribe ourselves from our producer's events.
                 LockGuard<SpinLock> guard (spinLock);
                 for (typename Producers::iterator it = producers.begin (), end = producers.end (); it != end; ++it) {
-                    typename Producer<T>::SharedPtr producer = it->GetSharedPtr ();
+                    typename Producer<T>::SharedPtr producer = (*it)->GetSharedPtr ();
                     if (producer.Get () != 0) {
                         producer->Unsubscribe (*this);
+                        delete *it;
                     }
                 }
                 producers.clear ();
@@ -96,7 +97,7 @@ namespace thekogans {
                 typename Producers::iterator it = GetProducerIterator (producer);
                 if (it == producers.end ()) {
                     producer.Subscribe (*this, eventDeliveryPolicy);
-                    producers.push_back (typename Producer<T>::WeakPtr (&producer));
+                    producers.push_back (new typename Producer<T>::WeakPtr (&producer));
                 }
             }
 
@@ -108,6 +109,7 @@ namespace thekogans {
                 typename Producers::iterator it = GetProducerIterator (producer);
                 if (it != producers.end ()) {
                     producer.Unsubscribe (*this);
+                    delete *it;
                     producers.erase (it);
                 }
             }
@@ -120,7 +122,7 @@ namespace thekogans {
             /// if the given producer is not in the list.
             typename Producers::iterator GetProducerIterator (Producer<T> &producer) {
                 for (typename Producers::iterator it = producers.begin (), end = producers.end (); it != end; ++it) {
-                    if (it->Get () == &producer) {
+                    if ((*it)->Get () == &producer) {
                         return it;
                     }
                 }
