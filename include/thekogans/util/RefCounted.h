@@ -516,7 +516,8 @@ namespace thekogans {
             /// IMPORTANT: If you're using SharedPtr (above) with stack
             /// or static RefCounted, overriding this method is
             /// compulsory, as they were never 'allocated' to
-            /// begin with.
+            /// begin with. In that case consider using \see{Singleton}
+            /// with \see{RefCountedInstanceCreator} and \see{RefCountedInstanceDestroyer}.
             virtual void Harakiri () {
                 delete this;
             }

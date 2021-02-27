@@ -161,7 +161,7 @@ namespace thekogans {
 
         protected:
             /// \brief
-            /// Convenient typedef for std::pair<typename Subscriber<T>::WeakPtr, EventDeliveryPolicy::SharedPtr>.
+            /// Convenient typedef for std::pair<typename Subscriber<T>::WeakPtr *, EventDeliveryPolicy::SharedPtr>.
             typedef std::pair<
                 typename Subscriber<T>::WeakPtr *,
                 typename EventDeliveryPolicy::SharedPtr> SubscriberInfo;
@@ -178,7 +178,16 @@ namespace thekogans {
         public:
             /// \nrief
             /// dtor.
-            virtual ~Producer () {}
+            virtual ~Producer () {
+                // We're going out of scope, delete all subscribers.
+                LockGuard<SpinLock> guard (spinLock);
+                for (typename Subscribers::iterator
+                        it = subscribers.begin (),
+                        end = subscribers.end (); it != end; ++it) {
+                    delete it->first;
+                }
+                subscribers.clear ();
+            }
 
             /// \brief
             /// Called by \see{Subscriber} to add itself to the subscribers list.
@@ -199,7 +208,7 @@ namespace thekogans {
                         SubscriberInfo (
                             // NOTE: We store a WeakPtr pointer because we can't risk a WeakPtr
                             // copy ctor being called. It uses GetSharedPtr and that will be
-                            // problematic for for objects subscribing in their ctors.
+                            // problematic for for objects subscribing in their ctors (shared == 0).
                             new typename Subscriber<T>::WeakPtr (&subscriber),
                             eventDeliveryPolicy));
                     OnSubscribe (subscriber, eventDeliveryPolicy, subscribers.size ());
