@@ -133,7 +133,10 @@ namespace thekogans {
                 }
             }
             thread = CreateThread (0, 0, ThreadProc, this, 0, 0);
-            if (thread == THEKOGANS_UTIL_INVALID_HANDLE_VALUE) {
+            if (thread != THEKOGANS_UTIL_INVALID_HANDLE_VALUE) {
+                id = GetThreadId (thread);
+            }
+            else {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
                     THEKOGANS_UTIL_OS_ERROR_CODE);
             }
@@ -479,7 +482,6 @@ namespace thekogans {
                     THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
             }
         }
-
 
     } // namespace util
 } // namespace thekogans

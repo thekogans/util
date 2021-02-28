@@ -136,7 +136,11 @@ namespace thekogans {
             /// \brief
             /// OS specific thread handle.
             THEKOGANS_UTIL_THREAD_HANDLE thread;
-        #if !defined (TOOLCHAIN_OS_Windows)
+        #if defined (TOOLCHAIN_OS_Windows)
+            /// \brief
+            /// Windows thread id.
+            THEKOGANS_UTIL_THREAD_ID id;
+        #else // defined (TOOLCHAIN_OS_Windows)
             /// \brief
             /// true = thread is joinable (waitable).
             const bool joinable;
@@ -382,6 +386,14 @@ namespace thekogans {
                 return id;
             #endif // defined (TOOLCHAIN_OS_Windows)
             }
+        #if defined (TOOLCHAIN_OS_Windows)
+            /// \brief
+            /// Return this thread id.
+            /// \return this thread id.
+            inline THEKOGANS_UTIL_THREAD_ID GetThreadId () const {
+                return id;
+            }
+        #endif // defined (TOOLCHAIN_OS_Windows)
 
             /// \brief
             /// Call this function from main () or any other thread you

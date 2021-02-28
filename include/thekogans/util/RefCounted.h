@@ -344,8 +344,7 @@ namespace thekogans {
                 ///
                 /// \code{.cpp}
                 /// struct foo : public thekogans::util::RefCounted {
-                ///     typedef thekogans::util::RefCounted::SharedPtr<foo> SharedPtr;
-                ///     typedef thekogans::util::RefCounted::WeakPtr<foo> WeakPtr;
+                ///     THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (foo)
                 ///     ...
                 ///     void bar ();
                 /// };
