@@ -134,7 +134,7 @@ namespace thekogans {
             }
             thread = CreateThread (0, 0, ThreadProc, this, 0, 0);
             if (thread != THEKOGANS_UTIL_INVALID_HANDLE_VALUE) {
-                id = GetThreadId (thread);
+                id = ::GetThreadId (thread);
             }
             else {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
@@ -415,7 +415,7 @@ namespace thekogans {
                         THEKOGANS_UTIL_THREAD_HANDLE thread) :
                         dwType (0x1000),
                         szName (name.c_str ()),
-                        dwThreadID (GetThreadId (thread)),
+                        dwThreadID (::GetThreadId (thread)),
                         dwFlags (0) {}
                 } info (thread->name, thread->thread);
             #pragma pack (pop)

@@ -208,7 +208,7 @@ namespace thekogans {
                         SubscriberInfo (
                             // NOTE: We store a WeakPtr pointer because we can't risk a WeakPtr
                             // copy ctor being called. It uses GetSharedPtr and that will be
-                            // problematic for for objects subscribing in their ctors (shared == 0).
+                            // problematic for objects subscribing in their ctors (shared == 0).
                             new typename Subscriber<T>::WeakPtr (&subscriber),
                             eventDeliveryPolicy));
                     OnSubscribe (subscriber, eventDeliveryPolicy, subscribers.size ());
