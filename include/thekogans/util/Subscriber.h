@@ -92,7 +92,7 @@ namespace thekogans {
                     Producer<T> &producer,
                     typename Producer<T>::EventDeliveryPolicy::SharedPtr eventDeliveryPolicy =
                         typename Producer<T>::EventDeliveryPolicy::SharedPtr (
-                            new typename Producer<T>::RunLoopEventDeliveryPolicy)) {
+                            new typename Producer<T>::JobQueueEventDeliveryPolicy)) {
                 LockGuard<SpinLock> guard (spinLock);
                 typename Producers::iterator it = GetProducerIterator (producer);
                 if (it == producers.end ()) {

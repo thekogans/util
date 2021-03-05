@@ -39,17 +39,17 @@ namespace thekogans {
             return newShared;
         }
 
-        RefCounted *RefCounted::References::LockObject (RefCounted *object) {
+        bool RefCounted::References::LockObject () {
             // This is a classical lock-free algorithm for shared access.
             for (ui32 count = shared; count != 0; count = shared) {
                 // If compare_exchange_weak failed, it's because between the load
                 // above and the exchange below, we were interupted by another thread
                 // that modified the value of shared. Reload and try again.
                 if (shared.compare_exchange_weak (count, count + 1)) {
-                    return object;
+                    return true;
                 }
             }
-            return 0;
+            return false;
         }
 
         RefCounted::~RefCounted () {

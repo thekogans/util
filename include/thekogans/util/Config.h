@@ -115,7 +115,7 @@ private:\
 /// If you use it, don't forget to include SpinLock.h, LockGuard.h
 /// and Exception.h.
 #define THEKOGANS_UTIL_STATIC_INIT(type)\
-    public:\
+public:\
     static void StaticInit () {\
         static volatile bool registered = false;\
         static thekogans::util::SpinLock spinLock;\

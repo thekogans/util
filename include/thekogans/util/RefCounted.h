@@ -116,10 +116,9 @@ namespace thekogans {
                 /// \brief
                 /// Used by \see{WeakPtr<T>::GetSharedPtr} below to atomically
                 /// take out a shared reference on a weak pointer.
-                /// \param[in] object RefCounted object to lock.
-                /// \return object if a shared reference was successfuly incremented,
-                /// 0 if there are no more shared references (shared == 0).
-                RefCounted *LockObject (RefCounted *object);
+                /// \return true == object was successfuly locked,
+                /// false == there are no more shared references (shared == 0).
+                bool LockObject ();
 
                 /// \brief
                 /// References is neither copy constructable, nor assignable.
@@ -502,7 +501,7 @@ namespace thekogans {
                     // takes out a reference on success and on failure we don't care since we're
                     // passing 0 as object pointer.
                     return SharedPtr<T> (
-                        dynamic_cast<T *> (references != 0 ? references->LockObject (object) : 0),
+                        references != 0 && references->LockObject () ? object : 0,
                         false);
                 }
             };

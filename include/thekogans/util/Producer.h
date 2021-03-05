@@ -139,7 +139,7 @@ namespace thekogans {
                 /// \brief
                 /// ctor.
                 /// \param[in] runLoop_ \see{RunLoop} on which to queue the event delivery job.
-                RunLoopEventDeliveryPolicy (RunLoop &runLoop_ = GlobalJobQueue::Instance ()) :
+                explicit RunLoopEventDeliveryPolicy (RunLoop &runLoop_) :
                     runLoop (runLoop_) {}
 
                 /// \brief
@@ -159,9 +159,25 @@ namespace thekogans {
                 }
             };
 
+            /// \struct Producer::JobQueueEventDeliveryPolicy Producer.h thekogans/util/Producer.h
+            ///
+            /// \brief
+            /// Gives each \see{Subscrivber} it's own delivery \see{JobQueue}.
+            struct JobQueueEventDeliveryPolicy : public RunLoopEventDeliveryPolicy {
+                /// \brief
+                /// \see{JobQueue} on which to queue the event delivery job.
+                JobQueue jobQueue;
+
+                /// \brief
+                /// ctor.
+                JobQueueEventDeliveryPolicy () :
+                    RunLoopEventDeliveryPolicy (jobQueue) {}
+            };
+
         protected:
             /// \brief
-            /// Convenient typedef for std::pair<typename Subscriber<T>::WeakPtr *, EventDeliveryPolicy::SharedPtr>.
+            /// Convenient typedef for std::pair<typename Subscriber<T>::WeakPtr *,
+            /// typename EventDeliveryPolicy::SharedPtr>.
             typedef std::pair<
                 typename Subscriber<T>::WeakPtr *,
                 typename EventDeliveryPolicy::SharedPtr> SubscriberInfo;

@@ -76,7 +76,7 @@ namespace thekogans {
         void RunLoop::COMInitializer::InitializeWorker () throw () {
             THEKOGANS_UTIL_TRY {
                 HRESULT result = CoInitializeEx (0, dwCoInit);
-                if (result != S_OK) {
+                if (FAILED (result)) {
                     THEKOGANS_UTIL_THROW_HRESULT_ERROR_CODE_EXCEPTION (result);
                 }
             }
@@ -90,7 +90,7 @@ namespace thekogans {
         void RunLoop::OLEInitializer::InitializeWorker () throw () {
             THEKOGANS_UTIL_TRY {
                 HRESULT result = OleInitialize (0);
-                if (result != S_OK) {
+                if (FAILED (result)) {
                     THEKOGANS_UTIL_THROW_HRESULT_ERROR_CODE_EXCEPTION (result);
                 }
             }
