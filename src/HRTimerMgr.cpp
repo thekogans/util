@@ -231,7 +231,7 @@ namespace thekogans {
         HRTimerMgr::ScopeInfo *HRTimerMgr::ScopeInfo::BeginScope (
                 const std::string &name) {
             SharedPtr scope (new ScopeInfo (name));
-            open.push_back (dynamic_refcounted_pointer_cast<TimerInfoBase> (scope));
+            open.push_back (dynamic_refcounted_sharedptr_cast<TimerInfoBase> (scope));
             return scope.Get ();
         }
 
@@ -245,7 +245,7 @@ namespace thekogans {
         HRTimerMgr::TimerInfo *HRTimerMgr::ScopeInfo::StartTimer (
                 const std::string &name) {
             TimerInfo::SharedPtr timer (new TimerInfo (name));
-            open.push_back (dynamic_refcounted_pointer_cast<TimerInfoBase> (timer));
+            open.push_back (dynamic_refcounted_sharedptr_cast<TimerInfoBase> (timer));
             return timer.Get ();
         }
 

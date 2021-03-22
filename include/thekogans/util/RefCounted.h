@@ -461,13 +461,15 @@ namespace thekogans {
                 /// are any more shared references left on the object and that
                 /// it's not dangling.
                 void Reset (T *object_ = 0) {
-                    object = object_;
-                    if (references != 0) {
-                        references->ReleaseWeakRef ();
-                    }
-                    references = object != 0 ? object->references : 0;
-                    if (references != 0) {
-                        references->AddWeakRef ();
+                    if (object != object_) {
+                        object = object_;
+                        if (references != 0) {
+                            references->ReleaseWeakRef ();
+                        }
+                        references = object != 0 ? object->references : 0;
+                        if (references != 0) {
+                            references->AddWeakRef ();
+                        }
                     }
                 }
 
@@ -530,11 +532,11 @@ namespace thekogans {
         /// \brief
         /// \see{RefCounted::SharedPtr} static cast operator.
         /// \param[in] from Type to cast from.
-        /// \return Pointer to destination type.
+        /// \return \see{RefCounted::SharedPtr} to destination type.
         template<
             typename To,
             typename From>
-        inline RefCounted::SharedPtr<To> _LIB_THEKOGANS_UTIL_API static_refcounted_pointer_cast (
+        inline RefCounted::SharedPtr<To> _LIB_THEKOGANS_UTIL_API static_refcounted_sharedptr_cast (
                 const RefCounted::SharedPtr<From> &from) throw () {
             return RefCounted::SharedPtr<To> (static_cast<To *> (from.Get ()));
         }
@@ -542,11 +544,11 @@ namespace thekogans {
         /// \brief
         /// \see{RefCounted::SharedPtr} dynamic cast operator.
         /// \param[in] from Type to cast from.
-        /// \return Pointer to destination type.
+        /// \return \see{RefCounted::SharedPtr} to destination type.
         template<
             typename To,
             typename From>
-        inline RefCounted::SharedPtr<To> _LIB_THEKOGANS_UTIL_API dynamic_refcounted_pointer_cast (
+        inline RefCounted::SharedPtr<To> _LIB_THEKOGANS_UTIL_API dynamic_refcounted_sharedptr_cast (
                 const RefCounted::SharedPtr<From> &from) throw () {
             return RefCounted::SharedPtr<To> (dynamic_cast<To *> (from.Get ()));
         }
@@ -554,11 +556,11 @@ namespace thekogans {
         /// \brief
         /// \see{RefCounted::SharedPtr} const cast operator.
         /// \param[in] from Type to cast from.
-        /// \return Pointer to destination type.
+        /// \return \see{RefCounted::SharedPtr} to destination type.
         template<
             typename To,
             typename From>
-        inline RefCounted::SharedPtr<To> _LIB_THEKOGANS_UTIL_API const_refcounted_pointer_cast (
+        inline RefCounted::SharedPtr<To> _LIB_THEKOGANS_UTIL_API const_refcounted_sharedptr_cast (
                 RefCounted::SharedPtr<From> &from) throw () {
             return RefCounted::SharedPtr<To> (const_cast<To *> (from.Get ()));
         }
@@ -566,19 +568,19 @@ namespace thekogans {
         /// \brief
         /// \see{RefCounted::SharedPtr} reinterpret cast operator.
         /// \param[in] from Type to cast from.
-        /// \return Pointer to destination type.
+        /// \return \see{RefCounted::SharedPtr} to destination type.
         template<
             typename To,
             typename From>
-        inline RefCounted::SharedPtr<To> _LIB_THEKOGANS_UTIL_API reinterpret_refcounted_pointer_cast (
+        inline RefCounted::SharedPtr<To> _LIB_THEKOGANS_UTIL_API reinterpret_refcounted_sharedptr_cast (
                 RefCounted::SharedPtr<From> &from) throw () {
             return RefCounted::SharedPtr<To> (reinterpret_cast<To *> (from.Get ()));
         }
 
         /// \brief
-        /// Compare two pointers for equality.
-        /// \param[in] item1 First pointer to compare.
-        /// \param[in] item2 Second pointer to compare.
+        /// Compare two \see{RefCounted::SharedPtr}s for equality.
+        /// \param[in] item1 First \see{RefCounted::SharedPtr} to compare.
+        /// \param[in] item2 Second \see{RefCounted::SharedPtr} to compare.
         /// \return true == Same object, false == Different objects.
         template<typename T>
         inline bool _LIB_THEKOGANS_UTIL_API operator == (
@@ -588,9 +590,9 @@ namespace thekogans {
         }
 
         /// \brief
-        /// Compare two pointers for inequality.
-        /// \param[in] item1 First pointer to compare.
-        /// \param[in] item2 Second pointer to compare.
+        /// Compare two \see{RefCounted::SharedPtr}s for inequality.
+        /// \param[in] item1 First \see{RefCounted::SharedPtr} to compare.
+        /// \param[in] item2 Second \see{RefCounted::SharedPtr} to compare.
         /// \return true == Different objects, false == Same object.
         template<typename T>
         inline bool _LIB_THEKOGANS_UTIL_API operator != (
@@ -600,9 +602,9 @@ namespace thekogans {
         }
 
         /// \brief
-        /// Compare two pointers for order.
-        /// \param[in] item1 First pointer to compare.
-        /// \param[in] item2 Second pointer to compare.
+        /// Compare two \see{RefCounted::SharedPtr}s for order.
+        /// \param[in] item1 First \see{RefCounted::SharedPtr} to compare.
+        /// \param[in] item2 Second \see{RefCounted::SharedPtr} to compare.
         /// \return true == item1 < item2.
         template<typename T>
         inline bool _LIB_THEKOGANS_UTIL_API operator < (
@@ -612,9 +614,9 @@ namespace thekogans {
         }
 
         /// \brief
-        /// Compare two pointers for order.
-        /// \param[in] item1 First pointer to compare.
-        /// \param[in] item2 Second pointer to compare.
+        /// Compare two \see{RefCounted::SharedPtr}s for order.
+        /// \param[in] item1 First \see{RefCounted::SharedPtr} to compare.
+        /// \param[in] item2 Second \see{RefCounted::SharedPtr} to compare.
         /// \return true == item1 <= item2.
         template<typename T>
         inline bool _LIB_THEKOGANS_UTIL_API operator <= (
@@ -624,9 +626,9 @@ namespace thekogans {
         }
 
         /// \brief
-        /// Compare two pointers for order.
-        /// \param[in] item1 First pointer to compare.
-        /// \param[in] item2 Second pointer to compare.
+        /// Compare two \see{RefCounted::SharedPtr}s for order.
+        /// \param[in] item1 First \see{RefCounted::SharedPtr} to compare.
+        /// \param[in] item2 Second \see{RefCounted::SharedPtr} to compare.
         /// \return true == item1 > item2.
         template<typename T>
         inline bool _LIB_THEKOGANS_UTIL_API operator > (
@@ -636,14 +638,134 @@ namespace thekogans {
         }
 
         /// \brief
-        /// Compare two pointers for order.
-        /// \param[in] item1 First pointer to compare.
-        /// \param[in] item2 Second pointer to compare.
+        /// Compare two \see{RefCounted::SharedPtr}s for order.
+        /// \param[in] item1 First \see{RefCounted::SharedPtr} to compare.
+        /// \param[in] item2 Second \see{RefCounted::SharedPtr} to compare.
         /// \return true == item1 >= item2.
         template<typename T>
         inline bool _LIB_THEKOGANS_UTIL_API operator >= (
                 const RefCounted::SharedPtr<T> &item1,
                 const RefCounted::SharedPtr<T> &item2) throw () {
+            return item1.Get () >= item2.Get ();
+        }
+
+        /// \brief
+        /// \see{RefCounted::WeakPtr} static cast operator.
+        /// \param[in] from Type to cast from.
+        /// \return \see{RefCounted::WeakPtr} to destination type.
+        template<
+            typename To,
+            typename From>
+        inline RefCounted::WeakPtr<To> _LIB_THEKOGANS_UTIL_API static_refcounted_weakptr_cast (
+                const RefCounted::WeakPtr<From> &from) throw () {
+            return RefCounted::WeakPtr<To> (static_cast<To *> (from.Get ()));
+        }
+
+        /// \brief
+        /// \see{RefCounted::WeakPtr} dynamic cast operator.
+        /// \param[in] from Type to cast from.
+        /// \return \see{RefCounted::WeakPtr} to destination type.
+        template<
+            typename To,
+            typename From>
+        inline RefCounted::WeakPtr<To> _LIB_THEKOGANS_UTIL_API dynamic_refcounted_weakptr_cast (
+                const RefCounted::WeakPtr<From> &from) throw () {
+            return RefCounted::WeakPtr<To> (dynamic_cast<To *> (from.Get ()));
+        }
+
+        /// \brief
+        /// \see{RefCounted::WeakPtr} const cast operator.
+        /// \param[in] from Type to cast from.
+        /// \return \see{RefCounted::WeakPtr} to destination type.
+        template<
+            typename To,
+            typename From>
+        inline RefCounted::WeakPtr<To> _LIB_THEKOGANS_UTIL_API const_refcounted_weakptr_cast (
+                RefCounted::WeakPtr<From> &from) throw () {
+            return RefCounted::WeakPtr<To> (const_cast<To *> (from.Get ()));
+        }
+
+        /// \brief
+        /// \see{RefCounted::WeakPtr} reinterpret cast operator.
+        /// \param[in] from Type to cast from.
+        /// \return \see{RefCounted::WeakPtr} to destination type.
+        template<
+            typename To,
+            typename From>
+        inline RefCounted::WeakPtr<To> _LIB_THEKOGANS_UTIL_API reinterpret_refcounted_weakptr_cast (
+                RefCounted::WeakPtr<From> &from) throw () {
+            return RefCounted::WeakPtr<To> (reinterpret_cast<To *> (from.Get ()));
+        }
+
+        /// \brief
+        /// Compare two \see{RefCounted::WeakPtr}s for equality.
+        /// \param[in] item1 First \see{RefCounted::WeakPtr} to compare.
+        /// \param[in] item2 Second \see{RefCounted::WeakPtr} to compare.
+        /// \return true == Same object, false == Different objects.
+        template<typename T>
+        inline bool _LIB_THEKOGANS_UTIL_API operator == (
+                const RefCounted::WeakPtr<T> &item1,
+                const RefCounted::WeakPtr<T> &item2) throw () {
+            return item1.Get () == item2.Get ();
+        }
+
+        /// \brief
+        /// Compare two \see{RefCounted::WeakPtr}s for inequality.
+        /// \param[in] item1 First \see{RefCounted::WeakPtr} to compare.
+        /// \param[in] item2 Second \see{RefCounted::WeakPtr} to compare.
+        /// \return true == Different objects, false == Same object.
+        template<typename T>
+        inline bool _LIB_THEKOGANS_UTIL_API operator != (
+                const RefCounted::WeakPtr<T> &item1,
+                const RefCounted::WeakPtr<T> &item2) throw () {
+            return item1.Get () != item2.Get ();
+        }
+
+        /// \brief
+        /// Compare two \see{RefCounted::WeakPtr}s for order.
+        /// \param[in] item1 First \see{RefCounted::WeakPtr} to compare.
+        /// \param[in] item2 Second \see{RefCounted::WeakPtr} to compare.
+        /// \return true == item1 < item2.
+        template<typename T>
+        inline bool _LIB_THEKOGANS_UTIL_API operator < (
+                const RefCounted::WeakPtr<T> &item1,
+                const RefCounted::WeakPtr<T> &item2) throw () {
+            return item1.Get () < item2.Get ();
+        }
+
+        /// \brief
+        /// Compare two \see{RefCounted::WeakPtr}s for order.
+        /// \param[in] item1 First \see{RefCounted::WeakPtr} to compare.
+        /// \param[in] item2 Second \see{RefCounted::WeakPtr} to compare.
+        /// \return true == item1 <= item2.
+        template<typename T>
+        inline bool _LIB_THEKOGANS_UTIL_API operator <= (
+                const RefCounted::WeakPtr<T> &item1,
+                const RefCounted::WeakPtr<T> &item2) throw () {
+            return item1.Get () <= item2.Get ();
+        }
+
+        /// \brief
+        /// Compare two \see{RefCounted::WeakPtr}s for order.
+        /// \param[in] item1 First \see{RefCounted::WeakPtr} to compare.
+        /// \param[in] item2 Second \see{RefCounted::WeakPtr} to compare.
+        /// \return true == item1 > item2.
+        template<typename T>
+        inline bool _LIB_THEKOGANS_UTIL_API operator > (
+                const RefCounted::WeakPtr<T> &item1,
+                const RefCounted::WeakPtr<T> &item2) throw () {
+            return item1.Get () > item2.Get ();
+        }
+
+        /// \brief
+        /// Compare two \see{RefCounted::WeakPtr}s for order.
+        /// \param[in] item1 First \see{RefCounted::WeakPtr} to compare.
+        /// \param[in] item2 Second \see{RefCounted::WeakPtr} to compare.
+        /// \return true == item1 >= item2.
+        template<typename T>
+        inline bool _LIB_THEKOGANS_UTIL_API operator >= (
+                const RefCounted::WeakPtr<T> &item1,
+                const RefCounted::WeakPtr<T> &item2) throw () {
             return item1.Get () >= item2.Get ();
         }
 

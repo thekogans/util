@@ -179,7 +179,7 @@ namespace thekogans {
                 /// \brief
                 /// Enqueue the job on the specified pipeline.
                 virtual void EnqJob () {
-                    pipeline.EnqJob (dynamic_refcounted_pointer_cast<Pipeline::Job> (job));
+                    pipeline.EnqJob (dynamic_refcounted_sharedptr_cast<Pipeline::Job> (job));
                 }
 
                 /// \brief

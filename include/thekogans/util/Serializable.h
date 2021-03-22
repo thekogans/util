@@ -772,7 +772,7 @@ namespace thekogans {
                         thekogans::util::Serializable::GetMap ().find (header.type);\
                     if (it != thekogans::util::Serializable::GetMap ().end ()) {\
                         serializable =\
-                            thekogans::util::dynamic_refcounted_pointer_cast<_T> (\
+                            thekogans::util::dynamic_refcounted_sharedptr_cast<_T> (\
                                 std::get<0> (it->second) (header, serializer));\
                         return serializer;\
                     }\
@@ -797,7 +797,7 @@ namespace thekogans {
                     thekogans::util::Serializable::GetMap ().find (header.type);\
                 if (it != thekogans::util::Serializable::GetMap ().end ()) {\
                     serializable =\
-                        thekogans::util::dynamic_refcounted_pointer_cast<_T> (\
+                        thekogans::util::dynamic_refcounted_sharedptr_cast<_T> (\
                             std::get<1> (it->second) (header, node)); \
                     return node;\
                 }\
@@ -816,7 +816,7 @@ namespace thekogans {
                     thekogans::util::Serializable::GetMap ().find (header.type);\
                 if (it != thekogans::util::Serializable::GetMap ().end ()) {\
                     serializable =\
-                        thekogans::util::dynamic_refcounted_pointer_cast<_T> (\
+                        thekogans::util::dynamic_refcounted_sharedptr_cast<_T> (\
                             std::get<2> (it->second) (header, object)); \
                     return object;\
                 }\
@@ -969,7 +969,7 @@ namespace thekogans {
                             if (it != thekogans::util::Serializable::GetMap ().end ()) {\
                                 THEKOGANS_UTIL_TRY {\
                                     value =\
-                                        thekogans::util::dynamic_refcounted_pointer_cast<_T> (\
+                                        thekogans::util::dynamic_refcounted_sharedptr_cast<_T> (\
                                             std::get<0> (it->second) (header, payload));\
                                     Reset ();\
                                     return true;\

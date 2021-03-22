@@ -216,7 +216,7 @@ namespace thekogans {
                 template<typename T>
                 typename T::SharedPtr Get (std::size_t index) const {
                     if (index < values.size ()) {
-                        return dynamic_refcounted_pointer_cast<T> (values[index]);
+                        return dynamic_refcounted_sharedptr_cast<T> (values[index]);
                     }
                     else {
                         THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
@@ -296,7 +296,7 @@ namespace thekogans {
                 typename T::SharedPtr Get (const std::string &name) const {
                     for (std::size_t i = 0, count = values.size (); i < count; ++i) {
                         if (values[i].first == name) {
-                            return dynamic_refcounted_pointer_cast<T> (values[i].second);
+                            return dynamic_refcounted_sharedptr_cast<T> (values[i].second);
                         }
                     }
                     return typename T::SharedPtr (new T);

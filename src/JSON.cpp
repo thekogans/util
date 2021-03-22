@@ -425,12 +425,12 @@ namespace thekogans {
                         return JSON::Value::SharedPtr (new JSON::String (token.value));
                     case Token::TYPE_ARRAY_START: {
                         JSON::Value::SharedPtr array (new JSON::Array);
-                        ParseArray (tokenizer, dynamic_refcounted_pointer_cast<JSON::Array> (array));
+                        ParseArray (tokenizer, dynamic_refcounted_sharedptr_cast<JSON::Array> (array));
                         return array;
                     }
                     case Token::TYPE_OBJECT_START: {
                         JSON::Value::SharedPtr object (new JSON::Object);
-                        ParseObject (tokenizer, dynamic_refcounted_pointer_cast<JSON::Object> (object));
+                        ParseObject (tokenizer, dynamic_refcounted_sharedptr_cast<JSON::Object> (object));
                         return object;
                     }
                     default: {
