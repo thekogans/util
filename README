@@ -109,8 +109,8 @@ Here is a complete feature list:
     - A reference counted base class (RefCounted.h) which implements
       both SharedPtr and WeakPtr templates.
 
-    - A producer/subscribeer (Producer.h, Subscriber.h) which allows
-      interested observers to subscribe to async events.
+    - A producer/subscribeer framework (Producer.h, Subscriber.h) which
+      allows interested observers to subscribe to async events.
 
     - A cryptographically secure random byte stream (RandomSource.h).
 
