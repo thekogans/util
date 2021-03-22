@@ -99,23 +99,6 @@ namespace thekogans {
                 virtual bool FilterException (const Exception &exception) throw () = 0;
             };
 
-        private:
-            /// \brief
-            /// "Exception"
-            static const char * const TAG_EXCEPTION;
-            /// \brief
-            /// "ErrorCode"
-            static const char * const ATTR_ERROR_CODE;
-            /// \brief
-            /// "Message"
-            static const char * const ATTR_MESSAGE;
-
-            /// \brief
-            /// Exception error code.
-            THEKOGANS_UTIL_ERROR_CODE errorCode;
-            /// \brief
-            /// Message describing the error.
-            std::string message;
             /// \struct Exception::Location Exception.h thekogans/util/Exception.h
             ///
             /// \brief
@@ -154,56 +137,20 @@ namespace thekogans {
                     function (function_),
                     line (line_),
                     buildTime (buildTime_) {}
-                /// \brief
-                /// ctor.
-                /// \param[in] node pugi::xml_node representing the Location.
-                Location (const pugi::xml_node &node) {
-                    Parse (node);
-                }
-
-                /// \brief
-                /// "Location"
-                static const char * const TAG_LOCATION;
-                /// \brief
-                /// "File"
-                static const char * const ATTR_FILE;
-                /// \brief
-                /// "Function"
-                static const char * const ATTR_FUNCTION;
-                /// \brief
-                /// "Line"
-                static const char * const ATTR_LINE;
-                /// \brief
-                /// "BuildTime"
-                static const char * const ATTR_BUILD_TIME;
 
                 /// \brief
                 /// Return location serialized size.
                 /// \return Location serialized size.
                 std::size_t Size () const;
-
-                /// \brief
-                /// Given an pugi::xml_node, parse the
-                /// location it represents. The Location has
-                /// the following format:
-                /// <tagName File = "Module name"
-                ///          Function = "Module function"
-                ///          Line = "Module line number"
-                ///          BuildTime = "Module build date and time"/>
-                /// \param[in] node pugi::xml_node representing the location.
-                void Parse (const pugi::xml_node &node);
-                /// \brief
-                /// Serialize the Location parameters in to an XML string.
-                /// \param[in] indentationLevel Pretty print parameter. If
-                /// the resulting tag is to be included in a larger structure
-                /// you might want to provide a value that will embed it in
-                /// the structure.
-                /// \param[in] tagName Openning tag name.
-                /// \return The XML reprentation of the Location.
-                std::string ToString (
-                    std::size_t indentationLevel,
-                    const char *tagName = TAG_LOCATION) const;
             };
+
+        private:
+            /// \brief
+            /// Exception error code.
+            THEKOGANS_UTIL_ERROR_CODE errorCode;
+            /// \brief
+            /// Message describing the error.
+            std::string message;
             /// \brief
             /// Stack of locations representing the
             /// exception path through the system.
@@ -221,8 +168,16 @@ namespace thekogans {
         public:
             /// \brief
             /// ctor.
-            Exception () :
-                errorCode (0) {}
+            /// \param[in] errorCode_ Exception error code.
+            /// \param[in] message_ Message describing the error.
+            /// \param[in] traceback_ of locations representing the exception path through the system.
+            Exception (
+                THEKOGANS_UTIL_ERROR_CODE errorCode_ = 0,
+                const std::string &message_ = std::string (),
+                const std::vector<Location> &traceback_ = std::vector<Location> ()) :
+                errorCode (errorCode_),
+                message (message_),
+                traceback (traceback_) {}
             /// \brief
             /// ctor.
             /// \param[in] file Translation unit of this exception.
@@ -241,21 +196,6 @@ namespace thekogans {
                 errorCode (errorCode_),
                 message (message_),
                 traceback (1, Location (file, function, line, buildTime)) {}
-            /// \brief
-            /// ctor.
-            /// \param[in] node XML encoded exception.
-            /// The node syntax looks like this:
-            /// <Exception ErrorCode = ""
-            ///            Message = "">
-            ///     <Location File = ""
-            ///               Function = ""
-            ///               Line = ""
-            ///               BuildTime = ""/>
-            ///     ...
-            /// </Exception>
-            explicit Exception (const pugi::xml_node &node) {
-                Parse (node);
-            }
             /// \brief
             /// Virtual dtor.
             virtual ~Exception () throw () {}
@@ -278,6 +218,13 @@ namespace thekogans {
             /// \return '\0' terminated message text.
             virtual const char *what () const throw () {
                 return message.c_str ();
+            }
+
+            /// \brief
+            /// Return the list of locations this exception hit while unwinding the stack.
+            /// \return List of locations this exception hit while unwinding the stack.
+            inline const std::vector<Location> &GetTraceback () const {
+                return traceback;
             }
 
             /// \brief
@@ -365,37 +312,6 @@ namespace thekogans {
             std::string Report () const;
 
             /// \brief
-            /// Parse an xml encoded exception.
-            /// \param[in] node XML encoded exception.
-            /// The node syntax looks like this:
-            /// <Exception ErrorCode = ""
-            ///            Message = "">
-            ///     <Location File = ""
-            ///               Function = ""
-            ///               Line = ""
-            ///               BuildTime = ""/>
-            ///     ...
-            /// </Exception>
-            void Parse (const pugi::xml_node &node);
-            /// \brief
-            /// Encode an xml exception.
-            /// \param[in] indentationLevel Number of '\t' to insert before each line.
-            /// The node syntax looks like this:
-            /// <Exception ErrorCode = ""
-            ///            Message = "">
-            ///     <Location File = ""
-            ///               Function = ""
-            ///               Line = ""
-            ///               BuildTime = ""/>
-            ///     ...
-            /// </Exception>
-            /// \param[in] tagName Openning tag name.
-            /// \return XML encoded exception.
-            std::string ToString (
-                std::size_t indentationLevel,
-                const char *tagName = TAG_EXCEPTION) const;
-
-            /// \brief
             /// operator << needs access to Location.
             friend _LIB_THEKOGANS_UTIL_DECL Serializer & _LIB_THEKOGANS_UTIL_API operator << (
                 Serializer &serializer,
@@ -415,6 +331,28 @@ namespace thekogans {
             /// operator >> needs access to provate members.
             friend _LIB_THEKOGANS_UTIL_DECL Serializer & _LIB_THEKOGANS_UTIL_API operator >> (
                 Serializer &serializer,
+                Exception &exception);
+
+            /// \brief
+            /// operator << needs access to Location.
+            friend _LIB_THEKOGANS_UTIL_DECL pugi::xml_node & _LIB_THEKOGANS_UTIL_API operator << (
+                pugi::xml_node &node,
+                const Location &location);
+            /// \brief
+            /// operator >> needs access to Location.
+            friend _LIB_THEKOGANS_UTIL_DECL pugi::xml_node & _LIB_THEKOGANS_UTIL_API operator >> (
+                pugi::xml_node &node,
+                Location &location);
+
+            /// \brief
+            /// operator << needs access to provate members.
+            friend _LIB_THEKOGANS_UTIL_DECL pugi::xml_node & _LIB_THEKOGANS_UTIL_API operator << (
+                pugi::xml_node &node,
+                const Exception &exception);
+            /// \brief
+            /// operator >> needs access to provate members.
+            friend _LIB_THEKOGANS_UTIL_DECL pugi::xml_node & _LIB_THEKOGANS_UTIL_API operator >> (
+                pugi::xml_node &node,
                 Exception &exception);
         };
 
@@ -1193,7 +1131,7 @@ namespace thekogans {
 
         /// \brief
         /// Write the given Exception::Location to the given serializer.
-        /// \param[in] serializer Where to write the given guid.
+        /// \param[in] serializer Where to write the given exception.
         /// \param[in] location Exception::Location to write.
         /// \return serializer.
         _LIB_THEKOGANS_UTIL_DECL Serializer & _LIB_THEKOGANS_UTIL_API operator << (
@@ -1202,7 +1140,7 @@ namespace thekogans {
 
         /// \brief
         /// Read an Exception::Location from the given serializer.
-        /// \param[in] serializer Where to read the guid from.
+        /// \param[in] serializer Where to read the exception from.
         /// \param[out] location Exception::Location to read.
         /// \return serializer.
         _LIB_THEKOGANS_UTIL_DECL Serializer & _LIB_THEKOGANS_UTIL_API operator >> (
@@ -1211,7 +1149,7 @@ namespace thekogans {
 
         /// \brief
         /// Write the given exception to the given serializer.
-        /// \param[in] serializer Where to write the given guid.
+        /// \param[in] serializer Where to write the given exception.
         /// \param[in] exception Exception to write.
         /// \return serializer.
         _LIB_THEKOGANS_UTIL_DECL Serializer & _LIB_THEKOGANS_UTIL_API operator << (
@@ -1220,11 +1158,65 @@ namespace thekogans {
 
         /// \brief
         /// Read an Exception from the given serializer.
-        /// \param[in] serializer Where to read the guid from.
+        /// \param[in] serializer Where to read the exception from.
         /// \param[out] exception Exception to read.
         /// \return serializer.
         _LIB_THEKOGANS_UTIL_DECL Serializer & _LIB_THEKOGANS_UTIL_API operator >> (
             Serializer &serializer,
+            Exception &exception);
+
+        /// \brief
+        /// Write the given Exception::Location to the given node.
+        /// \param[in] node Where to write the given exception.
+        /// \param[in] location Exception::Location to write.
+        /// \return node.
+        _LIB_THEKOGANS_UTIL_DECL pugi::xml_node & _LIB_THEKOGANS_UTIL_API operator << (
+            pugi::xml_node &node,
+            const Exception::Location &location);
+
+        /// \brief
+        /// Read an Exception::Location from the given node.
+        /// \param[in] node Where to read the exception from.
+        /// \param[out] location Exception::Location to read.
+        /// \return node.
+        _LIB_THEKOGANS_UTIL_DECL pugi::xml_node & _LIB_THEKOGANS_UTIL_API operator >> (
+            pugi::xml_node &node,
+            Exception::Location &location);
+
+        /// \brief
+        /// Write the given exception to the given node.
+        /// The node syntax looks like this:
+        /// <Exception ErrorCode = ""
+        ///            Message = "">
+        ///     <Location File = ""
+        ///               Function = ""
+        ///               Line = ""
+        ///               BuildTime = ""/>
+        ///     ...
+        /// </Exception>
+        /// \param[in] node Where to write the given exception.
+        /// \param[in] exception Exception to write.
+        /// \return node.
+        _LIB_THEKOGANS_UTIL_DECL pugi::xml_node & _LIB_THEKOGANS_UTIL_API operator << (
+            pugi::xml_node &node,
+            const Exception &exception);
+
+        /// \brief
+        /// Read an Exception from the given node.
+        /// The node syntax looks like this:
+        /// <Exception ErrorCode = ""
+        ///            Message = "">
+        ///     <Location File = ""
+        ///               Function = ""
+        ///               Line = ""
+        ///               BuildTime = ""/>
+        ///     ...
+        /// </Exception>
+        /// \param[in] node Where to read the exception from.
+        /// \param[out] exception Exception to read.
+        /// \return node.
+        _LIB_THEKOGANS_UTIL_DECL pugi::xml_node & _LIB_THEKOGANS_UTIL_API operator >> (
+            pugi::xml_node &node,
             Exception &exception);
 
     } // namespace util

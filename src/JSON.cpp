@@ -669,5 +669,72 @@ namespace thekogans {
             return stream.str ();
         }
 
+        namespace {
+            const char * const ATTR_ERROR_CODE = "ErrorCode";
+            const char * const ATTR_MESSAGE = "Message";
+
+            const char * const TAG_LOCATION = "Location";
+            const char * const ATTR_FILE = "File";
+            const char * const ATTR_FUNCTION = "Function";
+            const char * const ATTR_LINE = "Line";
+            const char * const ATTR_BUILD_TIME = "BuildTime";
+        }
+
+        _LIB_THEKOGANS_UTIL_DECL JSON::Object & _LIB_THEKOGANS_UTIL_API operator << (
+                JSON::Object &object,
+                const Exception::Location &location) {
+            object.Add<const std::string &> (ATTR_FILE, location.file);
+            object.Add<const std::string &> (ATTR_FUNCTION, location.function);
+            object.Add (ATTR_LINE, location.line);
+            object.Add<const std::string &> (ATTR_BUILD_TIME, location.buildTime);
+            return object;
+        }
+
+        _LIB_THEKOGANS_UTIL_DECL JSON::Object & _LIB_THEKOGANS_UTIL_API operator >> (
+                JSON::Object &object,
+                Exception::Location &location) {
+            location.file = object.Get<JSON::String> (ATTR_FILE)->value;
+            location.function = object.Get<JSON::String> (ATTR_FUNCTION)->value;
+            location.line = object.Get<JSON::Number> (ATTR_LINE)->To<ui32> ();
+            location.buildTime = object.Get<JSON::String> (ATTR_BUILD_TIME)->value;
+            return object;
+        }
+
+        _LIB_THEKOGANS_UTIL_DECL JSON::Object & _LIB_THEKOGANS_UTIL_API operator << (
+                JSON::Object &object,
+                const Exception &exception) {
+            object.Add (ATTR_ERROR_CODE, exception.GetErrorCode ());
+            object.Add<const std::string &> (ATTR_MESSAGE, exception.what ());
+            const std::vector<Exception::Location> &traceback = exception.GetTraceback ();
+            JSON::Array::SharedPtr locationArray (new JSON::Array);
+            for (std::size_t i = 1, count = traceback.size (); i < count; ++i) {
+                JSON::Object::SharedPtr location (new JSON::Object);
+                *location << traceback[i];
+                locationArray->Add (location);
+            }
+            object.Add (TAG_LOCATION, locationArray);
+            return object;
+        }
+
+        _LIB_THEKOGANS_UTIL_DECL JSON::Object & _LIB_THEKOGANS_UTIL_API operator >> (
+                JSON::Object &object,
+                Exception &exception) {
+            THEKOGANS_UTIL_ERROR_CODE errorCode =
+                object.Get<JSON::Number> (ATTR_ERROR_CODE)->To<THEKOGANS_UTIL_ERROR_CODE> ();
+            std::string message = object.Get<JSON::String> (ATTR_MESSAGE)->value;
+            std::vector<Exception::Location> traceback;
+            JSON::Array::SharedPtr locationArray = object.Get<JSON::Array> (TAG_LOCATION);
+            if (locationArray.Get () != 0) {
+                for (std::size_t i = 0, count = locationArray->GetValueCount (); i < count; ++i) {
+                    JSON::Object::SharedPtr locationObject = locationArray->Get<JSON::Object> (i);
+                    Exception::Location location;
+                    *locationObject >> location;
+                    traceback.push_back (location);
+                }
+            }
+            exception = Exception (errorCode, message, traceback);
+            return object;
+        }
+
     } // namespace util
 } // namespace thekogans

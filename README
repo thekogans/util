@@ -106,7 +106,11 @@ Here is a complete feature list:
     - A collection of platform specific utilities (LinuxUtils.h,
       OSXUtils.h, WindowsUtils.h, XlibUtils.h).
 
-    - A reference counted base class (RefCounted.h).
+    - A reference counted base class (RefCounted.h) which implements
+      both SharedPtr and WeakPtr templates.
+
+    - A producer/subscribeer (Producer.h, Subscriber.h) which allows
+      interested observers to subscribe to async events.
 
     - A cryptographically secure random byte stream (RandomSource.h).
 

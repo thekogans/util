@@ -137,9 +137,7 @@ namespace thekogans {
                 WorkerCallback *workerCallback_ = 0);
             /// \brief
             /// dtor. Stop the queue.
-            virtual ~JobQueue () {
-                Stop ();
-            }
+            virtual ~JobQueue ();
 
             // RunLoop
             /// \brief

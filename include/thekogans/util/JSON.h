@@ -26,6 +26,7 @@
 #include "thekogans/util/SizeT.h"
 #include "thekogans/util/RefCounted.h"
 #include "thekogans/util/Heap.h"
+#include "thekogans/util/Exception.h"
 #include "thekogans/util/SpinLock.h"
 
 namespace thekogans {
@@ -1385,6 +1386,70 @@ namespace thekogans {
                     THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
             }
         }
+
+        /// \brief
+        /// Write the given Exception::Location to the given object.
+        /// \param[in] object Where to write the given exception.
+        /// \param[in] location Exception::Location to write.
+        /// \return object.
+        _LIB_THEKOGANS_UTIL_DECL JSON::Object & _LIB_THEKOGANS_UTIL_API operator << (
+            JSON::Object &object,
+            const Exception::Location &location);
+
+        /// \brief
+        /// Read an Exception::Location from the given object.
+        /// \param[in] object Where to read the exception from.
+        /// \param[out] location Exception::Location to read.
+        /// \return object.
+        _LIB_THEKOGANS_UTIL_DECL JSON::Object & _LIB_THEKOGANS_UTIL_API operator >> (
+            JSON::Object &object,
+            Exception::Location &location);
+
+        /// \brief
+        /// Write the given exception to the given node.
+        /// The object syntax looks like this:
+        /// {
+        ///   ErrorCode: 'error code',
+        ///   Message: 'error message',
+        ///   Location: [
+        ///     {
+        ///       File: 'file name',
+        ///       Function: 'function name',
+        ///       Line: 'line number',
+        ///       BuildTime: 'build time'
+        ///     },
+        ///     ...
+        ///   ]
+        /// }
+        /// \param[in] object Where to write the given exception.
+        /// \param[in] exception Exception to write.
+        /// \return object.
+        _LIB_THEKOGANS_UTIL_DECL JSON::Object & _LIB_THEKOGANS_UTIL_API operator << (
+            JSON::Object &object,
+            const Exception &exception);
+
+        /// \brief
+        /// Read an Exception from the given object.
+        /// The object syntax looks like this:
+        /// {
+        ///   ErrorCode: 'error code',
+        ///   Message: 'error message',
+        ///   Location: [
+        ///     {
+        ///       File: 'file name',
+        ///       Function: 'function name',
+        ///       Line: 'line number',
+        ///       BuildTime: 'build time'
+        ///     },
+        ///     ...
+        ///   ]
+        /// }
+        /// \param[in] object Where to read the exception from.
+        /// \param[out] exception Exception to read.
+        /// \return object.
+        _LIB_THEKOGANS_UTIL_DECL JSON::Object & _LIB_THEKOGANS_UTIL_API operator >> (
+            JSON::Object &object,
+            Exception &exception);
 
     } // namespace util
 } // namespace thekogans

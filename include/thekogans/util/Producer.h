@@ -77,7 +77,7 @@ namespace thekogans {
         ///         util::Producer<Events2>::Produce (std::bind (&Events2::Pong, std::placeholders::_1));
         ///     }
         /// };
-        /// \\endcode
+        /// \endcode
 
         template <typename T>
         struct Producer : public virtual RefCounted {

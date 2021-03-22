@@ -18,9 +18,7 @@
 #include "thekogans/util/LockGuard.h"
 #include "thekogans/util/HRTimer.h"
 #include "thekogans/util/Exception.h"
-#if defined (TOOLCHAIN_OS_Windows)
-    #include "thekogans/util/LoggerMgr.h"
-#endif // defined (TOOLCHAIN_OS_Windows)
+#include "thekogans/util/LoggerMgr.h"
 #include "thekogans/util/StringUtils.h"
 #include "thekogans/util/JobQueue.h"
 
@@ -67,6 +65,18 @@ namespace thekogans {
             else {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
                     THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
+            }
+        }
+
+        JobQueue::~JobQueue () {
+            // FIXME: Perhaps parameterize the timeout.
+            const i64 TIMEOUT_SECONDS = 2;
+            if (!Stop (true, true, TimeSpec::FromSeconds (TIMEOUT_SECONDS))) {
+                THEKOGANS_UTIL_LOG_SUBSYSTEM_ERROR (
+                    THEKOGANS_UTIL,
+                    "Unable to stop the '%s' job queue in alloted time " THEKOGANS_UTIL_I64_FORMAT ".\n",
+                    name.c_str (),
+                    TIMEOUT_SECONDS);
             }
         }
 

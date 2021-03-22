@@ -323,7 +323,7 @@ namespace thekogans {
             /// \code{.cpp}
             /// SharedPtr<T> shared = weak.GetSharedPtr ();
             /// if (shared.Get () != 0) {
-            ///    // Do something productive.
+            ///    // Do something productive with shared.
             /// }
             /// \endcode
             ///
@@ -497,7 +497,7 @@ namespace thekogans {
                 /// Convert to SharedPtr<T>.
                 /// \return SharedPtr<T>.
                 inline SharedPtr<T> GetSharedPtr () const {
-                    // We pass false to SharedPtr (..., addRef) because References::LockObject
+                    // We pass false to SharedPtr<T> (..., addRef) because References::LockObject
                     // takes out a reference on success and on failure we don't care since we're
                     // passing 0 as object pointer.
                     return SharedPtr<T> (

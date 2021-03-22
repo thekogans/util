@@ -32,40 +32,12 @@
 namespace thekogans {
     namespace util {
 
-        const char * const Exception::TAG_EXCEPTION = "Exception";
-        const char * const Exception::ATTR_ERROR_CODE = "ErrorCode";
-        const char * const Exception::ATTR_MESSAGE = "Message";
-
-        const char * const Exception::Location::TAG_LOCATION = "Location";
-        const char * const Exception::Location::ATTR_FILE = "File";
-        const char * const Exception::Location::ATTR_FUNCTION = "Function";
-        const char * const Exception::Location::ATTR_LINE = "Line";
-        const char * const Exception::Location::ATTR_BUILD_TIME = "BuildTime";
-
         std::size_t Exception::Location::Size () const {
             return
                 Serializer::Size (file) +
                 Serializer::Size (function) +
                 Serializer::Size (line) +
                 Serializer::Size (buildTime);
-        }
-
-        void Exception::Location::Parse (const pugi::xml_node &node) {
-            file = Decodestring (node.attribute (ATTR_FILE).value ());
-            function = Decodestring (node.attribute (ATTR_FUNCTION).value ());
-            line = stringToui32 (node.attribute (ATTR_LINE).value ());
-            buildTime = Decodestring (node.attribute (ATTR_BUILD_TIME).value ());
-        }
-
-        std::string Exception::Location::ToString (
-                std::size_t indentationLevel,
-                const char *tagName) const {
-            Attributes attributes;
-            attributes.push_back (Attribute (ATTR_FILE, Encodestring (file)));
-            attributes.push_back (Attribute (ATTR_FUNCTION, Encodestring (function)));
-            attributes.push_back (Attribute (ATTR_LINE, ui32Tostring (line)));
-            attributes.push_back (Attribute (ATTR_BUILD_TIME, Encodestring (buildTime)));
-            return OpenTag (indentationLevel, tagName, attributes, true, true);
         }
 
         std::size_t Exception::Size () const {
@@ -287,34 +259,6 @@ namespace thekogans {
             return message + "\nTraceback:\n" + GetTracebackReport ();
         }
 
-        void Exception::Parse (const pugi::xml_node &node) {
-            errorCode = stringToTHEKOGANS_UTIL_ERROR_CODE (node.attribute (ATTR_ERROR_CODE).value ());
-            message = Decodestring (node.attribute (ATTR_MESSAGE).value ());
-            for (pugi::xml_node child = node.first_child ();
-                    !child.empty (); child = child.next_sibling ()) {
-                if (child.type () == pugi::node_element &&
-                        std::string (child.name ()) == Location::TAG_LOCATION) {
-                    traceback.push_back (Location (child));
-                }
-            }
-        }
-
-        std::string Exception::ToString (
-                std::size_t indentationLevel,
-                const char *tagName) const {
-            Attributes attributes;
-            attributes.push_back (Attribute (ATTR_ERROR_CODE, ErrorCodeTostring (errorCode)));
-            attributes.push_back (Attribute (ATTR_MESSAGE, Encodestring (message)));
-            std::stringstream stream;
-            stream <<
-                OpenTag (indentationLevel, tagName, attributes, false, true);
-            for (std::size_t i = 0, count = traceback.size (); i < count; ++i) {
-                stream << traceback[i].ToString (indentationLevel + 1);
-            }
-            stream << CloseTag (indentationLevel, tagName);
-            return stream.str ();
-        }
-
         _LIB_THEKOGANS_UTIL_DECL Serializer & _LIB_THEKOGANS_UTIL_API operator << (
                 Serializer &serializer,
                 const Exception::Location &location) {
@@ -351,6 +295,66 @@ namespace thekogans {
                 exception.errorCode >>
                 exception.message >>
                 exception.traceback;
+        }
+
+        namespace {
+            const char * const ATTR_ERROR_CODE = "ErrorCode";
+            const char * const ATTR_MESSAGE = "Message";
+
+            const char * const TAG_LOCATION = "Location";
+            const char * const ATTR_FILE = "File";
+            const char * const ATTR_FUNCTION = "Function";
+            const char * const ATTR_LINE = "Line";
+            const char * const ATTR_BUILD_TIME = "BuildTime";
+        }
+
+        _LIB_THEKOGANS_UTIL_DECL pugi::xml_node & _LIB_THEKOGANS_UTIL_API operator << (
+                pugi::xml_node &node,
+                const Exception::Location &location) {
+            node.append_attribute (ATTR_FILE).set_value (Encodestring (location.file).c_str ());
+            node.append_attribute (ATTR_FUNCTION).set_value (Encodestring (location.function).c_str ());
+            node.append_attribute (ATTR_LINE).set_value (ui32Tostring (location.line).c_str ());
+            node.append_attribute (ATTR_BUILD_TIME).set_value (Encodestring (location.buildTime).c_str ());
+            return node;
+        }
+
+        _LIB_THEKOGANS_UTIL_DECL pugi::xml_node & _LIB_THEKOGANS_UTIL_API operator >> (
+                pugi::xml_node &node,
+                Exception::Location &location) {
+            location.file = Decodestring (node.attribute (ATTR_FILE).value ());
+            location.function = Decodestring (node.attribute (ATTR_FUNCTION).value ());
+            location.line = stringToui32 (node.attribute (ATTR_LINE).value ());
+            location.buildTime = Decodestring (node.attribute (ATTR_BUILD_TIME).value ());
+            return node;
+        }
+
+        _LIB_THEKOGANS_UTIL_DECL pugi::xml_node & _LIB_THEKOGANS_UTIL_API operator << (
+                pugi::xml_node &node,
+                const Exception &exception) {
+            node.append_attribute (ATTR_ERROR_CODE).set_value (ErrorCodeTostring (exception.errorCode).c_str ());
+            node.append_attribute (ATTR_MESSAGE).set_value (Encodestring (exception.message).c_str ());
+            for (std::size_t i = 0, count = exception.traceback.size (); i < count; ++i) {
+                pugi::xml_node location = node.append_child (TAG_LOCATION);
+                location << exception.traceback[i];
+            }
+            return node;
+        }
+
+        _LIB_THEKOGANS_UTIL_DECL pugi::xml_node & _LIB_THEKOGANS_UTIL_API operator >> (
+                pugi::xml_node &node,
+                Exception &exception) {
+            exception.errorCode = stringToTHEKOGANS_UTIL_ERROR_CODE (node.attribute (ATTR_ERROR_CODE).value ());
+            exception.message = Decodestring (node.attribute (ATTR_MESSAGE).value ());
+            for (pugi::xml_node child = node.first_child ();
+                    !child.empty (); child = child.next_sibling ()) {
+                if (child.type () == pugi::node_element &&
+                        std::string (child.name ()) == TAG_LOCATION) {
+                    Exception::Location location;
+                    child >> location;
+                    exception.traceback.push_back (location);
+                }
+            }
+            return node;
         }
 
     } // namespace util
