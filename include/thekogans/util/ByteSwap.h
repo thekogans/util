@@ -27,6 +27,7 @@
 #include <utility>
 #include <type_traits>
 #include "thekogans/util/Types.h"
+#include "thekogans/util/Exception.h"
 
 namespace thekogans {
     namespace util {
@@ -61,6 +62,9 @@ namespace thekogans {
         /// Endianess constants.
         enum Endianness {
             /// \brief
+            /// Unknown endian.
+            UnknownEndian,
+            /// \brief
             /// Little endian.
             LittleEndian,
             /// \brief
@@ -85,6 +89,16 @@ namespace thekogans {
         /// \brief
         /// Serialized size of Endianness.
         const std::size_t ENDIANNESS_SIZE = UI8_SIZE;
+
+        inline std::string EndiannessToString (Endianness endianness) {
+            return
+                endianness == LittleEndian ? "LittleEndian" :
+                endianness == BigEndian ? "BigEndian" : "UnknownEndian";
+        }
+        inline Endianness StringToEndianness (const std::string &endianness) {
+            return endianness == "LittleEndian" ? LittleEndian :
+                endianness == "BigEndian" ? BigEndian : UnknownEndian;
+        }
 
         namespace detail {
             /// \brief

@@ -31,6 +31,7 @@
 #endif // defined (TOOLCHAIN_OS_Windows)
 #include <cassert>
 #include <memory>
+#include "pugixml/pugixml.hpp"
 #include "thekogans/util/Config.h"
 #include "thekogans/util/Types.h"
 #include "thekogans/util/Constants.h"
@@ -42,6 +43,7 @@
 #include "thekogans/util/DefaultAllocator.h"
 #include "thekogans/util/SecureAllocator.h"
 #include "thekogans/util/NullAllocator.h"
+#include "thekogans/util/StringUtils.h"
 
 namespace thekogans {
     namespace util {
@@ -332,6 +334,27 @@ namespace thekogans {
         #endif // defined (THEKOGANS_UTIL_HAVE_ZLIB)
 
             /// \brief
+            /// Given a hex encoded string and length, convert to Buffer.
+            /// \param[in] endianness Specifies how multi-byte values are stored.
+            /// \param[in] hexBuffer Hex encoded string.
+            /// \param[in] hexBufferLength hexBuffer length (must be even).
+            /// \param[in] allocator Allocator for the returned buffer.
+            /// \return Buffer containing the decoded hex string.
+            static Buffer FromHexBuffer (
+                Endianness endianness,
+                const char *hexBuffer,
+                std::size_t hexBufferLength,
+                Allocator *allocator = &DefaultAllocator::Instance ());
+            /// \brief
+            /// Convert the buffer to a hex string.
+            /// \return std::string containing the buffers hex encoded contents.
+            inline std::string ToHexString () const {
+                return GetDataAvailableForReading () > 0 ?
+                    HexEncodeBuffer (GetReadPtr (), GetDataAvailableForReading ()) :
+                    std::string ();
+            }
+
+            /// \brief
             /// Convert the buffer to a std::string.
             /// \return std::string containing the buffers contents.
             inline std::string Tostring () const {
@@ -606,6 +629,40 @@ namespace thekogans {
         /// \return serializer.
         _LIB_THEKOGANS_UTIL_DECL Serializer & _LIB_THEKOGANS_UTIL_API operator >> (
             Serializer &serializer,
+            Buffer &buffer);
+
+        /// \brief
+        /// Write the given buffer to the given node.
+        /// The node syntax looks like this:
+        /// <Buffer Endianness = ""
+        ///         Length = ""
+        ///         ReadOffset = ""
+        ///         WriteOffset = ""
+        ///         Allocator = "">
+        /// Base 64 encoded buffer contents.
+        /// </Buffer>
+        /// \param[in] node Where to write the given buffer.
+        /// \param[in] buffer Buffer to write.
+        /// \return node.
+        _LIB_THEKOGANS_UTIL_DECL pugi::xml_node & _LIB_THEKOGANS_UTIL_API operator << (
+            pugi::xml_node &node,
+            const Buffer &buffer);
+
+        /// \brief
+        /// Read an buffer from the given node.
+        /// The node syntax looks like this:
+        /// <Buffer Endianness = ""
+        ///         Length = ""
+        ///         ReadOffset = ""
+        ///         WriteOffset = ""
+        ///         Allocator = "">
+        /// Base 64 encoded buffer contents.
+        /// </Buffer>
+        /// \param[in] node Where to read the buffer from.
+        /// \param[out] buffer Buffer to read.
+        /// \return node.
+        _LIB_THEKOGANS_UTIL_DECL pugi::xml_node & _LIB_THEKOGANS_UTIL_API operator >> (
+            pugi::xml_node &node,
             Buffer &buffer);
 
     } // namespace util

@@ -25,6 +25,8 @@
 #if defined (TOOLCHAIN_OS_Windows)
     #include "thekogans/util/WindowsUtils.h"
 #endif // defined (TOOLCHAIN_OS_Windows)
+#include "thekogans/util/XMLUtils.h"
+#include "thekogans/util/Base64.h"
 #include "thekogans/util/Buffer.h"
 
 namespace thekogans {
@@ -183,23 +185,13 @@ namespace thekogans {
             }
         }
 
-        namespace {
-            std::string GetSerializedAllocatorName (const Buffer &buffer) {
-                std::string allocatorName = buffer.allocator->GetName ();
-                if (Allocator::Get (allocatorName) == 0) {
-                    allocatorName = DefaultAllocator::Instance ().GetName ();
-                }
-                return allocatorName;
-            }
-        }
-
         std::size_t Buffer::Size () const {
             return
                 Serializer::Size () +
                 Serializer::Size (length) +
                 Serializer::Size (readOffset) +
                 Serializer::Size (writeOffset) +
-                Serializer::Size (GetSerializedAllocatorName (*this)) +
+                Serializer::Size (allocator->GetSerializedName ()) +
                 length;
         }
 
@@ -374,6 +366,22 @@ namespace thekogans {
         }
     #endif // defined (THEKOGANS_UTIL_HAVE_ZLIB)
 
+        Buffer Buffer::FromHexBuffer (
+                Endianness endianness,
+                const char *hexBuffer,
+                std::size_t hexBufferLength,
+                Allocator *allocator) {
+            if (hexBuffer != 0 && hexBufferLength > 0 && IS_EVEN (hexBufferLength) && allocator != 0) {
+                void *data = allocator->Alloc (hexBufferLength / 2);
+                std::size_t length =  HexDecodeBuffer (hexBuffer, hexBufferLength, data);
+                return Buffer (endianness, data, length, 0, length, allocator);
+            }
+            else {
+                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
+            }
+        }
+
     #if defined (TOOLCHAIN_OS_Windows)
         HGLOBAL Buffer::ToHGLOBAL (UINT flags) const {
             if (GetDataAvailableForReading () > 0) {
@@ -462,7 +470,7 @@ namespace thekogans {
                 buffer.length <<
                 buffer.readOffset <<
                 buffer.writeOffset <<
-                GetSerializedAllocatorName (buffer);
+                buffer.allocator->GetSerializedName ();
             if (buffer.length > 0) {
                 std::size_t bytesWritten = serializer.Write (buffer.data, buffer.length);
                 if (buffer.length != bytesWritten) {
@@ -502,6 +510,67 @@ namespace thekogans {
             buffer.readOffset = readOffset;
             buffer.writeOffset = writeOffset;
             return serializer;
+        }
+
+        namespace {
+            const char *ATTR_ENDIANESS = "Endianness";
+            const char *ATTR_LENGTH = "Length";
+            const char *ATTR_READ_OFFSET = "ReadOffset";
+            const char *ATTR_WRITE_OFFSET = "WriteOffset";
+            const char *ATTR_ALLOCATOR = "Allocator";
+        }
+
+        _LIB_THEKOGANS_UTIL_DECL pugi::xml_node & _LIB_THEKOGANS_UTIL_API operator << (
+                pugi::xml_node &node,
+                const Buffer &buffer) {
+            node.append_attribute (ATTR_ENDIANESS).set_value (EndiannessToString (buffer.endianness).c_str ());
+            node.append_attribute (ATTR_LENGTH).set_value (util::ui64Tostring (buffer.length).c_str ());
+            node.append_attribute (ATTR_READ_OFFSET).set_value (util::ui64Tostring (buffer.readOffset).c_str ());
+            node.append_attribute (ATTR_WRITE_OFFSET).set_value (util::ui64Tostring (buffer.writeOffset).c_str ());
+            node.append_attribute (ATTR_ALLOCATOR).set_value (
+                EncodeXMLCharEntities (buffer.allocator->GetSerializedName ()).c_str ());
+            if (buffer.length > 0) {
+                node.text ().set (Base64::Encode (buffer.data, buffer.length, 64).Tostring ().c_str ());
+            }
+            return node;
+        }
+
+        _LIB_THEKOGANS_UTIL_DECL pugi::xml_node & _LIB_THEKOGANS_UTIL_API operator >> (
+                pugi::xml_node &node,
+                Buffer &buffer) {
+            Endianness endianness = StringToEndianness (node.attribute (ATTR_ENDIANESS).value ());
+            SizeT length = util::stringToui64 (node.attribute (ATTR_LENGTH).value ());
+            SizeT readOffset = util::stringToui64 (node.attribute (ATTR_READ_OFFSET).value ());
+            SizeT writeOffset = util::stringToui64 (node.attribute (ATTR_WRITE_OFFSET).value ());
+            Allocator *allocator = Allocator::Get (node.attribute (ATTR_ALLOCATOR).value ());
+            if (allocator == 0) {
+                allocator = &DefaultAllocator::Instance ();
+            }
+            buffer.Resize (length, allocator);
+            if (length > 0) {
+                const char *encodedBuffer = node.text ().get ();
+                std::size_t encodedBufferLength = strlen (encodedBuffer);
+                if (encodedBufferLength > 0) {
+                    std::size_t bytesDecoded = Base64::Decode (encodedBuffer, encodedBufferLength, buffer.data);
+                    if (length != bytesDecoded) {
+                        THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
+                            "Base64::Decode (node.text ().get (), " THEKOGANS_UTIL_SIZE_T_FORMAT
+                            ", buffer.data) == " THEKOGANS_UTIL_SIZE_T_FORMAT ", expecting " THEKOGANS_UTIL_SIZE_T_FORMAT,
+                            encodedBufferLength,
+                            bytesDecoded,
+                            length);
+                    }
+                }
+                else {
+                    THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
+                        "Empty encoded buffer, expecting length " THEKOGANS_UTIL_SIZE_T_FORMAT,
+                        length);
+                }
+            }
+            buffer.endianness = endianness;
+            buffer.readOffset = readOffset;
+            buffer.writeOffset = writeOffset;
+            return node;
         }
 
     } // namespace util

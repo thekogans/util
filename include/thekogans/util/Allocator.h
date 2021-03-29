@@ -92,6 +92,11 @@ namespace thekogans {
             virtual ~Allocator () {}
 
             /// \brief
+            /// Return a serializable allocator name (one that can be dynamically creatable).
+            /// \return A serializable allocator name (one that can be dynamically creatable).
+            std::string GetSerializedName () const;
+
+            /// \brief
             /// Return allocator name.
             /// \return Allocator name.
             virtual const char *GetName () const = 0;

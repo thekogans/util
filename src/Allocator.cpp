@@ -77,6 +77,14 @@ namespace thekogans {
         }
     #endif // defined (THEKOGANS_UTIL_TYPE_Static)
 
+        std::string Allocator::GetSerializedName () const {
+            std::string allocatorName = GetName ();
+            if (Get (allocatorName) == 0) {
+                allocatorName = DefaultAllocator::Instance ().GetName ();
+            }
+            return allocatorName;
+        }
+
         void Allocator::GetAllocators (std::list<std::string> &allocators) {
             for (Map::const_iterator it = GetMap ().begin (),
                     end = GetMap ().end (); it != end; ++it) {

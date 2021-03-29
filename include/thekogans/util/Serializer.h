@@ -22,6 +22,7 @@
 #include <string>
 #include <vector>
 #include <list>
+#include <map>
 #include "thekogans/util/Config.h"
 #include "thekogans/util/Types.h"
 #include "thekogans/util/ByteSwap.h"
@@ -685,6 +686,61 @@ namespace thekogans {
                     T t;
                     *this >> t;
                     value.push_back (t);
+                }
+                value.swap (temp);
+                return *this;
+            }
+
+            /// \brief
+            /// Return serialized size of const std::map<T> &.
+            /// \return Serialized size of const std::map<T> &.
+            template<
+                typename Key,
+                typename T>
+            static std::size_t Size (const std::map<Key, T> &value) {
+                std::size_t size = SizeT (value.size ()).Size ();
+                for (typename std::map<Key, T>::const_iterator
+                        it = value.begin (),
+                        end = value.end (); it != end; ++it) {
+                    size += Size (it->first) + Size (it->second);
+                }
+                return size;
+            }
+
+            /// \brief
+            /// Serialize a const std::map<T>. endianness is used to properly
+            /// convert between serializer and host byte order.
+            /// \param[in] value Value to serialize.
+            /// \return *this.
+            template<
+                typename Key,
+                typename T>
+            inline Serializer &operator << (const std::map<Key, T> &value) {
+                *this << SizeT (value.size ());
+                for (typename std::map<Key, T>::const_iterator
+                        it = value.begin (),
+                        end = value.end (); it != end; ++it) {
+                    *this << it->first << it->second;
+                }
+                return *this;
+            }
+            /// \brief
+            /// Extract a std::map<T>. endianness is used to properly
+            /// convert between serializer and host byte order.
+            /// \param[out] value Where to place the extracted value.
+            /// \return *this.
+            template<
+                typename Key,
+                typename T>
+            inline Serializer &operator >> (std::map<Key, T> &value) {
+                SizeT count;
+                *this >> count;
+                std::map<Key, T> temp;
+                for (std::size_t i = 0; i < count; ++i) {
+                    Key key;
+                    T t;
+                    *this >> key >> t;
+                    value.push_back (std::map<Key, T>::value_type (key, t));
                 }
                 value.swap (temp);
                 return *this;

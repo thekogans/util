@@ -24,6 +24,7 @@
 #include <vector>
 #include <sstream>
 #include <algorithm>
+#include "thekogans/util/Constants.h"
 #include "thekogans/util/Array.h"
 #include "thekogans/util/SpinLock.h"
 #include "thekogans/util/LockGuard.h"
@@ -259,7 +260,7 @@ namespace thekogans {
                 const char *hexBuffer,
                 std::size_t length,
                 void *buffer) {
-            if (hexBuffer != 0 && length > 0 && (length & 1) == 0 && buffer != 0) {
+            if (hexBuffer != 0 && length > 0 && IS_EVEN (length) && buffer != 0) {
                 ui8 *ptr = (ui8 *)buffer;
                 for (std::size_t i = 0; i < length; i += 2) {
                     if (IsHexChar (hexBuffer[i]) && IsHexChar (hexBuffer[i + 1])) {
@@ -282,7 +283,7 @@ namespace thekogans {
         _LIB_THEKOGANS_UTIL_DECL std::vector<ui8> _LIB_THEKOGANS_UTIL_API HexDecodeBuffer (
                 const char *hexBuffer,
                 std::size_t length) {
-            if (hexBuffer != 0 && length > 0 && (length & 1) == 0) {
+            if (hexBuffer != 0 && length > 0 && IS_EVEN (length)) {
                 std::vector<ui8> buffer (length / 2);
                 HexDecodeBuffer (hexBuffer, length, buffer.data ());
                 return buffer;
