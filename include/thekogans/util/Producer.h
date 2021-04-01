@@ -286,7 +286,7 @@ namespace thekogans {
             }
 
             /// \brief
-            /// Overide this methid to react to a new \see{Subscriber.
+            /// Overide this methid to react to a new \see{Subscriber}.
             /// \param[in] subscriber \see{Subscriber} to add to the subscribers list.
             /// \param[in] eventDeliveryPolicy \see{EventDeliveryPolicy} by which events are delivered.
             /// \param[in] subscriberCount Number of \see{Subscriber}s (including this one).
@@ -295,7 +295,7 @@ namespace thekogans {
                 typename EventDeliveryPolicy::SharedPtr /*eventDeliveryPolicy*/,
                 std::size_t /*subscriberCount*/) {}
             /// \brief
-            /// Overide this methid to react to a \see{Subscriber being removed.
+            /// Overide this methid to react to a \see{Subscriber} being removed.
             /// \param[in] subscriber \see{Subscriber} to remove from the subscribers list.
             /// \param[in] subscriberCount Number of \see{Subscriber}s remaining.
             virtual void OnUnsubscribe (
@@ -304,7 +304,7 @@ namespace thekogans {
 
         private:
             /// \brief
-            /// Given a subscriber, return the list iterator associated with it.
+            /// Given a \see{Subscriber}, return the list iterator associated with it.
             /// \param[in] subscriber \see{Subscriber} whos iterator to return.
             /// \return Subscribers iterator corresponding to the given subscriber,
             /// subscribers.end () if the given subscriber is not found in the list.
