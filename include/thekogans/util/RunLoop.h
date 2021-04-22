@@ -367,7 +367,7 @@ namespace thekogans {
                 /// \brief
                 /// If our run loop is still running, execute the lambda function.
                 /// \param[in] done true == The run loop is done and nothing can be executed on it.
-                virtual void Execute (const std::atomic<bool> &done) throw () {
+                virtual void Execute (const std::atomic<bool> &done) throw () override {
                     if (!ShouldStop (done)) {
                         function (*this, done);
                     }

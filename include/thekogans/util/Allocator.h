@@ -125,7 +125,7 @@ namespace thekogans {
             static thekogans::util::Allocator *Create () {\
                 return &Instance ();\
             }\
-            virtual const char *GetName () const {\
+            virtual const char *GetName () const override {\
                 return #type;\
             }
 

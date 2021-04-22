@@ -46,14 +46,14 @@ namespace thekogans {
             /// Allocate a block from system heap.
             /// \param[in] size Size of block to allocate.
             /// \return Pointer to the allocated block (0 if out of memory).
-            virtual void *Alloc (std::size_t size);
+            virtual void *Alloc (std::size_t size) override;
             /// \brief
             /// Free a previously Alloc(ated) block.
             /// \param[in] ptr Pointer to the block returned by Alloc.
             /// \param[in] size Same size parameter previously passed in to Alloc.
             virtual void Free (
                 void *ptr,
-                std::size_t /*size*/);
+                std::size_t /*size*/) override;
         };
 
         /// \def THEKOGANS_UTIL_IMPLEMENT_DEFAULT_ALLOCATOR_FUNCTIONS(type)

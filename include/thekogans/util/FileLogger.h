@@ -78,6 +78,7 @@ namespace thekogans {
                 Logger (level),
                 path (path_),
                 archive (archive_),
+                archiveCount (archiveCount_),
                 maxLogFileSize (maxLogFileSize_) {}
 
             // Logger
@@ -91,13 +92,13 @@ namespace thekogans {
                 const std::string & /*subsystem*/,
                 ui32 /*level*/,
                 const std::string &header,
-                const std::string &message) throw ();
+                const std::string &message) throw () override;
 
             /// \brief
             /// Flush the logger buffers.
             /// \param[in] timeSpec How long to wait for logger to complete.
             /// IMPORTANT: timeSpec is a relative value.
-            virtual void Flush (const TimeSpec & /*timeSpec*/ = TimeSpec::Infinite) {
+            virtual void Flush (const TimeSpec & /*timeSpec*/ = TimeSpec::Infinite) override {
                 if (file.IsOpen ()) {
                     file.Flush ();
                 }

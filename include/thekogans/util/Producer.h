@@ -19,7 +19,7 @@
 #define __thekogans_util_Producer_h
 
 #include <functional>
-#include <list>
+#include <map>
 #include "thekogans/util/RefCounted.h"
 #include "thekogans/util/SpinLock.h"
 #include "thekogans/util/LockGuard.h"
@@ -182,10 +182,10 @@ namespace thekogans {
                 typename Subscriber<T>::WeakPtr *,
                 typename EventDeliveryPolicy::SharedPtr> SubscriberInfo;
             /// \brief
-            /// Convenient typedef for std::list<SubscriberInfo>.
-            typedef std::list<SubscriberInfo> Subscribers;
+            /// Convenient typedef for std::map<Subscriber<T> *, SubscriberInfo>.
+            typedef std::map<Subscriber<T> *, SubscriberInfo> Subscribers;
             /// \brief
-            /// List of registered subscribers.
+            /// Map of registered subscribers.
             Subscribers subscribers;
             /// \brief
             /// Synchronization lock.
@@ -200,14 +200,14 @@ namespace thekogans {
                 for (typename Subscribers::iterator
                         it = subscribers.begin (),
                         end = subscribers.end (); it != end; ++it) {
-                    delete it->first;
+                    delete it->second.first;
                 }
                 subscribers.clear ();
             }
 
             /// \brief
-            /// Called by \see{Subscriber} to add itself to the subscribers list.
-            /// \param[in] subscriber \see{Subscriber} to add to the subscribers list.
+            /// Called by \see{Subscriber} to add itself to the subscribers map.
+            /// \param[in] subscriber \see{Subscriber} to add to the subscribers map.
             /// \param[in] eventDeliveryPolicy \see{EventDeliveryPolicy} by which events are delivered.
             /// NOTE: We respect the fact that some producers are designed for lazy initialization
             /// by waiting for the first subscriber before commiting potentially expensive resources.
@@ -218,22 +218,24 @@ namespace thekogans {
                     Subscriber<T> &subscriber,
                     typename EventDeliveryPolicy::SharedPtr eventDeliveryPolicy) {
                 LockGuard<SpinLock> guard (spinLock);
-                typename Subscribers::iterator it = GetSubscriberIterator (subscriber);
+                typename Subscribers::iterator it = subscribers.find (&subscriber);
                 if (it == subscribers.end ()) {
-                    subscribers.push_back (
-                        SubscriberInfo (
-                            // NOTE: We store a WeakPtr pointer because we can't risk a WeakPtr
-                            // copy ctor being called. It uses GetSharedPtr and that will be
-                            // problematic for objects subscribing in their ctors (shared == 0).
-                            new typename Subscriber<T>::WeakPtr (&subscriber),
-                            eventDeliveryPolicy));
+                    subscribers.insert (
+                        typename Subscribers::value_type (
+                            &subscriber,
+                            SubscriberInfo (
+                                // NOTE: We store a WeakPtr pointer because we can't risk a WeakPtr
+                                // copy ctor being called. It uses GetSharedPtr and that will be
+                                // problematic for objects subscribing in their ctors (shared == 0).
+                                new typename Subscriber<T>::WeakPtr (&subscriber),
+                                eventDeliveryPolicy)));
                     OnSubscribe (subscriber, eventDeliveryPolicy, subscribers.size ());
                 }
             }
 
             /// \brief
-            /// Called by \see{Subscriber} to remove itself from the subscribers list.
-            /// \param[in] subscriber \see{Subscriber} to remove from the subscribers list.
+            /// Called by \see{Subscriber} to remove itself from the subscribers map.
+            /// \param[in] subscriber \see{Subscriber} to remove from the subscribers map.
             /// NOTE: We respect the fact that some producers are designed for lazy cleanup
             /// by waiting for the last subscriber to unsubscribe before deallocating resources.
             /// That's why we call OnUnsubscribe under lock to make sure the count they get acurately
@@ -241,9 +243,9 @@ namespace thekogans {
             /// deadlock will occur.
             void Unsubscribe (Subscriber<T> &subscriber) {
                 LockGuard<SpinLock> guard (spinLock);
-                typename Subscribers::iterator it = GetSubscriberIterator (subscriber);
+                typename Subscribers::iterator it = subscribers.find (&subscriber);
                 if (it != subscribers.end ()) {
-                    delete it->first;
+                    delete it->second.first;
                     subscribers.erase (it);
                     OnUnsubscribe (subscriber, subscribers.size ());
                 }
@@ -255,7 +257,7 @@ namespace thekogans {
             void Produce (std::function<void (T *)> event) {
                 Subscribers subscribers_;
                 {
-                    // Copy the subscribers list in to a local
+                    // Copy the subscribers map in to a local
                     // variable before delivering the event in case
                     // they want to unsubscribe while processing it.
                     LockGuard<SpinLock> guard (spinLock);
@@ -270,9 +272,9 @@ namespace thekogans {
                     // This race is unavoidable but harmless. We want to preserve the right of
                     // the \see{Subscriber} to be able to call back in to the producer while
                     // processing a particular event.
-                    typename Subscriber<T>::SharedPtr subscriber = it->first->GetSharedPtr ();
+                    typename Subscriber<T>::SharedPtr subscriber = it->second.first->GetSharedPtr ();
                     if (subscriber.Get () != 0) {
-                        it->second->DeliverEvent (event, subscriber);
+                        it->second.second->DeliverEvent (event, subscriber);
                     }
                 }
             }
@@ -286,7 +288,7 @@ namespace thekogans {
             }
 
             /// \brief
-            /// Overide this methid to react to a new \see{Subscriber}.
+            /// Override this methid to react to a new \see{Subscriber}.
             /// \param[in] subscriber \see{Subscriber} to add to the subscribers list.
             /// \param[in] eventDeliveryPolicy \see{EventDeliveryPolicy} by which events are delivered.
             /// \param[in] subscriberCount Number of \see{Subscriber}s (including this one).
@@ -295,29 +297,12 @@ namespace thekogans {
                 typename EventDeliveryPolicy::SharedPtr /*eventDeliveryPolicy*/,
                 std::size_t /*subscriberCount*/) {}
             /// \brief
-            /// Overide this methid to react to a \see{Subscriber} being removed.
+            /// Override this methid to react to a \see{Subscriber} being removed.
             /// \param[in] subscriber \see{Subscriber} to remove from the subscribers list.
             /// \param[in] subscriberCount Number of \see{Subscriber}s remaining.
             virtual void OnUnsubscribe (
                 Subscriber<T> & /*subscriber*/,
                 std::size_t /*subscriberCount*/) {}
-
-        private:
-            /// \brief
-            /// Given a \see{Subscriber}, return the list iterator associated with it.
-            /// \param[in] subscriber \see{Subscriber} whos iterator to return.
-            /// \return Subscribers iterator corresponding to the given subscriber,
-            /// subscribers.end () if the given subscriber is not found in the list.
-            typename Subscribers::iterator GetSubscriberIterator (Subscriber<T> &subscriber) {
-                for (typename Subscribers::iterator
-                        it = subscribers.begin (),
-                        end = subscribers.end (); it != end; ++it) {
-                    if (it->first->Get () == &subscriber) {
-                        return it;
-                    }
-                }
-                return subscribers.end ();
-            }
         };
 
     } // namespace util

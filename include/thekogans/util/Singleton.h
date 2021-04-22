@@ -21,6 +21,7 @@
 #include <cassert>
 #include <typeinfo>
 #include "thekogans/util/Config.h"
+#include "thekogans/util/Constants.h"
 #include "thekogans/util/NullLock.h"
 #include "thekogans/util/SpinLock.h"
 #include "thekogans/util/LockGuard.h"
@@ -205,8 +206,8 @@ namespace thekogans {
             static void DestroyInstance () {
                 LockGuard<Lock> guard (lock);
                 if (instance != 0) {
-                    InstanceDestroyer () (instance);
-                    instance = 0;
+                    T * volatile instance_ = 0;
+                    InstanceDestroyer () (EXCHANGE (instance, instance_));
                 }
             }
 

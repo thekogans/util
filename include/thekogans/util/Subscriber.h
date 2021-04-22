@@ -18,7 +18,7 @@
 #if !defined (__thekogans_util_Subscriber_h)
 #define __thekogans_util_Subscriber_h
 
-#include <list>
+#include <map>
 #include "thekogans/util/SpinLock.h"
 #include "thekogans/util/LockGuard.h"
 #include "thekogans/util/Producer.h"
@@ -56,8 +56,8 @@ namespace thekogans {
 
         private:
             /// \brief
-            /// Convenient typedef for std::list<typename Producer<T>::WeakPtr *>.
-            typedef std::list<typename Producer<T>::WeakPtr *> Producers;
+            /// Convenient typedef for std::map<Producer<T> *, typename Producer<T>::WeakPtr *>.
+            typedef std::map<Producer<T> *, typename Producer<T>::WeakPtr *> Producers;
             /// \brief
             /// List of producers whos events we subscribe to.
             Producers producers;
@@ -75,13 +75,22 @@ namespace thekogans {
                 // We're going out of scope, unsubscribe ourselves from our producer's events.
                 LockGuard<SpinLock> guard (spinLock);
                 for (typename Producers::iterator it = producers.begin (), end = producers.end (); it != end; ++it) {
-                    typename Producer<T>::SharedPtr producer = (*it)->GetSharedPtr ();
+                    typename Producer<T>::SharedPtr producer = it->second->GetSharedPtr ();
                     if (producer.Get () != 0) {
                         producer->Unsubscribe (*this);
-                        delete *it;
+                        delete it->second;
                     }
                 }
                 producers.clear ();
+            }
+
+            /// \brief
+            /// Return true if we're subscribed to the given producer.
+            /// \param[in] producer \see{Producer} to check for subscription.
+            /// \return true == We're subscribed to the given producer.
+            bool IsSubscribed (Producer<T> &producer) {
+                LockGuard<SpinLock> guard (spinLock);
+                return producers.find (&producer) != producers.end ();
             }
 
             /// \brief
@@ -94,10 +103,13 @@ namespace thekogans {
                         typename Producer<T>::EventDeliveryPolicy::SharedPtr (
                             new typename Producer<T>::JobQueueEventDeliveryPolicy)) {
                 LockGuard<SpinLock> guard (spinLock);
-                typename Producers::iterator it = GetProducerIterator (producer);
+                typename Producers::iterator it = producers.find (&producer);
                 if (it == producers.end ()) {
                     producer.Subscribe (*this, eventDeliveryPolicy);
-                    producers.push_back (new typename Producer<T>::WeakPtr (&producer));
+                    producers.insert (
+                        typename Producers::value_type (
+                            &producer,
+                            new typename Producer<T>::WeakPtr (&producer)));
                 }
             }
 
@@ -106,27 +118,12 @@ namespace thekogans {
             /// \param[in] producer \see{Producer} whose events we want to unsubscribe from.
             void Unsubscribe (Producer<T> &producer) {
                 LockGuard<SpinLock> guard (spinLock);
-                typename Producers::iterator it = GetProducerIterator (producer);
+                typename Producers::iterator it = producers.find (&producer);
                 if (it != producers.end ()) {
                     producer.Unsubscribe (*this);
-                    delete *it;
+                    delete it->second;
                     producers.erase (it);
                 }
-            }
-
-        private:
-            /// \brief
-            /// Locate and return the list iterator associated with the given \see{Producer}.
-            /// \param[in] producer \see{Producer} whose iterator to locate in the list.
-            /// \return Producers::terator corresponding to the given producer, producers.end ()
-            /// if the given producer is not in the list.
-            typename Producers::iterator GetProducerIterator (Producer<T> &producer) {
-                for (typename Producers::iterator it = producers.begin (), end = producers.end (); it != end; ++it) {
-                    if ((*it)->Get () == &producer) {
-                        return it;
-                    }
-                }
-                return producers.end ();
             }
         };
 

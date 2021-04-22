@@ -40,6 +40,7 @@ namespace thekogans {
                 THEKOGANS_UTIL_TRY {
                     ArchiveLog ();
                     OpenFile ();
+                    file.Seek (0, SEEK_END);
                     if (!header.empty ()) {
                         file.Write (header.c_str (), header.size ());
                     }

@@ -341,7 +341,7 @@ namespace thekogans {
                 typedef typename Callback::argument_type argument_type;
                 /// \brief
                 /// No op.
-                virtual result_type operator () (argument_type /*node*/) {
+                virtual result_type operator () (argument_type /*node*/) override {
                     return true;
                 }
             } static defaultCallback;
@@ -371,7 +371,7 @@ namespace thekogans {
             /// Release the \see{RefCounted} nodes held by this list and clear it.
             inline void release () {
                 struct ReleaseCallback : public Callback {
-                    virtual bool operator () (T *node) {
+                    virtual bool operator () (T *node) override {
                         node->Release ();
                         return true;
                     }

@@ -53,6 +53,14 @@ namespace thekogans {
         /// count will never reach 0 and the object will not try to delete itself.
         /// For \see{Singleton}s, I provide \see{RefCountedInstanceCreator} and
         /// \see{RefCountedInstanceDestroyer} that will do just that.
+        ///
+        /// VERY IMPORTANT: Please read the question and understand the accepted answer in the following;
+        /// https://stackoverflow.com/questions/35314297/mixing-virtual-and-non-virtual-inheritance-of-a-base-class
+        /// Basically, to summarize it here; If you're going to directly inherit
+        /// from classes like RefCounted, and you expect your classes to be
+        /// inherited from, than your classes' inheritance must be virtual
+        /// to ward off the dreaded diamond pattern that can result from
+        /// multiple inheritance.
 
         struct _LIB_THEKOGANS_UTIL_DECL RefCounted {
         private:
@@ -410,7 +418,7 @@ namespace thekogans {
                 }
 
                 /// \brief
-                /// Assignemnet operator.
+                /// Assignment operator.
                 /// \param[in] object_ Raw pointer to reference counted object.
                 /// \return *this.
                 WeakPtr &operator = (T *object_) {
@@ -420,7 +428,7 @@ namespace thekogans {
                     return *this;
                 }
                 /// \brief
-                /// Assignemnet operator.
+                /// Assignment operator.
                 /// \param[in] ptr SharedPtr<T> to reference counted object.
                 /// \return *this.
                 WeakPtr &operator = (const SharedPtr<T> &ptr) {
@@ -430,7 +438,7 @@ namespace thekogans {
                     return *this;
                 }
                 /// \brief
-                /// Assignemnet operator.
+                /// Assignment operator.
                 /// \param[in] ptr WeakPtr<T> to reference counted object.
                 /// \return *this.
                 WeakPtr &operator = (const WeakPtr<T> &ptr) {

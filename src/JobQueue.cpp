@@ -71,7 +71,7 @@ namespace thekogans {
         JobQueue::~JobQueue () {
             // FIXME: Perhaps parameterize the timeout.
             const i64 TIMEOUT_SECONDS = 2;
-            if (!Stop (true, true, TimeSpec::FromSeconds (TIMEOUT_SECONDS))) {
+            if (!Stop (true, true, TimeSpec::FromSeconds (TIMEOUT_SECONDS)) && GlobalLoggerMgr::IsInstanceCreated ()) {
                 THEKOGANS_UTIL_LOG_SUBSYSTEM_ERROR (
                     THEKOGANS_UTIL,
                     "Unable to stop the '%s' job queue in alloted time " THEKOGANS_UTIL_I64_FORMAT ".\n",

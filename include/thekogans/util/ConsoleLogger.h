@@ -82,7 +82,7 @@ namespace thekogans {
                 /// Given a log level, return appropriate color.
                 /// \param[in] level Log level.
                 /// \return Color for the provided log level.
-                virtual Console::ColorType GetColor (ui32 level) {
+                virtual Console::ColorType GetColor (ui32 level) override {
                     return GetColorForLevel (level);
                 }
             };
@@ -124,13 +124,13 @@ namespace thekogans {
                 const std::string & /*subsystem*/,
                 ui32 level,
                 const std::string &header,
-                const std::string &message) throw ();
+                const std::string &message) throw () override;
 
             /// \brief
             /// Flush the logger buffers.
             /// \param[in] timeSpec How long to wait for logger to complete.
             /// IMPORTANT: timeSpec is a relative value.
-            virtual void Flush (const TimeSpec &timeSpec = TimeSpec::Infinite) {
+            virtual void Flush (const TimeSpec &timeSpec = TimeSpec::Infinite) override {
                 Console::Instance ().FlushPrintQueue ();
             }
 
