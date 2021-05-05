@@ -94,7 +94,7 @@ namespace thekogans {
                 Endianness endianness,
                 const std::string &path,
                 DWORD dwDesiredAccess = GENERIC_READ | GENERIC_WRITE,
-                DWORD dwShareMode = FILE_SHARE_READ | FILE_SHARE_WRITE,
+                DWORD dwShareMode = FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
                 DWORD dwCreationDisposition = OPEN_ALWAYS,
                 DWORD dwFlagsAndAttributes = FILE_ATTRIBUTE_NORMAL);
         #else // defined (TOOLCHAIN_OS_Windows)
@@ -132,7 +132,7 @@ namespace thekogans {
             virtual void Open (
                 const std::string &path_,
                 DWORD dwDesiredAccess = GENERIC_READ | GENERIC_WRITE,
-                DWORD dwShareMode = FILE_SHARE_READ | FILE_SHARE_WRITE,
+                DWORD dwShareMode = FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
                 DWORD dwCreationDisposition = OPEN_ALWAYS,
                 DWORD dwFlagsAndAttributes = FILE_ATTRIBUTE_NORMAL);
         #else // defined (TOOLCHAIN_OS_Windows)

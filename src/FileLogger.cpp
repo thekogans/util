@@ -33,10 +33,10 @@ namespace thekogans {
 
         void FileLogger::Log (
                 const std::string & /*subsystem*/,
-                ui32 /*level*/,
+                ui32 level,
                 const std::string &header,
                 const std::string &message) throw () {
-            if (!header.empty () || !message.empty ()) {
+            if (level <= this->level && (!header.empty () || !message.empty ())) {
                 THEKOGANS_UTIL_TRY {
                     ArchiveLog ();
                     OpenFile ();

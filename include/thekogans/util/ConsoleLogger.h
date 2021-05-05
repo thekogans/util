@@ -105,7 +105,7 @@ namespace thekogans {
                     Console::StdStream stream_ = Console::StdErr,
                     ColorScheme::UniquePtr colorScheme_ =
                         ColorScheme::UniquePtr (new DefaultColorScheme),
-                    ui32 level = UI32_MAX) :
+                    ui32 level = MaxLevel) :
                     Logger (level),
                     stream (stream_),
                     colorScheme (std::move (colorScheme_)) {

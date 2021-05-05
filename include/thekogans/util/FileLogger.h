@@ -74,7 +74,7 @@ namespace thekogans {
                 bool archive_ = true,
                 std::size_t archiveCount_ = DEFAULT_ARCHIVE_COUNT,
                 std::size_t maxLogFileSize_ = DEFAULT_MAX_LOG_FILE_SIZE,
-                ui32 level = UI32_MAX) :
+                ui32 level = MaxLevel) :
                 Logger (level),
                 path (path_),
                 archive (archive_),
@@ -90,7 +90,7 @@ namespace thekogans {
             /// \param[in] message Entry message.
             virtual void Log (
                 const std::string & /*subsystem*/,
-                ui32 /*level*/,
+                ui32 level,
                 const std::string &header,
                 const std::string &message) throw () override;
 

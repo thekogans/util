@@ -419,7 +419,7 @@ namespace thekogans {
             }
             if (flags_.Test (WriteOnly)) {
                 dwDesiredAccess |= GENERIC_WRITE;
-                dwShareMode |= FILE_SHARE_WRITE;
+                dwShareMode |= FILE_SHARE_WRITE | FILE_SHARE_DELETE;
             }
             if (flags_.Test (Append)) {
                 dwDesiredAccess |= FILE_APPEND_DATA;

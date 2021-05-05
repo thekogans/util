@@ -37,7 +37,8 @@ namespace thekogans {
 
         LoggerMgr::~LoggerMgr () {
             THEKOGANS_UTIL_TRY {
-                Flush ();
+                const i64 TIMEOUT_SECONDS = 2;
+                Flush (TimeSpec::FromSeconds (TIMEOUT_SECONDS));
             }
             THEKOGANS_UTIL_CATCH_ANY {
                 // Not much we can do here. Try a last-ditch effort to

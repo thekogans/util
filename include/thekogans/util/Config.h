@@ -143,8 +143,11 @@ namespace thekogans {
 
         enum {
             /// \brief
+            /// Log nothing.
+            Invalid,
+            /// \brief
             /// Log only errors.
-            Error = 1,
+            Error,
             /// \brief
             /// Log errors and warnings.
             Warning,
@@ -157,6 +160,9 @@ namespace thekogans {
             /// \brief
             /// Log errors, warnings, info, debug and development.
             Development,
+            /// \brief
+            /// Highest log level we support.
+            MaxLevel = Development
         };
 
         /// \brief

@@ -43,6 +43,7 @@ namespace thekogans {
         struct DefaultInstanceCreator {
             /// \brief
             /// Create a single instance using the default ctor.
+            /// \param[in] args List of arguments to instance ctor.
             /// \return Singleton instance.
             template<typename... Args>
             inline T *operator () (Args... args) {
@@ -81,6 +82,7 @@ namespace thekogans {
         struct RefCountedInstanceCreator {
             /// \brief
             /// Create a single instance using the default ctor.
+            /// \param[in] args List of arguments to instance ctor.
             /// \return Singleton instance.
             template<typename... Args>
             inline T *operator () (Args... args) {
@@ -215,7 +217,6 @@ namespace thekogans {
             /// Return true if instance has been created.
             /// \return true if instance has been created.
             static bool IsInstanceCreated () {
-                LockGuard<Lock> guard (lock);
                 return instance != 0;
             }
 

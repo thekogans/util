@@ -35,7 +35,7 @@ namespace thekogans {
             /// \ brief
             /// ctor.
             /// \param[in] level \see{LoggerMgr::level} this logger will log up to.
-            NullLogger (ui32 level = UI32_MAX) :
+            NullLogger (ui32 level = MaxLevel) :
                 Logger (level) {}
 
             // Logger

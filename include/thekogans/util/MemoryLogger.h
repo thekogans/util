@@ -131,7 +131,7 @@ namespace thekogans {
             /// \param[in] level \see{LoggerMgr::level} this logger will log up to.
             MemoryLogger (
                 std::size_t maxEntries_ = DEFAULT_MAX_ENTRIES,
-                ui32 level = LoggerMgr::MaxLevel) :
+                ui32 level = MaxLevel) :
                 Logger (level),
                 maxEntries (maxEntries_) {}
             /// \brief

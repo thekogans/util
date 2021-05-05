@@ -32,11 +32,13 @@ namespace thekogans {
                 ui32 level,
                 const std::string &header,
                 const std::string &message) throw () {
-            LockGuard<SpinLock> guard (spinLock);
-            entryList.push_back (new Entry (subsystem, level, header, message));
-            if (entryList.size () > maxEntries) {
-                Entry::UniquePtr entry (entryList.pop_front ());
-                // FIXME: callback.
+            if (level <= this->level && (!header.empty () || !message.empty ())) {
+                LockGuard<SpinLock> guard (spinLock);
+                entryList.push_back (new Entry (subsystem, level, header, message));
+                if (entryList.size () > maxEntries) {
+                    Entry::UniquePtr entry (entryList.pop_front ());
+                    // FIXME: callback.
+                }
             }
         }
 

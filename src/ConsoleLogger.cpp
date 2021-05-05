@@ -35,10 +35,12 @@ namespace thekogans {
                 ui32 level,
                 const std::string &header,
                 const std::string &message) throw () {
-            Console::Instance ().PrintString (
-                FormatString ("%s%s", header.c_str (), message.c_str ()),
-                stream,
-                colorScheme.get () != 0 ? colorScheme->GetColor (level) : 0);
+            if (level <= this->level && (!header.empty () || !message.empty ())) {
+                Console::Instance ().PrintString (
+                    FormatString ("%s%s", header.c_str (), message.c_str ()),
+                    stream,
+                    colorScheme.get () != 0 ? colorScheme->GetColor (level) : 0);
+            }
         }
 
     } // namespace util

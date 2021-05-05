@@ -405,10 +405,22 @@ namespace thekogans {
                 return level;
             }
             /// \brief
+            /// Set the logging level.
+            /// \param[in] level_ New logging level.
+            inline void SetLevel (ui32 level_) {
+                level = level_;
+            }
+            /// \brief
             /// Return the current log header decorations.
             /// \return Current log header decorations.
             inline ui32 GetDecorations () const {
                 return decorations;
+            }
+            /// \brief
+            /// Set current log header decorations.
+            /// \paraam[in] decorations_ New log header decorations.
+            inline void SetDecorations (ui32 decorations_) {
+                decorations = decorations_;
             }
 
             enum {
@@ -589,6 +601,15 @@ namespace thekogans {
         /// Reset the GlobalLoggerMgr.
         #define THEKOGANS_UTIL_LOG_RESET(level, decorations)\
             thekogans::util::GlobalLoggerMgr::Instance ().Reset (level, decorations)
+
+        /// \def THEKOGANS_UTIL_LOG_SET_LEVEL(level)
+        /// Set the logging level for the GlobalLoggerMgr.
+        #define THEKOGANS_UTIL_LOG_SET_LEVEL(level)\
+            thekogans::util::GlobalLoggerMgr::Instance ().SetLevel (level)
+        /// \def THEKOGANS_UTIL_LOG_SET_DECORATONS(decorations)
+        /// Set the log header decorations for the GlobalLoggerMgr.
+        #define THEKOGANS_UTIL_LOG_SET_DECORATONS(decorations)\
+            thekogans::util::GlobalLoggerMgr::Instance ().SetDecorations (decorations)
 
         /// \def THEKOGANS_UTIL_LOG_ADD_LOGGER(logger)
         /// After calling THEKOGANS_UTIL_LOG_[INIT | RESET][_EX] use
@@ -873,6 +894,10 @@ namespace thekogans {
                     __DATE__ " " __TIME__, format, __VA_ARGS__);\
             }
 
+        /// \def THEKOGANS_UTIL_LOG_FLUSH_EX
+        /// Use this macro to wait for GlobalLoggerMgr entry queue to drain.
+        #define THEKOGANS_UTIL_LOG_FLUSH_EX(timeSpec)\
+            thekogans::util::GlobalLoggerMgr::Instance ().Flush (timeSpec);
         /// \def THEKOGANS_UTIL_LOG_FLUSH
         /// Use this macro to wait for GlobalLoggerMgr entry queue to drain.
         #define THEKOGANS_UTIL_LOG_FLUSH\
@@ -882,8 +907,11 @@ namespace thekogans {
         /// Use this macro at the top of your main to flush the log on exit.
         #define THEKOGANS_UTIL_IMPLEMENT_LOG_FLUSHER\
             struct LogFlusher {\
+                thekogans::util::TimeSpec timeSpec;\
+                LogFlusher (const thekogans::util::TimeSpec &timeSpec_ = thekogans::util::TimeSpec::Infinite) :\
+                    timeSpec (timeSpec_) {}\
                 ~LogFlusher () {\
-                    THEKOGANS_UTIL_LOG_FLUSH\
+                    THEKOGANS_UTIL_LOG_FLUSH_EX (timeSpec)\
                 }\
             } logFlusher
 

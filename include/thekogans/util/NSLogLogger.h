@@ -38,7 +38,7 @@ namespace thekogans {
             /// \brief
             /// ctor.
             /// \param[in] level \see{LoggerMgr::level} this logger will log up to.
-            NSLogLogger (ui32 level = UI32_MAX) :
+            NSLogLogger (ui32 level = MaxLevel) :
                 Logger (level) {}
 
             // Logger

@@ -36,10 +36,12 @@ namespace thekogans {
 
         void NSLogLogger::Log (
                 const std::string & /*subsystem*/,
-                ui32 /*level*/,
+                ui32 level,
                 const std::string &header,
                 const std::string &message) throw () {
-            NSLog (CFSTR ("%s%s"), header.c_str (), message.c_str ());
+            if (level <= this->level && (!header.empty () || !message.empty ())) {
+                NSLog (CFSTR ("%s%s"), header.c_str (), message.c_str ());
+            }
         }
 
     } // namespace util

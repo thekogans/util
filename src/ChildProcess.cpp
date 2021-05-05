@@ -495,6 +495,12 @@ namespace thekogans {
                         *status = ETIMEDOUT;
                         waiter.Cancel ();
                     }
+                    // The following two lines will prevent a
+                    // potential deadlock that can result if the above
+                    // waiter.condition.Wait returns before Run had a
+                    // chance to execute.
+                    waiter.mutex.TryAcquire ();
+                    waiter.mutex.Release ();
                     waiter.Wait ();
                     return waiter.pid;
                 }
