@@ -453,7 +453,7 @@ namespace thekogans {
 
         void SystemInfo::Dump (std::ostream &stream) const {
             stream <<
-                "Endianness: " << (endianness == util::LittleEndian ? "LittleEndian" : "BigEndian") << std::endl <<
+                "Endianness: " << EndiannessToString (endianness) << std::endl <<
                 "CPU count: " << cpuCount << std::endl <<
                 "Page size: " << pageSize << std::endl <<
                 "Memory size: " << memorySize << std::endl <<

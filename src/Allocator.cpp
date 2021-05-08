@@ -19,6 +19,7 @@
 #include "thekogans/util/SpinLock.h"
 #include "thekogans/util/LockGuard.h"
 #include "thekogans/util/Exception.h"
+#include "thekogans/util/DefaultAllocator.h"
 #include "thekogans/util/Allocator.h"
 #if defined (THEKOGANS_UTIL_TYPE_Static)
     #include "thekogans/util/DefaultAllocator.h"
