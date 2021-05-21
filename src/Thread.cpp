@@ -381,7 +381,7 @@ namespace thekogans {
         }
 
         void Thread::Pause () {
-            CPU::Instance ().Pause ();
+            CPU::Pause ();
         }
 
         void Thread::YieldSlice () {

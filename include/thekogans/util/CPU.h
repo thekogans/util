@@ -451,13 +451,13 @@ namespace thekogans {
 
             /// \brief
             /// Pause the calling thread.
-            void Pause ();
+            static void Pause ();
             /// \brief
             /// Creates a hardware memory barrier (fence) that
             /// prevents the CPU from re-ordering read and write
             /// operations. It may also prevent the compiler from
             /// re-ordering read and write operations.
-            void Barrier ();
+            static void Barrier ();
 
             /// \brief
             /// Dump CPU info to std::ostream.
