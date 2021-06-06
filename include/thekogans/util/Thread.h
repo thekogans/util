@@ -40,6 +40,7 @@
 #include "thekogans/util/Constants.h"
 #include "thekogans/util/TimeSpec.h"
 #include "thekogans/util/SpinLock.h"
+#include "thekogans/util/ThreadRunLoop.h"
 
 #if defined (TOOLCHAIN_OS_Windows)
     /// \brief
@@ -570,6 +571,55 @@ namespace thekogans {
         #else // defined (TOOLCHAIN_OS_Windows)
             const char *format = THEKOGANS_UTIL_UI64_FORMAT);
         #endif // defined (TOOLCHAIN_OS_Windows)
+
+        /// \struct ThreadReaper Thread.h thekogans/util/Thread.h
+        ///
+        /// \brief
+        /// ThreadReaper is a \see{Singleton} whose job is to wait for given
+        /// threads to exit, join with them to release the system resources and
+        /// delete the \see{Thread} wrapper. It should be used by \see{Thread}
+        /// derivatives at the end of their \see{Thread::Run} method like this:
+        ///
+        /// \code{.cpp}
+        /// void SomeThread::Run () {
+        ///     ...
+        ///     ThreadReaper::Instance ().ReapThread (this);
+        /// }
+        /// \endcode
+        ///
+        /// This mechanism allows the thread to control it's own lifetime and
+        /// cleanup after itself avoiding leaks.
+        /// VERY IMPORTANT: This mechanism assumes that threads using this
+        /// mechanism were created with new.
+
+        struct _LIB_THEKOGANS_UTIL_DECL ThreadReaper :
+                public Thread,
+                public Singleton<ThreadReaper, SpinLock> {
+        private:
+            /// \brief
+            /// \see{ThreadRunLoop} that will be executed in this thread.
+            ThreadRunLoop runLoop;
+
+        public:
+            /// \brief
+            /// ctor.
+            ThreadReaper ();
+
+            /// \brief
+            /// Given a \see{Thread} to reap, create a lambda job that will wait for it to exit,
+            /// join with it, and then delete the \see{Thread} wrapper.
+            /// \param[in] thread \see{Thread} to reap.
+            /// \param[in] timeSpec How long to wait for \see{Thread} to exit.
+            void ReapThread (
+                Thread *thread,
+                const TimeSpec &timeSpec = TimeSpec::Infinite);
+
+        private:
+            // Thread
+            /// \brief
+            /// Worker thread.
+            virtual void Run () throw () override;
+        };
 
     } // namespace util
 } // namespace thekogans

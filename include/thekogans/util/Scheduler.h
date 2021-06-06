@@ -80,8 +80,8 @@ namespace thekogans {
                     public RunLoop,
                     public JobQueueList::Node {
                 /// \brief
-                /// Convenient typedef for RefCounted::SharedPtr<JobQueue>.
-                typedef RefCounted::SharedPtr<JobQueue> SharedPtr;
+                /// Declare \see{RefCounted} pointers.
+                THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (JobQueue)
 
                 /// \brief
                 /// JobQueue has a private heap to help with memory
@@ -141,22 +141,22 @@ namespace thekogans {
 
                 /// \brief
                 /// Scheduler job queue starts when jobs are enqueued.
-                virtual void Start ();
+                virtual void Start () override;
                 /// \brief
                 /// Scheduler job queue stops when there are no more jobs to execute.
                 /// \param[in] cancelRunningJobs true = Cancel all running jobs.
                 /// \param[in] cancelPendingJobs true = Cancel all pending jobs.
-                /// \param[in] timeSpec How long to wait for the job queue to stop.
-                /// IMPORTANT: timeSpec is a relative value.
-                /// \return true == Job queue stopped. false == timed out.
-                virtual bool Stop (
+                virtual void Stop (
                     bool cancelRunningJobs = true,
-                    bool cancelPendingJobs = true,
-                    const TimeSpec &timeSpec = TimeSpec::Infinite);
+                    bool cancelPendingJobs = true) override;
+                /// \brief
+                /// Return true if the run loop is running (Start was called).
+                /// \return true if the run loop is running (Start was called).
+                virtual bool IsRunning () override;
 
                 /// \brief
                 /// Continue the job queue execution. If the job queue is not paused, noop.
-                virtual void Continue ();
+                virtual void Continue () override;
 
                 /// \brief
                 /// Enqueue a job to be executed by the job queue.
@@ -168,7 +168,7 @@ namespace thekogans {
                 virtual bool EnqJob (
                     Job::SharedPtr job,
                     bool wait = false,
-                    const TimeSpec &timeSpec = TimeSpec::Infinite);
+                    const TimeSpec &timeSpec = TimeSpec::Infinite) override;
                 /// \brief
                 /// This is a very useful feature meant to aid in job
                 /// design and chunking. The idea is to be able to have
@@ -186,7 +186,7 @@ namespace thekogans {
                 virtual bool EnqJobFront (
                     Job::SharedPtr job,
                     bool wait = false,
-                    const TimeSpec &timeSpec = TimeSpec::Infinite);
+                    const TimeSpec &timeSpec = TimeSpec::Infinite) override;
 
                 /// \brief
                 /// Scheduler needs access to protected members.

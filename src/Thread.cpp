@@ -483,5 +483,28 @@ namespace thekogans {
             }
         }
 
+        ThreadReaper::ThreadReaper () :
+                runLoop ("ThreadReaper") {
+            Create (THEKOGANS_UTIL_LOW_THREAD_PRIORITY, THEKOGANS_UTIL_MAX_THREAD_AFFINITY);
+        }
+
+        void ThreadReaper::ReapThread (
+                Thread *thread,
+                const TimeSpec &timeSpec) {
+            if (thread != 0) {
+                auto job = [thread, timeSpec] (
+                        RunLoop::Job & /*job*/,
+                        const std::atomic<bool> & /*done*/) {
+                    thread->Wait (timeSpec);
+                    delete thread;
+                };
+                runLoop.EnqJob (job);
+            }
+        }
+
+        void ThreadReaper::Run () throw () {
+            runLoop.Start ();
+        }
+
     } // namespace util
 } // namespace thekogans

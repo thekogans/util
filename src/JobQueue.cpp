@@ -25,40 +25,48 @@
 namespace thekogans {
     namespace util {
 
-        void JobQueue::Worker::Run () throw () {
-            RunLoop::WorkerInitializer workerInitializer (queue.workerCallback);
-            while (!queue.done) {
-                Job *job = queue.DeqJob ();
+        void JobQueue::State::Worker::Run () throw () {
+            RunLoop::WorkerInitializer workerInitializer (state->workerCallback);
+            while (!state->done) {
+                Job *job = state->DeqJob ();
                 if (job != 0) {
                     ui64 start = 0;
                     ui64 end = 0;
                     // Short circuit cancelled pending jobs.
-                    if (!job->ShouldStop (queue.done)) {
+                    if (!job->ShouldStop (state->done)) {
                         start = HRTimer::Click ();
                         job->SetState (Job::Running);
-                        job->Prologue (queue.done);
-                        job->Execute (queue.done);
-                        job->Epilogue (queue.done);
-                        job->Succeed (queue.done);
+                        job->Prologue (state->done);
+                        job->Execute (state->done);
+                        job->Epilogue (state->done);
+                        job->Succeed (state->done);
                         end = HRTimer::Click ();
                     }
-                    queue.FinishedJob (job, start, end);
+                    state->FinishedJob (job, start, end);
                 }
             }
+            ThreadReaper::Instance ().ReapThread (this);
         }
+
+        THEKOGANS_UTIL_IMPLEMENT_HEAP_WITH_LOCK (JobQueue::State, SpinLock)
 
         JobQueue::JobQueue (
                 const std::string &name,
                 JobExecutionPolicy::SharedPtr jobExecutionPolicy,
-                std::size_t workerCount_,
-                i32 workerPriority_,
-                ui32 workerAffinity_,
-                WorkerCallback *workerCallback_) :
-                RunLoop (name, jobExecutionPolicy),
-                workerCount (workerCount_),
-                workerPriority (workerPriority_),
-                workerAffinity (workerAffinity_),
-                workerCallback (workerCallback_) {
+                std::size_t workerCount,
+                i32 workerPriority,
+                ui32 workerAffinity,
+                WorkerCallback *workerCallback) :
+                RunLoop (
+                    RunLoop::State::SharedPtr (
+                        new State (
+                            name,
+                            jobExecutionPolicy,
+                            workerCount,
+                            workerPriority,
+                            workerAffinity,
+                            workerCallback))),
+                state (dynamic_refcounted_sharedptr_cast<State> (RunLoop::state)) {
             if (workerCount > 0) {
                 Start ();
             }
@@ -69,108 +77,63 @@ namespace thekogans {
         }
 
         JobQueue::~JobQueue () {
-            // FIXME: Perhaps parameterize the timeout.
-            const i64 TIMEOUT_SECONDS = 2;
-            if (!Stop (true, true, TimeSpec::FromSeconds (TIMEOUT_SECONDS)) && GlobalLoggerMgr::IsInstanceCreated ()) {
-                THEKOGANS_UTIL_LOG_SUBSYSTEM_ERROR (
-                    THEKOGANS_UTIL,
-                    "Unable to stop the '%s' job queue in alloted time " THEKOGANS_UTIL_I64_FORMAT ".\n",
-                    name.c_str (),
-                    TIMEOUT_SECONDS);
-            }
+            Stop ();
         }
 
         void JobQueue::Start () {
-            LockGuard<Mutex> guard (workersMutex);
-            done = false;
-            for (std::size_t i = workers.size (); i < workerCount; ++i) {
+            LockGuard<Mutex> guard (state->workersMutex);
+            state->done = false;
+            for (std::size_t i = state->workers.size (); i < state->workerCount; ++i) {
                 std::string workerName;
-                if (!name.empty ()) {
-                    if (workerCount > 1) {
-                        workerName = FormatString ("%s-" THEKOGANS_UTIL_SIZE_T_FORMAT, name.c_str (), i);
+                if (!state->name.empty ()) {
+                    if (state->workerCount > 1) {
+                        workerName = FormatString ("%s-" THEKOGANS_UTIL_SIZE_T_FORMAT, state->name.c_str (), i);
                     }
                     else {
-                        workerName = name;
+                        workerName = state->name;
                     }
                 }
-                workers.push_back (
-                    new Worker (
-                        *this,
-                        workerName,
-                        workerPriority,
-                        workerAffinity));
+                state->workers.push_back (new State::Worker (state, workerName));
             }
         }
 
-        bool JobQueue::Stop (
+        void JobQueue::Stop (
                 bool cancelRunningJobs,
-                bool cancelPendingJobs,
-                const TimeSpec &timeSpec) {
-            LockGuard<Mutex> guard (workersMutex);
-            TimeSpec deadline = GetCurrentTime () + timeSpec;
-            if (!Pause (cancelRunningJobs, deadline - GetCurrentTime ())) {
-                return false;
+                bool cancelPendingJobs) {
+            LockGuard<Mutex> guard (state->workersMutex);
+            // Clear worker list in case Start is called again.
+            // The worker threads are responsible for their own
+            // lifetimes. Also do it before setting state->done = true
+            // below in case workers exit before we can clear the
+            // list so as not to have a race leading to a crash.
+            state->workers.clear ();
+            // Preclude workers from dequeuing any more pending jobs.
+            state->done = true;
+            // Wake up sleeping workers to allow them to exit.
+            state->jobsNotEmpty.SignalAll ();
+            //  Cancel all running jobs.
+            if (cancelRunningJobs) {
+                CancelRunningJobs ();
             }
-            // At this point there should be no more running jobs.
-            assert (runningJobs.empty ());
+            // CancelPendingJobs does not block.
             if (cancelPendingJobs) {
-                // CancelPendingJobs does not block.
-                CancelPendingJobs ();
-                // This Continue is necessary to wake up from
-                // Pause above so that WaitForIdle can do it's
-                // job.
-                Continue ();
-                if (!workers.empty ()) {
-                    // Since there are no more runningJobs, and
-                    // pendingJobs have been cancelled, WaitForIdle
-                    // should complete quickly.
-                    if (!WaitForIdle (deadline - GetCurrentTime ())) {
-                        return false;
-                    }
-                }
-                else {
-                    // The queue has no worker threads. Simulate what
-                    // they would do to make sure anyone waiting on
-                    // pending jobs gets notified.
-                    Job *job;
-                    while ((job = DeqJob (false)) != 0) {
-                        FinishedJob (job, 0, 0);
-                    }
+                // The queue has no worker threads. Simulate what
+                // they would do to make sure anyone waiting on
+                // pending jobs gets notified.
+                Job *job;
+                while ((job = state->jobExecutionPolicy->DeqJob (*state)) != 0) {
+                    job->Cancel ();
+                    state->runningJobs.push_back (job);
+                    state->FinishedJob (job, 0, 0);
                 }
             }
-            done = true;
-            // This Continue is necessary in case cancelPendingJobs == false.
-            // If cancelPendingJobs == true, it's harmless.
-            Continue ();
-            jobsNotEmpty.SignalAll ();
-            struct Callback : public WorkerList::Callback {
-                typedef WorkerList::Callback::result_type result_type;
-                typedef WorkerList::Callback::argument_type argument_type;
-                const TimeSpec &deadline;
-                explicit Callback (const TimeSpec &deadline_) :
-                    deadline (deadline_) {}
-                virtual result_type operator () (argument_type worker) {
-                    // Join the worker thread before deleting it to
-                    // let it's thread function finish it's teardown.
-                    if (!worker->Wait (deadline - GetCurrentTime ())) {
-                        return false;
-                    }
-                    delete worker;
-                    return true;
-                }
-            } callback (deadline);
-            // Since there are no more jobs (running or pending)
-            // and done == true, workers.clear should complete
-            // quickly.
-            if (!workers.clear (callback)) {
-                return false;
-            }
-            idle.SignalAll ();
-            return true;
+            // Let everyone know the queue is idle.
+            state->idle.SignalAll ();
         }
 
         bool JobQueue::IsRunning () {
-            return !workers.empty ();
+            LockGuard<Mutex> guard (state->workersMutex);
+            return !state->workers.empty ();
         }
 
     } // namespace util

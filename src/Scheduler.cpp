@@ -26,32 +26,33 @@ namespace thekogans {
         THEKOGANS_UTIL_IMPLEMENT_HEAP_WITH_LOCK (Scheduler::JobQueue, SpinLock)
 
         void Scheduler::JobQueue::Start () {
-            done = false;
+            state->done = false;
             if (GetPendingJobCount () != 0) {
                 scheduler.AddJobQueue (this);
             }
         }
 
-        bool Scheduler::JobQueue::Stop (
+        void Scheduler::JobQueue::Stop (
                 bool cancelRunningJobs,
-                bool cancelPendingJobs,
-                const TimeSpec &timeSpec) {
-            TimeSpec deadline = GetCurrentTime () + timeSpec;
-            if (!Pause (cancelRunningJobs, deadline - GetCurrentTime ())) {
-                return false;
+                bool cancelPendingJobs) {
+            state->done = true;
+            if (cancelRunningJobs) {
+                CancelRunningJobs ();
             }
+            scheduler.DeleteJobQueue (this);
             if (cancelPendingJobs) {
-                CancelPendingJobs ();
-                Continue ();
-                if (!WaitForIdle (deadline - GetCurrentTime ())) {
-                    return false;
+                Job *job;
+                while ((job = state->jobExecutionPolicy->DeqJob (*state)) != 0) {
+                    job->Cancel ();
+                    state->runningJobs.push_back (job);
+                    state->FinishedJob (job, 0, 0);
                 }
             }
-            done = true;
-            Continue ();
-            scheduler.DeleteJobQueue (this);
-            idle.SignalAll ();
-            return true;
+            state->idle.SignalAll ();
+        }
+
+        bool Scheduler::JobQueue::IsRunning () {
+            return !state->done;
         }
 
         void Scheduler::JobQueue::Continue () {
@@ -149,22 +150,22 @@ namespace thekogans {
                                 bool cancelled;
                                 // Skip over cancelled jobs.
                                 do {
-                                    job = jobQueue->DeqJob (false);
+                                    job = jobQueue->state->DeqJob (false);
                                     if (job != 0) {
                                         ui64 start = 0;
                                         ui64 end = 0;
                                         // Short circuit cancelled pending jobs.
-                                        cancelled = job->ShouldStop (jobQueue->done);
+                                        cancelled = job->ShouldStop (jobQueue->state->done);
                                         if (!cancelled) {
                                             start = HRTimer::Click ();
                                             job->SetState (Job::Running);
-                                            job->Prologue (jobQueue->done);
-                                            job->Execute (jobQueue->done);
-                                            job->Epilogue (jobQueue->done);
-                                            job->Succeed (jobQueue->done);
+                                            job->Prologue (jobQueue->state->done);
+                                            job->Execute (jobQueue->state->done);
+                                            job->Epilogue (jobQueue->state->done);
+                                            job->Succeed (jobQueue->state->done);
                                             end = HRTimer::Click ();
                                         }
-                                        jobQueue->FinishedJob (job, start, end);
+                                        jobQueue->state->FinishedJob (job, start, end);
                                     }
                                 } while (job != 0 && cancelled);
                                 jobQueue->inFlight = false;

@@ -125,8 +125,8 @@ namespace thekogans {
 
         struct _LIB_THEKOGANS_UTIL_DECL ThreadRunLoop : public RunLoop {
             /// \brief
-            /// Convenient typedef for RefCounted::SharedPtr<ThreadRunLoop>.
-            typedef RefCounted::SharedPtr<ThreadRunLoop> SharedPtr;
+            /// Declare \see{RefCounted} pointers.
+            THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (ThreadRunLoop)
 
         public:
             /// \brief
@@ -148,13 +148,9 @@ namespace thekogans {
             /// to return.
             /// \param[in] cancelRunningJobs true = Cancel all running jobs.
             /// \param[in] cancelPendingJobs true = Cancel all pending jobs.
-            /// \param[in] timeSpec How long to wait for the run loop to stop.
-            /// IMPORTANT: timeSpec is a relative value.
-            /// \return true == Run loop stopped. false == timed out.
-            virtual bool Stop (
+            virtual void Stop (
                 bool cancelRunningJobs = true,
-                bool cancelPendingJobs = true,
-                const TimeSpec &timeSpec = TimeSpec::Infinite) override;
+                bool cancelPendingJobs = true) override;
             /// \brief
             /// Return true is the run loop is running (Start was called).
             /// \return true is the run loop is running (Start was called).

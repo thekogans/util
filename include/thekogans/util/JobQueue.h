@@ -45,96 +45,135 @@ namespace thekogans {
 
         struct _LIB_THEKOGANS_UTIL_DECL JobQueue : public RunLoop {
             /// \brief
-            /// Convenient typedef for RefCounted::SharedPtr<JobQueue>.
-            typedef RefCounted::SharedPtr<JobQueue> SharedPtr;
+            /// Declare \see{RefCounted} pointers.
+            THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (JobQueue)
+
+            /// \struct JobQueue::State JobQueue.h thekogans/util/JobQueue.h
+            ///
+            /// \brief
+            /// JobQueue::State extends the \see{RunLoop::State} to add support for
+            /// worker threads.
+            struct _LIB_THEKOGANS_UTIL_DECL State : public RunLoop::State {
+                /// \brief
+                /// Declare \see{RefCounted} pointers.
+                THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (State)
+
+                /// \brief
+                /// State has a private heap to help with memory
+                /// management, performance, and global heap fragmentation.
+                THEKOGANS_UTIL_DECLARE_HEAP_WITH_LOCK (State, SpinLock)
+
+                /// \brief
+                /// Number of workers servicing the queue.
+                const std::size_t workerCount;
+                /// \brief
+                /// \Worker thread priority.
+                const i32 workerPriority;
+                /// \brief
+                /// \Worker thread processor affinity.
+                const ui32 workerAffinity;
+                /// \brief
+                /// Called to initialize/uninitialize the worker thread.
+                WorkerCallback *workerCallback;
+                /// \brief
+                /// Forward declaration of Worker.
+                struct Worker;
+                enum {
+                    /// \brief
+                    /// WorkerList ID.
+                    WORKER_LIST_ID
+                };
+                /// \brief
+                /// Convenient typedef for IntrusiveList<Worker, WORKER_LIST_ID>.
+                typedef IntrusiveList<Worker, WORKER_LIST_ID> WorkerList;
+                /// \struct JobQueue::Worker JobQueue.h thekogans/util/JobQueue.h
+                ///
+                /// \brief
+                /// Worker takes pending jobs off the queue and
+                /// executes them. It then reports back to the
+                /// queue so that it can collect statistics.
+                struct Worker :
+                        public Thread,
+                        public WorkerList::Node {
+                private:
+                    /// \brief
+                    /// \see{State} used by the worker to process jobs.
+                    State::SharedPtr state;
+
+                public:
+                    /// \brief
+                    /// ctor.
+                    /// \param[in] state_ \see{State} used by the worker to process jobs.
+                    /// \param[in] name Worker thread name.
+                    Worker (State::SharedPtr state_,
+                            const std::string &name = std::string ()) :
+                            Thread (name),
+                            state (state_) {
+                        Create (state->workerPriority, state->workerAffinity);
+                    }
+
+                private:
+                    // Thread
+                    /// \brief
+                    /// Worker thread.
+                    virtual void Run () throw () override;
+                };
+                /// \brief
+                /// List of workers.
+                WorkerList workers;
+                /// \brief
+                /// Synchronization mutex.
+                Mutex workersMutex;
+
+                /// \brief
+                /// ctor.
+                /// \param[in] name JobQueue name. If set, \see{Worker}
+                /// threads will be named name-%d.
+                /// \param[in] jobExecutionPolicy JobQueue \see{RunLoop::JobExecutionPolicy}.
+                /// \param[in] maxPendingJobs Max pending queue jobs.
+                /// \param[in] workerCount_ Max workers to service the queue.
+                /// \param[in] workerPriority_ Worker thread priority.
+                /// \param[in] workerAffinity_ Worker thread processor affinity.
+                /// \param[in] workerCallback_ Called to initialize/uninitialize
+                /// the worker thread.
+                State (
+                    const std::string &name = std::string (),
+                    JobExecutionPolicy::SharedPtr jobExecutionPolicy =
+                        JobExecutionPolicy::SharedPtr (new FIFOJobExecutionPolicy),
+                    std::size_t workerCount_ = 1,
+                    i32 workerPriority_ = THEKOGANS_UTIL_NORMAL_THREAD_PRIORITY,
+                    ui32 workerAffinity_ = THEKOGANS_UTIL_MAX_THREAD_AFFINITY,
+                    WorkerCallback *workerCallback_ = 0) :
+                    RunLoop::State (name, jobExecutionPolicy),
+                    workerCount (workerCount_),
+                    workerPriority (workerPriority_),
+                    workerAffinity (workerAffinity_),
+                    workerCallback (workerCallback_) {}
+            };
 
         protected:
             /// \brief
-            /// Number of workers servicing the queue.
-            const std::size_t workerCount;
-            /// \brief
-            /// \Worker thread priority.
-            const i32 workerPriority;
-            /// \brief
-            /// \Worker thread processor affinity.
-            const ui32 workerAffinity;
-            /// \brief
-            /// Called to initialize/uninitialize the worker thread.
-            WorkerCallback *workerCallback;
-            /// \brief
-            /// Forward declaration of Worker.
-            struct Worker;
-            enum {
-                /// \brief
-                /// WorkerList ID.
-                WORKER_LIST_ID
-            };
-            /// \brief
-            /// Convenient typedef for IntrusiveList<Worker, WORKER_LIST_ID>.
-            typedef IntrusiveList<Worker, WORKER_LIST_ID> WorkerList;
-            /// \struct JobQueue::Worker JobQueue.h thekogans/util/JobQueue.h
-            ///
-            /// \brief
-            /// Worker takes pending jobs off the queue and
-            /// executes them. It then reports back to the
-            /// queue so that it can collect statistics.
-            struct Worker :
-                    public Thread,
-                    public WorkerList::Node {
-            private:
-                /// \brief
-                /// JobQueue to which this worker belongs.
-                JobQueue &queue;
-
-            public:
-                /// \brief
-                /// ctor.
-                /// \param[in] queue_ JobQueue to which this worker belongs.
-                /// \param[in] name Worker thread name.
-                /// \param[in] priority Worker thread priority.
-                /// \param[in] affinity Worker thread processor affinity.
-                Worker (JobQueue &queue_,
-                        const std::string &name = std::string (),
-                        i32 priority = THEKOGANS_UTIL_NORMAL_THREAD_PRIORITY,
-                        ui32 affinity = THEKOGANS_UTIL_MAX_THREAD_AFFINITY) :
-                        Thread (name),
-                        queue (queue_) {
-                    Create (priority, affinity);
-                }
-
-            private:
-                // Thread
-                /// \brief
-                /// Worker thread.
-                virtual void Run () throw () override;
-            };
-            /// \brief
-            /// List of workers.
-            WorkerList workers;
-            /// \brief
-            /// Synchronization mutex.
-            Mutex workersMutex;
+            /// JobQueue \see{State}.
+            State::SharedPtr state;
 
         public:
             /// \brief
             /// ctor.
-            /// \param[in] name JobQueue name. If set, \see{Worker}
-            /// threads will be named name-%d.
+            /// \param[in] name JobQueue name. If set, \see{State::Worker} threads will be named name-%d.
             /// \param[in] jobExecutionPolicy JobQueue \see{RunLoop::JobExecutionPolicy}.
             /// \param[in] maxPendingJobs Max pending queue jobs.
-            /// \param[in] workerCount_ Max workers to service the queue.
-            /// \param[in] workerPriority_ Worker thread priority.
-            /// \param[in] workerAffinity_ Worker thread processor affinity.
-            /// \param[in] workerCallback_ Called to initialize/uninitialize
-            /// the worker thread.
+            /// \param[in] workerCount Max workers to service the queue.
+            /// \param[in] workerPriority Worker thread priority.
+            /// \param[in] workerAffinity Worker thread processor affinity.
+            /// \param[in] workerCallback Called to initialize/uninitialize the worker thread(s).
             JobQueue (
                 const std::string &name = std::string (),
                 JobExecutionPolicy::SharedPtr jobExecutionPolicy =
                     JobExecutionPolicy::SharedPtr (new FIFOJobExecutionPolicy),
-                std::size_t workerCount_ = 1,
-                i32 workerPriority_ = THEKOGANS_UTIL_NORMAL_THREAD_PRIORITY,
-                ui32 workerAffinity_ = THEKOGANS_UTIL_MAX_THREAD_AFFINITY,
-                WorkerCallback *workerCallback_ = 0);
+                std::size_t workerCount = 1,
+                i32 workerPriority = THEKOGANS_UTIL_NORMAL_THREAD_PRIORITY,
+                ui32 workerAffinity = THEKOGANS_UTIL_MAX_THREAD_AFFINITY,
+                WorkerCallback *workerCallback = 0);
             /// \brief
             /// dtor. Stop the queue.
             virtual ~JobQueue ();
@@ -144,7 +183,7 @@ namespace thekogans {
             /// Create the worker(s), and start waiting for jobs. The
             /// ctor calls this member, but if you ever need to stop
             /// the queue, you need to call Start manually to restart it.
-            virtual void Start ();
+            virtual void Start () override;
             /// \brief
             /// Stops all running, and cancels all pending jobs. The
             /// queue, and the worker pool are flushed. After calling
@@ -159,17 +198,13 @@ namespace thekogans {
             /// to the state of done.
             /// \param[in] cancelRunningJobs true = Cancel all running jobs.
             /// \param[in] cancelPendingJobs true = Cancel all pending jobs.
-            /// \param[in] timeSpec How long to wait for the job queue to stop.
-            /// IMPORTANT: timeSpec is a relative value.
-            /// \return true == Job queue stopped. false == timed out waiting for worker to stop.
-            virtual bool Stop (
+            virtual void Stop (
                 bool cancelRunningJobs = true,
-                bool cancelPendingJobs = true,
-                const TimeSpec &timeSpec = TimeSpec::Infinite);
+                bool cancelPendingJobs = true) override;
             /// \brief
             /// Return true is the run loop is running (Start was called).
             /// \return true is the run loop is running (Start was called).
-            virtual bool IsRunning ();
+            virtual bool IsRunning () override;
 
             /// \brief
             /// JobQueue is neither copy constructable, nor assignable.

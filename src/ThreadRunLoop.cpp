@@ -23,51 +23,48 @@ namespace thekogans {
     namespace util {
 
         void ThreadRunLoop::Start () {
-            done = false;
-            while (!done) {
-                Job *job = DeqJob ();
+            state->done = false;
+            while (!state->done) {
+                Job *job = state->DeqJob ();
                 if (job != 0) {
                     ui64 start = 0;
                     ui64 end = 0;
                     // Short circuit cancelled pending jobs.
-                    if (!job->ShouldStop (done)) {
+                    if (!job->ShouldStop (state->done)) {
                         start = HRTimer::Click ();
                         job->SetState (Job::Running);
-                        job->Prologue (done);
-                        job->Execute (done);
-                        job->Epilogue (done);
-                        job->Succeed (done);
+                        job->Prologue (state->done);
+                        job->Execute (state->done);
+                        job->Epilogue (state->done);
+                        job->Succeed (state->done);
                         end = HRTimer::Click ();
                     }
-                    FinishedJob (job, start, end);
+                    state->FinishedJob (job, start, end);
                 }
             }
         }
 
-        bool ThreadRunLoop::Stop (
+        void ThreadRunLoop::Stop (
                 bool cancelRunningJobs,
-                bool cancelPendingJobs,
-                const TimeSpec &timeSpec) {
-            TimeSpec deadline = GetCurrentTime () + timeSpec;
-            if (!Pause (cancelRunningJobs, deadline - GetCurrentTime ())) {
-                return false;
+                bool cancelPendingJobs) {
+            state->done = true;
+            if (cancelRunningJobs) {
+                CancelRunningJobs ();
             }
+            state->jobsNotEmpty.Signal ();
             if (cancelPendingJobs) {
-                CancelPendingJobs ();
-                Continue ();
-                if (!WaitForIdle (deadline - GetCurrentTime ())) {
-                    return false;
+                Job *job;
+                while ((job = state->jobExecutionPolicy->DeqJob (*state)) != 0) {
+                    job->Cancel ();
+                    state->runningJobs.push_back (job);
+                    state->FinishedJob (job, 0, 0);
                 }
             }
-            done = true;
-            Continue ();
-            jobsNotEmpty.Signal ();
-            idle.SignalAll ();
-            return true;
+            state->idle.SignalAll ();
         }
 
         bool ThreadRunLoop::IsRunning () {
-            return !done;
+            return !state->done;
         }
 
     } // namespace util

@@ -374,6 +374,8 @@ namespace thekogans {
                 }
             };
 
+            struct State;
+
             /// \struct RunLoop::JobExecutionPolicy RunLoop.h thekogans/util/RunLoop.h
             ///
             /// \brief
@@ -414,7 +416,7 @@ namespace thekogans {
                 /// \param[in] runLoop RunLoop on which to enqueue the given job.
                 /// \param[in] job Job to enqueue.
                 virtual void EnqJob (
-                    RunLoop &runLoop,
+                    State &state,
                     Job *job) = 0;
                 /// \brief
                 /// Enqueue a job on the given RunLoops pendingJobs to be performed
@@ -422,13 +424,13 @@ namespace thekogans {
                 /// \param[in] runLoop RunLoop on which to enqueue the given job.
                 /// \param[in] job Job to enqueue.
                 virtual void EnqJobFront (
-                    RunLoop &runLoop,
+                    State &state,
                     Job *job) = 0;
                 /// \brief
                 /// Dequeue the next job to be executed on the run loop thread.
                 /// \param[in] runLoop RunLoop from which to dequeue the next job.
                 /// \return The next job to execute (0 if no more pending jobs).
-                virtual Job *DeqJob (RunLoop &runLoop) = 0;
+                virtual Job *DeqJob (State &state) = 0;
             };
 
             /// \struct RunLoop::FIFOJobExecutionPolicy RunLoop.h thekogans/util/RunLoop.h
@@ -448,21 +450,21 @@ namespace thekogans {
                 /// \param[in] runLoop RunLoop on which to enqueue the given job.
                 /// \param[in] job Job to enqueue.
                 virtual void EnqJob (
-                    RunLoop &runLoop,
-                    Job *job);
+                    State &state,
+                    Job *job) override;
                 /// \brief
                 /// Enqueue a job on the given RunLoops pendingJobs to be performed
                 /// next on the run loop thread.
                 /// \param[in] runLoop RunLoop on which to enqueue the given job.
                 /// \param[in] job Job to enqueue.
                 virtual void EnqJobFront (
-                    RunLoop &runLoop,
-                    Job *job);
+                    State &state,
+                    Job *job) override;
                 /// \brief
                 /// Dequeue the next job to be executed on the run loop thread.
                 /// \param[in] runLoop RunLoop from which to dequeue the next job.
                 /// \return The next job to execute (0 if no more pending jobs).
-                virtual Job *DeqJob (RunLoop &runLoop);
+                virtual Job *DeqJob (State &state) override;
             };
 
             /// \struct RunLoop::LIFOJobExecutionPolicy RunLoop.h thekogans/util/RunLoop.h
@@ -482,21 +484,21 @@ namespace thekogans {
                 /// \param[in] runLoop RunLoop on which to enqueue the given job.
                 /// \param[in] job Job to enqueue.
                 virtual void EnqJob (
-                    RunLoop &runLoop,
-                    Job *job);
+                    State &state,
+                    Job *job) override;
                 /// \brief
                 /// Enqueue a job on the given RunLoops pendingJobs to be performed
                 /// next on the run loop thread.
                 /// \param[in] runLoop RunLoop on which to enqueue the given job.
                 /// \param[in] job Job to enqueue.
                 virtual void EnqJobFront (
-                    RunLoop &runLoop,
-                    Job *job);
+                    State &state,
+                    Job *job) override;
                 /// \brief
                 /// Dequeue the next job to be executed on the run loop thread.
                 /// \param[in] runLoop RunLoop from which to dequeue the next job.
                 /// \return The next job to execute (0 if no more pending jobs).
-                virtual Job *DeqJob (RunLoop &runLoop);
+                virtual Job *DeqJob (State &state) override;
             };
 
             /// \brief
@@ -869,68 +871,129 @@ namespace thekogans {
             };
         #endif // defined (TOOLCHAIN_OS_Windows)
 
+            /// \struct RunLoop::State RunLoop.h thekogans/util/RunLoop.h
+            ///
+            /// \brief
+            /// Shared RunLoop state. RunLoop lifetime is unpredictable. RunLoops can
+            /// be embedded in other objects making them difficult to use in multi-threaded
+            /// environment (worker threads). A RunLoop state will always be allocated on
+            /// the heap making managing it's lifetime a lot easier.
+            struct _LIB_THEKOGANS_UTIL_DECL State : public virtual RefCounted {
+                /// \brief
+                /// Declare \see{RefCounted} pointers.
+                THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (State)
+
+                /// \brief
+                /// State has a private heap to help with memory
+                /// management, performance, and global heap fragmentation.
+                THEKOGANS_UTIL_DECLARE_HEAP_WITH_LOCK (State, SpinLock)
+
+                /// \brief
+                /// RunLoop id.
+                const Id id;
+                /// \brief
+                /// RunLoop name.
+                const std::string name;
+                /// \brief
+                /// RunLoop \see{JobExecutionPolicy}.
+                JobExecutionPolicy::SharedPtr jobExecutionPolicy;
+                /// \brief
+                /// Flag to signal the worker thread(s).
+                std::atomic<bool> done;
+                /// \brief
+                /// Queue of pending jobs.
+                JobList pendingJobs;
+                /// \brief
+                /// List of running jobs.
+                JobList runningJobs;
+                /// \brief
+                /// RunLoop stats.
+                Stats stats;
+                /// \brief
+                /// Synchronization mutex.
+                Mutex jobsMutex;
+                /// \brief
+                /// Synchronization condition variable.
+                Condition jobsNotEmpty;
+                /// \brief
+                /// Synchronization condition variable.
+                Condition idle;
+                /// \brief
+                /// true == run loop is paused.
+                bool paused;
+                /// \brief
+                /// Signal waiting workers that the run loop is not paused.
+                Condition notPaused;
+
+                /// \brief
+                /// ctor.
+                /// \param[in] name_ RunLoop name.
+                /// \param[in] jobExecutionPolicy_ RunLoop \see{JobExecutionPolicy}.
+                State (
+                    const std::string &name_ = std::string (),
+                    JobExecutionPolicy::SharedPtr jobExecutionPolicy_ =
+                        JobExecutionPolicy::SharedPtr (new FIFOJobExecutionPolicy));
+                /// \brief
+                /// dtor.
+                virtual ~State ();
+
+                /// \brief
+                /// Used internally by worker(s) to get the next job.
+                /// \param[in] wait true == Wait until a job becomes available.
+                /// \return The next job to execute.
+                Job *DeqJob (bool wait = true);
+                /// \brief
+                /// Called by worker(s) after each job is completed.
+                /// Used to update state and \see{RunLoop::Stats}.
+                /// \param[in] job Completed job.
+                /// \param[in] start Completed job start time.
+                /// \param[in] end Completed job end time.
+                void FinishedJob (
+                    Job *job,
+                    ui64 start,
+                    ui64 end);
+            };
+
         protected:
             /// \brief
-            /// RunLoop id.
-            const Id id;
-            /// \brief
-            /// RunLoop name.
-            const std::string name;
-            /// \brief
-            /// RunLoop \see{JobExecutionPolicy}.
-            JobExecutionPolicy::SharedPtr jobExecutionPolicy;
-            /// \brief
-            /// Flag to signal the worker thread(s).
-            std::atomic<bool> done;
-            /// \brief
-            /// Queue of pending jobs.
-            JobList pendingJobs;
-            /// \brief
-            /// List of running jobs.
-            JobList runningJobs;
-            /// \brief
-            /// RunLoop stats.
-            Stats stats;
-            /// \brief
-            /// Synchronization mutex.
-            Mutex jobsMutex;
-            /// \brief
-            /// Synchronization condition variable.
-            Condition jobsNotEmpty;
-            /// \brief
-            /// Synchronization condition variable.
-            Condition idle;
-            /// \brief
-            /// true == run loop is paused.
-            bool paused;
-            /// \brief
-            /// Signal waiting workers that the run loop is not paused.
-            Condition notPaused;
+            /// Shared RunLoop state.
+            State::SharedPtr state;
 
         public:
             /// \brief
             /// ctor.
-            /// \param[in] name_ RunLoop name.
-            /// \param[in] jobExecutionPolicy_ RunLoop \see{JobExecutionPolicy}.
+            /// \param[in] name RunLoop name.
+            /// \param[in] jobExecutionPolicy RunLoop \see{JobExecutionPolicy}.
             RunLoop (
-                const std::string &name_ = std::string (),
-                JobExecutionPolicy::SharedPtr jobExecutionPolicy_ =
-                    JobExecutionPolicy::SharedPtr (new FIFOJobExecutionPolicy));
+                const std::string &name = std::string (),
+                JobExecutionPolicy::SharedPtr jobExecutionPolicy =
+                    JobExecutionPolicy::SharedPtr (new FIFOJobExecutionPolicy)) :
+                state (new State (name, jobExecutionPolicy)) {}
+            /// \brief
+            /// ctor.
+            /// \param[in] state_ Shared RunLoop state.
+            explicit RunLoop (State::SharedPtr state_) :
+                    state (state_) {
+                if (state.Get () == 0) {
+                    THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                        THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
+                }
+            }
             /// \brief
             /// dtor.
-            virtual ~RunLoop ();
+            virtual ~RunLoop () {}
 
             /// \brief
             /// Return RunLoop id.
             /// \return RunLoop id.
             inline const Id &GetId () const {
-                return id;
+                return state->id;
             }
             /// \brief
             /// Return RunLoop name.
             /// \return RunLoop name.
             inline const std::string &GetName () const {
-                return name;
+                return state->name;
             }
 
             /// \brief
@@ -972,13 +1035,9 @@ namespace thekogans {
             /// than the one that called Start.
             /// \param[in] cancelRunningJobs true == Cancel all running jobs.
             /// \param[in] cancelPendingJobs true == Cancel all pending jobs.
-            /// \param[in] timeSpec How long to wait for the run loop to stop.
-            /// IMPORTANT: timeSpec is a relative value.
-            /// \return true == Run loop stopped. false == timed out.
-            virtual bool Stop (
+            virtual void Stop (
                 bool /*cancelRunningJobs*/ = true,
-                bool /*cancelPendingJobs*/ = true,
-                const TimeSpec & /*timeSpec*/ = TimeSpec::Infinite) = 0;
+                bool /*cancelPendingJobs*/ = true) = 0;
             /// \brief
             /// Return true if the run loop is running (Start was called).
             /// \return true if the run loop is running (Start was called).
@@ -1181,23 +1240,6 @@ namespace thekogans {
             /// IMPORTANT: See VERY IMPORTANT comment in \see{Pause} (above).
             /// \return true == idle, false == busy.
             virtual bool IsIdle ();
-
-        protected:
-            /// \brief
-            /// Used internally by worker(s) to get the next job.
-            /// \param[in] wait true == Wait until a job becomes available.
-            /// \return The next job to execute.
-            Job *DeqJob (bool wait = true);
-            /// \brief
-            /// Called by worker(s) after each job is completed.
-            /// Used to update state and \see{RunLoop::Stats}.
-            /// \param[in] job Completed job.
-            /// \param[in] start Completed job start time.
-            /// \param[in] end Completed job end time.
-            void FinishedJob (
-                Job *job,
-                ui64 start,
-                ui64 end);
         };
 
         /// \brief

@@ -263,7 +263,7 @@ namespace thekogans {
     #endif // defined (TOOLCHAIN_OS_Windows)
 
         void SystemRunLoop::Start () {
-            done = false;
+            state->done = false;
             ExecuteJobs ();
         #if defined (TOOLCHAIN_OS_Windows)
             BOOL result;
@@ -285,7 +285,7 @@ namespace thekogans {
             struct epoll {
                 THEKOGANS_UTIL_HANDLE handle;
                 explicit epoll (ui32 maxSize) :
-                        handle (epoll_create (maxSize)) {
+                    handle (epoll_create (maxSize)) {
                     if (handle == THEKOGANS_UTIL_INVALID_HANDLE_VALUE) {
                         THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
                             THEKOGANS_UTIL_OS_ERROR_CODE);
@@ -362,23 +362,13 @@ namespace thekogans {
         #endif // defined (TOOLCHAIN_OS_Windows)
         }
 
-        bool SystemRunLoop::Stop (
+        void SystemRunLoop::Stop (
                 bool cancelRunningJobs,
-                bool cancelPendingJobs,
-                const TimeSpec &timeSpec) {
-            TimeSpec deadline = GetCurrentTime () + timeSpec;
-            if (!Pause (cancelRunningJobs, deadline - GetCurrentTime ())) {
-                return false;
+                bool cancelPendingJobs) {
+            state->done = true;
+            if (cancelRunningJobs) {
+                CancelRunningJobs ();
             }
-            if (cancelPendingJobs) {
-                CancelPendingJobs ();
-                Continue ();
-                if (!WaitForIdle (deadline - GetCurrentTime ())) {
-                    return false;
-                }
-            }
-            done = true;
-            Continue ();
         #if defined (TOOLCHAIN_OS_Windows)
             PostMessage (window->wnd, WM_CLOSE, 0, 0);
         #elif defined (TOOLCHAIN_OS_Linux)
@@ -386,12 +376,19 @@ namespace thekogans {
         #elif defined (TOOLCHAIN_OS_OSX)
             runLoop->Stop ();
         #endif // defined (TOOLCHAIN_OS_Windows)
-            idle.SignalAll ();
-            return true;
+            if (cancelPendingJobs) {
+                Job *job;
+                while ((job = state->jobExecutionPolicy->DeqJob (*state)) != 0) {
+                    job->Cancel ();
+                    state->runningJobs.push_back (job);
+                    state->FinishedJob (job, 0, 0);
+                }
+            }
+            state->idle.SignalAll ();
         }
 
         bool SystemRunLoop::IsRunning () {
-            return !done;
+            return !state->done;
         }
 
         bool SystemRunLoop::EnqJob (
@@ -443,24 +440,24 @@ namespace thekogans {
         }
 
         void SystemRunLoop::ExecuteJobs () {
-            while (!done) {
-                Job *job = DeqJob (false);
+            while (!state->done) {
+                Job *job = state->DeqJob (false);
                 if (job == 0) {
                     break;
                 }
                 ui64 start = 0;
                 ui64 end = 0;
                 // Short circuit cancelled pending jobs.
-                if (!job->ShouldStop (done)) {
+                if (!job->ShouldStop (state->done)) {
                     start = HRTimer::Click ();
                     job->SetState (Job::Running);
-                    job->Prologue (done);
-                    job->Execute (done);
-                    job->Epilogue (done);
-                    job->Succeed (done);
+                    job->Prologue (state->done);
+                    job->Execute (state->done);
+                    job->Epilogue (state->done);
+                    job->Succeed (state->done);
                     end = HRTimer::Click ();
                 }
-                FinishedJob (job, start, end);
+                state->FinishedJob (job, start, end);
             }
         }
 

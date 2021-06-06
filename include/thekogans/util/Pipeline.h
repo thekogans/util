@@ -68,6 +68,8 @@ namespace thekogans {
             /// Convenient typedef for IntrusiveList<Job, JOB_LIST_ID>.
             typedef IntrusiveList<Job, JOB_LIST_ID> JobList;
 
+            struct State;
+
             /// \struct Pipeline::JobExecutionPolicy Pipeline.h thekogans/util/Pipeline.h
             ///
             /// \brief
@@ -108,7 +110,7 @@ namespace thekogans {
                 /// \param[in] pipeline Pipeline on which to enqueue the given job.
                 /// \param[in] job Job to enqueue.
                 virtual void EnqJob (
-                    Pipeline &pipeline,
+                    State &state,
                     Job *job) = 0;
                 /// \brief
                 /// Enqueue a job on the given Pipelines pendingJobs to be performed
@@ -116,13 +118,13 @@ namespace thekogans {
                 /// \param[in] pipeline Pipeline on which to enqueue the given job.
                 /// \param[in] job Job to enqueue.
                 virtual void EnqJobFront (
-                    Pipeline &pipeline,
+                    State &state,
                     Job *job) = 0;
                 /// \brief
                 /// Dequeue the next job to be executed on the pipeline thread.
                 /// \param[in] pipeline Pipeline from which to dequeue the next job.
                 /// \return The next job to execute (0 if no more pending jobs).
-                virtual Job *DeqJob (Pipeline &pipeline) = 0;
+                virtual Job *DeqJob (State &state) = 0;
             };
 
             /// \struct Pipeline::FIFOJobExecutionPolicy Pipeline.h thekogans/util/Pipeline.h
@@ -142,21 +144,21 @@ namespace thekogans {
                 /// \param[in] pipeline Pipeline on which to enqueue the given job.
                 /// \param[in] job Job to enqueue.
                 virtual void EnqJob (
-                    Pipeline &pipeline,
-                    Job *job);
+                    State &state,
+                    Job *job) override;
                 /// \brief
                 /// Enqueue a job on the given Pipelines pendingJobs to be performed
                 /// next on the pipeline thread.
                 /// \param[in] pipeline Pipeline on which to enqueue the given job.
                 /// \param[in] job Job to enqueue.
                 virtual void EnqJobFront (
-                    Pipeline &pipeline,
-                    Job *job);
+                    State &state,
+                    Job *job) override;
                 /// \brief
                 /// Dequeue the next job to be executed on the pipeline thread.
                 /// \param[in] pipeline Pipeline from which to dequeue the next job.
                 /// \return The next job to execute (0 if no more pending jobs).
-                virtual Job *DeqJob (Pipeline &pipeline);
+                virtual Job *DeqJob (State &state) override;
             };
 
             /// \struct Pipeline::LIFOJobExecutionPolicy Pipeline.h thekogans/util/Pipeline.h
@@ -176,21 +178,21 @@ namespace thekogans {
                 /// \param[in] pipeline Pipeline on which to enqueue the given job.
                 /// \param[in] job Job to enqueue.
                 virtual void EnqJob (
-                    Pipeline &pipeline,
-                    Job *job);
+                    State &state,
+                    Job *job) override;
                 /// \brief
                 /// Enqueue a job on the given Pipelines pendingJobs to be performed
                 /// next on the pipeline thread.
                 /// \param[in] pipeline Pipeline on which to enqueue the given job.
                 /// \param[in] job Job to enqueue.
                 virtual void EnqJobFront (
-                    Pipeline &pipeline,
-                    Job *job);
+                    State &state,
+                    Job *job) override;
                 /// \brief
                 /// Dequeue the next job to be executed on the pipeline thread.
                 /// \param[in] pipeline Pipeline from which to dequeue the next job.
                 /// \return The next job to execute (0 if no more pending jobs).
-                virtual Job *DeqJob (Pipeline &pipeline);
+                virtual Job *DeqJob (State &state) override;
             };
 
         #if defined (_MSC_VER)
@@ -216,7 +218,7 @@ namespace thekogans {
             protected:
                 /// \brief
                 /// Pipeline on which this job is staged.
-                Pipeline &pipeline;
+                RefCounted::SharedPtr<Pipeline::State> pipeline;
                 /// \brief
                 /// Current job stage.
                 std::size_t stage;
@@ -231,36 +233,24 @@ namespace thekogans {
                 /// \brief
                 /// ctor.
                 /// \param[in] pipeline_ Pipeline that will execute this job.
-                explicit Job (Pipeline &pipeline_) :
-                    pipeline (pipeline_),
-                    stage (0),
-                    start (0),
-                    end (0) {}
+                explicit Job (Pipeline &pipeline_);
 
-                /// \brief
-                /// Return the pipeline on which this job can run.
-                /// \return Pipeline on which this job can run.
-                inline Pipeline &GetPipeline () const {
-                    return pipeline;
-                }
                 /// \brief
                 /// Return the pipeline id on which this job can run.
                 /// \return Pipeline id on which this job can run.
-                inline const RunLoop::Id &GetPipelineId () const {
-                    return pipeline.GetId ();
-                }
+                const RunLoop::Id &GetPipelineId () const;
 
             protected:
                 /// \brief
                 /// Used internally by Pipeline to set the RunLoop id and reset
                 /// the state, disposition and completed.
                 /// \param[in] runLoopId_ Pipeline id to which this job belongs.
-                virtual void Reset (const RunLoop::Id &runLoopId_);
+                virtual void Reset (const RunLoop::Id &runLoopId_) override;
                 /// \brief
                 /// Used internally by Pipeline and it's derivatives to set the
                 /// job state.
                 /// \param[in] state_ New job state.
-                virtual void SetState (State state_);
+                virtual void SetState (State state_) override;
 
                 /// \brief
                 /// Override this method to provide custom staging.
@@ -337,7 +327,7 @@ namespace thekogans {
                 /// \brief
                 /// If our run loop is still running, execute the lambda function.
                 /// \param[in] done true == The run loop is done and nothing can be executed on it.
-                virtual void Execute (const std::atomic<bool> &done) throw () {
+                virtual void Execute (const std::atomic<bool> &done) throw () override {
                     if (!ShouldStop (done) && functions[stage] != 0) {
                         functions[stage] (*this, done);
                     }
@@ -392,134 +382,218 @@ namespace thekogans {
                     workerCallback (workerCallback_) {}
             };
 
-        private:
-            /// \brief
-            /// Pipeline id.
-            const RunLoop::Id id;
-            /// \brief
-            /// Pipeline name.
-            const std::string name;
-            /// \brief
-            /// Pipeline job execution policy.
-            JobExecutionPolicy::SharedPtr jobExecutionPolicy;
-            /// \brief
-            /// Flag to signal the stage thread(s).
-            std::atomic<bool> done;
-            /// \brief
-            /// Queue of pending jobs.
-            JobList pendingJobs;
-            /// \brief
-            /// List of running jobs.
-            JobList runningJobs;
-            /// \brief
-            /// Pipeline stats.
-            RunLoop::Stats stats;
-            /// \brief
-            /// Synchronization mutex.
-            Mutex jobsMutex;
-            /// \brief
-            /// Synchronization condition variable.
-            Condition jobsNotEmpty;
-            /// \brief
-            /// Synchronization condition variable.
-            Condition idle;
-            /// \brief
-            /// true == pipeline is paused.
-            bool paused;
-            /// \brief
-            /// Signal waiting workers that the pipeline is not paused.
-            Condition notPaused;
-            /// \brief
-            /// Number of workers servicing the pipeline.
-            const std::size_t workerCount;
-            /// \brief
-            /// \Worker thread priority.
-            const i32 workerPriority;
-            /// \brief
-            /// \Worker thread processor affinity.
-            const ui32 workerAffinity;
-            /// \brief
-            /// Called to initialize/uninitialize the worker thread.
-            RunLoop::WorkerCallback *workerCallback;
-            /// \brief
-            /// Forward declaration of Worker.
-            struct Worker;
-            enum {
-                /// \brief
-                /// WorkerList ID.
-                WORKER_LIST_ID
-            };
-            /// \brief
-            /// Convenient typedef for IntrusiveList<Worker, WORKER_LIST_ID>.
-            typedef IntrusiveList<Worker, WORKER_LIST_ID> WorkerList;
-            /// \struct Pipeline::Worker Pipeline.h thekogans/util/Pipeline.h
+            /// \struct RunLoop::State RunLoop.h thekogans/util/RunLoop.h
             ///
             /// \brief
-            /// Worker takes pending jobs off the pipeline queue and
-            /// executes them. It then reports back to the pipeline
-            /// so that it can collect statistics.
-            struct Worker :
-                    public Thread,
-                    public WorkerList::Node {
-            private:
+            /// Shared RunLoop state. RunLoop lifetime is unpredictable. RunLoops can
+            /// be embedded in other objects making them difficult to use in multi-threaded
+            /// environment (worker threads). A RunLoop state will always be allocated on
+            /// the heap making managing it's lifetime a lot easier.
+            struct _LIB_THEKOGANS_UTIL_DECL State : public virtual RefCounted {
                 /// \brief
-                /// Pipeline to which this worker belongs.
-                Pipeline &pipeline;
+                /// Declare \see{RefCounted} pointers.
+                THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (State)
 
-            public:
+                /// \brief
+                /// State has a private heap to help with memory
+                /// management, performance, and global heap fragmentation.
+                THEKOGANS_UTIL_DECLARE_HEAP_WITH_LOCK (State, SpinLock)
+
+                /// \brief
+                /// Pipeline id.
+                const RunLoop::Id id;
+                /// \brief
+                /// Pipeline name.
+                const std::string name;
+                /// \brief
+                /// Pipeline job execution policy.
+                JobExecutionPolicy::SharedPtr jobExecutionPolicy;
+                /// \brief
+                /// Flag to signal the stage thread(s).
+                std::atomic<bool> done;
+                /// \brief
+                /// Queue of pending jobs.
+                JobList pendingJobs;
+                /// \brief
+                /// List of running jobs.
+                JobList runningJobs;
+                /// \brief
+                /// Pipeline stats.
+                RunLoop::Stats stats;
+                /// \brief
+                /// Synchronization mutex.
+                Mutex jobsMutex;
+                /// \brief
+                /// Synchronization condition variable.
+                Condition jobsNotEmpty;
+                /// \brief
+                /// Synchronization condition variable.
+                Condition idle;
+                /// \brief
+                /// true == pipeline is paused.
+                bool paused;
+                /// \brief
+                /// Signal waiting workers that the pipeline is not paused.
+                Condition notPaused;
+                /// \brief
+                /// Number of workers servicing the pipeline.
+                const std::size_t workerCount;
+                /// \brief
+                /// \Worker thread priority.
+                const i32 workerPriority;
+                /// \brief
+                /// \Worker thread processor affinity.
+                const ui32 workerAffinity;
+                /// \brief
+                /// Called to initialize/uninitialize the worker thread.
+                RunLoop::WorkerCallback *workerCallback;
+                /// \brief
+                /// Forward declaration of Worker.
+                struct Worker;
+                enum {
+                    /// \brief
+                    /// WorkerList ID.
+                    WORKER_LIST_ID
+                };
+                /// \brief
+                /// Convenient typedef for IntrusiveList<Worker, WORKER_LIST_ID>.
+                typedef IntrusiveList<Worker, WORKER_LIST_ID> WorkerList;
+                /// \struct Pipeline::Worker Pipeline.h thekogans/util/Pipeline.h
+                ///
+                /// \brief
+                /// Worker takes pending jobs off the pipeline queue and
+                /// executes them. It then reports back to the pipeline
+                /// so that it can collect statistics.
+                struct Worker :
+                        public Thread,
+                        public WorkerList::Node {
+                private:
+                    /// \brief
+                    /// Pipeline to which this worker belongs.
+                    State::SharedPtr state;
+
+                public:
+                    /// \brief
+                    /// ctor.
+                    /// \param[in] state_ Pipeline to which this worker belongs.
+                    /// \param[in] name Worker thread name.
+                    Worker (State::SharedPtr state_,
+                            const std::string &name = std::string ()) :
+                            Thread (name),
+                            state (state_) {
+                        Create (state->workerPriority, state->workerAffinity);
+                    }
+
+                private:
+                    // Thread
+                    /// \brief
+                    /// Worker thread.
+                    virtual void Run () throw () override;
+                };
+                /// \brief
+                /// List of workers.
+                WorkerList workers;
+                /// \brief
+                /// Pipeline stages.
+                std::vector<JobQueue::SharedPtr> stages;
+                /// \brief
+                /// Synchronization mutex.
+                Mutex workersMutex;
+
                 /// \brief
                 /// ctor.
-                /// \param[in] pipeline_ Pipeline to which this worker belongs.
-                /// \param[in] name Worker thread name.
-                /// \param[in] priority Worker thread priority.
-                /// \param[in] affinity Worker thread processor affinity.
-                Worker (Pipeline &pipeline_,
-                        const std::string &name = std::string (),
-                        i32 priority = THEKOGANS_UTIL_NORMAL_THREAD_PRIORITY,
-                        ui32 affinity = THEKOGANS_UTIL_MAX_THREAD_AFFINITY) :
-                        Thread (name),
-                        pipeline (pipeline_) {
-                    Create (priority, affinity);
-                }
-
-            private:
-                // Thread
+                /// \param[in] begin Pointer to the beginning of the Stage array.
+                /// \param[in] end Pointer to the end of the Stage array.
+                /// \param[in] name_ Pipeline name.
+                /// \param[in] jobExecutionPolicy_ Pipeline \see{JobExecutionPolicy}.
+                /// \param[in] workerCount_ Max workers to service the pipeline.
+                /// \param[in] workerPriority_ Worker thread priority.
+                /// \param[in] workerAffinity_ Worker thread processor affinity.
+                /// \param[in] workerCallback_ Called to initialize/uninitialize
+                /// the worker thread.
+                State (
+                    const Stage *begin,
+                    const Stage *end,
+                    const std::string &name_ = std::string (),
+                    JobExecutionPolicy::SharedPtr jobExecutionPolicy_ =
+                        JobExecutionPolicy::SharedPtr (new FIFOJobExecutionPolicy),
+                    std::size_t workerCount_ = 1,
+                    i32 workerPriority_ = THEKOGANS_UTIL_NORMAL_THREAD_PRIORITY,
+                    ui32 workerAffinity_ = THEKOGANS_UTIL_MAX_THREAD_AFFINITY,
+                    RunLoop::WorkerCallback *workerCallback_ = 0);
                 /// \brief
-                /// Worker thread.
-                virtual void Run () throw () override;
+                /// dtor.
+                virtual ~State ();
+
+                /// \brief
+                /// Used internally by worker(s) to get the next job.
+                /// \param[in] wait true == Wait until a job becomes available.
+                /// \return The next job to execute.
+                Job *DeqJob (bool wait = true);
+                /// \brief
+                /// Called by worker(s) after each job is completed.
+                /// Used to update state and \see{RunLoop::Stats}.
+                /// \param[in] job Completed job.
+                /// \param[in] start Completed job start time.
+                /// \param[in] end Completed job end time.
+                void FinishedJob (
+                    Job *job,
+                    ui64 start,
+                    ui64 end);
             };
+
+        protected:
             /// \brief
-            /// List of workers.
-            WorkerList workers;
-            /// \brief
-            /// Pipeline stages.
-            std::vector<JobQueue::SharedPtr> stages;
-            /// \brief
-            /// Synchronization mutex.
-            Mutex workersMutex;
+            /// Shared Pipeline state.
+            State::SharedPtr state;
 
         public:
             /// \brief
             /// ctor.
             /// \param[in] begin Pointer to the beginning of the Stage array.
             /// \param[in] end Pointer to the end of the Stage array.
-            /// \param[in] name_ Pipeline name.
-            /// \param[in] jobExecutionPolicy_ Pipeline \see{JobExecutionPolicy}.
-            /// \param[in] workerCount_ Max workers to service the pipeline.
-            /// \param[in] workerPriority_ Worker thread priority.
-            /// \param[in] workerAffinity_ Worker thread processor affinity.
-            /// \param[in] workerCallback_ Called to initialize/uninitialize
+            /// \param[in] name Pipeline name.
+            /// \param[in] jobExecutionPolicy Pipeline \see{JobExecutionPolicy}.
+            /// \param[in] workerCount Max workers to service the pipeline.
+            /// \param[in] workerPriority Worker thread priority.
+            /// \param[in] workerAffinity Worker thread processor affinity.
+            /// \param[in] workerCallback Called to initialize/uninitialize
             /// the worker thread.
             Pipeline (
-                const Stage *begin,
-                const Stage *end,
-                const std::string &name_ = std::string (),
-                JobExecutionPolicy::SharedPtr jobExecutionPolicy_ =
-                    JobExecutionPolicy::SharedPtr (new FIFOJobExecutionPolicy),
-                std::size_t workerCount_ = 1,
-                i32 workerPriority_ = THEKOGANS_UTIL_NORMAL_THREAD_PRIORITY,
-                ui32 workerAffinity_ = THEKOGANS_UTIL_MAX_THREAD_AFFINITY,
-                RunLoop::WorkerCallback *workerCallback_ = 0);
+                    const Stage *begin,
+                    const Stage *end,
+                    const std::string &name = std::string (),
+                    JobExecutionPolicy::SharedPtr jobExecutionPolicy =
+                        JobExecutionPolicy::SharedPtr (new FIFOJobExecutionPolicy),
+                    std::size_t workerCount = 1,
+                    i32 workerPriority = THEKOGANS_UTIL_NORMAL_THREAD_PRIORITY,
+                    ui32 workerAffinity = THEKOGANS_UTIL_MAX_THREAD_AFFINITY,
+                    RunLoop::WorkerCallback *workerCallback = 0) :
+                    state (
+                        new State (
+                            begin,
+                            end,
+                            name,
+                            jobExecutionPolicy,
+                            workerCount,
+                            workerPriority,
+                            workerAffinity,
+                            workerCallback)) {
+                Start ();
+            }
+            /// \brief
+            /// ctor.
+            /// \param[in] state_ Shared Pipeline state.
+            explicit Pipeline (State::SharedPtr state_) :
+                    state (state_) {
+                if (state.Get () != 0) {
+                    Start ();
+                }
+                else {
+                    THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                        THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
+                }
+            }
             /// \brief
             /// dtor. Stop the pipeline.
             virtual ~Pipeline () {
@@ -530,13 +604,13 @@ namespace thekogans {
             /// Return Pipeline id.
             /// \return Pipeline id.
             inline const RunLoop::Id &GetId () const {
-                return id;
+                return state->id;
             }
             /// \brief
             /// Return Pipeline name.
             /// \return Pipeline name.
             inline const std::string &GetName () const {
-                return name;
+                return state->name;
             }
 
             /// \brief
@@ -576,13 +650,9 @@ namespace thekogans {
             /// Stop the pipeline and it's stages.
             /// \param[in] cancelRunningJobs true = Cancel all running jobs.
             /// \param[in] cancelPendingJobs true = Cancel all pending jobs.
-            /// \param[in] timeSpec How long to wait for the job queue to stop.
-            /// IMPORTANT: timeSpec is a relative value.
-            /// \return true == Job queue stopped. false == timed out waiting for worker to stop.
-            bool Stop (
+            void Stop (
                 bool cancelRunningJobs = true,
-                bool cancelPendingJobs = true,
-                const TimeSpec &timeSpec = TimeSpec::Infinite);
+                bool cancelPendingJobs = true);
             /// \brief
             /// Return true if the pipeline is running (Start was called).
             /// \return true if the pipeline is running (Start was called).
@@ -772,23 +842,6 @@ namespace thekogans {
             /// IMPORTANT: See VERY IMPORTANT comment in \see{Pause} (above).
             /// \return true = idle, false = busy.
             bool IsIdle ();
-
-        protected:
-            /// \brief
-            /// Used internally by worker(s) to get the next job.
-            /// \param[in] wait true == Wait until a job becomes available.
-            /// \return The next job to execute.
-            Job *DeqJob (bool wait = true);
-            /// \brief
-            /// Called by job after it has traversed the pipeline.
-            /// Used to update state and \see{Pipeline::Stats}.
-            /// \param[in] job Completed job.
-            /// \param[in] start Completed job start time.
-            /// \param[in] end Completed job end time.
-            void FinishedJob (
-                Job *job,
-                ui64 start,
-                ui64 end);
 
             /// \brief
             /// Pipeline is neither copy constructable, nor assignable.
