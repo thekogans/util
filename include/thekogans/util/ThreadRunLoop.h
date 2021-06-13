@@ -156,6 +156,15 @@ namespace thekogans {
             /// \return true is the run loop is running (Start was called).
             virtual bool IsRunning () override;
 
+        protected:
+            /// \brief
+            /// ctor.
+            /// \param[in] state Shared RunLoop state.
+            /// NOTE: This ctor is meant to be used by ThreadRunLoop derivatives
+            /// that extend the RunLoop::State.
+            explicit ThreadRunLoop (State::SharedPtr state) :
+                RunLoop (state) {}
+
             /// \brief
             /// ThreadRunLoop is neither copy constructable, nor assignable.
             THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (ThreadRunLoop)
