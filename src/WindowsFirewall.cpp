@@ -19,6 +19,7 @@
 
 #include "thekogans/util/Types.h"
 #include "thekogans/util/Exception.h"
+#include "thekogans/util/WindowsUtils.h"
 #include "thekogans/util/WindowsFirewall.h"
 
 namespace thekogans {
@@ -26,7 +27,7 @@ namespace thekogans {
 
         bool WindowsFirewall::IsOn () {
             VARIANT_BOOL enabled = VARIANT_FALSE;
-            HRESULT hr = profile->get_FirewallEnabled (&enabled);
+            HRESULT hr = profile.profile->get_FirewallEnabled (&enabled);
             if (SUCCEEDED (hr)) {
                 return  enabled == VARIANT_TRUE ? TRUE : FALSE;
             }
@@ -37,7 +38,7 @@ namespace thekogans {
 
         void WindowsFirewall::TurnOn() {
             if (!IsOn ()) {
-                HRESULT hr = profile->put_FirewallEnabled (VARIANT_TRUE);
+                HRESULT hr = profile.profile->put_FirewallEnabled (VARIANT_TRUE);
                 if (FAILED (hr)) {
                     THEKOGANS_UTIL_THROW_HRESULT_ERROR_CODE_EXCEPTION (hr);
                 }
@@ -46,7 +47,7 @@ namespace thekogans {
 
         void WindowsFirewall::TurnOff () {
             if (IsOn ()) {
-                HRESULT hr = profile->put_FirewallEnabled (VARIANT_FALSE);
+                HRESULT hr = profile.profile->put_FirewallEnabled (VARIANT_FALSE);
                 if (FAILED (hr)) {
                     THEKOGANS_UTIL_THROW_HRESULT_ERROR_CODE_EXCEPTION (hr);
                 }
@@ -56,7 +57,7 @@ namespace thekogans {
         namespace {
             struct BStr {
                 BSTR bstr;
-                explicit BRStr (const std::string &str) :
+                explicit BStr (const std::string &str) :
                         bstr (SysAllocString (UTF8ToUTF16 (str).c_str ())) {
                     if (bstr != 0) {
                         THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
@@ -64,7 +65,7 @@ namespace thekogans {
                             str.c_str ());
                     }
                 }
-                ~BRStr () {
+                ~BStr () {
                     SysFreeString (bstr);
                 }
             };
@@ -219,7 +220,7 @@ namespace thekogans {
                 void RemovePort (
                         ui16 portNumber,
                         NET_FW_IP_PROTOCOL protocol) {
-                    HRESULT hr = apps->Remove (portNumber, protocol);
+                    HRESULT hr = ports->Remove (portNumber, protocol);
                     if (FAILED (hr)) {
                         THEKOGANS_UTIL_THROW_HRESULT_ERROR_CODE_EXCEPTION (hr);
                     }
@@ -283,7 +284,7 @@ namespace thekogans {
         bool WindowsFirewall::IsPortEnabled (
                 ui16 portNumber,
                 NET_FW_IP_PROTOCOL protocol) {
-            Ports ports (profile);
+            Ports ports (profile.profile);
             Port port (ports.GetPort (portNumber, protocol));
             return port.IsEnabled ();
         }

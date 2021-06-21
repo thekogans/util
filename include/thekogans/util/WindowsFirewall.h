@@ -100,14 +100,14 @@ namespace thekogans {
             ///
             /// \brief
             /// Wrap INetFwProfile COM object to provide lifetime management.
-            struct Profille {
+            struct Profile {
                 /// \brief
                 /// Windows COM object.
                 INetFwProfile *profile;
                 /// \brief
                 /// ctor.
-                explicit Profille (INetFwPolicy *policy) :
-                        profille (0) {
+                explicit Profile (INetFwPolicy *policy) :
+                        profile (0) {
                     HRESULT hr = policy->get_CurrentProfile (&profile);
                     if (FAILED (hr)) {
                         THEKOGANS_UTIL_THROW_HRESULT_ERROR_CODE_EXCEPTION (hr);
