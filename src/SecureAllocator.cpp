@@ -107,7 +107,7 @@ namespace thekogans {
                     void *data,
                     std::size_t size) {
                 volatile ui8 *ptr = (volatile ui8 *)data;
-                while (size--) {
+                while (size-- != 0) {
                     *ptr++ = 0;
                 }
             }

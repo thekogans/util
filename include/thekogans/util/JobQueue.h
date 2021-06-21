@@ -212,9 +212,7 @@ namespace thekogans {
             /// \param[in] state_ Shared JobQueue state.
             /// NOTE: This ctor is meant to be used by JobQueue derivatives that extend
             /// the JobQueue::State.
-            explicit JobQueue (State::SharedPtr state_) :
-                RunLoop (dynamic_refcounted_sharedptr_cast<RunLoop::State> (state_)),
-                state (state_) {}
+            explicit JobQueue (State::SharedPtr state_);
 
             /// \brief
             /// JobQueue is neither copy constructable, nor assignable.

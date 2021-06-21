@@ -136,5 +136,17 @@ namespace thekogans {
             return !state->workers.empty ();
         }
 
+        JobQueue::JobQueue (State::SharedPtr state_) :
+                RunLoop (dynamic_refcounted_sharedptr_cast<RunLoop::State> (state_)),
+                state (state_) {
+            if (state.Get () != 0) {
+                Start ();
+            }
+            else {
+                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
+            }
+        }
+
     } // namespace util
 } // namespace thekogans

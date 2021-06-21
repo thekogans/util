@@ -41,6 +41,8 @@
         <if condition = "!$(have_feature -f:THEKOGANS_UTIL_HAVE_WTS)">
           <library>Advapi32.lib</library>
         </if>
+        <library>ole32.lib</library>
+        <library>oleaut32.lib</library>
       </when>
       <when condition = "$(TOOLCHAIN_OS) == 'Linux'">
         <library>pthread</library>
@@ -179,6 +181,7 @@
     <cpp_header>$(organization)/$(project_directory)/Vectorizer.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/Version.h</cpp_header>
     <if condition = "$(TOOLCHAIN_OS) == 'Windows'">
+      <cpp_header>$(organization)/$(project_directory)/WindowsFirewall.h</cpp_header>
       <cpp_header>$(organization)/$(project_directory)/WindowsUtils.h</cpp_header>
     </if>
     <cpp_header>$(organization)/$(project_directory)/XMLUtils.h</cpp_header>
@@ -690,6 +693,7 @@
     <cpp_source>Vectorizer.cpp</cpp_source>
     <cpp_source>Version.cpp</cpp_source>
     <if condition = "$(TOOLCHAIN_OS) == 'Windows'">
+      <cpp_source>WindowsFirewall.cpp</cpp_source>
       <cpp_source>WindowsUtils.cpp</cpp_source>
     </if>
     <cpp_source>XMLUtils.cpp</cpp_source>

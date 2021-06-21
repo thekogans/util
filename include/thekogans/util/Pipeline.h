@@ -582,19 +582,6 @@ namespace thekogans {
                 Start ();
             }
             /// \brief
-            /// ctor.
-            /// \param[in] state_ Shared Pipeline state.
-            explicit Pipeline (State::SharedPtr state_) :
-                    state (state_) {
-                if (state.Get () != 0) {
-                    Start ();
-                }
-                else {
-                    THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                        THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
-                }
-            }
-            /// \brief
             /// dtor. Stop the pipeline.
             virtual ~Pipeline () {
                 Stop ();
@@ -842,6 +829,21 @@ namespace thekogans {
             /// IMPORTANT: See VERY IMPORTANT comment in \see{Pause} (above).
             /// \return true = idle, false = busy.
             bool IsIdle ();
+
+        protected:
+            /// \brief
+            /// ctor.
+            /// \param[in] state_ Shared Pipeline state.
+            explicit Pipeline (State::SharedPtr state_) :
+                    state (state_) {
+                if (state.Get () != 0) {
+                    Start ();
+                }
+                else {
+                    THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                        THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
+                }
+            }
 
             /// \brief
             /// Pipeline is neither copy constructable, nor assignable.

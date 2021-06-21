@@ -15,10 +15,10 @@
 // You should have received a copy of the GNU General Public License
 // along with libthekogans_util. If not, see <http://www.gnu.org/licenses/>.
 
-#if defined (TOOLCHAIN_OS_Windows)
-
 #if !defined (__thekogans_util_WindowsUtils_h)
 #define __thekogans_util_WindowsUtils_h
+
+#if defined (TOOLCHAIN_OS_Windows)
 
 #if !defined (_WINDOWS_)
     #if !defined (WIN32_LEAN_AND_MEAN)
@@ -363,6 +363,6 @@ namespace thekogans {
     } // namespace util
 } // namespace thekogans
 
-#endif // !defined (__thekogans_util_WindowsUtils_h)
-
 #endif // defined (TOOLCHAIN_OS_Windows)
+
+#endif // !defined (__thekogans_util_WindowsUtils_h)

@@ -102,6 +102,7 @@ namespace thekogans {
         void Pipeline::Job::Reset (const RunLoop::Id &runLoopId_) {
             RunLoop::Job::Reset (runLoopId_);
             if (runLoopId_ == pipeline->id) {
+                state = Completed;
                 stage = GetFirstStage ();
                 start = 0;
                 end = 0;
