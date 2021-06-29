@@ -238,14 +238,16 @@ namespace thekogans {
                 ui64 start,
                 ui64 end) {
             assert (job != 0);
-            LockGuard<Mutex> guard (jobsMutex);
-            stats.Update (job, start, end);
-            runningJobs.erase (job);
+            {
+                LockGuard<Mutex> guard (jobsMutex);
+                stats.Update (job, start, end);
+                runningJobs.erase (job);
+                if (pendingJobs.empty () && runningJobs.empty ()) {
+                    idle.SignalAll ();
+                }
+            }
             job->SetState (RunLoop::Job::Completed);
             job->Release ();
-            if (pendingJobs.empty () && runningJobs.empty ()) {
-                idle.SignalAll ();
-            }
         }
 
         bool Pipeline::Pause (
