@@ -26,6 +26,9 @@
         #include <windows.h>
     #endif // !defined (_WINDOWS_)
 #else // defined (TOOLCHAIN_OS_Windows)
+    #if defined (TOOLCHAIN_OS_Linux)
+        #include <sys/resource.h>
+    #endif // defined (TOOLCHAIN_OS_Linux)
     #include <sys/mman.h>
 #endif // defined (TOOLCHAIN_OS_Windows)
 #include "thekogans/util/Exception.h"
@@ -47,6 +50,14 @@ namespace thekogans {
         #if defined (TOOLCHAIN_OS_Windows)
             if (!SetProcessWorkingSetSize (GetCurrentProcess (),
                     (SIZE_T)minWorkingSetSize, (SIZE_T)maxWorkingSetSize)) {
+                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                    THEKOGANS_UTIL_OS_ERROR_CODE);
+            }
+        #else // defined (TOOLCHAIN_OS_Linux)
+            rlimit limit;
+            limit.rlim_cur = (rlim_t)minWorkingSetSize;
+            limit.rlim_max = (rlim_t)maxWorkingSetSize;
+            if (setrlimit (RLIMIT_MEMLOCK, &limit) != 0) {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
                     THEKOGANS_UTIL_OS_ERROR_CODE);
             }

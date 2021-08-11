@@ -92,7 +92,7 @@ namespace thekogans {
                 /// Worker takes pending jobs off the queue and
                 /// executes them. It then reports back to the
                 /// queue so that it can collect statistics.
-                struct Worker :
+                struct _LIB_THEKOGANS_UTIL_DECL Worker :
                         public Thread,
                         public WorkerList::Node {
                 private:
@@ -176,7 +176,9 @@ namespace thekogans {
                 WorkerCallback *workerCallback = 0);
             /// \brief
             /// dtor. Stop the queue.
-            virtual ~JobQueue ();
+            virtual ~JobQueue () {
+                Stop ();
+            }
 
             // RunLoop
             /// \brief

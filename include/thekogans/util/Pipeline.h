@@ -464,7 +464,7 @@ namespace thekogans {
                 /// Worker takes pending jobs off the pipeline queue and
                 /// executes them. It then reports back to the pipeline
                 /// so that it can collect statistics.
-                struct Worker :
+                struct _LIB_THEKOGANS_UTIL_DECL Worker :
                         public Thread,
                         public WorkerList::Node {
                 private:
@@ -834,16 +834,7 @@ namespace thekogans {
             /// \brief
             /// ctor.
             /// \param[in] state_ Shared Pipeline state.
-            explicit Pipeline (State::SharedPtr state_) :
-                    state (state_) {
-                if (state.Get () != 0) {
-                    Start ();
-                }
-                else {
-                    THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                        THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
-                }
-            }
+            explicit Pipeline (State::SharedPtr state_);
 
             /// \brief
             /// Pipeline is neither copy constructable, nor assignable.

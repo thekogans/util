@@ -239,6 +239,7 @@ namespace thekogans {
                 ui64 end) {
             assert (job != 0);
             {
+                // Acquire the lock to perform housekeeping chores.
                 LockGuard<Mutex> guard (jobsMutex);
                 stats.Update (job, start, end);
                 runningJobs.erase (job);
@@ -246,6 +247,8 @@ namespace thekogans {
                     idle.SignalAll ();
                 }
             }
+            // Release the lock here in case the job needs to call
+            // back in to the Pipeline to prevent deadlocks.
             job->SetState (RunLoop::Job::Completed);
             job->Release ();
         }
@@ -758,6 +761,17 @@ namespace thekogans {
         bool Pipeline::IsIdle () {
             LockGuard<Mutex> guard (state->jobsMutex);
             return !IsRunning () || (state->pendingJobs.empty () && state->runningJobs.empty ());
+        }
+
+        Pipeline::Pipeline (State::SharedPtr state_) :
+                state (state_) {
+            if (state.Get () != 0) {
+                Start ();
+            }
+            else {
+                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
+            }
         }
 
     } // namespace util

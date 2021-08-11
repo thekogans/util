@@ -76,10 +76,6 @@ namespace thekogans {
             }
         }
 
-        JobQueue::~JobQueue () {
-            Stop ();
-        }
-
         void JobQueue::Start () {
             LockGuard<Mutex> guard (state->workersMutex);
             state->done = false;

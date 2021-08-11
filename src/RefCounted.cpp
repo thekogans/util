@@ -41,11 +41,12 @@ namespace thekogans {
 
         bool RefCounted::References::LockObject () {
             // This is a classical lock-free algorithm for shared access.
-            for (ui32 count = shared; count != 0; count = shared) {
+            for (ui32 count = shared.load (std::memory_order_acquire);
+                    count != 0; count = shared.load (std::memory_order_acquire)) {
                 // If compare_exchange_weak failed, it's because between the load
                 // above and the exchange below, we were interupted by another thread
                 // that modified the value of shared. Reload and try again.
-                if (shared.compare_exchange_weak (count, count + 1)) {
+                if (shared.compare_exchange_weak (count, count + 1, std::memory_order_acquire)) {
                     return true;
                 }
             }

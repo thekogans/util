@@ -37,7 +37,7 @@ namespace thekogans {
                 const std::string & /*subsystem*/,
                 ui32 level,
                 const std::string &header,
-                const std::string &message) {
+                const std::string &message) throw () {
             if (level <= this->level && (!header.empty () || !message.empty ())) {
                 std::string logEntry = FormatString ("%s%s", header.c_str (), message.c_str ());
                 // These are log entries. There's no need to for high fidelity conversion.

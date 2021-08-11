@@ -446,6 +446,7 @@ namespace thekogans {
                 ui64 end) {
             assert (job != 0);
             {
+                // Acquire the lock to perform housekeeping chores.
                 LockGuard<Mutex> guard (jobsMutex);
                 stats.Update (job, start, end);
                 runningJobs.erase (job);
@@ -453,6 +454,8 @@ namespace thekogans {
                     idle.SignalAll ();
                 }
             }
+            // Release the lock here in case the job needs to call
+            // back in to the RunLoop to prevent deadlocks.
             job->SetState (RunLoop::Job::Completed);
             job->Release ();
         }
