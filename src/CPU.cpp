@@ -349,6 +349,7 @@ namespace thekogans {
                     bool supported) {
                 stream << feature << (supported ? " supported" : " not supported") << std::endl;
             };
+        #if defined (TOOLCHAIN_ARCH_i386) || defined (TOOLCHAIN_ARCH_x86_64)
             stream << Vendor () << std::endl;
             stream << Brand () << std::endl;
             Supported ("3DNOW", _3DNOW ());
@@ -403,6 +404,9 @@ namespace thekogans {
             Supported ("XOP", XOP ());
             Supported ("XSAVE", XSAVE ());
             stream << "L1 cache line size: " << L1CacheLineSize () << std::endl;
+        #elif defined (TOOLCHAIN_ARCH_ppc) || defined (TOOLCHAIN_ARCH_ppc64)
+            Supported ("AltiVec", AltiVec ());
+        #endif // defined (TOOLCHAIN_ARCH_i386) || defined (TOOLCHAIN_ARCH_x86_64)
         }
 
     } // namespace util

@@ -179,7 +179,7 @@ namespace thekogans {
         }
     #else // defined (TOOLCHAIN_OS_Windows)
         std::string Path::GetExtendedAttributeValue (const std::string &name) const {
-            int size = 0;
+            ssize_t size = 0;
             std::string value;
             do {
                 if (size > 0) {
@@ -200,7 +200,7 @@ namespace thekogans {
 
         Attributes Path::GetExtendedAttributeValues () const {
             Attributes attributes;
-            int size = 0;
+            ssize_t size = 0;
             std::vector<char> buffer;
             do {
                 if (size > 0) {
@@ -213,7 +213,7 @@ namespace thekogans {
             #endif // defined (TOOLCHAIN_OS_Linux)
             } while (size < 0 && THEKOGANS_UTIL_POSIX_OS_ERROR_CODE == ERANGE);
             if (size > 0) {
-                for (int i = 0; i < size; i += strlen (buffer.data () + i) + 1) {
+                for (ssize_t i = 0; i < size; i += (ssize_t)(strlen (buffer.data () + i) + 1)) {
                     attributes.push_back (
                         Attribute (
                             buffer.data () + i,
@@ -229,7 +229,7 @@ namespace thekogans {
 
         std::vector<std::string> Path::GetExtendedAttributeNames () const {
             std::vector<std::string> names;
-            int size = 0;
+            ssize_t size = 0;
             std::vector<char> buffer;
             do {
                 if (size > 0) {
@@ -242,7 +242,7 @@ namespace thekogans {
             #endif // defined (TOOLCHAIN_OS_Linux)
             } while (size < 0 && THEKOGANS_UTIL_POSIX_OS_ERROR_CODE == ERANGE);
             if (size > 0) {
-                for (int i = 0; i < size; i += strlen (buffer.data () + i) + 1) {
+                for (ssize_t i = 0; i < size; i += strlen (buffer.data () + i) + 1) {
                     names.push_back (buffer.data () + i);
                 }
             }
@@ -280,7 +280,7 @@ namespace thekogans {
         }
 
         void Path::DeleteExtendedAttributes () const {
-            int size = 0;
+            ssize_t size = 0;
             std::vector<char> buffer;
             do {
                 if (size > 0) {
@@ -293,7 +293,7 @@ namespace thekogans {
             #endif // defined (TOOLCHAIN_OS_Linux)
             } while (size < 0 && THEKOGANS_UTIL_POSIX_OS_ERROR_CODE == ERANGE);
             if (size > 0) {
-                for (int i = 0; i < size; i += strlen (buffer.data () + i) + 1) {
+                for (ssize_t i = 0; i < size; i += (ssize_t)(strlen (buffer.data () + i) + 1)) {
                     DeleteExtendedAttribute (buffer.data () + i);
                 }
             }
