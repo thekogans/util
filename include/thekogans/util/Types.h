@@ -131,9 +131,9 @@ namespace thekogans {
             /// \brief
             /// Host OS is OS X.
             HostOS = OSX
-        #else // defined (TOOLCHAIN_ENDIAN_Big)
+        #else // defined (TOOLCHAIN_OS_Windows)
             #error "Unable to determine host OS."
-        #endif // defined (TOOLCHAIN_ENDIAN_Little)
+        #endif // defined (TOOLCHAIN_OS_Windows)
         };
 
         /// \enum

@@ -126,8 +126,8 @@ namespace thekogans {
 
         struct _LIB_THEKOGANS_UTIL_DECL SystemRunLoop : public RunLoop {
             /// \brief
-            /// Convenient typedef for RefCounted::SharedPtr<SystemRunLoop>.
-            typedef RefCounted::SharedPtr<SystemRunLoop> SharedPtr;
+            /// Declare \see{RefCounted} pointers.
+            THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (SystemRunLoop)
 
         #if defined (TOOLCHAIN_OS_Windows)
             /// \brief

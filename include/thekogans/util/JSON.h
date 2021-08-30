@@ -1460,7 +1460,7 @@ namespace thekogans {
         ///   Length: 'length',
         ///   ReadOffset: 'read offset',
         ///   WriteOffset: 'write offset',
-        ///   Allocator: ' allocator name',
+        ///   Allocator: 'allocator name',
         ///   Contents: {
         ///   ...
         ///   }
@@ -1480,7 +1480,7 @@ namespace thekogans {
         ///   Length: 'length',
         ///   ReadOffset: 'read offset',
         ///   WriteOffset: 'write offset',
-        ///   Allocator: ' allocator name',
+        ///   Allocator: 'allocator name',
         ///   Contents: {
         ///   ...
         ///   }
