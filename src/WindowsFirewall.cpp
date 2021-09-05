@@ -29,14 +29,14 @@ namespace thekogans {
             VARIANT_BOOL enabled = VARIANT_FALSE;
             HRESULT hr = profile.profile->get_FirewallEnabled (&enabled);
             if (SUCCEEDED (hr)) {
-                return  enabled == VARIANT_TRUE ? TRUE : FALSE;
+                return  enabled == VARIANT_TRUE;
             }
             else {
                 THEKOGANS_UTIL_THROW_HRESULT_ERROR_CODE_EXCEPTION (hr);
             }
         }
 
-        void WindowsFirewall::TurnOn() {
+        void WindowsFirewall::TurnOn () {
             if (!IsOn ()) {
                 HRESULT hr = profile.profile->put_FirewallEnabled (VARIANT_TRUE);
                 if (FAILED (hr)) {

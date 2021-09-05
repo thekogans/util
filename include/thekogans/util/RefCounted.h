@@ -479,7 +479,7 @@ namespace thekogans {
                 }
 
                 /// \brief
-                /// Reset the object htis WeakPtr points to.
+                /// Reset the object this WeakPtr points to.
                 /// \param[in] object_ New object to encapsulate.
                 /// WARNING: You can't pass an object pointer from one WeakPtr::Get
                 /// to another WeakPtr::Reset. There is no guarantee that there

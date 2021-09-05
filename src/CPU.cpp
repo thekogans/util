@@ -344,11 +344,15 @@ namespace thekogans {
         }
 
         void CPU::Dump (std::ostream &stream) const {
+        #if defined (TOOLCHAIN_ARCH_i386) || defined (TOOLCHAIN_ARCH_x86_64) ||\
+            defined (TOOLCHAIN_ARCH_ppc) || defined (TOOLCHAIN_ARCH_ppc64)
             auto Supported = [&stream] (
                     const std::string &feature,
                     bool supported) {
                 stream << feature << (supported ? " supported" : " not supported") << std::endl;
             };
+        #endif // defined (TOOLCHAIN_ARCH_i386) || defined (TOOLCHAIN_ARCH_x86_64) ||\
+               defined (TOOLCHAIN_ARCH_ppc) || defined (TOOLCHAIN_ARCH_ppc64)
         #if defined (TOOLCHAIN_ARCH_i386) || defined (TOOLCHAIN_ARCH_x86_64)
             stream << Vendor () << std::endl;
             stream << Brand () << std::endl;

@@ -15,6 +15,12 @@ the results are converted to UTF8 before being returned to the caller.
 libthekogans_util is completely _UNICODE ambivalent (it will behave
 the same whether the macro is defined or not).
 
+VERY IMPORTANT: libthekogans_util DOES NOT return error codes. In
+the interest of promoting safe and secure coding habits libthekogans_util
+throws exceptions (Exception.h). If you choose to use libthekogans_util
+in your projects keep that in mind and use the various guards defined
+in Exception.h to protect your code.
+
 Here is a complete feature list:
 
     - A type system (Types.h, Constants.h) to hide platform specific
@@ -31,7 +37,7 @@ Here is a complete feature list:
       AbstractOwnerVector.h, OwnerList.h, OwnerVector.h, OwnerMap.h)
       which help with lifetime management of heap allocated objects.
 
-    - An intrusive list (IntrusiveList.h) used in many situations
+    - An intrusive list (IntrusiveList.h) useful in many situations
       where std::list is not appropriate.
 
     - A std::exception extension class (Exception.h) which uses a
@@ -51,11 +57,15 @@ Here is a complete feature list:
 
     - A full featured logging framework (LoggerMgr.h, Logger.h,
       ConsoleLogger.h, FileLogger.h, MemoryLogger.h, NSLogLogger.h
-      OutputDebugStringLogger.h).
+      OutputDebugStringLogger.h). LoggerMgr can use a background,
+      low priority JobQueue to log entries so as not to interfere
+      with main thread execution.
 
     - A per class heap (Heap.h), which makes memory management a
       breeze. It also provides built in diagnostics for leaks, and
-      double free (two of the nastiest memory bugs).
+      double free (two of the nastiest memory bugs). Use of class
+      heap significantly reduces global heap fragmentation leading
+      to stable and more performant code.
 
     - An extensible collection of allocators (Allocator.h,
       DefaultAllocator.h, AlignedAllocator.h, SecureAllocator.h,
@@ -101,7 +111,8 @@ Here is a complete feature list:
       XMLUtils.h)
 
     - A collection of string utilities (StringUtils.h) used to hide
-      platform inconsistencies.
+      platform inconsistencies and provide useful cross-platform
+      functionality.
 
     - A collection of platform specific utilities (LinuxUtils.h,
       OSXUtils.h, WindowsUtils.h, XlibUtils.h).
@@ -113,6 +124,8 @@ Here is a complete feature list:
       allows interested observers to subscribe to async events.
 
     - A cryptographically secure random byte stream (RandomSource.h).
+      Where available, the stream uses dedicated machine instructions
+      to harvest entropy.
 
     - Application plugin manager (Plugins.h).
 
@@ -122,12 +135,13 @@ Here is a complete feature list:
 
 libthekogans_util has the following required dependencies:
 
-Windows: Ws2_32.lib, mpr.lib, Iphlpapi.lib.
+Windows: Ws2_32.lib, mpr.lib, Iphlpapi.lib, Wtsapi32.lib.
 
 Linux: pthread, rt, dl.
 
-OS X: pthread, frameworks: Foundation, CoreFoundation, CoreServices,
-SystemConfiguration, IOKit, Cocoa.
+OS X: pthread, frameworks: Foundation, Security, Cocoa,
+CoreFoundation, CoreServices, CoreGraphics, SystemConfiguration,
+IOKit.
 
 libthekogans_util has the following optional dependencies:
 
