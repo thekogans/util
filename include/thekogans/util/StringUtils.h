@@ -565,6 +565,14 @@ namespace thekogans {
         _LIB_THEKOGANS_UTIL_DECL std::string _LIB_THEKOGANS_UTIL_API GetEnvironmentVariable (
             const std::string &name);
 
+        /// \brief
+        /// Given an environment variable name, set it's value to the one given.
+        /// \param[in] name Environment variable name whose value to set.
+        /// \param[in] value Environment variable value to set.
+        _LIB_THEKOGANS_UTIL_DECL void _LIB_THEKOGANS_UTIL_API SetEnvironmentVariable (
+            const std::string &name,
+            const std::string &value);
+
     } // namespace util
 } // namespace thekogans
 

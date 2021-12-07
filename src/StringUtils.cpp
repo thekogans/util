@@ -773,6 +773,7 @@ namespace thekogans {
             if (!name.empty ()) {
             #if defined (TOOLCHAIN_OS_Windows)
                 // Windows limit on value length.
+                // FIXME: There are systems where 32k of stack space is not available.
                 wchar_t value[32767];
                 std::size_t length = ::GetEnvironmentVariableW (UTF8ToUTF16 (name).c_str (), value, 32767);
                 if (length > 0) {
@@ -791,6 +792,25 @@ namespace thekogans {
                 }
             #endif // defined (TOOLCHAIN_OS_Windows)
                 return std::string ();
+            }
+            else {
+                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
+            }
+        }
+
+        _LIB_THEKOGANS_UTIL_DECL void _LIB_THEKOGANS_UTIL_API SetEnvironmentVariable (
+                const std::string &name,
+                const std::string &value) {
+            if (!name.empty ()) {
+            #if defined (TOOLCHAIN_OS_Windows)
+                if (!::SetEnvironmentVariableW (UTF8ToUTF16 (name).c_str (), UTF8ToUTF16 (value).c_str ())) {
+            #else // defined (TOOLCHAIN_OS_Windows)
+                if (setenv (name.c_str (), value.c_str (), 1) < 0) {
+            #endif // defined (TOOLCHAIN_OS_Windows)
+                    THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                        THEKOGANS_UTIL_OS_ERROR_CODE);
+                }
             }
             else {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
