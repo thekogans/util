@@ -138,17 +138,7 @@ namespace thekogans {
             /// \brief
             /// dtor.
             ~IntrusiveList () {
-                // IntrusiveList might be used in all sorts of situations,
-                // including static objects. When a static objects's dtor
-                // is called by the runtime, static defaultCallback (declared
-                // below) might have already been destructed. Create a fresh
-                // one on the stack so that we can control it's lifetime.
-                // NOTE: Clearing the list makes semantic sense as the nodes
-                // are now free to be inserted in another list with the same
-                // id. The side effect of this design decision is that nodes
-                // have to survive the list they reside in.
-                DefaultCallback callback;
-                clear (callback);
+                clear ();
             }
 
             /// \brief
@@ -344,13 +334,13 @@ namespace thekogans {
                 virtual result_type operator () (argument_type /*node*/) override {
                     return true;
                 }
-            } static defaultCallback;
+            };
 
             /// \brief
             /// Remove all nodes from the list.
             /// \param[in] callback Callback to be called for every node in the list.
             /// \return true == List is cleared. false == callback returned false.
-            inline bool clear (Callback &callback = defaultCallback) {
+            inline bool clear (Callback &callback) {
                 for (T *node = head; node != 0;) {
                     // After callback returns, we might not be able to call next (node).
                     T *temp = next (node);
@@ -365,6 +355,19 @@ namespace thekogans {
                 head = tail = 0;
                 count = 0;
                 return true;
+            }
+
+            /// \brief
+            /// Remove all nodes from the list.
+            inline void clear () {
+                for (T *node = head; node != 0;) {
+                    T *temp = next (node);
+                    prev (node) = next (node) = 0;
+                    contains (node) = false;
+                    node = temp;
+                }
+                head = tail = 0;
+                count = 0;
             }
 
             /// \brief
@@ -551,14 +554,6 @@ namespace thekogans {
             /// IntrusiveList is neither copy constructable, nor assignable.
             THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (IntrusiveList)
         };
-
-        /// \brief
-        /// Definition of the IntrusiveList<T, ID>::defaultCallback.
-        template<
-            typename T,
-            i32 ID>
-        THEKOGANS_UTIL_EXPORT typename IntrusiveList<T, ID>::DefaultCallback
-            IntrusiveList<T, ID>::defaultCallback;
 
     } // namespace util
 } // namespace thekogans

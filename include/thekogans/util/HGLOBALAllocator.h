@@ -18,6 +18,8 @@
 #if !defined (__thekogans_util_HGLOBALAllocator_h)
 #define __thekogans_util_HGLOBALAllocator_h
 
+#include "thekogans/util/Environment.h"
+
 #if defined (TOOLCHAIN_OS_Windows)
 
 #include <cstddef>

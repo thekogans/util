@@ -15,6 +15,7 @@
 // You should have received a copy of the GNU General Public License
 // along with libthekogans_util. If not, see <http://www.gnu.org/licenses/>.
 
+#include "thekogans/util/Environment.h"
 #if defined (TOOLCHAIN_OS_Windows)
     #if !defined (_WINDOWS_)
         #if !defined (WIN32_LEAN_AND_MEAN)

@@ -22,6 +22,7 @@
 #include <climits>
 #include <cfloat>
 #include <type_traits>
+#include "thekogans/util/Environment.h"
 #include "thekogans/util/Config.h"
 #include "thekogans/util/Types.h"
 

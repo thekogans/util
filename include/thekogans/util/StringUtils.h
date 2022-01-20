@@ -23,6 +23,7 @@
 #include <string>
 #include <vector>
 #include <list>
+#include "thekogans/util/Environment.h"
 #include "thekogans/util/Config.h"
 #include "thekogans/util/Types.h"
 

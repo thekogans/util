@@ -15,6 +15,7 @@
 // You should have received a copy of the GNU General Public License
 // along with libthekogans_util. If not, see <http://www.gnu.org/licenses/>.
 
+#include "thekogans/util/Environment.h"
 #if defined (TOOLCHAIN_OS_Windows)
     #if !defined (_WINDOWS_)
         #if !defined (WIN32_LEAN_AND_MEAN)
@@ -305,6 +306,9 @@ namespace thekogans {
                         THEKOGANS_UTIL_OS_ERROR_CODE);
                 }
             #elif defined (TOOLCHAIN_OS_OSX)
+                #if (MAC_OS_X_VERSION_MAX_ALLOWED < 120000) // Before macOS 12 Monterey
+                    #define kIOMainPortDefault kIOMasterPortDefault
+                #endif
                 struct io_registry_entry_tPtr {
                     io_registry_entry_t registryEntry;
                     io_registry_entry_tPtr (io_registry_entry_t registryEntry_) :
@@ -312,7 +316,7 @@ namespace thekogans {
                     ~io_registry_entry_tPtr () {
                         IOObjectRelease (registryEntry);
                     }
-                } ioRegistryRoot (IORegistryEntryFromPath (kIOMasterPortDefault, "IOService:/"));
+                } ioRegistryRoot (IORegistryEntryFromPath (kIOMainPortDefault, "IOService:/"));
                 if (ioRegistryRoot.registryEntry != 0) {
                     CFStringRefPtr uuid (
                         (CFStringRef)IORegistryEntryCreateCFProperty (

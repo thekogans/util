@@ -15,10 +15,12 @@
 // You should have received a copy of the GNU General Public License
 // along with libthekogans_util. If not, see <http://www.gnu.org/licenses/>.
 
-#if defined (TOOLCHAIN_OS_Linux) && defined (THEKOGANS_UTIL_HAVE_XLIB)
-
 #if !defined (__thekogans_util_XlibUtils_h)
 #define __thekogans_util_XlibUtils_h
+
+#include "thekogans/util/Environment.h"
+
+#if defined (TOOLCHAIN_OS_Linux) && defined (THEKOGANS_UTIL_HAVE_XLIB)
 
 #include <X11/Xlib.h>
 #include <vector>
@@ -68,6 +70,6 @@ namespace thekogans {
     } // namespace util
 } // namespace thekogans
 
-#endif // !defined (__thekogans_util_XlibUtils_h)
-
 #endif // defined (TOOLCHAIN_OS_Linux) && defined (THEKOGANS_UTIL_HAVE_XLIB)
+
+#endif // !defined (__thekogans_util_XlibUtils_h)

@@ -24,6 +24,7 @@
 #include <vector>
 #include <sstream>
 #include <algorithm>
+#include "thekogans/util/Environment.h"
 #include "thekogans/util/Constants.h"
 #include "thekogans/util/Array.h"
 #include "thekogans/util/SpinLock.h"

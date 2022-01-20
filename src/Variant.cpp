@@ -19,6 +19,7 @@
 #include <cstdlib>
 #include <cmath>
 #include <sstream>
+#include "thekogans/util/Environment.h"
 #if defined (TOOLCHAIN_OS_Windows)
     #include "thekogans/util/WindowsUtils.h"
 #endif // defined (TOOLCHAIN_OS_Windows)

@@ -18,6 +18,7 @@
 #if !defined (__thekogans_util_SizeT_h)
 #define __thekogans_util_SizeT_h
 
+#include "thekogans/util/Environment.h"
 #if defined (TOOLCHAIN_OS_Windows)
     #include <intrin.h>
 #endif // defined (TOOLCHAIN_OS_Windows)

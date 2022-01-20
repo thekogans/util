@@ -89,10 +89,9 @@ namespace thekogans {
         Scheduler::~Scheduler () {
             {
                 LockGuard<SpinLock> guard (spinLock);
-                JobQueueList::DefaultCallback callback;
-                high.clear (callback);
-                normal.clear (callback);
-                low.clear (callback);
+                high.clear ();
+                normal.clear ();
+                low.clear ();
             }
             jobQueuePool.WaitForIdle ();
         }

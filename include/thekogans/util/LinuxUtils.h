@@ -15,10 +15,12 @@
 // You should have received a copy of the GNU General Public License
 // along with libthekogans_util. If not, see <http://www.gnu.org/licenses/>.
 
-#if defined (TOOLCHAIN_OS_Linux)
-
 #if !defined (__thekogans_util_LinuxUtils_h)
 #define __thekogans_util_LinuxUtils_h
+
+#include "thekogans/util/Environment.h"
+
+#if defined (TOOLCHAIN_OS_Linux)
 
 #if !defined (_LARGEFILE64_SOURCE)
     #define _LARGEFILE64_SOURCE 1
@@ -48,6 +50,6 @@
     #error Unknown TOOLCHAIN_ARCH.
 #endif // defined (TOOLCHAIN_ARCH_i386) || defined (TOOLCHAIN_ARCH_ppc) || defined (TOOLCHAIN_ARCH_arm)
 
-#endif // !defined (__thekogans_util_LinuxUtils_h)
-
 #endif // defined (TOOLCHAIN_OS_Linux)
+
+#endif // !defined (__thekogans_util_LinuxUtils_h)

@@ -18,6 +18,7 @@
 #if !defined (__thekogans_util_RWLock_h)
 #define __thekogans_util_RWLock_h
 
+#include "thekogans/util/Environment.h"
 #if defined (TOOLCHAIN_OS_Windows)
     #if defined (_MSC_VER)
         #if !defined (_WINDOWS_)

@@ -18,6 +18,7 @@
 #if !defined (__thekogans_util_Buffer_h)
 #define __thekogans_util_Buffer_h
 
+#include "thekogans/util/Environment.h"
 #if defined (TOOLCHAIN_OS_Windows)
     #if !defined (_WINDOWS_)
         #if !defined (WIN32_LEAN_AND_MEAN)
@@ -64,7 +65,7 @@ namespace thekogans {
         /// (readOffset and writeOffset). It allows you to continue
         /// filling the buffer without disturbing the current read
         /// position. This is very useful in streaming operations.
-        /// The following diagram represents the various buffer regions:
+        /// The following diagram represents various buffer regions:
         ///
         /// |--- consumed ---+--- available for reading ---+--- available for writing ---|
         /// 0            readOffset                   writeOffset                     length

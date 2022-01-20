@@ -19,6 +19,7 @@
 #define __thekogans_util_CPU_h
 
 #include <string>
+#include "thekogans/util/Environment.h"
 #include "thekogans/util/Config.h"
 #include "thekogans/util/Types.h"
 #include "thekogans/util/Flags.h"

@@ -15,15 +15,18 @@
 // You should have received a copy of the GNU General Public License
 // along with libthekogans_util. If not, see <http://www.gnu.org/licenses/>.
 
-#if defined (TOOLCHAIN_OS_OSX)
-
 #if !defined (__thekogans_util_OSXUtils_h)
 #define __thekogans_util_OSXUtils_h
 
-#include <sys/stat.h>
+#include "thekogans/util/Environment.h"
+
+#if defined (TOOLCHAIN_OS_OSX)
+
 #include <CoreFoundation/CFError.h>
 #include <IOKit/IOReturn.h>
+#include <sys/stat.h>
 #include <string>
+#include "thekogans/util/Config.h"
 
 #define STAT_STRUCT struct stat
 #define STAT_FUNC stat
@@ -126,6 +129,6 @@ namespace thekogans {
     } // namespace util
 } // namespace thekogans
 
-#endif // !defined (__thekogans_util_OSXUtils_h)
-
 #endif // defined (TOOLCHAIN_OS_OSX)
+
+#endif // !defined (__thekogans_util_OSXUtils_h)

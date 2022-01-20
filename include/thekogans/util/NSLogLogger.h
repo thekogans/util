@@ -18,6 +18,8 @@
 #if !defined (__thekogans_util_NSLogLogger_h)
 #define __thekogans_util_NSLogLogger_h
 
+#include "thekogans/util/Environment.h"
+
 #if defined (TOOLCHAIN_OS_OSX)
 
 #include <memory>

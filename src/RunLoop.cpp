@@ -16,6 +16,7 @@
 // along with libthekogans_util. If not, see <http://www.gnu.org/licenses/>.
 
 #include <cassert>
+#include "thekogans/util/Environment.h"
 #include "thekogans/util/Event.h"
 #include "thekogans/util/HRTimer.h"
 #include "thekogans/util/XMLUtils.h"

@@ -18,6 +18,8 @@
 #if !defined (__thekogans_util_WindowsUtils_h)
 #define __thekogans_util_WindowsUtils_h
 
+#include "thekogans/util/Environment.h"
+
 #if defined (TOOLCHAIN_OS_Windows)
 
 #if !defined (_WINDOWS_)

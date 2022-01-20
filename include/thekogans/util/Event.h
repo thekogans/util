@@ -19,6 +19,7 @@
 #define __thekogans_util_Event_h
 
 #include <string>
+#include "thekogans/util/Environment.h"
 #include "thekogans/util/Config.h"
 #if defined (TOOLCHAIN_OS_Windows)
     #include "thekogans/util/Types.h"

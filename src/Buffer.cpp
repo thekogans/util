@@ -22,6 +22,7 @@
     #include <vector>
     #include <zlib.h>
 #endif // defined (THEKOGANS_UTIL_HAVE_ZLIB)
+#include "thekogans/util/Environment.h"
 #if defined (TOOLCHAIN_OS_Windows)
     #include "thekogans/util/WindowsUtils.h"
 #endif // defined (TOOLCHAIN_OS_Windows)

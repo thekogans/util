@@ -18,6 +18,7 @@
 #if !defined (__thekogans_util_ByteSwap_h)
 #define __thekogans_util_ByteSwap_h
 
+#include "thekogans/util/Environment.h"
 #if defined (TOOLCHAIN_OS_OSX)
     #include <libkern/OSByteOrder.h>
 #endif // defined (TOOLCHAIN_OS_OSX)

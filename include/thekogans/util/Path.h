@@ -20,6 +20,7 @@
 
 #include <string>
 #include <list>
+#include "thekogans/util/Environment.h"
 #include "thekogans/util/Config.h"
 #if !defined (TOOLCHAIN_OS_Windows)
     #include "thekogans/util/XMLUtils.h"

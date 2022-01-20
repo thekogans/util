@@ -15,6 +15,7 @@
 // You should have received a copy of the GNU General Public License
 // along with libthekogans_util. If not, see <http://www.gnu.org/licenses/>.
 
+#include "thekogans/util/Environment.h"
 #if !defined (TOOLCHAIN_OS_Windows)
     #include <signal.h>
     #include <errno.h>
@@ -381,7 +382,11 @@ namespace thekogans {
             }
             ClearProcessInformation (pid, returnCode);
             // We can't use dup with vfork.
+        #if defined (__APPLE__)
+            pid = fork ();
+        #else // defined (__APPLE__)
             pid = hookStdIO != HOOK_NONE ? fork () : vfork ();
+        #endif // defined (__APPLE__)
             if (pid < 0) {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
                     THEKOGANS_UTIL_OS_ERROR_CODE);

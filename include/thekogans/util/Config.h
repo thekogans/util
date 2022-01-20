@@ -34,9 +34,16 @@
 ///
 /// The reason for this order is to prevent global namespace
 /// collisions as much as posible.
+///
+/// The only exception is Environment.h. That header defines
+/// the toolchain triplet (TOOLCHAIN_OS, TOOLCHAIN_ARCH and
+/// TOOLCHAIN_COMP) and should be included before the use of
+/// any of the TOOLCHAIN_... macros as it will try to deduce
+/// them if they were not provided during compilation.
 
 #include <cstdlib>
 #include <iostream>
+#include "thekogans/util/Environment.h"
 
 #if defined (TOOLCHAIN_OS_Windows)
     #define _LIB_THEKOGANS_UTIL_API __stdcall
