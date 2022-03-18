@@ -91,6 +91,12 @@ namespace thekogans {
             /// NOTE: There is a very small but > 0 chance that the number
             /// of bytes returned will be less than what you asked for. You
             /// should check the return value and act accordingly.
+            /// NOTE: The code implementing hardware rnadom bytes
+            /// requires the passed in buffer to be aligned on a ui32
+            /// byte boundary. If you pass a misaligned buffer the
+            /// function will allocate an aligned internal buffer, get
+            /// bytes in to it, and copy the result in to passed in
+            /// buffer incurring a performance penalty.
             /// \param[out] buffer Buffer where random bytes will be placed.
             /// \param[in] count Count of random bytes to place in the buffer.
             /// \return Actual count of random bytes placed in the buffer.
@@ -103,6 +109,12 @@ namespace thekogans {
             /// NOTE: As per Intel's guidance here:
             /// https://software.intel.com/en-us/blogs/2012/11/17/the-difference-between-rdrand-and-rdseed,
             /// use of rdseed should be limited to seeding a prng.
+            /// NOTE: The code implementing hardware rnadom bytes
+            /// requires the passed in buffer to be aligned on a ui32
+            /// byte boundary. If you pass a misaligned buffer the
+            /// function will allocate an aligned internal buffer, get
+            /// bytes in to it, and copy the result in to passed in
+            /// buffer incurring a performance penalty.
             /// IMPORTANT: Unlike GetBytes above, this method will not fall back
             /// on a software implementation and will only deliver true random
             /// bytes. Depending on your use case, there is a very good chance

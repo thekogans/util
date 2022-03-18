@@ -496,6 +496,12 @@ namespace thekogans {
         /// \rerurn Process executable file path.
         _LIB_THEKOGANS_UTIL_DECL std::string _LIB_THEKOGANS_UTIL_API GetProcessPath (
             THEKOGANS_UTIL_PROCESS_ID processId);
+        /// \brief
+        /// Given process id, determine if it belongs to the admin group.
+        /// \param[in] processId Process id whose participation in the admin group to check.
+        /// \rerurn true == Given process belongs to the admin group.
+        _LIB_THEKOGANS_UTIL_DECL bool _LIB_THEKOGANS_UTIL_API IsAdminProcess (
+            THEKOGANS_UTIL_PROCESS_ID processId);
 
     } // namespace util
 } // namespace thekogans

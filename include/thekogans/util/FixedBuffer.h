@@ -37,6 +37,9 @@
 #include "thekogans/util/Serializer.h"
 #include "thekogans/util/Exception.h"
 #include "thekogans/util/SecureAllocator.h"
+#if defined (TOOLCHAIN_OS_Windows)
+    #include "thekogans/util/WindowsUtils.h"
+#endif // defined (TOOLCHAIN_OS_Windows)
 
 namespace thekogans {
     namespace util {
@@ -318,22 +321,21 @@ namespace thekogans {
             /// \param[in] flags GlobalAlloc flags.
             /// \return HGLOBAL containing the buffers contents.
             inline HGLOBAL ToHGLOBAL (UINT flags = GMEM_MOVEABLE) const {
-                HGLOBAL global = 0;
                 if (GetDataAvailableForReading () > 0) {
-                    global = GlobalAlloc (flags, GetDataAvailableForReading ());
-                    if (global != 0) {
+                    HGLOBALPtr global (flags, GetDataAvailableForReading ());
+                    if (global.Get () != 0) {
                         memcpy (
-                            GlobalLock (global),
+                            global,
                             GetReadPtr (),
                             GetDataAvailableForReading ());
-                        GlobalUnlock (global);
+                        return global.Release ();
                     }
                     else {
                         THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
                             THEKOGANS_UTIL_OS_ERROR_CODE);
                     }
                 }
-                return global;
+                return 0;
             }
         #endif // defined (TOOLCHAIN_OS_Windows)
         };

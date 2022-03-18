@@ -178,6 +178,26 @@ namespace thekogans {
         char Path::GetDrive () const {
             return path.size () > 1 && path[1] == DRIVE_LETTER_DELIMITER ? path[0] : -1;
         }
+
+        std::string Path::GetSystemDirectory () {
+            const UINT size = ::GetSystemDirectoryW (0, 0);
+            if (size > 0) {
+                std::wstring systemDirectory;
+                systemDirectory.resize (size);
+                if (::GetSystemDirectoryW (&systemDirectory[0], size) == size - 1) {
+                    systemDirectory.resize (size - 1);
+                    return UTF16ToUTF8 (systemDirectory);
+                }
+                else {
+                    THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                        THEKOGANS_UTIL_OS_ERROR_CODE);
+                }
+            }
+            else {
+                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                    THEKOGANS_UTIL_OS_ERROR_CODE);
+            }
+        }
     #else // defined (TOOLCHAIN_OS_Windows)
         std::string Path::GetExtendedAttributeValue (const std::string &name) const {
             ssize_t size = 0;

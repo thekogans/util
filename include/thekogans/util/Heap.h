@@ -221,11 +221,11 @@ namespace thekogans {
         /// macros below, and is not meant for public consumption.
         #define THEKOGANS_UTIL_DECLARE_HEAP_FUNCTIONS\
         public:\
-            static void *operator new (std::size_t size);\
-            static void *operator new (std::size_t size, std::nothrow_t) throw ();\
-            static void *operator new (std::size_t, void *ptr);\
-            static void operator delete (void *ptr);\
-            static void operator delete (void *ptr, std::nothrow_t) throw ();\
+            static void *operator new (std::size_t /*size*/);\
+            static void *operator new (std::size_t /*size*/, std::nothrow_t) throw ();\
+            static void *operator new (std::size_t, void * /*ptr*/);\
+            static void operator delete (void * /*ptr*/);\
+            static void operator delete (void * /*ptr*/, std::nothrow_t) throw ();\
             static void operator delete (void *, void *);
 
         /// \def THEKOGANS_UTIL_DECLARE_HEAP(type)

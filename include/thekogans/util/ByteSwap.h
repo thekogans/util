@@ -106,7 +106,7 @@ namespace thekogans {
             /// Swap bytes template.
             template<typename T, std::size_t size>
             struct SwapBytes {
-                inline T operator () (T value) {
+                inline T operator () (T /*value*/) {
                     throw std::out_of_range ("data size");
                 }
             };

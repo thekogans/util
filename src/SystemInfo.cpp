@@ -306,8 +306,8 @@ namespace thekogans {
                         THEKOGANS_UTIL_OS_ERROR_CODE);
                 }
             #elif defined (TOOLCHAIN_OS_OSX)
-                #if (MAC_OS_X_VERSION_MAX_ALLOWED < 120000) // Before macOS 12 Monterey
-                    #define kIOMainPortDefault kIOMasterPortDefault
+                #if (MAC_OS_X_VERSION_MAX_ALLOWED >= 120000) // Before macOS 12 Monterey
+                    #define kIOMasterPortDefault kIOMainPortDefault
                 #endif
                 struct io_registry_entry_tPtr {
                     io_registry_entry_t registryEntry;
@@ -316,7 +316,7 @@ namespace thekogans {
                     ~io_registry_entry_tPtr () {
                         IOObjectRelease (registryEntry);
                     }
-                } ioRegistryRoot (IORegistryEntryFromPath (kIOMainPortDefault, "IOService:/"));
+                } ioRegistryRoot (IORegistryEntryFromPath (kIOMasterPortDefault, "IOService:/"));
                 if (ioRegistryRoot.registryEntry != 0) {
                     CFStringRefPtr uuid (
                         (CFStringRef)IORegistryEntryCreateCFProperty (

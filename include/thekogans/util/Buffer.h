@@ -412,7 +412,7 @@ namespace thekogans {
             THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (Buffer)
         };
 
-        /// \struct DefaultBuffer Buffer.h thekogans/util/Buffer.h
+        /// \struct SecureBuffer Buffer.h thekogans/util/Buffer.h
         ///
         /// \brief
         /// Wraps a \see{SecureAllocator}. SecureBuffers are very useful

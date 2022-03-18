@@ -20,6 +20,11 @@
     #include <intrin.h>
 #endif // defined (TOOLCHAIN_OS_Windows)
 #include "thekogans/util/Types.h"
+#if defined (TOOLCHAIN_ARCH_i386) || defined (TOOLCHAIN_ARCH_x86_64)
+    #include "thekogans/util/DefaultAllocator.h"
+    #include "thekogans/util/AlignedAllocator.h"
+    #include "thekogans/util/Buffer.h"
+#endif // defined (TOOLCHAIN_ARCH_i386) || defined (TOOLCHAIN_ARCH_x86_64)
 #include "thekogans/util/Exception.h"
 #include "thekogans/util/LockGuard.h"
 #include "thekogans/util/CPU.h"
@@ -56,6 +61,16 @@ namespace thekogans {
                     std::size_t count) {
             #if defined (TOOLCHAIN_ARCH_i386) || defined (TOOLCHAIN_ARCH_x86_64)
                 if (CPU::Instance ().RDRAND ()) {
+                    if (((uintptr_t)buffer & (UI32_SIZE - 1)) != 0) {
+                        // A misaligned buffer was passed in. The code
+                        // below requires the buffer to be aligned on
+                        // a ui32 byte boundary.
+                        AlignedAllocator allocator (DefaultAllocator::Instance (), UI32_SIZE);
+                        Buffer alignedBuffer (HostEndian, count, 0, 0, &allocator);
+                        alignedBuffer.AdvanceWriteOffset (GetHardwareBytes (alignedBuffer.GetWritePtr (), count));
+                        memcpy (buffer, alignedBuffer.GetReadPtr (), alignedBuffer.GetDataAvailableForReading ());
+                        return alignedBuffer.GetDataAvailableForReading ();
+                    }
                     // This function was inspired by an answer from:
                     // https://stackoverflow.com/questions/11407103/how-i-can-get-the-random-number-from-intels-processor-with-assembler
                     std::size_t ui32Count = count >> 2;
@@ -151,6 +166,14 @@ namespace thekogans {
             if (buffer != 0 && count > 0) {
             #if defined (TOOLCHAIN_ARCH_i386) || defined (TOOLCHAIN_ARCH_x86_64)
                 if (CPU::Instance ().RDSEED ()) {
+                    if (((uintptr_t)buffer & (UI32_SIZE - 1)) != 0) {
+                        // See bove in GetHardwareBytes.
+                        AlignedAllocator allocator (DefaultAllocator::Instance (), UI32_SIZE);
+                        Buffer alignedBuffer (HostEndian, count, 0, 0, &allocator);
+                        alignedBuffer.AdvanceWriteOffset (GetSeed (alignedBuffer.GetWritePtr (), count));
+                        memcpy (buffer, alignedBuffer.GetReadPtr (), alignedBuffer.GetDataAvailableForReading ());
+                        return alignedBuffer.GetDataAvailableForReading ();
+                    }
                     LockGuard<SpinLock> guard (spinLock);
                     // This function was inspired by an answer from:
                     // https://stackoverflow.com/questions/11407103/how-i-can-get-the-random-number-from-intels-processor-with-assembler

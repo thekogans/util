@@ -124,6 +124,11 @@ namespace thekogans {
             /// \return If path contains a drive, return the letter,
             /// -1 otherwise.
             char GetDrive () const;
+
+            /// \brief
+            /// Return the Windows system directory.
+            /// \return Windows system directory.
+            static std::string GetSystemDirectory ();
         #else // defined (TOOLCHAIN_OS_Windows)
             /// \brief
             /// On Linux/OS X file system objects can have name:value extended attributes.

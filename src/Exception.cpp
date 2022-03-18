@@ -76,7 +76,7 @@ namespace thekogans {
 
     #if defined (TOOLCHAIN_OS_Windows)
         namespace {
-            // Use a none throwing version here to prevent infinite recursion.
+            // Use a no throwing version here to prevent infinite recursion.
             std::string UTF16ToUTF8 (
                     const wchar_t *utf16,
                     std::size_t length) {
@@ -127,7 +127,7 @@ namespace thekogans {
                 HMODULE handle;
 
                 NTDll () :
-                    handle (LoadLibraryW (L"NTDLL.DLL")) {}
+                    handle (LoadLibraryExW (L"NTDLL.DLL", 0, LOAD_LIBRARY_SEARCH_SYSTEM32)) {}
                 ~NTDll () {
                     FreeLibrary (handle);
                 }

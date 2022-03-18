@@ -196,9 +196,9 @@ namespace thekogans {
                     /// \param[in] directory Path of the affected directory.
                     /// \param[in] entry The new entry.
                     virtual void HandleAdd (
-                        WatchId watchId,
-                        const std::string &directory,
-                        const Directory::Entry &entry) {}
+                        WatchId /*watchId*/,
+                        const std::string & /*directory*/,
+                        const Directory::Entry & /*entry*/) {}
                     /// \brief
                     /// Called when an entry was deleted from
                     /// the watched directory.
@@ -206,18 +206,18 @@ namespace thekogans {
                     /// \param[in] directory Path of the affected directory.
                     /// \param[in] entry The deleted entry.
                     virtual void HandleDelete (
-                        WatchId watchId,
-                        const std::string &directory,
-                        const Directory::Entry &entry) {}
+                        WatchId /*watchId*/,
+                        const std::string & /*directory*/,
+                        const Directory::Entry & /*entry*/) {}
                     /// \brief
                     /// Called when an entry was modified.
                     /// \param[in] watchId Watch id of the affected directory.
                     /// \param[in] directory Path of the affected directory.
                     /// \param[in] entry The modified entry.
                     virtual void HandleModified (
-                        WatchId watchId,
-                        const std::string &directory,
-                        const Directory::Entry &entry) {}
+                        WatchId /*watchId*/,
+                        const std::string & /*directory*/,
+                        const Directory::Entry & /*entry*/) {}
                 };
 
                 struct Watch;

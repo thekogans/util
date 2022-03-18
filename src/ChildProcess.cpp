@@ -804,15 +804,17 @@ namespace thekogans {
         }
     #endif // !defined (TOOLCHAIN_OS_Windows)
 
-        _LIB_THEKOGANS_UTIL_DECL std::string _LIB_THEKOGANS_UTIL_API GetProcessPath (
-                THEKOGANS_UTIL_PROCESS_ID processId) {
-        #if defined (TOOLCHAIN_OS_Windows)
+    #if defined (TOOLCHAIN_OS_Windows)
+        namespace {
             struct ProcessHandle {
+            private:
                 HANDLE handle;
-                ProcessHandle (THEKOGANS_UTIL_PROCESS_ID processId) :
+
+            public:
+                explicit ProcessHandle (THEKOGANS_UTIL_PROCESS_ID processId) :
                         handle (
                             OpenProcess (
-                                SYNCHRONIZE | PROCESS_QUERY_LIMITED_INFORMATION,
+                                PROCESS_QUERY_LIMITED_INFORMATION,
                                 FALSE,
                                 processId)) {
                     if (handle == 0) {
@@ -821,12 +823,78 @@ namespace thekogans {
                     }
                 }
                 ~ProcessHandle () {
-                    CloseHandle (handle);
+                    if (handle != 0) {
+                        CloseHandle (handle);
+                    }
                 }
-            } process (processId);
+
+                HANDLE Get () const {
+                    return handle;
+                }
+            };
+
+            struct ProcessToken {
+            private:
+                HANDLE token;
+
+            public:
+                ProcessToken (
+                        HANDLE processHandle,
+                        DWORD desiredAccess = TOKEN_QUERY) :
+                        token (0) {
+                    if (!OpenProcessToken (processHandle, desiredAccess, &token)) {
+                        THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                            THEKOGANS_UTIL_OS_ERROR_CODE);
+                    }
+                }
+                ~ProcessToken () {
+                    if (token != 0) {
+                        CloseHandle (token);
+                    }
+                }
+
+                HANDLE Get () const {
+                    return token;
+                }
+            };
+
+            struct AdminSID {
+            private:
+                PSID adminSID;
+
+            public:
+                AdminSID () : adminSID (0) {
+                    SID_IDENTIFIER_AUTHORITY NtAuthority = SECURITY_NT_AUTHORITY;
+                    if (!AllocateAndInitializeSid (
+                            &NtAuthority,
+                            2,
+                            SECURITY_BUILTIN_DOMAIN_RID,
+                            DOMAIN_ALIAS_RID_ADMINS,
+                            0, 0, 0, 0, 0, 0,
+                            &adminSID)) {
+                        THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                            THEKOGANS_UTIL_OS_ERROR_CODE);
+                    }
+                }
+                ~AdminSID () {
+                    if (adminSID != 0) {
+                        FreeSid (adminSID);
+                    }
+                }
+
+                PSID Get () const {
+                    return adminSID;
+                }
+            };
+        }
+    #endif // defined (TOOLCHAIN_OS_Windows)
+        _LIB_THEKOGANS_UTIL_DECL std::string _LIB_THEKOGANS_UTIL_API GetProcessPath (
+                THEKOGANS_UTIL_PROCESS_ID processId) {
+        #if defined (TOOLCHAIN_OS_Windows)
+            ProcessHandle processHandle (processId);
             wchar_t path[MAX_PATH] = {};
             DWORD length = MAX_PATH;
-            if (QueryFullProcessImageNameW (process.handle, 0, path, &length)) {
+            if (QueryFullProcessImageNameW (processHandle.Get (), 0, path, &length)) {
                 return UTF16ToUTF8 (path, length, WC_ERR_INVALID_CHARS);
             }
             else {
@@ -854,6 +922,31 @@ namespace thekogans {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
                     THEKOGANS_UTIL_OS_ERROR_CODE);
             }
+        #endif // defined (TOOLCHAIN_OS_Windows)
+        }
+
+        _LIB_THEKOGANS_UTIL_DECL bool _LIB_THEKOGANS_UTIL_API IsAdminProcess (
+                THEKOGANS_UTIL_PROCESS_ID processId) {
+        #if defined (TOOLCHAIN_OS_Windows)
+            ProcessHandle processHandle (processId);
+            ProcessToken processToken (processHandle.Get ());
+            AdminSID adminSID;
+            BOOL result;
+            if (CheckTokenMembership (processToken.Get (), adminSID.Get (), &result)) {
+                return result == TRUE;
+            }
+            else {
+                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                    THEKOGANS_UTIL_OS_ERROR_CODE);
+            }
+        #elif defined (TOOLCHAIN_OS_Linux)
+            // FIXME: implement
+            assert (0);
+            return false;
+        #elif defined (TOOLCHAIN_OS_OSX)
+            // FIXME: implement
+            assert (0);
+            return false;
         #endif // defined (TOOLCHAIN_OS_Windows)
         }
 

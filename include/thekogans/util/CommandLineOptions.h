@@ -125,12 +125,12 @@ namespace thekogans {
             /// \param[in] option A valid option.
             /// \param[in] value Optional option value.
             virtual void DoOption (
-                char option,
-                const std::string &value) {}
+                char /*option*/,
+                const std::string & /*value*/) {}
             /// \brief
             /// Called when a path is encoutered.
             /// \param[in] path A path.
-            virtual void DoPath (const std::string &path) {}
+            virtual void DoPath (const std::string & /*path*/) {}
             /// \brief
             /// Called right after the options are parsed.
             /// Do one time teardown here.
