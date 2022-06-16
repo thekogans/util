@@ -67,7 +67,7 @@ namespace thekogans {
             /// \brief
             /// Handle to Windows crypto context.
             HCRYPTPROV cryptProv;
-        #else // defined (TOOLCHAIN_OS_Windows)
+        #elif defined (TOOLCHAIN_OS_Linux)
             /// \brief
             /// "/dev/urandom"
             ReadOnlyFile urandom;
@@ -91,7 +91,7 @@ namespace thekogans {
             /// NOTE: There is a very small but > 0 chance that the number
             /// of bytes returned will be less than what you asked for. You
             /// should check the return value and act accordingly.
-            /// NOTE: The code implementing hardware rnadom bytes
+            /// NOTE: The code implementing hardware random bytes
             /// requires the passed in buffer to be aligned on a ui32
             /// byte boundary. If you pass a misaligned buffer the
             /// function will allocate an aligned internal buffer, get
@@ -109,7 +109,7 @@ namespace thekogans {
             /// NOTE: As per Intel's guidance here:
             /// https://software.intel.com/en-us/blogs/2012/11/17/the-difference-between-rdrand-and-rdseed,
             /// use of rdseed should be limited to seeding a prng.
-            /// NOTE: The code implementing hardware rnadom bytes
+            /// NOTE: The code implementing hardware random bytes
             /// requires the passed in buffer to be aligned on a ui32
             /// byte boundary. If you pass a misaligned buffer the
             /// function will allocate an aligned internal buffer, get

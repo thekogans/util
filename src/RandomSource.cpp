@@ -18,6 +18,9 @@
 #include "thekogans/util/Environment.h"
 #if defined (TOOLCHAIN_OS_Windows)
     #include <intrin.h>
+#elif defined (TOOLCHAIN_OS_OSX)
+    #include <CoreFoundation/CoreFoundation.h>
+    #include <Security/Security.h>
 #endif // defined (TOOLCHAIN_OS_Windows)
 #include "thekogans/util/Types.h"
 #if defined (TOOLCHAIN_ARCH_i386) || defined (TOOLCHAIN_ARCH_x86_64)
@@ -33,13 +36,16 @@
 namespace thekogans {
     namespace util {
 
+    #if defined (TOOLCHAIN_OS_Windows)
         RandomSource::RandomSource () :
-            #if defined (TOOLCHAIN_OS_Windows)
                 cryptProv (0) {
-            #else // defined (TOOLCHAIN_OS_Windows)
+    #elif defined (TOOLCHAIN_OS_Linux)
+        RandomSource::RandomSource () :
                 // http://www.2uo.de/myths-about-urandom/
                 urandom (HostEndian, "/dev/urandom") {
-            #endif // defined (TOOLCHAIN_OS_Windows)
+    #elif defined (TOOLCHAIN_OS_OSX)
+        RandomSource::RandomSource () {
+    #endif // defined (TOOLCHAIN_OS_Windows)
         #if defined (TOOLCHAIN_OS_Windows)
             if (!CryptAcquireContext (&cryptProv, 0, 0,
                     PROV_RSA_FULL, CRYPT_VERIFYCONTEXT | CRYPT_SILENT)) {
@@ -148,10 +154,16 @@ namespace thekogans {
                         THEKOGANS_UTIL_OS_ERROR_CODE);
                 }
                 return count;
-            #else // defined (TOOLCHAIN_OS_Windows)
+            #elif defined (TOOLCHAIN_OS_Linux)
                 return hardwareCount + urandom.Read (
                     (ui8 *)buffer + hardwareCount,
                     count - hardwareCount);
+            #elif defined (TOOLCHAIN_OS_OSX)
+                OSStatus errorCode = SecRandomCopyBytes (kSecRandomDefault, count, buffer);
+                if (errorCode != noErr) {
+                    THEKOGANS_UTIL_THROW_SEC_OSSTATUS_ERROR_CODE_EXCEPTION (errorCode);
+                }
+                return count;
             #endif // defined (TOOLCHAIN_OS_Windows)
             }
             else {
@@ -167,7 +179,7 @@ namespace thekogans {
             #if defined (TOOLCHAIN_ARCH_i386) || defined (TOOLCHAIN_ARCH_x86_64)
                 if (CPU::Instance ().RDSEED ()) {
                     if (((uintptr_t)buffer & (UI32_SIZE - 1)) != 0) {
-                        // See bove in GetHardwareBytes.
+                        // See above in GetHardwareBytes.
                         AlignedAllocator allocator (DefaultAllocator::Instance (), UI32_SIZE);
                         Buffer alignedBuffer (HostEndian, count, 0, 0, &allocator);
                         alignedBuffer.AdvanceWriteOffset (GetSeed (alignedBuffer.GetWritePtr (), count));

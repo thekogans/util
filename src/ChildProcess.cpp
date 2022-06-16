@@ -930,10 +930,16 @@ namespace thekogans {
         #if defined (TOOLCHAIN_OS_Windows)
             ProcessHandle processHandle (processId);
             ProcessToken processToken (processHandle.Get ());
-            AdminSID adminSID;
-            BOOL result;
-            if (CheckTokenMembership (processToken.Get (), adminSID.Get (), &result)) {
-                return result == TRUE;
+            TOKEN_ELEVATION tokenElevation = {0};
+            DWORD length = 0;
+            if (GetTokenInformation (
+                    processToken.Get (),
+                    TokenElevation,
+                    &tokenElevation,
+                    sizeof (tokenElevation),
+                    &length)) {
+                assert (length == sizeof (tokenElevation));
+                return tokenElevation.TokenIsElevated == TRUE;
             }
             else {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (

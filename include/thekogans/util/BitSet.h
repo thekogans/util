@@ -275,7 +275,7 @@ namespace thekogans {
                 const BitSet &bitSet2) {
             BitSet temp = bitSet1;
             return temp &= bitSet2;
-		}
+        }
 
         /// \brief
         /// Or two bit sets together.
@@ -287,7 +287,7 @@ namespace thekogans {
                 const BitSet &bitSet2) {
             BitSet temp = bitSet1;
             return temp |= bitSet2;
-		}
+        }
 
         /// \brief
         /// Xor two bit sets together.
@@ -299,7 +299,7 @@ namespace thekogans {
                 const BitSet &bitSet2) {
             BitSet temp = bitSet1;
             return temp ^= bitSet2;
-		}
+        }
 
         /// \brief
         /// Return true if bitSet1 == bitSet2.

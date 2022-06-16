@@ -33,6 +33,9 @@
     #include <sys/mman.h>
 #endif // defined (TOOLCHAIN_OS_Windows)
 #include "thekogans/util/Exception.h"
+#if !defined (THEKOGANS_UTIL_HAVE_MMAP)
+    #include "thekogans/util/DefaultAllocator.h"
+#endif // !defined (THEKOGANS_UTIL_HAVE_MMAP)
 #include "thekogans/util/SecureAllocator.h"
 
 namespace thekogans {
@@ -83,6 +86,7 @@ namespace thekogans {
                         THEKOGANS_UTIL_OS_ERROR_CODE);
                 }
             #else // defined (TOOLCHAIN_OS_Windows)
+            #if defined (THEKOGANS_UTIL_HAVE_MMAP)
                 ptr = mmap (0, size, PROT_READ | PROT_WRITE, MAP_ANON | MAP_PRIVATE,
                     THEKOGANS_UTIL_INVALID_HANDLE_VALUE, 0);
                 if (ptr != MAP_FAILED) {
@@ -108,6 +112,9 @@ namespace thekogans {
                     THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
                         THEKOGANS_UTIL_OS_ERROR_CODE);
                 }
+            #else // defined (THEKOGANS_UTIL_HAVE_MMAP)
+                ptr = DefaultAllocator::Instance ().Alloc (size);
+            #endif // defined (THEKOGANS_UTIL_HAVE_MMAP)
             #endif // defined (TOOLCHAIN_OS_Windows)
             }
             return ptr;
@@ -134,7 +141,12 @@ namespace thekogans {
             #if defined (TOOLCHAIN_OS_Windows)
                 if (!VirtualUnlock (ptr, size) || !VirtualFree (ptr, 0, MEM_RELEASE)) {
             #else // defined (TOOLCHAIN_OS_Windows)
+            #if defined (THEKOGANS_UTIL_HAVE_MMAP)
                 if (munlock (ptr, size) != 0 || munmap (ptr, size) != 0) {
+            #else // defined (THEKOGANS_UTIL_HAVE_MMAP)
+                DefaultAllocator::Instance ().Free (ptr, size);
+                if (0) {
+            #endif // defined (THEKOGANS_UTIL_HAVE_MMAP)
             #endif // defined (TOOLCHAIN_OS_Windows)
                     THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
                         THEKOGANS_UTIL_OS_ERROR_CODE);

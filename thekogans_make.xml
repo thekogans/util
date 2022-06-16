@@ -13,6 +13,9 @@
       <feature>THEKOGANS_UTIL_HAVE_XLIB</feature>
     </if>
     <feature>THEKOGANS_UTIL_HAVE_TESTS</feature>
+    <if condition = "$(TOOLCHAIN_OS) != 'Windows'">
+      <feature>THEKOGANS_UTIL_HAVE_MMAP</feature>
+    </if>
     <!-- Uncomment this feature to use windows WTS functionality.
         <if condition = "$(TOOLCHAIN_OS) == 'Windows'">
           <feature>THEKOGANS_UTIL_HAVE_WTS</feature>
