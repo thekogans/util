@@ -145,14 +145,14 @@ namespace thekogans {
             /// \return true==the given application path is enavbled.
             bool IsAppEnabled (const std::string &path);
             /// \brief
-            /// Give an application path, enable if not already.
+            /// Given an application path, enable if not already.
             /// \param[in] path Application path.
             /// \param[in] name Name to give the firewall entry.
             void EnableApp (
                 const std::string &path,
                 const std::string &name);
             /// \brief
-            /// Give an application path, disable if not already.
+            /// Given an application path, disable if not already.
             /// \param[in] path Application path.
             void DisableApp (const std::string &path);
 
@@ -163,7 +163,7 @@ namespace thekogans {
                 ui16 portNumber,
                 NET_FW_IP_PROTOCOL protocol);
             /// \brief
-            /// Give an application port and protocol, enable if not already.
+            /// Given an application port and protocol, enable if not already.
             /// \param[in] port Port to enable.
             /// \param[in] protocol Protocol to enable.
             /// \param[in] name Name to give the firewall entry.
@@ -172,7 +172,7 @@ namespace thekogans {
                 NET_FW_IP_PROTOCOL protocol,
                 const std::string &name);
             /// \brief
-            /// Give a port and protocol, disable if not already.
+            /// Given a port and protocol, disable if not already.
             /// \param[in] path Port to disable.
             /// \param[in] protocol Protocol to disable.
             void DisablePort (

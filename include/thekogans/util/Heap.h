@@ -206,6 +206,8 @@ namespace thekogans {
         /// 07/17/2018 - version 2.5.1
         ///              Changed name type from std::string to const char *.
         ///              Added GetName ().
+        /// 07/05/2022 - version 2.5.2
+        ///              Added THEKOGANS_UTIL_DECLARE_HEAP to allow heap debugging in release mode.
         ///
         /// Author:
         ///
@@ -453,8 +455,11 @@ namespace thekogans {
         #define THEKOGANS_UTIL_IMPLEMENT_HEAP_EX_T(\
             type, minItemsInPage)\
         template<>\
-        thekogans::util::Heap<type> type::heap (\
-            #type, minItemsInPage);\
+        thekogans::util::Heap<type> &type::GetHeap () {\
+            static thekogans::util::Heap<type> *heap =\
+                new thekogans::util::Heap<type> (#type, minItemsInPage);\
+            return *heap;\
+        }\
         THEKOGANS_UTIL_IMPLEMENT_HEAP_FUNCTIONS_T (type)
 
         /// \def THEKOGANS_UTIL_IMPLEMENT_HEAP_EX_WITH_ALLOCATOR_T(
@@ -469,8 +474,11 @@ namespace thekogans {
         #define THEKOGANS_UTIL_IMPLEMENT_HEAP_EX_WITH_ALLOCATOR_T(\
             type, minItemsInPage, allocator)\
         template<>\
-        thekogans::util::Heap<type> type::heap (\
-            #type, minItemsInPage, allocator);\
+        thekogans::util::Heap<type> &type::GetHeap () {\
+            static thekogans::util::Heap<type> *heap =\
+                new thekogans::util::Heap<type> (#type, minItemsInPage, allocator);\
+            return *heap;\
+        }\
         THEKOGANS_UTIL_IMPLEMENT_HEAP_FUNCTIONS_T (type)
 
         /// \def THEKOGANS_UTIL_IMPLEMENT_HEAP_WITH_LOCK_EX_T(
@@ -485,8 +493,11 @@ namespace thekogans {
         #define THEKOGANS_UTIL_IMPLEMENT_HEAP_WITH_LOCK_EX_T(\
             type, lock, minItemsInPage)\
         template<>\
-        thekogans::util::Heap<type, lock>\
-            type::heap (#type, minItemsInPage);\
+        thekogans::util::Heap<type, lock> &type::GetHeap () {\
+            static thekogans::util::Heap<type, lock> *heap =\
+                new thekogans::util::Heap<type, lock> (#type, minItemsInPage);\
+            return *heap;\
+        }\
         THEKOGANS_UTIL_IMPLEMENT_HEAP_FUNCTIONS_T (type)
 
         /// \def THEKOGANS_UTIL_IMPLEMENT_HEAP_WITH_LOCK_EX_AND_ALLOCATOR_T(
@@ -502,8 +513,11 @@ namespace thekogans {
         #define THEKOGANS_UTIL_IMPLEMENT_HEAP_WITH_LOCK_EX_AND_ALLOCATOR_T(\
             type, lock, minItemsInPage, allocator)\
         template<>\
-        thekogans::util::Heap<type, lock> type::heap (\
-            #type, minItemsInPage, allocator);\
+        thekogans::util::Heap<type, lock> &type::GetHeap () {\
+            static thekogans::util::Heap<type, lock> *heap =\
+                new thekogans::util::Heap<type, lock> (#type, minItemsInPage, allocator);\
+            return *heap;\
+        }\
         THEKOGANS_UTIL_IMPLEMENT_HEAP_FUNCTIONS_T (type)
 
         /// \def THEKOGANS_UTIL_IMPLEMENT_HEAP_T(type)
@@ -562,6 +576,21 @@ namespace thekogans {
 
         struct _LIB_THEKOGANS_UTIL_DECL HeapRegistry :
                 public Singleton<HeapRegistry, SpinLock> {
+            /// \enum
+            /// Various heap error types.
+            enum HeapError {
+                OutOfMemory,
+                BadPointer,
+                // FIXME: Use these to pinpoint the type of corruption (BadPointer).
+                Underflow,
+                Overflow
+            };
+            /// \brief
+            /// Convenient typedef for void (*HeapErrorCallback) (HeapError heapError, const char *type).
+            typedef void (*HeapErrorCallback) (HeapError heapError, const char *type);
+            /// \brief
+            /// Heap error callback.
+            HeapErrorCallback heapErrorCallback;
             /// \struct HeapRegistry::Diagnostics Heap.h thekogans/util/Heap.h
             ///
             /// \brief
@@ -608,6 +637,23 @@ namespace thekogans {
             /// \brief
             /// Synchronization spin lock.
             SpinLock spinLock;
+
+            /// \brief
+            /// ctor.
+            HeapRegistry () :
+                heapErrorCallback (0) {}
+
+            /// \brief
+            /// Set callback function that will receive heap errors.
+            /// \param[in] heapErrorCallback_ Function to call describing heap errors.
+            void SetHeapErrorCallback (HeapErrorCallback heapErrorCallback_);
+            /// \brief
+            /// Call the registered heap error callback.
+            /// \brief heapError Type of heap error.
+            /// \brief type Object type that caused the error.
+            void CallHeapErrorCallback (
+                HeapError heapError,
+                const char *type);
 
             /// \brief
             /// Add a heap to the registry.
@@ -697,12 +743,12 @@ namespace thekogans {
                 /// \brief
                 /// Page item info.
                 struct Item {
-                #if defined (THEKOGANS_UTIL_CONFIG_Debug)
+                #if defined (THEKOGANS_UTIL_CONFIG_Debug) || defined (THEKOGANS_UTIL_DEBUG_HEAP)
                     /// \brief
                     /// In debug, helps to catch item double
                     /// free, and buffer underrun.
                     std::size_t magic1;
-                #endif // defined (THEKOGANS_UTIL_CONFIG_Debug)
+                #endif // defined (THEKOGANS_UTIL_CONFIG_Debug) || defined (THEKOGANS_UTIL_DEBUG_HEAP)
                     union {
                         /// \brief
                         /// Either a pointer to the next item in
@@ -712,12 +758,12 @@ namespace thekogans {
                         /// the item itself.
                         ui8 block[sizeof (T)];
                     };
-                #if defined (THEKOGANS_UTIL_CONFIG_Debug)
+                #if defined (THEKOGANS_UTIL_CONFIG_Debug) || defined (THEKOGANS_UTIL_DEBUG_HEAP)
                     /// \brief
                     /// In debug, helps to catch item double
                     /// free, and buffer overrun.
                     std::size_t magic2;
-                #endif // defined (THEKOGANS_UTIL_CONFIG_Debug)
+                #endif // defined (THEKOGANS_UTIL_CONFIG_Debug) || defined (THEKOGANS_UTIL_DEBUG_HEAP)
                 /// Within each page, freed items are stored
                 /// in a singly linked list.
                 } *freeItem;
@@ -748,9 +794,9 @@ namespace thekogans {
                         allocatedItems (0),
                         freeItem (0),
                         magic2 (MAGIC) {
-                #if defined (THEKOGANS_UTIL_CONFIG_Debug)
+                #if defined (THEKOGANS_UTIL_CONFIG_Debug) || defined (THEKOGANS_UTIL_DEBUG_HEAP)
                     memset (items, 0, maxItems * sizeof (Item));
-                #endif // defined (THEKOGANS_UTIL_CONFIG_Debug)
+                #endif // defined (THEKOGANS_UTIL_CONFIG_Debug) || defined (THEKOGANS_UTIL_DEBUG_HEAP)
                 }
 
                 /// \brief
@@ -774,10 +820,10 @@ namespace thekogans {
                         Item *item = freeItem;
                         // In release, this goes away, and the cost of
                         // allocation is reduced.
-                    #if defined (THEKOGANS_UTIL_CONFIG_Debug)
+                    #if defined (THEKOGANS_UTIL_CONFIG_Debug) || defined (THEKOGANS_UTIL_DEBUG_HEAP)
                         item->magic1 = MAGIC;
                         item->magic2 = MAGIC;
-                    #endif // defined (THEKOGANS_UTIL_CONFIG_Debug)
+                    #endif // defined (THEKOGANS_UTIL_CONFIG_Debug) || defined (THEKOGANS_UTIL_DEBUG_HEAP)
                         freeItem = freeItem->next;
                         ++allocatedItems;
                         return item->block;
@@ -787,10 +833,10 @@ namespace thekogans {
                         // In release, this goes away, and the assignment
                         // above, and return below get optimized down to:
                         // return &items[allocatedItems++];
-                    #if defined (THEKOGANS_UTIL_CONFIG_Debug)
+                    #if defined (THEKOGANS_UTIL_CONFIG_Debug) || defined (THEKOGANS_UTIL_DEBUG_HEAP)
                         item->magic1 = MAGIC;
                         item->magic2 = MAGIC;
-                    #endif // defined (THEKOGANS_UTIL_CONFIG_Debug)
+                    #endif // defined (THEKOGANS_UTIL_CONFIG_Debug) || defined (THEKOGANS_UTIL_DEBUG_HEAP)
                         return item->block;
                     }
                     // We are allocating from a full page!
@@ -802,15 +848,15 @@ namespace thekogans {
                 /// Free previously allocated item.
                 /// \param[in] ptr Pointer to item to free.
                 inline void Free (void *ptr) {
-                #if defined (THEKOGANS_UTIL_CONFIG_Debug)
+                #if defined (THEKOGANS_UTIL_CONFIG_Debug) || defined (THEKOGANS_UTIL_DEBUG_HEAP)
                     assert (ptr != 0);
                     Item *item = (Item *)((std::size_t *)ptr - 1);
                     assert (IsItem (item));
                     item->magic1 = 0;
                     item->magic2 = 0;
-                #else // defined (THEKOGANS_UTIL_CONFIG_Debug)
+                #else // defined (THEKOGANS_UTIL_CONFIG_Debug) || defined (THEKOGANS_UTIL_DEBUG_HEAP)
                     Item *item = (Item *)ptr;
-                #endif // defined (THEKOGANS_UTIL_CONFIG_Debug)
+                #endif // defined (THEKOGANS_UTIL_CONFIG_Debug) || defined (THEKOGANS_UTIL_DEBUG_HEAP)
                     item->next = freeItem;
                     freeItem = item;
                     --allocatedItems;
@@ -821,11 +867,11 @@ namespace thekogans {
                 /// \param[in] ptr Pointer to check.
                 /// \return true == we own the pointer, false == the pointer is not one of ours.
                 inline bool IsValidPtr (void *ptr) {
-                #if defined (THEKOGANS_UTIL_CONFIG_Debug)
+                #if defined (THEKOGANS_UTIL_CONFIG_Debug) || defined (THEKOGANS_UTIL_DEBUG_HEAP)
                     Item *item = (Item *)((std::size_t *)ptr - 1);
-                #else // defined (THEKOGANS_UTIL_CONFIG_Debug)
+                #else // defined (THEKOGANS_UTIL_CONFIG_Debug) || defined (THEKOGANS_UTIL_DEBUG_HEAP)
                     Item *item = (Item *)ptr;
-                #endif // defined (THEKOGANS_UTIL_CONFIG_Debug)
+                #endif // defined (THEKOGANS_UTIL_CONFIG_Debug) || defined (THEKOGANS_UTIL_DEBUG_HEAP)
                     return IsItem (item);
                 }
 
@@ -842,7 +888,7 @@ namespace thekogans {
                         item >= items && item < &items[maxItems] &&
                         (std::ptrdiff_t)((const std::size_t)item -
                             (const std::size_t)items) % sizeof (Item) == 0 &&
-                    #if defined (THEKOGANS_UTIL_CONFIG_Debug)
+                    #if defined (THEKOGANS_UTIL_CONFIG_Debug) || defined (THEKOGANS_UTIL_DEBUG_HEAP)
                         // The test for magic is a lot more convincing
                         // once we verified that this is indeed one of
                         // our pointers.
@@ -852,9 +898,9 @@ namespace thekogans {
                         // Either way, this is an application bug, and
                         // hopefully this will make it easier to find.
                         item->magic1 == MAGIC && item->magic2 == MAGIC;
-                    #else // defined (THEKOGANS_UTIL_CONFIG_Debug)
+                    #else // defined (THEKOGANS_UTIL_CONFIG_Debug) || defined (THEKOGANS_UTIL_DEBUG_HEAP)
                         1;
-                    #endif // defined (THEKOGANS_UTIL_CONFIG_Debug)
+                    #endif // defined (THEKOGANS_UTIL_CONFIG_Debug) || defined (THEKOGANS_UTIL_DEBUG_HEAP)
                 }
 
                 /// \brief
@@ -1174,6 +1220,9 @@ namespace thekogans {
                 ++itemCount;
                 return ptr;
             }
+            HeapRegistry::Instance ().CallHeapErrorCallback (
+                HeapRegistry::OutOfMemory,
+                name != 0 ? name : typeid (*this).name ());
             if (!nothrow) {
                 THEKOGANS_UTIL_THROW_EXCEPTION (
                     THEKOGANS_UTIL_OS_ERROR_CODE_ENOMEM,
@@ -1213,10 +1262,15 @@ namespace thekogans {
                         allocator.Free (page, page->size);
                     }
                 }
-                else if (!nothrow) {
-                    // Defensive programming. Nothing should ever go unnoticed.
-                    THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                        THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
+                else {
+                    HeapRegistry::Instance ().CallHeapErrorCallback (
+                        HeapRegistry::BadPointer,
+                        name != 0 ? name : typeid (*this).name ());
+                    if (!nothrow) {
+                        // Defensive programming. Nothing should ever go unnoticed.
+                        THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                            THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
+                    }
                 }
             }
         }

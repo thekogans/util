@@ -774,9 +774,9 @@ namespace thekogans {
             if (!name.empty ()) {
             #if defined (TOOLCHAIN_OS_Windows)
                 // Windows limit on value length.
-                // FIXME: There are systems where 32k of stack space is not available.
-                wchar_t value[32767];
-                std::size_t length = ::GetEnvironmentVariableW (UTF8ToUTF16 (name).c_str (), value, 32767);
+                const std::size_t MAX_VALUE_LENGTH = 32767;
+                Array<wchar_t> value (MAX_VALUE_LENGTH);
+                std::size_t length = ::GetEnvironmentVariableW (UTF8ToUTF16 (name).c_str (), value, MAX_VALUE_LENGTH);
                 if (length > 0) {
                     return UTF16ToUTF8 (value, length);
                 }

@@ -75,6 +75,19 @@ namespace thekogans {
             }
         }
 
+        void HeapRegistry::SetHeapErrorCallback (HeapErrorCallback heapErrorCallback_) {
+            LockGuard<SpinLock> guard (spinLock);
+            heapErrorCallback = heapErrorCallback_;
+        }
+
+        void HeapRegistry::CallHeapErrorCallback (
+                HeapError heapError,
+                const char *type) {
+            if (heapErrorCallback != 0) {
+                heapErrorCallback (heapError, type);
+            }
+        }
+
         void HeapRegistry::AddHeap (
                 const std::string &name,
                 Diagnostics *heap) {
