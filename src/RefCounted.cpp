@@ -17,6 +17,7 @@
 
 #include "thekogans/util/Constants.h"
 #include "thekogans/util/StringUtils.h"
+#include "thekogans/util/Exception.h"
 #include "thekogans/util/RefCounted.h"
 
 namespace thekogans {

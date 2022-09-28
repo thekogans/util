@@ -263,8 +263,13 @@ namespace thekogans {
             const char *function,
             unsigned int line,
             const char *buildTime,
-            const char *format,
+        #if defined (TOOLCHAIN_OS_Windows)
+            _Printf_format_string_ const char *format,
             ...);
+        #else // defined (TOOLCHAIN_OS_Windows)
+            const char *format,
+            ...) __attribute__ ((__format__ (__printf__, 8, 9)));
+        #endif // defined (TOOLCHAIN_OS_Windows)
         /// \brief
         /// Force log a message to the \see{GlobalLoggerMgr} irrespective of it's level.
         /// \param[in] subsystem Subsystem to log to.

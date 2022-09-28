@@ -513,8 +513,13 @@ namespace thekogans {
                 const char *function,
                 ui32 line,
                 const char *buildTime,
-                const char *format,
+            #if defined (TOOLCHAIN_OS_Windows)
+                _Printf_format_string_ const char *format,
                 ...);
+            #else // defined (TOOLCHAIN_OS_Windows)
+                const char *format,
+                ...) __attribute__ ((__format__ (__printf__, 8, 9)));
+            #endif // defined (TOOLCHAIN_OS_Windows)
             /// \brief
             /// Log an event.
             /// \param[in] subsystem Subsystem to log to.
@@ -984,7 +989,7 @@ namespace thekogans {
                         function,
                         line,
                         buildTime,
-                        str ().c_str ());
+                        "%s", str ().c_str ());
                 }
             }
         };

@@ -18,13 +18,17 @@
 #if !defined (__thekogans_util_RefCounted_h)
 #define __thekogans_util_RefCounted_h
 
+#include <utility>
 #include <memory>
 #include <typeinfo>
 #include <atomic>
+#include <vector>
 #include "thekogans/util/Config.h"
 #include "thekogans/util/Types.h"
 #include "thekogans/util/Heap.h"
+#include "thekogans/util/Singleton.h"
 #include "thekogans/util/SpinLock.h"
+#include "thekogans/util/LockGuard.h"
 
 namespace thekogans {
     namespace util {
@@ -530,6 +534,167 @@ namespace thekogans {
                     return SharedPtr<T> (
                         references != 0 && references->LockObject () ? object : 0,
                         false);
+                }
+            };
+
+            /// \struct RefCounted::Registry RefCounted.h thekogans/util/RefCounted.h
+            ///
+            /// \brief
+            /// Registry acts as an interface between RefCounted objects in the C++
+            /// world and raw pointers of the OS C APIs. It is specifically designed to
+            /// make life easier managing object lifetimes in the presence of async
+            /// callback interfaces. Most OS APIs that take a function pointer to
+            /// call back at a later (async) time also take a user parameter to pass
+            /// to the callback. Passing in raw pointers is dangerous as object
+            /// lifetime cannot be predicted and dereferencing raw pointers can lead
+            /// to disasters. Instead, use the registry to 'register' a WeakPtr to
+            /// the object that can later be used to create a SharedPtr if the object
+            /// still exists.
+            template<typename T>
+            struct Registry : public Singleton<Registry<T>, SpinLock> {
+            private:
+                /// \struct RefCounted::Registry::Entry RefCounted.h thekogans/util/RefCounted.h
+                ///
+                /// \brief
+                /// Registry entry keeps track of registered objects.
+                struct Entry {
+                    /// \brief
+                    /// Weak pointer to registered object.
+                    WeakPtr<T> object;
+                    /// \brief
+                    /// Counter to disambiguate entry objects.
+                    ui32 counter;
+                    /// \brief
+                    /// Next index in free list.
+                    ui32 next;
+
+                    /// \brief
+                    /// ctor.
+                    /// \param[in] object_ Entry object.
+                    /// \param[in] counter_ Object counter.
+                    /// \param[in] next_ Next index in free list.
+                    Entry (
+                        WeakPtr<T> object_ = WeakPtr<T> (),
+                        ui32 counter_ = 0,
+                        ui32 next_ = NIDX32) :
+                        object (object_),
+                        counter (counter_),
+                        next (next_) {}
+                };
+                /// \brief
+                /// The list of registered objects.
+                std::vector<Entry> entries;
+                /// \brief
+                /// Count of registered objects.
+                ui32 count;
+                /// \brief
+                /// Index of last freed object.
+                ui32 freeList;
+                /// \brief
+                /// Synchronization lock.
+                SpinLock spinLock;
+
+            public:
+                enum {
+                    /// \brief
+                    /// Default initial entry list size.
+                    DEFAULT_ENTRIES_SIZE = 1024,
+                    /// \brief
+                    /// Bit pattern for an invalid token.
+                    INVALID_TOKEN = NIDX64
+                };
+
+                /// \brief
+                /// Convenient typedef for ui64.
+                typedef ui64 Token;
+
+                /// \brief
+                /// ctor.
+                /// \param[in] entriesSize Initial entry list size.
+                Registry (std::size_t entriesSize = DEFAULT_ENTRIES_SIZE) :
+                        entries (entriesSize),
+                        count (0),
+                        freeList (NIDX32) {
+                    if (entriesSize == 0) {
+                        THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                            THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
+                    }
+                }
+
+                /// \brief
+                /// Add an object to the registry.
+                /// \param[in] t Object to add.
+                /// \return Token describing the object entry.
+                Token Add (T *t) {
+                    if (t != 0) {
+                        LockGuard<SpinLock> guard (spinLock);
+                        ui32 index;
+                        ui32 counter;
+                        if (freeList != NIDX32) {
+                            index = freeList;
+                            counter = ++entries[index].counter;
+                            freeList = entries[index].next;
+                        }
+                        else {
+                            index = count;
+                            counter = 0;
+                            if (index == entries.size ()) {
+                                // Here we implement a simple exponential
+                                // array grow algorithm. Every time we
+                                // need to grow the array, we double it's
+                                // size. This scheme has two advantages:
+                                // 1. Keep the registry small for types with few instances.
+                                // 2. Less grow copy overhead for types with many instances.
+                                entries.resize (index * 2);
+                            }
+                        }
+                        entries[index] = Entry (WeakPtr<T> (t), counter, NIDX32);
+                        ++count;
+                        return THEKOGANS_UTIL_MK_UI64 (index, counter);
+                    }
+                    else {
+                        THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                            THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
+                    }
+                }
+
+                /// \brief
+                /// Given a token, remove the object entry.
+                /// \param[in] token Token describing the object entry to remove.
+                void Remove (Token token) {
+                    LockGuard<SpinLock> guard (spinLock);
+                    ui32 index = THEKOGANS_UTIL_UI64_GET_UI32_AT_INDEX (token, 0);
+                    ui32 counter = THEKOGANS_UTIL_UI64_GET_UI32_AT_INDEX (token, 1);
+                    if (index < entries.size ()) {
+                        if (entries[index].counter == counter) {
+                            entries[index] = Entry (WeakPtr<T> (), counter, freeList);
+                            freeList = index;
+                            --count;
+                        }
+                    }
+                    else {
+                        THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                            THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
+                    }
+                }
+
+                /// \brief
+                /// Given a token, retrieve the object at the entry.
+                /// \param[in] token Token describing the object entry to retrieve.
+                /// \return SharedPtr<T>.
+                SharedPtr<T> Get (Token token) {
+                    LockGuard<SpinLock> guard (spinLock);
+                    ui32 index = THEKOGANS_UTIL_UI64_GET_UI32_AT_INDEX (token, 0);
+                    ui32 counter = THEKOGANS_UTIL_UI64_GET_UI32_AT_INDEX (token, 1);
+                    if (index < entries.size ()) {
+                        return entries[index].counter == counter ?
+                            entries[index].object.GetSharedPtr () :
+                            SharedPtr<T> ();
+                    }
+                    else {
+                        THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                            THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
+                    }
                 }
             };
 
