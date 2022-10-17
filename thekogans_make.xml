@@ -16,7 +16,7 @@
     <if condition = "$(TOOLCHAIN_OS) != 'Windows'">
       <feature>THEKOGANS_UTIL_HAVE_MMAP</feature>
     </if>
-    <!-- Uncomment this feature to use windows WTS functionality.
+    <!-- Uncomment this feature to use Windows WTS functionality.
         <if condition = "$(TOOLCHAIN_OS) == 'Windows'">
           <feature>THEKOGANS_UTIL_HAVE_WTS</feature>
         </if>

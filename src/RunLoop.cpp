@@ -474,30 +474,25 @@ namespace thekogans {
         bool RunLoop::Pause (
                 bool cancelRunningJobs,
                 const TimeSpec &timeSpec) {
-            struct GetRunningJobsCallback : public JobList::Callback {
-                typedef JobList::Callback::result_type result_type;
-                typedef JobList::Callback::argument_type argument_type;
-                bool cancelRunningJobs;
-                UserJobList runningJobs;
-                explicit GetRunningJobsCallback (bool cancelRunningJobs_) :
-                    cancelRunningJobs (cancelRunningJobs_) {}
-                virtual result_type operator () (argument_type job) {
-                    if (cancelRunningJobs) {
-                        job->Cancel ();
-                    }
-                    runningJobs.push_back (Job::SharedPtr (job));
-                    return true;
-                }
-            } getRunningJobsCallback (cancelRunningJobs);
+            UserJobList runningJobs;
             {
                 LockGuard<Mutex> guard (state->jobsMutex);
                 if (!state->paused) {
                     state->paused = true;
-                    state->runningJobs.for_each (getRunningJobsCallback);
+                    state->runningJobs.for_each (
+                        [cancelRunningJobs, &runningJobs] (JobList::Callback::argument_type job) ->
+                                JobList::Callback::result_type {
+                            if (cancelRunningJobs) {
+                                job->Cancel ();
+                            }
+                            runningJobs.push_back (Job::SharedPtr (job));
+                            return true;
+                        }
+                    );
                     state->jobsNotEmpty.SignalAll ();
                 }
             }
-            return WaitForJobs (getRunningJobsCallback.runningJobs, timeSpec);
+            return WaitForJobs (runningJobs, timeSpec);
         }
 
         void RunLoop::Continue () {
@@ -574,118 +569,73 @@ namespace thekogans {
         }
 
         RunLoop::Job::SharedPtr RunLoop::GetJob (const Job::Id &jobId) {
+            Job::SharedPtr job;
             LockGuard<Mutex> guard (state->jobsMutex);
-            struct GetJobCallback : public JobList::Callback {
-                typedef JobList::Callback::result_type result_type;
-                typedef JobList::Callback::argument_type argument_type;
-                const Job::Id &jobId;
-                Job::SharedPtr job;
-                explicit GetJobCallback (const Job::Id &jobId_) :
-                    jobId (jobId_) {}
-                virtual result_type operator () (argument_type job_) {
+            auto callback =
+                [jobId, &job] (JobList::Callback::argument_type job_) -> JobList::Callback::result_type {
                     if (job_->GetId () == jobId) {
                         job.Reset (job_);
                         return false;
                     }
                     return true;
-                }
-            } getJobWithIdCallback (jobId);
-            if (state->runningJobs.for_each (getJobWithIdCallback)) {
-                state->pendingJobs.for_each (getJobWithIdCallback);
+                };
+            if (state->runningJobs.for_each (callback)) {
+                state->pendingJobs.for_each (callback);
             }
-            return getJobWithIdCallback.job;
+            return job;
         }
 
         void RunLoop::GetJobs (
                 const EqualityTest &equalityTest,
                 UserJobList &jobs) {
             LockGuard<Mutex> guard (state->jobsMutex);
-            struct GetJobsCallback : public JobList::Callback {
-                typedef JobList::Callback::result_type result_type;
-                typedef JobList::Callback::argument_type argument_type;
-                const EqualityTest &equalityTest;
-                UserJobList &jobs;
-                GetJobsCallback (
-                    const EqualityTest &equalityTest_,
-                    UserJobList &jobs_) :
-                    equalityTest (equalityTest_),
-                    jobs (jobs_) {}
-                virtual result_type operator () (argument_type job) {
+            auto callback =
+                [&equalityTest, &jobs] (JobList::Callback::argument_type job) -> JobList::Callback::result_type {
                     if (equalityTest (*job)) {
-                        job->AddRef ();
-                        jobs.push_back (job);
+                        jobs.push_back (Job::SharedPtr (job));
                     }
                     return true;
-                }
-            } getJobsCallback (equalityTest, jobs);
-            state->runningJobs.for_each (getJobsCallback);
-            state->pendingJobs.for_each (getJobsCallback);
+                };
+            state->runningJobs.for_each (callback);
+            state->pendingJobs.for_each (callback);
         }
 
         void RunLoop::GetPendingJobs (UserJobList &pendingJobs) {
             LockGuard<Mutex> guard (state->jobsMutex);
-            struct GetPendingJobsCallback : public JobList::Callback {
-                typedef JobList::Callback::result_type result_type;
-                typedef JobList::Callback::argument_type argument_type;
-                UserJobList &pendingJobs;
-                explicit GetPendingJobsCallback (UserJobList &pendingJobs_) :
-                    pendingJobs (pendingJobs_) {}
-                virtual result_type operator () (argument_type job) {
-                    job->AddRef ();
-                    pendingJobs.push_back (job);
+            state->pendingJobs.for_each (
+                [&pendingJobs] (JobList::Callback::argument_type job) -> JobList::Callback::result_type {
+                    pendingJobs.push_back (Job::SharedPtr (job));
                     return true;
                 }
-            } getPendingJobsCallback (pendingJobs);
-            state->pendingJobs.for_each (getPendingJobsCallback);
+            );
         }
 
         void RunLoop::GetRunningJobs (UserJobList &runningJobs) {
             LockGuard<Mutex> guard (state->jobsMutex);
-            struct GetRunningJobsCallback : public JobList::Callback {
-                typedef JobList::Callback::result_type result_type;
-                typedef JobList::Callback::argument_type argument_type;
-                UserJobList &runningJobs;
-                explicit GetRunningJobsCallback (UserJobList &runningJobs_) :
-                    runningJobs (runningJobs_) {}
-                virtual result_type operator () (argument_type job) {
-                    job->AddRef ();
-                    runningJobs.push_back (job);
+            state->runningJobs.for_each (
+                [&runningJobs] (JobList::Callback::argument_type job) -> JobList::Callback::result_type {
+                    runningJobs.push_back (Job::SharedPtr (job));
                     return true;
                 }
-            } getRunningJobsCallback (runningJobs);
-            state->runningJobs.for_each (getRunningJobsCallback);
+            );
         }
 
         void RunLoop::GetAllJobs (
                 UserJobList &pendingJobs,
                 UserJobList &runningJobs) {
             LockGuard<Mutex> guard (state->jobsMutex);
-            struct GetAllJobsCallback : public JobList::Callback {
-                typedef JobList::Callback::result_type result_type;
-                typedef JobList::Callback::argument_type argument_type;
-                UserJobList &pendingJobs;
-                UserJobList &runningJobs;
-                bool pending;
-                GetAllJobsCallback (
-                    UserJobList &pendingJobs_,
-                    UserJobList &runningJobs_) :
-                    pendingJobs (pendingJobs_),
-                    runningJobs (runningJobs_),
-                    pending (true) {}
-                virtual result_type operator () (argument_type job) {
-                    job->AddRef ();
-                    if (pending) {
-                        pendingJobs.push_back (job);
-                    }
-                    else {
-                        runningJobs.push_back (job);
-                    }
+            state->pendingJobs.for_each (
+                [&pendingJobs] (JobList::Callback::argument_type job) -> JobList::Callback::result_type {
+                    pendingJobs.push_back (Job::SharedPtr (job));
                     return true;
                 }
-            } getAllJobsCallback (pendingJobs, runningJobs);
-            state->pendingJobs.for_each (getAllJobsCallback);
-            getAllJobsCallback.pending = false;
-            state->runningJobs.for_each (getAllJobsCallback);
+            );
+            state->runningJobs.for_each (
+                [&runningJobs] (JobList::Callback::argument_type job) -> JobList::Callback::result_type {
+                    runningJobs.push_back (Job::SharedPtr (job));
+                    return true;
+                }
+            );
         }
 
         bool RunLoop::WaitForJob (
@@ -754,26 +704,20 @@ namespace thekogans {
         bool RunLoop::WaitForJobs (
                 const EqualityTest &equalityTest,
                 const TimeSpec &timeSpec) {
-            struct WaitForJobsCallback : public JobList::Callback {
-                typedef JobList::Callback::result_type result_type;
-                typedef JobList::Callback::argument_type argument_type;
-                const EqualityTest &equalityTest;
-                UserJobList jobs;
-                explicit WaitForJobsCallback (const EqualityTest &equalityTest_) :
-                    equalityTest (equalityTest_) {}
-                virtual result_type operator () (argument_type job) {
+            UserJobList jobs;
+            auto callback =
+                [&equalityTest, &jobs] (JobList::Callback::argument_type job) -> JobList::Callback::result_type {
                     if (equalityTest (*job)) {
                         jobs.push_back (Job::SharedPtr (job));
                     }
                     return true;
-                }
-            } waitForJobsCallback (equalityTest);
+                };
             {
                 LockGuard<Mutex> guard (state->jobsMutex);
-                state->pendingJobs.for_each (waitForJobsCallback);
-                state->runningJobs.for_each (waitForJobsCallback);
+                state->pendingJobs.for_each (callback);
+                state->runningJobs.for_each (callback);
             }
-            return WaitForJobs (waitForJobsCallback.jobs, timeSpec);
+            return WaitForJobs (jobs, timeSpec);
         }
 
         bool RunLoop::WaitForIdle (const TimeSpec &timeSpec) {
@@ -798,23 +742,17 @@ namespace thekogans {
 
         bool RunLoop::CancelJob (const Job::Id &jobId) {
             LockGuard<Mutex> guard (state->jobsMutex);
-            struct CancelJobCallback : public JobList::Callback {
-                typedef JobList::Callback::result_type result_type;
-                typedef JobList::Callback::argument_type argument_type;
-                const Job::Id &jobId;
-                explicit CancelJobCallback (const Job::Id &jobId_) :
-                    jobId (jobId_) {}
-                virtual result_type operator () (argument_type job) {
+            auto callback =
+                [&jobId] (JobList::Callback::argument_type job) -> JobList::Callback::result_type {
                     if (job->GetId () == jobId) {
                         job->Cancel ();
                         return false;
                     }
                     return true;
-                }
-            } cancelJobCallback (jobId);
+                };
             return
-                !state->runningJobs.for_each (cancelJobCallback) ||
-                !state->pendingJobs.for_each (cancelJobCallback);
+                !state->runningJobs.for_each (callback) ||
+                !state->pendingJobs.for_each (callback);
         }
 
         void RunLoop::CancelJobs (const UserJobList &jobs) {
@@ -825,61 +763,46 @@ namespace thekogans {
 
         void RunLoop::CancelJobs (const EqualityTest &equalityTest) {
             LockGuard<Mutex> guard (state->jobsMutex);
-            struct CancelJobsCallback : public JobList::Callback {
-                typedef JobList::Callback::result_type result_type;
-                typedef JobList::Callback::argument_type argument_type;
-                const EqualityTest &equalityTest;
-                explicit CancelJobsCallback (const EqualityTest &equalityTest_) :
-                    equalityTest (equalityTest_) {}
-                virtual result_type operator () (argument_type job) {
+            auto callback =
+                [&equalityTest] (JobList::Callback::argument_type job) -> JobList::Callback::result_type {
                     if (equalityTest (*job)) {
                         job->Cancel ();
                     }
                     return true;
-                }
-            } cancelJobsCallback (equalityTest);
-            state->runningJobs.for_each (cancelJobsCallback);
-            state->pendingJobs.for_each (cancelJobsCallback);
+                };
+            state->runningJobs.for_each (callback);
+            state->pendingJobs.for_each (callback);
         }
 
         void RunLoop::CancelPendingJobs () {
             LockGuard<Mutex> guard (state->jobsMutex);
-            struct CancelPendingJobsCallback : public JobList::Callback {
-                typedef JobList::Callback::result_type result_type;
-                typedef JobList::Callback::argument_type argument_type;
-                virtual result_type operator () (argument_type job) {
+            state->pendingJobs.for_each (
+                [] (JobList::Callback::argument_type job) -> JobList::Callback::result_type {
                     job->Cancel ();
                     return true;
                 }
-            } cancelPendingJobsCallback;
-            state->pendingJobs.for_each (cancelPendingJobsCallback);
+            );
         }
 
         void RunLoop::CancelRunningJobs () {
             LockGuard<Mutex> guard (state->jobsMutex);
-            struct CancelRunningJobsCallback : public JobList::Callback {
-                typedef JobList::Callback::result_type result_type;
-                typedef JobList::Callback::argument_type argument_type;
-                virtual result_type operator () (argument_type job) {
+            state->runningJobs.for_each (
+                [] (JobList::Callback::argument_type job) -> JobList::Callback::result_type {
                     job->Cancel ();
                     return true;
                 }
-            } cancelRunningJobsCallback;
-            state->runningJobs.for_each (cancelRunningJobsCallback);
+            );
         }
 
         void RunLoop::CancelAllJobs () {
             LockGuard<Mutex> guard (state->jobsMutex);
-            struct CancelAllJobsCallback : public JobList::Callback {
-                typedef JobList::Callback::result_type result_type;
-                typedef JobList::Callback::argument_type argument_type;
-                virtual result_type operator () (argument_type job) {
+            auto callback =
+                [] (JobList::Callback::argument_type job) -> JobList::Callback::result_type {
                     job->Cancel ();
                     return true;
-                }
-            } cancelAllJobsCallback;
-            state->runningJobs.for_each (cancelAllJobsCallback);
-            state->pendingJobs.for_each (cancelAllJobsCallback);
+                };
+            state->runningJobs.for_each (callback);
+            state->pendingJobs.for_each (callback);
         }
 
         RunLoop::Stats RunLoop::GetStats () {

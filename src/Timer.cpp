@@ -233,25 +233,15 @@ namespace thekogans {
             RunLoop::UserJobList jobs;
             {
                 LockGuard<SpinLock> guard (spinLock);
-                struct GetJobsCallback : public JobList::Callback {
-                    typedef JobList::Callback::result_type result_type;
-                    typedef JobList::Callback::argument_type argument_type;
-                    RunLoop::UserJobList &jobs;
-                    bool cancel;
-                    GetJobsCallback (
-                        RunLoop::UserJobList &jobs_,
-                        bool cancel_) :
-                        jobs (jobs_),
-                        cancel (cancel_) {}
-                    virtual result_type operator () (argument_type job) {
-                        if (cancel) {
+                this->jobs.for_each (
+                    [&jobs, cancelCallbacks] (JobList::Callback::argument_type job) -> JobList::Callback::result_type {
+                        if (cancelCallbacks) {
                             job->Cancel ();
                         }
                         jobs.push_back (Job::SharedPtr (job));
                         return true;
                     }
-                } getJobsCallback (jobs, cancelCallbacks);
-                this->jobs.for_each (getJobsCallback);
+                );
             }
             return RunLoop::WaitForJobs (jobs, timeSpec);
         }

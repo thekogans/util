@@ -78,16 +78,13 @@ namespace thekogans {
 
         JobQueuePool::~JobQueuePool () {
             LockGuard<Mutex> guard (mutex);
-            struct DeleteCallback : public JobQueueList::Callback {
-                typedef JobQueueList::Callback::result_type result_type;
-                typedef JobQueueList::Callback::argument_type argument_type;
-                virtual result_type operator () (argument_type jobQueue) {
+            auto callback =
+                [] (JobQueueList::Callback::argument_type jobQueue) ->JobQueueList::Callback::result_type {
                     delete jobQueue;
                     return true;
-                }
-            } deleteCallback;
-            availableJobQueues.clear (deleteCallback);
-            borrowedJobQueues.clear (deleteCallback);
+                };
+            availableJobQueues.clear (callback);
+            borrowedJobQueues.clear (callback);
         }
 
         JobQueue::SharedPtr JobQueuePool::GetJobQueue (
@@ -105,22 +102,13 @@ namespace thekogans {
                 const RunLoop::EqualityTest &equalityTest,
                 RunLoop::UserJobList &jobs) {
             LockGuard<Mutex> guard (mutex);
-            struct GetJobsCallback : public JobQueueList::Callback {
-                typedef JobQueueList::Callback::result_type result_type;
-                typedef JobQueueList::Callback::argument_type argument_type;
-                const RunLoop::EqualityTest &equalityTest;
-                RunLoop::UserJobList &jobs;
-                GetJobsCallback (
-                    const RunLoop::EqualityTest &equalityTest_,
-                    RunLoop::UserJobList &jobs_) :
-                    equalityTest (equalityTest_),
-                    jobs (jobs_) {}
-                virtual result_type operator () (argument_type jobQueue) {
+            borrowedJobQueues.for_each (
+                [&equalityTest, &jobs] (JobQueueList::Callback::argument_type jobQueue) ->
+                        JobQueueList::Callback::result_type {
                     jobQueue->GetJobs (equalityTest, jobs);
                     return true;
                 }
-            } getJobsCallback (equalityTest, jobs);
-            borrowedJobQueues.for_each (getJobsCallback);
+            );
         }
 
         bool JobQueuePool::WaitForJobs (
@@ -133,18 +121,13 @@ namespace thekogans {
 
         void JobQueuePool::CancelJobs (RunLoop::EqualityTest &equalityTest) {
             LockGuard<Mutex> guard (mutex);
-            struct CancelJobsCallback : public JobQueueList::Callback {
-                typedef JobQueueList::Callback::result_type result_type;
-                typedef JobQueueList::Callback::argument_type argument_type;
-                RunLoop::EqualityTest &equalityTest;
-                explicit CancelJobsCallback (RunLoop::EqualityTest &equalityTest_) :
-                    equalityTest (equalityTest_) {}
-                virtual result_type operator () (argument_type jobQueue) {
+            borrowedJobQueues.for_each (
+                [&equalityTest] (JobQueueList::Callback::argument_type jobQueue) ->
+                        JobQueueList::Callback::result_type {
                     jobQueue->CancelJobs (equalityTest);
                     return true;
                 }
-            } cancelJobsCallback (equalityTest);
-            borrowedJobQueues.for_each (cancelJobsCallback);
+            );
         }
 
         bool JobQueuePool::WaitForIdle (const TimeSpec &timeSpec) {

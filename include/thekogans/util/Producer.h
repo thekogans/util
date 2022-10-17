@@ -90,10 +90,10 @@ namespace thekogans {
             /// \brief
             /// An abstract base class encapsulating the mechanism by which events
             /// are delivered to subscribers.
-            struct EventDeliveryPolicy : public RefCounted {
+            struct EventDeliveryPolicy : public virtual RefCounted {
                 /// \brief
-                /// Convenient typedef for RefCounted::SharedPtr<EventDeliveryPolicy>>.
-                typedef RefCounted::SharedPtr<EventDeliveryPolicy> SharedPtr;
+                /// Declare \see{RefCounted} pointers.
+                THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (EventDeliveryPolicy)
 
                 /// \brief
                 /// dtor.

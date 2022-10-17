@@ -83,16 +83,12 @@ namespace thekogans {
 
         PipelinePool::~PipelinePool () {
             LockGuard<Mutex> guard (mutex);
-            struct DeleteCallback : public PipelineList::Callback {
-                typedef PipelineList::Callback::result_type result_type;
-                typedef PipelineList::Callback::argument_type argument_type;
-                virtual result_type operator () (argument_type pipeline) {
-                    delete pipeline;
-                    return true;
-                }
-            } deleteCallback;
-            availablePipelines.clear (deleteCallback);
-            borrowedPipelines.clear (deleteCallback);
+            auto callback = [] (PipelineList::Callback::argument_type pipeline) -> PipelineList::Callback::result_type {
+                delete pipeline;
+                return true;
+            };
+            availablePipelines.clear (callback);
+            borrowedPipelines.clear (callback);
         }
 
         Pipeline::SharedPtr PipelinePool::GetPipeline (
@@ -110,22 +106,13 @@ namespace thekogans {
                 const RunLoop::EqualityTest &equalityTest,
                 RunLoop::UserJobList &jobs) {
             LockGuard<Mutex> guard (mutex);
-            struct GetJobsCallback : public PipelineList::Callback {
-                typedef PipelineList::Callback::result_type result_type;
-                typedef PipelineList::Callback::argument_type argument_type;
-                const RunLoop::EqualityTest &equalityTest;
-                RunLoop::UserJobList &jobs;
-                GetJobsCallback (
-                    const RunLoop::EqualityTest &equalityTest_,
-                    RunLoop::UserJobList &jobs_) :
-                    equalityTest (equalityTest_),
-                    jobs (jobs_) {}
-                virtual result_type operator () (argument_type jobQueue) {
+            borrowedPipelines.for_each (
+                [&equalityTest, &jobs] (PipelineList::Callback::argument_type jobQueue) ->
+                        PipelineList::Callback::result_type {
                     jobQueue->GetJobs (equalityTest, jobs);
                     return true;
                 }
-            } getJobsCallback (equalityTest, jobs);
-            borrowedPipelines.for_each (getJobsCallback);
+            );
         }
 
         bool PipelinePool::WaitForJobs (
@@ -138,18 +125,12 @@ namespace thekogans {
 
         void PipelinePool::CancelJobs (RunLoop::EqualityTest &equalityTest) {
             LockGuard<Mutex> guard (mutex);
-            struct CancelJobsCallback : public PipelineList::Callback {
-                typedef PipelineList::Callback::result_type result_type;
-                typedef PipelineList::Callback::argument_type argument_type;
-                RunLoop::EqualityTest &equalityTest;
-                explicit CancelJobsCallback (RunLoop::EqualityTest &equalityTest_) :
-                    equalityTest (equalityTest_) {}
-                virtual result_type operator () (argument_type jobQueue) {
+            borrowedPipelines.for_each (
+                [&equalityTest] (PipelineList::Callback::argument_type jobQueue) -> PipelineList::Callback::result_type {
                     jobQueue->CancelJobs (equalityTest);
                     return true;
                 }
-            } cancelJobsCallback (equalityTest);
-            borrowedPipelines.for_each (cancelJobsCallback);
+            );
         }
 
         bool PipelinePool::WaitForIdle (const TimeSpec &timeSpec) {

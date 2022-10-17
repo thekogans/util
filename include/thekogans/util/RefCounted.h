@@ -49,10 +49,12 @@ namespace thekogans {
         /// control over the lifetime management of their classes. If you
         /// need more control over heap placement, that's what \see{Heap}
         /// is for.
+        ///
         /// NOTE: When inheriting from RefCounted, consider making it 'public virtual'.
         /// This will go a long way towards resolving multiple inheritance ambiguities.
+        ///
         /// VERY IMPORTANT: If you're going to create RefCounted::SharedPtrs on
-        /// stack or static (see \see{Singleton}) objects, it's important that the
+        /// stack for static (see \see{Singleton}) objects, it's important that the
         /// object itself take out a reference in it's ctor. This way the reference
         /// count will never reach 0 and the object will not try to delete itself.
         /// For \see{Singleton}s, I provide \see{RefCountedInstanceCreator} and
@@ -186,6 +188,7 @@ namespace thekogans {
             ///
             /// \brief
             /// RefCounted object shared pointer template.
+            ///
             /// NOTE: Unlike other ref counted pointers, SharedPtr is symmetric in the
             /// way it deals with an object's shared reference count. It incrementes it
             /// in it's ctor, and decrements it in it's dtor. In other words, SharedPtr
@@ -346,6 +349,7 @@ namespace thekogans {
             /// that can occur when two objects hold on to a shared pointer to one another.
             /// In order to use the object encapsulated by the WeakPtr you must first call
             /// WeakPtr<T>::GetSharedPtr to get a SharedPtr<T>.
+            ///
             /// NOTE: The SharedPtr<T> returned by WeakPtr<T>::GetSharedPtr can be null.
             /// That's why it's important that you use the following pattern;
             ///

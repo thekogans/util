@@ -48,15 +48,9 @@ namespace thekogans {
                 bool clear) {
             LockGuard<SpinLock> guard (spinLock);
             if (!entryList.empty ()) {
-                struct WriteEntriesCallback : public EntryList::Callback {
-                    typedef EntryList::Callback::result_type result_type;
-                    typedef EntryList::Callback::argument_type argument_type;
-                    SimpleFile file;
-                    WriteEntriesCallback (
-                        const std::string &path,
-                        i32 flags) :
-                        file (HostEndian, path, flags) {}
-                    virtual result_type operator () (argument_type entry) {
+                SimpleFile file (HostEndian, path, flags);
+                entryList.for_each (
+                    [&file] (EntryList::Callback::argument_type entry) -> EntryList::Callback::result_type {
                         if (!entry->header.empty ()) {
                             file.Write (entry->header.c_str (), entry->header.size ());
                         }
@@ -65,8 +59,7 @@ namespace thekogans {
                         }
                         return true;
                     }
-                } writeEntriesCallback (path, flags);
-                entryList.for_each (writeEntriesCallback);
+                );
                 if (clear) {
                     ClearEntries ();
                 }
@@ -75,15 +68,12 @@ namespace thekogans {
 
         void MemoryLogger::ClearEntries () {
             LockGuard<SpinLock> guard (spinLock);
-            struct DeleteCallback : public EntryList::Callback {
-                typedef EntryList::Callback::result_type result_type;
-                typedef EntryList::Callback::argument_type argument_type;
-                virtual result_type operator () (argument_type entry) {
+            entryList.clear (
+                [] (EntryList::Callback::argument_type entry) -> EntryList::Callback::result_type {
                     delete entry;
                     return true;
                 }
-            } deleteCallback;
-            entryList.clear (deleteCallback);
+            );
         }
 
     } // namespace util
