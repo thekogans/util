@@ -127,7 +127,7 @@ namespace thekogans {
         /// \param[in] acp ACP string to convert.
         /// \param[in] flags Various MB_* flags to control the behavior of MultiByteToWideChar.
         /// \return std::wstring UTF16 representation of the given ACP string.
-        inline std::wstring _LIB_THEKOGANS_UTIL_API ACPToUTF16(
+        inline std::wstring _LIB_THEKOGANS_UTIL_API ACPToUTF16 (
                 const std::string &acp,
                 DWORD flags = MB_ERR_INVALID_CHARS) {
             return ACPToUTF16 (acp.data (), acp.size (), flags);

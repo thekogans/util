@@ -249,15 +249,25 @@ namespace thekogans {
 
             /// \brief
             /// Return all borrowedPipelines jobs matching the given equality test.
-            /// \param[in] equalityTest EqualityTest to query to determine the matching jobs.
-            /// \param[out] jobs \see{RunLoop::UserJobList} (\see{IntrusiveList}) containing the matching jobs.
+            /// \param[in] equalityTest \see{RunLoop::EqualityTest} to query to determine the matching jobs.
+            /// \param[out] jobs \see{RunLoop::UserJobList} containing the matching jobs.
             /// NOTE: This method will take a reference on all matching jobs.
             void GetJobs (
                 const RunLoop::EqualityTest &equalityTest,
                 RunLoop::UserJobList &jobs);
             /// \brief
+            /// Return all borrowedPipelines jobs matching the given equality test.
+            /// \param[in] function \see{RunLoop::LambdaEqualityTest::Function} to query to determine the matching jobs.
+            /// \param[out] jobs \see{RunLoop::UserJobList} containing the matching jobs.
+            /// NOTE: This method will take a reference on all matching jobs.
+            inline void GetJobs (
+                    const RunLoop::LambdaEqualityTest::Function &function,
+                    RunLoop::UserJobList &jobs) {
+                GetJobs (RunLoop::LambdaEqualityTest (function), jobs);
+            }
+            /// \brief
             /// Wait for all borrowedPipelines jobs matching the given equality test to complete.
-            /// \param[in] equalityTest EqualityTest to query to determine which jobs to wait on.
+            /// \param[in] equalityTest \see{RunLoop::EqualityTest} to query to determine which jobs to wait on.
             /// \param[in] timeSpec How long to wait for the jobs to complete.
             /// IMPORTANT: timeSpec is a relative value.
             /// \return true == All jobs satisfying the equalityTest completed,
@@ -266,17 +276,36 @@ namespace thekogans {
                 const RunLoop::EqualityTest &equalityTest,
                 const TimeSpec &timeSpec = TimeSpec::Infinite);
             /// \brief
+            /// Wait for all borrowedPipelines jobs matching the given equality test to complete.
+            /// \param[in] function \see{RunLoop::LambdaEqualityTest::Function} to query to
+            /// determine which jobs to wait on.
+            /// \param[in] timeSpec How long to wait for the jobs to complete.
+            /// IMPORTANT: timeSpec is a relative value.
+            /// \return true == All jobs satisfying the equalityTest completed,
+            /// false == One or more matching jobs timed out.
+            inline bool WaitForJobs (
+                    const RunLoop::LambdaEqualityTest::Function &function,
+                    const TimeSpec &timeSpec = TimeSpec::Infinite) {
+                return WaitForJobs (RunLoop::LambdaEqualityTest (function), timeSpec);
+            }
+            /// \brief
             /// Cancel all borrowedPipelines jobs matching the given equality test.
-            /// \param[in] equalityTest EqualityTest to query to determine the matching jobs.
-            void CancelJobs (RunLoop::EqualityTest &equalityTest);
+            /// \param[in] equalityTest \see{RunLoop::EqualityTest} to query to determine the matching jobs.
+            void CancelJobs (const RunLoop::EqualityTest &equalityTest);
+            /// \brief
+            /// Cancel all function jobs matching the given equality test.
+            /// \param[in] equalityTest \see{RunLoop::LambdaEqualityTest::Function} to query to
+            /// determine the matching jobs.
+            inline void CancelJobs (const RunLoop::LambdaEqualityTest::Function &function) {
+                CancelJobs (RunLoop::LambdaEqualityTest (function));
+            }
 
             /// \brief
             /// Blocks until all borrowed \see{Pipeline}s have been returned to the pool.
             /// \param[in] timeSpec How long to wait for \see{Pipeline}s to return.
             /// IMPORTANT: timeSpec is a relative value.
             /// \return true == PipelinePool is idle, false == Timed out.
-            bool WaitForIdle (
-                const TimeSpec &timeSpec = TimeSpec::Infinite);
+            bool WaitForIdle (const TimeSpec &timeSpec = TimeSpec::Infinite);
 
             /// \brief
             /// Return true if this pool has no outstanding \see{Pipeline}s.

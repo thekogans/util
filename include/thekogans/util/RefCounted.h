@@ -363,7 +363,7 @@ namespace thekogans {
             /// IMPORTANT: The Get method provided by this class should not be used to
             /// dereference the contained object. It's there in case you want to compare
             /// two raw pointers. Dereferencing the raw pointer returned by Get can lead
-            /// to races and crashes. If you need to dereference the object poonted to
+            /// to races and crashes. If you need to dereference the object pointed to
             /// by the raw pointer, again, you must first call GetSharedPtr and check it's
             /// return value for nullness before using it.
             template<typename T>
@@ -431,7 +431,7 @@ namespace thekogans {
                 /// \brief
                 /// ctor.
                 /// \param[in] ptr WeakPtr<T> to reference counted object.
-                WeakPtr (const WeakPtr &ptr) :
+                WeakPtr (const WeakPtr<T> &ptr) :
                         object (0),
                         references (0) {
                     Reset (ptr.GetSharedPtr ().Get ());
@@ -636,11 +636,17 @@ namespace thekogans {
                         ui32 counter;
                         if (freeList != NIDX32) {
                             index = freeList;
+                            // Since there might still be tokens
+                            // floating about that reference this
+                            // slot, bump up the counter so that they
+                            // would not accidently remove the wrong
+                            // entry.
                             counter = ++entries[index].counter;
                             freeList = entries[index].next;
                         }
                         else {
                             index = count;
+                            // This is the first time we're using this slot.
                             counter = 0;
                             if (index == entries.size ()) {
                                 // Here we implement a simple exponential
@@ -654,6 +660,7 @@ namespace thekogans {
                         }
                         entries[index] = Entry (WeakPtr<T> (t), counter, NIDX32);
                         ++count;
+                        // Pack index and counter describing this entry in to a token.
                         return THEKOGANS_UTIL_MK_UI64 (index, counter);
                     }
                     else {
@@ -667,9 +674,11 @@ namespace thekogans {
                 /// \param[in] token Token describing the object entry to remove.
                 void Remove (Token token) {
                     LockGuard<SpinLock> guard (spinLock);
+                    // Unpack the token to get index and counter.
                     ui32 index = THEKOGANS_UTIL_UI64_GET_UI32_AT_INDEX (token, 0);
                     ui32 counter = THEKOGANS_UTIL_UI64_GET_UI32_AT_INDEX (token, 1);
                     if (index < entries.size ()) {
+                        // Check the counter to make this token still has access to this slot.
                         if (entries[index].counter == counter) {
                             entries[index] = Entry (WeakPtr<T> (), counter, freeList);
                             freeList = index;
@@ -688,9 +697,12 @@ namespace thekogans {
                 /// \return SharedPtr<T>.
                 SharedPtr<T> Get (Token token) {
                     LockGuard<SpinLock> guard (spinLock);
+                    // Unpack the token to get index and counter.
                     ui32 index = THEKOGANS_UTIL_UI64_GET_UI32_AT_INDEX (token, 0);
                     ui32 counter = THEKOGANS_UTIL_UI64_GET_UI32_AT_INDEX (token, 1);
                     if (index < entries.size ()) {
+                        // Check the counter to make this token still
+                        // references the current object.
                         return entries[index].counter == counter ?
                             entries[index].object.GetSharedPtr () :
                             SharedPtr<T> ();

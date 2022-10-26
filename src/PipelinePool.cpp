@@ -123,7 +123,7 @@ namespace thekogans {
             return RunLoop::WaitForJobs (jobs, timeSpec);
         }
 
-        void PipelinePool::CancelJobs (RunLoop::EqualityTest &equalityTest) {
+        void PipelinePool::CancelJobs (const RunLoop::EqualityTest &equalityTest) {
             LockGuard<Mutex> guard (mutex);
             borrowedPipelines.for_each (
                 [&equalityTest] (PipelineList::Callback::argument_type jobQueue) -> PipelineList::Callback::result_type {

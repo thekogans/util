@@ -25,6 +25,7 @@
     #include <pwd.h>
     #if defined (TOOLCHAIN_OS_OSX)
         #include <libproc.h>
+        #include <grp.h>
     #endif // defined (TOOLCHAIN_OS_OSX)
 #endif // !defined (TOOLCHAIN_OS_Windows)
 #include <cassert>
@@ -950,8 +951,41 @@ namespace thekogans {
             assert (0);
             return false;
         #elif defined (TOOLCHAIN_OS_OSX)
-            // FIXME: implement
-            assert (0);
+            // A user cannot be member in more than NGROUPS groups,
+            // not counting the default group (hence the + 1)
+            gid_t groupIDs[NGROUPS + 1];
+            int groupCount = 0;
+            {
+                // ID of user who started the process
+                uid_t userID = getuid ();
+                // Get user password info for that user
+                const struct passwd *pw = getpwuid (userID);
+                if (pw != 0) {
+                    // Look up groups that user belongs to
+                    groupCount = NGROUPS + 1;
+                    // getgrouplist returns ints and not gid_t and
+                    // both may not necessarily have the same size
+                    int intGroupIDs[NGROUPS + 1];
+                    getgrouplist (pw->pw_name, pw->pw_gid, intGroupIDs, &groupCount);
+                    // Copy them to real array
+                    for (int i = 0; i < groupCount; ++i) {
+                        groupIDs[i] = intGroupIDs[i];
+                    }
+                }
+                else {
+                    // We cannot lookup the user but we can look what groups this process
+                    // currently belongs to (which is usually the same group list).
+                    groupCount = getgroups (NGROUPS + 1, groupIDs);
+                }
+            }
+            for (int i = 0; i < groupCount; ++i) {
+                // Get the group info for each group
+                const struct group *group = getgrgid (groupIDs[i]);
+                // An admin user is member of the group named "admin"
+                if (group != 0 && strcmp (group->gr_name, "admin") == 0) {
+                    return true;
+                }
+            }
             return false;
         #endif // defined (TOOLCHAIN_OS_Windows)
         }

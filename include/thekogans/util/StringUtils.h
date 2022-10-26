@@ -161,7 +161,7 @@ namespace thekogans {
         }
         /// \brief
         /// Return the length (in UTF8 characters) of the given UTF8 string.
-        /// \param[in] utf UTF8 string whose length to return.
+        /// \param[in] utf8 UTF8 string whose length to return.
         /// \param[in] length Length (in bytes) of the given string.
         /// \return The length (in UTF8 characters) of the given UTF8 string.
         inline std::size_t UTF8StringLength (
@@ -172,7 +172,7 @@ namespace thekogans {
         }
         /// \brief
         /// Return the length (in UTF8 characters) of the given UTF8 string.
-        /// \param[in] utf UTF8 string whose length to return.
+        /// \param[in] utf8 UTF8 string whose length to return.
         /// \return The length (in UTF8 characters) of the given UTF8 string.
         inline std::size_t UTF8StringLength (const std::string &utf8) {
             return UTF8StringLength (utf8.data (), utf8.size ());

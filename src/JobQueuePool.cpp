@@ -119,7 +119,7 @@ namespace thekogans {
             return RunLoop::WaitForJobs (jobs, timeSpec);
         }
 
-        void JobQueuePool::CancelJobs (RunLoop::EqualityTest &equalityTest) {
+        void JobQueuePool::CancelJobs (const RunLoop::EqualityTest &equalityTest) {
             LockGuard<Mutex> guard (mutex);
             borrowedJobQueues.for_each (
                 [&equalityTest] (JobQueueList::Callback::argument_type jobQueue) ->

@@ -40,7 +40,9 @@ namespace thekogans {
         void RunLoop::CocoaInitializer::InitializeWorker () throw () {
             THEKOGANS_UTIL_TRY {
                 if (NSApplicationLoad () == YES) {
+                #if !__has_feature (objc_arc)
                     [NSAutoreleasePool new];
+                #endif // !__has_feature (objc_arc)
                     [NSApplication sharedApplication];
                 }
                 else {

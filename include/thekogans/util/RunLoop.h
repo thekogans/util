@@ -346,7 +346,9 @@ namespace thekogans {
                 /// Convenient typedef for std::function<void (Job & /*job*/, const std::atomic<bool> & /*done*/)>.
                 /// \param[in] job Job that is executing the lambda.
                 /// \param[in] done Call job.ShouldStop (done) to respond to cancel requests and termination events.
-                typedef std::function<void (Job & /*job*/, const std::atomic<bool> & /*done*/)> Function;
+                typedef std::function<void (
+                    const Job & /*job*/,
+                    const std::atomic<bool> & /*done*/)> Function;
 
             private:
                 /// \brief
@@ -1110,7 +1112,49 @@ namespace thekogans {
                 /// Reimplement this function to test for equality.
                 /// \param[in] job Instance to test for equality.
                 /// \return true == equal.
-                virtual bool operator () (Job & /*job*/) const throw () = 0;
+                virtual bool operator () (const Job & /*job*/) const throw () = 0;
+            };
+
+            /// \struct RunLoop::LambdaEqualityTest RunLoop.h thekogans/util/RunLoop.h
+            ///
+            /// \brief
+            /// A helper class used to execute lambda (function) jobs.
+
+            struct _LIB_THEKOGANS_UTIL_DECL LambdaEqualityTest : public EqualityTest {
+                /// \brief
+                /// Convenient typedef for;
+                /// std::function<bool (const EqualityTest & /*equalityTest*/, const Job & /*job*/)>.
+                /// \param[in] equalityTest EqualityTest that is executing the lambda.
+                /// \param[in] job Job to compare for equality.
+                /// \return true == equal, false == not equal.
+                typedef std::function<bool (
+                    const EqualityTest & /*equalityTest*/,
+                    const Job & /*job*/)> Function;
+
+            private:
+                /// \brief
+                /// Lambda to execute.
+                Function function;
+
+            public:
+                /// \brief
+                /// ctor.
+                /// \param[in] function_ Lambda to execute.
+                explicit LambdaEqualityTest (const Function &function_) :
+                        function (function_) {
+                    if (function == 0) {
+                        THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                            THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
+                    }
+                }
+
+                /// \brief
+                /// Reimplement this function to test for equality.
+                /// \param[in] job Instance to test for equality.
+                /// \return true == equal.
+                virtual bool operator () (const Job &job) const throw () override {
+                    return function (*this, job);
+                }
             };
 
             /// \brief
@@ -1125,6 +1169,15 @@ namespace thekogans {
             virtual void GetJobs (
                 const EqualityTest &equalityTest,
                 UserJobList &jobs);
+            /// \brief
+            /// Get all running and pending jobs matching the given equality test.
+            /// \param[in] function \see{LambdaEqualityTest::Function} to query to determine the matching jobs.
+            /// \param[out] jobs \see{UserJobList} containing the matching jobs.
+            virtual void GetJobs (
+                    const LambdaEqualityTest::Function &function,
+                    UserJobList &jobs) {
+                GetJobs (LambdaEqualityTest (function), jobs);
+            }
             /// \brief
             /// Get all pending jobs.
             /// \param[out] pendingJobs \see{UserJobList} containing pending jobs.
@@ -1176,7 +1229,7 @@ namespace thekogans {
             /// \param[in] jobs \see{UserJobList} containing the jobs to wait on.
             /// \param[in] timeSpec How long to wait for the jobs to complete.
             /// IMPORTANT: timeSpec is a relative value.
-            /// \return true == All jobs satisfying the equalityTest completed,
+            /// \return true == All jobs completed before the deadline,
             /// false == One or more matching jobs timed out.
             /// NOTE: This is a static method and is designed to allow you to
             /// wait on a collection of jobs without regard as to which run loop
@@ -1194,6 +1247,18 @@ namespace thekogans {
             virtual bool WaitForJobs (
                 const EqualityTest &equalityTest,
                 const TimeSpec &timeSpec = TimeSpec::Infinite);
+            /// \brief
+            /// Wait for all running and pending jobs matching the given equality test to complete.
+            /// \param[in] function \see{LambdaEqualityTest::Function} to query to determine which jobs to wait on.
+            /// \param[in] timeSpec How long to wait for the jobs to complete.
+            /// IMPORTANT: timeSpec is a relative value.
+            /// \return true == All jobs satisfying the equalityTest completed,
+            /// false == One or more matching jobs timed out.
+            virtual bool WaitForJobs (
+                    const LambdaEqualityTest::Function &function,
+                    const TimeSpec &timeSpec = TimeSpec::Infinite) {
+                return WaitForJobs (LambdaEqualityTest (function), timeSpec);
+            }
             /// \brief
             /// Blocks until paused or all jobs are complete and the run loop is empty.
             /// IMPORTANT: See VERY IMPORTANT comment in \see{Pause} (above).
@@ -1218,6 +1283,12 @@ namespace thekogans {
             /// Cancel all running and pending jobs matching the given equality test.
             /// \param[in] equalityTest \see{EqualityTest} to query to determine which jobs to cancel.
             virtual void CancelJobs (const EqualityTest &equalityTest);
+            /// \brief
+            /// Cancel all running and pending jobs matching the given equality test.
+            /// \param[in] function \see{LambdaEqualityTest::Function} to query to determine which jobs to cancel.
+            virtual void CancelJobs (const LambdaEqualityTest::Function &function) {
+                CancelJobs (LambdaEqualityTest (function));
+            }
             /// \brief
             /// Cancel all pending jobs.
             virtual void CancelPendingJobs ();
