@@ -88,6 +88,10 @@ namespace thekogans {
             Allocator *allocator;
 
             /// \brief
+            /// Copy ctor.
+            /// \param[in] other Buffer to copy.
+            Buffer (const Buffer &other);
+            /// \brief
             /// Move ctor.
             /// \param[in,out] other Buffer to move.
             Buffer (Buffer &&other) :
@@ -160,6 +164,11 @@ namespace thekogans {
                 Resize (0);
             }
 
+            /// \brief
+            /// Copy assignment operator.
+            /// \param[in] other Buffer to copy.
+            /// \return *this.
+            Buffer &operator = (const Buffer &other);
             /// \brief
             /// Move assignment operator.
             /// \param[in,out] other Buffer to move.
@@ -326,12 +335,12 @@ namespace thekogans {
             /// Use zlib to compress the buffer.
             /// \param[in] allocator Allocator for the returned buffer.
             /// \return A buffer containing deflated data.
-            virtual Buffer Deflate (Allocator *allocator = &DefaultAllocator::Instance ());
+            virtual Buffer Deflate (Allocator *allocator = &DefaultAllocator::Instance ()) const;
             /// \brief
             /// Use zlib to decompress the buffer.
             /// \param[in] allocator Allocator for the returned buffer.
             /// \return A buffer containing inflated data.
-            virtual Buffer Inflate (Allocator *allocator = &DefaultAllocator::Instance ());
+            virtual Buffer Inflate (Allocator *allocator = &DefaultAllocator::Instance ()) const;
         #endif // defined (THEKOGANS_UTIL_HAVE_ZLIB)
 
             /// \brief
@@ -406,10 +415,6 @@ namespace thekogans {
             /// \return HGLOBAL containing the buffers contents.
             HGLOBAL ToHGLOBAL (UINT flags = GMEM_MOVEABLE) const;
         #endif // defined (TOOLCHAIN_OS_Windows)
-
-            /// \brief
-            /// Buffer is neither copy constructable, nor assignable.
-            THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (Buffer)
         };
 
         /// \struct SecureBuffer Buffer.h thekogans/util/Buffer.h
@@ -420,6 +425,11 @@ namespace thekogans {
         /// ensure buffer data stays away from prying eyes.
 
         struct _LIB_THEKOGANS_UTIL_DECL SecureBuffer : public Buffer {
+            /// \brief
+            /// Copy ctor.
+            /// \param[in,out] other SecureBuffer to move.
+            SecureBuffer (const SecureBuffer &other) :
+                Buffer (other) {}
             /// \brief
             /// Move ctor.
             /// \param[in,out] other SecureBuffer to move.
@@ -482,7 +492,15 @@ namespace thekogans {
                     readOffset,
                     writeOffset,
                     &SecureAllocator::Instance ()) {}
+            /// \brief
+            /// dtor. Zero out the buffer before releasing.
+            virtual ~SecureBuffer ();
 
+            /// \brief
+            /// Copy assignment operator.
+            /// \param[in,out] other SecureBuffer to move.
+            /// \return *this.
+            SecureBuffer &operator = (const SecureBuffer &other);
             /// \brief
             /// Move assignment operator.
             /// \param[in,out] other SecureBuffer to move.
@@ -526,18 +544,14 @@ namespace thekogans {
             /// \param[in] allocator Allocator for the returned buffer.
             /// NOTE: The allocator paramater is ignored as SecureBuffer uses the SecureAllocator.
             /// \return A buffer containing deflated data.
-            virtual Buffer Deflate (Allocator * /*allocator*/ = &DefaultAllocator::Instance ());
+            virtual Buffer Deflate (Allocator * /*allocator*/ = &DefaultAllocator::Instance ()) const;
             /// \brief
             /// Use zlib to decompress the buffer.
             /// \param[in] allocator Allocator for the returned buffer.
             /// NOTE: The allocator paramater is ignored as SecureBuffer uses the SecureAllocator.
             /// \return A buffer containing inflated data.
-            virtual Buffer Inflate (Allocator * /*allocator*/ = &DefaultAllocator::Instance ());
+            virtual Buffer Inflate (Allocator * /*allocator*/ = &DefaultAllocator::Instance ()) const;
         #endif // defined (THEKOGANS_UTIL_HAVE_ZLIB)
-
-            /// \brief
-            /// SecureBuffer is neither copy constructable, nor assignable.
-            THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (SecureBuffer)
         };
 
         /// \struct TenantReadBuffer Buffer.h thekogans/util/Buffer.h

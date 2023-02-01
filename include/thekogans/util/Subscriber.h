@@ -73,15 +73,7 @@ namespace thekogans {
             /// dtor.
             virtual ~Subscriber () {
                 // We're going out of scope, unsubscribe ourselves from our producer's events.
-                LockGuard<SpinLock> guard (spinLock);
-                for (typename Producers::iterator it = producers.begin (), end = producers.end (); it != end; ++it) {
-                    typename Producer<T>::SharedPtr producer = it->second->GetSharedPtr ();
-                    if (producer.Get () != 0) {
-                        producer->Unsubscribe (*this);
-                        delete it->second;
-                    }
-                }
-                producers.clear ();
+                Unsubscribe ();
             }
 
             /// \brief
@@ -114,7 +106,7 @@ namespace thekogans {
             }
 
             /// \brief
-            /// Given a \see{Producer} of particular events, unsubscribe from them.
+            /// Given a \see{Producer} of particular events, unsubscribe from it.
             /// \param[in] producer \see{Producer} whose events we want to unsubscribe from.
             void Unsubscribe (Producer<T> &producer) {
                 LockGuard<SpinLock> guard (spinLock);
@@ -124,6 +116,22 @@ namespace thekogans {
                     delete it->second;
                     producers.erase (it);
                 }
+            }
+
+            /// \brief
+            /// Unsubscribe from all \see{Producer}s of particular events.
+            void Unsubscribe () {
+                LockGuard<SpinLock> guard (spinLock);
+                for (typename Producers::iterator
+                        it = producers.begin (),
+                        end = producers.end (); it != end; ++it) {
+                    typename Producer<T>::SharedPtr producer = it->second->GetSharedPtr ();
+                    if (producer.Get () != 0) {
+                        producer->Unsubscribe (*this);
+                    }
+                    delete it->second;
+                }
+                producers.clear ();
             }
         };
 

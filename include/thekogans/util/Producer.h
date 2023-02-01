@@ -151,9 +151,11 @@ namespace thekogans {
                         std::function<void (T *)> event,
                         typename Subscriber<T>::SharedPtr subscriber) {
                     auto job = [event, subscriber] (
-                            RunLoop::Job & /*job*/,
-                            const std::atomic<bool> & /*done*/) {
-                        event (subscriber.Get ());
+                            const RunLoop::LambdaJob &job,
+                            const std::atomic<bool> &done) {
+                        if (job.IsRunning (done)) {
+                            event (subscriber.Get ());
+                        }
                     };
                     runLoop.EnqJob (job);
                 }
@@ -196,13 +198,7 @@ namespace thekogans {
             /// dtor.
             virtual ~Producer () {
                 // We're going out of scope, delete all subscribers.
-                LockGuard<SpinLock> guard (spinLock);
-                for (typename Subscribers::iterator
-                        it = subscribers.begin (),
-                        end = subscribers.end (); it != end; ++it) {
-                    delete it->second.first;
-                }
-                subscribers.clear ();
+                Unsubscribe ();
             }
 
             /// \brief
@@ -249,6 +245,22 @@ namespace thekogans {
                     subscribers.erase (it);
                     OnUnsubscribe (subscriber, subscribers.size ());
                 }
+            }
+
+            /// \brief
+            /// Unsubscribe all subscribers.
+            void Unsubscribe () {
+                LockGuard<SpinLock> guard (spinLock);
+                for (typename Subscribers::iterator
+                        it = subscribers.begin (),
+                        end = subscribers.end (); it != end; ++it) {
+                    typename Subscriber<T>::SharedPtr subscriber = it->second.first->GetSharedPtr ();
+                    if (subscriber.Get () != 0) {
+                        OnUnsubscribe (*subscriber, subscribers.size () - 1);
+                    }
+                    delete it->second.first;
+                }
+                subscribers.clear ();
             }
 
             /// \brief

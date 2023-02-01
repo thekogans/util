@@ -544,8 +544,10 @@ namespace thekogans {
         inline pugi::xml_node & _LIB_THEKOGANS_UTIL_API operator << (
                 pugi::xml_node &node,
                 const Serializable::TextHeader &header) {
-            node.append_attribute (Serializable::TextHeader::ATTR_TYPE).set_value (header.type.c_str ());
-            node.append_attribute (Serializable::TextHeader::ATTR_VERSION).set_value (ui32Tostring (header.version).c_str ());
+            node.append_attribute (
+                Serializable::TextHeader::ATTR_TYPE).set_value (header.type.c_str ());
+            node.append_attribute (
+                Serializable::TextHeader::ATTR_VERSION).set_value (ui32Tostring (header.version).c_str ());
             return node;
         }
 

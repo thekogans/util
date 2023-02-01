@@ -609,108 +609,189 @@ namespace thekogans {
                 };
 
                 /// \brief
-                /// Convenient typedef for ui64.
-                typedef ui64 Token;
+                /// Encapsulates the ui64 token consisting of {index, counter} pair. The
+                /// index part is the index used to access the registration in the entries
+                /// vector. The counter acts to disembiguate the various entry lifetimes.
+                /// Entries are recycled and have to be protected from eronious latent
+                /// access that will result in serious damage (major security risks).
+                /// Therefore as soon as an entry is released it's counter is bumped up to
+                /// notify the old token that it is no longer valid.
+                ///
+                /// Provides convenient access as well as registration lifetime management.
+                ///
+                /// Ex:
+                /// \code{.cpp}
+                /// typedef thekogans::util::RefCounted::Registry<foo> fooRegistry;
+                ///
+                /// struct foo : public thekogans::util::RefCounted {
+                ///     THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (foo)
+                ///
+                /// private:
+                ///     const fooRegistry::Token token;
+                ///
+                /// public:
+                ///     foo () :
+                ///         token (this) {}
+                ///
+                ///     inline fooRegistry::Token::ValueType GetToken () const {
+                ///         return token.GetValue ();
+                ///     }
+                /// };
+                /// \endcode
+                struct Token {
+                    /// \brief
+                    /// Convenient typedef for ui32.
+                    typedef ui32 IndexType;
+                    /// \brief
+                    /// Convenient typedef for ui32.
+                    typedef ui32 CounterType;
+                    /// \brief
+                    /// Convenient typedef for ui64.
+                    typedef ui64 ValueType;
+
+                private:
+                    /// \brief
+                    /// {index, counter} pair.
+                    ValueType value;
+
+                public:
+                    /// \brief
+                    /// ctor.
+                    /// \param[in] t Object to register.
+                    explicit Token (T *t) :
+                        value (Registry<T>::Instance ().Add (t)) {}
+                    /// \brief
+                    /// dtor.
+                    ~Token () {
+                        Registry<T>::Instance ().Remove (value);
+                    }
+
+                    /// \brief
+                    /// Make token from the given index and counter.
+                    /// \param[in] index Index part of the token.
+                    /// \param[in] counter Counter part of the token.
+                    /// \return A freshly minted token value.
+                    static inline ValueType MakeValue (
+                            IndexType index,
+                            CounterType counter) {
+                        return THEKOGANS_UTIL_MK_UI64 (index, counter);
+                    }
+                    /// \brief
+                    /// Extract the index.
+                    /// \return THEKOGANS_UTIL_UI64_GET_UI32_AT_INDEX (value, 0);
+                    static inline IndexType GetIndex (ValueType value) {
+                        return THEKOGANS_UTIL_UI64_GET_UI32_AT_INDEX (value, 0);
+                    }
+                    /// \brief
+                    /// Extract the index.
+                    /// \return THEKOGANS_UTIL_UI64_GET_UI32_AT_INDEX (value, 1);
+                    static inline CounterType GetCounter (ValueType value) {
+                        return THEKOGANS_UTIL_UI64_GET_UI32_AT_INDEX (value, 1);
+                    }
+
+                    /// \brief
+                    /// Retutn the token value.
+                    /// \return value.
+                    inline ValueType GetValue () const {
+                        return value;
+                    }
+
+                    /// \brief
+                    /// Token is neither copy constructable, nor assignable.
+                    THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (Token)
+                };
 
                 /// \brief
                 /// ctor.
                 /// \param[in] entriesSize Initial entry list size.
                 Registry (std::size_t entriesSize = DEFAULT_ENTRIES_SIZE) :
-                        entries (entriesSize),
-                        count (0),
-                        freeList (NIDX32) {
-                    if (entriesSize == 0) {
-                        THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                            THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
-                    }
-                }
+                    entries (entriesSize == 0 ? 1 : entriesSize),
+                    count (0),
+                    freeList (NIDX32) {}
 
                 /// \brief
                 /// Add an object to the registry.
                 /// \param[in] t Object to add.
                 /// \return Token describing the object entry.
-                Token Add (T *t) {
+                /// NOTE: This method is meant to be used by the
+                /// \see{Token} ctor which will be initialized
+                /// by the containing (T) object's ctor. In this
+                /// case passing a raw pointer is appropriate.
+                typename Token::ValueType Add (T *t) {
+                    typename Token::ValueType value = INVALID_TOKEN;
                     if (t != 0) {
-                        LockGuard<SpinLock> guard (spinLock);
-                        ui32 index;
-                        ui32 counter;
-                        if (freeList != NIDX32) {
-                            index = freeList;
-                            // Since there might still be tokens
-                            // floating about that reference this
-                            // slot, bump up the counter so that they
-                            // would not accidently remove the wrong
-                            // entry.
-                            counter = ++entries[index].counter;
-                            freeList = entries[index].next;
-                        }
-                        else {
-                            index = count;
-                            // This is the first time we're using this slot.
-                            counter = 0;
-                            if (index == entries.size ()) {
-                                // Here we implement a simple exponential
-                                // array grow algorithm. Every time we
-                                // need to grow the array, we double it's
-                                // size. This scheme has two advantages:
-                                // 1. Keep the registry small for types with few instances.
-                                // 2. Less grow copy overhead for types with many instances.
-                                entries.resize (index * 2);
+                        typename Token::IndexType index;
+                        typename Token::CounterType counter;
+                        {
+                            LockGuard<SpinLock> guard (spinLock);
+                            if (freeList != NIDX32) {
+                                // Reuse a free entry.
+                                index = freeList;
+                                counter = entries[index].counter;
+                                freeList = entries[index].next;
                             }
+                            else {
+                                index = count;
+                                // This is the first time we're using this slot.
+                                counter = 0;
+                                if (index == entries.size ()) {
+                                    // Here we implement a simple exponential
+                                    // array grow algorithm. Every time we
+                                    // need to grow the array, we double it's
+                                    // size. This scheme has two advantages:
+                                    // 1. Keep the registry small for types with few instances.
+                                    // 2. Less grow copy overhead for types with many instances.
+                                    // A byproduct of this approach is that every
+                                    // index allocated and returned by the registry
+                                    // is valid in perpetuity.
+                                    entries.resize (index * 2);
+                                }
+                            }
+                            entries[index] = Entry (WeakPtr<T> (t), counter, NIDX32);
+                            ++count;
                         }
-                        entries[index] = Entry (WeakPtr<T> (t), counter, NIDX32);
-                        ++count;
-                        // Pack index and counter describing this entry in to a token.
-                        return THEKOGANS_UTIL_MK_UI64 (index, counter);
+                        // Pack index and counter describing this entry in to a token value.
+                        value = Token::MakeValue (index, counter);
                     }
-                    else {
-                        THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                            THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
-                    }
+                    return value;
                 }
 
                 /// \brief
                 /// Given a token, remove the object entry.
-                /// \param[in] token Token describing the object entry to remove.
-                void Remove (Token token) {
-                    LockGuard<SpinLock> guard (spinLock);
+                /// \param[in] value Token describing the object entry to remove.
+                void Remove (typename Token::ValueType value) {
                     // Unpack the token to get index and counter.
-                    ui32 index = THEKOGANS_UTIL_UI64_GET_UI32_AT_INDEX (token, 0);
-                    ui32 counter = THEKOGANS_UTIL_UI64_GET_UI32_AT_INDEX (token, 1);
-                    if (index < entries.size ()) {
-                        // Check the counter to make this token still has access to this slot.
-                        if (entries[index].counter == counter) {
-                            entries[index] = Entry (WeakPtr<T> (), counter, freeList);
-                            freeList = index;
-                            --count;
-                        }
-                    }
-                    else {
-                        THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                            THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
+                    typename Token::IndexType index = Token::GetIndex (value);
+                    typename Token::CounterType counter = Token::GetCounter (value);
+                    LockGuard<SpinLock> guard (spinLock);
+                    // Check the counter to make sure this token
+                    // still has access to this slot.
+                    if (index < entries.size () && entries[index].counter == counter) {
+                        // Incrementing the counter prevents double Remove and Get after Remove.
+                        // NOTE: Because of WeakPtr<T> () in Entry below, Get after Remove is
+                        // harmless, though it's still semantically wrong. Double Remove on the
+                        // other hand would lead to freeList corruption.
+                        entries[index] = Entry (WeakPtr<T> (), ++counter, freeList);
+                        freeList = index;
+                        --count;
                     }
                 }
 
                 /// \brief
                 /// Given a token, retrieve the object at the entry.
-                /// \param[in] token Token describing the object entry to retrieve.
+                /// \param[in] value Token describing the object entry to retrieve.
                 /// \return SharedPtr<T>.
-                SharedPtr<T> Get (Token token) {
-                    LockGuard<SpinLock> guard (spinLock);
+                SharedPtr<T> Get (typename Token::ValueType value) {
                     // Unpack the token to get index and counter.
-                    ui32 index = THEKOGANS_UTIL_UI64_GET_UI32_AT_INDEX (token, 0);
-                    ui32 counter = THEKOGANS_UTIL_UI64_GET_UI32_AT_INDEX (token, 1);
-                    if (index < entries.size ()) {
-                        // Check the counter to make this token still
-                        // references the current object.
-                        return entries[index].counter == counter ?
-                            entries[index].object.GetSharedPtr () :
-                            SharedPtr<T> ();
-                    }
-                    else {
-                        THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                            THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
-                    }
+                    typename Token::IndexType index = Token::GetIndex (value);
+                    typename Token::CounterType counter = Token::GetCounter (value);
+                    LockGuard<SpinLock> guard (spinLock);
+                    // Check the counter to make sure this token
+                    // still references the current object.
+                    return index < entries.size () && entries[index].counter == counter ?
+                        // Yes? Ask the WeakPtr<T> registered to return a SharedPtr<T>.
+                        entries[index].object.GetSharedPtr () :
+                        SharedPtr<T> ();
                 }
             };
 
@@ -732,6 +813,7 @@ namespace thekogans {
         /// \def THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS(type)
         /// Use this macro inside a \see{RefCounted} derived class to declare the pointers.
         #define THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS(type)\
+        public:\
             typedef thekogans::util::RefCounted::SharedPtr<type> SharedPtr;\
             typedef thekogans::util::RefCounted::WeakPtr<type> WeakPtr;
 
@@ -788,10 +870,12 @@ namespace thekogans {
         /// \param[in] item1 First \see{RefCounted::SharedPtr} to compare.
         /// \param[in] item2 Second \see{RefCounted::SharedPtr} to compare.
         /// \return true == Same object, false == Different objects.
-        template<typename T>
+        template<
+            typename T1,
+            typename T2>
         inline bool _LIB_THEKOGANS_UTIL_API operator == (
-                const RefCounted::SharedPtr<T> &item1,
-                const RefCounted::SharedPtr<T> &item2) throw () {
+                const RefCounted::SharedPtr<T1> &item1,
+                const RefCounted::SharedPtr<T2> &item2) throw () {
             return item1.Get () == item2.Get ();
         }
 
@@ -800,10 +884,12 @@ namespace thekogans {
         /// \param[in] item1 First \see{RefCounted::SharedPtr} to compare.
         /// \param[in] item2 Second \see{RefCounted::SharedPtr} to compare.
         /// \return true == Different objects, false == Same object.
-        template<typename T>
+        template<
+            typename T1,
+            typename T2>
         inline bool _LIB_THEKOGANS_UTIL_API operator != (
-                const RefCounted::SharedPtr<T> &item1,
-                const RefCounted::SharedPtr<T> &item2) throw () {
+                const RefCounted::SharedPtr<T1> &item1,
+                const RefCounted::SharedPtr<T2> &item2) throw () {
             return item1.Get () != item2.Get ();
         }
 
@@ -812,10 +898,12 @@ namespace thekogans {
         /// \param[in] item1 First \see{RefCounted::SharedPtr} to compare.
         /// \param[in] item2 Second \see{RefCounted::SharedPtr} to compare.
         /// \return true == item1 < item2.
-        template<typename T>
+        template<
+            typename T1,
+            typename T2>
         inline bool _LIB_THEKOGANS_UTIL_API operator < (
-                const RefCounted::SharedPtr<T> &item1,
-                const RefCounted::SharedPtr<T> &item2) throw () {
+                const RefCounted::SharedPtr<T1> &item1,
+                const RefCounted::SharedPtr<T2> &item2) throw () {
             return item1.Get () < item2.Get ();
         }
 
@@ -824,10 +912,12 @@ namespace thekogans {
         /// \param[in] item1 First \see{RefCounted::SharedPtr} to compare.
         /// \param[in] item2 Second \see{RefCounted::SharedPtr} to compare.
         /// \return true == item1 <= item2.
-        template<typename T>
+        template<
+            typename T1,
+            typename T2>
         inline bool _LIB_THEKOGANS_UTIL_API operator <= (
-                const RefCounted::SharedPtr<T> &item1,
-                const RefCounted::SharedPtr<T> &item2) throw () {
+                const RefCounted::SharedPtr<T1> &item1,
+                const RefCounted::SharedPtr<T2> &item2) throw () {
             return item1.Get () <= item2.Get ();
         }
 
@@ -836,10 +926,12 @@ namespace thekogans {
         /// \param[in] item1 First \see{RefCounted::SharedPtr} to compare.
         /// \param[in] item2 Second \see{RefCounted::SharedPtr} to compare.
         /// \return true == item1 > item2.
-        template<typename T>
+        template<
+            typename T1,
+            typename T2>
         inline bool _LIB_THEKOGANS_UTIL_API operator > (
-                const RefCounted::SharedPtr<T> &item1,
-                const RefCounted::SharedPtr<T> &item2) throw () {
+                const RefCounted::SharedPtr<T1> &item1,
+                const RefCounted::SharedPtr<T2> &item2) throw () {
             return item1.Get () > item2.Get ();
         }
 
@@ -848,10 +940,12 @@ namespace thekogans {
         /// \param[in] item1 First \see{RefCounted::SharedPtr} to compare.
         /// \param[in] item2 Second \see{RefCounted::SharedPtr} to compare.
         /// \return true == item1 >= item2.
-        template<typename T>
+        template<
+            typename T1,
+            typename T2>
         inline bool _LIB_THEKOGANS_UTIL_API operator >= (
-                const RefCounted::SharedPtr<T> &item1,
-                const RefCounted::SharedPtr<T> &item2) throw () {
+                const RefCounted::SharedPtr<T1> &item1,
+                const RefCounted::SharedPtr<T2> &item2) throw () {
             return item1.Get () >= item2.Get ();
         }
 
@@ -908,10 +1002,12 @@ namespace thekogans {
         /// \param[in] item1 First \see{RefCounted::WeakPtr} to compare.
         /// \param[in] item2 Second \see{RefCounted::WeakPtr} to compare.
         /// \return true == Same object, false == Different objects.
-        template<typename T>
+        template<
+            typename T1,
+            typename T2>
         inline bool _LIB_THEKOGANS_UTIL_API operator == (
-                const RefCounted::WeakPtr<T> &item1,
-                const RefCounted::WeakPtr<T> &item2) throw () {
+                const RefCounted::WeakPtr<T1> &item1,
+                const RefCounted::WeakPtr<T2> &item2) throw () {
             return item1.Get () == item2.Get ();
         }
 
@@ -920,10 +1016,12 @@ namespace thekogans {
         /// \param[in] item1 First \see{RefCounted::WeakPtr} to compare.
         /// \param[in] item2 Second \see{RefCounted::WeakPtr} to compare.
         /// \return true == Different objects, false == Same object.
-        template<typename T>
+        template<
+            typename T1,
+            typename T2>
         inline bool _LIB_THEKOGANS_UTIL_API operator != (
-                const RefCounted::WeakPtr<T> &item1,
-                const RefCounted::WeakPtr<T> &item2) throw () {
+                const RefCounted::WeakPtr<T1> &item1,
+                const RefCounted::WeakPtr<T2> &item2) throw () {
             return item1.Get () != item2.Get ();
         }
 
@@ -932,10 +1030,12 @@ namespace thekogans {
         /// \param[in] item1 First \see{RefCounted::WeakPtr} to compare.
         /// \param[in] item2 Second \see{RefCounted::WeakPtr} to compare.
         /// \return true == item1 < item2.
-        template<typename T>
+        template<
+            typename T1,
+            typename T2>
         inline bool _LIB_THEKOGANS_UTIL_API operator < (
-                const RefCounted::WeakPtr<T> &item1,
-                const RefCounted::WeakPtr<T> &item2) throw () {
+                const RefCounted::WeakPtr<T1> &item1,
+                const RefCounted::WeakPtr<T2> &item2) throw () {
             return item1.Get () < item2.Get ();
         }
 
@@ -944,10 +1044,12 @@ namespace thekogans {
         /// \param[in] item1 First \see{RefCounted::WeakPtr} to compare.
         /// \param[in] item2 Second \see{RefCounted::WeakPtr} to compare.
         /// \return true == item1 <= item2.
-        template<typename T>
+        template<
+            typename T1,
+            typename T2>
         inline bool _LIB_THEKOGANS_UTIL_API operator <= (
-                const RefCounted::WeakPtr<T> &item1,
-                const RefCounted::WeakPtr<T> &item2) throw () {
+                const RefCounted::WeakPtr<T1> &item1,
+                const RefCounted::WeakPtr<T2> &item2) throw () {
             return item1.Get () <= item2.Get ();
         }
 
@@ -956,10 +1058,12 @@ namespace thekogans {
         /// \param[in] item1 First \see{RefCounted::WeakPtr} to compare.
         /// \param[in] item2 Second \see{RefCounted::WeakPtr} to compare.
         /// \return true == item1 > item2.
-        template<typename T>
+        template<
+            typename T1,
+            typename T2>
         inline bool _LIB_THEKOGANS_UTIL_API operator > (
-                const RefCounted::WeakPtr<T> &item1,
-                const RefCounted::WeakPtr<T> &item2) throw () {
+                const RefCounted::WeakPtr<T1> &item1,
+                const RefCounted::WeakPtr<T2> &item2) throw () {
             return item1.Get () > item2.Get ();
         }
 
@@ -968,10 +1072,12 @@ namespace thekogans {
         /// \param[in] item1 First \see{RefCounted::WeakPtr} to compare.
         /// \param[in] item2 Second \see{RefCounted::WeakPtr} to compare.
         /// \return true == item1 >= item2.
-        template<typename T>
+        template<
+            typename T1,
+            typename T2>
         inline bool _LIB_THEKOGANS_UTIL_API operator >= (
-                const RefCounted::WeakPtr<T> &item1,
-                const RefCounted::WeakPtr<T> &item2) throw () {
+                const RefCounted::WeakPtr<T1> &item1,
+                const RefCounted::WeakPtr<T2> &item2) throw () {
             return item1.Get () >= item2.Get ();
         }
 

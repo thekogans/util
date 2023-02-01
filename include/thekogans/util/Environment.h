@@ -21,6 +21,7 @@
 // thekogans libraries are used in environments that don't call $TOOLCHAIN_COMMON_BIN/setenvironment,
 // and don't use thekogans_make. In that case try to deduce the environment we're running on top of.
 
+// TOOLCHAIN_OS
 #if !defined (TOOLCHAIN_OS_Windows) && !defined (TOOLCHAIN_OS_Linux) && !defined (TOOLCHAIN_OS_OSX)
     #if defined (_WIN32) || defined (_WIN64)
         #define TOOLCHAIN_OS_Windows
@@ -33,6 +34,7 @@
     #endif // defined (_WIN32) || defined (_WIN64)
 #endif // !defined (TOOLCHAIN_OS_Windows) && !defined (TOOLCHAIN_OS_Linux) && !defined (TOOLCHAIN_OS_OSX)
 
+// TOOLCHAIN_ARCH
 #if !defined (TOOLCHAIN_ARCH_i386) && !defined (TOOLCHAIN_ARCH_x86_64) &&\
     !defined (TOOLCHAIN_ARCH_ppc) && !defined (TOOLCHAIN_ARCH_ppc64) &&\
     !defined (TOOLCHAIN_ARCH_arm) && !defined (TOOLCHAIN_ARCH_arm64)
@@ -81,8 +83,44 @@
        // !defined (TOOLCHAIN_ARCH_ppc) && !defined (TOOLCHAIN_ARCH_ppc64) &&
        // !defined (TOOLCHAIN_ARCH_arm) && !defined (TOOLCHAIN_ARCH_arm64)
 
-// FIXME: Deduce TOOLCHAIN_COMPILER
+// TOOLCHAIN_COMPILER
+#if defined (TOOLCHAIN_OS_Windows)
+    #if !defined (TOOLCHAIN_COMPILER_cl18) && !defined (TOOLCHAIN_COMPILER_cl19) &&\
+        !defined (TOOLCHAIN_COMPILER_cl1910) && !defined (TOOLCHAIN_COMPILER_cl1924)
+        #if defined (_MSC_VER == 1800)
+            #define TOOLCHAIN_COMPILER_cl18
+        #elif defined (_MSC_VER == 1900)
+            #define TOOLCHAIN_COMPILER_cl19
+        #elif defined (_MSC_VER == 1910)
+            #define TOOLCHAIN_COMPILER_cl1910
+        #elif defined (_MSC_VER == 1924)
+            #define TOOLCHAIN_COMPILER_cl1924
+        #else // defined (_MSC_VER == 1800)
+            #error Unknown TOOLCHAIN_COMPILER.
+        #endif // defined (_MSC_VER == 1800)
+    #endif // !defined (TOOLCHAIN_COMPILER_cl18) && !defined (TOOLCHAIN_COMPILER_cl19) &&
+           // !defined (TOOLCHAIN_COMPILER_cl1910) && !defined (TOOLCHAIN_COMPILER_cl1924)
+#elif defined (TOOLCHAIN_OS_Linux)
+    #if !defined (TOOLCHAIN_COMPILER_gcc)
+        #if defined (__GNUC__)
+            #define TOOLCHAIN_COMPILER_gcc
+        #else // defined (__GNUC__)
+            #error Unknown TOOLCHAIN_COMPILER.
+        #endif // defined (__GNUC__)
+    #endif // !defined (TOOLCHAIN_COMPILER_gcc)
+#elif defined (TOOLCHAIN_OS_OSX)
+    #if !defined (TOOLCHAIN_COMPILER_clang) && !defined (TOOLCHAIN_COMPILER_gcc)
+        #if defined (__clang__)
+            #define TOOLCHAIN_COMPILER_clang
+        #elif defined (__GNUC__)
+            #define TOOLCHAIN_COMPILER_gcc
+        #else // defined (__clang__)
+            #error Unknown TOOLCHAIN_COMPILER.
+        #endif // defined (__clang__)
+    #endif // !defined (TOOLCHAIN_COMPILER_clang) && !defined (TOOLCHAIN_COMPILER_gcc)
+#endif // defined (TOOLCHAIN_OS_Windows)
 
+// TOOLCHAIN_ENDIAN
 #if !defined (TOOLCHAIN_ENDIAN_Little) && !defined (TOOLCHAIN_ENDIAN_Big)
     #define THEKOGANS_UTIL_LITTLE_ENDIAN 0x41424344UL
     #define THEKOGANS_UTIL_BIG_ENDIAN    0x44434241UL

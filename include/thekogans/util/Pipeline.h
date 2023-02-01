@@ -304,7 +304,10 @@ namespace thekogans {
                 /// Convenient typedef for std::function<void (Job & /*job*/, const std::atomic<bool> & /*done*/)>.
                 /// \param[in] job Job that is executing the lambda.
                 /// \param[in] done Call job.ShouldStop (done) to respond to cancel requests and termination events.
-                typedef std::function<void (Job & /*job*/, const std::atomic<bool> & /*done*/)> Function;
+                typedef std::function<
+                    void (
+                        LambdaJob & /*job*/,
+                        const std::atomic<bool> & /*done*/)> Function;
 
             private:
                 /// \brief

@@ -347,7 +347,7 @@ namespace thekogans {
                 /// \param[in] job Job that is executing the lambda.
                 /// \param[in] done Call job.ShouldStop (done) to respond to cancel requests and termination events.
                 typedef std::function<void (
-                    const Job & /*job*/,
+                    const LambdaJob & /*job*/,
                     const std::atomic<bool> & /*done*/)> Function;
 
             private:
@@ -374,6 +374,14 @@ namespace thekogans {
                     if (!ShouldStop (done)) {
                         function (*this, done);
                     }
+                }
+
+                /// \ brief
+                /// This method exposes the ShoulStop machinery to the lambda.
+                /// \param[in] done true == The run loop is done and nothing can be executed on it.
+                /// \return true == Continue executing, false == Stop and return.
+                inline bool IsRunning (const std::atomic<bool> &done) const {
+                    return !ShouldStop (done);
                 }
             };
 

@@ -33,6 +33,18 @@
 namespace thekogans {
     namespace util {
 
+        Buffer::Buffer (const Buffer &other) :
+                Serializer (other.endianness),
+                data ((ui8 *)other.allocator->Alloc (other.length)),
+                length (other.length),
+                readOffset (other.readOffset),
+                writeOffset (other.writeOffset),
+                allocator (other.allocator) {
+            if (length > 0) {
+                memcpy (data, other.data, length);
+            }
+        }
+
         Buffer::Buffer (
                 Endianness endianness,
                 const void *begin,
@@ -49,6 +61,22 @@ namespace thekogans {
             if (length > 0) {
                 memcpy (data, begin, length);
             }
+        }
+
+        Buffer &Buffer::operator = (const Buffer &other) {
+            if (this != &other) {
+                Resize (0);
+                endianness = other.endianness;
+                data = (ui8 *)other.allocator->Alloc (other.length);
+                length = other.length;
+                readOffset = other.readOffset;
+                writeOffset = other.writeOffset;
+                allocator = other.allocator;
+                if (length > 0) {
+                    memcpy (data, other.data, length);
+                }
+            }
+            return *this;
         }
 
         Buffer &Buffer::operator = (Buffer &&other) {
@@ -324,7 +352,7 @@ namespace thekogans {
             }
         }
 
-        Buffer Buffer::Deflate (Allocator *allocator) {
+        Buffer Buffer::Deflate (Allocator *allocator) const {
             if (allocator != 0) {
                 if (GetDataAvailableForReading () != 0) {
                     OutBuffer outBuffer (allocator);
@@ -345,7 +373,7 @@ namespace thekogans {
             }
         }
 
-        Buffer Buffer::Inflate (Allocator *allocator) {
+        Buffer Buffer::Inflate (Allocator *allocator) const {
             if (allocator != 0) {
                 if (GetDataAvailableForReading () != 0) {
                     OutBuffer outBuffer (allocator);
@@ -403,6 +431,28 @@ namespace thekogans {
         }
     #endif // defined (TOOLCHAIN_OS_Windows)
 
+        SecureBuffer::~SecureBuffer () {
+            if (data != 0) {
+                memset (data, 0, length);
+            }
+        }
+
+        SecureBuffer &SecureBuffer::operator = (const SecureBuffer &other) {
+            if (this != &other) {
+                Resize (0);
+                endianness = other.endianness;
+                data = (ui8 *)other.allocator->Alloc (other.length);
+                length = other.length;
+                readOffset = other.readOffset;
+                writeOffset = other.writeOffset;
+                allocator = other.allocator;
+                if (length > 0) {
+                    memcpy (data, other.data, length);
+                }
+            }
+            return *this;
+        }
+
         SecureBuffer &SecureBuffer::operator = (SecureBuffer &&other) {
             if (this != &other) {
                 SecureBuffer temp (std::move (other));
@@ -434,7 +484,7 @@ namespace thekogans {
         }
 
     #if defined (THEKOGANS_UTIL_HAVE_ZLIB)
-        Buffer SecureBuffer::Deflate (Allocator * /*allocator*/) {
+        Buffer SecureBuffer::Deflate (Allocator * /*allocator*/) const {
             if (GetDataAvailableForReading () != 0) {
                 OutBuffer outBuffer (&SecureAllocator::Instance ());
                 DeflateHelper (GetReadPtr (), GetDataAvailableForReading (), outBuffer);
@@ -448,7 +498,7 @@ namespace thekogans {
             return SecureBuffer ();
         }
 
-        Buffer SecureBuffer::Inflate (Allocator * /*allocator*/) {
+        Buffer SecureBuffer::Inflate (Allocator * /*allocator*/) const {
             if (GetDataAvailableForReading () != 0) {
                 OutBuffer outBuffer (&SecureAllocator::Instance ());
                 InflateHelper (GetReadPtr (), GetDataAvailableForReading (), outBuffer);
