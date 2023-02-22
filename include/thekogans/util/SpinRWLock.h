@@ -18,32 +18,24 @@
 #if !defined (__thekogans_util_SpinRWLock_h)
 #define __thekogans_util_SpinRWLock_h
 
-#include <atomic>
 #include "thekogans/util/Config.h"
 #include "thekogans/util/Types.h"
 
 namespace thekogans {
     namespace util {
 
-        /// \struct SpinRWLock SpinRWLock.h thekogans/util/SpinRWLock.h
+        /// \struct StorageSpinRWLock SpinRWLock.h thekogans/util/SpinRWLock.h
         ///
         /// \brief
-        /// SpinRWLock wraps a std::atomic so that it can be used
+        /// SpinRWLock wraps a ui32 & so that it can be used
         /// with the rest of the util synchronization machinery.
         ///
         /// This implementation was adapted from Intel TBB.
 
-        struct _LIB_THEKOGANS_UTIL_DECL SpinRWLock {
-        private:
-            /// \brief
-            /// Default max pause iterations before giving up the time slice.
-            static const ui32 DEFAULT_MAX_PAUSE_BEFORE_YIELD = 16;
+        struct _LIB_THEKOGANS_UTIL_DECL StorageSpinRWLock {
             /// \brief
             /// Flag indicating the presence of a writer.
             static const ui32 WRITER = 1;
-            /// \brief
-            /// \see{Thread::Backoff} parameter.
-            ui32 maxPauseBeforeYield;
             /// \brief
             /// Flag indicating that a writer is waiting
             /// for the readers to exit.
@@ -58,16 +50,29 @@ namespace thekogans {
             /// Mask to test if the lock is busy with readers or writer.
             static const ui32 BUSY = WRITER | READERS;
             /// \brief
+            /// Default max pause iterations before giving up the time slice.
+            static const ui32 DEFAULT_MAX_PAUSE_BEFORE_YIELD = 16;
+
+        private:
+            /// \brief
             /// Lock state.
-            std::atomic<ui32> state;
+            ui32 &state;
+            /// \brief
+            /// \see{Thread::Backoff} parameter.
+            ui32 maxPauseBeforeYield;
 
         public:
             /// \brief
             /// ctor. Initialize to unlocked.
+            /// \param[in] state_ Storage for lock state.
             /// \param[in] maxPauseBeforeYield_ \see{Thread::Backoff} parameter.
-            SpinRWLock (ui32 maxPauseBeforeYield_ = DEFAULT_MAX_PAUSE_BEFORE_YIELD) :
-                maxPauseBeforeYield (maxPauseBeforeYield_),
-                state (0) {}
+            StorageSpinRWLock (
+                    ui32 &state_,
+                    ui32 maxPauseBeforeYield_ = DEFAULT_MAX_PAUSE_BEFORE_YIELD) :
+                    state (state_),
+                    maxPauseBeforeYield (maxPauseBeforeYield_) {
+                state = 0;
+            }
 
             /// \brief
             /// Try to acquire the lock.
@@ -82,6 +87,51 @@ namespace thekogans {
             /// Release the lock.
             /// \param[in] read true = release for reading, release for writing.
             void Release (bool read);
+
+            /// \brief
+            /// SpinRWLock is neither copy constructable, nor assignable.
+            THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (StorageSpinRWLock)
+        };
+
+        /// \struct SpinRWLock SpinRWLock.h thekogans/util/SpinRWLock.h
+        ///
+        /// \brief
+        /// SpinRWLock wraps a ui32 so that it can be used
+        /// with the rest of the util synchronization machinery.
+        ///
+        /// This implementation was adapted from Intel TBB.
+
+        struct _LIB_THEKOGANS_UTIL_DECL SpinRWLock : private StorageSpinRWLock {
+        private:
+            /// Lock state.
+            ui32 state;
+
+        public:
+            /// \brief
+            /// ctor. Initialize to unlocked.
+            /// \param[in] maxPauseBeforeYield \see{Thread::Backoff} parameter.
+            SpinRWLock (ui32 maxPauseBeforeYield = DEFAULT_MAX_PAUSE_BEFORE_YIELD) :
+                StorageSpinRWLock (state, maxPauseBeforeYield) {}
+
+            /// \brief
+            /// Try to acquire the lock.
+            /// \param[in] read true = acqure for reading, acquire for writing.
+            /// \return true = acquierd, false = failed to acquire.
+            inline bool TryAcquire (bool read) {
+                return StorageSpinRWLock::TryAcquire (read);
+            }
+            /// \brief
+            /// Acquire the lock.
+            /// \param[in] read true = acqure for reading, acquire for writing.
+            inline void Acquire (bool read) {
+                StorageSpinRWLock::Acquire (read);
+            }
+            /// \brief
+            /// Release the lock.
+            /// \param[in] read true = release for reading, release for writing.
+            inline void Release (bool read) {
+                StorageSpinRWLock::Release (read);
+            }
 
             /// \brief
             /// SpinRWLock is neither copy constructable, nor assignable.

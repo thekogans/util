@@ -33,9 +33,6 @@
     #include <unistd.h>
 #endif // defined (TOOLCHAIN_OS_Windows)
 #include <string>
-#include <boost/memory_order.hpp>
-#include <boost/atomic/detail/config.hpp>
-#include <boost/atomic/detail/operations_lockfree.hpp>
 #include "thekogans/util/LockGuard.h"
 #include "thekogans/util/Thread.h"
 #include "thekogans/util/SharedAllocator.h"
@@ -43,35 +40,9 @@
 namespace thekogans {
     namespace util {
 
-        namespace {
-            typedef boost::atomics::detail::operations<4u, false> operations;
-        }
-
-        bool SharedAllocator::Lock::TryAcquire () {
-            return operations::exchange (storage, Locked, boost::memory_order_acquire) == Unlocked;
-        }
-
-        void SharedAllocator::Lock::Acquire () {
-            while (operations::exchange (storage, Locked, boost::memory_order_acquire) == Locked) {
-                // Wait for lock to become free with exponential back-off.
-                // In a heavily contested lock, this leads to fewer cache
-                // line invalidations and better performance.
-                // This code was adapted from the ideas found here:
-                // https://geidav.wordpress.com/tag/exponential-back-off/
-                Thread::Backoff backoff;
-                while (operations::load (storage, boost::memory_order_relaxed) == Locked) {
-                    backoff.Pause ();
-                }
-            }
-        }
-
-        void SharedAllocator::Lock::Release () {
-            operations::store (storage, Unlocked, boost::memory_order_release);
-        }
-
         void *SharedAllocator::Alloc (std::size_t size) {
             if (size > 0) {
-                LockGuard<Lock> guard (lock);
+                LockGuard<StorageSpinLock> guard (lock);
                 if (size < Block::SMALLEST_BLOCK_SIZE) {
                     size = Block::SMALLEST_BLOCK_SIZE;
                 }
@@ -107,7 +78,7 @@ namespace thekogans {
                 void *ptr,
                 std::size_t size) {
             if (ptr != 0) {
-                LockGuard<Lock> guard (lock);
+                LockGuard<StorageSpinLock> guard (lock);
                 Block *blockToFree = ValidatePtr (ptr);
                 if (blockToFree != 0) {
                     Block *prev = 0;
@@ -175,7 +146,7 @@ namespace thekogans {
 
         void SharedAllocator::SetRootObject (void *rootObject) {
             if (rootObject == 0 || ValidatePtr (rootObject) != 0) {
-                LockGuard<Lock> guard (lock);
+                LockGuard<StorageSpinLock> guard (lock);
                 header->rootObject = rootObject != 0 ? GetOffsetFromPtr (rootObject) : 0;
             }
             else {
@@ -185,7 +156,7 @@ namespace thekogans {
         }
 
         void *SharedAllocator::GetRootObject () {
-            LockGuard<Lock> guard (lock);
+            LockGuard<StorageSpinLock> guard (lock);
             return header->rootObject != 0 ? GetPtrFromOffset (header->rootObject) : 0;
         }
 

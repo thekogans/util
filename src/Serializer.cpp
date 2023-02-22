@@ -159,13 +159,14 @@ namespace thekogans {
             SizeT length;
             *this >> length;
             if (length > 0) {
-                value.resize (length);
-                if (Read (&value[0], length) != length) {
+                std::string temp (length, 0);
+                if (Read (&temp[0], length) != length) {
                     THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
                         "Read (&value[0], " THEKOGANS_UTIL_SIZE_T_FORMAT ") != " THEKOGANS_UTIL_SIZE_T_FORMAT,
                         length,
                         length);
                 }
+                value.swap (temp);
             }
             else {
                 value.clear ();
@@ -234,7 +235,7 @@ namespace thekogans {
             SizeT length;
             *this >> length;
             if (length > 0) {
-                value.resize (length);
+                std::wstring temp (length, 0);
                 for (std::size_t i = 0; i < length; ++i) {
                     wchar_t ch;
                     if (Read (&ch, WCHAR_T_SIZE) != WCHAR_T_SIZE) {
@@ -246,8 +247,9 @@ namespace thekogans {
                     if (endianness != HostEndian) {
                         ch = ByteSwap<LittleEndian, BigEndian> (ch);
                     }
-                    value[i] = ch;
+                    temp[i] = ch;
                 }
+                value.swap (temp);
             }
             else {
                 value.clear ();
@@ -272,13 +274,14 @@ namespace thekogans {
             SizeT length;
             *this >> length;
             if (length > 0) {
-                value.resize (length);
-                if (Read (&value[0], length) != length) {
+                SecureString temp (length, 0);
+                if (Read (&temp[0], length) != length) {
                     THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
                         "Read (&value[0], " THEKOGANS_UTIL_SIZE_T_FORMAT ") != " THEKOGANS_UTIL_SIZE_T_FORMAT,
                         length,
                         length);
                 }
+                value.swap (temp);
             }
             else {
                 value.clear ();
@@ -544,6 +547,7 @@ namespace thekogans {
             return *this;
         }
 
+        template<>
         Serializer &Serializer::operator << (const std::vector<i8> &value) {
             *this << SizeT (value.size ());
             if (value.size () > 0) {
@@ -558,18 +562,20 @@ namespace thekogans {
             return *this;
         }
 
+        template<>
         Serializer &Serializer::operator >> (std::vector<i8> &value) {
             SizeT length;
             *this >> length;
             if (length > 0) {
-                value.resize (length);
+                std::vector<i8> temp (length);
                 std::size_t size = length * I8_SIZE;
-                if (Read (value.data (), size) != size) {
+                if (Read (temp.data (), size) != size) {
                     THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
                         "Read (value.data (), " THEKOGANS_UTIL_SIZE_T_FORMAT ") != " THEKOGANS_UTIL_SIZE_T_FORMAT,
                         size,
                         size);
                 }
+                value.swap (temp);
             }
             else {
                 value.clear ();
@@ -577,6 +583,7 @@ namespace thekogans {
             return *this;
         }
 
+        template<>
         Serializer &Serializer::operator << (const std::vector<ui8> &value) {
             *this << SizeT (value.size ());
             if (value.size () > 0) {
@@ -591,18 +598,20 @@ namespace thekogans {
             return *this;
         }
 
+        template<>
         Serializer &Serializer::operator >> (std::vector<ui8> &value) {
             SizeT length;
             *this >> length;
             if (length > 0) {
-                value.resize (length);
+                std::vector<ui8> temp (length);
                 std::size_t size = length * UI8_SIZE;
-                if (Read (value.data (), size) != size) {
+                if (Read (temp.data (), size) != size) {
                     THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
                         "Read (value.data (), " THEKOGANS_UTIL_SIZE_T_FORMAT ") != " THEKOGANS_UTIL_SIZE_T_FORMAT,
                         size,
                         size);
                 }
+                value.swap (temp);
             }
             else {
                 value.clear ();
@@ -610,6 +619,7 @@ namespace thekogans {
             return *this;
         }
 
+        template<>
         Serializer &Serializer::operator << (const SecureVector<i8> &value) {
             *this << SizeT (value.size ());
             if (value.size () > 0) {
@@ -624,18 +634,20 @@ namespace thekogans {
             return *this;
         }
 
+        template<>
         Serializer &Serializer::operator >> (SecureVector<i8> &value) {
             SizeT length;
             *this >> length;
             if (length > 0) {
-                value.resize (length);
+                SecureVector<i8> temp (length);
                 std::size_t size = length * I8_SIZE;
-                if (Read (value.data (), size) != size) {
+                if (Read (temp.data (), size) != size) {
                     THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
                         "Read (value.data (), " THEKOGANS_UTIL_SIZE_T_FORMAT ") != " THEKOGANS_UTIL_SIZE_T_FORMAT,
                         size,
                         size);
                 }
+                value.swap (temp);
             }
             else {
                 value.clear ();
@@ -643,6 +655,7 @@ namespace thekogans {
             return *this;
         }
 
+        template<>
         Serializer &Serializer::operator << (const SecureVector<ui8> &value) {
             *this << SizeT (value.size ());
             if (value.size () > 0) {
@@ -657,18 +670,20 @@ namespace thekogans {
             return *this;
         }
 
+        template<>
         Serializer &Serializer::operator >> (SecureVector<ui8> &value) {
             SizeT length;
             *this >> length;
             if (length > 0) {
-                value.resize (length);
+                SecureVector<ui8> temp (length);
                 std::size_t size = length * UI8_SIZE;
-                if (Read (value.data (), size) != size) {
+                if (Read (temp.data (), size) != size) {
                     THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
                         "Read (value.data (), " THEKOGANS_UTIL_SIZE_T_FORMAT ") != " THEKOGANS_UTIL_SIZE_T_FORMAT,
                         size,
                         size);
                 }
+                value.swap (temp);
             }
             else {
                 value.clear ();

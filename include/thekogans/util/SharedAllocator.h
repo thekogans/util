@@ -62,9 +62,9 @@ namespace thekogans {
         /// you need to allocate aligned blocks from SharedAllocator use the
         /// \see{AlignedAllocator} adaptor.
         ///
-        /// NOTE: On Windows, if secure == true, you might need to call
-        /// \see{SecureAllocator::ReservePages} to ensure your process
-        /// has enough physical pages.
+        /// NOTE: if secure == true, you might need to call
+        /// \see{SecureAllocator::ReservePages} to ensure
+        /// your process has enough physical pages.
 
         struct _LIB_THEKOGANS_UTIL_DECL SharedAllocator : public Allocator {
         protected:
@@ -108,7 +108,7 @@ namespace thekogans {
                 Header (void *ptr,
                         ui64 size) :
                         magic (MAGIC32),
-                        lock (Lock::Unlocked),
+                        lock (StorageSpinLock::Unlocked),
                         freeList (SIZE),
                         rootObject (0) {
                     // Create the first block.
@@ -123,46 +123,7 @@ namespace thekogans {
                 /// Header is neither copy constructable, nor assignable.
                 THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (Header)
             } *header;
-            /// \struct SharedAllocator::Lock SharedAllocator.h thekogans/util/SharedAllocator.h
-            ///
-            /// \brief
-            /// A custom \see{SpinLock} whose storage comes from \see{Header::lock}.
-            struct Lock {
-                /// \enum
-                /// SpinLock state type.
-                typedef enum {
-                    /// \brief
-                    /// Unlocked.
-                    Unlocked,
-                    /// \brief
-                    /// Locked.
-                    Locked
-                } LockState;
-                /// \brief
-                /// Storage used by this lock.
-                ui32 &storage;
-
-                /// \brief
-                /// ctor.
-                /// \param[in] storage_ Pointer to storage used by this lock.
-                explicit Lock (ui32 &storage_) :
-                    storage (storage_) {}
-
-                /// \brief
-                /// Try to acquire the lock.
-                /// \return true = acquired, false = failed to acquire
-                bool TryAcquire ();
-                /// \brief
-                /// Acquire the lock.
-                void Acquire ();
-                /// \brief
-                /// Release the lock.
-                void Release ();
-
-                /// \brief
-                /// Lock is neither copy constructable, nor assignable.
-                THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (Lock)
-            } lock;
+            StorageSpinLock lock;
             /// \struct SharedAllocator::Block SharedAllocator.h thekogans/util/SharedAllocator.h
             ///
             /// \brief

@@ -534,11 +534,13 @@ namespace thekogans {
             /// Serialize a const std::vector<i8>.
             /// \param[in] value Value to serialize.
             /// \return *this.
+            template<>
             Serializer &operator << (const std::vector<i8> &value);
             /// \brief
             /// Extract a std::vector<i8>.
             /// \param[out] value Where to place the extracted value.
             /// \return *this.
+            template<>
             Serializer &operator >> (std::vector<i8> &value);
 
             /// \brief
@@ -552,11 +554,13 @@ namespace thekogans {
             /// Serialize a const std::vector<ui8>.
             /// \param[in] value Value to serialize.
             /// \return *this.
+            template<>
             Serializer &operator << (const std::vector<ui8> &value);
             /// \brief
             /// Extract a std::vector<ui8>.
             /// \param[out] value Where to place the extracted value.
             /// \return *this.
+            template<>
             Serializer &operator >> (std::vector<ui8> &value);
 
             /// \brief
@@ -618,11 +622,13 @@ namespace thekogans {
             /// Serialize a const \see{SecureVector}<i8>.
             /// \param[in] value Value to serialize.
             /// \return *this.
+            template<>
             Serializer &operator << (const SecureVector<i8> &value);
             /// \brief
             /// Extract a \see{SecureVector}<i8>.
             /// \param[out] value Where to place the extracted value.
             /// \return *this.
+            template<>
             Serializer &operator >> (SecureVector<i8> &value);
 
             /// \brief
@@ -636,11 +642,13 @@ namespace thekogans {
             /// Serialize a const \see{SecureVector}<ui8>.
             /// \param[in] value Value to serialize.
             /// \return *this.
+            template<>
             Serializer &operator << (const SecureVector<ui8> &value);
             /// \brief
             /// Extract a \see{SecureVector}<ui8>.
             /// \param[out] value Where to place the extracted value.
             /// \return *this.
+            template<>
             Serializer &operator >> (SecureVector<ui8> &value);
 
             /// \brief

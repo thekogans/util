@@ -18,30 +18,23 @@
 #if !defined (__thekogans_util_SpinLock_h)
 #define __thekogans_util_SpinLock_h
 
-#include <atomic>
 #include "thekogans/util/Config.h"
 #include "thekogans/util/Types.h"
 
 namespace thekogans {
     namespace util {
 
-        /// \struct SpinLock SpinLock.h thekogans/util/SpinLock.h
+        /// \struct StorageSpinLock SpinLock.h thekogans/util/SpinLock.h
         ///
         /// \brief
-        /// SpinLock wraps a std::atomic so that it can be used
+        /// StorageSpinLock wraps a provided ui32 & so that it can be used
         /// with the rest of the util synchronization machinery.
         ///
         /// This implementation was adapted from:
         /// http://www.boost.org/doc/libs/1_53_0/doc/html/atomic/usage_examples.html
 
-        struct _LIB_THEKOGANS_UTIL_DECL SpinLock {
-        private:
-            /// \brief
-            /// Default max pause iterations before giving up the time slice.
-            static const ui32 DEFAULT_MAX_PAUSE_BEFORE_YIELD = 16;
-            /// \brief
-            /// \see{Thread::Backoff} parameter.
-            ui32 maxPauseBeforeYield;
+        struct _LIB_THEKOGANS_UTIL_DECL StorageSpinLock {
+        public:
             /// \enum
             /// SpinLock state type.
             /// \brief
@@ -51,16 +44,29 @@ namespace thekogans {
             /// Locked.
             static const ui32 Locked = 1;
             /// \brief
+            /// Default max pause iterations before giving up the time slice.
+            static const ui32 DEFAULT_MAX_PAUSE_BEFORE_YIELD = 16;
+
+        private:
+            /// \brief
             /// SpinLock state.
-            std::atomic<ui32> state;
+            ui32 &state;
+            /// \brief
+            /// \see{Thread::Backoff} parameter.
+            ui32 maxPauseBeforeYield;
 
         public:
             /// \brief
             /// Default ctor. Initialize to unlocked.
+            /// \param[in] state_ Storage for spin lock state.
             /// \param[in] maxPauseBeforeYield_ \see{Thread::Backoff} parameter.
-            SpinLock (ui32 maxPauseBeforeYield_ = DEFAULT_MAX_PAUSE_BEFORE_YIELD) :
-                maxPauseBeforeYield (maxPauseBeforeYield_),
-                state (Unlocked) {}
+            StorageSpinLock (
+                    ui32 &state_,
+                    ui32 maxPauseBeforeYield_ = DEFAULT_MAX_PAUSE_BEFORE_YIELD) :
+                    state (state_),
+                    maxPauseBeforeYield (maxPauseBeforeYield_) {
+                state = Unlocked;
+            }
 
             /// \brief
             /// Return true if locked.
@@ -81,6 +87,59 @@ namespace thekogans {
             /// \brief
             /// Release the lock.
             void Release ();
+
+            /// \brief
+            /// SpinLock is neither copy constructable, nor assignable.
+            THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (StorageSpinLock)
+        };
+
+        /// \struct SpinLock SpinLock.h thekogans/util/SpinLock.h
+        ///
+        /// \brief
+        /// SpinLock wraps a ui32 so that it can be used
+        /// with the rest of the util synchronization machinery.
+        ///
+        /// This implementation was adapted from:
+        /// http://www.boost.org/doc/libs/1_53_0/doc/html/atomic/usage_examples.html
+
+        struct _LIB_THEKOGANS_UTIL_DECL SpinLock : private StorageSpinLock {
+        private:
+            /// \brief
+            /// SpinLock state.
+            ui32 state;
+
+        public:
+            /// \brief
+            /// Default ctor. Initialize to unlocked.
+            /// \param[in] maxPauseBeforeYield \see{Thread::Backoff} parameter.
+            SpinLock (ui32 maxPauseBeforeYield = DEFAULT_MAX_PAUSE_BEFORE_YIELD) :
+                StorageSpinLock (state, maxPauseBeforeYield) {}
+
+            /// \brief
+            /// Return true if locked.
+            /// \return true if locked.
+            inline bool IsLocked () const {
+                return StorageSpinLock::IsLocked ();
+            }
+
+            /// \brief
+            /// Try to acquire the lock.
+            /// \return true = acquired, false = failed to acquire
+            inline bool TryAcquire () {
+                return StorageSpinLock::TryAcquire ();
+            }
+
+            /// \brief
+            /// Acquire the lock.
+            inline void Acquire () {
+                StorageSpinLock::Acquire ();
+            }
+
+            /// \brief
+            /// Release the lock.
+            inline void Release () {
+                StorageSpinLock::Release ();
+            }
 
             /// \brief
             /// SpinLock is neither copy constructable, nor assignable.

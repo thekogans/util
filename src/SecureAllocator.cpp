@@ -57,7 +57,8 @@ namespace thekogans {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
                     THEKOGANS_UTIL_OS_ERROR_CODE);
             }
-        #else // defined (TOOLCHAIN_OS_Linux)
+        #else // defined (TOOLCHAIN_OS_Windows)
+        #if defined (THEKOGANS_UTIL_HAVE_MMAP)
             rlimit limit;
             limit.rlim_cur = (rlim_t)minWorkingSetSize;
             limit.rlim_max = (rlim_t)maxWorkingSetSize;
@@ -65,6 +66,7 @@ namespace thekogans {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
                     THEKOGANS_UTIL_OS_ERROR_CODE);
             }
+        #endif // defined (THEKOGANS_UTIL_HAVE_MMAP)
         #endif // defined (TOOLCHAIN_OS_Windows)
         }
 
@@ -112,7 +114,7 @@ namespace thekogans {
                     THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
                         THEKOGANS_UTIL_OS_ERROR_CODE);
                 }
-            #else // defined (THEKOGANS_UTIL_HAVE_MMAP)
+            #elif defined (THEKOGANS_UTIL_USE_DEFAULT_SECURE_ALLOCATOR)
                 ptr = DefaultAllocator::Instance ().Alloc (size);
             #endif // defined (THEKOGANS_UTIL_HAVE_MMAP)
             #endif // defined (TOOLCHAIN_OS_Windows)
@@ -143,9 +145,14 @@ namespace thekogans {
             #else // defined (TOOLCHAIN_OS_Windows)
             #if defined (THEKOGANS_UTIL_HAVE_MMAP)
                 if (munlock (ptr, size) != 0 || munmap (ptr, size) != 0) {
-            #else // defined (THEKOGANS_UTIL_HAVE_MMAP)
+            #elif defined (THEKOGANS_UTIL_USE_DEFAULT_SECURE_ALLOCATOR)
                 DefaultAllocator::Instance ().Free (ptr, size);
                 if (0) {
+            #else // defined (THEKOGANS_UTIL_USE_DEFAULT_SECURE_ALLOCATOR)
+                // At this point we know that ptr could not possibly
+                // have been allocated by the SecureAllocator.
+                THEKOGANS_UTIL_OS_ERROR_CODE = EINVAL;
+                if (1) {
             #endif // defined (THEKOGANS_UTIL_HAVE_MMAP)
             #endif // defined (TOOLCHAIN_OS_Windows)
                     THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
