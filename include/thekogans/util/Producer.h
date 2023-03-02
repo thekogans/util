@@ -176,7 +176,7 @@ namespace thekogans {
                     RunLoopEventDeliveryPolicy (jobQueue) {}
             };
 
-        protected:
+        private:
             /// \brief
             /// Convenient typedef for std::pair<typename Subscriber<T>::WeakPtr *,
             /// typename EventDeliveryPolicy::SharedPtr>.

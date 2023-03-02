@@ -87,17 +87,17 @@
 #if defined (TOOLCHAIN_OS_Windows)
     #if !defined (TOOLCHAIN_COMPILER_cl18) && !defined (TOOLCHAIN_COMPILER_cl19) &&\
         !defined (TOOLCHAIN_COMPILER_cl1910) && !defined (TOOLCHAIN_COMPILER_cl1924)
-        #if defined (_MSC_VER == 1800)
+        #if _MSC_VER == 1800
             #define TOOLCHAIN_COMPILER_cl18
-        #elif defined (_MSC_VER == 1900)
+        #elif _MSC_VER == 1900
             #define TOOLCHAIN_COMPILER_cl19
-        #elif defined (_MSC_VER == 1910)
+        #elif _MSC_VER == 1910
             #define TOOLCHAIN_COMPILER_cl1910
-        #elif defined (_MSC_VER == 1924)
+        #elif _MSC_VER == 1924
             #define TOOLCHAIN_COMPILER_cl1924
-        #else // defined (_MSC_VER == 1800)
+        #else // _MSC_VER == 1800
             #error Unknown TOOLCHAIN_COMPILER.
-        #endif // defined (_MSC_VER == 1800)
+        #endif // _MSC_VER == 1800
     #endif // !defined (TOOLCHAIN_COMPILER_cl18) && !defined (TOOLCHAIN_COMPILER_cl19) &&
            // !defined (TOOLCHAIN_COMPILER_cl1910) && !defined (TOOLCHAIN_COMPILER_cl1924)
 #elif defined (TOOLCHAIN_OS_Linux)
