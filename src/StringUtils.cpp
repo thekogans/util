@@ -819,5 +819,23 @@ namespace thekogans {
             }
         }
 
+        _LIB_THEKOGANS_UTIL_DECL void _LIB_THEKOGANS_UTIL_API DelEnvironmentVariable (
+                const std::string &name) {
+            if (!name.empty ()) {
+            #if defined (TOOLCHAIN_OS_Windows)
+                if (!::SetEnvironmentVariableW (UTF8ToUTF16 (name).c_str (), 0)) {
+            #else // defined (TOOLCHAIN_OS_Windows)
+                if (unsetenv (name.c_str ()) < 0) {
+            #endif // defined (TOOLCHAIN_OS_Windows)
+                    THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                        THEKOGANS_UTIL_OS_ERROR_CODE);
+                }
+            }
+            else {
+                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
+            }
+        }
+
     } // namespace util
 } // namespace thekogans

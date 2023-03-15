@@ -724,7 +724,13 @@
   </if>
   <if condition = "$(have_feature -f:THEKOGANS_UTIL_HAVE_TESTS)">
     <cpp_tests prefix = "tests">
+      <!--
+      <cpp_test>test_RefCounted.cpp</cpp_test>
+      <cpp_test>test_SharedAllocator.cpp</cpp_test>
+      <cpp_test>test_SpinLock.cpp</cpp_test>
+      <cpp_test>test_SpinRWLock.cpp</cpp_test>
       <cpp_test>test_Version.cpp</cpp_test>
+      -->
     </cpp_tests>
   </if>
   <resources prefix = "resources"

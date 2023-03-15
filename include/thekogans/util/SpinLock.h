@@ -71,9 +71,7 @@ namespace thekogans {
             /// \brief
             /// Return true if locked.
             /// \return true if locked.
-            inline bool IsLocked () const {
-                return state == Locked;
-            }
+            bool IsLocked () const;
 
             /// \brief
             /// Try to acquire the lock.

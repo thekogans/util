@@ -15,9 +15,9 @@
 // You should have received a copy of the GNU General Public License
 // along with libthekogans_util. If not, see <http://www.gnu.org/licenses/>.
 
-#include <boost/memory_order.hpp>
 #include <boost/atomic/detail/config.hpp>
 #include <boost/atomic/detail/operations_lockfree.hpp>
+#include <boost/memory_order.hpp>
 #include "thekogans/util/Thread.h"
 #include "thekogans/util/SpinLock.h"
 
@@ -26,6 +26,10 @@ namespace thekogans {
 
         namespace {
             typedef boost::atomics::detail::operations<4u, false> operations;
+        }
+
+        bool StorageSpinLock::IsLocked () const {
+            return operations::load (state, boost::memory_order_relaxed) == Locked;
         }
 
         bool StorageSpinLock::TryAcquire () {

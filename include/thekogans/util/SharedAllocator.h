@@ -123,6 +123,8 @@ namespace thekogans {
                 /// Header is neither copy constructable, nor assignable.
                 THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (Header)
             } *header;
+            /// \brief
+            /// Heap lock.
             StorageSpinLock lock;
             /// \struct SharedAllocator::Block SharedAllocator.h thekogans/util/SharedAllocator.h
             ///

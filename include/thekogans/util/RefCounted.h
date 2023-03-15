@@ -21,7 +21,6 @@
 #include <utility>
 #include <memory>
 #include <typeinfo>
-#include <atomic>
 #include <vector>
 #include "thekogans/util/Config.h"
 #include "thekogans/util/Types.h"
@@ -82,10 +81,10 @@ namespace thekogans {
             private:
                 /// \brief
                 /// Count of weak references.
-                std::atomic<ui32> weak;
+                ui32 weak;
                 /// \brief
                 /// Count of shared references.
-                std::atomic<ui32> shared;
+                ui32 shared;
 
             public:
                 /// \brief
@@ -97,9 +96,7 @@ namespace thekogans {
                 /// \brief
                 /// Increment the weak reference count.
                 /// \return Incremented weak reference count.
-                inline ui32 AddWeakRef () {
-                    return ++weak;
-                }
+                ui32 AddWeakRef ();
                 /// \brief
                 /// Decrement the weak reference count, and if 0, call delete.
                 /// \return Decremented weak reference count.
@@ -107,16 +104,12 @@ namespace thekogans {
                 /// \brief
                 /// Return the count of weak references held.
                 /// \return Count of weak references held.
-                inline ui32 GetWeakCount () const {
-                    return weak;
-                }
+                ui32 GetWeakCount () const;
 
                 /// \brief
                 /// Increment the shared reference count.
                 /// \return Incremented shared reference count.
-                inline ui32 AddSharedRef () {
-                    return ++shared;
-                }
+                ui32 AddSharedRef ();
                 /// \brief
                 /// Decrement the shared reference count, and if 0, call object->Harakiri ().
                 /// \return Decremented shared reference count.
@@ -124,9 +117,7 @@ namespace thekogans {
                 /// \brief
                 /// Return the count of shared references held.
                 /// \return Count of shared references held.
-                inline ui32 GetSharedCount () const {
-                    return shared;
-                }
+                ui32 GetSharedCount () const;
                 /// \brief
                 /// Used by \see{WeakPtr<T>::GetSharedPtr} below to atomically
                 /// take out a shared reference on a weak pointer.

@@ -16,6 +16,11 @@
 // along with libthekogans_util. If not, see <http://www.gnu.org/licenses/>.
 
 #include "thekogans/util/Environment.h"
+
+#if defined (TOOLCHAIN_OS_Windows) || \
+    defined (THEKOGANS_UTIL_HAVE_MMAP) || \
+    defined (THEKOGANS_UTIL_USE_DEFAULT_SECURE_ALLOCATOR)
+
 #if defined (TOOLCHAIN_OS_Windows)
     #if !defined (_WINDOWS_)
         #if !defined (WIN32_LEAN_AND_MEAN)
@@ -163,3 +168,7 @@ namespace thekogans {
 
     } // namespace util
 } // namespace thekogans
+
+#endif // defined (TOOLCHAIN_OS_Windows) ||
+       // defined (THEKOGANS_UTIL_HAVE_MMAP) ||
+       // defined (THEKOGANS_UTIL_USE_DEFAULT_SECURE_ALLOCATOR)

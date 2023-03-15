@@ -15,9 +15,9 @@
 // You should have received a copy of the GNU General Public License
 // along with libthekogans_util. If not, see <http://www.gnu.org/licenses/>.
 
-#include <boost/memory_order.hpp>
 #include <boost/atomic/detail/config.hpp>
 #include <boost/atomic/detail/operations_lockfree.hpp>
+#include <boost/memory_order.hpp>
 #include "thekogans/util/Thread.h"
 #include "thekogans/util/SpinRWLock.h"
 
@@ -32,14 +32,14 @@ namespace thekogans {
         // re-implemented it using boost atomic primitives.
 
         bool StorageSpinRWLock::TryAcquire (bool read) {
-            ui32 currState = operations::load (state, boost::memory_order_acquire);
+            ui32 currState = operations::load (state, boost::memory_order_seq_cst);
             if (read) {
                 if (!(currState & (WRITER | WRITER_PENDING))) {
-                    ui32 newState = operations::fetch_add (state, ONE_READER, boost::memory_order_release);
+                    ui32 newState = operations::fetch_add (state, ONE_READER, boost::memory_order_seq_cst);
                     if (!(newState & WRITER)) {
                         return true;
                     }
-                    operations::fetch_sub (state, ONE_READER, boost::memory_order_release);
+                    operations::fetch_sub (state, ONE_READER, boost::memory_order_seq_cst);
                 }
             }
             else {
@@ -48,8 +48,8 @@ namespace thekogans {
                             state,
                             currState,
                             WRITER,
-                            boost::memory_order_acq_rel,
-                            boost::memory_order_acq_rel)) {
+                            boost::memory_order_seq_cst,
+                            boost::memory_order_seq_cst)) {
                     return true;
                 }
             }
@@ -59,32 +59,32 @@ namespace thekogans {
         void StorageSpinRWLock::Acquire (bool read) {
             if (read) {
                 for (Thread::Backoff backoff (maxPauseBeforeYield);; backoff.Pause ()) {
-                    ui32 currState = operations::load (state, boost::memory_order_acquire);
+                    ui32 currState = operations::load (state, boost::memory_order_seq_cst);
                     if (!(currState & (WRITER | WRITER_PENDING))) {
-                        ui32 newState = operations::fetch_add (state, ONE_READER, boost::memory_order_release);
+                        ui32 newState = operations::fetch_add (state, ONE_READER, boost::memory_order_seq_cst);
                         if (!(newState & WRITER)) {
                             break;
                         }
-                        operations::fetch_sub (state, ONE_READER, boost::memory_order_release);
+                        operations::fetch_sub (state, ONE_READER, boost::memory_order_seq_cst);
                     }
                 }
             }
             else {
                 for (Thread::Backoff backoff (maxPauseBeforeYield);; backoff.Pause ()) {
-                    ui32 currState = operations::load (state, boost::memory_order_acquire);
+                    ui32 currState = operations::load (state, boost::memory_order_seq_cst);
                     if (!(currState & BUSY)) {
                         if (operations::compare_exchange_strong (
                                 state,
                                 currState,
                                 WRITER,
-                                boost::memory_order_acq_rel,
-                                boost::memory_order_acq_rel)) {
+                                boost::memory_order_seq_cst,
+                                boost::memory_order_seq_cst)) {
                             break;
                         }
                         backoff.Reset ();
                     }
                     else if (!(currState & WRITER_PENDING)) {
-                        operations::fetch_or (state, WRITER_PENDING, boost::memory_order_release);
+                        operations::fetch_or (state, WRITER_PENDING, boost::memory_order_seq_cst);
                     }
                 }
             }
@@ -94,12 +94,12 @@ namespace thekogans {
             if (read) {
                 THEKOGANS_UTIL_ASSERT (state & READERS,
                     "Invalid state of a SpinRWLock: no readers.");
-                operations::fetch_sub (state, ONE_READER, boost::memory_order_release);
+                operations::fetch_sub (state, ONE_READER, boost::memory_order_seq_cst);
             }
             else {
                 THEKOGANS_UTIL_ASSERT (state & WRITER,
                     "Invalid state of a SpinRWLock: no writer.");
-                operations::fetch_and (state, READERS, boost::memory_order_release);
+                operations::fetch_and (state, READERS, boost::memory_order_seq_cst);
             }
         }
 

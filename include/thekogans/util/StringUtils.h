@@ -574,6 +574,12 @@ namespace thekogans {
             const std::string &name,
             const std::string &value);
 
+        /// \brief
+        /// Given an environment variable name, remove it from the environment.
+        /// \param[in] name Environment variable name to remove.
+        _LIB_THEKOGANS_UTIL_DECL void _LIB_THEKOGANS_UTIL_API DelEnvironmentVariable (
+            const std::string &name);
+
     } // namespace util
 } // namespace thekogans
 

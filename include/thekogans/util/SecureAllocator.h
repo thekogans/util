@@ -18,13 +18,11 @@
 #if !defined (__thekogans_util_SecureAllocator_h)
 #define __thekogans_util_SecureAllocator_h
 
-#if !defined (TOOLCHAIN_OS_Windows) && \
-    !defined (THEKOGANS_UTIL_HAVE_MMAP) && \
-    !defined (THEKOGANS_UTIL_USE_DEFAULT_SECURE_ALLOCATOR)
-    #warning SecureAllocator is non functional.
-#endif // !defined (TOOLCHAIN_OS_Windows) &&
-       // !defined (THEKOGANS_UTIL_HAVE_MMAP) &&
-       // !defined (THEKOGANS_UTIL_USE_DEFAULT_SECURE_ALLOCATOR)
+#include "thekogans/util/Environment.h"
+
+#if defined (TOOLCHAIN_OS_Windows) || \
+    defined (THEKOGANS_UTIL_HAVE_MMAP) || \
+    defined (THEKOGANS_UTIL_USE_DEFAULT_SECURE_ALLOCATOR)
 
 #include <cstddef>
 #if __cplusplus >= 201103L
@@ -397,5 +395,9 @@ namespace thekogans {
 
     } // namespace util
 } // namespace thekogans
+
+#endif // defined (TOOLCHAIN_OS_Windows) ||
+       // defined (THEKOGANS_UTIL_HAVE_MMAP) ||
+       // defined (THEKOGANS_UTIL_USE_DEFAULT_SECURE_ALLOCATOR)
 
 #endif // !defined (__thekogans_util_SecureAllocator_h)

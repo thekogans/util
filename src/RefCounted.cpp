@@ -15,6 +15,9 @@
 // You should have received a copy of the GNU General Public License
 // along with libthekogans_util. If not, see <http://www.gnu.org/licenses/>.
 
+#include <boost/atomic/detail/config.hpp>
+#include <boost/atomic/detail/operations_lockfree.hpp>
+#include <boost/memory_order.hpp>
 #include "thekogans/util/Constants.h"
 #include "thekogans/util/StringUtils.h"
 #include "thekogans/util/Exception.h"
@@ -25,8 +28,16 @@ namespace thekogans {
 
         THEKOGANS_UTIL_IMPLEMENT_HEAP_WITH_LOCK (RefCounted::References, SpinLock)
 
+        namespace {
+            typedef boost::atomics::detail::operations<4u, false> operations;
+        }
+
+        ui32 RefCounted::References::AddWeakRef () {
+            return operations::fetch_add (weak, 1, boost::memory_order_release) + 1;
+        }
+
         ui32 RefCounted::References::ReleaseWeakRef () {
-            ui32 newWeak = --weak;
+            ui32 newWeak = operations::fetch_sub (weak, 1, boost::memory_order_release) - 1;
             if (newWeak == 0) {
                 delete this;
             }
@@ -38,8 +49,16 @@ namespace thekogans {
             return newWeak;
         }
 
+        ui32 RefCounted::References::GetWeakCount () const {
+            return operations::load (weak, boost::memory_order_relaxed);
+        }
+
+        ui32 RefCounted::References::AddSharedRef () {
+            return operations::fetch_add (shared, 1, boost::memory_order_release) + 1;
+        }
+
         ui32 RefCounted::References::ReleaseSharedRef (RefCounted *object) {
-            ui32 newShared = --shared;
+            ui32 newShared = operations::fetch_sub (shared, 1, boost::memory_order_release) - 1;
             if (newShared == 0) {
                 object->Harakiri ();
             }
@@ -51,14 +70,23 @@ namespace thekogans {
             return newShared;
         }
 
+        ui32 RefCounted::References::GetSharedCount () const {
+            return operations::load (shared, boost::memory_order_relaxed);
+        }
+
         bool RefCounted::References::LockObject () {
             // This is a classical lock-free algorithm for shared access.
-            for (ui32 count = shared.load (std::memory_order_acquire);
-                    count != 0; count = shared.load (std::memory_order_acquire)) {
+            ui32 count = operations::load (shared, boost::memory_order_relaxed);
+            while (count != 0) {
                 // If compare_exchange_weak failed, it's because between the load
                 // above and the exchange below, we were interupted by another thread
                 // that modified the value of shared. Reload and try again.
-                if (shared.compare_exchange_weak (count, count + 1, std::memory_order_acquire)) {
+                if (operations::compare_exchange_weak (
+                        shared,
+                        count,
+                        count + 1,
+                        boost::memory_order_release,
+                        boost::memory_order_relaxed)) {
                     return true;
                 }
             }
