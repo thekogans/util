@@ -41,11 +41,11 @@ namespace thekogans {
         /// A RunLoopScheduler allows you to schedule \see{RunLoop::Job}s and \see{Pipeline::Job}s
         /// to be executed in the future.
 
-        struct _LIB_THEKOGANS_UTIL_DECL RunLoopScheduler : public Timer::Callback {
+        struct _LIB_THEKOGANS_UTIL_DECL RunLoopScheduler : public Subscriber<TimerEvents> {
         private:
             /// \brief
             /// \see{Timer} used to schedule future jobs.
-            Timer timer;
+            Timer::SharedPtr timer;
             /// \struct RunLoopScheduler::JobInfo RunLoopScheduler.h thekogans/util/RunLoopScheduler.h
             ///
             /// \brief
@@ -224,7 +224,12 @@ namespace thekogans {
             /// different names to the ctor to distinguish their threads
             /// in the debugger.
             RunLoopScheduler (const std::string &name = "RunLoopScheduler") :
-                timer (*this, name, true) {}
+                    timer (Timer::Create (name)) {
+                Subscribe (
+                    *timer,
+                    Producer<TimerEvents>::EventDeliveryPolicy::SharedPtr (
+                        new Producer<TimerEvents>::ImmediateEventDeliveryPolicy));
+            }
             /// \brief
             /// dtor.
             ~RunLoopScheduler () {
@@ -304,11 +309,11 @@ namespace thekogans {
             void CancelAllJobs ();
 
         private:
-            // Timer::Callback
+            // TimerEvents
             /// \brief
             /// Called every time the timer fires.
             /// \param[in] timer Timer that fired.
-            virtual void Alarm (Timer & /*timer*/) throw ();
+            virtual void OnTimerAlarm (Timer::SharedPtr /*timer*/) throw ();
 
             /// \brief
             /// Schedule helper.

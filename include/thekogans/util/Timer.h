@@ -40,11 +40,44 @@
 #include "thekogans/util/TimeSpec.h"
 #include "thekogans/util/SpinLock.h"
 #include "thekogans/util/Singleton.h"
-#include "thekogans/util/RunLoop.h"
-#include "thekogans/util/JobQueuePool.h"
+#include "thekogans/util/RefCounted.h"
+#include "thekogans/util/Subscriber.h"
+#include "thekogans/util/Producer.h"
 
 namespace thekogans {
     namespace util {
+
+        /// \brief
+        /// Forward declaration of Timer.
+        struct Timer;
+
+        /// \struct TimerEvents Timer.h thekogans/util/Timer.h
+        ///
+        /// \brief
+
+        struct _LIB_THEKOGANS_UTIL_DECL TimerEvents : public virtual RefCounted {
+            /// \brief
+            /// Declare \see{RefCounted} pointers.
+            THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (TimerEvents)
+
+            /// \brief
+            /// dtor.
+            virtual ~TimerEvents () {}
+
+            /// \brief
+            /// Called every time the timer fires.
+            /// \param[in] timer Timer that fired.
+            /// VERY IMPORTANT: Timer events are delivered using the ImmediateEventDeliveryPolicy.
+            /// Therefore you should always schedule a job in your OnTimerAlarm to minimize the time
+            /// spent in the callback (see IdleProcessor example below).
+            virtual void OnTimerAlarm (RefCounted::SharedPtr<Timer> /*timer*/) throw () {}
+        };
+
+        /// \brief
+        /// Convenient typedef for RefCounted::Registry<Timer>.
+        /// NOTE: It's one and only instance is accessed like this;
+        /// thekogans::util::TimerRegistry::Instance ().
+        typedef RefCounted::Registry<Timer> TimerRegistry;
 
         /// \struct Timer Timer.h thekogans/util/Timer.h
         ///
@@ -58,27 +91,32 @@ namespace thekogans {
         /// using namespace thekogans;
         ///
         /// struct IdleProcessor :
-        ///         public util::Timer::Callback,
+        ///         public util::Subscriber<util::TimerEvents>,
         ///         public util::Singleton<IdleProcessor, util::SpinLock> {
         /// private:
-        ///     util::Timer timer;
+        ///     util::Timer::SharedPtr timer;
         ///     util::JobQueue jobQueue;
         ///
         /// public:
         ///     IdleProcessor () :
-        ///         timer (*this, "IdleProcessor"),
-        ///         jobQueue (
-        ///             "IdleProcessor",
-        ///             util::RunLoop::JobExecutionPolicy::Ptr (
-        ///                 new util::RunLoop::FIFOJobExecutionPolicy),
-        ///             1,
-        ///             THEKOGANS_UTIL_LOW_THREAD_PRIORITY) {}
+        ///             timer (util::Timer::Create ("IdleProcessor")),
+        ///             jobQueue (
+        ///                 "IdleProcessor",
+        ///                 util::RunLoop::JobExecutionPolicy::Ptr (
+        ///                     new util::RunLoop::FIFOJobExecutionPolicy),
+        ///                 1,
+        ///                 THEKOGANS_UTIL_LOW_THREAD_PRIORITY) {
+        ///         Sbscriber<util::TimerEvents>::Subsctibe (
+        ///             *timer,
+        ///             util::Producer<util::TimerEvents>::EventDeliveryPolicy::SharedPtr (
+        ///                 new util::Producer<util::TimerEvents>::ImmediateEventDeliveryPolicy));
+        ///     }
         ///
         ///     inline void StartTimer (const util::TimeSpec &timeSpec) {
-        ///         timer.Start (timeSpec);
+        ///         timer->Start (timeSpec);
         ///     }
         ///     inline void StopTimer () {
-        ///         timer.Stop ();
+        ///         timer->Stop ();
         ///     }
         ///
         ///     inline void CancelPendingJobs (
@@ -91,8 +129,8 @@ namespace thekogans {
         ///     }
         ///
         /// private:
-        ///     // Timer::Callback
-        ///     virtual void Alarm (util::Timer & /*timer*/) throw () {
+        ///     // TimerEvents
+        ///     virtual void OnTimerAlarm (util::Timer::SharedPtr /*timer*/) throw () {
         ///         // queue idle jobs.
         ///         jobQueue.EnqJob (...);
         ///     }
@@ -115,10 +153,12 @@ namespace thekogans {
         /// There are no 'catchup' events.
         ///
         /// NOTE: IdleProcessor demonstrates the canonical way of using Timer.
-        /// By coupling the lifetime of the timer to the lifetime of the callback
-        /// (IdleProcessor), we avoid calling callback through a dangling pointer.
 
-        struct _LIB_THEKOGANS_UTIL_DECL Timer {
+        struct _LIB_THEKOGANS_UTIL_DECL Timer : public util::Producer<TimerEvents> {
+            /// \brief
+            /// Declare \see{RefCounted} pointers.
+            THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (Timer)
+
             enum {
                 /// \brief
                 /// Default minimum number of \see{JobQueue}s in the pool.
@@ -128,71 +168,17 @@ namespace thekogans {
                 DEFAULT_MAX_JOB_QUEUE_POOL_JOB_QUEUES = 100,
             };
 
-            /// \struct Timer::JobQueuePool Timer.h thekogans/util/Timer.h
-            ///
-            /// \brief
-            /// Call Timer::JobQueuePool::CreateSingleton before the first use of
-            /// Timer to supply custom arguments to JobQueuePool ctor.
-            struct _LIB_THEKOGANS_UTIL_DECL JobQueuePool :
-                    public util::JobQueuePool,
-                    public Singleton<JobQueuePool, SpinLock> {
-                /// \brief
-                /// Create a Timer \see{JobQueuePool} with custom ctor arguments.
-                /// \param[in] minJobQueues Minimum \see{JobQueue}s to keep in the pool.
-                /// \param[in] maxJobQueues Maximum \see{JobQueue}s to allow the pool to grow to.
-                /// \param[in] name \see{JobQueue} name.
-                /// \param[in] jobExecutionPolicy \see{JobQueue} \see{RunLoop::JobExecutionPolicy}.
-                /// \param[in] workerCount Number of worker threads servicing the \see{JobQueue}.
-                /// \param[in] workerPriority \see{JobQueue} worker thread priority.
-                /// \param[in] workerAffinity \see{JobQueue} worker thread processor affinity.
-                /// \param[in] workerCallback Called to initialize/uninitialize the \see{JobQueue}
-                /// thread.
-                JobQueuePool (
-                    std::size_t minJobQueues = DEFAULT_MIN_JOB_QUEUE_POOL_JOB_QUEUES,
-                    std::size_t maxJobQueues = DEFAULT_MAX_JOB_QUEUE_POOL_JOB_QUEUES,
-                    const std::string &name = "TimerJobQueuePool",
-                    RunLoop::JobExecutionPolicy::SharedPtr jobExecutionPolicy =
-                        RunLoop::JobExecutionPolicy::SharedPtr (new RunLoop::FIFOJobExecutionPolicy),
-                    std::size_t workerCount = 1,
-                    i32 workerPriority = THEKOGANS_UTIL_NORMAL_THREAD_PRIORITY,
-                    ui32 workerAffinity = THEKOGANS_UTIL_MAX_THREAD_AFFINITY,
-                    RunLoop::WorkerCallback *workerCallback = 0) :
-                    util::JobQueuePool (
-                        minJobQueues,
-                        maxJobQueues,
-                        name,
-                        jobExecutionPolicy,
-                        workerCount,
-                        workerPriority,
-                        workerAffinity,
-                        workerCallback) {}
-            };
-
-            /// \struct Timer::Callback Timer.h thekogans/util/Timer.h
-            ///
-            /// \brief
-            /// An abstract base class used to notify timer listeners.
-            struct _LIB_THEKOGANS_UTIL_DECL Callback {
-                /// \brief
-                /// dtor.
-                virtual ~Callback () {}
-
-                /// \brief
-                /// Called every time the timer fires.
-                /// \param[in] timer Timer that fired.
-                virtual void Alarm (Timer & /*timer*/) throw () = 0;
-            };
-
         private:
             /// \brief
-            /// Receiver of the alarm notifications.
-            Callback &callback;
-            /// \brief
             /// Timer name.
-            std::string name;
+            const std::string name;
             /// \brief
-            /// true == Alarm can be called more then once.
-            bool reentrantAlarm;
+            /// This token is the key between the c++ and the c async io worlds (os).
+            /// This token is registered with os specific apis (io completion port on
+            /// windows, epoll on linux and kqueue on os x). On callback the token
+            /// is used to get a Stream::SharedPtr from the Stream::WeakPtr found in
+            /// the \see{util::RefCounted::Registry<Stream>}.
+            const TimerRegistry::Token token;
         #if defined (TOOLCHAIN_OS_Windows)
             /// \brief
             /// Windows native timer object.
@@ -222,28 +208,29 @@ namespace thekogans {
             /// true == Start (..., true);
             bool periodic;
 
-        public:
             /// \brief
             /// ctor.
-            /// \param[in] callback_ Callback to notify of timer events.
-            /// NOTE: We're holding on to a reference to callback. That
-            /// means it's lifetime has to be >= lifetime of the timer.
             /// \param[in] name_ Timer name. Use this parameter to help
             /// identify the timer that fired. This way a single callback
             /// can process multiple timers and be able to distinguish
             /// between them.
-            /// \param[in] reentrantAlarm_ true == Alarm can be called more then once.
-            /// NOTE: If this parameter is false and your Callback::Alarm
-            /// takes longer to finish than the timer period you will loose
-            /// notifications as further invocations of Callback::Alarm will
-            /// be suppressed until it returns.
-            Timer (
-                Callback &callback_,
-                const std::string &name_ = std::string (),
-                bool reentrantAlarm_ = true);
+            Timer (const std::string &name_ = std::string ());
             /// \brief
             /// dtor.
             ~Timer ();
+
+        public:
+            /// \brief
+            /// Timer factory method. Timers must be created on the
+            /// heap and this method insures that.
+            /// \param[in] name Timer name. Use this parameter to help
+            /// identify the timer that fired. This way a single callback
+            /// can process multiple timers and be able to distinguish
+            /// between them.
+            /// \return A newly created timer.
+            static SharedPtr Create (const std::string &name = std::string ()) {
+                return SharedPtr (new Timer (name));
+            }
 
             /// \brief
             /// Return the timer name.
@@ -267,47 +254,9 @@ namespace thekogans {
             void Stop ();
 
             /// \brief
-            /// Rreturn true if timer is armed and running.
+            /// Return true if timer is armed and running.
             /// \return true == timer is armed and running.
             bool IsRunning ();
-
-            /// \brief
-            /// Wait for all pending callbacks to complete.
-            /// \param[in] timeSpec How long to wait for the callbacks to complete.
-            /// IMPORTANT: timeSpec is a relative value.
-            /// \param[in] cancelCallbacks true == Cancel pending callbacks.
-            /// \return true == All jobs completed, false == One or more jobs timed out.
-            bool WaitForCallbacks (
-                const TimeSpec &timeSpec = TimeSpec::Infinite,
-                bool cancelCallbacks = true);
-
-        private:
-            /// \brief
-            /// Forward declaration of Job.
-            struct Job;
-            /// \brief
-            /// Job list id.
-            enum {
-                /// \brief
-                /// JobList ID.
-                JOB_LIST_ID = RunLoop::LAST_JOB_LIST_ID,
-                /// \brief
-                /// Use this sentinel to create your own job lists.
-                LAST_JOB_LIST_ID
-            };
-            /// \brief
-            /// Convenient typedef for IntrusiveList<Job, JOB_LIST_ID>.
-            typedef IntrusiveList<Job, JOB_LIST_ID> JobList;
-            /// \brief
-            /// Queue of pending jobs.
-            JobList jobs;
-            /// \brief
-            /// Synchronization lock.
-            SpinLock spinLock;
-
-            /// \brief
-            /// Used internally to queue up a Callback::Alorm Job.
-            void QueueJob ();
 
             /// \brief
             /// Timer is neither copy constructable, nor assignable.

@@ -87,7 +87,7 @@ namespace thekogans {
                 TimeSpec deadline = queue.top ()->deadline;
                 queue.CancelJob (id);
                 if (!queue.empty () && queue.top ()->deadline != deadline) {
-                    timer.Start (queue.top ()->deadline - GetCurrentTime ());
+                    timer->Start (queue.top ()->deadline - GetCurrentTime ());
                 }
             }
         }
@@ -98,19 +98,19 @@ namespace thekogans {
                 TimeSpec deadline = queue.top ()->deadline;
                 queue.CancelJobs (runLoopId);
                 if (!queue.empty () && queue.top ()->deadline != deadline) {
-                    timer.Start (queue.top ()->deadline - GetCurrentTime ());
+                    timer->Start (queue.top ()->deadline - GetCurrentTime ());
                 }
             }
         }
 
         void RunLoopScheduler::CancelAllJobs () {
             LockGuard<SpinLock> guard (spinLock);
-            timer.Stop ();
+            timer->Stop ();
             Queue empty;
             queue.swap (empty);
         }
 
-        void RunLoopScheduler::Alarm (Timer & /*timer*/) throw () {
+        void RunLoopScheduler::OnTimerAlarm (Timer::SharedPtr /*timer*/) throw () {
             LockGuard<SpinLock> guard (spinLock);
             TimeSpec now = GetCurrentTime ();
             while (!queue.empty () && queue.top ()->deadline <= now) {
@@ -118,7 +118,7 @@ namespace thekogans {
                 queue.pop ();
             }
             if (!queue.empty ()) {
-                timer.Start (queue.top ()->deadline - now);
+                timer->Start (queue.top ()->deadline - now);
             }
         }
 
@@ -128,12 +128,12 @@ namespace thekogans {
             LockGuard<SpinLock> guard (spinLock);
             bool startTimer = false;
             if (queue.empty () || queue.top ()->deadline > jobInfo->deadline) {
-                timer.Stop ();
+                timer->Stop ();
                 startTimer = true;
             }
             queue.push (jobInfo);
             if (startTimer) {
-                timer.Start (timeSpec);
+                timer->Start (timeSpec);
             }
             return jobInfo->job->GetId ();
         }

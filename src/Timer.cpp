@@ -39,47 +39,55 @@ namespace thekogans {
                 PTP_CALLBACK_INSTANCE /*Instance*/,
                 PVOID Context,
                 PTP_TIMER Timer_) {
-            Timer *timer = static_cast<Timer *> (Context);
-            if (timer != 0) {
+            Timer::SharedPtr timer = TimerRegistry::Instance ().Get (Context);
+            if (timer.Get () != 0) {
                 if (!timer->periodic) {
                     SetThreadpoolTimer (Timer_, 0, 0, 0);
                 }
-                timer->QueueJob ();
+                timer->Produce (
+                    std::bind (
+                        &TimerEvents::OnTimerAlarm,
+                        std::placeholders::_1,
+                        timer));
             }
         }
     #elif defined (TOOLCHAIN_OS_Linux)
         void Timer::TimerCallback (union sigval val) {
-            Timer *timer = static_cast<Timer *> (val.sival_ptr);
-            if (timer != 0) {
+            Timer::SharedPtr timer = TimerRegistry::Instance ().Get (val.sival_ptr);
+            if (timer.Get () != 0) {
                 if (!timer->periodic) {
                     timer->Stop ();
                 }
-                timer->QueueJob ();
+                timer->Produce (
+                    std::bind (
+                        &TimerEvents::OnTimerAlarm,
+                        std::placeholders::_1,
+                        timer));
             }
         }
     #elif defined (TOOLCHAIN_OS_OSX)
         void Timer::TimerCallback (void *userData) {
-            Timer *timer = static_cast<Timer *> (userData);
+            Timer::SharedPtr timer = TimerRegistry::Instance ().Get ((TimerRegistry::Token::ValueType)userData);
             if (timer != 0) {
                 if (!timer->periodic) {
                     timer->Stop ();
                 }
-                timer->QueueJob ();
+                timer->Produce (
+                    std::bind (
+                        &TimerEvents::OnTimerAlarm,
+                        std::placeholders::_1,
+                        timer));
             }
         }
     #endif // defined (TOOLCHAIN_OS_Windows)
 
-        Timer::Timer (
-                Callback &callback_,
-                const std::string &name_,
-                bool reentrantAlarm_) :
-                callback (callback_),
+        Timer::Timer (const std::string &name_) :
                 name (name_),
-                reentrantAlarm (reentrantAlarm_),
+                token (this),
                 timer (0),
                 periodic (false) {
         #if defined (TOOLCHAIN_OS_Windows)
-            timer = CreateThreadpoolTimer (TimerCallback, this, 0);
+            timer = CreateThreadpoolTimer (TimerCallback, (void *)token.GetValue (), 0);
             if (timer == 0) {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
                     THEKOGANS_UTIL_OS_ERROR_CODE);
@@ -88,7 +96,7 @@ namespace thekogans {
             sigevent sigEvent;
             memset (&sigEvent, 0, sizeof (sigEvent));
             sigEvent.sigev_notify = SIGEV_THREAD;
-            sigEvent.sigev_value.sival_ptr = this;
+            sigEvent.sigev_value.sival_ptr = (void *)token.GetValue ();
             sigEvent.sigev_notify_function = TimerCallback;
             while (timer_create (CLOCK_REALTIME, &sigEvent, &timer) != 0) {
                 THEKOGANS_UTIL_ERROR_CODE errorCode = THEKOGANS_UTIL_OS_ERROR_CODE;
@@ -98,7 +106,7 @@ namespace thekogans {
                 Sleep (TimeSpec::FromMilliseconds (50));
             }
         #elif defined (TOOLCHAIN_OS_OSX)
-            timer = CreateKQueueTimer (TimerCallback, this);
+            timer = CreateKQueueTimer (TimerCallback, (void *)token.GetValue ());
             if (timer == 0) {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
                     THEKOGANS_UTIL_OS_ERROR_CODE);
@@ -108,7 +116,6 @@ namespace thekogans {
 
         Timer::~Timer () {
             Stop ();
-            WaitForCallbacks ();
         #if defined (TOOLCHAIN_OS_Windows)
             CloseThreadpoolTimer (timer);
         #elif defined (TOOLCHAIN_OS_Linux)
@@ -184,96 +191,6 @@ namespace thekogans {
         #elif defined (TOOLCHAIN_OS_OSX)
             return IsKQueueTimerRunning (timer);
         #endif // defined (TOOLCHAIN_OS_Windows)
-        }
-
-        struct Timer::Job :
-                public RunLoop::Job,
-                public Timer::JobList::Node {
-            THEKOGANS_UTIL_DECLARE_HEAP_WITH_LOCK (Job, SpinLock)
-
-        private:
-            JobQueue::SharedPtr jobQueue;
-            Timer &timer;
-
-        public:
-            Job (
-                JobQueue::SharedPtr jobQueue_,
-                Timer &timer_) :
-                jobQueue (jobQueue_),
-                timer (timer_) {}
-
-        protected:
-            // RunLoop::Job
-            virtual void SetState (State state) {
-                if (state == Pending) {
-                    // Don't grab the lock here as SetState (Pending)
-                    // will be called from JobQueue::EnqJob which is
-                    // protected in QueueJob below.
-                    timer.jobs.push_back (this);
-                }
-                else if (state == Completed) {
-                    LockGuard<SpinLock> guard (timer.spinLock);
-                    timer.jobs.erase (this);
-                }
-                RunLoop::Job::SetState (state);
-            }
-
-            virtual void Execute (const std::atomic<bool> &done) throw () {
-                if (!ShouldStop (done)) {
-                    timer.callback.Alarm (timer);
-                }
-            }
-        };
-
-        THEKOGANS_UTIL_IMPLEMENT_HEAP_WITH_LOCK (Timer::Job, SpinLock)
-
-        bool Timer::WaitForCallbacks (
-                const TimeSpec &timeSpec,
-                bool cancelCallbacks) {
-            RunLoop::UserJobList jobs;
-            {
-                LockGuard<SpinLock> guard (spinLock);
-                this->jobs.for_each (
-                    [&jobs, cancelCallbacks] (JobList::Callback::argument_type job) -> JobList::Callback::result_type {
-                        if (cancelCallbacks) {
-                            job->Cancel ();
-                        }
-                        jobs.push_back (Job::SharedPtr (job));
-                        return true;
-                    }
-                );
-            }
-            return RunLoop::WaitForJobs (jobs, timeSpec);
-        }
-
-        void Timer::QueueJob () {
-            LockGuard<SpinLock> guard (spinLock);
-            if (reentrantAlarm || jobs.empty ()) {
-                // Try to acquire a job queue from the pool. Note the
-                // retry count == 0. Delivering timer alarms on time
-                // is more important then delivering them at all. It's
-                // better to log a warning to let the developer adjust
-                // available/max queue count (JobQueuePoolCreateInstance).
-                JobQueue::SharedPtr jobQueue = JobQueuePool::Instance ().GetJobQueue (0);
-                if (jobQueue.Get () != 0) {
-                    THEKOGANS_UTIL_TRY {
-                        jobQueue->EnqJob (Job::SharedPtr (new Job (jobQueue, *this)));
-                    }
-                    THEKOGANS_UTIL_CATCH_AND_LOG_SUBSYSTEM (THEKOGANS_UTIL)
-                }
-                else {
-                    THEKOGANS_UTIL_LOG_SUBSYSTEM_WARNING (
-                        THEKOGANS_UTIL,
-                        "Unable to acquire a '%s' worker, skipping Alarm call.\n",
-                        name.c_str ());
-                }
-            }
-            else {
-                THEKOGANS_UTIL_LOG_SUBSYSTEM_WARNING (
-                    THEKOGANS_UTIL,
-                    "Supressing non re-entrant Alarm call in '%s'.\n",
-                    name.c_str ());
-            }
         }
 
     } // namespace util
