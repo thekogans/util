@@ -89,33 +89,37 @@ namespace thekogans {
             /// Given a \see{Producer} of particular events, subscribe to them.
             /// \param[in] producer \see{Producer} whose events we want to subscribe to.
             /// \param[in] eventDeliveryPolicy \see{Producer::EventDeliveryPolicy} by which events are delivered.
-            void Subscribe (
+            /// \return true == subscribed, false == already subscribed.
+            bool Subscribe (
                     Producer<T> &producer,
                     typename Producer<T>::EventDeliveryPolicy::SharedPtr eventDeliveryPolicy =
                         typename Producer<T>::EventDeliveryPolicy::SharedPtr (
                             new typename Producer<T>::JobQueueEventDeliveryPolicy)) {
                 LockGuard<SpinLock> guard (spinLock);
-                typename Producers::iterator it = producers.find (&producer);
-                if (it == producers.end ()) {
-                    producer.Subscribe (*this, eventDeliveryPolicy);
+                if (producer.Subscribe (*this, eventDeliveryPolicy)) {
                     producers.insert (
                         typename Producers::value_type (
                             &producer,
                             new typename Producer<T>::WeakPtr (&producer)));
+                    return true;
                 }
+                return false;
             }
 
             /// \brief
             /// Given a \see{Producer} of particular events, unsubscribe from it.
             /// \param[in] producer \see{Producer} whose events we want to unsubscribe from.
-            void Unsubscribe (Producer<T> &producer) {
+            /// \return true == unsubscribed, false == was not subscribed.
+            bool Unsubscribe (Producer<T> &producer) {
                 LockGuard<SpinLock> guard (spinLock);
                 typename Producers::iterator it = producers.find (&producer);
                 if (it != producers.end ()) {
                     producer.Unsubscribe (*this);
                     delete it->second;
                     producers.erase (it);
+                    return true;
                 }
+                return false;
             }
 
             /// \brief

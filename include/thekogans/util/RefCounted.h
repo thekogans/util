@@ -674,7 +674,7 @@ namespace thekogans {
                         return THEKOGANS_UTIL_UI64_GET_UI32_AT_INDEX (value, 0);
                     }
                     /// \brief
-                    /// Extract the index.
+                    /// Extract the counter.
                     /// \return THEKOGANS_UTIL_UI64_GET_UI32_AT_INDEX (value, 1);
                     static inline CounterType GetCounter (ValueType value) {
                         return THEKOGANS_UTIL_UI64_GET_UI32_AT_INDEX (value, 1);

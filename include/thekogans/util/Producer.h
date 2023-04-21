@@ -194,7 +194,7 @@ namespace thekogans {
             SpinLock spinLock;
 
         public:
-            /// \nrief
+            /// \brief
             /// dtor.
             virtual ~Producer () {
                 // We're going out of scope, delete all subscribers.
@@ -210,7 +210,8 @@ namespace thekogans {
             /// That's why we call OnSubscribe under lock to make sure the count they get acurately
             /// reflects that fact. It's important that you don't call back in to the Producer as
             /// deadlock will occur.
-            void Subscribe (
+            /// \return true == subscribed, false == already subscribed.
+            bool Subscribe (
                     Subscriber<T> &subscriber,
                     typename EventDeliveryPolicy::SharedPtr eventDeliveryPolicy) {
                 LockGuard<SpinLock> guard (spinLock);
@@ -226,7 +227,9 @@ namespace thekogans {
                                 new typename Subscriber<T>::WeakPtr (&subscriber),
                                 eventDeliveryPolicy)));
                     OnSubscribe (subscriber, eventDeliveryPolicy, subscribers.size ());
+                    return true;
                 }
+                return false;
             }
 
             /// \brief
@@ -237,14 +240,17 @@ namespace thekogans {
             /// That's why we call OnUnsubscribe under lock to make sure the count they get acurately
             /// reflects that fact. It's important that you don't call back in to the Producer as
             /// deadlock will occur.
-            void Unsubscribe (Subscriber<T> &subscriber) {
+            /// \return true == unsubscribed, false == was not subscribed.
+            bool Unsubscribe (Subscriber<T> &subscriber) {
                 LockGuard<SpinLock> guard (spinLock);
                 typename Subscribers::iterator it = subscribers.find (&subscriber);
                 if (it != subscribers.end ()) {
                     delete it->second.first;
                     subscribers.erase (it);
                     OnUnsubscribe (subscriber, subscribers.size ());
+                    return true;
                 }
+                return false;
             }
 
             /// \brief
