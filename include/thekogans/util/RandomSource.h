@@ -87,7 +87,7 @@ namespace thekogans {
             ~RandomSource ();
 
             /// \brief
-            /// Use a system specific entropy source to return a count of random bytes.
+            /// Use a system specific entropy source to return a bufferLength of random bytes.
             /// NOTE: There is a very small but > 0 chance that the number
             /// of bytes returned will be less than what you asked for. You
             /// should check the return value and act accordingly.
@@ -98,14 +98,14 @@ namespace thekogans {
             /// bytes in to it, and copy the result in to passed in
             /// buffer incurring a performance penalty.
             /// \param[out] buffer Buffer where random bytes will be placed.
-            /// \param[in] count Count of random bytes to place in the buffer.
+            /// \param[in] bufferLength Length of buffer.
             /// \return Actual count of random bytes placed in the buffer.
             std::size_t GetBytes (
                 void *buffer,
-                std::size_t count);
+                std::size_t bufferLength);
 
             /// \brief
-            /// Use a hardware entropy source to return a count of seed bytes.
+            /// Use a hardware entropy source to return a bufferLength of seed bytes.
             /// NOTE: As per Intel's guidance here:
             /// https://software.intel.com/en-us/blogs/2012/11/17/the-difference-between-rdrand-and-rdseed,
             /// use of rdseed should be limited to seeding a prng.
@@ -123,55 +123,39 @@ namespace thekogans {
             /// it's because you have a need for true randomness and I will
             /// not lie and tell you that I have it when I don't. It's up to
             /// you to decide how to proceed as you know your code better then
-            /// I do. Here is an example from thekogans_crypto seeding OpenSSL
-            /// prng:
-            ///
-            /// \code{.cpp}
-            /// util::SecureBuffer entropy (util::HostEndian, entropyNeeded);
-            /// // Start by trying to get seed bytes.
-            /// entropy.AdvanceWriteOffset (
-            ///     util::GlobalRandomSource::Instance ().GetSeed (
-            ///         entropy.GetWritePtr (),
-            ///         entropy.GetDataAvailableForWriting ()));
-            /// // If entropy couldn't be satisfied with seed bytes,
-            /// // get random bytes.
-            /// if (entropy.GetDataAvailableForWriting () > 0) {
-            ///     entropy.AdvanceWriteOffset (
-            ///         util::GlobalRandomSource::Instance ().GetBytes (
-            ///             entropy.GetWritePtr (),
-            ///             entropy.GetDataAvailableForWriting ()));
-            /// }
-            /// if (entropy.GetDataAvailableForWriting () == 0) {
-            ///     RAND_seed (
-            ///         entropy.GetReadPtr (),
-            ///         (util::i32)entropy.GetDataAvailableForReading ());
-            /// }
-            /// else {
-            ///     THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-            ///         "Unable to get " THEKOGANS_UTIL_SIZE_T_FORMAT " random bytes for seed.",
-            ///         entropyNeeded);
-            /// }
-            /// \endcode
-            ///
+            /// I do.
             /// \param[out] buffer Buffer where seed bytes will be placed.
-            /// \param[in] count Count of seed bytes to place in the buffer.
+            /// \param[in] bufferLength Length of buffer.
             /// \return Actual count of seed bytes placed in the buffer.
             std::size_t GetSeed (
                 void *buffer,
-                std::size_t count);
+                std::size_t bufferLength);
+
+            /// \brief
+            /// This is a convenience method.
+            /// Try to get bufferLength of seed. If not enough available, backfill with bytes.
+            /// \param[out] buffer Buffer where seed or bytes will be placed.
+            /// \param[in] bufferLength Length of buffer.
+            /// \return Actual count of seed and bytes placed in the buffer.
+            std::size_t GetSeedOrBytes (
+                void *buffer,
+                std::size_t bufferLength);
 
             /// \brief
             /// Substitute for system rand function.
+            /// NOTE: This method is implemented in terms of GetSeedOrBytes.
             /// \return A random ui32.
             ui32 Getui32 ();
 
             /// \brief
             /// Substitute for system rand function.
+            /// NOTE: This method is implemented in terms of GetSeedOrBytes.
             /// \return A random ui64.
             ui64 Getui64 ();
 
             /// \brief
             /// Substitute for system rand function.
+            /// NOTE: This method is implemented in terms of GetSeedOrBytes.
             /// \return A random std::size_t.
             std::size_t Getsize_t ();
 

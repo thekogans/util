@@ -196,7 +196,7 @@ namespace thekogans {
                 ///
                 /// \code{.cpp}
                 /// struct foo : public thekogans::util::RefCounted {
-                ///     typedef thekogans::util::RefCounted::SharedPtr<foo> SharedPtr;
+                ///     THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (foo);
                 ///     ...
                 ///     void bar ();
                 /// };
@@ -654,6 +654,15 @@ namespace thekogans {
                     /// \brief
                     /// dtor.
                     ~Token () {
+                        // NOTE: There's no race here. Even though a
+                        // registry entry still exists when the dtor
+                        // is called there are no more shared
+                        // references (hence the call to dtor).
+                        // Therefore even if we're interrupted and a
+                        // call is made to the registry to get a
+                        // shared pointer, null will be returned as
+                        // the object is in the middle of cleaning
+                        // up after itself.
                         Registry<T>::Instance ().Remove (value);
                     }
 
@@ -725,7 +734,7 @@ namespace thekogans {
                                 index = count;
                                 // This is the first time we're using this slot.
                                 counter = 0;
-                                if (index == entries.size ()) {
+                                if (count == entries.size ()) {
                                     // Here we implement a simple exponential
                                     // array grow algorithm. Every time we
                                     // need to grow the array, we double it's
@@ -735,7 +744,7 @@ namespace thekogans {
                                     // A byproduct of this approach is that every
                                     // index allocated and returned by the registry
                                     // is valid in perpetuity.
-                                    entries.resize (index * 2);
+                                    entries.resize (count * 2);
                                 }
                             }
                             entries[index] = Entry (WeakPtr<T> (t), counter, NIDX32);

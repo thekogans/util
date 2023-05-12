@@ -146,6 +146,12 @@ namespace thekogans {
             return *this;
         }
 
+        void Buffer::Clear () {
+            if (data != 0) {
+                memset (data, 0, length);
+            }
+        }
+
         void Buffer::Resize (
                 std::size_t length_,
                 Allocator *allocator_) {
@@ -432,9 +438,7 @@ namespace thekogans {
     #endif // defined (TOOLCHAIN_OS_Windows)
 
         SecureBuffer::~SecureBuffer () {
-            if (data != 0) {
-                memset (data, 0, length);
-            }
+            Clear ();
         }
 
         SecureBuffer &SecureBuffer::operator = (const SecureBuffer &other) {

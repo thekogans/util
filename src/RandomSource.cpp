@@ -64,7 +64,7 @@ namespace thekogans {
         namespace {
             std::size_t GetHardwareBytes (
                     void *buffer,
-                    std::size_t count) {
+                    std::size_t bufferLength) {
             #if defined (TOOLCHAIN_ARCH_i386) || defined (TOOLCHAIN_ARCH_x86_64)
                 if (CPU::Instance ().RDRAND ()) {
                     if (((uintptr_t)buffer & (UI32_SIZE - 1)) != 0) {
@@ -72,14 +72,15 @@ namespace thekogans {
                         // below requires the buffer to be aligned on
                         // a ui32 byte boundary.
                         AlignedAllocator allocator (DefaultAllocator::Instance (), UI32_SIZE);
-                        Buffer alignedBuffer (HostEndian, count, 0, 0, &allocator);
-                        alignedBuffer.AdvanceWriteOffset (GetHardwareBytes (alignedBuffer.GetWritePtr (), count));
+                        Buffer alignedBuffer (HostEndian, bufferLength, 0, 0, &allocator);
+                        alignedBuffer.AdvanceWriteOffset (GetHardwareBytes (alignedBuffer.GetWritePtr (), bufferLength));
                         memcpy (buffer, alignedBuffer.GetReadPtr (), alignedBuffer.GetDataAvailableForReading ());
+                        alignedBuffer.Clear ();
                         return alignedBuffer.GetDataAvailableForReading ();
                     }
                     // This function was inspired by an answer from:
                     // https://stackoverflow.com/questions/11407103/how-i-can-get-the-random-number-from-intels-processor-with-assembler
-                    std::size_t ui32Count = count >> 2;
+                    std::size_t ui32Count = bufferLength >> 2;
                     ui32 *begin = (ui32 *)buffer;
                     ui32 *end = begin + ui32Count;
                     std::size_t retries = ui32Count + 4;
@@ -98,12 +99,12 @@ namespace thekogans {
                             *begin++ = value;
                         }
                         else if (retries-- == 0) {
-                            count = (ui8 *)begin - (ui8 *)buffer;
+                            bufferLength = (ui8 *)begin - (ui8 *)buffer;
                             break;
                         }
                     }
                     if (begin == end) {
-                        std::size_t remainder = count & 3;
+                        std::size_t remainder = bufferLength & 3;
                         while (remainder > 0) {
                             char rc;
                         #if defined (TOOLCHAIN_OS_Windows)
@@ -119,14 +120,14 @@ namespace thekogans {
                                 break;
                             }
                             else if (retries-- == 0) {
-                                count = (ui8 *)begin - (ui8 *)buffer;
+                                bufferLength = (ui8 *)begin - (ui8 *)buffer;
                                 break;
                             }
                         }
                     }
                     // Wipe value on exit.
                     *((volatile ui32 *)&value) = 0;
-                    return count;
+                    return bufferLength;
                 }
             #endif // defined (TOOLCHAIN_ARCH_i386) || defined (TOOLCHAIN_ARCH_x86_64)
                 return 0;
@@ -135,12 +136,12 @@ namespace thekogans {
 
         std::size_t RandomSource::GetBytes (
                 void *buffer,
-                std::size_t count) {
-            if (buffer != 0 && count > 0) {
+                std::size_t bufferLength) {
+            if (buffer != 0 && bufferLength > 0) {
                 LockGuard<SpinLock> guard (spinLock);
                 // If a hardware random source exists, use it first.
-                std::size_t hardwareCount = GetHardwareBytes (buffer, count);
-                if (hardwareCount == count) {
+                std::size_t hardwareCount = GetHardwareBytes (buffer, bufferLength);
+                if (hardwareCount == bufferLength) {
                     return hardwareCount;
                 }
                 // If we got here either there's no hardware random source or,
@@ -148,22 +149,22 @@ namespace thekogans {
             #if defined (TOOLCHAIN_OS_Windows)
                 if (!CryptGenRandom (
                         cryptProv,
-                        (DWORD)(count - hardwareCount),
+                        (DWORD)(bufferLength - hardwareCount),
                         (BYTE *)buffer + hardwareCount)) {
                     THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
                         THEKOGANS_UTIL_OS_ERROR_CODE);
                 }
-                return count;
+                return bufferLength;
             #elif defined (TOOLCHAIN_OS_Linux)
                 return hardwareCount + urandom.Read (
                     (ui8 *)buffer + hardwareCount,
-                    count - hardwareCount);
+                    bufferLength - hardwareCount);
             #elif defined (TOOLCHAIN_OS_OSX)
-                OSStatus errorCode = SecRandomCopyBytes (kSecRandomDefault, count, buffer);
+                OSStatus errorCode = SecRandomCopyBytes (kSecRandomDefault, bufferLength, buffer);
                 if (errorCode != noErr) {
                     THEKOGANS_UTIL_THROW_SEC_OSSTATUS_ERROR_CODE_EXCEPTION (errorCode);
                 }
-                return count;
+                return bufferLength;
             #endif // defined (TOOLCHAIN_OS_Windows)
             }
             else {
@@ -174,22 +175,23 @@ namespace thekogans {
 
         std::size_t RandomSource::GetSeed (
                 void *buffer,
-                std::size_t count) {
-            if (buffer != 0 && count > 0) {
+                std::size_t bufferLength) {
+            if (buffer != 0 && bufferLength > 0) {
             #if defined (TOOLCHAIN_ARCH_i386) || defined (TOOLCHAIN_ARCH_x86_64)
                 if (CPU::Instance ().RDSEED ()) {
                     if (((uintptr_t)buffer & (UI32_SIZE - 1)) != 0) {
                         // See above in GetHardwareBytes.
                         AlignedAllocator allocator (DefaultAllocator::Instance (), UI32_SIZE);
-                        Buffer alignedBuffer (HostEndian, count, 0, 0, &allocator);
-                        alignedBuffer.AdvanceWriteOffset (GetSeed (alignedBuffer.GetWritePtr (), count));
+                        Buffer alignedBuffer (HostEndian, bufferLength, 0, 0, &allocator);
+                        alignedBuffer.AdvanceWriteOffset (GetSeed (alignedBuffer.GetWritePtr (), bufferLength));
                         memcpy (buffer, alignedBuffer.GetReadPtr (), alignedBuffer.GetDataAvailableForReading ());
+                        alignedBuffer.Clear ();
                         return alignedBuffer.GetDataAvailableForReading ();
                     }
                     LockGuard<SpinLock> guard (spinLock);
                     // This function was inspired by an answer from:
                     // https://stackoverflow.com/questions/11407103/how-i-can-get-the-random-number-from-intels-processor-with-assembler
-                    std::size_t ui32Count = count >> 2;
+                    std::size_t ui32Count = bufferLength >> 2;
                     ui32 *begin = (ui32 *)buffer;
                     ui32 *end = begin + ui32Count;
                     std::size_t retries = ui32Count + 4;
@@ -208,12 +210,12 @@ namespace thekogans {
                             *begin++ = value;
                         }
                         else if (retries-- == 0) {
-                            count = (ui8 *)begin - (ui8 *)buffer;
+                            bufferLength = (ui8 *)begin - (ui8 *)buffer;
                             break;
                         }
                     }
                     if (begin == end) {
-                        std::size_t remainder = count & 3;
+                        std::size_t remainder = bufferLength & 3;
                         while (remainder > 0) {
                             char rc;
                         #if defined (TOOLCHAIN_OS_Windows)
@@ -229,14 +231,14 @@ namespace thekogans {
                                 break;
                             }
                             else if (retries-- == 0) {
-                                count = (ui8 *)begin - (ui8 *)buffer;
+                                bufferLength = (ui8 *)begin - (ui8 *)buffer;
                                 break;
                             }
                         }
                     }
                     // Wipe value on exit.
                     *((volatile ui32 *)&value) = 0;
-                    return count;
+                    return bufferLength;
                 }
             #endif // defined (TOOLCHAIN_ARCH_i386) || defined (TOOLCHAIN_ARCH_x86_64)
                 return 0;
@@ -247,9 +249,21 @@ namespace thekogans {
             }
         }
 
+        std::size_t RandomSource::GetSeedOrBytes (
+                void *buffer,
+                std::size_t bufferLength) {
+            std::size_t seedCount = GetSeed (buffer, bufferLength);
+            std::size_t byteCount = 0;
+            if (seedCount < bufferLength) {
+                // Seed is a scarce resource. If we couldn't get enough, backfill with random bytes.
+                byteCount = GetBytes ((ui8 *)buffer + seedCount, bufferLength - seedCount);
+            }
+            return seedCount + byteCount;
+        }
+
         ui32 RandomSource::Getui32 () {
             ui32 value;
-            if (GetBytes (&value, UI32_SIZE) == UI32_SIZE) {
+            if (GetSeedOrBytes (&value, UI32_SIZE) == UI32_SIZE) {
                 return value;
             }
             else {
@@ -261,7 +275,7 @@ namespace thekogans {
 
         ui64 RandomSource::Getui64 () {
             ui64 value;
-            if (GetBytes (&value, UI64_SIZE) == UI64_SIZE) {
+            if (GetSeedOrBytes (&value, UI64_SIZE) == UI64_SIZE) {
                 return value;
             }
             else {
@@ -273,7 +287,7 @@ namespace thekogans {
 
         std::size_t RandomSource::Getsize_t () {
             std::size_t value;
-            if (GetBytes (&value, SIZE_T_SIZE) == SIZE_T_SIZE) {
+            if (GetSeedOrBytes (&value, SIZE_T_SIZE) == SIZE_T_SIZE) {
                 return value;
             }
             else {

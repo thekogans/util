@@ -205,6 +205,12 @@ namespace thekogans {
             Buffer &operator += (const Buffer &buffer);
 
             /// \brief
+            /// Clear the buffer (set to '\0').
+            /// NOTE: This method does not respect read and write offsets.
+            /// It clears from data to data + length.
+            void Clear ();
+
+            /// \brief
             /// Resize the buffer. Adjust readOffset and writeOffset to stay within [0, length).
             /// \param[in] length_ New buffer length.
             /// \param[in] allocator_ Allocator to use to allocate new data.

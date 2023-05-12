@@ -21,104 +21,84 @@
 // thekogans libraries are used in environments that don't call $TOOLCHAIN_COMMON_BIN/setenvironment,
 // and don't use thekogans_make. In that case try to deduce the environment we're running on top of.
 
+// NOTE: This file is meant to be periodically updated by adding new
+// defines for whatever os, arch and compiler we might want to support
+// next.
+
 // TOOLCHAIN_OS
 #if !defined (TOOLCHAIN_OS_Windows) && !defined (TOOLCHAIN_OS_Linux) && !defined (TOOLCHAIN_OS_OSX)
-    #if defined (_WIN32) || defined (_WIN64)
+    #if defined (_WINDOWS_)
         #define TOOLCHAIN_OS_Windows
+        #define TOOLCHAIN_OS "Windows"
     #elif defined (__linux__)
         #define TOOLCHAIN_OS_Linux
+        #define TOOLCHAIN_OS "Linux"
     #elif defined (__APPLE__)
         #define TOOLCHAIN_OS_OSX
-    #else // defined (_WIN32) || defined (_WIN64)
+        #define TOOLCHAIN_OS "OSX"
+    #else // defined (_WINDOWS_)
         #error Unknown TOOLCHAIN_OS.
-    #endif // defined (_WIN32) || defined (_WIN64)
+    #endif // defined (_WINDOWS_)
 #endif // !defined (TOOLCHAIN_OS_Windows) && !defined (TOOLCHAIN_OS_Linux) && !defined (TOOLCHAIN_OS_OSX)
 
 // TOOLCHAIN_ARCH
 #if !defined (TOOLCHAIN_ARCH_i386) && !defined (TOOLCHAIN_ARCH_x86_64) &&\
-    !defined (TOOLCHAIN_ARCH_ppc) && !defined (TOOLCHAIN_ARCH_ppc64) &&\
-    !defined (TOOLCHAIN_ARCH_arm) && !defined (TOOLCHAIN_ARCH_arm64)
-    #if defined (TOOLCHAIN_OS_Windows)
-        #if defined (_M_IX86)
-            #define TOOLCHAIN_ARCH_i386
-        #elif defined (_M_X64)
-            #define TOOLCHAIN_ARCH_x86_64
-        #elif defined (_M_ARM)
-            #if defined (_M_ARM64)
-                #define TOOLCHAIN_ARCH_arm64
-            #else // defined (_M_ARM64)
-                #define TOOLCHAIN_ARCH_arm32
-            #endif // defined (_M_ARM64)
-        #else // defined (_M_IX86)
-            #error Unknown TOOLCHAIN_ARCH.
-        #endif // defined (_M_IX86)
-    #elif defined (TOOLCHAIN_OS_Linux)
-        #if defined (__i386__)
-            #define TOOLCHAIN_ARCH_i386
-        #elif defined (__x86_64__)
-            #define TOOLCHAIN_ARCH_x86_64
-        #elif defined (__arm__)
-            #if defined (__aarch64__)
-                #define TOOLCHAIN_ARCH_arm64
-            #else // defined (__aarch64__)
-                #define TOOLCHAIN_ARCH_arm32
-            #endif // defined (__aarch64__)
-        #elif defined (__powerpc64__)
-            #define TOOLCHAIN_ARCH_ppc64
-        #else // defined (__i386__)
-            #error Unknown TOOLCHAIN_ARCH.
-        #endif // defined (__i386__)
-    #elif defined (TOOLCHAIN_OS_OSX)
-        #if defined (__x86_64)
-            #define TOOLCHAIN_ARCH_x86_64
-        #elif defined (__ppc64)
-            #define TOOLCHAIN_ARCH_ppc64
-        #elif defined (__arm64)
-            #define TOOLCHAIN_ARCH_arm64
-        #else // defined (__x86_64)
-            #error Unknown TOOLCHAIN_ARCH.
-        #endif // defined (__x86_64)
-    #endif // defined (TOOLCHAIN_OS_Windows)
+    !defined (TOOLCHAIN_ARCH_ppc32) && !defined (TOOLCHAIN_ARCH_ppc64) &&\
+    !defined (TOOLCHAIN_ARCH_arm32) && !defined (TOOLCHAIN_ARCH_arm64) &&\
+    !defined (TOOLCHAIN_ARCH_mips32) && !defined (TOOLCHAIN_ARCH_mips64)
+    #if defined (_M_X64) || defined (__x86_64__) || defined (__x86_64)
+        #define TOOLCHAIN_ARCH_x86_64
+        #define TOOLCHAIN_ARCH "x86_64"
+    #elif defined (_M_IX86) || defined (__i386__)
+        #define TOOLCHAIN_ARCH_i386
+        #define TOOLCHAIN_ARCH "i386"
+    #elif defined (_M_ARM64) || defined (__aarch64__) || defined (__arm64)
+        #define TOOLCHAIN_ARCH_arm64
+        #define TOOLCHAIN_ARCH "arm64"
+    #elif defined (_M_ARM) || defined (__arm__)
+        #define TOOLCHAIN_ARCH_arm32
+        #define TOOLCHAIN_ARCH "arm32"
+    #elif defined (__powerpc64__) || defined (__ppc64)
+        #define TOOLCHAIN_ARCH_ppc64
+        #define TOOLCHAIN_ARCH "ppc64"
+    #else
+        #error Unknown TOOLCHAIN_ARCH.
+    #endif // defined (_M_X64) || defined (__x86_64__) || defined (__x86_64)
 #endif // !defined (TOOLCHAIN_ARCH_i386) && !defined (TOOLCHAIN_ARCH_x86_64) &&
-       // !defined (TOOLCHAIN_ARCH_ppc) && !defined (TOOLCHAIN_ARCH_ppc64) &&
-       // !defined (TOOLCHAIN_ARCH_arm) && !defined (TOOLCHAIN_ARCH_arm64)
+       // !defined (TOOLCHAIN_ARCH_ppc32) && !defined (TOOLCHAIN_ARCH_ppc64) &&
+       // !defined (TOOLCHAIN_ARCH_arm32) && !defined (TOOLCHAIN_ARCH_arm64) &&
+       // !defined (TOOLCHAIN_ARCH_mips32) && !defined (TOOLCHAIN_ARCH_mips64)
 
 // TOOLCHAIN_COMPILER
-#if defined (TOOLCHAIN_OS_Windows)
-    #if !defined (TOOLCHAIN_COMPILER_cl18) && !defined (TOOLCHAIN_COMPILER_cl19) &&\
-        !defined (TOOLCHAIN_COMPILER_cl1910) && !defined (TOOLCHAIN_COMPILER_cl1924)
-        #if _MSC_VER == 1800
-            #define TOOLCHAIN_COMPILER_cl18
-        #elif _MSC_VER == 1900
-            #define TOOLCHAIN_COMPILER_cl19
-        #elif _MSC_VER == 1910
-            #define TOOLCHAIN_COMPILER_cl1910
-        #elif _MSC_VER == 1924
-            #define TOOLCHAIN_COMPILER_cl1924
-        #else // _MSC_VER == 1800
-            #error Unknown TOOLCHAIN_COMPILER.
-        #endif // _MSC_VER == 1800
-    #endif // !defined (TOOLCHAIN_COMPILER_cl18) && !defined (TOOLCHAIN_COMPILER_cl19) &&
-           // !defined (TOOLCHAIN_COMPILER_cl1910) && !defined (TOOLCHAIN_COMPILER_cl1924)
-#elif defined (TOOLCHAIN_OS_Linux)
-    #if !defined (TOOLCHAIN_COMPILER_gcc)
-        #if defined (__GNUC__)
-            #define TOOLCHAIN_COMPILER_gcc
-        #else // defined (__GNUC__)
-            #error Unknown TOOLCHAIN_COMPILER.
-        #endif // defined (__GNUC__)
-    #endif // !defined (TOOLCHAIN_COMPILER_gcc)
-#elif defined (TOOLCHAIN_OS_OSX)
-    #if !defined (TOOLCHAIN_COMPILER_clang) && !defined (TOOLCHAIN_COMPILER_gcc)
-        #if defined (__clang__)
-            #define TOOLCHAIN_COMPILER_clang
-        #elif defined (__GNUC__)
-            #define TOOLCHAIN_COMPILER_gcc
-        #else // defined (__clang__)
-            #error Unknown TOOLCHAIN_COMPILER.
-        #endif // defined (__clang__)
-    #endif // !defined (TOOLCHAIN_COMPILER_clang) && !defined (TOOLCHAIN_COMPILER_gcc)
-#endif // defined (TOOLCHAIN_OS_Windows)
+#if !defined (TOOLCHAIN_COMPILER_cl) && !defined (TOOLCHAIN_COMPILER_clang) &&\
+    !defined (TOOLCHAIN_COMPILER_gcc) && !defined (TOOLCHAIN_COMPILER_icc)
+    #if defined (_MSC_VER)
+        #define TOOLCHAIN_COMPILER_cl
+        #define TOOLCHAIN_COMPILER "cl"
+    #elif defined (__clang__)
+        #define TOOLCHAIN_COMPILER_clang
+        #define TOOLCHAIN_COMPILER "clang"
+    #elif defined (__GNUC__)
+        #define TOOLCHAIN_COMPILER_gcc
+        #define TOOLCHAIN_COMPILER "gcc"
+    #elif defined (__INTEL_COMPILER)
+        #define TOOLCHAIN_COMPILER_icc
+        #define TOOLCHAIN_COMPILER "icc"
+    #else
+        #error Unknown TOOLCHAIN_COMPILER.
+    #endif // defined (_MSC_VER)
+#endif // !defined (TOOLCHAIN_COMPILER_cl) && !defined (TOOLCHAIN_COMPILER_clang) &&
+       // !defined (TOOLCHAIN_COMPILER_gcc) && !defined (TOOLCHAIN_COMPILER_icc)
+
+// TOOLCHAIN_BRANCH
+#if !defined (TOOLCHAIN_BRANCH)
+    #define TOOLCHAIN_BRANCH TOOLCHAIN_OS##"/"##TOOLCHAIN_ARCH##"/"##TOOLCHAIN_COMPILER
+#endif // !defined (TOOLCHAIN_BRANCH)
+
+// TOOLCHAIN_TRIPLET
+#if !defined (TOOLCHAIN_TRIPLET)
+    #define TOOLCHAIN_TRIPLET TOOLCHAIN_OS##"-"##TOOLCHAIN_ARCH##"-"##TOOLCHAIN_COMPILER
+#endif // !defined (TOOLCHAIN_TRIPLET)
 
 // TOOLCHAIN_ENDIAN
 #if !defined (TOOLCHAIN_ENDIAN_Little) && !defined (TOOLCHAIN_ENDIAN_Big)
