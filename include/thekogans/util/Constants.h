@@ -157,21 +157,25 @@ namespace thekogans {
 
         /// \brief
         /// Architecture word size invalid index, and magic number.
-    #if defined (TOOLCHAIN_ARCH_i386) || defined (TOOLCHAIN_ARCH_ppc) || defined (TOOLCHAIN_ARCH_arm)
+    #if defined (TOOLCHAIN_ARCH_i386) || defined (TOOLCHAIN_ARCH_ppc32) ||\
+        defined (TOOLCHAIN_ARCH_arm32) || defined (TOOLCHAIN_ARCH_mips32)
         const std::size_t NIDX = NIDX32;
         const std::size_t MAGIC = MAGIC32;
     #if !defined (SIZE_T_MAX)
         #define SIZE_T_MAX thekogans::util::UI32_MAX
     #endif // !defined (SIZE_T_MAX)
-    #elif defined (TOOLCHAIN_ARCH_x86_64) || defined (TOOLCHAIN_ARCH_ppc64) || defined (TOOLCHAIN_ARCH_arm64)
+    #elif defined (TOOLCHAIN_ARCH_x86_64) || defined (TOOLCHAIN_ARCH_ppc64) ||\
+        defined (TOOLCHAIN_ARCH_arm64) || defined (TOOLCHAIN_ARCH_mips64)
         const std::size_t NIDX = NIDX64;
         const std::size_t MAGIC = MAGIC64;
     #if !defined (SIZE_T_MAX)
         #define SIZE_T_MAX thekogans::util::UI64_MAX
     #endif // !defined (SIZE_T_MAX)
-    #else // defined (TOOLCHAIN_ARCH_i386) || defined (TOOLCHAIN_ARCH_ppc) || defined (TOOLCHAIN_ARCH_arm)
+    #else // defined (TOOLCHAIN_ARCH_i386) || defined (TOOLCHAIN_ARCH_ppc32) ||
+          // defined (TOOLCHAIN_ARCH_arm32) || defined (TOOLCHAIN_ARCH_mips32)
         #error Unknown TOOLCHAIN_ARCH.
-    #endif // defined (TOOLCHAIN_ARCH_i386) || defined (TOOLCHAIN_ARCH_ppc) || defined (TOOLCHAIN_ARCH_arm)
+    #endif // defined (TOOLCHAIN_ARCH_i386) || defined (TOOLCHAIN_ARCH_ppc32) ||
+           // defined (TOOLCHAIN_ARCH_arm32) || defined (TOOLCHAIN_ARCH_mips32)
 
         /// \brief
         /// Ethernet MAC length.

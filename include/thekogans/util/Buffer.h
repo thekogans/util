@@ -208,7 +208,11 @@ namespace thekogans {
             /// Clear the buffer (set to '\0').
             /// NOTE: This method does not respect read and write offsets.
             /// It clears from data to data + length.
-            void Clear ();
+            /// \param[in] rewind true == Reset the read (and possibly write) offsets.
+            /// \param[in] readOnly true == Only rewind the read offset.
+            void Clear (
+                bool rewind = true,
+                bool readOnly = false);
 
             /// \brief
             /// Resize the buffer. Adjust readOffset and writeOffset to stay within [0, length).

@@ -208,7 +208,8 @@ namespace thekogans {
 
     #if defined (TOOLCHAIN_OS_Windows)
         private:
-        #if defined (TOOLCHAIN_ARCH_i386) || defined (TOOLCHAIN_ARCH_ppc) || defined (TOOLCHAIN_ARCH_arm)
+        #if defined (TOOLCHAIN_ARCH_i386) || defined (TOOLCHAIN_ARCH_ppc32) ||\
+            defined (TOOLCHAIN_ARCH_arm32) || defined (TOOLCHAIN_ARCH_mips32)
             /// \brief
             /// Emulate __builtin_clzll on Windows.
             /// \param[in] value Value whose leading zero count to return.
@@ -225,7 +226,8 @@ namespace thekogans {
                 }
                 return 63 - mostSignificantOneBit;
             }
-        #elif defined (TOOLCHAIN_ARCH_x86_64) || defined (TOOLCHAIN_ARCH_ppc64) || defined (TOOLCHAIN_ARCH_arm64)
+        #elif defined (TOOLCHAIN_ARCH_x86_64) || defined (TOOLCHAIN_ARCH_ppc64) ||\
+            defined (TOOLCHAIN_ARCH_arm64) || defined (TOOLCHAIN_ARCH_mips64)
             /// \brief
             /// Emulate __builtin_clzll on Windows.
             /// \param[in] value Value whose leading zero count to return.
@@ -235,9 +237,11 @@ namespace thekogans {
                 _BitScanReverse64 (&mostSignificantOneBit, value);
                 return 63 - mostSignificantOneBit;
             }
-        #else // defined (TOOLCHAIN_ARCH_i386) || defined (TOOLCHAIN_ARCH_ppc) || defined (TOOLCHAIN_ARCH_arm)
+        #else // defined (TOOLCHAIN_ARCH_i386) || defined (TOOLCHAIN_ARCH_ppc32) ||
+              // defined (TOOLCHAIN_ARCH_arm32) || defined (TOOLCHAIN_ARCH_mips32)
             #error Unknown TOOLCHAIN_ARCH.
-        #endif // defined (TOOLCHAIN_ARCH_i386) || defined (TOOLCHAIN_ARCH_ppc) || defined (TOOLCHAIN_ARCH_arm)
+        #endif // defined (TOOLCHAIN_ARCH_i386) || defined (TOOLCHAIN_ARCH_ppc32) ||
+               // defined (TOOLCHAIN_ARCH_arm32) || defined (TOOLCHAIN_ARCH_mips32)
 
             /// \brief
             /// Emulate __builtin_ctz on Windows.

@@ -35,21 +35,25 @@
 #define LSEEK_FUNC lseek
 #define FTRUNCATE_FUNC ftruncate
 
-#if defined (TOOLCHAIN_ARCH_i386) || defined (TOOLCHAIN_ARCH_ppc) || defined (TOOLCHAIN_ARCH_arm)
+#if defined (TOOLCHAIN_ARCH_i386) || defined (TOOLCHAIN_ARCH_ppc32) ||\
+    defined (TOOLCHAIN_ARCH_arm32) || defined (TOOLCHAIN_ARCH_mips32)
     #define keventStruct kevent
     #define keventFunc(kq, changelist, nchanges, eventlist, nevents, timeout)\
         kevent (kq, changelist, nchanges, eventlist, nevents, timeout)
     #define keventSet(kev, ident, filter, flags, fflags, data, udata)\
         EV_SET (kev, ident, filter, flags, fflags, data, (void *)udata)
-#elif defined (TOOLCHAIN_ARCH_x86_64) || defined (TOOLCHAIN_ARCH_ppc64) || defined (TOOLCHAIN_ARCH_arm64)
+#elif defined (TOOLCHAIN_ARCH_x86_64) || defined (TOOLCHAIN_ARCH_ppc64) ||\
+    defined (TOOLCHAIN_ARCH_arm64) || defined (TOOLCHAIN_ARCH_mips64)
     #define keventStruct kevent64_s
     #define keventFunc(kq, changelist, nchanges, eventlist, nevents, timeout)\
         kevent64 (kq, changelist, nchanges, eventlist, nevents, 0, timeout)
     #define keventSet(kev, ident, filter, flags, fflags, data, udata)\
         EV_SET64 (kev, ident, filter, flags, fflags, data, (uint64_t)udata, 0, 0)
-#else // defined (TOOLCHAIN_ARCH_i386) || defined (TOOLCHAIN_ARCH_ppc) || defined (TOOLCHAIN_ARCH_arm)
+#else // defined (TOOLCHAIN_ARCH_i386) || defined (TOOLCHAIN_ARCH_ppc32) ||
+      // defined (TOOLCHAIN_ARCH_arm32) || defined (TOOLCHAIN_ARCH_mips32)
     #error Unknown TOOLCHAIN_ARCH.
-#endif // defined (TOOLCHAIN_ARCH_i386) || defined (TOOLCHAIN_ARCH_ppc) || defined (TOOLCHAIN_ARCH_arm)
+#endif // defined (TOOLCHAIN_ARCH_i386) || defined (TOOLCHAIN_ARCH_ppc32) ||
+       // defined (TOOLCHAIN_ARCH_arm32) || defined (TOOLCHAIN_ARCH_mips32)
 
 namespace thekogans {
     namespace util {

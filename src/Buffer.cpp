@@ -146,9 +146,14 @@ namespace thekogans {
             return *this;
         }
 
-        void Buffer::Clear () {
+        void Buffer::Clear (
+                bool rewind,
+                bool readOnly) {
             if (data != 0) {
                 memset (data, 0, length);
+            }
+            if (rewind) {
+                Clear (readOnly);
             }
         }
 

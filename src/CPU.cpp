@@ -18,7 +18,7 @@
 #include "thekogans/util/Environment.h"
 #if defined (TOOLCHAIN_OS_Windows)
     #include <intrin.h>
-#elif defined (TOOLCHAIN_ARCH_ppc) || defined (TOOLCHAIN_ARCH_ppc64)
+#elif defined (TOOLCHAIN_ARCH_ppc32) || defined (TOOLCHAIN_ARCH_ppc64)
     #if defined (TOOLCHAIN_OS_Linux)
         #include <features.h>
         #include <signal.h>
@@ -124,7 +124,7 @@ namespace thekogans {
                     : "a" (function), "c" (subfunction));
             }
         #endif // defined (TOOLCHAIN_OS_Windows)
-        #elif defined (TOOLCHAIN_ARCH_ppc) || defined (TOOLCHAIN_ARCH_ppc64)
+        #elif defined (TOOLCHAIN_ARCH_ppc32) || defined (TOOLCHAIN_ARCH_ppc64)
         #if defined (TOOLCHAIN_OS_Linux)
             jmp_buf jmpbuf;
 
@@ -245,7 +245,7 @@ namespace thekogans {
                 }
             }
         }
-    #elif defined (TOOLCHAIN_ARCH_ppc) || defined (TOOLCHAIN_ARCH_ppc64)
+    #elif defined (TOOLCHAIN_ARCH_ppc32) || defined (TOOLCHAIN_ARCH_ppc64)
         CPU::CPU () :
             isAltiVec (HaveAltiVec ()) {}
     #endif // defined (TOOLCHAIN_ARCH_i386) || defined (TOOLCHAIN_ARCH_x86_64)
@@ -346,14 +346,14 @@ namespace thekogans {
 
         void CPU::Dump (std::ostream &stream) const {
         #if defined (TOOLCHAIN_ARCH_i386) || defined (TOOLCHAIN_ARCH_x86_64) ||\
-            defined (TOOLCHAIN_ARCH_ppc) || defined (TOOLCHAIN_ARCH_ppc64)
+            defined (TOOLCHAIN_ARCH_ppc32) || defined (TOOLCHAIN_ARCH_ppc64)
             auto Supported = [&stream] (
                     const std::string &feature,
                     bool supported) {
                 stream << feature << (supported ? " supported" : " not supported") << std::endl;
             };
         #endif // defined (TOOLCHAIN_ARCH_i386) || defined (TOOLCHAIN_ARCH_x86_64) ||
-               // defined (TOOLCHAIN_ARCH_ppc) || defined (TOOLCHAIN_ARCH_ppc64)
+               // defined (TOOLCHAIN_ARCH_ppc32) || defined (TOOLCHAIN_ARCH_ppc64)
         #if defined (TOOLCHAIN_ARCH_i386) || defined (TOOLCHAIN_ARCH_x86_64)
             stream << Vendor () << std::endl;
             stream << Brand () << std::endl;
@@ -409,7 +409,7 @@ namespace thekogans {
             Supported ("XOP", XOP ());
             Supported ("XSAVE", XSAVE ());
             stream << "L1 cache line size: " << L1CacheLineSize () << std::endl;
-        #elif defined (TOOLCHAIN_ARCH_ppc) || defined (TOOLCHAIN_ARCH_ppc64)
+        #elif defined (TOOLCHAIN_ARCH_ppc32) || defined (TOOLCHAIN_ARCH_ppc64)
             Supported ("AltiVec", AltiVec ());
         #endif // defined (TOOLCHAIN_ARCH_i386) || defined (TOOLCHAIN_ARCH_x86_64)
         }

@@ -32,23 +32,27 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-#if defined (TOOLCHAIN_ARCH_i386) || defined (TOOLCHAIN_ARCH_ppc) || defined (TOOLCHAIN_ARCH_arm)
+#if defined (TOOLCHAIN_ARCH_i386) || defined (TOOLCHAIN_ARCH_ppc32) ||\
+    defined (TOOLCHAIN_ARCH_arm32) || defined (TOOLCHAIN_ARCH_mips32)
     #define STAT_STRUCT struct stat
     #define STAT_FUNC stat
     #define LSTAT_FUNC lstat
     #define FSTAT_FUNC fstat
     #define LSEEK_FUNC lseek
     #define FTRUNCATE_FUNC ftruncate
-#elif defined (TOOLCHAIN_ARCH_x86_64) || defined (TOOLCHAIN_ARCH_ppc64) || defined (TOOLCHAIN_ARCH_arm64)
+#elif defined (TOOLCHAIN_ARCH_x86_64) || defined (TOOLCHAIN_ARCH_ppc64) ||\
+    defined (TOOLCHAIN_ARCH_arm64) || defined (TOOLCHAIN_ARCH_mips64)
     #define STAT_STRUCT struct stat64
     #define STAT_FUNC stat64
     #define LSTAT_FUNC lstat64
     #define FSTAT_FUNC fstat64
     #define LSEEK_FUNC lseek64
     #define FTRUNCATE_FUNC ftruncate64
-#else // defined (TOOLCHAIN_ARCH_i386) || defined (TOOLCHAIN_ARCH_ppc) || defined (TOOLCHAIN_ARCH_arm)
+#else // defined (TOOLCHAIN_ARCH_i386) || defined (TOOLCHAIN_ARCH_ppc32) ||
+      // defined (TOOLCHAIN_ARCH_arm32) || defined (TOOLCHAIN_ARCH_mips32)
     #error Unknown TOOLCHAIN_ARCH.
-#endif // defined (TOOLCHAIN_ARCH_i386) || defined (TOOLCHAIN_ARCH_ppc) || defined (TOOLCHAIN_ARCH_arm)
+#endif // defined (TOOLCHAIN_ARCH_i386) || defined (TOOLCHAIN_ARCH_ppc32) ||
+       // defined (TOOLCHAIN_ARCH_arm32) || defined (TOOLCHAIN_ARCH_mips32)
 
 #endif // defined (TOOLCHAIN_OS_Linux)
 

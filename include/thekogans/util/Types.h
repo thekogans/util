@@ -90,13 +90,17 @@ namespace thekogans {
         typedef double f64;
         /// \brief
         /// Architecture dependent natural word type.
-    #if defined (TOOLCHAIN_ARCH_i386) || defined (TOOLCHAIN_ARCH_ppc) || defined (TOOLCHAIN_ARCH_arm)
+    #if defined (TOOLCHAIN_ARCH_i386) || defined (TOOLCHAIN_ARCH_ppc32) ||\
+        defined (TOOLCHAIN_ARCH_arm32) || defined (TOOLCHAIN_ARCH_mips32)
         typedef ui32 MachineWord;
-    #elif defined (TOOLCHAIN_ARCH_x86_64) || defined (TOOLCHAIN_ARCH_ppc64) || defined (TOOLCHAIN_ARCH_arm64)
+    #elif defined (TOOLCHAIN_ARCH_x86_64) || defined (TOOLCHAIN_ARCH_ppc64) ||\
+        defined (TOOLCHAIN_ARCH_arm64) || defined (TOOLCHAIN_ARCH_mips64)
         typedef ui64 MachineWord;
-    #else // defined (TOOLCHAIN_ARCH_x86_64) || defined (TOOLCHAIN_ARCH_ppc64) || defined (TOOLCHAIN_ARCH_arm64)
+    #else // defined (TOOLCHAIN_ARCH_x86_64) || defined (TOOLCHAIN_ARCH_ppc64) ||
+          // defined (TOOLCHAIN_ARCH_arm64) || defined (TOOLCHAIN_ARCH_mips64)
         #error Unknown TOOLCHAIN_ARCH.
-    #endif // defined (TOOLCHAIN_ARCH_i386) || defined (TOOLCHAIN_ARCH_ppc) || defined (TOOLCHAIN_ARCH_arm)
+    #endif // defined (TOOLCHAIN_ARCH_i386) || defined (TOOLCHAIN_ARCH_ppc32) ||
+           // defined (TOOLCHAIN_ARCH_arm32) || defined (TOOLCHAIN_ARCH_mips32)
 
         /// \brief
         /// Validate assumptions about integral types sizes.
@@ -147,17 +151,23 @@ namespace thekogans {
             /// x86_64.
             x86_64,
             /// \brief
-            /// ppc.
-            ppc,
+            /// ppc32.
+            ppc32,
             /// \brief
             /// ppc64.
             ppc64,
             /// \brief
-            /// arm.
-            arm,
+            /// arm32.
+            arm32,
             /// \brief
             /// arm64.
             arm64,
+            /// \brief
+            /// arm32.
+            mips32,
+            /// \brief
+            /// arm64.
+            mips64,
         #if defined (TOOLCHAIN_ARCH_i386)
             /// \brief
             /// Host Arch is i386.
@@ -166,22 +176,30 @@ namespace thekogans {
             /// \brief
             /// Host Arch is x86_64.
             HostArch = x86_64
-        #elif defined (TOOLCHAIN_ARCH_ppc)
+        #elif defined (TOOLCHAIN_ARCH_ppc32)
             /// \brief
-            /// Host Arch is ppc.
-            HostArch = ppc
+            /// Host Arch is ppc32.
+            HostArch = ppc32
         #elif defined (TOOLCHAIN_ARCH_ppc64)
             /// \brief
             /// Host Arch is ppc64.
             HostArch = ppc64
-        #elif defined (TOOLCHAIN_ARCH_arm)
+        #elif defined (TOOLCHAIN_ARCH_arm32)
             /// \brief
-            /// Host Arch is arm.
-            HostArch = arm
+            /// Host Arch is arm32.
+            HostArch = arm32
         #elif defined (TOOLCHAIN_ARCH_arm64)
             /// \brief
             /// Host Arch is arm64.
             HostArch = arm64
+        #elif defined (TOOLCHAIN_ARCH_mips32)
+            /// \brief
+            /// Host Arch is mips32.
+            HostArch = mips32
+        #elif defined (TOOLCHAIN_ARCH_mips64)
+            /// \brief
+            /// Host Arch is mips64.
+            HostArch = mips64
         #else // defined (TOOLCHAIN_ARCH_i386)
             #error Unknown TOOLCHAIN_ARCH.
         #endif // defined (TOOLCHAIN_ARCH_i386)
