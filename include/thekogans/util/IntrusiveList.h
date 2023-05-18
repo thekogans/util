@@ -89,7 +89,7 @@ namespace thekogans {
             /// \brief
             /// For every IntrusiveList an object will reside in,
             /// it must derive from that IntrusiveList::Node.
-            struct Node {
+            struct _LIB_THEKOGANS_UTIL_DECL Node {
                 /// \brief
                 /// Pointer to previous node.
                 T *prev;

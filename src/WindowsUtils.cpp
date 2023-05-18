@@ -19,6 +19,7 @@
 
 #if defined (TOOLCHAIN_OS_Windows)
 
+#include <atomic>
 #include "thekogans/util/Buffer.h"
 #include "thekogans/util/StringUtils.h"
 #include "thekogans/util/Exception.h"

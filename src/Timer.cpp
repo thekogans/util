@@ -34,12 +34,14 @@
 namespace thekogans {
     namespace util {
 
+        THEKOGANS_UTIL_IMPLEMENT_HEAP_WITH_LOCK (Timer, SpinLock)
+
     #if defined (TOOLCHAIN_OS_Windows)
         VOID CALLBACK Timer::TimerCallback (
                 PTP_CALLBACK_INSTANCE /*Instance*/,
                 PVOID Context,
                 PTP_TIMER Timer_) {
-            Timer::SharedPtr timer = TimerRegistry::Instance ().Get (Context);
+            Timer::SharedPtr timer = TimerRegistry::Instance ().Get ((TimerRegistry::Token::ValueType)Context);
             if (timer.Get () != 0) {
                 if (!timer->periodic) {
                     SetThreadpoolTimer (Timer_, 0, 0, 0);
@@ -53,7 +55,7 @@ namespace thekogans {
         }
     #elif defined (TOOLCHAIN_OS_Linux)
         void Timer::TimerCallback (union sigval val) {
-            Timer::SharedPtr timer = TimerRegistry::Instance ().Get (val.sival_ptr);
+            Timer::SharedPtr timer = TimerRegistry::Instance ().Get ((TimerRegistry::Token::ValueType)val.sival_ptr);
             if (timer.Get () != 0) {
                 if (!timer->periodic) {
                     timer->Stop ();

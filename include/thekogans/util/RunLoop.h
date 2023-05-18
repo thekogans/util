@@ -1111,7 +1111,7 @@ namespace thekogans {
             ///
             /// \brief
             /// Equality test to use to determine which jobs to wait for and cancel.
-            struct EqualityTest {
+            struct _LIB_THEKOGANS_UTIL_DECL EqualityTest {
                 /// \brief
                 /// dtor.
                 virtual ~EqualityTest () {}

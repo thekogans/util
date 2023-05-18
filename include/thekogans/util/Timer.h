@@ -146,18 +146,17 @@ namespace thekogans {
         /// This will arm the IdleProcessor timer to fire after 30 seconds.
         /// Call IdleProcessor::Instance ().StopTimer () to disarm the timer.
         ///
-        /// NOTE: Timer is designed to have the same semantics on all supported
-        /// platforms. To that end if you're using a periodic timer and it fires
-        /// while Timer::Callback::Alarm is in progress, and reentrantAlarm == false,
-        /// that event will be silently dropped and that cycle will be missed.
-        /// There are no 'catchup' events.
-        ///
         /// NOTE: IdleProcessor demonstrates the canonical way of using Timer.
 
         struct _LIB_THEKOGANS_UTIL_DECL Timer : public util::Producer<TimerEvents> {
             /// \brief
             /// Declare \see{RefCounted} pointers.
             THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (Timer)
+
+            /// \brief
+            /// Timer has a private heap to help with memory
+            /// management, performance, and global heap fragmentation.
+            THEKOGANS_UTIL_DECLARE_HEAP_WITH_LOCK (Timer, SpinLock)
 
             enum {
                 /// \brief
