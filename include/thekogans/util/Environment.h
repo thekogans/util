@@ -47,6 +47,21 @@
         #if !defined (TOOLCHAIN_OS_Solaris)
             #define TOOLCHAIN_OS_Solaris
         #endif // !defined (TOOLCHAIN_OS_Solaris)
+    #elif defined (_AIX)
+        #define TOOLCHAIN_OS "AIX"
+        #if !defined (TOOLCHAIN_OS_AIX)
+            #define TOOLCHAIN_OS_AIX
+        #endif // !defined (TOOLCHAIN_OS_AIX)
+    #elif defined (_hpux)
+        #define TOOLCHAIN_OS "HPUX"
+        #if !defined (TOOLCHAIN_OS_HPUX)
+            #define TOOLCHAIN_OS_HPUX
+        #endif // !defined (TOOLCHAIN_OS_HPUX)
+    #elif defined (_OS2)
+        #define TOOLCHAIN_OS "OS2"
+        #if !defined (TOOLCHAIN_OS_OS2)
+            #define TOOLCHAIN_OS_OS2
+        #endif // !defined (TOOLCHAIN_OS_OS2)
     #else // defined (_WINDOWS_)
         #error Unknown TOOLCHAIN_OS.
     #endif // defined (_WINDOWS_)

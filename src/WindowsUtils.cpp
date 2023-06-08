@@ -188,7 +188,6 @@ namespace thekogans {
                 GlobalUnlock (hglobal);
                 if (owner) {
                     GlobalFree (hglobal);
-                    owner = false;
                 }
                 ptr = 0;
                 length = 0;
@@ -241,8 +240,9 @@ namespace thekogans {
                 wndClassEx.hIcon = icon;
                 wndClassEx.hCursor = cursor;
                 wndClassEx.hbrBackground = background;
+                std::wstring wmenu;
                 if (menu != 0) {
-                    std::wstring wmenu = UTF8ToUTF16 (menu, strlen (menu));
+                    wmenu = UTF8ToUTF16 (menu, strlen (menu));
                     wndClassEx.lpszMenuName = wmenu.c_str ();
                 }
                 std::wstring wname = UTF8ToUTF16 (name);
