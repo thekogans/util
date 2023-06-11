@@ -547,48 +547,6 @@ namespace thekogans {
             /// still exists.
             template<typename T>
             struct Registry : public Singleton<Registry<T>, SpinLock> {
-            private:
-                /// \struct RefCounted::Registry::Entry RefCounted.h thekogans/util/RefCounted.h
-                ///
-                /// \brief
-                /// Registry entry keeps track of registered objects.
-                struct Entry {
-                    /// \brief
-                    /// Weak pointer to registered object.
-                    WeakPtr<T> object;
-                    /// \brief
-                    /// Counter to disambiguate entry objects.
-                    ui32 counter;
-                    /// \brief
-                    /// Next index in free list.
-                    ui32 next;
-
-                    /// \brief
-                    /// ctor.
-                    /// \param[in] object_ Entry object.
-                    /// \param[in] counter_ Object counter.
-                    /// \param[in] next_ Next index in free list.
-                    Entry (
-                        WeakPtr<T> object_ = WeakPtr<T> (),
-                        ui32 counter_ = 0,
-                        ui32 next_ = NIDX32) :
-                        object (object_),
-                        counter (counter_),
-                        next (next_) {}
-                };
-                /// \brief
-                /// The list of registered objects.
-                std::vector<Entry> entries;
-                /// \brief
-                /// Count of registered objects.
-                ui32 count;
-                /// \brief
-                /// Index of last freed object.
-                ui32 freeList;
-                /// \brief
-                /// Synchronization lock.
-                SpinLock spinLock;
-
             public:
                 enum {
                     /// \brief
@@ -701,6 +659,49 @@ namespace thekogans {
                     THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (Token)
                 };
 
+            private:
+                /// \struct RefCounted::Registry::Entry RefCounted.h thekogans/util/RefCounted.h
+                ///
+                /// \brief
+                /// Registry entry keeps track of registered objects.
+                struct Entry {
+                    /// \brief
+                    /// Weak pointer to registered object.
+                    WeakPtr<T> object;
+                    /// \brief
+                    /// Counter to disambiguate entry objects.
+                    typename Token::CounterType counter;
+                    /// \brief
+                    /// Next index in free list.
+                    typename Token::IndexType next;
+
+                    /// \brief
+                    /// ctor.
+                    /// \param[in] object_ Entry object.
+                    /// \param[in] counter_ Object counter.
+                    /// \param[in] next_ Next index in free list.
+                    Entry (
+                        WeakPtr<T> object_ = WeakPtr<T> (),
+                        typename Token::CounterType counter_ = 0,
+                        typename Token::IndexType next_ = NIDX32) :
+                        object (object_),
+                        counter (counter_),
+                        next (next_) {}
+                };
+                /// \brief
+                /// The list of registered objects.
+                std::vector<Entry> entries;
+                /// \brief
+                /// Count of registered objects.
+                typename Token::IndexType count;
+                /// \brief
+                /// Index of last freed object.
+                typename Token::IndexType freeList;
+                /// \brief
+                /// Synchronization lock.
+                SpinLock spinLock;
+
+            public:
                 /// \brief
                 /// ctor.
                 /// \param[in] entriesSize Initial entry list size.

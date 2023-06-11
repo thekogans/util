@@ -40,22 +40,15 @@ namespace thekogans {
         VOID CALLBACK Timer::TimerCallback (
                 PTP_CALLBACK_INSTANCE /*Instance*/,
                 PVOID Context,
-                PTP_TIMER Timer_) {
+                PTP_TIMER /*Timer*/) {
             Timer::SharedPtr timer = TimerRegistry::Instance ().Get ((TimerRegistry::Token::ValueType)Context);
-            if (timer.Get () != 0) {
-                if (!timer->periodic) {
-                    SetThreadpoolTimer (Timer_, 0, 0, 0);
-                }
-                timer->Produce (
-                    std::bind (
-                        &TimerEvents::OnTimerAlarm,
-                        std::placeholders::_1,
-                        timer));
-            }
-        }
     #elif defined (TOOLCHAIN_OS_Linux)
         void Timer::TimerCallback (union sigval val) {
             Timer::SharedPtr timer = TimerRegistry::Instance ().Get ((TimerRegistry::Token::ValueType)val.sival_ptr);
+    #elif defined (TOOLCHAIN_OS_OSX)
+        void Timer::TimerCallback (void *userData) {
+            Timer::SharedPtr timer = TimerRegistry::Instance ().Get ((TimerRegistry::Token::ValueType)userData);
+    #endif // defined (TOOLCHAIN_OS_Windows)
             if (timer.Get () != 0) {
                 if (!timer->periodic) {
                     timer->Stop ();
@@ -67,21 +60,6 @@ namespace thekogans {
                         timer));
             }
         }
-    #elif defined (TOOLCHAIN_OS_OSX)
-        void Timer::TimerCallback (void *userData) {
-            Timer::SharedPtr timer = TimerRegistry::Instance ().Get ((TimerRegistry::Token::ValueType)userData);
-            if (timer != 0) {
-                if (!timer->periodic) {
-                    timer->Stop ();
-                }
-                timer->Produce (
-                    std::bind (
-                        &TimerEvents::OnTimerAlarm,
-                        std::placeholders::_1,
-                        timer));
-            }
-        }
-    #endif // defined (TOOLCHAIN_OS_Windows)
 
         Timer::Timer (const std::string &name_) :
                 name (name_),
@@ -119,6 +97,7 @@ namespace thekogans {
         Timer::~Timer () {
             Stop ();
         #if defined (TOOLCHAIN_OS_Windows)
+            WaitForThreadpoolTimerCallbacks (timer, TRUE);
             CloseThreadpoolTimer (timer);
         #elif defined (TOOLCHAIN_OS_Linux)
             timer_delete (timer);
@@ -165,7 +144,6 @@ namespace thekogans {
         void Timer::Stop () {
         #if defined (TOOLCHAIN_OS_Windows)
             SetThreadpoolTimer (timer, 0, 0, 0);
-            WaitForThreadpoolTimerCallbacks (timer, TRUE);
         #elif defined (TOOLCHAIN_OS_Linux)
             itimerspec spec;
             memset (&spec, 0, sizeof (spec));
