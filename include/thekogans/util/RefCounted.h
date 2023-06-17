@@ -237,7 +237,7 @@ namespace thekogans {
                 /// \brief
                 /// copy ctor.
                 /// \param[in] ptr Pointer to copy.
-                SharedPtr (const SharedPtr &ptr) :
+                SharedPtr (const SharedPtr<T> &ptr) :
                         object (0) {
                     Reset (ptr.object);
                 }
@@ -258,7 +258,7 @@ namespace thekogans {
                 /// Assignemnet operator.
                 /// \param[in] ptr Pointer to copy.
                 /// \return *this.
-                SharedPtr &operator = (const SharedPtr &ptr) {
+                SharedPtr<T> &operator = (const SharedPtr<T> &ptr) {
                     if (&ptr != this) {
                         Reset (ptr.object);
                     }
@@ -268,7 +268,7 @@ namespace thekogans {
                 /// Assignemnet operator.
                 /// \param[in] object_ Object to assign.
                 /// \return *this.
-                SharedPtr &operator = (T *object_) {
+                SharedPtr<T> &operator = (T *object_) {
                     Reset (object_);
                     return *this;
                 }
@@ -324,7 +324,7 @@ namespace thekogans {
                 /// \brief
                 /// Swap objects with the given pointer.
                 /// \param[in] ptr Pointer to swap objects with.
-                void Swap (SharedPtr &ptr) {
+                void Swap (SharedPtr<T> &ptr) {
                     std::swap (object, ptr.object);
                 }
             };
@@ -437,7 +437,7 @@ namespace thekogans {
                 /// Assignment operator.
                 /// \param[in] object_ Raw pointer to reference counted object.
                 /// \return *this.
-                WeakPtr &operator = (T *object_) {
+                WeakPtr<T> &operator = (T *object_) {
                     if (object != object_) {
                         Reset (object_);
                     }
@@ -447,7 +447,7 @@ namespace thekogans {
                 /// Assignment operator.
                 /// \param[in] ptr SharedPtr<T> to reference counted object.
                 /// \return *this.
-                WeakPtr &operator = (const SharedPtr<T> &ptr) {
+                WeakPtr<T> &operator = (const SharedPtr<T> &ptr) {
                     if (object != ptr.Get ()) {
                         Reset (ptr.Get ());
                     }
@@ -457,7 +457,7 @@ namespace thekogans {
                 /// Assignment operator.
                 /// \param[in] ptr WeakPtr<T> to reference counted object.
                 /// \return *this.
-                WeakPtr &operator = (const WeakPtr<T> &ptr) {
+                WeakPtr<T> &operator = (const WeakPtr<T> &ptr) {
                     if (object != ptr.Get ()) {
                         Reset (ptr.GetSharedPtr ().Get ());
                     }

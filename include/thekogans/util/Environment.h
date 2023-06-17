@@ -89,11 +89,16 @@
         #if !defined (TOOLCHAIN_ARCH_arm32)
             #define TOOLCHAIN_ARCH_arm32
         #endif // !defined (TOOLCHAIN_ARCH_arm32)
-    #elif defined (__powerpc64__) || defined (__ppc64)
+    #elif defined (__powerpc64__) || defined (__ppc64__)
         #define TOOLCHAIN_ARCH "ppc64"
         #if !defined (TOOLCHAIN_ARCH_ppc64)
             #define TOOLCHAIN_ARCH_ppc64
         #endif // !defined (TOOLCHAIN_ARCH_ppc64)
+    #elif defined (__powerpc__) || defined (__ppc__)
+        #define TOOLCHAIN_ARCH "ppc32"
+        #if !defined (TOOLCHAIN_ARCH_ppc32)
+            #define TOOLCHAIN_ARCH_ppc32
+        #endif // !defined (TOOLCHAIN_ARCH_ppc32)
     #elif defined (__sparcv9)
         #define TOOLCHAIN_ARCH "sparc64"
         #if !defined (TOOLCHAIN_ARCH_sparc64)

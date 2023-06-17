@@ -28,7 +28,7 @@ Here is a complete feature list:
 
     - A full featured JSON parser/formatter (JSON.h). Supports Variant
       for numbers (f64, i64, ui64). Supports multiline text through a
-      clever Array ctor.
+      clever JOSN::Array ctor.
 
     - A collection of useful, simple, and lightweight types (Flags.h,
       Variant.h, GUID.h, Fraction.h, Array.h, FixedArray.h, BitSet.h).
