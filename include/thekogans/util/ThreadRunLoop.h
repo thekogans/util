@@ -132,7 +132,7 @@ namespace thekogans {
             /// \brief
             /// ctor.
             /// \param[in] name RunLoop name.
-            /// \param[in] jobExecutionPolicy RunLoop \see{JobExecutionPolicy}.
+            /// \param[in] jobExecutionPolicy \see{RunLoop::JobExecutionPolicy}.
             ThreadRunLoop (
                 const std::string &name = std::string (),
                 JobExecutionPolicy::SharedPtr jobExecutionPolicy =
