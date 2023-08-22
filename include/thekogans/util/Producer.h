@@ -181,7 +181,7 @@ namespace thekogans {
             /// Convenient typedef for std::pair<typename Subscriber<T>::WeakPtr *,
             /// typename EventDeliveryPolicy::SharedPtr>.
             typedef std::pair<
-                typename Subscriber<T>::WeakPtr *,
+                typename Subscriber<T>::WeakPtr,
                 typename EventDeliveryPolicy::SharedPtr> SubscriberInfo;
             /// \brief
             /// Convenient typedef for std::map<Subscriber<T> *, SubscriberInfo>.
@@ -213,23 +213,23 @@ namespace thekogans {
             /// \return true == subscribed, false == already subscribed.
             bool Subscribe (
                     Subscriber<T> &subscriber,
-                    typename EventDeliveryPolicy::SharedPtr eventDeliveryPolicy) {
-                LockGuard<SpinLock> guard (spinLock);
-                typename Subscribers::iterator it = subscribers.find (&subscriber);
-                if (it == subscribers.end ()) {
+                    typename EventDeliveryPolicy::SharedPtr eventDeliveryPolicy =
+                        typename EventDeliveryPolicy::SharedPtr (new ImmediateEventDeliveryPolicy)) {
+                {
+                    LockGuard<SpinLock> guard (spinLock);
+                    typename Subscribers::iterator it = subscribers.find (&subscriber);
+                    if (it != subscribers.end ()) {
+                        return false;
+                    }
                     subscribers.insert (
                         typename Subscribers::value_type (
                             &subscriber,
                             SubscriberInfo (
-                                // NOTE: We store a WeakPtr pointer because we can't risk a WeakPtr
-                                // copy ctor being called. It uses GetSharedPtr and that will be
-                                // problematic for objects subscribing in their ctors (shared == 0).
-                                new typename Subscriber<T>::WeakPtr (&subscriber),
+                                typename Subscriber<T>::WeakPtr (&subscriber),
                                 eventDeliveryPolicy)));
-                    OnSubscribe (subscriber, eventDeliveryPolicy, subscribers.size ());
-                    return true;
                 }
-                return false;
+                OnSubscribe (subscriber, eventDeliveryPolicy);
+                return true;
             }
 
             /// \brief
@@ -242,31 +242,44 @@ namespace thekogans {
             /// deadlock will occur.
             /// \return true == unsubscribed, false == was not subscribed.
             bool Unsubscribe (Subscriber<T> &subscriber) {
-                LockGuard<SpinLock> guard (spinLock);
-                typename Subscribers::iterator it = subscribers.find (&subscriber);
-                if (it != subscribers.end ()) {
-                    delete it->second.first;
+                {
+                    LockGuard<SpinLock> guard (spinLock);
+                    typename Subscribers::iterator it = subscribers.find (&subscriber);
+                    if (it == subscribers.end ()) {
+                        return false;
+                    }
                     subscribers.erase (it);
-                    OnUnsubscribe (subscriber, subscribers.size ());
-                    return true;
                 }
-                return false;
+                OnUnsubscribe (subscriber);
+                return true;
             }
 
             /// \brief
             /// Unsubscribe all subscribers.
             void Unsubscribe () {
-                LockGuard<SpinLock> guard (spinLock);
-                for (typename Subscribers::iterator
-                        it = subscribers.begin (),
-                        end = subscribers.end (); it != end; ++it) {
-                    typename Subscriber<T>::SharedPtr subscriber = it->second.first->GetSharedPtr ();
-                    if (subscriber.Get () != 0) {
-                        OnUnsubscribe (*subscriber, subscribers.size () - 1);
-                    }
-                    delete it->second.first;
+                Subscribers subscribers_;
+                {
+                    // Copy the subscribers map in to a local
+                    // variable before calling OnUnsubscribe in case
+                    // they want to unsubscribe while processing it.
+                    LockGuard<SpinLock> guard (spinLock);
+                    subscribers_ = subscribers;
+                    subscribers.clear ();
                 }
-                subscribers.clear ();
+                for (typename Subscribers::iterator
+                        it = subscribers_.begin (),
+                        end = subscribers_.end (); it != end; ++it) {
+                    // NOTE: If we get a NULL pointer here it simply means that that particular subscriber
+                    // is in the porocess of deallocating. It just hasn't removed itself from our subscriber
+                    // list (~Subscriber) in time for us to include it in subscribers_ above.
+                    // This race is unavoidable but harmless. We want to preserve the right of
+                    // the \see{Subscriber} to be able to call back in to the producer while
+                    // processing a particular event.
+                    typename Subscriber<T>::SharedPtr subscriber = it->second.first.GetSharedPtr ();
+                    if (subscriber.Get () != 0) {
+                        OnUnsubscribe (*subscriber);
+                    }
+                }
             }
 
             /// \brief
@@ -290,7 +303,7 @@ namespace thekogans {
                     // This race is unavoidable but harmless. We want to preserve the right of
                     // the \see{Subscriber} to be able to call back in to the producer while
                     // processing a particular event.
-                    typename Subscriber<T>::SharedPtr subscriber = it->second.first->GetSharedPtr ();
+                    typename Subscriber<T>::SharedPtr subscriber = it->second.first.GetSharedPtr ();
                     if (subscriber.Get () != 0) {
                         it->second.second->DeliverEvent (event, subscriber);
                     }
@@ -309,18 +322,13 @@ namespace thekogans {
             /// Override this methid to react to a new \see{Subscriber}.
             /// \param[in] subscriber \see{Subscriber} to add to the subscribers list.
             /// \param[in] eventDeliveryPolicy \see{EventDeliveryPolicy} by which events are delivered.
-            /// \param[in] subscriberCount Number of \see{Subscriber}s (including this one).
             virtual void OnSubscribe (
                 Subscriber<T> & /*subscriber*/,
-                typename EventDeliveryPolicy::SharedPtr /*eventDeliveryPolicy*/,
-                std::size_t /*subscriberCount*/) {}
+                typename EventDeliveryPolicy::SharedPtr /*eventDeliveryPolicy*/) {}
             /// \brief
             /// Override this methid to react to a \see{Subscriber} being removed.
             /// \param[in] subscriber \see{Subscriber} to remove from the subscribers list.
-            /// \param[in] subscriberCount Number of \see{Subscriber}s remaining.
-            virtual void OnUnsubscribe (
-                Subscriber<T> & /*subscriber*/,
-                std::size_t /*subscriberCount*/) {}
+            virtual void OnUnsubscribe (Subscriber<T> & /*subscriber*/) {}
         };
 
     } // namespace util

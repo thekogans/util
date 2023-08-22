@@ -57,7 +57,7 @@ namespace thekogans {
         private:
             /// \brief
             /// Convenient typedef for std::map<Producer<T> *, typename Producer<T>::WeakPtr *>.
-            typedef std::map<Producer<T> *, typename Producer<T>::WeakPtr *> Producers;
+            typedef std::map<Producer<T> *, typename Producer<T>::WeakPtr> Producers;
             /// \brief
             /// List of producers whos events we subscribe to.
             Producers producers;
@@ -94,13 +94,13 @@ namespace thekogans {
                     Producer<T> &producer,
                     typename Producer<T>::EventDeliveryPolicy::SharedPtr eventDeliveryPolicy =
                         typename Producer<T>::EventDeliveryPolicy::SharedPtr (
-                            new typename Producer<T>::JobQueueEventDeliveryPolicy)) {
+                            new typename Producer<T>::ImmediateEventDeliveryPolicy)) {
                 LockGuard<SpinLock> guard (spinLock);
                 if (producer.Subscribe (*this, eventDeliveryPolicy)) {
                     producers.insert (
                         typename Producers::value_type (
                             &producer,
-                            new typename Producer<T>::WeakPtr (&producer)));
+                            typename Producer<T>::WeakPtr (&producer)));
                     return true;
                 }
                 return false;
@@ -115,7 +115,6 @@ namespace thekogans {
                 typename Producers::iterator it = producers.find (&producer);
                 if (it != producers.end ()) {
                     producer.Unsubscribe (*this);
-                    delete it->second;
                     producers.erase (it);
                     return true;
                 }
@@ -129,11 +128,10 @@ namespace thekogans {
                 for (typename Producers::iterator
                         it = producers.begin (),
                         end = producers.end (); it != end; ++it) {
-                    typename Producer<T>::SharedPtr producer = it->second->GetSharedPtr ();
+                    typename Producer<T>::SharedPtr producer = it->second.GetSharedPtr ();
                     if (producer.Get () != 0) {
                         producer->Unsubscribe (*this);
                     }
-                    delete it->second;
                 }
                 producers.clear ();
             }

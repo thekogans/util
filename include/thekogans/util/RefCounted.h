@@ -423,9 +423,11 @@ namespace thekogans {
                 /// ctor.
                 /// \param[in] ptr WeakPtr<T> to reference counted object.
                 WeakPtr (const WeakPtr<T> &ptr) :
-                        object (0),
-                        references (0) {
-                    Reset (ptr.GetSharedPtr ().Get ());
+                        object (ptr.object),
+                        references (ptr.references) {
+                    if (references != 0) {
+                        references->AddWeakRef ();
+                    }
                 }
                 /// \brief
                 /// dtor.
@@ -459,7 +461,14 @@ namespace thekogans {
                 /// \return *this.
                 WeakPtr<T> &operator = (const WeakPtr<T> &ptr) {
                     if (object != ptr.Get ()) {
-                        Reset (ptr.GetSharedPtr ().Get ());
+                        if (references != 0) {
+                            references->ReleaseWeakRef ();
+                        }
+                        object = ptr.object;
+                        references = ptr.references;
+                        if (references != 0) {
+                            references->AddWeakRef ();
+                        }
                     }
                     return *this;
                 }
@@ -486,10 +495,10 @@ namespace thekogans {
                 /// it's not dangling.
                 void Reset (T *object_ = 0) {
                     if (object != object_) {
-                        object = object_;
                         if (references != 0) {
                             references->ReleaseWeakRef ();
                         }
+                        object = object_;
                         references = object != 0 ? object->references : 0;
                         if (references != 0) {
                             references->AddWeakRef ();
