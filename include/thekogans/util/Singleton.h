@@ -100,13 +100,13 @@ namespace thekogans {
         ///
         /// \code{.cpp}
         /// // AsyncIoEventQueue is a derived from \see{RefCounted}.
-        /// struct _LIB_THEKOGANS_STREAM_DECL GlobalAsyncIoEventQueue :
+        /// struct _LIB_THEKOGANS_STREAM_DECL AsyncIoEventQueue :
         ///         public AsyncIoEventQueue,
         ///         public util::Singleton<
-        ///             GlobalAsyncIoEventQueue,
+        ///             AsyncIoEventQueue,
         ///             util::SpinLock,
-        ///             util::RefCountedInstanceCreator<GlobalAsyncIoEventQueue>,
-        ///             util::RefCountedInstanceDestroyer<GlobalAsyncIoEventQueue>>,
+        ///             util::RefCountedInstanceCreator<AsyncIoEventQueue>,
+        ///             util::RefCountedInstanceDestroyer<AsyncIoEventQueue>>,
         ///         ... {
         ///     ...
         /// };
@@ -208,7 +208,7 @@ namespace thekogans {
             static void DestroyInstance () {
                 LockGuard<Lock> guard (lock);
                 if (instance != 0) {
-                    T * volatile instance_ = 0;
+                    const T * volatile instance_ = 0;
                     InstanceDestroyer () (EXCHANGE (instance, instance_));
                 }
             }
