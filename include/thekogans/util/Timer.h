@@ -158,15 +158,6 @@ namespace thekogans {
             /// management, performance, and global heap fragmentation.
             THEKOGANS_UTIL_DECLARE_HEAP_WITH_LOCK (Timer, SpinLock)
 
-            enum {
-                /// \brief
-                /// Default minimum number of \see{JobQueue}s in the pool.
-                DEFAULT_MIN_JOB_QUEUE_POOL_JOB_QUEUES = 1,
-                /// \brief
-                /// Default maximum number of \see{JobQueue}s in the pool.
-                DEFAULT_MAX_JOB_QUEUE_POOL_JOB_QUEUES = 100,
-            };
-
         private:
             /// \brief
             /// Timer name.
@@ -203,9 +194,6 @@ namespace thekogans {
             /// OS X timer callback.
             static void TimerCallback (void *userData);
         #endif // defined (TOOLCHAIN_OS_Windows)
-            /// \brief
-            /// true == Start (..., true);
-            bool periodic;
 
             /// \brief
             /// ctor.

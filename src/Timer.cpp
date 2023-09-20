@@ -50,9 +50,6 @@ namespace thekogans {
             Timer::SharedPtr timer = TimerRegistry::Instance ().Get ((TimerRegistry::Token::ValueType)userData);
     #endif // defined (TOOLCHAIN_OS_Windows)
             if (timer.Get () != 0) {
-                if (!timer->periodic) {
-                    timer->Stop ();
-                }
                 timer->Produce (
                     std::bind (
                         &TimerEvents::OnTimerAlarm,
@@ -64,8 +61,7 @@ namespace thekogans {
         Timer::Timer (const std::string &name_) :
                 name (name_),
                 token (this),
-                timer (0),
-                periodic (false) {
+                timer (0) {
         #if defined (TOOLCHAIN_OS_Windows)
             timer = CreateThreadpoolTimer (TimerCallback, (void *)token.GetValue (), 0);
             if (timer == 0) {
@@ -133,7 +129,6 @@ namespace thekogans {
             #elif defined (TOOLCHAIN_OS_OSX)
                 StartKQueueTimer (timer, timeSpec, periodic);
             #endif // defined (TOOLCHAIN_OS_Windows)
-                this->periodic = periodic;
             }
             else {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
@@ -154,7 +149,6 @@ namespace thekogans {
         #elif defined (TOOLCHAIN_OS_OSX)
             StopKQueueTimer (timer);
         #endif // defined (TOOLCHAIN_OS_Windows)
-            periodic = false;
         }
 
         bool Timer::IsRunning () {

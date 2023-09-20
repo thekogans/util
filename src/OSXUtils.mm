@@ -193,12 +193,15 @@ namespace thekogans {
             return UTF8String;
         }
 
-        struct KQueueTimer {
+        namespace {
+            typedef RefCounted::Registry<KQueueTimer> KQueueTimerRegistry;
+        }
+
+        struct KQueueTimer : public RefCounted {
             ui64 id;
             KQueueTimerCallback timerCallback;
             void *userData;
-            TimeSpec timeSpec;
-            bool periodic;
+            const KQueueTimerRegistry::Token token;
             bool running;
 
             KQueueTimer (
@@ -208,8 +211,7 @@ namespace thekogans {
                 id (id_),
                 timerCallback (timerCallback_),
                 userData (userData_),
-                timeSpec (TimeSpec::Zero),
-                periodic (false),
+                token (this),
                 running (false) {}
         };
 
@@ -220,9 +222,6 @@ namespace thekogans {
             private:
                 THEKOGANS_UTIL_HANDLE handle;
                 std::atomic<ui64> idPool;
-                typedef std::set<KQueueTimer *> TimerMap;
-                TimerMap timerMap;
-                SpinLock spinLock;
 
             public:
                 TimerKQueue () :
@@ -247,10 +246,8 @@ namespace thekogans {
                         void *userData) {
                     if (timerCallback != 0) {
                         KQueueTimer *timer = new KQueueTimer (++idPool, timerCallback, userData);
-                        {
-                            LockGuard<SpinLock> guard (spinLock);
-                            timerMap.insert (timer);
-                        }
+                        // We own the timer. Call DestroyTimer below to release.
+                        timer->AddRef ();
                         return timer;
                     }
                     else {
@@ -261,18 +258,10 @@ namespace thekogans {
 
                 void DestroyTimer (KQueueTimer *timer) {
                     if (timer != 0) {
-                        {
-                            LockGuard<SpinLock> guard (spinLock);
-                            TimerMap::iterator it = timerMap.find (timer);
-                            if (it == timerMap.end ()) {
-                                return;
-                            }
-                            timerMap.erase (it);
-                        }
                         keventStruct event;
                         keventSet (&event, timer->id, EVFILT_TIMER, EV_DELETE, 0, 0, 0);
                         keventFunc (handle, &event, 1, 0, 0, 0);
-                        delete timer;
+                        timer->Release ();
                     }
                     else {
                         THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
@@ -285,19 +274,21 @@ namespace thekogans {
                         const TimeSpec &timeSpec,
                         bool periodic) {
                     if (timer != 0) {
-                        if (IsTimerActive (timer)) {
-                            keventStruct event;
-                            keventSet (&event, timer->id, EVFILT_TIMER, EV_ADD | EV_ENABLE,
-                                0, timeSpec.ToMilliseconds (), timer);
-                            if (keventFunc (handle, &event, 1, 0, 0, 0) == 0) {
-                                timer->timeSpec = timeSpec;
-                                timer->periodic = periodic;
-                                timer->running = true;
-                            }
-                            else {
-                                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                                    THEKOGANS_UTIL_OS_ERROR_CODE);
-                            }
+                        keventStruct event;
+                        keventSet (
+                            &event,
+                            timer->id,
+                            EVFILT_TIMER,
+                            EV_ADD | (!periodic ? EV_ONESHOT : 0),
+                            0,
+                            timeSpec.ToMilliseconds (),
+                            timer->token.GetValue ());
+                        if (keventFunc (handle, &event, 1, 0, 0, 0) == 0) {
+                            timer->running = true;
+                        }
+                        else {
+                            THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                                THEKOGANS_UTIL_OS_ERROR_CODE);
                         }
                     }
                     else {
@@ -308,19 +299,21 @@ namespace thekogans {
 
                 void StopTimer (KQueueTimer *timer) {
                     if (timer != 0) {
-                        if (IsTimerActive (timer)) {
-                            keventStruct event;
-                            keventSet (&event, timer->id, EVFILT_TIMER,
-                                EV_ADD | EV_DISABLE, 0, 0, timer);
-                            if (keventFunc (handle, &event, 1, 0, 0, 0) == 0) {
-                                timer->timeSpec = TimeSpec::Zero;
-                                timer->periodic = false;
-                                timer->running = false;
-                            }
-                            else {
-                                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                                    THEKOGANS_UTIL_OS_ERROR_CODE);
-                            }
+                        keventStruct event;
+                        keventSet (
+                            &event,
+                            timer->id,
+                            EVFILT_TIMER,
+                            EV_DELETE,
+                            0,
+                            0,
+                            timer->token.GetValue ());
+                        if (keventFunc (handle, &event, 1, 0, 0, 0) == 0) {
+                            timer->running = false;
+                        }
+                        else {
+                            THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                                THEKOGANS_UTIL_OS_ERROR_CODE);
                         }
                     }
                     else {
@@ -331,7 +324,7 @@ namespace thekogans {
 
                 bool IsTimerRunning (KQueueTimer *timer) {
                     if (timer != 0) {
-                        return IsTimerActive (timer) && timer->running;
+                        return timer->running;
                     }
                     else {
                         THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
@@ -346,19 +339,16 @@ namespace thekogans {
                     while (1) {
                         int count = keventFunc (handle, 0, 0, kqueueEvents, MaxEventsBatch, 0);
                         for (int i = 0; i < count; ++i) {
-                            KQueueTimer *timer = (KQueueTimer *)kqueueEvents[i].udata;
-                            if (timer != 0) {
-                                if (IsTimerActive (timer)) {
-                                    timer->timerCallback (timer->userData);
+                            KQueueTimer::SharedPtr timer = KQueueTimerRegistry::Instance ().Get (
+                                (KQueueTimerRegistry::Token::ValueType)kqueueEvents[i].udata);
+                            if (timer.Get () != 0) {
+                                if ((kqueueEvents[i].flags & EV_ONESHOT) == EV_ONESHOT) {
+                                    timer->running = false;
                                 }
+                                timer->timerCallback (timer->userData);
                             }
                         }
                     }
-                }
-
-                bool IsTimerActive (KQueueTimer *timer) {
-                    LockGuard<SpinLock> guard (spinLock);
-                    return timerMap.find (timer) != timerMap.end ();
                 }
             };
         }
