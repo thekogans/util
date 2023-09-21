@@ -234,7 +234,9 @@ namespace thekogans {
                     RunLoop::JobExecutionPolicy::SharedPtr jobExecutionPolicy =
                         RunLoop::JobExecutionPolicy::SharedPtr (new RunLoop::FIFOJobExecutionPolicy)) {
                 Thread::SetMainThread ();
-                return (RunLoop *)new ThreadRunLoop (name, jobExecutionPolicy);
+                RunLoop *runLoop = (RunLoop *)new ThreadRunLoop (name, jobExecutionPolicy);
+                runLoop->AdRef ();
+                return runLoop;
             }
         #endif // defined (THEKOGANS_UTIL_HAVE_XLIB)
         #elif defined (TOOLCHAIN_OS_OSX)
