@@ -652,6 +652,9 @@ namespace thekogans {
                 /// \brief
                 /// ctor.
                 /// \param[in] entriesSize Initial entry list size.
+                /// NOTE: The resizing algorithm used below doubles this
+                /// starting seed every time it needs to add room for a
+                /// new entry. This is why the check for 0 is done below.
                 Registry (std::size_t entriesSize = DEFAULT_ENTRIES_SIZE) :
                     entries (entriesSize == 0 ? 1 : entriesSize),
                     count (0),
@@ -739,6 +742,7 @@ namespace thekogans {
                     return index < entries.size () && entries[index].counter == counter ?
                         // Yes? Ask the WeakPtr<T> registered to return a SharedPtr<T>.
                         entries[index].object.GetSharedPtr () :
+                        // No? Return NULL pointer.
                         SharedPtr<T> ();
                 }
             };

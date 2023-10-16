@@ -159,71 +159,6 @@ namespace thekogans {
         /// \endcode
 
         struct _LIB_THEKOGANS_UTIL_DECL MainRunLoopInstanceCreator {
-        #if defined (TOOLCHAIN_OS_Windows)
-            /// \brief
-            /// Create a main thread run loop with custom ctor arguments.
-            /// \param[in] name RunLoop name.
-            /// \param[in] jobExecutionPolicy JobQueue \see{RunLoop::JobExecutionPolicy}.
-            /// \param[in] eventProcessor Callback to process Windows HWND events.
-            /// \param[in] userData Optional user data passed to eventProcessor.
-            /// \param[in] window Windows window.
-            /// \return A main thread run loop with custom ctor arguments.
-            RunLoop *operator () (
-                    const std::string &name = "MainRunLoop",
-                    RunLoop::JobExecutionPolicy::SharedPtr jobExecutionPolicy =
-                        RunLoop::JobExecutionPolicy::SharedPtr (new RunLoop::FIFOJobExecutionPolicy),
-                    SystemRunLoop::EventProcessor eventProcessor = 0,
-                    void *userData = 0,
-                    Window::UniquePtr window = Window::UniquePtr ()) {
-                Thread::SetMainThread ();
-                RunLoop *runLoop = window.get () != 0 ?
-                    (RunLoop *)new SystemRunLoop (
-                        name,
-                        jobExecutionPolicy,
-                        eventProcessor,
-                        userData,
-                        std::move (window)) :
-                    (RunLoop *)new ThreadRunLoop (
-                        name,
-                        jobExecutionPolicy);
-                runLoop->AddRef ();
-                return runLoop;
-            }
-        #elif defined (TOOLCHAIN_OS_Linux)
-        #if defined (THEKOGANS_UTIL_HAVE_XLIB)
-            /// \brief
-            /// Create a main thread run loop with custom ctor arguments.
-            /// \param[in] name RunLoop name.
-            /// \param[in] jobExecutionPolicy JobQueue \see{RunLoop::JobExecutionPolicy}.
-            /// \param[in] eventProcessor Callback to process Xlib XEvent events.
-            /// \param[in] userData Optional user data passed to eventProcessor.
-            /// \param[in] window Xlib server window.
-            /// \param[in] displays A list of displays to listen to.
-            /// \return A main thread run loop with custom ctor arguments.
-            RunLoop *operator () (
-                    const std::string &name = "MainRunLoop",
-                    RunLoop::JobExecutionPolicy::SharedPtr jobExecutionPolicy =
-                        RunLoop::JobExecutionPolicy::SharedPtr (new RunLoop::FIFOJobExecutionPolicy),
-                    SystemRunLoop::EventProcessor eventProcessor = 0,
-                    void *userData = 0,
-                    SystemRunLoop::XlibWindow::UniquePtr window = SystemRunLoop::XlibWindow::UniquePtr (),
-                    const std::vector<Display *> &displays = std::vector<Display *> ()) {
-                Thread::SetMainThread ();
-                RunLoop *runLoop = eventProcessor != 0 ?
-                    (RunLoop *)new SystemRunLoop (
-                        name,
-                        jobExecutionPolicy,
-                        eventProcessor,
-                        userData,
-                        std::move (window),
-                        displays) :
-                    (RunLoop *)new ThreadRunLoop (
-                        name,
-                        jobExecutionPolicy);
-                runLoop->AdRef ();
-                return runLoop;
-            }
-        #else // defined (THEKOGANS_UTIL_HAVE_XLIB)
             /// \brief
             /// Create a main thread run loop with custom ctor arguments.
             /// \param[in] name RunLoop name.
@@ -234,36 +169,10 @@ namespace thekogans {
                     RunLoop::JobExecutionPolicy::SharedPtr jobExecutionPolicy =
                         RunLoop::JobExecutionPolicy::SharedPtr (new RunLoop::FIFOJobExecutionPolicy)) {
                 Thread::SetMainThread ();
-                RunLoop *runLoop = (RunLoop *)new ThreadRunLoop (name, jobExecutionPolicy);
-                runLoop->AdRef ();
-                return runLoop;
-            }
-        #endif // defined (THEKOGANS_UTIL_HAVE_XLIB)
-        #elif defined (TOOLCHAIN_OS_OSX)
-            /// \brief
-            /// Create a main thread run loop with custom ctor arguments.
-            /// \param[in] name RunLoop name.
-            /// \param[in] jobExecutionPolicy JobQueue \see{RunLoop::JobExecutionPolicy}.
-            /// \param[in] runLoop OS X run loop object.
-            /// \return A main thread run loop with custom ctor arguments.
-            RunLoop *operator () (
-                    const std::string &name = "MainRunLoop",
-                    RunLoop::JobExecutionPolicy::SharedPtr jobExecutionPolicy =
-                        RunLoop::JobExecutionPolicy::SharedPtr (new RunLoop::FIFOJobExecutionPolicy),
-                    SystemRunLoop::OSXRunLoop::SharedPtr osxRunLoop = SystemRunLoop::OSXRunLoop::SharedPtr ()) {
-                Thread::SetMainThread ();
-                RunLoop *runLoop = osxRunLoop.Get () != 0 ?
-                    (RunLoop *)new SystemRunLoop (
-                        name,
-                        jobExecutionPolicy,
-                        osxRunLoop) :
-                    (RunLoop *)new ThreadRunLoop (
-                        name,
-                        jobExecutionPolicy);
+                RunLoop *runLoop = new SystemRunLoop (name, jobExecutionPolicy);
                 runLoop->AddRef ();
                 return runLoop;
             }
-        #endif // defined (TOOLCHAIN_OS_Windows)
         };
 
         /// \struct MainRunLoop MainRunLoop.h thekogans/util/MainRunLoop.h

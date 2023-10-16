@@ -867,11 +867,11 @@ namespace thekogans {
                 virtual void UninitializeWorker () throw () override;
             };
         #elif defined (TOOLCHAIN_OS_OSX)
-            /// \struct RunLoop::CocoaInitializer RunLoop.h thekogans/util/RunLoop.h
+            /// \struct RunLoop::NSAppInitializer RunLoop.h thekogans/util/RunLoop.h
             ///
             /// \brief
-            /// Initialize the OS X Cocoa framework.
-            struct _LIB_THEKOGANS_UTIL_DECL CocoaInitializer : public WorkerCallback {
+            /// Initialize the OS X NSApp framework.
+            struct _LIB_THEKOGANS_UTIL_DECL NSAppInitializer : public WorkerCallback {
                 // WorkerCallback
                 /// \brief
                 /// Called by the worker before entering the job execution loop.

@@ -27,6 +27,7 @@
 #include <sys/stat.h>
 #include <string>
 #include "thekogans/util/Config.h"
+#include "thekogans/util/OS.h"
 
 #define STAT_STRUCT struct stat
 #define STAT_FUNC stat
@@ -59,77 +60,150 @@ namespace thekogans {
     namespace util {
 
         /// \brief
-        /// Return security framework error description from the given OSStatus.
-        /// \param[in] errorCode Security framework OSStatus to return description for.
-        /// \return Error description from the given Security framework OSStatus.
-        std::string DescriptionFromSecOSStatus (OSStatus errorCode);
-
-        /// \brief
-        /// Return error description from the given OSStatus.
-        /// \param[in] errorCode OSStatus to return description for.
-        /// \return Error description from the given OSStatus.
-        std::string DescriptionFromOSStatus (OSStatus errorCode);
-
-        /// \brief
-        /// Return error description from the given CFError.
-        /// \param[in] error CFError to return description for.
-        /// \return Error description from the given CFError.
-        std::string DescriptionFromCFErrorRef (CFErrorRef error);
-
-        /// \brief
-        /// Return error description from the given IOReturn.
-        /// \param[in] errorCode IOReturn to return description for.
-        /// \return Error description from the given IOReturn.
-        std::string DescriptionFromIOReturn (IOReturn errorCode);
-
-        /// \brief
-        /// Return the current user home directory path.
-        /// \return Current user home directory path.
-        std::string GetHomeDirectory ();
-
-        /// \brief
-        /// typedef for KQueueTimer alarm callback.
-        typedef void (*KQueueTimerCallback) (void * /*userData*/);
-
-        /// \brief
-        /// Forward declaration for KQueueTimer.
-        struct KQueueTimer;
-        /// \brief
         /// Forward declaration for \see{TimeSpec}.
         struct TimeSpec;
 
-        /// \brief
-        /// Create a KQueueTimer.
-        /// \param[in] timerCallback Timer alarm callback.
-        /// \param[in] userData Parameter passed to callback.
-        /// \return A new KQueueTimer struct.
-        KQueueTimer *CreateKQueueTimer (
-            KQueueTimerCallback timerCallback,
-            void *userData);
-        /// \brief
-        /// Destroy the given KQueueTimer.
-        /// \param[in] timer KQueueTimer to destroy.
-        void DestroyKQueueTimer (KQueueTimer *timer);
-        /// \brief
-        /// Start the given KQueueTimer.
-        /// \param[in] timer KQueueTimer to start.
-        /// \param[in] timeSpec \see{TimeSpec} representing the timer interval.
-        /// \param[in] periodic true == the timer will fire every timeSpec milliseconds,
-        /// false == the timer will fire once after timeSpec milliseconds.
-        void StartKQueueTimer (
-            KQueueTimer *timer,
-            const TimeSpec &timeSpec,
-            bool periodic);
-        /// \brief
-        /// Stop the given KQueueTimer.
-        /// \param[in] timer KQueueTimer to stop.
-        void StopKQueueTimer (KQueueTimer *timer);
-        /// \brief
-        /// Return true if the given KQueueTimer is running.
-        /// \param[in] timer KQueueTimer to check if running.
-        /// \return true == the given KQueueTimer is running.
-        bool IsKQueueTimerRunning (KQueueTimer *timer);
+        namespace os {
+            namespace osx {
 
+                /// \brief
+                /// Return security framework error description from the given OSStatus.
+                /// \param[in] errorCode Security framework OSStatus to return description for.
+                /// \return Error description from the given Security framework OSStatus.
+                std::string DescriptionFromSecOSStatus (OSStatus errorCode);
+
+                /// \brief
+                /// Return error description from the given OSStatus.
+                /// \param[in] errorCode OSStatus to return description for.
+                /// \return Error description from the given OSStatus.
+                std::string DescriptionFromOSStatus (OSStatus errorCode);
+
+                /// \brief
+                /// Return error description from the given CFError.
+                /// \param[in] error CFError to return description for.
+                /// \return Error description from the given CFError.
+                std::string DescriptionFromCFErrorRef (CFErrorRef error);
+
+                /// \brief
+                /// Return error description from the given IOReturn.
+                /// \param[in] errorCode IOReturn to return description for.
+                /// \return Error description from the given IOReturn.
+                std::string DescriptionFromIOReturn (IOReturn errorCode);
+
+                /// \brief
+                /// Return the current user home directory path.
+                /// \return Current user home directory path.
+                std::string GetHomeDirectory ();
+
+                /// \brief
+                /// typedef for KQueueTimer alarm callback.
+                typedef void (*KQueueTimerCallback) (void * /*userData*/);
+
+                /// \brief
+                /// Forward declaration for KQueueTimer.
+                struct KQueueTimer;
+
+                /// \brief
+                /// Create a KQueueTimer.
+                /// \param[in] timerCallback Timer alarm callback.
+                /// \param[in] userData Parameter passed to callback.
+                /// \return A new KQueueTimer struct.
+                KQueueTimer *CreateKQueueTimer (
+                    KQueueTimerCallback timerCallback,
+                    void *userData);
+                /// \brief
+                /// Destroy the given KQueueTimer.
+                /// \param[in] timer KQueueTimer to destroy.
+                void DestroyKQueueTimer (KQueueTimer *timer);
+                /// \brief
+                /// Start the given KQueueTimer.
+                /// \param[in] timer KQueueTimer to start.
+                /// \param[in] timeSpec \see{TimeSpec} representing the timer interval.
+                /// \param[in] periodic true == the timer will fire every timeSpec milliseconds,
+                /// false == the timer will fire once after timeSpec milliseconds.
+                void StartKQueueTimer (
+                    KQueueTimer *timer,
+                    const TimeSpec &timeSpec,
+                    bool periodic);
+                /// \brief
+                /// Stop the given KQueueTimer.
+                /// \param[in] timer KQueueTimer to stop.
+                void StopKQueueTimer (KQueueTimer *timer);
+                /// \brief
+                /// Return true if the given KQueueTimer is running.
+                /// \param[in] timer KQueueTimer to check if running.
+                /// \return true == the given KQueueTimer is running.
+                bool IsKQueueTimerRunning (KQueueTimer *timer);
+
+                /// \struct RunLoop OSXUtils.h thekogans/util/OSXUtils.h
+                ///
+                /// \brief
+                /// Base class for OS X based run loop.
+
+                struct RunLoop : public os::RunLoop {
+                    /// \brief
+                    /// OS X run loop.
+                    CFRunLoopRef runLoop;
+
+                    /// \brief
+                    /// ctor.
+                    /// \param[in] runLoop_ OS X run loop.
+                    explicit RunLoop (CFRunLoopRef runLoop_) :
+                        runLoop (runLoop_) {}
+
+                    virtual void ScheduleJob () override {
+                        CFRunLoopPerformBlock (
+                            runLoop,
+                            kCFRunLoopCommonModes,
+                            ^(void) {
+                                ExecuteJob ();
+                            });
+                        CFRunLoopWakeUp (runLoop);
+                    }
+                };
+
+                /// \struct CFRunLoop OSXUtils.h thekogans/util/OSXUtils.h
+                ///
+                /// \brief
+                /// CFRunLoopRef based OS X run loop.
+
+                struct CFRunLoop : public RunLoop {
+                    /// \brief
+                    /// ctor.
+                    /// \param[in] runLoop OS X run loop.
+                    CFRunLoop (CFRunLoopRef runLoop = CFRunLoopGetCurrent ()) :
+                        RunLoop (runLoop) {}
+
+                    /// \brief
+                    /// Start the run loop.
+                    virtual void Begin () override;
+                    /// \brief
+                    /// Stop the run loop.
+                    virtual void End () override;
+                };
+
+                /// \struct NSAppRunLoop OSXUtils.h thekogans/util/OSXUtils.h
+                ///
+                /// \brief
+                /// NSApp based main OS X run loop.
+
+                struct NSAppRunLoop : public RunLoop {
+                    /// \brief
+                    /// ctor.
+                    /// \param[in] runLoop OS X run loop.
+                    NSAppRunLoop () :
+                        RunLoop (CFRunLoopGetMain ()) {}
+
+                    /// \brief
+                    /// Start the run loop.
+                    virtual void Begin () override;
+                    /// \brief
+                    /// Stop the run loop.
+                    virtual void End () override;
+                };
+
+            } // namespace osx
+        } // namespace os
     } // namespace util
 } // namespace thekogans
 
