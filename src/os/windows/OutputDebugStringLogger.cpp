@@ -29,24 +29,27 @@
     #include <windows.h>
 #endif // !defined (_WINDOWS_)
 #include "thekogans/util/StringUtils.h"
-#include "thekogans/util/WindowsUtils.h"
-#include "thekogans/util/OutputDebugStringLogger.h"
+#include "thekogans/util/os/windows/OutputDebugStringLogger.h"
 
 namespace thekogans {
     namespace util {
+        namespace os {
+            namespace windows {
 
-        void OutputDebugStringLogger::Log (
-                const std::string & /*subsystem*/,
-                ui32 level,
-                const std::string &header,
-                const std::string &message) throw () {
-            if (level <= this->level && (!header.empty () || !message.empty ())) {
-                std::string logEntry = FormatString ("%s%s", header.c_str (), message.c_str ());
-                // These are log entries. There's no need to for high fidelity conversion.
-                OutputDebugStringW (UTF8ToUTF16 (logEntry, 0).c_str ());
-            }
-        }
+                void OutputDebugStringLogger::Log (
+                        const std::string & /*subsystem*/,
+                        ui32 level,
+                        const std::string &header,
+                        const std::string &message) throw () {
+                    if (level <= this->level && (!header.empty () || !message.empty ())) {
+                        std::string logEntry = FormatString ("%s%s", header.c_str (), message.c_str ());
+                        // These are log entries. There's no need to for high fidelity conversion.
+                        OutputDebugStringW (UTF8ToUTF16 (logEntry, 0).c_str ());
+                    }
+                }
 
+            } // namespace windows
+        } // namespace os
     } // namespace util
 } // namespace thekogans
 

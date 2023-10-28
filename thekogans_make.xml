@@ -105,9 +105,6 @@
     <cpp_header>$(organization)/$(project_directory)/Flags.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/Fraction.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/GUID.h</cpp_header>
-    <if condition = "$(TOOLCHAIN_OS) == 'Windows'">
-      <cpp_header>$(organization)/$(project_directory)/HGLOBALAllocator.h</cpp_header>
-    </if>
     <cpp_header>$(organization)/$(project_directory)/HRTimer.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/HRTimerMgr.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/Hash.h</cpp_header>
@@ -116,9 +113,6 @@
     <cpp_header>$(organization)/$(project_directory)/JSON.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/JobQueue.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/JobQueuePool.h</cpp_header>
-    <if condition = "$(TOOLCHAIN_OS) == 'Linux'">
-      <cpp_header>$(organization)/$(project_directory)/LinuxUtils.h</cpp_header>
-    </if>
     <cpp_header>$(organization)/$(project_directory)/LockGuard.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/Logger.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/LoggerMgr.h</cpp_header>
@@ -127,15 +121,9 @@
     <cpp_header>$(organization)/$(project_directory)/MemoryLogger.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/MimeTypeMapper.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/Mutex.h</cpp_header>
-    <if condition = "$(TOOLCHAIN_OS) == 'OSX'">
-      <cpp_header>$(organization)/$(project_directory)/NSLogLogger.h</cpp_header>
-    </if>
     <cpp_header>$(organization)/$(project_directory)/NullAllocator.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/NullLock.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/NullLogger.h</cpp_header>
-    <if condition = "$(TOOLCHAIN_OS) == 'Windows'">
-      <cpp_header>$(organization)/$(project_directory)/OutputDebugStringLogger.h</cpp_header>
-    </if>
     <cpp_header>$(organization)/$(project_directory)/OwnerList.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/OwnerMap.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/OwnerVector.h</cpp_header>
@@ -183,17 +171,28 @@
     <cpp_header>$(organization)/$(project_directory)/Variant.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/Vectorizer.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/Version.h</cpp_header>
-    <if condition = "$(TOOLCHAIN_OS) == 'Windows'">
-      <cpp_header>$(organization)/$(project_directory)/WindowsFirewall.h</cpp_header>
-      <cpp_header>$(organization)/$(project_directory)/WindowsUtils.h</cpp_header>
-    </if>
     <cpp_header>$(organization)/$(project_directory)/XMLUtils.h</cpp_header>
     <if condition = "$(have_feature -f:THEKOGANS_UTIL_HAVE_XERCES)">
       <cpp_header>$(organization)/$(project_directory)/XercesUtils.h</cpp_header>
     </if>
-    <if condition = "$(TOOLCHAIN_OS) == 'Linux' &amp;&amp; $(have_feature -f:THEKOGANS_UTIL_HAVE_XLIB)">
-      <cpp_header>$(organization)/$(project_directory)/XlibUtils.h</cpp_header>
-    </if>
+    <cpp_header>$(organization)/$(project_directory)/os/RunLoop.h</cpp_header>
+    <choose>
+      <when condition = "$(TOOLCHAIN_OS) == 'Windows'">
+        <cpp_header>$(organization)/$(project_directory)/os/windows/HGLOBALAllocator.h</cpp_header>
+        <cpp_header>$(organization)/$(project_directory)/os/windows/OutputDebugStringLogger.h</cpp_header>
+        <cpp_header>$(organization)/$(project_directory)/os/windows/WindowsFirewall.h</cpp_header>
+        <cpp_header>$(organization)/$(project_directory)/os/windows/WindowsUtils.h</cpp_header>
+      </when>
+      <when condition = "$(TOOLCHAIN_OS) == 'Linux'">
+        <cpp_header>$(organization)/$(project_directory)/os/linux/LinuxUtils.h</cpp_header>
+        <if condition = "$(have_feature -f:THEKOGANS_UTIL_HAVE_XLIB)">
+          <cpp_header>$(organization)/$(project_directory)/os/linux/XlibUtils.h</cpp_header>
+        </if>
+      </when>
+      <when condition = "$(TOOLCHAIN_OS) == 'OSX'">
+        <cpp_header>$(organization)/$(project_directory)/os/osx/NSLogLogger.h</cpp_header>
+      </when>
+    </choose>
   </cpp_headers>
   <cpp_headers prefix = "include/3rdparty"
                install = "yes">
@@ -633,9 +632,6 @@
     <cpp_source>FileLogger.cpp</cpp_source>
     <cpp_source>Fraction.cpp</cpp_source>
     <cpp_source>GUID.cpp</cpp_source>
-    <if condition = "$(TOOLCHAIN_OS) == 'Windows'">
-      <cpp_source>HGLOBALAllocator.cpp</cpp_source>>
-    </if>
     <cpp_source>HRTimer.cpp</cpp_source>
     <cpp_source>HRTimerMgr.cpp</cpp_source>
     <cpp_source>Hash.cpp</cpp_source>
@@ -648,15 +644,9 @@
     <cpp_source>MemoryLogger.cpp</cpp_source>
     <cpp_source>MimeTypeMapper.cpp</cpp_source>
     <cpp_source>Mutex.cpp</cpp_source>
-    <if condition = "$(TOOLCHAIN_OS) == 'OSX'">
-      <cpp_source>NSLogLogger.cpp</cpp_source>
-    </if>
     <cpp_source>NullAllocator.cpp</cpp_source>
     <cpp_source>NullLock.cpp</cpp_source>
     <cpp_source>NullLogger.cpp</cpp_source>
-    <if condition = "$(TOOLCHAIN_OS) == 'Windows'">
-      <cpp_source>OutputDebugStringLogger.cpp</cpp_source>
-    </if>
     <cpp_source>Path.cpp</cpp_source>
     <cpp_source>Pipeline.cpp</cpp_source>
     <cpp_source>PipelinePool.cpp</cpp_source>
@@ -695,17 +685,26 @@
     <cpp_source>Variant.cpp</cpp_source>
     <cpp_source>Vectorizer.cpp</cpp_source>
     <cpp_source>Version.cpp</cpp_source>
-    <if condition = "$(TOOLCHAIN_OS) == 'Windows'">
-      <cpp_source>WindowsFirewall.cpp</cpp_source>
-      <cpp_source>WindowsUtils.cpp</cpp_source>
-    </if>
     <cpp_source>XMLUtils.cpp</cpp_source>
     <if condition = "$(have_feature -f:THEKOGANS_UTIL_HAVE_XERCES)">
       <cpp_source>XercesUtils.cpp</cpp_source>
     </if>
-    <if condition = "$(TOOLCHAIN_OS) == 'Linux' &amp;&amp; $(have_feature -f:THEKOGANS_UTIL_HAVE_XLIB)">
-      <cpp_source>XlibUtils.cpp</cpp_source>
-    </if>
+    <choose>
+      <when condition = "$(TOOLCHAIN_OS) == 'Windows'">
+        <cpp_source>os/windows/HGLOBALAllocator.cpp</cpp_source>>
+        <cpp_source>os/windows/OutputDebugStringLogger.cpp</cpp_source>
+        <cpp_source>os/windows/WindowsFirewall.cpp</cpp_source>
+        <cpp_source>os/windows/WindowsUtils.cpp</cpp_source>
+      </when>
+      <when condition = "$(TOOLCHAIN_OS) == 'Linux'">
+        <if condition = "$(have_feature -f:THEKOGANS_UTIL_HAVE_XLIB)">
+          <cpp_source>os/linux/XlibUtils.cpp</cpp_source>
+        </if>
+      </when>
+      <when condition = "$(TOOLCHAIN_OS) == 'OSX'">
+        <cpp_source>os/osx/NSLogLogger.cpp</cpp_source>
+      </when>
+    </choose>
   </cpp_sources>
   <cpp_sources prefix = "src/3rdparty">
     <cpp_source>pugixml/pugixml.cpp</cpp_source>
@@ -716,10 +715,10 @@
   <if condition = "$(TOOLCHAIN_OS) == 'OSX'">
     <objective_cpp_headers prefix = "include"
                            install = "yes">
-      <objective_cpp_header>$(organization)/$(project_directory)/OSXUtils.h</objective_cpp_header>
+      <objective_cpp_header>$(organization)/$(project_directory)/os/osx/OSXUtils.h</objective_cpp_header>
     </objective_cpp_headers>
     <objective_cpp_sources prefix = "src">
-      <objective_cpp_source>OSXUtils.mm</objective_cpp_source>
+      <objective_cpp_source>os/osx/OSXUtils.mm</objective_cpp_source>
     </objective_cpp_sources>
   </if>
   <if condition = "$(have_feature -f:THEKOGANS_UTIL_HAVE_TESTS)">

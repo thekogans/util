@@ -15,8 +15,8 @@
 // You should have received a copy of the GNU General Public License
 // along with libthekogans_util. If not, see <http://www.gnu.org/licenses/>.
 
-#if !defined (__thekogans_util_LinuxUtils_h)
-#define __thekogans_util_LinuxUtils_h
+#if !defined (__thekogans_util_os_linux_LinuxUtils_h)
+#define __thekogans_util_os_linux_LinuxUtils_h
 
 #include "thekogans/util/Environment.h"
 
@@ -56,4 +56,4 @@
 
 #endif // defined (TOOLCHAIN_OS_Linux)
 
-#endif // !defined (__thekogans_util_LinuxUtils_h)
+#endif // !defined (__thekogans_util_os_linux_LinuxUtils_h)

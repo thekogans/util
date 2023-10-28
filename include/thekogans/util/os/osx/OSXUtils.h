@@ -1,4 +1,4 @@
-// Copyright 2011 Boris Kogan (boris@thekogans.net)
+\// Copyright 2011 Boris Kogan (boris@thekogans.net)
 //
 // This file is part of libthekogans_util.
 //
@@ -15,8 +15,8 @@
 // You should have received a copy of the GNU General Public License
 // along with libthekogans_util. If not, see <http://www.gnu.org/licenses/>.
 
-#if !defined (__thekogans_util_OSXUtils_h)
-#define __thekogans_util_OSXUtils_h
+#if !defined (__thekogans_util_os_osx_OSXUtils_h)
+#define __thekogans_util_os_osx_OSXUtils_h
 
 #include "thekogans/util/Environment.h"
 
@@ -209,4 +209,4 @@ namespace thekogans {
 
 #endif // defined (TOOLCHAIN_OS_OSX)
 
-#endif // !defined (__thekogans_util_OSXUtils_h)
+#endif // !defined (__thekogans_util_os_osx_OSXUtils_h)

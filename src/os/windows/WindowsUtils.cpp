@@ -23,7 +23,7 @@
 #include "thekogans/util/Buffer.h"
 #include "thekogans/util/StringUtils.h"
 #include "thekogans/util/Exception.h"
-#include "thekogans/util/WindowsUtils.h"
+#include "thekogans/util/os/windows/WindowsUtils.h"
 
 _LIB_THEKOGANS_UTIL_DECL int _LIB_THEKOGANS_UTIL_API pipe (
         THEKOGANS_UTIL_HANDLE fildes[2]) {

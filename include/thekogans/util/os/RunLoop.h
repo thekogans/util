@@ -15,8 +15,8 @@
 // You should have received a copy of the GNU General Public License
 // along with libthekogans_util. If not, see <http://www.gnu.org/licenses/>.
 
-#if !defined (__thekogans_util_os_OS_h)
-#define __thekogans_util_os_OS_h
+#if !defined (__thekogans_util_os_RunLoop_h)
+#define __thekogans_util_os_RunLoop_h
 
 #include "thekogans/util/Config.h"
 
@@ -60,4 +60,4 @@ namespace thekogans {
     } // namespace util
 } // namespace thekogans
 
-#endif // !defined (__thekogans_util_os_OS_h)
+#endif // !defined (__thekogans_util_os_RunLoop_h)

@@ -15,8 +15,8 @@
 // You should have received a copy of the GNU General Public License
 // along with libthekogans_util. If not, see <http://www.gnu.org/licenses/>.
 
-#if !defined (__thekogans_util_WindowsUtils_h)
-#define __thekogans_util_WindowsUtils_h
+#if !defined (__thekogans_util_os_windows_WindowsUtils_h)
+#define __thekogans_util_os_windows_WindowsUtils_h
 
 #include "thekogans/util/Environment.h"
 
@@ -334,10 +334,10 @@ namespace thekogans {
                     THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (Stream)
 
                     /// \brief
-                    /// Windows window.
+                    /// Windows window handle.
                     HWND wnd;
                     /// \brief
-                    /// true == call DestroyWindow in the dtor.
+                    /// Used to retrieve a Window::SharedPtr from the window registry.
                     const WindowRegistry::Token token;
 
                     /// \brief
@@ -363,6 +363,10 @@ namespace thekogans {
                     /// dtor.
                     virtual ~Window ();
 
+                    inline WindowRegistry::Token::ValueType GetToken () const {
+                        return token.GetValue ();
+                    }
+
                     /// \brief
                     virtual LRESULT OnEvent (
                             UINT message,
@@ -382,8 +386,8 @@ namespace thekogans {
                 /// Windows thread based run loop.
 
                 struct RunLoop : public os::RunLoop {
-                    const UINT ID_RUN_LOOP_EXECUTE_JOBS = RegisterWindowMessageW (L"thekogans_util_os_windows_ThreadRunLoop_ExecuteJobs");
-                    const UINT ID_RUN_LOOP_STOP = RegisterWindowMessageW (L"thekogans_util_os_windows_ThreadRunLoop_Stop");
+                    const UINT ID_RUN_LOOP_EXECUTE_JOBS = RegisterWindowMessageW (L"thekogans_util_os_windows_RunLoop_ExecuteJobs");
+                    const UINT ID_RUN_LOOP_STOP = RegisterWindowMessageW (L"thekogans_util_os_windows_RunLoop_Stop");
 
                     DWORD threadId;
 
@@ -410,4 +414,4 @@ namespace thekogans {
 
 #endif // defined (TOOLCHAIN_OS_Windows)
 
-#endif // !defined (__thekogans_util_WindowsUtils_h)
+#endif // !defined (__thekogans_util_os_windows_WindowsUtils_h)

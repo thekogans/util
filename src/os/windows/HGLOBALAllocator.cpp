@@ -30,44 +30,48 @@
 #endif // !defined (_WINDOWS_)
 #include <memory>
 #include "thekogans/util/Exception.h"
-#include "thekogans/util/HGLOBALAllocator.h"
+#include "thekogans/util/os/windows/HGLOBALAllocator.h"
 
 namespace thekogans {
     namespace util {
+        namespace os {
+            namespace windows {
 
-        THEKOGANS_UTIL_IMPLEMENT_ALLOCATOR (HGLOBALAllocator)
+                THEKOGANS_UTIL_IMPLEMENT_ALLOCATOR (HGLOBALAllocator)
 
-        HGLOBALAllocator &HGLOBALAllocator::Instance () {
-            static HGLOBALAllocator *instance = new HGLOBALAllocator;
-            return *instance;
-        }
-
-        void *HGLOBALAllocator::Alloc (std::size_t size) {
-            return Alloc (GMEM_FIXED,  size);
-        }
-
-        void HGLOBALAllocator::Free (
-                void *ptr,
-                std::size_t /*size*/) {
-            if (ptr != 0) {
-                GlobalFree (ptr);
-            }
-        }
-
-        void *HGLOBALAllocator::Alloc (
-                ui32 flags,
-                std::size_t size) {
-            void *ptr = 0;
-            if (size > 0) {
-                ptr = GlobalAlloc (flags,  size);
-                if (ptr == 0) {
-                    THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                        THEKOGANS_UTIL_OS_ERROR_CODE);
+                HGLOBALAllocator &HGLOBALAllocator::Instance () {
+                    static HGLOBALAllocator *instance = new HGLOBALAllocator;
+                    return *instance;
                 }
-            }
-            return ptr;
-        }
 
+                void *HGLOBALAllocator::Alloc (std::size_t size) {
+                    return Alloc (GMEM_FIXED,  size);
+                }
+
+                void HGLOBALAllocator::Free (
+                        void *ptr,
+                        std::size_t /*size*/) {
+                    if (ptr != 0) {
+                        GlobalFree (ptr);
+                    }
+                }
+
+                void *HGLOBALAllocator::Alloc (
+                        ui32 flags,
+                        std::size_t size) {
+                    void *ptr = 0;
+                    if (size > 0) {
+                        ptr = GlobalAlloc (flags,  size);
+                        if (ptr == 0) {
+                            THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                                THEKOGANS_UTIL_OS_ERROR_CODE);
+                        }
+                    }
+                    return ptr;
+                }
+
+            } // namespace windows
+        } // namespace os
     } // namespace util
 } // namespace thekogans
 
