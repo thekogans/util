@@ -32,7 +32,7 @@
 #elif defined (TOOLCHAIN_OS_Linux)
     #include <ctime>
 #elif defined (TOOLCHAIN_OS_OSX)
-    #include "thekogans/util/OSXUtils.h"
+    #include "thekogans/util/os/osx/OSXUtils.h"
 #endif // defined (TOOLCHAIN_OS_Windows)
 #include <string>
 #include "thekogans/util/Config.h"
@@ -189,7 +189,7 @@ namespace thekogans {
         #elif defined (TOOLCHAIN_OS_OSX)
             /// \brief
             /// OS X native timer object.
-            KQueueTimer *timer;
+            os::osx::KQueueTimer *timer;
             /// \brief
             /// OS X timer callback.
             static void TimerCallback (void *userData);

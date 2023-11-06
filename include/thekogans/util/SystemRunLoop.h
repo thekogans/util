@@ -25,35 +25,39 @@
 #include "thekogans/util/Config.h"
 #include "thekogans/util/RunLoop.h"
 #if defined (TOOLCHAIN_OS_Windows)
-    #include "thekogans/util/os/windows/RunLoop.h"
+    #include "thekogans/util/os/windows/WindowsUtils.h"
 #elif defined (TOOLCHAIN_OS_Linux)
-    #include "thekogans/util/os/linux/RunLoop.h"
+    #include "thekogans/util/os/linux/XlibUtils.h"
 #elif defined (TOOLCHAIN_OS_OSX)
-    #include "thekogans/util/os/osx/RunLoop.h"
+    #include "thekogans/util/os/osx/OSXUtils.h"
 #endif // defined (TOOLCHAIN_OS_Linux)
+#include "thekogans/util/HRTimer.h"
 
 namespace thekogans {
     namespace util {
 
+    #if defined (TOOLCHAIN_OS_Windows)
+        typedef os::windows::RunLoop OSThreadRunLoopType;
+    #elif defined (TOOLCHAIN_OS_Linux)
+        typedef os::linux::RunLoop OSThreadRunLoopType;
+    #elif defined (TOOLCHAIN_OS_OSX)
+        typedef os::osx::CFRunLoop OSThreadRunLoopType;
+    #endif // defined (TOOLCHAIN_OS_Windows)
+
         /// \struct SystemRunLoop SystemRunLoop.h thekogans/util/SystemRunLoop.h
         ///
         /// \brief
-        /// SystemRunLoop is a marriage between an \see{os::RunLoop} and \see{RunLoop}. It
-        /// alows the user to make any thread using os specific run loop facilities in to a
-        /// thread that supports \see{RunLoop::Job} scheduling and execution. SystemRunLoop
-        /// is used by \see{MainRunLoop} to make sure the main thread is responsible for
-        /// UI updates and other system notifications. But you can use SystemRunLoop in any
+        /// SystemRunLoop is a marriage between an \see{util::RunLoop} and \see{os::RunLoop}.
+        /// It alows the user to make any thread using os specific run loop facilities in to
+        /// a thread that supports \see{util::RunLoop::Job} scheduling and execution. SystemRunLoop
+        /// is used by \see{MainRunLoop} to make sure the main thread is responsible for UI
+        /// updates and other system notifications. But you can use SystemRunLoop in any
         /// thread that requires those facilities.
 
-        struct _LIB_THEKOGANS_UTIL_DECL SystemRunLoop :
-                public RunLoop,
-            #if defined (TOOLCHAIN_OS_Windows)
-                public os::windows::RunLoop {
-            #elif defined (TOOLCHAIN_OS_Linux)
-                public os::linux::RunLoop {
-            #elif defined (TOOLCHAIN_OS_OSX)
-                public os::osx::RunLoop {
-            #endif // defined (TOOLCHAIN_OS_Windows)
+        template<typename OSRunLoop = OSThreadRunLoopType>
+        struct SystemRunLoop :
+                public util::RunLoop,
+                private OSRunLoop {
             /// \brief
             /// ctor.
             /// \param[in] name \see{RunLoop} name.
@@ -62,7 +66,7 @@ namespace thekogans {
                 const std::string &name = std::string (),
                 JobExecutionPolicy::SharedPtr jobExecutionPolicy =
                     JobExecutionPolicy::SharedPtr (new FIFOJobExecutionPolicy)) :
-                RunLoop (name, jobExecutionPolicy) {}
+                util::RunLoop (name, jobExecutionPolicy) {}
             /// \brief
             /// dtor.
             virtual ~SystemRunLoop () {
@@ -73,19 +77,40 @@ namespace thekogans {
             /// \brief
             /// Start the run loop. This is a blocking call and will
             /// only complete when Stop is called.
-            virtual void Start () override;
+            virtual void Start () override {
+                state->done = false;
+                ExecuteJob ();
+                OSRunLoop::Begin ();
+            }
             /// \brief
             /// Stop the run loop. Calling this function will cause the Start call
             /// to return.
             /// \param[in] cancelRunningJobs true = Cancel all running jobs.
             /// \param[in] cancelPendingJobs true = Cancel all pending jobs.
             virtual void Stop (
-                bool cancelRunningJobs = true,
-                bool cancelPendingJobs = true) override;
+                    bool cancelRunningJobs = true,
+                    bool cancelPendingJobs = true) override {
+                state->done = true;
+                if (cancelRunningJobs) {
+                    CancelRunningJobs ();
+                }
+                OSRunLoop::End ();
+                if (cancelPendingJobs) {
+                    Job *job;
+                    while ((job = state->jobExecutionPolicy->DeqJob (*state)) != 0) {
+                        job->Cancel ();
+                        state->runningJobs.push_back (job);
+                        state->FinishedJob (job, 0, 0);
+                    }
+                }
+                state->idle.SignalAll ();
+            }
             /// \brief
             /// Return true is the run loop is running (Start was called).
             /// \return true is the run loop is running (Start was called).
-            virtual bool IsRunning () override;
+            virtual bool IsRunning () override {
+                return !state->done;
+            }
 
             /// \brief
             /// Enqueue a job to be performed on the run loop thread.
@@ -119,19 +144,53 @@ namespace thekogans {
             }
 
         private:
+            /// \brief
+            /// Helper used by EnqJob and EnqJobFront above.
+            /// \param[in] job Job to enqueue.
+            /// \param[in] wait Wait for job to finish. Used for synchronous job execution.
+            /// \param[in] timeSpec How long to wait for the job to complete.
+            /// IMPORTANT: timeSpec is a relative value.
+            /// NOTE: Same constraint applies to EnqJob as Stop. Namely, you can't call EnqJob
+            /// from the same thread that called Start.
+            /// \param[in] front true == enq to the front of the queue.
+            /// \return true == !wait || WaitForJob (...)
             bool EnqJob (
-                Job::SharedPtr job,
-                bool wait,
-                const TimeSpec &timeSpec,
-                bool front);
-            // os::RunLoop
+                    Job::SharedPtr job,
+                    bool wait,
+                    const TimeSpec &timeSpec,
+                    bool front) {
+                bool result = front ? util::RunLoop::EnqJobFront (job) : util::RunLoop::EnqJob (job);
+                if (result) {
+                    OSRunLoop::ScheduleJob ();
+                    result = !wait || WaitForJob (job, timeSpec);
+                }
+                return result;
+            }
+
+            // OSRunLoop
             /// \brief
             /// Used internally to execute the pending jobs.
-            virtual void ExecuteJob () override;
-
-            /// \brief
-            /// SystemRunLoop is neither copy constructable, nor assignable.
-            THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (SystemRunLoop)
+            virtual void ExecuteJob () override {
+                while (!state->done) {
+                    Job *job = state->DeqJob (false);
+                    if (job == 0) {
+                        break;
+                    }
+                    ui64 start = 0;
+                    ui64 end = 0;
+                    // Short circuit cancelled pending jobs.
+                    if (!job->ShouldStop (state->done)) {
+                        start = HRTimer::Click ();
+                        job->SetState (Job::Running);
+                        job->Prologue (state->done);
+                        job->Execute (state->done);
+                        job->Epilogue (state->done);
+                        job->Succeed (state->done);
+                        end = HRTimer::Click ();
+                    }
+                    state->FinishedJob (job, start, end);
+                }
+            }
         };
 
     } // namespace util

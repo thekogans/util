@@ -363,11 +363,20 @@ namespace thekogans {
                     /// dtor.
                     virtual ~Window ();
 
+                    /// \brief
+                    /// Return the WindowRegistry token for this window.
+                    /// \return WindowRegistry token for this window.
                     inline WindowRegistry::Token::ValueType GetToken () const {
                         return token.GetValue ();
                     }
 
                     /// \brief
+                    /// Default event processor. Window derivatives should call down
+                    /// to this method to process all messages that they don't.
+                    /// \param[in] message Windows message id.
+                    /// \param[in] wParam Optional message parameter.
+                    /// \param[in] lParam Optional message parameter.
+                    /// \return DefWindowProc (wnd, message, wParam, lParam);
                     virtual LRESULT OnEvent (
                             UINT message,
                             WPARAM wParam = 0,
@@ -380,30 +389,44 @@ namespace thekogans {
                     THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (Window)
                 };
 
-                /// \struct ThreadRunLoop WindowsUtils.h thekogans/util/WindowsUtils.h
+                /// \struct RunLoop WindowsUtils.h thekogans/util/WindowsUtils.h
                 ///
                 /// \brief
                 /// Windows thread based run loop.
 
                 struct RunLoop : public os::RunLoop {
-                    const UINT ID_RUN_LOOP_EXECUTE_JOBS = RegisterWindowMessageW (L"thekogans_util_os_windows_RunLoop_ExecuteJobs");
-                    const UINT ID_RUN_LOOP_STOP = RegisterWindowMessageW (L"thekogans_util_os_windows_RunLoop_Stop");
+                    /// \brief
+                    /// Message sent to the run loop (ScheduleJob) thread to initiate job processing.
+                    const UINT ID_RUN_LOOP_EXECUTE_JOB =
+                        RegisterWindowMessageW (L"thekogans_util_os_windows_RunLoop_ExecuteJob");
+                    /// \brief
+                    /// Message sent to the run loop (End) thread to exit out of Begin.
+                    const UINT ID_RUN_LOOP_STOP =
+                        RegisterWindowMessageW (L"thekogans_util_os_windows_RunLoop_Stop");
 
+                    /// \brief
+                    /// Thread id.
                     DWORD threadId;
 
+                    /// \brief
+                    /// ctor.
+                    /// \param[in] threadId_ Thread id.
                     RunLoop (
                         DWORD threadId_ = GetCurrentThreadId ()) :
                         threadId (threadId_) {}
 
                     /// \brief
-                    /// Start the run loop.
+                    /// Enter GetMessageW/DispatchMessageW thread loop. Windows
+                    /// created by this thread will get their messages serviced
+                    /// by this loop.
                     virtual void Begin () override;
                     /// \brief
-                    /// Stop the run loop.
+                    /// Post ID_RUN_LOOP_STOP to the thread to indicate that
+                    /// the run loop should exit Begin.
                     virtual void End () override;
                     /// \brief
-                    /// This is system specific. Each RunLoop implementation will use whatever
-                    /// system facilities it needs to schedule an ExecutionTarget job.
+                    /// Post ID_RUN_LOOP_EXECUTE_JOB to the thread to signal
+                    /// that job processing should take place.
                     virtual void ScheduleJob () override;
                 };
 

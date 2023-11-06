@@ -1,4 +1,4 @@
-\// Copyright 2011 Boris Kogan (boris@thekogans.net)
+// Copyright 2011 Boris Kogan (boris@thekogans.net)
 //
 // This file is part of libthekogans_util.
 //
@@ -22,12 +22,13 @@
 
 #if defined (TOOLCHAIN_OS_OSX)
 
+#include <CoreFoundation/CFRunLoop.h>
 #include <CoreFoundation/CFError.h>
 #include <IOKit/IOReturn.h>
 #include <sys/stat.h>
 #include <string>
 #include "thekogans/util/Config.h"
-#include "thekogans/util/OS.h"
+#include "thekogans/util/os/RunLoop.h"
 
 #define STAT_STRUCT struct stat
 #define STAT_FUNC stat
@@ -190,7 +191,6 @@ namespace thekogans {
                 struct NSAppRunLoop : public RunLoop {
                     /// \brief
                     /// ctor.
-                    /// \param[in] runLoop OS X run loop.
                     NSAppRunLoop () :
                         RunLoop (CFRunLoopGetMain ()) {}
 

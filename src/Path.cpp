@@ -44,12 +44,12 @@
 #include <algorithm>
 #if defined (TOOLCHAIN_OS_Windows)
     #include "thekogans/util/StringUtils.h"
-    #include "thekogans/util/WindowsUtils.h"
+    #include "thekogans/util/os/osx/WindowsUtils.h"
 #elif defined (TOOLCHAIN_OS_Linux)
-    #include "thekogans/util/LinuxUtils.h"
+    #include "thekogans/util/os/linux/LinuxUtils.h"
 #elif defined (TOOLCHAIN_OS_OSX)
     #include "thekogans/util/Array.h"
-    #include "thekogans/util/OSXUtils.h"
+    #include "thekogans/util/os/osx/OSXUtils.h"
 #endif // defined (TOOLCHAIN_OS_Windows)
 #include "thekogans/util/Directory.h"
 #include "thekogans/util/File.h"
@@ -145,7 +145,7 @@ namespace thekogans {
             }
             return homeDirectory;
         #elif defined (TOOLCHAIN_OS_OSX)
-            return util::GetHomeDirectory ();
+            return os::osx::GetHomeDirectory ();
         #endif // defined (TOOLCHAIN_OS_Windows)
         }
 

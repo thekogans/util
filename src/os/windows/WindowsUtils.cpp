@@ -352,7 +352,7 @@ namespace thekogans {
                 }
 
                 void RunLoop::ScheduleJob () {
-                    PostThreadMessageW (threadId, ID_RUN_LOOP_EXECUTE_JOBS, 0, 0);
+                    PostThreadMessageW (threadId, ID_RUN_LOOP_EXECUTE_JOB, 0, 0);
                 }
 
             } // namespace windows

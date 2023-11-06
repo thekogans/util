@@ -687,20 +687,10 @@ namespace thekogans {
                     // memory management.
                     AddRef ();
                     // Pre-allocate the string to avoid memory
-                    // management in Reset (below).
+                    // management in Reset.
                     runLoopId = GUID::FromRandom ().ToString ();
                 }
             protected:
-                // This duplicates RunLoop::Job::Reset with a minor
-                // difference. We avoid std::string copy (and
-                // potential malloc/free) by copying the RunLoop::Id
-                // in place.
-                virtual void Reset (const RunLoop::Id &runLoopId_) {
-                    strncpy (&runLoopId[0], &runLoopId_[0], runLoopId.size ());
-                    SetState (Pending);
-                    disposition = Unknown;
-                    completed.Reset ();
-                }
                 virtual void Execute (const std::atomic<bool> & /*done*/) throw () {
                     exit (exitCode);
                 }
@@ -708,14 +698,20 @@ namespace thekogans {
             RunLoop::Job *failureExit = new exitJob (EXIT_FAILURE);
             RunLoop::Job *successExit = new exitJob (EXIT_SUCCESS);
 
+            typedef Singleton<
+                JobQueue,
+                SpinLock,
+                RefCountedInstanceCreator<JobQueue>,
+                RefCountedInstanceDestroyer<JobQueue>> DaemonizeJobQueue;
+
             void SignalHandlerSIGCHLD (int /*signum*/) {
-                GlobalJobQueue::Instance ().EnqJob (RunLoop::Job::SharedPtr (failureExit));
+                DaemonizeJobQueue::Instance ().EnqJob (RunLoop::Job::SharedPtr (failureExit));
             }
             void SignalHandlerSIGALRM (int /*signum*/) {
-                GlobalJobQueue::Instance ().EnqJob (RunLoop::Job::SharedPtr (failureExit));
+                DaemonizeJobQueue::Instance ().EnqJob (RunLoop::Job::SharedPtr (failureExit));
             }
             void SignalHandlerSIGUSR1 (int /*signum*/) {
-                GlobalJobQueue::Instance ().EnqJob (RunLoop::Job::SharedPtr (successExit));
+                DaemonizeJobQueue::Instance ().EnqJob (RunLoop::Job::SharedPtr (successExit));
             }
         }
 
@@ -750,7 +746,7 @@ namespace thekogans {
             signal (SIGALRM, SignalHandlerSIGALRM);
             signal (SIGUSR1, SignalHandlerSIGUSR1);
             // This hack is necessary to make sure no allocation is done in the signal handler.
-            GlobalJobQueue::CreateInstance ();
+            DaemonizeJobQueue::CreateInstance ();
             // Fork off the parent process.
             pid_t pid = fork ();
             if (pid < 0) {

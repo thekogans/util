@@ -233,6 +233,9 @@ namespace thekogans {
         /// using the defaults. This struct exists to aid in that. If all
         /// you need is a background thread where you can schedule jobs,
         /// then GlobalJobQueue::Instance () will do the trick.
+        /// To provide your own arguments to GlobalJobQueue ctor call
+        /// GlobalJobQueue::CreateInstance (...) before the first call
+        /// to GlobalJobQueue::Instance ().
 
         struct _LIB_THEKOGANS_UTIL_DECL GlobalJobQueue :
                 public JobQueue,

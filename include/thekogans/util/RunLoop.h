@@ -321,6 +321,7 @@ namespace thekogans {
                 friend struct ThreadRunLoop;
                 /// \brief
                 /// SystemRunLoop needs acces to protected members.
+                template<typename OSRunLoop>
                 friend struct SystemRunLoop;
                 /// \brief
                 /// JobQueue needs acces to protected members.
@@ -810,24 +811,6 @@ namespace thekogans {
                 virtual void UninitializeWorker () throw () {}
             };
 
-            /// \struct RunLoop::WorkerInitializer RunLoop.h thekogans/util/RunLoop.h
-            ///
-            /// \brief
-            /// Instantiate one of these in your RunLoop thread to initialize/uninitialize the worker.
-            struct _LIB_THEKOGANS_UTIL_DECL WorkerInitializer {
-                /// \brief
-                /// Worker thread initialization/uninitialization callback.
-                WorkerCallback *workerCallback;
-
-                /// \brief
-                /// ctor.
-                /// \param[in] workerCallback_ Worker thread initialization/uninitialization callback.
-                explicit WorkerInitializer (WorkerCallback *workerCallback_);
-                /// \brief
-                /// dtor.
-                ~WorkerInitializer ();
-            };
-
         #if defined (TOOLCHAIN_OS_Windows)
             /// \struct RunLoop::COMInitializer RunLoop.h thekogans/util/RunLoop.h
             ///
@@ -866,12 +849,26 @@ namespace thekogans {
                 /// Called by the worker before exiting the thread.
                 virtual void UninitializeWorker () throw () override;
             };
-        #elif defined (TOOLCHAIN_OS_OSX)
-            /// \struct RunLoop::NSAppInitializer RunLoop.h thekogans/util/RunLoop.h
+        #elif defined (TOOLCHAIN_OS_Linux)
+            /// \struct RunLoop::XlibInitializer RunLoop.h thekogans/util/RunLoop.h
             ///
             /// \brief
-            /// Initialize the OS X NSApp framework.
-            struct _LIB_THEKOGANS_UTIL_DECL NSAppInitializer : public WorkerCallback {
+            /// Initialize the Linux X library.
+            struct _LIB_THEKOGANS_UTIL_DECL XlibInitializer : public WorkerCallback {
+                // WorkerCallback
+                /// \brief
+                /// Called by the worker before entering the job execution loop.
+                virtual void InitializeWorker () throw () override;
+                /// \brief
+                /// Called by the worker before exiting the thread.
+                virtual void UninitializeWorker () throw () override;
+            };
+        #elif defined (TOOLCHAIN_OS_OSX)
+            /// \struct RunLoop::NSApplicationInitializer RunLoop.h thekogans/util/RunLoop.h
+            ///
+            /// \brief
+            /// Initialize the OS X NSApplication framework.
+            struct _LIB_THEKOGANS_UTIL_DECL NSApplicationInitializer : public WorkerCallback {
                 // WorkerCallback
                 /// \brief
                 /// Called by the worker before entering the job execution loop.
@@ -881,6 +878,27 @@ namespace thekogans {
                 virtual void UninitializeWorker () throw () override;
             };
         #endif // defined (TOOLCHAIN_OS_Windows)
+
+            /// \struct RunLoop::WorkerInitializer RunLoop.h thekogans/util/RunLoop.h
+            ///
+            /// \brief
+            /// Instantiate one of these in your RunLoop thread to initialize/uninitialize the worker.
+            /// This is a convenience class meant to be instatiated on the stack of the worker thread.
+            /// It's ctor will call WorkerCallback::InitializeWorker and it's dtor will call
+            /// WorkerCallback::UninitializeWorker.
+            struct _LIB_THEKOGANS_UTIL_DECL WorkerInitializer {
+                /// \brief
+                /// Worker thread initialization/uninitialization callback.
+                WorkerCallback *workerCallback;
+
+                /// \brief
+                /// ctor.
+                /// \param[in] workerCallback_ Worker thread initialization/uninitialization callback.
+                explicit WorkerInitializer (WorkerCallback *workerCallback_);
+                /// \brief
+                /// dtor.
+                ~WorkerInitializer ();
+            };
 
             /// \struct RunLoop::State RunLoop.h thekogans/util/RunLoop.h
             ///
@@ -967,7 +985,18 @@ namespace thekogans {
 
         protected:
             /// \brief
-            /// Shared RunLoop state.
+            /// Shared RunLoop state. The idea behind state is
+            /// to get around potential lifetime issues that exist
+            /// between run loop worker threads and the RunLoop object
+            /// itself. Since RunLoop can be instantiated anywhere
+            /// (including on the stack and as an aggregate of another
+            /// class) it's important that the run loop workers are
+            /// able to access run loop state even though the run loop
+            /// itself could be gone. To that end RunLoop:::State is
+            /// always allocated on the heap and it's lifetime is
+            /// controlled by the reference count encoded in it's
+            /// State::SharedPtr. To allow the last worker to release
+            /// the state, pass the State::SharedPtr to worker threads.
             State::SharedPtr state;
 
         public:

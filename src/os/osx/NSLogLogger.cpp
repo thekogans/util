@@ -21,7 +21,7 @@
 
 #include <CoreFoundation/CoreFoundation.h>
 #include "thekogans/util/StringUtils.h"
-#include "thekogans/util/NSLogLogger.h"
+#include "thekogans/util/os/osx/NSLogLogger.h"
 
 #if __cplusplus
 extern "C" {

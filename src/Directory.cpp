@@ -41,11 +41,11 @@
 #include <list>
 #include <set>
 #if defined (TOOLCHAIN_OS_Windows)
-    #include "thekogans/util/WindowsUtils.h"
+    #include "thekogans/util/os/windows/WindowsUtils.h"
 #elif defined (TOOLCHAIN_OS_Linux)
-    #include "thekogans/util/LinuxUtils.h"
+    #include "thekogans/util/os/linux/LinuxUtils.h"
 #elif defined (TOOLCHAIN_OS_OSX)
-    #include "thekogans/util/OSXUtils.h"
+    #include "thekogans/util/os/osx/OSXUtils.h"
 #endif // defined (TOOLCHAIN_OS_Windows)
 #include "thekogans/util/Flags.h"
 #include "thekogans/util/Path.h"

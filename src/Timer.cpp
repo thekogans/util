@@ -24,7 +24,7 @@
 #elif defined (TOOLCHAIN_OS_Linux)
     #include <signal.h>
 #elif defined (TOOLCHAIN_OS_OSX)
-    #include "thekogans/util/OSXUtils.h"
+    #include "thekogans/util/os/osx/OSXUtils.h"
 #endif // defined (TOOLCHAIN_OS_Windows)
 #include "thekogans/util/LoggerMgr.h"
 #include "thekogans/util/Exception.h"
@@ -82,7 +82,7 @@ namespace thekogans {
                 Sleep (TimeSpec::FromMilliseconds (50));
             }
         #elif defined (TOOLCHAIN_OS_OSX)
-            timer = CreateKQueueTimer (TimerCallback, (void *)token.GetValue ());
+            timer = os::osx::CreateKQueueTimer (TimerCallback, (void *)token.GetValue ());
             if (timer == 0) {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
                     THEKOGANS_UTIL_OS_ERROR_CODE);
@@ -98,7 +98,7 @@ namespace thekogans {
         #elif defined (TOOLCHAIN_OS_Linux)
             timer_delete (timer);
         #elif defined (TOOLCHAIN_OS_OSX)
-            DestroyKQueueTimer (timer);
+            os::osx::DestroyKQueueTimer (timer);
         #endif // defined (TOOLCHAIN_OS_Windows)
         }
 
@@ -127,7 +127,7 @@ namespace thekogans {
                         THEKOGANS_UTIL_OS_ERROR_CODE);
                 }
             #elif defined (TOOLCHAIN_OS_OSX)
-                StartKQueueTimer (timer, timeSpec, periodic);
+                os::osx::StartKQueueTimer (timer, timeSpec, periodic);
             #endif // defined (TOOLCHAIN_OS_Windows)
             }
             else {
@@ -147,7 +147,7 @@ namespace thekogans {
                     THEKOGANS_UTIL_OS_ERROR_CODE);
             }
         #elif defined (TOOLCHAIN_OS_OSX)
-            StopKQueueTimer (timer);
+            os::osx::StopKQueueTimer (timer);
         #endif // defined (TOOLCHAIN_OS_Windows)
         }
 
@@ -163,7 +163,7 @@ namespace thekogans {
             }
             return TimeSpec (spec.it_value) != TimeSpec::Zero;
         #elif defined (TOOLCHAIN_OS_OSX)
-            return IsKQueueTimerRunning (timer);
+            return os::osx::IsKQueueTimerRunning (timer);
         #endif // defined (TOOLCHAIN_OS_Windows)
         }
 

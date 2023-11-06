@@ -32,31 +32,32 @@
 #include "thekogans/util/RunLoop.h"
 #include "thekogans/util/SystemRunLoop.h"
 #include "thekogans/util/TimeSpec.h"
-#include "thekogans/util/OSXUtils.h"
+#include "thekogans/util/os/osx/OSXUtils.h"
 
 namespace thekogans {
     namespace util {
+
+        void RunLoop::NSApplicationInitializer::InitializeWorker () throw () {
+            THEKOGANS_UTIL_TRY {
+                if (NSApplicationLoad () == YES) {
+                #if !__has_feature (objc_arc)
+                    [NSAutoreleasePool new];
+                #endif // !__has_feature (objc_arc)
+                    [NSApplication sharedApplication];
+                }
+                else {
+                    THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
+                        "%s", "Failed to initialize NSApplication!\n");
+                }
+            }
+            THEKOGANS_UTIL_CATCH_AND_LOG_SUBSYSTEM (THEKOGANS_UTIL)
+        }
+
+        void RunLoop::NSApplicationInitializer::UninitializeWorker () throw () {
+        }
+
         namespace os {
             namespace osx {
-
-                void RunLoop::NSApplicationInitializer::InitializeWorker () throw () {
-                    THEKOGANS_UTIL_TRY {
-                        if (NSApplicationLoad () == YES) {
-                        #if !__has_feature (objc_arc)
-                            [NSAutoreleasePool new];
-                        #endif // !__has_feature (objc_arc)
-                            [NSApplication sharedApplication];
-                        }
-                        else {
-                            THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                                "%s", "Failed to initialize NSApp!\n");
-                        }
-                    }
-                    THEKOGANS_UTIL_CATCH_AND_LOG_SUBSYSTEM (THEKOGANS_UTIL)
-                }
-
-                void RunLoop::NSApplicationInitializer::UninitializeWorker () throw () {
-                }
 
                 namespace {
                     struct CFStringRefDeleter {

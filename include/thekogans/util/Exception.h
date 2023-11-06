@@ -49,7 +49,7 @@
 #include "thekogans/util/Mutex.h"
 #include "thekogans/util/StringUtils.h"
 #if defined (TOOLCHAIN_OS_OSX)
-    #include "thekogans/util/OSXUtils.h"
+    #include "thekogans/util/os/osx/OSXUtils.h"
 #endif // defined (TOOLCHAIN_OS_OSX)
 
 namespace thekogans {
@@ -496,7 +496,7 @@ namespace thekogans {
         #define THEKOGANS_UTIL_SEC_OSSTATUS_ERROR_CODE_EXCEPTION_EX(\
                 file, function, line, buildTime, errorCode)\
             thekogans::util::Exception (file, function, line, buildTime,\
-                errorCode, thekogans::util::DescriptionFromSecOSStatus (errorCode).c_str ())
+                errorCode, thekogans::util::os::osx::DescriptionFromSecOSStatus (errorCode).c_str ())
         /// \def THEKOGANS_UTIL_SEC_OSSTATUS_ERROR_CODE_EXCEPTION(errorCode)
         /// Build an Exception from Security framework OSStatus errorCode.
         #define THEKOGANS_UTIL_SEC_OSSTATUS_ERROR_CODE_EXCEPTION(errorCode)\
@@ -509,7 +509,7 @@ namespace thekogans {
         #define THEKOGANS_UTIL_OSSTATUS_ERROR_CODE_EXCEPTION_EX(\
                 file, function, line, buildTime, errorCode)\
             thekogans::util::Exception (file, function, line, buildTime,\
-                errorCode, thekogans::util::DescriptionFromOSStatus (errorCode).c_str ())
+                errorCode, thekogans::util::os::osx::DescriptionFromOSStatus (errorCode).c_str ())
         /// \def THEKOGANS_UTIL_OSSTATUS_ERROR_CODE_EXCEPTION(errorCode)
         /// Build an Exception from OSStatus errorCode.
         #define THEKOGANS_UTIL_OSSTATUS_ERROR_CODE_EXCEPTION(errorCode)\
@@ -523,7 +523,7 @@ namespace thekogans {
                 file, function, line, buildTime, error)\
             thekogans::util::Exception (file, function, line, buildTime,\
                 (thekogans::util::i32)CFErrorGetCode (error),\
-                thekogans::util::DescriptionFromCFErrorRef (error).c_str ())
+                thekogans::util::os::osx::DescriptionFromCFErrorRef (error).c_str ())
         /// \def THEKOGANS_UTIL_CFERRORREF_EXCEPTION(error)
         /// Build an Exception from CFErrorRef error.
         #define THEKOGANS_UTIL_CFERRORREF_EXCEPTION(error)\
@@ -536,7 +536,7 @@ namespace thekogans {
         #define THEKOGANS_UTIL_IORETURN_EXCEPTION_EX(\
                 file, function, line, buildTime, error)\
             thekogans::util::Exception (file, function, line, buildTime,\
-                error, thekogans::util::DescriptionFromIOReturn (error).c_str ())
+                error, thekogans::util::os::osx::DescriptionFromIOReturn (error).c_str ())
         /// \def THEKOGANS_UTIL_IORETURN_EXCEPTION(error)
         /// Build an Exception from IOReturn errorCode.
         #define THEKOGANS_UTIL_IORETURN_EXCEPTION(error)\
@@ -674,7 +674,7 @@ namespace thekogans {
                 file, function, line, buildTime, errorCode)\
             THEKOGANS_UTIL_DEBUG_BREAK\
             throw thekogans::util::Exception (file, function, line, buildTime,\
-                errorCode, thekogans::util::DescriptionFromSecOSStatus (errorCode).c_str ())
+                errorCode, thekogans::util::os::osx::DescriptionFromSecOSStatus (errorCode).c_str ())
         /// \def THEKOGANS_UTIL_THROW_SEC_OSSTATUS_ERROR_CODE_EXCEPTION(errorCode)
         /// Throw an Exception from Security framework OSStatus errorCode.
         #define THEKOGANS_UTIL_THROW_SEC_OSSTATUS_ERROR_CODE_EXCEPTION(errorCode)\
@@ -689,7 +689,7 @@ namespace thekogans {
             THEKOGANS_UTIL_DEBUG_BREAK\
             throw thekogans::util::Exception (file, function, line, buildTime, errorCode,\
                 thekogans::util::FormatString ("%s%s",\
-                    thekogans::util::DescriptionFromSecOSStatus (errorCode).c_str (),\
+                    thekogans::util::os::osx::DescriptionFromSecOSStatus (errorCode).c_str (), \
                     thekogans::util::FormatString (format, __VA_ARGS__).c_str ()))
         /// \def THEKOGANS_UTIL_THROW_SEC_OSSTATUS_ERROR_CODE_AND_MESSAGE_EXCEPTION(
         ///          errorCode, format, ...)
@@ -722,7 +722,7 @@ namespace thekogans {
             THEKOGANS_UTIL_DEBUG_BREAK\
             throw thekogans::util::Exception (file, function, line, buildTime, errorCode,\
                 thekogans::util::FormatString ("%s%s",\
-                    thekogans::util::DescriptionFromOSStatus (errorCode).c_str (),\
+                    thekogans::util::os::osx::DescriptionFromOSStatus (errorCode).c_str (), \
                     thekogans::util::FormatString (format, __VA_ARGS__).c_str ()))
         /// \def THEKOGANS_UTIL_THROW_OSSTATUS_ERROR_CODE_AND_MESSAGE_EXCEPTION(
         ///          errorCode, format, ...)
@@ -741,7 +741,7 @@ namespace thekogans {
             THEKOGANS_UTIL_DEBUG_BREAK\
             throw thekogans::util::Exception (file, function, line, buildTime,\
                 (thekogans::util::i32)CFErrorGetCode (error),\
-                thekogans::util::DescriptionFromCFErrorRef (error).c_str ())
+                thekogans::util::os::osx::DescriptionFromCFErrorRef (error).c_str ())
         /// \def THEKOGANS_UTIL_THROW_CFERRORREF_EXCEPTION(error)
         /// Throw an Exception from CFErrorRef error.
         #define THEKOGANS_UTIL_THROW_CFERRORREF_EXCEPTION(error)\
@@ -756,7 +756,7 @@ namespace thekogans {
             THEKOGANS_UTIL_DEBUG_BREAK\
             throw thekogans::util::Exception (file, function, line, buildTime, CFErrorGetCode (error),\
                 thekogans::util::FormatString ("%s%s",\
-                    thekogans::util::DescriptionFromCFErrorRef (error).c_str (),\
+                    thekogans::util::os::osx::DescriptionFromCFErrorRef (error).c_str (), \
                     thekogans::util::FormatString (format, __VA_ARGS__).c_str ()))
         /// \def THEKOGANS_UTIL_THROW_CFERRORREF_AND_MESSAGE_EXCEPTION(
         ///          errorCode, format, ...)
@@ -774,7 +774,7 @@ namespace thekogans {
                 file, function, line, buildTime, error)\
             THEKOGANS_UTIL_DEBUG_BREAK\
             throw thekogans::util::Exception (file, function, line, buildTime,\
-                error, thekogans::util::DescriptionFromIOReturn (error).c_str ())
+                error, thekogans::util::os::osx::DescriptionFromIOReturn (error).c_str ())
         /// \def THEKOGANS_UTIL_THROW_IORETURN_EXCEPTION(error)
         /// Throw an Exception from IOReturn error.
         #define THEKOGANS_UTIL_THROW_IORETURN_EXCEPTION(error)\
@@ -789,7 +789,7 @@ namespace thekogans {
             THEKOGANS_UTIL_DEBUG_BREAK\
             throw thekogans::util::Exception (file, function, line, buildTime, error,\
                 thekogans::util::FormatString ("%s%s",\
-                    thekogans::util::DescriptionFromIOReturn (error).c_str (),\
+                    thekogans::util::os::osx::DescriptionFromIOReturn (error).c_str (), \
                     thekogans::util::FormatString (format, __VA_ARGS__).c_str ()))
         /// \def THEKOGANS_UTIL_THROW_IORETURN_AND_MESSAGE_EXCEPTION(
         ///          errorCode, format, ...)

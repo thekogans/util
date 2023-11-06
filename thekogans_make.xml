@@ -676,7 +676,6 @@
     <cpp_source>SpinRWLock.cpp</cpp_source>
     <cpp_source>StringUtils.cpp</cpp_source>
     <cpp_source>SystemInfo.cpp</cpp_source>
-    <cpp_source>SystemRunLoop.cpp</cpp_source>
     <cpp_source>Thread.cpp</cpp_source>
     <cpp_source>ThreadRunLoop.cpp</cpp_source>
     <cpp_source>Timer.cpp</cpp_source>

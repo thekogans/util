@@ -48,6 +48,9 @@ namespace thekogans {
                 virtual void End () = 0;
                 /// \brief
                 /// Schedule a job to be performed by run loop.
+                /// This is system specific. Each RunLoop implementation will use whatever
+                /// system facilities are appropriate to signal that job processing should
+                /// take place.
                 virtual void ScheduleJob () = 0;
 
                 /// \brief
