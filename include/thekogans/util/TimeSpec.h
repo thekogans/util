@@ -41,7 +41,7 @@
 #include "thekogans/util/Serializable.h"
 #include "thekogans/util/Exception.h"
 #if defined (TOOLCHAIN_OS_Windows)
-    #include "thekogans/util/WindowsUtils.h"
+    #include "thekogans/util/os/windows/WindowsUtils.h"
 #endif // defined (TOOLCHAIN_OS_Windows)
 
 namespace thekogans {

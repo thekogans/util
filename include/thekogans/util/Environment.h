@@ -27,7 +27,7 @@
 
 // TOOLCHAIN_OS
 #if !defined (TOOLCHAIN_OS)
-    #if defined (_WINDOWS_)
+    #if defined (_WIN32) || defined (_WIN64)
         #define TOOLCHAIN_OS "Windows"
         #if !defined (TOOLCHAIN_OS_Windows)
             #define TOOLCHAIN_OS_Windows

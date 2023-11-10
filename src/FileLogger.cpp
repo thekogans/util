@@ -20,7 +20,7 @@
 #include <iostream>
 #include "thekogans/util/Environment.h"
 #if defined (TOOLCHAIN_OS_Windows)
-    #include "thekogans/util/WindowsUtils.h"
+    #include "thekogans/util/os/windows/WindowsUtils.h"
 #endif // defined (TOOLCHAIN_OS_Windows)
 #include "thekogans/util/Path.h"
 #include "thekogans/util/Directory.h"

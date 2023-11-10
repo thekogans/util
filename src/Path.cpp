@@ -44,7 +44,7 @@
 #include <algorithm>
 #if defined (TOOLCHAIN_OS_Windows)
     #include "thekogans/util/StringUtils.h"
-    #include "thekogans/util/os/osx/WindowsUtils.h"
+    #include "thekogans/util/os/windows/WindowsUtils.h"
 #elif defined (TOOLCHAIN_OS_Linux)
     #include "thekogans/util/os/linux/LinuxUtils.h"
 #elif defined (TOOLCHAIN_OS_OSX)

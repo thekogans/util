@@ -26,7 +26,7 @@
         #endif // !defined (NOMINMAX)
         #include <windows.h>
     #endif // !defined (_WINDOWS_)
-    #include "thekogans/util/WindowsUtils.h"
+    #include "thekogans/util/os/windows/WindowsUtils.h"
 #else // defined (TOOLCHAIN_OS_Windows)
     #include "thekogans/util/Heap.h"
     #include "thekogans/util/SpinLock.h"

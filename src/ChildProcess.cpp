@@ -32,7 +32,7 @@
 #include <cstdlib>
 #include <vector>
 #if defined (TOOLCHAIN_OS_Windows)
-    #include "thekogans/util/WindowsUtils.h"
+    #include "thekogans/util/os/windows/WindowsUtils.h"
 #endif // defined (TOOLCHAIN_OS_Windows)
 #include "thekogans/util/Flags.h"
 #include "thekogans/util/LoggerMgr.h"
