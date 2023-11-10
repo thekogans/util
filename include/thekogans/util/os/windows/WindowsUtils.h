@@ -37,7 +37,7 @@
 #include "thekogans/util/Types.h"
 #include "thekogans/util/Constants.h"
 #include "thekogans/util/Rectangle.h"
-#include "thekogans/util/OS.h"
+#include "thekogans/util/os/RunLoop.h"
 
 /// \brief
 /// Create both ends of an anonymous pipe. Useful

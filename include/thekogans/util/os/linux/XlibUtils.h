@@ -24,6 +24,12 @@
 
 #include <X11/Xlib.h>
 #include <vector>
+#include "thekogans/util/Config.h"
+#include "thekogans/util/Singleton.h"
+#include "thekogans/util/SpinLock.h"
+#include "thekogans/util/RefCounted.h"
+#include "thekogans/util/os/RunLoop.h"
+
 
 namespace thekogans {
     namespace util {
