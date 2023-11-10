@@ -816,7 +816,9 @@ namespace thekogans {
                 const std::string &value) {
             if (!name.empty ()) {
             #if defined (TOOLCHAIN_OS_Windows)
-                if (!::SetEnvironmentVariableW (os::windows::UTF8ToUTF16 (name).c_str (), UTF8ToUTF16 (value).c_str ())) {
+                if (!::SetEnvironmentVariableW (
+                        os::windows::UTF8ToUTF16 (name).c_str (),
+                        os::windows::UTF8ToUTF16 (value).c_str ())) {
             #else // defined (TOOLCHAIN_OS_Windows)
                 if (setenv (name.c_str (), value.c_str (), 1) < 0) {
             #endif // defined (TOOLCHAIN_OS_Windows)

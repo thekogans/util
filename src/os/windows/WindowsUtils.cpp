@@ -317,19 +317,12 @@ namespace thekogans {
                     }
                 }
 
-                void Window::PostEvent (
-                        UINT message,
-                        WPARAM wParam,
-                        LPARAM lParam) {
-                    PostMessageW (wnd, message, wParam, lParam);
-                }
-
                 void RunLoop::Begin () {
                     BOOL result;
                     MSG msg;
                     while ((result = GetMessageW (&msg, 0, 0, 0)) != 0) {
                         if (result != -1) {
-                            if (msg.message == ID_RUN_LOOP_EXECUTE_JOBS) {
+                            if (msg.message == ID_RUN_LOOP_EXECUTE_JOB) {
                                 ExecuteJobs ();
                             }
                             else if (msg.message == ID_RUN_LOOP_STOP) {

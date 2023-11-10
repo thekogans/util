@@ -227,7 +227,7 @@ namespace thekogans {
                     if (gethostname (name, 256) == 0) {
                         // There is no direct way to convert ACP into
                         // UTF8, so perform the conversion in two steps.
-                        return os::windows::UTF16ToUTF8 (ACPToUTF16 (name));
+                        return os::windows::UTF16ToUTF8 (os::windows::ACPToUTF16 (name));
                     }
                     else {
                         THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (

@@ -21,6 +21,7 @@
 
 #include "thekogans/util/Types.h"
 #include "thekogans/util/Exception.h"
+#include "thekogans/util/os/windows/WindowsUtils.h"
 #include "thekogans/util/os/windows/WindowsFirewall.h"
 
 namespace thekogans {
