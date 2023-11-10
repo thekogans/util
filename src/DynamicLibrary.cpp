@@ -49,7 +49,7 @@ namespace thekogans {
                 Unload ();
             }
         #if defined (TOOLCHAIN_OS_Windows)
-            library = LoadLibraryExW (UTF8ToUTF16 (path).c_str (), 0, LOAD_WITH_ALTERED_SEARCH_PATH);
+            library = LoadLibraryExW (os::windows::UTF8ToUTF16 (path).c_str (), 0, LOAD_WITH_ALTERED_SEARCH_PATH);
             if (library == 0) {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (THEKOGANS_UTIL_OS_ERROR_CODE);
             }
@@ -109,7 +109,7 @@ namespace thekogans {
                     THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
                         THEKOGANS_UTIL_OS_ERROR_CODE);
                 }
-                return UTF16ToUTF8 (pathName, wcslen (pathName));
+                return os::windows::UTF16ToUTF8 (pathName, wcslen (pathName));
             #else // defined (TOOLCHAIN_OS_Windows)
                 Dl_info info;
                 if (dladdr (&dladdrDummySymbol, &info) == 0) {

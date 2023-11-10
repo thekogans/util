@@ -348,12 +348,12 @@ namespace thekogans {
                 startInfo.hStdError = stdIO->errPipe[1];
             }
             ClearProcessInformation (processInformation);
-            std::wstring wcommandLine = UTF8ToUTF16 (commandLine);
-            std::wstring wenvironment = UTF8ToUTF16 (environment);
+            std::wstring wcommandLine = os::windows::UTF8ToUTF16 (commandLine);
+            std::wstring wenvironment = os::windows::UTF8ToUTF16 (environment);
             if (!CreateProcessW (0, &wcommandLine[0], 0, 0, TRUE,
                     CREATE_UNICODE_ENVIRONMENT | (detached ? DETACHED_PROCESS : 0),
                     !wenvironment.empty () ? &wenvironment[0] : 0,
-                    !startupDirectory.empty () ? UTF8ToUTF16 (startupDirectory).c_str () : 0,
+                    !startupDirectory.empty () ? os::windows::UTF8ToUTF16 (startupDirectory).c_str () : 0,
                     &startInfo,
                     &processInformation)) {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
@@ -892,7 +892,7 @@ namespace thekogans {
             wchar_t path[MAX_PATH] = {};
             DWORD length = MAX_PATH;
             if (QueryFullProcessImageNameW (processHandle.Get (), 0, path, &length)) {
-                return UTF16ToUTF8 (path, length, WC_ERR_INVALID_CHARS);
+                return os::windows::UTF16ToUTF8 (path, length, WC_ERR_INVALID_CHARS);
             }
             else {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (

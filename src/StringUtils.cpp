@@ -784,9 +784,12 @@ namespace thekogans {
                 // Windows limit on value length.
                 const std::size_t MAX_VALUE_LENGTH = 32767;
                 Array<wchar_t> value (MAX_VALUE_LENGTH);
-                std::size_t length = ::GetEnvironmentVariableW (UTF8ToUTF16 (name).c_str (), value, MAX_VALUE_LENGTH);
+                std::size_t length = ::GetEnvironmentVariableW (
+                    os::windows::UTF8ToUTF16 (name).c_str (),
+                    value,
+                    MAX_VALUE_LENGTH);
                 if (length > 0) {
-                    return UTF16ToUTF8 (value, length);
+                    return os::windows::UTF16ToUTF8 (value, length);
                 }
                 else {
                     THEKOGANS_UTIL_ERROR_CODE errorCode = THEKOGANS_UTIL_OS_ERROR_CODE;
@@ -813,7 +816,7 @@ namespace thekogans {
                 const std::string &value) {
             if (!name.empty ()) {
             #if defined (TOOLCHAIN_OS_Windows)
-                if (!::SetEnvironmentVariableW (UTF8ToUTF16 (name).c_str (), UTF8ToUTF16 (value).c_str ())) {
+                if (!::SetEnvironmentVariableW (os::windows::UTF8ToUTF16 (name).c_str (), UTF8ToUTF16 (value).c_str ())) {
             #else // defined (TOOLCHAIN_OS_Windows)
                 if (setenv (name.c_str (), value.c_str (), 1) < 0) {
             #endif // defined (TOOLCHAIN_OS_Windows)
@@ -831,7 +834,7 @@ namespace thekogans {
                 const std::string &name) {
             if (!name.empty ()) {
             #if defined (TOOLCHAIN_OS_Windows)
-                if (!::SetEnvironmentVariableW (UTF8ToUTF16 (name).c_str (), 0)) {
+                if (!::SetEnvironmentVariableW (os::windows::UTF8ToUTF16 (name).c_str (), 0)) {
             #else // defined (TOOLCHAIN_OS_Windows)
                 if (unsetenv (name.c_str ()) < 0) {
             #endif // defined (TOOLCHAIN_OS_Windows)

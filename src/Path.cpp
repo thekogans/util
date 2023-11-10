@@ -102,7 +102,7 @@ namespace thekogans {
             wchar_t tempDirectory[MAX_PATH + 1];
             DWORD length = GetTempPathW (MAX_PATH, tempDirectory);
             if (length != 0) {
-                return UTF16ToUTF8 (tempDirectory, length, WC_ERR_INVALID_CHARS);
+                return os::windows::UTF16ToUTF8 (tempDirectory, length, WC_ERR_INVALID_CHARS);
             }
             else {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
@@ -186,7 +186,7 @@ namespace thekogans {
                 systemDirectory.resize (size);
                 if (::GetSystemDirectoryW (&systemDirectory[0], size) == size - 1) {
                     systemDirectory.resize (size - 1);
-                    return UTF16ToUTF8 (systemDirectory);
+                    return os::windows::UTF16ToUTF8 (systemDirectory);
                 }
                 else {
                     THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
@@ -342,9 +342,9 @@ namespace thekogans {
         #if defined (TOOLCHAIN_OS_Windows)
             wchar_t fullPath[32767];
             std::size_t length = GetFullPathNameW (
-                UTF8ToUTF16 (path).c_str (), 32767, fullPath, 0);
+                os::windows::UTF8ToUTF16 (path).c_str (), 32767, fullPath, 0);
             if (length > 0) {
-                return UTF16ToUTF8 (fullPath, length);
+                return os::windows::UTF16ToUTF8 (fullPath, length);
             }
             else {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
@@ -448,7 +448,7 @@ namespace thekogans {
         bool Path::Exists () const {
         #if defined (TOOLCHAIN_OS_Windows)
             WIN32_FILE_ATTRIBUTE_DATA attributeData;
-            return GetFileAttributesExW (UTF8ToUTF16 (path).c_str (),
+            return GetFileAttributesExW (os::windows::UTF8ToUTF16 (path).c_str (),
                 GetFileExInfoStandard, &attributeData) == TRUE;
         #else // defined (TOOLCHAIN_OS_Windows)
             STAT_STRUCT buf;

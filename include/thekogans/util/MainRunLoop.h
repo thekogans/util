@@ -171,9 +171,9 @@ namespace thekogans {
                 Thread::SetMainThread ();
                 RunLoop *runLoop =
                 #if defined (TOOLCHAIN_OS_Windows)
-                    new SystemRunLoop (name, jobExecutionPolicy);
+                    new SystemRunLoop<os::windows::RunLoop> (name, jobExecutionPolicy);
                 #elif defined (TOOLCHAIN_OS_Linux)
-                    new SystemRunLoop (name, jobExecutionPolicy);
+                    new SystemRunLoop<os::linux::XlibRunLoop> (name, jobExecutionPolicy);
                 #elif defined (TOOLCHAIN_OS_OSX)
                     new SystemRunLoop<os::osx::NSAppRunLoop> (name, jobExecutionPolicy);
                 #endif // defined (TOOLCHAIN_OS_Windows)

@@ -87,7 +87,7 @@ namespace thekogans {
             #endif // defined (TOOLCHAIN_OS_Windows)
             Close ();
         #if defined (TOOLCHAIN_OS_Windows)
-            handle = CreateFileW (UTF8ToUTF16 (path_).c_str (),
+            handle = CreateFileW (os::windows::UTF8ToUTF16 (path_).c_str (),
                 dwDesiredAccess, dwShareMode, 0, dwCreationDisposition, dwFlagsAndAttributes, 0);
         #else // defined (TOOLCHAIN_OS_Windows)
             handle =  open (path_.c_str (), flags, mode);
@@ -319,7 +319,7 @@ namespace thekogans {
 
         void File::Delete (const std::string &path) {
         #if defined (TOOLCHAIN_OS_Windows)
-            if (!DeleteFileW (UTF8ToUTF16 (path).c_str ())) {
+            if (!DeleteFileW (os::windows::UTF8ToUTF16 (path).c_str ())) {
         #else // defined (TOOLCHAIN_OS_Windows)
             if (unlink (path.c_str ()) < 0) {
         #endif // defined (TOOLCHAIN_OS_Windows)

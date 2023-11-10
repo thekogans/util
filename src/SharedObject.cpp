@@ -122,7 +122,7 @@ namespace thekogans {
                                     PAGE_READWRITE,
                                     THEKOGANS_UTIL_UI64_GET_UI32_AT_INDEX (size, 0),
                                     THEKOGANS_UTIL_UI64_GET_UI32_AT_INDEX (size, 1),
-                                    UTF8ToUTF16 (name).c_str ())),
+                                    os::windows::UTF8ToUTF16 (name).c_str ())),
                             errorCode (THEKOGANS_UTIL_OS_ERROR_CODE),
                             created (errorCode != ERROR_ALREADY_EXISTS) {
                         if (handle == 0) {
@@ -306,7 +306,7 @@ namespace thekogans {
                         PAGE_READWRITE,
                         0,
                         1,
-                        UTF8ToUTF16 (GetName (name_)).c_str ())) {
+                        os::windows::UTF8ToUTF16 (GetName (name_)).c_str ())) {
             #else // defined (TOOLCHAIN_OS_Windows)
                 name (GetName (name_)),
                 handle (shm_open (name.c_str (), O_RDWR | O_CREAT | O_EXCL, mode)) {
@@ -324,7 +324,7 @@ namespace thekogans {
                         PAGE_READWRITE,
                         0,
                         1,
-                        UTF8ToUTF16 (GetName (name_)).c_str ());
+                        os::windows::UTF8ToUTF16 (GetName (name_)).c_str ());
                 }
                 else {
                     THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (errorCode);

@@ -183,8 +183,12 @@ namespace thekogans {
                 State initialState,
                 const std::string &name) :
         #if defined (TOOLCHAIN_OS_Windows)
-                handle (CreateEventW (0, manualReset ? TRUE : FALSE,
-                    initialState == Signalled ? TRUE : FALSE, !name.empty () ? UTF8ToUTF16 (name).c_str () : 0)) {
+                handle (
+                    CreateEventW (
+                        0,
+                        manualReset ? TRUE : FALSE,
+                        initialState == Signalled ? TRUE : FALSE,
+                        !name.empty () ? os::windows::UTF8ToUTF16 (name).c_str () : 0)) {
             if (handle == THEKOGANS_UTIL_INVALID_HANDLE_VALUE) {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
                     THEKOGANS_UTIL_OS_ERROR_CODE);

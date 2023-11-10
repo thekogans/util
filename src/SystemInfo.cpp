@@ -142,7 +142,7 @@ namespace thekogans {
                 wchar_t path[MAX_PATH];
                 std::size_t length = GetModuleFileNameW (0, path, MAX_PATH);
                 if (length > 0) {
-                    return UTF16ToUTF8 (path, length);
+                    return os::windows::UTF16ToUTF8 (path, length);
                 }
                 else {
                     THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
@@ -203,7 +203,7 @@ namespace thekogans {
                             wchar_t name[256];
                             memset (name, 0, 256);
                             if (getHostNameW (name, 256) == 0) {
-                                return UTF16ToUTF8 (name);
+                                return os::windows::UTF16ToUTF8 (name);
                             }
                             else {
                                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
@@ -227,7 +227,7 @@ namespace thekogans {
                     if (gethostname (name, 256) == 0) {
                         // There is no direct way to convert ACP into
                         // UTF8, so perform the conversion in two steps.
-                        return UTF16ToUTF8 (ACPToUTF16 (name));
+                        return os::windows::UTF16ToUTF8 (ACPToUTF16 (name));
                     }
                     else {
                         THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
@@ -376,7 +376,7 @@ namespace thekogans {
                         }
                     }
                     operator std::string () {
-                        return name != 0 ? UTF16ToUTF8 (std::wstring (name)) : std::string ();
+                        return name != 0 ? os::windows::UTF16ToUTF8 (std::wstring (name)) : std::string ();
                     }
                 } userName;
                 result = userName;
@@ -384,7 +384,7 @@ namespace thekogans {
                 WCHAR name[UNLEN + 1];
                 DWORD length = UNLEN + 1;
                 if (GetUserNameW (name, &length)) {
-                    result = UTF16ToUTF8 (std::wstring (name));
+                    result = os::windows::UTF16ToUTF8 (std::wstring (name));
                 }
                 else {
                     THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (

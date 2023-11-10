@@ -139,7 +139,7 @@ namespace thekogans {
                 const std::string &name) :
             #if defined (TOOLCHAIN_OS_Windows)
                 handle (CreateSemaphoreW (0, initialCount, maxCount,
-                    !name.empty () ? UTF8ToUTF16 (name).c_str () : 0)) {
+                    !name.empty () ? os::windows::UTF8ToUTF16 (name).c_str () : 0)) {
             #else // defined (TOOLCHAIN_OS_Windows)
                 semaphore (name.empty () ?
                     new SemaphoreImpl (maxCount, initialCount) :
