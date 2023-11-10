@@ -107,7 +107,7 @@ namespace thekogans {
             /// ctor.
             /// \param[in] fileTime Windows FILETIME to initialize to.
             explicit TimeSpec (const FILETIME &fileTime) :
-                seconds (FILETIMEToi64 (fileTime)),
+                seconds (os::windows::FILETIMEToi64 (fileTime)),
                 nanoseconds (0) {}
             /// \brief
             /// ctor.
@@ -259,13 +259,13 @@ namespace thekogans {
             /// IMPORTANT: This function is lossy (doesn't use nanoseconds).
             /// \return TimeSpec as FILETIME.
             inline FILETIME ToFILETIME () const {
-                return i64ToFILETIME (seconds);
+                return os::windows::i64ToFILETIME (seconds);
             }
             /// \brief
             /// Convert this TimeSpec to Windows SYSTEMTIME.
             /// \return TimeSpec as SYSTEMTIME.
             inline SYSTEMTIME ToSYSTEMTIME () const {
-                FILETIME fileTime = i64ToFILETIME (seconds);
+                FILETIME fileTime = os::windows::i64ToFILETIME (seconds);
                 SYSTEMTIME systemTime;
                 if (!FileTimeToSystemTime (&fileTime, &systemTime)) {
                     THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
