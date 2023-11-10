@@ -323,7 +323,7 @@ namespace thekogans {
                     while ((result = GetMessageW (&msg, 0, 0, 0)) != 0) {
                         if (result != -1) {
                             if (msg.message == ID_RUN_LOOP_EXECUTE_JOB) {
-                                ExecuteJobs ();
+                                ExecuteJob ();
                             }
                             else if (msg.message == ID_RUN_LOOP_STOP) {
                                 break;
