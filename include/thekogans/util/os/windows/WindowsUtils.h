@@ -167,7 +167,7 @@ namespace thekogans {
                     return UTF16ToUTF8 (utf16.data (), utf16.size (), flags);
                 }
 
-                /// \struct HGLOBALPtr WindowsUtils.h thekogans/util/WindowsUtils.h
+                /// \struct HGLOBALPtr WindowsUtils.h thekogans/util/os/windows/WindowsUtils.h
                 ///
                 /// \brief
                 /// A helper used to make dealing with Windows HGLOBAL api easier.
@@ -275,7 +275,7 @@ namespace thekogans {
                     THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (HGLOBALPtr)
                 };
 
-                /// \struct WindowClass WindowsUtils.h thekogans/util/WindowsUtils.h
+                /// \struct WindowClass WindowsUtils.h thekogans/util/os/windows/WindowsUtils.h
                 ///
                 /// \brief
                 /// A helper for creating window classes.
@@ -327,7 +327,7 @@ namespace thekogans {
                 /// thekogans::util::WindowRegistry::Instance ().
                 typedef RefCounted::Registry<Window> WindowRegistry;
 
-                /// \struct Window WindowsUtils.h thekogans/util/WindowsUtils.h
+                /// \struct Window WindowsUtils.h thekogans/util/os/windows/WindowsUtils.h
                 ///
                 /// \brief
                 /// A helper for creating windows. Hides a lot of Windows specific code and
@@ -394,7 +394,7 @@ namespace thekogans {
                     THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (Window)
                 };
 
-                /// \struct RunLoop WindowsUtils.h thekogans/util/WindowsUtils.h
+                /// \struct RunLoop WindowsUtils.h thekogans/util/os/windows/WindowsUtils.h
                 ///
                 /// \brief
                 /// Windows thread based run loop.

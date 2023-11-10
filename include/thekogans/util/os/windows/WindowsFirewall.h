@@ -40,7 +40,7 @@ namespace thekogans {
         namespace os {
             namespace windows {
 
-                /// \struct WindowsFirewall WindowsFirewall.h thekogans/util/WindowsFirewall.h
+                /// \struct WindowsFirewall WindowsFirewall.h thekogans/util/os/windows/WindowsFirewall.h
                 ///
                 /// \brief
                 /// WindowsFirewall puts a thin wrapper around the Windows firewall COM interface.
