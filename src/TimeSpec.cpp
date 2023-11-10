@@ -67,7 +67,7 @@ namespace thekogans {
         TimeSpec::TimeSpec (const SYSTEMTIME &systemTime) {
             FILETIME fileTime;
             SystemTimeToFileTime (&systemTime, &fileTime);
-            seconds = FILETIMEToi64 (fileTime) + systemTime.wMilliseconds / 1000;
+            seconds = os::windows::FILETIMEToi64 (fileTime) + systemTime.wMilliseconds / 1000;
             nanoseconds = (i32)((systemTime.wMilliseconds % 1000) * 1000000);
         }
     #else // defined (TOOLCHAIN_OS_Windows)

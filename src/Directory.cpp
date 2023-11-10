@@ -584,9 +584,9 @@ namespace thekogans {
                 type = systemTotype (attributeData.dwFileAttributes);
                 name = Path (path).GetFullFileName ();
                 attributes = attributeData.dwFileAttributes;
-                creationDate = FILETIMEToi64 (attributeData.ftCreationTime);
-                lastAccessedDate = FILETIMEToi64 (attributeData.ftLastAccessTime);
-                lastModifiedDate = FILETIMEToi64 (attributeData.ftLastWriteTime);
+                creationDate = os::windows::FILETIMEToi64 (attributeData.ftCreationTime);
+                lastAccessedDate = os::windows::FILETIMEToi64 (attributeData.ftLastAccessTime);
+                lastModifiedDate = os::windows::FILETIMEToi64 (attributeData.ftLastWriteTime);
                 size = DWORDDWORDToui64 (attributeData.nFileSizeLow,
                     attributeData.nFileSizeHigh);
             }
@@ -823,9 +823,9 @@ namespace thekogans {
             if (GetFileAttributesExW (os::windows::UTF8ToUTF16 (path).c_str (),
                     GetFileExInfoStandard, &attributeData) == TRUE) {
                 attributes = attributeData.dwFileAttributes;
-                creationDate = FILETIMEToi64 (attributeData.ftCreationTime);
-                lastAccessedDate = FILETIMEToi64 (attributeData.ftLastAccessTime);
-                lastModifiedDate = FILETIMEToi64 (attributeData.ftLastWriteTime);
+                creationDate = os::windows::FILETIMEToi64 (attributeData.ftCreationTime);
+                lastAccessedDate = os::windows::FILETIMEToi64 (attributeData.ftLastAccessTime);
+                lastModifiedDate = os::windows::FILETIMEToi64 (attributeData.ftLastWriteTime);
             }
             else {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_AND_MESSAGE_EXCEPTION (
@@ -894,9 +894,9 @@ namespace thekogans {
             entry.type = systemTotype (findData.dwFileAttributes);
             entry.name = os::windows::UTF16ToUTF8 (findData.cFileName, wcslen (findData.cFileName));
             entry.attributes = findData.dwFileAttributes;
-            entry.creationDate = FILETIMEToi64 (findData.ftCreationTime);
-            entry.lastAccessedDate = FILETIMEToi64 (findData.ftLastAccessTime);
-            entry.lastModifiedDate = FILETIMEToi64 (findData.ftLastWriteTime);
+            entry.creationDate = os::windows::FILETIMEToi64 (findData.ftCreationTime);
+            entry.lastAccessedDate = os::windows::FILETIMEToi64 (findData.ftLastAccessTime);
+            entry.lastModifiedDate = os::windows::FILETIMEToi64 (findData.ftLastWriteTime);
             entry.size = DWORDDWORDToui64 (findData.nFileSizeLow, findData.nFileSizeHigh);
         }
 
