@@ -37,6 +37,7 @@
 #include "thekogans/util/Types.h"
 #include "thekogans/util/Constants.h"
 #include "thekogans/util/Rectangle.h"
+#include "thekogans/util/RefCounted.h"
 #include "thekogans/util/os/RunLoop.h"
 
 /// \brief
