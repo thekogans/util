@@ -30,14 +30,41 @@ namespace thekogans {
         namespace os {
             namespace linux {
 
-                /// \struct DisplayGuard XlibUtils.h thekogans/util/XlibUtils.h
+                /// \brief
+                /// Call XInitThreads and setup error handling callbacks.
+                /// IMPORTANT: This method must be called before any other
+                /// calls to Xlib.
+                void XlibInit ();
+
+                /// \struct XlibDisplays XlibUtils.h thekogans/util/XlibUtils.h
+                ///
+                /// \brief
+
+                struct XlibDispays : public Singleton<XlibDispays, SpinLock> {
+                    /// \brief
+                    /// A list of connections (Display) to all X-servers running on the system.
+                    std::vector<Display *> displays;
+
+                    /// \brief
+                    /// ctor.
+                    /// \param[in] path Path where displays are located.
+                    /// \param[in] pattern Display file name pattern.
+                    /// NOTE: More often than not, displays have the following pattern: "X%d". If you
+                    /// have a custom X11 install, supply the pattern that works for you. Keep in mind
+                    /// that your pattern needs to expose a display number.
+                    XlibDispays (
+                        const char *path = "/tmp/.X11-unix",
+                        const char *pattern = "X%d");
+                };
+
+                /// \struct XlibDisplayGuard XlibUtils.h thekogans/util/XlibUtils.h
                 ///
                 /// \brief
                 /// Xlib is not thread safe. This Display guard will lock the display
                 /// in it's ctor, and unlock it in it's dtor. Use it anytime you use
                 /// Xlib functions that take a Display parameter.
 
-                struct DisplayGuard {
+                struct XlibDisplayGuard {
                     /// \brief
                     /// Xlib Display to Lock/Unlock.
                     Display *display;
@@ -45,23 +72,99 @@ namespace thekogans {
                     /// \brief
                     /// ctor. Call XLockDisplay (display);
                     /// \param[in] display Xlib Display to Lock/Unlock.
-                    DisplayGuard (Display *display_);
+                    XlibDisplayGuard (Display *display_);
                     /// \brief
                     /// dtor. Call XUnlockDisplay (display);
-                    ~DisplayGuard ();
+                    ~XlibDisplayGuard ();
                 };
 
-                /// \struct CFRunLoop OSXUtils.h thekogans/util/OSXUtils.h
+                /// \brief
+                /// Convenient typedef for util::RefCounted::Registry<XlibWindow>.
+                typedef RefCounted::Registry<XlibWindow> XlibWindowRegistry;
+
+                /// \struct SystemRunLoop::XlibWindow SystemRunLoop.h thekogans/util/SystemRunLoop.h
                 ///
                 /// \brief
-                /// CFRunLoopRef based OS X run loop.
+                /// Encapsulates an Xlib Window. XlibWindow provides barebones functionality needed
+                /// to wire an Xlib window in to our \see{XlibRunLoop}. The only interface it exposes
+                /// is OnEvent. An XlibWindow derivative will override this method to react to events
+                /// sent to this window. If you're planning on using \see{MainRunLoop} in your main
+                /// thread and you're going to create Xlib windows you must derive your windows from
+                /// XlibWindow.
 
-                struct XlibRunLoop : public os::RunLoop {
+                struct XlibWindow : public RefCounted {
+                    /// \brief
+                    /// Declare \see{util::RefCounted} pointers.
+                    THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (XlibWindow)
+
+                protected:
+                    /// \brief
+                    /// Xlib Display.
+                    Display *display;
+                    /// \brief
+                    /// Xlib Window.
+                    Window window;
+                    /// \brief
+                    /// XlibWindowRegistry token.
+                    const XlibWindowRegistry::Token token;
+
+                public:
                     /// \brief
                     /// ctor.
-                    /// \param[in] runLoop OS X run loop.
-                    CFRunLoop (CFRunLoopRef runLoop = CFRunLoopGetCurrent ()) :
-                        RunLoop (runLoop) {}
+                    /// \param[in] display_ Xlib Display.
+                    /// \param[in] window_ Xlib Window.
+                    /// IMPORTANT: The Window is owned by this XlibWindow
+                    /// and it will call XDestroyWindow in it's dtor.
+                    XlibWindow (
+                        Display *display_,
+                        Window window_);
+                    /// \brief
+                    /// dtor.
+                    virtual ~XlibWindow ();
+
+                    /// \brief
+                    /// Override this method in your derivatives to react to events sent to your window.
+                    /// \param[in] event XEvent sent.
+                    virtual void OnEvent (const XEvent & /*event*/) throw () {}
+
+                    /// \brief
+                    /// XlibWindow is neither copy constructable, nor assignable.
+                    THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (XlibWindow)
+
+                    /// \brief
+                    /// XlibRunLoop needs access to protected members.
+                    friend struct XlibRunLoop;
+                };
+
+                /// \struct XlibRunLoop XlibUtils.h thekogans/util/os/linux/XlibUtils.h
+                ///
+                /// \brief
+                /// Xlib based run loop.
+
+                struct XlibRunLoop : public os::RunLoop {
+                private:
+                    /// \brief
+                    ///
+                    const char * const MESSAGE_TYPE_NAME = "thekogans_util_os_linux_XlibRunLoop_message_type";
+                    enum {
+                        /// \brief
+                        /// Execute the next waiting job.
+                        ID_RUN_LOOP_EXECUTE_JOB,
+                        /// \brief
+                        /// Stop the run loop.
+                        ID_RUN_LOOP_STOP
+                    };
+                    /// \brief
+                    ///
+                    XlibWindow::SharedPtr window;
+                    /// \brief
+                    /// A custom Xlib message type used to signal our run loop.
+                    Atom message_type;
+
+                public:
+                    /// \brief
+                    /// ctor.
+                    XlibRunLoop ();
 
                     /// \brief
                     /// Start the run loop.
@@ -69,128 +172,21 @@ namespace thekogans {
                     /// \brief
                     /// Stop the run loop.
                     virtual void End () override;
+                    /// \brief
+                    /// Post ID_RUN_LOOP_EXECUTE_JOB to the thread to signal
+                    /// that job processing should take place.
+                    virtual void ScheduleJob () override;
+
+                    /// \brief
+                    /// Override this method in your derivatives to react to events sent to your windows.
+                    /// \param[in] event XEvent sent.
+                    virtual void OnEvent (const XEvent & /*event*/) throw () {}
 
                 private:
-                    /// \brief
-                    /// Call XInitThreads and setup error handling callbacks.
-                    /// IMPORTANT: This method must be called before any other
-                    /// calls to Xlib.
-                    void XlibInit ();
-
-                    /// \brief
-                    /// Return a list of connections (Display) to all X-servers running on the system.
-                    /// \param[in] path Path where displays are located.
-                    /// \param[in] pattern Display file name pattern.
-                    /// NOTE: More often than not, displays have the following pattern: "X%d". If you
-                    /// have a custom X11 install, supply the pattern that works for you. Keep in mind
-                    /// that your pattern needs to expose a display number.
-                    /// \return A list of connections (Display) to all X-servers running on the system.
-                    std::vector<Display *> EnumerateDisplays (
-                        const char *path = "/tmp/.X11-unix",
-                        const char *pattern = "X%d");
-                };
-
-                /// \struct SystemRunLoop::XlibWindow SystemRunLoop.h thekogans/util/SystemRunLoop.h
-                ///
-                /// \brief
-                /// Encapsulates Xlib Display, Window and Atom used to implement the run loop.
-                struct XlibWindow {
-                    /// \brief
-                    /// Convenient typedef for std::unique_ptr<XlibWindow>.
-                    typedef std::unique_ptr<XlibWindow> UniquePtr;
-
-                    /// \struct SystemRunLoop::XlibWindow::_Display SystemRunLoop.h thekogans/util/SystemRunLoop.h
-                    ///
-                    /// \brief
-                    /// Manages the lifetime of Xlib Display.
-                    struct _Display {
-                        /// \brief
-                        /// Xlib Display.
-                        Display *display;
-                        /// \brief
-                        /// true = We own the display and need to close it in our dtor.
-                        bool owner;
-
-                        /// \brief
-                        /// ctor.
-                        /// \param[in] display_ Xlib Display.
-                        _Display (Display *display_);
-                        /// \brief
-                        /// dtor.
-                        ~_Display ();
-                    } display;
-                    /// \struct SystemRunLoop::XlibWindow::_Window SystemRunLoop.h thekogans/util/SystemRunLoop.h
-                    ///
-                    /// \brief
-                    /// Manages the lifetime of Xlib Window.
-                    struct _Window {
-                        /// \brief
-                        /// Xlib Display.
-                        Display *display;
-                        /// \brief
-                        /// Xlib Window.
-                        Window window;
-                        /// \brief
-                        /// true = We own the window and need to close it in our dtor.
-                        bool owner;
-
-                        /// \brief
-                        /// ctor.
-                        /// \param[in] display_ Xlib Display.
-                        /// \param[in] window_ Xlib Window.
-                        _Window (
-                            Display *display_,
-                            Window window_);
-                        /// \brief
-                        /// dtor.
-                        ~_Window ();
-
-                    private:
-                        /// \brief
-                        /// Create the Xlib window if none were provided in the ctor.
-                        /// \return A simple 0 area, invisible window that will receive
-                        /// job processing events.
-                        Window CreateWindow ();
-                    } window;
-                    /// \brief
-                    /// A custom Xlib message type used to signal our window.
-                    Atom message_type;
-
-                    /// \brief
-                    /// ctor.
-                    /// \param[in] display_ Xlib Display.
-                    /// \param[in] window_ Xlib Window.
-                    XlibWindow (
-                        Display *display_ = 0,
-                        Window window_ = 0);
-
-                    /// \brief
-                    /// Convenient typedef for void (*) (Display *, const XEvent &, void *).
-                    /// NOTE: Returning false from this callback will cause
-                    /// the event loop to terminate.
-                    typedef void (*EventProcessor) (
-                        Display * /*display*/,
-                        const XEvent & /*event*/,
-                        void * /*userData*/);
-
-                private:
-                    enum {
-                        /// \brief
-                        /// Execute the next waiting job.
-                        ID_RUN_LOOP,
-                        /// \brief
-                        /// Stop the run loop.
-                        ID_STOP
-                    };
-
                     /// \brief
                     /// Post an event with the given id.
                     /// \param[in] id Event id.
                     void PostEvent (long id);
-
-                    /// \brief
-                    /// SystemRunLoop needs access to PostEvent and event ids.
-                    friend SystemRunLoop;
                 };
 
             } // namespace linux

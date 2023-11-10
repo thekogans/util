@@ -36,6 +36,8 @@
 namespace thekogans {
     namespace util {
 
+        /// \brief
+        /// Convenient typedef for os::windows::RunLoop.
     #if defined (TOOLCHAIN_OS_Windows)
         typedef os::windows::RunLoop OSThreadRunLoopType;
     #elif defined (TOOLCHAIN_OS_Linux)
@@ -47,17 +49,17 @@ namespace thekogans {
         /// \struct SystemRunLoop SystemRunLoop.h thekogans/util/SystemRunLoop.h
         ///
         /// \brief
-        /// SystemRunLoop is a marriage between an \see{util::RunLoop} and \see{os::RunLoop}.
+        /// SystemRunLoop is a marriage between a \see{util::RunLoop} and an \see{os::RunLoop}.
         /// It alows the user to make any thread using os specific run loop facilities in to
         /// a thread that supports \see{util::RunLoop::Job} scheduling and execution. SystemRunLoop
         /// is used by \see{MainRunLoop} to make sure the main thread is responsible for UI
         /// updates and other system notifications. But you can use SystemRunLoop in any
         /// thread that requires those facilities.
 
-        template<typename OSRunLoop = OSThreadRunLoopType>
+        template<typename OSRunLoopType = OSThreadRunLoopType>
         struct SystemRunLoop :
                 public util::RunLoop,
-                private OSRunLoop {
+                private OSRunLoopType {
             /// \brief
             /// ctor.
             /// \param[in] name \see{RunLoop} name.
@@ -80,7 +82,7 @@ namespace thekogans {
             virtual void Start () override {
                 state->done = false;
                 ExecuteJob ();
-                OSRunLoop::Begin ();
+                OSRunLoopType::Begin ();
             }
             /// \brief
             /// Stop the run loop. Calling this function will cause the Start call
@@ -94,7 +96,7 @@ namespace thekogans {
                 if (cancelRunningJobs) {
                     CancelRunningJobs ();
                 }
-                OSRunLoop::End ();
+                OSRunLoopType::End ();
                 if (cancelPendingJobs) {
                     Job *job;
                     while ((job = state->jobExecutionPolicy->DeqJob (*state)) != 0) {
@@ -161,13 +163,13 @@ namespace thekogans {
                     bool front) {
                 bool result = front ? util::RunLoop::EnqJobFront (job) : util::RunLoop::EnqJob (job);
                 if (result) {
-                    OSRunLoop::ScheduleJob ();
+                    OSRunLoopType::ScheduleJob ();
                     result = !wait || WaitForJob (job, timeSpec);
                 }
                 return result;
             }
 
-            // OSRunLoop
+            // OSRunLoopType
             /// \brief
             /// Used internally to execute the pending jobs.
             virtual void ExecuteJob () override {

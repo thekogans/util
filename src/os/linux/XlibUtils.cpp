@@ -50,7 +50,7 @@ namespace thekogans {
                     int IOErrorHandler (Display *display) {
                         THEKOGANS_UTIL_LOG_SUBSYSTEM_ERROR (
                             THEKOGANS_UTIL,
-                            "%s\n", "Fatal IO error.");
+                            "%s\n", "Fatal Xlib IO error.");
                         return 0;
                     }
                 }
@@ -61,25 +61,9 @@ namespace thekogans {
                     XSetIOErrorHandler (IOErrorHandler);
                 }
 
-                DisplayGuard::DisplayGuard (Display *display_) :
-                        display (display_) {
-                    if (display != 0) {
-                        XLockDisplay (display);
-                    }
-                    else {
-                        THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                            THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
-                    }
-                }
-
-                DisplayGuard::~DisplayGuard () {
-                    XUnlockDisplay (display);
-                }
-
-                std::vector<Display *> EnumerateDisplays (
+                XlibDispays::XlibDispays (
                         const char *path,
                         const char *pattern) {
-                    std::vector<Display *> displays;
                     Directory directory (path);
                     Directory::Entry entry;
                     for (bool gotEntry = directory.GetFirstEntry (entry);
@@ -98,56 +82,89 @@ namespace thekogans {
                             }
                         }
                     }
-                    return displays;
                 }
 
-                SystemRunLoop::XlibWindow::_Display::_Display (Display *display_) :
-                        display (display_ == 0 ? XOpenDisplay (0) : display_),
-                        owner (display_ == 0) {
-                    if (display == 0) {
-                        THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                            "%s", "Unable to create SystemRunLoop display.");
+                XlibDisplayGuard::XlibDisplayGuard (Display *display_) :
+                        display (display_) {
+                    if (display != 0) {
+                        XLockDisplay (display);
+                    }
+                    else {
+                        THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                            THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
                     }
                 }
 
-                SystemRunLoop::XlibWindow::_Display::~_Display () {
-                    if (owner) {
-                        XCloseDisplay (display);
-                    }
-                }
-
-                SystemRunLoop::XlibWindow::_Window::_Window (
-                        Display *display_,
-                        Window window_) :
-                        display (display_),
-                        window (window_ == 0 ? CreateWindow () : window_),
-                        owner (window_ == 0) {
-                    if (window == 0) {
-                        THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                            "%s", "Unable to create SystemRunLoop window.");
-                    }
-                }
-
-                SystemRunLoop::XlibWindow::_Window::~_Window () {
-                    if (owner) {
-                        DisplayGuard guard (display);
-                        XDestroyWindow (display, window);
-                    }
-                }
-
-                Window SystemRunLoop::XlibWindow::_Window::CreateWindow () {
-                    DisplayGuard guard (display);
-                    return XCreateSimpleWindow (
-                        display,
-                        DefaultRootWindow (display),
-                        0, 0, 0, 0, 0,
-                        BlackPixel (display, DefaultScreen (display)),
-                        BlackPixel (display, DefaultScreen (display)));
+                XlibDisplayGuard::~XlibDisplayGuard () {
+                    XUnlockDisplay (display);
                 }
 
                 namespace {
-                    const char * const MESSAGE_TYPE_NAME = "thekogans_util_SystemRunLoop_message_type";
+                    struct XlibWindowMap :
+                            public Singleton<XlibWindowMap, SpinLock>,
+                            private std::map<Window, XlibWindowRegistry::Token::ValueType> {
+                        SpinLock spinLok;
 
+                        void Add (
+                                Window window,
+                                XlibWindowRegistry::Token::ValueType token) {
+                            LockGuard<SpinLock> guard (spinLock);
+                            insert (value_type (window, token));
+                        }
+                        void Remove (Window window) {
+                            LockGuard<SpinLock> guard (spinLock);
+                            erase (window);
+                        }
+                        XlibWindow::SharedPtr Get (Window window) {
+                            LockGuard<SpinLock> guard (spinLock);
+                            const_iterator it = find (window);
+                            return it != end () ?
+                                XlibWindowRegistry::Instance ().Get (it->second) :
+                                XlibWindow::SharedPtr ();
+                        }
+                    };
+                }
+
+                XlibWindow::XlibWindow (
+                        Display *display_,
+                        Window window_) :
+                        display (display_),
+                        window (window_),
+                        token (this) {
+                    // Register the window with the XlibWindowMap so that XlibRunLoop::Begin
+                    // can find it and route events to it.
+                    XlibWindowMap::Instance ().Add (window, token.GetValue ());
+                }
+
+                XlibWindow::~XlibWindow () {
+                    XlibWindowMap::Instance ().Remove (window);
+                    XlibDisplayGuard guard (display);
+                    XDestroyWindow (display, window);
+                }
+
+
+                XlibRunLoop::XlibRunLoop () {
+                    if (!XlibDisplays::Instance ().displays.empty ()) {
+                        Display *display = XlibDisplays::Instance ().displays[0];
+                        XlibDisplayGuard guard (display);
+                        window.Reset (
+                            new XlibWindow (
+                                display,
+                                XCreateSimpleWindow (
+                                    display,
+                                    DefaultRootWindow (display),
+                                    0, 0, 0, 0, 0,
+                                    BlackPixel (display, DefaultScreen (display)),
+                                    BlackPixel (display, DefaultScreen (display)))));
+                        message_type = XInternAtom (display, MESSAGE_TYPE_NAME, False);
+                    }
+                    else {
+                        THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
+                            "%s", "No connections to Xlib server found.");
+                    }
+                }
+
+                namespace {
                     bool GetEvent (
                             Display *display,
                             XEvent &event) {
@@ -160,73 +177,7 @@ namespace thekogans {
                     }
                 }
 
-                SystemRunLoop::XlibWindow::XlibWindow (
-                        Display *display_,
-                        Window window_) :
-                        display (display_),
-                        window (display.display, window_),
-                        message_type (XInternAtom (display.display, MESSAGE_TYPE_NAME, False)) {
-                    if (message_type == 0) {
-                        THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                            "%s", "Unable to create SystemRunLoop atom.");
-                    }
-                }
-
-                void SystemRunLoop::XlibWindow::PostEvent (long id) {
-                    XClientMessageEvent event;
-                    memset (&event, 0, sizeof (event));
-                    event.type = ClientMessage;
-                    event.message_type = message_type;
-                    event.format = 32;
-                    event.data.l[0] = id;
-                    DisplayGuard guard (display.display);
-                    XSendEvent (display.display, window.window, False, 0, (XEvent *)&event);
-                }
-
-                SystemRunLoop::SystemRunLoop (
-                        const std::string &name,
-                        JobExecutionPolicy::SharedPtr jobExecutionPolicy,
-                        EventProcessor eventProcessor_,
-                        void *userData_,
-                        XlibWindow::UniquePtr window_,
-                        const std::vector<Display *> &displays_) :
-                        RunLoop (name, jobExecutionPolicy),
-                        eventProcessor (eventProcessor_),
-                        userData (userData_),
-                        window (std::move (window_)),
-                        displays (displays_) {
-                    if (window.get () == 0) {
-                        THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                            THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
-                    }
-                }
-
-                SystemRunLoop::XlibWindow::UniquePtr SystemRunLoop::CreateThreadWindow (
-                        Display *display) {
-                    return XlibWindow::UniquePtr (new XlibWindow (display));
-                }
-
-                bool SystemRunLoop::DispatchEvent (
-                        Display *display,
-                        const XEvent &event) {
-                    if (display == window->display.display &&
-                            event.type == ClientMessage &&
-                            event.xclient.window == window->window.window &&
-                            event.xclient.message_type == window->message_type) {
-                        if (event.xclient.data.l[0] == XlibWindow::ID_RUN_LOOP) {
-                            ExecuteJobs ();
-                        }
-                        else if (event.xclient.data.l[0] == XlibWindow::ID_STOP) {
-                            return false;
-                        }
-                    }
-                    else if (eventProcessor == 0) {
-                        eventProcessor (display, event, userData);
-                    }
-                    return true;
-                }
-
-                void XlibWindow::WaitForEvents () {
+                void XlibRunLoop::Begin () {
                     enum {
                         DEFAULT_MAX_SIZE = 256
                     };
@@ -243,17 +194,17 @@ namespace thekogans {
                             close (handle);
                         }
                     } epoll (DEFAULT_MAX_SIZE);
-                    for (std::size_t i = 0, count = displays.size (); i < count; ++i) {
+                    for (std::size_t i = 0, count = XlibDisplays::Instance ().displays.size (); i < count; ++i) {
                         epoll_event event = {0};
                         event.events = EPOLLIN;
                         event.data.ptr = displays[i];
                         if (epoll_ctl (epoll.handle, EPOLL_CTL_ADD,
-                                ConnectionNumber (displays[i]), &event) < 0) {
+                                ConnectionNumber (XlibDisplays::Instance ().displays[i]), &event) < 0) {
                             THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
                                 THEKOGANS_UTIL_OS_ERROR_CODE);
                         }
                     }
-                    while (!done) {
+                    while (1) {
                         std::vector<epoll_event> events (DEFAULT_MAX_SIZE);
                         int count = epoll_wait (epoll.handle, events.data (), DEFAULT_MAX_SIZE, -1);
                         if (count < 0) {
@@ -284,8 +235,34 @@ namespace thekogans {
                                     else if (events[i].events & EPOLLIN) {
                                         XEvent event;
                                         while (GetEvent (display, event)) {
-                                            if (!DispatchEvent (display, event)) {
-                                                break;
+                                            if (display == window->display &&
+                                                    event.type == ClientMessage &&
+                                                    event.xclient.window == window->window &&
+                                                    event.xclient.message_type == message_type) {
+                                                if (event.xclient.data.l[0] == ID_RUN_LOOP_EXECUTE_JOB) {
+                                                    ExecuteJob ();
+                                                }
+                                                else if (event.xclient.data.l[0] == ID_RUN_LOOP_STOP) {
+                                                    return;
+                                                }
+                                            }
+                                            else {
+                                                // Unlike Windows there's no window class registering a
+                                                // callback function for a particular Xlib window on Linux.
+                                                // Therefore we provide our own version of DispatchMessage.
+                                                // For this to work user Xlib windows need to inherit from
+                                                // XlibWindow.
+                                                XlibWindow::SharedPtr window =
+                                                    XlibWindowMap::Instance ().Get (event.xclient.window);
+                                                if (window.Get () != 0) {
+                                                    window->OnEvent (event);
+                                                }
+                                                else {
+                                                    // As a last ditch effort to process the event call our OnEvent
+                                                    // method. Derivatives should override this to provide catch all
+                                                    // processing.
+                                                    OnEvent (event);
+                                                }
                                             }
                                         }
                                     }
@@ -295,7 +272,24 @@ namespace thekogans {
                     }
                 }
 
-                window->PostEvent (XlibWindow::ID_RUN_LOOP);
+                void XlibRunLoop::End () {
+                    PostEvent (ID_RUN_LOOP_STOP);
+                }
+
+                void XlibRunLoop::ScheduleJob () {
+                    PostEvent (ID_RUN_LOOP_EXECUTE_JOB);
+                }
+
+                void XlibRunLoop::PostEvent (long id) {
+                    XClientMessageEvent event;
+                    memset (&event, 0, sizeof (event));
+                    event.type = ClientMessage;
+                    event.message_type = message_type;
+                    event.format = 32;
+                    event.data.l[0] = id;
+                    DisplayGuard guard (display);
+                    XSendEvent (window->display, window->window, False, 0, (XEvent *)&event);
+                }
 
             } // namespace linux
         } // namespace os

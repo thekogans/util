@@ -331,7 +331,7 @@ namespace thekogans {
                 struct _LIB_THEKOGANS_UTIL_DECL Window : public RefCounted {
                     /// \brief
                     /// Declare \see{util::RefCounted} pointers.
-                    THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (Stream)
+                    THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (Window)
 
                     /// \brief
                     /// Windows window handle.
@@ -395,6 +395,7 @@ namespace thekogans {
                 /// Windows thread based run loop.
 
                 struct RunLoop : public os::RunLoop {
+                private:
                     /// \brief
                     /// Message sent to the run loop (ScheduleJob) thread to initiate job processing.
                     const UINT ID_RUN_LOOP_EXECUTE_JOB =
@@ -408,6 +409,7 @@ namespace thekogans {
                     /// Thread id.
                     DWORD threadId;
 
+                public:
                     /// \brief
                     /// ctor.
                     /// \param[in] threadId_ Thread id.

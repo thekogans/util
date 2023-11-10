@@ -169,7 +169,14 @@ namespace thekogans {
                     RunLoop::JobExecutionPolicy::SharedPtr jobExecutionPolicy =
                         RunLoop::JobExecutionPolicy::SharedPtr (new RunLoop::FIFOJobExecutionPolicy)) {
                 Thread::SetMainThread ();
-                RunLoop *runLoop = new SystemRunLoop (name, jobExecutionPolicy);
+                RunLoop *runLoop =
+                #if defined (TOOLCHAIN_OS_Windows)
+                    new SystemRunLoop (name, jobExecutionPolicy);
+                #elif defined (TOOLCHAIN_OS_Linux)
+                    new SystemRunLoop (name, jobExecutionPolicy);
+                #elif defined (TOOLCHAIN_OS_OSX)
+                    new SystemRunLoop<os::osx::NSAppRunLoop> (name, jobExecutionPolicy);
+                #endif // defined (TOOLCHAIN_OS_Windows)
                 runLoop->AddRef ();
                 return runLoop;
             }
