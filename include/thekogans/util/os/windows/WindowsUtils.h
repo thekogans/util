@@ -317,6 +317,10 @@ namespace thekogans {
                 };
 
                 /// \brief
+                /// Forward declaration of Window.
+                struct Window;
+
+                /// \brief
                 /// Convenient typedef for RefCounted::Registry<Window>.
                 /// NOTE: It's one and only instance is accessed like this;
                 /// thekogans::util::WindowRegistry::Instance ().
