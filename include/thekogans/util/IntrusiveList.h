@@ -83,13 +83,13 @@ namespace thekogans {
         template<
             typename T,
             i32 ID>
-        struct IntrusiveList {
+        struct THEKOGANS_UTIL_EXPORT IntrusiveList {
             /// \struct IntrusiveList::Node IntrusiveList.h thekogans/util/IntrusiveList.h
             ///
             /// \brief
             /// For every IntrusiveList an object will reside in,
             /// it must derive from that IntrusiveList::Node.
-            struct _LIB_THEKOGANS_UTIL_DECL Node {
+            struct THEKOGANS_UTIL_EXPORT Node {
                 /// \brief
                 /// Pointer to previous node.
                 T *prev;
@@ -301,7 +301,7 @@ namespace thekogans {
             ///
             /// \brief
             /// Base class for callbacks passed to clear and for_each.
-            struct Callback : public unary_function<T *, bool> {
+            struct THEKOGANS_UTIL_EXPORT Callback : public unary_function<T *, bool> {
                 /// \brief
                 /// Convenient typedef for unary_function<T *, bool>::result_type.
                 typedef typename unary_function<T *, bool>::result_type result_type;
@@ -322,7 +322,7 @@ namespace thekogans {
             ///
             /// \brief
             /// Default no op callback.
-            struct DefaultCallback : public Callback {
+            struct THEKOGANS_UTIL_EXPORT DefaultCallback : public Callback {
                 /// \brief
                 /// Convenient typedef for Callback::result_type.
                 typedef typename Callback::result_type result_type;
