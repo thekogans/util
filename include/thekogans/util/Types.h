@@ -36,6 +36,18 @@
 #include <cstdarg>
 #include "thekogans/util/Config.h"
 
+/// \brief
+/// For compatibility only.
+#if defined (TOOLCHAIN_OS_Windows)
+    #if defined (TOOLCHAIN_ARCH_i386)
+        typedef long ssize_t;
+    #elif defined (TOOLCHAIN_ARCH_x86_64)
+        typedef __int64 ssize_t;
+    #else // defined (TOOLCHAIN_ARCH_x86_64)
+        #error Unknown TOOLCHAIN_ARCH.
+    #endif // defined (TOOLCHAIN_ARCH_i386)
+#endif // defined (TOOLCHAIN_OS_Windows)
+
 namespace thekogans {
     namespace util {
 
@@ -248,15 +260,6 @@ namespace thekogans {
         /// \brief
         /// Invalid session id value.
         #define THEKOGANS_UTIL_INVALID_SESSION_ID_VALUE 0xffffffff
-        /// \brief
-        /// For compatibility only.
-        #if defined (TOOLCHAIN_ARCH_i386)
-            typedef long ssize_t;
-        #elif defined (TOOLCHAIN_ARCH_x86_64)
-            typedef __int64 ssize_t;
-        #else // defined (TOOLCHAIN_ARCH_x86_64)
-            #error Unknown TOOLCHAIN_ARCH.
-        #endif // defined (TOOLCHAIN_ARCH_i386)
     #else // defined (TOOLCHAIN_OS_Windows)
         /// \brief
         /// Error code type.
