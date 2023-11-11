@@ -342,15 +342,18 @@ namespace thekogans {
             /// \brief
             /// Remove all nodes from the list.
             /// \param[in] callback Callback to be called for every node in the list.
+            /// VERY, VERY IMPORTANT: The node is removed from the list BEFORE the
+            /// call to callback and is never touched again (regardless of the callback
+            /// return value).
             /// \return true == List is cleared. false == callback returned false.
             inline bool clear (Callback &callback) {
                 for (T *node = head; node != 0;) {
-                    // After callback returns, we might not be able to call next (node).
+                    // After callback returns, we might not be able to access the node.
+                    // Remove it from the list first.
                     T *temp = next (node);
                     prev (node) = next (node) = 0;
                     contains (node) = false;
                     if (!callback (node)) {
-                        head = node;
                         return false;
                     }
                     node = temp;
@@ -382,16 +385,18 @@ namespace thekogans {
             /// \brief
             /// Remove all nodes from the list.
             /// \param[in] callback Callback to be called for every node in the list.
+            /// See VERY, VERY important comment above (clear).
             /// \return true == List is cleared. false == callback returned false.
             inline bool clear (const Function &callback) {
                 for (T *node = head; node != 0;) {
-                    // After callback returns, we might not be able to call next (node).
+                    // After callback returns, we might not be able to access the node.
+                    // Remove it from the list first.
                     T *temp = next (node);
+                    prev (node) = next (node) = 0;
+                    contains (node) = false;
                     if (!callback (node)) {
                         return false;
                     }
-                    prev (node) = next (node) = 0;
-                    contains (node) = false;
                     node = temp;
                 }
                 head = tail = 0;
