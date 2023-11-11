@@ -73,6 +73,9 @@ namespace thekogans {
         /// the fact that all IntrusiveList nodes will have to be fully defined
         /// before defining the lists that contain them.
         ///
+        /// IMPORTANT: In keeping with similar design principles as are used for
+        /// other 'basic' types, IntrusiveList is not thread safe.
+        ///
         /// VERY IMPORTANT: Because of the design of IntrusiveList you cannot
         /// store the same node twice in the list. Use IntrusiveList::contains
         /// to tell if the given node is already in the list. This API is used
@@ -384,12 +387,11 @@ namespace thekogans {
                 for (T *node = head; node != 0;) {
                     // After callback returns, we might not be able to call next (node).
                     T *temp = next (node);
-                    prev (node) = next (node) = 0;
-                    contains (node) = false;
                     if (!callback (node)) {
-                        head = node;
                         return false;
                     }
+                    prev (node) = next (node) = 0;
+                    contains (node) = false;
                     node = temp;
                 }
                 head = tail = 0;
