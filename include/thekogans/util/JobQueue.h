@@ -92,7 +92,7 @@ namespace thekogans {
                 /// Worker takes pending jobs off the queue and
                 /// executes them. It then reports back to the
                 /// queue so that it can collect statistics.
-                struct _LIB_THEKOGANS_UTIL_DECL Worker :
+                struct Worker :
                         public Thread,
                         public WorkerList::Node {
                 private:

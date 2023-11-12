@@ -176,7 +176,7 @@ namespace thekogans {
             typename Lock = NullLock,
             typename InstanceCreator = DefaultInstanceCreator<T>,
             typename InstanceDestroyer = DefaultInstanceDestroyer<T>>
-        struct THEKOGANS_UTIL_EXPORT Singleton {
+        struct Singleton {
             /// \brief
             /// Uses modern C++ template facilities to provide singleton
             /// ctor parameters.
@@ -191,13 +191,13 @@ namespace thekogans {
                 // We implement the double-checked locking pattern here
                 // to allow our singleton instance method to be thread-safe
                 // (i.e. thread-safe singleton construction).
-                if (instance == 0) {
+                if (instance () == 0) {
                     // Here we acquire the lock, check instance again,
                     // and if it's STILL null, we are the lucky ones,
                     // we get to create the actual instance!
-                    LockGuard<Lock> guard (lock);
-                    if (instance == 0) {
-                        instance = InstanceCreator () (std::forward<Args> (args)...);
+                    LockGuard<Lock> guard (lock ());
+                    if (instance () == 0) {
+                        instance () = InstanceCreator () (std::forward<Args> (args)...);
                     }
                 }
                 assert (instance != 0);
@@ -206,10 +206,11 @@ namespace thekogans {
             /// \brief
             /// Destroy the singleton instance.
             static void DestroyInstance () {
-                LockGuard<Lock> guard (lock);
-                if (instance != 0) {
-                    const T * volatile instance_ = 0;
-                    InstanceDestroyer () (EXCHANGE (instance, instance_));
+                LockGuard<Lock> guard (lock ());
+                if (instance () != 0) {
+                    T *instance_ = instance ();
+                    instance () = 0;
+                    InstanceDestroyer () (instance_);
                 }
             }
 
@@ -217,7 +218,7 @@ namespace thekogans {
             /// Return true if instance has been created.
             /// \return true if instance has been created.
             static bool IsInstanceCreated () {
-                return instance != 0;
+                return instance () != 0;
             }
 
             /// \brief
@@ -227,26 +228,34 @@ namespace thekogans {
                 // We implement the double-checked locking pattern here
                 // to allow our singleton instance method to be thread-safe
                 // (i.e. thread-safe singleton construction).
-                if (instance == 0) {
+                if (instance () == 0) {
                     // Here we acquire the lock, check instance again,
                     // and if it's STILL null, we are the lucky ones,
                     // we get to create the actual instance!
-                    LockGuard<Lock> guard (lock);
-                    if (instance == 0) {
-                        instance = InstanceCreator () ();
+                    LockGuard<Lock> guard (lock ());
+                    if (instance () == 0) {
+                        instance () = InstanceCreator () ();
                     }
                 }
-                assert (instance != 0);
-                return *instance;
+                assert (instance () != 0);
+                return *instance ();
             }
 
         protected:
             /// \brief
+            /// Singleton is not an object, it's more of a namespace as it's api is all static.
+            /// \brief
             /// The one and only singleton instance.
-            static T * volatile instance;
+            static T *&instance () {
+                static T *i = 0;
+                return i;
+            }
             /// \brief
             /// Lock protecting singleton construction.
-            static Lock lock;
+            static Lock &lock () {
+                static Lock l;
+                return l;
+            }
 
             /// \brief
             /// ctor.
@@ -259,24 +268,6 @@ namespace thekogans {
             /// Singleton is neither copy constructable, nor assignable.
             THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (Singleton)
         };
-
-        /// \brief
-        /// Definition of the Singleton<T, Lock, InstanceCreator, InstanceDestroyer>::instance.
-        template<
-            typename T,
-            typename Lock,
-            typename InstanceCreator,
-            typename InstanceDestroyer>
-        T * volatile Singleton<T, Lock, InstanceCreator, InstanceDestroyer>::instance = 0;
-
-        /// \brief
-        /// Definition of the Singleton<T, Lock, InstanceCreator, InstanceDestroyer>::lock.
-        template<
-            typename T,
-            typename Lock,
-            typename InstanceCreator,
-            typename InstanceDestroyer>
-        Lock Singleton<T, Lock, InstanceCreator, InstanceDestroyer>::lock;
 
     } // namespace util
 } // namespace thekogans
