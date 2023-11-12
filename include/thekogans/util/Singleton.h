@@ -206,6 +206,13 @@ namespace thekogans {
             /// \brief
             /// Destroy the singleton instance.
             static void DestroyInstance () {
+                // Note that while DestroyInstance will protect
+                // against two threads calling at the same time it
+                // cannot and will not protect against one thread
+                // calling DestroyInstance while another is still
+                // using the Instance. That kind of synchronization is
+                // outside the scope of Singleton and needs to be
+                // handled by the application.
                 LockGuard<Lock> guard (lock ());
                 if (instance () != 0) {
                     T *instance_ = instance ();
