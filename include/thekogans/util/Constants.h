@@ -426,7 +426,7 @@ namespace thekogans {
         template<typename T>
         T EXCHANGE (
                 T &object,
-                const T &newValue) {
+                const T newValue) {
             T oldValue = object;
             object = newValue;
             return oldValue;

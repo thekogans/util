@@ -215,9 +215,8 @@ namespace thekogans {
                 // handled by the application.
                 LockGuard<Lock> guard (lock ());
                 if (instance () != 0) {
-                    T *instance_ = instance ();
-                    instance () = 0;
-                    InstanceDestroyer () (instance_);
+                    T *instance_ = 0;
+                    InstanceDestroyer () (EXCHANGE (instance (), instance_));
                 }
             }
 
