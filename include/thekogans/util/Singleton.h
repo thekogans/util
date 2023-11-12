@@ -200,7 +200,7 @@ namespace thekogans {
                         instance () = InstanceCreator () (std::forward<Args> (args)...);
                     }
                 }
-                assert (instance != 0);
+                assert (instance () != 0);
             }
 
             /// \brief
@@ -248,8 +248,7 @@ namespace thekogans {
             /// the right order.
             /// \return A reference to the one and only instance pointer.
             static T *&instance () {
-                /// \brief
-                /// The one and only singleton instance.
+                // The one and only singleton instance.
                 static T *_instance = 0;
                 return _instance;
             };
@@ -259,8 +258,7 @@ namespace thekogans {
             /// the right order.
             /// \return A reference to the lock protecting singleton construction.
             static Lock &lock () {
-                /// \brief
-                /// Lock protecting singleton construction.
+                // Lock protecting singleton construction.
                 static Lock _lock;
                 return _lock;
             }
