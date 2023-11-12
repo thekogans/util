@@ -243,18 +243,26 @@ namespace thekogans {
 
         protected:
             /// \brief
-            /// Singleton is not an object, it's more of a namespace as it's api is all static.
-            /// \brief
-            /// The one and only singleton instance.
+            /// By wrapping the Singleton static members in accessor
+            /// functions we guarantee that the ctors are called in
+            /// the right order.
+            /// \return A reference to the one and only instance pointer.
             static T *&instance () {
-                static T *i = 0;
-                return i;
-            }
+                /// \brief
+                /// The one and only singleton instance.
+                static T *_instance = 0;
+                return _instance;
+            };
             /// \brief
-            /// Lock protecting singleton construction.
+            /// By wrapping the Singleton static members in accessor
+            /// functions we guarantee that the ctors are called in
+            /// the right order.
+            /// \return A reference to the lock protecting singleton construction.
             static Lock &lock () {
-                static Lock l;
-                return l;
+                /// \brief
+                /// Lock protecting singleton construction.
+                static Lock _lock;
+                return _lock;
             }
 
             /// \brief
