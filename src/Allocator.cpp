@@ -26,7 +26,7 @@
     #include "thekogans/util/DefaultAllocator.h"
     #include "thekogans/util/SecureAllocator.h"
     #if defined (TOOLCHAIN_OS_Windows)
-        #include "thekogans/util/HGLOBALAllocator.h"
+        #include "thekogans/util/os/windows/HGLOBALAllocator.h"
     #endif // defined (TOOLCHAIN_OS_Windows)
     //#include "thekogans/util/AlignedAllocator.h"
     //#include "thekogans/util/SharedAllocator.h"
@@ -56,7 +56,7 @@ namespace thekogans {
                     DefaultAllocator::StaticInit ();
                     SecureAllocator::StaticInit ();
                 #if defined (TOOLCHAIN_OS_Windows)
-                    HGLOBALAllocator::StaticInit ();
+                    os::windows::HGLOBALAllocator::StaticInit ();
                 #endif // defined (TOOLCHAIN_OS_Windows)
                     //AlignedAllocator::StaticInit ();
                     //SharedAllocator::StaticInit ();
