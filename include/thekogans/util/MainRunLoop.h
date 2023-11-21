@@ -19,19 +19,7 @@
 #define __thekogans_util_MainRunLoop_h
 
 #include "thekogans/util/Environment.h"
-#if defined (TOOLCHAIN_OS_Windows)
-    #if !defined (_WINDOWS_)
-        #if !defined (WIN32_LEAN_AND_MEAN)
-            #define WIN32_LEAN_AND_MEAN
-        #endif // !defined (WIN32_LEAN_AND_MEAN)
-        #if !defined (NOMINMAX)
-            #define NOMINMAX
-        #endif // !defined (NOMINMAX)
-        #include <windows.h>
-    #endif // !defined (_WINDOWS_)
-#elif defined (TOOLCHAIN_OS_OSX)
-    #include <CoreFoundation/CFRunLoop.h>
-#endif // defined (TOOLCHAIN_OS_Windows)
+
 #include <memory>
 #include <list>
 #include "thekogans/util/Config.h"
@@ -56,107 +44,6 @@ namespace thekogans {
         /// VERY IMPORTANT: MainRunLoop::CreateInstance performs initialization
         /// (calls Thread::SetMainThread ()) that only makes sense when called from the
         /// main thread (main).
-        ///
-        /// Follow these templates in order to create the \see{SystemRunLoop} on the
-        /// right thread:
-        ///
-        /// On Windows:
-        ///
-        /// \code{.cpp}
-        /// using namespace thekogans;
-        ///
-        /// int CALLBACK WinMain (
-        ///         HINSTANCE /*hInstance*/,
-        ///         HINSTANCE /*hPrevInstance*/,
-        ///         LPSTR /*lpCmdLine*/,
-        ///         int /*nCmdShow*/) {
-        ///     ...
-        ///     util::MainRunLoop::CreateInstance (
-        ///         "MainRunLoop",
-        ///         util::RunLoop::JobExecutionPolicy::SharedPtr (
-        ///             new util::RunLoop::FIFOJobExecutionPolicy),
-        ///         0,
-        ///         0,
-        ///         util::SystemRunLoop::CreateThreadWindow ());
-        ///     ...
-        ///     BOOL result;
-        ///     MSG msg;
-        ///     while ((result = GetMessage (&msg, 0, 0, 0)) != 0) {
-        ///         if (result != -1) {
-        ///             TranslateMessage (&msg);
-        ///             DispatchMessage (&msg);
-        ///         }
-        ///         else {
-        ///             THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-        ///                 THEKOGANS_UTIL_OS_ERROR_CODE);
-        ///         }
-        ///     }
-        ///     or
-        ///     util::MainRunLoop::Instance ().Start ();
-        ///     ...
-        ///     return 0;
-        /// }
-        /// \endcode
-        ///
-        /// On Linux:
-        ///
-        /// \code{.cpp}
-        /// using namespace thekogans;
-        ///
-        /// int main (
-        ///         int /*argc*/,
-        ///         const char * /*argv*/ []) {
-        ///     ...
-        ///     util::MainRunLoop::CreateInstance (
-        ///         "MainRunLoop",
-        ///         util::RunLoop::JobExecutionPolicy::SharedPtr (
-        ///             new util::RunLoop::FIFOJobExecutionPolicy),
-        ///         0,
-        ///         0,
-        ///         util::SystemRunLoop::CreateThreadWindow ());
-        ///     ...
-        ///     Display *display = XOpenDisplay (0);
-        ///     while (1) {
-        ///         XEvent event;
-        ///         XNextEvent (display, &event);
-        ///         if (!util::MainRunLoop::Instance ().DispatchEvent (display, event)) {
-        ///             break;
-        ///         }
-        ///     }
-        ///     or
-        ///     util::MainRunLoop::Instance ().Start ();
-        ///     ...
-        ///     return 0;
-        /// }
-        /// \endcode
-        ///
-        /// On OS X:
-        ///
-        /// \code{.cpp}
-        /// using namespace thekogans;
-        ///
-        /// int main (
-        ///         int /*argc*/,
-        ///         const char * /*argv*/ []) {
-        ///     ...
-        ///     // If using Cocoa, uncomment the following two lines.
-        ///     //util::RunLoop::CocoaInitializer cocoaInitializer;
-        ///     //util::RunLoop::WorkerInitializer workerInitializer (&cocoaInitializer);
-        ///     ...
-        ///     util::MainRunLoop::CreateInstance (
-        ///         "MainRunLoop",
-        ///         util::RunLoop::JobExecutionPolicy::SharedPtr (
-        ///             new util::RunLoop::FIFOJobExecutionPolicy),
-        ///         SystemRunLoop::OSXRunLoop::SharedPtr (
-        ///             new SystemRunLoop::CocoaOSXRunLoop
-        ///             or
-        ///             new SystemRunLoop::CFOSXRunLoop (CFRunLoopGetMain ())));
-        ///     ...
-        ///     util::MainRunLoop::Instance ().Start ();
-        ///     ...
-        ///     return 0;
-        /// }
-        /// \endcode
 
         struct _LIB_THEKOGANS_UTIL_DECL MainRunLoopInstanceCreator {
             /// \brief

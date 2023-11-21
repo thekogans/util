@@ -36,13 +36,17 @@
 namespace thekogans {
     namespace util {
 
+    #if defined (TOOLCHAIN_OS_Windows)
         /// \brief
         /// Convenient typedef for os::windows::RunLoop.
-    #if defined (TOOLCHAIN_OS_Windows)
         typedef os::windows::RunLoop OSThreadRunLoopType;
     #elif defined (TOOLCHAIN_OS_Linux)
+        /// \brief
+        /// Convenient typedef for os::linux::RunLoop.
         typedef os::linux::RunLoop OSThreadRunLoopType;
     #elif defined (TOOLCHAIN_OS_OSX)
+        /// \brief
+        /// Convenient typedef for os::osx::CFRunLoop.
         typedef os::osx::CFRunLoop OSThreadRunLoopType;
     #endif // defined (TOOLCHAIN_OS_Windows)
 
