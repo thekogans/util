@@ -52,11 +52,11 @@ namespace thekogans {
             /// Move ctor.
             /// \param[in] other Vector to move.
             OwnerVector (OwnerVector<T> &&other) {
-                swap (other);
+                this->swap (other);
             }
             /// \brief
             /// dtor. Delete all vector elements.
-            ~OwnerVector () {
+            virtual ~OwnerVector () {
                 deleteAndClear ();
             }
 
@@ -67,7 +67,7 @@ namespace thekogans {
             OwnerVector<T> &operator = (OwnerVector<T> &&other) {
                 if (this != &other) {
                     OwnerVector<T> temp (std::move (other));
-                    swap (temp);
+                    this->swap (temp);
                 }
                 return *this;
             }
@@ -79,7 +79,7 @@ namespace thekogans {
             /// \return Next element in the vector.
             iterator deleteAndErase (const_iterator p) {
                 delete *p;
-                return erase (p);
+                return this->erase (p);
             }
 
             /// \brief
@@ -102,6 +102,66 @@ namespace thekogans {
             /// After calling this method, the vector is empty.
             void deleteAndClear () {
                 deleteAndErase (this->begin (), this->end ());
+            }
+        };
+
+        /// \struct OwnerVectorWithCopyCtor OwnerVector.h thekogans/util/OwnerVector.h
+        ///
+        /// \brief
+        /// Adds a copy ctor on top of \see{OwnerVector}.
+
+        template<typename T>
+        struct OwnerVectorWithCopyCtor : public OwnerVector<T> {
+            /// \brief
+            /// Convenient typedef to reduce code clutter.
+            typedef THEKOGANS_UTIL_TYPENAME std::vector<T *>::const_iterator const_iterator;
+
+            /// \brief
+            /// Default ctor.
+            OwnerVectorWithCopyCtor () {}
+            /// \brief
+            /// ctor. Create a vector of size count.
+            /// \param[in] count Number of '0' elements to initialize the vector to.
+            explicit OwnerVectorWithCopyCtor (std::size_t count) :
+                OwnerVector<T> (count) {}
+            /// \brief
+            /// Move ctor.
+            /// \param[in] other Vector to move.
+            OwnerVectorWithCopyCtor (OwnerVectorWithCopyCtor<T> &&other) {
+                this->swap (other);
+            }
+            /// \brief
+            /// Copy ctor.
+            /// \param[in] other Vector to copy.
+            OwnerVectorWithCopyCtor (const OwnerVectorWithCopyCtor<T> &other) {
+                for (const_iterator it = other.begin (), end = other.end (); it != end; ++it) {
+                    this->push_back (new T (**it));
+                }
+            }
+
+            /// \brief
+            /// Move assignemnt operator.
+            /// \param[in] other Vector to move.
+            /// \return *this
+            OwnerVectorWithCopyCtor<T> &operator = (OwnerVectorWithCopyCtor<T> &&other) {
+                if (this != &other) {
+                    OwnerVectorWithCopyCtor<T> temp (std::move (other));
+                    this->swap (temp);
+                }
+                return *this;
+            }
+            /// \brief
+            /// Copy assignemnt operator.
+            /// \param[in] other Vector to move.
+            /// \return *this
+            OwnerVectorWithCopyCtor<T> &operator = (const OwnerVectorWithCopyCtor<T> &other) {
+                if (this != &other) {
+                    OwnerVectorWithCopyCtor<T> temp (std::move (*this));
+                    for (const_iterator it = other.begin (), end = other.end (); it != end; ++it) {
+                        this->push_back (new T (**it));
+                    }
+                }
+                return *this;
             }
         };
 
