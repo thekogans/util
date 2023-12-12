@@ -41,7 +41,7 @@ namespace thekogans {
 
                 struct _LIB_THEKOGANS_UTIL_DECL WindowsFirewall {
                 private:
-                    /// \struct WindowsFirewall::Mgr WindowsFirewall.h thekogans/util/WindowsFirewall.h
+                    /// \struct WindowsFirewall::Mgr WindowsFirewall.h thekogans/util/os/windows/WindowsFirewall.h
                     ///
                     /// \brief
                     /// Wrap INetFwMgr COM object to provide lifetime management.
@@ -69,7 +69,7 @@ namespace thekogans {
                             mgr->Release ();
                         }
                     } mgr;
-                    /// \struct WindowsFirewall::Policy WindowsFirewall.h thekogans/util/WindowsFirewall.h
+                    /// \struct WindowsFirewall::Policy WindowsFirewall.h thekogans/util/os/windows/WindowsFirewall.h
                     ///
                     /// \brief
                     /// Wrap INetFwPolicy COM object to provide lifetime management.
@@ -92,7 +92,7 @@ namespace thekogans {
                             policy->Release ();
                         }
                     } policy;
-                    /// \struct WindowsFirewall::Profile WindowsFirewall.h thekogans/util/WindowsFirewall.h
+                    /// \struct WindowsFirewall::Profile WindowsFirewall.h thekogans/util/os/windows/WindowsFirewall.h
                     ///
                     /// \brief
                     /// Wrap INetFwProfile COM object to provide lifetime management.

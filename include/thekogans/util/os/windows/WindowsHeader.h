@@ -26,7 +26,7 @@
         #define WIN32_LEAN_AND_MEAN
     #endif // !defined (WIN32_LEAN_AND_MEAN)
     #if !defined (_WIN32_WINDOWS)
-        #define _WIN32_WINDOWS 0x0602
+        #define _WIN32_WINDOWS 0x0602  // If they're not at least running Windows 8, fuck em!
     #endif // !defined (_WIN32_WINDOWS)
     #if !defined (_WIN32_WINNT)
         #define _WIN32_WINNT 0x0602
