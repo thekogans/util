@@ -250,27 +250,8 @@ namespace thekogans {
             isAltiVec (HaveAltiVec ()) {}
     #endif // defined (TOOLCHAIN_ARCH_i386) || defined (TOOLCHAIN_ARCH_x86_64)
 
-    #if defined (_MSC_VER)
-    #if defined (_ARM_)
-        __forceinline void YieldProcessor () {}
-        extern "C" void __emit (const unsigned __int32 opcode);
-        #pragma intrinsic (__emit)
-        #define MemoryBarrier() {\
-            __emit (0xF3BF);\
-            __emit (0x8F5F);\
-        }
-    #elif defined (_ARM64_)
-        extern "C" void __yield (void);
-        #pragma intrinsic (__yield)
-        __forceinline void YieldProcessor () {\
-            __yield();\
-        }
-        extern "C" void __dmb (const unsigned __int32 _Type);
-        #pragma intrinsic (__dmb)
-        #define MemoryBarrier() {\
-            __dmb (_ARM64_BARRIER_SY);\
-        }
-    #elif defined (_AMD64_)
+    #if defined (TOOLCHAIN_COMPILER_cl)
+    #if defined (TOOLCHAIN_ARCH_x86_64)
         #if !defined (YieldProcessor)
             extern "C" void _mm_pause (void);
             #pragma intrinsic (_mm_pause)
@@ -281,7 +262,7 @@ namespace thekogans {
             #pragma intrinsic (_mm_mfence)
             #define MemoryBarrier _mm_mfence
         #endif // !defined (MemoryBarrier)
-    #elif defined (_X86_)
+    #elif defined (TOOLCHAIN_ARCH_i386)
         #if !defined (YieldProcessor)
             #define YieldProcessor() __asm {rep nop}
         #endif // !defined (YieldProcessor)
@@ -294,11 +275,30 @@ namespace thekogans {
                 }
             }
         #endif // !defined (MemoryBarrier)
-    #else // defined (_ARM_)
+    #elif defined (TOOLCHAIN_ARCH_arm64)
+        extern "C" void __yield (void);
+        #pragma intrinsic (__yield)
+        __forceinline void YieldProcessor () {\
+            __yield();\
+        }
+        extern "C" void __dmb (const unsigned __int32 _Type);
+        #pragma intrinsic (__dmb)
+        #define MemoryBarrier() {\
+            __dmb (_ARM64_BARRIER_SY);\
+        }
+    #elif defined (TOOLCHAIN_ARCH_arm32)
+        __forceinline void YieldProcessor () {}
+        extern "C" void __emit (const unsigned __int32 opcode);
+        #pragma intrinsic (__emit)
+        #define MemoryBarrier() {\
+            __emit (0xF3BF);\
+            __emit (0x8F5F);\
+        }
+    #else // defined (TOOLCHAIN_ARCH_x86_64)
         #error Unsupported architecture
-    #endif // defined (_ARM_)
-    #else // defined (_MSC_VER)
-    #if defined (__i386__) || defined (__x86_64__)
+    #endif // defined (TOOLCHAIN_ARCH_arm32)
+    #else // defined (TOOLCHAIN_COMPILER_cl)
+    #if defined (TOOLCHAIN_ARCH_i386) || defined (TOOLCHAIN_ARCH_x86_64)
         #if defined (TOOLCHAIN_OS_Linux)
             #if (__GNUC__ > 4 && __GNUC_MINOR > 7)
                 // gcc added this intrinsic by 4.7.1
@@ -325,16 +325,16 @@ namespace thekogans {
         #if !defined (MemoryBarrier)
              #define MemoryBarrier() asm volatile ("mfence")
         #endif // !defined (MemoryBarrier)
-    #endif // defined (__i386__) || defined (__x86_64__)
-        #if defined (__aarch64__)
+    #endif // defined (TOOLCHAIN_ARCH_i386) || defined (TOOLCHAIN_ARCH_x86_64)
+        #if defined (TOOLCHAIN_ARCH_arm64)
              #define YieldProcessor() asm volatile ("yield")
              #define MemoryBarrier __sync_synchronize
-        #endif // defined (__aarch64__)
-        #if defined (__arm__)
+        #endif // defined (TOOLCHAIN_ARCH_arm64)
+        #if defined (TOOLCHAIN_ARCH_arm32)
              #define YieldProcessor()
              #define MemoryBarrier __sync_synchronize
-        #endif // defined (__arm__)
-    #endif // defined (_MSC_VER)
+        #endif // defined (TOOLCHAIN_ARCH_arm32)
+    #endif // defined (TOOLCHAIN_COMPILER_cl)
 
         void CPU::Pause () {
             YieldProcessor ();

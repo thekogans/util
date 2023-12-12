@@ -493,13 +493,14 @@ namespace thekogans {
                 Thread *thread,
                 const TimeSpec &timeSpec) {
             if (thread != 0) {
-                auto job = [thread, timeSpec] (
-                        const RunLoop::Job & /*job*/,
-                        const std::atomic<bool> & /*done*/) {
-                    thread->Wait (timeSpec);
-                    delete thread;
-                };
-                runLoop.EnqJob (job);
+                runLoop.EnqJob (
+                    [thread, timeSpec] (
+                            const RunLoop::Job & /*job*/,
+                            const std::atomic<bool> & /*done*/) {
+                        thread->Wait (timeSpec);
+                        delete thread;
+                    }
+                );
             }
         }
 

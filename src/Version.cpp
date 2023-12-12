@@ -23,10 +23,10 @@ namespace thekogans {
 
         const Version Version::Empty (0, 0, 0);
 
-    #if defined (_MSC_VER)
+    #if defined (TOOLCHAIN_COMPILER_cl)
         #pragma warning (push)
         #pragma warning (disable : 4996)
-    #endif // defined (_MSC_VER)
+    #endif // defined (TOOLCHAIN_COMPILER_cl)
 
         Version::Version (const std::string &value) :
                 majorVersion (0),
@@ -41,9 +41,9 @@ namespace thekogans {
             }
         }
 
-    #if defined (_MSC_VER)
+    #if defined (TOOLCHAIN_COMPILER_cl)
         #pragma warning (pop)
-    #endif // defined (_MSC_VER)
+    #endif // defined (TOOLCHAIN_COMPILER_cl)
 
         void Version::IncMajorVersion () {
             ++majorVersion;

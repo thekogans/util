@@ -15,13 +15,6 @@
 // You should have received a copy of the GNU General Public License
 // along with libthekogans_util. If not, see <http://www.gnu.org/licenses/>.
 
-#include "thekogans/util/Environment.h"
-#if defined (TOOLCHAIN_OS_Windows)
-    #if defined (__GNUC__)
-        #define _WIN32_WINNT 0x0600
-        #include <synchapi.h>
-    #endif // defined (__GNUC__)
-#endif // defined (TOOLCHAIN_OS_Windows)
 #include "thekogans/util/Exception.h"
 #include "thekogans/util/TimeSpec.h"
 #include "thekogans/util/Condition.h"

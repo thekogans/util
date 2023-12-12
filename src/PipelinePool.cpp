@@ -85,11 +85,12 @@ namespace thekogans {
             // Wait for all borrowed queues to be returned.
             WaitForIdle ();
             assert (borrowedPipelines.empty ());
-            auto callback = [] (PipelineList::Callback::argument_type pipeline) -> PipelineList::Callback::result_type {
-                delete pipeline;
-                return true;
-            };
-            availablePipelines.clear (callback);
+            availablePipelines.clear (
+                [] (PipelineList::Callback::argument_type pipeline) -> PipelineList::Callback::result_type {
+                    delete pipeline;
+                    return true;
+                }
+            );
         }
 
         Pipeline::SharedPtr PipelinePool::GetPipeline (

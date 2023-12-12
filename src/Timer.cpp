@@ -17,10 +17,10 @@
 
 #include "thekogans/util/Environment.h"
 #if defined (TOOLCHAIN_OS_Windows)
-    #if defined (__GNUC__)
-        #define _WIN32_WINNT 0x0600
+    #if defined (TOOLCHAIN_COMPILER_gcc)
+        #include "thekogans/util/os/windows/WindowsHeader.h"
         #include <threadpoolapiset.h>
-    #endif // defined (__GNUC__)
+    #endif // defined (TOOLCHAIN_COMPILER_gcc)
 #elif defined (TOOLCHAIN_OS_Linux)
     #include <signal.h>
 #elif defined (TOOLCHAIN_OS_OSX)

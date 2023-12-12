@@ -383,11 +383,11 @@ namespace thekogans {
             }
             ClearProcessInformation (pid, returnCode);
             // We can't use dup with vfork.
-        #if defined (__APPLE__)
+        #if defined (TOOLCHAIN_OS_OSX)
             pid = fork ();
-        #else // defined (__APPLE__)
+        #else // defined (TOOLCHAIN_OS_OSX)
             pid = hookStdIO != HOOK_NONE ? fork () : vfork ();
-        #endif // defined (__APPLE__)
+        #endif // defined (TOOLCHAIN_OS_OSX)
             if (pid < 0) {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
                     THEKOGANS_UTIL_OS_ERROR_CODE);

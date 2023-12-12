@@ -16,11 +16,9 @@
 // along with libthekogans_util. If not, see <http://www.gnu.org/licenses/>.
 
 #include "thekogans/util/Environment.h"
-#if defined (TOOLCHAIN_OS_Windows)
-    #if defined (__GNUC__)
-        #include <sec_api/stdio_s.h>
-    #endif // defined (__GNUC__)
-#endif // defined (TOOLCHAIN_OS_Windows)
+#if defined (TOOLCHAIN_OS_Windows) && defined (TOOLCHAIN_COMPILER_gcc)
+    #include <sec_api/stdio_s.h>
+#endif // defined (TOOLCHAIN_OS_Windows) && defined (TOOLCHAIN_COMPILER_gcc)
 #include <cstdarg>
 #include <cstring>
 #include <sstream>

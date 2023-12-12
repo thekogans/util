@@ -21,6 +21,7 @@
 #include "thekogans/util/Environment.h"
 #if defined (TOOLCHAIN_OS_Windows)
     #include "thekogans/util/os/windows/WindowsHeader.h"
+    #include <synchapi.h>
 #else // defined (TOOLCHAIN_OS_Windows)
     #include <pthread.h>
 #endif // defined (TOOLCHAIN_OS_Windows)

@@ -21,13 +21,9 @@
 #include "thekogans/util/Environment.h"
 #if defined (TOOLCHAIN_OS_Windows)
     #include "thekogans/util/os/windows/WindowsHeader.h"
-    #if (WINVER > 0x0602)
-        #include <synchapi.h>
-        #define THEKOGANS_UTIL_USE_WINDOWS_RWLOCK
-    #endif // WINVER > 0x0602
+    #include <synchapi.h>
 #else // defined (TOOLCHAIN_OS_Windows)
     #include <pthread.h>
-    #define THEKOGANS_UTIL_USE_POSIX_RWLOCK
 #endif // defined (TOOLCHAIN_OS_Windows)
 #include "thekogans/util/Config.h"
 
@@ -43,15 +39,15 @@ namespace thekogans {
 
         struct _LIB_THEKOGANS_UTIL_DECL RWLock {
         private:
-        #if defined (THEKOGANS_UTIL_USE_WINDOWS_RWLOCK)
+        #if defined (TOOLCHAIN_OS_Windows)
             /// \brief
             /// Windows read/write lock.
             SRWLOCK rwlock;
-        #else // defined (THEKOGANS_UTIL_USE_WINDOWS_RWLOCK)
+        #else // defined (TOOLCHAIN_OS_Windows)
             /// \brief
             /// POSIX read/write lock.
             pthread_rwlock_t rwlock;
-        #endif // defined (THEKOGANS_UTIL_USE_WINDOWS_RWLOCK)
+        #endif // defined (TOOLCHAIN_OS_Windows)
 
         public:
             /// \brief

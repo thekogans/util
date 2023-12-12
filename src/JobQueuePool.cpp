@@ -80,12 +80,12 @@ namespace thekogans {
             // Wait for all borrowed queues to be returned.
             WaitForIdle ();
             assert (borrowedJobQueues.empty ());
-            auto callback =
+            availableJobQueues.clear (
                 [] (JobQueueList::Callback::argument_type jobQueue) ->JobQueueList::Callback::result_type {
                     delete jobQueue;
                     return true;
-                };
-            availableJobQueues.clear (callback);
+                }
+            );
         }
 
         JobQueue::SharedPtr JobQueuePool::GetJobQueue (

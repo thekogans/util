@@ -15,11 +15,6 @@
 // You should have received a copy of the GNU General Public License
 // along with libthekogans_util. If not, see <http://www.gnu.org/licenses/>.
 
-#include "thekogans/util/Environment.h"
-#if defined (TOOLCHAIN_OS_Windows) && defined (__GNUC__)
-    #define _WIN32_WINNT 0x0600
-    #include <synchapi.h>
-#endif // defined (TOOLCHAIN_OS_Windows) && defined (__GNUC__)
 #include "thekogans/util/Exception.h"
 #include "thekogans/util/RWLock.h"
 
