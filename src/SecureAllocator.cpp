@@ -22,7 +22,7 @@
     defined (THEKOGANS_UTIL_USE_DEFAULT_SECURE_ALLOCATOR)
 
 #if defined (TOOLCHAIN_OS_Windows)
-    #include "os/windows/WindowsHeader.h"
+    #include "thekogans/util/os/windows/WindowsHeader.h"
 #else // defined (TOOLCHAIN_OS_Windows)
     #if defined (TOOLCHAIN_OS_Linux)
         #include <sys/resource.h>

@@ -19,7 +19,7 @@
 
 #if defined (TOOLCHAIN_OS_Windows)
 
-#include "os/windows/WindowsHeader.h"
+#include "thekogans/util/os/windows/WindowsHeader.h"
 #include <memory>
 #include "thekogans/util/Exception.h"
 #include "thekogans/util/os/windows/HGLOBALAllocator.h"

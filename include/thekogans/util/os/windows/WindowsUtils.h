@@ -298,7 +298,7 @@ namespace thekogans {
                         HICON icon = 0,
                         HCURSOR cursor = LoadCursor (0, IDC_ARROW),
                         HBRUSH background = (HBRUSH)(COLOR_WINDOW + 1),
-                        LPCTSTR menu = 0,
+                        const std::string &menu = std::string (),
                         HINSTANCE instance_ = GetModuleHandle (0));
                     /// \brief
                     /// dtor.

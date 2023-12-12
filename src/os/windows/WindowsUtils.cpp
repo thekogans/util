@@ -240,7 +240,7 @@ namespace thekogans {
                         HICON icon,
                         HCURSOR cursor,
                         HBRUSH background,
-                        LPCTSTR menu,
+                        const std::string &menu,
                         HINSTANCE instance_) :
                         name (name_),
                         instance (instance_),
@@ -256,8 +256,8 @@ namespace thekogans {
                         wndClassEx.hCursor = cursor;
                         wndClassEx.hbrBackground = background;
                         std::wstring wmenu;
-                        if (menu != 0) {
-                            wmenu = UTF8ToUTF16 (menu, strlen (menu));
+                        if (!menu.empty ()) {
+                            wmenu = UTF8ToUTF16 (menu);
                             wndClassEx.lpszMenuName = wmenu.c_str ();
                         }
                         std::wstring wname = UTF8ToUTF16 (name);

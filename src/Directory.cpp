@@ -943,7 +943,7 @@ namespace thekogans {
                         }
                     }
                 }
-                else if (!CreateDirectory (path.c_str (), lpSecurityAttributes)) {
+                else if (!CreateDirectoryW (os::windows::UTF8ToUTF16 (path).c_str (), lpSecurityAttributes)) {
                     THEKOGANS_UTIL_THROW_ERROR_CODE_AND_MESSAGE_EXCEPTION (
                         THEKOGANS_UTIL_OS_ERROR_CODE, " (%s)", path.c_str ());
                 }
