@@ -380,10 +380,10 @@ namespace thekogans {
             /// \return <0 = less, =0 = equal, >0 = greater.
             i32 PrefixCompare (const Variant &variant) const;
 
-        #if defined (_MSC_VER)
+        #if defined (TOOLCHAIN_COMPILER_cl)
             #pragma warning (push)
             #pragma warning (disable : 4244)
-        #endif // defined (_MSC_VER)
+        #endif // defined (TOOLCHAIN_COMPILER_cl)
 
             /// \brief
             /// Numerical type conversion template.
@@ -420,9 +420,9 @@ namespace thekogans {
                 }
             }
 
-        #if defined (_MSC_VER)
+        #if defined (TOOLCHAIN_COMPILER_cl)
             #pragma warning (pop)
-        #endif // defined (_MSC_VER)
+        #endif // defined (TOOLCHAIN_COMPILER_cl)
 
             /// \brief
             /// Parse variant state from an xml node.

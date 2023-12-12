@@ -20,15 +20,7 @@
 
 #include "thekogans/util/Environment.h"
 #if defined (TOOLCHAIN_OS_Windows)
-    #if !defined (_WINDOWS_)
-        #if !defined (WIN32_LEAN_AND_MEAN)
-            #define WIN32_LEAN_AND_MEAN
-        #endif // !defined (WIN32_LEAN_AND_MEAN)
-        #if !defined (NOMINMAX)
-            #define NOMINMAX
-        #endif // !defined (NOMINMAX)
-        #include <windows.h>
-    #endif // !defined (_WINDOWS_)
+    #include "thekogans/util/os/windows/WindowsHeader.h"
     #include <cstdio>
 #else // defined (TOOLCHAIN_OS_Windows)
     #include <errno.h>
@@ -67,10 +59,10 @@ namespace thekogans {
         /// Exception is integrated with \see{LoggerMgr} to make it
         /// easy to record, and analyze application runtime.
 
-    #if defined (_MSC_VER)
+    #if defined (TOOLCHAIN_COMPILER_cl)
         #pragma warning (push)
         #pragma warning (disable : 4275)
-    #endif // defined (_MSC_VER)
+    #endif // defined (TOOLCHAIN_COMPILER_cl)
 
         struct _LIB_THEKOGANS_UTIL_DECL Exception : public std::exception {
             /// \brief
@@ -357,9 +349,9 @@ namespace thekogans {
                 Exception &exception);
         };
 
-    #if defined (_MSC_VER)
+    #if defined (TOOLCHAIN_COMPILER_cl)
         #pragma warning (pop)
-    #endif // defined (_MSC_VER)
+    #endif // defined (TOOLCHAIN_COMPILER_cl)
 
     #if defined (TOOLCHAIN_OS_Windows)
         /// \def THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL

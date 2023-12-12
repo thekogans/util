@@ -112,10 +112,10 @@ namespace thekogans {
             /// \brief
             /// Convenient typedef for IntrusiveList<JobQueue, JOB_QUEUE_LIST_ID>.
             typedef IntrusiveList<JobQueue, JOB_QUEUE_LIST_ID> JobQueueList;
-        #if defined (_MSC_VER)
+        #if defined (TOOLCHAIN_COMPILER_cl)
             #pragma warning (push)
             #pragma warning (disable : 4275)
-        #endif // defined (_MSC_VER)
+        #endif // defined (TOOLCHAIN_COMPILER_cl)
             /// \struct JobQueuePool::JobQueue JobQueuePool.h thekogans/util/JobQueuePool.h
             ///
             /// \brief
@@ -174,9 +174,9 @@ namespace thekogans {
                 /// JobQueue is neither copy constructable, nor assignable.
                 THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (JobQueue)
             };
-        #if defined (_MSC_VER)
+        #if defined (TOOLCHAIN_COMPILER_cl)
             #pragma warning (pop)
-        #endif // defined (_MSC_VER)
+        #endif // defined (TOOLCHAIN_COMPILER_cl)
             /// \brief
             /// List of available \see{JobQueue}s.
             JobQueueList availableJobQueues;

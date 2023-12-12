@@ -22,15 +22,7 @@
     defined (THEKOGANS_UTIL_USE_DEFAULT_SECURE_ALLOCATOR)
 
 #if defined (TOOLCHAIN_OS_Windows)
-    #if !defined (_WINDOWS_)
-        #if !defined (WIN32_LEAN_AND_MEAN)
-            #define WIN32_LEAN_AND_MEAN
-        #endif // !defined (WIN32_LEAN_AND_MEAN)
-        #if !defined (NOMINMAX)
-            #define NOMINMAX
-        #endif // !defined (NOMINMAX)
-        #include <windows.h>
-    #endif // !defined (_WINDOWS_)
+    #include "os/windows/WindowsHeader.h"
 #else // defined (TOOLCHAIN_OS_Windows)
     #if defined (TOOLCHAIN_OS_Linux)
         #include <sys/resource.h>

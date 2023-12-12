@@ -116,10 +116,10 @@ namespace thekogans {
             /// \brief
             /// Convenient typedef for IntrusiveList<Pipeline, PIPELINE_LIST_ID>.
             typedef IntrusiveList<Pipeline, PIPELINE_LIST_ID> PipelineList;
-        #if defined (_MSC_VER)
+        #if defined (TOOLCHAIN_COMPILER_cl)
             #pragma warning (push)
             #pragma warning (disable : 4275)
-        #endif // defined (_MSC_VER)
+        #endif // defined (TOOLCHAIN_COMPILER_cl)
             /// \struct PipelinePool::Pipeline PipelinePool.h thekogans/util/PipelinePool.h
             ///
             /// \brief
@@ -184,9 +184,9 @@ namespace thekogans {
                 /// Pipeline is neither copy constructable, nor assignable.
                 THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (Pipeline)
             };
-        #if defined (_MSC_VER)
+        #if defined (TOOLCHAIN_COMPILER_cl)
             #pragma warning (pop)
-        #endif // defined (_MSC_VER)
+        #endif // defined (TOOLCHAIN_COMPILER_cl)
             /// \brief
             /// List of available \see{Pipeline}s.
             PipelineList availablePipelines;

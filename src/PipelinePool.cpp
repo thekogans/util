@@ -82,13 +82,14 @@ namespace thekogans {
         }
 
         PipelinePool::~PipelinePool () {
-            LockGuard<Mutex> guard (mutex);
+            // Wait for all borrowed queues to be returned.
+            WaitForIdle ();
+            assert (borrowedPipelines.empty ());
             auto callback = [] (PipelineList::Callback::argument_type pipeline) -> PipelineList::Callback::result_type {
                 delete pipeline;
                 return true;
             };
             availablePipelines.clear (callback);
-            borrowedPipelines.clear (callback);
         }
 
         Pipeline::SharedPtr PipelinePool::GetPipeline (

@@ -195,10 +195,10 @@ namespace thekogans {
                 virtual Job *DeqJob (State &state) override;
             };
 
-        #if defined (_MSC_VER)
+        #if defined (TOOLCHAIN_COMPILER_cl)
             #pragma warning (push)
             #pragma warning (disable : 4275)
-        #endif // defined (_MSC_VER)
+        #endif // defined (TOOLCHAIN_COMPILER_cl)
             /// \struct Pipeline::Job Pipeline.h thekogans/util/Pipeline.h
             ///
             /// \brief
@@ -288,9 +288,9 @@ namespace thekogans {
                 /// Job is neither copy constructable, nor assignable.
                 THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (Job)
             };
-        #if defined (_MSC_VER)
+        #if defined (TOOLCHAIN_COMPILER_cl)
             #pragma warning (pop)
-        #endif // defined (_MSC_VER)
+        #endif // defined (TOOLCHAIN_COMPILER_cl)
 
             /// \struct Pipeline::LambdaJob Pipeline.h thekogans/util/Pipeline.h
             ///

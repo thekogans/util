@@ -77,14 +77,15 @@ namespace thekogans {
         }
 
         JobQueuePool::~JobQueuePool () {
-            LockGuard<Mutex> guard (mutex);
+            // Wait for all borrowed queues to be returned.
+            WaitForIdle ();
+            assert (borrowedJobQueues.empty ());
             auto callback =
                 [] (JobQueueList::Callback::argument_type jobQueue) ->JobQueueList::Callback::result_type {
                     delete jobQueue;
                     return true;
                 };
             availableJobQueues.clear (callback);
-            borrowedJobQueues.clear (callback);
         }
 
         JobQueue::SharedPtr JobQueuePool::GetJobQueue (

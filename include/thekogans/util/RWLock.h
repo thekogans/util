@@ -20,21 +20,14 @@
 
 #include "thekogans/util/Environment.h"
 #if defined (TOOLCHAIN_OS_Windows)
-    #if defined (_MSC_VER)
-        #if !defined (_WINDOWS_)
-            #if !defined (WIN32_LEAN_AND_MEAN)
-                #define WIN32_LEAN_AND_MEAN
-            #endif // !defined (WIN32_LEAN_AND_MEAN)
-            #if !defined (NOMINMAX)
-                #define NOMINMAX
-            #endif // !defined (NOMINMAX)
-            #include <windows.h>
-        #endif // !defined (_WINDOWS_)
-    #else // defined (_MSC_VER)
+    #include "thekogans/util/os/windows/WindowsHeader.h"
+    #if (WINVER > 0x0602)
         #include <synchapi.h>
-    #endif // defined (_MSC_VER)
+        #define THEKOGANS_UTIL_USE_WINDOWS_RWLOCK
+    #endif // WINVER > 0x0602
 #else // defined (TOOLCHAIN_OS_Windows)
     #include <pthread.h>
+    #define THEKOGANS_UTIL_USE_POSIX_RWLOCK
 #endif // defined (TOOLCHAIN_OS_Windows)
 #include "thekogans/util/Config.h"
 
@@ -50,15 +43,15 @@ namespace thekogans {
 
         struct _LIB_THEKOGANS_UTIL_DECL RWLock {
         private:
-        #if defined (TOOLCHAIN_OS_Windows)
+        #if defined (THEKOGANS_UTIL_USE_WINDOWS_RWLOCK)
             /// \brief
             /// Windows read/write lock.
             SRWLOCK rwlock;
-        #else // defined (TOOLCHAIN_OS_Windows)
+        #else // defined (THEKOGANS_UTIL_USE_WINDOWS_RWLOCK)
             /// \brief
             /// POSIX read/write lock.
             pthread_rwlock_t rwlock;
-        #endif // defined (TOOLCHAIN_OS_Windows)
+        #endif // defined (THEKOGANS_UTIL_USE_WINDOWS_RWLOCK)
 
         public:
             /// \brief

@@ -20,15 +20,7 @@
 
 #include "thekogans/util/Environment.h"
 #if defined (TOOLCHAIN_OS_Windows)
-    #if !defined (_WINDOWS_)
-        #if !defined (WIN32_LEAN_AND_MEAN)
-            #define WIN32_LEAN_AND_MEAN
-        #endif // !defined (WIN32_LEAN_AND_MEAN)
-        #if !defined (NOMINMAX)
-            #define NOMINMAX
-        #endif // !defined (NOMINMAX)
-        #include <windows.h>
-    #endif // !defined (_WINDOWS_)
+    #include "thekogans/util/os/windows/WindowsHeader.h"
     #include <objbase.h>
 #endif // defined (TOOLCHAIN_OS_Windows)
 #include <memory>
@@ -87,10 +79,10 @@ namespace thekogans {
             /// Convenient typedef for IntrusiveList<Job, JOB_LIST_ID>.
             typedef IntrusiveList<Job, JOB_LIST_ID> JobList;
 
-        #if defined (_MSC_VER)
+        #if defined (TOOLCHAIN_COMPILER_cl)
             #pragma warning (push)
             #pragma warning (disable : 4275)
-        #endif // defined (_MSC_VER)
+        #endif // defined (TOOLCHAIN_COMPILER_cl)
             /// \struct RunLoop::Job RunLoop.h thekogans/util/RunLoop.h
             ///
             /// \brief
@@ -333,9 +325,9 @@ namespace thekogans {
                 /// Scheduler needs acces to protected members.
                 friend struct Scheduler;
             };
-        #if defined (_MSC_VER)
+        #if defined (TOOLCHAIN_COMPILER_cl)
             #pragma warning (pop)
-        #endif // defined (_MSC_VER)
+        #endif // defined (TOOLCHAIN_COMPILER_cl)
 
             /// \struct RunLoop::LambdaJob RunLoop.h thekogans/util/RunLoop.h
             ///

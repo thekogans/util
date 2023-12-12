@@ -32,20 +32,20 @@ namespace thekogans {
         /// \def THEKOGANS_UTIL_I64_LITERAL(n)
         /// Macro to define a platform independent
         /// 64 bit integer literal.
-        #if defined (_MSC_VER)
+        #if defined (TOOLCHAIN_COMPILER_cl)
             #define THEKOGANS_UTIL_I64_LITERAL(n) n##I64
-        #else // defined (_MSC_VER)
+        #else // defined (TOOLCHAIN_COMPILER_cl)
             #define THEKOGANS_UTIL_I64_LITERAL(n) n##LL
-        #endif // defined (_MSC_VER)
+        #endif // defined (TOOLCHAIN_COMPILER_cl)
 
         /// \def THEKOGANS_UTIL_UI64_LITERAL(n)
         /// Macro to define a platform independent
         /// 64 bit unsigned integer literal.
-        #if defined (_MSC_VER)
+        #if defined (TOOLCHAIN_COMPILER_cl)
             #define THEKOGANS_UTIL_UI64_LITERAL(n) n##UI64
-        #else // defined (_MSC_VER)
+        #else // defined (TOOLCHAIN_COMPILER_cl)
             #define THEKOGANS_UTIL_UI64_LITERAL(n) n##ULL
-        #endif // defined (_MSC_VER)
+        #endif // defined (TOOLCHAIN_COMPILER_cl)
 
         /// \brief
         /// Smallest 64 bit integer.

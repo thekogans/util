@@ -19,15 +19,7 @@
 
 #if defined (TOOLCHAIN_OS_Windows)
 
-#if !defined (_WINDOWS_)
-    #if !defined (WIN32_LEAN_AND_MEAN)
-        #define WIN32_LEAN_AND_MEAN
-    #endif // !defined (WIN32_LEAN_AND_MEAN)
-    #if !defined (NOMINMAX)
-        #define NOMINMAX
-    #endif // !defined (NOMINMAX)
-    #include <windows.h>
-#endif // !defined (_WINDOWS_)
+#include "os/windows/WindowsHeader.h"
 #include <memory>
 #include "thekogans/util/Exception.h"
 #include "thekogans/util/os/windows/HGLOBALAllocator.h"

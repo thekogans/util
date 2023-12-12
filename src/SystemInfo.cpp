@@ -17,15 +17,7 @@
 
 #include "thekogans/util/Environment.h"
 #if defined (TOOLCHAIN_OS_Windows)
-    #if !defined (_WINDOWS_)
-        #if !defined (WIN32_LEAN_AND_MEAN)
-            #define WIN32_LEAN_AND_MEAN
-        #endif // !defined (WIN32_LEAN_AND_MEAN)
-        #if !defined (NOMINMAX)
-            #define NOMINMAX
-        #endif // !defined (NOMINMAX)
-        #include <windows.h>
-    #endif // !defined (_WINDOWS_)
+    #include "os/windows/WindowsHeader.h"
     #include <winsock2.h>
     #include <iphlpapi.h>
     #if defined (THEKOGANS_UTIL_HAVE_WTS)

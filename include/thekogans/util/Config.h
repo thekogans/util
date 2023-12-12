@@ -58,16 +58,16 @@
         #define _LIB_THEKOGANS_UTIL_DECL
         #define THEKOGANS_UTIL_EXPORT
     #endif // defined (THEKOGANS_UTIL_TYPE_Shared)
-    #if defined (_MSC_VER) && (_MSC_VER <= 1200)
+    #if defined (TOOLCHAIN_COMPILER_cl) && (_MSC_VER <= 1200)
         #define THEKOGANS_UTIL_TYPENAME
-    #else // defined (_MSC_VER) && (_MSC_VER <= 1200)
+    #else // defined (TOOLCHAIN_COMPILER_cl) && (_MSC_VER <= 1200)
         #define THEKOGANS_UTIL_TYPENAME typename
-    #endif // defined (_MSC_VER) && (_MSC_VER <= 1200)
+    #endif // defined (TOOLCHAIN_COMPILER_cl) && (_MSC_VER <= 1200)
     #define THEKOGANS_UTIL_PACKED(x) __pragma (pack (push, 1)) x __pragma (pack (pop))
-    #if defined (_MSC_VER)
+    #if defined (TOOLCHAIN_COMPILER_cl)
         #pragma warning (disable: 4251)  // using non-exported as public in exported
         #pragma warning (disable: 4786)
-    #endif // defined (_MSC_VER)
+    #endif // defined (TOOLCHAIN_COMPILER_cl)
 #else // defined (TOOLCHAIN_OS_Windows)
     #define _LIB_THEKOGANS_UTIL_API
     #define _LIB_THEKOGANS_UTIL_DECL

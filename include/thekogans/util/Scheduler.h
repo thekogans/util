@@ -59,10 +59,10 @@ namespace thekogans {
             typedef IntrusiveList<JobQueue, JOB_QUEUE_LIST_ID> JobQueueList;
 
         public:
-        #if defined (_MSC_VER)
+        #if defined (TOOLCHAIN_COMPILER_cl)
             #pragma warning (push)
             #pragma warning (disable : 4275)
-        #endif // defined (_MSC_VER)
+        #endif // defined (TOOLCHAIN_COMPILER_cl)
             /// \struct Scheduler::JobQueue Scheduler.h thekogans/util/Scheduler.h
             ///
             /// \brief
@@ -196,9 +196,9 @@ namespace thekogans {
                 /// JobQueue is neither copy constructable, nor assignable.
                 THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (JobQueue)
             };
-        #if defined (_MSC_VER)
+        #if defined (TOOLCHAIN_COMPILER_cl)
             #pragma warning (pop)
-        #endif // defined (_MSC_VER)
+        #endif // defined (TOOLCHAIN_COMPILER_cl)
 
             /// \brief
             /// ctor.
