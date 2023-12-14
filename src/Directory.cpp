@@ -587,8 +587,7 @@ namespace thekogans {
                 creationDate = os::windows::FILETIMEToi64 (attributeData.ftCreationTime);
                 lastAccessedDate = os::windows::FILETIMEToi64 (attributeData.ftLastAccessTime);
                 lastModifiedDate = os::windows::FILETIMEToi64 (attributeData.ftLastWriteTime);
-                size = DWORDDWORDToui64 (attributeData.nFileSizeLow,
-                    attributeData.nFileSizeHigh);
+                size = DWORDDWORDToui64 (attributeData.nFileSizeLow, attributeData.nFileSizeHigh);
             }
             else {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_AND_MESSAGE_EXCEPTION (
@@ -943,7 +942,8 @@ namespace thekogans {
                         }
                     }
                 }
-                else if (!CreateDirectoryW (os::windows::UTF8ToUTF16 (path).c_str (), lpSecurityAttributes)) {
+                else if (!CreateDirectoryW (
+                        os::windows::UTF8ToUTF16 (path).c_str (), lpSecurityAttributes)) {
                     THEKOGANS_UTIL_THROW_ERROR_CODE_AND_MESSAGE_EXCEPTION (
                         THEKOGANS_UTIL_OS_ERROR_CODE, " (%s)", path.c_str ());
                 }
