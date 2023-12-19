@@ -165,14 +165,14 @@ namespace thekogans {
             template<typename T>
             std::shared_ptr<T> CreateStdSharedPtr () {
                 AddRef ();
-                struct Deleter {
-                    void operator () (T *object) const {
+                return std::shared_ptr<T> (
+                    this,
+                    [] (T *object) const {
                         if (object != 0) {
                             object->Release ();
                         }
                     }
-                };
-                return std::shared_ptr<T> (this, Deleter ());
+                );
             }
 
             /// \struct RefCounted::SharedPtr RefCounted.h thekogans/util/RefCounted.h

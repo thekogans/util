@@ -984,7 +984,7 @@ namespace thekogans {
             /// (including on the stack and as an aggregate of another
             /// class) it's important that the run loop workers are
             /// able to access run loop state even though the run loop
-            /// itself could be gone. To that end RunLoop:::State is
+            /// itself could be gone. To that end RunLoop::State is
             /// always allocated on the heap and it's lifetime is
             /// controlled by the reference count encoded in it's
             /// State::SharedPtr. To allow the last worker to release
