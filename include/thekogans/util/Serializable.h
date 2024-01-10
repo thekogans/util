@@ -45,7 +45,8 @@ namespace thekogans {
         /// \see{Serializer}). It exposes machinery used by descendants to register
         /// themselves for dynamic discovery, creation and serializable insertion and
         /// extraction. Serializable has built in support for binary, XML and JSON
-        /// serialization and de-serialization.
+        /// serialization and de-serialization. (For a good real world example have a
+        /// look at \see{crypto::Serializable} and it's derivatives.)
 
         struct _LIB_THEKOGANS_UTIL_DECL Serializable : public virtual RefCounted {
             /// \brief

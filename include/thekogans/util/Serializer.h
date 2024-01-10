@@ -40,7 +40,8 @@ namespace thekogans {
         /// Serializer provide stream insertion and extraction
         /// capabilities. Serializer provides a convenient base
         /// for reading/writing binary protocols. Insertion/extraction
-        /// operators for all thekogans basic types are provided.
+        /// operators for all thekogans util (See \see{Types.h}) basic
+        /// types are provided.
 
         struct _LIB_THEKOGANS_UTIL_DECL Serializer {
             /// \brief

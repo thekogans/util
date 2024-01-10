@@ -107,7 +107,7 @@ namespace thekogans {
            // defined (TOOLCHAIN_ARCH_arm32) || defined (TOOLCHAIN_ARCH_mips32)
 
         /// \brief
-        /// Validate assumptions about integral types sizes.
+        /// Validate assumptions about integral type sizes.
         static_assert (
             sizeof (i8) == 1 && sizeof (ui8) == 1 &&
             sizeof (i16) == 2 && sizeof (ui16) == 2 &&
@@ -375,25 +375,83 @@ namespace thekogans {
         /// \param[in] index 0 (msw) or 1 (lsw).
         #define THEKOGANS_UTIL_UI64_GET_UI32_AT_INDEX(value, index)\
             ((thekogans::util::ui32)((thekogans::util::ui64)(value) >> ((1 - index) << 5)))
+        /// \def THEKOGANS_UTIL_UI64_FROM_UI64_UI16_GET_UI64(ui64)
+        /// Extract the top 48 bits.
+        /// \param[in] ui64 Value to extract from.
+        #define THEKOGANS_UTIL_UI64_FROM_UI64_UI16_GET_UI64(ui64)\
+            (((thekogans::util::ui64)(ui64) >> 16) & 0x0000ffffffffffff)
+        /// \def THEKOGANS_UTIL_UI64_FROM_UI64_UI8_GET_UI64(ui64)
+        /// Extract the top 56 bits.
+        /// \param[in] ui64 Value to extract from.
+        #define THEKOGANS_UTIL_UI64_FROM_UI64_UI8_GET_UI64(ui64)\
+            (((thekogans::util::ui64)(ui64) >> 8) & 0x00ffffffffffffff)
+        /// \def THEKOGANS_UTIL_UI64_FROM_UI64_UI16_GET_UI16(ui64)
+        /// Extract the low 16 bits.
+        /// \param[in] ui64 Value to extract from.
+        #define THEKOGANS_UTIL_UI64_FROM_UI64_UI16_GET_UI16(ui64)\
+            ((thekogans::util::ui64)(ui64) & 0x000000000000ffff)
+        /// \def THEKOGANS_UTIL_UI64_FROM_UI64_UI16_GET_UI8(ui64)
+        /// Extract the low 8 bits.
+        /// \param[in] ui64 Value to extract from.
+        #define THEKOGANS_UTIL_UI64_FROM_UI64_UI16_GET_UI8(ui64)\
+            ((thekogans::util::ui64)(ui64) & 0x00000000000000ff)
 
         /// \def THEKOGANS_UTIL_MK_UI16(h8, l8)
         /// Make an ui16 from two ui8s.
         /// \param[in] h8 msb
         /// \param[in] l8 lsb
         #define THEKOGANS_UTIL_MK_UI16(h8, l8)\
-            ((thekogans::util::ui16)(((thekogans::util::ui16)(h8) << 8) | (l8)))
+            ((thekogans::util::ui16)(((thekogans::util::ui16)(h8) << 8) |\
+                (thekogans::util::ui16)(thekogans::util::ui8)(l8)))
         /// \def THEKOGANS_UTIL_MK_UI32(h16, l16)
         /// Make an ui32 from two ui16s.
         /// \param[in] h16 mss
         /// \param[in] l16 lss
         #define THEKOGANS_UTIL_MK_UI32(h16, l16)\
-            ((thekogans::util::ui32)(((thekogans::util::ui32)(h16) << 16) | (l16)))
+            ((thekogans::util::ui32)(((thekogans::util::ui32)(h16) << 16) |\
+                (thekogans::util::ui32)(thekogans::util::ui16)(l16)))
+        /// \def THEKOGANS_UTIL_MK_UI32_FROM_UI8_UI32(h8, l24)
+        /// Make an ui32 from a ui8 and a ui32(Least significant 24 bits).
+        /// \param[in] h8 msb
+        /// \param[in] l24 lsdw
+        #define THEKOGANS_UTIL_MK_UI32_FROM_UI8_UI32(h8, l24)\
+            ((thekogans::util::ui32)(((thekogans::util::ui32)(h8) << 24) |\
+                (thekogans::util::ui32)(l24) & 0x0fff)
         /// \def THEKOGANS_UTIL_MK_UI64(h32, l32)
         /// Make an ui64 from two ui32s.
         /// \param[in] h32 msw
         /// \param[in] l32 lsw
         #define THEKOGANS_UTIL_MK_UI64(h32, l32)\
-            ((thekogans::util::ui64)(((thekogans::util::ui64)(h32) << 32) | (l32)))
+            ((thekogans::util::ui64)(((thekogans::util::ui64)(h32) << 32) |\
+                (thekogans::util::ui64)(thekogans::util::ui32)(l32)))
+        /// \def THEKOGANS_UTIL_MK_UI64_FROM_UI8_UI64(h8, l56)
+        /// Make an ui64 from a ui8 and a ui64(Least significant 56 bits).
+        /// \param[in] h8 msb
+        /// \param[in] l56 lsqw
+        #define THEKOGANS_UTIL_MK_UI64_FROM_UI8_UI64(h8, l56)\
+            ((thekogans::util::ui64)(((thekogans::util::ui64)(h8) << 56) |\
+                ((thekogans::util::ui64)(l56) & 0x00ffffffffffffff))
+        /// \def THEKOGANS_UTIL_MK_UI64_FROM_UI64_UI8(h56, l8)
+        /// Make an ui64 from a ui64(Least significant 56 bits) and a ui8.
+        /// \param[in] h56 msqw
+        /// \param[in] l8 lsb
+        #define THEKOGANS_UTIL_MK_UI64_FROM_UI64_UI8(h56, l8)\
+            ((thekogans::util::ui64)(((thekogans::util::ui64)(h56) << 8) |\
+                ((thekogans::util::ui64)(thekogans::util::ui8)(l8) & 0x00ff))
+        /// \def THEKOGANS_UTIL_MK_UI64_FROM_UI16_UI64(h16, l48)
+        /// Make an ui64 from a ui16 and a ui64(Least significant 48 bits).
+        /// \param[in] h16 msb
+        /// \param[in] l48 lsqw
+        #define THEKOGANS_UTIL_MK_UI64_FROM_UI16_UI64(h16, l48)\
+            ((thekogans::util::ui64)(((thekogans::util::ui64)(h8) << 48) |\
+                ((thekogans::util::ui64)(l48) & 0x0000ffffffffffff))
+        /// \def THEKOGANS_UTIL_MK_UI64_FROM_UI64_UI16(h48, l16)
+        /// Make an ui64 from a ui16 and a ui64(Least significant 48 bits).
+        /// \param[in] h48 msqw
+        /// \param[in] l16 lsb
+        #define THEKOGANS_UTIL_MK_UI64_FROM_UI64_UI16(h48, l16)\
+            ((thekogans::util::ui64)(((thekogans::util::ui64)(h48) << 16) |\
+                ((thekogans::util::ui64)(thekogans::util::ui16)(l16) & 0x0000ffff))
 
         /// \def THEKOGANS_UTIL_ARRAY_SIZE(array)
         /// Calculate the number of elements in an array.

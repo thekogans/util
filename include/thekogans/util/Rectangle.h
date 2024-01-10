@@ -278,6 +278,28 @@ namespace thekogans {
         }
 
         /// \brief
+        /// Add an offset to the given rectangle extents.
+        /// \paran[in] extents Rectangle extents to add an offset too.
+        /// \paran[in] offset Offset to add.
+        /// \return Offset rectangle extents.
+        inline Rectangle::Extents operator + (
+                const Rectangle::Extents &extents,
+                const Point &offset) {
+            return Rectangle::Extents (extents.width + offset.x, extents.height + offset.y);
+        }
+
+        /// \brief
+        /// Subtract an offset from the given rectangle extents.
+        /// \paran[in] extents Rectangle extents to subtract an offset from.
+        /// \paran[in] offset Offset to subtract.
+        /// \return Offset rectangle extents.
+        inline Rectangle::Extents operator - (
+                const Rectangle::Extents &extents,
+                const Point &offset) {
+            return Rectangle::Extents (extents.width - offset.x, extents.height - offset.y);
+        }
+
+        /// \brief
         /// Compare rectangles for equality.
         /// \paran[in] rectangle1 First rectangle to compare.
         /// \paran[in] rectangle2 Second rectangle to compare.

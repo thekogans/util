@@ -167,7 +167,7 @@ namespace thekogans {
                 AddRef ();
                 return std::shared_ptr<T> (
                     this,
-                    [] (T *object) const {
+                    [] (T *object) {
                         if (object != 0) {
                             object->Release ();
                         }
@@ -504,6 +504,8 @@ namespace thekogans {
                     INVALID_TOKEN = NIDX64
                 };
 
+                /// \struct RefCounted::Registry::Token RefCounted.h thekogans/util/RefCounted.h
+                ///
                 /// \brief
                 /// Encapsulates the ui64 token consisting of {index, counter} pair. The
                 /// index part is the index used to access the registration in the entries
@@ -534,13 +536,39 @@ namespace thekogans {
                 ///     }
                 /// };
                 /// \endcode
+                ///
+                /// NOTE: The limiting size of the token is 64 bits. That's the size of current
+                /// register architectures. And that's usually the size of the user data that one
+                /// can pass to OS APIs. That said, the layout of the index/counter pair does
+                /// not have to be 32/32. If we find that in the future we want to keep track of
+                /// more than 4G of objects all we need to do is allocate more of the 64 bits to
+                /// the index part. Since all access to index/counter is done through a few API
+                /// (\see{Token::MakeValue}, \see{Token::GetIndex}, \see{Token::GetCounter}), it
+                /// should be a straight forward change (all user code using the registry will
+                /// have to be recompiled).
                 struct Token {
+                #if defined (THEKOGANS_UTIL_REF_COUNTED_REGISTRY_TOKEN_COUNTER_UI16)
+                    /// \brief
+                    /// Convenient typedef for ui64.
+                    typedef ui64 IndexType;
+                    /// \brief
+                    /// Convenient typedef for ui16.
+                    typedef ui16 CounterType;
+                #elif defined (THEKOGANS_UTIL_REF_COUNTED_REGISTRY_TOKEN_COUNTER_UI8)
+                    /// \brief
+                    /// Convenient typedef for ui64.
+                    typedef ui64 IndexType;
+                    /// \brief
+                    /// Convenient typedef for ui8.
+                    typedef ui8 CounterType;
+                #else // defined (THEKOGANS_UTIL_REF_COUNTED_REGISTRY_TOKEN_COUNTER_UI8)
                     /// \brief
                     /// Convenient typedef for ui32.
                     typedef ui32 IndexType;
                     /// \brief
                     /// Convenient typedef for ui32.
                     typedef ui32 CounterType;
+                #endif // defined (THEKOGANS_UTIL_REF_COUNTED_REGISTRY_TOKEN_COUNTER_UI16)
                     /// \brief
                     /// Convenient typedef for ui64.
                     typedef ui64 ValueType;
@@ -579,19 +607,39 @@ namespace thekogans {
                     static inline ValueType MakeValue (
                             IndexType index,
                             CounterType counter) {
+                    #if defined (THEKOGANS_UTIL_REF_COUNTED_REGISTRY_TOKEN_COUNTER_UI16)
+                        return THEKOGANS_UTIL_MK_UI64_FROM_UI64_UI16 (index, counter);
+                    #elif defined (THEKOGANS_UTIL_REF_COUNTED_REGISTRY_TOKEN_COUNTER_UI8)
+                        return THEKOGANS_UTIL_MK_UI64_FROM_UI64_UI8 (index, counter);
+                    #else // defined (THEKOGANS_UTIL_REF_COUNTED_REGISTRY_TOKEN_COUNTER_UI8)
                         return THEKOGANS_UTIL_MK_UI64 (index, counter);
+                    #endif // defined (THEKOGANS_UTIL_REF_COUNTED_REGISTRY_TOKEN_COUNTER_UI16)
                     }
                     /// \brief
                     /// Extract the index.
-                    /// \return THEKOGANS_UTIL_UI64_GET_UI32_AT_INDEX (value, 0);
+                    /// \param[in] value Token value to extract the index from.
+                    /// \return index;
                     static inline IndexType GetIndex (ValueType value) {
+                    #if defined (THEKOGANS_UTIL_REF_COUNTED_REGISTRY_TOKEN_COUNTER_UI16)
+                        return THEKOGANS_UTIL_UI64_FROM_UI64_UI16_GET_UI64 (value);
+                    #elif defined (THEKOGANS_UTIL_REF_COUNTED_REGISTRY_TOKEN_COUNTER_UI8)
+                        return THEKOGANS_UTIL_UI64_FROM_UI64_UI8_GET_UI64 (value);
+                    #else // defined (THEKOGANS_UTIL_REF_COUNTED_REGISTRY_TOKEN_COUNTER_UI8)
                         return THEKOGANS_UTIL_UI64_GET_UI32_AT_INDEX (value, 0);
+                    #endif // defined (THEKOGANS_UTIL_REF_COUNTED_REGISTRY_TOKEN_COUNTER_UI16)
                     }
                     /// \brief
                     /// Extract the counter.
-                    /// \return THEKOGANS_UTIL_UI64_GET_UI32_AT_INDEX (value, 1);
+                    /// \param[in] value Token value to extract the counter from.
+                    /// \return counter;
                     static inline CounterType GetCounter (ValueType value) {
+                    #if defined (THEKOGANS_UTIL_REF_COUNTED_REGISTRY_TOKEN_COUNTER_UI16)
+                        return THEKOGANS_UTIL_UI64_GET_UI16_AT_INDEX (value, 3);
+                    #elif defined (THEKOGANS_UTIL_REF_COUNTED_REGISTRY_TOKEN_COUNTER_UI8)
+                        return THEKOGANS_UTIL_UI64_GET_UI8_AT_INDEX (value, 7);
+                    #else // defined (THEKOGANS_UTIL_REF_COUNTED_REGISTRY_TOKEN_COUNTER_UI8)
                         return THEKOGANS_UTIL_UI64_GET_UI32_AT_INDEX (value, 1);
+                    #endif // defined (THEKOGANS_UTIL_REF_COUNTED_REGISTRY_TOKEN_COUNTER_UI16)
                     }
 
                     /// \brief
@@ -607,6 +655,20 @@ namespace thekogans {
                 };
 
             private:
+            #if defined (THEKOGANS_UTIL_REF_COUNTED_REGISTRY_TOKEN_COUNTER_UI16)
+                /// \brief
+                /// Bad index value.
+                static const typename Token::IndexType BAD_INDEX = (NIDX64 >> 16) & 0x0000ffffffffffff;
+            #elif defined (THEKOGANS_UTIL_REF_COUNTED_REGISTRY_TOKEN_COUNTER_UI8)
+                /// \brief
+                /// Bad index value.
+                static const typename Token::IndexType BAD_INDEX = (NIDX64 >> 8) & 0x00ffffffffffffff;
+            #else // defined (THEKOGANS_UTIL_REF_COUNTED_REGISTRY_TOKEN_COUNTER_UI8)
+                /// \brief
+                /// Bad index value.
+                static const typename Token::IndexType BAD_INDEX = NIDX32;
+            #endif // defined (THEKOGANS_UTIL_REF_COUNTED_REGISTRY_TOKEN_COUNTER_UI16)
+
                 /// \struct RefCounted::Registry::Entry RefCounted.h thekogans/util/RefCounted.h
                 ///
                 /// \brief
@@ -630,7 +692,7 @@ namespace thekogans {
                     Entry (
                         WeakPtr<T> object_ = WeakPtr<T> (),
                         typename Token::CounterType counter_ = 0,
-                        typename Token::IndexType next_ = NIDX32) :
+                        typename Token::IndexType next_ = BAD_INDEX) :
                         object (object_),
                         counter (counter_),
                         next (next_) {}
@@ -658,14 +720,14 @@ namespace thekogans {
                 Registry (std::size_t entriesSize = DEFAULT_ENTRIES_SIZE) :
                     entries (entriesSize == 0 ? 1 : entriesSize),
                     count (0),
-                    freeList (NIDX32) {}
+                    freeList (BAD_INDEX) {}
 
                 /// \brief
                 /// Add an object to the registry.
                 /// \param[in] t Object to add.
                 /// \return Token describing the object entry.
-                /// NOTE: This method is meant to be used by the
-                /// \see{Token} ctor which will be initialized
+                /// NOTE: This method is meant to be used by
+                /// \see{Token::Token} which will be called
                 /// by the containing (T) object's ctor. In this
                 /// case passing a raw pointer is appropriate.
                 typename Token::ValueType Add (T *t) {
@@ -675,7 +737,7 @@ namespace thekogans {
                         typename Token::CounterType counter;
                         {
                             LockGuard<SpinLock> guard (spinLock);
-                            if (freeList != NIDX32) {
+                            if (freeList != BAD_INDEX) {
                                 // Reuse a free entry.
                                 index = freeList;
                                 counter = entries[index].counter;
@@ -694,11 +756,16 @@ namespace thekogans {
                                     // 2. Less grow copy overhead for types with many instances.
                                     // A byproduct of this approach is that every
                                     // index allocated and returned by the registry
-                                    // is valid in perpetuity.
+                                    // is valid in perpetuity. This is exactly the
+                                    // reason counter is used in the token to disambiguate
+                                    // object lifetimes. When an object leaves the registry,
+                                    // \see{Remove} will bump up the counter so that any
+                                    // leftover token copies will now point to an earlier,
+                                    // possibly deleted object.
                                     entries.resize (count * 2);
                                 }
                             }
-                            entries[index] = Entry (WeakPtr<T> (t), counter, NIDX32);
+                            entries[index] = Entry (WeakPtr<T> (t), counter, BAD_INDEX);
                             ++count;
                         }
                         // Pack index and counter describing this entry in to a token value.
