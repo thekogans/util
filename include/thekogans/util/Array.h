@@ -34,9 +34,10 @@ namespace thekogans {
         /// Helps with life cycle management, and keeps the code
         /// clutter down.
         ///
-        /// IMPORTANT: Arrays are not resizable, and do not grow. This
-        /// is the reason for a single explicit ctor. Want resizable,
-        /// growable containers? That's what the stl is for!
+        /// IMPORTANT: Arrays are not resizable, and do not grow. In its
+        /// one and only ctor either allocates a fixed block or wraps the
+        /// one provided. Want resizable, growable containers? That's what
+        /// the stl is for!
 
         template<typename T>
         struct Array {
@@ -46,25 +47,37 @@ namespace thekogans {
             /// \brief
             /// Array elements.
             T *array;
+            /// \brief
+            /// true == Array owns the pointer and will call delete in the dtor.
+            bool owner;
 
             /// \brief
             /// ctor. Create Array of length elements.
             /// \param[in] length_ Number of elements in the array.
-            explicit Array (std::size_t length_) :
+            /// \param[in] array_ Optional pointer to wrap.
+            /// IMPORTANT: This pointer is owned by the caller and must
+            /// survive for the lifetime of the Array.
+            Array (
+                std::size_t length_,
+                T *array_ = 0) :
                 length (length_),
-                array (new T[length]) {}
+                array (array_ == 0 ? new T[length] : array_),
+                owner (array_ == 0) {}
             /// \brief
             /// Move ctor.
             /// \param[in,out] other Array to move.
             Array (Array<T> &&other) :
                     length (0),
-                    array (0) {
+                    array (0),
+                    owner (false) {
                 swap (other);
             }
             /// \brief
             /// dtor. Release the memory held by Array.
             ~Array () {
-                delete [] array;
+                if (owner) {
+                    delete [] array;
+                }
             }
 
             /// \brief
@@ -84,6 +97,7 @@ namespace thekogans {
             void swap (Array<T> &other) {
                 std::swap (length, other.length);
                 std::swap (array, other.array);
+                std::swap (owner, other.owner);
             }
 
             /// \brief
