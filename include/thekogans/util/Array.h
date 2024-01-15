@@ -20,6 +20,7 @@
 
 #include <cstddef>
 #include <memory>
+#include <functional>
 #include "thekogans/util/Config.h"
 
 namespace thekogans {
@@ -48,36 +49,37 @@ namespace thekogans {
             /// Array elements.
             T *array;
             /// \brief
-            /// true == Array owns the pointer and will call delete in the dtor.
-            bool owner;
+            /// Convenient typedef for std::function<void (T * /*array*/)>.
+            typedef std::function<void (T * /*array*/)> Deleter;
+            /// \brief
+            /// Deleter used to deallocate the array.
+            Deleter deleter;
 
             /// \brief
             /// ctor. Create Array of length elements.
             /// \param[in] length_ Number of elements in the array.
             /// \param[in] array_ Optional pointer to wrap.
-            /// IMPORTANT: This pointer is owned by the caller and must
-            /// survive for the lifetime of the Array.
+            /// \param[in] deleter_ Deleter used to deallocate the array pointer.
             Array (
                 std::size_t length_,
-                T *array_ = 0) :
+                T *array_ = 0,
+                const Deleter &deleter_ = [] (T * /*array*/) {}) :
                 length (length_),
                 array (array_ == 0 ? new T[length] : array_),
-                owner (array_ == 0) {}
+                deleter (array_ == 0 ? [] (T *array) {delete [] array;} : deleter_) {}
             /// \brief
             /// Move ctor.
             /// \param[in,out] other Array to move.
             Array (Array<T> &&other) :
                     length (0),
                     array (0),
-                    owner (false) {
+                    deleter ([] (T * /*array*/) {}) {
                 swap (other);
             }
             /// \brief
             /// dtor. Release the memory held by Array.
             ~Array () {
-                if (owner) {
-                    delete [] array;
-                }
+                deleter (array);
             }
 
             /// \brief
@@ -97,7 +99,7 @@ namespace thekogans {
             void swap (Array<T> &other) {
                 std::swap (length, other.length);
                 std::swap (array, other.array);
-                std::swap (owner, other.owner);
+                std::swap (deleter, other.deleter);
             }
 
             /// \brief
