@@ -52,13 +52,13 @@ namespace thekogans {
             /// Convenient typedef for std::function<void (T * /*array*/)>.
             typedef std::function<void (T * /*array*/)> Deleter;
             /// \brief
-            /// Deleter used to deallocate the array.
+            /// Deleter used to deallocate the array pointer.
             Deleter deleter;
 
             /// \brief
             /// ctor. Create Array of length elements.
             /// \param[in] length_ Number of elements in the array.
-            /// \param[in] array_ Optional pointer to wrap.
+            /// \param[in] array_ Optional array pointer to wrap.
             /// \param[in] deleter_ Deleter used to deallocate the array pointer.
             Array (
                 std::size_t length_,
