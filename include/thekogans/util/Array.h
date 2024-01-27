@@ -36,9 +36,9 @@ namespace thekogans {
         /// clutter down.
         ///
         /// IMPORTANT: Arrays are not resizable, and do not grow. In its
-        /// one and only ctor either allocates a fixed block or wraps the
-        /// one provided. Want resizable, growable containers? That's what
-        /// the stl is for!
+        /// one and only ctor it either allocates a fixed block or wraps
+        /// the one provided. Want resizable, growable containers? That's
+        /// what the stl is for!
 
         template<typename T>
         struct Array {
@@ -56,7 +56,7 @@ namespace thekogans {
             Deleter deleter;
 
             /// \brief
-            /// ctor. Create Array of length elements.
+            /// ctor. Create (or wrap) Array of length elements.
             /// \param[in] length_ Number of elements in the array.
             /// \param[in] array_ Optional array pointer to wrap.
             /// \param[in] deleter_ Deleter used to deallocate the array pointer.
