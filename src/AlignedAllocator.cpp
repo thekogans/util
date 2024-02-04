@@ -32,7 +32,7 @@ namespace thekogans {
         void AlignedAllocator::Free (
                 void *ptr,
                 std::size_t size) {
-            if (ptr != 0) {
+            if (ptr != nullptr) {
                 Footer *footer = (Footer *)((std::size_t)ptr + size);
                 footer->~Footer ();
                 allocator.Free (footer->ptr, footer->size);
@@ -42,14 +42,14 @@ namespace thekogans {
         void *AlignedAllocator::AllocHelper (
                 std::size_t &size,
                 bool useMax) {
-            void *ptr = 0;
+            void *ptr = nullptr;
             if (size > 0) {
                 // Calculate additional space required to align the block.
                 // NOTE: For very large alignments, we can have very
                 // inefficient use of resources.
                 std::size_t rawSize = alignment + size + sizeof (Footer);
                 void *rawPtr = allocator.Alloc (rawSize);
-                if (rawPtr != 0) {
+                if (rawPtr != nullptr) {
                     // To minimize waste, return to the caller the
                     // maximum amount of space available for use
                     // after alignment restrictions are satisfied.

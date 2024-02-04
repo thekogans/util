@@ -67,14 +67,14 @@ namespace thekogans {
             /// \param[in] clearUnused Clear unused array elements to 0.
             FixedBuffer (
                     Endianness endianness = HostEndian,
-                    const void *data_ = 0,
+                    const void *data_ = nullptr,
                     std::size_t length_ = 0,
                     bool clearUnused = false) :
                     Serializer (endianness),
                     readOffset (0),
                     writeOffset (length_) {
                 if (writeOffset <= length) {
-                    if (data_ != 0 && length_ > 0) {
+                    if (data_ != nullptr && length_ > 0) {
                         memcpy (data, data_, length_);
                     }
                     if (clearUnused) {
@@ -123,7 +123,7 @@ namespace thekogans {
             virtual std::size_t Read (
                     void *buffer,
                     std::size_t count) {
-                if (buffer != 0 && count > 0) {
+                if (buffer != nullptr && count > 0) {
                     std::size_t availableForReading = GetDataAvailableForReading ();
                     if (count > availableForReading) {
                         count = availableForReading;
@@ -147,7 +147,7 @@ namespace thekogans {
             virtual std::size_t Write (
                     const void *buffer,
                     std::size_t count) {
-                if (buffer != 0 && count > 0) {
+                if (buffer != nullptr && count > 0) {
                     std::size_t availableForWriting = GetDataAvailableForWriting ();
                     if (count > availableForWriting) {
                         count = availableForWriting;

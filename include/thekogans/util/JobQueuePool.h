@@ -217,7 +217,7 @@ namespace thekogans {
                 std::size_t workerCount_ = 1,
                 i32 workerPriority_ = THEKOGANS_UTIL_NORMAL_THREAD_PRIORITY,
                 ui32 workerAffinity_ = THEKOGANS_UTIL_MAX_THREAD_AFFINITY,
-                RunLoop::WorkerCallback *workerCallback_ = 0);
+                RunLoop::WorkerCallback *workerCallback_ = nullptr);
             /// \brief
             /// dtor.
             virtual ~JobQueuePool ();
@@ -352,7 +352,7 @@ namespace thekogans {
                 std::size_t workerCount = 1,
                 i32 workerPriority = THEKOGANS_UTIL_NORMAL_THREAD_PRIORITY,
                 ui32 workerAffinity = THEKOGANS_UTIL_MAX_THREAD_AFFINITY,
-                RunLoop::WorkerCallback *workerCallback = 0) :
+                RunLoop::WorkerCallback *workerCallback = nullptr) :
                 JobQueuePool (
                     minJobQueues,
                     maxJobQueues,

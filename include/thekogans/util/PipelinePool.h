@@ -231,7 +231,7 @@ namespace thekogans {
                 std::size_t workerCount_ = 1,
                 i32 workerPriority_ = THEKOGANS_UTIL_NORMAL_THREAD_PRIORITY,
                 ui32 workerAffinity_ = THEKOGANS_UTIL_MAX_THREAD_AFFINITY,
-                RunLoop::WorkerCallback *workerCallback_ = 0);
+                RunLoop::WorkerCallback *workerCallback_ = nullptr);
             /// \brief
             /// dtor.
             virtual ~PipelinePool ();
@@ -363,15 +363,15 @@ namespace thekogans {
             GlobalPipelinePool (
                 std::size_t minPipelines = 0,
                 std::size_t maxPipelines = 0,
-                const util::Pipeline::Stage *begin = 0,
-                const util::Pipeline::Stage *end = 0,
+                const util::Pipeline::Stage *begin = nullptr,
+                const util::Pipeline::Stage *end = nullptr,
                 const std::string &name = "GlobalPipelinePool",
                 util::Pipeline::JobExecutionPolicy::SharedPtr jobExecutionPolicy =
                     util::Pipeline::JobExecutionPolicy::SharedPtr (new util::Pipeline::FIFOJobExecutionPolicy),
                 std::size_t workerCount = 1,
                 i32 workerPriority = THEKOGANS_UTIL_NORMAL_THREAD_PRIORITY,
                 ui32 workerAffinity = THEKOGANS_UTIL_MAX_THREAD_AFFINITY,
-                RunLoop::WorkerCallback *workerCallback = 0) :
+                RunLoop::WorkerCallback *workerCallback = nullptr) :
                 PipelinePool (
                     minPipelines,
                     maxPipelines,

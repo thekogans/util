@@ -573,7 +573,7 @@ namespace thekogans {
             static void Create (
                 const std::string &path,
                 bool createAncestry = true,
-                LPSECURITY_ATTRIBUTES lpSecurityAttributes = 0);
+                LPSECURITY_ATTRIBUTES lpSecurityAttributes = nullptr);
         #else // defined (TOOLCHAIN_OS_Windows)
             /// \brief
             /// Create a new directory, optionally creating it's ancestry.
@@ -666,7 +666,7 @@ namespace thekogans {
         /// \brief
         /// Return true if name points to '.' or '..'
         inline bool IsDotOrDotDot (const char *name) {
-            return name != 0 && name[0] == '.' &&
+            return name != nullptr && name[0] == '.' &&
                 (name[1] == '\0' || (name[1] == '.' && name[2] == '\0'));
         }
 

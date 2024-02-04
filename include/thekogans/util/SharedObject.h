@@ -93,7 +93,7 @@ namespace thekogans {
                 bool secure = false,
                 const Constructor &constructor = Constructor (),
             #if defined (TOOLCHAIN_OS_Windows)
-                LPSECURITY_ATTRIBUTES securityAttributes = 0,
+                LPSECURITY_ATTRIBUTES securityAttributes = nullptr,
             #else // defined (TOOLCHAIN_OS_Windows)
                 mode_t mode = 0666,
             #endif // defined (TOOLCHAIN_OS_Windows)
@@ -130,7 +130,7 @@ namespace thekogans {
                 void *ptr,
                 const Destructor &destructor = Destructor (),
             #if defined (TOOLCHAIN_OS_Windows)
-                LPSECURITY_ATTRIBUTES securityAttributes = 0,
+                LPSECURITY_ATTRIBUTES securityAttributes = nullptr,
             #else // defined (TOOLCHAIN_OS_Windows)
                 mode_t mode = 0666,
             #endif // defined (TOOLCHAIN_OS_Windows)
@@ -166,7 +166,7 @@ namespace thekogans {
                 Lock (
                     const char *name,
                 #if defined (TOOLCHAIN_OS_Windows)
-                    LPSECURITY_ATTRIBUTES securityAttributes = 0,
+                    LPSECURITY_ATTRIBUTES securityAttributes = nullptr,
                 #else // defined (TOOLCHAIN_OS_Windows)
                     mode_t mode = 0666,
                 #endif // defined (TOOLCHAIN_OS_Windows)

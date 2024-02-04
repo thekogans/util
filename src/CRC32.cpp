@@ -104,7 +104,7 @@ namespace thekogans {
                 const void *buffer,
                 std::size_t length,
                 ui32 crc) {
-            if (buffer != 0 && length > 0) {
+            if (buffer != nullptr && length > 0) {
                 const ui8 *ptr = (const ui8 *)buffer;
                 crc ^= ~0U;
                 while (length--) {

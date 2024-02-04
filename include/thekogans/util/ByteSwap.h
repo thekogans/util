@@ -275,7 +275,10 @@ namespace thekogans {
         /// Convert a given value from byte order to byte order.
         /// \param[in] value Value to convert.
         /// \return Converted value.
-        template<Endianness from, Endianness to, typename T>
+        template<
+            Endianness from,
+            Endianness to,
+            typename T>
         inline T ByteSwap (T value) {
             // Ensure value is 1, 2, 4 or 8 bytes.
             static_assert (

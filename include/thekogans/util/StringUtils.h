@@ -151,7 +151,7 @@ namespace thekogans {
         _LIB_THEKOGANS_UTIL_DECL const char * _LIB_THEKOGANS_UTIL_API IsUTF8String (
             const char *utf8,
             std::size_t length,
-            std::size_t *utf8Length = 0);
+            std::size_t *utf8Length = nullptr);
         /// \brief
         /// Check if the given string is valid UTF8.
         /// \param[in] utf8 String to check.
@@ -320,7 +320,7 @@ namespace thekogans {
         /// \return std::size_t represented by a given string.
         _LIB_THEKOGANS_UTIL_DECL std::size_t _LIB_THEKOGANS_UTIL_API stringTosize_t (
             const char *value,
-            char **end = 0,
+            char **end = nullptr,
             i32 base = 10);
         /// \brief
         /// Convert a string value to a boolean.
@@ -328,7 +328,7 @@ namespace thekogans {
         /// \return true if value == "true", false if value == "false".
         _LIB_THEKOGANS_UTIL_DECL bool _LIB_THEKOGANS_UTIL_API stringTobool (
             const char *value,
-            char **end = 0);
+            char **end = nullptr);
         /// \brief
         /// Parse a i8 represented by a given string.
         /// \param[in] value Pointer to the beginning of the string.
@@ -339,7 +339,7 @@ namespace thekogans {
         /// \return i8 represented by a given string.
         _LIB_THEKOGANS_UTIL_DECL i8 _LIB_THEKOGANS_UTIL_API stringToi8 (
             const char *value,
-            char **end = 0,
+            char **end = nullptr,
             i32 base = 10);
         /// \brief
         /// Parse a ui8 represented by a given string.
@@ -351,7 +351,7 @@ namespace thekogans {
         /// \return ui8 represented by a given string.
         _LIB_THEKOGANS_UTIL_DECL ui8 _LIB_THEKOGANS_UTIL_API stringToui8 (
             const char *value,
-            char **end = 0,
+            char **end = nullptr,
             i32 base = 10);
         /// \brief
         /// Parse a i16 represented by a given string.
@@ -363,7 +363,7 @@ namespace thekogans {
         /// \return i16 represented by a given string.
         _LIB_THEKOGANS_UTIL_DECL i16 _LIB_THEKOGANS_UTIL_API stringToi16 (
             const char *value,
-            char **end = 0,
+            char **end = nullptr,
             i32 base = 10);
         /// \brief
         /// Parse a ui16 represented by a given string.
@@ -375,7 +375,7 @@ namespace thekogans {
         /// \return ui16 represented by a given string.
         _LIB_THEKOGANS_UTIL_DECL ui16 _LIB_THEKOGANS_UTIL_API stringToui16 (
             const char *value,
-            char **end = 0,
+            char **end = nullptr,
             i32 base = 10);
         /// \brief
         /// Parse a i32 represented by a given string.
@@ -387,7 +387,7 @@ namespace thekogans {
         /// \return i32 represented by a given string.
         _LIB_THEKOGANS_UTIL_DECL i32 _LIB_THEKOGANS_UTIL_API stringToi32 (
             const char *value,
-            char **end = 0,
+            char **end = nullptr,
             i32 base = 10);
         /// \brief
         /// Parse a ui32 represented by a given string.
@@ -399,7 +399,7 @@ namespace thekogans {
         /// \return ui32 represented by a given string.
         _LIB_THEKOGANS_UTIL_DECL ui32 _LIB_THEKOGANS_UTIL_API stringToui32 (
             const char *value,
-            char **end = 0,
+            char **end = nullptr,
             i32 base = 10);
         /// \brief
         /// Parse a i64 represented by a given string.
@@ -411,7 +411,7 @@ namespace thekogans {
         /// \return i64 represented by a given string.
         _LIB_THEKOGANS_UTIL_DECL i64 _LIB_THEKOGANS_UTIL_API stringToi64 (
             const char *value,
-            char **end = 0,
+            char **end = nullptr,
             i32 base = 10);
         /// \brief
         /// Parse a ui64 represented by a given string.
@@ -423,7 +423,7 @@ namespace thekogans {
         /// \return ui64 represented by a given string.
         _LIB_THEKOGANS_UTIL_DECL ui64 _LIB_THEKOGANS_UTIL_API stringToui64 (
             const char *value,
-            char **end = 0,
+            char **end = nullptr,
             i32 base = 10);
         /// \brief
         /// Parse a f32 represented by a given string.
@@ -434,7 +434,7 @@ namespace thekogans {
         /// \return f32 represented by a given string.
         _LIB_THEKOGANS_UTIL_DECL f32 _LIB_THEKOGANS_UTIL_API stringTof32 (
             const char *value,
-            char **end = 0);
+            char **end = nullptr);
         /// \brief
         /// Parse a f64 represented by a given string.
         /// \param[in] value Pointer to the beginning of the string.
@@ -444,7 +444,7 @@ namespace thekogans {
         /// \return f64 represented by a given string.
         _LIB_THEKOGANS_UTIL_DECL f64 _LIB_THEKOGANS_UTIL_API stringTof64 (
             const char *value,
-            char **end = 0);
+            char **end = nullptr);
         /// \brief
         /// Parse an OS specific error code. On windows error codes
         /// are unsigned, and on POSIX they are signed. This api puts
@@ -457,7 +457,7 @@ namespace thekogans {
         _LIB_THEKOGANS_UTIL_DECL THEKOGANS_UTIL_ERROR_CODE _LIB_THEKOGANS_UTIL_API
             stringToTHEKOGANS_UTIL_ERROR_CODE (
                 const char *value,
-                char **end = 0);
+                char **end = nullptr);
 
         /// \brief
         /// Format a const void *.

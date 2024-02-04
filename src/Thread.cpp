@@ -463,7 +463,7 @@ namespace thekogans {
         _LIB_THEKOGANS_UTIL_DECL std::string _LIB_THEKOGANS_UTIL_API FormatThreadHandle (
                 THEKOGANS_UTIL_THREAD_HANDLE thread,
                 const char *format) {
-            if (format != 0) {
+            if (format != nullptr) {
                 return FormatString (format, thread);
             }
             else {
@@ -475,7 +475,7 @@ namespace thekogans {
         _LIB_THEKOGANS_UTIL_DECL std::string _LIB_THEKOGANS_UTIL_API FormatThreadId (
                 THEKOGANS_UTIL_THREAD_ID id,
                 const char *format) {
-            if (format != 0) {
+            if (format != nullptr) {
                 return FormatString (format, id);
             }
             else {
@@ -491,14 +491,15 @@ namespace thekogans {
 
         void ThreadReaper::ReapThread (
                 Thread *thread,
-                const TimeSpec &timeSpec) {
-            if (thread != 0) {
+                const TimeSpec &timeSpec,
+                const Deleter &deleter) {
+            if (thread != nullptr) {
                 runLoop.EnqJob (
-                    [thread, timeSpec] (
+                    [thread, timeSpec, deleter] (
                             const RunLoop::Job & /*job*/,
                             const std::atomic<bool> & /*done*/) {
                         thread->Wait (timeSpec);
-                        delete thread;
+                        deleter (thread);
                     }
                 );
             }

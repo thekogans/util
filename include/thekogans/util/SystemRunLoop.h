@@ -43,7 +43,7 @@ namespace thekogans {
     #elif defined (TOOLCHAIN_OS_Linux)
         /// \brief
         /// Convenient typedef for os::linux::RunLoop.
-        typedef os::linux::RunLoop OSThreadRunLoopType;
+        typedef os::linux::XlibRunLoop OSThreadRunLoopType;
     #elif defined (TOOLCHAIN_OS_OSX)
         /// \brief
         /// Convenient typedef for os::osx::CFRunLoop.
@@ -103,7 +103,7 @@ namespace thekogans {
                 OSRunLoopType::End ();
                 if (cancelPendingJobs) {
                     Job *job;
-                    while ((job = state->jobExecutionPolicy->DeqJob (*state)) != 0) {
+                    while ((job = state->jobExecutionPolicy->DeqJob (*state)) != nullptr) {
                         job->Cancel ();
                         state->runningJobs.push_back (job);
                         state->FinishedJob (job, 0, 0);
@@ -179,7 +179,7 @@ namespace thekogans {
             virtual void ExecuteJob () override {
                 while (!state->done) {
                     Job *job = state->DeqJob (false);
-                    if (job == 0) {
+                    if (job == nullptr) {
                         break;
                     }
                     ui64 start = 0;

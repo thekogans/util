@@ -237,7 +237,7 @@ namespace thekogans {
             static Rectangle AspectFitAndLetterbox (
                 const Extents &frame,
                 const Extents &window,
-                f32 *scale = 0);
+                f32 *scale = nullptr);
         };
 
         /// \brief

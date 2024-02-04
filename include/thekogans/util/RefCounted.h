@@ -168,7 +168,7 @@ namespace thekogans {
                 return std::shared_ptr<T> (
                     this,
                     [] (T *object) {
-                        if (object != 0) {
+                        if (object != nullptr) {
                             object->Release ();
                         }
                     }
@@ -200,16 +200,16 @@ namespace thekogans {
                 /// \param[in] addRef true == take out a new reference on the passed in object,
                 /// false == this object was probably Release(d) by another SharedPtr.
                 SharedPtr (
-                        T *object_ = 0,
+                        T *object_ = nullptr,
                         bool addRef = true) :
-                        object (0) {
+                        object (nullptr) {
                     Reset (object_, addRef);
                 }
                 /// \brief
                 /// copy ctor.
                 /// \param[in] ptr Pointer to copy.
                 SharedPtr (const SharedPtr<T> &ptr) :
-                        object (0) {
+                        object (nullptr) {
                     Reset (ptr.object);
                 }
                 /// \brief
@@ -220,9 +220,9 @@ namespace thekogans {
 
                 /// \brief
                 /// Check the pointer for nullness.
-                /// \return true if object != 0.
+                /// \return true if object != nullptr.
                 operator bool () const {
-                    return object != 0;
+                    return object != nullptr;
                 }
 
                 /// \brief
@@ -269,7 +269,7 @@ namespace thekogans {
                 /// \return T *.
                 T *Release () {
                     T *object_ = object;
-                    object = 0;
+                    object = nullptr;
                     return object_;
                 }
 
@@ -279,14 +279,14 @@ namespace thekogans {
                 /// \param[in] addRef true == take out a new reference on the passed in object,
                 /// false == this object was probably Release(d) by another SharedPtr.
                 void Reset (
-                        T *object_ = 0,
+                        T *object_ = nullptr,
                         bool addRef = true) {
                     if (object != object_) {
-                        if (object != 0) {
+                        if (object != nullptr) {
                             object->Release ();
                         }
                         object = object_;
-                        if (object != 0 && addRef) {
+                        if (object != nullptr && addRef) {
                             object->AddRef ();
                         }
                     }
@@ -317,7 +317,7 @@ namespace thekogans {
             ///
             /// \code{.cpp}
             /// SharedPtr<T> shared = weak.GetSharedPtr ();
-            /// if (shared.Get () != 0) {
+            /// if (shared.Get () != nullptr) {
             ///    // Do something productive with shared.
             /// }
             /// \endcode
@@ -344,17 +344,17 @@ namespace thekogans {
                 /// \brief
                 /// ctor.
                 /// \paramin] object_ Raw pointer to RefCounted object.
-                explicit WeakPtr (T *object_ = 0) :
-                        object (0),
-                        references (0) {
+                explicit WeakPtr (T *object_ = nullptr) :
+                        object (nullptr),
+                        references (nullptr) {
                     Reset (object_);
                 }
                 /// \brief
                 /// ctor.
                 /// \param[in] ptr SharedPtr<T> to reference counted object.
                 explicit WeakPtr (const SharedPtr<T> &ptr) :
-                        object (0),
-                        references (0) {
+                        object (nullptr),
+                        references (nullptr) {
                     Reset (ptr.Get ());
                 }
                 /// \brief
@@ -363,7 +363,7 @@ namespace thekogans {
                 WeakPtr (const WeakPtr<T> &ptr) :
                         object (ptr.object),
                         references (ptr.references) {
-                    if (references != 0) {
+                    if (references != nullptr) {
                         references->AddWeakRef ();
                     }
                 }
@@ -399,12 +399,12 @@ namespace thekogans {
                 /// \return *this.
                 WeakPtr<T> &operator = (const WeakPtr<T> &ptr) {
                     if (object != ptr.Get ()) {
-                        if (references != 0) {
+                        if (references != nullptr) {
                             references->ReleaseWeakRef ();
                         }
                         object = ptr.object;
                         references = ptr.references;
-                        if (references != 0) {
+                        if (references != nullptr) {
                             references->AddWeakRef ();
                         }
                     }
@@ -431,14 +431,14 @@ namespace thekogans {
                 /// to another WeakPtr::Reset. There is no guarantee that there
                 /// are any more shared references left on the object and that
                 /// it's not dangling.
-                void Reset (T *object_ = 0) {
+                void Reset (T *object_ = nullptr) {
                     if (object != object_) {
-                        if (references != 0) {
+                        if (references != nullptr) {
                             references->ReleaseWeakRef ();
                         }
                         object = object_;
-                        references = object != 0 ? object->references : 0;
-                        if (references != 0) {
+                        references = object != nullptr ? object->references : nullptr;
+                        if (references != nullptr) {
                             references->AddWeakRef ();
                         }
                     }
@@ -456,14 +456,14 @@ namespace thekogans {
                 /// Return the count of shared references on the contained object.
                 /// \return Count of shared references on the contained object.
                 inline ui32 SharedCount () const {
-                    return references != 0 ? references->GetSharedCount () : 0;
+                    return references != nullptr ? references->GetSharedCount () : nullptr;
                 }
 
                 /// \brief
                 /// Return true if the contained object has expired (deleted).
                 /// \return true == the contained object has expired (deleted).
                 inline bool IsExpired () const {
-                    return references == 0 || references->GetSharedCount () == 0;
+                    return references == nullptr || references->GetSharedCount () == 0;
                 }
 
                 /// \brief
@@ -472,9 +472,9 @@ namespace thekogans {
                 inline SharedPtr<T> GetSharedPtr () const {
                     // We pass false to SharedPtr<T> (..., addRef) because References::LockObject
                     // takes out a reference on success and on failure we don't care since we're
-                    // passing 0 as object pointer.
+                    // passing nullptr as object pointer.
                     return SharedPtr<T> (
-                        references != 0 && references->LockObject () ? object : 0,
+                        references != nullptr && references->LockObject () ? object : nullptr,
                         false);
                 }
             };
@@ -732,7 +732,7 @@ namespace thekogans {
                 /// case passing a raw pointer is appropriate.
                 typename Token::ValueType Add (T *t) {
                     typename Token::ValueType value = INVALID_TOKEN;
-                    if (t != 0) {
+                    if (t != nullptr) {
                         typename Token::IndexType index;
                         typename Token::CounterType counter;
                         {

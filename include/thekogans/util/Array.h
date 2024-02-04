@@ -62,17 +62,17 @@ namespace thekogans {
             /// \param[in] deleter_ Deleter used to deallocate the array pointer.
             Array (
                 std::size_t length_,
-                T *array_ = 0,
+                T *array_ = nullptr,
                 const Deleter &deleter_ = [] (T * /*array*/) {}) :
                 length (length_),
-                array (array_ == 0 ? new T[length] : array_),
-                deleter (array_ == 0 ? [] (T *array) {delete [] array;} : deleter_) {}
+                array (array_ == nullptr ? new T[length] : array_),
+                deleter (array_ == nullptr ? [] (T *array) {delete [] array;} : deleter_) {}
             /// \brief
             /// Move ctor.
             /// \param[in,out] other Array to move.
             Array (Array<T> &&other) :
                     length (0),
-                    array (0),
+                    array (nullptr),
                     deleter ([] (T * /*array*/) {}) {
                 swap (other);
             }

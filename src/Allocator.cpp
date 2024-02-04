@@ -43,7 +43,7 @@ namespace thekogans {
 
         Allocator *Allocator::Get (const std::string &type) {
             Map::iterator it = GetMap ().find (type);
-            return it != GetMap ().end () ? it->second () : 0;
+            return it != GetMap ().end () ? it->second () : nullptr;
         }
 
     #if defined (THEKOGANS_UTIL_TYPE_Static)
@@ -81,7 +81,7 @@ namespace thekogans {
 
         std::string Allocator::GetSerializedName () const {
             std::string allocatorName = GetName ();
-            if (Get (allocatorName) == 0) {
+            if (Get (allocatorName) == nullptr) {
                 allocatorName = DefaultAllocator::Instance ().GetName ();
             }
             return allocatorName;

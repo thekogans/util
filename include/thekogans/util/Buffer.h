@@ -88,7 +88,7 @@ namespace thekogans {
             /// \param[in,out] other Buffer to move.
             Buffer (Buffer &&other) :
                     Serializer (HostEndian),
-                    data (0),
+                    data (nullptr),
                     length (0),
                     readOffset (0),
                     writeOffset (0),
@@ -105,7 +105,7 @@ namespace thekogans {
             /// \param[in] allocator_ Allocator used for memory management.
             Buffer (
                 Endianness endianness = HostEndian,
-                void *data_ = 0,
+                void *data_ = nullptr,
                 std::size_t length_ = 0,
                 std::size_t readOffset_ = 0,
                 std::size_t writeOffset_ = 0,
@@ -446,7 +446,7 @@ namespace thekogans {
             /// \param[in] writeOffset Offset at which to write.
             SecureBuffer (
                 Endianness endianness = HostEndian,
-                void *data = 0,
+                void *data = nullptr,
                 std::size_t length = 0,
                 std::size_t readOffset = 0,
                 std::size_t writeOffset = 0) :

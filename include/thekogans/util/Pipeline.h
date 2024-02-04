@@ -376,7 +376,7 @@ namespace thekogans {
                     std::size_t workerCount_ = 1,
                     i32 workerPriority_ = THEKOGANS_UTIL_NORMAL_THREAD_PRIORITY,
                     ui32 workerAffinity_ = THEKOGANS_UTIL_MAX_THREAD_AFFINITY,
-                    RunLoop::WorkerCallback *workerCallback_ = 0) :
+                    RunLoop::WorkerCallback *workerCallback_ = nullptr) :
                     name (name_),
                     jobExecutionPolicy (jobExecutionPolicy_),
                     workerCount (workerCount_),
@@ -523,7 +523,7 @@ namespace thekogans {
                     std::size_t workerCount_ = 1,
                     i32 workerPriority_ = THEKOGANS_UTIL_NORMAL_THREAD_PRIORITY,
                     ui32 workerAffinity_ = THEKOGANS_UTIL_MAX_THREAD_AFFINITY,
-                    RunLoop::WorkerCallback *workerCallback_ = 0);
+                    RunLoop::WorkerCallback *workerCallback_ = nullptr);
                 /// \brief
                 /// dtor.
                 virtual ~State ();
@@ -571,7 +571,7 @@ namespace thekogans {
                     std::size_t workerCount = 1,
                     i32 workerPriority = THEKOGANS_UTIL_NORMAL_THREAD_PRIORITY,
                     ui32 workerAffinity = THEKOGANS_UTIL_MAX_THREAD_AFFINITY,
-                    RunLoop::WorkerCallback *workerCallback = 0) :
+                    RunLoop::WorkerCallback *workerCallback = nullptr) :
                     state (
                         new State (
                             begin,
@@ -880,15 +880,15 @@ namespace thekogans {
             /// \param[in] workerAffinity Worker thread processor affinity.
             /// \param[in] workerCallback Called to initialize/uninitialize the worker thread.
             GlobalPipeline (
-                const Pipeline::Stage *begin = 0,
-                const Pipeline::Stage *end = 0,
+                const Pipeline::Stage *begin = nullptr,
+                const Pipeline::Stage *end = nullptr,
                 const std::string &name = "GlobalPipeline",
                 Pipeline::JobExecutionPolicy::SharedPtr jobExecutionPolicy =
                     Pipeline::JobExecutionPolicy::SharedPtr (new Pipeline::FIFOJobExecutionPolicy),
                 std::size_t workerCount = 1,
                 i32 workerPriority = THEKOGANS_UTIL_NORMAL_THREAD_PRIORITY,
                 ui32 workerAffinity = THEKOGANS_UTIL_MAX_THREAD_AFFINITY,
-                RunLoop::WorkerCallback *workerCallback = 0) :
+                RunLoop::WorkerCallback *workerCallback = nullptr) :
                 Pipeline (
                     begin,
                     end,

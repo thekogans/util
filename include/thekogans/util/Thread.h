@@ -582,12 +582,14 @@ namespace thekogans {
         ///
         /// This mechanism allows the thread to control it's own lifetime and
         /// cleanup after itself avoiding leaks.
-        /// VERY IMPORTANT: This mechanism assumes that threads using this
-        /// mechanism were created with new.
 
         struct _LIB_THEKOGANS_UTIL_DECL ThreadReaper :
                 public Thread,
                 public Singleton<ThreadReaper, SpinLock> {
+            /// \brief
+            /// Convenient typedef for std::function<void (Thread * /*thread*/)>.
+            typedef std::function<void (Thread * /*thread*/)> Deleter;
+
         private:
             /// \brief
             /// \see{ThreadRunLoop} that will be executed in this thread.
@@ -603,9 +605,11 @@ namespace thekogans {
             /// join with it, and then delete the \see{Thread} wrapper.
             /// \param[in] thread \see{Thread} to reap.
             /// \param[in] timeSpec How long to wait for \see{Thread} to exit.
+            /// \param[in] deleter Deleter used to deallocate the thread pointer.
             void ReapThread (
                 Thread *thread,
-                const TimeSpec &timeSpec = TimeSpec::Infinite);
+                const TimeSpec &timeSpec = TimeSpec::Infinite,
+                const Deleter &deleter = [] (Thread *thread) {delete thread;});
 
         private:
             // Thread

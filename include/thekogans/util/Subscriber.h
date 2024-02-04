@@ -129,7 +129,7 @@ namespace thekogans {
                         it = producers.begin (),
                         end = producers.end (); it != end; ++it) {
                     typename Producer<T>::SharedPtr producer = it->second.GetSharedPtr ();
-                    if (producer.Get () != 0) {
+                    if (producer.Get () != nullptr) {
                         producer->Unsubscribe (*this);
                     }
                 }

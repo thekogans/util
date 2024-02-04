@@ -143,7 +143,7 @@ namespace thekogans {
                     std::size_t workerCount_ = 1,
                     i32 workerPriority_ = THEKOGANS_UTIL_NORMAL_THREAD_PRIORITY,
                     ui32 workerAffinity_ = THEKOGANS_UTIL_MAX_THREAD_AFFINITY,
-                    WorkerCallback *workerCallback_ = 0) :
+                    WorkerCallback *workerCallback_ = nullptr) :
                     RunLoop::State (name, jobExecutionPolicy),
                     workerCount (workerCount_),
                     workerPriority (workerPriority_),
@@ -173,7 +173,7 @@ namespace thekogans {
                 std::size_t workerCount = 1,
                 i32 workerPriority = THEKOGANS_UTIL_NORMAL_THREAD_PRIORITY,
                 ui32 workerAffinity = THEKOGANS_UTIL_MAX_THREAD_AFFINITY,
-                WorkerCallback *workerCallback = 0);
+                WorkerCallback *workerCallback = nullptr);
             /// \brief
             /// dtor. Stop the queue.
             virtual ~JobQueue () {
@@ -260,7 +260,7 @@ namespace thekogans {
                 std::size_t workerCount = 1,
                 i32 workerPriority = THEKOGANS_UTIL_NORMAL_THREAD_PRIORITY,
                 ui32 workerAffinity = THEKOGANS_UTIL_MAX_THREAD_AFFINITY,
-                WorkerCallback *workerCallback = 0) :
+                WorkerCallback *workerCallback = nullptr) :
                 JobQueue (
                     name,
                     jobExecutionPolicy,

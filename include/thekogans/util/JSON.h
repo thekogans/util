@@ -687,7 +687,7 @@ namespace thekogans {
         /// \param[in] value const char * value to add to Array.
         template<>
         inline void JSON::Array::Add (const char *value) {
-            if (value != 0) {
+            if (value != nullptr) {
                 values.push_back (Value::SharedPtr (new String (value)));
             }
             else {
@@ -847,7 +847,7 @@ namespace thekogans {
         inline void JSON::Array::Insert (
                 const char *value,
                 std::size_t index) {
-            if (value != 0) {
+            if (value != nullptr) {
                 values.insert (values.begin () + index, Value::SharedPtr (new String (value)));
             }
             else {
@@ -1085,7 +1085,7 @@ namespace thekogans {
         inline void JSON::Object::Add (
                 const std::string &name,
                 const char *value) {
-            if (!name.empty () && value != 0) {
+            if (!name.empty () && value != nullptr) {
                 values.push_back (NameValue (name, Value::SharedPtr (new String (value))));
             }
             else {
@@ -1377,7 +1377,7 @@ namespace thekogans {
                 const std::string &name,
                 const char *value,
                 std::size_t index) {
-            if (!name.empty () && value != 0) {
+            if (!name.empty () && value != nullptr) {
                 values.insert (
                     values.begin () + index,
                     NameValue (name, Value::SharedPtr (new String (value))));

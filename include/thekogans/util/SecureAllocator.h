@@ -202,7 +202,7 @@ namespace thekogans {
             /// \return Buffer with enough space to contain count objects.
             pointer allocate (
                     size_type count,
-                    const void * /*hint*/ = 0) {
+                    const void * /*hint*/ = nullptr) {
                 return (pointer)SecureAllocator::Instance ().Alloc (count * sizeof (T));
             }
             /// \brief

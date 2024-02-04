@@ -224,7 +224,7 @@ namespace thekogans {
             /// NOTE: You can use this handle as a parameter
             /// to \see{TenantFile}.
             inline THEKOGANS_UTIL_HANDLE GetInPipe () const {
-                return stdIO.get () != 0 ?
+                return stdIO.get () != nullptr ?
                     stdIO->inPipe[1] : THEKOGANS_UTIL_INVALID_HANDLE_VALUE;
             }
             /// \brief
@@ -233,7 +233,7 @@ namespace thekogans {
             /// NOTE: You can use this handle as a parameter
             /// to \see{TenantFile}.
             inline THEKOGANS_UTIL_HANDLE GetOutPipe () const {
-                return stdIO.get () != 0 ?
+                return stdIO.get () != nullptr ?
                     stdIO->outPipe[0] : THEKOGANS_UTIL_INVALID_HANDLE_VALUE;
             }
             /// \brief
@@ -242,7 +242,7 @@ namespace thekogans {
             /// NOTE: You can use this handle as a parameter
             /// to \see{TenantFile}.
             inline THEKOGANS_UTIL_HANDLE GetErrPipe () const {
-                return stdIO.get () != 0 ?
+                return stdIO.get () != nullptr ?
                     stdIO->errPipe[0] : THEKOGANS_UTIL_INVALID_HANDLE_VALUE;
             }
 
@@ -476,9 +476,9 @@ namespace thekogans {
         /// }
         /// \endcode
         _LIB_THEKOGANS_UTIL_DECL void _LIB_THEKOGANS_UTIL_API Daemonize (
-            const char *userName = 0,
-            const char *directory = 0,
-            const char *lockFilePath = 0,
+            const char *userName = nullptr,
+            const char *directory = nullptr,
+            const char *lockFilePath = nullptr,
             i32 waitForChild = 3);
     #endif // !defined (TOOLCHAIN_OS_Windows)
 

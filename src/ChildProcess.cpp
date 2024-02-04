@@ -494,7 +494,7 @@ namespace thekogans {
                     int *status,
                     int options,
                     const TimeSpec &timeSpec) {
-                if (status != 0) {
+                if (status != nullptr) {
                     Waiter waiter (pid, status, options);
                     waiter.Create (THEKOGANS_UTIL_NORMAL_THREAD_PRIORITY);
                     if (!waiter.condition.Wait (timeSpec)) {
@@ -726,7 +726,7 @@ namespace thekogans {
                 return;
             }
             // Create the lock file as the current user.
-            if (lockFilePath != 0) {
+            if (lockFilePath != nullptr) {
                 THEKOGANS_UTIL_HANDLE lockFile = open (lockFilePath, O_RDWR | O_CREAT, 0640);
                 if (lockFile < 0) {
                     THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
@@ -734,7 +734,7 @@ namespace thekogans {
                 }
             }
             // Drop user if there is one, and we were run as root.
-            if (userName != 0 && (getuid () == 0 || geteuid () == 0)) {
+            if (userName != nullptr && (getuid () == 0 || geteuid () == 0)) {
                 passwd *pw = getpwnam (userName);
                 if (pw == 0 || setuid (pw->pw_uid) < 0) {
                     THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
@@ -779,7 +779,7 @@ namespace thekogans {
             }
             // Change the current working directory. This prevents the current
             // directory from being locked; hence not being able to remove it.
-            if (directory == 0) {
+            if (directory == nullptr) {
                 directory = "/";
             }
             if (chdir (directory) < 0) {

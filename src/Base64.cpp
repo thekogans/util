@@ -27,7 +27,7 @@ namespace thekogans {
                 std::size_t bufferLength,
                 std::size_t lineLength,
                 std::size_t linePad) {
-            if (buffer != 0 && bufferLength > 0) {
+            if (buffer != nullptr && bufferLength > 0) {
                 std::size_t encodedLength = bufferLength / 3;
                 if (bufferLength % 3 != 0) {
                     ++encodedLength;
@@ -52,7 +52,7 @@ namespace thekogans {
                 std::size_t lineLength,
                 std::size_t linePad,
                 ui8 *encoded) {
-            if (buffer != 0 && bufferLength > 0) {
+            if (buffer != nullptr && bufferLength > 0) {
                 static const ui8 base64[] = {
                     'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P',
                     'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z', 'a', 'b', 'c', 'd', 'e', 'f',
@@ -136,7 +136,7 @@ namespace thekogans {
                 std::size_t bufferLength,
                 std::size_t lineLength,
                 std::size_t linePad) {
-            if (buffer != 0 && bufferLength > 0) {
+            if (buffer != nullptr && bufferLength > 0) {
                 Buffer encoded (
                     HostEndian,
                     GetEncodedLength (
@@ -186,7 +186,7 @@ namespace thekogans {
             Buffer ValidateInput (
                     const void *buffer,
                     std::size_t bufferLength) {
-                if (buffer != 0 && bufferLength > 0) {
+                if (buffer != nullptr && bufferLength > 0) {
                     Buffer output (HostEndian, bufferLength);
                     std::size_t equalCount = 0;
                     std::size_t index = 0;

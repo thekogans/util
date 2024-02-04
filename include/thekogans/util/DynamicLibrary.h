@@ -39,7 +39,7 @@ namespace thekogans {
             /// \brief
             /// ctor.
             /// \param[in] library_ Wrap an OS library handle.
-            DynamicLibrary (void *library_ = 0) :
+            DynamicLibrary (void *library_ = nullptr) :
                 library (library_) {}
             /// \brief
             /// dtor.

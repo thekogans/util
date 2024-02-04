@@ -62,7 +62,7 @@ namespace thekogans {
             /// Destroy the singleton instance.
             /// \param[in] instance Singleton instance to destroy.
             inline void operator () (T *instance) {
-                if (instance != 0) {
+                if (instance != nullptr) {
                     delete instance;
                 }
             }
@@ -118,7 +118,7 @@ namespace thekogans {
             /// Destroy the singleton instance.
             /// \param[in] instance Singleton instance to destroy.
             inline void operator () (T *instance) {
-                if (instance != 0) {
+                if (instance != nullptr) {
                     instance->Release ();
                 }
             }
@@ -191,16 +191,16 @@ namespace thekogans {
                 // We implement the double-checked locking pattern here
                 // to allow our singleton instance method to be thread-safe
                 // (i.e. thread-safe singleton construction).
-                if (instance () == 0) {
+                if (instance () == nullptr) {
                     // Here we acquire the lock, check instance again,
                     // and if it's STILL null, we are the lucky ones,
                     // we get to create the actual instance!
                     LockGuard<Lock> guard (lock ());
-                    if (instance () == 0) {
+                    if (instance () == nullptr) {
                         instance () = InstanceCreator () (std::forward<Args> (args)...);
                     }
                 }
-                assert (instance () != 0);
+                assert (instance () != nullptr);
             }
 
             /// \brief
@@ -214,8 +214,8 @@ namespace thekogans {
                 // outside the scope of Singleton and needs to be
                 // handled by the application.
                 LockGuard<Lock> guard (lock ());
-                if (instance () != 0) {
-                    T *instance_ = 0;
+                if (instance () != nullptr) {
+                    T *instance_ = nullptr;
                     InstanceDestroyer () (EXCHANGE (instance (), instance_));
                 }
             }
@@ -224,7 +224,7 @@ namespace thekogans {
             /// Return true if instance has been created.
             /// \return true if instance has been created.
             static bool IsInstanceCreated () {
-                return instance () != 0;
+                return instance () != nullptr;
             }
 
             /// \brief
@@ -234,16 +234,16 @@ namespace thekogans {
                 // We implement the double-checked locking pattern here
                 // to allow our singleton instance method to be thread-safe
                 // (i.e. thread-safe singleton construction).
-                if (instance () == 0) {
+                if (instance () == nullptr) {
                     // Here we acquire the lock, check instance again,
                     // and if it's STILL null, we are the lucky ones,
                     // we get to create the actual instance!
                     LockGuard<Lock> guard (lock ());
-                    if (instance () == 0) {
+                    if (instance () == nullptr) {
                         instance () = InstanceCreator () ();
                     }
                 }
-                assert (instance () != 0);
+                assert (instance () != nullptr);
                 return *instance ();
             }
 
@@ -255,7 +255,7 @@ namespace thekogans {
             /// \return A reference to the one and only instance pointer.
             static T *&instance () {
                 // The one and only singleton instance.
-                static T *_instance = 0;
+                static T *_instance = nullptr;
                 return _instance;
             };
             /// \brief

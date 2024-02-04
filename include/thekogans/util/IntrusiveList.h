@@ -210,7 +210,7 @@ namespace thekogans {
             /// \param[in] node Node whose previous node to return.
             /// \return Previous node of the given node.
             inline T *&prev (T *node) const {
-                assert (node != 0);
+                assert (node != nullptr);
                 return node->util::template IntrusiveList<T, ID>::Node::prev;
             }
 
@@ -219,7 +219,7 @@ namespace thekogans {
             /// \param[in] node Node whose next node to return.
             /// \return Next node of the given node.
             inline T *&next (T *node) const {
-                assert (node != 0);
+                assert (node != nullptr);
                 return node->util::template IntrusiveList<T, ID>::Node::next;
             }
 
@@ -228,7 +228,7 @@ namespace thekogans {
             /// \param[in] node Node to check for containment.
             /// \return true if a given node is in this list.
             inline bool &contains (T *node) const {
-                assert (node != 0);
+                assert (node != nullptr);
                 return node->util::template IntrusiveList<T, ID>::Node::inList;
             }
 
@@ -236,17 +236,17 @@ namespace thekogans {
             /// Add a given node to the front of the list.
             /// \param[in] node Node to add to the front of the list.
             /// \return true = Node was added to the list.
-            /// false = Either node == 0 or it's already in the list.
+            /// false = Either node == nullptr or it's already in the list.
             inline bool push_front (T *node) {
-                assert (node != 0);
-                if (node != 0 && !contains (node)) {
-                    if (head == 0) {
-                        assert (tail == 0);
-                        prev (node) = next (node) = 0;
+                assert (node != nullptr);
+                if (node != nullptr && !contains (node)) {
+                    if (head == nullptr) {
+                        assert (tail == nullptr);
+                        prev (node) = next (node) = nullptr;
                         head = tail = node;
                     }
                     else {
-                        prev (node) = 0;
+                        prev (node) = nullptr;
                         next (node) = head;
                         head = prev (head) = node;
                     }
@@ -261,19 +261,19 @@ namespace thekogans {
             /// Add a given node to the back of the list.
             /// \param[in] node Node to add to the back of the list.
             /// \return true = Node was added to the list.
-            /// false = Either node == 0 or it's already in the list.
+            /// false = Either node == nullptr or it's already in the list.
             inline bool push_back (T *node) {
-                assert (node != 0);
-                if (node != 0 && !contains (node)) {
-                    if (head == 0) {
-                        assert (tail == 0);
-                        prev (node) = next (node) = 0;
+                assert (node != nullptr);
+                if (node != nullptr && !contains (node)) {
+                    if (head == nullptr) {
+                        assert (tail == nullptr);
+                        prev (node) = next (node) = nullptr;
                         head = tail = node;
                     }
                     else {
-                        assert (tail != 0);
+                        assert (tail != nullptr);
                         prev (node) = tail;
-                        next (node) = 0;
+                        next (node) = nullptr;
                         tail = next (tail) = node;
                     }
                     contains (node) = true;
@@ -347,18 +347,18 @@ namespace thekogans {
             /// return value).
             /// \return true == List is cleared. false == callback returned false.
             inline bool clear (Callback &callback) {
-                for (T *node = head; node != 0;) {
+                for (T *node = head; node != nullptr;) {
                     // After callback returns, we might not be able to access the node.
                     // Remove it from the list first.
                     T *temp = next (node);
-                    prev (node) = next (node) = 0;
+                    prev (node) = next (node) = nullptr;
                     contains (node) = false;
                     if (!callback (node)) {
                         return false;
                     }
                     node = temp;
                 }
-                head = tail = 0;
+                head = tail = nullptr;
                 count = 0;
                 return true;
             }
@@ -366,13 +366,13 @@ namespace thekogans {
             /// \brief
             /// Remove all nodes from the list.
             inline void clear () {
-                for (T *node = head; node != 0;) {
+                for (T *node = head; node != nullptr;) {
                     T *temp = next (node);
-                    prev (node) = next (node) = 0;
+                    prev (node) = next (node) = nullptr;
                     contains (node) = false;
                     node = temp;
                 }
-                head = tail = 0;
+                head = tail = nullptr;
                 count = 0;
             }
 
@@ -388,18 +388,18 @@ namespace thekogans {
             /// See VERY, VERY important comment above (clear).
             /// \return true == List is cleared. false == callback returned false.
             inline bool clear (const Function &callback) {
-                for (T *node = head; node != 0;) {
+                for (T *node = head; node != nullptr;) {
                     // After callback returns, we might not be able to access the node.
                     // Remove it from the list first.
                     T *temp = next (node);
-                    prev (node) = next (node) = 0;
+                    prev (node) = next (node) = nullptr;
                     contains (node) = false;
                     if (!callback (node)) {
                         return false;
                     }
                     node = temp;
                 }
-                head = tail = 0;
+                head = tail = nullptr;
                 count = 0;
                 return true;
             }
@@ -420,13 +420,13 @@ namespace thekogans {
             /// Reverse the nodes in the list.
             inline void reverse () {
                 IntrusiveList<T, ID> list;
-                for (T *node = tail; node != 0;) {
+                for (T *node = tail; node != nullptr;) {
                     T *temp = prev (node);
                     contains (node) = false;
                     list.push_back (node);
                     node = temp;
                 }
-                head = tail = 0;
+                head = tail = nullptr;
                 count = 0;
                 swap (list);
             }
@@ -435,21 +435,21 @@ namespace thekogans {
             /// Insert a given node before another.
             /// \param[in] node Node to insert.
             /// \param[in] before Node before which to insert.
-            /// NOTE: before == 0 is the same as push_back.
+            /// NOTE: before == nullptr is the same as push_back.
             /// \return true = Node was inserted in to the list.
-            /// false = Either node == 0 or it's already in the list.
+            /// false = Either node == nullptr or it's already in the list.
             inline bool insert (
                     T *node,
                     T *before) {
-                assert (node != 0);
-                if (node != 0 && !contains (node)) {
-                    if (before == 0) {
+                assert (node != nullptr);
+                if (node != nullptr && !contains (node)) {
+                    if (before == nullptr) {
                         push_back (node);
                     }
                     else {
                         next (node) = before;
                         prev (node) = prev (before);
-                        if (prev (node) != 0) {
+                        if (prev (node) != nullptr) {
                             next (prev (node)) = node;
                         }
                         prev (before) = node;
@@ -465,31 +465,31 @@ namespace thekogans {
             /// Remove a given node from the list.
             /// \param[in] node Node to remove.
             /// \return true = Node was erased from the list.
-            /// false = Either node == 0 or it's not in the list.
+            /// false = Either node == nullptr or it's not in the list.
             inline bool erase (T *node) {
-                assert (node != 0);
-                if (node != 0 && contains (node)) {
-                    if (prev (node) != 0) {
+                assert (node != nullptr);
+                if (node != nullptr && contains (node)) {
+                    if (prev (node) != nullptr) {
                         next (prev (node)) = next (node);
                     }
                     else {
                         assert (node == head);
                         head = next (node);
-                        if (head != 0) {
-                            prev (head) = 0;
+                        if (head != nullptr) {
+                            prev (head) = nullptr;
                         }
                     }
-                    if (next (node) != 0) {
+                    if (next (node) != nullptr) {
                         prev (next (node)) = prev (node);
                     }
                     else {
                         assert (node == tail);
                         tail = prev (node);
-                        if (tail != 0) {
-                            next (tail) = 0;
+                        if (tail != nullptr) {
+                            next (tail) = nullptr;
                         }
                     }
-                    prev (node) = next (node) = 0;
+                    prev (node) = next (node) = nullptr;
                     contains (node) = false;
                     --count;
                     return true;
@@ -502,17 +502,17 @@ namespace thekogans {
             /// \return Head node.
             inline T *pop_front () {
                 T *node = head;
-                if (node != 0) {
-                    if (next (node) != 0) {
+                if (node != nullptr) {
+                    if (next (node) != nullptr) {
                         head = next (node);
-                        prev (next (node)) = 0;
+                        prev (next (node)) = nullptr;
                     }
                     else {
                         assert (head == tail);
                         assert (count == 1);
-                        head = tail = 0;
+                        head = tail = nullptr;
                     }
-                    prev (node) = next (node) = 0;
+                    prev (node) = next (node) = nullptr;
                     contains (node) = false;
                     --count;
                 }
@@ -524,17 +524,17 @@ namespace thekogans {
             /// \return Tail node.
             inline T *pop_back () {
                 T *node = tail;
-                if (node != 0) {
-                    if (prev (node) != 0) {
+                if (node != nullptr) {
+                    if (prev (node) != nullptr) {
                         tail = prev (node);
-                        next (prev (node)) = 0;
+                        next (prev (node)) = nullptr;
                     }
                     else {
                         assert (head == tail);
                         assert (count == 1);
-                        head = tail = 0;
+                        head = tail = nullptr;
                     }
-                    prev (node) = next (node) = 0;
+                    prev (node) = next (node) = nullptr;
                     contains (node) = false;
                     --count;
                 }
@@ -551,7 +551,7 @@ namespace thekogans {
                     Callback &callback,
                     bool reverse = false) const {
                 if (reverse) {
-                    for (T *node = tail; node != 0;) {
+                    for (T *node = tail; node != nullptr;) {
                         // After callback returns, we might not be able to call prev (node).
                         T *temp = prev (node);
                         if (!callback (node)) {
@@ -561,7 +561,7 @@ namespace thekogans {
                     }
                 }
                 else {
-                    for (T *node = head; node != 0;) {
+                    for (T *node = head; node != nullptr;) {
                         // After callback returns, we might not be able to call next (node).
                         T *temp = next (node);
                         if (!callback (node)) {
@@ -583,7 +583,7 @@ namespace thekogans {
                     const Function &callback,
                     bool reverse = false) const {
                 if (reverse) {
-                    for (T *node = tail; node != 0;) {
+                    for (T *node = tail; node != nullptr;) {
                         // After callback returns, we might not be able to call prev (node).
                         T *temp = prev (node);
                         if (!callback (node)) {
@@ -593,7 +593,7 @@ namespace thekogans {
                     }
                 }
                 else {
-                    for (T *node = head; node != 0;) {
+                    for (T *node = head; node != nullptr;) {
                         // After callback returns, we might not be able to call next (node).
                         T *temp = next (node);
                         if (!callback (node)) {

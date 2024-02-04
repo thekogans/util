@@ -944,7 +944,7 @@ namespace thekogans {
             /// \param[in] name_ Heap name.
             /// \param[in] minItemsInPage_ Heap minimum items in page.
             /// \param[in] allocator_ Page allocator.
-            Heap (const char *name_ = 0,
+            Heap (const char *name_ = nullptr,
                     std::size_t minItemsInPage_ =
                         THEKOGANS_UTIL_HEAP_DEFAULT_MIN_ITEMS_IN_PAGE,
                     Allocator &allocator_ = DefaultAllocator::Instance ()) :
@@ -956,7 +956,7 @@ namespace thekogans {
                     allocator (allocator_, minPageSize) {
                 assert (minItemsInPage > 0);
                 assert (OneBitCount (minPageSize) == 1);
-                if (name != 0) {
+                if (name != nullptr) {
                     HeapRegistry::Instance ().AddHeap (name, this);
                 }
             }
@@ -971,7 +971,7 @@ namespace thekogans {
                     std::string message =
                         FormatString (
                             "%s : " THEKOGANS_UTIL_SIZE_T_FORMAT "\n",
-                            name != 0 ? name : typeid (*this).name (),
+                            name != nullptr ? name : typeid (*this).name (),
                             itemCount);
                     Log (
                         SubsystemAll,
@@ -990,7 +990,7 @@ namespace thekogans {
                 // local temp heap, inherit from this one, and call
                 // Flush from its dtor.
                 //Flush ();
-                if (name != 0) {
+                if (name != nullptr) {
                     HeapRegistry::Instance ().DeleteHeap (name);
                 }
             }
@@ -1126,7 +1126,7 @@ namespace thekogans {
             /// If the heap was given a name, return it, otherwise return "unnamed".
             /// \return Heap name.
             inline const char *GetName () const {
-                return name != 0  ? name : "unnamed";
+                return name != nullptr  ? name : "unnamed";
             }
 
             /// \brief
@@ -1140,8 +1140,8 @@ namespace thekogans {
                     // page sub-allocate as much as available.
                     std::size_t pageSize = minPageSize;
                     void *page = allocator.AllocMax (pageSize);
-                    assert (page != 0);
-                    if (page != 0) {
+                    assert (page != nullptr);
+                    if (page != nullptr) {
                         assert (pageSize >= minPageSize);
                         // This is safe, as neither placement new, nor
                         // Page ctor, nor push_back will throw.
@@ -1168,7 +1168,7 @@ namespace thekogans {
                 if (page->magic1 != MAGIC || page->magic2 != MAGIC) {
                     page = (Page *)((std::size_t)page - minPageSize);
                     if (page->magic1 != MAGIC || page->magic2 != MAGIC) {
-                        page = 0;
+                        page = nullptr;
                     }
                 }
                 return page;
@@ -1181,7 +1181,7 @@ namespace thekogans {
             typename T,
             typename Lock>
         bool Heap<T, Lock>::IsValidPtr (void *ptr) throw () {
-            if (ptr != 0) {
+            if (ptr != nullptr) {
                 LockGuard<Lock> guard (lock);
                 // To honor the no throw promise, we can't assume the
                 // pointer came from this heap. We can't even assume
@@ -1207,10 +1207,10 @@ namespace thekogans {
         void *Heap<T, Lock>::Alloc (bool nothrow) {
             LockGuard<Lock> guard (lock);
             Page *page = GetPage ();
-            assert (page != 0);
-            if (page != 0) {
+            assert (page != nullptr);
+            if (page != nullptr) {
                 void *ptr = page->Alloc ();
-                assert (ptr != 0);
+                assert (ptr != nullptr);
                 if (page->IsFull ()) {
                     // GetPage will always return a page from the
                     // partialPages list.
@@ -1222,14 +1222,14 @@ namespace thekogans {
             }
             HeapRegistry::Instance ().CallHeapErrorCallback (
                 HeapRegistry::OutOfMemory,
-                name != 0 ? name : typeid (*this).name ());
+                name != nullptr ? name : typeid (*this).name ());
             if (!nothrow) {
                 THEKOGANS_UTIL_THROW_EXCEPTION (
                     THEKOGANS_UTIL_OS_ERROR_CODE_ENOMEM,
                     "Out of memory allocating a '%s'.",
                     GetName ());
             }
-            return 0;
+            return nullptr;
         }
 
         template<
@@ -1238,11 +1238,11 @@ namespace thekogans {
         void Heap<T, Lock>::Free (
                 void *ptr,
                 bool nothrow) {
-            if (ptr != 0) {
+            if (ptr != nullptr) {
                 LockGuard<Lock> guard (lock);
                 Page *page = GetPage (ptr);
-                assert (page != 0);
-                if (page != 0) {
+                assert (page != nullptr);
+                if (page != nullptr) {
                     // This logic is necessary to accommodate pages
                     // with one item. They become full after one
                     // allocation, and empty after one deletion.
@@ -1265,7 +1265,7 @@ namespace thekogans {
                 else {
                     HeapRegistry::Instance ().CallHeapErrorCallback (
                         HeapRegistry::BadPointer,
-                        name != 0 ? name : typeid (*this).name ());
+                        name != nullptr ? name : typeid (*this).name ());
                     if (!nothrow) {
                         // Defensive programming. Nothing should ever go unnoticed.
                         THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (

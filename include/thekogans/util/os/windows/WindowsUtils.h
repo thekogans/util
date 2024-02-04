@@ -316,7 +316,7 @@ namespace thekogans {
                 /// \brief
                 /// Convenient typedef for RefCounted::Registry<Window>.
                 /// NOTE: It's one and only instance is accessed like this;
-                /// thekogans::util::WindowRegistry::Instance ().
+                /// thekogans::util::os::windows::WindowRegistry::Instance ().
                 typedef RefCounted::Registry<Window> WindowRegistry;
 
                 /// \struct Window WindowsUtils.h thekogans/util/os/windows/WindowsUtils.h
