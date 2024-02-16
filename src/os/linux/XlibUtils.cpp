@@ -197,7 +197,7 @@ namespace thekogans {
                     for (std::size_t i = 0, count = XlibDisplays::Instance ().displays.size (); i < count; ++i) {
                         epoll_event event = {0};
                         event.events = EPOLLIN;
-                        event.data.ptr = displays[i];
+                        event.data.ptr = XlibDisplays::Instance ().displays[i];
                         if (epoll_ctl (epoll.handle, EPOLL_CTL_ADD,
                                 ConnectionNumber (XlibDisplays::Instance ().displays[i]), &event) < 0) {
                             THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
@@ -287,7 +287,7 @@ namespace thekogans {
                     event.message_type = message_type;
                     event.format = 32;
                     event.data.l[0] = id;
-                    DisplayGuard guard (display);
+                    DisplayGuard guard (window->display);
                     XSendEvent (window->display, window->window, False, 0, (XEvent *)&event);
                 }
 
