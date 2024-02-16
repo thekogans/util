@@ -49,7 +49,7 @@ namespace thekogans {
         void Timer::TimerCallback (void *userData) {
             Timer::SharedPtr timer = TimerRegistry::Instance ().Get ((TimerRegistry::Token::ValueType)userData);
     #endif // defined (TOOLCHAIN_OS_Windows)
-            if (timer.Get () != 0) {
+            if (timer.Get () != nullptr) {
                 timer->Produce (
                     std::bind (
                         &TimerEvents::OnTimerAlarm,

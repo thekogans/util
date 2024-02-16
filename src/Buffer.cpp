@@ -426,7 +426,7 @@ namespace thekogans {
         HGLOBAL Buffer::ToHGLOBAL (UINT flags) const {
             if (GetDataAvailableForReading () > 0) {
                 os::windows::HGLOBALPtr global (flags, GetDataAvailableForReading ());
-                if (global.Get () != 0) {
+                if (global.Get () != nullptr) {
                     memcpy (
                         global,
                         GetReadPtr (),

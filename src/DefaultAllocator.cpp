@@ -46,7 +46,7 @@ namespace thekogans {
         void DefaultAllocator::Free (
                 void *ptr,
                 std::size_t /*size*/) {
-            if (ptr != 0) {
+            if (ptr != nullptr) {
                 ::operator delete (ptr);
             }
         }

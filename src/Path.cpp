@@ -78,7 +78,7 @@ namespace thekogans {
         #else // defined (TOOLCHAIN_OS_Windows)
             char *buffer = getcwd (0, 0);
         #endif // defined (TOOLCHAIN_OS_Windows)
-            if (buffer != 0) {
+            if (buffer != nullptr) {
                 path = buffer;
                 free (buffer);
             }
@@ -131,7 +131,7 @@ namespace thekogans {
             std::string homeDirectory = GetEnvironmentVariable ("HOME");
             if (homeDirectory.empty ()) {
                 const char *dir = getpwuid (getuid ())->pw_dir;
-                if (dir != 0) {
+                if (dir != nullptr) {
                     homeDirectory = dir;
                 }
             }

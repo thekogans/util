@@ -39,7 +39,7 @@ namespace thekogans {
                 Console::Instance ().PrintString (
                     FormatString ("%s%s", header.c_str (), message.c_str ()),
                     stream,
-                    colorScheme.get () != 0 ? colorScheme->GetColor (level) : 0);
+                    colorScheme.get () != nullptr ? colorScheme->GetColor (level) : 0);
             }
         }
 

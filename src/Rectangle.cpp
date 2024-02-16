@@ -141,7 +141,7 @@ namespace thekogans {
                 f32 *scale) {
             Rectangle::Extents extents = frame;
             f32 scale_ = extents.AspectFit (window);
-            if (scale != 0) {
+            if (scale != nullptr) {
                 *scale = scale_;
             }
             Point origin (

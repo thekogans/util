@@ -28,7 +28,7 @@ namespace thekogans {
         void ValueParser<ui8 *>::Reset (
                 ui8 *value_,
                 std::size_t length_) {
-            if (value_ != 0 && length_ > 0) {
+            if (value_ != nullptr && length_ > 0) {
                 value = value_;
                 length = length_;
                 offset = 0;
@@ -123,7 +123,7 @@ namespace thekogans {
                 lengthParser (length, ValueParser<SizeT>::TYPE_SIZE_T),
                 offset (0),
                 state (STATE_STRING) {
-            if (delimiter == 0 || delimiterLength == 0) {
+            if (delimiter == nullptr || delimiterLength == 0) {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
                     THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
             }
@@ -133,7 +133,7 @@ namespace thekogans {
             length = 0;
             lengthParser.Reset ();
             offset = 0;
-            state = delimiter == 0 ? STATE_LENGTH : STATE_STRING;
+            state = delimiter == nullptr ? STATE_LENGTH : STATE_STRING;
         }
 
         bool ValueParser<std::string>::ParseValue (Serializer &serializer) {
@@ -148,7 +148,7 @@ namespace thekogans {
                 }
             }
             if (state == STATE_STRING) {
-                if (delimiter == 0) {
+                if (delimiter == nullptr) {
                     offset += serializer.Read (&value[offset], length - offset);
                     if (offset == length) {
                         Reset ();

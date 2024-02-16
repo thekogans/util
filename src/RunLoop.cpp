@@ -62,13 +62,13 @@ namespace thekogans {
 
         RunLoop::WorkerInitializer::WorkerInitializer (WorkerCallback *workerCallback_) :
                 workerCallback (workerCallback_) {
-            if (workerCallback != 0) {
+            if (workerCallback != nullptr) {
                 workerCallback->InitializeWorker ();
             }
         }
 
         RunLoop::WorkerInitializer::~WorkerInitializer () {
-            if (workerCallback != 0) {
+            if (workerCallback != nullptr) {
                 workerCallback->UninitializeWorker ();
             }
         }
@@ -140,7 +140,7 @@ namespace thekogans {
         }
 
         RunLoop::Job *RunLoop::FIFOJobExecutionPolicy::DeqJob (State &state) {
-            return !state.pendingJobs.empty () ? state.pendingJobs.pop_front () : 0;
+            return !state.pendingJobs.empty () ? state.pendingJobs.pop_front () : nullptr;
         }
 
         void RunLoop::LIFOJobExecutionPolicy::EnqJob (
@@ -164,7 +164,7 @@ namespace thekogans {
         }
 
         RunLoop::Job *RunLoop::LIFOJobExecutionPolicy::DeqJob (State &state) {
-            return !state.pendingJobs.empty () ? state.pendingJobs.pop_front () : 0;
+            return !state.pendingJobs.empty () ? state.pendingJobs.pop_front () : nullptr;
         }
 
         #if !defined (THEKOGANS_UTIL_MIN_RUN_LOOP_STATS_JOBS_IN_PAGE)
@@ -406,7 +406,7 @@ namespace thekogans {
                 idle (jobsMutex),
                 paused (false),
                 notPaused (jobsMutex) {
-            if (jobExecutionPolicy.Get () == 0) {
+            if (jobExecutionPolicy.Get () == nullptr) {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
                     THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
             }
@@ -418,7 +418,7 @@ namespace thekogans {
             assert (runningJobs.empty ());
             // Cancel remaining pending jobs to unblock waiters.
             Job *job;
-            while ((job = jobExecutionPolicy->DeqJob (*this)) != 0) {
+            while ((job = jobExecutionPolicy->DeqJob (*this)) != nullptr) {
                 job->Cancel ();
                 runningJobs.push_back (job);
                 FinishedJob (job, 0, 0);
@@ -433,7 +433,7 @@ namespace thekogans {
             while (!done && pendingJobs.empty () && wait) {
                 jobsNotEmpty.Wait ();
             }
-            Job *job = 0;
+            Job *job = nullptr;
             if (!done && !paused && !pendingJobs.empty ()) {
                 job = jobExecutionPolicy->DeqJob (*this);
                 runningJobs.push_back (job);
@@ -445,7 +445,7 @@ namespace thekogans {
                 Job *job,
                 ui64 start,
                 ui64 end) {
-            assert (job != 0);
+            assert (job != nullptr);
             {
                 // Acquire the lock to perform housekeeping chores.
                 LockGuard<Mutex> guard (jobsMutex);
@@ -512,7 +512,7 @@ namespace thekogans {
                 Job::SharedPtr job,
                 bool wait,
                 const TimeSpec &timeSpec) {
-            if (job.Get () != 0 && job->IsCompleted ()) {
+            if (job.Get () != nullptr && job->IsCompleted ()) {
                 {
                     LockGuard<Mutex> guard (state->jobsMutex);
                     state->jobExecutionPolicy->EnqJob (*state, job.Get ());
@@ -542,7 +542,7 @@ namespace thekogans {
                 Job::SharedPtr job,
                 bool wait,
                 const TimeSpec &timeSpec) {
-            if (job.Get () != 0 && job->IsCompleted ()) {
+            if (job.Get () != nullptr && job->IsCompleted ()) {
                 {
                     LockGuard<Mutex> guard (state->jobsMutex);
                     state->jobExecutionPolicy->EnqJobFront (*state, job.Get ());
@@ -641,7 +641,7 @@ namespace thekogans {
         bool RunLoop::WaitForJob (
                 Job::SharedPtr job,
                 const TimeSpec &timeSpec) {
-            if (job.Get () != 0 && job->GetRunLoopId () == state->id) {
+            if (job.Get () != nullptr && job->GetRunLoopId () == state->id) {
                 if (timeSpec == TimeSpec::Infinite) {
                     while (IsRunning () && !job->IsCompleted ()) {
                         job->Wait ();
@@ -667,7 +667,7 @@ namespace thekogans {
                 const Job::Id &jobId,
                 const TimeSpec &timeSpec) {
             Job::SharedPtr job = GetJob (jobId);
-            return job.Get () != 0 && WaitForJob (job, timeSpec);
+            return job.Get () != nullptr && WaitForJob (job, timeSpec);
         }
 
         bool RunLoop::WaitForJobs (

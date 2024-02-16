@@ -191,7 +191,7 @@ namespace thekogans {
                             int namelen);
                         const GetHostNameWProc getHostNameW = reinterpret_cast<GetHostNameWProc> (
                             GetProcAddress (hmodule, "GetHostNameW"));
-                        if (getHostNameW != 0) {
+                        if (getHostNameW != nullptr) {
                             wchar_t name[256];
                             memset (name, 0, 256);
                             if (getHostNameW (name, 256) == 0) {
@@ -243,7 +243,7 @@ namespace thekogans {
             namespace {
                 struct CFStringRefDeleter {
                     void operator () (CFStringRef stringRef) {
-                        if (stringRef != 0) {
+                        if (stringRef != nullptr) {
                             CFRelease (stringRef);
                         }
                     }
@@ -316,7 +316,7 @@ namespace thekogans {
                             CFSTR (kIOPlatformUUIDKey),
                             kCFAllocatorDefault,
                             0));
-                    if (uuid != 0) {
+                    if (uuid != nullptr) {
                         char buffer[1024];
                         CFStringGetCString (uuid.get (), buffer, 1024, kCFStringEncodingMacRoman);
                         Hash::Digest digest;
@@ -350,7 +350,7 @@ namespace thekogans {
                     LPWSTR name;
                     DWORD length;
                     UserName () :
-                            name (0),
+                            name (nullptr),
                             length (0) {
                         if (!WTSQuerySessionInformationW (
                                 WTS_CURRENT_SERVER_HANDLE,
@@ -363,12 +363,12 @@ namespace thekogans {
                         }
                     }
                     ~UserName () {
-                        if (name != 0) {
+                        if (name != nullptr) {
                             WTSFreeMemory (name);
                         }
                     }
                     operator std::string () {
-                        return name != 0 ? os::windows::UTF16ToUTF8 (std::wstring (name)) : std::string ();
+                        return name != nullptr ? os::windows::UTF16ToUTF8 (std::wstring (name)) : std::string ();
                     }
                 } userName;
                 result = userName;
@@ -385,7 +385,7 @@ namespace thekogans {
             #endif // defined (THEKOGANS_UTIL_HAVE_WTS)
             #elif defined (TOOLCHAIN_OS_Linux)
                 struct passwd *pw = getpwuid (geteuid ());
-                if (pw != 0) {
+                if (pw != nullptr) {
                     result = pw->pw_name;
                 }
                 else {
@@ -394,10 +394,10 @@ namespace thekogans {
                 }
             #elif defined (TOOLCHAIN_OS_OSX)
                 CFStringRefPtr consoleUser (SCDynamicStoreCopyConsoleUser (nullptr, nullptr, nullptr));
-                if (consoleUser.get () != 0) {
+                if (consoleUser.get () != nullptr) {
                     struct CFDataRefDeleter {
                         void operator () (CFDataRef dataRef) {
-                            if (dataRef != 0) {
+                            if (dataRef != nullptr) {
                                 CFRelease (dataRef);
                             }
                         }
@@ -406,7 +406,7 @@ namespace thekogans {
                     CFDataRefPtr UTF8String (
                         CFStringCreateExternalRepresentation (
                             nullptr, consoleUser.get (), kCFStringEncodingUTF8, '?'));
-                    if (UTF8String.get () != 0) {
+                    if (UTF8String.get () != nullptr) {
                         const UInt8 *data = CFDataGetBytePtr (UTF8String.get ());
                         CFIndex length = CFDataGetLength (UTF8String.get ());
                         result = std::string (data, data + length);

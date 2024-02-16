@@ -182,7 +182,7 @@ namespace thekogans {
                         workerCallback,
                         *this);
                 }
-                if (jobQueue != 0) {
+                if (jobQueue != nullptr) {
                     borrowedJobQueues.push_back (jobQueue);
                 }
             }
@@ -190,7 +190,7 @@ namespace thekogans {
         }
 
         void JobQueuePool::ReleaseJobQueue (JobQueue *jobQueue) {
-            if (jobQueue != 0) {
+            if (jobQueue != nullptr) {
                 LockGuard<Mutex> guard (mutex);
                 borrowedJobQueues.erase (jobQueue);
                 // Put the recently used job queue at the front of

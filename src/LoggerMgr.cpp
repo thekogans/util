@@ -286,7 +286,7 @@ namespace thekogans {
         void LoggerMgr::AddLogger (
                 const char *subsystem,
                 Logger::SharedPtr logger) {
-            if (subsystem != 0 && logger.Get () != 0) {
+            if (subsystem != nullptr && logger.Get () != nullptr) {
                 LockGuard<Mutex> guard (mutex);
                 loggerMap[subsystem].push_back (logger);
             }
@@ -299,7 +299,7 @@ namespace thekogans {
         void LoggerMgr::AddLoggerList (
                 const char *subsystem,
                 const LoggerList &loggerList) {
-            if (subsystem != 0 && !loggerList.empty ()) {
+            if (subsystem != nullptr && !loggerList.empty ()) {
                 LockGuard<Mutex> guard (mutex);
                 loggerMap[subsystem].insert (
                     loggerMap[subsystem].end (),
@@ -313,7 +313,7 @@ namespace thekogans {
         }
 
         void LoggerMgr::AddDefaultLogger (Logger::SharedPtr logger) {
-            if (logger.Get () != 0) {
+            if (logger.Get () != nullptr) {
                 LockGuard<Mutex> guard (mutex);
                 defaultLoggers.push_back (logger);
             }
@@ -346,11 +346,11 @@ namespace thekogans {
                 ui32 line,
                 const char *buildTime) {
             if (decorations <= SubsystemAll &&
-                    subsystem != 0 &&
+                    subsystem != nullptr &&
                     level > Invalid && level <= MaxLevel &&
-                    file != 0 &&
-                    function != 0 &&
-                    buildTime != 0) {
+                    file != nullptr &&
+                    function != nullptr &&
+                    buildTime != nullptr) {
                 std::string header;
                 if (decorations != NoDecorations) {
                     Flags32 flags (decorations);
@@ -512,13 +512,13 @@ namespace thekogans {
                 ui32 level,
                 const std::string &header,
                 const std::string &message) {
-            if (subsystem != 0 && level > Invalid && level <= MaxLevel) {
+            if (subsystem != nullptr && level > Invalid && level <= MaxLevel) {
                 Entry::UniquePtr entry (new Entry (subsystem, level, header, message));
                 if (FilterEntry (*entry)) {
                     LockGuard<Mutex> guard (mutex);
                     LoggerMap::iterator it = loggerMap.find (subsystem);
                     if (it != loggerMap.end () || !defaultLoggers.empty ()) {
-                        if (jobQueue.Get () != 0) {
+                        if (jobQueue.Get () != nullptr) {
                             jobQueue->EnqJob (
                                 RunLoop::Job::SharedPtr (
                                     new LogSubsystemJob (
@@ -540,7 +540,7 @@ namespace thekogans {
         }
 
         void LoggerMgr::AddFilter (Filter::UniquePtr filter) {
-            if (filter.get () != 0) {
+            if (filter.get () != nullptr) {
                 LockGuard<Mutex> guard (mutex);
                 filterList.push_back (std::move (filter));
             }
@@ -552,7 +552,7 @@ namespace thekogans {
 
         void LoggerMgr::Flush (const TimeSpec &timeSpec) {
             LockGuard<Mutex> guard (mutex);
-            if (jobQueue.Get () != 0) {
+            if (jobQueue.Get () != nullptr) {
                 jobQueue->WaitForIdle (timeSpec);
             }
             for (LoggerMap::iterator

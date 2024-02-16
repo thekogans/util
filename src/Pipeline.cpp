@@ -144,7 +144,7 @@ namespace thekogans {
             RunLoop::WorkerInitializer workerInitializer (state->workerCallback);
             while (!state->done) {
                 Job *job = state->DeqJob ();
-                if (job != 0) {
+                if (job != nullptr) {
                     // Short circuit cancelled pending jobs.
                     if (!job->ShouldStop (state->done) &&
                             ((job->stage = job->GetFirstStage ()) < state->stages.size ())) {
@@ -185,7 +185,7 @@ namespace thekogans {
                 workerPriority (workerPriority_),
                 workerAffinity (workerAffinity_),
                 workerCallback (workerCallback_) {
-            if (begin != 0 && end != 0 && jobExecutionPolicy.Get () != 0 && workerCount > 0) {
+            if (begin != nullptr && end != nullptr && jobExecutionPolicy.Get () != nullptr && workerCount > 0) {
                 for (; begin != end; ++begin) {
                     stages.push_back (
                         JobQueue::SharedPtr (
@@ -210,7 +210,7 @@ namespace thekogans {
             assert (runningJobs.empty ());
             // Cancel remaining pending jobs to unblock waiters.
             Job *job;
-            while ((job = jobExecutionPolicy->DeqJob (*this)) != 0) {
+            while ((job = jobExecutionPolicy->DeqJob (*this)) != nullptr) {
                 job->Cancel ();
                 runningJobs.push_back (job);
                 FinishedJob (job, 0, 0);
@@ -225,7 +225,7 @@ namespace thekogans {
             while (!done && pendingJobs.empty () && wait) {
                 jobsNotEmpty.Wait ();
             }
-            Job *job = 0;
+            Job *job = nullptr;
             if (!done && !paused && !pendingJobs.empty ()) {
                 job = jobExecutionPolicy->DeqJob (*this);
                 runningJobs.push_back (job);
@@ -237,7 +237,7 @@ namespace thekogans {
                 Job *job,
                 ui64 start,
                 ui64 end) {
-            assert (job != 0);
+            assert (job != nullptr);
             {
                 // Acquire the lock to perform housekeeping chores.
                 LockGuard<Mutex> guard (jobsMutex);
@@ -354,7 +354,7 @@ namespace thekogans {
                 // they would do to make sure anyone waiting on
                 // pending jobs gets notified.
                 Job *job;
-                while ((job = state->jobExecutionPolicy->DeqJob (*state)) != 0) {
+                while ((job = state->jobExecutionPolicy->DeqJob (*state)) != nullptr) {
                     job->Cancel ();
                     state->runningJobs.push_back (job);
                     state->FinishedJob (job, 0, 0);
@@ -373,7 +373,7 @@ namespace thekogans {
                 Job::SharedPtr job,
                 bool wait,
                 const TimeSpec &timeSpec) {
-            if (job.Get () != 0 && job->IsCompleted () && job->GetPipelineId () == state->id) {
+            if (job.Get () != nullptr && job->IsCompleted () && job->GetPipelineId () == state->id) {
                 {
                     LockGuard<Mutex> guard (state->jobsMutex);
                     state->jobExecutionPolicy->EnqJob (*state, job.Get ());
@@ -404,7 +404,7 @@ namespace thekogans {
                 Job::SharedPtr job,
                 bool wait,
                 const TimeSpec &timeSpec) {
-            if (job.Get () != 0 && job->IsCompleted ()) {
+            if (job.Get () != nullptr && job->IsCompleted ()) {
                 {
                     LockGuard<Mutex> guard (state->jobsMutex);
                     state->jobExecutionPolicy->EnqJobFront (*state, job.Get ());
@@ -504,7 +504,7 @@ namespace thekogans {
         bool Pipeline::WaitForJob (
                 Job::SharedPtr job,
                 const TimeSpec &timeSpec) {
-            if (job.Get () != 0 && job->GetPipelineId () == state->id) {
+            if (job.Get () != nullptr && job->GetPipelineId () == state->id) {
                 if (timeSpec == TimeSpec::Infinite) {
                     while (IsRunning () && !job->IsCompleted ()) {
                         job->Wait ();
@@ -530,7 +530,7 @@ namespace thekogans {
                 const Job::Id &jobId,
                 const TimeSpec &timeSpec) {
             Job::SharedPtr job = GetJob (jobId);
-            return job.Get () != 0 && WaitForJob (job, timeSpec);
+            return job.Get () != nullptr && WaitForJob (job, timeSpec);
         }
 
         bool Pipeline::WaitForJobs (
@@ -689,7 +689,7 @@ namespace thekogans {
 
         Pipeline::Pipeline (State::SharedPtr state_) :
                 state (state_) {
-            if (state.Get () != 0) {
+            if (state.Get () != nullptr) {
                 Start ();
             }
             else {

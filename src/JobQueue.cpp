@@ -29,7 +29,7 @@ namespace thekogans {
             RunLoop::WorkerInitializer workerInitializer (state->workerCallback);
             while (!state->done) {
                 Job *job = state->DeqJob ();
-                if (job != 0) {
+                if (job != nullptr) {
                     ui64 start = 0;
                     ui64 end = 0;
                     // Short circuit cancelled pending jobs.
@@ -117,7 +117,7 @@ namespace thekogans {
                 // they would do to make sure anyone waiting on
                 // pending jobs gets notified.
                 Job *job;
-                while ((job = state->jobExecutionPolicy->DeqJob (*state)) != 0) {
+                while ((job = state->jobExecutionPolicy->DeqJob (*state)) != nullptr) {
                     job->Cancel ();
                     state->runningJobs.push_back (job);
                     state->FinishedJob (job, 0, 0);
@@ -135,7 +135,7 @@ namespace thekogans {
         JobQueue::JobQueue (State::SharedPtr state_) :
                 RunLoop (dynamic_refcounted_sharedptr_cast<RunLoop::State> (state_)),
                 state (state_) {
-            if (state.Get () != 0) {
+            if (state.Get () != nullptr) {
                 Start ();
             }
             else {

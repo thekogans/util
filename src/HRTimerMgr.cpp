@@ -74,7 +74,7 @@ namespace thekogans {
                 const JSON::Object &object) {
             name = object.Get<JSON::String> (ATTR_NAME)->value;
             util::JSON::Array::SharedPtr attributesArray = object.Get<JSON::Array> (TAG_ATTRIBUTES);
-            if (attributesArray.Get () != 0) {
+            if (attributesArray.Get () != nullptr) {
                 for (std::size_t i = 0, count = attributesArray->GetValueCount (); i < count; ++i) {
                     util::JSON::Object::SharedPtr attributeObject = attributesArray->Get<util::JSON::Object> (i);
                     std::string name = attributeObject->Get<JSON::String> (ATTR_NAME)->value;
@@ -481,7 +481,7 @@ namespace thekogans {
                 open.clear ();
                 util::JSON::Array::SharedPtr openScopes =
                     object.Get<util::JSON::Array> (TAG_OPEN_SCOPES);
-                if (openScopes.Get () != 0) {
+                if (openScopes.Get () != nullptr) {
                     for (std::size_t i = 0, count = openScopes->GetValueCount (); i < count; ++i) {
                         util::JSON::Object::SharedPtr openScope = openScopes->Get<util::JSON::Object> (i);
                         TimerInfoBase::SharedPtr timerInfo;
@@ -494,7 +494,7 @@ namespace thekogans {
                 closed.clear ();
                 util::JSON::Array::SharedPtr closedScopes =
                     object.Get<util::JSON::Array> (TAG_CLOSED_SCOPES);
-                if (closedScopes.Get () != 0) {
+                if (closedScopes.Get () != nullptr) {
                     for (std::size_t i = 0, count = closedScopes->GetValueCount (); i < count; ++i) {
                         util::JSON::Object::SharedPtr closedScope = closedScopes->Get<util::JSON::Object> (i);
                         TimerInfoBase::SharedPtr timerInfo;

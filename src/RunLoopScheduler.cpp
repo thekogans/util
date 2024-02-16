@@ -47,7 +47,7 @@ namespace thekogans {
                 RunLoop::Job::SharedPtr job,
                 const TimeSpec &timeSpec,
                 RunLoop &runLoop) {
-            if (job.Get () != 0 && timeSpec != TimeSpec::Infinite) {
+            if (job.Get () != nullptr && timeSpec != TimeSpec::Infinite) {
                 return ScheduleJobInfo (
                     JobInfo::SharedPtr (
                         new RunLoopJobInfo (
@@ -66,7 +66,7 @@ namespace thekogans {
                 Pipeline::Job::SharedPtr job,
                 const TimeSpec &timeSpec,
                 Pipeline &pipeline) {
-            if (job.Get () != 0 && timeSpec != TimeSpec::Infinite) {
+            if (job.Get () != nullptr && timeSpec != TimeSpec::Infinite) {
                 return ScheduleJobInfo (
                     JobInfo::SharedPtr (
                         new PipelineJobInfo (

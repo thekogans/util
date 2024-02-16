@@ -37,7 +37,7 @@ namespace thekogans {
                 dynamicLibrary.Load (pluginPath);
                 GetPluginInterfaceProc GetPluginInterface =
                     (GetPluginInterfaceProc)dynamicLibrary.GetProc ("GetPluginInterface");
-                if (GetPluginInterface != 0) {
+                if (GetPluginInterface != nullptr) {
                     Interface &interface = GetPluginInterface ();
                     std::string pluginVersion = interface.GetVersion ().ToString ();
                     if (version != pluginVersion) {
@@ -65,7 +65,7 @@ namespace thekogans {
         void Plugins::Plugin::Unload () {
             GetPluginInterfaceProc GetPluginInterface =
                 (GetPluginInterfaceProc)dynamicLibrary.GetProc ("GetPluginInterface");
-            if (GetPluginInterface != 0) {
+            if (GetPluginInterface != nullptr) {
                 Interface &interface = GetPluginInterface ();
                 interface.Shutdown ();
                 dynamicLibrary.Unload ();
@@ -145,7 +145,7 @@ namespace thekogans {
                 const std::string &SHA2_256,
                 const Plugin::Dependencies &dependencies) {
             Plugin::SharedPtr plugin = GetPlugin (path);
-            if (plugin.Get () == 0) {
+            if (plugin.Get () == nullptr) {
                 plugin.Reset (new Plugin (path, version, SHA2_256, dependencies));
                 plugins.insert (PluginMap::value_type (path, plugin));
                 modified = true;

@@ -50,7 +50,7 @@ namespace thekogans {
         Mutex Exception::filterListMutex;
 
         void Exception::AddFilter (Filter::UniquePtr filter) {
-            if (filter.get () != 0) {
+            if (filter.get () != nullptr) {
                 LockGuard<Mutex> guard (filterListMutex);
                 filterList.push_back (std::move (filter));
             }
@@ -78,7 +78,7 @@ namespace thekogans {
             std::string UTF16ToUTF8 (
                     const wchar_t *utf16,
                     std::size_t length) {
-                if (utf16 != 0 && length > 0) {
+                if (utf16 != nullptr && length > 0) {
                     int utf8Length = WideCharToMultiByte (
                         CP_UTF8,
                         0,

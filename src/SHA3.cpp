@@ -45,7 +45,7 @@ namespace thekogans {
         void SHA3::Update (
                 const void *buffer_,
                 std::size_t size) {
-            if (buffer_ != 0 && size != 0) {
+            if (buffer_ != nullptr && size != 0) {
                 byteCount += size;
                 const ui8 *ptr = (const ui8 *)buffer_;
                 do {

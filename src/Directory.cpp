@@ -301,8 +301,8 @@ namespace thekogans {
                 EventSink &evenSink) {
             LockGuard<SpinLock> guard (spinLock);
             Watch::UniquePtr watch (new Watch (directory, evenSink));
-            assert (watch.get () != 0);
-            if (watch.get () == 0) {
+            assert (watch.get () != nullptr);
+            if (watch.get () == nullptr) {
                 THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
                     "Unable to create a watch for: %s", directory.c_str ());
             }
@@ -339,7 +339,7 @@ namespace thekogans {
                             maxEvents, &count, INFINITE, FALSE) && count > 0) {
                         for (ULONG i = 0; i < count; ++i) {
                             std::string directory;
-                            EventSink *eventSink = 0;
+                            EventSink *eventSink = nullptr;
                             WatchId watchId = 0;
                             ui8 buffer[Watch::BUFFER_SIZE];
                             {
@@ -354,8 +354,8 @@ namespace thekogans {
                                     it->second->ReadDirectoryChanges ();
                                 }
                             }
-                            if (eventSink != 0) {
-                                PFILE_NOTIFY_INFORMATION notify = 0;
+                            if (eventSink != nullptr) {
+                                PFILE_NOTIFY_INFORMATION notify = nullptr;
                                 size_t offset = 0;
                                 do {
                                     notify = (PFILE_NOTIFY_INFORMATION)&buffer[offset];
@@ -411,7 +411,7 @@ namespace thekogans {
                             for (ui32 i = 0; i < length;) {
                                 inotify_event *event = (inotify_event *)&buffer[i];
                                 std::string directory;
-                                EventSink *eventSink = 0;
+                                EventSink *eventSink = nullptr;
                                 WatchId watchId = THEKOGANS_UTIL_INVALID_HANDLE_VALUE;
                                 {
                                     LockGuard<SpinLock> guard (spinLock);
@@ -422,7 +422,7 @@ namespace thekogans {
                                         watchId = it->second->handle;
                                     }
                                 }
-                                if (eventSink != 0) {
+                                if (eventSink != nullptr) {
                                     if (Flags32 (event->mask).Test (IN_MOVED_TO) ||
                                             Flags32 (event->mask).Test (IN_CREATE)) {
                                         eventSink->HandleAdd (watchId, directory,
@@ -458,7 +458,7 @@ namespace thekogans {
                         for (int i = 0; i < count; ++i) {
                             if (kqueueEvents[i].flags & EV_ERROR) {
                                 std::string directory;
-                                EventSink *eventSink = 0;
+                                EventSink *eventSink = nullptr;
                                 WatchId watchId = 0;
                                 {
                                     LockGuard<SpinLock> guard (spinLock);
@@ -470,7 +470,7 @@ namespace thekogans {
                                         watchId = jt->second->handle;
                                     }
                                 }
-                                if (eventSink != 0) {
+                                if (eventSink != nullptr) {
                                     eventSink->HandleError (watchId, directory,
                                         THEKOGANS_UTIL_ERROR_CODE_EXCEPTION (
                                             (THEKOGANS_UTIL_ERROR_CODE)kqueueEvents[i].data));
@@ -484,7 +484,7 @@ namespace thekogans {
                                 it = watches.begin (),
                                 end = watches.end (); it != end; ++it) {
                             std::string directory;
-                            EventSink *eventSink = 0;
+                            EventSink *eventSink = nullptr;
                             WatchId watchId = 0;
                             std::list<Directory::Entry> added;
                             std::list<Directory::Entry> deleted;
@@ -499,7 +499,7 @@ namespace thekogans {
                                     jt->second->Update (added, deleted, modified);
                                 }
                             }
-                            if (eventSink != 0) {
+                            if (eventSink != nullptr) {
                                 for (std::list<Directory::Entry>::const_iterator
                                         it = added.begin (), end = added.end ();
                                         it != end; ++it) {
@@ -981,11 +981,11 @@ namespace thekogans {
         bool Directory::GetFirstEntry (Entry &entry) {
             Close ();
             dir = opendir (path.c_str ());
-            if (dir != 0) {
+            if (dir != nullptr) {
                 char buffer[sizeof (dirent) + NAME_MAX + 1];
-                dirent *dirEnt = 0;
+                dirent *dirEnt = nullptr;
                 if (readdir_r (dir, (dirent *)buffer, &dirEnt) == 0) {
-                    if (dirEnt != 0) {
+                    if (dirEnt != nullptr) {
                         GetEntry (*dirEnt, entry);
                         return true;
                     }
@@ -1005,11 +1005,11 @@ namespace thekogans {
         }
 
         bool Directory::GetNextEntry (Entry &entry) {
-            if (dir != 0) {
+            if (dir != nullptr) {
                 char buffer[sizeof (dirent) + NAME_MAX + 1];
-                dirent *dirEnt = 0;
+                dirent *dirEnt = nullptr;
                 if (readdir_r (dir, (dirent *)buffer, &dirEnt) == 0) {
-                    if (dirEnt != 0) {
+                    if (dirEnt != nullptr) {
                         GetEntry (*dirEnt, entry);
                         return true;
                     }
@@ -1071,7 +1071,7 @@ namespace thekogans {
         }
 
         void Directory::Close () {
-            if (dir != 0) {
+            if (dir != nullptr) {
                 int result;
                 do {
                     result = closedir (dir);
@@ -1080,7 +1080,7 @@ namespace thekogans {
                             THEKOGANS_UTIL_OS_ERROR_CODE);
                     }
                 } while (result < 0);
-                dir = 0;
+                dir = nullptr;
             }
         }
 

@@ -42,7 +42,7 @@ namespace thekogans {
             scheduler.DeleteJobQueue (this);
             if (cancelPendingJobs) {
                 Job *job;
-                while ((job = state->jobExecutionPolicy->DeqJob (*state)) != 0) {
+                while ((job = state->jobExecutionPolicy->DeqJob (*state)) != nullptr) {
                     job->Cancel ();
                     state->runningJobs.push_back (job);
                     state->FinishedJob (job, 0, 0);
@@ -99,7 +99,7 @@ namespace thekogans {
         void Scheduler::AddJobQueue (
                 JobQueue *jobQueue,
                 bool scheduleJobQueue) {
-            if (jobQueue != 0) {
+            if (jobQueue != nullptr) {
                 {
                     LockGuard<SpinLock> guard (spinLock);
                     // In flight job queues are the ones executing
@@ -144,13 +144,13 @@ namespace thekogans {
 
                         virtual void Execute (const std::atomic<bool> &done) throw () {
                             JobQueue *jobQueue;
-                            while (!ShouldStop (done) && (jobQueue = scheduler.GetNextJobQueue ()) != 0) {
-                                RunLoop::Job *job = 0;
+                            while (!ShouldStop (done) && (jobQueue = scheduler.GetNextJobQueue ()) != nullptr) {
+                                RunLoop::Job *job = nullptr;
                                 bool cancelled = false;
                                 // Skip over cancelled jobs.
                                 do {
                                     job = jobQueue->state->DeqJob (false);
-                                    if (job != 0) {
+                                    if (job != nullptr) {
                                         ui64 start = 0;
                                         ui64 end = 0;
                                         // Short circuit cancelled pending jobs.
@@ -166,7 +166,7 @@ namespace thekogans {
                                         }
                                         jobQueue->state->FinishedJob (job, start, end);
                                     }
-                                } while (job != 0 && cancelled);
+                                } while (job != nullptr && cancelled);
                                 jobQueue->inFlight = false;
                                 if (!jobQueue->IsPaused () && jobQueue->GetPendingJobCount () != 0) {
                                     scheduler.AddJobQueue (jobQueue, false);
@@ -175,7 +175,7 @@ namespace thekogans {
                         }
                     };
                     util::JobQueue::SharedPtr jobQueue = jobQueuePool.GetJobQueue (0);
-                    if (jobQueue.Get () != 0) {
+                    if (jobQueue.Get () != nullptr) {
                         jobQueue->EnqJob (
                             RunLoop::Job::SharedPtr (new JobQueueJob (jobQueue, *this)));
                     }
@@ -188,7 +188,7 @@ namespace thekogans {
         }
 
         void Scheduler::DeleteJobQueue (JobQueue *jobQueue) {
-            if (jobQueue != 0) {
+            if (jobQueue != nullptr) {
                 LockGuard<SpinLock> guard (spinLock);
                 switch (jobQueue->priority) {
                     case JobQueue::PRIORITY_LOW:
@@ -209,7 +209,7 @@ namespace thekogans {
         }
 
         Scheduler::JobQueue *Scheduler::GetNextJobQueue () {
-            JobQueue *jobQueue = 0;
+            JobQueue *jobQueue = nullptr;
             LockGuard<SpinLock> guard (spinLock);
             // Priority based, round-robin, O(1) scheduler!
             if (!high.empty ()) {
@@ -221,7 +221,7 @@ namespace thekogans {
             else if (!low.empty ()) {
                 jobQueue = low.pop_front ();
             }
-            if (jobQueue != 0) {
+            if (jobQueue != nullptr) {
                 jobQueue->inFlight = true;
             }
             return jobQueue;

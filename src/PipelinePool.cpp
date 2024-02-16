@@ -188,7 +188,7 @@ namespace thekogans {
                         workerCallback,
                         *this);
                 }
-                if (pipeline != 0) {
+                if (pipeline != nullptr) {
                     borrowedPipelines.push_back (pipeline);
                 }
             }
@@ -196,7 +196,7 @@ namespace thekogans {
         }
 
         void PipelinePool::ReleasePipeline (Pipeline *pipeline) {
-            if (pipeline != 0) {
+            if (pipeline != nullptr) {
                 LockGuard<Mutex> guard (mutex);
                 borrowedPipelines.erase (pipeline);
                 // Put the recently used pipeline at the front of

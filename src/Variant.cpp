@@ -237,11 +237,11 @@ namespace thekogans {
                     size += F64_SIZE;
                     break;
                 case Variant::TYPE_SizeT:
-                    assert (value._SizeT != 0);
+                    assert (value._SizeT != nullptr);
                     size += Serializer::Size (*value._SizeT);
                     break;
                 case Variant::TYPE_string: {
-                    assert (value._string != 0);
+                    assert (value._string != nullptr);
                     size += Serializer::Size (*value._string);
                     break;
                 }
@@ -293,15 +293,15 @@ namespace thekogans {
         void Variant::Clear () {
             if (type == TYPE_SizeT) {
                 delete value._SizeT;
-                value._SizeT = 0;
+                value._SizeT = nullptr;
             }
             if (type == TYPE_string) {
                 delete value._string;
-                value._string = 0;
+                value._string = nullptr;
             }
             else if (type == TYPE_GUID) {
                 delete value._guid;
-                value._guid = 0;
+                value._guid = nullptr;
             }
             type = TYPE_Invalid;
         }
@@ -580,14 +580,15 @@ namespace thekogans {
                     serializer << variant.value._f64;
                     break;
                 case Variant::TYPE_SizeT:
+                    assert (variant.value._SizeT != nullptr);
                     serializer << *variant.value._SizeT;
                     break;
                 case Variant::TYPE_string:
-                    assert (variant.value._string != 0);
+                    assert (variant.value._string != nullptr);
                     serializer << *variant.value._string;
                     break;
                 case Variant::TYPE_GUID:
-                    assert (variant.value._string != 0);
+                    assert (variant.value._string != nullptr);
                     serializer << *variant.value._guid;
                     break;
             }

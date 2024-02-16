@@ -59,7 +59,7 @@ namespace thekogans {
 
     #if !defined (TOOLCHAIN_OS_Windows)
         void SharedObject::Cleanup (const char *name) {
-            if (name != 0) {
+            if (name != nullptr) {
                 shm_unlink (name);
                 shm_unlink (Lock::GetName (name).c_str ());
             }
@@ -103,7 +103,7 @@ namespace thekogans {
                 mode_t mode,
             #endif // defined (TOOLCHAIN_OS_Windows)
                 const TimeSpec &timeSpec) {
-            if (name != 0 && size > 0 && timeSpec != TimeSpec::Infinite) {
+            if (name != nullptr && size > 0 && timeSpec != TimeSpec::Infinite) {
                 size += sizeof (SharedObjectHeader);
             #if defined (TOOLCHAIN_OS_Windows)
                 Lock lock (name, securityAttributes, timeSpec);
@@ -134,7 +134,7 @@ namespace thekogans {
                     }
                 } sharedMemory (name, size, securityAttributes);
                 void *ptr = MapViewOfFile (sharedMemory.handle, FILE_MAP_ALL_ACCESS, 0, 0, (SIZE_T)size);
-                if (ptr != 0) {
+                if (ptr != nullptr) {
                     if (!secure || VirtualLock (ptr, (SIZE_T)size)) {
                         if (sharedMemory.created) {
                             THEKOGANS_UTIL_TRY {
@@ -259,7 +259,7 @@ namespace thekogans {
                 mode_t mode,
             #endif // defined (TOOLCHAIN_OS_Windows)
                 const TimeSpec &timeSpec) {
-            if (ptr != 0 && timeSpec != TimeSpec::Infinite) {
+            if (ptr != nullptr && timeSpec != TimeSpec::Infinite) {
                 SharedObjectHeader *sharedObject = (SharedObjectHeader *)ptr - 1;
                 ui64 size = sharedObject->size;
                 bool secure = sharedObject->secure;

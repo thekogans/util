@@ -145,7 +145,7 @@ namespace thekogans {
             while (!vectorizer.done) {
                 // Wait until Execute releases us.
                 vectorizer.barrier.Wait ();
-                if (vectorizer.job != 0 && rank < vectorizer.workerCount) {
+                if (vectorizer.job != nullptr && rank < vectorizer.workerCount) {
                     std::size_t startIndex = rank * vectorizer.chunkSize;
                     std::size_t endIndex = std::min (
                         startIndex + vectorizer.chunkSize, vectorizer.job->Size ());

@@ -43,7 +43,7 @@ namespace thekogans {
                 char *destination,
                 std::size_t destinationLength,
                 const char *source) {
-            if (destination != 0 && destinationLength != 0 && source != 0) {
+            if (destination != nullptr && destinationLength != 0 && source != nullptr) {
                 while (--destinationLength != 0 && *source != '\0') {
                     *destination++ = *source++;
                 }
@@ -57,7 +57,7 @@ namespace thekogans {
 
         _LIB_THEKOGANS_UTIL_DECL std::string _LIB_THEKOGANS_UTIL_API TrimLeftSpaces (
                 const char *str) {
-            if (str != 0) {
+            if (str != nullptr) {
                 while (*str != 0 && isspace (*str)) {
                     ++str;
                 }
@@ -70,7 +70,7 @@ namespace thekogans {
 
         _LIB_THEKOGANS_UTIL_DECL std::string _LIB_THEKOGANS_UTIL_API TrimRightSpaces (
                 const char *str) {
-            if (str != 0) {
+            if (str != nullptr) {
                 for (const char *end = str + strlen (str); end > str; --end) {
                     if (!isspace (*(end - 1))) {
                         return std::string (str, end);
@@ -82,7 +82,7 @@ namespace thekogans {
 
         _LIB_THEKOGANS_UTIL_DECL std::string _LIB_THEKOGANS_UTIL_API TrimSpaces (
                 const char *str) {
-            if (str != 0) {
+            if (str != nullptr) {
                 while (*str != 0 && isspace (*str)) {
                     ++str;
                 }
@@ -98,7 +98,7 @@ namespace thekogans {
         _LIB_THEKOGANS_UTIL_DECL std::string _LIB_THEKOGANS_UTIL_API StringToUpper (
                 const char *str) {
             std::string upper;
-            if (str != 0) {
+            if (str != nullptr) {
                 while (*str != 0) {
                     upper += toupper (*str++);
                 }
@@ -109,7 +109,7 @@ namespace thekogans {
         _LIB_THEKOGANS_UTIL_DECL std::string _LIB_THEKOGANS_UTIL_API StringToLower (
                 const char *str) {
             std::string lower;
-            if (str != 0) {
+            if (str != nullptr) {
                 while (*str != 0) {
                     lower += tolower (*str++);
                 }
@@ -142,7 +142,7 @@ namespace thekogans {
                 const char *utf8,
                 std::size_t length,
                 std::size_t *utf8Length) {
-            if (utf8 != 0 && length > 0) {
+            if (utf8 != nullptr && length > 0) {
                 std::size_t utf8Length_ = 0;
                 for (const ui8 *start = (const ui8 *)utf8, *end = start + length; start < end;) {
                     if (start[0] < 0x80) {
@@ -195,7 +195,7 @@ namespace thekogans {
                 if (utf8Length != 0) {
                     *utf8Length = utf8Length_;
                 }
-                return 0;
+                return nullptr;
             }
             else {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
@@ -211,7 +211,7 @@ namespace thekogans {
                 const void *buffer,
                 std::size_t length,
                 char *hexBuffer) {
-            if (buffer != 0 && length > 0 && hexBuffer != 0) {
+            if (buffer != nullptr && length > 0 && hexBuffer != nullptr) {
                 const char *ptr = (const char *)buffer;
                 for (std::size_t i = 0; i < length; ++i) {
                     *hexBuffer++ = hexTable[(ptr[i] & 0xf0) >> 4];
@@ -229,7 +229,7 @@ namespace thekogans {
         _LIB_THEKOGANS_UTIL_DECL std::string _LIB_THEKOGANS_UTIL_API HexEncodeBuffer (
                 const void *buffer,
                 std::size_t length) {
-            if (buffer != 0 && length > 0) {
+            if (buffer != nullptr && length > 0) {
                 std::string hexString;
                 hexString.resize (length * 2);
                 HexEncodeBuffer (buffer, length, &hexString[0]);
@@ -261,7 +261,7 @@ namespace thekogans {
                 const char *hexBuffer,
                 std::size_t length,
                 void *buffer) {
-            if (hexBuffer != 0 && length > 0 && IS_EVEN (length) && buffer != 0) {
+            if (hexBuffer != nullptr && length > 0 && IS_EVEN (length) && buffer != nullptr) {
                 ui8 *ptr = (ui8 *)buffer;
                 for (std::size_t i = 0; i < length; i += 2) {
                     if (IsHexChar (hexBuffer[i]) && IsHexChar (hexBuffer[i + 1])) {
@@ -284,7 +284,7 @@ namespace thekogans {
         _LIB_THEKOGANS_UTIL_DECL std::vector<ui8> _LIB_THEKOGANS_UTIL_API HexDecodeBuffer (
                 const char *hexBuffer,
                 std::size_t length) {
-            if (hexBuffer != 0 && length > 0 && IS_EVEN (length)) {
+            if (hexBuffer != nullptr && length > 0 && IS_EVEN (length)) {
                 std::vector<ui8> buffer (length / 2);
                 HexDecodeBuffer (hexBuffer, length, buffer.data ());
                 return buffer;
@@ -347,7 +347,7 @@ namespace thekogans {
         _LIB_THEKOGANS_UTIL_DECL std::string _LIB_THEKOGANS_UTIL_API HexFormatBuffer (
                 const void *buffer,
                 std::size_t length) {
-            if (buffer != 0 && length > 0) {
+            if (buffer != nullptr && length > 0) {
                 std::ostringstream stream;
                 const ui8 *ptr = (const ui8 *)buffer;
                 const std::size_t charsPerRow = 16;
@@ -429,7 +429,7 @@ namespace thekogans {
                 const char *value,
                 char **end,
                 i32 base) {
-            if (value != 0) {
+            if (value != nullptr) {
             #if defined (TOOLCHAIN_ARCH_i386) || defined (TOOLCHAIN_ARCH_ppc32) ||\
                 defined (TOOLCHAIN_ARCH_arm32) || defined (TOOLCHAIN_ARCH_mips32)
                 return (std::size_t)strtoul (value, end, base);
@@ -451,7 +451,7 @@ namespace thekogans {
         _LIB_THEKOGANS_UTIL_DECL bool _LIB_THEKOGANS_UTIL_API stringTobool (
                 const char *value,
                 char **end) {
-            if (value != 0) {
+            if (value != nullptr) {
                 // Skip leading whitespace.
                 while  (*value != 0 && isspace (*value)) {
                     ++value;
@@ -471,7 +471,7 @@ namespace thekogans {
                         value[4] == 'e') {
                     value += 5;
                 }
-                if (end != 0) {
+                if (end != nullptr) {
                     *end = (char *)value;
                 }
                 return result;
@@ -486,7 +486,7 @@ namespace thekogans {
                 const char *value,
                 char **end,
                 i32 base) {
-            if (value != 0) {
+            if (value != nullptr) {
                 return (i8)strtol (value, end, base);
             }
             else {
@@ -499,7 +499,7 @@ namespace thekogans {
                 const char *value,
                 char **end,
                 i32 base) {
-            if (value != 0) {
+            if (value != nullptr) {
                 return (ui8)strtoul (value, end, base);
             }
             else {
@@ -512,7 +512,7 @@ namespace thekogans {
                 const char *value,
                 char **end,
                 i32 base) {
-            if (value != 0) {
+            if (value != nullptr) {
                 return (i16)strtol (value, end, base);
             }
             else {
@@ -525,7 +525,7 @@ namespace thekogans {
                 const char *value,
                 char **end,
                 i32 base) {
-            if (value != 0) {
+            if (value != nullptr) {
                 return (ui16)strtoul (value, end, base);
             }
             else {
@@ -538,7 +538,7 @@ namespace thekogans {
                 const char *value,
                 char **end,
                 i32 base) {
-            if (value != 0) {
+            if (value != nullptr) {
                 return (i32)strtol (value, end, base);
             }
             else {
@@ -551,7 +551,7 @@ namespace thekogans {
                 const char *value,
                 char **end,
                 i32 base) {
-            if (value != 0) {
+            if (value != nullptr) {
                 return (ui32)strtoul (value, end, base);
             }
             else {
@@ -564,7 +564,7 @@ namespace thekogans {
                 const char *value,
                 char **end,
                 i32 base) {
-            if (value != 0) {
+            if (value != nullptr) {
             #if defined (TOOLCHAIN_OS_Windows)
                 return (i64)_strtoi64 (value, end, base);
             #else // defined (TOOLCHAIN_OS_Windows)
@@ -581,7 +581,7 @@ namespace thekogans {
                 const char *value,
                 char **end,
                 i32 base) {
-            if (value != 0) {
+            if (value != nullptr) {
             #if defined (TOOLCHAIN_OS_Windows)
                 return (ui64)_strtoui64 (value, end, base);
             #else // defined (TOOLCHAIN_OS_Windows)
@@ -597,7 +597,7 @@ namespace thekogans {
         _LIB_THEKOGANS_UTIL_DECL f32 _LIB_THEKOGANS_UTIL_API stringTof32 (
                 const char *value,
                 char **end) {
-            if (value != 0) {
+            if (value != nullptr) {
                 return (f32)strtod (value, end);
             }
             else {
@@ -609,7 +609,7 @@ namespace thekogans {
         _LIB_THEKOGANS_UTIL_DECL f64 _LIB_THEKOGANS_UTIL_API stringTof64 (
                 const char *value,
                 char **end) {
-            if (value != 0) {
+            if (value != nullptr) {
                 return (f64)strtod (value, end);
             }
             else {
@@ -621,7 +621,7 @@ namespace thekogans {
         _LIB_THEKOGANS_UTIL_DECL time_t _LIB_THEKOGANS_UTIL_API stringTotime_t (
                 const char *value,
                 char **end) {
-            if (value != 0) {
+            if (value != nullptr) {
             #if defined (TOOLCHAIN_ARCH_i386) || defined (TOOLCHAIN_ARCH_ppc32) ||\
                 defined (TOOLCHAIN_ARCH_arm32) || defined (TOOLCHAIN_ARCH_mips32)
                 return (time_t)stringToi32 (value, end);
@@ -644,7 +644,7 @@ namespace thekogans {
         stringToTHEKOGANS_UTIL_ERROR_CODE (
                 const char *value,
                 char **end) {
-            if (value != 0) {
+            if (value != nullptr) {
             #if defined (TOOLCHAIN_OS_Windows)
                 return (THEKOGANS_UTIL_ERROR_CODE)stringToui32 (value, end);
             #else // defined (TOOLCHAIN_OS_Windows)
@@ -732,7 +732,7 @@ namespace thekogans {
         _LIB_THEKOGANS_UTIL_DECL std::string _LIB_THEKOGANS_UTIL_API FormatStringHelper (
                 const char *format,
                 va_list argptr) {
-            if (format != 0) {
+            if (format != nullptr) {
                 std::string str;
                 int size = _vscprintf (format, argptr);
                 if (size > 0) {
@@ -755,7 +755,7 @@ namespace thekogans {
         _LIB_THEKOGANS_UTIL_DECL std::string FormatString (
                 const char *format,
                 ...) {
-            if (format != 0) {
+            if (format != nullptr) {
                 va_list argptr;
                 va_start (argptr, format);
                 std::string str = FormatStringHelper (format, argptr);
@@ -799,7 +799,7 @@ namespace thekogans {
                 }
             #else // defined (TOOLCHAIN_OS_Windows)
                 const char *value = getenv (name.c_str ());
-                if (value != 0) {
+                if (value != nullptr) {
                     return value;
                 }
             #endif // defined (TOOLCHAIN_OS_Windows)
@@ -838,7 +838,7 @@ namespace thekogans {
             #if defined (TOOLCHAIN_OS_Windows)
                 if (!::SetEnvironmentVariableW (os::windows::UTF8ToUTF16 (name).c_str (), 0)) {
             #else // defined (TOOLCHAIN_OS_Windows)
-                if (unsetenv (name.c_str ()) < 0) {
+                    if (unsetenv (name.c_str ()) < 0) {
             #endif // defined (TOOLCHAIN_OS_Windows)
                     THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
                         THEKOGANS_UTIL_OS_ERROR_CODE);

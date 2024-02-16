@@ -38,8 +38,8 @@ namespace thekogans {
                 if (size < Block::SMALLEST_BLOCK_SIZE) {
                     size = Block::SMALLEST_BLOCK_SIZE;
                 }
-                for (Block *prev = 0, *block = GetBlockFromOffset (header->freeList);
-                        block != 0;
+                for (Block *prev = nullptr, *block = GetBlockFromOffset (header->freeList);
+                        block != nullptr;
                         prev = block, block = GetBlockFromOffset (block->next)) {
                     if (block->size >= size) {
                         ui64 remainder = block->size - size;
@@ -51,7 +51,7 @@ namespace thekogans {
                         else {
                             freeBlock = GetBlockFromOffset (block->next);
                         }
-                        if (prev != 0) {
+                        if (prev != nullptr) {
                             prev->next = GetOffsetFromBlock (freeBlock);
                         }
                         else {
@@ -63,26 +63,26 @@ namespace thekogans {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
                     THEKOGANS_UTIL_OS_ERROR_CODE_ENOMEM);
             }
-            return 0;
+            return nullptr;
         }
 
         void SharedAllocator::Free (
                 void *ptr,
                 std::size_t size) {
-            if (ptr != 0) {
+            if (ptr != nullptr) {
                 LockGuard<StorageSpinLock> guard (lock);
                 Block *blockToFree = ValidatePtr (ptr);
-                if (blockToFree != 0) {
-                    Block *prev = 0;
+                if (blockToFree != nullptr) {
+                    Block *prev = nullptr;
                     // The freeList chain is sorted on offset. Find the
                     // place in the chain where this block belongs and
                     // see if it needs to be coalesced to either or both
                     // of it's neighbors.
                     for (Block *block = GetBlockFromOffset (header->freeList);
-                            block != 0;
+                            block != nullptr;
                             prev = block, block = GetBlockFromOffset (block->next)) {
                         if (block > blockToFree) {
-                            if (prev != 0) {
+                            if (prev != nullptr) {
                                 if (GetNextBlock (prev) == blockToFree) {
                                     prev->size += GetTrueBlockSize (blockToFree);
                                     if (GetNextBlock (blockToFree) == block) {
@@ -113,7 +113,7 @@ namespace thekogans {
                             return;
                         }
                     }
-                    if (prev == 0) {
+                    if (prev == nullptr) {
                         // First and only block in the list.
                         header->freeList = GetOffsetFromBlock (blockToFree);
                         blockToFree->next = 0;
@@ -137,9 +137,9 @@ namespace thekogans {
         }
 
         void SharedAllocator::SetRootObject (void *rootObject) {
-            if (rootObject == 0 || ValidatePtr (rootObject) != 0) {
+            if (rootObject == nullptr || ValidatePtr (rootObject) != nullptr) {
                 LockGuard<StorageSpinLock> guard (lock);
-                header->rootObject = rootObject != 0 ? GetOffsetFromPtr (rootObject) : 0;
+                header->rootObject = rootObject != nullptr ? GetOffsetFromPtr (rootObject) : 0;
             }
             else {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
@@ -149,7 +149,7 @@ namespace thekogans {
 
         void *SharedAllocator::GetRootObject () {
             LockGuard<StorageSpinLock> guard (lock);
-            return header->rootObject != 0 ? GetPtrFromOffset (header->rootObject) : 0;
+            return header->rootObject != 0 ? GetPtrFromOffset (header->rootObject) : nullptr;
         }
 
     } // namespace util

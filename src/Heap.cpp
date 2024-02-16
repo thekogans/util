@@ -83,7 +83,7 @@ namespace thekogans {
         void HeapRegistry::CallHeapErrorCallback (
                 HeapError heapError,
                 const char *type) {
-            if (heapErrorCallback != 0) {
+            if (heapErrorCallback != nullptr) {
                 heapErrorCallback (heapError, type);
             }
         }
@@ -92,7 +92,7 @@ namespace thekogans {
                 const std::string &name,
                 Diagnostics *heap) {
             assert (!name.empty ());
-            assert (heap != 0);
+            assert (heap != nullptr);
             LockGuard<SpinLock> guard (spinLock);
             map.insert (Map::value_type (name, heap));
         }
@@ -106,7 +106,7 @@ namespace thekogans {
         }
 
         bool HeapRegistry::IsValidPtr (void *ptr) throw () {
-            if (ptr != 0) {
+            if (ptr != nullptr) {
                 LockGuard<SpinLock> guard (spinLock);
                 for (Map::const_iterator it = map.begin (),
                         end = map.end (); it != end; ++it) {
@@ -128,7 +128,7 @@ namespace thekogans {
             for (Map::const_iterator it = map.begin (),
                     end = map.end (); it != end; ++it) {
                 Diagnostics::Stats::UniquePtr stats = it->second->GetStats ();
-                if (stats.get () != 0) {
+                if (stats.get () != nullptr) {
                     stats->Dump (stream);
                 }
             }

@@ -30,9 +30,9 @@ namespace thekogans {
         _LIB_THEKOGANS_UTIL_DECL std::string _LIB_THEKOGANS_UTIL_API XMLChTostring (
                 const XMLCh *xml) {
             std::string str;
-            if (xml != 0) {
+            if (xml != nullptr) {
                 char *ch = XERCES_CPP_NAMESPACE::XMLString::transcode (xml);
-                if (ch != 0) {
+                if (ch != nullptr) {
                     str = ch;
                     XERCES_CPP_NAMESPACE::XMLString::release (&ch);
                 }
@@ -43,9 +43,9 @@ namespace thekogans {
         _LIB_THEKOGANS_UTIL_DECL std::string _LIB_THEKOGANS_UTIL_API charTostring (
                 const char *ch) {
             std::string str;
-            if (ch != 0) {
+            if (ch != nullptr) {
                 XMLCh *xml = XERCES_CPP_NAMESPACE::XMLString::transcode (ch);
-                if (xml != 0) {
+                if (xml != nullptr) {
                     str = XMLChTostring (xml);
                     XERCES_CPP_NAMESPACE::XMLString::release (&xml);
                 }
@@ -62,7 +62,7 @@ namespace thekogans {
                 explicit XMLChPtr (XMLCh *xc_) :
                     xc (xc_) {}
                 ~XMLChPtr () {
-                    if (xc != 0) {
+                    if (xc != nullptr) {
                         XERCES_CPP_NAMESPACE::XMLString::release (&xc);
                     }
                 }
@@ -73,7 +73,7 @@ namespace thekogans {
 
             XMLChPtr stringToXMLCh (const std::string &s) {
                 return XMLChPtr (!s.empty () ?
-                    XERCES_CPP_NAMESPACE::XMLString::transcode (s.c_str ()) : 0);
+                    XERCES_CPP_NAMESPACE::XMLString::transcode (s.c_str ()) : nullptr);
             }
         }
 
@@ -88,8 +88,8 @@ namespace thekogans {
         _LIB_THEKOGANS_UTIL_DECL std::string _LIB_THEKOGANS_UTIL_API XMLFileLocTostring (
                 XMLFileLoc value,
                 const char *format) {
-            assert (format != 0);
-            return format != 0 ? FormatString (format, value) : std::string ();
+            assert (format != nullptr);
+            return format != nullptr ? FormatString (format, value) : std::string ();
         }
 
         void XercesErrorHandler::warning (

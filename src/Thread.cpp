@@ -252,7 +252,7 @@ namespace thekogans {
                     pthread_t thread,
                     void **result,
                     const timespec *timeSpec) {
-                if (timeSpec != 0) {
+                if (timeSpec != nullptr) {
                     Waiter waiter (thread, result);
                     waiter.Create (THEKOGANS_UTIL_NORMAL_THREAD_PRIORITY);
                     if (!waiter.condition.Wait (TimeSpec (*timeSpec))) {
@@ -398,7 +398,7 @@ namespace thekogans {
     #else // defined (TOOLCHAIN_OS_Windows)
         void *Thread::ThreadProc (void *data) {
     #endif // defined (TOOLCHAIN_OS_Windows)
-            assert (data != 0);
+            assert (data != nullptr);
             Thread *thread = static_cast<Thread *> (data);
             if (!thread->name.empty ()) {
             #if defined (TOOLCHAIN_OS_Windows)

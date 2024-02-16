@@ -158,8 +158,8 @@ namespace thekogans {
             /// This token is the key between the c++ and the c async io worlds (os).
             /// This token is registered with os specific apis (io completion port on
             /// windows, epoll on linux and kqueue on os x). On callback the token
-            /// is used to get a Stream::SharedPtr from the Stream::WeakPtr found in
-            /// the \see{util::RefCounted::Registry<Stream>}.
+            /// is used to get a Timer::SharedPtr from the Timer::WeakPtr found in
+            /// the \see{util::RefCounted::Registry<Timer>}.
             const TimerRegistry::Token token;
         #if defined (TOOLCHAIN_OS_Windows)
             /// \brief

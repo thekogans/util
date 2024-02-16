@@ -126,7 +126,7 @@ namespace thekogans {
         void SHA2_384_512::Update (
                 const void *buffer_,
                 std::size_t size) {
-            if (buffer_ != 0 && size != 0) {
+            if (buffer_ != nullptr && size != 0) {
                 ADDINC128 (bitCount, size << 3);
                 const ui8 *ptr = (const ui8 *)buffer_;
                 do {
