@@ -407,13 +407,14 @@ namespace thekogans {
             /// \brief
             /// Release the \see{RefCounted} nodes held by this list and clear it.
             inline void release () {
-                struct ReleaseCallback : public Callback {
-                    virtual bool operator () (T *node) override {
-                        node->Release ();
+                clear (
+                    [] (T *node) -> bool {
+                        if (node != nullptr) {
+                            node->Release ();
+                        }
                         return true;
                     }
-                } releaseCallback;
-                clear (releaseCallback);
+                );
             }
 
             /// \brief

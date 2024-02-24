@@ -45,6 +45,7 @@ namespace thekogans {
                 /// \struct XlibDisplays XlibUtils.h thekogans/util/XlibUtils.h
                 ///
                 /// \brief
+                /// List of all X-servers running on the system.
 
                 struct XlibDispays : public Singleton<XlibDispays, SpinLock> {
                     /// \brief
@@ -150,7 +151,7 @@ namespace thekogans {
                 struct XlibRunLoop : public os::RunLoop {
                 private:
                     /// \brief
-                    ///
+                    /// Run loop custom message type.
                     const char * const MESSAGE_TYPE_NAME = "thekogans_util_os_linux_XlibRunLoop_message_type";
                     enum {
                         /// \brief
@@ -161,7 +162,7 @@ namespace thekogans {
                         ID_RUN_LOOP_STOP
                     };
                     /// \brief
-                    ///
+                    /// Window that will receive run loop notifications.
                     XlibWindow::SharedPtr window;
                     /// \brief
                     /// A custom Xlib message type used to signal our run loop.
