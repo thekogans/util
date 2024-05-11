@@ -134,12 +134,12 @@ namespace thekogans {
             struct RunLoopEventDeliveryPolicy : public EventDeliveryPolicy {
                 /// \brief
                 /// \see{RunLoop} on which to queue the event delivery job.
-                RunLoop &runLoop;
+                RunLoop::SharedPtr runLoop;
 
                 /// \brief
                 /// ctor.
                 /// \param[in] runLoop_ \see{RunLoop} on which to queue the event delivery job.
-                explicit RunLoopEventDeliveryPolicy (RunLoop &runLoop_) :
+                explicit RunLoopEventDeliveryPolicy (RunLoop::SharedPtr runLoop_) :
                     runLoop (runLoop_) {}
 
                 /// \brief
@@ -157,7 +157,7 @@ namespace thekogans {
                             event (subscriber.Get ());
                         }
                     };
-                    runLoop.EnqJob (job);
+                    runLoop->EnqJob (job);
                 }
             };
 
@@ -168,11 +168,34 @@ namespace thekogans {
             struct JobQueueEventDeliveryPolicy : public RunLoopEventDeliveryPolicy {
                 /// \brief
                 /// \see{JobQueue} on which to queue the event delivery job.
-                JobQueue jobQueue;
+                JobQueue::SharedPtr jobQueue;
 
                 /// \brief
                 /// ctor.
-                JobQueueEventDeliveryPolicy () :
+                /// \param[in] name \see{JobQueue} name. If set, \see{JobQueue::State::Worker}
+                /// threads will be named name-%d.
+                /// \param[in] jobExecutionPolicy JobQueue \see{RunLoop::JobExecutionPolicy}.
+                /// \param[in] maxPendingJobs Max pending queue jobs.
+                /// \param[in] workerCount Max workers to service the queue.
+                /// \param[in] workerPriority Worker thread priority.
+                /// \param[in] workerAffinity Worker thread processor affinity.
+                /// \param[in] workerCallback Called to initialize/uninitialize the worker thread(s).
+                JobQueueEventDeliveryPolicy (
+                    const std::string &name = std::string (),
+                    RunLoop::JobExecutionPolicy::SharedPtr jobExecutionPolicy =
+                        RunLoop::JobExecutionPolicy::SharedPtr (new RunLoop::FIFOJobExecutionPolicy),
+                    std::size_t workerCount = 1,
+                    i32 workerPriority = THEKOGANS_UTIL_NORMAL_THREAD_PRIORITY,
+                    ui32 workerAffinity = THEKOGANS_UTIL_MAX_THREAD_AFFINITY,
+                    JobQueue::WorkerCallback *workerCallback = nullptr) :
+                    jobQueue (
+                        new JobQueue (
+                            name,
+                            jobExecutionPolicy,
+                            workerCount,
+                            workerPriority,
+                            workerAffinity,
+                            workerCallback)),
                     RunLoopEventDeliveryPolicy (jobQueue) {}
             };
 
