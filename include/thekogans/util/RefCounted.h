@@ -24,6 +24,7 @@
 #include <vector>
 #include "thekogans/util/Config.h"
 #include "thekogans/util/Types.h"
+#include "thekogans/util/Constants.h"
 #include "thekogans/util/Heap.h"
 #include "thekogans/util/Singleton.h"
 #include "thekogans/util/SpinLock.h"
@@ -268,9 +269,7 @@ namespace thekogans {
                 /// Release the object without calling object->Release ().
                 /// \return T *.
                 T *Release () {
-                    T *object_ = object;
-                    object = nullptr;
-                    return object_;
+                    return EXCHANGE (object, nullptr);
                 }
 
                 /// \brief
@@ -483,15 +482,15 @@ namespace thekogans {
             ///
             /// \brief
             /// Registry acts as an interface between RefCounted objects in the C++
-            /// world and raw pointers of the OS C APIs. It is specifically designed to
-            /// make life easier managing object lifetimes in the presence of async
-            /// callback interfaces. Most OS APIs that take a function pointer to
-            /// call back at a later (async) time also take a user parameter to pass
+            /// world and raw pointers of the OS C API world. It is specifically
+            /// designed to make life easier managing object lifetimes in the presence
+            /// of async callback interfaces. Most OS APIs that take a function pointer
+            /// to call back at a later (async) time also take a user parameter to pass
             /// to the callback. Passing in raw pointers is dangerous as object
             /// lifetime cannot be predicted and dereferencing raw pointers can lead
             /// to disasters. Instead, use the registry to 'register' a WeakPtr to
-            /// the object that can later be used to create a SharedPtr if the object
-            /// still exists.
+            /// the object that can later be used to create a SharedPtr (if the object
+            /// still exists).
             template<typename T>
             struct Registry : public Singleton<Registry<T>, SpinLock> {
             public:

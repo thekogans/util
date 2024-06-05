@@ -89,7 +89,7 @@ namespace thekogans {
         }
 
         void HeapRegistry::AddHeap (
-                const std::string &name,
+                const char *name,
                 Diagnostics *heap) {
             assert (!name.empty ());
             assert (heap != nullptr);
@@ -97,7 +97,7 @@ namespace thekogans {
             map.insert (Map::value_type (name, heap));
         }
 
-        void HeapRegistry::DeleteHeap (const std::string &name) {
+        void HeapRegistry::DeleteHeap (const char *name) {
             LockGuard<SpinLock> guard (spinLock);
             Map::iterator it = map.find (name);
             if (it != map.end ()) {

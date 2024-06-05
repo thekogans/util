@@ -208,6 +208,8 @@ namespace thekogans {
         ///              Added GetName ().
         /// 07/05/2022 - version 2.5.2
         ///              Added THEKOGANS_UTIL_DECLARE_HEAP to allow heap debugging in release mode.
+        /// 06/04/2024 - version 2.5.3
+        ///              Changed name type in Registry from std::string to const char *.
         ///
         /// Author:
         ///
@@ -629,8 +631,8 @@ namespace thekogans {
                 virtual Stats::UniquePtr GetStats () = 0;
             };
             /// \brief
-            /// Convenient typedef for std::map<std::string, Diagnostics *>.
-            typedef std::map<std::string, Diagnostics *> Map;
+            /// Convenient typedef for std::map<const char *, Diagnostics *>.
+            typedef std::map<const char *, Diagnostics *> Map;
             /// \brief
             /// Heap map.
             Map map;
@@ -660,12 +662,12 @@ namespace thekogans {
             /// \param[in] name Heap name.
             /// \param[in] heap Heap to add.
             void AddHeap (
-                const std::string &name,
+                const char *name,
                 Diagnostics *heap);
             /// \brief
             /// Remove a named heap from the registry.
             /// \param[in] name Heap name.
-            void DeleteHeap (const std::string &name);
+            void DeleteHeap (const char *name);
 
             /// \brief
             /// Return true if the given pointer belongs to any of the heaps we manage.
