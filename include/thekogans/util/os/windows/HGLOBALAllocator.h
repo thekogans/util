@@ -77,13 +77,13 @@ namespace thekogans {
                 #define THEKOGANS_UTIL_IMPLEMENT_HGLOBAL_ALLOCATOR_FUNCTIONS(type)\
                 void *type::operator new (std::size_t size) {\
                     assert (size == sizeof (type));\
-                    return thekogans::util::HGLOBALAllocator::Instance ().Alloc (size);\
+                    return thekogans::util::HGLOBALAllocator::Instance ().Alloc (size, false);\
                 }\
                 void *type::operator new (\
                         std::size_t size,\
                         std::nothrow_t) throw () {\
                     assert (size == sizeof (type));\
-                    return thekogans::util::HGLOBALAllocator::Instance ().Alloc (size);\
+                    return thekogans::util::HGLOBALAllocator::Instance ().Alloc (size, true);\
                 }\
                 void *type::operator new (\
                         std::size_t size,\
@@ -92,12 +92,12 @@ namespace thekogans {
                     return ptr;\
                 }\
                 void type::operator delete (void *ptr) {\
-                    thekogans::util::HGLOBALAllocator::Instance ().Free (ptr, sizeof (type));\
+                    thekogans::util::HGLOBALAllocator::Instance ().Free (ptr, sizeof (type), false);\
                 }\
                 void type::operator delete (\
                         void *ptr,\
                         std::nothrow_t) throw () {\
-                    thekogans::util::HGLOBALAllocator::Instance ().Free (ptr, sizeof (type));\
+                    thekogans::util::HGLOBALAllocator::Instance ().Free (ptr, sizeof (type), true);\
                 }\
                 void type::operator delete (\
                     void *,\

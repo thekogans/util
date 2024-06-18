@@ -101,17 +101,23 @@ namespace thekogans {
             /// Use Allocator to allocate a block, and align it to the
             /// requested boundary.
             /// \param[in] size Block size to allocate.\n
+            /// \param[in] nothrow true = return nullptr if can't allocate,
+            /// false = throw exception.
             /// \return Pointer to the aligned block.
-            virtual void *Alloc (std::size_t size) {
-                return AllocHelper (size, false);
+            virtual void *Alloc (
+                    std::size_t size,
+                    bool nothrow = false) {
+                return AllocHelper (size, nothrow, false);
             }
             /// \brief
             /// Free the block previously allocated with Alloc.
             /// \param[in] ptr Block pointer returned by Alloc
             /// \param[in] size 'true' size returned by Alloc
+            /// \param[in] nothrow true = don't throw an exception on error.
             virtual void Free (
                 void *ptr,
-                std::size_t size);
+                std::size_t size,
+                bool nothrow = false);
 
             /// \brief
             /// Use Allocator to allocate a block, and align it to the
@@ -119,9 +125,13 @@ namespace thekogans {
             /// \param[in,out] size in = minimum block size to allocate.\n
             ///                     out = 'true' block size after alignment
             ///                           (at least minimum).
+            /// \param[in] nothrow true = return nullptr if can't allocate,
+            /// false = throw exception.
             /// \return Pointer to the aligned block.
-            inline void *AllocMax (std::size_t &size) {
-                return AllocHelper (size, true);
+            inline void *AllocMax (
+                    std::size_t &size,
+                    bool nothrow = false) {
+                return AllocHelper (size, nothrow, true);
             }
 
         private:
@@ -130,10 +140,13 @@ namespace thekogans {
             /// \param[in,out] size in = minimum block size to allocate.\n
             ///                     out = 'true' block size after alignment
             ///                           (at least minimum).
+            /// \param[in] nothrow true = return nullptr if can't allocate,
+            /// false = throw exception.
             /// \param[in] useMax false = Called by Alloc. true = Called by AllocMax.
             /// \return Pointer to the aligned block.
             void *AllocHelper (
                 std::size_t &size,
+                bool nothrow,
                 bool useMax);
 
             /// \brief

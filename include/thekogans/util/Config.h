@@ -114,39 +114,22 @@ private:\
     type (const type &) = delete;\
     type &operator = (const type &) = delete;
 
-#if defined (THEKOGANS_UTIL_TYPE_Static)
-/// \def THEKOGANS_UTIL_STATIC_INIT(type)
-/// Common dynamic discovery static initializer macro.
-/// NOTE: Because of the circular namture of it's dependencies
-/// (DynamicCreatable and Allocator), I put this macro here.
-/// If you use it, don't forget to include SpinLock.h, LockGuard.h
-/// and Exception.h.
-#define THEKOGANS_UTIL_STATIC_INIT(type)\
-public:\
-    static void StaticInit () {\
-        static volatile bool registered = false;\
-        static thekogans::util::SpinLock spinLock;\
-        if (!registered) {\
-            thekogans::util::LockGuard<thekogans::util::SpinLock> guard (spinLock);\
-            if (!registered) {\
-                std::pair<Map::iterator, bool> result =\
-                    GetMap ().insert (Map::value_type (#type, type::Create));\
-                if (!result.second) {\
-                    THEKOGANS_UTIL_THROW_STRING_EXCEPTION (\
-                        "'%s' is already registered.", #type);\
-                }\
-                registered = true;\
-            }\
-        }\
-    }
-#endif // defined (THEKOGANS_UTIL_TYPE_Static)
-
 /// \def THEKOGANS_UTIL
 /// Logging subsystem name.
 #define THEKOGANS_UTIL "thekogans_util"
 
 namespace thekogans {
     namespace util {
+
+    #if defined (THEKOGANS_UTIL_TYPE_Static)
+        /// \brief
+        /// If you're linking to thekogans_util statically, call this
+        /// method early on in main to initialize dynamically creatable
+        /// (\see{DynamicCreatable}) types. If you don't call this method
+        /// the only available types that will be available to your
+        /// application are the ones you explicitly link to.
+        void StaticInit ();
+    #endif // defined (THEKOGANS_UTIL_TYPE_Static)
 
         enum {
             /// \brief

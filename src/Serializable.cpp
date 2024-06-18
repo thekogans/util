@@ -48,16 +48,11 @@ namespace thekogans {
         const char * const Serializable::TextHeader::ATTR_TYPE = "Type";
         const char * const Serializable::TextHeader::ATTR_VERSION = "Version";
 
-        Serializable::Map &Serializable::GetMap () {
-            static Map *map = new Map;
-            return *map;
-        }
-
         Serializable::MapInitializer::MapInitializer (
                 const std::string &type,
                 Factories factories) {
-            std::pair<Map::iterator, bool> result =
-                GetMap ().insert (Map::value_type (type, factories));
+            std::pair<MapType::iterator, bool> result =
+                Map::Instance ().insert (MapType::value_type (type, factories));
             if (!result.second) {
                 THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
                     "'%s' is already registered.", type.c_str ());
@@ -65,7 +60,7 @@ namespace thekogans {
         }
 
         bool Serializable::ValidateType (const std::string &type) {
-            return GetMap ().find (type) != GetMap ().end ();
+            return Map::Instance ().find (type) != Map::Instance ().end ();
         }
 
         std::size_t Serializable::Size (const Serializable &serializable) {

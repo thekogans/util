@@ -30,17 +30,24 @@ namespace thekogans {
             return "NullAllocator";
         }
 
-        void *NullAllocator::Alloc (std::size_t size) {
-            if (size > 0) {
+        void *NullAllocator::Alloc (
+                std::size_t size,
+                bool nothrow) {
+            if (size > 0 && !nothrow) {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
                     THEKOGANS_UTIL_OS_ERROR_CODE_ENOMEM);
             }
-            return 0;
+            return nullptr;
         }
 
         void NullAllocator::Free (
-            void * /*ptr*/,
-            std::size_t /*size*/) {
+                void *ptr,
+                std::size_t /*size*/,
+                bool nothrow) {
+            if (ptr != nullptr && !nothrow) {
+                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
+            }
         }
 
     } // namespace util

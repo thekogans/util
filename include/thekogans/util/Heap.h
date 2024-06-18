@@ -667,7 +667,7 @@ namespace thekogans {
             /// \brief
             /// Remove a named heap from the registry.
             /// \param[in] name Heap name.
-            void DeleteHeap (const char *name);
+            void RemoveHeap (const char *name);
 
             /// \brief
             /// Return true if the given pointer belongs to any of the heaps we manage.
@@ -993,7 +993,7 @@ namespace thekogans {
                 // Flush from its dtor.
                 //Flush ();
                 if (name != nullptr) {
-                    HeapRegistry::Instance ().DeleteHeap (name);
+                    HeapRegistry::Instance ().RemoveHeap (name);
                 }
             }
 
@@ -1097,7 +1097,7 @@ namespace thekogans {
 
             /// \brief
             /// Allocate an object for the heap.
-            /// \param[in] nothrow true = return 0 if can't allocate,
+            /// \param[in] nothrow true = return nullptr if can't allocate,
             /// false = throw exception.
             /// \return pointer to newly allocated object.
             void *Alloc (bool nothrow);

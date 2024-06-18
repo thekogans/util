@@ -93,28 +93,31 @@ namespace thekogans {
             /// Allocate a secure block and pin it.
             /// \param[in] size Size of block to allocate.
             /// \return Pointer to the allocated block (0 if out of memory).
-            virtual void *Alloc (std::size_t size) override;
+            virtual void *Alloc (
+                std::size_t size,
+                bool nothrow = false) override;
             /// \brief
             /// Free a previously Alloc(ated) block.
             /// \param[in] ptr Pointer to the block returned by Alloc.
             /// \param[in] size Same size parameter previously passed in to Alloc.
             virtual void Free (
                 void *ptr,
-                std::size_t size) override;
+                std::size_t size,
+                bool nothrow = false) override;
         };
 
         /// \def THEKOGANS_UTIL_IMPLEMENT_SECURE_ALLOCATOR_FUNCTIONS(type)
-        /// Macro to implement SecureAllocator functions.
+        /// Macro to implement SecureAllocator functions for a given type.
         #define THEKOGANS_UTIL_IMPLEMENT_SECURE_ALLOCATOR_FUNCTIONS(type)\
         void *type::operator new (std::size_t size) {\
             assert (size == sizeof (type));\
-            return thekogans::util::SecureAllocator::Instance ().Alloc (size); \
+            return thekogans::util::SecureAllocator::Instance ().Alloc (size, false);\
         }\
         void *type::operator new (\
                 std::size_t size,\
                 std::nothrow_t) throw () {\
             assert (size == sizeof (type));\
-            return thekogans::util::SecureAllocator::Instance ().Alloc (size);\
+            return thekogans::util::SecureAllocator::Instance ().Alloc (size, true);\
         }\
         void *type::operator new (\
                 std::size_t size,\
@@ -123,12 +126,12 @@ namespace thekogans {
             return ptr;\
         }\
         void type::operator delete (void *ptr) {\
-            thekogans::util::SecureAllocator::Instance ().Free (ptr, sizeof (type));\
+            thekogans::util::SecureAllocator::Instance ().Free (ptr, sizeof (type), false);\
         }\
         void type::operator delete (\
                 void *ptr,\
                 std::nothrow_t) throw () {\
-            thekogans::util::SecureAllocator::Instance ().Free (ptr, sizeof (type));\
+            thekogans::util::SecureAllocator::Instance ().Free (ptr, sizeof (type), true);\
         }\
         void type::operator delete (\
             void *,\

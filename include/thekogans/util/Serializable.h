@@ -27,6 +27,7 @@
 #include "thekogans/util/Constants.h"
 #include "thekogans/util/Heap.h"
 #include "thekogans/util/RefCounted.h"
+#include "thekogans/util/Singleton.h"
 #include "thekogans/util/Serializer.h"
 #include "thekogans/util/JSON.h"
 #include "thekogans/util/Buffer.h"
@@ -200,11 +201,10 @@ namespace thekogans {
             typedef std::tuple<BinFactory, XMLFactory, JSONFactory> Factories;
             /// \brief
             /// typedef for the Serializable map.
-            typedef std::map<std::string, Factories> Map;
+            typedef std::map<std::string, Factories> MapType;
             /// \brief
             /// Controls Map's lifetime.
-            /// \return Serializable map.
-            static Map &GetMap ();
+            typedef Singleton<MapType, SpinLock> Map;
             /// \struct Serializable::MapInitializer Serializable.h thekogans/util/Serializable.h
             ///
             /// \brief
@@ -449,9 +449,9 @@ namespace thekogans {
                 if (!registered) {\
                     thekogans::util::LockGuard<thekogans::util::SpinLock> guard (spinLock);\
                     if (!registered) {\
-                        std::pair<Map::iterator, bool> result =\
-                            GetMap ().insert (\
-                                Map::value_type (\
+                        std::pair<MapType::iterator, bool> result =\
+                            Map::Instance ().insert (\
+                                MapType::value_type (\
                                     #type,\
                                     thekogans::util::Serializable::Factories (\
                                         type::BinCreate,\
@@ -771,9 +771,9 @@ namespace thekogans {
                 thekogans::util::Serializable::BinHeader header;\
                 serializer >> header;\
                 if (header.magic == thekogans::util::MAGIC32) {\
-                    thekogans::util::Serializable::Map::iterator it =\
-                        thekogans::util::Serializable::GetMap ().find (header.type);\
-                    if (it != thekogans::util::Serializable::GetMap ().end ()) {\
+                    thekogans::util::Serializable::MapType::iterator it =\
+                        thekogans::util::Serializable::Map::Instance ().find (header.type);\
+                    if (it != thekogans::util::Serializable::Map::Instance ().end ()) {\
                         serializable =\
                             thekogans::util::dynamic_refcounted_sharedptr_cast<_T> (\
                                 std::get<0> (it->second) (header, serializer));\
@@ -796,9 +796,9 @@ namespace thekogans {
                     _T::SharedPtr &serializable) {\
                 thekogans::util::Serializable::TextHeader header;\
                 node >> header;\
-                thekogans::util::Serializable::Map::iterator it =\
-                    thekogans::util::Serializable::GetMap ().find (header.type);\
-                if (it != thekogans::util::Serializable::GetMap ().end ()) {\
+                thekogans::util::Serializable::MapType::iterator it =\
+                    thekogans::util::Serializable::Map::Instance ().find (header.type);\
+                if (it != thekogans::util::Serializable::Map::Instance ().end ()) {\
                     serializable =\
                         thekogans::util::dynamic_refcounted_sharedptr_cast<_T> (\
                             std::get<1> (it->second) (header, node)); \
@@ -815,9 +815,9 @@ namespace thekogans {
                     _T::SharedPtr &serializable) {\
                 thekogans::util::Serializable::TextHeader header;\
                 object >> header;\
-                thekogans::util::Serializable::Map::iterator it =\
-                    thekogans::util::Serializable::GetMap ().find (header.type);\
-                if (it != thekogans::util::Serializable::GetMap ().end ()) {\
+                thekogans::util::Serializable::MapType::iterator it =\
+                    thekogans::util::Serializable::Map::Instance ().find (header.type);\
+                if (it != thekogans::util::Serializable::Map::Instance ().end ()) {\
                     serializable =\
                         thekogans::util::dynamic_refcounted_sharedptr_cast<_T> (\
                             std::get<2> (it->second) (header, object)); \
@@ -967,9 +967,9 @@ namespace thekogans {
                                 payload.GetWritePtr (),\
                                 payload.GetDataAvailableForWriting ()));\
                         if (payload.IsFull ()) {\
-                            thekogans::util::Serializable::Map::iterator it =\
-                                thekogans::util::Serializable::GetMap ().find (header.type);\
-                            if (it != thekogans::util::Serializable::GetMap ().end ()) {\
+                            thekogans::util::Serializable::MapType::iterator it =\
+                                thekogans::util::Serializable::Map::Instance ().find (header.type);\
+                            if (it != thekogans::util::Serializable::Map::Instance ().end ()) {\
                                 THEKOGANS_UTIL_TRY {\
                                     value =\
                                         thekogans::util::dynamic_refcounted_sharedptr_cast<_T> (\

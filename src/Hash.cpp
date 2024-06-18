@@ -32,52 +32,16 @@
 namespace thekogans {
     namespace util {
 
-        Hash::Map &Hash::GetMap () {
-            static Map *map = new Map;
-            return *map;
-        }
-
-        Hash::SharedPtr Hash::Get (const std::string &type) {
-            Map::iterator it = GetMap ().find (type);
-            return it != GetMap ().end () ?
-                it->second () : Hash::SharedPtr ();
-        }
+        THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_BASE (Hash)
 
     #if defined (THEKOGANS_UTIL_TYPE_Static)
         void Hash::StaticInit () {
-            static volatile bool registered = false;
-            static SpinLock spinLock;
-            if (!registered) {
-                LockGuard<SpinLock> guard (spinLock);
-                if (!registered) {
-                    MD5::StaticInit ();
-                    SHA1::StaticInit ();
-                    SHA2::StaticInit ();
-                    SHA3::StaticInit ();
-                    registered = true;
-                }
-            }
-        }
-    #else // defined (THEKOGANS_UTIL_TYPE_Static)
-        Hash::MapInitializer::MapInitializer (
-                const std::string &type,
-                Factory factory) {
-            std::pair<Map::iterator, bool> result =
-                GetMap ().insert (Map::value_type (type, factory));
-            assert (result.second);
-            if (!result.second) {
-                THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                    "%s is already registered.", type.c_str ());
-            }
+            MD5::StaticInit ();
+            SHA1::StaticInit ();
+            SHA2::StaticInit ();
+            SHA3::StaticInit ();
         }
     #endif // defined (THEKOGANS_UTIL_TYPE_Static)
-
-        void Hash::GetHashers (std::list<std::string> &hashers) {
-            for (Map::const_iterator it = GetMap ().begin (),
-                    end = GetMap ().end (); it != end; ++it) {
-                hashers.push_back (it->first);
-            }
-        }
 
         std::string Hash::DigestTostring (const Digest &digest) {
             return HexEncodeBuffer (digest.data (), digest.size ());
