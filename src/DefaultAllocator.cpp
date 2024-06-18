@@ -24,12 +24,9 @@ namespace thekogans {
 
         THEKOGANS_UTIL_IMPLEMENT_ALLOCATOR (DefaultAllocator)
 
-        DefaultAllocator &DefaultAllocator::Instance () {
-            static DefaultAllocator *instance = new DefaultAllocator;
-            return *instance;
-        }
-
-        void *DefaultAllocator::Alloc (std::size_t size) {
+        void *DefaultAllocator::Alloc (
+                std::size_t size,
+                bool /*nothrow*/) {
             void *ptr = 0;
             if (size > 0) {
                 THEKOGANS_UTIL_TRY {
@@ -45,7 +42,8 @@ namespace thekogans {
 
         void DefaultAllocator::Free (
                 void *ptr,
-                std::size_t /*size*/) {
+                std::size_t /*size*/,
+                bool /*nothrow*/) {
             if (ptr != nullptr) {
                 ::operator delete (ptr);
             }
