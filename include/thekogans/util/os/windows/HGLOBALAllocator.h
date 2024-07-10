@@ -26,6 +26,7 @@
 #include "thekogans/util/Config.h"
 #include "thekogans/util/Types.h"
 #include "thekogans/util/Allocator.h"
+#include "thekogans/util/Singleton.h"
 #include "thekogans/util/Exception.h"
 
 namespace thekogans {
@@ -39,15 +40,17 @@ namespace thekogans {
                 /// Uses Windows GlobalAlloc (GMEM_FIXED, ...)/GlobalFree to allocate from the global heap.
                 /// HGLOBALAllocator is part of the \see{Allocator} framework.
 
-                struct _LIB_THEKOGANS_UTIL_DECL HGLOBALAllocator : public Allocator {
+                struct _LIB_THEKOGANS_UTIL_DECL HGLOBALAllocator :
+                        public Allocator,
+                        public Singleton<
+                            HGLOBALAllocator,
+                            SpinLock,
+                            RefCountedInstanceCreator<HGLOBALAllocator>,
+                            RefCountedInstanceDestroyer<HGLOBALAllocator>> {
                     /// \brief
-                    /// HGLOBALAllocator participates in the \see{Allocator} dynamic
+                    /// HGLOBALAllocator participates in the \see{DynamicCreatable} dynamic
                     /// discovery and creation.
-                    THEKOGANS_UTIL_DECLARE_ALLOCATOR (HGLOBALAllocator)
-
-                    /// \brief
-                    /// Global HGLOBALAllocator. Used by default in \see{Heap} and \see{Buffer}.
-                    static HGLOBALAllocator &Instance ();
+                    THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE_SINGLETON (HGLOBALAllocator)
 
                     /// \brief
                     /// Allocate a block from system heap (GMEM_FIXED).
@@ -72,34 +75,34 @@ namespace thekogans {
                         std::size_t size);
                 };
 
-                /// \def THEKOGANS_UTIL_IMPLEMENT_HGLOBAL_ALLOCATOR_FUNCTIONS(type)
+                /// \def THEKOGANS_UTIL_IMPLEMENT_HGLOBAL_ALLOCATOR_FUNCTIONS(_T)
                 /// Macro to implement HGLOBALAllocator functions.
-                #define THEKOGANS_UTIL_IMPLEMENT_HGLOBAL_ALLOCATOR_FUNCTIONS(type)\
-                void *type::operator new (std::size_t size) {\
-                    assert (size == sizeof (type));\
+                #define THEKOGANS_UTIL_IMPLEMENT_HGLOBAL_ALLOCATOR_FUNCTIONS(_T)\
+                void *_T::operator new (std::size_t size) {\
+                    assert (size == sizeof (_T));\
                     return thekogans::util::HGLOBALAllocator::Instance ().Alloc (size);\
                 }\
-                void *type::operator new (\
+                void *_T::operator new (\
                         std::size_t size,\
                         std::nothrow_t) throw () {\
-                    assert (size == sizeof (type));\
+                    assert (size == sizeof (_T));\
                     return thekogans::util::HGLOBALAllocator::Instance ().Alloc (size);\
                 }\
-                void *type::operator new (\
+                void *_T::operator new (\
                         std::size_t size,\
                         void *ptr) {\
-                    assert (size == sizeof (type));\
+                    assert (size == sizeof (_T));\
                     return ptr;\
                 }\
-                void type::operator delete (void *ptr) {\
-                    thekogans::util::HGLOBALAllocator::Instance ().Free (ptr, sizeof (type));\
+                void _T::operator delete (void *ptr) {\
+                    thekogans::util::HGLOBALAllocator::Instance ().Free (ptr, sizeof (_T));\
                 }\
-                void type::operator delete (\
+                void _T::operator delete (\
                         void *ptr,\
                         std::nothrow_t) throw () {\
-                    thekogans::util::HGLOBALAllocator::Instance ().Free (ptr, sizeof (type));\
+                    thekogans::util::HGLOBALAllocator::Instance ().Free (ptr, sizeof (_T));\
                 }\
-                void type::operator delete (\
+                void _T::operator delete (\
                     void *,\
                     void *) {}
 

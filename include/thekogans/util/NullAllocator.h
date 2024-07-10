@@ -35,15 +35,17 @@ namespace thekogans {
         /// used. Specifically it's very useful with \see{TenantReadBuffer}
         /// and \see{TenantWriteBuffer} instances created from raw buffers.
 
-        struct _LIB_THEKOGANS_UTIL_DECL NullAllocator : public Allocator {
+        struct _LIB_THEKOGANS_UTIL_DECL NullAllocator :
+                public Allocator,
+                public Singleton<
+                    NullAllocator,
+                    SpinLock,
+                    RefCountedInstanceCreator<NullAllocator>,
+                    RefCountedInstanceDestroyer<NullAllocator>> {
             /// \brief
-            /// Global NullAllocator. Used in \see{TenantReadBuffer} and \see{TenantWriteBuffer}.
-            static NullAllocator &Instance ();
-
-            /// \brief
-            /// Return allocator name.
-            /// \return Allocator name.
-            virtual const char *GetName () const;
+            /// NullAllocator participates in the \see{DynamicCreatable}
+            /// dynamic discovery and creation.
+            THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE_SINGLETON (NullAllocator)
 
             /// \brief
             /// Allocate a block.
@@ -59,34 +61,34 @@ namespace thekogans {
                 std::size_t /*size*/);
         };
 
-        /// \def THEKOGANS_UTIL_IMPLEMENT_NULL_ALLOCATOR_FUNCTIONS(type)
+        /// \def THEKOGANS_UTIL_IMPLEMENT_NULL_ALLOCATOR_FUNCTIONS(_T)
         /// Macro to implement NullAllocator functions.
-        #define THEKOGANS_UTIL_IMPLEMENT_NULL_ALLOCATOR_FUNCTIONS(type)\
-        void *type::operator new (std::size_t size) {\
-            assert (size == sizeof (type));\
+        #define THEKOGANS_UTIL_IMPLEMENT_NULL_ALLOCATOR_FUNCTIONS(_T)\
+        void *_T::operator new (std::size_t size) {\
+            assert (size == sizeof (_T));\
             return thekogans::util::NullAllocator::Instance ().Alloc (size);\
         }\
-        void *type::operator new (\
+        void *_T::operator new (\
                 std::size_t size,\
                 std::nothrow_t) throw () {\
-            assert (size == sizeof (type));\
+            assert (size == sizeof (_T));\
             return thekogans::util::NullAllocator::Instance ().Alloc (size);\
         }\
-        void *type::operator new (\
+        void *_T::operator new (\
                 std::size_t size,\
                 void *ptr) {\
-            assert (size == sizeof (type));\
+            assert (size == sizeof (_T));\
             return ptr;\
         }\
-        void type::operator delete (void *ptr) {\
-            thekogans::util::NullAllocator::Instance ().Free (ptr, sizeof (type));\
+        void _T::operator delete (void *ptr) {\
+            thekogans::util::NullAllocator::Instance ().Free (ptr, sizeof (_T));\
         }\
-        void type::operator delete (\
+        void _T::operator delete (\
                 void *ptr,\
                 std::nothrow_t) throw () {\
-            thekogans::util::NullAllocator::Instance ().Free (ptr, sizeof (type));\
+            thekogans::util::NullAllocator::Instance ().Free (ptr, sizeof (_T));\
         }\
-        void type::operator delete (\
+        void _T::operator delete (\
             void *,\
             void *) {}
 

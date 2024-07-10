@@ -62,10 +62,85 @@
         #if !defined (TOOLCHAIN_OS_OS2)
             #define TOOLCHAIN_OS_OS2
         #endif // !defined (TOOLCHAIN_OS_OS2)
+    #elif defined (_sgi)
+        #define TOOLCHAIN_OS "IRIX"
+        #if !defined (TOOLCHAIN_OS_IRIX)
+            #define TOOLCHAIN_OS_IRIX
+        #endif // !defined (TOOLCHAIN_OS_IRIX)
     #else // defined (_WINDOWS_)
         #error Unknown TOOLCHAIN_OS.
     #endif // defined (_WINDOWS_)
 #endif // !defined (TOOLCHAIN_OS)
+
+namespace thekogans {
+    namespace util {
+
+        /// \enum
+        /// OS constants.
+        enum OS {
+            /// \brief
+            /// Windows.
+            Windows,
+            /// \brief
+            /// Linux.
+            Linux,
+            /// \brief
+            /// OS X.
+            OSX,
+            /// \brief
+            /// Solaris.
+            Solaris,
+            /// \brief
+            /// AIX.
+            AIX,
+            /// \brief
+            /// HPUX.
+            HPUX,
+            /// \brief
+            /// OS 2.
+            OS2,
+            /// \brief
+            /// IRIX.
+            IRIX,
+        #if defined (TOOLCHAIN_OS_Windows)
+            /// \brief
+            /// Host OS is Windows.
+            HostOS = Windows
+        #elif defined (TOOLCHAIN_OS_Linux)
+            /// \brief
+            /// Host OS is Linux.
+            HostOS = Linux
+        #elif defined (TOOLCHAIN_OS_OSX)
+            /// \brief
+            /// Host OS is OS X.
+            HostOS = OSX
+        #elif defined (TOOLCHAIN_OS_Solaris)
+            /// \brief
+            /// Host OS is Solaris.
+            HostOS = Solaris
+        #elif defined (TOOLCHAIN_OS_AIX)
+            /// \brief
+            /// Host OS is AIX.
+            HostOS = AIX
+        #elif defined (TOOLCHAIN_HPUX)
+            /// \brief
+            /// Host OS is HPUX.
+            HostOS = HPUX
+        #elif defined (TOOLCHAIN_OS_OS2)
+            /// \brief
+            /// Host OS is OS2.
+            HostOS = OS2
+        #elif defined (TOOLCHAIN_OS_IRIX)
+            /// \brief
+            /// Host OS is IRIX.
+            HostOS = IRIX
+        #else // defined (TOOLCHAIN_OS_Windows)
+            #error "Unable to determine host OS."
+        #endif // defined (TOOLCHAIN_OS_Windows)
+        };
+
+    } // namespace util
+} // namespace thekogans
 
 // TOOLCHAIN_ARCH
 #if !defined (TOOLCHAIN_ARCH)
@@ -123,6 +198,103 @@
         #error Unknown TOOLCHAIN_ARCH.
     #endif // defined (_M_X64) || defined (__x86_64__) || defined (__x86_64)
 #endif // !defined (TOOLCHAIN_ARCH)
+
+namespace thekogans {
+    namespace util {
+
+        /// \enum
+        /// Arch constants.
+        enum Arch {
+            /// \brief
+            /// i386.
+            i386,
+            /// \brief
+            /// x86_64.
+            x86_64,
+            /// \brief
+            /// arm32.
+            arm32,
+            /// \brief
+            /// arm64.
+            arm64,
+            /// \brief
+            /// ppc32.
+            ppc32,
+            /// \brief
+            /// ppc64.
+            ppc64,
+            /// \brief
+            /// sparc32.
+            sparc32,
+            /// \brief
+            /// sparc64.
+            sparc64,
+            /// \brief
+            /// mips32.
+            mips32,
+            /// \brief
+            /// mips64.
+            mips64,
+        #if defined (TOOLCHAIN_ARCH_i386)
+            /// \brief
+            /// Host Arch is i386.
+            HostArch = i386
+        #elif defined (TOOLCHAIN_ARCH_x86_64)
+            /// \brief
+            /// Host Arch is x86_64.
+            HostArch = x86_64
+        #elif defined (TOOLCHAIN_ARCH_arm32)
+            /// \brief
+            /// Host Arch is arm32.
+            HostArch = arm32
+        #elif defined (TOOLCHAIN_ARCH_arm64)
+            /// \brief
+            /// Host Arch is arm64.
+            HostArch = arm64
+        #elif defined (TOOLCHAIN_ARCH_ppc32)
+            /// \brief
+            /// Host Arch is ppc32.
+            HostArch = ppc32
+        #elif defined (TOOLCHAIN_ARCH_ppc64)
+            /// \brief
+            /// Host Arch is ppc64.
+            HostArch = ppc64
+        #elif defined (TOOLCHAIN_ARCH_sparc32)
+            /// \brief
+            /// Host Arch is sparc32.
+            HostArch = sparc32
+        #elif defined (TOOLCHAIN_ARCH_sparc64)
+            /// \brief
+            /// Host Arch is sparc64.
+            HostArch = sparc64
+        #elif defined (TOOLCHAIN_ARCH_mips32)
+            /// \brief
+            /// Host Arch is mips32.
+            HostArch = mips32
+        #elif defined (TOOLCHAIN_ARCH_mips64)
+            /// \brief
+            /// Host Arch is mips64.
+            HostArch = mips64
+        #else // defined (TOOLCHAIN_ARCH_i386)
+            #error Unknown TOOLCHAIN_ARCH.
+        #endif // defined (TOOLCHAIN_ARCH_i386)
+        };
+
+    } // namespace util
+} // namespace thekogans
+
+// TOOLCHAIN_ARCH_WORD_SIZE
+#if !defined (TOOLCHAIN_ARCH_WORD_SIZE)
+    #if defined (TOOLCHAIN_ARCH_x86_64) || defined (TOOLCHAIN_ARCH_arm64) ||\
+        defined (TOOLCHAIN_ARCH_ppc64) || defined (TOOLCHAIN_ARCH_sparc64) ||\
+        defined (TOOLCHAIN_ARCH_mips64)
+        #define TOOLCHAIN_ARCH_WORD_SIZE 8
+    #elif defined (TOOLCHAIN_ARCH_i386) || defined (TOOLCHAIN_ARCH_arm32) ||\
+        defined (TOOLCHAIN_ARCH_ppc32) || defined (TOOLCHAIN_ARCH_sparc32) ||\
+        defined (TOOLCHAIN_ARCH_mips32)
+        #define TOOLCHAIN_ARCH_WORD_SIZE 4
+    #endif
+#endif // !defined (TOOLCHAIN_ARCH_WORD_SIZE)
 
 // TOOLCHAIN_COMPILER
 #if !defined (TOOLCHAIN_COMPILER)

@@ -40,12 +40,21 @@
 #include <cstring>
 #include "thekogans/util/ByteSwap.h"
 #include "thekogans/util/Exception.h"
+#include "thekogans/util/DefaultAllocator.h"
 #include "thekogans/util/MD5.h"
 
 namespace thekogans {
     namespace util {
 
-        THEKOGANS_UTIL_IMPLEMENT_HASH (MD5)
+        #if !defined (THEKOGANS_UTIL_MIN_HASH_MD5_IN_PAGE)
+            #define THEKOGANS_UTIL_MIN_HASH_MD5_IN_PAGE 5
+        #endif // !defined (THEKOGANS_UTIL_MIN_HASH_MD5_IN_PAGE)
+
+        THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE (
+            MD5,
+            SpinLock,
+            THEKOGANS_UTIL_MIN_HASH_MD5_IN_PAGE,
+            DefaultAllocator::Instance ())
 
         namespace {
             // Initial hash value H for MD5:

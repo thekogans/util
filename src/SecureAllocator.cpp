@@ -38,12 +38,7 @@
 namespace thekogans {
     namespace util {
 
-        THEKOGANS_UTIL_IMPLEMENT_ALLOCATOR (SecureAllocator)
-
-        SecureAllocator &SecureAllocator::Instance () {
-            static SecureAllocator *instance = new SecureAllocator;
-            return *instance;
-        }
+        THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_SINGLETON (SecureAllocator)
 
         void SecureAllocator::ReservePages (
                 ui64 minWorkingSetSize,

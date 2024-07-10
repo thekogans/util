@@ -67,6 +67,8 @@ namespace thekogans {
         /// your process has enough physical pages.
 
         struct _LIB_THEKOGANS_UTIL_DECL SharedAllocator : public Allocator {
+            THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE_OVERRIDE (SharedAllocator)
+
         protected:
             /// \struct SharedAllocator::Header SharedAllocator.h thekogans/util/SharedAllocator.h
             ///
@@ -235,13 +237,6 @@ namespace thekogans {
             /// dtor.
             virtual ~SharedAllocator () {
                 SharedObject::Destroy (header);
-            }
-
-            /// \brief
-            /// Return allocator name.
-            /// \return Allocator name.
-            virtual const char *GetName () const {
-                return "SharedAllocator";
             }
 
             /// \brief

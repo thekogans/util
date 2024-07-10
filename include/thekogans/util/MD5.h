@@ -21,6 +21,7 @@
 #include <string>
 #include "thekogans/util/Config.h"
 #include "thekogans/util/Types.h"
+#include "thekogans/util/SpinLock.h"
 #include "thekogans/util/Hash.h"
 
 namespace thekogans {
@@ -34,7 +35,7 @@ namespace thekogans {
         struct _LIB_THEKOGANS_UTIL_DECL MD5 : public Hash {
             /// \brief
             /// MD5 participates in the Hash dynamic discovery and creation.
-            THEKOGANS_UTIL_DECLARE_HASH (MD5)
+            THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE (MD5, SpinLock)
 
             enum {
                 /// \brief
@@ -75,20 +76,21 @@ namespace thekogans {
             }
 
             /// \brief
-            /// Return hasher name.
-            /// \return Hasher name.
-            virtual std::string GetName (std::size_t /*digestSize*/) const {
+            /// Given it's size, return the digest name.
+            /// \return Digest name based on the given size.
+            virtual std::string GetDigestName (std::size_t /*digestSize*/) const override {
                 return "MD5";
             }
             /// \brief
             /// Return hasher supported digest sizes.
             /// \param[out] digestSizes List of supported digest sizes.
-            virtual void GetDigestSizes (std::list<std::size_t> &digestSizes) const {
+            virtual void GetDigestSizes (std::list<std::size_t> &digestSizes) const override {
                 digestSizes.push_back (DIGEST_SIZE_128);
             }
+
             /// \brief
             /// Initialize the hasher.
-            virtual void Init (std::size_t digestSize);
+            virtual void Init (std::size_t digestSize) override;
             /// \brief
             /// Hash a buffer. Call multiple times before
             /// Finalize to process incremental data.
@@ -96,11 +98,11 @@ namespace thekogans {
             /// \param[in] size Size of buffer in bytes.
             virtual void Update (
                 const void *buffer,
-                std::size_t size);
+                std::size_t size) override;
             /// \brief
             /// Finalize the hashing operation, and retrieve the digest.
             /// \param[out] digest Result of the hashing operation.
-            virtual void Final (Digest &digest);
+            virtual void Final (Digest &digest) override;
 
         private:
             /// \brief

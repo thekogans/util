@@ -20,6 +20,7 @@
 
 #include "thekogans/util/Config.h"
 #include "thekogans/util/Types.h"
+#include "thekogans/util/SpinLock.h"
 #include "thekogans/util/Hash.h"
 #include "thekogans/util/SHA2_224_256.h"
 #include "thekogans/util/SHA2_384_512.h"
@@ -35,7 +36,7 @@ namespace thekogans {
         struct _LIB_THEKOGANS_UTIL_DECL SHA2 : public Hash {
             /// \brief
             /// SHA2 participates in the Hash dynamic discovery and creation.
-            THEKOGANS_UTIL_DECLARE_HASH (SHA2)
+            THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE (SHA2, SpinLock)
 
             enum {
                 /// \brief
@@ -72,27 +73,28 @@ namespace thekogans {
             /// \brief
             /// Return hasher name.
             /// \return Hasher name.
-            virtual std::string GetName (std::size_t digestSize) const {
+            virtual std::string GetDigestName (std::size_t digestSize) const override{
                 return FormatString ("SHA2-" THEKOGANS_UTIL_SIZE_T_FORMAT, digestSize * 8);
             }
             /// \brief
             /// Return hasher supported digest sizes.
             /// \param[out] digestSizes List of supported digest sizes.
-            virtual void GetDigestSizes (std::list<std::size_t> &digestSizes) const;
+            virtual void GetDigestSizes (std::list<std::size_t> &digestSizes) const override;
+
             /// Initialize the hasher.
             /// \param[in] digestSize Digest size.
-            virtual void Init (std::size_t digestSize);
+            virtual void Init (std::size_t digestSize) override;
             /// \brief
             /// Hash a buffer.
             /// \param[in] buffer Buffer to hash.
             /// \param[in] size Size of buffer in bytes.
             virtual void Update (
                 const void *buffer,
-                std::size_t size);
+                std::size_t size) override;
             /// \brief
             /// Finalize the hashing operation, and retrieve the digest.
             /// \param[out] digest Result of the hashing operation.
-            virtual void Final (Digest &digest);
+            virtual void Final (Digest &digest) override;
 
             /// \brief
             /// SHA2 is neither copy constructable, nor assignable.

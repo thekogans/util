@@ -15,13 +15,22 @@
 // You should have received a copy of the GNU General Public License
 // along with libthekogans_util. If not, see <http://www.gnu.org/licenses/>.
 
+#include "thekogans/util/DefaultAllocator.h"
 #include "thekogans/util/Exception.h"
 #include "thekogans/util/SHA2.h"
 
 namespace thekogans {
     namespace util {
 
-        THEKOGANS_UTIL_IMPLEMENT_HASH (SHA2)
+        #if !defined (THEKOGANS_UTIL_MIN_HASH_SHA2_IN_PAGE)
+            #define THEKOGANS_UTIL_MIN_HASH_SHA2_IN_PAGE 5
+        #endif // !defined (THEKOGANS_UTIL_MIN_HASH_SHA2_IN_PAGE)
+
+        THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE (
+            SHA2,
+            SpinLock,
+            THEKOGANS_UTIL_MIN_HASH_SHA2_IN_PAGE,
+            DefaultAllocator::Instance ())
 
         void SHA2::GetDigestSizes (std::list<std::size_t> &digestSizes) const {
             digestSizes.push_back (DIGEST_SIZE_224);

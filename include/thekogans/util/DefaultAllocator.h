@@ -21,6 +21,7 @@
 #include <cstddef>
 #include "thekogans/util/Config.h"
 #include "thekogans/util/Allocator.h"
+#include "thekogans/util/Singleton.h"
 #include "thekogans/util/Exception.h"
 
 namespace thekogans {
@@ -32,15 +33,17 @@ namespace thekogans {
         /// Uses system new/delete to allocate from the global heap.
         /// DefaultAllocator is part of the \see{Allocator} framework.
 
-        struct _LIB_THEKOGANS_UTIL_DECL DefaultAllocator : public Allocator {
+        struct _LIB_THEKOGANS_UTIL_DECL DefaultAllocator :
+                public Allocator,
+                public Singleton<
+                    DefaultAllocator,
+                    SpinLock,
+                    RefCountedInstanceCreator<DefaultAllocator>,
+                    RefCountedInstanceDestroyer<DefaultAllocator>> {
             /// \brief
-            /// DefaultAllocator participates in the \see{Allocator} dynamic
-            /// discovery and creation.
-            THEKOGANS_UTIL_DECLARE_ALLOCATOR (DefaultAllocator)
-
-            /// \brief
-            /// Global DefaultAllocator. Used by default in \see{Heap} and \see{Buffer}.
-            static DefaultAllocator &Instance ();
+            /// DefaultAllocator participates in the \see{DynamicCreatable}
+            /// dynamic discovery and creation.
+            THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE_SINGLETON (DefaultAllocator)
 
             /// \brief
             /// Allocate a block from system heap.
@@ -56,34 +59,34 @@ namespace thekogans {
                 std::size_t /*size*/) override;
         };
 
-        /// \def THEKOGANS_UTIL_IMPLEMENT_DEFAULT_ALLOCATOR_FUNCTIONS(type)
+        /// \def THEKOGANS_UTIL_IMPLEMENT_DEFAULT_ALLOCATOR_FUNCTIONS(_T)
         /// Macro to implement DefaultAllocator functions.
-        #define THEKOGANS_UTIL_IMPLEMENT_DEFAULT_ALLOCATOR_FUNCTIONS(type)\
-        void *type::operator new (std::size_t size) {\
-            assert (size == sizeof (type));\
+        #define THEKOGANS_UTIL_IMPLEMENT_DEFAULT_ALLOCATOR_FUNCTIONS(_T)\
+        void *_T::operator new (std::size_t size) {\
+            assert (size == sizeof (_T));\
             return thekogans::util::DefaultAllocator::Instance ().Alloc (size);\
         }\
-        void *type::operator new (\
+        void *_T::operator new (\
                 std::size_t size,\
                 std::nothrow_t) throw () {\
-            assert (size == sizeof (type));\
+            assert (size == sizeof (_T));\
             return thekogans::util::DefaultAllocator::Instance ().Alloc (size);\
         }\
-        void *type::operator new (\
+        void *_T::operator new (\
                 std::size_t size,\
                 void *ptr) {\
-            assert (size == sizeof (type));\
+            assert (size == sizeof (_T));\
             return ptr;\
         }\
-        void type::operator delete (void *ptr) {\
-            thekogans::util::DefaultAllocator::Instance ().Free (ptr, sizeof (type));\
+        void _T::operator delete (void *ptr) {\
+            thekogans::util::DefaultAllocator::Instance ().Free (ptr, sizeof (_T));\
         }\
-        void type::operator delete (\
+        void _T::operator delete (\
                 void *ptr,\
                 std::nothrow_t) throw () {\
-            thekogans::util::DefaultAllocator::Instance ().Free (ptr, sizeof (type));\
+            thekogans::util::DefaultAllocator::Instance ().Free (ptr, sizeof (_T));\
         }\
-        void type::operator delete (\
+        void _T::operator delete (\
             void *,\
             void *) {}
 

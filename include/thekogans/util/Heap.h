@@ -27,6 +27,7 @@
 #include "thekogans/util/Config.h"
 #include "thekogans/util/Types.h"
 #include "thekogans/util/Constants.h"
+#include "thekogans/util/Allocator.h"
 #include "thekogans/util/DefaultAllocator.h"
 #include "thekogans/util/AlignedAllocator.h"
 #include "thekogans/util/NullLock.h"
@@ -227,10 +228,10 @@ namespace thekogans {
         public:\
             static void *operator new (std::size_t /*size*/);\
             static void *operator new (std::size_t /*size*/, std::nothrow_t) throw ();\
-            static void *operator new (std::size_t, void * /*ptr*/);\
+            static void *operator new (std::size_t /*size*/, void * /*ptr*/);\
             static void operator delete (void * /*ptr*/);\
             static void operator delete (void * /*ptr*/, std::nothrow_t) throw ();\
-            static void operator delete (void *, void *);
+            static void operator delete (void * /*ptr*/, void * /*ptr*/);
 
         /// \def THEKOGANS_UTIL_DECLARE_HEAP(type)
         /// Use this macro to declare a heap with
@@ -667,7 +668,7 @@ namespace thekogans {
             /// \brief
             /// Remove a named heap from the registry.
             /// \param[in] name Heap name.
-            void DeleteHeap (const char *name);
+            void RemoveHeap (const char *name);
 
             /// \brief
             /// Return true if the given pointer belongs to any of the heaps we manage.
@@ -993,7 +994,7 @@ namespace thekogans {
                 // Flush from its dtor.
                 //Flush ();
                 if (name != nullptr) {
-                    HeapRegistry::Instance ().DeleteHeap (name);
+                    HeapRegistry::Instance ().RemoveHeap (name);
                 }
             }
 
@@ -1097,7 +1098,7 @@ namespace thekogans {
 
             /// \brief
             /// Allocate an object for the heap.
-            /// \param[in] nothrow true = return 0 if can't allocate,
+            /// \param[in] nothrow true = return nullptr if can't allocate,
             /// false = throw exception.
             /// \return pointer to newly allocated object.
             void *Alloc (bool nothrow);

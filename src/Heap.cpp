@@ -97,7 +97,7 @@ namespace thekogans {
             map.insert (Map::value_type (name, heap));
         }
 
-        void HeapRegistry::DeleteHeap (const char *name) {
+        void HeapRegistry::RemoveHeap (const char *name) {
             LockGuard<SpinLock> guard (spinLock);
             Map::iterator it = map.find (name);
             if (it != map.end ()) {

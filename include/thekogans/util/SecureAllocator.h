@@ -31,6 +31,7 @@
 #include "thekogans/util/Config.h"
 #include "thekogans/util/Types.h"
 #include "thekogans/util/Allocator.h"
+#include "thekogans/util/Singleton.h"
 #include "thekogans/util/Exception.h"
 
 namespace thekogans {
@@ -69,15 +70,17 @@ namespace thekogans {
         /// ensure your process has enough physical pages to satisfy
         /// SecureAllocator::Alloc requests.
 
-        struct _LIB_THEKOGANS_UTIL_DECL SecureAllocator : public Allocator {
+        struct _LIB_THEKOGANS_UTIL_DECL SecureAllocator :
+                public Allocator,
+                public Singleton<
+                    SecureAllocator,
+                    SpinLock,
+                    RefCountedInstanceCreator<SecureAllocator>,
+                    RefCountedInstanceDestroyer<SecureAllocator>> {
             /// \brief
             /// SecureAllocator participates in the \see{Allocator} dynamic
             /// discovery and creation.
-            THEKOGANS_UTIL_DECLARE_ALLOCATOR (SecureAllocator)
-
-            /// \brief
-            /// Global SecureAllocator. Used by default in \see{SecureBuffer}.
-            static SecureAllocator &Instance ();
+            THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE_SINGLETON (SecureAllocator)
 
             /// \brief
             /// Call this method during process initialization to reserve
@@ -103,34 +106,34 @@ namespace thekogans {
                 std::size_t size) override;
         };
 
-        /// \def THEKOGANS_UTIL_IMPLEMENT_SECURE_ALLOCATOR_FUNCTIONS(type)
+        /// \def THEKOGANS_UTIL_IMPLEMENT_SECURE_ALLOCATOR_FUNCTIONS(_T)
         /// Macro to implement SecureAllocator functions.
-        #define THEKOGANS_UTIL_IMPLEMENT_SECURE_ALLOCATOR_FUNCTIONS(type)\
-        void *type::operator new (std::size_t size) {\
-            assert (size == sizeof (type));\
+        #define THEKOGANS_UTIL_IMPLEMENT_SECURE_ALLOCATOR_FUNCTIONS(_T)\
+        void *_T::operator new (std::size_t size) {\
+            assert (size == sizeof (_T));\
             return thekogans::util::SecureAllocator::Instance ().Alloc (size); \
         }\
-        void *type::operator new (\
+        void *_T::operator new (\
                 std::size_t size,\
                 std::nothrow_t) throw () {\
-            assert (size == sizeof (type));\
+            assert (size == sizeof (_T));\
             return thekogans::util::SecureAllocator::Instance ().Alloc (size);\
         }\
-        void *type::operator new (\
+        void *_T::operator new (\
                 std::size_t size,\
                 void *ptr) {\
-            assert (size == sizeof (type));\
+            assert (size == sizeof (_T));\
             return ptr;\
         }\
-        void type::operator delete (void *ptr) {\
-            thekogans::util::SecureAllocator::Instance ().Free (ptr, sizeof (type));\
+        void _T::operator delete (void *ptr) {\
+            thekogans::util::SecureAllocator::Instance ().Free (ptr, sizeof (_T));\
         }\
-        void type::operator delete (\
+        void _T::operator delete (\
                 void *ptr,\
                 std::nothrow_t) throw () {\
-            thekogans::util::SecureAllocator::Instance ().Free (ptr, sizeof (type));\
+            thekogans::util::SecureAllocator::Instance ().Free (ptr, sizeof (_T));\
         }\
-        void type::operator delete (\
+        void _T::operator delete (\
             void *,\
             void *) {}
 

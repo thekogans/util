@@ -92,122 +92,77 @@ namespace thekogans {
         /// \brief
         /// 64 bit float type.
         typedef double f64;
+
         /// \brief
-        /// Architecture dependent natural word type.
-    #if defined (TOOLCHAIN_ARCH_i386) || defined (TOOLCHAIN_ARCH_ppc32) ||\
-        defined (TOOLCHAIN_ARCH_arm32) || defined (TOOLCHAIN_ARCH_mips32)
-        typedef ui32 MachineWord;
-    #elif defined (TOOLCHAIN_ARCH_x86_64) || defined (TOOLCHAIN_ARCH_ppc64) ||\
-        defined (TOOLCHAIN_ARCH_arm64) || defined (TOOLCHAIN_ARCH_mips64)
-        typedef ui64 MachineWord;
-    #else // defined (TOOLCHAIN_ARCH_x86_64) || defined (TOOLCHAIN_ARCH_ppc64) ||
-          // defined (TOOLCHAIN_ARCH_arm64) || defined (TOOLCHAIN_ARCH_mips64)
-        #error Unknown TOOLCHAIN_ARCH.
-    #endif // defined (TOOLCHAIN_ARCH_i386) || defined (TOOLCHAIN_ARCH_ppc32) ||
-           // defined (TOOLCHAIN_ARCH_arm32) || defined (TOOLCHAIN_ARCH_mips32)
+        /// bool type size.
+        const std::size_t BOOL_SIZE = sizeof (ui8);
+        /// \brief
+        /// Signed 8 bit type size.
+        const std::size_t I8_SIZE = sizeof (i8);
+        /// \brief
+        /// Unsigned 8 bit type size.
+        const std::size_t UI8_SIZE = sizeof (ui8);
+        /// \brief
+        /// Signed 16 bit type size.
+        const std::size_t I16_SIZE = sizeof (i16);
+        /// \brief
+        /// Unsigned 16 bit type size.
+        const std::size_t UI16_SIZE = sizeof (ui16);
+        /// \brief
+        /// Signed 32 bit type size.
+        const std::size_t I32_SIZE = sizeof (i32);
+        /// \brief
+        /// Unsigned 32 bit type size.
+        const std::size_t UI32_SIZE = sizeof (ui32);
+        /// \brief
+        /// Signed 64 bit type size.
+        const std::size_t I64_SIZE = sizeof (i64);
+        /// \brief
+        /// Unsigned 64 bit type size.
+        const std::size_t UI64_SIZE = sizeof (ui64);
+        /// \brief
+        /// 32 bit float type size.
+        const std::size_t F32_SIZE = sizeof (f32);
+        /// \brief
+        /// 64 bit float type size.
+        const std::size_t F64_SIZE = sizeof (f64);
 
         /// \brief
         /// Validate assumptions about integral type sizes.
         static_assert (
-            sizeof (i8) == 1 && sizeof (ui8) == 1 &&
-            sizeof (i16) == 2 && sizeof (ui16) == 2 &&
-            sizeof (i32) == 4 && sizeof (ui32) == 4 &&
-            sizeof (i64) == 8 && sizeof (ui64) == 8 &&
-            sizeof (f32) == 4 && sizeof (f64) == 8,
+            I8_SIZE == 1 && UI8_SIZE == 1 &&
+            I16_SIZE == 2 && UI16_SIZE == 2 &&
+            I32_SIZE == 4 && UI32_SIZE == 4 &&
+            I64_SIZE == 8 && UI64_SIZE == 8 &&
+            F32_SIZE == 4 && F64_SIZE == 8,
             "Invalid assumption about integral types sizes.");
 
-        /// \enum
-        /// OS constants.
-        enum OS {
-            /// \brief
-            /// Windows.
-            Windows,
-            /// \brief
-            /// Linux.
-            Linux,
-            /// \brief
-            /// OS X.
-            OSX,
-        #if defined (TOOLCHAIN_OS_Windows)
-            /// \brief
-            /// Host OS is Windows.
-            HostOS = Windows
-        #elif defined (TOOLCHAIN_OS_Linux)
-            /// \brief
-            /// Host OS is Linux.
-            HostOS = Linux
-        #elif defined (TOOLCHAIN_OS_OSX)
-            /// \brief
-            /// Host OS is OS X.
-            HostOS = OSX
-        #else // defined (TOOLCHAIN_OS_Windows)
-            #error "Unable to determine host OS."
-        #endif // defined (TOOLCHAIN_OS_Windows)
-        };
+        /// \brief
+        /// Architecture dependent natural word (register) type (size).
+        #if (TOOLCHAIN_ARCH_WORD_SIZE == 1)
+            typedef ui8 MachineWord;
+        #elif (TOOLCHAIN_ARCH_WORD_SIZE == 2)
+            typedef ui16 MachineWord;
+        #elif (TOOLCHAIN_ARCH_WORD_SIZE == 4)
+            typedef ui32 MachineWord;
+        #elif (TOOLCHAIN_ARCH_WORD_SIZE == 8)
+            typedef ui64 MachineWord;
+        #else // (TOOLCHAIN_ARCH_WORD_SIZE == 8)
+            #error Unknown TOOLCHAIN_ARCH_WORD_SIZE.
+        #endif // (TOOLCHAIN_ARCH_WORD_SIZE == 1)
 
-        /// \enum
-        /// Arch constants.
-        enum Arch {
-            /// \brief
-            /// i386.
-            i386,
-            /// \brief
-            /// x86_64.
-            x86_64,
-            /// \brief
-            /// ppc32.
-            ppc32,
-            /// \brief
-            /// ppc64.
-            ppc64,
-            /// \brief
-            /// arm32.
-            arm32,
-            /// \brief
-            /// arm64.
-            arm64,
-            /// \brief
-            /// arm32.
-            mips32,
-            /// \brief
-            /// arm64.
-            mips64,
-        #if defined (TOOLCHAIN_ARCH_i386)
-            /// \brief
-            /// Host Arch is i386.
-            HostArch = i386
-        #elif defined (TOOLCHAIN_ARCH_x86_64)
-            /// \brief
-            /// Host Arch is x86_64.
-            HostArch = x86_64
-        #elif defined (TOOLCHAIN_ARCH_ppc32)
-            /// \brief
-            /// Host Arch is ppc32.
-            HostArch = ppc32
-        #elif defined (TOOLCHAIN_ARCH_ppc64)
-            /// \brief
-            /// Host Arch is ppc64.
-            HostArch = ppc64
-        #elif defined (TOOLCHAIN_ARCH_arm32)
-            /// \brief
-            /// Host Arch is arm32.
-            HostArch = arm32
-        #elif defined (TOOLCHAIN_ARCH_arm64)
-            /// \brief
-            /// Host Arch is arm64.
-            HostArch = arm64
-        #elif defined (TOOLCHAIN_ARCH_mips32)
-            /// \brief
-            /// Host Arch is mips32.
-            HostArch = mips32
-        #elif defined (TOOLCHAIN_ARCH_mips64)
-            /// \brief
-            /// Host Arch is mips64.
-            HostArch = mips64
-        #else // defined (TOOLCHAIN_ARCH_i386)
-            #error Unknown TOOLCHAIN_ARCH.
-        #endif // defined (TOOLCHAIN_ARCH_i386)
-        };
+        /// \brief
+        /// Natural machine word size.
+        const std::size_t MACHINE_WORD_SIZE = sizeof (MachineWord);
+        /// \brief
+        /// ssize_t type size.
+        const std::size_t SSIZE_T_SIZE = sizeof (ssize_t);
+        /// \brief
+        /// std::size_t type size.
+        const std::size_t SIZE_T_SIZE = sizeof (std::size_t);
+        /// \brief
+        /// wchar_t type size.
+        const std::size_t WCHAR_T_SIZE = sizeof (wchar_t);
 
         /// \brief
         /// Error code type.
@@ -278,52 +233,6 @@ namespace thekogans {
         /// Invalid session id value.
         #define THEKOGANS_UTIL_INVALID_SESSION_ID_VALUE -1
     #endif // defined (TOOLCHAIN_OS_Windows)
-
-        /// \brief
-        /// bool type size.
-        const std::size_t BOOL_SIZE = sizeof (ui8);
-        /// \brief
-        /// Signed 8 bit type size.
-        const std::size_t I8_SIZE = sizeof (i8);
-        /// \brief
-        /// Unsigned 8 bit type size.
-        const std::size_t UI8_SIZE = sizeof (ui8);
-        /// \brief
-        /// Signed 16 bit type size.
-        const std::size_t I16_SIZE = sizeof (i16);
-        /// \brief
-        /// Unsigned 16 bit type size.
-        const std::size_t UI16_SIZE = sizeof (ui16);
-        /// \brief
-        /// Signed 32 bit type size.
-        const std::size_t I32_SIZE = sizeof (i32);
-        /// \brief
-        /// Unsigned 32 bit type size.
-        const std::size_t UI32_SIZE = sizeof (ui32);
-        /// \brief
-        /// Signed 64 bit type size.
-        const std::size_t I64_SIZE = sizeof (i64);
-        /// \brief
-        /// Unsigned 64 bit type size.
-        const std::size_t UI64_SIZE = sizeof (ui64);
-        /// \brief
-        /// 32 bit float type size.
-        const std::size_t F32_SIZE = sizeof (f32);
-        /// \brief
-        /// 64 bit float type size.
-        const std::size_t F64_SIZE = sizeof (f64);
-        /// \brief
-        /// Natural machine word size.
-        const std::size_t MACHINE_WORD_SIZE = sizeof (MachineWord);
-        /// \brief
-        /// ssize_t type size.
-        const std::size_t SSIZE_T_SIZE = sizeof (ssize_t);
-        /// \brief
-        /// std::size_t type size.
-        const std::size_t SIZE_T_SIZE = sizeof (std::size_t);
-        /// \brief
-        /// wchar_t type size.
-        const std::size_t WCHAR_T_SIZE = sizeof (wchar_t);
 
         /// \def THEKOGANS_UTIL_IS_ODD(value)
         /// Evaluates to true if the given value is odd.
@@ -473,6 +382,12 @@ namespace thekogans {
         /// Given a prefix, create a unique name using __LINE__.
         /// \param[in] prefix Name prefix.
         #define THEKOGANS_UTIL_UNIQUE_NAME(prefix) THEKOGANS_UTIL_LABEL(prefix, __LINE__)
+        /// \undef THEKOGANS_UTIL_LABEL
+        /// THEKOGANS_UTIL_LABEL is private to Types.h and should not polute the global namespace.
+        #undef THEKOGANS_UTIL_LABEL
+        /// \undef THEKOGANS_UTIL_MERGE
+        /// THEKOGANS_UTIL_MERGE is private to Types.h and should not polute the global namespace.
+        #undef THEKOGANS_UTIL_MERGE
 
     } // namespace util
 } // namespace thekogans

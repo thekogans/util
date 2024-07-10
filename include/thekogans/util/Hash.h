@@ -23,10 +23,8 @@
 #include <string>
 #include <vector>
 #include <list>
-#include <map>
 #include "thekogans/util/Config.h"
 #include "thekogans/util/Types.h"
-#include "thekogans/util/RefCounted.h"
 #include "thekogans/util/DynamicCreatable.h"
 
 namespace thekogans {
@@ -37,26 +35,11 @@ namespace thekogans {
         /// \brief
         /// Base class used to represent an abstract hash generator.
 
-        struct _LIB_THEKOGANS_UTIL_DECL Hash : public virtual RefCounted {
+        struct _LIB_THEKOGANS_UTIL_DECL Hash : public DynamicCreatable {
             /// \brief
-            /// Convenient typedef for RefCounted::SharedPtr<Hash>.
-            typedef RefCounted::SharedPtr<Hash> SharedPtr;
+            /// Declare Declare \see{DynamicCreatable} boilerplate.
+            THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE_BASE (Hash)
 
-            /// \brief
-            /// typedef for the Hash factory function.
-            typedef SharedPtr (*Factory) ();
-            /// \brief
-            /// typedef for the Hash map.
-            typedef std::map<std::string, Factory> Map;
-            /// \brief
-            /// Controls Map's lifetime.
-            /// \return Hash map.
-            static Map &GetMap ();
-            /// \brief
-            /// Used for Hash dynamic discovery and creation.
-            /// \param[in] type Hash type (it's name).
-            /// \return A Hash based on the passed in type.
-            static SharedPtr Get (const std::string &type);
         #if defined (THEKOGANS_UTIL_TYPE_Static)
             /// \brief
             /// Because Hash uses dynamic initialization, when using
@@ -65,35 +48,7 @@ namespace thekogans {
             /// calling this api, the only hashers that will be available
             /// to your application are the ones you explicitly link to.
             static void StaticInit ();
-        #else // defined (THEKOGANS_UTIL_TYPE_Static)
-            /// \struct Hash::MapInitializer Hash.h thekogans/util/Hash.h
-            ///
-            /// \brief
-            /// MapInitializer is used to initialize the Hash::map.
-            /// It should not be used directly, and instead is included
-            /// in THEKOGANS_UTIL_DECLARE_HASH/THEKOGANS_UTIL_IMPLEMENT_HASH.
-            /// If you are deriving a hasher from Hash, and you want
-            /// it to be dynamically discoverable/creatable, add
-            /// THEKOGANS_UTIL_DECLARE_HASH to it's declaration,
-            /// and THEKOGANS_UTIL_IMPLEMENT_HASH to it's definition.
-            struct _LIB_THEKOGANS_UTIL_DECL MapInitializer {
-                /// \brief
-                /// ctor. Add hasher of type, and factory for creating it
-                /// to the Hash::map
-                /// \param[in] type Hash type (it's class name).
-                /// \param[in] factory Hash creation factory.
-                MapInitializer (
-                    const std::string &type,
-                    Factory factory);
-            };
         #endif // defined (THEKOGANS_UTIL_TYPE_Static)
-            /// \brief
-            /// Get the list of all hashers registered with the map.
-            static void GetHashers (std::list<std::string> &hashers);
-
-            /// \brief
-            /// Virtual dtor.
-            virtual ~Hash () {}
 
             /// \brief
             /// Digest type.
@@ -110,17 +65,18 @@ namespace thekogans {
             static Digest stringToDigest (const std::string &digest);
 
             /// \brief
-            /// Return hasher name.
-            /// \return Hasher name.
-            virtual std::string GetName (std::size_t /*digestSize*/) const = 0;
-            /// This API is used in streaming situations. Call Init at the
-            /// beginning of the stream. As data comes in, call Update with
-            /// each successive chunk. Once all data has been received,
-            /// call Final to get the digest.
+            /// Given it's size, return the digest name.
+            /// \return Digest name based on the given size.
+            virtual std::string GetDigestName (std::size_t /*digestSize*/) const = 0;
             /// \brief
             /// Return hasher supported digest sizes.
             /// \param[out] digestSizes List of supported digest sizes.
             virtual void GetDigestSizes (std::list<std::size_t> & /*digestSizes*/) const = 0;
+
+            /// This API is used in streaming situations. Call Init at the
+            /// beginning of the stream. As data comes in, call Update with
+            /// each successive chunk. Once all data has been received,
+            /// call Final to get the digest.
             /// \brief
             /// Initialize the hasher.
             /// \param[in] digestSize digest size.
@@ -182,62 +138,6 @@ namespace thekogans {
             return digest1.size () != digest2.size () ||
                 memcmp (&digest1[0], &digest2[0], digest1.size ()) != 0;
         }
-
-        /// \def THEKOGANS_UTIL_DECLARE_HASH_COMMON(type)
-        /// Common dynamic discovery macro.
-        #define THEKOGANS_UTIL_DECLARE_HASH_COMMON(type)\
-        public:\
-            static thekogans::util::Hash::SharedPtr Create () {\
-                return thekogans::util::Hash::SharedPtr (new type);\
-            }
-
-    #if defined (THEKOGANS_UTIL_TYPE_Static)
-        /// \def THEKOGANS_UTIL_DECLARE_HASH(type)
-        /// Dynamic discovery macro. Add this to your class declaration.
-        /// Example:
-        /// \code{.cpp}
-        /// struct _LIB_THEKOGANS_UTIL_DECL SHA1 : public Hash {
-        ///     THEKOGANS_UTIL_DECLARE_HASH (SHA1)
-        ///     ...
-        /// };
-        /// \endcode
-        #define THEKOGANS_UTIL_DECLARE_HASH(type)\
-        public:\
-            THEKOGANS_UTIL_DECLARE_HASH_COMMON (type)\
-            THEKOGANS_UTIL_STATIC_INIT (type)
-
-        /// \def THEKOGANS_UTIL_IMPLEMENT_HASH(type)
-        /// Dynamic discovery macro. Instantiate one of these in the class cpp file.
-        /// Example:
-        /// \code{.cpp}
-        /// THEKOGANS_UTIL_IMPLEMENT_HASH (SHA1)
-        /// \endcode
-        #define THEKOGANS_UTIL_IMPLEMENT_HASH(type)
-    #else // defined (THEKOGANS_UTIL_TYPE_Static)
-        /// \def THEKOGANS_UTIL_DECLARE_HASH(type)
-        /// Dynamic discovery macro. Add this to your class declaration.
-        /// Example:
-        /// \code{.cpp}
-        /// struct _LIB_THEKOGANS_UTIL_DECL SHA1 : public Hash {
-        ///     THEKOGANS_UTIL_DECLARE_HASH (SHA1)
-        ///     ...
-        /// };
-        /// \endcode
-        #define THEKOGANS_UTIL_DECLARE_HASH(type)\
-        public:\
-            THEKOGANS_UTIL_DECLARE_HASH_COMMON (type)\
-            static const thekogans::util::Hash::MapInitializer mapInitializer;
-
-        /// \def THEKOGANS_UTIL_IMPLEMENT_HASH(type)
-        /// Dynamic discovery macro. Instantiate one of these in the class cpp file.
-        /// Example:
-        /// \code{.cpp}
-        /// THEKOGANS_UTIL_IMPLEMENT_HASH (SHA1)
-        /// \endcode
-        #define THEKOGANS_UTIL_IMPLEMENT_HASH(type)\
-            const thekogans::util::Hash::MapInitializer type::mapInitializer (\
-                #type, type::Create);
-    #endif // defined (THEKOGANS_UTIL_TYPE_Static)
 
     } // namespace util
 } // namespace thekogans

@@ -51,7 +51,7 @@ namespace thekogans {
                 const void *end,
                 std::size_t readOffset_,
                 std::size_t writeOffset_,
-                Allocator *allocator_) :
+                Allocator::SharedPtr allocator_) :
                 Serializer (endianness),
                 data ((ui8 *)allocator_->Alloc ((const ui8 *)end - (const ui8 *)begin)),
                 length ((const ui8 *)end - (const ui8 *)begin),
@@ -159,7 +159,7 @@ namespace thekogans {
 
         void Buffer::Resize (
                 std::size_t length_,
-                Allocator *allocator_) {
+                Allocator::SharedPtr allocator_) {
             if (length != length_) {
                 if (length_ > 0) {
                     ui8 *data_ = (ui8 *)allocator_->Alloc (length_);
@@ -187,8 +187,8 @@ namespace thekogans {
             }
         }
 
-        Buffer Buffer::Clone (Allocator *allocator) const {
-            if (allocator != nullptr) {
+        Buffer Buffer::Clone (Allocator::SharedPtr allocator) const {
+            if (allocator.Get () != nullptr) {
                 return Buffer (
                     endianness,
                     data,
@@ -206,8 +206,8 @@ namespace thekogans {
         Buffer Buffer::Subset (
                 std::size_t offset,
                 std::size_t count,
-                Allocator *allocator) const {
-            if (offset < length && count > 0 && allocator != nullptr) {
+                Allocator::SharedPtr allocator) const {
+            if (offset < length && count > 0 && allocator.Get () != nullptr) {
                 if (count == SIZE_T_MAX || offset + count > length) {
                     count = length - offset;
                 }
@@ -260,11 +260,11 @@ namespace thekogans {
     #if defined (THEKOGANS_UTIL_HAVE_ZLIB)
         namespace {
             struct OutBuffer {
-                Allocator *allocator;
+                Allocator::SharedPtr allocator;
                 ui8 *data;
                 std::size_t length;
 
-                explicit OutBuffer (Allocator *allocator_) :
+                explicit OutBuffer (Allocator::SharedPtr allocator_) :
                     allocator (allocator_),
                     data (nullptr),
                     length (0) {}
@@ -363,8 +363,8 @@ namespace thekogans {
             }
         }
 
-        Buffer Buffer::Deflate (Allocator *allocator) const {
-            if (allocator != nullptr) {
+        Buffer Buffer::Deflate (Allocator::SharedPtr allocator) const {
+            if (allocator.Get () != nullptr) {
                 if (GetDataAvailableForReading () != 0) {
                     OutBuffer outBuffer (allocator);
                     DeflateHelper (GetReadPtr (), GetDataAvailableForReading (), outBuffer);
@@ -384,8 +384,8 @@ namespace thekogans {
             }
         }
 
-        Buffer Buffer::Inflate (Allocator *allocator) const {
-            if (allocator != nullptr) {
+        Buffer Buffer::Inflate (Allocator::SharedPtr allocator) const {
+            if (allocator.Get () != nullptr) {
                 if (GetDataAvailableForReading () != 0) {
                     OutBuffer outBuffer (allocator);
                     InflateHelper (GetReadPtr (), GetDataAvailableForReading (), outBuffer);
@@ -410,8 +410,9 @@ namespace thekogans {
                 Endianness endianness,
                 const char *hexBuffer,
                 std::size_t hexBufferLength,
-                Allocator *allocator) {
-            if (hexBuffer != nullptr && hexBufferLength > 0 && IS_EVEN (hexBufferLength) && allocator != nullptr) {
+                Allocator::SharedPtr allocator) {
+            if (hexBuffer != nullptr && hexBufferLength > 0 &&
+                    IS_EVEN (hexBufferLength) && allocator.Get () != nullptr) {
                 void *data = allocator->Alloc (hexBufferLength / 2);
                 std::size_t length =  HexDecodeBuffer (hexBuffer, hexBufferLength, data);
                 return Buffer (endianness, data, length, 0, length, allocator);
@@ -472,11 +473,11 @@ namespace thekogans {
 
         void SecureBuffer::Resize (
                 std::size_t length,
-                Allocator * /*allocator*/) {
+                Allocator::SharedPtr /*allocator*/) {
             Buffer::Resize (length, &SecureAllocator::Instance ());
         }
 
-        Buffer SecureBuffer::Clone (Allocator * /*allocator*/) const {
+        Buffer SecureBuffer::Clone (Allocator::SharedPtr /*allocator*/) const {
             return SecureBuffer (
                 endianness,
                 data,
@@ -488,12 +489,12 @@ namespace thekogans {
         Buffer SecureBuffer::Subset (
                 std::size_t offset,
                 std::size_t count,
-                Allocator * /*allocator*/) const {
+                Allocator::SharedPtr /*allocator*/) const {
             return Buffer::Subset (offset, count, &SecureAllocator::Instance ());
         }
 
     #if defined (THEKOGANS_UTIL_HAVE_ZLIB)
-        Buffer SecureBuffer::Deflate (Allocator * /*allocator*/) const {
+        Buffer SecureBuffer::Deflate (Allocator::SharedPtr /*allocator*/) const {
             if (GetDataAvailableForReading () != 0) {
                 OutBuffer outBuffer (&SecureAllocator::Instance ());
                 DeflateHelper (GetReadPtr (), GetDataAvailableForReading (), outBuffer);
@@ -507,7 +508,7 @@ namespace thekogans {
             return SecureBuffer ();
         }
 
-        Buffer SecureBuffer::Inflate (Allocator * /*allocator*/) const {
+        Buffer SecureBuffer::Inflate (Allocator::SharedPtr /*allocator*/) const {
             if (GetDataAvailableForReading () != 0) {
                 OutBuffer outBuffer (&SecureAllocator::Instance ());
                 InflateHelper (GetReadPtr (), GetDataAvailableForReading (), outBuffer);
@@ -552,9 +553,9 @@ namespace thekogans {
             SizeT writeOffset;
             std::string allocatorName;
             serializer >> endianness >> length >> readOffset >> writeOffset >> allocatorName;
-            Allocator *allocator = Allocator::Get (allocatorName);
-            if (allocator == nullptr) {
-                allocator = &DefaultAllocator::Instance ();
+            Allocator::SharedPtr allocator = Allocator::CreateType (allocatorName);
+            if (allocator.Get () == nullptr) {
+                allocator.Reset (&DefaultAllocator::Instance ());
             }
             buffer.Resize (length, allocator);
             if (length > 0) {
@@ -602,9 +603,9 @@ namespace thekogans {
             SizeT length = util::stringToui64 (node.attribute (ATTR_LENGTH).value ());
             SizeT readOffset = util::stringToui64 (node.attribute (ATTR_READ_OFFSET).value ());
             SizeT writeOffset = util::stringToui64 (node.attribute (ATTR_WRITE_OFFSET).value ());
-            Allocator *allocator = Allocator::Get (node.attribute (ATTR_ALLOCATOR).value ());
-            if (allocator == nullptr) {
-                allocator = &DefaultAllocator::Instance ();
+            Allocator::SharedPtr allocator = Allocator::CreateType (node.attribute (ATTR_ALLOCATOR).value ());
+            if (allocator.Get () == nullptr) {
+                allocator.Reset (&DefaultAllocator::Instance ());
             }
             buffer.Resize (length, allocator);
             if (length > 0) {

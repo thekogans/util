@@ -24,7 +24,15 @@
 namespace thekogans {
     namespace util {
 
-        THEKOGANS_UTIL_IMPLEMENT_HASH (SHA3)
+        #if !defined (THEKOGANS_UTIL_MIN_HASH_SHA3_IN_PAGE)
+            #define THEKOGANS_UTIL_MIN_HASH_SHA3_IN_PAGE 5
+        #endif // !defined (THEKOGANS_UTIL_MIN_HASH_SHA3_IN_PAGE)
+
+        THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE (
+            SHA3,
+            SpinLock,
+            THEKOGANS_UTIL_MIN_HASH_SHA3_IN_PAGE,
+            DefaultAllocator::Instance ())
 
         void SHA3::Init (std::size_t digestSize_) {
             if (digestSize_ == DIGEST_SIZE_224 || digestSize_ == DIGEST_SIZE_256 ||

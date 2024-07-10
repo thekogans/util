@@ -15,33 +15,31 @@
 // You should have received a copy of the GNU General Public License
 // along with libthekogans_util. If not, see <http://www.gnu.org/licenses/>.
 
-#include <cassert>
-#include "thekogans/util/SpinLock.h"
-#include "thekogans/util/LockGuard.h"
-#include "thekogans/util/Exception.h"
+#if defined (THEKOGANS_UTIL_TYPE_Static)
+//    #include "thekogans/util/Allocator.h"
+    #include "thekogans/util/Hash.h"
+//    #include "thekogans/util/Serializable.h"
+#endif // defined (THEKOGANS_UTIL_TYPE_Static)
 #include "thekogans/util/DynamicCreatable.h"
 
 namespace thekogans {
     namespace util {
 
-        DynamicCreatable::Map &DynamicCreatable::GetMap () {
-            static Map *map = new Map;
-            return *map;
-        }
+        THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_BASE (DynamicCreatable)
 
-    #if defined (THEKOGANS_UTIL_TYPE_Shared)
+    #if defined (THEKOGANS_UTIL_TYPE_Static)
+        void DynamicCreatable::StaticInit () {
+            //Allocator::StaticInit ();
+            Hash::StaticInit ();
+            //Serializable::StaticInit ();
+        }
+    #else // defined (THEKOGANS_UTIL_TYPE_Static)
         DynamicCreatable::MapInitializer::MapInitializer (
                 const std::string &type,
                 Factory factory) {
-            std::pair<Map::iterator, bool> result =
-                GetMap ().insert (Map::value_type (type, factory));
-            assert (result.second);
-            if (!result.second) {
-                THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                    "%s is already registered.", type.c_str ());
-            }
+            Map::Instance ().insert (MapType::value_type (type, factory));
         }
-    #endif // defined (THEKOGANS_UTIL_TYPE_Shared)
+    #endif // defined (THEKOGANS_UTIL_TYPE_Static)
 
     } // namespace util
 } // namespace thekogans

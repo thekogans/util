@@ -21,14 +21,7 @@
 namespace thekogans {
     namespace util {
 
-        NullAllocator &NullAllocator::Instance () {
-            static NullAllocator *instance = new NullAllocator;
-            return *instance;
-        }
-
-        const char *NullAllocator::GetName () const {
-            return "NullAllocator";
-        }
+        THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_SINGLETON (NullAllocator)
 
         void *NullAllocator::Alloc (std::size_t size) {
             if (size > 0) {

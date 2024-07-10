@@ -32,6 +32,8 @@
 namespace thekogans {
     namespace util {
 
+        THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_OVERRIDE (SharedAllocator)
+
         void *SharedAllocator::Alloc (std::size_t size) {
             if (size > 0) {
                 LockGuard<StorageSpinLock> guard (lock);

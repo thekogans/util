@@ -35,6 +35,8 @@ namespace thekogans {
         /// Take a look at \see{Heap} to see an example of it's usage.
 
         struct _LIB_THEKOGANS_UTIL_DECL AlignedAllocator : public Allocator {
+            THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE_OVERRIDE (AlignedAllocator)
+
         private:
             /// \struct AlignedAllocator::Footer AlignedAllocator.h thekogans/util/AlignedAllocator.h
             ///
@@ -89,13 +91,6 @@ namespace thekogans {
             AlignedAllocator (
                 Allocator &allocator_,
                 std::size_t alignment_);
-
-            /// \brief
-            /// Return allocator name.
-            /// \return Allocator name.
-            virtual const char *GetName () const {
-                return "AlignedAllocator";
-            }
 
             /// \brief
             /// Use Allocator to allocate a block, and align it to the
