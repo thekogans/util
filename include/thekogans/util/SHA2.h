@@ -36,7 +36,7 @@ namespace thekogans {
         struct _LIB_THEKOGANS_UTIL_DECL SHA2 : public Hash {
             /// \brief
             /// SHA2 participates in the Hash dynamic discovery and creation.
-            THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE (SHA2, SpinLock)
+            THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE (SHA2)
 
             enum {
                 /// \brief

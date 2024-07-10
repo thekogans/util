@@ -35,7 +35,7 @@ namespace thekogans {
         struct _LIB_THEKOGANS_UTIL_DECL MD5 : public Hash {
             /// \brief
             /// MD5 participates in the Hash dynamic discovery and creation.
-            THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE (MD5, SpinLock)
+            THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE (MD5)
 
             enum {
                 /// \brief

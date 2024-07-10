@@ -173,38 +173,14 @@ namespace thekogans {
             static const char *TYPE;\
             virtual const char *Type () const;
 
-        /// \def THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE_COMMON(_T)
-        #define THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE_COMMON(_T)\
+        /// \def THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE(_T)
+        #define THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE(_T)\
         public:\
             THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (_T)\
             THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE_STATIC (_T)\
             THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE_SHARED (_T)\
             THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE_OVERRIDE (_T)\
             static thekogans::util::DynamicCreatable::SharedPtr Create ();
-
-        /// \def THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE(_T, lock)
-        /// Dynamic discovery macro. Add this to your class declaration.
-        /// Example:
-        /// \code{.cpp}
-        /// struct _LIB_THEKOGANS_UTIL_DECL SHA1 : public DynamicCreatable {
-        ///     THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE (SHA1, SpinLock)
-        ///     ...
-        /// };
-        /// \endcode
-        #define THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE(_T, lock)\
-            THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE_COMMON (_T)
-
-        /// \def THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE_SINGLETON(_T)
-        /// Dynamic discovery macro. Add this to your class declaration.
-        /// Example:
-        /// \code{.cpp}
-        /// struct _LIB_THEKOGANS_UTIL_DECL DefaultAllocator : public Allocator {
-        ///     THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE_SINGLETON (DefaultAllocator)
-        ///     ...
-        /// };
-        /// \endcode
-        #define THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE_SINGLETON(_T)\
-            THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE_COMMON (_T)
 
         /// \def THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_OVERRIDE(_T)
         /// Common defines for DynamicCreatable.
@@ -213,13 +189,6 @@ namespace thekogans {
             const char *_T::Type () const {\
                 return TYPE;\
             }
-
-        /// \def THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_COMMON(_T)
-        /// Common defines for DynamicCreatable.
-        #define THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_COMMON(_T)\
-            THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_STATIC (_T)\
-            THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_SHARED (_T)\
-            THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_OVERRIDE(_T)
 
         /// \def THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE(_T, lock)
         /// Dynamic discovery macro. Instantiate one of these in the class cpp file.
@@ -233,7 +202,9 @@ namespace thekogans {
         /// \endcode
         #define THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE(\
                 _T, lock, minItemsInPage, allocator)\
-            THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_COMMON (_T)\
+            THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_STATIC (_T)\
+            THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_SHARED (_T)\
+            THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_OVERRIDE(_T)\
             thekogans::util::DynamicCreatable::SharedPtr _T::Create () {\
                 return thekogans::util::DynamicCreatable::SharedPtr (new _T);\
             }
@@ -245,7 +216,9 @@ namespace thekogans {
         /// THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_SINGLETON (DefaultAllocator)
         /// \endcode
         #define THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_SINGLETON(_T)\
-            THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_COMMON (_T)\
+            THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_STATIC (_T)\
+            THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_SHARED (_T)\
+            THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_OVERRIDE(_T)\
             thekogans::util::DynamicCreatable::SharedPtr _T::Create () {\
                 return thekogans::util::DynamicCreatable::SharedPtr (&_T::Instance ());\
             }

@@ -50,7 +50,7 @@ namespace thekogans {
                     /// \brief
                     /// HGLOBALAllocator participates in the \see{DynamicCreatable} dynamic
                     /// discovery and creation.
-                    THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE_SINGLETON (HGLOBALAllocator)
+                    THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE (HGLOBALAllocator)
 
                     /// \brief
                     /// Allocate a block from system heap (GMEM_FIXED).

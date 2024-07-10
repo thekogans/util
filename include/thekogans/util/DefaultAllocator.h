@@ -43,7 +43,7 @@ namespace thekogans {
             /// \brief
             /// DefaultAllocator participates in the \see{DynamicCreatable}
             /// dynamic discovery and creation.
-            THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE_SINGLETON (DefaultAllocator)
+            THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE (DefaultAllocator)
 
             /// \brief
             /// Allocate a block from system heap.

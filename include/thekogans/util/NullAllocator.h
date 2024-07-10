@@ -45,7 +45,7 @@ namespace thekogans {
             /// \brief
             /// NullAllocator participates in the \see{DynamicCreatable}
             /// dynamic discovery and creation.
-            THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE_SINGLETON (NullAllocator)
+            THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE (NullAllocator)
 
             /// \brief
             /// Allocate a block.

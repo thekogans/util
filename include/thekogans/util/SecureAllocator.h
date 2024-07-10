@@ -80,7 +80,7 @@ namespace thekogans {
             /// \brief
             /// SecureAllocator participates in the \see{Allocator} dynamic
             /// discovery and creation.
-            THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE_SINGLETON (SecureAllocator)
+            THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE (SecureAllocator)
 
             /// \brief
             /// Call this method during process initialization to reserve
