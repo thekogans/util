@@ -30,7 +30,6 @@
 #include "thekogans/util/Allocator.h"
 #include "thekogans/util/DefaultAllocator.h"
 #include "thekogans/util/AlignedAllocator.h"
-#include "thekogans/util/NullLock.h"
 #include "thekogans/util/SpinLock.h"
 #include "thekogans/util/LockGuard.h"
 #include "thekogans/util/Exception.h"
@@ -220,353 +219,83 @@ namespace thekogans {
         /// Default number of items per page.
         const std::size_t THEKOGANS_UTIL_HEAP_DEFAULT_MIN_ITEMS_IN_PAGE = 256;
 
-        /// \def THEKOGANS_UTIL_DECLARE_HEAP_FUNCTIONS
-        /// Macro to declare heap functions. This is an
-        /// internal macro used by various THEKOGANS_UTIL_DECLARE_HEAP*
-        /// macros below, and is not meant for public consumption.
-        #define THEKOGANS_UTIL_DECLARE_HEAP_FUNCTIONS\
-        public:\
-            static void *operator new (std::size_t /*size*/);\
-            static void *operator new (std::size_t /*size*/, std::nothrow_t) throw ();\
-            static void *operator new (std::size_t /*size*/, void * /*ptr*/);\
-            static void operator delete (void * /*ptr*/);\
-            static void operator delete (void * /*ptr*/, std::nothrow_t) throw ();\
-            static void operator delete (void * /*ptr*/, void * /*ptr*/);
-
-        /// \def THEKOGANS_UTIL_DECLARE_HEAP(type)
-        /// Use this macro to declare a heap with
-        /// a given type, a DefaultAllocator and a NullLock.
-        /// \param[in] type Type for which a custom heap
-        /// is being declared (same as struct/class type).
-        #define THEKOGANS_UTIL_DECLARE_HEAP(type)\
-        private:\
-            static thekogans::util::Heap<type> &GetHeap ();\
-            THEKOGANS_UTIL_DECLARE_HEAP_FUNCTIONS
-
-        /// \def THEKOGANS_UTIL_DECLARE_HEAP_WITH_LOCK(type, lock)
-        /// Use this macro to declare a heap with
-        /// a given type, a DefaultAllocator and a custom lock.
-        /// \param[in] type Type for which a custom heap
-        /// is being declared (same as struct/class type).
-        /// \param[in] lock Custom heap protection lock \see{NullLock}.
-        #define THEKOGANS_UTIL_DECLARE_HEAP_WITH_LOCK(type, lock)\
-        private:\
-            static thekogans::util::Heap<type, lock> &GetHeap ();\
-            THEKOGANS_UTIL_DECLARE_HEAP_FUNCTIONS
-
         /// \brief
         /// Use these defines for regular classes (not templates).
 
-        /// \def THEKOGANS_UTIL_IMPLEMENT_HEAP_FUNCTIONS(type)
+        /// \def THEKOGANS_UTIL_IMPLEMENT_HEAP_FUNCTIONS(_T)
         /// Macro to implement heap functions. This is an
         /// internal macro used by various THEKOGANS_UTIL_IMPLEMENT_HEAP*
         /// macros below, and is not meant for public consumption.
-        #define THEKOGANS_UTIL_IMPLEMENT_HEAP_FUNCTIONS(type)\
-        void *type::operator new (std::size_t size) {\
-            assert (size == sizeof (type));\
-            return GetHeap ().Alloc (false);\
+        #define THEKOGANS_UTIL_IMPLEMENT_HEAP_FUNCTIONS(_T)\
+        void *_T::operator new (std::size_t size) {\
+            assert (size == sizeof (_T));\
+            return Heap<_T>::Instance ().Alloc (false);\
         }\
-        void *type::operator new (\
+        void *_T::operator new (\
                 std::size_t size,\
                 std::nothrow_t) throw () {\
-            assert (size == sizeof (type));\
-            return GetHeap ().Alloc (true);\
+            assert (size == sizeof (_T));\
+            return Heap<_T>::Instance ().Alloc (true);\
         }\
-        void *type::operator new (\
+        void *_T::operator new (\
                 std::size_t size,\
                 void *ptr) {\
-            assert (size == sizeof (type));\
+            assert (size == sizeof (_T));\
             return ptr;\
         }\
-        void type::operator delete (void *ptr) {\
-            GetHeap ().Free (ptr, false);\
+        void _T::operator delete (void *ptr) {\
+            Heap<_T>::Instance ().Free (ptr, false);\
         }\
-        void type::operator delete (\
+        void _T::operator delete (\
                 void *ptr,\
                 std::nothrow_t) throw () {\
-            GetHeap ().Free (ptr, true);\
+            Heap<_T>::Instance ().Free (ptr, true);\
         }\
-        void type::operator delete (\
+        void _T::operator delete (\
             void *,\
             void *) {}
-
-        /// \def THEKOGANS_UTIL_IMPLEMENT_HEAP_EX(type, minItemsInPage)
-        /// Use this macro to instantiate a heap with
-        /// a given items per page, DefaultAllocator
-        /// and NullLock.
-        /// \param[in] type Type for which a custom heap
-        /// is being declared (same as struct/class type).
-        /// \param[in] minItemsInPage Minimum items per page.
-        #define THEKOGANS_UTIL_IMPLEMENT_HEAP_EX(\
-            type, minItemsInPage)\
-        thekogans::util::Heap<type> &type::GetHeap () {\
-            static thekogans::util::Heap<type> *heap =\
-                new thekogans::util::Heap<type> (#type, minItemsInPage);\
-            return *heap;\
-        }\
-        THEKOGANS_UTIL_IMPLEMENT_HEAP_FUNCTIONS (type)
-
-        /// \def THEKOGANS_UTIL_IMPLEMENT_HEAP_EX_WITH_ALLOCATOR(
-        ///          type, allocator, minItemsInPage)
-        /// Use this macro to instantiate a heap with
-        /// a given items per page, a custom page
-        /// allocator and a NullLock.
-        /// \param[in] type Type for which a custom heap
-        /// is being declared (same as struct/class type).
-        /// \param[in] minItemsInPage Minimum items per page.
-        /// \param[in] allocator Custom page allocator \see{Allocator}.
-        #define THEKOGANS_UTIL_IMPLEMENT_HEAP_EX_WITH_ALLOCATOR(\
-            type, minItemsInPage, allocator)\
-        thekogans::util::Heap<type> &type::GetHeap () {\
-            static thekogans::util::Heap<type> *heap =\
-                new thekogans::util::Heap<type> (#type, minItemsInPage, allocator);\
-            return *heap;\
-        }\
-        THEKOGANS_UTIL_IMPLEMENT_HEAP_FUNCTIONS (type)
-
-        /// \def THEKOGANS_UTIL_IMPLEMENT_HEAP_WITH_LOCK_EX(
-        ///          type, lock, minItemsInPage)
-        /// Use this macro to instantiate a heap with
-        /// a DefaultAllocator, a custom lock and a
-        /// given items per page.
-        /// \param[in] type Type for which a custom heap
-        /// is being declared (same as struct/class type).
-        /// \param[in] lock Custom heap protection lock \see{NullLock}.
-        /// \param[in] minItemsInPage Minimum items per page.
-        #define THEKOGANS_UTIL_IMPLEMENT_HEAP_WITH_LOCK_EX(\
-            type, lock, minItemsInPage)\
-        thekogans::util::Heap<type, lock> &type::GetHeap () {\
-            static thekogans::util::Heap<type, lock> *heap =\
-                new thekogans::util::Heap<type, lock> (#type, minItemsInPage);\
-            return *heap;\
-        }\
-        THEKOGANS_UTIL_IMPLEMENT_HEAP_FUNCTIONS (type)
-
-        /// \def THEKOGANS_UTIL_IMPLEMENT_HEAP_WITH_LOCK_EX_AND_ALLOCATOR(
-        ///          type, lock, minItemsInPage, allocator)
-        /// Use this macro to instantiate a heap with
-        /// a custom page allocator and lock and a
-        /// given items per page.
-        /// \param[in] type Type for which a custom heap
-        /// is being declared (same as struct/class type).
-        /// \param[in] lock custom Heap protection lock \see{NullLock}.
-        /// \param[in] minItemsInPage Minimum items per page.
-        /// \param[in] allocator Custom page allocator \see{tAllocator}.
-        #define THEKOGANS_UTIL_IMPLEMENT_HEAP_WITH_LOCK_EX_AND_ALLOCATOR(\
-            type, lock, minItemsInPage, allocator)\
-        thekogans::util::Heap<type, lock> &type::GetHeap () {\
-            static thekogans::util::Heap<type, lock> *heap =\
-                new thekogans::util::Heap<type, lock> (#type, minItemsInPage, allocator);\
-            return *heap;\
-        }\
-        THEKOGANS_UTIL_IMPLEMENT_HEAP_FUNCTIONS (type)
-
-        /// \def THEKOGANS_UTIL_IMPLEMENT_HEAP(type)
-        /// Use this macro to instantiate a heap with
-        /// a DefaultAllocator, a NullLock and
-        /// THEKOGANS_UTIL_HEAP_DEFAULT_MIN_ITEMS_IN_PAGE.
-        /// \param[in] type Type for which a custom heap
-        /// is being declared (same as struct/class type).
-        #define THEKOGANS_UTIL_IMPLEMENT_HEAP(type)\
-        THEKOGANS_UTIL_IMPLEMENT_HEAP_EX (type,\
-            thekogans::util::THEKOGANS_UTIL_HEAP_DEFAULT_MIN_ITEMS_IN_PAGE)
-
-        /// \def THEKOGANS_UTIL_IMPLEMENT_HEAP_WITH_ALLOCATOR(type, allocator)
-        /// Use this macro to instantiate a heap with
-        /// a custom allocator, a NullLock and
-        /// THEKOGANS_UTIL_HEAP_DEFAULT_MIN_ITEMS_IN_PAGE.
-        /// \param[in] type Type for which a custom heap
-        /// is being declared (same as struct/class type).
-        /// \param[in] allocator Custom page allocator \see{DefaultAllocator}.
-        #define THEKOGANS_UTIL_IMPLEMENT_HEAP_WITH_ALLOCATOR(type, allocator)\
-        THEKOGANS_UTIL_IMPLEMENT_HEAP_EX_WITH_ALLOCATOR (type,\
-            thekogans::util::THEKOGANS_UTIL_HEAP_DEFAULT_MIN_ITEMS_IN_PAGE, allocator)
-
-        /// \def THEKOGANS_UTIL_IMPLEMENT_HEAP_WITH_LOCK(type, lock)
-        /// Use this macro to instantiate a heap with
-        /// a DefaultAllocator, a custom lock and
-        /// THEKOGANS_UTIL_HEAP_DEFAULT_MIN_ITEMS_IN_PAGE.
-        /// \param[in] type Type for which a custom heap
-        /// is being declared (same as struct/class type).
-        /// \param[in] lock Custom heap protection lock \see{NullLock}.
-        #define THEKOGANS_UTIL_IMPLEMENT_HEAP_WITH_LOCK(type, lock)\
-        THEKOGANS_UTIL_IMPLEMENT_HEAP_WITH_LOCK_EX (type, lock,\
-            thekogans::util::THEKOGANS_UTIL_HEAP_DEFAULT_MIN_ITEMS_IN_PAGE)
-
-        /// \def THEKOGANS_UTIL_IMPLEMENT_HEAP_WITH_LOCK_AND_ALLOCATOR(type, lock, allocator)
-        /// Use this macro to instantiate a heap with
-        /// a custom allocator, a custom lock and
-        /// THEKOGANS_UTIL_HEAP_DEFAULT_MIN_ITEMS_IN_PAGE.
-        /// \param[in] type Type for which a custom heap
-        /// is being declared (same as struct/class type).
-        /// \param[in] lock Custom heap protection lock \see{NullLock}.
-        /// \param[in] allocator Custom page allocator \see{Allocator}.
-        #define THEKOGANS_UTIL_IMPLEMENT_HEAP_WITH_LOCK_AND_ALLOCATOR(\
-            type, lock, allocator)\
-        THEKOGANS_UTIL_IMPLEMENT_HEAP_WITH_LOCK_EX_AND_ALLOCATOR (type,\
-            lock, thekogans::util::THEKOGANS_UTIL_HEAP_DEFAULT_MIN_ITEMS_IN_PAGE, allocator)
 
         /// \brief
         /// Use these defines for templates.
 
-        /// \def THEKOGANS_UTIL_IMPLEMENT_HEAP_FUNCTIONS_T(type)
+        /// \def THEKOGANS_UTIL_IMPLEMENT_HEAP_FUNCTIONS_T(_T)
         /// Macro to implement heap functions. This is an
         /// internal macro used by various THEKOGANS_UTIL_IMPLEMENT_HEAP*
         /// macros below, and is not meant for public consumption.
-        #define THEKOGANS_UTIL_IMPLEMENT_HEAP_FUNCTIONS_T(type)\
+        #define THEKOGANS_UTIL_IMPLEMENT_HEAP_FUNCTIONS_T(_T)\
         template<>\
-        THEKOGANS_UTIL_EXPORT void *type::operator new (std::size_t size) {\
-            assert (size == sizeof (type));\
-            return GetHeap ().Alloc (false);\
+        THEKOGANS_UTIL_EXPORT void *_T::operator new (std::size_t size) {\
+            assert (size == sizeof (_T));\
+            return Heap<_T>::Instance ().Alloc (false);\
         }\
         template<>\
-        THEKOGANS_UTIL_EXPORT void *type::operator new (\
+        THEKOGANS_UTIL_EXPORT void *_T::operator new (\
                 std::size_t size,\
                 std::nothrow_t) throw () {\
-            assert (size == sizeof (type));\
-            return GetHeap ().Alloc (true);\
+            assert (size == sizeof (_T));\
+            return Heap<_T>::Instance ().Alloc (true);\
         }\
         template<>\
-        THEKOGANS_UTIL_EXPORT void *type::operator new (\
+        THEKOGANS_UTIL_EXPORT void *_T::operator new (\
                 std::size_t size,\
                 void *ptr) {\
-            assert (size == sizeof (type));\
+            assert (size == sizeof (_T));\
             return ptr;\
         }\
         template<>\
-        THEKOGANS_UTIL_EXPORT void type::operator delete (void *ptr) {\
-            GetHeap ().Free (ptr, false);\
+        THEKOGANS_UTIL_EXPORT void _T::operator delete (void *ptr) {\
+            Heap<_T>::Instance ().Free (ptr, false);\
         }\
         template<>\
-        THEKOGANS_UTIL_EXPORT void type::operator delete (\
+        THEKOGANS_UTIL_EXPORT void _T::operator delete (\
                 void *ptr,\
                 std::nothrow_t) throw () {\
-            GetHeap ().Free (ptr, true);\
+            Heap<_T>::Instance ().Free (ptr, true);\
         }\
         template<>\
-        THEKOGANS_UTIL_EXPORT void type::operator delete (\
+        THEKOGANS_UTIL_EXPORT void _T::operator delete (\
             void *,\
             void *) {}
-
-        /// \def THEKOGANS_UTIL_IMPLEMENT_HEAP_EX_T(type, minItemsInPage)
-        /// Use this macro to instantiate a heap with
-        /// a given items per page, DefaultAllocator
-        /// and NullLock.
-        /// \param[in] type Type for which a custom heap
-        /// is being declared (same as struct/class type).
-        /// \param[in] minItemsInPage Minimum items per page.
-        #define THEKOGANS_UTIL_IMPLEMENT_HEAP_EX_T(\
-            type, minItemsInPage)\
-        template<>\
-        thekogans::util::Heap<type> &type::GetHeap () {\
-            static thekogans::util::Heap<type> *heap =\
-                new thekogans::util::Heap<type> (#type, minItemsInPage);\
-            return *heap;\
-        }\
-        THEKOGANS_UTIL_IMPLEMENT_HEAP_FUNCTIONS_T (type)
-
-        /// \def THEKOGANS_UTIL_IMPLEMENT_HEAP_EX_WITH_ALLOCATOR_T(
-        ///          type, allocator, minItemsInPage)
-        /// Use this macro to instantiate a heap with
-        /// a NullLock, a given items per page and a custom
-        /// page allocator.
-        /// \param[in] type Type for which a custom heap
-        /// is being declared (same as struct/class type).
-        /// \param[in] minItemsInPage Minimum items per page.
-        /// \param[in] allocator Custom page allocator \see{Allocator}.
-        #define THEKOGANS_UTIL_IMPLEMENT_HEAP_EX_WITH_ALLOCATOR_T(\
-            type, minItemsInPage, allocator)\
-        template<>\
-        thekogans::util::Heap<type> &type::GetHeap () {\
-            static thekogans::util::Heap<type> *heap =\
-                new thekogans::util::Heap<type> (#type, minItemsInPage, allocator);\
-            return *heap;\
-        }\
-        THEKOGANS_UTIL_IMPLEMENT_HEAP_FUNCTIONS_T (type)
-
-        /// \def THEKOGANS_UTIL_IMPLEMENT_HEAP_WITH_LOCK_EX_T(
-        ///          type, lock, minItemsInPage)
-        /// Use this macro to instantiate a heap with
-        /// a DefaultAllocator, a custom lock and a
-        /// given items per page.
-        /// \param[in] type Type for which a custom heap
-        /// is being declared (same as struct/class type).
-        /// \param[in] lock Custom heap protection lock \see{NullLock}.
-        /// \param[in] minItemsInPage Minimum items per page.
-        #define THEKOGANS_UTIL_IMPLEMENT_HEAP_WITH_LOCK_EX_T(\
-            type, lock, minItemsInPage)\
-        template<>\
-        thekogans::util::Heap<type, lock> &type::GetHeap () {\
-            static thekogans::util::Heap<type, lock> *heap =\
-                new thekogans::util::Heap<type, lock> (#type, minItemsInPage);\
-            return *heap;\
-        }\
-        THEKOGANS_UTIL_IMPLEMENT_HEAP_FUNCTIONS_T (type)
-
-        /// \def THEKOGANS_UTIL_IMPLEMENT_HEAP_WITH_LOCK_EX_AND_ALLOCATOR_T(
-        ///          type, lock, minItemsInPage, allocator)
-        /// Use this macro to instantiate a heap with
-        /// a lock and a custom page allocator and
-        /// given items per page.
-        /// \param[in] type Type for which a custom heap
-        /// is being declared (same as struct/class type).
-        /// \param[in] lock Custom heap protection lock \see{NullLock}.
-        /// \param[in] minItemsInPage Minimum items per page.
-        /// \param[in] allocator Custom page allocator \see{Allocator}.
-        #define THEKOGANS_UTIL_IMPLEMENT_HEAP_WITH_LOCK_EX_AND_ALLOCATOR_T(\
-            type, lock, minItemsInPage, allocator)\
-        template<>\
-        thekogans::util::Heap<type, lock> &type::GetHeap () {\
-            static thekogans::util::Heap<type, lock> *heap =\
-                new thekogans::util::Heap<type, lock> (#type, minItemsInPage, allocator);\
-            return *heap;\
-        }\
-        THEKOGANS_UTIL_IMPLEMENT_HEAP_FUNCTIONS_T (type)
-
-        /// \def THEKOGANS_UTIL_IMPLEMENT_HEAP_T(type)
-        /// Use this macro to instantiate a heap with
-        /// a NullLock, THEKOGANS_UTIL_HEAP_DEFAULT_MIN_ITEMS_IN_PAGE
-        /// and a DefaultAllocator.
-        /// \param[in] type Type for which a custom heap
-        /// is being declared (same as struct/class type).
-        #define THEKOGANS_UTIL_IMPLEMENT_HEAP_T(type)\
-        THEKOGANS_UTIL_IMPLEMENT_HEAP_EX_T (type,\
-            thekogans::util::THEKOGANS_UTIL_HEAP_DEFAULT_MIN_ITEMS_IN_PAGE)
-
-        /// \def THEKOGANS_UTIL_IMPLEMENT_HEAP_WITH_ALLOCATOR_T(type, allocator)
-        /// Use this macro to instantiate a heap with
-        /// a custom allocator, a NullLock and
-        /// THEKOGANS_UTIL_HEAP_DEFAULT_MIN_ITEMS_IN_PAGE.
-        /// \param[in] type Type for which a custom heap
-        /// is being declared (same as struct/class type).
-        /// \param[in] allocator Custom page allocator \see{DefaultAllocator}.
-        #define THEKOGANS_UTIL_IMPLEMENT_HEAP_WITH_ALLOCATOR_T(type, allocator)\
-        THEKOGANS_UTIL_IMPLEMENT_HEAP_EX_WITH_ALLOCATOR_T (type,\
-            thekogans::util::THEKOGANS_UTIL_HEAP_DEFAULT_MIN_ITEMS_IN_PAGE, allocator)
-
-        /// \brief
-        /// Use this macro to instantiate a heap with
-        /// a DefaultAllocator, a custom lock and
-        /// THEKOGANS_UTIL_HEAP_DEFAULT_MIN_ITEMS_IN_PAGE.
-        /// \param[in] type Type for which a custom heap
-        /// is being declared (same as struct/class type).
-        /// \param[in] lock Custom heap protection lock \see{NullLock}.
-        #define THEKOGANS_UTIL_IMPLEMENT_HEAP_WITH_LOCK_T(type, lock)\
-        THEKOGANS_UTIL_IMPLEMENT_HEAP_WITH_LOCK_EX_T (type, lock,\
-            thekogans::util::THEKOGANS_UTIL_HEAP_DEFAULT_MIN_ITEMS_IN_PAGE)
-
-        /// \def THEKOGANS_UTIL_IMPLEMENT_HEAP_WITH_LOCK_AND_ALLOCATOR_T(type, lock, allocator)
-        /// Use this macro to instantiate a heap with
-        /// a custom allocator, a custom lock and
-        /// THEKOGANS_UTIL_HEAP_DEFAULT_MIN_ITEMS_IN_PAGE.
-        /// \param[in] type Type for which a custom heap
-        /// is being declared (same as struct/class type).
-        /// \param[in] lock Custom heap protection lock \see{NullLock}.
-        /// \param[in] allocator Custom page allocator \see{Allocator}.
-        #define THEKOGANS_UTIL_IMPLEMENT_HEAP_WITH_LOCK_AND_ALLOCATOR_T(\
-            type, lock, allocator)\
-        THEKOGANS_UTIL_IMPLEMENT_HEAP_WITH_LOCK_EX_AND_ALLOCATOR_T (type, lock,\
-            thekogans::util::THEKOGANS_UTIL_HEAP_DEFAULT_MIN_ITEMS_IN_PAGE, allocator)
 
         /// \struct HeapRegistry Heap.h thekogans/util/Heap.h
         ///
@@ -694,10 +423,10 @@ namespace thekogans {
         /// \brief
         /// Heap template.
 
-        template<
-            typename T,
-            typename Lock = NullLock>
-        struct Heap : public HeapRegistry::Diagnostics {
+        template<typename T>
+        struct Heap :
+            public HeapRegistry::Diagnostics,
+            public Singleton<Heap<T>, SpinLock> {
         protected:
             /// \brief
             /// Forward declaration of Page.
@@ -934,23 +663,23 @@ namespace thekogans {
             AlignedAllocator allocator;
             /// \brief
             /// Synchronization lock.
-            Lock lock;
+            SpinLock spinLock;
 
         public:
             /// \brief
             /// ctor.
-            /// The heap uses an \see{AlignedAllocator} to allocate its pages.
+            /// \param[in] name_ Heap name.
+            /// \param[in] minItemsInPage_ Heap minimum items in page.
+            /// NOTE: The heap uses an \see{AlignedAllocator} to allocate its pages.
             /// To maximize memory efficiency, any given page may contain
             /// more or less items then any other (depends on alignment. See
             /// AlignedAllocator.h). Therefore you cannot dictate the exact
             /// count of items per page, only the minimum.
-            /// \param[in] name_ Heap name.
-            /// \param[in] minItemsInPage_ Heap minimum items in page.
             /// \param[in] allocator_ Page allocator.
             Heap (const char *name_ = nullptr,
                     std::size_t minItemsInPage_ =
                         THEKOGANS_UTIL_HEAP_DEFAULT_MIN_ITEMS_IN_PAGE,
-                    Allocator &allocator_ = DefaultAllocator::Instance ()) :
+                    Allocator::SharedPtr allocator_ = &DefaultAllocator::Instance ()) :
                     name (name_),
                     minItemsInPage (minItemsInPage_),
                     minPageSize (Align (sizeof (Page) +
@@ -1077,7 +806,7 @@ namespace thekogans {
             /// Return a snapshot of the heap state.
             /// \return A snapshot of the heap state.
             virtual HeapRegistry::Diagnostics::Stats::UniquePtr GetStats () {
-                LockGuard<Lock> guard (lock);
+                LockGuard<SpinLock> guard (spinLock);
                 return HeapRegistry::Diagnostics::Stats::UniquePtr (
                     new Stats (
                         GetName (),
@@ -1180,35 +909,26 @@ namespace thekogans {
             THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (Heap)
         };
 
-        template<
-            typename T,
-            typename Lock>
-        bool Heap<T, Lock>::IsValidPtr (void *ptr) throw () {
+        template<typename T>
+        bool Heap<T>::IsValidPtr (void *ptr) throw () {
             if (ptr != nullptr) {
-                LockGuard<Lock> guard (lock);
+                LockGuard<SpinLock> guard (spinLock);
                 // To honor the no throw promise, we can't assume the
                 // pointer came from this heap. We can't even assume
                 // that it is valid (we cannot de-reference it). We
                 // therefore search through our pages to see if the
                 // given pointer lies within range.
-                struct Callback : public PageList::Callback {
-                    void *ptr;
-                    explicit Callback (void *ptr_) :
-                        ptr (ptr_) {}
-                    virtual bool operator () (Page *page) {
-                        return !page->IsValidPtr (ptr);
-                    }
-                } callback (ptr);
+                auto callback = [ptr] (Page *page) -> bool {
+                    return !page->IsValidPtr (ptr);
+                };
                 return !fullPages.for_each (callback) || !partialPages.for_each (callback);
             }
             return false;
         }
 
-        template<
-            typename T,
-            typename Lock>
-        void *Heap<T, Lock>::Alloc (bool nothrow) {
-            LockGuard<Lock> guard (lock);
+        template<typename T>
+        void *Heap<T>::Alloc (bool nothrow) {
+            LockGuard<SpinLock> guard (spinLock);
             Page *page = GetPage ();
             assert (page != nullptr);
             if (page != nullptr) {
@@ -1235,14 +955,12 @@ namespace thekogans {
             return nullptr;
         }
 
-        template<
-            typename T,
-            typename Lock>
-        void Heap<T, Lock>::Free (
+        template<typename T>
+        void Heap<T>::Free (
                 void *ptr,
                 bool nothrow) {
             if (ptr != nullptr) {
-                LockGuard<Lock> guard (lock);
+                LockGuard<SpinLock> guard (spinLock);
                 Page *page = GetPage (ptr);
                 assert (page != nullptr);
                 if (page != nullptr) {
@@ -1278,26 +996,17 @@ namespace thekogans {
             }
         }
 
-        template<
-            typename T,
-            typename Lock>
-        void Heap<T, Lock>::Flush () {
-            LockGuard<Lock> guard (lock);
+        template<typename T>
+        void Heap<T>::Flush () {
+            LockGuard<SpinLock> guard (spinLock);
             itemCount = 0;
-            struct Callback : public PageList::Callback {
-                typedef typename PageList::Callback::result_type result_type;
-                typedef typename PageList::Callback::argument_type argument_type;
-                Allocator &allocator;
-                explicit Callback (Allocator &allocator_) :
-                    allocator (allocator_) {}
-                virtual result_type operator () (argument_type page) {
-                    page->~Page ();
-                    allocator.Free (page, page->size);
-                    return true;
-                }
-            } callback (allocator);
-            fullPages.clear (callback);
-            partialPages.clear (callback);
+            auto deletePage = [allocator] (Page *page) -> bool {
+                page->~Page ();
+                allocator.Free (page, page->size);
+                return true;
+            };
+            fullPages.clear (deletePage);
+            partialPages.clear (deletePage);
         }
 
     } // namespace util

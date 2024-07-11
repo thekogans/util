@@ -126,7 +126,7 @@ namespace thekogans {
                 /// \brief
                 /// JobQueue has a private heap to help with memory
                 /// management, performance, and global heap fragmentation.
-                THEKOGANS_UTIL_DECLARE_HEAP_WITH_LOCK (JobQueue, SpinLock)
+                THEKOGANS_UTIL_DECLARE_STD_ALLOCATOR_FUNCTIONS
 
             private:
                 /// \brief

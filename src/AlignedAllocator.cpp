@@ -16,6 +16,7 @@
 // along with libthekogans_util. If not, see <http://www.gnu.org/licenses/>.
 
 #include <cstddef>
+#include "thekogans/util/Exception.h"
 #include "thekogans/util/AlignedAllocator.h"
 
 namespace thekogans {
@@ -24,11 +25,14 @@ namespace thekogans {
         THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_OVERRIDE (AlignedAllocator)
 
         AlignedAllocator::AlignedAllocator (
-                Allocator &allocator_,
+                Allocator::SharedPtr allocator_,
                 std::size_t alignment_) :
                 allocator (allocator_),
                 alignment (alignment_) {
-            assert (OneBitCount (alignment) == 1);
+            if (allocator.Get () == 0 || OneBitCount (alignment) != 1) {
+                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
+            }
         }
 
         void AlignedAllocator::Free (
@@ -37,7 +41,7 @@ namespace thekogans {
             if (ptr != nullptr) {
                 Footer *footer = (Footer *)((std::size_t)ptr + size);
                 footer->~Footer ();
-                allocator.Free (footer->ptr, footer->size);
+                allocator->Free (footer->ptr, footer->size);
             }
         }
 
@@ -50,7 +54,7 @@ namespace thekogans {
                 // NOTE: For very large alignments, we can have very
                 // inefficient use of resources.
                 std::size_t rawSize = alignment + size + sizeof (Footer);
-                void *rawPtr = allocator.Alloc (rawSize);
+                void *rawPtr = allocator->Alloc (rawSize);
                 if (rawPtr != nullptr) {
                     // To minimize waste, return to the caller the
                     // maximum amount of space available for use

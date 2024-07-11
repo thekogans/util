@@ -521,7 +521,7 @@ namespace thekogans {
             struct _LIB_THEKOGANS_UTIL_DECL Stats : public Serializable {
                 /// \brief
                 /// RunLoop::Stats is a \see{Serializable}.
-                THEKOGANS_UTIL_DECLARE_SERIALIZABLE (Stats, SpinLock)
+                THEKOGANS_UTIL_DECLARE_SERIALIZABLE (Stats)
 
                 /// \brief
                 /// Run loop id.
@@ -542,7 +542,7 @@ namespace thekogans {
                 struct _LIB_THEKOGANS_UTIL_DECL Job : public Serializable {
                     /// \brief
                     /// RunLoop::Stats::Job is a \see{Serializable}.
-                    THEKOGANS_UTIL_DECLARE_SERIALIZABLE (Job, SpinLock)
+                    THEKOGANS_UTIL_DECLARE_SERIALIZABLE (Job)
 
                     /// \brief
                     /// Job id.
@@ -597,7 +597,6 @@ namespace thekogans {
                     /// Reset the job stats.
                     void Reset ();
 
-                protected:
                     // Serializable
                     /// \brief
                     /// Return the serialized key size.
@@ -654,8 +653,6 @@ namespace thekogans {
                     /// Write a Serializable to the JSON DOM.
                     /// \param[out] node Parent node.
                     virtual void Write (JSON::Object &object) const override;
-
-                    friend struct Stats;
                 };
                 /// \brief
                 /// Last job stats.
@@ -672,8 +669,8 @@ namespace thekogans {
                 /// \param[in] id_ Run loop id.
                 /// \param[in] name_ Run loop name.
                 Stats (
-                    const RunLoop::Id &id_,
-                    const std::string &name_) :
+                    const RunLoop::Id &id_ = RunLoop::Id (),
+                    const std::string &name_ = std::string ()) :
                     id (id_),
                     name (name_),
                     totalJobs (0),
@@ -700,7 +697,6 @@ namespace thekogans {
                 /// Reset the RunLoop stats.
                 void Reset ();
 
-            protected:
                 // Serializable
                 /// \brief
                 /// Return the serialized key size.
@@ -907,7 +903,7 @@ namespace thekogans {
                 /// \brief
                 /// State has a private heap to help with memory
                 /// management, performance, and global heap fragmentation.
-                THEKOGANS_UTIL_DECLARE_HEAP_WITH_LOCK (State, SpinLock)
+                THEKOGANS_UTIL_DECLARE_STD_ALLOCATOR_FUNCTIONS
 
                 /// \brief
                 /// RunLoop id.

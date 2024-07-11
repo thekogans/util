@@ -140,7 +140,7 @@ namespace thekogans {
         ///
         /// NOTE: IdleProcessor demonstrates the canonical way of using Timer.
 
-        struct _LIB_THEKOGANS_UTIL_DECL Timer : public util::Producer<TimerEvents> {
+        struct _LIB_THEKOGANS_UTIL_DECL Timer : public Producer<TimerEvents> {
             /// \brief
             /// Declare \see{RefCounted} pointers.
             THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (Timer)
@@ -148,7 +148,7 @@ namespace thekogans {
             /// \brief
             /// Timer has a private heap to help with memory
             /// management, performance, and global heap fragmentation.
-            THEKOGANS_UTIL_DECLARE_HEAP_WITH_LOCK (Timer, SpinLock)
+            THEKOGANS_UTIL_DECLARE_STD_ALLOCATOR_FUNCTIONS
 
         private:
             /// \brief

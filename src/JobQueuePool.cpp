@@ -25,7 +25,7 @@
 namespace thekogans {
     namespace util {
 
-        THEKOGANS_UTIL_IMPLEMENT_HEAP_WITH_LOCK (JobQueuePool::JobQueue, SpinLock)
+        THEKOGANS_UTIL_IMPLEMENT_HEAP_FUNCTIONS (JobQueuePool::JobQueue)
 
         JobQueuePool::JobQueuePool (
                 std::size_t minJobQueues_,

@@ -78,7 +78,7 @@ namespace thekogans {
             /// \brief
             /// AlignedAllocator is an adaptor. It will use this allocator
             /// for actual allocations and will align the resulting block.
-            Allocator &allocator;
+            Allocator::SharedPtr allocator;
             /// \brief
             /// Alignment boundary (power of 2).
             std::size_t alignment;
@@ -89,7 +89,7 @@ namespace thekogans {
             /// \param[in] allocator_ Allocator to use for actual allocation.
             /// \param[in] alignment_ Alignment boundary (power of 2).
             AlignedAllocator (
-                Allocator &allocator_,
+                Allocator::SharedPtr allocator_,
                 std::size_t alignment_);
 
             /// \brief

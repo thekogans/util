@@ -161,7 +161,7 @@ namespace thekogans {
             }
         }
 
-        THEKOGANS_UTIL_IMPLEMENT_HEAP_WITH_LOCK (Pipeline::State, SpinLock)
+        THEKOGANS_UTIL_IMPLEMENT_HEAP_FUNCTIONS (Pipeline::State)
 
         Pipeline::State::State (
                 const Stage *begin,

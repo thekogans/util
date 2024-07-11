@@ -60,7 +60,7 @@ namespace thekogans {
     namespace util {
 
         struct Directory::Watcher::Watch {
-            THEKOGANS_UTIL_DECLARE_HEAP_WITH_LOCK (Watch, SpinLock)
+            THEKOGANS_UTIL_DECLARE_STD_ALLOCATOR_FUNCTIONS
 
             typedef std::unique_ptr<Watch> UniquePtr;
 
@@ -249,10 +249,10 @@ namespace thekogans {
         };
 
     #if defined (TOOLCHAIN_OS_OSX)
-        THEKOGANS_UTIL_IMPLEMENT_HEAP_WITH_LOCK (Directory::Watcher::Watch::Entry, SpinLock)
+        THEKOGANS_UTIL_IMPLEMENT_HEAP_FUNCTIONS (Directory::Watcher::Watch::Entry)
     #endif // defined (TOOLCHAIN_OS_OSX)
 
-        THEKOGANS_UTIL_IMPLEMENT_HEAP_WITH_LOCK_EX (Directory::Watcher::Watch, SpinLock, 64)
+        THEKOGANS_UTIL_IMPLEMENT_HEAP_FUNCTIONS (Directory::Watcher::Watch)
 
         Directory::Watcher::Watcher () :
             Thread ("Watcher"),
@@ -528,12 +528,7 @@ namespace thekogans {
             #define THEKOGANS_UTIL_MIN_DIRECORY_ENTRY_IN_PAGE 64
         #endif // !defined (THEKOGANS_UTIL_MIN_DIRECORY_ENTRY_IN_PAGE)
 
-        THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE (
-            Directory::Entry,
-            1,
-            SpinLock,
-            THEKOGANS_UTIL_MIN_DIRECORY_ENTRY_IN_PAGE,
-            DefaultAllocator::Instance ())
+        THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE (Directory::Entry, 1)
 
     #if defined (TOOLCHAIN_OS_Windows)
         namespace {

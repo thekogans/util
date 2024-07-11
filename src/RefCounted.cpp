@@ -18,6 +18,7 @@
 #include <boost/atomic/detail/config.hpp>
 #include <boost/atomic/detail/operations_lockfree.hpp>
 #include <boost/memory_order.hpp>
+#include "thekogans/util/Heap.h"
 #include "thekogans/util/Constants.h"
 #include "thekogans/util/StringUtils.h"
 #include "thekogans/util/Exception.h"
@@ -26,7 +27,7 @@
 namespace thekogans {
     namespace util {
 
-        //THEKOGANS_UTIL_IMPLEMENT_HEAP_WITH_LOCK (RefCounted::References, SpinLock)
+        THEKOGANS_UTIL_IMPLEMENT_HEAP_FUNCTIONS (RefCounted::References)
 
         namespace {
             typedef boost::atomics::detail::operations<4u, false> operations;

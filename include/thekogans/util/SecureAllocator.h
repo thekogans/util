@@ -111,7 +111,7 @@ namespace thekogans {
         #define THEKOGANS_UTIL_IMPLEMENT_SECURE_ALLOCATOR_FUNCTIONS(_T)\
         void *_T::operator new (std::size_t size) {\
             assert (size == sizeof (_T));\
-            return thekogans::util::SecureAllocator::Instance ().Alloc (size); \
+            return thekogans::util::SecureAllocator::Instance ().Alloc (size);\
         }\
         void *_T::operator new (\
                 std::size_t size,\

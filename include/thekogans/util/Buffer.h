@@ -519,7 +519,7 @@ namespace thekogans {
             /// NOTE: The allocator paramater is ignored as SecureBuffer uses the SecureAllocator.
             virtual void Resize (
                 std::size_t length,
-                Allocator::SharedPtr /*allocator*/ = &DefaultAllocator::Instance ());
+                Allocator::SharedPtr /*allocator*/ = &DefaultAllocator::Instance ()) override;
 
             /// \brief
             /// Clone the buffer.
@@ -527,7 +527,7 @@ namespace thekogans {
             /// NOTE: The allocator paramater is ignored as SecureBuffer uses the SecureAllocator.
             /// \return A clone of this buffer.
             virtual Buffer Clone (
-                Allocator::SharedPtr /*allocator*/ = &DefaultAllocator::Instance ()) const;
+                Allocator::SharedPtr /*allocator*/ = &DefaultAllocator::Instance ()) const override;
 
             /// \brief
             /// Return subset of the buffer.
@@ -542,7 +542,7 @@ namespace thekogans {
             virtual Buffer Subset (
                 std::size_t offset,
                 std::size_t count,
-                Allocator::SharedPtr /*allocator*/ = &DefaultAllocator::Instance ()) const;
+                Allocator::SharedPtr /*allocator*/ = &DefaultAllocator::Instance ()) const override;
 
         #if defined (THEKOGANS_UTIL_HAVE_ZLIB)
             /// \brief
@@ -551,14 +551,14 @@ namespace thekogans {
             /// NOTE: The allocator paramater is ignored as SecureBuffer uses the SecureAllocator.
             /// \return A buffer containing deflated data.
             virtual Buffer Deflate (
-                Allocator::SharedPtr /*allocator*/ = &DefaultAllocator::Instance ()) const;
+                Allocator::SharedPtr /*allocator*/ = &DefaultAllocator::Instance ()) const override;
             /// \brief
             /// Use zlib to decompress the buffer.
             /// \param[in] allocator Allocator for the returned buffer.
             /// NOTE: The allocator paramater is ignored as SecureBuffer uses the SecureAllocator.
             /// \return A buffer containing inflated data.
             virtual Buffer Inflate (
-                Allocator::SharedPtr /*allocator*/ = &DefaultAllocator::Instance ()) const;
+                Allocator::SharedPtr /*allocator*/ = &DefaultAllocator::Instance ()) const override;
         #endif // defined (THEKOGANS_UTIL_HAVE_ZLIB)
         };
 
@@ -594,7 +594,7 @@ namespace thekogans {
             /// \return Number of bytes actually written.
             virtual std::size_t Write (
                     const void * /*buffer*/,
-                    std::size_t /*count*/) {
+                    std::size_t /*count*/) override {
                 assert (0);
                 THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
                     "%s", "TenantReadBuffer can't Write.");

@@ -106,12 +106,7 @@ namespace thekogans {
             #define THEKOGANS_UTIL_MIN_TIMER_INFOS_IN_PAGE 64
         #endif // !defined (THEKOGANS_UTIL_MIN_TIMER_INFOS_IN_PAGE)
 
-        THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE (
-            HRTimerMgr::TimerInfo,
-            1,
-            SpinLock,
-            THEKOGANS_UTIL_MIN_TIMER_INFOS_IN_PAGE,
-            DefaultAllocator::Instance ())
+        THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE (HRTimerMgr::TimerInfo, 1)
 
         void HRTimerMgr::TimerInfo::Start () {
             start = HRTimer::Click ();
@@ -221,12 +216,7 @@ namespace thekogans {
             #define THEKOGANS_UTIL_MIN_SCOPE_INFOS_IN_PAGE 64
         #endif // !defined (THEKOGANS_UTIL_MIN_SCOPE_INFOS_IN_PAGE)
 
-        THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE (
-            HRTimerMgr::ScopeInfo,
-            1,
-            SpinLock,
-            THEKOGANS_UTIL_MIN_SCOPE_INFOS_IN_PAGE,
-            DefaultAllocator::Instance ())
+        THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE (HRTimerMgr::ScopeInfo, 1)
 
         HRTimerMgr::ScopeInfo *HRTimerMgr::ScopeInfo::BeginScope (
                 const std::string &name) {
@@ -356,14 +346,14 @@ namespace thekogans {
                 size += util::SizeT (open.size ()).Size ();
                 for (std::list<TimerInfoBase::SharedPtr>::const_iterator it = open.begin (),
                         end = open.end (); it != end; ++it) {
-                    size += Serializable::Size (**it);
+                    size += (*it)->Size ();
                 }
             }
             {
                 size += util::SizeT (closed.size ()).Size ();
                 for (std::list<TimerInfoBase::SharedPtr>::const_iterator it = closed.begin (),
                         end = closed.end (); it != end; ++it) {
-                    size += Serializable::Size (**it);
+                    size += (*it)->Size ();
                 }
             }
             return size;
@@ -535,12 +525,7 @@ namespace thekogans {
             #define THEKOGANS_UTIL_MIN_HR_TIMER_MGR_IN_PAGE 16
         #endif // !defined (THEKOGANS_UTIL_MIN_HR_TIMER_MGR_IN_PAGE)
 
-        THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE (
-            HRTimerMgr,
-            1,
-            SpinLock,
-            THEKOGANS_UTIL_MIN_HR_TIMER_MGR_IN_PAGE,
-            DefaultAllocator::Instance ())
+        THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE (HRTimerMgr, 1)
 
 
         std::string HRTimerMgr::ToXMLString (
@@ -561,7 +546,7 @@ namespace thekogans {
         }
 
         std::size_t HRTimerMgr::Size () const {
-            return Serializable::Size (root);
+            return root.Size ();
         }
 
         void HRTimerMgr::Read (

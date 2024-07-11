@@ -75,7 +75,7 @@ namespace thekogans {
         struct _LIB_THEKOGANS_UTIL_DECL TimeSpec : public Serializable {
             /// \brief
             /// TimeSpec is a \see{Serializable}.
-            THEKOGANS_UTIL_DECLARE_SERIALIZABLE (TimeSpec, SpinLock)
+            THEKOGANS_UTIL_DECLARE_SERIALIZABLE (TimeSpec)
 
             /// \brief
             /// Seconds value.
@@ -339,7 +339,6 @@ namespace thekogans {
             /// \return *this + FromNanoseconds (nanoseconds).
             TimeSpec AddNanoseconds (i64 nanoseconds) const;
 
-        protected:
             // Serializable
             /// \brief
             /// Return the serialized key size.

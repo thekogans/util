@@ -16,9 +16,9 @@
 // along with libthekogans_util. If not, see <http://www.gnu.org/licenses/>.
 
 #if defined (THEKOGANS_UTIL_TYPE_Static)
-//    #include "thekogans/util/Allocator.h"
+    #include "thekogans/util/Allocator.h"
     #include "thekogans/util/Hash.h"
-//    #include "thekogans/util/Serializable.h"
+    #include "thekogans/util/Serializable.h"
 #endif // defined (THEKOGANS_UTIL_TYPE_Static)
 #include "thekogans/util/DynamicCreatable.h"
 
@@ -29,9 +29,9 @@ namespace thekogans {
 
     #if defined (THEKOGANS_UTIL_TYPE_Static)
         void DynamicCreatable::StaticInit () {
-            //Allocator::StaticInit ();
+            Allocator::StaticInit ();
             Hash::StaticInit ();
-            //Serializable::StaticInit ();
+            Serializable::StaticInit ();
         }
     #else // defined (THEKOGANS_UTIL_TYPE_Static)
         DynamicCreatable::MapInitializer::MapInitializer (

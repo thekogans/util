@@ -25,7 +25,6 @@
 #include "thekogans/util/Config.h"
 #include "thekogans/util/Types.h"
 #include "thekogans/util/Constants.h"
-//#include "thekogans/util/Heap.h"
 #include "thekogans/util/Singleton.h"
 #include "thekogans/util/SpinLock.h"
 #include "thekogans/util/LockGuard.h"
@@ -77,7 +76,7 @@ namespace thekogans {
             struct _LIB_THEKOGANS_UTIL_DECL References {
                 /// \brief
                 /// References has a private heap to help with performance and memory fragmentation.
-                //THEKOGANS_UTIL_DECLARE_HEAP_WITH_LOCK (References, SpinLock)
+                THEKOGANS_UTIL_DECLARE_STD_ALLOCATOR_FUNCTIONS
 
             private:
                 /// \brief

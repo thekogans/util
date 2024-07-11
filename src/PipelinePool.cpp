@@ -25,7 +25,7 @@
 namespace thekogans {
     namespace util {
 
-        THEKOGANS_UTIL_IMPLEMENT_HEAP_WITH_LOCK (PipelinePool::Pipeline, SpinLock)
+        THEKOGANS_UTIL_IMPLEMENT_HEAP_FUNCTIONS (PipelinePool::Pipeline)
 
         PipelinePool::PipelinePool (
                 std::size_t minPipelines_,

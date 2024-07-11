@@ -58,12 +58,12 @@ namespace thekogans {
             struct _LIB_THEKOGANS_UTIL_DECL Plugin : public virtual RefCounted {
                 /// \brief
                 /// Convenient typedef for RefCounted::SharedPtr<Plugin>.
-                typedef RefCounted::SharedPtr<Plugin> SharedPtr;
+                THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (Plugin)
 
                 /// \brief
                 /// Plugin has a private heap to help with memory
                 /// management, performance, and global heap fragmentation.
-                THEKOGANS_UTIL_DECLARE_HEAP_WITH_LOCK (Plugin, SpinLock)
+                THEKOGANS_UTIL_DECLARE_STD_ALLOCATOR_FUNCTIONS
 
                 /// \brief
                 /// Plugin path relative to the xml file.

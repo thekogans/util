@@ -34,7 +34,7 @@ namespace thekogans {
         struct _LIB_THEKOGANS_UTIL_DECL SHA3 : public Hash {
             /// \brief
             /// SHA3 participates in the Hash dynamic discovery and creation.
-            THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE (SHA3, SpinLock)
+            THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE (SHA3)
 
             enum {
                 /// \brief

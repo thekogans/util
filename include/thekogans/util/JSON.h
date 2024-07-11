@@ -73,7 +73,7 @@ namespace thekogans {
             #define THEKOGANS_UTIL_JSON_DECLARE_VALUE(type)\
             public:\
                 typedef RefCounted::SharedPtr<type> SharedPtr;\
-                THEKOGANS_UTIL_DECLARE_HEAP_WITH_LOCK (type, SpinLock)\
+                THEKOGANS_UTIL_DECLARE_STD_ALLOCATOR_FUNCTIONS\
                 static const char * const TYPE;\
                 virtual const char *GetType () const {\
                     return TYPE;\
@@ -82,7 +82,7 @@ namespace thekogans {
             /// \def THEKOGANS_UTIL_JSON_IMPLEMENT_VALUE(type)
             /// Common implementations used by all Value derivatives.
             #define THEKOGANS_UTIL_JSON_IMPLEMENT_VALUE(type)\
-                THEKOGANS_UTIL_IMPLEMENT_HEAP_WITH_LOCK (JSON::type, SpinLock)\
+                THEKOGANS_UTIL_IMPLEMENT_HEAP_FUNCTIONS (JSON::type)\
                 const char * const JSON::type::TYPE = #type;
 
             /// \struct JSON::Bool JSON.h thekogans/util/JSON.h

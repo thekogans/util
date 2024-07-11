@@ -26,7 +26,7 @@
 namespace thekogans {
     namespace util {
 
-        THEKOGANS_UTIL_IMPLEMENT_HEAP_WITH_LOCK (Plugins::Plugin, SpinLock)
+        THEKOGANS_UTIL_IMPLEMENT_HEAP_FUNCTIONS (Plugins::Plugin)
 
         void Plugins::Plugin::Load (const std::string &directory) {
             std::string pluginPath = MakePath (directory, path);

@@ -17,9 +17,18 @@
 
 #include "thekogans/util/XMLUtils.h"
 #include "thekogans/util/Serializable.h"
+#if defined (THEKOGANS_UTIL_TYPE_Static)
+#endif // defined (THEKOGANS_UTIL_TYPE_Static)
 
 namespace thekogans {
     namespace util {
+
+        THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_BASE (Serializable)
+
+    #if defined (THEKOGANS_UTIL_TYPE_Static)
+        void StaticInit::StaticInit () {
+        }
+    #endif // defined (THEKOGANS_UTIL_TYPE_Static)
 
         const char * const Serializable::BinHeader::TAG_BIN_HEADER = "BinHeader";
         const char * const Serializable::BinHeader::ATTR_MAGIC = "Magic";
@@ -48,31 +57,12 @@ namespace thekogans {
         const char * const Serializable::TextHeader::ATTR_TYPE = "Type";
         const char * const Serializable::TextHeader::ATTR_VERSION = "Version";
 
-        Serializable::Map &Serializable::GetMap () {
-            static Map *map = new Map;
-            return *map;
-        }
-
-        Serializable::MapInitializer::MapInitializer (
-                const std::string &type,
-                Factories factories) {
-            std::pair<Map::iterator, bool> result =
-                GetMap ().insert (Map::value_type (type, factories));
-            if (!result.second) {
-                THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                    "'%s' is already registered.", type.c_str ());
-            }
-        }
-
         bool Serializable::ValidateType (const std::string &type) {
-            return GetMap ().find (type) != GetMap ().end ();
+            return Map::Instance ().find (type) != Map::Instance ().end ();
         }
 
-        std::size_t Serializable::Size (const Serializable &serializable) {
-            BinHeader header (
-                serializable.Type (),
-                serializable.Version (),
-                serializable.Size ());
+        std::size_t Serializable::GetSize () const {
+            BinHeader header (Type (), Version (), Size ());
             return header.Size () + header.size;
         }
 

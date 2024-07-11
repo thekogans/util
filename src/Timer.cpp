@@ -34,7 +34,7 @@
 namespace thekogans {
     namespace util {
 
-        THEKOGANS_UTIL_IMPLEMENT_HEAP_WITH_LOCK (Timer, SpinLock)
+        THEKOGANS_UTIL_IMPLEMENT_HEAP_FUNCTIONS (Timer)
 
     #if defined (TOOLCHAIN_OS_Windows)
         VOID CALLBACK Timer::TimerCallback (

@@ -154,7 +154,7 @@ namespace thekogans {
         struct _LIB_THEKOGANS_UTIL_DECL HRTimerMgr : public Serializable {
             /// \brief
             /// HRTimerMgr is a \see{Serializable}.
-            THEKOGANS_UTIL_DECLARE_SERIALIZABLE (HRTimerMgr, SpinLock)
+            THEKOGANS_UTIL_DECLARE_SERIALIZABLE (HRTimerMgr)
 
             /// \struct HRTimerMgr::TimerInfoBase HRTimerMgr.h thekogans/util/HRTimerMgr.h
             ///
@@ -216,7 +216,6 @@ namespace thekogans {
                     ui64 & /*average*/,
                     ui64 & /*total*/) const = 0;
 
-            protected:
                 // Serializable
                 /// \brief
                 /// Return the serializable size.
@@ -280,7 +279,7 @@ namespace thekogans {
             struct _LIB_THEKOGANS_UTIL_DECL TimerInfo : public TimerInfoBase {
                 /// \brief
                 /// TimerInfo is a \see{Serializable}.
-                THEKOGANS_UTIL_DECLARE_SERIALIZABLE (TimerInfo, SpinLock)
+                THEKOGANS_UTIL_DECLARE_SERIALIZABLE (TimerInfo)
 
                 /// \brief
                 /// Start time.
@@ -328,7 +327,6 @@ namespace thekogans {
                     ui64 &average,
                     ui64 &total) const override;
 
-            protected:
                 // Serializable
                 /// \brief
                 /// Return the serialized key size.
@@ -389,7 +387,7 @@ namespace thekogans {
             struct _LIB_THEKOGANS_UTIL_DECL ScopeInfo : public TimerInfoBase {
                 /// \brief
                 /// ScopeInfo is a \see{Serializable}.
-                THEKOGANS_UTIL_DECLARE_SERIALIZABLE (ScopeInfo, SpinLock)
+                THEKOGANS_UTIL_DECLARE_SERIALIZABLE (ScopeInfo)
 
                 /// \brief
                 /// A stack of open scopes.
@@ -446,7 +444,6 @@ namespace thekogans {
                     ui64 &average,
                     ui64 &total) const override;
 
-            protected:
                 // Serializable
                 /// \brief
                 /// Return the serialized key size.
@@ -670,7 +667,6 @@ namespace thekogans {
                 std::size_t indentationLevel = 0,
                 std::size_t indentationWidth = 2) const;
 
-        protected:
             // Serializable
             /// \brief
             /// Return the serialized key size.

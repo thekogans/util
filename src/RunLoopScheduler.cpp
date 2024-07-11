@@ -23,8 +23,8 @@ namespace thekogans {
 
         RunLoopScheduler::JobInfo::Compare RunLoopScheduler::JobInfo::compare;
 
-        THEKOGANS_UTIL_IMPLEMENT_HEAP_WITH_LOCK (RunLoopScheduler::RunLoopJobInfo, SpinLock)
-        THEKOGANS_UTIL_IMPLEMENT_HEAP_WITH_LOCK (RunLoopScheduler::PipelineJobInfo, SpinLock)
+        THEKOGANS_UTIL_IMPLEMENT_HEAP_FUNCTIONS (RunLoopScheduler::RunLoopJobInfo)
+        THEKOGANS_UTIL_IMPLEMENT_HEAP_FUNCTIONS (RunLoopScheduler::PipelineJobInfo)
 
         void RunLoopScheduler::Queue::CancelJob (const RunLoop::Job::Id &id) {
             for (std::size_t i = c.size (); i-- > 0;) {

@@ -24,7 +24,7 @@ namespace thekogans {
         // This code was inspired by:
         // https://github.com/stoklund/varint/blob/master/prefix_varint.cpp
 
-        THEKOGANS_UTIL_IMPLEMENT_HEAP_WITH_LOCK (SizeT, SpinLock)
+        THEKOGANS_UTIL_IMPLEMENT_HEAP_FUNCTIONS (SizeT)
 
         _LIB_THEKOGANS_UTIL_DECL Serializer & _LIB_THEKOGANS_UTIL_API operator << (
                 Serializer &serializer,

@@ -23,7 +23,7 @@
 namespace thekogans {
     namespace util {
 
-        THEKOGANS_UTIL_IMPLEMENT_HEAP_WITH_LOCK (Scheduler::JobQueue, SpinLock)
+        THEKOGANS_UTIL_IMPLEMENT_HEAP_FUNCTIONS (Scheduler::JobQueue)
 
         void Scheduler::JobQueue::Start () {
             state->done = false;

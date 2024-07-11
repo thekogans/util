@@ -48,7 +48,7 @@ namespace thekogans {
             ThreadReaper::Instance ().ReapThread (this);
         }
 
-        THEKOGANS_UTIL_IMPLEMENT_HEAP_WITH_LOCK (JobQueue::State, SpinLock)
+        THEKOGANS_UTIL_IMPLEMENT_HEAP_FUNCTIONS (JobQueue::State)
 
         JobQueue::JobQueue (
                 const std::string &name,

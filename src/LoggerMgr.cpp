@@ -33,7 +33,7 @@ namespace thekogans {
 
         const char * const LoggerMgr::SUBSYSTEM_GLOBAL = "global";
 
-        THEKOGANS_UTIL_IMPLEMENT_HEAP_WITH_LOCK_EX (LoggerMgr::Entry, SpinLock, 5)
+        THEKOGANS_UTIL_IMPLEMENT_HEAP_FUNCTIONS (LoggerMgr::Entry)
 
         LoggerMgr::~LoggerMgr () {
             THEKOGANS_UTIL_TRY {

@@ -25,8 +25,7 @@
 #include "thekogans/util/Config.h"
 #include "thekogans/util/Types.h"
 #include "thekogans/util/Constants.h"
-#include "thekogans/util/Heap.h"
-#include "thekogans/util/RefCounted.h"
+#include "thekogans/util/DynamicCreatable.h"
 #include "thekogans/util/Serializer.h"
 #include "thekogans/util/JSON.h"
 #include "thekogans/util/Buffer.h"
@@ -48,10 +47,10 @@ namespace thekogans {
         /// serialization and de-serialization. (For a good real world example have a
         /// look at \see{crypto::Serializable} and it's derivatives.)
 
-        struct _LIB_THEKOGANS_UTIL_DECL Serializable : public virtual RefCounted {
+        struct _LIB_THEKOGANS_UTIL_DECL Serializable : public DynamicCreatable {
             /// \brief
             /// Declare \see{RefCounted} pointers.
-            THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (Serializable)
+            THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE_BASE (Serializable)
 
             /// \struct Serializable::BinHeader Serializable.h thekogans/util/Serializable.h
             ///
@@ -181,79 +180,14 @@ namespace thekogans {
             };
 
             /// \brief
-            /// typedef for the Serializable binary factory function.
-            typedef SharedPtr (*BinFactory) (
-                const BinHeader & /*header*/,
-                Serializer & /*serializer*/);
-            /// \brief
-            /// typedef for the Serializable XML factory function.
-            typedef SharedPtr (*XMLFactory) (
-                const TextHeader & /*header*/,
-                const pugi::xml_node & /*node*/);
-            /// \brief
-            /// typedef for the Serializable JSON factory function.
-            typedef SharedPtr (*JSONFactory) (
-                const TextHeader & /*header*/,
-                const JSON::Object & /*object*/);
-            /// \brief
-            /// typedef for Serializable factories.
-            typedef std::tuple<BinFactory, XMLFactory, JSONFactory> Factories;
-            /// \brief
-            /// typedef for the Serializable map.
-            typedef std::map<std::string, Factories> Map;
-            /// \brief
-            /// Controls Map's lifetime.
-            /// \return Serializable map.
-            static Map &GetMap ();
-            /// \struct Serializable::MapInitializer Serializable.h thekogans/util/Serializable.h
-            ///
-            /// \brief
-            /// MapInitializer is used to initialize the Serializable::map.
-            /// It should not be used directly, and instead is included
-            /// in THEKOGANS_UTIL_DECLARE_SERIALIZABLE/THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE.
-            /// If you are deriving a serializable from Serializable, and you want
-            /// it to be dynamically discoverable/creatable, add
-            /// THEKOGANS_UTIL_DECLARE_SERIALIZABLE to it's declaration,
-            /// and THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE to it's definition.
-            struct _LIB_THEKOGANS_UTIL_DECL MapInitializer {
-                /// \brief
-                /// ctor. Add serializable of type, and factories for creating it
-                /// to the Serializable::map
-                /// \param[in] type Serializable type (it's class name).
-                /// \param[in] factories Serializable creation factories.
-                MapInitializer (
-                    const std::string &type,
-                    Factories factories);
-            };
-
-            /// \brief
-            /// dtor.
-            virtual ~Serializable () {}
-
-            /// \brief
             /// Check the map for the given type.
             /// \return true == The given type is in the map.
             static bool ValidateType (const std::string &type);
 
             /// \brief
             /// Return the size of the serializable including the header.
-            /// Use of this API is mendatory as virtual std::size_t Size ()
-            /// (below) is protected.
             /// \return Size of the serializable including the header.
-            static std::size_t Size (const Serializable &serializable);
-
-            /// \brief
-            /// Return Serializable type.
-            /// \return Serializable type.
-            inline std::string GetType () const {
-                return Type ();
-            }
-
-        protected:
-            /// \brief
-            /// Return serializable type (it's class name).
-            /// \return Serializable type.
-            virtual const char *Type () const = 0;
+            std::size_t GetSize () const;
 
             /// \brief
             /// Return the serializable version.
@@ -298,212 +232,26 @@ namespace thekogans {
             /// Write a Serializable to the JSON DOM.
             /// \param[out] node Parent node.
             virtual void Write (JSON::Object & /*object*/) const = 0;
-
-            /// \brief
-            /// Needs access to BinHeader.
-            friend Serializer & _LIB_THEKOGANS_UTIL_API operator << (
-                Serializer &serializer,
-                const BinHeader &header);
-            /// \brief
-            /// Needs access to BinHeader.
-            friend Serializer & _LIB_THEKOGANS_UTIL_API operator >> (
-                Serializer &serializer,
-                BinHeader &header);
-            /// \brief
-            /// Needs access to TextHeader.
-            friend pugi::xml_node & _LIB_THEKOGANS_UTIL_API operator << (
-                pugi::xml_node &node,
-                const TextHeader &header);
-            /// \brief
-            /// Needs access to TextHeader.
-            friend const pugi::xml_node & _LIB_THEKOGANS_UTIL_API operator >> (
-                const pugi::xml_node &node,
-                TextHeader &header);
-            /// \brief
-            /// Needs access to TextHeader and Write.
-            friend Serializer & _LIB_THEKOGANS_UTIL_API operator << (
-                Serializer &serializer,
-                const Serializable &serializable);
-            /// \brief
-            /// Needs access to TextHeader and Write.
-            friend pugi::xml_node & _LIB_THEKOGANS_UTIL_API operator << (
-                pugi::xml_node &node,
-                const Serializable &serializable);
-            /// \brief
-            /// Needs access to TextHeader and Write.
-            friend JSON::Object & _LIB_THEKOGANS_UTIL_API operator << (
-                JSON::Object &object,
-                const Serializable &serializable);
         };
 
-        /// \def THEKOGANS_UTIL_DECLARE_SERIALIZABLE_COMMON(type, lock)
+        /// \def THEKOGANS_UTIL_DECLARE_SERIALIZABLE(_T)
         /// Common code used by Static and Shared versions THEKOGANS_UTIL_DECLARE_SERIALIZABLE.
-        #define THEKOGANS_UTIL_DECLARE_SERIALIZABLE_COMMON(type, lock)\
+        #define THEKOGANS_UTIL_DECLARE_SERIALIZABLE(_T)\
+            THEKOGANS_UTIL_DECLARE_STD_ALLOCATOR_FUNCTIONS\
+            THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE (_T)\
         public:\
-            THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (type)\
-        protected:\
-            THEKOGANS_UTIL_DECLARE_HEAP_WITH_LOCK (type, lock)\
-            type (\
-                    const thekogans::util::Serializable::BinHeader &header,\
-                    thekogans::util::Serializer &serializer) {\
-                Read (header, serializer);\
-            }\
-            type (\
-                    const thekogans::util::Serializable::TextHeader &header,\
-                    const pugi::xml_node &node) {\
-                Read (header, node);\
-            }\
-            type (\
-                    const thekogans::util::Serializable::TextHeader &header,\
-                    const thekogans::util::JSON::Object &object) {\
-                Read (header, object);\
-            }\
-            static thekogans::util::Serializable::SharedPtr BinCreate (\
-                    const thekogans::util::Serializable::BinHeader &header,\
-                    thekogans::util::Serializer &serializer) {\
-                return thekogans::util::Serializable::SharedPtr (\
-                    new type (header, serializer));\
-            }\
-            static thekogans::util::Serializable::SharedPtr XMLCreate (\
-                    const thekogans::util::Serializable::TextHeader &header,\
-                    const pugi::xml_node &node) {\
-                return thekogans::util::Serializable::SharedPtr (\
-                    new type (header, node));\
-            }\
-            static thekogans::util::Serializable::SharedPtr JSONCreate (\
-                    const thekogans::util::Serializable::TextHeader &header,\
-                    const thekogans::util::JSON::Object &object) {\
-                return thekogans::util::Serializable::SharedPtr (\
-                    new type (header, object));\
-            }\
-            friend thekogans::util::Serializer & _LIB_THEKOGANS_UTIL_API operator >> (\
-                thekogans::util::Serializer &serializer,\
-                type &serializable);\
-            friend const pugi::xml_node & _LIB_THEKOGANS_UTIL_API operator >> (\
-                const pugi::xml_node &node,\
-                type &serializable);\
-            friend const thekogans::util::JSON::Object & _LIB_THEKOGANS_UTIL_API operator >> (\
-                const thekogans::util::JSON::Object &object,\
-                type &serializable);\
-            template<typename>\
-            friend struct thekogans::util::ValueParser;\
-        public:\
-            static const char *TYPE;\
             static const thekogans::util::ui16 VERSION;\
-        protected:\
-            virtual const char *Type () const override {\
-                return TYPE;\
-            }\
-            virtual thekogans::util::ui16 Version () const override {\
-                return VERSION;\
-            }\
-        public:
+            virtual thekogans::util::ui16 Version () const override;
 
-        /// \def THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_COMMON(
-        ///     type, version, lock, minSerializablesInPage, allocator)
+        /// \def THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE(_T, version)
         /// Common code used by Static and Shared versions THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE.
-        #define THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_COMMON(\
-                type, version, lock, minSerializablesInPage, allocator)\
-            const char *type::TYPE = #type;\
-            const thekogans::util::ui16 type::VERSION = version;\
-            THEKOGANS_UTIL_IMPLEMENT_HEAP_WITH_LOCK_EX_AND_ALLOCATOR (\
-                type,\
-                lock,\
-                minSerializablesInPage,\
-                allocator)
-
-    #if defined (THEKOGANS_UTIL_TYPE_Static)
-        /// \def THEKOGANS_UTIL_DECLARE_SERIALIZABLE(type, lock)
-        /// Dynamic discovery macro. Add this to your class declaration.
-        /// Example:
-        /// \code{.cpp}
-        /// struct _LIB_THEKOGANS_UTIL_DECL SymmetricKey : public util::Serializable {
-        ///     THEKOGANS_CRYPTO_DECLARE_SERIALIZABLE (SymmetricKey)
-        ///     ...
-        /// };
-        /// \endcode
-        #define THEKOGANS_UTIL_DECLARE_SERIALIZABLE(type, lock)\
-            THEKOGANS_UTIL_DECLARE_SERIALIZABLE_COMMON (type, lock)\
-            static void StaticInit ();
-
-        /// \def THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE(type, version, lock, minSerializablesInPage, allocator)
-        /// Dynamic discovery macro. Instantiate one of these in the class cpp file.
-        /// Example:
-        /// \code{.cpp}
-        /// #if !defined (THEKOGANS_CRYPTO_MIN_SYMMETRIC_KEYS_IN_PAGE)
-        ///     #define THEKOGANS_CRYPTO_MIN_SYMMETRIC_KEYS_IN_PAGE 16
-        /// #endif // !defined (THEKOGANS_CRYPTO_MIN_SYMMETRIC_KEYS_IN_PAGE)
-        ///
-        /// THEKOGANS_CRYPTO_IMPLEMENT_SERIALIZABLE (
-        ///     SymmetricKey,
-        ///     1,
-        ///     THEKOGANS_CRYPTO_MIN_SYMMETRIC_KEYS_IN_PAGE)
-        /// \endcode
-        #define THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE(\
-                type, version, lock, minSerializablesInPage, allocator)\
-            THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_COMMON (\
-                type, version, lock, minSerializablesInPage, allocator)\
-            void type::StaticInit () {\
-                static volatile bool registered = false;\
-                static thekogans::util::SpinLock spinLock;\
-                if (!registered) {\
-                    thekogans::util::LockGuard<thekogans::util::SpinLock> guard (spinLock);\
-                    if (!registered) {\
-                        std::pair<Map::iterator, bool> result =\
-                            GetMap ().insert (\
-                                Map::value_type (\
-                                    #type,\
-                                    thekogans::util::Serializable::Factories (\
-                                        type::BinCreate,\
-                                        type::XMLCreate,\
-                                        type::JSONCreate)));\
-                        if (!result.second) {\
-                            THEKOGANS_UTIL_THROW_STRING_EXCEPTION (\
-                                "'%s' is already registered.", #type);\
-                        }\
-                        registered = true;\
-                    }\
-                }\
+        #define THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE(_T, version)\
+            THEKOGANS_UTIL_IMPLEMENT_HEAP_FUNCTIONS (_T)\
+            THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE (_T)\
+            const thekogans::util::ui16 _T::VERSION = version;\
+            thekogans::util::ui16 _T::Version () const {\
+                return VERSION;\
             }
-    #else // defined (THEKOGANS_UTIL_TYPE_Static)
-        /// \def THEKOGANS_UTIL_DECLARE_SERIALIZABLE(type, lock)
-        /// Dynamic discovery macro. Add this to your class declaration.
-        /// Example:
-        /// \code{.cpp}
-        /// struct _LIB_THEKOGANS_UTIL_DECL SymmetricKey : public util::Serializable {
-        ///     THEKOGANS_CRYPTO_DECLARE_SERIALIZABLE (SymmetricKey)
-        ///     ...
-        /// };
-        /// \endcode
-        #define THEKOGANS_UTIL_DECLARE_SERIALIZABLE(type, lock)\
-            THEKOGANS_UTIL_DECLARE_SERIALIZABLE_COMMON (type, lock)\
-            static const thekogans::util::Serializable::MapInitializer mapInitializer;
-
-        /// \def THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE(
-        ///     type, version, lock, minSerializablesInPage, allocator)
-        /// Dynamic discovery macro. Instantiate one of these in the class cpp file.
-        /// Example:
-        /// \code{.cpp}
-        /// #if !defined (THEKOGANS_CRYPTO_MIN_SYMMETRIC_KEYS_IN_PAGE)
-        ///     #define THEKOGANS_CRYPTO_MIN_SYMMETRIC_KEYS_IN_PAGE 16
-        /// #endif // !defined (THEKOGANS_CRYPTO_MIN_SYMMETRIC_KEYS_IN_PAGE)
-        ///
-        /// THEKOGANS_CRYPTO_IMPLEMENT_SERIALIZABLE (
-        ///     SymmetricKey,
-        ///     1,
-        ///     THEKOGANS_CRYPTO_MIN_SYMMETRIC_SERIALIZABLES_IN_PAGE)
-        /// \endcode
-        #define THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE(\
-                type, version, lock, minSerializablesInPage, allocator)\
-            THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_COMMON (\
-                type, version, lock, minSerializablesInPage, allocator)\
-            const thekogans::util::Serializable::MapInitializer type::mapInitializer (\
-                #type,\
-                thekogans::util::Serializable::Factories (\
-                    type::BinCreate,\
-                    type::XMLCreate,\
-                    type::JSONCreate));
-    #endif // defined (THEKOGANS_UTIL_TYPE_Static)
 
         /// \brief
         /// Serializable::BinHeader insertion operator.
@@ -718,7 +466,7 @@ namespace thekogans {
                 thekogans::util::Serializable::BinHeader header;\
                 serializer >> header;\
                 if (header.magic == thekogans::util::MAGIC32 &&\
-                        header.type == serializable.GetType ()) {\
+                        header.type == serializable.Type ()) {\
                     serializable.Read (header, serializer);\
                     return serializer;\
                 }\
@@ -726,7 +474,7 @@ namespace thekogans {
                     THEKOGANS_UTIL_THROW_STRING_EXCEPTION (\
                         "Corrupt serializable header. Got %s, expecting %s.",\
                         header.type.c_str (),\
-                        serializable.GetType ().c_str ());\
+                        serializable.Type ());\
                 }\
             }\
             inline const pugi::xml_node & _LIB_THEKOGANS_UTIL_API operator >> (\
@@ -734,7 +482,7 @@ namespace thekogans {
                     _T &serializable) {\
                 thekogans::util::Serializable::TextHeader header;\
                 node >> header;\
-                if (header.type == serializable.GetType ()) {\
+                if (header.type == serializable.Type ()) {\
                     serializable.Read (header, node);\
                     return node;\
                 }\
@@ -742,7 +490,7 @@ namespace thekogans {
                     THEKOGANS_UTIL_THROW_STRING_EXCEPTION (\
                         "Corrupt serializable header. Got %s, expecting %s.",\
                         header.type.c_str (),\
-                        serializable.GetType ().c_str ());\
+                        serializable.Type ());\
                 }\
             }\
             inline const thekogans::util::JSON::Object & _LIB_THEKOGANS_UTIL_API operator >> (\
@@ -750,7 +498,7 @@ namespace thekogans {
                     _T &serializable) {\
                 thekogans::util::Serializable::TextHeader header;\
                 object >> header;\
-                if (header.type == serializable.GetType ()) {\
+                if (header.type == serializable.Type ()) {\
                     serializable.Read (header, object);\
                     return object;\
                 }\
@@ -758,7 +506,7 @@ namespace thekogans {
                     THEKOGANS_UTIL_THROW_STRING_EXCEPTION (\
                         "Corrupt serializable header. Got %s, expecting %s.",\
                         header.type.c_str (),\
-                        serializable.GetType ().c_str ());\
+                        serializable.Type ());\
                 }\
             }
 
@@ -771,12 +519,10 @@ namespace thekogans {
                 thekogans::util::Serializable::BinHeader header;\
                 serializer >> header;\
                 if (header.magic == thekogans::util::MAGIC32) {\
-                    thekogans::util::Serializable::Map::iterator it =\
-                        thekogans::util::Serializable::GetMap ().find (header.type);\
-                    if (it != thekogans::util::Serializable::GetMap ().end ()) {\
-                        serializable =\
-                            thekogans::util::dynamic_refcounted_sharedptr_cast<_T> (\
-                                std::get<0> (it->second) (header, serializer));\
+                    serializable = thekogans::util::dynamic_refcounted_sharedptr_cast<_T> (\
+                        thekogans::util::Serializable::CreateType (header.type));\
+                    if (serializable.Get () != nullptr) {\
+                        serializable->Read (header, serializer);\
                         return serializer;\
                     }\
                     else {\
@@ -796,12 +542,10 @@ namespace thekogans {
                     _T::SharedPtr &serializable) {\
                 thekogans::util::Serializable::TextHeader header;\
                 node >> header;\
-                thekogans::util::Serializable::Map::iterator it =\
-                    thekogans::util::Serializable::GetMap ().find (header.type);\
-                if (it != thekogans::util::Serializable::GetMap ().end ()) {\
-                    serializable =\
-                        thekogans::util::dynamic_refcounted_sharedptr_cast<_T> (\
-                            std::get<1> (it->second) (header, node)); \
+                serializable = thekogans::util::dynamic_refcounted_sharedptr_cast<_T> (\
+                    thekogans::util::Serializable::CreateType (header.type));\
+                if (serializable.Get () != nullptr) {\
+                    serializable->Read (header, node);\
                     return node;\
                 }\
                 else {\
@@ -815,12 +559,10 @@ namespace thekogans {
                     _T::SharedPtr &serializable) {\
                 thekogans::util::Serializable::TextHeader header;\
                 object >> header;\
-                thekogans::util::Serializable::Map::iterator it =\
-                    thekogans::util::Serializable::GetMap ().find (header.type);\
-                if (it != thekogans::util::Serializable::GetMap ().end ()) {\
-                    serializable =\
-                        thekogans::util::dynamic_refcounted_sharedptr_cast<_T> (\
-                            std::get<2> (it->second) (header, object)); \
+                serializable = thekogans::util::dynamic_refcounted_sharedptr_cast<_T> (\
+                    thekogans::util::Serializable::CreateType (header.type));\
+                if (serializable.Get () != nullptr) {\
+                    serializable->Read (header, object);\
                     return object;\
                 }\
                 else {\
@@ -967,23 +709,15 @@ namespace thekogans {
                                 payload.GetWritePtr (),\
                                 payload.GetDataAvailableForWriting ()));\
                         if (payload.IsFull ()) {\
-                            thekogans::util::Serializable::Map::iterator it =\
-                                thekogans::util::Serializable::GetMap ().find (header.type);\
-                            if (it != thekogans::util::Serializable::GetMap ().end ()) {\
-                                THEKOGANS_UTIL_TRY {\
-                                    value =\
-                                        thekogans::util::dynamic_refcounted_sharedptr_cast<_T> (\
-                                            std::get<0> (it->second) (header, payload));\
-                                    Reset ();\
-                                    return true;\
-                                }\
-                                THEKOGANS_UTIL_CATCH (thekogans::util::Exception) {\
-                                    Reset ();\
-                                    THEKOGANS_UTIL_RETHROW_EXCEPTION (exception); \
-                                }\
+                            thekogans::util::Buffer temp (std::move (payload));\
+                            Reset ();\
+                            value = thekogans::util::dynamic_refcounted_sharedptr_cast<_T> (\
+                                thekogans::util::Serializable::CreateType (header.type));\
+                            if (value.Get () != nullptr) {\
+                                value->Read (header, temp);\
+                                return true;\
                             }\
                             else {\
-                                Reset ();\
                                 THEKOGANS_UTIL_THROW_STRING_EXCEPTION (\
                                     "No registered factory for serializable '%s'.",\
                                     header.type.c_str ());\

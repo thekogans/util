@@ -108,7 +108,7 @@ namespace thekogans {
                 /// \brief
                 /// RunLoopJobInfo has a private heap to help with memory
                 /// management, performance, and global heap fragmentation.
-                THEKOGANS_UTIL_DECLARE_HEAP_WITH_LOCK (RunLoopJobInfo, SpinLock)
+                THEKOGANS_UTIL_DECLARE_STD_ALLOCATOR_FUNCTIONS
 
                 /// \brief
                 /// \see{RunLoop} the job will be scheduled on.
@@ -151,7 +151,7 @@ namespace thekogans {
                 /// \brief
                 /// PipelineJobInfo has a private heap to help with memory
                 /// management, performance, and global heap fragmentation.
-                THEKOGANS_UTIL_DECLARE_HEAP_WITH_LOCK (PipelineJobInfo, SpinLock)
+                THEKOGANS_UTIL_DECLARE_STD_ALLOCATOR_FUNCTIONS
 
                 /// \brief
                 /// \see{Pipeline} the job will be scheduled on.

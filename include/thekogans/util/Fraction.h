@@ -42,7 +42,7 @@ namespace thekogans {
         struct _LIB_THEKOGANS_UTIL_DECL Fraction : public Serializable {
             /// \brief
             /// Fraction is a \see{Serializable}.
-            THEKOGANS_UTIL_DECLARE_SERIALIZABLE (Fraction, SpinLock)
+            THEKOGANS_UTIL_DECLARE_SERIALIZABLE (Fraction)
 
             /// \brief
             /// Fraction numerator.
@@ -148,7 +148,6 @@ namespace thekogans {
                 return sign == Positive ? value : -value;
             }
 
-        protected:
             // Serializable
             /// \brief
             /// Return the serialized key size.

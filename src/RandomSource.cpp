@@ -71,7 +71,7 @@ namespace thekogans {
                         // A misaligned buffer was passed in. The code
                         // below requires the buffer to be aligned on
                         // a ui32 byte boundary.
-                        AlignedAllocator allocator (DefaultAllocator::Instance (), UI32_SIZE);
+                        AlignedAllocator allocator (&DefaultAllocator::Instance (), UI32_SIZE);
                         Buffer alignedBuffer (HostEndian, bufferLength, 0, 0, &allocator);
                         alignedBuffer.AdvanceWriteOffset (GetHardwareBytes (alignedBuffer.GetWritePtr (), bufferLength));
                         memcpy (buffer, alignedBuffer.GetReadPtr (), alignedBuffer.GetDataAvailableForReading ());
@@ -181,7 +181,7 @@ namespace thekogans {
                 if (CPU::Instance ().RDSEED ()) {
                     if (((uintptr_t)buffer & (UI32_SIZE - 1)) != 0) {
                         // See above in GetHardwareBytes.
-                        AlignedAllocator allocator (DefaultAllocator::Instance (), UI32_SIZE);
+                        AlignedAllocator allocator (&DefaultAllocator::Instance (), UI32_SIZE);
                         Buffer alignedBuffer (HostEndian, bufferLength, 0, 0, &allocator);
                         alignedBuffer.AdvanceWriteOffset (GetSeed (alignedBuffer.GetWritePtr (), bufferLength));
                         memcpy (buffer, alignedBuffer.GetReadPtr (), alignedBuffer.GetDataAvailableForReading ());

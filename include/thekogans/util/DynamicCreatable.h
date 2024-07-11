@@ -190,18 +190,13 @@ namespace thekogans {
                 return TYPE;\
             }
 
-        /// \def THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE(_T, lock)
+        /// \def THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE(_T)
         /// Dynamic discovery macro. Instantiate one of these in the class cpp file.
         /// Example:
         /// \code{.cpp}
-        /// THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE (
-        ///     SHA1,
-        ///     SpinLock,
-        ///     THEKOGANS_UTIL_HEAP_DEFAULT_MIN_ITEMS_IN_PAGE,
-        ///     DefaultAllocator::Instance ())
+        /// THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE (SHA1)
         /// \endcode
-        #define THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE(\
-                _T, lock, minItemsInPage, allocator)\
+        #define THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE(_T)\
             THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_STATIC (_T)\
             THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_SHARED (_T)\
             THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_OVERRIDE(_T)\

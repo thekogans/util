@@ -171,12 +171,7 @@ namespace thekogans {
             #define THEKOGANS_UTIL_MIN_RUN_LOOP_STATS_JOBS_IN_PAGE 64
         #endif // !defined (THEKOGANS_UTIL_MIN_RUN_LOOP_STATS_JOBS_IN_PAGE)
 
-        THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE (
-            RunLoop::Stats::Job,
-            1,
-            SpinLock,
-            THEKOGANS_UTIL_MIN_RUN_LOOP_STATS_JOBS_IN_PAGE,
-            DefaultAllocator::Instance ())
+        THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE (RunLoop::Stats::Job, 1)
 
         RunLoop::Stats::Job &RunLoop::Stats::Job::operator = (const Job &job) {
             if (&job != this) {
@@ -254,12 +249,7 @@ namespace thekogans {
             #define THEKOGANS_UTIL_MIN_RUN_LOOP_STATS_IN_PAGE 16
         #endif // !defined (THEKOGANS_UTIL_MIN_RUN_LOOP_STATS_IN_PAGE)
 
-        THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE (
-            RunLoop::Stats,
-            1,
-            SpinLock,
-            THEKOGANS_UTIL_MIN_RUN_LOOP_STATS_IN_PAGE,
-            DefaultAllocator::Instance ())
+        THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE (RunLoop::Stats, 1)
 
         RunLoop::Stats &RunLoop::Stats::operator = (const Stats &stats) {
             if (&stats != this) {
@@ -287,9 +277,9 @@ namespace thekogans {
                 Serializer::Size (name) +
                 Serializer::Size (totalJobs) +
                 Serializer::Size (totalJobTime) +
-                Serializable::Size (lastJob) +
-                Serializable::Size (minJob) +
-                Serializable::Size (maxJob);
+                lastJob.Size () +
+                minJob.Size () +
+                maxJob.Size ();
         }
 
         void RunLoop::Stats::Read (
@@ -392,7 +382,7 @@ namespace thekogans {
             }
         }
 
-        THEKOGANS_UTIL_IMPLEMENT_HEAP_WITH_LOCK (RunLoop::State, SpinLock)
+        THEKOGANS_UTIL_IMPLEMENT_HEAP_FUNCTIONS (RunLoop::State)
 
         RunLoop::State::State (
                 const std::string &name_,

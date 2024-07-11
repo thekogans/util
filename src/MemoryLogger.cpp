@@ -21,7 +21,7 @@
 namespace thekogans {
     namespace util {
 
-        THEKOGANS_UTIL_IMPLEMENT_HEAP_WITH_LOCK (MemoryLogger::Entry, SpinLock)
+        THEKOGANS_UTIL_IMPLEMENT_HEAP_FUNCTIONS (MemoryLogger::Entry)
 
         MemoryLogger::~MemoryLogger () {
             ClearEntries ();

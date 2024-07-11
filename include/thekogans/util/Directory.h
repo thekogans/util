@@ -315,7 +315,7 @@ namespace thekogans {
             struct _LIB_THEKOGANS_UTIL_DECL Entry : public Serializable {
                 /// \brief
                 /// Entry is a \see{Serializable}.
-                THEKOGANS_UTIL_DECLARE_SERIALIZABLE (Entry, SpinLock)
+                THEKOGANS_UTIL_DECLARE_SERIALIZABLE (Entry)
 
                 /// \brief
                 /// The file system this entry came from.
@@ -456,7 +456,6 @@ namespace thekogans {
                         size == entry.size;
                 }
 
-            protected:
                 // Serializable
                 /// \brief
                 /// Return the serialized key size.

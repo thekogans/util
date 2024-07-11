@@ -130,7 +130,7 @@ namespace thekogans {
                 /// \brief
                 /// Pipeline has a private heap to help with memory
                 /// management, performance, and global heap fragmentation.
-                THEKOGANS_UTIL_DECLARE_HEAP_WITH_LOCK (Pipeline, SpinLock)
+                THEKOGANS_UTIL_DECLARE_STD_ALLOCATOR_FUNCTIONS
 
             private:
                 /// \brief
