@@ -20,6 +20,8 @@
 namespace thekogans {
     namespace util {
 
+        THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_BASE (HRTimerMgr::TimerInfoBase)
+
         std::size_t HRTimerMgr::TimerInfoBase::Size () const {
             return Serializer::Size (name) + Serializer::Size (attributes);
         }

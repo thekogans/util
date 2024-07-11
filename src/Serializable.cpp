@@ -18,6 +18,13 @@
 #include "thekogans/util/XMLUtils.h"
 #include "thekogans/util/Serializable.h"
 #if defined (THEKOGANS_UTIL_TYPE_Static)
+    #include "thekogans/util/Directory.h"
+    #include "thekogans/util/Fraction.h"
+    #include "thekogans/util/HRTimerMgr.h"
+    #include "thekogans/util/HRTimerMgr.h"
+    #include "thekogans/util/RunLoop.h"
+    #include "thekogans/util/RunLoop.h"
+    #include "thekogans/util/TimeSpec.h"
 #endif // defined (THEKOGANS_UTIL_TYPE_Static)
 
 namespace thekogans {
@@ -27,6 +34,14 @@ namespace thekogans {
 
     #if defined (THEKOGANS_UTIL_TYPE_Static)
         void StaticInit::StaticInit () {
+            Directory::Entry::StaticInit ();
+            Fraction::StaticInit ();
+            HRTimerMgr::TimerInfo::StaticInit ();
+            HRTimerMgr::ScopeInfo::StaticInit ();
+            HRTimerMgr::StaticInit ();
+            RunLoop::Stats::Job::StaticInit ();
+            RunLoop::Stats::StaticInit ();
+            TimeSpec::StaticInit ();
         }
     #endif // defined (THEKOGANS_UTIL_TYPE_Static)
 

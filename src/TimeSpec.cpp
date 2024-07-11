@@ -39,12 +39,7 @@ namespace thekogans {
             #define THEKOGANS_UTIL_MIN_TIME_SPECS_IN_PAGE 64
         #endif // !defined (THEKOGANS_UTIL_MIN_TIME_SPECS_IN_PAGE)
 
-        THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE (
-            TimeSpec,
-            1,
-            SpinLock,
-            THEKOGANS_UTIL_MIN_TIME_SPECS_IN_PAGE,
-            DefaultAllocator::Instance ())
+        THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE (TimeSpec, 1)
 
         TimeSpec::TimeSpec (
                 i64 seconds_,

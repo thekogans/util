@@ -50,11 +50,7 @@ namespace thekogans {
             #define THEKOGANS_UTIL_MIN_HASH_MD5_IN_PAGE 5
         #endif // !defined (THEKOGANS_UTIL_MIN_HASH_MD5_IN_PAGE)
 
-        THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE (
-            MD5,
-            SpinLock,
-            THEKOGANS_UTIL_MIN_HASH_MD5_IN_PAGE,
-            DefaultAllocator::Instance ())
+        THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE (MD5)
 
         namespace {
             // Initial hash value H for MD5:

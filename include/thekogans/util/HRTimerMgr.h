@@ -164,8 +164,8 @@ namespace thekogans {
             /// collects the statistics from various scopes.
             struct _LIB_THEKOGANS_UTIL_DECL TimerInfoBase : public Serializable {
                 /// \brief
-                /// Convenient typedef for RefCounted::SharedPtr<TimerInfoBase>.
-                typedef RefCounted::SharedPtr<TimerInfoBase> SharedPtr;
+                /// Declare \see{DynamicCreatable} boilerplate.
+                THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE_BASE (TimerInfoBase)
 
                 /// \btief
                 /// Label by which this TimerInfoBase is identified.
