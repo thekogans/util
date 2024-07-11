@@ -54,7 +54,7 @@ namespace thekogans {
             RunLoop *operator () (
                     const std::string &name = "MainRunLoop",
                     RunLoop::JobExecutionPolicy::SharedPtr jobExecutionPolicy =
-                        RunLoop::JobExecutionPolicy::SharedPtr (new RunLoop::FIFOJobExecutionPolicy)) {
+                        new RunLoop::FIFOJobExecutionPolicy) {
                 Thread::SetMainThread ();
                 RunLoop *runLoop =
                 #if defined (TOOLCHAIN_OS_Windows)

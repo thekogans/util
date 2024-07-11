@@ -418,13 +418,13 @@ namespace thekogans {
                 switch (token.type) {
                     case Token::TYPE_TRUE:
                     case Token::TYPE_FALSE:
-                        return JSON::Value::SharedPtr (new JSON::Bool (token.value == XML_TRUE));
+                        return new JSON::Bool (token.value == XML_TRUE);
                     case Token::TYPE_NULL:
-                        return JSON::Value::SharedPtr (new JSON::Null);
+                        return new JSON::Null;
                     case Token::TYPE_NUMBER:
-                        return JSON::Value::SharedPtr (new JSON::Number (token.number));
+                        return new JSON::Number (token.number);
                     case Token::TYPE_STRING:
-                        return JSON::Value::SharedPtr (new JSON::String (token.value));
+                        return new JSON::String (token.value);
                     case Token::TYPE_ARRAY_START: {
                         JSON::Value::SharedPtr array (new JSON::Array);
                         ParseArray (tokenizer, dynamic_refcounted_sharedptr_cast<JSON::Array> (array));

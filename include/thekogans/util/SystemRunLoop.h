@@ -70,8 +70,7 @@ namespace thekogans {
             /// \param[in] jobExecutionPolicy \see{RunLoop::JobExecutionPolicy}.
             SystemRunLoop (
                 const std::string &name = std::string (),
-                JobExecutionPolicy::SharedPtr jobExecutionPolicy =
-                    JobExecutionPolicy::SharedPtr (new FIFOJobExecutionPolicy)) :
+                JobExecutionPolicy::SharedPtr jobExecutionPolicy = new FIFOJobExecutionPolicy) :
                 util::RunLoop (name, jobExecutionPolicy) {}
             /// \brief
             /// dtor.

@@ -272,7 +272,7 @@ namespace thekogans {
                 jobQueue.Reset (!blocking ?
                     new JobQueue (
                         name,
-                        RunLoop::JobExecutionPolicy::SharedPtr (new RunLoop::FIFOJobExecutionPolicy),
+                        new RunLoop::FIFOJobExecutionPolicy,
                         1,
                         priority,
                         affinity) : 0);

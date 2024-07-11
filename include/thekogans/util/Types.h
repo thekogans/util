@@ -381,7 +381,7 @@ namespace thekogans {
         /// \def THEKOGANS_UTIL_UNIQUE_NAME(prefix)
         /// Given a prefix, create a unique name using __LINE__.
         /// \param[in] prefix Name prefix.
-        #define THEKOGANS_UTIL_UNIQUE_NAME(prefix) THEKOGANS_UTIL_LABEL(prefix, __LINE__)
+        #define THEKOGANS_UTIL_UNIQUE_NAME(prefix) THEKOGANS_UTIL_LABEL (prefix, __LINE__)
         /// \undef THEKOGANS_UTIL_LABEL
         /// THEKOGANS_UTIL_LABEL is private to Types.h and should not polute the global namespace.
         #undef THEKOGANS_UTIL_LABEL

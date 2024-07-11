@@ -138,8 +138,7 @@ namespace thekogans {
                 /// the worker thread.
                 State (
                     const std::string &name = std::string (),
-                    JobExecutionPolicy::SharedPtr jobExecutionPolicy =
-                        JobExecutionPolicy::SharedPtr (new FIFOJobExecutionPolicy),
+                    JobExecutionPolicy::SharedPtr jobExecutionPolicy = new FIFOJobExecutionPolicy,
                     std::size_t workerCount_ = 1,
                     i32 workerPriority_ = THEKOGANS_UTIL_NORMAL_THREAD_PRIORITY,
                     ui32 workerAffinity_ = THEKOGANS_UTIL_MAX_THREAD_AFFINITY,
@@ -168,8 +167,7 @@ namespace thekogans {
             /// \param[in] workerCallback Called to initialize/uninitialize the worker thread(s).
             JobQueue (
                 const std::string &name = std::string (),
-                JobExecutionPolicy::SharedPtr jobExecutionPolicy =
-                    JobExecutionPolicy::SharedPtr (new FIFOJobExecutionPolicy),
+                JobExecutionPolicy::SharedPtr jobExecutionPolicy = new FIFOJobExecutionPolicy,
                 std::size_t workerCount = 1,
                 i32 workerPriority = THEKOGANS_UTIL_NORMAL_THREAD_PRIORITY,
                 ui32 workerAffinity = THEKOGANS_UTIL_MAX_THREAD_AFFINITY,
@@ -255,8 +253,7 @@ namespace thekogans {
             /// \param[in] workerCallback Called to initialize/uninitialize the worker thread.
             GlobalJobQueue (
                 const std::string &name = "GlobalJobQueue",
-                JobExecutionPolicy::SharedPtr jobExecutionPolicy =
-                    JobExecutionPolicy::SharedPtr (new FIFOJobExecutionPolicy),
+                JobExecutionPolicy::SharedPtr jobExecutionPolicy = new FIFOJobExecutionPolicy,
                 std::size_t workerCount = 1,
                 i32 workerPriority = THEKOGANS_UTIL_NORMAL_THREAD_PRIORITY,
                 ui32 workerAffinity = THEKOGANS_UTIL_MAX_THREAD_AFFINITY,

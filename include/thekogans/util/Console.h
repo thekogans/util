@@ -128,8 +128,7 @@ namespace thekogans {
             ///     THEKOGANS_UTIL_LOG_INIT (
             ///         thekogans::util::LoggerMgr::Debug,
             ///         thekogans::util::LoggerMgr::All);
-            ///     THEKOGANS_UTIL_LOG_ADD_LOGGER (
-            ///         thekogans::util::Logger::SharedPtr (new thekogans::util::ConsoleLogger));
+            ///     THEKOGANS_UTIL_LOG_ADD_LOGGER (new thekogans::util::ConsoleLogger);
             ///     THEKOGANS_UTIL_IMPLEMENT_LOG_FLUSHER;
             ///     THEKOGANS_UTIL_TRY {
             ///         ...

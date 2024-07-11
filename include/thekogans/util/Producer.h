@@ -183,7 +183,7 @@ namespace thekogans {
                 JobQueueEventDeliveryPolicy (
                     const std::string &name = std::string (),
                     RunLoop::JobExecutionPolicy::SharedPtr jobExecutionPolicy =
-                        RunLoop::JobExecutionPolicy::SharedPtr (new RunLoop::FIFOJobExecutionPolicy),
+                        new RunLoop::FIFOJobExecutionPolicy,
                     std::size_t workerCount = 1,
                     i32 workerPriority = THEKOGANS_UTIL_NORMAL_THREAD_PRIORITY,
                     ui32 workerAffinity = THEKOGANS_UTIL_MAX_THREAD_AFFINITY,
@@ -237,7 +237,7 @@ namespace thekogans {
             bool Subscribe (
                     Subscriber<T> &subscriber,
                     typename EventDeliveryPolicy::SharedPtr eventDeliveryPolicy =
-                        typename EventDeliveryPolicy::SharedPtr (new ImmediateEventDeliveryPolicy)) {
+                        new ImmediateEventDeliveryPolicy) {
                 {
                     LockGuard<SpinLock> guard (spinLock);
                     typename Subscribers::iterator it = subscribers.find (&subscriber);

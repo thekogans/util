@@ -948,8 +948,7 @@ namespace thekogans {
                 /// \param[in] jobExecutionPolicy_ RunLoop \see{JobExecutionPolicy}.
                 State (
                     const std::string &name_ = std::string (),
-                    JobExecutionPolicy::SharedPtr jobExecutionPolicy_ =
-                        JobExecutionPolicy::SharedPtr (new FIFOJobExecutionPolicy));
+                    JobExecutionPolicy::SharedPtr jobExecutionPolicy_ = new FIFOJobExecutionPolicy);
                 /// \brief
                 /// dtor.
                 virtual ~State ();
@@ -994,8 +993,7 @@ namespace thekogans {
             /// \param[in] jobExecutionPolicy RunLoop \see{JobExecutionPolicy}.
             RunLoop (
                 const std::string &name = std::string (),
-                JobExecutionPolicy::SharedPtr jobExecutionPolicy =
-                    JobExecutionPolicy::SharedPtr (new FIFOJobExecutionPolicy)) :
+                JobExecutionPolicy::SharedPtr jobExecutionPolicy = new FIFOJobExecutionPolicy) :
                 state (new State (name, jobExecutionPolicy)) {}
             /// \brief
             /// ctor.

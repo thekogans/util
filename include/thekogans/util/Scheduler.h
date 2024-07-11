@@ -126,7 +126,7 @@ namespace thekogans {
                         Priority priority_ = PRIORITY_NORMAL,
                         const std::string &name = std::string (),
                         JobExecutionPolicy::SharedPtr jobExecutionPolicy =
-                            JobExecutionPolicy::SharedPtr (new FIFOJobExecutionPolicy)) :
+                            new FIFOJobExecutionPolicy) :
                         RunLoop (name, jobExecutionPolicy),
                         scheduler (scheduler_),
                         priority (priority_),
@@ -217,7 +217,7 @@ namespace thekogans {
                 std::size_t maxJobQueues = SystemInfo::Instance ().GetCPUCount () * 2,
                 const std::string name = std::string (),
                 RunLoop::JobExecutionPolicy::SharedPtr jobExecutionPolicy =
-                    RunLoop::JobExecutionPolicy::SharedPtr (new RunLoop::FIFOJobExecutionPolicy),
+                    new RunLoop::FIFOJobExecutionPolicy,
                 std::size_t workerCount = 1,
                 i32 workerPriority = THEKOGANS_UTIL_NORMAL_THREAD_PRIORITY,
                 ui32 workerAffinity = THEKOGANS_UTIL_MAX_THREAD_AFFINITY,
@@ -302,7 +302,7 @@ namespace thekogans {
                 std::size_t maxJobQueues = SystemInfo::Instance ().GetCPUCount () * 2,
                 const std::string &name = "GlobalScheduler",
                 RunLoop::JobExecutionPolicy::SharedPtr jobExecutionPolicy =
-                    RunLoop::JobExecutionPolicy::SharedPtr (new RunLoop::FIFOJobExecutionPolicy),
+                    new RunLoop::FIFOJobExecutionPolicy,
                 std::size_t workerCount = 1,
                 i32 workerPriority = THEKOGANS_UTIL_NORMAL_THREAD_PRIORITY,
                 ui32 workerAffinity = THEKOGANS_UTIL_MAX_THREAD_AFFINITY,

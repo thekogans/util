@@ -57,11 +57,8 @@ namespace thekogans {
         /// using namespace thekogans;
         ///
         /// THEKOGANS_UTIL_LOG_INIT (log level, "| separated log level list");
-        /// THEKOGANS_UTIL_LOG_ADD_LOGGER (
-        ///     util::Logger::SharedPtr (new util::ConsoleLogger));
-        /// THEKOGANS_UTIL_LOG_ADD_LOGGER (
-        ///     util::Logger::SharedPtr (
-        ///         new util::FileLogger ("log file path", true));
+        /// THEKOGANS_UTIL_LOG_ADD_LOGGER (new util::ConsoleLogger);
+        /// THEKOGANS_UTIL_LOG_ADD_LOGGER (new util::FileLogger ("log file path", true));
         /// \endcode
         ///
         /// Once initialized, you can now do something like this in your code:
@@ -79,11 +76,10 @@ namespace thekogans {
         /// THEKOGANS_UTIL_LOG_INIT (log level, "| separated log level list");
         /// THEKOGANS_UTIL_LOG_SUBSYSTEM_ADD_LOGGER (
         ///     "subsystem name",
-        ///     util::Logger::SharedPtr (new util::ConsoleLogger));
+        ///     new util::ConsoleLogger);
         /// THEKOGANS_UTIL_LOG_SUBSYSTEM_ADD_LOGGER (
         ///     "subsystem name",
-        ///     util::Logger::SharedPtr (
-        ///         new util::FileLogger ("log file path", true)));
+        ///     new util::FileLogger ("log file path", true));
         /// ...
         /// Continue adding loggers for various application subsystems.
         /// \endcode
@@ -355,7 +351,7 @@ namespace thekogans {
                 jobQueue (!blocking ?
                     new JobQueue (
                         name,
-                        RunLoop::JobExecutionPolicy::SharedPtr (new RunLoop::FIFOJobExecutionPolicy),
+                        new RunLoop::FIFOJobExecutionPolicy,
                         1,
                         priority,
                         affinity) : 0) {}

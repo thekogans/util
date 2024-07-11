@@ -259,7 +259,7 @@ namespace thekogans {
                     const TimeSpec &timeSpec,
                     RunLoop &runLoop = MainRunLoop::Instance ()) {
                 return ScheduleRunLoopJob (
-                    RunLoop::Job::SharedPtr (new RunLoop::LambdaJob (function)),
+                    new RunLoop::LambdaJob (function),
                     timeSpec,
                     runLoop);
             }
@@ -288,7 +288,7 @@ namespace thekogans {
                     const TimeSpec &timeSpec,
                     Pipeline &pipeline = GlobalPipeline::Instance ()) {
                 return SchedulePipelineJob (
-                    Pipeline::Job::SharedPtr (new Pipeline::LambdaJob (pipeline, begin, end)),
+                    new Pipeline::LambdaJob (pipeline, begin, end),
                     timeSpec,
                     pipeline);
             }

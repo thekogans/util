@@ -601,7 +601,7 @@ namespace thekogans {
                     }
                 }
             };
-            return RunLoop::Job::SharedPtr (new SpawnJob (*this, detached));
+            return new SpawnJob (*this, detached);
         }
 
         RunLoop::Job::SharedPtr ChildProcess::CreateExecJob (ChildStatus &status) {
@@ -623,7 +623,7 @@ namespace thekogans {
                     }
                 }
             };
-            return RunLoop::Job::SharedPtr (new ExecJob (*this, status));
+            return new ExecJob (*this, status);
         }
 
         Buffer ChildProcess::CollectOutput (

@@ -135,8 +135,7 @@ namespace thekogans {
             /// \param[in] jobExecutionPolicy \see{RunLoop::JobExecutionPolicy}.
             ThreadRunLoop (
                 const std::string &name = std::string (),
-                JobExecutionPolicy::SharedPtr jobExecutionPolicy =
-                    JobExecutionPolicy::SharedPtr (new FIFOJobExecutionPolicy)) :
+                JobExecutionPolicy::SharedPtr jobExecutionPolicy = new FIFOJobExecutionPolicy) :
                 RunLoop (name, jobExecutionPolicy) {}
 
             /// \brief

@@ -176,8 +176,7 @@ namespace thekogans {
                     };
                     util::JobQueue::SharedPtr jobQueue = jobQueuePool.GetJobQueue (0);
                     if (jobQueue.Get () != nullptr) {
-                        jobQueue->EnqJob (
-                            RunLoop::Job::SharedPtr (new JobQueueJob (jobQueue, *this)));
+                        jobQueue->EnqJob (new JobQueueJob (jobQueue, *this));
                     }
                 }
             }

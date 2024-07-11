@@ -65,7 +65,7 @@ namespace thekogans {
         ///     };
         ///     util::JobQueue::SharedPtr jobQueue = jobQueuePool.GetJobQueue ();
         ///     if (jobQueue.Get () != 0) {
-        ///         jobQueue->EnqJob (RunLoop::Job::SharedPtr (new Job (jobQueue, ...)));
+        ///         jobQueue->EnqJob (new Job (jobQueue, ...));
         ///     }
         /// }
         /// \endcode
@@ -213,7 +213,7 @@ namespace thekogans {
                 std::size_t maxJobQueues_,
                 const std::string &name_ = std::string (),
                 RunLoop::JobExecutionPolicy::SharedPtr jobExecutionPolicy_ =
-                    RunLoop::JobExecutionPolicy::SharedPtr (new RunLoop::FIFOJobExecutionPolicy),
+                    new RunLoop::FIFOJobExecutionPolicy,
                 std::size_t workerCount_ = 1,
                 i32 workerPriority_ = THEKOGANS_UTIL_NORMAL_THREAD_PRIORITY,
                 ui32 workerAffinity_ = THEKOGANS_UTIL_MAX_THREAD_AFFINITY,
@@ -348,7 +348,7 @@ namespace thekogans {
                 std::size_t maxJobQueues = 0,
                 const std::string &name = "GlobalJobQueuePool",
                 RunLoop::JobExecutionPolicy::SharedPtr jobExecutionPolicy =
-                    RunLoop::JobExecutionPolicy::SharedPtr (new RunLoop::FIFOJobExecutionPolicy),
+                    new RunLoop::FIFOJobExecutionPolicy,
                 std::size_t workerCount = 1,
                 i32 workerPriority = THEKOGANS_UTIL_NORMAL_THREAD_PRIORITY,
                 ui32 workerAffinity = THEKOGANS_UTIL_MAX_THREAD_AFFINITY,

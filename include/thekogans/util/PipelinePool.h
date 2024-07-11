@@ -66,7 +66,7 @@ namespace thekogans {
         ///     };
         ///     util::Pipeline::SharedPtr pipeline = pipelinePool.GetPipeline ();
         ///     if (pipeline.Get () != 0) {
-        ///         pipeline->EnqJob (Pipeline::Job::SharedPtr (new Job (pipeline, ...)));
+        ///         pipeline->EnqJob (new Job (pipeline, ...));
         ///     }
         /// }
         /// \endcode
@@ -227,7 +227,7 @@ namespace thekogans {
                 const util::Pipeline::Stage *end_,
                 const std::string &name_ = std::string (),
                 Pipeline::JobExecutionPolicy::SharedPtr jobExecutionPolicy_ =
-                    Pipeline::JobExecutionPolicy::SharedPtr (new Pipeline::FIFOJobExecutionPolicy),
+                    new Pipeline::FIFOJobExecutionPolicy,
                 std::size_t workerCount_ = 1,
                 i32 workerPriority_ = THEKOGANS_UTIL_NORMAL_THREAD_PRIORITY,
                 ui32 workerAffinity_ = THEKOGANS_UTIL_MAX_THREAD_AFFINITY,
@@ -367,7 +367,7 @@ namespace thekogans {
                 const util::Pipeline::Stage *end = nullptr,
                 const std::string &name = "GlobalPipelinePool",
                 util::Pipeline::JobExecutionPolicy::SharedPtr jobExecutionPolicy =
-                    util::Pipeline::JobExecutionPolicy::SharedPtr (new util::Pipeline::FIFOJobExecutionPolicy),
+                    new util::Pipeline::FIFOJobExecutionPolicy,
                 std::size_t workerCount = 1,
                 i32 workerPriority = THEKOGANS_UTIL_NORMAL_THREAD_PRIORITY,
                 ui32 workerAffinity = THEKOGANS_UTIL_MAX_THREAD_AFFINITY,

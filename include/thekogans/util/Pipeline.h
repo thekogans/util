@@ -372,7 +372,7 @@ namespace thekogans {
                 Stage (
                     const std::string &name_ = std::string (),
                     RunLoop::JobExecutionPolicy::SharedPtr jobExecutionPolicy_ =
-                        RunLoop::JobExecutionPolicy::SharedPtr (new RunLoop::FIFOJobExecutionPolicy),
+                        new RunLoop::FIFOJobExecutionPolicy,
                     std::size_t workerCount_ = 1,
                     i32 workerPriority_ = THEKOGANS_UTIL_NORMAL_THREAD_PRIORITY,
                     ui32 workerAffinity_ = THEKOGANS_UTIL_MAX_THREAD_AFFINITY,
@@ -518,8 +518,7 @@ namespace thekogans {
                     const Stage *begin,
                     const Stage *end,
                     const std::string &name_ = std::string (),
-                    JobExecutionPolicy::SharedPtr jobExecutionPolicy_ =
-                        JobExecutionPolicy::SharedPtr (new FIFOJobExecutionPolicy),
+                    JobExecutionPolicy::SharedPtr jobExecutionPolicy_ = new FIFOJobExecutionPolicy,
                     std::size_t workerCount_ = 1,
                     i32 workerPriority_ = THEKOGANS_UTIL_NORMAL_THREAD_PRIORITY,
                     ui32 workerAffinity_ = THEKOGANS_UTIL_MAX_THREAD_AFFINITY,
@@ -566,8 +565,7 @@ namespace thekogans {
                     const Stage *begin,
                     const Stage *end,
                     const std::string &name = std::string (),
-                    JobExecutionPolicy::SharedPtr jobExecutionPolicy =
-                        JobExecutionPolicy::SharedPtr (new FIFOJobExecutionPolicy),
+                    JobExecutionPolicy::SharedPtr jobExecutionPolicy = new FIFOJobExecutionPolicy,
                     std::size_t workerCount = 1,
                     i32 workerPriority = THEKOGANS_UTIL_NORMAL_THREAD_PRIORITY,
                     ui32 workerAffinity = THEKOGANS_UTIL_MAX_THREAD_AFFINITY,
@@ -884,7 +882,7 @@ namespace thekogans {
                 const Pipeline::Stage *end = nullptr,
                 const std::string &name = "GlobalPipeline",
                 Pipeline::JobExecutionPolicy::SharedPtr jobExecutionPolicy =
-                    Pipeline::JobExecutionPolicy::SharedPtr (new Pipeline::FIFOJobExecutionPolicy),
+                    new Pipeline::FIFOJobExecutionPolicy,
                 std::size_t workerCount = 1,
                 i32 workerPriority = THEKOGANS_UTIL_NORMAL_THREAD_PRIORITY,
                 ui32 workerAffinity = THEKOGANS_UTIL_MAX_THREAD_AFFINITY,
