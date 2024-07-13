@@ -244,9 +244,9 @@ namespace thekogans {
             static const thekogans::util::ui16 VERSION;\
             virtual thekogans::util::ui16 Version () const override;
 
-        /// \def THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_EX(_T, version, minItemsInPage, allocator)
-        #define THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_EX(_T, version, minItemsInPage, allocator)\
-            THEKOGANS_UTIL_IMPLEMENT_HEAP_FUNCTIONS_EX (_T, minItemsInPage, allocator)\
+        /// \def THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_EX(_T, version, lock, minItemsInPage, allocator)
+        #define THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_EX(_T, version, lock, minItemsInPage, allocator)\
+            THEKOGANS_UTIL_IMPLEMENT_HEAP_FUNCTIONS_EX (_T, lock, minItemsInPage, allocator)\
             THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE (_T)\
             const thekogans::util::ui16 _T::VERSION = version;\
             thekogans::util::ui16 _T::Version () const {\
@@ -258,6 +258,7 @@ namespace thekogans {
             THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_EX (\
                 _T,\
                 version,\
+                thekogans::util::SpinLock,\
                 THEKOGANS_UTIL_HEAP_DEFAULT_MIN_ITEMS_IN_PAGE,\
                 DefaultAllocator::Instance ().Get ())
 

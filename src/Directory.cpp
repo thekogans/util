@@ -528,7 +528,12 @@ namespace thekogans {
             #define THEKOGANS_UTIL_MIN_DIRECORY_ENTRY_IN_PAGE 64
         #endif // !defined (THEKOGANS_UTIL_MIN_DIRECORY_ENTRY_IN_PAGE)
 
-        THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE (Directory::Entry, 1)
+        THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_EX (
+            Directory::Entry,
+            1,
+            SpinLock,
+            THEKOGANS_UTIL_MIN_DIRECORY_ENTRY_IN_PAGE,
+            DefaultAllocator::Instance ().Get ())
 
     #if defined (TOOLCHAIN_OS_Windows)
         namespace {

@@ -30,6 +30,7 @@
 #include "thekogans/util/Allocator.h"
 #include "thekogans/util/DefaultAllocator.h"
 #include "thekogans/util/AlignedAllocator.h"
+#include "thekogans/util/NullLock.h"
 #include "thekogans/util/SpinLock.h"
 #include "thekogans/util/LockGuard.h"
 #include "thekogans/util/Exception.h"
@@ -214,8 +215,7 @@ namespace thekogans {
         ///              Heaps are now Singletons. As much as I originally liked the idea
         ///              of a local heap, in almost 30 years of use I never had a reason
         ///              to create one. The feature in now gone and so are a few dozen
-        ///              macros used to initialize the heap. Use Singleton::CreateInstance
-        ///              during initialization to parametarize the heap ctor.
+        ///              macros used to initialize the heap.
         ///
         /// Author:
         ///
@@ -228,19 +228,19 @@ namespace thekogans {
         /// \brief
         /// Use these defines for regular classes (not templates).
 
-        /// \def THEKOGANS_UTIL_IMPLEMENT_HEAP_FUNCTIONS_EX(_T, minItemsInPage, allocator)
+        /// \def THEKOGANS_UTIL_IMPLEMENT_HEAP_FUNCTIONS_EX(_T, lock, minItemsInPage, allocator)
         /// Macro to implement heap functions using provided heap ctor arguments.
-        #define THEKOGANS_UTIL_IMPLEMENT_HEAP_FUNCTIONS_EX(_T, minItemsInPage, allocator)\
+        #define THEKOGANS_UTIL_IMPLEMENT_HEAP_FUNCTIONS_EX(_T, lock, minItemsInPage, allocator)\
         void *_T::operator new (std::size_t size) {\
             assert (size == sizeof (_T));\
-            return thekogans::util::Heap<_T>::CreateInstance (\
+            return thekogans::util::Heap<_T, lock>::CreateInstance (\
                 #_T, minItemsInPage, allocator)->Alloc (false);\
         }\
         void *_T::operator new (\
                 std::size_t size,\
                 std::nothrow_t) throw () {\
             assert (size == sizeof (_T));\
-            return thekogans::util::Heap<_T>::CreateInstance (\
+            return thekogans::util::Heap<_T, lock>::CreateInstance (\
                 #_T, minItemsInPage, allocator)->Alloc (true);\
         }\
         void *_T::operator new (\
@@ -250,13 +250,13 @@ namespace thekogans {
             return ptr;\
         }\
         void _T::operator delete (void *ptr) {\
-            thekogans::util::Heap<_T>::CreateInstance (\
+            thekogans::util::Heap<_T, lock>::CreateInstance (\
                 #_T, minItemsInPage, allocator)->Free (ptr, false);\
         }\
         void _T::operator delete (\
                 void *ptr,\
                 std::nothrow_t) throw () {\
-            thekogans::util::Heap<_T>::CreateInstance (\
+            thekogans::util::Heap<_T, lock>::CreateInstance (\
                 #_T, minItemsInPage, allocator)->Free (ptr, true);\
         }\
         void _T::operator delete (\
@@ -268,6 +268,7 @@ namespace thekogans {
         #define THEKOGANS_UTIL_IMPLEMENT_HEAP_FUNCTIONS(_T)\
         THEKOGANS_UTIL_IMPLEMENT_HEAP_FUNCTIONS_EX (\
             _T,\
+            thekogans::util::SpinLock,\
             THEKOGANS_UTIL_HEAP_DEFAULT_MIN_ITEMS_IN_PAGE,\
             thekogans::util::DefaultAllocator::Instance ().Get ())
 
@@ -276,11 +277,11 @@ namespace thekogans {
 
         /// \def THEKOGANS_UTIL_IMPLEMENT_HEAP_FUNCTIONS_EX_T(_T, minItemsInPage, allocator)
         /// Macro to implement heap functions using provided heap ctor arguments.
-        #define THEKOGANS_UTIL_IMPLEMENT_HEAP_FUNCTIONS_EX_T(_T, minItemsInPage, allocator)\
+        #define THEKOGANS_UTIL_IMPLEMENT_HEAP_FUNCTIONS_EX_T(_T, lock, minItemsInPage, allocator)\
         template<>\
         THEKOGANS_UTIL_EXPORT void *_T::operator new (std::size_t size) {\
             assert (size == sizeof (_T));\
-            return thekogans::util::Heap<_T>::CreateInstance (\
+            return thekogans::util::Heap<_T, lock>::CreateInstance (\
                 #_T, minItemsInPage, allocator)->Alloc (false);\
         }\
         template<>\
@@ -288,7 +289,7 @@ namespace thekogans {
                 std::size_t size,\
                 std::nothrow_t) throw () {\
             assert (size == sizeof (_T));\
-            return thekogans::util::Heap<_T>::CreateInstance (\
+            return thekogans::util::Heap<_T, lock>::CreateInstance (\
                 #_T, minItemsInPage, allocator)->Alloc (true);\
         }\
         template<>\
@@ -300,14 +301,14 @@ namespace thekogans {
         }\
         template<>\
         THEKOGANS_UTIL_EXPORT void _T::operator delete (void *ptr) {\
-            thekogans::util::Heap<_T>::CreateInstance (\
+            thekogans::util::Heap<_T, lock>::CreateInstance (\
                 #_T, minItemsInPage, allocator)->Free (ptr, false);\
         }\
         template<>\
         THEKOGANS_UTIL_EXPORT void _T::operator delete (\
                 void *ptr,\
                 std::nothrow_t) throw () {\
-            thekogans::util::Heap<_T>::CreateInstance (\
+            thekogans::util::Heap<_T, lock>::CreateInstance (\
                 #_T, minItemsInPage, allocator)->Free (ptr, true);\
         }\
         template<>\
@@ -320,6 +321,7 @@ namespace thekogans {
         #define THEKOGANS_UTIL_IMPLEMENT_HEAP_FUNCTIONS_T(_T)\
         THEKOGANS_UTIL_IMPLEMENT_HEAP_FUNCTIONS_EX_T (\
             _T,\
+            thekogans::util::SpinLock,\
             THEKOGANS_UTIL_HEAP_DEFAULT_MIN_ITEMS_IN_PAGE,\
             thekogans::util::DefaultAllocator::Instance ().Get ())
 
@@ -449,10 +451,12 @@ namespace thekogans {
         /// \brief
         /// Heap template.
 
-        template<typename T>
+        template<
+            typename T,
+            typename Lock = NullLock>
         struct Heap :
             public HeapRegistry::Diagnostics,
-            public Singleton<Heap<T>, SpinLock> {
+            public Singleton<Heap<T, Lock>, SpinLock> {
         protected:
             /// \brief
             /// Forward declaration of Page.
@@ -689,7 +693,7 @@ namespace thekogans {
             AlignedAllocator allocator;
             /// \brief
             /// Synchronization lock.
-            SpinLock spinLock;
+            Lock lock;
 
         public:
             /// \brief
@@ -832,7 +836,7 @@ namespace thekogans {
             /// Return a snapshot of the heap state.
             /// \return A snapshot of the heap state.
             virtual HeapRegistry::Diagnostics::Stats::UniquePtr GetStats () {
-                LockGuard<SpinLock> guard (spinLock);
+                LockGuard<Lock> guard (lock);
                 return HeapRegistry::Diagnostics::Stats::UniquePtr (
                     new Stats (
                         GetName (),
@@ -935,10 +939,12 @@ namespace thekogans {
             THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (Heap)
         };
 
-        template<typename T>
-        bool Heap<T>::IsValidPtr (void *ptr) throw () {
+        template<
+            typename T,
+            typename Lock>
+        bool Heap<T, Lock>::IsValidPtr (void *ptr) throw () {
             if (ptr != nullptr) {
-                LockGuard<SpinLock> guard (spinLock);
+                LockGuard<Lock> guard (lock);
                 // To honor the no throw promise, we can't assume the
                 // pointer came from this heap. We can't even assume
                 // that it is valid (we cannot de-reference it). We
@@ -952,9 +958,11 @@ namespace thekogans {
             return false;
         }
 
-        template<typename T>
-        void *Heap<T>::Alloc (bool nothrow) {
-            LockGuard<SpinLock> guard (spinLock);
+        template<
+            typename T,
+            typename Lock>
+        void *Heap<T, Lock>::Alloc (bool nothrow) {
+            LockGuard<Lock> guard (lock);
             Page *page = GetPage ();
             assert (page != nullptr);
             if (page != nullptr) {
@@ -981,12 +989,14 @@ namespace thekogans {
             return nullptr;
         }
 
-        template<typename T>
-        void Heap<T>::Free (
+        template<
+            typename T,
+            typename Lock>
+        void Heap<T, Lock>::Free (
                 void *ptr,
                 bool nothrow) {
             if (ptr != nullptr) {
-                LockGuard<SpinLock> guard (spinLock);
+                LockGuard<Lock> guard (lock);
                 Page *page = GetPage (ptr);
                 assert (page != nullptr);
                 if (page != nullptr) {
@@ -1022,9 +1032,11 @@ namespace thekogans {
             }
         }
 
-        template<typename T>
-        void Heap<T>::Flush () {
-            LockGuard<SpinLock> guard (spinLock);
+        template<
+            typename T,
+            typename Lock>
+        void Heap<T, Lock>::Flush () {
+            LockGuard<Lock> guard (lock);
             itemCount = 0;
             auto deletePage = [allocator] (Page *page) -> bool {
                 page->~Page ();

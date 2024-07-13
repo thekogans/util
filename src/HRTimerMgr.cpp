@@ -108,7 +108,12 @@ namespace thekogans {
             #define THEKOGANS_UTIL_MIN_TIMER_INFOS_IN_PAGE 64
         #endif // !defined (THEKOGANS_UTIL_MIN_TIMER_INFOS_IN_PAGE)
 
-        THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE (HRTimerMgr::TimerInfo, 1)
+        THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_EX (
+            HRTimerMgr::TimerInfo,
+            1,
+            SpinLock,
+            THEKOGANS_UTIL_MIN_TIMER_INFOS_IN_PAGE,
+            DefaultAllocator::Instance ().Get ())
 
         void HRTimerMgr::TimerInfo::Start () {
             start = HRTimer::Click ();
@@ -218,7 +223,12 @@ namespace thekogans {
             #define THEKOGANS_UTIL_MIN_SCOPE_INFOS_IN_PAGE 64
         #endif // !defined (THEKOGANS_UTIL_MIN_SCOPE_INFOS_IN_PAGE)
 
-        THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE (HRTimerMgr::ScopeInfo, 1)
+        THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_EX (
+            HRTimerMgr::ScopeInfo,
+            1,
+            SpinLock,
+            THEKOGANS_UTIL_MIN_SCOPE_INFOS_IN_PAGE,
+            DefaultAllocator::Instance ().Get ())
 
         HRTimerMgr::ScopeInfo *HRTimerMgr::ScopeInfo::BeginScope (
                 const std::string &name) {
@@ -527,7 +537,12 @@ namespace thekogans {
             #define THEKOGANS_UTIL_MIN_HR_TIMER_MGR_IN_PAGE 16
         #endif // !defined (THEKOGANS_UTIL_MIN_HR_TIMER_MGR_IN_PAGE)
 
-        THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE (HRTimerMgr, 1)
+        THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_EX (
+            HRTimerMgr,
+            1,
+            SpinLock,
+            THEKOGANS_UTIL_MIN_HR_TIMER_MGR_IN_PAGE,
+            DefaultAllocator::Instance ().Get ())
 
 
         std::string HRTimerMgr::ToXMLString (

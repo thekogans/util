@@ -171,7 +171,12 @@ namespace thekogans {
             #define THEKOGANS_UTIL_MIN_RUN_LOOP_STATS_JOBS_IN_PAGE 64
         #endif // !defined (THEKOGANS_UTIL_MIN_RUN_LOOP_STATS_JOBS_IN_PAGE)
 
-        THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE (RunLoop::Stats::Job, 1)
+        THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_EX (
+            RunLoop::Stats::Job,
+            1,
+            SpinLock,
+            THEKOGANS_UTIL_MIN_RUN_LOOP_STATS_JOBS_IN_PAGE,
+            DefaultAllocator::Instance ().Get ())
 
         RunLoop::Stats::Job &RunLoop::Stats::Job::operator = (const Job &job) {
             if (&job != this) {
@@ -249,7 +254,12 @@ namespace thekogans {
             #define THEKOGANS_UTIL_MIN_RUN_LOOP_STATS_IN_PAGE 16
         #endif // !defined (THEKOGANS_UTIL_MIN_RUN_LOOP_STATS_IN_PAGE)
 
-        THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE (RunLoop::Stats, 1)
+        THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_EX (
+            RunLoop::Stats,
+            1,
+            SpinLock,
+            THEKOGANS_UTIL_MIN_RUN_LOOP_STATS_IN_PAGE,
+            DefaultAllocator::Instance ().Get ())
 
         RunLoop::Stats &RunLoop::Stats::operator = (const Stats &stats) {
             if (&stats != this) {

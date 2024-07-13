@@ -28,7 +28,12 @@ namespace thekogans {
             #define THEKOGANS_UTIL_MIN_FRACTIONS_IN_PAGE 64
         #endif // !defined (THEKOGANS_UTIL_MIN_FRACTIONS_IN_PAGE)
 
-        THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE (Fraction, 1)
+        THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_EX (
+            Fraction,
+            1,
+            SpinLock,
+            THEKOGANS_UTIL_MIN_FRACTIONS_IN_PAGE,
+            DefaultAllocator::Instance ().Get ())
 
         const Fraction Fraction::Zero (0, 1);
         const Fraction Fraction::One (1, 1);
