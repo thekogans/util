@@ -59,7 +59,7 @@ namespace thekogans {
             if (!value.empty ()) {
                 optionAndValue += std::string (":") + value;
             }
-            Console::Instance ().PrintString (
+            Console::Instance ()->PrintString (
                 FormatString (
                     "Unknown option: '%s', skipping.\n",
                     optionAndValue.c_str ()),

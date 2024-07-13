@@ -374,32 +374,32 @@ namespace thekogans {
                         header += FormatTimeSpec (timeSpec, "%X ");
                     }
                     if (flags.Test (HostName)) {
-                        header += SystemInfo::Instance ().GetHostName ();
+                        header += SystemInfo::Instance ()->GetHostName ();
                         header += " ";
                     }
                     if (flags.Test (ProcessId | ThreadId)) {
                         header += FormatString ("[%u:%s] ",
-                            SystemInfo::Instance ().GetProcessId (),
+                            SystemInfo::Instance ()->GetProcessId (),
                             FormatThreadId (Thread::GetCurrThreadId ()).c_str ());
                     }
                     else if (flags.Test (ProcessId)) {
                         header += FormatString ("[%u] ",
-                            SystemInfo::Instance ().GetProcessId ());
+                            SystemInfo::Instance ()->GetProcessId ());
                     }
                     else if (flags.Test (ThreadId)) {
                         header += FormatString ("[%s] ",
                             FormatThreadId (Thread::GetCurrThreadId ()).c_str ());
                     }
                     if (flags.Test (ProcessPath)) {
-                        header += SystemInfo::Instance ().GetProcessPath ();
+                        header += SystemInfo::Instance ()->GetProcessPath ();
                         header += " ";
                     }
                     if (flags.Test (ProcessStartTime)) {
-                        header += FormatTimeSpec (SystemInfo::Instance ().GetProcessStartTime ());
+                        header += FormatTimeSpec (SystemInfo::Instance ()->GetProcessStartTime ());
                         header += " ";
                     }
                     if (flags.Test (ProcessUpTime)) {
-                        TimeSpec upTime = timeSpec - SystemInfo::Instance ().GetProcessStartTime ();
+                        TimeSpec upTime = timeSpec - SystemInfo::Instance ()->GetProcessStartTime ();
                         i64 days = upTime.seconds / (3600 * 24);
                         i64 hours = upTime.seconds % (3600 * 24) / 3600;
                         i64 minutes = upTime.seconds % 3600 / 60;
@@ -478,7 +478,7 @@ namespace thekogans {
                     THEKOGANS_UTIL_CATCH (std::exception) {
                         // There is very little we can do here.
                     #if defined (THEKOGANS_UTIL_CONFIG_Debug)
-                        Console::Instance ().PrintString (
+                        Console::Instance ()->PrintString (
                             FormatString (
                                 "LoggerMgr::Log: %s\n",
                                 exception.what ()),

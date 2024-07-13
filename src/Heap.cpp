@@ -36,7 +36,7 @@ namespace thekogans {
                 const char *buildTime,
                 const char *format,
                 ...) {
-            std::string header = GlobalLoggerMgr::Instance ().FormatHeader (
+            std::string header = GlobalLoggerMgr::Instance ()->FormatHeader (
                 decorations,
                 subsystem,
                 level,
@@ -57,15 +57,15 @@ namespace thekogans {
                 const std::string &header,
                 const std::string &message) {
             if (GlobalLoggerMgr::IsInstanceCreated ()) {
-                GlobalLoggerMgr::Instance ().Log (subsystem, level, header, message);
+                GlobalLoggerMgr::Instance ()->Log (subsystem, level, header, message);
                 // This function is usually called right before the
                 // process exits. In case the user forgot to call flush,
                 // we do it here so that this important error message is
                 // written to the logs.
-                GlobalLoggerMgr::Instance ().Flush ();
+                GlobalLoggerMgr::Instance ()->Flush ();
             }
             else if (Console::IsInstanceCreated ()) {
-                Console::Instance ().PrintString (
+                Console::Instance ()->PrintString (
                     header + message,
                     Console::StdErr,
                     ConsoleLogger::DefaultColorScheme::GetColorForLevel (level));

@@ -33,6 +33,7 @@
 #include "thekogans/util/SpinLock.h"
 #include "thekogans/util/Singleton.h"
 #include "thekogans/util/RefCounted.h"
+#include "thekogans/util/RefCountedRegistry.h"
 #include "thekogans/util/Subscriber.h"
 #include "thekogans/util/Producer.h"
 
@@ -66,10 +67,10 @@ namespace thekogans {
         };
 
         /// \brief
-        /// Convenient typedef for RefCounted::Registry<Timer>.
+        /// Convenient typedef for RefCountedRegistry<Timer>.
         /// NOTE: It's one and only instance is accessed like this;
         /// thekogans::util::TimerRegistry::Instance ().
-        typedef RefCounted::Registry<Timer> TimerRegistry;
+        typedef RefCountedRegistry<Timer> TimerRegistry;
 
         /// \struct Timer Timer.h thekogans/util/Timer.h
         ///
@@ -132,11 +133,11 @@ namespace thekogans {
         /// In your code you can now write:
         ///
         /// \code{.cpp}
-        /// IdleProcessor::Instance ().StartTimer (util::TimeSpec::FromSeconds (30));
+        /// IdleProcessor::Instance ()->StartTimer (util::TimeSpec::FromSeconds (30));
         /// \endcode
         ///
         /// This will arm the IdleProcessor timer to fire after 30 seconds.
-        /// Call IdleProcessor::Instance ().StopTimer () to disarm the timer.
+        /// Call IdleProcessor::Instance ()->StopTimer () to disarm the timer.
         ///
         /// NOTE: IdleProcessor demonstrates the canonical way of using Timer.
 
@@ -159,7 +160,7 @@ namespace thekogans {
             /// This token is registered with os specific apis (io completion port on
             /// windows, epoll on linux and kqueue on os x). On callback the token
             /// is used to get a Timer::SharedPtr from the Timer::WeakPtr found in
-            /// the \see{util::RefCounted::Registry<Timer>}.
+            /// the \see{util::RefCountedRegistry<Timer>}.
             const TimerRegistry::Token token;
         #if defined (TOOLCHAIN_OS_Windows)
             /// \brief

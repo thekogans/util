@@ -111,13 +111,13 @@ namespace thekogans {
         #define THEKOGANS_UTIL_IMPLEMENT_SECURE_ALLOCATOR_FUNCTIONS(_T)\
         void *_T::operator new (std::size_t size) {\
             assert (size == sizeof (_T));\
-            return thekogans::util::SecureAllocator::Instance ().Alloc (size);\
+            return thekogans::util::SecureAllocator::Instance ()->Alloc (size);\
         }\
         void *_T::operator new (\
                 std::size_t size,\
                 std::nothrow_t) throw () {\
             assert (size == sizeof (_T));\
-            return thekogans::util::SecureAllocator::Instance ().Alloc (size);\
+            return thekogans::util::SecureAllocator::Instance ()->Alloc (size);\
         }\
         void *_T::operator new (\
                 std::size_t size,\
@@ -126,12 +126,12 @@ namespace thekogans {
             return ptr;\
         }\
         void _T::operator delete (void *ptr) {\
-            thekogans::util::SecureAllocator::Instance ().Free (ptr, sizeof (_T));\
+            thekogans::util::SecureAllocator::Instance ()->Free (ptr, sizeof (_T));\
         }\
         void _T::operator delete (\
                 void *ptr,\
                 std::nothrow_t) throw () {\
-            thekogans::util::SecureAllocator::Instance ().Free (ptr, sizeof (_T));\
+            thekogans::util::SecureAllocator::Instance ()->Free (ptr, sizeof (_T));\
         }\
         void _T::operator delete (\
             void *,\
@@ -206,7 +206,7 @@ namespace thekogans {
             pointer allocate (
                     size_type count,
                     const void * /*hint*/ = nullptr) {
-                return (pointer)SecureAllocator::Instance ().Alloc (count * sizeof (T));
+                return (pointer)SecureAllocator::Instance ()->Alloc (count * sizeof (T));
             }
             /// \brief
             /// Free a previously allocated buffer.
@@ -215,7 +215,7 @@ namespace thekogans {
             void deallocate (
                     pointer ptr,
                     size_type count) {
-                SecureAllocator::Instance ().Free (ptr, count * sizeof (T));
+                SecureAllocator::Instance ()->Free (ptr, count * sizeof (T));
             }
 
             /// \brief

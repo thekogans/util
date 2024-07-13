@@ -85,7 +85,7 @@ namespace thekogans {
         ///         return vertices.size ();
         ///     }
         /// } job (result, vertices, xform);
-        /// GlobalVectorizer::Instance ().Execute (job);
+        /// GlobalVectorizer::Instance ()->Execute (job);
         /// \endcode
 
         struct _LIB_THEKOGANS_UTIL_DECL Vectorizer {
@@ -143,7 +143,7 @@ namespace thekogans {
             /// \param[in] workerCount_ The width of the vector.
             /// \param[in] workerPriority Worker thread priority.
             Vectorizer (
-                std::size_t workerCount_ = SystemInfo::Instance ().GetCPUCount (),
+                std::size_t workerCount_ = SystemInfo::Instance ()->GetCPUCount (),
                 i32 workerPriority = THEKOGANS_UTIL_NORMAL_THREAD_PRIORITY);
             /// \brief
             /// dtor.
@@ -247,7 +247,7 @@ namespace thekogans {
             /// \param[in] workerCount The width of the vector.
             /// \param[in] workerPriority Worker thread priority.
             GlobalVectorizer (
-                std::size_t workerCount = SystemInfo::Instance ().GetCPUCount (),
+                std::size_t workerCount = SystemInfo::Instance ()->GetCPUCount (),
                 i32 workerPriority = THEKOGANS_UTIL_NORMAL_THREAD_PRIORITY) :
                 Vectorizer (workerCount, workerPriority) {}
         };

@@ -595,72 +595,72 @@ namespace thekogans {
         /// Reset the GlobalLoggerMgr.
         #define THEKOGANS_UTIL_LOG_RESET_EX(\
                 level, decorations, flags, blocking, name, priority, affinity)\
-            thekogans::util::GlobalLoggerMgr::Instance ().Reset (\
+            thekogans::util::GlobalLoggerMgr::Instance ()->Reset (\
                 level, decorations, flags, blocking, name, priority, affinity)
         /// \def THEKOGANS_UTIL_LOG_RESET(level, decorations)
         /// Reset the GlobalLoggerMgr.
         #define THEKOGANS_UTIL_LOG_RESET(level, decorations)\
-            thekogans::util::GlobalLoggerMgr::Instance ().Reset (level, decorations)
+            thekogans::util::GlobalLoggerMgr::Instance ()->Reset (level, decorations)
 
         /// \def THEKOGANS_UTIL_LOG_SET_LEVEL(level)
         /// Set the logging level for the GlobalLoggerMgr.
         #define THEKOGANS_UTIL_LOG_SET_LEVEL(level)\
-            thekogans::util::GlobalLoggerMgr::Instance ().SetLevel (level)
+            thekogans::util::GlobalLoggerMgr::Instance ()->SetLevel (level)
         /// \def THEKOGANS_UTIL_LOG_SET_DECORATONS(decorations)
         /// Set the log header decorations for the GlobalLoggerMgr.
         #define THEKOGANS_UTIL_LOG_SET_DECORATONS(decorations)\
-            thekogans::util::GlobalLoggerMgr::Instance ().SetDecorations (decorations)
+            thekogans::util::GlobalLoggerMgr::Instance ()->SetDecorations (decorations)
 
         /// \def THEKOGANS_UTIL_LOG_ADD_LOGGER(logger)
         /// After calling THEKOGANS_UTIL_LOG_[INIT | RESET][_EX] use
         /// this macro to add new global loggers to the GlobalLoggerMgr.
         #define THEKOGANS_UTIL_LOG_ADD_LOGGER(logger)\
-            thekogans::util::GlobalLoggerMgr::Instance ().AddLogger (\
+            thekogans::util::GlobalLoggerMgr::Instance ()->AddLogger (\
                 thekogans::util::LoggerMgr::SUBSYSTEM_GLOBAL, logger)
         /// \def THEKOGANS_UTIL_LOG_SUBSYSTEM_ADD_LOGGER(subsystem, logger)
         /// After calling THEKOGANS_UTIL_LOG_[INIT | RESET][_EX] use
         /// this macro to add new subsystem loggers to the GlobalLoggerMgr.
         #define THEKOGANS_UTIL_LOG_SUBSYSTEM_ADD_LOGGER(subsystem, logger)\
-            thekogans::util::GlobalLoggerMgr::Instance ().AddLogger (subsystem, logger)
+            thekogans::util::GlobalLoggerMgr::Instance ()->AddLogger (subsystem, logger)
         /// \def THEKOGANS_UTIL_LOG_ADD_LOGGER_LIST(loggerList)
         /// After calling THEKOGANS_UTIL_LOG_[INIT | RESET][_EX] use
         /// this macro to add new global logger list to the GlobalLoggerMgr.
         #define THEKOGANS_UTIL_LOG_ADD_LOGGER_LIST(loggerList)\
-            thekogans::util::GlobalLoggerMgr::Instance ().AddLoggerList (\
+            thekogans::util::GlobalLoggerMgr::Instance ()->AddLoggerList (\
                 thekogans::util::LoggerMgr::SUBSYSTEM_GLOBAL, loggerList)
         /// \def THEKOGANS_UTIL_LOG_SUBSYSTEM_ADD_LOGGER_LIST(subsystem, loggerList)
         /// After calling THEKOGANS_UTIL_LOG_[INIT | RESET][_EX] use
         /// this macro to add new subsystem logger list to the GlobalLoggerMgr.
         #define THEKOGANS_UTIL_LOG_SUBSYSTEM_ADD_LOGGER_LIST(subsystem, loggerList)\
-            thekogans::util::GlobalLoggerMgr::Instance ().AddLoggerList (subsystem, loggerList)
+            thekogans::util::GlobalLoggerMgr::Instance ()->AddLoggerList (subsystem, loggerList)
 
         /// \def THEKOGANS_UTIL_LOG_ADD_DEFAULT_LOGGER(logger)
         /// After calling THEKOGANS_UTIL_LOG_[INIT | RESET][_EX] use
         /// this macro to add new default loggers to the GlobalLoggerMgr.
         #define THEKOGANS_UTIL_LOG_ADD_DEFAULT_LOGGER(logger)\
-            thekogans::util::GlobalLoggerMgr::Instance ().AddDefaultLogger (logger)
+            thekogans::util::GlobalLoggerMgr::Instance ()->AddDefaultLogger (logger)
         /// \def THEKOGANS_UTIL_LOG_ADD_DEFAULT_LOGGER_LIST(loggerList)
         /// After calling THEKOGANS_UTIL_LOG_[INIT | RESET][_EX] use
         /// this macro to add new default logger list to the GlobalLoggerMgr.
         #define THEKOGANS_UTIL_LOG_ADD_DEFAULT_LOGGER_LIST(loggerList)\
-            thekogans::util::GlobalLoggerMgr::Instance ().AddLoggerList (loggerList)
+            thekogans::util::GlobalLoggerMgr::Instance ()->AddLoggerList (loggerList)
 
         /// \def THEKOGANS_UTIL_LOG_ADD_FILTER(filter)
         /// After calling THEKOGANS_UTIL_LOG_[INIT | RESET][_EX] use
         /// this macro to add a filter to the GlobalLoggerMgr.
         #define THEKOGANS_UTIL_LOG_ADD_FILTER(filter)\
-            thekogans::util::GlobalLoggerMgr::Instance ().AddFilter (filter)
+            thekogans::util::GlobalLoggerMgr::Instance ()->AddFilter (filter)
 
         /// \def THEKOGANS_UTIL_LOG_EX(level, file, line, buildTime, format, ...)
         /// Use this macro to bypass the level checking machinery.
         #define THEKOGANS_UTIL_LOG_EX(level, file, function, line, buildTime, format, ...)\
-            thekogans::util::GlobalLoggerMgr::Instance ().Log (\
+            thekogans::util::GlobalLoggerMgr::Instance ()->Log (\
                 thekogans::util::LoggerMgr::SUBSYSTEM_GLOBAL, level,\
                 file, function, line, buildTime, format, __VA_ARGS__);
         /// \def THEKOGANS_UTIL_LOG(level, format, ...)
         /// Use this macro to bypass the level checking machinery.
         #define THEKOGANS_UTIL_LOG(level, format, ...)\
-            thekogans::util::GlobalLoggerMgr::Instance ().Log (\
+            thekogans::util::GlobalLoggerMgr::Instance ()->Log (\
                 thekogans::util::LoggerMgr::SUBSYSTEM_GLOBAL, level,\
                 __FILE__, __FUNCTION__, __LINE__,\
                 __DATE__ " " __TIME__, format, __VA_ARGS__);
@@ -669,12 +669,12 @@ namespace thekogans {
         /// Use this macro to bypass the level checking machinery.
         #define THEKOGANS_UTIL_LOG_SUBSYSTEM_EX(\
                 subsystem, level, file, function, line, buildTime, format, ...)\
-            thekogans::util::GlobalLoggerMgr::Instance ().Log (\
+            thekogans::util::GlobalLoggerMgr::Instance ()->Log (\
                 subsystem, level, file, function, line, buildTime, format, __VA_ARGS__);
         /// \def THEKOGANS_UTIL_LOG_SUBSYSTEM(subsystem, level, format, ...)
         /// Use this macro to bypass the level checking machinery.
         #define THEKOGANS_UTIL_LOG_SUBSYSTEM(subsystem, level, format, ...)\
-            thekogans::util::GlobalLoggerMgr::Instance ().Log (\
+            thekogans::util::GlobalLoggerMgr::Instance ()->Log (\
                 subsystem, level,\
                 __FILE__, __FUNCTION__, __LINE__,\
                 __DATE__ " " __TIME__, format, __VA_ARGS__);
@@ -682,9 +682,9 @@ namespace thekogans {
         /// \def THEKOGANS_UTIL_LOG_ERROR_EX(file, function, line, buildTime, format, ...)
         /// Use this macro to log at level Error.
         #define THEKOGANS_UTIL_LOG_ERROR_EX(file, function, line, buildTime, format, ...)\
-            if (thekogans::util::GlobalLoggerMgr::Instance ().GetLevel () >=\
+            if (thekogans::util::GlobalLoggerMgr::Instance ()->GetLevel () >=\
                     thekogans::util::LoggerMgr::Error) {\
-                thekogans::util::GlobalLoggerMgr::Instance ().Log (\
+                thekogans::util::GlobalLoggerMgr::Instance ()->Log (\
                     thekogans::util::LoggerMgr::SUBSYSTEM_GLOBAL,\
                     thekogans::util::LoggerMgr::Error,\
                     file, function, line, buildTime, format, __VA_ARGS__);\
@@ -692,9 +692,9 @@ namespace thekogans {
         /// \def THEKOGANS_UTIL_LOG_ERROR(format, ...)
         /// Use this macro to log at level Error.
         #define THEKOGANS_UTIL_LOG_ERROR(format, ...)\
-            if (thekogans::util::GlobalLoggerMgr::Instance ().GetLevel () >=\
+            if (thekogans::util::GlobalLoggerMgr::Instance ()->GetLevel () >=\
                     thekogans::util::LoggerMgr::Error) {\
-                thekogans::util::GlobalLoggerMgr::Instance ().Log (\
+                thekogans::util::GlobalLoggerMgr::Instance ()->Log (\
                     thekogans::util::LoggerMgr::SUBSYSTEM_GLOBAL,\
                     thekogans::util::LoggerMgr::Error,\
                     __FILE__, __FUNCTION__, __LINE__,\
@@ -705,18 +705,18 @@ namespace thekogans {
         /// Use this macro to log at level Error.
         #define THEKOGANS_UTIL_LOG_SUBSYSTEM_ERROR_EX(\
                 subsystem, file, function, line, buildTime, format, ...)\
-            if (thekogans::util::GlobalLoggerMgr::Instance ().GetLevel () >=\
+            if (thekogans::util::GlobalLoggerMgr::Instance ()->GetLevel () >=\
                     thekogans::util::LoggerMgr::Error) {\
-                thekogans::util::GlobalLoggerMgr::Instance ().Log (\
+                thekogans::util::GlobalLoggerMgr::Instance ()->Log (\
                     subsystem, thekogans::util::LoggerMgr::Error,\
                     file, function, line, buildTime, format, __VA_ARGS__);\
             }
         /// \def THEKOGANS_UTIL_LOG_SUBSYSTEM_ERROR(subsystem, format, ...)
         /// Use this macro to log at level Error.
         #define THEKOGANS_UTIL_LOG_SUBSYSTEM_ERROR(subsystem, format, ...)\
-            if (thekogans::util::GlobalLoggerMgr::Instance ().GetLevel () >=\
+            if (thekogans::util::GlobalLoggerMgr::Instance ()->GetLevel () >=\
                     thekogans::util::LoggerMgr::Error) {\
-                thekogans::util::GlobalLoggerMgr::Instance ().Log (\
+                thekogans::util::GlobalLoggerMgr::Instance ()->Log (\
                     subsystem, thekogans::util::LoggerMgr::Error,\
                     __FILE__, __FUNCTION__, __LINE__,\
                     __DATE__ " " __TIME__, format, __VA_ARGS__);\
@@ -725,9 +725,9 @@ namespace thekogans {
         /// \def THEKOGANS_UTIL_LOG_WARNING_EX(file, function, line, buildTime, format, ...)
         /// Use this macro to log at level Warning.
         #define THEKOGANS_UTIL_LOG_WARNING_EX(file, function, line, buildTime, format, ...)\
-            if (thekogans::util::GlobalLoggerMgr::Instance ().GetLevel () >=\
+            if (thekogans::util::GlobalLoggerMgr::Instance ()->GetLevel () >=\
                     thekogans::util::LoggerMgr::Warning) {\
-                thekogans::util::GlobalLoggerMgr::Instance ().Log (\
+                thekogans::util::GlobalLoggerMgr::Instance ()->Log (\
                     thekogans::util::LoggerMgr::SUBSYSTEM_GLOBAL,\
                     thekogans::util::LoggerMgr::Warning,\
                     file, function, line, buildTime, format, __VA_ARGS__);\
@@ -735,9 +735,9 @@ namespace thekogans {
         /// \def THEKOGANS_UTIL_LOG_WARNING(format, ...)
         /// Use this macro to log at level Warning.
         #define THEKOGANS_UTIL_LOG_WARNING(format, ...)\
-            if (thekogans::util::GlobalLoggerMgr::Instance ().GetLevel () >=\
+            if (thekogans::util::GlobalLoggerMgr::Instance ()->GetLevel () >=\
                     thekogans::util::LoggerMgr::Warning) {\
-                thekogans::util::GlobalLoggerMgr::Instance ().Log (\
+                thekogans::util::GlobalLoggerMgr::Instance ()->Log (\
                     thekogans::util::LoggerMgr::SUBSYSTEM_GLOBAL,\
                     thekogans::util::LoggerMgr::Warning,\
                     __FILE__, __FUNCTION__, __LINE__,\
@@ -748,18 +748,18 @@ namespace thekogans {
         /// Use this macro to log at level Warning.
         #define THEKOGANS_UTIL_LOG_SUBSYSTEM_WARNING_EX(\
                 subsystem, file, function, line, buildTime, format, ...)\
-            if (thekogans::util::GlobalLoggerMgr::Instance ().GetLevel () >=\
+            if (thekogans::util::GlobalLoggerMgr::Instance ()->GetLevel () >=\
                     thekogans::util::LoggerMgr::Warning) {\
-                thekogans::util::GlobalLoggerMgr::Instance ().Log (\
+                thekogans::util::GlobalLoggerMgr::Instance ()->Log (\
                     subsystem, thekogans::util::LoggerMgr::Warning,\
                     file, function, line, buildTime, format, __VA_ARGS__);\
             }
         /// \def THEKOGANS_UTIL_LOG_SUBSYSTEM_WARNING(subsystem, format, ...)
         /// Use this macro to log at level Warning.
         #define THEKOGANS_UTIL_LOG_SUBSYSTEM_WARNING(subsystem, format, ...)\
-            if (thekogans::util::GlobalLoggerMgr::Instance ().GetLevel () >=\
+            if (thekogans::util::GlobalLoggerMgr::Instance ()->GetLevel () >=\
                     thekogans::util::LoggerMgr::Warning) {\
-                thekogans::util::GlobalLoggerMgr::Instance ().Log (\
+                thekogans::util::GlobalLoggerMgr::Instance ()->Log (\
                     subsystem, thekogans::util::LoggerMgr::Warning,\
                     __FILE__, __FUNCTION__, __LINE__,\
                     __DATE__ " " __TIME__, format, __VA_ARGS__);\
@@ -768,9 +768,9 @@ namespace thekogans {
         /// \def THEKOGANS_UTIL_LOG_INFO_EX(file, function, line, buildTime, format, ...)
         /// Use this macro to log at level Info.
         #define THEKOGANS_UTIL_LOG_INFO_EX(file, function, line, buildTime, format, ...)\
-            if (thekogans::util::GlobalLoggerMgr::Instance ().GetLevel () >=\
+            if (thekogans::util::GlobalLoggerMgr::Instance ()->GetLevel () >=\
                     thekogans::util::LoggerMgr::Info) {\
-                thekogans::util::GlobalLoggerMgr::Instance ().Log (\
+                thekogans::util::GlobalLoggerMgr::Instance ()->Log (\
                     thekogans::util::LoggerMgr::SUBSYSTEM_GLOBAL,\
                     thekogans::util::LoggerMgr::Info,\
                     file, function, line, buildTime, format, __VA_ARGS__);\
@@ -778,9 +778,9 @@ namespace thekogans {
         /// \def THEKOGANS_UTIL_LOG_INFO(format, ...)
         /// Use this macro to log at level Info.
         #define THEKOGANS_UTIL_LOG_INFO(format, ...)\
-            if (thekogans::util::GlobalLoggerMgr::Instance ().GetLevel () >=\
+            if (thekogans::util::GlobalLoggerMgr::Instance ()->GetLevel () >=\
                     thekogans::util::LoggerMgr::Info) {\
-                thekogans::util::GlobalLoggerMgr::Instance ().Log (\
+                thekogans::util::GlobalLoggerMgr::Instance ()->Log (\
                     thekogans::util::LoggerMgr::SUBSYSTEM_GLOBAL,\
                     thekogans::util::LoggerMgr::Info,\
                     __FILE__, __FUNCTION__, __LINE__,\
@@ -791,18 +791,18 @@ namespace thekogans {
         /// Use this macro to log at level Info.
         #define THEKOGANS_UTIL_LOG_SUBSYSTEM_INFO_EX(\
                 subsystem, file, function, line, buildTime, format, ...)\
-            if (thekogans::util::GlobalLoggerMgr::Instance ().GetLevel () >=\
+            if (thekogans::util::GlobalLoggerMgr::Instance ()->GetLevel () >=\
                     thekogans::util::LoggerMgr::Info) {\
-                thekogans::util::GlobalLoggerMgr::Instance ().Log (\
+                thekogans::util::GlobalLoggerMgr::Instance ()->Log (\
                     subsystem, thekogans::util::LoggerMgr::Info,\
                     file, function, line, buildTime, format, __VA_ARGS__);\
             }
         /// \def THEKOGANS_UTIL_LOG_SUBSYSTEM_INFO(subsystem, format, ...)
         /// Use this macro to log at level Info.
         #define THEKOGANS_UTIL_LOG_SUBSYSTEM_INFO(subsystem, format, ...)\
-            if (thekogans::util::GlobalLoggerMgr::Instance ().GetLevel () >=\
+            if (thekogans::util::GlobalLoggerMgr::Instance ()->GetLevel () >=\
                     thekogans::util::LoggerMgr::Info) {\
-                thekogans::util::GlobalLoggerMgr::Instance ().Log (\
+                thekogans::util::GlobalLoggerMgr::Instance ()->Log (\
                     subsystem, thekogans::util::LoggerMgr::Info,\
                     __FILE__, __FUNCTION__, __LINE__,\
                     __DATE__ " " __TIME__, format, __VA_ARGS__);\
@@ -811,9 +811,9 @@ namespace thekogans {
         /// \def THEKOGANS_UTIL_LOG_DEBUG_EX(file, function, line, buildTime, format, ...)
         /// Use this macro to log at level Debug.
         #define THEKOGANS_UTIL_LOG_DEBUG_EX(file, function, line, buildTime, format, ...)\
-            if (thekogans::util::GlobalLoggerMgr::Instance ().GetLevel () >=\
+            if (thekogans::util::GlobalLoggerMgr::Instance ()->GetLevel () >=\
                     thekogans::util::LoggerMgr::Debug) {\
-                thekogans::util::GlobalLoggerMgr::Instance ().Log (\
+                thekogans::util::GlobalLoggerMgr::Instance ()->Log (\
                     thekogans::util::LoggerMgr::SUBSYSTEM_GLOBAL,\
                     thekogans::util::LoggerMgr::Debug,\
                     file, function, line, buildTime, format, __VA_ARGS__);\
@@ -821,9 +821,9 @@ namespace thekogans {
         /// \def THEKOGANS_UTIL_LOG_DEBUG(format, ...)
         /// Use this macro to log at level Debug.
         #define THEKOGANS_UTIL_LOG_DEBUG(format, ...)\
-            if (thekogans::util::GlobalLoggerMgr::Instance ().GetLevel () >=\
+            if (thekogans::util::GlobalLoggerMgr::Instance ()->GetLevel () >=\
                     thekogans::util::LoggerMgr::Debug) {\
-                thekogans::util::GlobalLoggerMgr::Instance ().Log (\
+                thekogans::util::GlobalLoggerMgr::Instance ()->Log (\
                     thekogans::util::LoggerMgr::SUBSYSTEM_GLOBAL,\
                     thekogans::util::LoggerMgr::Debug,\
                     __FILE__, __FUNCTION__, __LINE__,\
@@ -834,18 +834,18 @@ namespace thekogans {
         /// Use this macro to log at level Debug.
         #define THEKOGANS_UTIL_LOG_SUBSYSTEM_DEBUG_EX(\
                 subsystem, file, function, line, buildTime, format, ...)\
-            if (thekogans::util::GlobalLoggerMgr::Instance ().GetLevel () >=\
+            if (thekogans::util::GlobalLoggerMgr::Instance ()->GetLevel () >=\
                     thekogans::util::LoggerMgr::Debug) {\
-                thekogans::util::GlobalLoggerMgr::Instance ().Log (\
+                thekogans::util::GlobalLoggerMgr::Instance ()->Log (\
                     subsystem, thekogans::util::LoggerMgr::Debug,\
                     file, function, line, buildTime, format, __VA_ARGS__);\
             }
         /// \def THEKOGANS_UTIL_LOG_SUBSYSTEM_DEBUG(subsystem, format, ...)
         /// Use this macro to log at level Debug.
         #define THEKOGANS_UTIL_LOG_SUBSYSTEM_DEBUG(subsystem, format, ...)\
-            if (thekogans::util::GlobalLoggerMgr::Instance ().GetLevel () >=\
+            if (thekogans::util::GlobalLoggerMgr::Instance ()->GetLevel () >=\
                     thekogans::util::LoggerMgr::Debug) {\
-                thekogans::util::GlobalLoggerMgr::Instance ().Log (\
+                thekogans::util::GlobalLoggerMgr::Instance ()->Log (\
                     subsystem, thekogans::util::LoggerMgr::Debug,\
                     __FILE__, __FUNCTION__, __LINE__,\
                     __DATE__ " " __TIME__, format, __VA_ARGS__);\
@@ -854,9 +854,9 @@ namespace thekogans {
         /// \def THEKOGANS_UTIL_LOG_DEVELOPMENT_EX(file, function, line, buildTime, format, ...)
         /// Use this macro to log at level Development.
         #define THEKOGANS_UTIL_LOG_DEVELOPMENT_EX(file, function, line, buildTime, format, ...)\
-            if (thekogans::util::GlobalLoggerMgr::Instance ().GetLevel () >=\
+            if (thekogans::util::GlobalLoggerMgr::Instance ()->GetLevel () >=\
                     thekogans::util::LoggerMgr::Development) {\
-                thekogans::util::GlobalLoggerMgr::Instance ().Log (\
+                thekogans::util::GlobalLoggerMgr::Instance ()->Log (\
                     thekogans::util::LoggerMgr::SUBSYSTEM_GLOBAL,\
                     thekogans::util::LoggerMgr::Development,\
                     file, function, line, buildTime, format, __VA_ARGS__);\
@@ -864,9 +864,9 @@ namespace thekogans {
         /// \def THEKOGANS_UTIL_LOG_DEVELOPMENT(format, ...)
         /// Use this macro to log at level Development.
         #define THEKOGANS_UTIL_LOG_DEVELOPMENT(format, ...)\
-            if (thekogans::util::GlobalLoggerMgr::Instance ().GetLevel () >=\
+            if (thekogans::util::GlobalLoggerMgr::Instance ()->GetLevel () >=\
                     thekogans::util::LoggerMgr::Development) {\
-                thekogans::util::GlobalLoggerMgr::Instance ().Log (\
+                thekogans::util::GlobalLoggerMgr::Instance ()->Log (\
                     thekogans::util::LoggerMgr::SUBSYSTEM_GLOBAL,\
                     thekogans::util::LoggerMgr::Development,\
                     __FILE__, __FUNCTION__, __LINE__,\
@@ -877,18 +877,18 @@ namespace thekogans {
         /// Use this macro to log at level Development.
         #define THEKOGANS_UTIL_LOG_SUBSYSTEM_DEVELOPMENT_EX(\
                 subsystem, file, function, line, buildTime, format, ...)\
-            if (thekogans::util::GlobalLoggerMgr::Instance ().GetLevel () >=\
+            if (thekogans::util::GlobalLoggerMgr::Instance ()->GetLevel () >=\
                     thekogans::util::LoggerMgr::Development) {\
-                thekogans::util::GlobalLoggerMgr::Instance ().Log (\
+                thekogans::util::GlobalLoggerMgr::Instance ()->Log (\
                     subsystem, thekogans::util::LoggerMgr::Development,\
                     file, function, line, buildTime, format, __VA_ARGS__);\
             }
         /// \def THEKOGANS_UTIL_LOG_SUBSYSTEM_DEVELOPMENT(subsystem, format, ...)
         /// Use this macro to log at level Development.
         #define THEKOGANS_UTIL_LOG_SUBSYSTEM_DEVELOPMENT(subsystem, format, ...)\
-            if (thekogans::util::GlobalLoggerMgr::Instance ().GetLevel () >=\
+            if (thekogans::util::GlobalLoggerMgr::Instance ()->GetLevel () >=\
                     thekogans::util::LoggerMgr::Development) {\
-                thekogans::util::GlobalLoggerMgr::Instance ().Log (\
+                thekogans::util::GlobalLoggerMgr::Instance ()->Log (\
                     subsystem, thekogans::util::LoggerMgr::Development,\
                     __FILE__, __FUNCTION__, __LINE__,\
                     __DATE__ " " __TIME__, format, __VA_ARGS__);\
@@ -897,11 +897,11 @@ namespace thekogans {
         /// \def THEKOGANS_UTIL_LOG_FLUSH_EX
         /// Use this macro to wait for GlobalLoggerMgr entry queue to drain.
         #define THEKOGANS_UTIL_LOG_FLUSH_EX(timeSpec)\
-            thekogans::util::GlobalLoggerMgr::Instance ().Flush (timeSpec);
+            thekogans::util::GlobalLoggerMgr::Instance ()->Flush (timeSpec);
         /// \def THEKOGANS_UTIL_LOG_FLUSH
         /// Use this macro to wait for GlobalLoggerMgr entry queue to drain.
         #define THEKOGANS_UTIL_LOG_FLUSH\
-            thekogans::util::GlobalLoggerMgr::Instance ().Flush ();
+            thekogans::util::GlobalLoggerMgr::Instance ()->Flush ();
 
         /// \def THEKOGANS_UTIL_IMPLEMENT_LOG_FLUSHER
         /// Use this macro at the top of your main to flush the log on exit.
@@ -962,7 +962,7 @@ namespace thekogans {
                 const char *function_,
                 ui32 line_,
                 const char *buildTime_,
-                LoggerMgr &loggerMgr_ = GlobalLoggerMgr::Instance ()) :
+                LoggerMgr &loggerMgr_ = *GlobalLoggerMgr::Instance ()) :
                 subsystem (subsystem_),
                 level (level_),
                 file (file_),

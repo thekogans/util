@@ -33,9 +33,9 @@ namespace thekogans {
         ///
         /// \brief
         /// ThreadRunLoop implements a very simple thread run loop. To use it as your main thread
-        /// run loop, all you need to do is call thekogans::util::MainRunLoop::Instance ().Start ()
+        /// run loop, all you need to do is call thekogans::util::MainRunLoop::Instance ()->Start ()
         /// from main. If you initialized the \see{Console}, then the ctrl-break handler will call
-        /// thekogans::util::MainRunLoop::Instance ().Stop () and your main thread will exit.
+        /// thekogans::util::MainRunLoop::Instance ()->Stop () and your main thread will exit.
         /// Alternatively, you can call thekogans::util::MainRunLoop::Stop () from a secondary
         /// (worker) thread yourself (if ctrl-break is not appropriate). If your main thread needs
         /// to process UI events, use \see{SystemRunLoop} instead. It's designed to integrate
@@ -54,7 +54,7 @@ namespace thekogans {
         ///         LPSTR /*lpCmdLine*/,
         ///         int /*nCmdShow*/) {
         ///     ...
-        ///     util::MainRunLoop::Instance ().Start ();
+        ///     util::MainRunLoop::Instance ()->Start ();
         ///     ...
         ///     return 0;
         /// }
@@ -69,7 +69,7 @@ namespace thekogans {
         ///         int /*argc*/,
         ///         const char * /*argv*/ []) {
         ///     ...
-        ///     util::MainRunLoop::Instance ().Start ();
+        ///     util::MainRunLoop::Instance ()->Start ();
         ///     ...
         ///     return 0;
         /// }

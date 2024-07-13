@@ -204,7 +204,7 @@ namespace thekogans {
 
         GUID GUID::FromRandom () {
             GUID guid;
-            if (GlobalRandomSource::Instance ().GetBytes (guid.data, SIZE) == SIZE) {
+            if (GlobalRandomSource::Instance ()->GetBytes (guid.data, SIZE) == SIZE) {
                 return guid;
             }
             else {

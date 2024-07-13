@@ -119,7 +119,7 @@ namespace thekogans {
                             LockGuard<SpinLock> guard (spinLock);
                             const_iterator it = find (window);
                             return it != end () ?
-                                XlibWindowRegistry::Instance ().Get (it->second) :
+                                XlibWindowRegistry::Instance ()->Get (it->second) :
                                 XlibWindow::SharedPtr ();
                         }
                     };
@@ -133,19 +133,19 @@ namespace thekogans {
                         token (this) {
                     // Register the window with the XlibWindowMap so that XlibRunLoop::Begin
                     // can find it and route events to it.
-                    XlibWindowMap::Instance ().Add (window, token.GetValue ());
+                    XlibWindowMap::Instance ()->Add (window, token.GetValue ());
                 }
 
                 XlibWindow::~XlibWindow () {
-                    XlibWindowMap::Instance ().Remove (window);
+                    XlibWindowMap::Instance ()->Remove (window);
                     XlibDisplayGuard guard (display);
                     XDestroyWindow (display, window);
                 }
 
 
                 XlibRunLoop::XlibRunLoop () {
-                    if (!XlibDisplays::Instance ().displays.empty ()) {
-                        Display *display = XlibDisplays::Instance ().displays[0];
+                    if (!XlibDisplays::Instance ()->displays.empty ()) {
+                        Display *display = XlibDisplays::Instance ()->displays[0];
                         XlibDisplayGuard guard (display);
                         window.Reset (
                             new XlibWindow (
@@ -194,12 +194,12 @@ namespace thekogans {
                             close (handle);
                         }
                     } epoll (DEFAULT_MAX_SIZE);
-                    for (std::size_t i = 0, count = XlibDisplays::Instance ().displays.size (); i < count; ++i) {
+                    for (std::size_t i = 0, count = XlibDisplays::Instance ()->displays.size (); i < count; ++i) {
                         epoll_event event = {0};
                         event.events = EPOLLIN;
-                        event.data.ptr = XlibDisplays::Instance ().displays[i];
+                        event.data.ptr = XlibDisplays::Instance ()->displays[i];
                         if (epoll_ctl (epoll.handle, EPOLL_CTL_ADD,
-                                ConnectionNumber (XlibDisplays::Instance ().displays[i]), &event) < 0) {
+                                ConnectionNumber (XlibDisplays::Instance ()->displays[i]), &event) < 0) {
                             THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
                                 THEKOGANS_UTIL_OS_ERROR_CODE);
                         }
@@ -253,7 +253,7 @@ namespace thekogans {
                                                 // For this to work user Xlib windows need to inherit from
                                                 // XlibWindow.
                                                 XlibWindow::SharedPtr window =
-                                                    XlibWindowMap::Instance ().Get (event.xclient.window);
+                                                    XlibWindowMap::Instance ()->Get (event.xclient.window);
                                                 if (window.Get () != 0) {
                                                     window->OnEvent (event);
                                                 }

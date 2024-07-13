@@ -53,7 +53,7 @@ namespace thekogans {
             /// Console::CreateInstance (...) with your custom arguments before the first call to
             /// Console::Instance ().
             /// \param[in] threadSafePrintString true == Serialize access to std::cout and std::cerr.
-            /// \param[in] hookCtrlBreak true == Hook CTRL-C to call MainRunLoop::Instance ().Stop ().
+            /// \param[in] hookCtrlBreak true == Hook CTRL-C to call MainRunLoop::Instance ()->Stop ().
             /// \param[in] hookChild Linux and OS X only. true == Hook SIGCHLD to avoid zombie children.
             /// NOTE: You should only pass in true for hookChild if you're calling \see{ChildProcess::Spawn}
             /// (instead of \see{ChildProcess::Exec}, and you don't want to reap the zombie children yourself.
@@ -132,7 +132,7 @@ namespace thekogans {
             ///     THEKOGANS_UTIL_IMPLEMENT_LOG_FLUSHER;
             ///     THEKOGANS_UTIL_TRY {
             ///         ...
-            ///         thekogans::util::MainRunLoop::Instance ().Start ();
+            ///         thekogans::util::MainRunLoop::Instance ()->Start ();
             ///         THEKOGANS_UTIL_LOG_DEBUG ("%s exiting.\n", argv[0]);
             ///     }
             ///     THEKOGANS_UTIL_CATCH_AND_LOG
@@ -141,7 +141,7 @@ namespace thekogans {
             /// \endcode
             ///
             /// there's nothing for you to do as THEKOGANS_UTIL_IMPLEMENT_LOG_FLUSHER will
-            /// take care of calling thekogans::util::Console::Instance ().FlushPrintQueue ().
+            /// take care of calling thekogans::util::Console::Instance ()->FlushPrintQueue ().
             ///
             /// If you do something else, you need to make sure to call FlushPrintQueue
             /// yourself or you risk having your application deadlock on exit.

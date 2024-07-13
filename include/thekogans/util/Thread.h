@@ -576,7 +576,7 @@ namespace thekogans {
         /// \code{.cpp}
         /// void SomeThread::Run () {
         ///     ...
-        ///     ThreadReaper::Instance ().ReapThread (this);
+        ///     ThreadReaper::Instance ()->ReapThread (this);
         /// }
         /// \endcode
         ///

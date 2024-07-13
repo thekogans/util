@@ -154,7 +154,7 @@ namespace thekogans {
                 0,
                 errorCode);
             if (message.empty ()) {
-                message = NTDll::Instance ().FormatMessage (errorCode);
+                message = NTDll::Instance ()->FormatMessage (errorCode);
             }
             return !message.empty () ?
                 FormatString (

@@ -41,13 +41,16 @@ namespace thekogans {
                 PTP_CALLBACK_INSTANCE /*Instance*/,
                 PVOID Context,
                 PTP_TIMER /*Timer*/) {
-            Timer::SharedPtr timer = TimerRegistry::Instance ().Get ((TimerRegistry::Token::ValueType)Context);
+            Timer::SharedPtr timer =
+                TimerRegistry::Instance ()->Get ((TimerRegistry::Token::ValueType)Context);
     #elif defined (TOOLCHAIN_OS_Linux)
         void Timer::TimerCallback (union sigval val) {
-            Timer::SharedPtr timer = TimerRegistry::Instance ().Get ((TimerRegistry::Token::ValueType)val.sival_ptr);
+            Timer::SharedPtr timer =
+                TimerRegistry::Instance ()->Get ((TimerRegistry::Token::ValueType)val.sival_ptr);
     #elif defined (TOOLCHAIN_OS_OSX)
         void Timer::TimerCallback (void *userData) {
-            Timer::SharedPtr timer = TimerRegistry::Instance ().Get ((TimerRegistry::Token::ValueType)userData);
+            Timer::SharedPtr timer =
+                TimerRegistry::Instance ()->Get ((TimerRegistry::Token::ValueType)userData);
     #endif // defined (TOOLCHAIN_OS_Windows)
             if (timer.Get () != nullptr) {
                 timer->Produce (

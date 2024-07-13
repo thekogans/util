@@ -321,7 +321,7 @@ namespace thekogans {
                             while (1) {
                                 int count = keventFunc (handle, 0, 0, kqueueEvents, MaxEventsBatch, 0);
                                 for (int i = 0; i < count; ++i) {
-                                    KQueueTimer::SharedPtr timer = KQueueTimerRegistry::Instance ().Get (
+                                    KQueueTimer::SharedPtr timer = KQueueTimerRegistry::Instance ()->Get (
                                         (KQueueTimerRegistry::Token::ValueType)kqueueEvents[i].udata);
                                     if (timer.Get () != 0) {
                                         if ((kqueueEvents[i].flags & EV_ONESHOT) == EV_ONESHOT) {
@@ -338,26 +338,26 @@ namespace thekogans {
                 KQueueTimer *CreateKQueueTimer (
                         KQueueTimerCallback timerCallback,
                         void *userData) {
-                    return TimerKQueue::Instance ().CreateTimer (timerCallback, userData);
+                    return TimerKQueue::Instance ()->CreateTimer (timerCallback, userData);
                 }
 
                 void DestroyKQueueTimer (KQueueTimer *timer) {
-                    TimerKQueue::Instance ().DestroyTimer (timer);
+                    TimerKQueue::Instance ()->DestroyTimer (timer);
                 }
 
                 void StartKQueueTimer (
                         KQueueTimer *timer,
                         const TimeSpec &timeSpec,
                         bool periodic) {
-                    TimerKQueue::Instance ().StartTimer (timer, timeSpec, periodic);
+                    TimerKQueue::Instance ()->StartTimer (timer, timeSpec, periodic);
                 }
 
                 void StopKQueueTimer (KQueueTimer *timer) {
-                    TimerKQueue::Instance ().StopTimer (timer);
+                    TimerKQueue::Instance ()->StopTimer (timer);
                 }
 
                 bool IsKQueueTimerRunning (KQueueTimer *timer) {
-                    return TimerKQueue::Instance ().IsTimerRunning (timer);
+                    return TimerKQueue::Instance ()->IsTimerRunning (timer);
                 }
 
                 namespace {

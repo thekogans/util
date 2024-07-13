@@ -259,7 +259,7 @@ namespace thekogans {
                 _T,\
                 version,\
                 THEKOGANS_UTIL_HEAP_DEFAULT_MIN_ITEMS_IN_PAGE,\
-                &DefaultAllocator::Instance ())
+                DefaultAllocator::Instance ().Get ())
 
         /// \brief
         /// Serializable::BinHeader insertion operator.

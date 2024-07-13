@@ -137,6 +137,7 @@
     <cpp_header>$(organization)/$(project_directory)/Rectangle.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/RecursiveLock.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/RefCounted.h</cpp_header>
+    <cpp_header>$(organization)/$(project_directory)/RefCountedRegistry.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/RunLoop.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/RunLoopScheduler.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/RWLock.h</cpp_header>

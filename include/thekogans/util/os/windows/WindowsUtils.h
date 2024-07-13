@@ -30,6 +30,7 @@
 #include "thekogans/util/Constants.h"
 #include "thekogans/util/Rectangle.h"
 #include "thekogans/util/RefCounted.h"
+#include "thekogans/util/RefCountedRegistry.h"
 #include "thekogans/util/os/RunLoop.h"
 
 /// \brief
@@ -314,10 +315,10 @@ namespace thekogans {
                 struct Window;
 
                 /// \brief
-                /// Convenient typedef for RefCounted::Registry<Window>.
+                /// Convenient typedef for RefCountedRegistry<Window>.
                 /// NOTE: It's one and only instance is accessed like this;
                 /// thekogans::util::os::windows::WindowRegistry::Instance ().
-                typedef RefCounted::Registry<Window> WindowRegistry;
+                typedef RefCountedRegistry<Window> WindowRegistry;
 
                 /// \struct Window WindowsUtils.h thekogans/util/os/windows/WindowsUtils.h
                 ///

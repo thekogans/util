@@ -53,8 +53,8 @@ namespace thekogans {
             /// the given \see{RunLoop} or \see{Pipeline}.
             struct JobInfo : public virtual RefCounted {
                 /// \brief
-                /// Convenient typedef for RefCounted::SharedPtr<JobInfo>.
-                typedef RefCounted::SharedPtr<JobInfo> SharedPtr;
+                /// Declare \see{RefCounted} pointers.
+                THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (JobInfo)
 
                 /// \brief
                 /// \see{RunLoop::Job} or \see{Pipeline::Job} that will be scheduled.
@@ -112,7 +112,7 @@ namespace thekogans {
 
                 /// \brief
                 /// \see{RunLoop} the job will be scheduled on.
-                RunLoop &runLoop;
+                RunLoop::SharedPtr runLoop;
 
                 /// \brief
                 /// ctor.
@@ -122,7 +122,7 @@ namespace thekogans {
                 RunLoopJobInfo (
                     RunLoop::Job::SharedPtr job,
                     const TimeSpec &deadline,
-                    RunLoop &runLoop_) :
+                    RunLoop::SharedPtr runLoop_) :
                     JobInfo (job, deadline),
                     runLoop (runLoop_) {}
 
@@ -130,13 +130,13 @@ namespace thekogans {
                 /// Return the id associated with this \see{RunLoop}.
                 /// \return Id associated with this \see{RunLoop}.
                 virtual const RunLoop::Id &GetRunLoopId () const {
-                    return runLoop.GetId ();
+                    return runLoop->GetId ();
                 }
 
                 /// \brief
                 /// Enqueue the job on the specified run loop.
                 virtual void EnqJob () {
-                    runLoop.EnqJob (job);
+                    runLoop->EnqJob (job);
                 }
 
                 /// \brief
@@ -155,7 +155,7 @@ namespace thekogans {
 
                 /// \brief
                 /// \see{Pipeline} the job will be scheduled on.
-                Pipeline &pipeline;
+                Pipeline::SharedPtr pipeline;
 
                 /// \brief
                 /// ctor.
@@ -165,7 +165,7 @@ namespace thekogans {
                 PipelineJobInfo (
                     Pipeline::Job::SharedPtr job,
                     const TimeSpec &deadline,
-                    Pipeline &pipeline_) :
+                    Pipeline::SharedPtr pipeline_) :
                     JobInfo (RunLoop::Job::SharedPtr (job.Get ()), deadline),
                     pipeline (pipeline_) {}
 
@@ -173,13 +173,13 @@ namespace thekogans {
                 /// Return the id associated with this \see{Pipeline}.
                 /// \return Id associated with this \see{Pipeline}.
                 virtual const RunLoop::Id &GetRunLoopId () const {
-                    return pipeline.GetId ();
+                    return pipeline->GetId ();
                 }
 
                 /// \brief
                 /// Enqueue the job on the specified pipeline.
                 virtual void EnqJob () {
-                    pipeline.EnqJob (dynamic_refcounted_sharedptr_cast<Pipeline::Job> (job));
+                    pipeline->EnqJob (dynamic_refcounted_sharedptr_cast<Pipeline::Job> (job));
                 }
 
                 /// \brief
@@ -246,7 +246,7 @@ namespace thekogans {
             RunLoop::Job::Id ScheduleRunLoopJob (
                 RunLoop::Job::SharedPtr job,
                 const TimeSpec &timeSpec,
-                RunLoop &runLoop = MainRunLoop::Instance ());
+                RunLoop::SharedPtr runLoop = MainRunLoop::Instance ().Get ());
             /// \brief
             /// Schedule a lambda (function) to be performed in the future.
             /// \param[in] function Lambda to execute in the future.
@@ -257,7 +257,7 @@ namespace thekogans {
             inline RunLoop::Job::Id ScheduleRunLoopJob (
                     const RunLoop::LambdaJob::Function &function,
                     const TimeSpec &timeSpec,
-                    RunLoop &runLoop = MainRunLoop::Instance ()) {
+                    RunLoop::SharedPtr runLoop = MainRunLoop::Instance ().Get ()) {
                 return ScheduleRunLoopJob (
                     new RunLoop::LambdaJob (function),
                     timeSpec,
@@ -273,7 +273,7 @@ namespace thekogans {
             Pipeline::Job::Id SchedulePipelineJob (
                 Pipeline::Job::SharedPtr job,
                 const TimeSpec &timeSpec,
-                Pipeline &pipeline = GlobalPipeline::Instance ());
+                Pipeline::SharedPtr pipeline = GlobalPipeline::Instance ().Get ());
             /// \brief
             /// Schedule a set of lambdas (functions) to be performed in the future at each pipeline stage.
             /// \param[in] begin First lambda in the array.
@@ -286,7 +286,7 @@ namespace thekogans {
                     const Pipeline::LambdaJob::Function *&begin,
                     const Pipeline::LambdaJob::Function *&end,
                     const TimeSpec &timeSpec,
-                    Pipeline &pipeline = GlobalPipeline::Instance ()) {
+                    Pipeline::SharedPtr pipeline = GlobalPipeline::Instance ().Get ()) {
                 return SchedulePipelineJob (
                     new Pipeline::LambdaJob (pipeline, begin, end),
                     timeSpec,

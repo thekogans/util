@@ -234,14 +234,14 @@ namespace thekogans {
         void *_T::operator new (std::size_t size) {\
             assert (size == sizeof (_T));\
             return thekogans::util::Heap<_T>::CreateInstance (\
-                #_T, minItemsInPage, allocator).Alloc (false);\
+                #_T, minItemsInPage, allocator)->Alloc (false);\
         }\
         void *_T::operator new (\
                 std::size_t size,\
                 std::nothrow_t) throw () {\
             assert (size == sizeof (_T));\
             return thekogans::util::Heap<_T>::CreateInstance (\
-                #_T, minItemsInPage, allocator).Alloc (true);\
+                #_T, minItemsInPage, allocator)->Alloc (true);\
         }\
         void *_T::operator new (\
                 std::size_t size,\
@@ -251,13 +251,13 @@ namespace thekogans {
         }\
         void _T::operator delete (void *ptr) {\
             thekogans::util::Heap<_T>::CreateInstance (\
-                #_T, minItemsInPage, allocator).Free (ptr, false);\
+                #_T, minItemsInPage, allocator)->Free (ptr, false);\
         }\
         void _T::operator delete (\
                 void *ptr,\
                 std::nothrow_t) throw () {\
             thekogans::util::Heap<_T>::CreateInstance (\
-                #_T, minItemsInPage, allocator).Free (ptr, true);\
+                #_T, minItemsInPage, allocator)->Free (ptr, true);\
         }\
         void _T::operator delete (\
             void *,\
@@ -269,7 +269,7 @@ namespace thekogans {
         THEKOGANS_UTIL_IMPLEMENT_HEAP_FUNCTIONS_EX (\
             _T,\
             THEKOGANS_UTIL_HEAP_DEFAULT_MIN_ITEMS_IN_PAGE,\
-            &DefaultAllocator::Instance ())
+            thekogans::util::DefaultAllocator::Instance ().Get ())
 
         /// \brief
         /// Use these defines for templates.
@@ -281,7 +281,7 @@ namespace thekogans {
         THEKOGANS_UTIL_EXPORT void *_T::operator new (std::size_t size) {\
             assert (size == sizeof (_T));\
             return thekogans::util::Heap<_T>::CreateInstance (\
-                #_T, minItemsInPage, allocator).Alloc (false);\
+                #_T, minItemsInPage, allocator)->Alloc (false);\
         }\
         template<>\
         THEKOGANS_UTIL_EXPORT void *_T::operator new (\
@@ -289,7 +289,7 @@ namespace thekogans {
                 std::nothrow_t) throw () {\
             assert (size == sizeof (_T));\
             return thekogans::util::Heap<_T>::CreateInstance (\
-                #_T, minItemsInPage, allocator).Alloc (true);\
+                #_T, minItemsInPage, allocator)->Alloc (true);\
         }\
         template<>\
         THEKOGANS_UTIL_EXPORT void *_T::operator new (\
@@ -301,14 +301,14 @@ namespace thekogans {
         template<>\
         THEKOGANS_UTIL_EXPORT void _T::operator delete (void *ptr) {\
             thekogans::util::Heap<_T>::CreateInstance (\
-                #_T, minItemsInPage, allocator).Free (ptr, false);\
+                #_T, minItemsInPage, allocator)->Free (ptr, false);\
         }\
         template<>\
         THEKOGANS_UTIL_EXPORT void _T::operator delete (\
                 void *ptr,\
                 std::nothrow_t) throw () {\
             thekogans::util::Heap<_T>::CreateInstance (\
-                #_T, minItemsInPage, allocator).Free (ptr, true);\
+                #_T, minItemsInPage, allocator)->Free (ptr, true);\
         }\
         template<>\
         THEKOGANS_UTIL_EXPORT void _T::operator delete (\
@@ -321,7 +321,7 @@ namespace thekogans {
         THEKOGANS_UTIL_IMPLEMENT_HEAP_FUNCTIONS_EX_T (\
             _T,\
             THEKOGANS_UTIL_HEAP_DEFAULT_MIN_ITEMS_IN_PAGE,\
-            &DefaultAllocator::Instance ())
+            thekogans::util::DefaultAllocator::Instance ().Get ())
 
         /// \struct HeapRegistry Heap.h thekogans/util/Heap.h
         ///
@@ -705,17 +705,17 @@ namespace thekogans {
             Heap (const char *name_ = nullptr,
                     std::size_t minItemsInPage_ =
                         THEKOGANS_UTIL_HEAP_DEFAULT_MIN_ITEMS_IN_PAGE,
-                    Allocator::SharedPtr allocator_ = &DefaultAllocator::Instance ()) :
+                    Allocator::SharedPtr allocator_ = DefaultAllocator::Instance ().Get ()) :
                     name (name_),
                     minItemsInPage (minItemsInPage_),
                     minPageSize (Align (sizeof (Page) +
                         sizeof (typename Page::Item) * (minItemsInPage - 1))),
                     itemCount (0),
-                    allocator (allocator_, minPageSize) {
+                    allocator (allocator_.Get (), minPageSize) {
                 assert (minItemsInPage > 0);
                 assert (OneBitCount (minPageSize) == 1);
                 if (name != nullptr) {
-                    HeapRegistry::Instance ().AddHeap (name, this);
+                    HeapRegistry::Instance ()->AddHeap (name, this);
                 }
             }
             /// \brief
@@ -749,7 +749,7 @@ namespace thekogans {
                 // Flush from its dtor.
                 //Flush ();
                 if (name != nullptr) {
-                    HeapRegistry::Instance ().RemoveHeap (name);
+                    HeapRegistry::Instance ()->RemoveHeap (name);
                 }
             }
 
@@ -969,7 +969,7 @@ namespace thekogans {
                 ++itemCount;
                 return ptr;
             }
-            HeapRegistry::Instance ().CallHeapErrorCallback (
+            HeapRegistry::Instance ()->CallHeapErrorCallback (
                 HeapRegistry::OutOfMemory,
                 name != nullptr ? name : typeid (*this).name ());
             if (!nothrow) {
@@ -1010,7 +1010,7 @@ namespace thekogans {
                     }
                 }
                 else {
-                    HeapRegistry::Instance ().CallHeapErrorCallback (
+                    HeapRegistry::Instance ()->CallHeapErrorCallback (
                         HeapRegistry::BadPointer,
                         name != nullptr ? name : typeid (*this).name ());
                     if (!nothrow) {

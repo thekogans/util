@@ -51,8 +51,8 @@ namespace thekogans {
         #define THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_BASE(_T)\
             void _T::GetTypes (std::list<std::string> &types) {\
                 for (thekogans::util::DynamicCreatable::MapType::const_iterator it =\
-                        thekogans::util::DynamicCreatable::Map::Instance ().begin (),\
-                        end = thekogans::util::DynamicCreatable::Map::Instance ().end ();\
+                        thekogans::util::DynamicCreatable::Map::Instance ()->begin (),\
+                        end = thekogans::util::DynamicCreatable::Map::Instance ()->end ();\
                         it != end; ++it) {\
                     if (thekogans::util::dynamic_refcounted_sharedptr_cast<_T> (\
                             it->second ()).Get () != nullptr) {\
@@ -62,8 +62,8 @@ namespace thekogans {
             }\
             _T::SharedPtr _T::CreateType (const std::string &type) {\
                 thekogans::util::DynamicCreatable::MapType::iterator it =\
-                    thekogans::util::DynamicCreatable::Map::Instance ().find (type);\
-                return it != thekogans::util::DynamicCreatable::Map::Instance ().end () ?\
+                    thekogans::util::DynamicCreatable::Map::Instance ()->find (type);\
+                return it != thekogans::util::DynamicCreatable::Map::Instance ()->end () ?\
                     thekogans::util::dynamic_refcounted_sharedptr_cast<_T> (it->second ()) :\
                     _T::SharedPtr ();\
             }
@@ -141,7 +141,7 @@ namespace thekogans {
         /// Common code for static initialization of a DynamicCreatable.
         #define THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_STATIC(_T)\
             void _T::StaticInit () {\
-                thekogans::util::DynamicCreatable::Map::Instance ().insert (\
+                thekogans::util::DynamicCreatable::Map::Instance ()->insert (\
                     thekogans::util::DynamicCreatable::Map::value_type (#_T, _T::Create));\
             }
 
@@ -215,7 +215,8 @@ namespace thekogans {
             THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_SHARED (_T)\
             THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_OVERRIDE(_T)\
             thekogans::util::DynamicCreatable::SharedPtr _T::Create () {\
-                return thekogans::util::DynamicCreatable::SharedPtr (&_T::Instance ());\
+                return thekogans::util::static_refcounted_sharedptr_cast<\
+                    thekogans::util::DynamicCreatable> (_T::Instance ());\
             }
 
     } // namespace util

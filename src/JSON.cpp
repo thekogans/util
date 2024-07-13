@@ -788,8 +788,8 @@ namespace thekogans {
             SizeT readOffset = object.Get<JSON::Number> (ATTR_READ_OFFSET)->To<ui64> ();
             SizeT writeOffset = object.Get<JSON::Number> (ATTR_WRITE_OFFSET)->To<ui64> ();
             Allocator::SharedPtr allocator = Allocator::CreateType (object.Get<JSON::String> (ATTR_ALLOCATOR)->value);
-            if (allocator.Get () == 0) {
-                allocator.Reset (&DefaultAllocator::Instance ());
+            if (allocator == nullptr) {
+                allocator.Reset (DefaultAllocator::Instance ().Get ());
             }
             buffer.Resize (length, allocator);
             if (length > 0) {

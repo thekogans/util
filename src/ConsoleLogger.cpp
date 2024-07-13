@@ -36,7 +36,7 @@ namespace thekogans {
                 const std::string &header,
                 const std::string &message) throw () {
             if (level <= this->level && (!header.empty () || !message.empty ())) {
-                Console::Instance ().PrintString (
+                Console::Instance ()->PrintString (
                     FormatString ("%s%s", header.c_str (), message.c_str ()),
                     stream,
                     colorScheme.get () != nullptr ? colorScheme->GetColor (level) : 0);

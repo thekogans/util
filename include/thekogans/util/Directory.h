@@ -96,7 +96,7 @@ namespace thekogans {
             ///         thekogans::util::Directory::Watcher::EventSink &evenSink,
             ///         std::list<thekogans::util::Directory::Watcher::WatchId> &watches) {
             ///     thekogans::util::Directory::Watcher::WatchId watchId =
-            ///         thekogans::util::Directory::Watcher::Instance ().AddWatch (
+            ///         thekogans::util::Directory::Watcher::Instance ()->AddWatch (
             ///             path, evenSink);
             ///     assert (watchId != THEKOGANS_UTIL_INVALID_HANDLE_VALUE);
             ///     watches.push_back (watchId);
@@ -127,7 +127,7 @@ namespace thekogans {
             ///     Options () :
             ///             startDirectory (thekogans::util::Path::GetCurrDirectory ()),
             ///             watchId (
-            ///                 thekogans::util::Directory::Watcher::Instance ().AddWatch (
+            ///                 thekogans::util::Directory::Watcher::Instance ()->AddWatch (
             ///                     startDirectory, *this)) {
             ///         if (thekogans::util::Path (
             ///                 thekogans::util::MakePath (

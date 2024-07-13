@@ -45,7 +45,7 @@ namespace thekogans {
                     state->FinishedJob (job, start, end);
                 }
             }
-            ThreadReaper::Instance ().ReapThread (this);
+            ThreadReaper::Instance ()->ReapThread (this);
         }
 
         THEKOGANS_UTIL_IMPLEMENT_HEAP_FUNCTIONS (JobQueue::State)

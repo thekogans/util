@@ -213,8 +213,8 @@ namespace thekogans {
             /// \param[in] workerAffinity JobQueue thread processor affinity.
             /// \param[in] workerCallback Called to initialize/uninitialize the worker thread.
             Scheduler (
-                std::size_t minJobQueues = SystemInfo::Instance ().GetCPUCount (),
-                std::size_t maxJobQueues = SystemInfo::Instance ().GetCPUCount () * 2,
+                std::size_t minJobQueues = SystemInfo::Instance ()->GetCPUCount (),
+                std::size_t maxJobQueues = SystemInfo::Instance ()->GetCPUCount () * 2,
                 const std::string name = std::string (),
                 RunLoop::JobExecutionPolicy::SharedPtr jobExecutionPolicy =
                     new RunLoop::FIFOJobExecutionPolicy,
@@ -298,8 +298,8 @@ namespace thekogans {
             /// \param[in] workerAffinity JobQueue thread processor affinity.
             /// \param[in] workerCallback Called to initialize/uninitialize the worker thread.
             GlobalScheduler (
-                std::size_t minJobQueues = SystemInfo::Instance ().GetCPUCount (),
-                std::size_t maxJobQueues = SystemInfo::Instance ().GetCPUCount () * 2,
+                std::size_t minJobQueues = SystemInfo::Instance ()->GetCPUCount (),
+                std::size_t maxJobQueues = SystemInfo::Instance ()->GetCPUCount () * 2,
                 const std::string &name = "GlobalScheduler",
                 RunLoop::JobExecutionPolicy::SharedPtr jobExecutionPolicy =
                     new RunLoop::FIFOJobExecutionPolicy,

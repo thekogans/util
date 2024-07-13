@@ -52,7 +52,7 @@ namespace thekogans {
                 THEKOGANS_UTIL_CATCH (std::exception) {
                     // There is very little we can do here.
                 #if defined (THEKOGANS_UTIL_CONFIG_Debug)
-                    Console::Instance ().PrintString (
+                    Console::Instance ()->PrintString (
                         FormatString (
                             "FileLogger::Log: %s\n",
                             exception.what ()),

@@ -102,7 +102,7 @@ namespace thekogans {
                         keventStruct event;
                         keventSet (&event, handle, EVFILT_VNODE, EV_ADD | EV_ENABLE,
                             NOTE_DELETE | NOTE_EXTEND | NOTE_WRITE | NOTE_ATTRIB, 0, watch.handle);
-                        if (keventFunc (Directory::Watcher::Instance ().handle,
+                        if (keventFunc (Directory::Watcher::Instance ()->handle,
                                 &event, 1, 0, 0, 0) < 0) {
                             THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
                                 THEKOGANS_UTIL_OS_ERROR_CODE);
@@ -128,7 +128,7 @@ namespace thekogans {
                         FILE_FLAG_BACKUP_SEMANTICS | FILE_FLAG_OVERLAPPED, 0)) {
                 #elif defined (TOOLCHAIN_OS_Linux)
                     handle (inotify_add_watch (
-                        Directory::Watcher::Instance ().handle, directory.c_str (),
+                        Directory::Watcher::Instance ()->handle, directory.c_str (),
                         IN_CLOSE_WRITE | IN_MOVED_TO | IN_CREATE | IN_MOVED_FROM | IN_DELETE)) {
                 #elif defined (TOOLCHAIN_OS_OSX)
                     handle (open (directory.c_str (), O_RDONLY)) {
@@ -139,7 +139,7 @@ namespace thekogans {
                 }
             #if defined (TOOLCHAIN_OS_Windows)
                 if (CreateIoCompletionPort (handle,
-                        Directory::Watcher::Instance ().handle,
+                        Directory::Watcher::Instance ()->handle,
                         (ULONG_PTR)handle, 0) == 0) {
                     THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
                         THEKOGANS_UTIL_OS_ERROR_CODE);
@@ -149,7 +149,7 @@ namespace thekogans {
                 keventStruct event;
                 keventSet (&event, handle, EVFILT_VNODE, EV_ADD | EV_ENABLE,
                     NOTE_DELETE | NOTE_EXTEND | NOTE_WRITE | NOTE_ATTRIB, 0, handle);
-                if (keventFunc (Directory::Watcher::Instance ().handle, &event, 1, 0, 0, 0) < 0) {
+                if (keventFunc (Directory::Watcher::Instance ()->handle, &event, 1, 0, 0, 0) < 0) {
                     THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
                         THEKOGANS_UTIL_OS_ERROR_CODE);
                 }
@@ -161,7 +161,7 @@ namespace thekogans {
             #if defined (TOOLCHAIN_OS_Windows)
                 CloseHandle (handle);
             #elif defined (TOOLCHAIN_OS_Linux)
-                inotify_rm_watch (Directory::Watcher::Instance ().handle, handle);
+                inotify_rm_watch (Directory::Watcher::Instance ()->handle, handle);
             #elif defined (TOOLCHAIN_OS_OSX)
                 close (handle);
             #endif // defined (TOOLCHAIN_OS_Windows)

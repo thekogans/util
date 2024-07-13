@@ -66,13 +66,13 @@ namespace thekogans {
         #define THEKOGANS_UTIL_IMPLEMENT_NULL_ALLOCATOR_FUNCTIONS(_T)\
         void *_T::operator new (std::size_t size) {\
             assert (size == sizeof (_T));\
-            return thekogans::util::NullAllocator::Instance ().Alloc (size);\
+            return thekogans::util::NullAllocator::Instance ()->Alloc (size);\
         }\
         void *_T::operator new (\
                 std::size_t size,\
                 std::nothrow_t) throw () {\
             assert (size == sizeof (_T));\
-            return thekogans::util::NullAllocator::Instance ().Alloc (size);\
+            return thekogans::util::NullAllocator::Instance ()->Alloc (size);\
         }\
         void *_T::operator new (\
                 std::size_t size,\
@@ -81,12 +81,12 @@ namespace thekogans {
             return ptr;\
         }\
         void _T::operator delete (void *ptr) {\
-            thekogans::util::NullAllocator::Instance ().Free (ptr, sizeof (_T));\
+            thekogans::util::NullAllocator::Instance ()->Free (ptr, sizeof (_T));\
         }\
         void _T::operator delete (\
                 void *ptr,\
                 std::nothrow_t) throw () {\
-            thekogans::util::NullAllocator::Instance ().Free (ptr, sizeof (_T));\
+            thekogans::util::NullAllocator::Instance ()->Free (ptr, sizeof (_T));\
         }\
         void _T::operator delete (\
             void *,\

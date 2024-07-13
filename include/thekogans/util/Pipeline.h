@@ -212,8 +212,8 @@ namespace thekogans {
                     public RunLoop::Job,
                     public JobList::Node {
                 /// \brief
-                /// Convenient typedef for RefCounted::SharedPtr<Job>.
-                typedef RefCounted::SharedPtr<Job> SharedPtr;
+                /// Declare \see{RefCounted} pointers.
+                THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (Job)
 
             protected:
                 /// \brief
@@ -233,7 +233,7 @@ namespace thekogans {
                 /// \brief
                 /// ctor.
                 /// \param[in] pipeline_ Pipeline that will execute this job.
-                explicit Job (Pipeline &pipeline_);
+                explicit Job (Pipeline::SharedPtr pipeline_);
 
                 /// \brief
                 /// Return the pipeline id on which this job can run.
@@ -321,7 +321,7 @@ namespace thekogans {
                 /// \param[in] begin First lambda in the array.
                 /// \param[in] end Just past the last lambda in the array.
                 LambdaJob (
-                    Pipeline &pipeline,
+                    Pipeline::SharedPtr pipeline,
                     const Function *&begin,
                     const Function *&end) :
                     Job (pipeline),

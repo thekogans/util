@@ -41,12 +41,12 @@ namespace thekogans {
                     case CTRL_LOGOFF_EVENT:
                     case CTRL_SHUTDOWN_EVENT:
                         if (MainRunLoop::IsInstanceCreated ()) {
-                            MainRunLoop::Instance ().Stop ();
+                            MainRunLoop::Instance ()->Stop ();
                         }
                         return TRUE;
                     case CTRL_CLOSE_EVENT:
                         if (MainRunLoop::IsInstanceCreated ()) {
-                            MainRunLoop::Instance ().Stop ();
+                            MainRunLoop::Instance ()->Stop ();
                         }
                         return FALSE;
                 }
@@ -55,7 +55,7 @@ namespace thekogans {
         #else // defined (TOOLCHAIN_OS_Windows)
             void CtrlBreakHandler (int /*signal*/) {
                 if (MainRunLoop::IsInstanceCreated ()) {
-                    MainRunLoop::Instance ().Stop ();
+                    MainRunLoop::Instance ()->Stop ();
                 }
             }
         #endif // defined (TOOLCHAIN_OS_Windows)

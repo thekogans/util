@@ -28,6 +28,7 @@
 #include "thekogans/util/Singleton.h"
 #include "thekogans/util/SpinLock.h"
 #include "thekogans/util/RefCounted.h"
+#include "thekogans/util/RefCountedRegistry.h"
 #include "thekogans/util/os/RunLoop.h"
 
 
@@ -86,8 +87,8 @@ namespace thekogans {
                 };
 
                 /// \brief
-                /// Convenient typedef for util::RefCounted::Registry<XlibWindow>.
-                typedef RefCounted::Registry<XlibWindow> XlibWindowRegistry;
+                /// Convenient typedef for RefCountedRegistry<XlibWindow>.
+                typedef RefCountedRegistry<XlibWindow> XlibWindowRegistry;
 
                 /// \struct SystemRunLoop::XlibWindow SystemRunLoop.h thekogans/util/SystemRunLoop.h
                 ///

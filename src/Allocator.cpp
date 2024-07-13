@@ -50,7 +50,7 @@ namespace thekogans {
         std::string Allocator::GetSerializedName () const {
             std::string allocatorName = Type ();
             if (CreateType (allocatorName).Get () == nullptr) {
-                allocatorName = DefaultAllocator::Instance ().Type ();
+                allocatorName = DefaultAllocator::Instance ()->Type ();
             }
             return allocatorName;
         }

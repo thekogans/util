@@ -107,7 +107,7 @@ namespace thekogans {
                         THEKOGANS_UTIL_OS_ERROR_CODE);
                 }
             #elif defined (THEKOGANS_UTIL_USE_DEFAULT_SECURE_ALLOCATOR)
-                ptr = DefaultAllocator::Instance ().Alloc (size);
+                ptr = DefaultAllocator::Instance ()->Alloc (size);
             #endif // defined (THEKOGANS_UTIL_HAVE_MMAP)
             #endif // defined (TOOLCHAIN_OS_Windows)
             }
@@ -138,7 +138,7 @@ namespace thekogans {
             #if defined (THEKOGANS_UTIL_HAVE_MMAP)
                 if (munlock (ptr, size) != 0 || munmap (ptr, size) != 0) {
             #elif defined (THEKOGANS_UTIL_USE_DEFAULT_SECURE_ALLOCATOR)
-                DefaultAllocator::Instance ().Free (ptr, size);
+                DefaultAllocator::Instance ()->Free (ptr, size);
                 if (0) {
             #else // defined (THEKOGANS_UTIL_USE_DEFAULT_SECURE_ALLOCATOR)
                 // At this point we know that ptr could not possibly

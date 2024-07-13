@@ -89,8 +89,8 @@ namespace thekogans {
             return !state.pendingJobs.empty () ? state.pendingJobs.pop_front () : 0;
         }
 
-        Pipeline::Job::Job (Pipeline &pipeline_) :
-            pipeline (pipeline_.state),
+        Pipeline::Job::Job (Pipeline::SharedPtr pipeline_) :
+            pipeline (pipeline_->state),
             stage (GetFirstStage ()),
             start (0),
             end (0) {}
@@ -395,7 +395,7 @@ namespace thekogans {
                 bool wait,
                 const TimeSpec &timeSpec) {
             std::pair<Job::SharedPtr, bool> result;
-            result.first.Reset (new LambdaJob (*this, begin, end));
+            result.first.Reset (new LambdaJob (this, begin, end));
             result.second = EnqJob (result.first, wait, timeSpec);
             return result;
         }
@@ -426,7 +426,7 @@ namespace thekogans {
                 bool wait,
                 const TimeSpec &timeSpec) {
             std::pair<Job::SharedPtr, bool> result;
-            result.first.Reset (new LambdaJob (*this, begin, end));
+            result.first.Reset (new LambdaJob (this, begin, end));
             result.second = EnqJobFront (result.first, wait, timeSpec);
             return result;
         }

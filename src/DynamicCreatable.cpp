@@ -39,7 +39,7 @@ namespace thekogans {
         DynamicCreatable::MapInitializer::MapInitializer (
                 const std::string &type,
                 Factory factory) {
-            Map::Instance ().insert (MapType::value_type (type, factory));
+            Map::Instance ()->insert (MapType::value_type (type, factory));
         }
     #endif // defined (THEKOGANS_UTIL_TYPE_Static)
 

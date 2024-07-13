@@ -705,13 +705,13 @@ namespace thekogans {
                 RefCountedInstanceDestroyer<JobQueue>> DaemonizeJobQueue;
 
             void SignalHandlerSIGCHLD (int /*signum*/) {
-                DaemonizeJobQueue::Instance ().EnqJob (RunLoop::Job::SharedPtr (failureExit));
+                DaemonizeJobQueue::Instance ()->EnqJob (RunLoop::Job::SharedPtr (failureExit));
             }
             void SignalHandlerSIGALRM (int /*signum*/) {
-                DaemonizeJobQueue::Instance ().EnqJob (RunLoop::Job::SharedPtr (failureExit));
+                DaemonizeJobQueue::Instance ()->EnqJob (RunLoop::Job::SharedPtr (failureExit));
             }
             void SignalHandlerSIGUSR1 (int /*signum*/) {
-                DaemonizeJobQueue::Instance ().EnqJob (RunLoop::Job::SharedPtr (successExit));
+                DaemonizeJobQueue::Instance ()->EnqJob (RunLoop::Job::SharedPtr (successExit));
             }
         }
 

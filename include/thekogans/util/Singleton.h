@@ -21,6 +21,7 @@
 #include <typeinfo>
 #include "thekogans/util/Config.h"
 #include "thekogans/util/Constants.h"
+#include "thekogans/util/RefCounted.h"
 #include "thekogans/util/NullLock.h"
 #include "thekogans/util/SpinLock.h"
 #include "thekogans/util/LockGuard.h"
@@ -41,12 +42,16 @@ namespace thekogans {
         template<typename T>
         struct DefaultInstanceCreator {
             /// \brief
+            /// Returns raw pointer to instance.
+            typedef T *ReturnType;
+
+            /// \brief
             /// Create a single instance using the default ctor.
             /// \param[in] args List of arguments to instance ctor.
             /// \return Singleton instance.
             template<typename... Args>
-            inline T *operator () (Args... args) {
-                return new T (std::forward<Args> (args)...);
+            inline ReturnType operator () (Args... args) {
+                return ReturnType (new T (std::forward<Args> (args)...));
             }
         };
 
@@ -60,7 +65,7 @@ namespace thekogans {
             /// \brief
             /// Destroy the singleton instance.
             /// \param[in] instance Singleton instance to destroy.
-            inline void operator () (T *instance) {
+            inline void operator () (typename DefaultInstanceCreator<T>::ReturnType instance) {
                 if (instance != nullptr) {
                     delete instance;
                 }
@@ -80,15 +85,16 @@ namespace thekogans {
         template<typename T>
         struct RefCountedInstanceCreator {
             /// \brief
+            /// Returns RefCounted::SharedPtr<T> to instance.
+            typedef RefCounted::SharedPtr<T> ReturnType;
+
+            /// \brief
             /// Create a single instance using the default ctor.
             /// \param[in] args List of arguments to instance ctor.
             /// \return Singleton instance.
             template<typename... Args>
-            inline T *operator () (Args... args) {
-                T *instance = new T (std::forward<Args> (args)...);
-                // The singleton is the owner of the instance.
-                instance->AddRef ();
-                return instance;
+            inline ReturnType operator () (Args... args) {
+                return ReturnType (new T (std::forward<Args> (args)...));
             }
         };
 
@@ -116,10 +122,8 @@ namespace thekogans {
             /// \brief
             /// Destroy the singleton instance.
             /// \param[in] instance Singleton instance to destroy.
-            inline void operator () (T *instance) {
-                if (instance != nullptr) {
-                    instance->Release ();
-                }
+            inline void operator () (typename RefCountedInstanceCreator<T>::ReturnType /*instance*/) {
+                // Nothing to do.
             }
         };
 
@@ -143,7 +147,7 @@ namespace thekogans {
         /// can be accessed like this:
         ///
         /// \code{.cpp}
-        /// foo::Instance ().bar ();
+        /// foo::Instance ()->bar ();
         /// \endcode
         ///
         /// 2) Used directly to make a singleton out of an exisiting class.
@@ -162,7 +166,7 @@ namespace thekogans {
         /// can be accessed like this:
         ///
         /// \code{.cpp}
-        /// FooSingleton::Instance ().bar ();
+        /// FooSingleton::Instance ()->bar ();
         /// \endcode
         ///
         /// NOTE: That thekogans::util::SpinLock used as the second template
@@ -187,7 +191,7 @@ namespace thekogans {
             /// to singleton instance ctor.
             /// \return The singleton instance.
             template<typename... Args>
-            static T &CreateInstance (Args... args) {
+            static typename InstanceCreator::ReturnType CreateInstance (Args... args) {
                 // We implement the double-checked locking pattern here
                 // to allow our singleton instance method to be thread-safe
                 // (i.e. thread-safe singleton construction).
@@ -200,7 +204,7 @@ namespace thekogans {
                         instance () = InstanceCreator () (std::forward<Args> (args)...);
                     }
                 }
-                return *instance ();
+                return instance ();
             }
 
             /// \brief
@@ -215,7 +219,7 @@ namespace thekogans {
                 // handled by the application.
                 LockGuard<Lock> guard (lock ());
                 if (instance () != nullptr) {
-                    T *instance_ = nullptr;
+                    typename InstanceCreator::ReturnType instance_ = nullptr;
                     InstanceDestroyer () (EXCHANGE (instance (), instance_));
                 }
             }
@@ -230,7 +234,7 @@ namespace thekogans {
             /// \brief
             /// Return the singleton instance. Create if first time accessed.
             /// \return The singleton instance.
-            static T &Instance () {
+            static typename InstanceCreator::ReturnType Instance () {
                 // We implement the double-checked locking pattern here
                 // to allow our singleton instance method to be thread-safe
                 // (i.e. thread-safe singleton construction).
@@ -243,7 +247,7 @@ namespace thekogans {
                         instance () = InstanceCreator () ();
                     }
                 }
-                return *instance ();
+                return instance ();
             }
 
         protected:
@@ -252,9 +256,9 @@ namespace thekogans {
             /// functions we guarantee that the ctors are called in
             /// the right order.
             /// \return A reference to the one and only instance pointer.
-            static T *&instance () {
+            static typename InstanceCreator::ReturnType &instance () {
                 // The one and only singleton instance.
-                static T *_instance = nullptr;
+                static typename InstanceCreator::ReturnType _instance = nullptr;
                 return _instance;
             };
             /// \brief

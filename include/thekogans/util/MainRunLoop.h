@@ -47,25 +47,27 @@ namespace thekogans {
 
         struct _LIB_THEKOGANS_UTIL_DECL MainRunLoopInstanceCreator {
             /// \brief
+            /// Returns RefCounted::SharedPtr<T> to instance.
+            typedef RunLoop::SharedPtr ReturnType;
+
+            /// \brief
             /// Create a main thread run loop with custom ctor arguments.
             /// \param[in] name RunLoop name.
             /// \param[in] jobExecutionPolicy JobQueue \see{RunLoop::JobExecutionPolicy}.
             /// \return A main thread run loop with custom ctor arguments.
-            RunLoop *operator () (
+            inline ReturnType operator () (
                     const std::string &name = "MainRunLoop",
                     RunLoop::JobExecutionPolicy::SharedPtr jobExecutionPolicy =
                         new RunLoop::FIFOJobExecutionPolicy) {
                 Thread::SetMainThread ();
-                RunLoop *runLoop =
+                return ReturnType (
                 #if defined (TOOLCHAIN_OS_Windows)
-                    new SystemRunLoop<os::windows::RunLoop> (name, jobExecutionPolicy);
+                    new SystemRunLoop<os::windows::RunLoop> (name, jobExecutionPolicy));
                 #elif defined (TOOLCHAIN_OS_Linux)
-                    new SystemRunLoop<os::linux::XlibRunLoop> (name, jobExecutionPolicy);
+                    new SystemRunLoop<os::linux::XlibRunLoop> (name, jobExecutionPolicy));
                 #elif defined (TOOLCHAIN_OS_OSX)
-                    new SystemRunLoop<os::osx::NSAppRunLoop> (name, jobExecutionPolicy);
+                    new SystemRunLoop<os::osx::NSAppRunLoop> (name, jobExecutionPolicy));
                 #endif // defined (TOOLCHAIN_OS_Windows)
-                runLoop->AddRef ();
-                return runLoop;
             }
         };
 

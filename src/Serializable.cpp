@@ -73,7 +73,7 @@ namespace thekogans {
         const char * const Serializable::TextHeader::ATTR_VERSION = "Version";
 
         bool Serializable::ValidateType (const std::string &type) {
-            return Map::Instance ().find (type) != Map::Instance ().end ();
+            return Map::Instance ()->find (type) != Map::Instance ()->end ();
         }
 
         std::size_t Serializable::GetSize () const {
