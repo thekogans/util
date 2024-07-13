@@ -210,6 +210,12 @@ namespace thekogans {
         ///              Added THEKOGANS_UTIL_DECLARE_HEAP to allow heap debugging in release mode.
         /// 06/04/2024 - version 2.5.3
         ///              Changed name type in Registry from std::string to const char *.
+        /// 07/11/2024 - version 3.0.0
+        ///              Heaps are now Singletons. As much as I originally liked the idea
+        ///              of a local heap, in almost 30 years of use I never had a reason
+        ///              to create one. The feature in now gone and so are a few dozen
+        ///              macros used to initialize the heap. Use Singleton::CreateInstance
+        ///              during initialization to parametarize the heap ctor.
         ///
         /// Author:
         ///
@@ -222,20 +228,20 @@ namespace thekogans {
         /// \brief
         /// Use these defines for regular classes (not templates).
 
-        /// \def THEKOGANS_UTIL_IMPLEMENT_HEAP_FUNCTIONS(_T)
-        /// Macro to implement heap functions. This is an
-        /// internal macro used by various THEKOGANS_UTIL_IMPLEMENT_HEAP*
-        /// macros below, and is not meant for public consumption.
-        #define THEKOGANS_UTIL_IMPLEMENT_HEAP_FUNCTIONS(_T)\
+        /// \def THEKOGANS_UTIL_IMPLEMENT_HEAP_FUNCTIONS_EX(_T, minItemsInPage, allocator)
+        /// Macro to implement heap functions using provided heap ctor arguments.
+        #define THEKOGANS_UTIL_IMPLEMENT_HEAP_FUNCTIONS_EX(_T, minItemsInPage, allocator)\
         void *_T::operator new (std::size_t size) {\
             assert (size == sizeof (_T));\
-            return Heap<_T>::Instance ().Alloc (false);\
+            return thekogans::util::Heap<_T>::CreateInstance (\
+                #_T, minItemsInPage, allocator).Alloc (false);\
         }\
         void *_T::operator new (\
                 std::size_t size,\
                 std::nothrow_t) throw () {\
             assert (size == sizeof (_T));\
-            return Heap<_T>::Instance ().Alloc (true);\
+            return thekogans::util::Heap<_T>::CreateInstance (\
+                #_T, minItemsInPage, allocator).Alloc (true);\
         }\
         void *_T::operator new (\
                 std::size_t size,\
@@ -244,36 +250,46 @@ namespace thekogans {
             return ptr;\
         }\
         void _T::operator delete (void *ptr) {\
-            Heap<_T>::Instance ().Free (ptr, false);\
+            thekogans::util::Heap<_T>::CreateInstance (\
+                #_T, minItemsInPage, allocator).Free (ptr, false);\
         }\
         void _T::operator delete (\
                 void *ptr,\
                 std::nothrow_t) throw () {\
-            Heap<_T>::Instance ().Free (ptr, true);\
+            thekogans::util::Heap<_T>::CreateInstance (\
+                #_T, minItemsInPage, allocator).Free (ptr, true);\
         }\
         void _T::operator delete (\
             void *,\
             void *) {}
 
+        /// \def THEKOGANS_UTIL_IMPLEMENT_HEAP_FUNCTIONS(_T)
+        /// Macro to implement heap functions using heap ctor defaults.
+        #define THEKOGANS_UTIL_IMPLEMENT_HEAP_FUNCTIONS(_T)\
+        THEKOGANS_UTIL_IMPLEMENT_HEAP_FUNCTIONS_EX (\
+            _T,\
+            THEKOGANS_UTIL_HEAP_DEFAULT_MIN_ITEMS_IN_PAGE,\
+            &DefaultAllocator::Instance ())
+
         /// \brief
         /// Use these defines for templates.
 
-        /// \def THEKOGANS_UTIL_IMPLEMENT_HEAP_FUNCTIONS_T(_T)
-        /// Macro to implement heap functions. This is an
-        /// internal macro used by various THEKOGANS_UTIL_IMPLEMENT_HEAP*
-        /// macros below, and is not meant for public consumption.
-        #define THEKOGANS_UTIL_IMPLEMENT_HEAP_FUNCTIONS_T(_T)\
+        /// \def THEKOGANS_UTIL_IMPLEMENT_HEAP_FUNCTIONS_EX_T(_T, minItemsInPage, allocator)
+        /// Macro to implement heap functions using provided heap ctor arguments.
+        #define THEKOGANS_UTIL_IMPLEMENT_HEAP_FUNCTIONS_EX_T(_T, minItemsInPage, allocator)\
         template<>\
         THEKOGANS_UTIL_EXPORT void *_T::operator new (std::size_t size) {\
             assert (size == sizeof (_T));\
-            return Heap<_T>::Instance ().Alloc (false);\
+            return thekogans::util::Heap<_T>::CreateInstance (\
+                #_T, minItemsInPage, allocator).Alloc (false);\
         }\
         template<>\
         THEKOGANS_UTIL_EXPORT void *_T::operator new (\
                 std::size_t size,\
                 std::nothrow_t) throw () {\
             assert (size == sizeof (_T));\
-            return Heap<_T>::Instance ().Alloc (true);\
+            return thekogans::util::Heap<_T>::CreateInstance (\
+                #_T, minItemsInPage, allocator).Alloc (true);\
         }\
         template<>\
         THEKOGANS_UTIL_EXPORT void *_T::operator new (\
@@ -284,18 +300,28 @@ namespace thekogans {
         }\
         template<>\
         THEKOGANS_UTIL_EXPORT void _T::operator delete (void *ptr) {\
-            Heap<_T>::Instance ().Free (ptr, false);\
+            thekogans::util::Heap<_T>::CreateInstance (\
+                #_T, minItemsInPage, allocator).Free (ptr, false);\
         }\
         template<>\
         THEKOGANS_UTIL_EXPORT void _T::operator delete (\
                 void *ptr,\
                 std::nothrow_t) throw () {\
-            Heap<_T>::Instance ().Free (ptr, true);\
+            thekogans::util::Heap<_T>::CreateInstance (\
+                #_T, minItemsInPage, allocator).Free (ptr, true);\
         }\
         template<>\
         THEKOGANS_UTIL_EXPORT void _T::operator delete (\
             void *,\
             void *) {}
+
+        /// \def THEKOGANS_UTIL_IMPLEMENT_HEAP_FUNCTIONS_T(_T)
+        /// Macro to implement heap functions using heap ctor defaults.
+        #define THEKOGANS_UTIL_IMPLEMENT_HEAP_FUNCTIONS_T(_T)\
+        THEKOGANS_UTIL_IMPLEMENT_HEAP_FUNCTIONS_EX_T (\
+            _T,\
+            THEKOGANS_UTIL_HEAP_DEFAULT_MIN_ITEMS_IN_PAGE,\
+            &DefaultAllocator::Instance ())
 
         /// \struct HeapRegistry Heap.h thekogans/util/Heap.h
         ///

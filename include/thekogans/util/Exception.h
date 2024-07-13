@@ -209,7 +209,7 @@ namespace thekogans {
             /// \brief
             /// Return the message text.
             /// \return '\0' terminated message text.
-            virtual const char *what () const throw () {
+            virtual const char *what () const throw () override {
                 return message.c_str ();
             }
 

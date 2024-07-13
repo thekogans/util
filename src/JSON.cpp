@@ -28,12 +28,25 @@
 namespace thekogans {
     namespace util {
 
-        THEKOGANS_UTIL_JSON_IMPLEMENT_VALUE (Bool)
-        THEKOGANS_UTIL_JSON_IMPLEMENT_VALUE (Null)
-        THEKOGANS_UTIL_JSON_IMPLEMENT_VALUE (Number)
-        THEKOGANS_UTIL_JSON_IMPLEMENT_VALUE (String)
-        THEKOGANS_UTIL_JSON_IMPLEMENT_VALUE (Array)
-        THEKOGANS_UTIL_JSON_IMPLEMENT_VALUE (Object)
+        THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_BASE (JSON::Value)
+
+    #if defined (THEKOGANS_UTIL_TYPE_Static)
+        void JSON::Value::StaticInit () {
+            Bool::StaticInit ();
+            Null::StaticInit ();
+            Number::StaticInit ();
+            String::StaticInit ();
+            Array::StaticInit ();
+            Object::StaticInit ();
+        }
+    #endif // defined (THEKOGANS_UTIL_TYPE_Static)
+
+        THEKOGANS_UTIL_IMPLEMENT_JSON_VALUE (JSON::Bool)
+        THEKOGANS_UTIL_IMPLEMENT_JSON_VALUE (JSON::Null)
+        THEKOGANS_UTIL_IMPLEMENT_JSON_VALUE (JSON::Number)
+        THEKOGANS_UTIL_IMPLEMENT_JSON_VALUE (JSON::String)
+        THEKOGANS_UTIL_IMPLEMENT_JSON_VALUE (JSON::Array)
+        THEKOGANS_UTIL_IMPLEMENT_JSON_VALUE (JSON::Object)
 
         JSON::Array::Array (
                 const std::string &str,
@@ -41,7 +54,8 @@ namespace thekogans {
                 std::size_t delimiterLength) {
             if (delimiter != 0 && delimiterLength > 0) {
                 std::string::size_type start = 0;
-                std::string::size_type end = str.find ((const char *)delimiter, start, delimiterLength);
+                std::string::size_type end =
+                    str.find ((const char *)delimiter, start, delimiterLength);
                 while (end != std::string::npos) {
                     Add<const std::string &> (str.substr (start, end - start));
                     start = end + delimiterLength;
@@ -66,7 +80,7 @@ namespace thekogans {
                     (const char *)delimiter + delimiterLength);
                 std::string str;
                 for (std::size_t i = 0, count = values.size (); i < count; ++i) {
-                    if (values[i]->GetType () == String::TYPE) {
+                    if (values[i]->Type () == String::TYPE) {
                         str += values[i]->To<std::string> () + _delimiter;
                     }
                     else {
@@ -600,19 +614,19 @@ namespace thekogans {
                     const JSON::Value &value,
                     std::size_t indentationLevel,
                     std::size_t indentationWidth) {
-                if (value.GetType () == JSON::Bool::TYPE) {
+                if (value.Type () == JSON::Bool::TYPE) {
                     stream << (value.To<bool> () ? XML_TRUE : XML_FALSE);
                 }
-                else if (value.GetType () == JSON::Null::TYPE) {
+                else if (value.Type () == JSON::Null::TYPE) {
                     stream << "null";
                 }
-                else if (value.GetType () == JSON::Number::TYPE) {
+                else if (value.Type () == JSON::Number::TYPE) {
                     stream << value.To<f64> ();
                 }
-                else if (value.GetType () == JSON::String::TYPE) {
+                else if (value.Type () == JSON::String::TYPE) {
                     FormatString (stream, value.To<std::string> ().c_str ());
                 }
-                else if (value.GetType () == JSON::Array::TYPE) {
+                else if (value.Type () == JSON::Array::TYPE) {
                     stream << "[";
                     const JSON::Array &array = dynamic_cast<const JSON::Array &> (value);
                     if (!array.values.empty ()) {
@@ -632,7 +646,7 @@ namespace thekogans {
                     }
                     stream << "]";
                 }
-                else if (value.GetType () == JSON::Object::TYPE) {
+                else if (value.Type () == JSON::Object::TYPE) {
                     stream << "{";
                     const JSON::Object &object = dynamic_cast<const JSON::Object &> (value);
                     if (!object.values.empty ()) {
@@ -657,7 +671,7 @@ namespace thekogans {
                 else {
                     THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
                         "Unknown value type %s.",
-                        value.GetType ());
+                        value.Type ());
                 }
             }
         }

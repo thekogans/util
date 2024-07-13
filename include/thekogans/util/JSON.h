@@ -25,7 +25,7 @@
 #include "thekogans/util/Buffer.h"
 #include "thekogans/util/Variant.h"
 #include "thekogans/util/SizeT.h"
-#include "thekogans/util/RefCounted.h"
+#include "thekogans/util/DynamicCreatable.h"
 #include "thekogans/util/Heap.h"
 #include "thekogans/util/Exception.h"
 #include "thekogans/util/SpinLock.h"
@@ -46,20 +46,18 @@ namespace thekogans {
             ///
             /// \brief
             /// Base for all JSON value types.
-            struct _LIB_THEKOGANS_UTIL_DECL Value : public RefCounted {
-                /// \brief
-                /// Convenient typedef for RefCounted::SharedPtr<Value>.
-                typedef RefCounted::SharedPtr<Value> SharedPtr;
+            struct _LIB_THEKOGANS_UTIL_DECL Value : public DynamicCreatable {
+                THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE_BASE (Value)
 
-            public:
+            #if defined (THEKOGANS_UTIL_TYPE_Static)
                 /// \brief
-                /// dtor.
-                virtual ~Value () {}
-
-                /// \brief
-                /// Return value type.
-                /// \return Value type.
-                virtual const char *GetType () const = 0;
+                /// Because Hash uses dynamic initialization, when using
+                /// it in static builds call this method to have the Hash
+                /// explicitly include all internal hash types. Without
+                /// calling this api, the only hashers that will be available
+                /// to your application are the ones you explicitly link to.
+                static void StaticInit ();
+            #endif // defined (THEKOGANS_UTIL_TYPE_Static)
 
                 /// \brief
                 /// Convert Bool, Number or String to bool, one of the
@@ -68,22 +66,17 @@ namespace thekogans {
                 T To () const;
             };
 
-            /// \def THEKOGANS_UTIL_JSON_DECLARE_VALUE(type)
+            /// \def THEKOGANS_UTIL_JSON_DECLARE_VALUE(_T)
             /// Common declarations used by all Value derivatives.
-            #define THEKOGANS_UTIL_JSON_DECLARE_VALUE(type)\
-            public:\
-                typedef RefCounted::SharedPtr<type> SharedPtr;\
-                THEKOGANS_UTIL_DECLARE_STD_ALLOCATOR_FUNCTIONS\
-                static const char * const TYPE;\
-                virtual const char *GetType () const {\
-                    return TYPE;\
-                }
+            #define THEKOGANS_UTIL_DECLARE_JSON_VALUE(_T)\
+                THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE (_T)\
+                THEKOGANS_UTIL_DECLARE_STD_ALLOCATOR_FUNCTIONS
 
-            /// \def THEKOGANS_UTIL_JSON_IMPLEMENT_VALUE(type)
+            /// \def THEKOGANS_UTIL_JSON_IMPLEMENT_VALUE(_T)
             /// Common implementations used by all Value derivatives.
-            #define THEKOGANS_UTIL_JSON_IMPLEMENT_VALUE(type)\
-                THEKOGANS_UTIL_IMPLEMENT_HEAP_FUNCTIONS (JSON::type)\
-                const char * const JSON::type::TYPE = #type;
+            #define THEKOGANS_UTIL_IMPLEMENT_JSON_VALUE(_T)\
+                THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE (_T)\
+                THEKOGANS_UTIL_IMPLEMENT_HEAP_FUNCTIONS (_T)
 
             /// \struct JSON::Bool JSON.h thekogans/util/JSON.h
             ///
@@ -92,7 +85,7 @@ namespace thekogans {
             struct _LIB_THEKOGANS_UTIL_DECL Bool : public Value {
                 /// \brief
                 /// Bool is a value.
-                THEKOGANS_UTIL_JSON_DECLARE_VALUE (Bool)
+                THEKOGANS_UTIL_DECLARE_JSON_VALUE (Bool)
 
                 /// \brief
                 /// Bool value.
@@ -112,7 +105,7 @@ namespace thekogans {
             struct _LIB_THEKOGANS_UTIL_DECL Null : public Value {
                 /// \brief
                 /// Null is a value.
-                THEKOGANS_UTIL_JSON_DECLARE_VALUE (Null)
+                THEKOGANS_UTIL_DECLARE_JSON_VALUE (Null)
 
                 /// \brief
                 /// ctor.
@@ -132,7 +125,7 @@ namespace thekogans {
             struct _LIB_THEKOGANS_UTIL_DECL Number : public Value {
                 /// \brief
                 /// Number is a value.
-                THEKOGANS_UTIL_JSON_DECLARE_VALUE (Number)
+                THEKOGANS_UTIL_DECLARE_JSON_VALUE (Number)
 
                 /// \brief
                 /// Number value.
@@ -152,7 +145,7 @@ namespace thekogans {
             struct _LIB_THEKOGANS_UTIL_DECL String : public Value {
                 /// \brief
                 /// String is a value.
-                THEKOGANS_UTIL_JSON_DECLARE_VALUE (String)
+                THEKOGANS_UTIL_DECLARE_JSON_VALUE (String)
 
                 /// \brief
                 /// String value.
@@ -172,7 +165,7 @@ namespace thekogans {
             struct _LIB_THEKOGANS_UTIL_DECL Array : public Value {
                 /// \brief
                 /// Array is a value.
-                THEKOGANS_UTIL_JSON_DECLARE_VALUE (Array)
+                THEKOGANS_UTIL_DECLARE_JSON_VALUE (Array)
 
                 /// \brief
                 /// Array of values.
@@ -269,7 +262,7 @@ namespace thekogans {
             struct _LIB_THEKOGANS_UTIL_DECL Object : public Value {
                 /// \brief
                 /// Object is a value.
-                THEKOGANS_UTIL_JSON_DECLARE_VALUE (Object)
+                THEKOGANS_UTIL_DECLARE_JSON_VALUE (Object)
 
                 /// \brief
                 /// Convenient typedef for std::pair<std::string, Value::SharedPtr>.
@@ -375,13 +368,13 @@ namespace thekogans {
         /// \return Value cast to bool.
         template<>
         inline bool JSON::Value::To<bool> () const {
-            if (GetType () == Bool::TYPE) {
+            if (Type () == Bool::TYPE) {
                 return static_cast<const Bool *> (this)->value;
             }
             else {
                 THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
                     "Value type %s is not %s.",
-                    GetType (),
+                    Type (),
                     Bool::TYPE);
             }
         }
@@ -391,13 +384,13 @@ namespace thekogans {
         /// \return Value cast to i8.
         template<>
         inline i8 JSON::Value::To<i8> () const {
-            if (GetType () == Number::TYPE) {
+            if (Type () == Number::TYPE) {
                 return static_cast<const Number *> (this)->value.To<i8> ();
             }
             else {
                 THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
                     "Value type %s is not %s.",
-                    GetType (),
+                    Type (),
                     Number::TYPE);
             }
         }
@@ -407,13 +400,13 @@ namespace thekogans {
         /// \return Value cast to ui8.
         template<>
         inline ui8 JSON::Value::To<ui8> () const {
-            if (GetType () == Number::TYPE) {
+            if (Type () == Number::TYPE) {
                 return static_cast<const Number *> (this)->value.To<ui8> ();
             }
             else {
                 THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
                     "Value type %s is not %s.",
-                    GetType (),
+                    Type (),
                     Number::TYPE);
             }
         }
@@ -423,13 +416,13 @@ namespace thekogans {
         /// \return Value cast to i16.
         template<>
         inline i16 JSON::Value::To<i16> () const {
-            if (GetType () == Number::TYPE) {
+            if (Type () == Number::TYPE) {
                 return static_cast<const Number *> (this)->value.To<i16> ();
             }
             else {
                 THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
                     "Value type %s is not %s.",
-                    GetType (),
+                    Type (),
                     Number::TYPE);
             }
         }
@@ -439,13 +432,13 @@ namespace thekogans {
         /// \return Value cast to ui16.
         template<>
         inline ui16 JSON::Value::To<ui16> () const {
-            if (GetType () == Number::TYPE) {
+            if (Type () == Number::TYPE) {
                 return static_cast<const Number *> (this)->value.To<ui16> ();
             }
             else {
                 THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
                     "Value type %s is not %s.",
-                    GetType (),
+                    Type (),
                     Number::TYPE);
             }
         }
@@ -455,13 +448,13 @@ namespace thekogans {
         /// \return Value cast to i32.
         template<>
         inline i32 JSON::Value::To<i32> () const {
-            if (GetType () == Number::TYPE) {
+            if (Type () == Number::TYPE) {
                 return static_cast<const Number *> (this)->value.To<i32> ();
             }
             else {
                 THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
                     "Value type %s is not %s.",
-                    GetType (),
+                    Type (),
                     Number::TYPE);
             }
         }
@@ -471,13 +464,13 @@ namespace thekogans {
         /// \return Value cast to ui32.
         template<>
         inline ui32 JSON::Value::To<ui32> () const {
-            if (GetType () == Number::TYPE) {
+            if (Type () == Number::TYPE) {
                 return static_cast<const Number *> (this)->value.To<ui32> ();
             }
             else {
                 THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
                     "Value type %s is not %s.",
-                    GetType (),
+                    Type (),
                     Number::TYPE);
             }
         }
@@ -487,13 +480,13 @@ namespace thekogans {
         /// \return Value cast to i64.
         template<>
         inline i64 JSON::Value::To<i64> () const {
-            if (GetType () == Number::TYPE) {
+            if (Type () == Number::TYPE) {
                 return static_cast<const Number *> (this)->value.To<i64> ();
             }
             else {
                 THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
                     "Value type %s is not %s.",
-                    GetType (),
+                    Type (),
                     Number::TYPE);
             }
         }
@@ -503,13 +496,13 @@ namespace thekogans {
         /// \return Value cast to ui64.
         template<>
         inline ui64 JSON::Value::To<ui64> () const {
-            if (GetType () == Number::TYPE) {
+            if (Type () == Number::TYPE) {
                 return static_cast<const Number *> (this)->value.To<ui64> ();
             }
             else {
                 THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
                     "Value type %s is not %s.",
-                    GetType (),
+                    Type (),
                     Number::TYPE);
             }
         }
@@ -519,13 +512,13 @@ namespace thekogans {
         /// \return Value cast to f32.
         template<>
         inline f32 JSON::Value::To<f32> () const {
-            if (GetType () == Number::TYPE) {
+            if (Type () == Number::TYPE) {
                 return static_cast<const Number *> (this)->value.To<f32> ();
             }
             else {
                 THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
                     "Value type %s is not %s.",
-                    GetType (),
+                    Type (),
                     Number::TYPE);
             }
         }
@@ -535,13 +528,13 @@ namespace thekogans {
         /// \return Value cast to f64.
         template<>
         inline f64 JSON::Value::To<f64> () const {
-            if (GetType () == Number::TYPE) {
+            if (Type () == Number::TYPE) {
                 return static_cast<const Number *> (this)->value.To<f64> ();
             }
             else {
                 THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
                     "Value type %s is not %s.",
-                    GetType (),
+                    Type (),
                     Number::TYPE);
             }
         }
@@ -551,13 +544,13 @@ namespace thekogans {
         /// \return Value cast to SizeT.
         template<>
         inline SizeT JSON::Value::To<SizeT> () const {
-            if (GetType () == Number::TYPE) {
+            if (Type () == Number::TYPE) {
                 return static_cast<const Number *> (this)->value.To<SizeT> ();
             }
             else {
                 THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
                     "Value type %s is not %s.",
-                    GetType (),
+                    Type (),
                     Number::TYPE);
             }
         }
@@ -567,13 +560,13 @@ namespace thekogans {
         /// \return Value cast to std::string.
         template<>
         inline std::string JSON::Value::To<std::string> () const {
-            if (GetType () == String::TYPE) {
+            if (Type () == String::TYPE) {
                 return static_cast<const String *> (this)->value;
             }
             else {
                 THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
                     "Value type %s is not %s.",
-                    GetType (),
+                    Type (),
                     String::TYPE);
             }
         }

@@ -18,7 +18,6 @@
 #if !defined (__thekogans_util_Singleton_h)
 #define __thekogans_util_Singleton_h
 
-#include <cassert>
 #include <typeinfo>
 #include "thekogans/util/Config.h"
 #include "thekogans/util/Constants.h"
@@ -180,14 +179,15 @@ namespace thekogans {
             /// \brief
             /// Uses modern C++ template facilities to provide singleton
             /// ctor parameters.
-            /// \param[in] args Variable length list of parameters to pass
-            /// to singleton instance ctor.
             /// NOTE: In order to supply custom ctor arguments you need
             /// to call this method before the first call to Instance below.
             /// If you don't, CreateInstance will be a noop as instance will
             /// have already be created.
+            /// \param[in] args Variable length list of parameters to pass
+            /// to singleton instance ctor.
+            /// \return The singleton instance.
             template<typename... Args>
-            static void CreateInstance (Args... args) {
+            static T &CreateInstance (Args... args) {
                 // We implement the double-checked locking pattern here
                 // to allow our singleton instance method to be thread-safe
                 // (i.e. thread-safe singleton construction).
@@ -200,7 +200,7 @@ namespace thekogans {
                         instance () = InstanceCreator () (std::forward<Args> (args)...);
                     }
                 }
-                assert (instance () != nullptr);
+                return *instance ();
             }
 
             /// \brief
@@ -243,7 +243,6 @@ namespace thekogans {
                         instance () = InstanceCreator () ();
                     }
                 }
-                assert (instance () != nullptr);
                 return *instance ();
             }
 

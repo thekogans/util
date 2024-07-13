@@ -24,6 +24,7 @@
 #include "pugixml/pugixml.hpp"
 #include "thekogans/util/Config.h"
 #include "thekogans/util/Types.h"
+#include "thekogans/util/Heap.h"
 #include "thekogans/util/Constants.h"
 #include "thekogans/util/DynamicCreatable.h"
 #include "thekogans/util/Serializer.h"
@@ -243,15 +244,22 @@ namespace thekogans {
             static const thekogans::util::ui16 VERSION;\
             virtual thekogans::util::ui16 Version () const override;
 
-        /// \def THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE(_T, version)
-        /// Common code used by Static and Shared versions THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE.
-        #define THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE(_T, version)\
-            THEKOGANS_UTIL_IMPLEMENT_HEAP_FUNCTIONS (_T)\
+        /// \def THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_EX(_T, version, minItemsInPage, allocator)
+        #define THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_EX(_T, version, minItemsInPage, allocator)\
+            THEKOGANS_UTIL_IMPLEMENT_HEAP_FUNCTIONS_EX (_T, minItemsInPage, allocator)\
             THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE (_T)\
             const thekogans::util::ui16 _T::VERSION = version;\
             thekogans::util::ui16 _T::Version () const {\
                 return VERSION;\
             }
+
+        /// \def THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE(_T, version)
+        #define THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE(_T, version)\
+            THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_EX (\
+                _T,\
+                version,\
+                THEKOGANS_UTIL_HEAP_DEFAULT_MIN_ITEMS_IN_PAGE,\
+                &DefaultAllocator::Instance ())
 
         /// \brief
         /// Serializable::BinHeader insertion operator.
