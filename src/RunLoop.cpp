@@ -406,7 +406,7 @@ namespace thekogans {
                 idle (jobsMutex),
                 paused (false),
                 notPaused (jobsMutex) {
-            if (jobExecutionPolicy.Get () == nullptr) {
+            if (jobExecutionPolicy == nullptr) {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
                     THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
             }

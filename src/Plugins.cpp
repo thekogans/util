@@ -145,7 +145,7 @@ namespace thekogans {
                 const std::string &SHA2_256,
                 const Plugin::Dependencies &dependencies) {
             Plugin::SharedPtr plugin = GetPlugin (path);
-            if (plugin.Get () == nullptr) {
+            if (plugin == nullptr) {
                 plugin.Reset (new Plugin (path, version, SHA2_256, dependencies));
                 plugins.insert (PluginMap::value_type (path, plugin));
                 modified = true;

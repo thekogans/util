@@ -67,14 +67,21 @@ namespace thekogans {
         ///         // Do some work.
         ///         ...
         ///         // Emit event.
-        ///         util::Producer<Events1>::Produce (std::bind (&Events1::Ping, std::placeholders::_1, 5));
+        ///         util::Producer<Events1>::Produce (
+        ///             std::bind (
+        ///                 &Events1::Ping,
+        ///                 std::placeholders::_1,
+        ///                 5));
         ///     }
         ///
         ///     void bar () {
         ///         // Do some work.
         ///         ...
         ///         // Emit event.
-        ///         util::Producer<Events2>::Produce (std::bind (&Events2::Pong, std::placeholders::_1));
+        ///         util::Producer<Events2>::Produce (
+        ///             std::bind (
+        ///                 &Events2::Pong,
+        ///                 std::placeholders::_1));
         ///     }
         /// };
         /// \endcode

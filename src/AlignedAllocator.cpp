@@ -29,7 +29,7 @@ namespace thekogans {
                 std::size_t alignment_) :
                 allocator (allocator_),
                 alignment (alignment_) {
-            if (allocator.Get () == 0 || OneBitCount (alignment) != 1) {
+            if (allocator == nullptr || OneBitCount (alignment) != 1) {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
                     THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
             }

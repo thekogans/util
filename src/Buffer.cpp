@@ -554,7 +554,7 @@ namespace thekogans {
             std::string allocatorName;
             serializer >> endianness >> length >> readOffset >> writeOffset >> allocatorName;
             Allocator::SharedPtr allocator = Allocator::CreateType (allocatorName);
-            if (allocator.Get () == nullptr) {
+            if (allocator == nullptr) {
                 allocator.Reset (DefaultAllocator::Instance ().Get ());
             }
             buffer.Resize (length, allocator);
@@ -604,7 +604,7 @@ namespace thekogans {
             SizeT readOffset = util::stringToui64 (node.attribute (ATTR_READ_OFFSET).value ());
             SizeT writeOffset = util::stringToui64 (node.attribute (ATTR_WRITE_OFFSET).value ());
             Allocator::SharedPtr allocator = Allocator::CreateType (node.attribute (ATTR_ALLOCATOR).value ());
-            if (allocator.Get () == nullptr) {
+            if (allocator == nullptr) {
                 allocator.Reset (DefaultAllocator::Instance ().Get ());
             }
             buffer.Resize (length, allocator);
