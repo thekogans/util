@@ -41,8 +41,7 @@ namespace thekogans {
         /// gives the reverse. Once initialized (with a call to
         /// LoadMimeTypes), the class is thread safe.
 
-        struct _LIB_THEKOGANS_UTIL_DECL MimeTypeMapper :
-                public Singleton<MimeTypeMapper, SpinLock> {
+        struct _LIB_THEKOGANS_UTIL_DECL MimeTypeMapper : public Singleton<MimeTypeMapper> {
             /// \brief
             /// Convenient typedef for std::list<std::string>.
             typedef std::list<std::string> ExtensionList;

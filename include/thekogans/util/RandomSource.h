@@ -161,7 +161,7 @@ namespace thekogans {
         /// \brief
         /// A global random source instance.
         struct _LIB_THEKOGANS_UTIL_DECL GlobalRandomSource :
-            public Singleton<RandomSource, SpinLock> {};
+            public Singleton<RandomSource> {};
 
     } // namespace util
 } // namespace thekogans

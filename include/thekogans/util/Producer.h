@@ -96,6 +96,10 @@ namespace thekogans {
                 THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (EventDeliveryPolicy)
 
                 /// \brief
+                /// Convenient typedef for std::function<void (T *)>.
+                typedef std::function<void (T *)> Event;
+
+                /// \brief
                 /// dtor.
                 virtual ~EventDeliveryPolicy () {}
 
@@ -105,7 +109,7 @@ namespace thekogans {
                 /// \param[in] event Event to deliver.
                 /// \param[in] subscriber \see{Subscriber} to whom to deliver the event.
                 virtual void DeliverEvent (
-                    std::function<void (T *)> event,
+                    Event event,
                     typename Subscriber<T>::SharedPtr subscriber) = 0;
             };
 
@@ -120,7 +124,7 @@ namespace thekogans {
                 /// \param[in] event Event to deliver.
                 /// \param[in] subscriber \see{Subscriber} to whom to deliver the event.
                 virtual void DeliverEvent (
-                        std::function<void (T *)> event,
+                        Event event,
                         typename Subscriber<T>::SharedPtr subscriber) {
                     event (subscriber.Get ());
                 }
@@ -148,7 +152,7 @@ namespace thekogans {
                 /// \param[in] event Event to deliver.
                 /// \param[in] subscriber \see{Subscriber} to whom to deliver the event.
                 virtual void DeliverEvent (
-                        std::function<void (T *)> event,
+                        Event event,
                         typename Subscriber<T>::SharedPtr subscriber) {
                     auto job = [event, subscriber] (
                             const RunLoop::LambdaJob &job,
@@ -308,7 +312,7 @@ namespace thekogans {
             /// \brief
             /// Produce an event for subscribers to consume.
             /// \param[in] event Event to deliver to all registered subscribers.
-            void Produce (std::function<void (T *)> event) {
+            void Produce (typename EventDeliveryPolicy::Event event) {
                 Subscribers subscribers_;
                 {
                     // Copy the subscribers map in to a local

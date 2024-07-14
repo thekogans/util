@@ -85,7 +85,7 @@ namespace thekogans {
         ///
         /// struct IdleProcessor :
         ///         public util::Subscriber<util::TimerEvents>,
-        ///         public util::Singleton<IdleProcessor, util::SpinLock> {
+        ///         public util::Singleton<IdleProcessor> {
         /// private:
         ///     util::Timer::SharedPtr timer;
         ///     util::JobQueue jobQueue;

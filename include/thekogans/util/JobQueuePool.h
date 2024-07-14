@@ -331,7 +331,7 @@ namespace thekogans {
 
         struct _LIB_THEKOGANS_UTIL_DECL GlobalJobQueuePool :
                 public JobQueuePool,
-                public Singleton<GlobalJobQueuePool, SpinLock> {
+                public Singleton<GlobalJobQueuePool> {
             /// \brief
             /// Create a global \see{JobQueuePool} with custom ctor arguments.
             /// \param[in] minJobQueues Minimum \see{JobQueue}s to keep in the pool.

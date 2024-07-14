@@ -24,7 +24,6 @@
 #include "thekogans/util/Types.h"
 #include "thekogans/util/Flags.h"
 #include "thekogans/util/Singleton.h"
-#include "thekogans/util/SpinLock.h"
 
 namespace thekogans {
     namespace util {
@@ -37,7 +36,7 @@ namespace thekogans {
 
         // This class was heavily borrowed from: https://msdn.microsoft.com/en-us/library/hskdteyh.aspx
 
-        struct _LIB_THEKOGANS_UTIL_DECL CPU : public Singleton<CPU, SpinLock> {
+        struct _LIB_THEKOGANS_UTIL_DECL CPU : public Singleton<CPU> {
         private:
         #if defined (TOOLCHAIN_ARCH_i386) || defined (TOOLCHAIN_ARCH_x86_64)
             /// \brief

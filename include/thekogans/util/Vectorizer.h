@@ -241,7 +241,7 @@ namespace thekogans {
 
         struct _LIB_THEKOGANS_UTIL_DECL GlobalVectorizer :
                 public Vectorizer,
-                public Singleton<GlobalVectorizer, SpinLock> {
+                public Singleton<GlobalVectorizer> {
             /// \brief
             /// Create a global vectorizer with custom ctor arguments.
             /// \param[in] workerCount The width of the vector.

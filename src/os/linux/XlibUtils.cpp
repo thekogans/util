@@ -101,7 +101,7 @@ namespace thekogans {
 
                 namespace {
                     struct XlibWindowMap :
-                            public Singleton<XlibWindowMap, SpinLock>,
+                            public Singleton<XlibWindowMap>,
                             private std::map<Window, XlibWindowRegistry::Token::ValueType> {
                         SpinLock spinLok;
 

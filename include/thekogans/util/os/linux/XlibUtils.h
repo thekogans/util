@@ -48,7 +48,7 @@ namespace thekogans {
                 /// \brief
                 /// List of all X-servers running on the system.
 
-                struct XlibDispays : public Singleton<XlibDispays, SpinLock> {
+                struct XlibDispays : public Singleton<XlibDispays> {
                     /// \brief
                     /// A list of connections (Display) to all X-servers running on the system.
                     std::vector<Display *> displays;

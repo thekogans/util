@@ -553,7 +553,7 @@ namespace thekogans {
 
         struct _LIB_THEKOGANS_UTIL_DECL GlobalLoggerMgr :
                 public LoggerMgr,
-                public Singleton<GlobalLoggerMgr, SpinLock> {
+                public Singleton<GlobalLoggerMgr> {
             /// \brief
             /// Create a global job queue with custom ctor arguments.
             /// \param[in] level Level at which to log.

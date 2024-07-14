@@ -47,7 +47,7 @@ namespace thekogans {
         /// the object that can later be used to create a SharedPtr (if the object
         /// still exists).
         template<typename T>
-        struct RefCountedRegistry : public Singleton<RefCountedRegistry<T>, SpinLock> {
+        struct RefCountedRegistry : public Singleton<RefCountedRegistry<T>> {
         public:
             enum {
                 /// \brief

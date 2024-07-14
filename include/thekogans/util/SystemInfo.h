@@ -35,8 +35,7 @@ namespace thekogans {
         /// SystemInfo is a system wide singleton that provides basic
         /// system stats in a platform independent manner.
 
-        struct _LIB_THEKOGANS_UTIL_DECL SystemInfo :
-                public Singleton<SystemInfo, SpinLock> {
+        struct _LIB_THEKOGANS_UTIL_DECL SystemInfo : public Singleton<SystemInfo> {
             enum : ui8 {
                 /// \brief
                 /// Unknown OS.

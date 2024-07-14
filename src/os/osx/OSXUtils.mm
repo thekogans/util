@@ -199,7 +199,7 @@ namespace thekogans {
 
                 namespace {
                     struct TimerKQueue :
-                            public Singleton<TimerKQueue, SpinLock>,
+                            public Singleton<TimerKQueue>,
                             public Thread {
                     private:
                         THEKOGANS_UTIL_HANDLE handle;

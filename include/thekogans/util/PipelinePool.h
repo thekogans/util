@@ -346,7 +346,7 @@ namespace thekogans {
 
         struct _LIB_THEKOGANS_UTIL_DECL GlobalPipelinePool :
                 public PipelinePool,
-                public Singleton<GlobalPipelinePool, SpinLock> {
+                public Singleton<GlobalPipelinePool> {
             /// \brief
             /// Create a global \see{PipelinePool} with custom ctor arguments.
             /// \param[in] minPipelines Minimum \see{Pipeline}s to keep in the pool.

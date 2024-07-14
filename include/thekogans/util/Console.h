@@ -25,7 +25,6 @@
 #include <string>
 #include "thekogans/util/Config.h"
 #include "thekogans/util/Singleton.h"
-#include "thekogans/util/SpinLock.h"
 #include "thekogans/util/Event.h"
 #include "thekogans/util/JobQueue.h"
 #include "thekogans/util/TimeSpec.h"
@@ -40,7 +39,7 @@ namespace thekogans {
         /// colored text output. On Linux and OS X it also turns on core
         /// dumping, and ignores the SIGPIPE.
 
-        struct _LIB_THEKOGANS_UTIL_DECL Console : public Singleton<Console, SpinLock> {
+        struct _LIB_THEKOGANS_UTIL_DECL Console : public Singleton<Console> {
         private:
             /// \brief
             /// Used to synchronize access to std::cout and std::cerr in PrintString.

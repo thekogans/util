@@ -55,7 +55,7 @@ namespace thekogans {
                         end = thekogans::util::DynamicCreatable::Map::Instance ()->end ();\
                         it != end; ++it) {\
                     if (thekogans::util::dynamic_refcounted_sharedptr_cast<_T> (\
-                            it->second ()).Get () != nullptr) {\
+                            it->second ()) != nullptr) {\
                         types.push_back (it->first);\
                     }\
                 }\
@@ -86,7 +86,7 @@ namespace thekogans {
             typedef std::map<std::string, Factory> MapType;
             /// \brief
             /// Controls Map's lifetime.
-            typedef Singleton<MapType, SpinLock> Map;
+            typedef Singleton<MapType> Map;
 
         #if defined (THEKOGANS_UTIL_TYPE_Static)
             /// \brief
@@ -215,8 +215,7 @@ namespace thekogans {
             THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_SHARED (_T)\
             THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_OVERRIDE(_T)\
             thekogans::util::DynamicCreatable::SharedPtr _T::Create () {\
-                return thekogans::util::static_refcounted_sharedptr_cast<\
-                    thekogans::util::DynamicCreatable> (_T::Instance ());\
+                return thekogans::util::DynamicCreatable::SharedPtr (_T::Instance ().Get ());\
             }
 
     } // namespace util

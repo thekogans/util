@@ -585,7 +585,7 @@ namespace thekogans {
 
         struct _LIB_THEKOGANS_UTIL_DECL ThreadReaper :
                 public Thread,
-                public Singleton<ThreadReaper, SpinLock> {
+                public Singleton<ThreadReaper> {
             /// \brief
             /// Convenient typedef for std::function<void (Thread * /*thread*/)>.
             typedef std::function<void (Thread * /*thread*/)> Deleter;

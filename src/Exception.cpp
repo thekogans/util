@@ -121,7 +121,7 @@ namespace thekogans {
                 return UTF16ToUTF8 (buffer, wcslen (buffer));
             }
 
-            struct NTDll : public Singleton<NTDll, SpinLock> {
+            struct NTDll : public Singleton<NTDll> {
                 HMODULE handle;
 
                 NTDll () :

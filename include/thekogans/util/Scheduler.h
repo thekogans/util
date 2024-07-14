@@ -286,7 +286,7 @@ namespace thekogans {
         /// will do the trick.
         struct _LIB_THEKOGANS_UTIL_DECL GlobalScheduler :
                 public Scheduler,
-                public Singleton<GlobalScheduler, SpinLock> {
+                public Singleton<GlobalScheduler> {
             /// \brief
             /// Create a global scheduler with custom ctor arguments.
             /// \param[in] minJobQueues Minimum worker count to keep in the pool.

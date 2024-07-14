@@ -22,7 +22,6 @@
 #include "thekogans/util/Config.h"
 #include "thekogans/util/Constants.h"
 #include "thekogans/util/RefCounted.h"
-#include "thekogans/util/NullLock.h"
 #include "thekogans/util/SpinLock.h"
 #include "thekogans/util/LockGuard.h"
 
@@ -46,8 +45,8 @@ namespace thekogans {
             typedef T *ReturnType;
 
             /// \brief
-            /// Create a single instance using the default ctor.
-            /// \param[in] args List of arguments to instance ctor.
+            /// Create the instance using the supplied ctor arguments.
+            /// \param[in] args List of arguments to the instance ctor.
             /// \return Singleton instance.
             template<typename... Args>
             inline ReturnType operator () (Args... args) {
@@ -81,6 +80,19 @@ namespace thekogans {
         /// call an appropriate ctor inside the class function call operator. All global
         /// singletons take a template parameter like this to allow you to customize their
         /// instance creation before using them.
+        ///
+        /// \code{.cpp}
+        /// struct _LIB_THEKOGANS_STREAM_DECL DefaultAllocator :
+        ///         public Allocator,
+        ///         public util::Singleton<
+        ///             DefaultAllocator,
+        ///             util::SpinLock,
+        ///             util::RefCountedInstanceCreator<DefaultAllocator>,
+        ///             util::RefCountedInstanceDestroyer<DefaultAllocator>>,
+        ///         ... {
+        ///     ...
+        /// };
+        /// \endcode
 
         template<typename T>
         struct RefCountedInstanceCreator {
@@ -89,8 +101,8 @@ namespace thekogans {
             typedef RefCounted::SharedPtr<T> ReturnType;
 
             /// \brief
-            /// Create a single instance using the default ctor.
-            /// \param[in] args List of arguments to instance ctor.
+            /// Create the instance using the supplied ctor arguments.
+            /// \param[in] args List of arguments to the instance ctor.
             /// \return Singleton instance.
             template<typename... Args>
             inline ReturnType operator () (Args... args) {
@@ -104,14 +116,13 @@ namespace thekogans {
         /// Implements a \see{RefCounted} singleton destruction method.
         ///
         /// \code{.cpp}
-        /// // AsyncIoEventQueue is a derived from \see{RefCounted}.
-        /// struct _LIB_THEKOGANS_STREAM_DECL AsyncIoEventQueue :
-        ///         public AsyncIoEventQueue,
+        /// struct _LIB_THEKOGANS_STREAM_DECL DefaultAllocator :
+        ///         public Allocator,
         ///         public util::Singleton<
-        ///             AsyncIoEventQueue,
+        ///             DefaultAllocator,
         ///             util::SpinLock,
-        ///             util::RefCountedInstanceCreator<AsyncIoEventQueue>,
-        ///             util::RefCountedInstanceDestroyer<AsyncIoEventQueue>>,
+        ///             util::RefCountedInstanceCreator<DefaultAllocator>,
+        ///             util::RefCountedInstanceDestroyer<DefaultAllocator>>,
         ///         ... {
         ///     ...
         /// };
@@ -172,11 +183,11 @@ namespace thekogans {
         /// NOTE: That thekogans::util::SpinLock used as the second template
         /// parameter means that foo's creation will be thread safe (not
         /// that foo itself is thread safe). If you don't care about thread
-        /// safety when creating the singleton, use thekogans::util::NullLock (default).
+        /// safety when creating the singleton, use thekogans::util::NullLock.
 
         template<
             typename T,
-            typename Lock = NullLock,
+            typename Lock = SpinLock,
             typename InstanceCreator = DefaultInstanceCreator<T>,
             typename InstanceDestroyer = DefaultInstanceDestroyer<T>>
         struct Singleton {

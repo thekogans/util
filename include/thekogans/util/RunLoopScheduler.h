@@ -336,7 +336,7 @@ namespace thekogans {
         /// A global run loop scheduler instance.
         struct _LIB_THEKOGANS_UTIL_DECL GlobalRunLoopScheduler :
                 public RunLoopScheduler,
-                public Singleton<GlobalRunLoopScheduler, SpinLock> {
+                public Singleton<GlobalRunLoopScheduler> {
             /// \brief
             /// Create a global run loop scheduler with custom ctor arguments.
             /// \param[in] name RunLoopScheduler name.

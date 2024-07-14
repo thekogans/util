@@ -381,7 +381,7 @@ namespace thekogans {
         /// The one and only global shared allocator instance.
         struct _LIB_THEKOGANS_UTIL_DECL GlobalSharedAllocator :
                 public SharedAllocator,
-                public Singleton<GlobalSharedAllocator, SpinLock> {
+                public Singleton<GlobalSharedAllocator> {
             /// \brief
             /// Create a global shared allocator with custom ctor arguments.
             /// \param[in] name Global name used to identify the shared region.
