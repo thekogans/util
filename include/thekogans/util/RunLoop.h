@@ -336,9 +336,11 @@ namespace thekogans {
 
             struct _LIB_THEKOGANS_UTIL_DECL LambdaJob : public Job {
                 /// \brief
-                /// Convenient typedef for std::function<void (Job & /*job*/, const std::atomic<bool> & /*done*/)>.
+                /// Convenient typedef for std::function<void (Job & /*job*/,
+                /// const std::atomic<bool> & /*done*/)>.
                 /// \param[in] job Job that is executing the lambda.
-                /// \param[in] done Call job.ShouldStop (done) to respond to cancel requests and termination events.
+                /// \param[in] done Call job.ShouldStop (done) to respond to
+                /// cancel requests and termination events.
                 typedef std::function<void (
                     const LambdaJob & /*job*/,
                     const std::atomic<bool> & /*done*/)> Function;

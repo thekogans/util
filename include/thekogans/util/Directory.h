@@ -140,7 +140,7 @@ namespace thekogans {
             ///     virtual void HandleModified (
             ///             thekogans::util::Directory::Watcher::WatchId watchId_,
             ///             const std::string &directory,
-            ///             const thekogans::util::Directory::Entry &entry) {
+            ///             const thekogans::util::Directory::Entry &entry) override {
             ///         if (watchId_ == watchId && directory == startDirectory &&
             ///                 entry.name == OPTIONS_XML) {
             ///             ReadConfig ();

@@ -52,7 +52,7 @@ namespace thekogans {
             Timer::SharedPtr timer =
                 TimerRegistry::Instance ()->Get ((TimerRegistry::Token::ValueType)userData);
     #endif // defined (TOOLCHAIN_OS_Windows)
-            if (timer.Get () != nullptr) {
+            if (timer != nullptr) {
                 timer->Produce (
                     std::bind (
                         &TimerEvents::OnTimerAlarm,

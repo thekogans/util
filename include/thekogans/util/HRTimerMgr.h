@@ -71,7 +71,7 @@ namespace thekogans {
         /// struct ExtractMetadataJob : public thekogans::util::RunLoop::Job {
         ///     // Nonessential members, and methods omitted for clarity.
         ///
-        ///     virtual void Execute (const std::atomic<bool> &done) throw () {
+        ///     virtual void Execute (const std::atomic<bool> &done) throw () override {
         ///         THEKOGANS_UTIL_HRTIMER_MGR ("ExtractMetadataJob::Execute");
         ///         {
         ///             THEKOGANS_UTIL_HRTIMER_MGR_SCOPE ("categories");
@@ -220,7 +220,7 @@ namespace thekogans {
                 /// \brief
                 /// Return the serializable size.
                 /// \return Serializable size.
-                virtual std::size_t Size () const;
+                virtual std::size_t Size () const override;
 
                 /// \brief
                 /// Read the serializable from the given serializer.
@@ -228,11 +228,11 @@ namespace thekogans {
                 /// \param[in] serializer \see{Serializer} to read the serializable from.
                 virtual void Read (
                     const BinHeader & /*header*/,
-                    Serializer &serializer);
+                    Serializer &serializer) override;
                 /// \brief
                 /// Write the serializable to the given serializer.
                 /// \param[out] serializer \see{Serializer} to write the serializable to.
-                virtual void Write (Serializer &serializer) const;
+                virtual void Write (Serializer &serializer) const override;
 
                 /// \brief
                 /// "Attributes"
@@ -253,23 +253,39 @@ namespace thekogans {
                 /// \param[in] node XML DOM representation of a Serializable.
                 virtual void Read (
                     const TextHeader & /*header*/,
-                    const pugi::xml_node &node);
+                    const pugi::xml_node &node) override;
                 /// \brief
                 /// Write the Serializable to the XML DOM.
                 /// \param[out] node Parent node.
-                virtual void Write (pugi::xml_node &node) const;
+                virtual void Write (pugi::xml_node &node) const override;
 
                 /// \brief
                 /// Read a Serializable from an JSON DOM.
                 /// \param[in] node JSON DOM representation of a Serializable.
                 virtual void Read (
                     const TextHeader & /*header*/,
-                    const JSON::Object &object);
+                    const JSON::Object &object) override;
                 /// \brief
                 /// Write a Serializable to the JSON DOM.
                 /// \param[out] node Parent node.
-                virtual void Write (JSON::Object &object) const;
+                virtual void Write (JSON::Object &object) const override;
             };
+
+            /// \def THEKOGANS_UTIL_HRTIMERMGR_TIMERINFOBASE(_T)
+            /// Common declarations used by all Value derivatives.
+            #define THEKOGANS_UTIL_DECLARE_HRTIMERMGR_TIMERINFOBASE(_T)\
+                THEKOGANS_UTIL_DECLARE_SERIALIZABLE (_T)\
+                THEKOGANS_UTIL_DECLARE_STD_ALLOCATOR_FUNCTIONS
+
+            /// \def THEKOGANS_UTIL_HRTIMERMGR_TIMERINFOBASE(_T, version)
+            /// Common implementations used by all Value derivatives.
+            #define THEKOGANS_UTIL_IMPLEMENT_HRTIMERMGR_TIMERINFOBASE(_T, version, minItemsInPage)\
+                THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE (_T, version)\
+                THEKOGANS_UTIL_IMPLEMENT_HEAP_FUNCTIONS_EX (\
+                    _T,\
+                    SpinLock,\
+                    minItemsInPage,\
+                    DefaultAllocator::Instance ().Get ())
 
             /// \struct HRTimerMgr::TimerInfo HRTimerMgr.h thekogans/util/HRTimerMgr.h
             ///
@@ -279,7 +295,7 @@ namespace thekogans {
             struct _LIB_THEKOGANS_UTIL_DECL TimerInfo : public TimerInfoBase {
                 /// \brief
                 /// TimerInfo is a \see{Serializable}.
-                THEKOGANS_UTIL_DECLARE_SERIALIZABLE (TimerInfo)
+                THEKOGANS_UTIL_DECLARE_HRTIMERMGR_TIMERINFOBASE (TimerInfo)
 
                 /// \brief
                 /// Start time.
@@ -387,7 +403,7 @@ namespace thekogans {
             struct _LIB_THEKOGANS_UTIL_DECL ScopeInfo : public TimerInfoBase {
                 /// \brief
                 /// ScopeInfo is a \see{Serializable}.
-                THEKOGANS_UTIL_DECLARE_SERIALIZABLE (ScopeInfo)
+                THEKOGANS_UTIL_DECLARE_HRTIMERMGR_TIMERINFOBASE (ScopeInfo)
 
                 /// \brief
                 /// A stack of open scopes.

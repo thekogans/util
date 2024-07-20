@@ -185,7 +185,10 @@ namespace thekogans {
                 workerPriority (workerPriority_),
                 workerAffinity (workerAffinity_),
                 workerCallback (workerCallback_) {
-            if (begin != nullptr && end != nullptr && jobExecutionPolicy.Get () != nullptr && workerCount > 0) {
+            if (begin != nullptr &&
+                    end != nullptr &&
+                    jobExecutionPolicy != nullptr &&
+                    workerCount > 0) {
                 for (; begin != end; ++begin) {
                     stages.push_back (
                         JobQueue::SharedPtr (
@@ -373,7 +376,7 @@ namespace thekogans {
                 Job::SharedPtr job,
                 bool wait,
                 const TimeSpec &timeSpec) {
-            if (job.Get () != nullptr && job->IsCompleted () && job->GetPipelineId () == state->id) {
+            if (job != nullptr && job->IsCompleted () && job->GetPipelineId () == state->id) {
                 {
                     LockGuard<Mutex> guard (state->jobsMutex);
                     state->jobExecutionPolicy->EnqJob (*state, job.Get ());
@@ -404,7 +407,7 @@ namespace thekogans {
                 Job::SharedPtr job,
                 bool wait,
                 const TimeSpec &timeSpec) {
-            if (job.Get () != nullptr && job->IsCompleted ()) {
+            if (job != nullptr && job->IsCompleted ()) {
                 {
                     LockGuard<Mutex> guard (state->jobsMutex);
                     state->jobExecutionPolicy->EnqJobFront (*state, job.Get ());
@@ -504,7 +507,7 @@ namespace thekogans {
         bool Pipeline::WaitForJob (
                 Job::SharedPtr job,
                 const TimeSpec &timeSpec) {
-            if (job.Get () != nullptr && job->GetPipelineId () == state->id) {
+            if (job != nullptr && job->GetPipelineId () == state->id) {
                 if (timeSpec == TimeSpec::Infinite) {
                     while (IsRunning () && !job->IsCompleted ()) {
                         job->Wait ();
@@ -530,7 +533,7 @@ namespace thekogans {
                 const Job::Id &jobId,
                 const TimeSpec &timeSpec) {
             Job::SharedPtr job = GetJob (jobId);
-            return job.Get () != nullptr && WaitForJob (job, timeSpec);
+            return job != nullptr && WaitForJob (job, timeSpec);
         }
 
         bool Pipeline::WaitForJobs (
@@ -689,7 +692,7 @@ namespace thekogans {
 
         Pipeline::Pipeline (State::SharedPtr state_) :
                 state (state_) {
-            if (state.Get () != nullptr) {
+            if (state != nullptr) {
                 Start ();
             }
             else {

@@ -56,7 +56,7 @@ namespace thekogans {
                         const std::string & /*subsystem*/,
                         ui32 /*level*/,
                         const std::string &header,
-                        const std::string &message) throw ();
+                        const std::string &message) throw () override;
 
                     /// \brief
                     /// OutputDebugStringLogger is neither copy constructable, nor assignable.

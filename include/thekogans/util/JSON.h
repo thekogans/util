@@ -66,13 +66,13 @@ namespace thekogans {
                 T To () const;
             };
 
-            /// \def THEKOGANS_UTIL_JSON_DECLARE_VALUE(_T)
+            /// \def THEKOGANS_UTIL_DECLARE_JSON_VALUE(_T)
             /// Common declarations used by all Value derivatives.
             #define THEKOGANS_UTIL_DECLARE_JSON_VALUE(_T)\
                 THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE (_T)\
                 THEKOGANS_UTIL_DECLARE_STD_ALLOCATOR_FUNCTIONS
 
-            /// \def THEKOGANS_UTIL_JSON_IMPLEMENT_VALUE(_T)
+            /// \def THEKOGANS_UTIL_IMPLEMENT_JSON_VALUE(_T)
             /// Common implementations used by all Value derivatives.
             #define THEKOGANS_UTIL_IMPLEMENT_JSON_VALUE(_T)\
                 THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE (_T)\

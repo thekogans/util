@@ -24,7 +24,6 @@
 #include "pugixml/pugixml.hpp"
 #include "thekogans/util/Config.h"
 #include "thekogans/util/Types.h"
-#include "thekogans/util/Heap.h"
 #include "thekogans/util/Constants.h"
 #include "thekogans/util/DynamicCreatable.h"
 #include "thekogans/util/Serializer.h"
@@ -238,29 +237,18 @@ namespace thekogans {
         /// \def THEKOGANS_UTIL_DECLARE_SERIALIZABLE(_T)
         /// Common code used by Static and Shared versions THEKOGANS_UTIL_DECLARE_SERIALIZABLE.
         #define THEKOGANS_UTIL_DECLARE_SERIALIZABLE(_T)\
-            THEKOGANS_UTIL_DECLARE_STD_ALLOCATOR_FUNCTIONS\
             THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE (_T)\
         public:\
             static const thekogans::util::ui16 VERSION;\
             virtual thekogans::util::ui16 Version () const override;
 
-        /// \def THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_EX(_T, version, lock, minItemsInPage, allocator)
-        #define THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_EX(_T, version, lock, minItemsInPage, allocator)\
-            THEKOGANS_UTIL_IMPLEMENT_HEAP_FUNCTIONS_EX (_T, lock, minItemsInPage, allocator)\
+        /// \def THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE(_T, version)
+        #define THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE(_T, version)\
             THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE (_T)\
             const thekogans::util::ui16 _T::VERSION = version;\
             thekogans::util::ui16 _T::Version () const {\
                 return VERSION;\
             }
-
-        /// \def THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE(_T, version)
-        #define THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE(_T, version)\
-            THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_EX (\
-                _T,\
-                version,\
-                thekogans::util::SpinLock,\
-                THEKOGANS_UTIL_HEAP_DEFAULT_MIN_ITEMS_IN_PAGE,\
-                DefaultAllocator::Instance ().Get ())
 
         /// \brief
         /// Serializable::BinHeader insertion operator.
@@ -530,7 +518,7 @@ namespace thekogans {
                 if (header.magic == thekogans::util::MAGIC32) {\
                     serializable = thekogans::util::dynamic_refcounted_sharedptr_cast<_T> (\
                         thekogans::util::Serializable::CreateType (header.type));\
-                    if (serializable.Get () != nullptr) {\
+                    if (serializable != nullptr) {\
                         serializable->Read (header, serializer);\
                         return serializer;\
                     }\
@@ -553,7 +541,7 @@ namespace thekogans {
                 node >> header;\
                 serializable = thekogans::util::dynamic_refcounted_sharedptr_cast<_T> (\
                     thekogans::util::Serializable::CreateType (header.type));\
-                if (serializable.Get () != nullptr) {\
+                if (serializable != nullptr) {\
                     serializable->Read (header, node);\
                     return node;\
                 }\
@@ -570,7 +558,7 @@ namespace thekogans {
                 object >> header;\
                 serializable = thekogans::util::dynamic_refcounted_sharedptr_cast<_T> (\
                     thekogans::util::Serializable::CreateType (header.type));\
-                if (serializable.Get () != nullptr) {\
+                if (serializable != nullptr) {\
                     serializable->Read (header, object);\
                     return object;\
                 }\
@@ -722,7 +710,7 @@ namespace thekogans {
                             Reset ();\
                             value = thekogans::util::dynamic_refcounted_sharedptr_cast<_T> (\
                                 thekogans::util::Serializable::CreateType (header.type));\
-                            if (value.Get () != nullptr) {\
+                            if (value != nullptr) {\
                                 value->Read (header, temp);\
                                 return true;\
                             }\

@@ -59,7 +59,7 @@ namespace thekogans {
         ///             ... {}
         ///
         ///         // util::RunLoop::Job
-        ///         virtual void Execute (const std::atomic<bool> &) throw () {
+        ///         virtual void Execute (const std::atomic<bool> &) throw () override {
         ///             ...
         ///         }
         ///     };

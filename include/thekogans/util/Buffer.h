@@ -180,7 +180,7 @@ namespace thekogans {
             /// \return Number of bytes actually read.
             virtual std::size_t Read (
                 void *buffer,
-                std::size_t count);
+                std::size_t count) override;
             /// \brief
             /// Write raw bytes to a buffer.
             /// \param[in] buffer Bytes to write.
@@ -188,7 +188,7 @@ namespace thekogans {
             /// \return Number of bytes actually written.
             virtual std::size_t Write (
                 const void *buffer,
-                std::size_t count);
+                std::size_t count) override;
 
             /// \brief
             /// Append the contents of the given buffer to this one.

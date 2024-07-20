@@ -325,24 +325,9 @@ namespace thekogans {
             /// \param[in] path Path to file to open.
             /// \param[in] flags Most useful POSIX open flags.
             SimpleFile (
-                    Endianness endianness,
-                    const std::string &path,
-                    i32 flags = ReadWrite | Create) :
-                    File (endianness) {
-                Open (path, flags);
-            }
-
-            /// \brief
-            /// Open the file.
-            /// NOTE: This function overrides the one in \see{File}
-            /// for POSIX file systems (Linux/ OS X).
-            /// \param[in] path Path to file to open.
-            /// \param[in] flags Most useful POSIX open flags.
-            /// \param[in] mode Not used. Here to match the signature of \see{File::Open}.
-            virtual void Open (
+                Endianness endianness,
                 const std::string &path,
-                i32 flags = ReadWrite | Create,
-                i32 /*mode*/ = 0);
+                i32 flags = ReadWrite | Create);
 
             /// \brief
             /// SimpleFile is neither copy constructable, nor assignable.
@@ -399,7 +384,7 @@ namespace thekogans {
         private:
             /// \brief
             /// Close file.
-            virtual void Close () {
+            virtual void Close () override {
                 THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
                     "%s", "TenantFile is not allowed to close the file.");
             }

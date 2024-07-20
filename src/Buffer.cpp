@@ -188,7 +188,7 @@ namespace thekogans {
         }
 
         Buffer Buffer::Clone (Allocator::SharedPtr allocator) const {
-            if (allocator.Get () != nullptr) {
+            if (allocator != nullptr) {
                 return Buffer (
                     endianness,
                     data,
@@ -207,7 +207,7 @@ namespace thekogans {
                 std::size_t offset,
                 std::size_t count,
                 Allocator::SharedPtr allocator) const {
-            if (offset < length && count > 0 && allocator.Get () != nullptr) {
+            if (offset < length && count > 0 && allocator != nullptr) {
                 if (count == SIZE_T_MAX || offset + count > length) {
                     count = length - offset;
                 }
@@ -364,7 +364,7 @@ namespace thekogans {
         }
 
         Buffer Buffer::Deflate (Allocator::SharedPtr allocator) const {
-            if (allocator.Get () != nullptr) {
+            if (allocator != nullptr) {
                 if (GetDataAvailableForReading () != 0) {
                     OutBuffer outBuffer (allocator);
                     DeflateHelper (GetReadPtr (), GetDataAvailableForReading (), outBuffer);
@@ -385,7 +385,7 @@ namespace thekogans {
         }
 
         Buffer Buffer::Inflate (Allocator::SharedPtr allocator) const {
-            if (allocator.Get () != nullptr) {
+            if (allocator != nullptr) {
                 if (GetDataAvailableForReading () != 0) {
                     OutBuffer outBuffer (allocator);
                     InflateHelper (GetReadPtr (), GetDataAvailableForReading (), outBuffer);
@@ -412,7 +412,7 @@ namespace thekogans {
                 std::size_t hexBufferLength,
                 Allocator::SharedPtr allocator) {
             if (hexBuffer != nullptr && hexBufferLength > 0 &&
-                    IS_EVEN (hexBufferLength) && allocator.Get () != nullptr) {
+                    IS_EVEN (hexBufferLength) && allocator != nullptr) {
                 void *data = allocator->Alloc (hexBufferLength / 2);
                 std::size_t length =  HexDecodeBuffer (hexBuffer, hexBufferLength, data);
                 return Buffer (endianness, data, length, 0, length, allocator);

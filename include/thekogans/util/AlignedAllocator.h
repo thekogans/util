@@ -97,7 +97,7 @@ namespace thekogans {
             /// requested boundary.
             /// \param[in] size Block size to allocate.\n
             /// \return Pointer to the aligned block.
-            virtual void *Alloc (std::size_t size) {
+            virtual void *Alloc (std::size_t size) override {
                 return AllocHelper (size, false);
             }
             /// \brief
@@ -106,7 +106,7 @@ namespace thekogans {
             /// \param[in] size 'true' size returned by Alloc
             virtual void Free (
                 void *ptr,
-                std::size_t size);
+                std::size_t size) override;
 
             /// \brief
             /// Use Allocator to allocate a block, and align it to the

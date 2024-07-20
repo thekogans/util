@@ -69,7 +69,8 @@ namespace thekogans {
             /// Control block for the lifetime of RefCounted as well as \see{WeakPtr}.
             struct _LIB_THEKOGANS_UTIL_DECL References {
                 /// \brief
-                /// References has a private heap to help with performance and memory fragmentation.
+                /// References has a private heap to help with
+                /// performance and memory fragmentation.
                 THEKOGANS_UTIL_DECLARE_STD_ALLOCATOR_FUNCTIONS
 
             private:
@@ -215,14 +216,14 @@ namespace thekogans {
                 /// \brief
                 /// Check the pointer for nullness.
                 /// \return true if object != nullptr.
-                operator bool () const {
+                inline operator bool () const {
                     return object != nullptr;
                 }
 
                 /// \brief
                 /// Return const * for comparison.
                 /// \return true const *.
-                operator const T * () const {
+                inline operator const T * () const {
                     return object;
                 }
 
@@ -230,7 +231,7 @@ namespace thekogans {
                 /// Assignemnet operator.
                 /// \param[in] ptr Pointer to copy.
                 /// \return *this.
-                SharedPtr<T> &operator = (const SharedPtr<T> &ptr) {
+                inline SharedPtr<T> &operator = (const SharedPtr<T> &ptr) {
                     if (&ptr != this) {
                         Reset (ptr.object);
                     }
@@ -240,7 +241,7 @@ namespace thekogans {
                 /// Assignemnet operator.
                 /// \param[in] object_ Object to assign.
                 /// \return *this.
-                SharedPtr<T> &operator = (T *object_) {
+                inline SharedPtr<T> &operator = (T *object_) {
                     Reset (object_);
                     return *this;
                 }
@@ -248,27 +249,27 @@ namespace thekogans {
                 /// \brief
                 /// Dereference operator.
                 /// \return T &.
-                T &operator * () const {
+                inline T &operator * () const {
                     return *object;
                 }
 
                 /// \brief
                 /// Dereference operator.
                 /// \return T *.
-                T *operator -> () const {
+                inline T *operator -> () const {
                     return object;
                 }
 
                 /// \brief
                 /// Getter.
                 /// \return T *.
-                T *Get () const {
+                inline T *Get () const {
                     return object;
                 }
                 /// \brief
                 /// Release the object without calling object->Release ().
                 /// \return T *.
-                T *Release () {
+                inline T *Release () {
                     return EXCHANGE (object, nullptr);
                 }
 
@@ -294,7 +295,7 @@ namespace thekogans {
                 /// \brief
                 /// Swap objects with the given pointer.
                 /// \param[in] ptr Pointer to swap objects with.
-                void Swap (SharedPtr<T> &ptr) {
+                inline void Swap (SharedPtr<T> &ptr) {
                     std::swap (object, ptr.object);
                 }
             };
@@ -316,7 +317,7 @@ namespace thekogans {
             ///
             /// \code{.cpp}
             /// SharedPtr<T> shared = weak.GetSharedPtr ();
-            /// if (shared.Get () != nullptr) {
+            /// if (shared != nullptr) {
             ///    // Do something productive with shared.
             /// }
             /// \endcode

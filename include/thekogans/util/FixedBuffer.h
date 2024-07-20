@@ -122,7 +122,7 @@ namespace thekogans {
             /// \return Number of bytes actually read.
             virtual std::size_t Read (
                     void *buffer,
-                    std::size_t count) {
+                    std::size_t count) override {
                 if (buffer != nullptr && count > 0) {
                     std::size_t availableForReading = GetDataAvailableForReading ();
                     if (count > availableForReading) {
@@ -146,7 +146,7 @@ namespace thekogans {
             /// \return Number of bytes actually written.
             virtual std::size_t Write (
                     const void *buffer,
-                    std::size_t count) {
+                    std::size_t count) override {
                 if (buffer != nullptr && count > 0) {
                     std::size_t availableForWriting = GetDataAvailableForWriting ();
                     if (count > availableForWriting) {

@@ -132,7 +132,7 @@ namespace thekogans {
                 /// \param[in] subscriber \see{Subscriber} to whom to deliver the event.
                 virtual void DeliverEvent (
                         Event event,
-                        typename Subscriber<T>::SharedPtr subscriber) {
+                        typename Subscriber<T>::SharedPtr subscriber) override {
                     event (subscriber.Get ());
                 }
             };
@@ -160,7 +160,7 @@ namespace thekogans {
                 /// \param[in] subscriber \see{Subscriber} to whom to deliver the event.
                 virtual void DeliverEvent (
                         Event event,
-                        typename Subscriber<T>::SharedPtr subscriber) {
+                        typename Subscriber<T>::SharedPtr subscriber) override {
                     auto job = [event, subscriber] (
                             const RunLoop::LambdaJob &job,
                             const std::atomic<bool> &done) {

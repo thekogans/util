@@ -62,7 +62,7 @@ namespace thekogans {
         ///         #endif // defined (THEKOGANS_UTIL_CONFIG_Debug)
         ///         ) {}
         ///
-        ///     virtual void DoOption (char option, const std::string &value) {
+        ///     virtual void DoOption (char option, const std::string &value) override {
         ///         switch (option) {
         ///             case 'a':
         ///                 archive = true;
@@ -85,7 +85,7 @@ namespace thekogans {
         ///                 break;
         ///         }
         ///     }
-        ///     virtual void DoPath (const std::string &value) {}
+        ///     virtual void DoPath (const std::string &value) override {}
         /// } options;
         /// options.Parse (argc, argv, "acdlv");
         /// \endcode

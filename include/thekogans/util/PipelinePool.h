@@ -60,7 +60,7 @@ namespace thekogans {
         ///             ... {}
         ///
         ///         // util::Pipeline::Job
-        ///         virtual void Execute (const std::atomic<bool> &) throw () {
+        ///         virtual void Execute (const std::atomic<bool> &) throw () override {
         ///             ...
         ///         }
         ///     };
@@ -176,7 +176,7 @@ namespace thekogans {
                 /// \brief
                 /// If there are no more references to this pipeline,
                 /// release it back to the pool.
-                virtual void Harakiri () {
+                virtual void Harakiri () override {
                     pipelinePool.ReleasePipeline (this);
                 }
 

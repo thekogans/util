@@ -286,7 +286,7 @@ namespace thekogans {
         void LoggerMgr::AddLogger (
                 const char *subsystem,
                 Logger::SharedPtr logger) {
-            if (subsystem != nullptr && logger.Get () != nullptr) {
+            if (subsystem != nullptr && logger != nullptr) {
                 LockGuard<Mutex> guard (mutex);
                 loggerMap[subsystem].push_back (logger);
             }
@@ -313,7 +313,7 @@ namespace thekogans {
         }
 
         void LoggerMgr::AddDefaultLogger (Logger::SharedPtr logger) {
-            if (logger.Get () != nullptr) {
+            if (logger != nullptr) {
                 LockGuard<Mutex> guard (mutex);
                 defaultLoggers.push_back (logger);
             }
@@ -518,7 +518,7 @@ namespace thekogans {
                     LockGuard<Mutex> guard (mutex);
                     LoggerMap::iterator it = loggerMap.find (subsystem);
                     if (it != loggerMap.end () || !defaultLoggers.empty ()) {
-                        if (jobQueue.Get () != nullptr) {
+                        if (jobQueue != nullptr) {
                             jobQueue->EnqJob (
                                 RunLoop::Job::SharedPtr (
                                     new LogSubsystemJob (
@@ -552,7 +552,7 @@ namespace thekogans {
 
         void LoggerMgr::Flush (const TimeSpec &timeSpec) {
             LockGuard<Mutex> guard (mutex);
-            if (jobQueue.Get () != nullptr) {
+            if (jobQueue != nullptr) {
                 jobQueue->WaitForIdle (timeSpec);
             }
             for (LoggerMap::iterator

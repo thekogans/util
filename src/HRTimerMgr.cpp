@@ -76,9 +76,10 @@ namespace thekogans {
                 const JSON::Object &object) {
             name = object.Get<JSON::String> (ATTR_NAME)->value;
             util::JSON::Array::SharedPtr attributesArray = object.Get<JSON::Array> (TAG_ATTRIBUTES);
-            if (attributesArray.Get () != nullptr) {
+            if (attributesArray != nullptr) {
                 for (std::size_t i = 0, count = attributesArray->GetValueCount (); i < count; ++i) {
-                    util::JSON::Object::SharedPtr attributeObject = attributesArray->Get<util::JSON::Object> (i);
+                    util::JSON::Object::SharedPtr attributeObject =
+                        attributesArray->Get<util::JSON::Object> (i);
                     std::string name = attributeObject->Get<JSON::String> (ATTR_NAME)->value;
                     std::string value = attributeObject->Get<JSON::String> (ATTR_VALUE)->value;
                     if (!name.empty () && !value.empty ()) {
@@ -108,12 +109,10 @@ namespace thekogans {
             #define THEKOGANS_UTIL_MIN_TIMER_INFOS_IN_PAGE 64
         #endif // !defined (THEKOGANS_UTIL_MIN_TIMER_INFOS_IN_PAGE)
 
-        THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_EX (
+        THEKOGANS_UTIL_IMPLEMENT_HRTIMERMGR_TIMERINFOBASE (
             HRTimerMgr::TimerInfo,
             1,
-            SpinLock,
-            THEKOGANS_UTIL_MIN_TIMER_INFOS_IN_PAGE,
-            DefaultAllocator::Instance ().Get ())
+            THEKOGANS_UTIL_MIN_TIMER_INFOS_IN_PAGE)
 
         void HRTimerMgr::TimerInfo::Start () {
             start = HRTimer::Click ();
@@ -223,12 +222,10 @@ namespace thekogans {
             #define THEKOGANS_UTIL_MIN_SCOPE_INFOS_IN_PAGE 64
         #endif // !defined (THEKOGANS_UTIL_MIN_SCOPE_INFOS_IN_PAGE)
 
-        THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_EX (
+        THEKOGANS_UTIL_IMPLEMENT_HRTIMERMGR_TIMERINFOBASE (
             HRTimerMgr::ScopeInfo,
             1,
-            SpinLock,
-            THEKOGANS_UTIL_MIN_SCOPE_INFOS_IN_PAGE,
-            DefaultAllocator::Instance ().Get ())
+            THEKOGANS_UTIL_MIN_SCOPE_INFOS_IN_PAGE)
 
         HRTimerMgr::ScopeInfo *HRTimerMgr::ScopeInfo::BeginScope (
                 const std::string &name) {
@@ -483,7 +480,7 @@ namespace thekogans {
                 open.clear ();
                 util::JSON::Array::SharedPtr openScopes =
                     object.Get<util::JSON::Array> (TAG_OPEN_SCOPES);
-                if (openScopes.Get () != nullptr) {
+                if (openScopes != nullptr) {
                     for (std::size_t i = 0, count = openScopes->GetValueCount (); i < count; ++i) {
                         util::JSON::Object::SharedPtr openScope = openScopes->Get<util::JSON::Object> (i);
                         TimerInfoBase::SharedPtr timerInfo;
@@ -496,7 +493,7 @@ namespace thekogans {
                 closed.clear ();
                 util::JSON::Array::SharedPtr closedScopes =
                     object.Get<util::JSON::Array> (TAG_CLOSED_SCOPES);
-                if (closedScopes.Get () != nullptr) {
+                if (closedScopes != nullptr) {
                     for (std::size_t i = 0, count = closedScopes->GetValueCount (); i < count; ++i) {
                         util::JSON::Object::SharedPtr closedScope = closedScopes->Get<util::JSON::Object> (i);
                         TimerInfoBase::SharedPtr timerInfo;
@@ -533,16 +530,7 @@ namespace thekogans {
 
         ////////////////////////////////////////////////////////////////////////////////////////
 
-        #if !defined (THEKOGANS_UTIL_MIN_HR_TIMER_MGR_IN_PAGE)
-            #define THEKOGANS_UTIL_MIN_HR_TIMER_MGR_IN_PAGE 16
-        #endif // !defined (THEKOGANS_UTIL_MIN_HR_TIMER_MGR_IN_PAGE)
-
-        THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_EX (
-            HRTimerMgr,
-            1,
-            SpinLock,
-            THEKOGANS_UTIL_MIN_HR_TIMER_MGR_IN_PAGE,
-            DefaultAllocator::Instance ().Get ())
+        THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE (HRTimerMgr, 1)
 
 
         std::string HRTimerMgr::ToXMLString (

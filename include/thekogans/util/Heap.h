@@ -268,7 +268,7 @@ namespace thekogans {
         THEKOGANS_UTIL_IMPLEMENT_HEAP_FUNCTIONS_EX (\
             _T,\
             thekogans::util::SpinLock,\
-            THEKOGANS_UTIL_HEAP_DEFAULT_MIN_ITEMS_IN_PAGE,\
+            thekogans::util::THEKOGANS_UTIL_HEAP_DEFAULT_MIN_ITEMS_IN_PAGE,\
             thekogans::util::DefaultAllocator::Instance ().Get ())
 
         /// \brief
@@ -321,7 +321,7 @@ namespace thekogans {
         THEKOGANS_UTIL_IMPLEMENT_HEAP_FUNCTIONS_EX_T (\
             _T,\
             thekogans::util::SpinLock,\
-            THEKOGANS_UTIL_HEAP_DEFAULT_MIN_ITEMS_IN_PAGE,\
+            thekogans::util::THEKOGANS_UTIL_HEAP_DEFAULT_MIN_ITEMS_IN_PAGE,\
             thekogans::util::DefaultAllocator::Instance ().Get ())
 
         /// \struct HeapRegistry Heap.h thekogans/util/Heap.h
@@ -748,7 +748,7 @@ namespace thekogans {
             /// Return true if the given pointer is one of ours.
             /// \param[in] ptr Pointer to check.
             /// \return true == we own the pointer, false == the pointer is not one of ours.
-            virtual bool IsValidPtr (void *ptr) throw ();
+            virtual bool IsValidPtr (void *ptr) throw () override;
 
             // HeapRegistry::Diagnostics::Stats
             /// \struct Heap::Stats Heap.h thekogans/util/Heap.h
@@ -807,7 +807,7 @@ namespace thekogans {
                 /// \brief
                 /// Dump heap stats to std::ostream.
                 /// \param[in] stream std::ostream stream to dump the stats to.
-                virtual void Dump (std::ostream &stream) const {
+                virtual void Dump (std::ostream &stream) const override {
                     Attributes attributes;
                     attributes.push_back (Attribute ("name", name));
                     attributes.push_back (Attribute ("itemSize", size_tTostring (itemSize)));
@@ -822,7 +822,7 @@ namespace thekogans {
             /// \brief
             /// Return a snapshot of the heap state.
             /// \return A snapshot of the heap state.
-            virtual HeapRegistry::Diagnostics::Stats::UniquePtr GetStats () {
+            virtual HeapRegistry::Diagnostics::Stats::UniquePtr GetStats () override {
                 LockGuard<Lock> guard (lock);
                 return HeapRegistry::Diagnostics::Stats::UniquePtr (
                     new Stats (

@@ -406,10 +406,11 @@ namespace thekogans {
         #endif // defined (TOOLCHAIN_OS_Windows)
         }
 
-        void SimpleFile::Open (
+        SimpleFile::SimpleFile (
+                Endianness endianness,
                 const std::string &path,
-                i32 flags,
-                i32 /*mode*/) {
+                i32 flags) :
+                File (endianness) {
         #if defined (TOOLCHAIN_OS_Windows)
             DWORD dwDesiredAccess = 0;
             DWORD dwShareMode = 0;

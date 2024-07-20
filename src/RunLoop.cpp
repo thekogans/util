@@ -167,16 +167,7 @@ namespace thekogans {
             return !state.pendingJobs.empty () ? state.pendingJobs.pop_front () : nullptr;
         }
 
-        #if !defined (THEKOGANS_UTIL_MIN_RUN_LOOP_STATS_JOBS_IN_PAGE)
-            #define THEKOGANS_UTIL_MIN_RUN_LOOP_STATS_JOBS_IN_PAGE 64
-        #endif // !defined (THEKOGANS_UTIL_MIN_RUN_LOOP_STATS_JOBS_IN_PAGE)
-
-        THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_EX (
-            RunLoop::Stats::Job,
-            1,
-            SpinLock,
-            THEKOGANS_UTIL_MIN_RUN_LOOP_STATS_JOBS_IN_PAGE,
-            DefaultAllocator::Instance ().Get ())
+        THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE (RunLoop::Stats::Job, 1)
 
         RunLoop::Stats::Job &RunLoop::Stats::Job::operator = (const Job &job) {
             if (&job != this) {
@@ -250,16 +241,7 @@ namespace thekogans {
             object.Add (ATTR_TOTAL_TIME, totalTime);
         }
 
-        #if !defined (THEKOGANS_UTIL_MIN_RUN_LOOP_STATS_IN_PAGE)
-            #define THEKOGANS_UTIL_MIN_RUN_LOOP_STATS_IN_PAGE 16
-        #endif // !defined (THEKOGANS_UTIL_MIN_RUN_LOOP_STATS_IN_PAGE)
-
-        THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_EX (
-            RunLoop::Stats,
-            1,
-            SpinLock,
-            THEKOGANS_UTIL_MIN_RUN_LOOP_STATS_IN_PAGE,
-            DefaultAllocator::Instance ().Get ())
+        THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE (RunLoop::Stats, 1)
 
         RunLoop::Stats &RunLoop::Stats::operator = (const Stats &stats) {
             if (&stats != this) {
@@ -512,7 +494,7 @@ namespace thekogans {
                 Job::SharedPtr job,
                 bool wait,
                 const TimeSpec &timeSpec) {
-            if (job.Get () != nullptr && job->IsCompleted ()) {
+            if (job != nullptr && job->IsCompleted ()) {
                 {
                     LockGuard<Mutex> guard (state->jobsMutex);
                     state->jobExecutionPolicy->EnqJob (*state, job.Get ());
@@ -542,7 +524,7 @@ namespace thekogans {
                 Job::SharedPtr job,
                 bool wait,
                 const TimeSpec &timeSpec) {
-            if (job.Get () != nullptr && job->IsCompleted ()) {
+            if (job != nullptr && job->IsCompleted ()) {
                 {
                     LockGuard<Mutex> guard (state->jobsMutex);
                     state->jobExecutionPolicy->EnqJobFront (*state, job.Get ());
@@ -641,7 +623,7 @@ namespace thekogans {
         bool RunLoop::WaitForJob (
                 Job::SharedPtr job,
                 const TimeSpec &timeSpec) {
-            if (job.Get () != nullptr && job->GetRunLoopId () == state->id) {
+            if (job != nullptr && job->GetRunLoopId () == state->id) {
                 if (timeSpec == TimeSpec::Infinite) {
                     while (IsRunning () && !job->IsCompleted ()) {
                         job->Wait ();
@@ -667,7 +649,7 @@ namespace thekogans {
                 const Job::Id &jobId,
                 const TimeSpec &timeSpec) {
             Job::SharedPtr job = GetJob (jobId);
-            return job.Get () != nullptr && WaitForJob (job, timeSpec);
+            return job != nullptr && WaitForJob (job, timeSpec);
         }
 
         bool RunLoop::WaitForJobs (

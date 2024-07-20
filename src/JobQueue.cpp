@@ -135,7 +135,7 @@ namespace thekogans {
         JobQueue::JobQueue (State::SharedPtr state_) :
                 RunLoop (dynamic_refcounted_sharedptr_cast<RunLoop::State> (state_)),
                 state (state_) {
-            if (state.Get () != nullptr) {
+            if (state != nullptr) {
                 Start ();
             }
             else {

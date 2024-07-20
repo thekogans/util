@@ -20,6 +20,7 @@
 
 #include <cstddef>
 #include <string>
+#include <functional>
 #include <map>
 #include "thekogans/util/Config.h"
 #include "thekogans/util/Types.h"
@@ -80,7 +81,7 @@ namespace thekogans {
 
             /// \brief
             /// typedef for the DynamicCreatable factory function.
-            typedef SharedPtr (*Factory) ();
+            typedef std::function<SharedPtr ()> Factory;
             /// \brief
             /// typedef for the DynamicCreatable map.
             typedef std::map<std::string, Factory> MapType;

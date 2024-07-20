@@ -524,16 +524,7 @@ namespace thekogans {
             }
         }
 
-        #if !defined (THEKOGANS_UTIL_MIN_DIRECORY_ENTRY_IN_PAGE)
-            #define THEKOGANS_UTIL_MIN_DIRECORY_ENTRY_IN_PAGE 64
-        #endif // !defined (THEKOGANS_UTIL_MIN_DIRECORY_ENTRY_IN_PAGE)
-
-        THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_EX (
-            Directory::Entry,
-            1,
-            SpinLock,
-            THEKOGANS_UTIL_MIN_DIRECORY_ENTRY_IN_PAGE,
-            DefaultAllocator::Instance ().Get ())
+        THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE (Directory::Entry, 1)
 
     #if defined (TOOLCHAIN_OS_Windows)
         namespace {
@@ -1138,12 +1129,12 @@ namespace thekogans {
                 }
             }
         #if defined (TOOLCHAIN_OS_Windows)
-            if (RemoveDirectoryW (os::windows::UTF8ToUTF16 (path).c_str ()) != 0) {
+            if (RemoveDirectoryW (os::windows::UTF8ToUTF16 (path).c_str ()) == 0) {
         #else // defined (TOOLCHAIN_OS_Windows)
-            if (rmdir (path.c_str ()) != 0) {
+            if (rmdir (path.c_str ()) == -1) {
         #endif // defined (TOOLCHAIN_OS_Windows)
-                THEKOGANS_UTIL_THROW_POSIX_ERROR_CODE_AND_MESSAGE_EXCEPTION (
-                    errno, " (%s)", path.c_str ());
+                THEKOGANS_UTIL_THROW_ERROR_CODE_AND_MESSAGE_EXCEPTION (
+                    THEKOGANS_UTIL_OS_ERROR_CODE, " (%s)", path.c_str ());
             }
         }
 
