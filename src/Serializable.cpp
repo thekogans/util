@@ -32,19 +32,6 @@ namespace thekogans {
 
         THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_BASE (Serializable)
 
-    #if defined (THEKOGANS_UTIL_TYPE_Static)
-        void StaticInit::StaticInit () {
-            Directory::Entry::StaticInit ();
-            Fraction::StaticInit ();
-            HRTimerMgr::TimerInfo::StaticInit ();
-            HRTimerMgr::ScopeInfo::StaticInit ();
-            HRTimerMgr::StaticInit ();
-            RunLoop::Stats::Job::StaticInit ();
-            RunLoop::Stats::StaticInit ();
-            TimeSpec::StaticInit ();
-        }
-    #endif // defined (THEKOGANS_UTIL_TYPE_Static)
-
         const char * const Serializable::BinHeader::TAG_BIN_HEADER = "BinHeader";
         const char * const Serializable::BinHeader::ATTR_MAGIC = "Magic";
         const char * const Serializable::BinHeader::ATTR_TYPE = "Type";
@@ -71,6 +58,19 @@ namespace thekogans {
 
         const char * const Serializable::TextHeader::ATTR_TYPE = "Type";
         const char * const Serializable::TextHeader::ATTR_VERSION = "Version";
+
+    #if defined (THEKOGANS_UTIL_TYPE_Static)
+        void Serializable::StaticInit () {
+            Directory::Entry::StaticInit ();
+            Fraction::StaticInit ();
+            HRTimerMgr::TimerInfo::StaticInit ();
+            HRTimerMgr::ScopeInfo::StaticInit ();
+            HRTimerMgr::StaticInit ();
+            RunLoop::Stats::Job::StaticInit ();
+            RunLoop::Stats::StaticInit ();
+            TimeSpec::StaticInit ();
+        }
+    #endif // defined (THEKOGANS_UTIL_TYPE_Static)
 
         bool Serializable::ValidateType (const std::string &type) {
             return Map::Instance ()->find (type) != Map::Instance ()->end ();

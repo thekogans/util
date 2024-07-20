@@ -179,6 +179,10 @@ namespace thekogans {
                 void Write (pugi::xml_node &node) const;
             };
 
+        #if defined (THEKOGANS_UTIL_TYPE_Static)
+            static void StaticInit ();
+        #endif // defined (THEKOGANS_UTIL_TYPE_Static)
+
             /// \brief
             /// Check the map for the given type.
             /// \return true == The given type is in the map.

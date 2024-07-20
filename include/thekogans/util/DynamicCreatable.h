@@ -143,7 +143,7 @@ namespace thekogans {
         #define THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_STATIC(_T)\
             void _T::StaticInit () {\
                 thekogans::util::DynamicCreatable::Map::Instance ()->insert (\
-                    thekogans::util::DynamicCreatable::Map::value_type (#_T, _T::Create));\
+                    thekogans::util::DynamicCreatable::MapType::value_type (#_T, _T::Create));\
             }
 
         /// \def THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_SHARED(_T)
