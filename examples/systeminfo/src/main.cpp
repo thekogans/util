@@ -26,8 +26,8 @@ int main (
         int /*argc*/,
         const char * /*argv*/ []) {
     std::cout << "SystemInfo:" << std::endl;
-    util::SystemInfo::Instance ().Dump ();
+    util::SystemInfo::Instance ()->Dump ();
     std::cout << std::endl << "CPU:" << std::endl;
-    util::CPU::Instance ().Dump ();
+    util::CPU::Instance ()->Dump ();
     return 0;
 }

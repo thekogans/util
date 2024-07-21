@@ -71,7 +71,7 @@ int main (
             "w - Generate using Windows guid format (XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX) (default false).\n"
             "u - Use uppercase for hex chars (default false).\n"
             "n - Emmit a newline (\\n) char (default false).\n",
-            util::SystemInfo::Instance ().GetProcessPath ().c_str ());
+            util::SystemInfo::Instance ()->GetProcessPath ().c_str ());
     }
     else {
         for (util::ui32 i = 0; i < options.count; ++i) {

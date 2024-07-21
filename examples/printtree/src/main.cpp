@@ -38,10 +38,10 @@ namespace {
                 if (entry.type == util::Directory::Entry::Folder) {
                     if (!util::IsDotOrDotDot (entry.name.c_str ())) {
                         for (util::ui32 i = 0; i < level; ++i) {
-                            util::Console::Instance ().PrintString ("  ");
+                            util::Console::Instance ()->PrintString ("  ");
                         }
-                        util::Console::Instance ().PrintString (entry.name.c_str ());
-                        util::Console::Instance ().PrintString ("\n");
+                        util::Console::Instance ()->PrintString (entry.name.c_str ());
+                        util::Console::Instance ()->PrintString ("\n");
                         PrintTree (util::MakePath (path, entry.name), level + 1);
                     }
                 }
@@ -65,8 +65,8 @@ int main (
     }
     THEKOGANS_UTIL_TRY {
         THEKOGANS_UTIL_IMPLEMENT_LOG_FLUSHER;
-        util::Console::Instance ().PrintString (path.c_str ());
-        util::Console::Instance ().PrintString ("\n");
+        util::Console::Instance ()->PrintString (path.c_str ());
+        util::Console::Instance ()->PrintString ("\n");
         PrintTree (path, 1);
     }
     THEKOGANS_UTIL_CATCH_AND_LOG

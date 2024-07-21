@@ -33,7 +33,7 @@ namespace {
         std::string hasherList;
         {
             std::list<std::string> hashers;
-            util::Hash::GetHashers (hashers);
+            util::Hash::GetTypes (hashers);
             if (!hashers.empty ()) {
                 std::list<std::string>::const_iterator it = hashers.begin ();
                 hasherList = *it++;
@@ -75,12 +75,13 @@ int main (
             switch (option) {
                 case 'h': {
                     if (!hashers.empty () && hashers.back ()->digestSizes.empty ()) {
-                        util::Hash::SharedPtr hash = util::Hash::Get (hashers.back ()->name);
+                        util::Hash::SharedPtr hash =
+                            util::Hash::CreateType (hashers.back ()->name);
                         assert (hash.Get () != 0);
                         hashers.back ()->digestSizes.clear ();
                         hash->GetDigestSizes (hashers.back ()->digestSizes);
                     }
-                    util::Hash::SharedPtr hash = util::Hash::Get (value);
+                    util::Hash::SharedPtr hash = util::Hash::CreateType (value);
                     if (hash.Get () != 0) {
                         hashers.push_back (new Hasher (value));
                     }
@@ -92,12 +93,13 @@ int main (
                 case 'd': {
                     if (!hashers.empty ()) {
                         if (value == "ALL") {
-                            util::Hash::SharedPtr hash = util::Hash::Get (hashers.back ()->name);
+                            util::Hash::SharedPtr hash =
+                                util::Hash::CreateType (hashers.back ()->name);
                             assert (hash.Get () != 0);
                             hashers.back ()->digestSizes.clear ();
                             hash->GetDigestSizes (hashers.back ()->digestSizes);
                             if (hashers.back ()->digestSizes.empty ()) {
-                                std::cout << "Hasher: " << hash->GetName (0) <<
+                                std::cout << "Hasher: " << hash->GetDigestName (0) <<
                                     " does not expose digests, skipping.";
                                 delete hashers.back ();
                                 hashers.pop_back ();
@@ -125,7 +127,7 @@ int main (
         }
         virtual void Epilog () {
             if (!hashers.empty () && hashers.back ()->digestSizes.empty ()) {
-                util::Hash::SharedPtr hash = util::Hash::Get (hashers.back ()->name);
+                util::Hash::SharedPtr hash = util::Hash::CreateType (hashers.back ()->name);
                 assert (hash.Get () != 0);
                 hashers.back ()->digestSizes.clear ();
                 hash->GetDigestSizes (hashers.back ()->digestSizes);
@@ -146,7 +148,7 @@ int main (
     for (util::OwnerList<Options::Hasher>::const_iterator
             it = options.hashers.begin (),
             end = options.hashers.end (); it != end; ++it) {
-        util::Hash::SharedPtr hash = util::Hash::Get ((*it)->name);
+        util::Hash::SharedPtr hash = util::Hash::CreateType ((*it)->name);
         assert (hash.Get () != 0);
         for (std::list<std::size_t>::const_iterator
                 jt = (*it)->digestSizes.begin (),
@@ -155,7 +157,7 @@ int main (
                 util::Hash::Digest digest;
                 hash->FromFile (options.path, *jt, digest);
                 if (!options.naked) {
-                    std::cout << hash->GetName (*jt)  << ": " <<
+                    std::cout << hash->GetDigestName (*jt)  << ": " <<
                         util::Hash::DigestTostring (digest) << std::endl;
                 }
                 else {
