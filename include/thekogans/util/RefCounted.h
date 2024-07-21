@@ -71,7 +71,7 @@ namespace thekogans {
                 /// \brief
                 /// References has a private heap to help with
                 /// performance and memory fragmentation.
-                THEKOGANS_UTIL_DECLARE_STD_ALLOCATOR_FUNCTIONS
+                //THEKOGANS_UTIL_DECLARE_STD_ALLOCATOR_FUNCTIONS
 
             private:
                 /// \brief

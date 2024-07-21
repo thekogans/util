@@ -91,7 +91,7 @@ namespace thekogans {
         void HeapRegistry::AddHeap (
                 const char *name,
                 Diagnostics *heap) {
-            assert (!name.empty ());
+            assert (name != nullptr);
             assert (heap != nullptr);
             LockGuard<SpinLock> guard (spinLock);
             map.insert (Map::value_type (name, heap));

@@ -27,7 +27,7 @@
 namespace thekogans {
     namespace util {
 
-        THEKOGANS_UTIL_IMPLEMENT_HEAP_FUNCTIONS (RefCounted::References)
+        //THEKOGANS_UTIL_IMPLEMENT_HEAP_FUNCTIONS (RefCounted::References)
 
         namespace {
             typedef boost::atomics::detail::operations<4u, false> operations;

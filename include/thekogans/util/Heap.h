@@ -61,13 +61,13 @@ namespace thekogans {
         ///
         /// in myclass.cpp:
         ///
-        /// use THEKOGANS_UTIL_HEAP_DEFAULT_MIN_ITEMS_IN_PAGE
+        /// use DEFAULT_HEAP_MIN_ITEMS_IN_PAGE
         /// \code{.cpp}
-        /// THEKOGANS_UTIL_IMPLEMENT_HEAP (MyClass)
+        /// THEKOGANS_UTIL_IMPLEMENT_HEAP_FUNCTIONS (MyClass)
         /// \endcode
         /// or
         /// \code{.cpp}
-        /// THEKOGANS_UTIL_IMPLEMENT_HEAP_EX (MyClass, minItemsInPage)
+        /// THEKOGANS_UTIL_IMPLEMENT_HEAP_FUNCTIONS_EX (MyClass, lock, minItemsInPage, allocator)
         /// \endcode
         ///
         /// Aternate usage: Temporary object sub-allocation.
@@ -117,11 +117,10 @@ namespace thekogans {
         /// from this heap are properly aligned. To do that use
         /// pad bytes in the type declaration.
         ///
-        /// 7) The heap is thread safe. By default the heap uses NullLock
-        /// for performance. Use THEKOGANS_UTIL_DECLARE_HEAP_WITH_LOCK/
-        /// THEKOGANS_UTIL_IMPLEMENT_HEAP_WITH_LOCK to specify the type of
-        /// lock to use. It is highly recommended that you use \see{SpinLock}
-        /// for this, as it is very fast, and cheap.
+        /// 7) The heap is thread safe. By default the heap uses SpinLock
+        /// for performance. Use THEKOGANS_UTIL_IMPLEMENT_HEAP_FUNCTIONS_EX
+        /// to specify the type of lock to use. It is highly recommended that
+        /// you use \see{SpinLock} for this, as it is very fast, and cheap.
         ///
         /// 8) Perhaps the most important reason for using the heap is,
         /// it's a no brainer to use. The examples above illustrate the
@@ -213,7 +212,7 @@ namespace thekogans {
         /// 07/11/2024 - version 3.0.0
         ///              Heaps are now Singletons. As much as I originally liked the idea
         ///              of a local heap, in almost 30 years of use I never had a reason
-        ///              to create one. The feature in now gone and so are a few dozen
+        ///              to create one. The feature is now gone and so are a few dozen
         ///              macros used to initialize the heap.
         ///
         /// Author:
@@ -222,7 +221,7 @@ namespace thekogans {
 
         /// \brief
         /// Default number of items per page.
-        const std::size_t THEKOGANS_UTIL_HEAP_DEFAULT_MIN_ITEMS_IN_PAGE = 256;
+        const std::size_t DEFAULT_HEAP_MIN_ITEMS_IN_PAGE = 256;
 
         /// \brief
         /// Use these defines for regular classes (not templates).
@@ -268,7 +267,7 @@ namespace thekogans {
         THEKOGANS_UTIL_IMPLEMENT_HEAP_FUNCTIONS_EX (\
             _T,\
             thekogans::util::SpinLock,\
-            thekogans::util::THEKOGANS_UTIL_HEAP_DEFAULT_MIN_ITEMS_IN_PAGE,\
+            thekogans::util::DEFAULT_HEAP_MIN_ITEMS_IN_PAGE,\
             thekogans::util::DefaultAllocator::Instance ().Get ())
 
         /// \brief
@@ -321,7 +320,7 @@ namespace thekogans {
         THEKOGANS_UTIL_IMPLEMENT_HEAP_FUNCTIONS_EX_T (\
             _T,\
             thekogans::util::SpinLock,\
-            thekogans::util::THEKOGANS_UTIL_HEAP_DEFAULT_MIN_ITEMS_IN_PAGE,\
+            thekogans::util::DEFAULT_HEAP_MIN_ITEMS_IN_PAGE,\
             thekogans::util::DefaultAllocator::Instance ().Get ())
 
         /// \struct HeapRegistry Heap.h thekogans/util/Heap.h
@@ -700,7 +699,7 @@ namespace thekogans {
             /// AlignedAllocator.h). Therefore you cannot dictate the exact
             /// count of items per page, only the minimum.
             /// \param[in] allocator_ Page allocator.
-            Heap (std::size_t minItemsInPage_ = THEKOGANS_UTIL_HEAP_DEFAULT_MIN_ITEMS_IN_PAGE,
+            Heap (std::size_t minItemsInPage_ = DEFAULT_HEAP_MIN_ITEMS_IN_PAGE,
                     Allocator::SharedPtr allocator_ = DefaultAllocator::Instance ().Get ()) :
                     minItemsInPage (minItemsInPage_),
                     minPageSize (Align (sizeof (Page) +

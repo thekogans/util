@@ -139,17 +139,17 @@ namespace thekogans {
 
         /// \brief
         /// Architecture dependent natural word (register) type (size).
-        #if (TOOLCHAIN_ARCH_WORD_SIZE == 1)
-            typedef ui8 MachineWord;
-        #elif (TOOLCHAIN_ARCH_WORD_SIZE == 2)
-            typedef ui16 MachineWord;
-        #elif (TOOLCHAIN_ARCH_WORD_SIZE == 4)
-            typedef ui32 MachineWord;
-        #elif (TOOLCHAIN_ARCH_WORD_SIZE == 8)
-            typedef ui64 MachineWord;
-        #else // (TOOLCHAIN_ARCH_WORD_SIZE == 8)
-            #error Unknown TOOLCHAIN_ARCH_WORD_SIZE.
-        #endif // (TOOLCHAIN_ARCH_WORD_SIZE == 1)
+    #if (TOOLCHAIN_ARCH_WORD_SIZE == 1)
+        typedef ui8 MachineWord;
+    #elif (TOOLCHAIN_ARCH_WORD_SIZE == 2)
+        typedef ui16 MachineWord;
+    #elif (TOOLCHAIN_ARCH_WORD_SIZE == 4)
+        typedef ui32 MachineWord;
+    #elif (TOOLCHAIN_ARCH_WORD_SIZE == 8)
+        typedef ui64 MachineWord;
+    #else // (TOOLCHAIN_ARCH_WORD_SIZE == 8)
+        #error Unknown TOOLCHAIN_ARCH_WORD_SIZE.
+    #endif // (TOOLCHAIN_ARCH_WORD_SIZE == 1)
 
         /// \brief
         /// Natural machine word size.
