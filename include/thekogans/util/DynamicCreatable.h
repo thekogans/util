@@ -172,7 +172,7 @@ namespace thekogans {
         #define THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE_OVERRIDE(_T)\
         public:\
             static const char *TYPE;\
-            virtual const char *Type () const;
+            virtual const char *Type () const override;
 
         /// \def THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE(_T)
         #define THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE(_T)\

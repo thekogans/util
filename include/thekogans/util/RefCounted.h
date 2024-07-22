@@ -456,7 +456,7 @@ namespace thekogans {
                 /// Return the count of shared references on the contained object.
                 /// \return Count of shared references on the contained object.
                 inline ui32 SharedCount () const {
-                    return references != nullptr ? references->GetSharedCount () : nullptr;
+                    return references != nullptr ? references->GetSharedCount () : 0;
                 }
 
                 /// \brief

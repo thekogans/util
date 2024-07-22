@@ -75,7 +75,7 @@ namespace thekogans {
             ui8 buffer[BUFFER_SIZE];
         #elif defined (TOOLCHAIN_OS_OSX)
             struct Entry {
-                THEKOGANS_UTIL_DECLARE_HEAP_WITH_LOCK (Entry, SpinLock)
+                THEKOGANS_UTIL_DECLARE_STD_ALLOCATOR_FUNCTIONS
 
                 typedef std::unique_ptr<Entry> UniquePtr;
 

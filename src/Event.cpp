@@ -36,7 +36,7 @@ namespace thekogans {
 
     #if !defined (TOOLCHAIN_OS_Windows)
         struct Event::EventImpl {
-            THEKOGANS_UTIL_DECLARE_HEAP_WITH_LOCK (EventImpl, SpinLock)
+            THEKOGANS_UTIL_DECLARE_STD_ALLOCATOR_FUNCTIONS
 
             bool manualReset;
             volatile State state;
@@ -146,7 +146,7 @@ namespace thekogans {
             }
         };
 
-        THEKOGANS_UTIL_IMPLEMENT_HEAP_WITH_LOCK (Event::EventImpl, SpinLock)
+        THEKOGANS_UTIL_IMPLEMENT_HEAP_FUNCTIONS (Event::EventImpl)
 
         struct Event::EventImplConstructor : public SharedObject::Constructor {
             bool manualReset;

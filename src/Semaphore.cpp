@@ -35,7 +35,7 @@ namespace thekogans {
 
     #if !defined (TOOLCHAIN_OS_Windows)
         struct Semaphore::SemaphoreImpl {
-            THEKOGANS_UTIL_DECLARE_HEAP_WITH_LOCK (SemaphoreImpl, SpinLock)
+            THEKOGANS_UTIL_DECLARE_STD_ALLOCATOR_FUNCTIONS
 
             const ui32 maxCount;
             volatile ui32 count;
@@ -101,7 +101,7 @@ namespace thekogans {
             }
         };
 
-        THEKOGANS_UTIL_IMPLEMENT_HEAP_WITH_LOCK (Semaphore::SemaphoreImpl, SpinLock)
+        THEKOGANS_UTIL_IMPLEMENT_HEAP_FUNCTIONS (Semaphore::SemaphoreImpl)
 
         struct Semaphore::SemaphoreImplConstructor : public SharedObject::Constructor {
             ui32 maxCount;

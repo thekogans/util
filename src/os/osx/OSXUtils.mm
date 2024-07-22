@@ -31,6 +31,7 @@
 #include "thekogans/util/StringUtils.h"
 #include "thekogans/util/RunLoop.h"
 #include "thekogans/util/SystemRunLoop.h"
+#include "thekogans/util/RefCountedRegistry.h"
 #include "thekogans/util/TimeSpec.h"
 #include "thekogans/util/os/osx/OSXUtils.h"
 
@@ -176,7 +177,7 @@ namespace thekogans {
                 }
 
                 namespace {
-                    typedef RefCounted::Registry<KQueueTimer> KQueueTimerRegistry;
+                    typedef RefCountedRegistry<KQueueTimer> KQueueTimerRegistry;
                 }
 
                 struct KQueueTimer : public RefCounted {
