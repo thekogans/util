@@ -1024,7 +1024,7 @@ namespace thekogans {
         void Heap<T, Lock>::Flush () {
             LockGuard<Lock> guard (lock);
             itemCount = 0;
-            auto deletePage = [allocator] (Page *page) -> bool {
+            auto deletePage = [&allocator = allocator] (Page *page) -> bool {
                 page->~Page ();
                 allocator.Free (page, page->size);
                 return true;
