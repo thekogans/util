@@ -243,14 +243,14 @@ namespace thekogans {
             /// Allocate a shared block.
             /// \param[in] size Size of block to allocate.
             /// \return Pointer to the allocated block (0 if out of memory).
-            virtual void *Alloc (std::size_t size);
+            virtual void *Alloc (std::size_t size) override;
             /// \brief
             /// Free a previously Alloc(ated) block.
             /// \param[in] ptr Pointer to the block returned by Alloc.
             /// \param[in] size Same size parameter previously passed in to Alloc.
             virtual void Free (
                 void *ptr,
-                std::size_t size);
+                std::size_t size) override;
 
             /// \brief
             /// Use these three functions to calculate the size of the
