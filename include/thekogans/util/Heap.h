@@ -52,7 +52,7 @@ namespace thekogans {
         ///
         /// \code{.cpp}
         /// class MyClass {
-        ///     THEKOGANS_UTIL_DECLARE_HEAP (MyClass)
+        ///     THEKOGANS_UTIL_DECLARE_STD_ALLOCATOR_FUNCTIONS
         /// public:
         ///     MyClass ();
         ///     ~MyClass ();

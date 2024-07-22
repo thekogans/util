@@ -49,21 +49,16 @@ namespace thekogans {
         ///
         /// \code{.cpp}
         /// struct SecureObject {
-        ///     THEKOGANS_UTIL_DECLARE_HEAP (SecureObject)
-        ///     or
-        ///     THEKOGANS_UTIL_DECLARE_HEAP_WITH_LOCK (
-        ///         SecureObject,
-        ///         thekogans::util::SpinLock)
+        ///     THEKOGANS_UTIL_DECLARE_STD_ALLOCATOR_FUNCTIONS
         /// };
         ///
-        /// THEKOGANS_UTIL_IMPLEMENT_HEAP_WITH_ALLOCATOR (
-        ///     SecureObject,
-        ///     thekogans::util::SecureAllocator::Instance ())
-        /// or
-        /// THEKOGANS_UTIL_IMPLEMENT_HEAP_WITH_LOCK_AND_ALLOCATOR (
+        /// THEKOGANS_UTIL_IMPLEMENT_HEAP_FUNCTIONS_EX (
         ///     SecureObject,
         ///     thekogans::util::SpinLock,
-        ///     thekogans::util::SecureAllocator::Instance ())
+        ///     thekogans::util::DEFAULT_HEAP_MIN_ITEMS_IN_PAGE,
+        ///     thekogans::util::SecureAllocator::Instance ().Get ())
+        /// or
+        /// THEKOGANS_UTIL_IMPLEMENT_SECURE_ALLOCATOR_FUNCTIONS (SecureObject)
         /// \endcode
         ///
         /// NOTE: Don't forget to call SecureAllocator::ReservePages to
