@@ -69,9 +69,18 @@ namespace thekogans {
             /// Control block for the lifetime of RefCounted as well as \see{WeakPtr}.
             struct _LIB_THEKOGANS_UTIL_DECL References {
                 /// \brief
-                /// References has a private heap to help with
-                /// performance and memory fragmentation.
-                //THEKOGANS_UTIL_DECLARE_STD_ALLOCATOR_FUNCTIONS
+                /// References has a private heap to speed up (de)allocation.
+                struct Heap;
+
+                /// \brief
+                /// Use the private heap to allocate a References.
+                /// \param[in] size Ignored as we know exactly how much to allocate.
+                /// \return A pointer to raw References instance.
+                static void *operator new (std::size_t);
+                /// \brief
+                /// Use the private heap to deallocate the given pointer to a References.
+                /// \param[in] ptr Raw block of memory to deallocate.
+                static void operator delete (void *ptr);
 
             private:
                 /// \brief

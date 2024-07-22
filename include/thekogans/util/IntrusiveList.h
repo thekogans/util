@@ -607,6 +607,60 @@ namespace thekogans {
             }
 
             /// \brief
+            /// Walk the list calling the callback for every node.
+            /// The enumeration stops if callback returns true.
+            /// \param[in] callback Called for every node in the list.
+            /// \param[in] reverse true == Walk the list tail to head.
+            /// \return First node for which the callback returned true.
+            /// nullptr if no node was found matching the criteria.
+            inline T *find (
+                    Callback &callback,
+                    bool reverse = false) const {
+                if (reverse) {
+                    for (T *node = tail; node != nullptr; node = prev (node)) {
+                        if (callback (node)) {
+                            return node;
+                        }
+                    }
+                }
+                else {
+                    for (T *node = head; node != nullptr; node = next (node)) {
+                        if (callback (node)) {
+                            return node;
+                        }
+                    }
+                }
+                return nullptr;
+            }
+
+            /// \brief
+            /// Walk the list calling the callback for every node.
+            /// The enumeration stops if callback returns true.
+            /// \param[in] callback Called for every node in the list.
+            /// \param[in] reverse true == Walk the list tail to head.
+            /// \return First node for which the callback returned true.
+            /// nullptr if no node was found matching the criteria.
+            inline T *find (
+                    const Function &callback,
+                    bool reverse = false) const {
+                if (reverse) {
+                    for (T *node = tail; node != nullptr; node = prev (node)) {
+                        if (callback (node)) {
+                            return node;
+                        }
+                    }
+                }
+                else {
+                    for (T *node = head; node != nullptr; node = next (node)) {
+                        if (callback (node)) {
+                            return node;
+                        }
+                    }
+                }
+                return nullptr;
+            }
+
+            /// \brief
             /// Swap the contents of this list with the one given.
             /// \param[in] list List with which to swap contents.
             inline void swap (IntrusiveList<T, ID> &list) {

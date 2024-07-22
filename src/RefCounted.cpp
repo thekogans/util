@@ -18,16 +18,164 @@
 #include <boost/atomic/detail/config.hpp>
 #include <boost/atomic/detail/operations_lockfree.hpp>
 #include <boost/memory_order.hpp>
-#include "thekogans/util/Heap.h"
+#include "thekogans/util/Singleton.h"
 #include "thekogans/util/Constants.h"
 #include "thekogans/util/StringUtils.h"
 #include "thekogans/util/Exception.h"
+#include "thekogans/util/IntrusiveList.h"
 #include "thekogans/util/RefCounted.h"
 
 namespace thekogans {
     namespace util {
 
-        //THEKOGANS_UTIL_IMPLEMENT_HEAP_FUNCTIONS (RefCounted::References)
+    #if !defined (THEKOGANS_UTIL_DEFAULT_REF_COUNED_REFERENCES_HEAP_ITEMS_IN_PAGE)
+        #define THEKOGANS_UTIL_DEFAULT_REF_COUNED_REFERENCES_HEAP_ITEMS_IN_PAGE 8192
+    #endif // !defined (THEKOGANS_UTIL_DEFAULT_REF_COUNED_REFERENCES_HEAP_ITEMS_IN_PAGE)
+
+        struct RefCounted::References::Heap : Singleton<Heap> {
+        protected:
+            struct Page;
+            enum {
+                PAGE_LIST_ID
+            };
+            typedef IntrusiveList<Page, PAGE_LIST_ID> PageList;
+            struct Page : public PageList::Node {
+                const std::size_t maxItems;
+                std::size_t itemCount;
+                union Item {
+                    Item *next;
+                    ui8 block[sizeof (RefCounted::References)];
+                } *freeItem, items[1];
+
+                Page (std::size_t maxItems_) :
+                    maxItems (maxItems_),
+                    itemCount (0),
+                    freeItem (0) {}
+
+                inline bool IsEmpty () const {
+                    return itemCount == 0;
+                }
+                inline bool IsFull () const {
+                    return itemCount == maxItems;
+                }
+
+                inline void *Alloc () {
+                    if (freeItem != 0) {
+                        Item *item = freeItem;
+                        freeItem = freeItem->next;
+                        ++itemCount;
+                        return item->block;
+                    }
+                    else if (!IsFull ()) {
+                        Item *item = &items[itemCount++];
+                        return item->block;
+                    }
+                    return 0;
+                }
+
+                inline void Free (void *ptr) {
+                    Item *item = (Item *)ptr;
+                    item->next = freeItem;
+                    freeItem = item;
+                    --itemCount;
+                }
+
+                // Check to see if the given pointer is within the
+                // items list and falls on an Item boundary.
+                inline bool IsItem (const void *item) const {
+                    return item >= items && item < &items[maxItems] &&
+                        (std::ptrdiff_t)((const std::size_t)item -
+                            (const std::size_t)items) % sizeof (Item) == 0;
+                }
+
+                THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (Page)
+            };
+
+            const std::size_t itemsInPage;
+            const std::size_t pageSize;
+            std::size_t itemCount;
+            PageList fullPages;
+            PageList partialPages;
+            SpinLock spinLock;
+
+        public:
+            Heap (std::size_t itemsInPage_ =
+                    THEKOGANS_UTIL_DEFAULT_REF_COUNED_REFERENCES_HEAP_ITEMS_IN_PAGE) :
+                itemsInPage (itemsInPage_),
+                pageSize (sizeof (Page) + sizeof (Page::Item) * (itemsInPage - 1)),
+                itemCount (0) {}
+
+            void *Alloc () {
+                LockGuard<SpinLock> guard (spinLock);
+                Page *page = GetPage ();
+                if (page != nullptr) {
+                    void *ptr = page->Alloc ();
+                    if (page->IsFull ()) {
+                        partialPages.erase (page);
+                        fullPages.push_back (page);
+                    }
+                    ++itemCount;
+                    return ptr;
+                }
+                THEKOGANS_UTIL_THROW_EXCEPTION (
+                    THEKOGANS_UTIL_OS_ERROR_CODE_ENOMEM,
+                    "Out of memory allocating a '%s'.",
+                    "RefCounted::References");
+            }
+
+            void Free (void *ptr) {
+                if (ptr != nullptr) {
+                    LockGuard<SpinLock> guard (spinLock);
+                    Page *page = GetPage (ptr);
+                    if (page != nullptr) {
+                        if (page->IsFull ()) {
+                            fullPages.erase (page);
+                            partialPages.push_front (page);
+                        }
+                        page->Free (ptr);
+                        --itemCount;
+                        if (page->IsEmpty ()) {
+                            partialPages.erase (page);
+                            page->~Page ();
+                            delete [] (ui8 *)page;
+                        }
+                    }
+                    else {
+                        THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                            THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
+                    }
+                }
+            }
+
+        private:
+            inline Page *GetPage () {
+                if (partialPages.empty ()) {
+                    partialPages.push_back (new (new ui8[pageSize]) Page (itemsInPage));
+                }
+                return partialPages.front ();
+            }
+
+            inline Page *GetPage (void *ptr) const {
+                auto findPage = [ptr] (Page *page) -> bool {
+                    return page->IsItem (ptr);
+                };
+                Page *page = partialPages.find (findPage);
+                if (page == nullptr) {
+                    page = fullPages.find (findPage);
+                }
+                return page;
+            }
+
+            THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (Heap)
+        };
+
+        void *RefCounted::References::operator new (std::size_t) {
+            return Heap::Instance ()->Alloc ();
+        }
+
+        void RefCounted::References::operator delete (void *ptr) {
+            Heap::Instance ()->Free (ptr);
+        }
 
         namespace {
             typedef boost::atomics::detail::operations<4u, false> operations;

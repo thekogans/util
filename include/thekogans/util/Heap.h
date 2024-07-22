@@ -747,7 +747,21 @@ namespace thekogans {
             /// Return true if the given pointer is one of ours.
             /// \param[in] ptr Pointer to check.
             /// \return true == we own the pointer, false == the pointer is not one of ours.
-            virtual bool IsValidPtr (void *ptr) throw () override;
+            virtual bool IsValidPtr (void *ptr) throw () override {
+                if (ptr != nullptr) {
+                    LockGuard<Lock> guard (lock);
+                    // To honor the no throw promise, we can't assume the
+                    // pointer came from this heap. We can't even assume
+                    // that it is valid (we cannot de-reference it). We
+                    // therefore search through our pages to see if the
+                    // given pointer lies within range.
+                    auto callback = [ptr] (Page *page) -> bool {
+                        return !page->IsValidPtr (ptr);
+                    };
+                    return !fullPages.for_each (callback) || !partialPages.for_each (callback);
+                }
+                return false;
+            }
 
             // HeapRegistry::Diagnostics::Stats
             /// \struct Heap::Stats Heap.h thekogans/util/Heap.h
@@ -853,14 +867,77 @@ namespace thekogans {
             /// \param[in] nothrow true = return nullptr if can't allocate,
             /// false = throw exception.
             /// \return pointer to newly allocated object.
-            void *Alloc (bool nothrow);
+            void *Alloc (bool nothrow) {
+                LockGuard<Lock> guard (lock);
+                Page *page = GetPage ();
+                assert (page != nullptr);
+                if (page != nullptr) {
+                    void *ptr = page->Alloc ();
+                    assert (ptr != nullptr);
+                    if (page->IsFull ()) {
+                        // GetPage will always return a page from the
+                        // partialPages list.
+                        partialPages.erase (page);
+                        fullPages.push_back (page);
+                    }
+                    ++itemCount;
+                    return ptr;
+                }
+                HeapRegistry::Instance ()->CallHeapErrorCallback (
+                    HeapRegistry::OutOfMemory,
+                    GetName ());
+                if (!nothrow) {
+                    THEKOGANS_UTIL_THROW_EXCEPTION (
+                        THEKOGANS_UTIL_OS_ERROR_CODE_ENOMEM,
+                        "Out of memory allocating a '%s'.",
+                        GetName ());
+                }
+                return nullptr;
+            }
+
             /// \brief
             /// Free a previously Alloc(ated) object.
             /// \param[in] ptr Pointer to object to free.
             /// \param[in] nothrow true = don't throw an exception on error.
             void Free (
-                void *ptr,
-                bool nothrow);
+                    void *ptr,
+                    bool nothrow) {
+                if (ptr != nullptr) {
+                    LockGuard<Lock> guard (lock);
+                    Page *page = GetPage (ptr);
+                    assert (page != nullptr);
+                    if (page != nullptr) {
+                        // This logic is necessary to accommodate pages
+                        // with one item. They become full after one
+                        // allocation, and empty after one deletion.
+                        if (page->IsFull ()) {
+                            fullPages.erase (page);
+                            // Put the page at the head of the partial
+                            // pages list. If the next allocation happens
+                            // soon enough, this page should still be in
+                            // cache.
+                            partialPages.push_front (page);
+                        }
+                        page->Free (ptr);
+                        --itemCount;
+                        if (page->IsEmpty ()) {
+                            partialPages.erase (page);
+                            page->~Page ();
+                            allocator.Free (page, page->size);
+                        }
+                    }
+                    else {
+                        HeapRegistry::Instance ()->CallHeapErrorCallback (
+                            HeapRegistry::BadPointer,
+                            GetName ());
+                        if (!nothrow) {
+                            // Defensive programming. Nothing should ever go unnoticed.
+                            THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                                THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
+                        }
+                    }
+                }
+            }
 
             /// \brief
             /// Free all objects from the heap.
@@ -874,7 +951,17 @@ namespace thekogans {
             /// sub-allocation. If the items being allocated contain
             /// a non trivial dtor, they need to be destroyed before
             /// calling Flush or they might(will) leak.
-            void Flush ();
+            void Flush () {
+                LockGuard<Lock> guard (lock);
+                itemCount = 0;
+                auto deletePage = [&allocator = allocator] (Page *page) -> bool {
+                    page->~Page ();
+                    allocator.Free (page, page->size);
+                    return true;
+                };
+                fullPages.clear (deletePage);
+                partialPages.clear (deletePage);
+            }
 
         private:
             /// \brief
@@ -924,114 +1011,6 @@ namespace thekogans {
 
             THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (Heap)
         };
-
-        template<
-            typename T,
-            typename Lock>
-        bool Heap<T, Lock>::IsValidPtr (void *ptr) throw () {
-            if (ptr != nullptr) {
-                LockGuard<Lock> guard (lock);
-                // To honor the no throw promise, we can't assume the
-                // pointer came from this heap. We can't even assume
-                // that it is valid (we cannot de-reference it). We
-                // therefore search through our pages to see if the
-                // given pointer lies within range.
-                auto callback = [ptr] (Page *page) -> bool {
-                    return !page->IsValidPtr (ptr);
-                };
-                return !fullPages.for_each (callback) || !partialPages.for_each (callback);
-            }
-            return false;
-        }
-
-        template<
-            typename T,
-            typename Lock>
-        void *Heap<T, Lock>::Alloc (bool nothrow) {
-            LockGuard<Lock> guard (lock);
-            Page *page = GetPage ();
-            assert (page != nullptr);
-            if (page != nullptr) {
-                void *ptr = page->Alloc ();
-                assert (ptr != nullptr);
-                if (page->IsFull ()) {
-                    // GetPage will always return a page from the
-                    // partialPages list.
-                    partialPages.erase (page);
-                    fullPages.push_back (page);
-                }
-                ++itemCount;
-                return ptr;
-            }
-            HeapRegistry::Instance ()->CallHeapErrorCallback (
-                HeapRegistry::OutOfMemory,
-                GetName ());
-            if (!nothrow) {
-                THEKOGANS_UTIL_THROW_EXCEPTION (
-                    THEKOGANS_UTIL_OS_ERROR_CODE_ENOMEM,
-                    "Out of memory allocating a '%s'.",
-                    GetName ());
-            }
-            return nullptr;
-        }
-
-        template<
-            typename T,
-            typename Lock>
-        void Heap<T, Lock>::Free (
-                void *ptr,
-                bool nothrow) {
-            if (ptr != nullptr) {
-                LockGuard<Lock> guard (lock);
-                Page *page = GetPage (ptr);
-                assert (page != nullptr);
-                if (page != nullptr) {
-                    // This logic is necessary to accommodate pages
-                    // with one item. They become full after one
-                    // allocation, and empty after one deletion.
-                    if (page->IsFull ()) {
-                        fullPages.erase (page);
-                        // Put the page at the head of the partial
-                        // pages list. If the next allocation happens
-                        // soon enough, this page should still be in
-                        // cache.
-                        partialPages.push_front (page);
-                    }
-                    page->Free (ptr);
-                    --itemCount;
-                    if (page->IsEmpty ()) {
-                        partialPages.erase (page);
-                        page->~Page ();
-                        allocator.Free (page, page->size);
-                    }
-                }
-                else {
-                    HeapRegistry::Instance ()->CallHeapErrorCallback (
-                        HeapRegistry::BadPointer,
-                        GetName ());
-                    if (!nothrow) {
-                        // Defensive programming. Nothing should ever go unnoticed.
-                        THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                            THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
-                    }
-                }
-            }
-        }
-
-        template<
-            typename T,
-            typename Lock>
-        void Heap<T, Lock>::Flush () {
-            LockGuard<Lock> guard (lock);
-            itemCount = 0;
-            auto deletePage = [&allocator = allocator] (Page *page) -> bool {
-                page->~Page ();
-                allocator.Free (page, page->size);
-                return true;
-            };
-            fullPages.clear (deletePage);
-            partialPages.clear (deletePage);
-        }
 
     } // namespace util
 } // namespace thekogans
