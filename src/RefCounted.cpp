@@ -60,17 +60,16 @@ namespace thekogans {
                 }
 
                 inline void *Alloc () {
-                    if (freeItem != 0) {
-                        Item *item = freeItem;
+                    Item *item;
+                    if (freeItem != nullptr) {
+                        item = freeItem;
                         freeItem = freeItem->next;
-                        ++itemCount;
-                        return item->block;
                     }
-                    else if (!IsFull ()) {
-                        Item *item = &items[itemCount++];
-                        return item->block;
+                    else {
+                        item = &items[itemCount];
                     }
-                    return 0;
+                    ++itemCount;
+                    return item->block;
                 }
 
                 inline void Free (void *ptr) {
@@ -81,19 +80,14 @@ namespace thekogans {
                 }
 
                 // Check to see if the given pointer is within the
-                // items list and falls on an Item boundary.
+                // items list.
                 inline bool IsItem (const void *item) const {
-                    return item >= items && item < &items[maxItems] &&
-                        (std::ptrdiff_t)((const std::size_t)item -
-                            (const std::size_t)items) % sizeof (Item) == 0;
+                    return item >= items && item < &items[maxItems];
                 }
-
-                THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (Page)
             };
 
             const std::size_t itemsInPage;
             const std::size_t pageSize;
-            std::size_t itemCount;
             PageList fullPages;
             PageList partialPages;
             SpinLock spinLock;
@@ -102,48 +96,31 @@ namespace thekogans {
             Heap (std::size_t itemsInPage_ =
                     THEKOGANS_UTIL_DEFAULT_REF_COUNED_REFERENCES_HEAP_ITEMS_IN_PAGE) :
                 itemsInPage (itemsInPage_),
-                pageSize (sizeof (Page) + sizeof (Page::Item) * (itemsInPage - 1)),
-                itemCount (0) {}
+                pageSize (sizeof (Page) + sizeof (Page::Item) * (itemsInPage - 1)) {}
 
             void *Alloc () {
                 LockGuard<SpinLock> guard (spinLock);
                 Page *page = GetPage ();
-                if (page != nullptr) {
-                    void *ptr = page->Alloc ();
-                    if (page->IsFull ()) {
-                        partialPages.erase (page);
-                        fullPages.push_back (page);
-                    }
-                    ++itemCount;
-                    return ptr;
+                void *ptr = page->Alloc ();
+                if (page->IsFull ()) {
+                    partialPages.erase (page);
+                    fullPages.push_back (page);
                 }
-                THEKOGANS_UTIL_THROW_EXCEPTION (
-                    THEKOGANS_UTIL_OS_ERROR_CODE_ENOMEM,
-                    "Out of memory allocating a '%s'.",
-                    "RefCounted::References");
+                return ptr;
             }
 
             void Free (void *ptr) {
-                if (ptr != nullptr) {
-                    LockGuard<SpinLock> guard (spinLock);
-                    Page *page = GetPage (ptr);
-                    if (page != nullptr) {
-                        if (page->IsFull ()) {
-                            fullPages.erase (page);
-                            partialPages.push_front (page);
-                        }
-                        page->Free (ptr);
-                        --itemCount;
-                        if (page->IsEmpty ()) {
-                            partialPages.erase (page);
-                            page->~Page ();
-                            delete [] (ui8 *)page;
-                        }
-                    }
-                    else {
-                        THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                            THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
-                    }
+                LockGuard<SpinLock> guard (spinLock);
+                Page *page = GetPage (ptr);
+                if (page->IsFull ()) {
+                    fullPages.erase (page);
+                    partialPages.push_front (page);
+                }
+                page->Free (ptr);
+                if (page->IsEmpty ()) {
+                    partialPages.erase (page);
+                    page->~Page ();
+                    delete [] (ui8 *)page;
                 }
             }
 
@@ -165,8 +142,6 @@ namespace thekogans {
                 }
                 return page;
             }
-
-            THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (Heap)
         };
 
         void *RefCounted::References::operator new (std::size_t) {

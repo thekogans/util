@@ -69,7 +69,7 @@ namespace thekogans {
             /// Control block for the lifetime of RefCounted as well as \see{WeakPtr}.
             struct _LIB_THEKOGANS_UTIL_DECL References {
                 /// \brief
-                /// References has a private heap to speed up (de)allocation.
+                /// References has a private heap to speed up (de)allocations.
                 struct Heap;
 
                 /// \brief

@@ -81,7 +81,7 @@ namespace thekogans {
         ///     Heap<Bar> barHeap ("Bar");
         ///     ...
         ///     Bar *bar = barHeap.Alloc ();
-        ///     assert (bar != 0);
+        ///     assert (bar != nullptr);
         ///     ...
         ///     barHeap.Flush ();
         /// }
@@ -575,7 +575,7 @@ namespace thekogans {
                 /// Allocate an item.
                 /// \return Pointer to the newly allocated item.
                 inline void *Alloc () {
-                    if (freeItem != 0) {
+                    if (freeItem != nullptr) {
                         Item *item = freeItem;
                         // In release, this goes away, and the cost of
                         // allocation is reduced.
@@ -608,7 +608,7 @@ namespace thekogans {
                 /// \param[in] ptr Pointer to item to free.
                 inline void Free (void *ptr) {
                 #if defined (THEKOGANS_UTIL_CONFIG_Debug) || defined (THEKOGANS_UTIL_DEBUG_HEAP)
-                    assert (ptr != 0);
+                    assert (ptr != nullptr);
                     Item *item = (Item *)((std::size_t *)ptr - 1);
                     assert (IsItem (item));
                     item->magic1 = 0;
