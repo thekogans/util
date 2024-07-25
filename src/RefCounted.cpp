@@ -50,7 +50,7 @@ namespace thekogans {
                 Page (std::size_t maxItems_) :
                     maxItems (maxItems_),
                     itemCount (0),
-                    freeItem (0) {}
+                    freeItem (nullptr) {}
 
                 inline bool IsEmpty () const {
                     return itemCount == 0;
