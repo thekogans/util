@@ -24,7 +24,6 @@
 #endif // defined (TOOLCHAIN_OS_Windows)
 #include "thekogans/util/Types.h"
 #if defined (TOOLCHAIN_ARCH_i386) || defined (TOOLCHAIN_ARCH_x86_64)
-    #include "thekogans/util/DefaultAllocator.h"
     #include "thekogans/util/AlignedAllocator.h"
     #include "thekogans/util/Buffer.h"
 #endif // defined (TOOLCHAIN_ARCH_i386) || defined (TOOLCHAIN_ARCH_x86_64)
@@ -71,8 +70,12 @@ namespace thekogans {
                         // A misaligned buffer was passed in. The code
                         // below requires the buffer to be aligned on
                         // a ui32 byte boundary.
-                        AlignedAllocator allocator (DefaultAllocator::Instance ().Get (), UI32_SIZE);
-                        Buffer alignedBuffer (HostEndian, bufferLength, 0, 0, &allocator);
+                        Buffer alignedBuffer (
+                            HostEndian,
+                            bufferLength,
+                            0,
+                            0,
+                            new AlignedAllocator (UI32_SIZE));
                         alignedBuffer.AdvanceWriteOffset (
                             GetHardwareBytes (alignedBuffer.GetWritePtr (), bufferLength));
                         memcpy (
@@ -141,7 +144,7 @@ namespace thekogans {
         std::size_t RandomSource::GetBytes (
                 void *buffer,
                 std::size_t bufferLength) {
-            if (buffer != 0 && bufferLength > 0) {
+            if (buffer != nullptr && bufferLength > 0) {
                 LockGuard<SpinLock> guard (spinLock);
                 // If a hardware random source exists, use it first.
                 std::size_t hardwareCount = GetHardwareBytes (buffer, bufferLength);
@@ -180,13 +183,17 @@ namespace thekogans {
         std::size_t RandomSource::GetSeed (
                 void *buffer,
                 std::size_t bufferLength) {
-            if (buffer != 0 && bufferLength > 0) {
+            if (buffer != nullptr && bufferLength > 0) {
             #if defined (TOOLCHAIN_ARCH_i386) || defined (TOOLCHAIN_ARCH_x86_64)
                 if (CPU::Instance ()->RDSEED ()) {
                     if (((uintptr_t)buffer & (UI32_SIZE - 1)) != 0) {
                         // See above in GetHardwareBytes.
-                        AlignedAllocator allocator (DefaultAllocator::Instance ().Get (), UI32_SIZE);
-                        Buffer alignedBuffer (HostEndian, bufferLength, 0, 0, &allocator);
+                        Buffer alignedBuffer (
+                            HostEndian,
+                            bufferLength,
+                            0,
+                            0,
+                            new AlignedAllocator (UI32_SIZE));
                         alignedBuffer.AdvanceWriteOffset (
                             GetSeed (alignedBuffer.GetWritePtr (), bufferLength));
                         memcpy (

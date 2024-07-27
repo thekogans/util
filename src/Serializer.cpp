@@ -94,7 +94,7 @@ namespace thekogans {
         }
 
         std::size_t Serializer::Size (const char *value) {
-            if (value != 0) {
+            if (value != nullptr) {
                 return strlen (value) + 1;
             }
             else {
@@ -104,7 +104,7 @@ namespace thekogans {
         }
 
         Serializer &Serializer::operator << (const char *value) {
-            if (value != 0) {
+            if (value != nullptr) {
                 std::size_t size = Size (value);
                 if (Write (value, size) != size) {
                     THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
@@ -121,7 +121,7 @@ namespace thekogans {
         }
 
         Serializer &Serializer::operator >> (char *value) {
-            if (value != 0) {
+            if (value != nullptr) {
                 for (;;) {
                     if (Read (value, I8_SIZE) != I8_SIZE) {
                         THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
@@ -175,7 +175,7 @@ namespace thekogans {
         }
 
         std::size_t Serializer::Size (const wchar_t *value) {
-            if (value != 0) {
+            if (value != nullptr) {
                 return wcslen (value) + 1;
             }
             else {
@@ -185,7 +185,7 @@ namespace thekogans {
         }
 
         Serializer &Serializer::operator << (const wchar_t *value) {
-            if (value != 0) {
+            if (value != nullptr) {
                 for (std::size_t i = 0, size = Size (value); i <= size; ++i) {
                     *this << value[i];
                 }
@@ -198,7 +198,7 @@ namespace thekogans {
         }
 
         Serializer &Serializer::operator >> (wchar_t *value) {
-            if (value != 0) {
+            if (value != nullptr) {
                 for (;;) {
                     *this >> *value;
                     if (*value == 0) {

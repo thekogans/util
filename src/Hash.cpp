@@ -56,7 +56,7 @@ namespace thekogans {
                 std::size_t size,
                 std::size_t digestSize,
                 Digest &digest) {
-            if (buffer != 0 && size > 0) {
+            if (buffer != nullptr && size > 0) {
                 Init (digestSize);
                 Update (buffer, size);
                 Final (digest);

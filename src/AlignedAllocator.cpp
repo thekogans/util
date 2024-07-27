@@ -25,11 +25,11 @@ namespace thekogans {
         THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_OVERRIDE (AlignedAllocator)
 
         AlignedAllocator::AlignedAllocator (
-                Allocator::SharedPtr allocator_,
-                std::size_t alignment_) :
-                allocator (allocator_),
-                alignment (alignment_) {
-            if (allocator == nullptr || OneBitCount (alignment) != 1) {
+                std::size_t alignment_,
+                Allocator::SharedPtr allocator_) :
+                alignment (alignment_),
+                allocator (allocator_) {
+            if (OneBitCount (alignment) != 1 || allocator == nullptr) {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
                     THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
             }

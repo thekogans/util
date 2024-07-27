@@ -73,19 +73,19 @@ namespace thekogans {
 
                 std::string DescriptionFromSecOSStatus (OSStatus errorCode) {
                     CFStringRefPtr description (SecCopyErrorMessageString (errorCode, 0));
-                    const char *str = 0;
-                    if (description.get () != 0) {
+                    const char *str = nullptr;
+                    if (description.get () != nullptr) {
                         str = CFStringGetCStringPtr (description.get (), kCFStringEncodingUTF8);
                     }
-                    return str != 0 ? str : "Unknown error.";
+                    return str != nullptr ? str : "Unknown error.";
                 }
 
                 std::string DescriptionFromOSStatus (OSStatus errorCode) {
                     std::string UTF8String;
                     NSError *error = [NSError errorWithDomain: NSOSStatusErrorDomain code: errorCode userInfo: nil];
-                    if (error != 0) {
+                    if (error != nullptr) {
                         NSString *description = [error description];
-                        if (description != 0) {
+                        if (description != nullptr) {
                             UTF8String = [description UTF8String];
                         }
                     }
@@ -95,11 +95,11 @@ namespace thekogans {
 
                 std::string DescriptionFromCFErrorRef (CFErrorRef error) {
                     CFStringRefPtr description (CFErrorCopyDescription (error));
-                    const char *str = 0;
-                    if (description.get () != 0) {
+                    const char *str = nullptr;
+                    if (description.get () != nullptr) {
                         str = CFStringGetCStringPtr (description.get (), kCFStringEncodingUTF8);
                     }
-                    return str != 0 ? str : "Unknown error.";
+                    return str != nullptr ? str : "Unknown error.";
                 }
 
                 std::string DescriptionFromIOReturn (IOReturn errorCode) {
@@ -170,7 +170,7 @@ namespace thekogans {
                 std::string GetHomeDirectory () {
                     std::string UTF8String;
                     NSString *homeDirectory = NSHomeDirectory ();
-                    if (homeDirectory != 0) {
+                    if (homeDirectory != nullptr) {
                         UTF8String = [homeDirectory UTF8String];
                     }
                     return UTF8String;
@@ -227,7 +227,7 @@ namespace thekogans {
                         KQueueTimer *CreateTimer (
                                 KQueueTimerCallback timerCallback,
                                 void *userData) {
-                            if (timerCallback != 0) {
+                            if (timerCallback != nullptr) {
                                 KQueueTimer *timer = new KQueueTimer (++idPool, timerCallback, userData);
                                 // We own the timer. Call DestroyTimer below to release.
                                 timer->AddRef ();
@@ -240,7 +240,7 @@ namespace thekogans {
                         }
 
                         void DestroyTimer (KQueueTimer *timer) {
-                            if (timer != 0) {
+                            if (timer != nullptr) {
                                 keventStruct event;
                                 keventSet (&event, timer->id, EVFILT_TIMER, EV_DELETE, 0, 0, 0);
                                 keventFunc (handle, &event, 1, 0, 0, 0);
@@ -256,7 +256,7 @@ namespace thekogans {
                                 KQueueTimer *timer,
                                 const TimeSpec &timeSpec,
                                 bool periodic) {
-                            if (timer != 0) {
+                            if (timer != nullptr) {
                                 keventStruct event;
                                 keventSet (
                                     &event,
@@ -281,7 +281,7 @@ namespace thekogans {
                         }
 
                         void StopTimer (KQueueTimer *timer) {
-                            if (timer != 0) {
+                            if (timer != nullptr) {
                                 keventStruct event;
                                 keventSet (
                                     &event,
@@ -306,7 +306,7 @@ namespace thekogans {
                         }
 
                         bool IsTimerRunning (KQueueTimer *timer) {
-                            if (timer != 0) {
+                            if (timer != nullptr) {
                                 return timer->running;
                             }
                             else {
@@ -324,7 +324,7 @@ namespace thekogans {
                                 for (int i = 0; i < count; ++i) {
                                     KQueueTimer::SharedPtr timer = KQueueTimerRegistry::Instance ()->Get (
                                         (KQueueTimerRegistry::Token::ValueType)kqueueEvents[i].udata);
-                                    if (timer.Get () != 0) {
+                                    if (timer.Get () != nullptr) {
                                         if ((kqueueEvents[i].flags & EV_ONESHOT) == EV_ONESHOT) {
                                             timer->running = false;
                                         }
@@ -381,7 +381,7 @@ namespace thekogans {
                     CFRunLoopSourceContext context = {0};
                     context.perform = DoNothingRunLoopCallback;
                     CFRunLoopSourceRefPtr runLoopSource (CFRunLoopSourceCreate (0, 0, &context));
-                    if (runLoopSource.get () != 0) {
+                    if (runLoopSource.get () != nullptr) {
                         CFRunLoopAddSource (runLoop, runLoopSource.get (), kCFRunLoopCommonModes);
                         CFRunLoopRun ();
                         CFRunLoopRemoveSource (runLoop, runLoopSource.get (), kCFRunLoopCommonModes);

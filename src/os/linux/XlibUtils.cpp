@@ -71,7 +71,7 @@ namespace thekogans {
                         i32 dispayNumber;
                         if (sscanf (entry.name.c_str (), pattern, &dispayNumber) == 1) {
                             Display *display = XOpenDisplay (FormatString (":%d", dispayNumber).c_str ());
-                            if (display != 0) {
+                            if (display != nullptr) {
                                 displays.push_back (display);
                             }
                             else {
@@ -86,7 +86,7 @@ namespace thekogans {
 
                 XlibDisplayGuard::XlibDisplayGuard (Display *display_) :
                         display (display_) {
-                    if (display != 0) {
+                    if (display != nullptr) {
                         XLockDisplay (display);
                     }
                     else {
@@ -217,7 +217,7 @@ namespace thekogans {
                         else {
                             for (int i = 0; i < count; ++i) {
                                 Display *display = (Display *)events[i].data.ptr;
-                                if (display != 0) {
+                                if (display != nullptr) {
                                     if (events[i].events & EPOLLERR) {
                                         THEKOGANS_UTIL_ERROR_CODE errorCode = 0;
                                         socklen_t length = sizeof (errorCode);
@@ -254,7 +254,7 @@ namespace thekogans {
                                                 // XlibWindow.
                                                 XlibWindow::SharedPtr window =
                                                     XlibWindowMap::Instance ()->Get (event.xclient.window);
-                                                if (window.Get () != 0) {
+                                                if (window.Get () != nullptr) {
                                                     window->OnEvent (event);
                                                 }
                                                 else {

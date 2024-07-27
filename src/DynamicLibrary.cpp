@@ -37,25 +37,25 @@ namespace thekogans {
     namespace util {
 
         void DynamicLibrary::Load (const std::string &path) {
-            if (library != 0) {
+            if (library != nullptr) {
                 Unload ();
             }
         #if defined (TOOLCHAIN_OS_Windows)
             library = LoadLibraryExW (os::windows::UTF8ToUTF16 (path).c_str (), 0, LOAD_WITH_ALTERED_SEARCH_PATH);
-            if (library == 0) {
+            if (library == nullptr) {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (THEKOGANS_UTIL_OS_ERROR_CODE);
             }
         #else // defined (TOOLCHAIN_OS_Windows)
             // FIXME: encapsulate RTLD_LAZY
             library = dlopen (path.c_str (), RTLD_LAZY);
-            if (library == 0) {
+            if (library == nullptr) {
                 THEKOGANS_UTIL_THROW_STRING_EXCEPTION ("%s", dlerror ());
             }
         #endif // defined (TOOLCHAIN_OS_Windows)
         }
 
         void DynamicLibrary::Unload () {
-            if (library == 0) {
+            if (library == nullptr) {
                 THEKOGANS_UTIL_THROW_STRING_EXCEPTION ("%s", "library == 0");
             }
         #if defined (TOOLCHAIN_OS_Windows)
@@ -71,18 +71,18 @@ namespace thekogans {
         }
 
         void *DynamicLibrary::GetProc (const std::string &name) const {
-            if (library == 0) {
+            if (library == nullptr) {
                 THEKOGANS_UTIL_THROW_STRING_EXCEPTION ("%s", "library == 0");
             }
             void *proc;
         #if defined (TOOLCHAIN_OS_Windows)
             proc = (void *)GetProcAddress ((HMODULE)library, name.c_str ());
-            if (proc == 0) {
+            if (proc == nullptr) {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (THEKOGANS_UTIL_OS_ERROR_CODE);
             }
         #else // defined (TOOLCHAIN_OS_Windows)
             proc = dlsym (library, name.c_str ());
-            if (proc == 0) {
+            if (proc == nullptr) {
                 THEKOGANS_UTIL_THROW_STRING_EXCEPTION ("%s", dlerror ());
             }
         #endif // defined (TOOLCHAIN_OS_Windows)
@@ -94,7 +94,7 @@ namespace thekogans {
     #endif // !defined (TOOLCHAIN_OS_Windows)
 
         std::string DynamicLibrary::GetPathName () const {
-            if (library != 0) {
+            if (library != nullptr) {
             #if defined (TOOLCHAIN_OS_Windows)
                 wchar_t pathName[MAX_PATH];
                 if (GetModuleFileNameW ((HMODULE)library, pathName, MAX_PATH) == 0) {

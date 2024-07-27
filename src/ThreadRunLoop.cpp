@@ -26,7 +26,7 @@ namespace thekogans {
             state->done = false;
             while (!state->done) {
                 Job *job = state->DeqJob ();
-                if (job != 0) {
+                if (job != nullptr) {
                     ui64 start = 0;
                     ui64 end = 0;
                     // Short circuit cancelled pending jobs.
@@ -54,7 +54,7 @@ namespace thekogans {
             state->jobsNotEmpty.Signal ();
             if (cancelPendingJobs) {
                 Job *job;
-                while ((job = state->jobExecutionPolicy->DeqJob (*state)) != 0) {
+                while ((job = state->jobExecutionPolicy->DeqJob (*state)) != nullptr) {
                     job->Cancel ();
                     state->runningJobs.push_back (job);
                     state->FinishedJob (job, 0, 0);

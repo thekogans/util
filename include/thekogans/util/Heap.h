@@ -705,7 +705,7 @@ namespace thekogans {
                     minPageSize (Align (sizeof (Page) +
                         sizeof (typename Page::Item) * (minItemsInPage - 1))),
                     itemCount (0),
-                    allocator (allocator_.Get (), minPageSize) {
+                    allocator (minPageSize, allocator_.Get ()) {
                 assert (minItemsInPage > 0);
                 assert (OneBitCount (minPageSize) == 1);
                 HeapRegistry::Instance ()->AddHeap (GetName (), this);

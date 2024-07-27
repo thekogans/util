@@ -18,8 +18,10 @@
 #include <boost/atomic/detail/config.hpp>
 #include <boost/atomic/detail/operations_lockfree.hpp>
 #include <boost/memory_order.hpp>
-#include "thekogans/util/Singleton.h"
+#include "thekogans/util/Types.h"
 #include "thekogans/util/Constants.h"
+#include "thekogans/util/Singleton.h"
+#include "thekogans/util/AlignedAllocator.h"
 #include "thekogans/util/StringUtils.h"
 #include "thekogans/util/Exception.h"
 #include "thekogans/util/IntrusiveList.h"
@@ -40,6 +42,10 @@ namespace thekogans {
             };
             typedef IntrusiveList<Page, PAGE_LIST_ID> PageList;
             struct Page : public PageList::Node {
+                // Page is designed to properly align the shared and
+                // weak counters in RefCounted::References on both 32
+                // and 64 bit architectures. It's even future proof
+                // for 128 bit architectures if they ever become common.
                 const std::size_t maxItems;
                 std::size_t itemCount;
                 union Item {
@@ -88,6 +94,15 @@ namespace thekogans {
 
             const std::size_t itemsInPage;
             const std::size_t pageSize;
+            // RefCounted::References uses boost primitives to atomicaly
+            // increment/decrement the shared and weak counters. On some
+            // platforms these primitives use machine instructions to
+            // achieve good performance. Sometimes those instructins
+            // have various alignment requirements. In order to guarntee
+            // that we satisfy these requirements we allocate pages from
+            // AlignedAllocator. The alignement used is UI32_SIZE which
+            // happens to be the type of the above mentioned counters.
+            AlignedAllocator allocator;
             PageList fullPages;
             PageList partialPages;
             SpinLock spinLock;
@@ -96,7 +111,8 @@ namespace thekogans {
             Heap (std::size_t itemsInPage_ =
                     THEKOGANS_UTIL_DEFAULT_REF_COUNED_REFERENCES_HEAP_ITEMS_IN_PAGE) :
                 itemsInPage (itemsInPage_),
-                pageSize (sizeof (Page) + sizeof (Page::Item) * (itemsInPage - 1)) {}
+                pageSize (sizeof (Page) + sizeof (Page::Item) * (itemsInPage - 1)),
+                allocator (UI32_SIZE) {}
 
             void *Alloc () {
                 LockGuard<SpinLock> guard (spinLock);
@@ -120,18 +136,30 @@ namespace thekogans {
                 if (page->IsEmpty ()) {
                     partialPages.erase (page);
                     page->~Page ();
-                    delete [] (ui8 *)page;
+                    allocator.Free (page, pageSize);
                 }
             }
 
         private:
             inline Page *GetPage () {
                 if (partialPages.empty ()) {
-                    partialPages.push_back (new (new ui8[pageSize]) Page (itemsInPage));
+                    partialPages.push_back (
+                        new (allocator.Alloc (pageSize)) Page (itemsInPage));
                 }
                 return partialPages.front ();
             }
 
+            // The heap has only two publc facing methods, Alloc and Free.
+            // Alloc uses the above GetPage which runs in O(1). Free uses
+            // this GetPage which runs in O(n) where n is the sum of both
+            // partial and full page lists. If you're profiling your code
+            // and you see that it spends a lot of its time here theres a
+            // knob you can tune to substantially improve performance. Rebuild
+            // util and supply your own:
+            // THEKOGANS_UTIL_DEFAULT_REF_COUNED_REFERENCES_HEAP_ITEMS_IN_PAGE.
+            // Its default is 8192 which should be acceptable in most
+            // situations. By increasing it to match the needs of your
+            // application you greatly reduce the time it spends here.
             inline Page *GetPage (void *ptr) const {
                 auto findPage = [ptr] (Page *page) -> bool {
                     return page->IsItem (ptr);

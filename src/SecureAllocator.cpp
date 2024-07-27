@@ -67,7 +67,7 @@ namespace thekogans {
             if (size > 0) {
             #if defined (TOOLCHAIN_OS_Windows)
                 ptr = VirtualAlloc (0, size, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE);
-                if (ptr != 0) {
+                if (ptr != nullptr) {
                     if (!VirtualLock (ptr, size)) {
                         // Grab the error code in case VirtualFree clears it.
                         THEKOGANS_UTIL_ERROR_CODE errorCode = THEKOGANS_UTIL_OS_ERROR_CODE;
@@ -130,7 +130,7 @@ namespace thekogans {
         void SecureAllocator::Free (
                 void *ptr,
                 std::size_t size) {
-            if (ptr != 0) {
+            if (ptr != nullptr) {
                 SecureZeroMemory (ptr, size);
             #if defined (TOOLCHAIN_OS_Windows)
                 if (!VirtualUnlock (ptr, size) || !VirtualFree (ptr, 0, MEM_RELEASE)) {

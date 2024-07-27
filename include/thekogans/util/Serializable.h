@@ -297,7 +297,8 @@ namespace thekogans {
             node.append_attribute (
                 Serializable::TextHeader::ATTR_TYPE).set_value (header.type.c_str ());
             node.append_attribute (
-                Serializable::TextHeader::ATTR_VERSION).set_value (ui32Tostring (header.version).c_str ());
+                Serializable::TextHeader::ATTR_VERSION).set_value (
+                    ui32Tostring (header.version).c_str ());
             return node;
         }
 
@@ -310,7 +311,8 @@ namespace thekogans {
                 const pugi::xml_node &node,
                 Serializable::TextHeader &header) {
             header.type = node.attribute (Serializable::TextHeader::ATTR_TYPE).value ();
-            header.version = stringToui16 (node.attribute (Serializable::TextHeader::ATTR_VERSION).value ());
+            header.version = stringToui16 (node.attribute (
+                    Serializable::TextHeader::ATTR_VERSION).value ());
             return node;
         }
 
@@ -339,8 +341,10 @@ namespace thekogans {
         inline const JSON::Object & _LIB_THEKOGANS_UTIL_API operator >> (
                 const JSON::Object &object,
                 Serializable::TextHeader &header) {
-            header.type = object.Get<JSON::String> (Serializable::TextHeader::ATTR_TYPE)->value;
-            header.version = object.Get<JSON::Number> (Serializable::TextHeader::ATTR_VERSION)->To<ui16> ();
+            header.type = object.Get<JSON::String> (
+                Serializable::TextHeader::ATTR_TYPE)->value;
+            header.version = object.Get<JSON::Number> (
+                Serializable::TextHeader::ATTR_VERSION)->To<ui16> ();
             return object;
         }
 

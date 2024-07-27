@@ -24,6 +24,7 @@
 #include "thekogans/util/Types.h"
 #include "thekogans/util/Constants.h"
 #include "thekogans/util/Allocator.h"
+#include "thekogans/util/DefaultAllocator.h"
 
 namespace thekogans {
     namespace util {
@@ -76,21 +77,21 @@ namespace thekogans {
             };
 
             /// \brief
+            /// Alignment boundary (power of 2).
+            std::size_t alignment;
+            /// \brief
             /// AlignedAllocator is an adaptor. It will use this allocator
             /// for actual allocations and will align the resulting block.
             Allocator::SharedPtr allocator;
-            /// \brief
-            /// Alignment boundary (power of 2).
-            std::size_t alignment;
 
         public:
             /// \brief
             /// ctor.
-            /// \param[in] allocator_ Allocator to use for actual allocation.
             /// \param[in] alignment_ Alignment boundary (power of 2).
+            /// \param[in] allocator_ Allocator to use for actual allocation.
             AlignedAllocator (
-                Allocator::SharedPtr allocator_,
-                std::size_t alignment_);
+                std::size_t alignment_,
+                Allocator::SharedPtr allocator_ = DefaultAllocator::Instance ().Get ());
 
             /// \brief
             /// Use Allocator to allocate a block, and align it to the

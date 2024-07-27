@@ -95,7 +95,7 @@ namespace thekogans {
                         std::size_t length,
                         DWORD flags) {
                     if (length > 0) {
-                        if (multiByte != 0) {
+                        if (multiByte != nullptr) {
                             int utf16Length = MultiByteToWideChar (
                                 codePage,
                                 flags,
@@ -132,7 +132,7 @@ namespace thekogans {
                         std::size_t length,
                         DWORD flags) {
                     if (length > 0) {
-                        if (utf16 != 0) {
+                        if (utf16 != nullptr) {
                             int utf8Length = WideCharToMultiByte (
                                 CP_UTF8,
                                 flags,
@@ -198,7 +198,7 @@ namespace thekogans {
                     owner = owner_;
                     if (hglobal != 0) {
                         ptr = GlobalLock (hglobal);
-                        if (ptr != 0) {
+                        if (ptr != nullptr) {
                             length = GlobalSize (hglobal);
                         }
                         else {
@@ -214,7 +214,7 @@ namespace thekogans {
                         GlobalUnlock (hglobal);
                         hglobal = 0;
                         owner = false;
-                        ptr = 0;
+                        ptr = nullptr;
                         length = 0;
                     }
                     return result;
@@ -228,7 +228,7 @@ namespace thekogans {
                             LPARAM lParam) {
                         Window::SharedPtr window =
                             WindowRegistry::Instance ()->Get (GetWindowLongPtrW (wnd, GWLP_USERDATA));
-                        return window.Get () != 0 ?
+                        return window.Get () != nullptr ?
                             window->OnEvent (message, wParam, lParam) :
                             DefWindowProcW (wnd, message, wParam, lParam);
                     }

@@ -52,7 +52,7 @@ namespace thekogans {
                 const std::string &str,
                 const void *delimiter,
                 std::size_t delimiterLength) {
-            if (delimiter != 0 && delimiterLength > 0) {
+            if (delimiter != nullptr && delimiterLength > 0) {
                 std::string::size_type start = 0;
                 std::string::size_type end =
                     str.find ((const char *)delimiter, start, delimiterLength);
@@ -74,7 +74,7 @@ namespace thekogans {
         std::string JSON::Array::ToString (
                 const void *delimiter,
                 std::size_t delimiterLength) {
-            if (delimiter != 0 && delimiterLength > 0) {
+            if (delimiter != nullptr && delimiterLength > 0) {
                 const std::string _delimiter (
                     (const char *)delimiter,
                     (const char *)delimiter + delimiterLength);
@@ -463,7 +463,7 @@ namespace thekogans {
                 bool expectComma = false;
                 while (1) {
                     JSON::Value::SharedPtr value = ParseValueHelper (tokenizer);
-                    if (value.Get () != 0) {
+                    if (value.Get () != nullptr) {
                         if (!expectComma) {
                             array->Add (value);
                             expectValue = false;
@@ -516,7 +516,7 @@ namespace thekogans {
                             Token colon = tokenizer.GetToken ();
                             if (colon.type == Token::TYPE_COLON) {
                                 JSON::Value::SharedPtr value = ParseValueHelper (tokenizer);
-                                if (value.Get () != 0) {
+                                if (value.Get () != nullptr) {
                                     object->Add (token.value, value);
                                     expectNameValue = false;
                                     expectComma = true;
@@ -740,7 +740,7 @@ namespace thekogans {
             std::string message = object.Get<JSON::String> (ATTR_MESSAGE)->value;
             std::vector<Exception::Location> traceback;
             JSON::Array::SharedPtr locationArray = object.Get<JSON::Array> (TAG_LOCATION);
-            if (locationArray.Get () != 0) {
+            if (locationArray.Get () != nullptr) {
                 for (std::size_t i = 0, count = locationArray->GetValueCount (); i < count; ++i) {
                     JSON::Object::SharedPtr locationObject = locationArray->Get<JSON::Object> (i);
                     Exception::Location location;

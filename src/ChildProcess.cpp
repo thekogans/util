@@ -395,7 +395,7 @@ namespace thekogans {
             if (pid > 0) {
                 // parent process
                 if (hookStdIO != HOOK_NONE) {
-                    assert (stdIO.get () != 0);
+                    assert (stdIO.get () != nullptr);
                     stdIO->SetupParent ();
                 }
             }
@@ -410,7 +410,7 @@ namespace thekogans {
                             THEKOGANS_UTIL_OS_ERROR_CODE);
                     }
                     if (hookStdIO != HOOK_NONE) {
-                        assert (stdIO.get () != 0);
+                        assert (stdIO.get () != nullptr);
                         stdIO->SetupChild ();
                     }
                     if (!envp.empty ()) {
@@ -874,7 +874,7 @@ namespace thekogans {
                     }
                 }
                 ~AdminSID () {
-                    if (adminSID != 0) {
+                    if (adminSID != nullptr) {
                         FreeSid (adminSID);
                     }
                 }
@@ -956,7 +956,7 @@ namespace thekogans {
                 uid_t userID = getuid ();
                 // Get user password info for that user
                 const struct passwd *pw = getpwuid (userID);
-                if (pw != 0) {
+                if (pw != nullptr) {
                     // Look up groups that user belongs to
                     groupCount = NGROUPS + 1;
                     // getgrouplist returns ints and not gid_t and
@@ -978,7 +978,7 @@ namespace thekogans {
                 // Get the group info for each group
                 const struct group *group = getgrgid (groupIDs[i]);
                 // An admin user is member of the group named "admin"
-                if (group != 0 && strcmp (group->gr_name, "admin") == 0) {
+                if (group != nullptr && strcmp (group->gr_name, "admin") == 0) {
                     return true;
                 }
             }

@@ -392,7 +392,7 @@ namespace thekogans {
         _LIB_THEKOGANS_UTIL_DECL std::string _LIB_THEKOGANS_UTIL_API FormatTimeSpec (
                 const TimeSpec &timeSpec,
                 const char *format) {
-            if (format != 0) {
+            if (format != nullptr) {
                 time_t rawTime = (time_t)timeSpec.seconds;
                 struct tm tm;
             #if defined (TOOLCHAIN_OS_Windows)
