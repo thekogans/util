@@ -59,7 +59,7 @@ namespace thekogans {
                 INVALID_TOKEN = NIDX64
             };
 
-            /// \struct RefCountedRegistry::Token RefCounted.h thekogans/util/RefCounted.h
+            /// \struct RefCountedRegistry::Token RefCountedRegistry.h thekogans/util/RefCountedRegistry.h
             ///
             /// \brief
             /// Encapsulates the ui64 token consisting of {index, counter} pair. The
@@ -305,7 +305,7 @@ namespace thekogans {
                             if (count == entries.size ()) {
                                 // Here we implement a simple exponential
                                 // array grow algorithm. Every time we
-                                // need to grow the array, we double it's
+                                // need to grow the array, we double its
                                 // size. This scheme has two advantages:
                                 // 1. Keep the registry small for types with few instances.
                                 // 2. Less grow copy overhead for types with many instances.
@@ -320,7 +320,8 @@ namespace thekogans {
                                 entries.resize (count * 2);
                             }
                         }
-                        entries[index] = Entry (RefCounted::WeakPtr<T> (t), counter, BAD_INDEX);
+                        entries[index] = Entry (
+                            typename RefCounted::WeakPtr<T> (t), counter, BAD_INDEX);
                         ++count;
                     }
                     // Pack index and counter describing this entry in to a token value.
@@ -344,7 +345,8 @@ namespace thekogans {
                     // NOTE: Because of WeakPtr<T> () in Entry below, Get after Remove is
                     // harmless, though it's still semantically wrong. Double Remove on the
                     // other hand would lead to freeList corruption.
-                    entries[index] = Entry (typename RefCounted::WeakPtr<T> (), ++counter, freeList);
+                    entries[index] = Entry (
+                        typename RefCounted::WeakPtr<T> (), ++counter, freeList);
                     freeList = index;
                     --count;
                 }

@@ -48,7 +48,7 @@ namespace thekogans {
         void *AlignedAllocator::AllocHelper (
                 std::size_t &size,
                 bool useMax) {
-            void *ptr = nullptr;
+            ui8 *ptr = nullptr;
             if (size > 0) {
                 // Calculate additional space required to align the block.
                 // NOTE: For very large alignments, we can have very
@@ -56,17 +56,19 @@ namespace thekogans {
                 std::size_t rawSize = alignment + size + sizeof (Footer);
                 void *rawPtr = allocator->Alloc (rawSize);
                 if (rawPtr != nullptr) {
+                    ptr = (ui8 *)rawPtr;
                     // To minimize waste, return to the caller the
                     // maximum amount of space available for use
                     // after alignment restrictions are satisfied.
-                    std::size_t amountMisaligned =
-                        alignment - ((std::size_t)rawPtr & (alignment - 1));
+                    std::size_t amountMisaligned = ((std::size_t)ptr & (alignment - 1));
                     assert (alignment >= amountMisaligned);
                     if (useMax) {
-                        size += alignment - amountMisaligned;
+                        size += amountMisaligned;
                     }
-                    // Align the raw pointer.
-                    ptr = (void *)((std::size_t)rawPtr + amountMisaligned);
+                    if (amountMisaligned > 0) {
+                        // Align the raw pointer.
+                        ptr += alignment - amountMisaligned;
+                    }
                     // Stash it away in the footer to be freed later.
                     new ((void *)((std::size_t)ptr + size)) Footer (rawPtr, rawSize);
                 }

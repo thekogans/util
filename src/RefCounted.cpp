@@ -15,16 +15,15 @@
 // You should have received a copy of the GNU General Public License
 // along with libthekogans_util. If not, see <http://www.gnu.org/licenses/>.
 
+#include <functional>
 #include <boost/atomic/detail/config.hpp>
 #include <boost/atomic/detail/operations_lockfree.hpp>
 #include <boost/memory_order.hpp>
 #include "thekogans/util/Types.h"
 #include "thekogans/util/Constants.h"
 #include "thekogans/util/Singleton.h"
-#include "thekogans/util/AlignedAllocator.h"
 #include "thekogans/util/StringUtils.h"
 #include "thekogans/util/Exception.h"
-#include "thekogans/util/IntrusiveList.h"
 #include "thekogans/util/RefCounted.h"
 
 namespace thekogans {
@@ -35,17 +34,14 @@ namespace thekogans {
     #endif // !defined (THEKOGANS_UTIL_DEFAULT_REF_COUNED_REFERENCES_HEAP_ITEMS_IN_PAGE)
 
         struct RefCounted::References::Heap : Singleton<Heap> {
-        protected:
-            struct Page;
-            enum {
-                PAGE_LIST_ID
-            };
-            typedef IntrusiveList<Page, PAGE_LIST_ID> PageList;
-            struct Page : public PageList::Node {
+        private:
+            struct Page {
                 // Page is designed to properly align the shared and
                 // weak counters in RefCounted::References on both 32
                 // and 64 bit architectures. It's even future proof
                 // for 128 bit architectures if they ever become common.
+                Page *prev;
+                Page *next;
                 const std::size_t maxItems;
                 std::size_t itemCount;
                 union Item {
@@ -54,6 +50,8 @@ namespace thekogans {
                 } *freeItem, items[1];
 
                 Page (std::size_t maxItems_) :
+                    prev (nullptr),
+                    next (nullptr),
                     maxItems (maxItems_),
                     itemCount (0),
                     freeItem (nullptr) {}
@@ -92,6 +90,65 @@ namespace thekogans {
                 }
             };
 
+            struct PageList {
+                Page *head;
+                Page *tail;
+
+                PageList () :
+                    head (nullptr),
+                    tail (nullptr) {}
+
+                inline bool empty () const {
+                    return head == nullptr;
+                }
+                inline Page *front () const {
+                    return head;
+                }
+
+                inline void push_front (Page *page) {
+                    if (head == nullptr) {
+                        page->prev = page->next = nullptr;
+                        head = tail = page;
+                    }
+                    else {
+                        page->prev = nullptr;
+                        page->next = head;
+                        head = head->prev = page;
+                    }
+                }
+
+                inline void erase (Page *page) {
+                    if (page->prev != nullptr) {
+                        page->prev->next = page->next;
+                    }
+                    else {
+                        head = page->next;
+                        if (head != nullptr) {
+                            head->prev = nullptr;
+                        }
+                    }
+                    if (page->next != nullptr) {
+                        page->next->prev = page->prev;
+                    }
+                    else {
+                        tail = page->prev;
+                        if (tail != nullptr) {
+                            tail->next = nullptr;
+                        }
+                    }
+                    page->prev = page->next = nullptr;
+                }
+
+                inline Page *find (const std::function<bool (Page *page)> &callback) const {
+                    for (Page *page = head; page != nullptr; page = page->next) {
+                        if (callback (page)) {
+                            return page;
+                        }
+                    }
+                    return nullptr;
+                }
+            };
+
             const std::size_t itemsInPage;
             const std::size_t pageSize;
             // RefCounted::References uses boost primitives to atomicaly
@@ -99,10 +156,35 @@ namespace thekogans {
             // platforms these primitives use machine instructions to
             // achieve good performance. Sometimes those instructins
             // have various alignment requirements. In order to guarntee
-            // that we satisfy these requirements we allocate pages from
-            // AlignedAllocator. The alignement used is UI32_SIZE which
-            // happens to be the type of the above mentioned counters.
-            AlignedAllocator allocator;
+            // that we satisfy these requirements we allocate pages with
+            // AlignedAllocator (above). The alignement used is UI32_SIZE
+            // which happens to be the type of the above mentioned counters.
+            struct AlignedAllocator {
+            private:
+                std::size_t alignment;
+
+            public:
+                AlignedAllocator (std::size_t alignment_) :
+                    alignment (alignment_) {}
+
+                void *Alloc (std::size_t size) {
+                    std::size_t rawSize = alignment + size + sizeof (ui8 *);
+                    ui8 *rawPtr = new ui8[rawSize];
+                    ui8 *ptr = rawPtr;
+                    std::size_t amountMisaligned = ((std::size_t)ptr & (alignment - 1));
+                    if (amountMisaligned > 0) {
+                        ptr += alignment - amountMisaligned;
+                    }
+                    *(ui8 **)((std::size_t)ptr + size) = rawPtr;
+                    return ptr;
+                }
+
+                void Free (
+                        void *ptr,
+                        std::size_t size) {
+                    delete [] *(ui8 **)((std::size_t)ptr + size);
+                }
+            } allocator;
             PageList fullPages;
             PageList partialPages;
             SpinLock spinLock;
@@ -120,7 +202,7 @@ namespace thekogans {
                 void *ptr = page->Alloc ();
                 if (page->IsFull ()) {
                     partialPages.erase (page);
-                    fullPages.push_back (page);
+                    fullPages.push_front (page);
                 }
                 return ptr;
             }
@@ -143,7 +225,7 @@ namespace thekogans {
         private:
             inline Page *GetPage () {
                 if (partialPages.empty ()) {
-                    partialPages.push_back (
+                    partialPages.push_front (
                         new (allocator.Alloc (pageSize)) Page (itemsInPage));
                 }
                 return partialPages.front ();
@@ -159,7 +241,7 @@ namespace thekogans {
             // THEKOGANS_UTIL_DEFAULT_REF_COUNED_REFERENCES_HEAP_ITEMS_IN_PAGE.
             // Its default is 8192 which should be acceptable in most
             // situations. By increasing it to match the needs of your
-            // application you greatly reduce the time it spends here.
+            // application you can greatly reduce the time it spends here.
             inline Page *GetPage (void *ptr) const {
                 auto findPage = [ptr] (Page *page) -> bool {
                     return page->IsItem (ptr);
@@ -252,7 +334,9 @@ namespace thekogans {
                 // Here we both log the problem and assert to give the
                 // engineer the best chance of figuring out what happened.
                 std::string message =
-                    FormatString ("%s : %u\n", typeid (*this).name (), references->GetSharedCount ());
+                    FormatString ("%s : %u\n",
+                        typeid (*this).name (),
+                        references->GetSharedCount ());
                 Log (
                     SubsystemAll,
                     THEKOGANS_UTIL,
