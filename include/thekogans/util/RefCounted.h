@@ -501,6 +501,8 @@ namespace thekogans {
             virtual void Harakiri () {
                 delete this;
             }
+
+            THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (RefCounted)
         };
 
         /// \def THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS(type)

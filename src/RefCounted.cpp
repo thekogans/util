@@ -56,6 +56,10 @@ namespace thekogans {
                     itemCount (0),
                     freeItem (nullptr) {}
 
+                static std::size_t Size (std::size_t itemsInPage) {
+                    return sizeof (Page) + sizeof (Item) * (itemsInPage - 1);
+                }
+
                 inline bool IsEmpty () const {
                     return itemCount == 0;
                 }
@@ -149,8 +153,7 @@ namespace thekogans {
                 }
             };
 
-            const std::size_t itemsInPage;
-            const std::size_t pageSize;
+            std::size_t itemsInPage;
             // RefCounted::References uses boost primitives to atomicaly
             // increment/decrement the shared and weak counters. On some
             // platforms these primitives use machine instructions to
@@ -193,7 +196,6 @@ namespace thekogans {
             Heap (std::size_t itemsInPage_ =
                     THEKOGANS_UTIL_DEFAULT_REF_COUNED_REFERENCES_HEAP_ITEMS_IN_PAGE) :
                 itemsInPage (itemsInPage_),
-                pageSize (sizeof (Page) + sizeof (Page::Item) * (itemsInPage - 1)),
                 allocator (UI32_SIZE) {}
 
             void *Alloc () {
@@ -218,7 +220,11 @@ namespace thekogans {
                 if (page->IsEmpty ()) {
                     partialPages.erase (page);
                     page->~Page ();
-                    allocator.Free (page, pageSize);
+                    allocator.Free (page, page->maxItems);
+                    // Shrink itemsInPage for the next page
+                    // to keep the page size relative to the
+                    // total number of pages.
+                    itemsInPage >>= 1;
                 }
             }
 
@@ -226,7 +232,15 @@ namespace thekogans {
             inline Page *GetPage () {
                 if (partialPages.empty ()) {
                     partialPages.push_front (
-                        new (allocator.Alloc (pageSize)) Page (itemsInPage));
+                        new (allocator.Alloc (Page::Size (itemsInPage))) Page (itemsInPage));
+                    // Similar to the algorithm in RefCountedRegistry, Heap
+                    // grows the page size with every allocation. Unlike
+                    // RefCountedRegistry, Heap also shrinks the page size
+                    // with every deallocation (above). This is because
+                    // while Alloc is O(1), Free is O(n) (n = partialPages +
+                    // fullPages). By adjusting the page size we keep the
+                    // page count relatively low for GetPage (below).
+                    itemsInPage <<= 1;
                 }
                 return partialPages.front ();
             }

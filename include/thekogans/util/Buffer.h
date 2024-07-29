@@ -29,7 +29,6 @@
 #include "thekogans/util/Types.h"
 #include "thekogans/util/Constants.h"
 #include "thekogans/util/SizeT.h"
-#include "thekogans/util/Heap.h"
 #include "thekogans/util/SpinLock.h"
 #include "thekogans/util/Exception.h"
 #include "thekogans/util/Serializer.h"
