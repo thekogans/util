@@ -33,7 +33,15 @@ namespace thekogans {
         #define THEKOGANS_UTIL_DEFAULT_REF_COUNED_REFERENCES_HEAP_ITEMS_IN_PAGE 8192
     #endif // !defined (THEKOGANS_UTIL_DEFAULT_REF_COUNED_REFERENCES_HEAP_ITEMS_IN_PAGE)
 
-        struct RefCounted::References::Heap : Singleton<Heap> {
+        // Heap implemented from first principles because RefCounted::References
+        // is that far down in the firmament. Practically every other sub-system
+        // uses it. So I wrote this 'tuned' version to provide lightning fast
+        // RefCounted::References allocations making RefCounted a very attractive
+        // solution in many different contexts. Paired with RefCountedRegistry
+        // it's an unbeatable combination for async work that interfaces with the
+        // OS API.
+
+        struct RefCounted::References::Heap : public Singleton<Heap> {
         private:
             struct Page {
                 // Page is designed to properly align the shared and
@@ -140,7 +148,6 @@ namespace thekogans {
                             tail->next = nullptr;
                         }
                     }
-                    page->prev = page->next = nullptr;
                 }
 
                 inline Page *find (const std::function<bool (Page *page)> &callback) const {
@@ -174,7 +181,7 @@ namespace thekogans {
                     std::size_t rawSize = alignment + size + sizeof (ui8 *);
                     ui8 *rawPtr = new ui8[rawSize];
                     ui8 *ptr = rawPtr;
-                    std::size_t amountMisaligned = ((std::size_t)ptr & (alignment - 1));
+                    std::size_t amountMisaligned = (std::size_t)ptr & (alignment - 1);
                     if (amountMisaligned > 0) {
                         ptr += alignment - amountMisaligned;
                     }
@@ -240,6 +247,12 @@ namespace thekogans {
                     // while Alloc is O(1), Free is O(n) (n = partialPages +
                     // fullPages). By adjusting the page size we keep the
                     // page count relatively low for GetPage (below).
+                    // RefCountedRegistry has no such limitation as both
+                    // Add and Remove are O(1).
+                    // ASIDE: It has not escaped me that this is a policy and,
+                    // from design perspective, should be treated as such and be
+                    // parametarized. Perhaps, in the future, if the need arizes
+                    // Heap can be turned in to a template taking a policy type.
                     itemsInPage <<= 1;
                 }
                 return partialPages.front ();
