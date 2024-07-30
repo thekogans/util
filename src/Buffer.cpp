@@ -536,7 +536,8 @@ namespace thekogans {
                 std::size_t bytesWritten = serializer.Write (buffer.data, buffer.length);
                 if (buffer.length != bytesWritten) {
                     THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                        "serializer.Write (buffer.data, " THEKOGANS_UTIL_SIZE_T_FORMAT ") == " THEKOGANS_UTIL_SIZE_T_FORMAT,
+                        "serializer.Write (buffer.data, " THEKOGANS_UTIL_SIZE_T_FORMAT
+                        ") == " THEKOGANS_UTIL_SIZE_T_FORMAT,
                         buffer.length,
                         bytesWritten);
                 }
@@ -562,7 +563,8 @@ namespace thekogans {
                 std::size_t bytesRead = serializer.Read (buffer.data, length);
                 if (length != bytesRead) {
                     THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                        "serializer.Read (buffer.data, " THEKOGANS_UTIL_SIZE_T_FORMAT ") == " THEKOGANS_UTIL_SIZE_T_FORMAT,
+                        "serializer.Read (buffer.data, " THEKOGANS_UTIL_SIZE_T_FORMAT
+                        ") == " THEKOGANS_UTIL_SIZE_T_FORMAT,
                         length,
                         bytesRead);
                 }
@@ -574,24 +576,30 @@ namespace thekogans {
         }
 
         namespace {
-            const char *ATTR_ENDIANESS = "Endianness";
-            const char *ATTR_LENGTH = "Length";
-            const char *ATTR_READ_OFFSET = "ReadOffset";
-            const char *ATTR_WRITE_OFFSET = "WriteOffset";
-            const char *ATTR_ALLOCATOR = "Allocator";
+            const char * const ATTR_ENDIANESS = "Endianness";
+            const char * const ATTR_LENGTH = "Length";
+            const char * const ATTR_READ_OFFSET = "ReadOffset";
+            const char * const ATTR_WRITE_OFFSET = "WriteOffset";
+            const char * const ATTR_ALLOCATOR = "Allocator";
+            const char * const ATTR_CONTENTS = "Contents";
         }
 
         _LIB_THEKOGANS_UTIL_DECL pugi::xml_node & _LIB_THEKOGANS_UTIL_API operator << (
                 pugi::xml_node &node,
                 const Buffer &buffer) {
-            node.append_attribute (ATTR_ENDIANESS).set_value (EndiannessToString (buffer.endianness).c_str ());
-            node.append_attribute (ATTR_LENGTH).set_value (util::ui64Tostring (buffer.length).c_str ());
-            node.append_attribute (ATTR_READ_OFFSET).set_value (util::ui64Tostring (buffer.readOffset).c_str ());
-            node.append_attribute (ATTR_WRITE_OFFSET).set_value (util::ui64Tostring (buffer.writeOffset).c_str ());
+            node.append_attribute (ATTR_ENDIANESS).set_value (
+                EndiannessToString (buffer.endianness).c_str ());
+            node.append_attribute (ATTR_LENGTH).set_value (
+                util::ui64Tostring (buffer.length).c_str ());
+            node.append_attribute (ATTR_READ_OFFSET).set_value (
+                util::ui64Tostring (buffer.readOffset).c_str ());
+            node.append_attribute (ATTR_WRITE_OFFSET).set_value (
+                util::ui64Tostring (buffer.writeOffset).c_str ());
             node.append_attribute (ATTR_ALLOCATOR).set_value (
                 EncodeXMLCharEntities (buffer.allocator->GetSerializedName ()).c_str ());
             if (buffer.length > 0) {
-                node.text ().set (Base64::Encode (buffer.data, buffer.length, 64).Tostring ().c_str ());
+                node.text ().set (
+                    Base64::Encode (buffer.data, buffer.length, 64).Tostring ().c_str ());
             }
             return node;
         }
@@ -599,11 +607,16 @@ namespace thekogans {
         _LIB_THEKOGANS_UTIL_DECL pugi::xml_node & _LIB_THEKOGANS_UTIL_API operator >> (
                 pugi::xml_node &node,
                 Buffer &buffer) {
-            Endianness endianness = StringToEndianness (node.attribute (ATTR_ENDIANESS).value ());
-            SizeT length = util::stringToui64 (node.attribute (ATTR_LENGTH).value ());
-            SizeT readOffset = util::stringToui64 (node.attribute (ATTR_READ_OFFSET).value ());
-            SizeT writeOffset = util::stringToui64 (node.attribute (ATTR_WRITE_OFFSET).value ());
-            Allocator::SharedPtr allocator = Allocator::CreateType (node.attribute (ATTR_ALLOCATOR).value ());
+            Endianness endianness =
+                StringToEndianness (node.attribute (ATTR_ENDIANESS).value ());
+            SizeT length =
+                util::stringToui64 (node.attribute (ATTR_LENGTH).value ());
+            SizeT readOffset =
+                util::stringToui64 (node.attribute (ATTR_READ_OFFSET).value ());
+            SizeT writeOffset =
+                util::stringToui64 (node.attribute (ATTR_WRITE_OFFSET).value ());
+            Allocator::SharedPtr allocator =
+                Allocator::CreateType (node.attribute (ATTR_ALLOCATOR).value ());
             if (allocator == nullptr) {
                 allocator.Reset (DefaultAllocator::Instance ().Get ());
             }
@@ -612,11 +625,13 @@ namespace thekogans {
                 const char *encodedBuffer = node.text ().get ();
                 std::size_t encodedBufferLength = strlen (encodedBuffer);
                 if (encodedBufferLength > 0) {
-                    std::size_t bytesDecoded = Base64::Decode (encodedBuffer, encodedBufferLength, buffer.data);
+                    std::size_t bytesDecoded =
+                        Base64::Decode (encodedBuffer, encodedBufferLength, buffer.data);
                     if (length != bytesDecoded) {
                         THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
                             "Base64::Decode (node.text ().get (), " THEKOGANS_UTIL_SIZE_T_FORMAT
-                            ", buffer.data) == " THEKOGANS_UTIL_SIZE_T_FORMAT ", expecting " THEKOGANS_UTIL_SIZE_T_FORMAT,
+                            ", buffer.data) == " THEKOGANS_UTIL_SIZE_T_FORMAT
+                            ", expecting " THEKOGANS_UTIL_SIZE_T_FORMAT,
                             encodedBufferLength,
                             bytesDecoded,
                             length);
@@ -632,6 +647,72 @@ namespace thekogans {
             buffer.readOffset = readOffset;
             buffer.writeOffset = writeOffset;
             return node;
+        }
+
+        _LIB_THEKOGANS_UTIL_DECL JSON::Object & _LIB_THEKOGANS_UTIL_API operator << (
+                JSON::Object &object,
+                const Buffer &buffer) {
+            object.Add<const std::string &> (
+                ATTR_ENDIANESS, EndiannessToString (buffer.endianness));
+            object.Add (ATTR_LENGTH, (ui64)buffer.length);
+            object.Add (ATTR_READ_OFFSET, (ui64)buffer.readOffset);
+            object.Add (ATTR_WRITE_OFFSET, (ui64)buffer.writeOffset);
+            object.Add<const std::string &> (
+                ATTR_ALLOCATOR,
+                buffer.allocator->GetSerializedName ());
+            if (buffer.length > 0) {
+                object.Add (
+                    ATTR_CONTENTS,
+                    JSON::Array::SharedPtr (
+                        new JSON::Array (
+                            Base64::Encode (buffer.data, buffer.length, 64).Tostring ())));
+            }
+            return object;
+        }
+
+        _LIB_THEKOGANS_UTIL_DECL JSON::Object & _LIB_THEKOGANS_UTIL_API operator >> (
+                JSON::Object &object,
+                Buffer &buffer) {
+            Endianness endianness =
+                StringToEndianness (object.Get<JSON::String> (ATTR_ENDIANESS)->value);
+            SizeT length =
+                object.Get<JSON::Number> (ATTR_LENGTH)->To<ui64> ();
+            SizeT readOffset =
+                object.Get<JSON::Number> (ATTR_READ_OFFSET)->To<ui64> ();
+            SizeT writeOffset =
+                object.Get<JSON::Number> (ATTR_WRITE_OFFSET)->To<ui64> ();
+            Allocator::SharedPtr allocator =
+                Allocator::CreateType (object.Get<JSON::String> (ATTR_ALLOCATOR)->value);
+            if (allocator == nullptr) {
+                allocator.Reset (DefaultAllocator::Instance ().Get ());
+            }
+            buffer.Resize (length, allocator);
+            if (length > 0) {
+                std::string contents =
+                    object.Get<JSON::Array> (ATTR_CONTENTS)->ToString ();
+                if (!contents.empty ()) {
+                    std::size_t bytesDecoded =
+                        Base64::Decode (contents.data (), contents.size (), buffer.data);
+                    if (length != bytesDecoded) {
+                        THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
+                            "Base64::Decode (node.text ().get (), " THEKOGANS_UTIL_SIZE_T_FORMAT
+                            ", buffer.data) == " THEKOGANS_UTIL_SIZE_T_FORMAT
+                            ", expecting " THEKOGANS_UTIL_SIZE_T_FORMAT,
+                            contents.size (),
+                            bytesDecoded,
+                            length);
+                    }
+                }
+                else {
+                    THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
+                        "Empty encoded buffer, expecting length " THEKOGANS_UTIL_SIZE_T_FORMAT,
+                        length);
+                }
+            }
+            buffer.endianness = endianness;
+            buffer.readOffset = readOffset;
+            buffer.writeOffset = writeOffset;
+            return object;
         }
 
     } // namespace util

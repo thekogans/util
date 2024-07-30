@@ -310,10 +310,14 @@ namespace thekogans {
         _LIB_THEKOGANS_UTIL_DECL pugi::xml_node & _LIB_THEKOGANS_UTIL_API operator << (
                 pugi::xml_node &node,
                 const Exception::Location &location) {
-            node.append_attribute (ATTR_FILE).set_value (Encodestring (location.file).c_str ());
-            node.append_attribute (ATTR_FUNCTION).set_value (Encodestring (location.function).c_str ());
-            node.append_attribute (ATTR_LINE).set_value (ui32Tostring (location.line).c_str ());
-            node.append_attribute (ATTR_BUILD_TIME).set_value (Encodestring (location.buildTime).c_str ());
+            node.append_attribute (ATTR_FILE).set_value (
+                Encodestring (location.file).c_str ());
+            node.append_attribute (ATTR_FUNCTION).set_value (
+                Encodestring (location.function).c_str ());
+            node.append_attribute (ATTR_LINE).set_value (
+                ui32Tostring (location.line).c_str ());
+            node.append_attribute (ATTR_BUILD_TIME).set_value (
+                Encodestring (location.buildTime).c_str ());
             return node;
         }
 
@@ -330,8 +334,10 @@ namespace thekogans {
         _LIB_THEKOGANS_UTIL_DECL pugi::xml_node & _LIB_THEKOGANS_UTIL_API operator << (
                 pugi::xml_node &node,
                 const Exception &exception) {
-            node.append_attribute (ATTR_ERROR_CODE).set_value (ErrorCodeTostring (exception.errorCode).c_str ());
-            node.append_attribute (ATTR_MESSAGE).set_value (Encodestring (exception.message).c_str ());
+            node.append_attribute (ATTR_ERROR_CODE).set_value (
+                ErrorCodeTostring (exception.errorCode).c_str ());
+            node.append_attribute (ATTR_MESSAGE).set_value (
+                Encodestring (exception.message).c_str ());
             for (std::size_t i = 0, count = exception.traceback.size (); i < count; ++i) {
                 pugi::xml_node location = node.append_child (TAG_LOCATION);
                 location << exception.traceback[i];
@@ -342,7 +348,8 @@ namespace thekogans {
         _LIB_THEKOGANS_UTIL_DECL pugi::xml_node & _LIB_THEKOGANS_UTIL_API operator >> (
                 pugi::xml_node &node,
                 Exception &exception) {
-            exception.errorCode = stringToTHEKOGANS_UTIL_ERROR_CODE (node.attribute (ATTR_ERROR_CODE).value ());
+            exception.errorCode =
+                stringToTHEKOGANS_UTIL_ERROR_CODE (node.attribute (ATTR_ERROR_CODE).value ());
             exception.message = Decodestring (node.attribute (ATTR_MESSAGE).value ());
             for (pugi::xml_node child = node.first_child ();
                     !child.empty (); child = child.next_sibling ()) {

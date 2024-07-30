@@ -22,7 +22,6 @@
 #include <vector>
 #include "thekogans/util/Config.h"
 #include "thekogans/util/Types.h"
-#include "thekogans/util/Buffer.h"
 #include "thekogans/util/Variant.h"
 #include "thekogans/util/SizeT.h"
 #include "thekogans/util/DynamicCreatable.h"
@@ -1443,46 +1442,6 @@ namespace thekogans {
         _LIB_THEKOGANS_UTIL_DECL JSON::Object & _LIB_THEKOGANS_UTIL_API operator >> (
             JSON::Object &object,
             Exception &exception);
-
-        /// \brief
-        /// Write the given buffer to the given object.
-        /// The object syntax looks like this:
-        /// {
-        ///   Endianness: 'endianness',
-        ///   Length: 'length',
-        ///   ReadOffset: 'read offset',
-        ///   WriteOffset: 'write offset',
-        ///   Allocator: 'allocator name',
-        ///   Contents: {
-        ///   ...
-        ///   }
-        /// }
-        /// \param[in] object Where to write the given buffer.
-        /// \param[in] buffer Buffer to write.
-        /// \return object.
-        _LIB_THEKOGANS_UTIL_DECL JSON::Object & _LIB_THEKOGANS_UTIL_API operator << (
-            JSON::Object &object,
-            const Buffer &buffer);
-
-        /// \brief
-        /// Read an Exception from the given object.
-        /// The object syntax looks like this:
-        /// {
-        ///   Endianness: 'endianness',
-        ///   Length: 'length',
-        ///   ReadOffset: 'read offset',
-        ///   WriteOffset: 'write offset',
-        ///   Allocator: 'allocator name',
-        ///   Contents: {
-        ///   ...
-        ///   }
-        /// }
-        /// \param[in] object Where to read the buffer from.
-        /// \param[out] buffer Buffer to read.
-        /// \return node.
-        _LIB_THEKOGANS_UTIL_DECL JSON::Object & _LIB_THEKOGANS_UTIL_API operator >> (
-            JSON::Object &object,
-            Buffer &buffer);
 
     } // namespace util
 } // namespace thekogans
