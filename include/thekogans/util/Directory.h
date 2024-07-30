@@ -35,7 +35,6 @@
 #include "thekogans/util/Config.h"
 #include "thekogans/util/Types.h"
 #include "thekogans/util/SizeT.h"
-#include "thekogans/util/Heap.h"
 #include "thekogans/util/OwnerMap.h"
 #include "thekogans/util/Singleton.h"
 #include "thekogans/util/SpinLock.h"

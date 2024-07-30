@@ -49,6 +49,7 @@
 #endif // defined (TOOLCHAIN_OS_Windows)
 #include "thekogans/util/Flags.h"
 #include "thekogans/util/Path.h"
+#include "thekogans/util/Heap.h"
 #include "thekogans/util/LockGuard.h"
 #include "thekogans/util/Exception.h"
 #include "thekogans/util/LoggerMgr.h"

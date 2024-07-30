@@ -17,6 +17,7 @@
 
 #include <cassert>
 #include "thekogans/util/Environment.h"
+#include "thekogans/util/Heap.h"
 #include "thekogans/util/Event.h"
 #include "thekogans/util/HRTimer.h"
 #include "thekogans/util/XMLUtils.h"

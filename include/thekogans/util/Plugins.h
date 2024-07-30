@@ -25,7 +25,6 @@
 #include "pugixml/pugixml.hpp"
 #include "thekogans/util/Config.h"
 #include "thekogans/util/RefCounted.h"
-#include "thekogans/util/Heap.h"
 #include "thekogans/util/Version.h"
 #include "thekogans/util/DynamicLibrary.h"
 

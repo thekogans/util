@@ -18,6 +18,7 @@
 #include <cctype>
 #include <limits>
 #include <sstream>
+#include "thekogans/util/Heap.h"
 #include "thekogans/util/Buffer.h"
 #include "thekogans/util/Exception.h"
 #include "thekogans/util/StringUtils.h"

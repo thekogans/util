@@ -26,7 +26,6 @@
 #include "thekogans/util/Variant.h"
 #include "thekogans/util/SizeT.h"
 #include "thekogans/util/DynamicCreatable.h"
-#include "thekogans/util/Heap.h"
 #include "thekogans/util/Exception.h"
 #include "thekogans/util/SpinLock.h"
 

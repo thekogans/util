@@ -15,7 +15,7 @@
 // You should have received a copy of the GNU General Public License
 // along with libthekogans_util. If not, see <http://www.gnu.org/licenses/>.
 
-#include "thekogans/util/Config.h"
+#include "thekogans/util/Heap.h"
 #include "thekogans/util/Timer.h"
 #include "thekogans/util/LockGuard.h"
 #include "thekogans/util/SpinLock.h"
@@ -81,7 +81,8 @@ namespace thekogans {
             WaitForIdle ();
             assert (borrowedJobQueues.empty ());
             availableJobQueues.clear (
-                [] (JobQueueList::Callback::argument_type jobQueue) ->JobQueueList::Callback::result_type {
+                [] (JobQueueList::Callback::argument_type jobQueue) ->
+                        JobQueueList::Callback::result_type {
                     delete jobQueue;
                     return true;
                 }

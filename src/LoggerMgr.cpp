@@ -21,6 +21,7 @@
 #include <ctime>
 #include <cassert>
 #include <iostream>
+#include "thekogans/util/Heap.h"
 #include "thekogans/util/Exception.h"
 #include "thekogans/util/LockGuard.h"
 #include "thekogans/util/TimeSpec.h"

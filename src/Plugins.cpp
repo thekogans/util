@@ -16,6 +16,7 @@
 // along with libthekogans_util. If not, see <http://www.gnu.org/licenses/>.
 
 #include <fstream>
+#include "thekogans/util/Heap.h"
 #include "thekogans/util/Exception.h"
 #include "thekogans/util/Path.h"
 #include "thekogans/util/File.h"

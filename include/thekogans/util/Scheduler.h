@@ -22,7 +22,6 @@
 #include <atomic>
 #include "thekogans/util/Config.h"
 #include "thekogans/util/Types.h"
-#include "thekogans/util/Heap.h"
 #include "thekogans/util/RunLoop.h"
 #include "thekogans/util/RefCounted.h"
 #include "thekogans/util/Singleton.h"

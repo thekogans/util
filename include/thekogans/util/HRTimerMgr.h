@@ -24,7 +24,6 @@
 #include "thekogans/util/Config.h"
 #include "thekogans/util/Types.h"
 #include "thekogans/util/Constants.h"
-#include "thekogans/util/Heap.h"
 #include "thekogans/util/Serializable.h"
 #include "thekogans/util/SpinLock.h"
 #include "thekogans/util/LoggerMgr.h"

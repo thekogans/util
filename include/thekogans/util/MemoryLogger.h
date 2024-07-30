@@ -22,7 +22,6 @@
 #include <string>
 #include "thekogans/util/Config.h"
 #include "thekogans/util/Types.h"
-#include "thekogans/util/Heap.h"
 #include "thekogans/util/Logger.h"
 #include "thekogans/util/LoggerMgr.h"
 #include "thekogans/util/IntrusiveList.h"

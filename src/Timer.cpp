@@ -26,6 +26,7 @@
 #elif defined (TOOLCHAIN_OS_OSX)
     #include "thekogans/util/os/osx/OSXUtils.h"
 #endif // defined (TOOLCHAIN_OS_Windows)
+#include "thekogans/util/Heap.h"
 #include "thekogans/util/LoggerMgr.h"
 #include "thekogans/util/Exception.h"
 #include "thekogans/util/LockGuard.h"
