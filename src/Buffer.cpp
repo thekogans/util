@@ -153,7 +153,7 @@ namespace thekogans {
                 memset (data, 0, length);
             }
             if (rewind) {
-                Clear (readOnly);
+                Rewind (readOnly);
             }
         }
 

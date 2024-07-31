@@ -18,8 +18,9 @@
 #if !defined (__thekogans_util_Environment_h)
 #define __thekogans_util_Environment_h
 
-// thekogans libraries are used in environments that don't call $TOOLCHAIN_COMMON_BIN/setenvironment,
-// and don't use thekogans_make. In that case try to deduce the environment we're running on top of.
+// thekogans libraries are used in environments that don't call
+// $TOOLCHAIN_COMMON_BIN/setenvironment, and don't use thekogans_make.
+// In that case try to deduce the environment we're running on top of.
 
 // NOTE: This file is meant to be periodically updated by adding new
 // defines for whatever os, arch and compiler we might want to support
