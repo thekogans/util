@@ -381,8 +381,12 @@ namespace thekogans {
             /// Convert the buffer to a std::wstring.
             /// \return std::wstring containing the buffers contents.
             inline std::wstring Towstring () const {
-                return GetDataAvailableForReading () > 0 && (GetDataAvailableForReading () % WCHAR_T_SIZE) == 0 ?
-                    std::wstring ((const wchar_t *)GetReadPtr (), GetDataAvailableForReading () / WCHAR_T_SIZE) :
+                return
+                    GetDataAvailableForReading () > 0 &&
+                    (GetDataAvailableForReading () % WCHAR_T_SIZE) == 0 ?
+                    std::wstring (
+                        (const wchar_t *)GetReadPtr (),
+                        GetDataAvailableForReading () / WCHAR_T_SIZE) :
                     std::wstring ();
             }
 

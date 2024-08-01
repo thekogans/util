@@ -48,11 +48,7 @@ namespace thekogans {
         ///
         /// \brief
 
-        struct _LIB_THEKOGANS_UTIL_DECL TimerEvents : public virtual RefCounted {
-            /// \brief
-            /// Declare \see{RefCounted} pointers.
-            THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (TimerEvents)
-
+        struct _LIB_THEKOGANS_UTIL_DECL TimerEvents {
             /// \brief
             /// dtor.
             virtual ~TimerEvents () {}

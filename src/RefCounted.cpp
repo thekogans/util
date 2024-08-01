@@ -65,6 +65,7 @@ namespace thekogans {
                     freeItem (nullptr) {}
 
                 static std::size_t Size (std::size_t itemsInPage) {
+                    // -1 is because of the items[1] above.
                     return sizeof (Page) + sizeof (Item) * (itemsInPage - 1);
                 }
 
@@ -73,6 +74,11 @@ namespace thekogans {
                 }
                 inline bool IsFull () const {
                     return itemCount == maxItems;
+                }
+                // Check to see if the given pointer is within the
+                // items list.
+                inline bool IsItem (const void *item) const {
+                    return item >= items && item < &items[maxItems];
                 }
 
                 inline void *Alloc () {
@@ -93,12 +99,6 @@ namespace thekogans {
                     item->next = freeItem;
                     freeItem = item;
                     --itemCount;
-                }
-
-                // Check to see if the given pointer is within the
-                // items list.
-                inline bool IsItem (const void *item) const {
-                    return item >= items && item < &items[maxItems];
                 }
             };
 
