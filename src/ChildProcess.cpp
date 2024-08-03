@@ -626,17 +626,18 @@ namespace thekogans {
             return new ExecJob (*this, status);
         }
 
-        Buffer ChildProcess::CollectOutput (
+        Buffer::SharedPtr ChildProcess::CollectOutput (
                 THEKOGANS_UTIL_HANDLE handle,
                 std::size_t chunkSize,
                 bool reap,
                 const TimeSpec &timeSpec) {
-            Buffer buffer (HostEndian, chunkSize);
+            Buffer::SharedPtr buffer (new Buffer (HostEndian, chunkSize));
             TenantFile stdOut (HostEndian, handle, std::string ());
-            while (buffer.AdvanceWriteOffset (
-                    stdOut.Read (buffer.GetWritePtr (), buffer.GetDataAvailableForWriting ())) > 0) {
-                if (buffer.GetDataAvailableForWriting () == 0) {
-                    buffer.Resize (buffer.GetDataAvailableForReading () + chunkSize);
+            while (buffer->AdvanceWriteOffset (
+                    stdOut.Read (buffer->GetWritePtr (),
+                    buffer->GetDataAvailableForWriting ())) > 0) {
+                if (buffer->GetDataAvailableForWriting () == 0) {
+                    buffer->Resize (buffer->GetDataAvailableForReading () + chunkSize);
                 }
             }
             if (reap) {

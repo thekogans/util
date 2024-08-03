@@ -714,12 +714,11 @@ namespace thekogans {
                                 payload.GetWritePtr (),\
                                 payload.GetDataAvailableForWriting ()));\
                         if (payload.IsFull ()) {\
-                            thekogans::util::Buffer temp (std::move (payload));\
-                            Reset ();\
                             value = thekogans::util::dynamic_refcounted_sharedptr_cast<_T> (\
                                 thekogans::util::Serializable::CreateType (header.type));\
                             if (value != nullptr) {\
-                                value->Read (header, temp);\
+                                value->Read (header, payload);\
+                                Reset ();\
                                 return true;\
                             }\
                             else {\

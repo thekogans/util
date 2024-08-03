@@ -26,6 +26,7 @@
 #if defined (TOOLCHAIN_OS_Windows)
     #include "thekogans/util/os/windows/WindowsUtils.h"
 #endif // defined (TOOLCHAIN_OS_Windows)
+#include "thekogans/util/Heap.h"
 #include "thekogans/util/XMLUtils.h"
 #include "thekogans/util/Base64.h"
 #include "thekogans/util/Buffer.h"
@@ -33,17 +34,12 @@
 namespace thekogans {
     namespace util {
 
-        Buffer::Buffer (const Buffer &other) :
-                Serializer (other.endianness),
-                data ((ui8 *)other.allocator->Alloc (other.length)),
-                length (other.length),
-                readOffset (other.readOffset),
-                writeOffset (other.writeOffset),
-                allocator (other.allocator) {
-            if (length > 0) {
-                memcpy (data, other.data, length);
-            }
-        }
+        THEKOGANS_UTIL_IMPLEMENT_HEAP_FUNCTIONS (Buffer)
+        THEKOGANS_UTIL_IMPLEMENT_HEAP_FUNCTIONS_EX (
+            SecureBuffer,
+            SpinLock,
+            DEFAULT_HEAP_MIN_ITEMS_IN_PAGE,
+            SecureAllocator::Instance ().Get ())
 
         Buffer::Buffer (
                 Endianness endianness,
@@ -61,30 +57,6 @@ namespace thekogans {
             if (length > 0) {
                 memcpy (data, begin, length);
             }
-        }
-
-        Buffer &Buffer::operator = (const Buffer &other) {
-            if (this != &other) {
-                Resize (0);
-                endianness = other.endianness;
-                data = (ui8 *)other.allocator->Alloc (other.length);
-                length = other.length;
-                readOffset = other.readOffset;
-                writeOffset = other.writeOffset;
-                allocator = other.allocator;
-                if (length > 0) {
-                    memcpy (data, other.data, length);
-                }
-            }
-            return *this;
-        }
-
-        Buffer &Buffer::operator = (Buffer &&other) {
-            if (this != &other) {
-                Buffer temp (std::move (other));
-                swap (temp);
-            }
-            return *this;
         }
 
         void Buffer::swap (Buffer &other) {
@@ -187,15 +159,16 @@ namespace thekogans {
             }
         }
 
-        Buffer Buffer::Clone (Allocator::SharedPtr allocator) const {
+        Buffer::SharedPtr Buffer::Clone (Allocator::SharedPtr allocator) const {
             if (allocator != nullptr) {
-                return Buffer (
-                    endianness,
-                    data,
-                    data + length,
-                    readOffset,
-                    writeOffset,
-                    allocator);
+                return SharedPtr (
+                    new Buffer (
+                        endianness,
+                        data,
+                        data + length,
+                        readOffset,
+                        writeOffset,
+                        allocator));
             }
             else {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
@@ -203,7 +176,7 @@ namespace thekogans {
             }
         }
 
-        Buffer Buffer::Subset (
+        Buffer::SharedPtr Buffer::Subset (
                 std::size_t offset,
                 std::size_t count,
                 Allocator::SharedPtr allocator) const {
@@ -211,13 +184,14 @@ namespace thekogans {
                 if (count == SIZE_T_MAX || offset + count > length) {
                     count = length - offset;
                 }
-                return Buffer (
-                    endianness,
-                    data + offset,
-                    data + offset + count,
-                    0,
-                    SIZE_T_MAX,
-                    allocator);
+                return SharedPtr (
+                    new Buffer (
+                        endianness,
+                        data + offset,
+                        data + offset + count,
+                        0,
+                        SIZE_T_MAX,
+                        allocator));
             }
             else {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
@@ -363,20 +337,21 @@ namespace thekogans {
             }
         }
 
-        Buffer Buffer::Deflate (Allocator::SharedPtr allocator) const {
+        Buffer::SharedPtr Buffer::Deflate (Allocator::SharedPtr allocator) const {
             if (allocator != nullptr) {
                 if (GetDataAvailableForReading () != 0) {
                     OutBuffer outBuffer (allocator);
                     DeflateHelper (GetReadPtr (), GetDataAvailableForReading (), outBuffer);
-                    return Buffer (
-                        endianness,
-                        outBuffer.data,
-                        outBuffer.length,
-                        0,
-                        outBuffer.length,
-                        allocator);
+                    return SharedPtr (
+                        new Buffer (
+                            endianness,
+                            outBuffer.data,
+                            outBuffer.length,
+                            0,
+                            outBuffer.length,
+                            allocator));
                 }
-                return Buffer ();
+                return SharedPtr ();
             }
             else {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
@@ -384,20 +359,21 @@ namespace thekogans {
             }
         }
 
-        Buffer Buffer::Inflate (Allocator::SharedPtr allocator) const {
+        Buffer::SharedPtr Buffer::Inflate (Allocator::SharedPtr allocator) const {
             if (allocator != nullptr) {
                 if (GetDataAvailableForReading () != 0) {
                     OutBuffer outBuffer (allocator);
                     InflateHelper (GetReadPtr (), GetDataAvailableForReading (), outBuffer);
-                    return Buffer (
-                        endianness,
-                        outBuffer.data,
-                        outBuffer.length,
-                        0,
-                        outBuffer.length,
-                        allocator);
+                    return SharedPtr (
+                        new Buffer (
+                            endianness,
+                            outBuffer.data,
+                            outBuffer.length,
+                            0,
+                            outBuffer.length,
+                            allocator));
                 }
-                return Buffer ();
+                return SharedPtr ();
             }
             else {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
@@ -406,7 +382,7 @@ namespace thekogans {
         }
     #endif // defined (THEKOGANS_UTIL_HAVE_ZLIB)
 
-        Buffer Buffer::FromHexBuffer (
+        Buffer::SharedPtr Buffer::FromHexBuffer (
                 Endianness endianness,
                 const char *hexBuffer,
                 std::size_t hexBufferLength,
@@ -414,8 +390,9 @@ namespace thekogans {
             if (hexBuffer != nullptr && hexBufferLength > 0 &&
                     IS_EVEN (hexBufferLength) && allocator != nullptr) {
                 void *data = allocator->Alloc (hexBufferLength / 2);
-                std::size_t length =  HexDecodeBuffer (hexBuffer, hexBufferLength, data);
-                return Buffer (endianness, data, length, 0, length, allocator);
+                std::size_t length = HexDecodeBuffer (hexBuffer, hexBufferLength, data);
+                return SharedPtr (
+                    new Buffer (endianness, data, length, 0, length, allocator));
             }
             else {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
@@ -447,46 +424,23 @@ namespace thekogans {
             Clear ();
         }
 
-        SecureBuffer &SecureBuffer::operator = (const SecureBuffer &other) {
-            if (this != &other) {
-                Resize (0);
-                endianness = other.endianness;
-                data = (ui8 *)other.allocator->Alloc (other.length);
-                length = other.length;
-                readOffset = other.readOffset;
-                writeOffset = other.writeOffset;
-                allocator = other.allocator;
-                if (length > 0) {
-                    memcpy (data, other.data, length);
-                }
-            }
-            return *this;
-        }
-
-        SecureBuffer &SecureBuffer::operator = (SecureBuffer &&other) {
-            if (this != &other) {
-                SecureBuffer temp (std::move (other));
-                swap (temp);
-            }
-            return *this;
-        }
-
         void SecureBuffer::Resize (
                 std::size_t length,
                 Allocator::SharedPtr /*allocator*/) {
             Buffer::Resize (length, SecureAllocator::Instance ().Get ());
         }
 
-        Buffer SecureBuffer::Clone (Allocator::SharedPtr /*allocator*/) const {
-            return SecureBuffer (
-                endianness,
-                data,
-                data + length,
-                readOffset,
-                writeOffset);
+        Buffer::SharedPtr SecureBuffer::Clone (Allocator::SharedPtr /*allocator*/) const {
+            return SharedPtr (
+                new SecureBuffer (
+                    endianness,
+                    data,
+                    data + length,
+                    readOffset,
+                    writeOffset));
         }
 
-        Buffer SecureBuffer::Subset (
+        Buffer::SharedPtr SecureBuffer::Subset (
                 std::size_t offset,
                 std::size_t count,
                 Allocator::SharedPtr /*allocator*/) const {
@@ -494,32 +448,34 @@ namespace thekogans {
         }
 
     #if defined (THEKOGANS_UTIL_HAVE_ZLIB)
-        Buffer SecureBuffer::Deflate (Allocator::SharedPtr /*allocator*/) const {
+        Buffer::SharedPtr SecureBuffer::Deflate (Allocator::SharedPtr /*allocator*/) const {
             if (GetDataAvailableForReading () != 0) {
                 OutBuffer outBuffer (SecureAllocator::Instance ().Get ());
                 DeflateHelper (GetReadPtr (), GetDataAvailableForReading (), outBuffer);
-                return SecureBuffer (
-                    endianness,
-                    outBuffer.data,
-                    outBuffer.length,
-                    0,
-                    outBuffer.length);
+                return SharedPtr (
+                    new SecureBuffer (
+                        endianness,
+                        outBuffer.data,
+                        outBuffer.length,
+                        0,
+                        outBuffer.length));
             }
-            return SecureBuffer ();
+            return SharedPtr ();
         }
 
-        Buffer SecureBuffer::Inflate (Allocator::SharedPtr /*allocator*/) const {
+        Buffer::SharedPtr SecureBuffer::Inflate (Allocator::SharedPtr /*allocator*/) const {
             if (GetDataAvailableForReading () != 0) {
                 OutBuffer outBuffer (SecureAllocator::Instance ().Get ());
                 InflateHelper (GetReadPtr (), GetDataAvailableForReading (), outBuffer);
-                return SecureBuffer (
-                    endianness,
-                    outBuffer.data,
-                    outBuffer.length,
-                    0,
-                    outBuffer.length);
+                return SharedPtr (
+                    new SecureBuffer (
+                        endianness,
+                        outBuffer.data,
+                        outBuffer.length,
+                        0,
+                        outBuffer.length));
             }
-            return SecureBuffer ();
+            return SharedPtr ();
         }
     #endif // defined (THEKOGANS_UTIL_HAVE_ZLIB)
 
@@ -599,7 +555,7 @@ namespace thekogans {
                 EncodeXMLCharEntities (buffer.allocator->GetSerializedName ()).c_str ());
             if (buffer.length > 0) {
                 node.text ().set (
-                    Base64::Encode (buffer.data, buffer.length, 64).Tostring ().c_str ());
+                    Base64::Encode (buffer.data, buffer.length, 64)->Tostring ().c_str ());
             }
             return node;
         }
@@ -665,7 +621,7 @@ namespace thekogans {
                     ATTR_CONTENTS,
                     JSON::Array::SharedPtr (
                         new JSON::Array (
-                            Base64::Encode (buffer.data, buffer.length, 64).Tostring ())));
+                            Base64::Encode (buffer.data, buffer.length, 64)->Tostring ())));
             }
             return object;
         }

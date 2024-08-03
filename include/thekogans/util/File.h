@@ -40,7 +40,6 @@
 #include "thekogans/util/Types.h"
 #include "thekogans/util/TimeSpec.h"
 #include "thekogans/util/Serializer.h"
-#include "thekogans/util/Buffer.h"
 #include "thekogans/util/GUID.h"
 #include "thekogans/util/Exception.h"
 

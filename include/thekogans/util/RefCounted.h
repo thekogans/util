@@ -217,6 +217,21 @@ namespace thekogans {
                     Reset (ptr.object);
                 }
                 /// \brief
+                /// template copy ctor.
+                /// \param[in] ptr Pointer to copy.
+                template<typename _U>
+                SharedPtr (const SharedPtr<_U> &ptr) :
+                        object (nullptr) {
+                    Reset (dynamic_cast<T *> (ptr.object));
+                }
+                /// \brief
+                /// move ctor.
+                /// \param[in] ptr Pointer to copy.
+                SharedPtr (SharedPtr<T> &&ptr) :
+                        object (nullptr) {
+                    Swap (ptr);
+                }
+                /// \brief
                 /// dtor.
                 ~SharedPtr () {
                     Reset ();
@@ -353,7 +368,7 @@ namespace thekogans {
                 /// \brief
                 /// ctor.
                 /// \paramin] object_ Raw pointer to RefCounted object.
-                explicit WeakPtr (T *object_ = nullptr) :
+                WeakPtr (T *object_ = nullptr) :
                         object (nullptr),
                         references (nullptr) {
                     Reset (object_);
@@ -361,13 +376,22 @@ namespace thekogans {
                 /// \brief
                 /// ctor.
                 /// \param[in] ptr SharedPtr<T> to reference counted object.
-                explicit WeakPtr (const SharedPtr<T> &ptr) :
+                WeakPtr (const SharedPtr<T> &ptr) :
                         object (nullptr),
                         references (nullptr) {
                     Reset (ptr.Get ());
                 }
                 /// \brief
-                /// ctor.
+                /// template ctor.
+                /// \param[in] ptr SharedPtr<_U> to reference counted object.
+                template<typename _U>
+                WeakPtr (const SharedPtr<_U> &ptr) :
+                        object (nullptr),
+                        references (nullptr) {
+                    Reset (dynamic_cast<T *> (ptr.Get ()));
+                }
+                /// \brief
+                /// copy ctor.
                 /// \param[in] ptr WeakPtr<T> to reference counted object.
                 WeakPtr (const WeakPtr<T> &ptr) :
                         object (ptr.object),
@@ -375,6 +399,25 @@ namespace thekogans {
                     if (references != nullptr) {
                         references->AddWeakRef ();
                     }
+                }
+                /// \brief
+                /// template copy ctor.
+                /// \param[in] ptr WeakPtr<_U> to reference counted object.
+                template<typename _U>
+                WeakPtr (const WeakPtr<_U> &ptr) :
+                        object (dynamic_cast<T *> (ptr.object)),
+                        references (ptr.references) {
+                    if (references != nullptr) {
+                        references->AddWeakRef ();
+                    }
+                }
+                /// \brief
+                /// move ctor.
+                /// \param[in] ptr WeakPtr<T> to reference counted object.
+                WeakPtr (WeakPtr<T> &&ptr) :
+                        object (0),
+                        references (0) {
+                    Swap (ptr);
                 }
                 /// \brief
                 /// dtor.
@@ -416,6 +459,21 @@ namespace thekogans {
                         if (references != nullptr) {
                             references->AddWeakRef ();
                         }
+                    }
+                    return *this;
+                }
+                /// \brief
+                /// Assignment operator.
+                /// \param[in] ptr WeakPtr<T> to reference counted object.
+                /// \return *this.
+                WeakPtr<T> &operator = (WeakPtr<T> &&ptr) {
+                    if (object != ptr.Get ()) {
+                        if (references != nullptr) {
+                            references->ReleaseWeakRef ();
+                        }
+                        object = 0;
+                        references = 0;
+                        Swap (ptr);
                     }
                     return *this;
                 }

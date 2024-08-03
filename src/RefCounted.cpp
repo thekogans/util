@@ -40,6 +40,9 @@ namespace thekogans {
         // solution in many different contexts. Paired with RefCountedRegistry
         // it's an unbeatable combination for async work that interfaces with the
         // OS API.
+        // NOTE: Unlike other, pablic facing code, this heap implementation is
+        // tuned for one purpose, performance. For this reason the safe and defensive
+        // coding standards I use everywhere else do not apply here.
 
         struct RefCounted::References::Heap : public Singleton<Heap> {
         private:
@@ -64,6 +67,7 @@ namespace thekogans {
                     itemCount (0),
                     freeItem (nullptr) {}
 
+                // Raw size of page block of memory to allocate.
                 static std::size_t Size (std::size_t itemsInPage) {
                     // -1 is because of the items[1] above.
                     return sizeof (Page) + sizeof (Item) * (itemsInPage - 1);
@@ -77,8 +81,8 @@ namespace thekogans {
                 }
                 // Check to see if the given pointer is within the
                 // items list.
-                inline bool IsItem (const void *item) const {
-                    return item >= items && item < &items[maxItems];
+                inline bool IsItem (const void *ptr) const {
+                    return ptr >= items && ptr < &items[maxItems];
                 }
 
                 inline void *Alloc () {
@@ -104,11 +108,9 @@ namespace thekogans {
 
             struct PageList {
                 Page *head;
-                Page *tail;
 
                 PageList () :
-                    head (nullptr),
-                    tail (nullptr) {}
+                    head (nullptr) {}
 
                 inline bool empty () const {
                     return head == nullptr;
@@ -120,7 +122,7 @@ namespace thekogans {
                 inline void push_front (Page *page) {
                     if (head == nullptr) {
                         page->prev = page->next = nullptr;
-                        head = tail = page;
+                        head = page;
                     }
                     else {
                         page->prev = nullptr;
@@ -142,17 +144,11 @@ namespace thekogans {
                     if (page->next != nullptr) {
                         page->next->prev = page->prev;
                     }
-                    else {
-                        tail = page->prev;
-                        if (tail != nullptr) {
-                            tail->next = nullptr;
-                        }
-                    }
                 }
 
-                inline Page *find (const std::function<bool (Page *page)> &callback) const {
+                inline Page *find (const void *ptr) const {
                     for (Page *page = head; page != nullptr; page = page->next) {
-                        if (callback (page)) {
+                        if (page->IsItem (ptr)) {
                             return page;
                         }
                     }
@@ -226,6 +222,8 @@ namespace thekogans {
                 page->Free (ptr);
                 if (page->IsEmpty ()) {
                     partialPages.erase (page);
+                    // If I did my job right, this is a noop and
+                    // any good compiler should optimize it away.
                     page->~Page ();
                     allocator.Free (page, page->maxItems);
                     // Shrink itemsInPage for the next page
@@ -250,8 +248,8 @@ namespace thekogans {
                     // RefCountedRegistry has no such limitation as both
                     // Add and Remove are O(1).
                     // ASIDE: It has not escaped me that this is a policy and,
-                    // from design perspective, should be treated as such and be
-                    // parametarized. Perhaps, in the future, if the need arizes
+                    // from the design perspective, should be treated as such and
+                    // be parametarized. Perhaps, in the future, if the need arizes
                     // Heap can be turned in to a template taking a policy type.
                     itemsInPage <<= 1;
                 }
@@ -269,13 +267,10 @@ namespace thekogans {
             // Its default is 8192 which should be acceptable in most
             // situations. By increasing it to match the needs of your
             // application you can greatly reduce the time it spends here.
-            inline Page *GetPage (void *ptr) const {
-                auto findPage = [ptr] (Page *page) -> bool {
-                    return page->IsItem (ptr);
-                };
-                Page *page = partialPages.find (findPage);
+            inline Page *GetPage (const void *ptr) const {
+                Page *page = partialPages.find (ptr);
                 if (page == nullptr) {
-                    page = fullPages.find (findPage);
+                    page = fullPages.find (ptr);
                 }
                 return page;
             }

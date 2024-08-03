@@ -29,6 +29,7 @@
 #include "thekogans/util/Types.h"
 #include "thekogans/util/Constants.h"
 #include "thekogans/util/SizeT.h"
+#include "thekogans/util/RefCounted.h"
 #include "thekogans/util/SpinLock.h"
 #include "thekogans/util/Exception.h"
 #include "thekogans/util/Serializer.h"
@@ -61,8 +62,36 @@ namespace thekogans {
         ///
         /// |--- consumed ---+--- available for reading ---+--- available for writing ---|
         /// 0            readOffset                   writeOffset                     length
+        ///
+        /// NOTE: Buffer is not thread safe. The need for a thread
+        /// safe buffer is rare and, for performance reasons, it's
+        /// better to leave the buffer lock free. That said, even
+        /// if buffer access was thread safe, because of it's design
+        /// (read and write offsets), maintaining proper read/write
+        /// synchronization between threads would require careful
+        /// planning and execution. To that end, if you're using
+        /// a buffer in a multithreaded (async) environment (to pass
+        /// as argument to a \see{Producer} event), you should treat
+        /// any buffer passed to you as const and use TenantReadBuffer
+        /// as your own local set of buffer variables. This way any
+        /// other event consumer that will receive the same buffer
+        /// pointer will get correct read/write offsets as the caller
+        /// intended. If you can't process the buffer during the
+        /// callback and you don't know if there are other recipients
+        /// it's best to make a copy.
 
-        struct _LIB_THEKOGANS_UTIL_DECL Buffer : public Serializer {
+        struct _LIB_THEKOGANS_UTIL_DECL Buffer :
+                public virtual RefCounted,
+                public Serializer {
+            /// \brief
+            /// Declare \see{RefCounted} pointers.
+            THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (Buffer)
+
+            /// \brief
+            /// Buffer has a private heap to help with memory
+            /// management, performance, and global heap fragmentation.
+            THEKOGANS_UTIL_DECLARE_STD_ALLOCATOR_FUNCTIONS
+
             /// \brief
             /// Buffer data.
             ui8 *data;
@@ -79,22 +108,6 @@ namespace thekogans {
             /// Allocator used for memory management.
             Allocator::SharedPtr allocator;
 
-            /// \brief
-            /// Copy ctor.
-            /// \param[in] other Buffer to copy.
-            Buffer (const Buffer &other);
-            /// \brief
-            /// Move ctor.
-            /// \param[in,out] other Buffer to move.
-            Buffer (Buffer &&other) :
-                    Serializer (HostEndian),
-                    data (nullptr),
-                    length (0),
-                    readOffset (0),
-                    writeOffset (0),
-                    allocator (DefaultAllocator::Instance ().Get ()) {
-                swap (other);
-            }
             /// \brief
             /// ctor for wrapping a raw data pointer.
             /// \param[in] endianness How multi-byte values are stored.
@@ -157,17 +170,6 @@ namespace thekogans {
             }
 
             /// \brief
-            /// Copy assignment operator.
-            /// \param[in] other Buffer to copy.
-            /// \return *this.
-            Buffer &operator = (const Buffer &other);
-            /// \brief
-            /// Move assignment operator.
-            /// \param[in,out] other Buffer to move.
-            /// \return *this.
-            Buffer &operator = (Buffer &&other);
-
-            /// \brief
             /// std::swap for Buffer.
             /// \param[in,out] other Buffer to swap.
             void swap (Buffer &other);
@@ -207,6 +209,17 @@ namespace thekogans {
                 bool readOnly = false);
 
             /// \brief
+            /// Reset the readOffset and the writeOffset to prepare the
+            /// buffer for reuse.
+            /// \param[in] readOnly true == Reset for reading only.
+            inline void Rewind (bool readOnly = false) {
+                readOffset = 0;
+                if (!readOnly) {
+                    writeOffset = 0;
+                }
+            }
+
+            /// \brief
             /// Resize the buffer. Adjust readOffset and writeOffset to stay within [0, length).
             /// \param[in] length_ New buffer length.
             /// \param[in] allocator_ Allocator to use to allocate new data.
@@ -218,7 +231,7 @@ namespace thekogans {
             /// Clone the buffer.
             /// \param[in] allocator Allocator for the returned buffer.
             /// \return A clone of this buffer.
-            virtual Buffer Clone (
+            virtual SharedPtr Clone (
                 Allocator::SharedPtr allocator = DefaultAllocator::Instance ().Get ()) const;
 
             /// \brief
@@ -230,7 +243,7 @@ namespace thekogans {
             /// NOTE: Unlike other methods, this one does NOT take
             /// readOffset and writeOffset in to account. A straight
             /// subset of [data, data + length) is returned.
-            virtual Buffer Subset (
+            virtual SharedPtr Subset (
                 std::size_t offset,
                 std::size_t count = SIZE_T_MAX,
                 Allocator::SharedPtr allocator = DefaultAllocator::Instance ().Get ()) const;
@@ -322,29 +335,18 @@ namespace thekogans {
             /// \return Number of bytes actually advanced.
             std::size_t AdvanceWriteOffset (std::size_t advance);
 
-            /// \brief
-            /// Reset the readOffset and the writeOffset to prepare the
-            /// buffer for reuse.
-            /// \param[in] readOnly true == Reset for reading only.
-            inline void Rewind (bool readOnly = false) {
-                readOffset = 0;
-                if (!readOnly) {
-                    writeOffset = 0;
-                }
-            }
-
         #if defined (THEKOGANS_UTIL_HAVE_ZLIB)
             /// \brief
             /// Use zlib to compress the buffer.
             /// \param[in] allocator Allocator for the returned buffer.
             /// \return A buffer containing deflated data.
-            virtual Buffer Deflate (
+            virtual SharedPtr Deflate (
                 Allocator::SharedPtr allocator = DefaultAllocator::Instance ().Get ()) const;
             /// \brief
             /// Use zlib to decompress the buffer.
             /// \param[in] allocator Allocator for the returned buffer.
             /// \return A buffer containing inflated data.
-            virtual Buffer Inflate (
+            virtual SharedPtr Inflate (
                 Allocator::SharedPtr allocator = DefaultAllocator::Instance ().Get ()) const;
         #endif // defined (THEKOGANS_UTIL_HAVE_ZLIB)
 
@@ -355,7 +357,7 @@ namespace thekogans {
             /// \param[in] hexBufferLength hexBuffer length (must be even).
             /// \param[in] allocator Allocator for the returned buffer.
             /// \return Buffer containing the decoded hex string.
-            static Buffer FromHexBuffer (
+            static SharedPtr FromHexBuffer (
                 Endianness endianness,
                 const char *hexBuffer,
                 std::size_t hexBufferLength,
@@ -424,6 +426,10 @@ namespace thekogans {
             /// \return HGLOBAL containing the buffers contents.
             HGLOBAL ToHGLOBAL (UINT flags = GMEM_MOVEABLE) const;
         #endif // defined (TOOLCHAIN_OS_Windows)
+
+            /// \brief
+            /// Buffer is neither copy constructable, nor assignable.
+            THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (Buffer)
         };
 
         /// \struct SecureBuffer Buffer.h thekogans/util/Buffer.h
@@ -435,15 +441,10 @@ namespace thekogans {
 
         struct _LIB_THEKOGANS_UTIL_DECL SecureBuffer : public Buffer {
             /// \brief
-            /// Copy ctor.
-            /// \param[in,out] other SecureBuffer to move.
-            SecureBuffer (const SecureBuffer &other) :
-                Buffer (other) {}
-            /// \brief
-            /// Move ctor.
-            /// \param[in,out] other SecureBuffer to move.
-            SecureBuffer (SecureBuffer &&other) :
-                Buffer (std::move (other)) {}
+            /// SecureBuffer has a private heap to help with memory
+            /// management, performance, and global heap fragmentation.
+            THEKOGANS_UTIL_DECLARE_STD_ALLOCATOR_FUNCTIONS
+
             /// \brief
             /// ctor for wrapping a raw data pointer.
             /// \param[in] endianness How multi-byte values are stored.
@@ -506,17 +507,6 @@ namespace thekogans {
             virtual ~SecureBuffer ();
 
             /// \brief
-            /// Copy assignment operator.
-            /// \param[in,out] other SecureBuffer to move.
-            /// \return *this.
-            SecureBuffer &operator = (const SecureBuffer &other);
-            /// \brief
-            /// Move assignment operator.
-            /// \param[in,out] other SecureBuffer to move.
-            /// \return *this.
-            SecureBuffer &operator = (SecureBuffer &&other);
-
-            /// \brief
             /// Resize the buffer. Adjust readOffset and writeOffset to stay within [0, length).
             /// \param[in] length New buffer length.
             /// \param[in] allocator Allocator to use to allocate new data.
@@ -531,7 +521,7 @@ namespace thekogans {
             /// \param[in] allocator Allocator for the returned buffer.
             /// NOTE: The allocator paramater is ignored as SecureBuffer uses the SecureAllocator.
             /// \return A clone of this buffer.
-            virtual Buffer Clone (
+            virtual SharedPtr Clone (
                 Allocator::SharedPtr /*allocator*/ =
                     DefaultAllocator::Instance ().Get ()) const override;
 
@@ -545,7 +535,7 @@ namespace thekogans {
             /// NOTE: Unlike other methods, this one does NOT take
             /// readOffset and writeOffset in to account. A straight
             /// subset of [data, data + length) is returned.
-            virtual Buffer Subset (
+            virtual SharedPtr Subset (
                 std::size_t offset,
                 std::size_t count,
                 Allocator::SharedPtr /*allocator*/ =
@@ -557,7 +547,7 @@ namespace thekogans {
             /// \param[in] allocator Allocator for the returned buffer.
             /// NOTE: The allocator paramater is ignored as SecureBuffer uses the SecureAllocator.
             /// \return A buffer containing deflated data.
-            virtual Buffer Deflate (
+            virtual SharedPtr Deflate (
                 Allocator::SharedPtr /*allocator*/ =
                     DefaultAllocator::Instance ().Get ()) const override;
             /// \brief
@@ -565,10 +555,14 @@ namespace thekogans {
             /// \param[in] allocator Allocator for the returned buffer.
             /// NOTE: The allocator paramater is ignored as SecureBuffer uses the SecureAllocator.
             /// \return A buffer containing inflated data.
-            virtual Buffer Inflate (
+            virtual SharedPtr Inflate (
                 Allocator::SharedPtr /*allocator*/ =
                     DefaultAllocator::Instance ().Get ()) const override;
         #endif // defined (THEKOGANS_UTIL_HAVE_ZLIB)
+
+            /// \brief
+            /// SecureBuffer is neither copy constructable, nor assignable.
+            THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (SecureBuffer)
         };
 
         /// \struct TenantReadBuffer Buffer.h thekogans/util/Buffer.h
@@ -581,6 +575,8 @@ namespace thekogans {
             /// ctor for wrapping a raw data pointer.
             /// \param[in] endianness How multi-byte values are stored.
             /// \param[in] data Pointer to wrap.
+            /// NOTE: The data pointer is wrapped and must survive
+            /// the lifetime of this TenantReadBuffer.
             /// \param[in] length Length of data.
             /// \param[in] readOffset Offset at which to read.
             TenantReadBuffer (
@@ -625,6 +621,8 @@ namespace thekogans {
             /// ctor for wrapping a raw data pointer.
             /// \param[in] endianness How multi-byte values are stored.
             /// \param[in] data Pointer to wrap.
+            /// NOTE: The data pointer is wrapped and must survive
+            /// the lifetime of this TenantWriteBuffer.
             /// \param[in] length Length of data.
             /// \param[in] writeOffset Offset at which to write.
             TenantWriteBuffer (

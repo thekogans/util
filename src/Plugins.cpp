@@ -104,7 +104,8 @@ namespace thekogans {
                 std::size_t fileSize = (std::size_t)file.GetSize ();
                 if (fileSize > maxPluginsFileSize) {
                     THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                        "'%s' is bigger (" THEKOGANS_UTIL_SIZE_T_FORMAT ") than expected. (" THEKOGANS_UTIL_SIZE_T_FORMAT ")",
+                        "'%s' is bigger (" THEKOGANS_UTIL_SIZE_T_FORMAT
+                        ") than expected. (" THEKOGANS_UTIL_SIZE_T_FORMAT ")",
                         path.c_str (),
                         fileSize,
                         maxPluginsFileSize);
