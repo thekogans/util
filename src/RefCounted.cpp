@@ -51,7 +51,6 @@ namespace thekogans {
                 // weak counters in RefCounted::References on both 32
                 // and 64 bit architectures. It's even future proof
                 // for 128 bit architectures if they ever become common.
-                Page *prev;
                 Page *next;
                 const std::size_t maxItems;
                 std::size_t itemCount;
@@ -61,13 +60,12 @@ namespace thekogans {
                 } *freeItem, items[1];
 
                 Page (std::size_t maxItems_) :
-                    prev (nullptr),
                     next (nullptr),
                     maxItems (maxItems_),
                     itemCount (0),
                     freeItem (nullptr) {}
 
-                // Raw size of page block of memory to allocate.
+                // Raw size of block of memory to allocate for the page.
                 static std::size_t Size (std::size_t itemsInPage) {
                     // -1 is because of the items[1] above.
                     return sizeof (Page) + sizeof (Item) * (itemsInPage - 1);
@@ -79,8 +77,7 @@ namespace thekogans {
                 inline bool IsFull () const {
                     return itemCount == maxItems;
                 }
-                // Check to see if the given pointer is within the
-                // items list.
+                // Check to see if the given pointer belongs to this page.
                 inline bool IsItem (const void *ptr) const {
                     return ptr >= items && ptr < &items[maxItems];
                 }
@@ -120,34 +117,26 @@ namespace thekogans {
                 }
 
                 inline void push_front (Page *page) {
-                    if (head == nullptr) {
-                        page->prev = page->next = nullptr;
-                        head = page;
-                    }
-                    else {
-                        page->prev = nullptr;
-                        page->next = head;
-                        head = head->prev = page;
-                    }
+                    page->next = head;
+                    head = page;
                 }
 
-                inline void erase (Page *page) {
-                    if (page->prev != nullptr) {
-                        page->prev->next = page->next;
+                inline void erase (
+                        Page *prev,
+                         Page *page) {
+                    if (prev != nullptr) {
+                        prev->next = page->next;
                     }
                     else {
                         head = page->next;
-                        if (head != nullptr) {
-                            head->prev = nullptr;
-                        }
-                    }
-                    if (page->next != nullptr) {
-                        page->next->prev = page->prev;
                     }
                 }
 
-                inline Page *find (const void *ptr) const {
-                    for (Page *page = head; page != nullptr; page = page->next) {
+                inline Page *find (
+                        const void *ptr,
+                        Page *&prev) const {
+                    prev = nullptr;
+                    for (Page *page = head; page != nullptr; prev = page, page = page->next) {
                         if (page->IsItem (ptr)) {
                             return page;
                         }
@@ -206,7 +195,7 @@ namespace thekogans {
                 Page *page = GetPage ();
                 void *ptr = page->Alloc ();
                 if (page->IsFull ()) {
-                    partialPages.erase (page);
+                    partialPages.erase (0, page);
                     fullPages.push_front (page);
                 }
                 return ptr;
@@ -214,14 +203,16 @@ namespace thekogans {
 
             void Free (void *ptr) {
                 LockGuard<SpinLock> guard (spinLock);
-                Page *page = GetPage (ptr);
+                Page *prev;
+                Page *page = GetPage (ptr, prev);
                 if (page->IsFull ()) {
-                    fullPages.erase (page);
+                    fullPages.erase (prev, page);
                     partialPages.push_front (page);
+                    prev = 0;
                 }
                 page->Free (ptr);
                 if (page->IsEmpty ()) {
-                    partialPages.erase (page);
+                    partialPages.erase (prev, page);
                     // If I did my job right, this is a noop and
                     // any good compiler should optimize it away.
                     page->~Page ();
@@ -267,10 +258,12 @@ namespace thekogans {
             // Its default is 8192 which should be acceptable in most
             // situations. By increasing it to match the needs of your
             // application you can greatly reduce the time it spends here.
-            inline Page *GetPage (const void *ptr) const {
-                Page *page = partialPages.find (ptr);
+            inline Page *GetPage (
+                    const void *ptr,
+                    Page *&prev) const {
+                Page *page = partialPages.find (ptr, prev);
                 if (page == nullptr) {
-                    page = fullPages.find (ptr);
+                    page = fullPages.find (ptr, prev);
                 }
                 return page;
             }
