@@ -65,7 +65,7 @@ namespace thekogans {
                     itemCount (0),
                     freeItem (nullptr) {}
 
-                // Raw size of block of memory to allocate for the page.
+                // Size of raw block of memory to allocate for the page.
                 static std::size_t Size (std::size_t itemsInPage) {
                     // -1 is because of the items[1] above.
                     return sizeof (Page) + sizeof (Item) * (itemsInPage - 1);
@@ -152,8 +152,8 @@ namespace thekogans {
             // achieve good performance. Sometimes those instructins
             // have various alignment requirements. In order to guarntee
             // that we satisfy these requirements we allocate pages with
-            // AlignedAllocator (above). The alignement used is UI32_SIZE
-            // which happens to be the type of the above mentioned counters.
+            // AlignedAllocator. The alignement used is UI32_SIZE which
+            // happens to be the type of the above mentioned counters.
             struct AlignedAllocator {
             private:
                 std::size_t alignment;
