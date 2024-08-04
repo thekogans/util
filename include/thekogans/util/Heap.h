@@ -69,27 +69,6 @@ namespace thekogans {
         /// THEKOGANS_UTIL_IMPLEMENT_HEAP_FUNCTIONS_EX (MyClass, lock, minItemsInPage, allocator)
         /// \endcode
         ///
-        /// Aternate usage: Temporary object sub-allocation.
-        ///
-        /// \code{.cpp}
-        /// using namespace thekogans::util;
-        ///
-        /// void foo (...) {
-        ///     // Bar comes from someplace where its not possible to embed
-        ///     // a heap in the class definition.
-        ///     Heap<Bar> barHeap ("Bar");
-        ///     ...
-        ///     Bar *bar = barHeap.Alloc ();
-        ///     assert (bar != nullptr);
-        ///     ...
-        ///     barHeap.Flush ();
-        /// }
-        /// \endcode
-        ///
-        /// Note: In production code barHeap would probably be
-        /// sub classed from Heap to encapsulate bar ctor, and
-        /// to call Flush in its own dtor.
-        ///
         /// FIXME: Add example for template classes.
         ///
         /// Advantages:
@@ -215,6 +194,8 @@ namespace thekogans {
         ///              macros used to initialize the heap.
         /// 08/03/2024 - version 3.1.0
         ///              Removed AlignedAllocator and added page size grow/shrink logic.
+        /// 08/04/2024 - version 3.1.1
+        ///              Removed Heap::Flush as it was never used and broke with the latest updates.
         ///
         /// Author:
         ///
@@ -736,11 +717,6 @@ namespace thekogans {
                         message.c_str ());
                     THEKOGANS_UTIL_ASSERT (fullPages.empty () && partialPages.empty (), message);
                 }
-                // IMPORTANT: Do not uncomment this Flush. It
-                // interferes with static dtors. If you are using a
-                // local temp heap, inherit from this one, and call
-                // Flush from its dtor.
-                //Flush ();
                 HeapRegistry::Instance ()->RemoveHeap (GetName ());
             }
 
@@ -931,30 +907,6 @@ namespace thekogans {
                         }
                     }
                 }
-            }
-
-            /// \brief
-            /// Free all objects from the heap.
-            /// IMPORTANT NOTE: The heap has a singular job; To
-            /// provide raw storage. It is not responsible for
-            /// any high level processing on that storage. That
-            /// includes construction/destruction of items contained
-            /// within. To that end, Flush reclaims the pages, but
-            /// does NOT destroy any items they may contain. This
-            /// is very important when using the heap for temporary
-            /// sub-allocation. If the items being allocated contain
-            /// a non trivial dtor, they need to be destroyed before
-            /// calling Flush or they might(will) leak.
-            void Flush () {
-                LockGuard<Lock> guard (lock);
-                itemCount = 0;
-                auto deletePage = [&allocator = allocator] (Page *page) -> bool {
-                    page->~Page ();
-                    allocator->Free (page);
-                    return true;
-                };
-                fullPages.clear (deletePage);
-                partialPages.clear (deletePage);
             }
 
         private:
