@@ -180,6 +180,7 @@
     <choose>
       <when condition = "$(TOOLCHAIN_OS) == 'Windows'">
         <cpp_header>$(organization)/$(project_directory)/os/windows/HGLOBALAllocator.h</cpp_header>
+        <cpp_header>$(organization)/$(project_directory)/os/windows/HeapAllocator.h</cpp_header>
         <cpp_header>$(organization)/$(project_directory)/os/windows/OutputDebugStringLogger.h</cpp_header>
         <cpp_header>$(organization)/$(project_directory)/os/windows/WindowsFirewall.h</cpp_header>
         <cpp_header>$(organization)/$(project_directory)/os/windows/WindowsUtils.h</cpp_header>
@@ -692,6 +693,7 @@
     <choose>
       <when condition = "$(TOOLCHAIN_OS) == 'Windows'">
         <cpp_source>os/windows/HGLOBALAllocator.cpp</cpp_source>>
+        <cpp_source>os/windows/HeapAllocator.cpp</cpp_source>>
         <cpp_source>os/windows/OutputDebugStringLogger.cpp</cpp_source>
         <cpp_source>os/windows/WindowsFirewall.cpp</cpp_source>
         <cpp_source>os/windows/WindowsUtils.cpp</cpp_source>
