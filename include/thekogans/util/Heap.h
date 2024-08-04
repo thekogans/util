@@ -66,7 +66,7 @@ namespace thekogans {
         /// \endcode
         /// or
         /// \code{.cpp}
-        /// THEKOGANS_UTIL_IMPLEMENT_HEAP_FUNCTIONS_EX (MyClass, lock, minItemsInPage, allocator)
+        /// THEKOGANS_UTIL_IMPLEMENT_HEAP_FUNCTIONS_EX (MyClass, lock, itemsInPage, allocator)
         /// \endcode
         ///
         /// FIXME: Add example for template classes.
@@ -210,20 +210,20 @@ namespace thekogans {
         /// \brief
         /// Use these defines for regular classes (not templates).
 
-        /// \def THEKOGANS_UTIL_IMPLEMENT_HEAP_FUNCTIONS_EX(_T, lock, minItemsInPage, allocator)
+        /// \def THEKOGANS_UTIL_IMPLEMENT_HEAP_FUNCTIONS_EX(_T, lock, itemsInPage, allocator)
         /// Macro to implement heap functions using provided heap ctor arguments.
-        #define THEKOGANS_UTIL_IMPLEMENT_HEAP_FUNCTIONS_EX(_T, lock, minItemsInPage, allocator)\
+        #define THEKOGANS_UTIL_IMPLEMENT_HEAP_FUNCTIONS_EX(_T, lock, itemsInPage, allocator)\
         void *_T::operator new (std::size_t size) {\
             assert (size == sizeof (_T));\
             return thekogans::util::Heap<_T, lock>::CreateInstance (\
-                minItemsInPage, allocator)->Alloc (false);\
+                itemsInPage, allocator)->Alloc (false);\
         }\
         void *_T::operator new (\
                 std::size_t size,\
                 std::nothrow_t) throw () {\
             assert (size == sizeof (_T));\
             return thekogans::util::Heap<_T, lock>::CreateInstance (\
-                minItemsInPage, allocator)->Alloc (true);\
+                itemsInPage, allocator)->Alloc (true);\
         }\
         void *_T::operator new (\
                 std::size_t size,\
@@ -233,13 +233,13 @@ namespace thekogans {
         }\
         void _T::operator delete (void *ptr) {\
             thekogans::util::Heap<_T, lock>::CreateInstance (\
-                minItemsInPage, allocator)->Free (ptr, false);\
+                itemsInPage, allocator)->Free (ptr, false);\
         }\
         void _T::operator delete (\
                 void *ptr,\
                 std::nothrow_t) throw () {\
             thekogans::util::Heap<_T, lock>::CreateInstance (\
-                minItemsInPage, allocator)->Free (ptr, true);\
+                itemsInPage, allocator)->Free (ptr, true);\
         }\
         void _T::operator delete (\
             void *,\
@@ -257,14 +257,14 @@ namespace thekogans {
         /// \brief
         /// Use these defines for templates.
 
-        /// \def THEKOGANS_UTIL_IMPLEMENT_HEAP_FUNCTIONS_EX_T(_T, lock, minItemsInPage, allocator)
+        /// \def THEKOGANS_UTIL_IMPLEMENT_HEAP_FUNCTIONS_EX_T(_T, lock, itemsInPage, allocator)
         /// Macro to implement heap functions using provided heap ctor arguments.
-        #define THEKOGANS_UTIL_IMPLEMENT_HEAP_FUNCTIONS_EX_T(_T, lock, minItemsInPage, allocator)\
+        #define THEKOGANS_UTIL_IMPLEMENT_HEAP_FUNCTIONS_EX_T(_T, lock, itemsInPage, allocator)\
         template<>\
         THEKOGANS_UTIL_EXPORT void *_T::operator new (std::size_t size) {\
             assert (size == sizeof (_T));\
             return thekogans::util::Heap<_T, lock>::CreateInstance (\
-                minItemsInPage, allocator)->Alloc (false);\
+                itemsInPage, allocator)->Alloc (false);\
         }\
         template<>\
         THEKOGANS_UTIL_EXPORT void *_T::operator new (\
@@ -272,7 +272,7 @@ namespace thekogans {
                 std::nothrow_t) throw () {\
             assert (size == sizeof (_T));\
             return thekogans::util::Heap<_T, lock>::CreateInstance (\
-                minItemsInPage, allocator)->Alloc (true);\
+                itemsInPage, allocator)->Alloc (true);\
         }\
         template<>\
         THEKOGANS_UTIL_EXPORT void *_T::operator new (\
@@ -284,14 +284,14 @@ namespace thekogans {
         template<>\
         THEKOGANS_UTIL_EXPORT void _T::operator delete (void *ptr) {\
             thekogans::util::Heap<_T, lock>::CreateInstance (\
-                minItemsInPage, allocator)->Free (ptr, false);\
+                itemsInPage, allocator)->Free (ptr, false);\
         }\
         template<>\
         THEKOGANS_UTIL_EXPORT void _T::operator delete (\
                 void *ptr,\
                 std::nothrow_t) throw () {\
             thekogans::util::Heap<_T, lock>::CreateInstance (\
-                minItemsInPage, allocator)->Free (ptr, true);\
+                itemsInPage, allocator)->Free (ptr, true);\
         }\
         template<>\
         THEKOGANS_UTIL_EXPORT void _T::operator delete (\
@@ -676,7 +676,7 @@ namespace thekogans {
         public:
             /// \brief
             /// ctor.
-            /// \param[in] minItemsInPage_ Heap minimum items in page.
+            /// \param[in] itemsInPage_ Heap minimum items in page.
             /// NOTE: The heap uses an \see{AlignedAllocator} to allocate its pages.
             /// To maximize memory efficiency, any given page may contain
             /// more or less items then any other (depends on alignment. See
