@@ -38,7 +38,7 @@ namespace thekogans {
         THEKOGANS_UTIL_IMPLEMENT_HEAP_FUNCTIONS_EX (
             SecureBuffer,
             SpinLock,
-            DEFAULT_HEAP_MIN_ITEMS_IN_PAGE,
+            THEKOGANS_UTIL_DEFAULT_HEAP_ITEMS_IN_PAGE,
             SecureAllocator::Instance ().Get ())
 
         Buffer::Buffer (

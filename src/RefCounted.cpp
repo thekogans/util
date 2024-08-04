@@ -215,8 +215,10 @@ namespace thekogans {
                     partialPages.erase (prev, page);
                     // If I did my job right, this is a noop and
                     // any good compiler should optimize it away.
+                    // It is only here for symmetry with the placement
+                    // new below (GetPage).
                     page->~Page ();
-                    allocator.Free (page, page->maxItems);
+                    allocator.Free (page, Page::Size (page->maxItems));
                     // Shrink itemsInPage for the next page
                     // to keep the page size relative to the
                     // total number of pages.

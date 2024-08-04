@@ -29,7 +29,6 @@
 #include "thekogans/util/Constants.h"
 #include "thekogans/util/Allocator.h"
 #include "thekogans/util/DefaultAllocator.h"
-#include "thekogans/util/AlignedAllocator.h"
 #include "thekogans/util/SpinLock.h"
 #include "thekogans/util/LockGuard.h"
 #include "thekogans/util/Exception.h"
@@ -61,7 +60,7 @@ namespace thekogans {
         ///
         /// in myclass.cpp:
         ///
-        /// use DEFAULT_HEAP_MIN_ITEMS_IN_PAGE
+        /// use THEKOGANS_UTIL_DEFAULT_HEAP_ITEMS_IN_PAGE
         /// \code{.cpp}
         /// THEKOGANS_UTIL_IMPLEMENT_HEAP_FUNCTIONS (MyClass)
         /// \endcode
@@ -214,6 +213,8 @@ namespace thekogans {
         ///              of a local heap, in almost 30 years of use I never had a reason
         ///              to create one. The feature is now gone and so are a few dozen
         ///              macros used to initialize the heap.
+        /// 08/03/2024 - version 3.1.0
+        ///              Removed AlignedAllocator and added page size grow/shrink logic.
         ///
         /// Author:
         ///
@@ -221,7 +222,9 @@ namespace thekogans {
 
         /// \brief
         /// Default number of items per page.
-        const std::size_t DEFAULT_HEAP_MIN_ITEMS_IN_PAGE = 256;
+    #if !defined (THEKOGANS_UTIL_DEFAULT_HEAP_ITEMS_IN_PAGE)
+        #define THEKOGANS_UTIL_DEFAULT_HEAP_ITEMS_IN_PAGE 256
+    #endif // !defined (THEKOGANS_UTIL_DEFAULT_HEAP_ITEMS_IN_PAGE)
 
         /// \brief
         /// Use these defines for regular classes (not templates).
@@ -267,7 +270,7 @@ namespace thekogans {
         THEKOGANS_UTIL_IMPLEMENT_HEAP_FUNCTIONS_EX (\
             _T,\
             thekogans::util::SpinLock,\
-            thekogans::util::DEFAULT_HEAP_MIN_ITEMS_IN_PAGE,\
+            THEKOGANS_UTIL_DEFAULT_HEAP_ITEMS_IN_PAGE,\
             thekogans::util::DefaultAllocator::Instance ().Get ())
 
         /// \brief
@@ -320,7 +323,7 @@ namespace thekogans {
         THEKOGANS_UTIL_IMPLEMENT_HEAP_FUNCTIONS_EX_T (\
             _T,\
             thekogans::util::SpinLock,\
-            thekogans::util::DEFAULT_HEAP_MIN_ITEMS_IN_PAGE,\
+            THEKOGANS_UTIL_DEFAULT_HEAP_ITEMS_IN_PAGE,\
             thekogans::util::DefaultAllocator::Instance ().Get ())
 
         /// \struct HeapRegistry Heap.h thekogans/util/Heap.h
@@ -482,10 +485,6 @@ namespace thekogans {
                 /// page.
                 const std::size_t magic1;
                 /// \brief
-                /// Size of entire page, including Page
-                /// Header, in bytes.
-                const std::size_t size;
-                /// \brief
                 /// Total number of items this page can hold.
                 /// The above three are const for a very
                 /// simple reason.
@@ -545,17 +544,24 @@ namespace thekogans {
                 /// \brief
                 /// ctor.
                 /// \param[in] size_ Page size.
-                Page (std::size_t size_) :
+                Page (std::size_t maxItems_) :
                         magic1 (MAGIC),
-                        size (size_),
-                        maxItems ((size - sizeof (Page)) / sizeof (Item) + 1), // + 1 is for the implicit
-                                                                               // item in sizeof (Page)
+                        maxItems (maxItems_),
                         allocatedItems (0),
                         freeItem (0),
                         magic2 (MAGIC) {
                 #if defined (THEKOGANS_UTIL_CONFIG_Debug) || defined (THEKOGANS_UTIL_DEBUG_HEAP)
                     memset (items, 0, maxItems * sizeof (Item));
                 #endif // defined (THEKOGANS_UTIL_CONFIG_Debug) || defined (THEKOGANS_UTIL_DEBUG_HEAP)
+                }
+
+                /// \brief
+                /// Return the size of raw block of memory to allocate for the page.
+                /// \param[in] itemsInPage Max items in page.
+                /// \return Size of raw block of memory to allocate for the page.
+                static std::size_t Size (std::size_t itemsInPage) {
+                    // -1 is because of the items[1] above.
+                    return sizeof (Page) + sizeof (Item) * (itemsInPage - 1);
                 }
 
                 /// \brief
@@ -669,10 +675,7 @@ namespace thekogans {
 
             /// \brief
             /// Heap minimum items in page.
-            const std::size_t minItemsInPage;
-            /// \brief
-            /// Heap minimum page size.
-            const std::size_t minPageSize;
+            std::size_t itemsInPage;
             /// \brief
             /// Current number of items on the heap.
             std::size_t itemCount;
@@ -684,7 +687,7 @@ namespace thekogans {
             PageList partialPages;
             /// \brief
             /// Pages need to be aligned on a page size boundary.
-            AlignedAllocator allocator;
+            Allocator::SharedPtr allocator;
             /// \brief
             /// Synchronization lock.
             Lock lock;
@@ -699,15 +702,13 @@ namespace thekogans {
             /// AlignedAllocator.h). Therefore you cannot dictate the exact
             /// count of items per page, only the minimum.
             /// \param[in] allocator_ Page allocator.
-            Heap (std::size_t minItemsInPage_ = DEFAULT_HEAP_MIN_ITEMS_IN_PAGE,
+            Heap (std::size_t itemsInPage_ = THEKOGANS_UTIL_DEFAULT_HEAP_ITEMS_IN_PAGE,
                     Allocator::SharedPtr allocator_ = DefaultAllocator::Instance ().Get ()) :
-                    minItemsInPage (minItemsInPage_),
-                    minPageSize (Align (sizeof (Page) +
-                        sizeof (typename Page::Item) * (minItemsInPage - 1))),
+                    itemsInPage (itemsInPage_),
                     itemCount (0),
-                    allocator (minPageSize, allocator_.Get ()) {
-                assert (minItemsInPage > 0);
-                assert (OneBitCount (minPageSize) == 1);
+                    allocator (allocator_) {
+                assert (itemsInPage > 0);
+                assert (allocator != nullptr);
                 HeapRegistry::Instance ()->AddHeap (GetName (), this);
             }
             /// \brief
@@ -778,10 +779,7 @@ namespace thekogans {
                 std::size_t itemSize;
                 /// \brief
                 /// Heap minimum item in page.
-                std::size_t minItemsInPage;
-                /// \brief
-                /// Heap minimum page size.
-                std::size_t minPageSize;
+                std::size_t itemsInPage;
                 /// \brief
                 /// Current number of items on the heap.
                 std::size_t itemCount;
@@ -796,23 +794,20 @@ namespace thekogans {
                 /// ctor.
                 /// \param[in] name_ Heap name.
                 /// \param[in] itemSize_ Heap item size.
-                /// \param[in] minItemsInPage_ Heap minimum item in page.
-                /// \param[in] minPageSize_ Heap minimum page size.
+                /// \param[in] itemsInPage_ Heap minimum item in page.
                 /// \param[in] itemCount_ Current number of items on the heap.
                 /// \param[in] fullPagesCount_ Number of full pages on the heap.
                 /// \param[in] partialPagesCount_ Number of partial pages on the heap.
                 Stats (
                     const char *name_,
                     std::size_t itemSize_,
-                    std::size_t minItemsInPage_,
-                    std::size_t minPageSize_,
+                    std::size_t itemsInPage_,
                     std::size_t itemCount_,
                     std::size_t fullPagesCount_,
                     std::size_t partialPagesCount_) :
                     name (name_),
                     itemSize (itemSize_),
-                    minItemsInPage (minItemsInPage_),
-                    minPageSize (minPageSize_),
+                    itemsInPage (itemsInPage_),
                     itemCount (itemCount_),
                     fullPagesCount (fullPagesCount_),
                     partialPagesCount (partialPagesCount_) {}
@@ -824,8 +819,7 @@ namespace thekogans {
                     Attributes attributes;
                     attributes.push_back (Attribute ("name", name));
                     attributes.push_back (Attribute ("itemSize", size_tTostring (itemSize)));
-                    attributes.push_back (Attribute ("minItemsInPage", size_tTostring (minItemsInPage)));
-                    attributes.push_back (Attribute ("minPageSize", size_tTostring (minPageSize)));
+                    attributes.push_back (Attribute ("itemsInPage", size_tTostring (itemsInPage)));
                     attributes.push_back (Attribute ("itemCount", size_tTostring (itemCount)));
                     attributes.push_back (Attribute ("fullPagesCount", size_tTostring (fullPagesCount)));
                     attributes.push_back (Attribute ("partialPagesCount", size_tTostring (partialPagesCount)));
@@ -841,8 +835,7 @@ namespace thekogans {
                     new Stats (
                         GetName (),
                         sizeof (T),
-                        minItemsInPage,
-                        minPageSize,
+                        itemsInPage,
                         itemCount,
                         fullPages.count,
                         partialPages.count));
@@ -923,7 +916,8 @@ namespace thekogans {
                         if (page->IsEmpty ()) {
                             partialPages.erase (page);
                             page->~Page ();
-                            allocator.Free (page, page->size);
+                            allocator->Free (page, Page::Size (page->maxItems));
+                            itemsInPage >>= 1;
                         }
                     }
                     else {
@@ -956,7 +950,7 @@ namespace thekogans {
                 itemCount = 0;
                 auto deletePage = [&allocator = allocator] (Page *page) -> bool {
                     page->~Page ();
-                    allocator.Free (page, page->size);
+                    allocator->Free (page);
                     return true;
                 };
                 fullPages.clear (deletePage);
@@ -970,18 +964,14 @@ namespace thekogans {
             /// \return Pointer to partialPages.head
             inline Page *GetPage () {
                 if (partialPages.empty ()) {
-                    // AlignedAllocator will return at least minPageSize
-                    // (usually more). To maximize efficiency, let the
-                    // page sub-allocate as much as available.
-                    std::size_t pageSize = minPageSize;
-                    void *page = allocator.AllocMax (pageSize);
+                    void *page = allocator->Alloc (Page::Size (itemsInPage));
                     assert (page != nullptr);
                     if (page != nullptr) {
-                        assert (pageSize >= minPageSize);
                         // This is safe, as neither placement new, nor
                         // Page ctor, nor push_back will throw.
-                        partialPages.push_back (new (page) Page (pageSize));
+                        partialPages.push_back (new (page) Page (itemsInPage));
                     }
+                    itemsInPage <<= 1;
                 }
                 return partialPages.front ();
             }
@@ -991,20 +981,12 @@ namespace thekogans {
             /// \param[in] ptr Pointer whose page we are asked to return.
             /// \return Page for a given pointer, or 0 if the pointer is not ours.
             inline Page *GetPage (void *ptr) const {
-                // Pages are aligned on minPageSize boundary. But
-                // because AlignedAllocator can return up to
-                // minPageSize - 1 more space (see AlignedAllocator.h),
-                // we can't just blindly assume that the page is on
-                // the first minPageSize boudary. We use Page::magic1/2
-                // to check for signatue, and if it fails, we go down
-                // to the next boudary. If that fails, then this
-                // pointer is not one of ours.
-                Page *page = (Page *)((std::size_t)ptr & ~(minPageSize - 1));
-                if (page->magic1 != MAGIC || page->magic2 != MAGIC) {
-                    page = (Page *)((std::size_t)page - minPageSize);
-                    if (page->magic1 != MAGIC || page->magic2 != MAGIC) {
-                        page = nullptr;
-                    }
+                auto callback = [ptr] (Page *page) -> bool {
+                    return page->IsValidPtr (ptr);
+                };
+                Page *page = partialPages.find (callback);
+                if (page == nullptr) {
+                    page = fullPages.find (callback);
                 }
                 return page;
             }
