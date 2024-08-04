@@ -107,6 +107,10 @@
     #define THEKOGANS_UTIL_DEBUG_BREAK
 #endif // defined (THEKOGANS_UTIL_CONFIG_Debug)
 
+/// \def THEKOGANS_UTIL
+/// Logging subsystem name.
+#define THEKOGANS_UTIL "thekogans_util"
+
 /// \def THEKOGANS_UTIL_DECLARE_STD_ALLOCATOR_FUNCTIONS
 /// Macro to declare std allocator functions.
 #define THEKOGANS_UTIL_DECLARE_STD_ALLOCATOR_FUNCTIONS  \
@@ -124,10 +128,6 @@ public:\
 private:\
     type (const type &) = delete;\
     type &operator = (const type &) = delete;
-
-/// \def THEKOGANS_UTIL
-/// Logging subsystem name.
-#define THEKOGANS_UTIL "thekogans_util"
 
 namespace thekogans {
     namespace util {

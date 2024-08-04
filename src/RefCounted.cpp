@@ -195,7 +195,7 @@ namespace thekogans {
                 Page *page = GetPage ();
                 void *ptr = page->Alloc ();
                 if (page->IsFull ()) {
-                    partialPages.erase (0, page);
+                    partialPages.erase (nullptr, page);
                     fullPages.push_front (page);
                 }
                 return ptr;
@@ -206,9 +206,14 @@ namespace thekogans {
                 Page *prev;
                 Page *page = GetPage (ptr, prev);
                 if (page->IsFull ()) {
+                    // If the page is full, it must have come
+                    // from the fullPages list.
                     fullPages.erase (prev, page);
+                    // Since we're removing an item from the
+                    // page it will no longer be full and needs
+                    // to go to the head of partialPages list.
                     partialPages.push_front (page);
-                    prev = 0;
+                    prev = nullptr;
                 }
                 page->Free (ptr);
                 if (page->IsEmpty ()) {
@@ -232,9 +237,9 @@ namespace thekogans {
                     partialPages.push_front (
                         new (allocator.Alloc (Page::Size (itemsInPage))) Page (itemsInPage));
                     // Similar to the algorithm in RefCountedRegistry, Heap
-                    // grows the page size with every allocation. Unlike
+                    // grows the page size with every page allocation. Unlike
                     // RefCountedRegistry, Heap also shrinks the page size
-                    // with every deallocation (above). This is because
+                    // with every page deallocation (above). This is because
                     // while Alloc is O(1), Free is O(n) (n = partialPages +
                     // fullPages). By adjusting the page size we keep the
                     // page count relatively low for GetPage (below).

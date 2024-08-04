@@ -46,14 +46,15 @@ namespace thekogans {
         /// NOTE: When inheriting from RefCounted, consider making it 'public virtual'.
         /// This will go a long way towards resolving multiple inheritance ambiguities.
         ///
-        /// VERY IMPORTANT: If you're going to create RefCounted::SharedPtrs on
+        /// VERY IMPORTANT: If you're going to create RefCounted::SharedPtrs on the
         /// stack for static (see \see{Singleton}) objects, it's important that the
         /// object itself take out a reference in it's ctor. This way the reference
         /// count will never reach 0 and the object will not try to delete itself.
         /// For \see{Singleton}s, I provide \see{RefCountedInstanceCreator} and
         /// \see{RefCountedInstanceDestroyer} that will do just that.
         ///
-        /// VERY IMPORTANT: Please read the question and understand the accepted answer in the following;
+        /// VERY IMPORTANT: Please read the question and understand the accepted
+        /// answer in the following;
         /// https://stackoverflow.com/questions/35314297/mixing-virtual-and-non-virtual-inheritance-of-a-base-class
         /// Basically, to summarize it here; If you're going to directly inherit
         /// from classes like RefCounted, and you expect your classes to be
@@ -262,6 +263,17 @@ namespace thekogans {
                     return *this;
                 }
                 /// \brief
+                /// template Assignemnet operator.
+                /// \param[in] ptr Pointer to copy.
+                /// \return *this.
+                template<typename _U>
+                inline SharedPtr<T> &operator = (const SharedPtr<_U> &ptr) {
+                    if (&ptr != this) {
+                        Reset (dynamic_cast<T *> (ptr.object));
+                    }
+                    return *this;
+                }
+                /// \brief
                 /// Assignemnet operator.
                 /// \param[in] object_ Object to assign.
                 /// \return *this.
@@ -446,6 +458,17 @@ namespace thekogans {
                     return *this;
                 }
                 /// \brief
+                /// template Assignment operator.
+                /// \param[in] ptr SharedPtr<_U> to reference counted object.
+                /// \return *this.
+                template<typename _U>
+                WeakPtr<T> &operator = (const SharedPtr<_U> &ptr) {
+                    if (object != ptr.Get ()) {
+                        Reset (dynamic_cast<T *> (ptr.Get ()));
+                    }
+                    return *this;
+                }
+                /// \brief
                 /// Assignment operator.
                 /// \param[in] ptr WeakPtr<T> to reference counted object.
                 /// \return *this.
@@ -463,6 +486,24 @@ namespace thekogans {
                     return *this;
                 }
                 /// \brief
+                /// template Assignment operator.
+                /// \param[in] ptr WeakPtr<_U> to reference counted object.
+                /// \return *this.
+                template<typename _U>
+                WeakPtr<T> &operator = (const WeakPtr<_U> &ptr) {
+                    if (object != ptr.Get ()) {
+                        if (references != nullptr) {
+                            references->ReleaseWeakRef ();
+                        }
+                        object = dynamic_cast<T *> (ptr.object);
+                        references = ptr.references;
+                        if (references != nullptr) {
+                            references->AddWeakRef ();
+                        }
+                    }
+                    return *this;
+                }
+                /// \brief
                 /// Assignment operator.
                 /// \param[in] ptr WeakPtr<T> to reference counted object.
                 /// \return *this.
@@ -471,8 +512,8 @@ namespace thekogans {
                         if (references != nullptr) {
                             references->ReleaseWeakRef ();
                         }
-                        object = 0;
-                        references = 0;
+                        object = nullptr;
+                        references = nullptr;
                         Swap (ptr);
                     }
                     return *this;
