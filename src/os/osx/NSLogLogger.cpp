@@ -20,7 +20,6 @@
 #if defined (TOOLCHAIN_OS_OSX)
 
 #include <CoreFoundation/CoreFoundation.h>
-#include "thekogans/util/StringUtils.h"
 #include "thekogans/util/os/osx/NSLogLogger.h"
 
 #if __cplusplus
@@ -35,17 +34,23 @@ extern "C" {
 
 namespace thekogans {
     namespace util {
+        namespace os {
+            namespace osx {
 
-        void NSLogLogger::Log (
-                const std::string & /*subsystem*/,
-                ui32 level,
-                const std::string &header,
-                const std::string &message) throw () {
-            if (level <= this->level && (!header.empty () || !message.empty ())) {
-                NSLog (CFSTR ("%s%s"), header.c_str (), message.c_str ());
-            }
-        }
+                THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE (NSLogLogger)
 
+                void NSLogLogger::Log (
+                        const std::string & /*subsystem*/,
+                        ui32 level,
+                        const std::string &header,
+                        const std::string &message) throw () {
+                    if (level <= this->level && (!header.empty () || !message.empty ())) {
+                        NSLog (CFSTR ("%s%s"), header.c_str (), message.c_str ());
+                    }
+                }
+
+            } // namespace osx
+        } // namespace os
     } // namespace util
 } // namespace thekogans
 

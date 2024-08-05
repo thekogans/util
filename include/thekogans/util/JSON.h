@@ -221,8 +221,8 @@ namespace thekogans {
                 /// \param[in] value Value to add.
                 template<typename T>
                 void Add (T value) {
-                    if (value.Get () != 0) {
-                        values.push_back (Value::SharedPtr (value.Get ()));
+                    if (value != nullptr) {
+                        values.push_back (value);
                     }
                     else {
                         THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
@@ -238,8 +238,8 @@ namespace thekogans {
                 void Insert (
                        T value,
                        std::size_t index) {
-                    if (value.Get () != 0 && index <= values.size ()) {
-                        values.insert (values.begin () + index, Value::SharedPtr (value.Get ()));
+                    if (value != nullptr && index <= values.size ()) {
+                        values.insert (values.begin () + index, value);
                     }
                     else {
                         THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
@@ -302,8 +302,8 @@ namespace thekogans {
                 void Add (
                         const std::string &name,
                         T value) {
-                    if (!name.empty () && value.Get () != 0) {
-                        values.push_back (NameValue (name, Value::SharedPtr (value.Get ())));
+                    if (!name.empty () && value != nullptr) {
+                        values.push_back (NameValue (name, value));
                     }
                     else {
                         THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
@@ -321,10 +321,8 @@ namespace thekogans {
                         const std::string &name,
                         T value,
                         std::size_t index) {
-                    if (!name.empty () && value.Get () != 0 && index <= values.size ()) {
-                        values.insert (
-                            values.begin () + index,
-                            NameValue (name, Value::SharedPtr (value.Get ())));
+                    if (!name.empty () && value != nullptr && index <= values.size ()) {
+                        values.insert (values.begin () + index, NameValue (name, value));
                     }
                     else {
                         THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (

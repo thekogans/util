@@ -15,6 +15,7 @@
 // You should have received a copy of the GNU General Public License
 // along with libthekogans_util. If not, see <http://www.gnu.org/licenses/>.
 
+#include "thekogans/util/Environment.h"
 #include "thekogans/util/DefaultAllocator.h"
 #include "thekogans/util/Allocator.h"
 #if defined (THEKOGANS_UTIL_TYPE_Static)
@@ -23,6 +24,7 @@
     #include "thekogans/util/SecureAllocator.h"
     #if defined (TOOLCHAIN_OS_Windows)
         #include "thekogans/util/os/windows/HGLOBALAllocator.h"
+        #include "thekogans/util/os/windows/HeapAllocator.h"
     #endif // defined (TOOLCHAIN_OS_Windows)
     //#include "thekogans/util/AlignedAllocator.h"
     //#include "thekogans/util/SharedAllocator.h"
@@ -40,6 +42,7 @@ namespace thekogans {
             SecureAllocator::StaticInit ();
         #if defined (TOOLCHAIN_OS_Windows)
             os::windows::HGLOBALAllocator::StaticInit ();
+            os::windows::HeapAllocator::StaticInit ();
         #endif // defined (TOOLCHAIN_OS_Windows)
             //AlignedAllocator::StaticInit ();
             //SharedAllocator::StaticInit ();
@@ -47,12 +50,12 @@ namespace thekogans {
         }
     #endif // defined (THEKOGANS_UTIL_TYPE_Static)
 
-        std::string Allocator::GetSerializedName () const {
-            std::string allocatorName = Type ();
-            if (CreateType (allocatorName) == nullptr) {
-                allocatorName = DefaultAllocator::Instance ()->Type ();
+        std::string Allocator::GetSerializedType () const {
+            std::string allocatorType = Type ();
+            if (CreateType (allocatorType) == nullptr) {
+                allocatorType = DefaultAllocator::Instance ()->Type ();
             }
-            return allocatorName;
+            return allocatorType;
         }
 
     } // namespace util

@@ -15,33 +15,36 @@
 // You should have received a copy of the GNU General Public License
 // along with libthekogans_util. If not, see <http://www.gnu.org/licenses/>.
 
+#include "thekogans/util/Environment.h"
+#include "thekogans/util/Logger.h"
 #if defined (THEKOGANS_UTIL_TYPE_Static)
-    #include "thekogans/util/JSON.h"
-    #include "thekogans/util/Allocator.h"
-    #include "thekogans/util/Hash.h"
-    #include "thekogans/util/Logger.h"
-    #include "thekogans/util/Serializable.h"
+    #include "thekogans/util/ConsoleLogger.h"
+    //#include "thekogans/util/FileLogger.h"
+    #include "thekogans/util/MemoryLogger.h"
+    #include "thekogans/util/NullLogger.h"
+    #if defined (TOOLCHAIN_OS_Windows)
+        #include "thekogans/util/os/windows/OutputDebugStringLogger.h"
+    #elif defined (TOOLCHAIN_OS_OSX)
+        #include "thekogans/util/os/osx/NSLogLogger.h"
+    #endif // defined (TOOLCHAIN_OS_Windows)
 #endif // defined (THEKOGANS_UTIL_TYPE_Static)
-#include "thekogans/util/DynamicCreatable.h"
 
 namespace thekogans {
     namespace util {
 
-        THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_BASE (DynamicCreatable)
+        THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_BASE (Logger)
 
     #if defined (THEKOGANS_UTIL_TYPE_Static)
-        void DynamicCreatable::StaticInit () {
-            JSON::Value::StaticInit ();
-            Allocator::StaticInit ();
-            Hash::StaticInit ();
-            Logger::StaticInit ();
-            Serializable::StaticInit ();
-        }
-    #else // defined (THEKOGANS_UTIL_TYPE_Static)
-        DynamicCreatable::MapInitializer::MapInitializer (
-                const std::string &type,
-                Factory factory) {
-            Map::Instance ()->insert (MapType::value_type (type, factory));
+        void Logger::StaticInit () {
+            ConsoleLogger::StaticInit ();
+            //FileLogger::StaticInit ();
+            MemoryLogger::StaticInit ();
+            NullLogger::StaticInit ();
+        #if defined (TOOLCHAIN_OS_Windows)
+            os::windows::OutputDebugStringLogger::StaticInit ();
+        #elif defined (TOOLCHAIN_OS_OSX)
+            os::osx::NSLogLogger::StaticInit ();
+        #endif // defined (TOOLCHAIN_OS_Windows)
         }
     #endif // defined (THEKOGANS_UTIL_TYPE_Static)
 

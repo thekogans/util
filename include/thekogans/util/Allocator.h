@@ -52,9 +52,9 @@ namespace thekogans {
         #endif // defined (THEKOGANS_UTIL_TYPE_Static)
 
             /// \brief
-            /// Return a serializable allocator name (one that can be dynamically creatable).
-            /// \return A serializable allocator name (one that can be dynamically creatable).
-            std::string GetSerializedName () const;
+            /// Return a serializable allocator type (one that can be dynamically creatable).
+            /// \return A serializable allocator type (one that can be dynamically creatable).
+            std::string GetSerializedType () const;
 
             /// \brief
             /// Allocate a block.

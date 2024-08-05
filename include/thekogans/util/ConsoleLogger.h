@@ -42,6 +42,11 @@ namespace thekogans {
         /// before instantiating a \see{Console::Instance}.
 
         struct _LIB_THEKOGANS_UTIL_DECL ConsoleLogger : public Logger {
+            /// \brief
+            /// ConsoleLogger participates in the \see{DynamicCreatable}
+            /// dynamic discovery and creation.
+            THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE (ConsoleLogger)
+
             /// \struct ConsoleLogger::ColorScheme ConsoleLogger.h thekogans/util/ConsoleLogger.h
             ///
             /// \brief

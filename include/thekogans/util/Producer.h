@@ -310,7 +310,7 @@ namespace thekogans {
                     // the \see{Subscriber} to be able to call back in to the producer while
                     // processing a particular event.
                     typename Subscriber<T>::SharedPtr subscriber = it->second.first.GetSharedPtr ();
-                    if (subscriber.Get () != 0) {
+                    if (subscriber != nullptr) {
                         OnUnsubscribe (*subscriber);
                     }
                 }
@@ -338,7 +338,7 @@ namespace thekogans {
                     // the \see{Subscriber} to be able to call back in to the producer while
                     // processing a particular event.
                     typename Subscriber<T>::SharedPtr subscriber = it->second.first.GetSharedPtr ();
-                    if (subscriber.Get () != 0) {
+                    if (subscriber != nullptr) {
                         it->second.second->DeliverEvent (event, subscriber);
                     }
                 }

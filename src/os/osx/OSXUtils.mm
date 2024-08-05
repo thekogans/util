@@ -324,7 +324,7 @@ namespace thekogans {
                                 for (int i = 0; i < count; ++i) {
                                     KQueueTimer::SharedPtr timer = KQueueTimerRegistry::Instance ()->Get (
                                         (KQueueTimerRegistry::Token::ValueType)kqueueEvents[i].udata);
-                                    if (timer.Get () != nullptr) {
+                                    if (timer != nullptr) {
                                         if ((kqueueEvents[i].flags & EV_ONESHOT) == EV_ONESHOT) {
                                             timer->running = false;
                                         }

@@ -56,7 +56,7 @@ namespace thekogans {
         ///     SecureObject,
         ///     thekogans::util::SpinLock,
         ///     thekogans::util::DEFAULT_HEAP_MIN_ITEMS_IN_PAGE,
-        ///     thekogans::util::SecureAllocator::Instance ().Get ())
+        ///     thekogans::util::SecureAllocator::Instance ())
         /// or
         /// THEKOGANS_UTIL_IMPLEMENT_SECURE_ALLOCATOR_FUNCTIONS (SecureObject)
         /// \endcode

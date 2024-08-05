@@ -254,7 +254,7 @@ namespace thekogans {
                                                 // XlibWindow.
                                                 XlibWindow::SharedPtr window =
                                                     XlibWindowMap::Instance ()->Get (event.xclient.window);
-                                                if (window.Get () != nullptr) {
+                                                if (window != nullptr) {
                                                     window->OnEvent (event);
                                                 }
                                                 else {

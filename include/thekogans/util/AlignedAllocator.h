@@ -91,7 +91,7 @@ namespace thekogans {
             /// \param[in] allocator_ Allocator to use for actual allocation.
             AlignedAllocator (
                 std::size_t alignment_,
-                Allocator::SharedPtr allocator_ = DefaultAllocator::Instance ().Get ());
+                Allocator::SharedPtr allocator_ = DefaultAllocator::Instance ());
 
             /// \brief
             /// Use Allocator to allocate a block, and align it to the

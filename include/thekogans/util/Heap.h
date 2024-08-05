@@ -252,7 +252,7 @@ namespace thekogans {
             _T,\
             thekogans::util::SpinLock,\
             THEKOGANS_UTIL_DEFAULT_HEAP_ITEMS_IN_PAGE,\
-            thekogans::util::DefaultAllocator::Instance ().Get ())
+            thekogans::util::DefaultAllocator::Instance ())
 
         /// \brief
         /// Use these defines for templates.
@@ -305,7 +305,7 @@ namespace thekogans {
             _T,\
             thekogans::util::SpinLock,\
             THEKOGANS_UTIL_DEFAULT_HEAP_ITEMS_IN_PAGE,\
-            thekogans::util::DefaultAllocator::Instance ().Get ())
+            thekogans::util::DefaultAllocator::Instance ())
 
         /// \struct HeapRegistry Heap.h thekogans/util/Heap.h
         ///
@@ -684,7 +684,7 @@ namespace thekogans {
             /// count of items per page, only the minimum.
             /// \param[in] allocator_ Page allocator.
             Heap (std::size_t itemsInPage_ = THEKOGANS_UTIL_DEFAULT_HEAP_ITEMS_IN_PAGE,
-                    Allocator::SharedPtr allocator_ = DefaultAllocator::Instance ().Get ()) :
+                    Allocator::SharedPtr allocator_ = DefaultAllocator::Instance ()) :
                     itemsInPage (itemsInPage_),
                     itemCount (0),
                     allocator (allocator_) {

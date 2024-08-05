@@ -165,7 +165,7 @@ namespace thekogans {
                     Pipeline::Job::SharedPtr job,
                     const TimeSpec &deadline,
                     Pipeline::SharedPtr pipeline_) :
-                    JobInfo (RunLoop::Job::SharedPtr (job.Get ()), deadline),
+                    JobInfo (job, deadline),
                     pipeline (pipeline_) {}
 
                 /// \brief
@@ -245,7 +245,7 @@ namespace thekogans {
             RunLoop::Job::Id ScheduleRunLoopJob (
                 RunLoop::Job::SharedPtr job,
                 const TimeSpec &timeSpec,
-                RunLoop::SharedPtr runLoop = MainRunLoop::Instance ().Get ());
+                RunLoop::SharedPtr runLoop = MainRunLoop::Instance ());
             /// \brief
             /// Schedule a lambda (function) to be performed in the future.
             /// \param[in] function Lambda to execute in the future.
@@ -256,7 +256,7 @@ namespace thekogans {
             inline RunLoop::Job::Id ScheduleRunLoopJob (
                     const RunLoop::LambdaJob::Function &function,
                     const TimeSpec &timeSpec,
-                    RunLoop::SharedPtr runLoop = MainRunLoop::Instance ().Get ()) {
+                    RunLoop::SharedPtr runLoop = MainRunLoop::Instance ()) {
                 return ScheduleRunLoopJob (
                     new RunLoop::LambdaJob (function),
                     timeSpec,
@@ -272,7 +272,7 @@ namespace thekogans {
             Pipeline::Job::Id SchedulePipelineJob (
                 Pipeline::Job::SharedPtr job,
                 const TimeSpec &timeSpec,
-                Pipeline::SharedPtr pipeline = GlobalPipeline::Instance ().Get ());
+                Pipeline::SharedPtr pipeline = GlobalPipeline::Instance ());
             /// \brief
             /// Schedule a set of lambdas (functions) to be performed in the future at each pipeline stage.
             /// \param[in] begin First lambda in the array.
@@ -285,7 +285,7 @@ namespace thekogans {
                     const Pipeline::LambdaJob::Function *&begin,
                     const Pipeline::LambdaJob::Function *&end,
                     const TimeSpec &timeSpec,
-                    Pipeline::SharedPtr pipeline = GlobalPipeline::Instance ().Get ()) {
+                    Pipeline::SharedPtr pipeline = GlobalPipeline::Instance ()) {
                 return SchedulePipelineJob (
                     new Pipeline::LambdaJob (pipeline, begin, end),
                     timeSpec,

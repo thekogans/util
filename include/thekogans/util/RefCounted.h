@@ -215,15 +215,15 @@ namespace thekogans {
                 /// \param[in] ptr Pointer to copy.
                 SharedPtr (const SharedPtr<T> &ptr) :
                         object (nullptr) {
-                    Reset (ptr.object);
+                     Reset (ptr.Get ());
                 }
                 /// \brief
-                /// template copy ctor.
+                /// Polymorphic copy ctor.
                 /// \param[in] ptr Pointer to copy.
                 template<typename _U>
                 SharedPtr (const SharedPtr<_U> &ptr) :
                         object (nullptr) {
-                    Reset (dynamic_cast<T *> (ptr.object));
+                    Reset (dynamic_cast<T *> (ptr.Get ()));
                 }
                 /// \brief
                 /// move ctor.
@@ -258,19 +258,17 @@ namespace thekogans {
                 /// \return *this.
                 inline SharedPtr<T> &operator = (const SharedPtr<T> &ptr) {
                     if (&ptr != this) {
-                        Reset (ptr.object);
+                        Reset (ptr.Get ());
                     }
                     return *this;
                 }
                 /// \brief
-                /// template Assignemnet operator.
+                /// Polymorphic assignemnet operator.
                 /// \param[in] ptr Pointer to copy.
                 /// \return *this.
                 template<typename _U>
                 inline SharedPtr<T> &operator = (const SharedPtr<_U> &ptr) {
-                    if (&ptr != this) {
-                        Reset (dynamic_cast<T *> (ptr.object));
-                    }
+                    Reset (dynamic_cast<T *> (ptr.Get ()));
                     return *this;
                 }
                 /// \brief
@@ -394,7 +392,7 @@ namespace thekogans {
                     Reset (ptr.Get ());
                 }
                 /// \brief
-                /// template ctor.
+                /// Polymorphic ctor.
                 /// \param[in] ptr SharedPtr<_U> to reference counted object.
                 template<typename _U>
                 WeakPtr (const SharedPtr<_U> &ptr) :
@@ -413,7 +411,7 @@ namespace thekogans {
                     }
                 }
                 /// \brief
-                /// template copy ctor.
+                /// Polymorphic copy ctor.
                 /// \param[in] ptr WeakPtr<_U> to reference counted object.
                 template<typename _U>
                 WeakPtr (const WeakPtr<_U> &ptr) :
@@ -486,7 +484,7 @@ namespace thekogans {
                     return *this;
                 }
                 /// \brief
-                /// template Assignment operator.
+                /// Polymorphic assignment operator.
                 /// \param[in] ptr WeakPtr<_U> to reference counted object.
                 /// \return *this.
                 template<typename _U>
@@ -504,7 +502,7 @@ namespace thekogans {
                     return *this;
                 }
                 /// \brief
-                /// Assignment operator.
+                /// Move assignment operator.
                 /// \param[in] ptr WeakPtr<T> to reference counted object.
                 /// \return *this.
                 WeakPtr<T> &operator = (WeakPtr<T> &&ptr) {

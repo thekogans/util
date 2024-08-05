@@ -23,7 +23,7 @@
 #include "thekogans/util/Config.h"
 #include "thekogans/util/Types.h"
 #include "thekogans/util/Constants.h"
-#include "thekogans/util/RefCounted.h"
+#include "thekogans/util/DynamicCreatable.h"
 #include "thekogans/util/TimeSpec.h"
 
 namespace thekogans {
@@ -37,10 +37,20 @@ namespace thekogans {
         /// and RemoteLogger for concrete implementations of this
         /// interface.
 
-        struct _LIB_THEKOGANS_UTIL_DECL Logger : public virtual RefCounted {
+        struct _LIB_THEKOGANS_UTIL_DECL Logger : public DynamicCreatable {
             /// \brief
-            /// Declare \see{RefCounted} pointers.
-            THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (Logger)
+            /// Declare \see{DynamicCreatable} boilerplate.
+            THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE_BASE (Logger)
+
+        #if defined (THEKOGANS_UTIL_TYPE_Static)
+            /// \brief
+            /// Because Allocator uses dynamic initialization, when using
+            /// it in static builds call this method to have the Allocator
+            /// explicitly include all internal allocator types. Without
+            /// calling this api, the only allocatorers that will be available
+            /// to your application are the ones you explicitly link to.
+            static void StaticInit ();
+        #endif // defined (THEKOGANS_UTIL_TYPE_Static)
 
             /// \brief
             /// \see{LoggerMgr::level} this logger will log up to.

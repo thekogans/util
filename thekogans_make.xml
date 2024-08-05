@@ -641,6 +641,7 @@
     <cpp_source>JSON.cpp</cpp_source>
     <cpp_source>JobQueue.cpp</cpp_source>
     <cpp_source>JobQueuePool.cpp</cpp_source>
+    <cpp_source>Logger.cpp</cpp_source>
     <cpp_source>LoggerMgr.cpp</cpp_source>
     <cpp_source>MD5.cpp</cpp_source>
     <cpp_source>MemoryLogger.cpp</cpp_source>

@@ -18,10 +18,6 @@
 #include <cassert>
 #include <cstdio>
 #include <iostream>
-#include "thekogans/util/Environment.h"
-#if defined (TOOLCHAIN_OS_Windows)
-    #include "thekogans/util/os/windows/WindowsUtils.h"
-#endif // defined (TOOLCHAIN_OS_Windows)
 #include "thekogans/util/Path.h"
 #include "thekogans/util/Directory.h"
 #include "thekogans/util/Exception.h"
@@ -31,6 +27,8 @@
 
 namespace thekogans {
     namespace util {
+
+        THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_OVERRIDE (FileLogger)
 
         void FileLogger::Log (
                 const std::string & /*subsystem*/,

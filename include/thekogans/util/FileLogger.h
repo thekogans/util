@@ -35,6 +35,8 @@ namespace thekogans {
         /// dropped.
 
         struct _LIB_THEKOGANS_UTIL_DECL FileLogger : public Logger {
+            THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE_OVERRIDE (FileLogger)
+
         private:
             /// \brief
             /// Path to a file that will hold the log.

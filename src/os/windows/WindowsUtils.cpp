@@ -227,7 +227,7 @@ namespace thekogans {
                             LPARAM lParam) {
                         Window::SharedPtr window =
                             WindowRegistry::Instance ()->Get (GetWindowLongPtrW (wnd, GWLP_USERDATA));
-                        return window.Get () != nullptr ?
+                        return window != nullptr ?
                             window->OnEvent (message, wParam, lParam) :
                             DefWindowProcW (wnd, message, wParam, lParam);
                     }

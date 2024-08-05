@@ -32,6 +32,11 @@ namespace thekogans {
         /// more subsystems.
 
         struct _LIB_THEKOGANS_UTIL_DECL NullLogger : public Logger {
+            /// \brief
+            /// NullLogger participates in the \see{DynamicCreatable}
+            /// dynamic discovery and creation.
+            THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE (NullLogger)
+
             /// \ brief
             /// ctor.
             /// \param[in] level \see{LoggerMgr::level} this logger will log up to.

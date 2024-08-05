@@ -284,7 +284,7 @@ namespace thekogans {
                     _T,\
                     SpinLock,\
                     minItemsInPage,\
-                    DefaultAllocator::Instance ().Get ())
+                    DefaultAllocator::Instance ())
 
             /// \struct HRTimerMgr::TimerInfo HRTimerMgr.h thekogans/util/HRTimerMgr.h
             ///

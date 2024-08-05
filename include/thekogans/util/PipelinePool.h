@@ -64,7 +64,7 @@ namespace thekogans {
         ///         }
         ///     };
         ///     util::Pipeline::SharedPtr pipeline = pipelinePool.GetPipeline ();
-        ///     if (pipeline.Get () != 0) {
+        ///     if (pipeline != nullptr) {
         ///         pipeline->EnqJob (new Job (pipeline, ...));
         ///     }
         /// }

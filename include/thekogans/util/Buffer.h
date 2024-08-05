@@ -122,7 +122,7 @@ namespace thekogans {
                 std::size_t length_ = 0,
                 std::size_t readOffset_ = 0,
                 std::size_t writeOffset_ = 0,
-                Allocator::SharedPtr allocator_ = DefaultAllocator::Instance ().Get ()) :
+                Allocator::SharedPtr allocator_ = DefaultAllocator::Instance ()) :
                 Serializer (endianness),
                 data ((ui8 *)data_),
                 length (length_),
@@ -141,7 +141,7 @@ namespace thekogans {
                 std::size_t length_,
                 std::size_t readOffset_ = 0,
                 std::size_t writeOffset_ = 0,
-                Allocator::SharedPtr allocator_ = DefaultAllocator::Instance ().Get ()) :
+                Allocator::SharedPtr allocator_ = DefaultAllocator::Instance ()) :
                 Serializer (endianness),
                 data ((ui8 *)allocator_->Alloc (length_)),
                 length (length_),
@@ -162,7 +162,7 @@ namespace thekogans {
                 const void *end,
                 std::size_t readOffset_ = 0,
                 std::size_t writeOffset_ = SIZE_T_MAX,
-                Allocator::SharedPtr allocator_ = DefaultAllocator::Instance ().Get ());
+                Allocator::SharedPtr allocator_ = DefaultAllocator::Instance ());
             /// \brief
             /// dtor.
             virtual ~Buffer () {
@@ -225,14 +225,14 @@ namespace thekogans {
             /// \param[in] allocator_ Allocator to use to allocate new data.
             virtual void Resize (
                 std::size_t length_,
-                Allocator::SharedPtr allocator_ = DefaultAllocator::Instance ().Get ());
+                Allocator::SharedPtr allocator_ = DefaultAllocator::Instance ());
 
             /// \brief
             /// Clone the buffer.
             /// \param[in] allocator Allocator for the returned buffer.
             /// \return A clone of this buffer.
             virtual SharedPtr Clone (
-                Allocator::SharedPtr allocator = DefaultAllocator::Instance ().Get ()) const;
+                Allocator::SharedPtr allocator = DefaultAllocator::Instance ()) const;
 
             /// \brief
             /// Return subset of the buffer.
@@ -246,7 +246,7 @@ namespace thekogans {
             virtual SharedPtr Subset (
                 std::size_t offset,
                 std::size_t count = SIZE_T_MAX,
-                Allocator::SharedPtr allocator = DefaultAllocator::Instance ().Get ()) const;
+                Allocator::SharedPtr allocator = DefaultAllocator::Instance ()) const;
 
             /// \brief
             /// Return the serialized size of this buffer.
@@ -341,13 +341,13 @@ namespace thekogans {
             /// \param[in] allocator Allocator for the returned buffer.
             /// \return A buffer containing deflated data.
             virtual SharedPtr Deflate (
-                Allocator::SharedPtr allocator = DefaultAllocator::Instance ().Get ()) const;
+                Allocator::SharedPtr allocator = DefaultAllocator::Instance ()) const;
             /// \brief
             /// Use zlib to decompress the buffer.
             /// \param[in] allocator Allocator for the returned buffer.
             /// \return A buffer containing inflated data.
             virtual SharedPtr Inflate (
-                Allocator::SharedPtr allocator = DefaultAllocator::Instance ().Get ()) const;
+                Allocator::SharedPtr allocator = DefaultAllocator::Instance ()) const;
         #endif // defined (THEKOGANS_UTIL_HAVE_ZLIB)
 
             /// \brief
@@ -361,7 +361,7 @@ namespace thekogans {
                 Endianness endianness,
                 const char *hexBuffer,
                 std::size_t hexBufferLength,
-                Allocator::SharedPtr allocator = DefaultAllocator::Instance ().Get ());
+                Allocator::SharedPtr allocator = DefaultAllocator::Instance ());
             /// \brief
             /// Convert the buffer to a hex string.
             /// \return std::string containing the buffers hex encoded contents.
@@ -464,7 +464,7 @@ namespace thekogans {
                     length,
                     readOffset,
                     writeOffset,
-                    SecureAllocator::Instance ().Get ()) {}
+                    SecureAllocator::Instance ()) {}
             /// \brief
             /// ctor for creating a buffer of a given length.
             /// \param[in] endianness Specifies how multi-byte values are stored.
@@ -481,7 +481,7 @@ namespace thekogans {
                     length,
                     readOffset,
                     writeOffset,
-                    SecureAllocator::Instance ().Get ()) {}
+                    SecureAllocator::Instance ()) {}
             /// \brief
             /// ctor for creating a buffer from a given range.
             /// \param[in] endianness Specifies how multi-byte values are stored.
@@ -501,7 +501,7 @@ namespace thekogans {
                     end,
                     readOffset,
                     writeOffset,
-                    SecureAllocator::Instance ().Get ()) {}
+                    SecureAllocator::Instance ()) {}
             /// \brief
             /// dtor. Zero out the buffer before releasing.
             virtual ~SecureBuffer ();
@@ -514,7 +514,7 @@ namespace thekogans {
             virtual void Resize (
                 std::size_t length,
                 Allocator::SharedPtr /*allocator*/ =
-                    DefaultAllocator::Instance ().Get ()) override;
+                    DefaultAllocator::Instance ()) override;
 
             /// \brief
             /// Clone the buffer.
@@ -523,7 +523,7 @@ namespace thekogans {
             /// \return A clone of this buffer.
             virtual SharedPtr Clone (
                 Allocator::SharedPtr /*allocator*/ =
-                    DefaultAllocator::Instance ().Get ()) const override;
+                    DefaultAllocator::Instance ()) const override;
 
             /// \brief
             /// Return subset of the buffer.
@@ -539,7 +539,7 @@ namespace thekogans {
                 std::size_t offset,
                 std::size_t count,
                 Allocator::SharedPtr /*allocator*/ =
-                    DefaultAllocator::Instance ().Get ()) const override;
+                    DefaultAllocator::Instance ()) const override;
 
         #if defined (THEKOGANS_UTIL_HAVE_ZLIB)
             /// \brief
@@ -549,7 +549,7 @@ namespace thekogans {
             /// \return A buffer containing deflated data.
             virtual SharedPtr Deflate (
                 Allocator::SharedPtr /*allocator*/ =
-                    DefaultAllocator::Instance ().Get ()) const override;
+                    DefaultAllocator::Instance ()) const override;
             /// \brief
             /// Use zlib to decompress the buffer.
             /// \param[in] allocator Allocator for the returned buffer.
@@ -557,7 +557,7 @@ namespace thekogans {
             /// \return A buffer containing inflated data.
             virtual SharedPtr Inflate (
                 Allocator::SharedPtr /*allocator*/ =
-                    DefaultAllocator::Instance ().Get ()) const override;
+                    DefaultAllocator::Instance ()) const override;
         #endif // defined (THEKOGANS_UTIL_HAVE_ZLIB)
 
             /// \brief
@@ -590,7 +590,7 @@ namespace thekogans {
                     length,
                     readOffset,
                     length,
-                    NullAllocator::Instance ().Get ()) {}
+                    NullAllocator::Instance ()) {}
 
             /// \brief
             /// Write raw bytes to a buffer.
@@ -636,7 +636,7 @@ namespace thekogans {
                     length,
                     0,
                     writeOffset,
-                    NullAllocator::Instance ().Get ()) {}
+                    NullAllocator::Instance ()) {}
 
             /// \brief
             /// TenantWriteBuffer is neither copy constructable, nor assignable.

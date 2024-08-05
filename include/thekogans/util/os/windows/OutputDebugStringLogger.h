@@ -40,6 +40,11 @@ namespace thekogans {
 
                 struct _LIB_THEKOGANS_UTIL_DECL OutputDebugStringLogger : public Logger {
                     /// \brief
+                    /// OutputDebugStringLogger participates in the \see{DynamicCreatable}
+                    /// dynamic discovery and creation.
+                    THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE (OutputDebugStringLogger)
+
+                    /// \brief
                     /// ctor.
                     /// \param[in] level \see{LoggerMgr::level} this logger will log up to.
                     OutputDebugStringLogger (ui32 level = MaxLevel) :

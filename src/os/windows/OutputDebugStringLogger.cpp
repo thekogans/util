@@ -21,12 +21,15 @@
 
 #include "thekogans/util/os/windows/WindowsHeader.h"
 #include "thekogans/util/StringUtils.h"
+#include "thekogans/util/os/windows/WindowsUtils.h"
 #include "thekogans/util/os/windows/OutputDebugStringLogger.h"
 
 namespace thekogans {
     namespace util {
         namespace os {
             namespace windows {
+
+                THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE (OutputDebugStringLogger)
 
                 void OutputDebugStringLogger::Log (
                         const std::string & /*subsystem*/,

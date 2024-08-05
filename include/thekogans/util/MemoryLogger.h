@@ -39,6 +39,11 @@ namespace thekogans {
 
         struct _LIB_THEKOGANS_UTIL_DECL MemoryLogger : public Logger {
             /// \brief
+            /// MemoryLogger participates in the \see{DynamicCreatable}
+            /// dynamic discovery and creation.
+            THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE (MemoryLogger)
+
+            /// \brief
             /// Max entries to keep in memory before dropping the oldest.
             std::size_t maxEntries;
             /// \brief

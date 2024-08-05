@@ -473,7 +473,7 @@ namespace thekogans {
                 bool expectComma = false;
                 while (1) {
                     JSON::Value::SharedPtr value = ParseValueHelper (tokenizer);
-                    if (value.Get () != nullptr) {
+                    if (value != nullptr) {
                         if (!expectComma) {
                             array->Add (value);
                             expectValue = false;
@@ -526,7 +526,7 @@ namespace thekogans {
                             Token colon = tokenizer.GetToken ();
                             if (colon.type == Token::TYPE_COLON) {
                                 JSON::Value::SharedPtr value = ParseValueHelper (tokenizer);
-                                if (value.Get () != nullptr) {
+                                if (value != nullptr) {
                                     object->Add (token.value, value);
                                     expectNameValue = false;
                                     expectComma = true;
@@ -750,7 +750,7 @@ namespace thekogans {
             std::string message = object.Get<JSON::String> (ATTR_MESSAGE)->value;
             std::vector<Exception::Location> traceback;
             JSON::Array::SharedPtr locationArray = object.Get<JSON::Array> (TAG_LOCATION);
-            if (locationArray.Get () != nullptr) {
+            if (locationArray != nullptr) {
                 for (std::size_t i = 0, count = locationArray->GetValueCount (); i < count; ++i) {
                     JSON::Object::SharedPtr locationObject = locationArray->Get<JSON::Object> (i);
                     Exception::Location location;

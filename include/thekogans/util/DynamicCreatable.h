@@ -200,9 +200,9 @@ namespace thekogans {
         #define THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE(_T)\
             THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_STATIC (_T)\
             THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_SHARED (_T)\
-            THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_OVERRIDE(_T)\
+            THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_OVERRIDE (_T)\
             thekogans::util::DynamicCreatable::SharedPtr _T::Create () {\
-                return thekogans::util::DynamicCreatable::SharedPtr (new _T);\
+                return new _T;\
             }
 
         /// \def THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_SINGLETON(_T)
@@ -214,9 +214,9 @@ namespace thekogans {
         #define THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_SINGLETON(_T)\
             THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_STATIC (_T)\
             THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_SHARED (_T)\
-            THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_OVERRIDE(_T)\
+            THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_OVERRIDE (_T)\
             thekogans::util::DynamicCreatable::SharedPtr _T::Create () {\
-                return thekogans::util::DynamicCreatable::SharedPtr (_T::Instance ().Get ());\
+                return _T::Instance ();\
             }
 
     } // namespace util

@@ -39,7 +39,7 @@ namespace thekogans {
             SecureBuffer,
             SpinLock,
             THEKOGANS_UTIL_DEFAULT_HEAP_ITEMS_IN_PAGE,
-            SecureAllocator::Instance ().Get ())
+            SecureAllocator::Instance ())
 
         Buffer::Buffer (
                 Endianness endianness,
@@ -205,7 +205,7 @@ namespace thekogans {
                 Serializer::Size (length) +
                 Serializer::Size (readOffset) +
                 Serializer::Size (writeOffset) +
-                Serializer::Size (allocator->GetSerializedName ()) +
+                Serializer::Size (allocator->GetSerializedType ()) +
                 length;
         }
 
@@ -427,7 +427,7 @@ namespace thekogans {
         void SecureBuffer::Resize (
                 std::size_t length,
                 Allocator::SharedPtr /*allocator*/) {
-            Buffer::Resize (length, SecureAllocator::Instance ().Get ());
+            Buffer::Resize (length, SecureAllocator::Instance ());
         }
 
         Buffer::SharedPtr SecureBuffer::Clone (Allocator::SharedPtr /*allocator*/) const {
@@ -444,13 +444,13 @@ namespace thekogans {
                 std::size_t offset,
                 std::size_t count,
                 Allocator::SharedPtr /*allocator*/) const {
-            return Buffer::Subset (offset, count, SecureAllocator::Instance ().Get ());
+            return Buffer::Subset (offset, count, SecureAllocator::Instance ());
         }
 
     #if defined (THEKOGANS_UTIL_HAVE_ZLIB)
         Buffer::SharedPtr SecureBuffer::Deflate (Allocator::SharedPtr /*allocator*/) const {
             if (GetDataAvailableForReading () != 0) {
-                OutBuffer outBuffer (SecureAllocator::Instance ().Get ());
+                OutBuffer outBuffer (SecureAllocator::Instance ());
                 DeflateHelper (GetReadPtr (), GetDataAvailableForReading (), outBuffer);
                 return SharedPtr (
                     new SecureBuffer (
@@ -465,7 +465,7 @@ namespace thekogans {
 
         Buffer::SharedPtr SecureBuffer::Inflate (Allocator::SharedPtr /*allocator*/) const {
             if (GetDataAvailableForReading () != 0) {
-                OutBuffer outBuffer (SecureAllocator::Instance ().Get ());
+                OutBuffer outBuffer (SecureAllocator::Instance ());
                 InflateHelper (GetReadPtr (), GetDataAvailableForReading (), outBuffer);
                 return SharedPtr (
                     new SecureBuffer (
@@ -487,7 +487,7 @@ namespace thekogans {
                 buffer.length <<
                 buffer.readOffset <<
                 buffer.writeOffset <<
-                buffer.allocator->GetSerializedName ();
+                buffer.allocator->GetSerializedType ();
             if (buffer.length > 0) {
                 std::size_t bytesWritten = serializer.Write (buffer.data, buffer.length);
                 if (buffer.length != bytesWritten) {
@@ -508,11 +508,11 @@ namespace thekogans {
             SizeT length;
             SizeT readOffset;
             SizeT writeOffset;
-            std::string allocatorName;
-            serializer >> endianness >> length >> readOffset >> writeOffset >> allocatorName;
-            Allocator::SharedPtr allocator = Allocator::CreateType (allocatorName);
+            std::string allocatorType;
+            serializer >> endianness >> length >> readOffset >> writeOffset >> allocatorType;
+            Allocator::SharedPtr allocator = Allocator::CreateType (allocatorType);
             if (allocator == nullptr) {
-                allocator.Reset (DefaultAllocator::Instance ().Get ());
+                allocator = DefaultAllocator::Instance ();
             }
             buffer.Resize (length, allocator);
             if (length > 0) {
@@ -552,7 +552,7 @@ namespace thekogans {
             node.append_attribute (ATTR_WRITE_OFFSET).set_value (
                 util::ui64Tostring (buffer.writeOffset).c_str ());
             node.append_attribute (ATTR_ALLOCATOR).set_value (
-                EncodeXMLCharEntities (buffer.allocator->GetSerializedName ()).c_str ());
+                EncodeXMLCharEntities (buffer.allocator->GetSerializedType ()).c_str ());
             if (buffer.length > 0) {
                 node.text ().set (
                     Base64::Encode (buffer.data, buffer.length, 64)->Tostring ().c_str ());
@@ -574,7 +574,7 @@ namespace thekogans {
             Allocator::SharedPtr allocator =
                 Allocator::CreateType (node.attribute (ATTR_ALLOCATOR).value ());
             if (allocator == nullptr) {
-                allocator.Reset (DefaultAllocator::Instance ().Get ());
+                allocator = DefaultAllocator::Instance ();
             }
             buffer.Resize (length, allocator);
             if (length > 0) {
@@ -615,7 +615,7 @@ namespace thekogans {
             object.Add (ATTR_WRITE_OFFSET, (ui64)buffer.writeOffset);
             object.Add<const std::string &> (
                 ATTR_ALLOCATOR,
-                buffer.allocator->GetSerializedName ());
+                buffer.allocator->GetSerializedType ());
             if (buffer.length > 0) {
                 object.Add (
                     ATTR_CONTENTS,
@@ -640,7 +640,7 @@ namespace thekogans {
             Allocator::SharedPtr allocator =
                 Allocator::CreateType (object.Get<JSON::String> (ATTR_ALLOCATOR)->value);
             if (allocator == nullptr) {
-                allocator.Reset (DefaultAllocator::Instance ().Get ());
+                allocator = DefaultAllocator::Instance ();
             }
             buffer.Resize (length, allocator);
             if (length > 0) {

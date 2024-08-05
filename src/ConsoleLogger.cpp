@@ -22,6 +22,8 @@
 namespace thekogans {
     namespace util {
 
+        THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE (ConsoleLogger)
+
         Console::ColorType ConsoleLogger::DefaultColorScheme::GetColorForLevel (ui32 level) {
             return
                 level == LoggerMgr::Error ? Console::TEXT_COLOR_RED :

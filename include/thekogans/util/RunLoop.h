@@ -1002,7 +1002,7 @@ namespace thekogans {
             /// \param[in] state_ Shared RunLoop state.
             explicit RunLoop (State::SharedPtr state_) :
                     state (state_) {
-                if (state.Get () == 0) {
+                if (state == nullptr) {
                     THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
                         THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
                 }

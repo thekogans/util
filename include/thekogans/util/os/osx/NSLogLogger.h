@@ -15,8 +15,8 @@
 // You should have received a copy of the GNU General Public License
 // along with libthekogans_util. If not, see <http://www.gnu.org/licenses/>.
 
-#if !defined (__thekogans_util_NSLogLogger_h)
-#define __thekogans_util_NSLogLogger_h
+#if !defined (__thekogans_util_os_osx_NSLogLogger_h)
+#define __thekogans_util_os_osx_NSLogLogger_h
 
 #include "thekogans/util/Environment.h"
 
@@ -30,40 +30,49 @@
 
 namespace thekogans {
     namespace util {
+        namespace os {
+            namespace osx {
 
-        /// \struct NSLogLogger NSLogLogger.h thekogans/util/NSLogLogger.h
-        ///
-        /// \brief
-        /// A pluggable Logger instance used to dump log entries to the XCode console.
+                /// \struct NSLogLogger NSLogLogger.h thekogans/util/NSLogLogger.h
+                ///
+                /// \brief
+                /// A pluggable Logger instance used to dump log entries to the XCode console.
 
-        struct _LIB_THEKOGANS_UTIL_DECL NSLogLogger : public Logger {
-            /// \brief
-            /// ctor.
-            /// \param[in] level \see{LoggerMgr::level} this logger will log up to.
-            NSLogLogger (ui32 level = MaxLevel) :
-                Logger (level) {}
+                struct _LIB_THEKOGANS_UTIL_DECL NSLogLogger : public Logger {
+                    /// \brief
+                    /// NSLogLogger participates in the \see{DynamicCreatable}
+                    /// dynamic discovery and creation.
+                    THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE (NSLogLogger)
 
-            // Logger
-            /// \brief
-            /// Dump an entry to XCode console.
-            /// \param[in] subsystem Entry subsystem.
-            /// \param[in] level Entry log level.
-            /// \param[in] header Entry header.
-            /// \param[in] message Entry message.
-            virtual void Log (
-                const std::string & /*subsystem*/,
-                ui32 /*level*/,
-                const std::string &header,
-                const std::string &message) throw () override;
+                    /// \brief
+                    /// ctor.
+                    /// \param[in] level \see{LoggerMgr::level} this logger will log up to.
+                    NSLogLogger (ui32 level = MaxLevel) :
+                        Logger (level) {}
 
-            /// \brief
-            /// NSLogLogger is neither copy constructable, nor assignable.
-            THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (NSLogLogger)
-        };
+                    // Logger
+                    /// \brief
+                    /// Dump an entry to XCode console.
+                    /// \param[in] subsystem Entry subsystem.
+                    /// \param[in] level Entry log level.
+                    /// \param[in] header Entry header.
+                    /// \param[in] message Entry message.
+                    virtual void Log (
+                        const std::string & /*subsystem*/,
+                        ui32 /*level*/,
+                        const std::string &header,
+                        const std::string &message) throw () override;
 
+                    /// \brief
+                    /// NSLogLogger is neither copy constructable, nor assignable.
+                    THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (NSLogLogger)
+                };
+
+            } // namespace osx
+        } // namespace os
     } // namespace util
 } // namespace thekogans
 
 #endif // defined (TOOLCHAIN_OS_OSX)
 
-#endif // !defined (__thekogans_util_NSLogLogger_h)
+#endif // !defined (__thekogans_util_os_osx_NSLogLogger_h)

@@ -315,7 +315,7 @@ namespace thekogans {
             inline HGLOBAL ToHGLOBAL (UINT flags = GMEM_MOVEABLE) const {
                 if (GetDataAvailableForReading () > 0) {
                     HGLOBALPtr global (flags, GetDataAvailableForReading ());
-                    if (global.Get () != 0) {
+                    if (global != nullptr) {
                         memcpy (
                             global,
                             GetReadPtr (),
