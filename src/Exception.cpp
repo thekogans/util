@@ -39,6 +39,15 @@ namespace thekogans {
                 Serializer::Size (buildTime);
         }
 
+        Exception &Exception::operator = (const Exception &exception) {
+            if (&exception != this) {
+                errorCode = exception.errorCode;
+                message = exception.message;
+                traceback = exception.traceback;
+            }
+            return *this;
+        }
+
         std::size_t Exception::Size () const {
             return
                 Serializer::Size (errorCode) +

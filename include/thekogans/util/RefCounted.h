@@ -304,7 +304,8 @@ namespace thekogans {
                 /// Release the object without calling object->Release ().
                 /// \return T *.
                 inline T *Release () {
-                    return EXCHANGE (object, nullptr);
+                    T *object_ = nullptr;
+                    return EXCHANGE (object, object_);
                 }
 
                 /// \brief

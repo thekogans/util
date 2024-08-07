@@ -40,7 +40,7 @@ namespace thekogans {
         // solution in many different contexts. Paired with RefCountedRegistry
         // it's an unbeatable combination for async work that interfaces with the
         // OS API.
-        // NOTE: Unlike other, pablic facing code, this heap implementation is
+        // NOTE: Unlike other, public facing code, this heap implementation is
         // tuned for one purpose, performance. For this reason the safe and defensive
         // coding standards I use everywhere else do not apply here.
 

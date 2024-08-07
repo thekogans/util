@@ -70,7 +70,7 @@ namespace thekogans {
                     valueBuffer + offset,
                     sizeof (T) - offset);
                 if (offset == sizeof (T)) {
-                    TenantReadBuffer buffer (
+                    TenantBuffer buffer (
                         serializer.endianness,
                         valueBuffer,
                         sizeof (T));

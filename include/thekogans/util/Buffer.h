@@ -52,8 +52,8 @@ namespace thekogans {
         /// appropriate. One of Buffer's more novel features is
         /// outsourcing memory management to an \see{Allocator}.
         /// This feature allows you to create buffers for all
-        /// occasions (See \see{SecureBuffer}, \see{TenantReadBuffer}
-        /// and \see{TenantWriteBuffer} below).
+        /// occasions (See \see{SecureBuffer} and \see{TenantBuffer}
+        /// below).
         /// NOTE: Buffer maintains distinct read and write positions
         /// (readOffset and writeOffset). It allows you to continue
         /// filling the buffer without disturbing the current read
@@ -72,9 +72,9 @@ namespace thekogans {
         /// planning and execution. To that end, if you're using
         /// a buffer in a multithreaded (async) environment (to pass
         /// as argument to a \see{Producer} event), you should treat
-        /// any buffer passed to you as const and use TenantReadBuffer
+        /// any buffer passed to you as const and use TenantBuffer
         /// as your own local set of buffer variables. This way any
-        /// other event consumer that will receive the same buffer
+        /// other event consumers that will receive the same buffer
         /// pointer will get correct read/write offsets as the caller
         /// intended. If you can't process the buffer during the
         /// callback and you don't know if there are other recipients
@@ -565,82 +565,37 @@ namespace thekogans {
             THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (SecureBuffer)
         };
 
-        /// \struct TenantReadBuffer Buffer.h thekogans/util/Buffer.h
+        /// \struct TenantBuffer Buffer.h thekogans/util/Buffer.h
         ///
         /// \brief
-        /// TenantReadBuffer is used to wrap a raw byte stream for reading.
+        /// TenantBuffer is used to wrap a raw byte stream.
 
-        struct TenantReadBuffer : public Buffer {
+        struct TenantBuffer : public Buffer {
             /// \brief
             /// ctor for wrapping a raw data pointer.
             /// \param[in] endianness How multi-byte values are stored.
             /// \param[in] data Pointer to wrap.
-            /// NOTE: The data pointer is wrapped and must survive
-            /// the lifetime of this TenantReadBuffer.
+            /// NOTE: The data pointer must survive the lifetime of the TenantBuffer.
             /// \param[in] length Length of data.
             /// \param[in] readOffset Offset at which to read.
-            TenantReadBuffer (
-                Endianness endianness,
-                const void *data,
-                std::size_t length,
-                std::size_t readOffset = 0) :
-                Buffer (
-                    endianness,
-                    const_cast<void *> (data),
-                    length,
-                    readOffset,
-                    length,
-                    NullAllocator::Instance ()) {}
-
-            /// \brief
-            /// Write raw bytes to a buffer.
-            /// \param[in] buffer Bytes to write.
-            /// \param[in] count Number of bytes to write.
-            /// \return Number of bytes actually written.
-            virtual std::size_t Write (
-                    const void * /*buffer*/,
-                    std::size_t /*count*/) override {
-                assert (0);
-                THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                    "%s", "TenantReadBuffer can't Write.");
-                return -1;
-            }
-
-            /// \brief
-            /// TenantReadBuffer is neither copy constructable, nor assignable.
-            THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (TenantReadBuffer)
-        };
-
-        /// \struct TenantWriteBuffer Buffer.h thekogans/util/Buffer.h
-        ///
-        /// \brief
-        /// TenantWriteBuffer is used to wrap a raw byte stream for writing.
-
-        struct TenantWriteBuffer : public Buffer {
-            /// \brief
-            /// ctor for wrapping a raw data pointer.
-            /// \param[in] endianness How multi-byte values are stored.
-            /// \param[in] data Pointer to wrap.
-            /// NOTE: The data pointer is wrapped and must survive
-            /// the lifetime of this TenantWriteBuffer.
-            /// \param[in] length Length of data.
             /// \param[in] writeOffset Offset at which to write.
-            TenantWriteBuffer (
+            TenantBuffer (
                 Endianness endianness,
                 void *data,
                 std::size_t length,
-                std::size_t writeOffset = 0) :
+                std::size_t readOffset = 0,
+                std::size_t writeOffset = SIZE_T_MAX) :
                 Buffer (
                     endianness,
                     data,
                     length,
-                    0,
-                    writeOffset,
+                    readOffset,
+                    writeOffset == SIZE_T_MAX ? length : writeOffset,
                     NullAllocator::Instance ()) {}
 
             /// \brief
-            /// TenantWriteBuffer is neither copy constructable, nor assignable.
-            THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (TenantWriteBuffer)
+            /// TenantBuffer is neither copy constructable, nor assignable.
+            THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (TenantBuffer)
         };
 
         /// \brief

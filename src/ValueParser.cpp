@@ -74,7 +74,7 @@ namespace thekogans {
             if (state == STATE_VALUE) {
                 offset += serializer.Read (valueBuffer + offset, size - offset);
                 if (offset == size) {
-                    TenantReadBuffer buffer (serializer.endianness, valueBuffer, size);
+                    TenantBuffer buffer (serializer.endianness, valueBuffer, size);
                     switch (type) {
                         case TYPE_UI8: {
                             ui8 _value;

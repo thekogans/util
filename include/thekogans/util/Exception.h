@@ -37,6 +37,7 @@
 #include <ostream>
 #include "pugixml/pugixml.hpp"
 #include "thekogans/util/Config.h"
+#include "thekogans/util/RefCounted.h"
 #include "thekogans/util/Types.h"
 #include "thekogans/util/Mutex.h"
 #include "thekogans/util/StringUtils.h"
@@ -64,10 +65,12 @@ namespace thekogans {
         #pragma warning (disable : 4275)
     #endif // defined (TOOLCHAIN_COMPILER_cl)
 
-        struct _LIB_THEKOGANS_UTIL_DECL Exception : public std::exception {
+        struct _LIB_THEKOGANS_UTIL_DECL Exception :
+                public virtual RefCounted,
+                public std::exception {
             /// \brief
-            /// Convenient typedef for std::unique_ptr<Exception>.
-            typedef std::unique_ptr<Exception> UniquePtr;
+            /// Declare \see{RefCounted} pointers.
+            THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (Exception)
 
         public:
             /// \struct Exception::Filter Exception.h thekogans/util/Exception.h
@@ -190,8 +193,18 @@ namespace thekogans {
                 message (message_),
                 traceback (1, Location (file, function, line, buildTime)) {}
             /// \brief
-            /// Virtual dtor.
-            virtual ~Exception () throw () {}
+            /// copy ctor.
+            /// \param[in] exception Exception to copy.
+            Exception (const Exception &exception) :
+                errorCode (exception.errorCode),
+                message (exception.message),
+                traceback (exception.traceback) {}
+
+            /// \brief
+            /// Assignment operator.
+            /// \param[in] exception Exception to copy.
+            /// \return *this
+            Exception &operator = (const Exception &exception);
 
             /// \brief
             /// Return exception serialized size.
