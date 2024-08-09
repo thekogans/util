@@ -125,7 +125,6 @@ public:\
 /// \def THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN(type)
 /// A convenient macro to suppress copy construction and assignment.
 #define THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN(type)\
-private:\
     type (const type &) = delete;\
     type &operator = (const type &) = delete;
 
