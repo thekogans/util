@@ -122,11 +122,11 @@ public:\
     static void operator delete (void *, std::nothrow_t) throw ();\
     static void operator delete (void *, void *);
 
-/// \def THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN(type)
+/// \def THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN(_T)
 /// A convenient macro to suppress copy construction and assignment.
-#define THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN(type)\
-    type (const type &) = delete;\
-    type &operator = (const type &) = delete;
+#define THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN(_T)\
+    _T (const _T &) = delete;\
+    _T &operator = (const _T &) = delete;
 
 namespace thekogans {
     namespace util {
