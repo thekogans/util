@@ -42,7 +42,13 @@ namespace thekogans {
         // OS API.
         // NOTE: Unlike other, public facing code, this heap implementation is
         // tuned for one purpose, performance. For this reason the safe and defensive
-        // coding standards I use everywhere else do not apply here.
+        // coding standards I use everywhere else do not apply here. I did this
+        // because this is not user facing code. There are no external interfaces.
+        // And in the interest of performance I removed all redundant checking and
+        // parameterezation. If there's a crash in this code it is most likely
+        // because of heap corruption which happened somewhere else. This code is
+        // very input sensative and as long as you give it back what it gave you
+        // should never cause any problems.
 
         struct RefCounted::References::Heap : public Singleton<Heap> {
         private:
@@ -123,7 +129,7 @@ namespace thekogans {
 
                 inline void erase (
                         Page *prev,
-                         Page *page) {
+                        Page *page) {
                     if (prev != nullptr) {
                         prev->next = page->next;
                     }
@@ -146,6 +152,8 @@ namespace thekogans {
             };
 
             std::size_t itemsInPage;
+            PageList fullPages;
+            PageList partialPages;
             // RefCounted::References uses boost primitives to atomicaly
             // increment/decrement the shared and weak counters. On some
             // platforms these primitives use machine instructions to
@@ -155,20 +163,13 @@ namespace thekogans {
             // AlignedAllocator. The alignement used is UI32_SIZE which
             // happens to be the type of the above mentioned counters.
             struct AlignedAllocator {
-            private:
-                std::size_t alignment;
-
-            public:
-                AlignedAllocator (std::size_t alignment_) :
-                    alignment (alignment_) {}
-
                 void *Alloc (std::size_t size) {
-                    std::size_t rawSize = alignment + size + sizeof (ui8 *);
+                    std::size_t rawSize = UI32_SIZE + size + sizeof (ui8 *);
                     ui8 *rawPtr = new ui8[rawSize];
                     ui8 *ptr = rawPtr;
-                    std::size_t amountMisaligned = (std::size_t)ptr & (alignment - 1);
+                    std::size_t amountMisaligned = (std::size_t)ptr & (UI32_SIZE - 1);
                     if (amountMisaligned > 0) {
-                        ptr += alignment - amountMisaligned;
+                        ptr += UI32_SIZE - amountMisaligned;
                     }
                     *(ui8 **)((std::size_t)ptr + size) = rawPtr;
                     return ptr;
@@ -180,15 +181,12 @@ namespace thekogans {
                     delete [] *(ui8 **)((std::size_t)ptr + size);
                 }
             } allocator;
-            PageList fullPages;
-            PageList partialPages;
             SpinLock spinLock;
 
         public:
             Heap (std::size_t itemsInPage_ =
                     THEKOGANS_UTIL_DEFAULT_REF_COUNED_REFERENCES_HEAP_ITEMS_IN_PAGE) :
-                itemsInPage (itemsInPage_),
-                allocator (UI32_SIZE) {}
+                itemsInPage (itemsInPage_) {}
 
             void *Alloc () {
                 LockGuard<SpinLock> guard (spinLock);
@@ -258,7 +256,7 @@ namespace thekogans {
             // Alloc uses the above GetPage which runs in O(1). Free uses
             // this GetPage which runs in O(n) where n is the sum of both
             // partial and full page lists. If you're profiling your code
-            // and you see that it spends a lot of its time here theres a
+            // and you see that it spends a lot of its time here there's a
             // knob you can tune to substantially improve performance. Rebuild
             // util and supply your own:
             // THEKOGANS_UTIL_DEFAULT_REF_COUNED_REFERENCES_HEAP_ITEMS_IN_PAGE.
