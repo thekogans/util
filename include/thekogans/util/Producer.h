@@ -212,7 +212,7 @@ namespace thekogans {
 
         private:
             /// \brief
-            /// Convenient typedef for std::pair<typename Subscriber<T>::WeakPtr *,
+            /// Convenient typedef for std::pair<typename Subscriber<T>::WeakPtr,
             /// typename EventDeliveryPolicy::SharedPtr>.
             typedef std::pair<
                 typename Subscriber<T>::WeakPtr,
@@ -297,8 +297,7 @@ namespace thekogans {
                     // variable before calling OnUnsubscribe in case
                     // they want to unsubscribe while processing it.
                     LockGuard<SpinLock> guard (spinLock);
-                    subscribers_ = subscribers;
-                    subscribers.clear ();
+                    subscribers_.swap (subscribers);
                 }
                 for (typename Subscribers::iterator
                         it = subscribers_.begin (),

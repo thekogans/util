@@ -56,17 +56,8 @@ namespace thekogans {
             /// \brief
             /// Called every time the timer fires.
             /// \param[in] timer Timer that fired.
-            /// VERY IMPORTANT: Timer events are delivered using the ImmediateEventDeliveryPolicy.
-            /// Therefore you should always schedule a job in your OnTimerAlarm to minimize the time
-            /// spent in the callback (see IdleProcessor example below).
             virtual void OnTimerAlarm (RefCounted::SharedPtr<Timer> /*timer*/) throw () {}
         };
-
-        /// \brief
-        /// Convenient typedef for RefCountedRegistry<Timer>.
-        /// NOTE: It's one and only instance is accessed like this;
-        /// thekogans::util::TimerRegistry::Instance ().
-        typedef RefCountedRegistry<Timer> TimerRegistry;
 
         /// \struct Timer Timer.h thekogans/util/Timer.h
         ///
@@ -91,14 +82,12 @@ namespace thekogans {
         ///             timer (util::Timer::Create ("IdleProcessor")),
         ///             jobQueue (
         ///                 "IdleProcessor",
-        ///                 util::RunLoop::JobExecutionPolicy::Ptr (
-        ///                     new util::RunLoop::FIFOJobExecutionPolicy),
+        ///                 new util::RunLoop::FIFOJobExecutionPolicy,
         ///                 1,
         ///                 THEKOGANS_UTIL_LOW_THREAD_PRIORITY) {
-        ///         Sbscriber<util::TimerEvents>::Subsctibe (
+        ///         Subscribe (
         ///             *timer,
-        ///             util::Producer<util::TimerEvents>::EventDeliveryPolicy::SharedPtr (
-        ///                 new util::Producer<util::TimerEvents>::ImmediateEventDeliveryPolicy));
+        ///             new util::Producer<util::TimerEvents>::ImmediateEventDeliveryPolicy);
         ///     }
         ///
         ///     inline void StartTimer (const util::TimeSpec &timeSpec) {
@@ -152,12 +141,15 @@ namespace thekogans {
             /// Timer name.
             const std::string name;
             /// \brief
+            /// Convenient typedef for RefCountedRegistry<Timer>.
+            typedef RefCountedRegistry<Timer> Registry;
+            /// \brief
             /// This token is the key between the c++ and the c async io worlds (os).
             /// This token is registered with os specific apis (io completion port on
             /// windows, epoll on linux and kqueue on os x). On callback the token
             /// is used to get a Timer::SharedPtr from the Timer::WeakPtr found in
             /// the \see{util::RefCountedRegistry<Timer>}.
-            const TimerRegistry::Token token;
+            const Registry::Token token;
         #if defined (TOOLCHAIN_OS_Windows)
             /// \brief
             /// Windows native timer object.

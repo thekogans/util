@@ -56,7 +56,7 @@ namespace thekogans {
 
         private:
             /// \brief
-            /// Convenient typedef for std::map<Producer<T> *, typename Producer<T>::WeakPtr *>.
+            /// Convenient typedef for std::map<Producer<T> *, typename Producer<T>::WeakPtr>.
             typedef std::map<Producer<T> *, typename Producer<T>::WeakPtr> Producers;
             /// \brief
             /// List of producers whos events we subscribe to.

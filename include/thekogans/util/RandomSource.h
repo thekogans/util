@@ -53,7 +53,7 @@ namespace thekogans {
         /// properly cleared when it goes out of scope and that it won't be
         /// swapped out to disc in an event of a core dump.
 
-        struct _LIB_THEKOGANS_UTIL_DECL RandomSource {
+        struct _LIB_THEKOGANS_UTIL_DECL RandomSource : public Singleton<RandomSource> {
         private:
         #if defined (TOOLCHAIN_OS_Windows)
             /// \brief
@@ -155,13 +155,6 @@ namespace thekogans {
             /// RandomSource is neither copy constructable, nor assignable.
             THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (RandomSource)
         };
-
-        /// \struct GlobalRandomSource RandomSource.h thekogans/util/RandomSource.h
-        ///
-        /// \brief
-        /// A global random source instance.
-        struct _LIB_THEKOGANS_UTIL_DECL GlobalRandomSource :
-            public Singleton<RandomSource> {};
 
     } // namespace util
 } // namespace thekogans
