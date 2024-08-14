@@ -220,44 +220,6 @@ namespace thekogans {
                 return static_cast<size_type> (-1) / sizeof (T);
             }
 
-        #if __cplusplus < 201103L
-            /// \struct stdSecureAllocator::rebind SecureAllocator.h thekogans/util/SecureAllocator.h
-            ///
-            /// \brief
-            /// Used internally by Visual Studio 10.
-            template <class _U>
-            struct rebind {
-                /// \brief
-                /// Convenient typedef for stdSecureAllocator<_U>.
-                typedef stdSecureAllocator<_U> other;
-            };
-
-            /// \brief
-            /// Placement new and copy construct.
-            /// \param[in] ptr Where to place the object.
-            /// \param[in] value Object to copy construct.
-            void construct (
-                    pointer ptr,
-                    const T &value) {
-                ::new ((void *)ptr) T (value);
-            }
-            /// \brief
-            /// Placement new and copy construct template.
-            /// \param[in] ptr Where to place the object.
-            /// \param[in] value Object to copy construct.
-            template<typename _U>
-            void construct (
-                    pointer ptr,
-                    _U &&value) {
-                ::new ((void *)ptr) T ((_U &&)value);
-            }
-
-            /// \brief
-            /// Destroy the object created with constuct.
-            void destroy (pointer ptr) {
-                ptr->~T ();
-            }
-        #else // __cplusplus < 201103L
             /// \brief
             /// Placement new and copy construct template.
             /// C++11 provides variadic templates.
@@ -278,7 +240,6 @@ namespace thekogans {
             void destroy (_U *ptr) {
                 ptr->~_U ();
             }
-        #endif // __cplusplus < 201103L
         };
 
         /// \brief
@@ -311,85 +272,9 @@ namespace thekogans {
         /// \brief
         /// Convenient typedef for std::basic_string<char, std::char_traits<char>, stdSecureAllocator<char>>.
         typedef std::basic_string<char, std::char_traits<char>, stdSecureAllocator<char>> SecureString;
-    #if __cplusplus < 201103L
-        /// \struct SecureVector SecureAllocator.h thekogans/util/SecureAllocator.h
-        ///
-        /// \brief
-        /// Convenient typedef for std::vector<T, stdSecureAllocator<T>>.
-        template<typename T>
-        struct SecureVector : public std::vector<T, stdSecureAllocator<T>> {
-            /// \brief
-            /// Convenient typedef for std::vector<T, stdSecureAllocator<T>>.
-            typedef std::vector<T, stdSecureAllocator<T>> Base;
-            /// \brief
-            /// Convenient typedef for typename Base::value_type.
-            typedef typename Base::value_type value_type;
-            /// \brief
-            /// Convenient typedef for typename Base::size_type.
-            typedef typename Base::size_type size_type;
-            /// \brief
-            /// Convenient typedef for typename Base::difference_type.
-            typedef typename Base::difference_type difference_type;
-            /// \brief
-            /// Convenient typedef for typename Base::reference.
-            typedef typename Base::reference reference;
-            /// \brief
-            /// Convenient typedef for typename Base::value_type.
-            typedef typename Base::value_type value_type;
-            /// \brief
-            /// Convenient typedef for typename Base::const_reference.
-            typedef typename Base::const_reference const_reference;
-            /// \brief
-            /// Convenient typedef for typename Base::pointer.
-            typedef typename Base::pointer pointer;
-            /// \brief
-            /// Convenient typedef for typename Base::const_pointer.
-            typedef typename Base::const_pointer const_pointer;
-            /// \brief
-            /// Convenient typedef for typename Base::iterator.
-            typedef typename Base::iterator iterator;
-            /// \brief
-            /// Convenient typedef for typename Base::const_iterator.
-            typedef typename Base::const_iterator const_iterator;
-            /// \brief
-            /// Convenient typedef for typename Base::reverse_iterator.
-            typedef typename Base::reverse_iterator reverse_iterator;
-            /// \brief
-            /// Convenient typedef for typename Base::const_reverse_iterator.
-            typedef typename Base::const_reverse_iterator const_reverse_iterator;
-
-            /// \brief
-            /// ctor.
-            SecureVector () :
-                Base (stdSecureAllocator<T> ()) {}
-            /// \brief
-            /// ctor.
-            /// \param[in] count Number of elements to resize to.
-            /// \param[in] value Prototype to initialize new elements with.
-            explicit SecureVector (
-                size_type count,
-                const T &value = T ()) :
-                Base (count, value, stdSecureAllocator<T> ()) {}
-            /// \brief
-            /// ctor.
-            /// \param[in] first Beginning of range.
-            /// \param[in] last Just past the end of range.
-            template<typename InputIt>
-            SecureVector (
-                InputIt first,
-                InputIt last) :
-                Base (first, last, stdSecureAllocator<T> ()) {}
-            /// \brief
-            /// ctor.
-            /// \param[in] secureVector SecureVector to copy.
-            SecureVector (const SecureVector<T> &secureVector) :
-                Base (secureVector) {}
-        };
-    #else // __cplusplus < 201103L
         /// \brief
         /// Convenient typedef for std::vector<T, stdSecureAllocator<T>>.
         template<typename T> using SecureVector = std::vector<T, stdSecureAllocator<T>>;
-    #endif // __cplusplus < 201103L
 
     } // namespace util
 } // namespace thekogans

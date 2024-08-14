@@ -536,13 +536,43 @@ namespace thekogans {
             /// \param[in] value Value to serialize.
             /// \return *this.
             template<>
-            Serializer &operator << (const std::vector<i8> &value);
+            Serializer &operator << (const std::vector<i8> &value) {
+                *this << SizeT (value.size ());
+                if (value.size () > 0) {
+                    std::size_t size = value.size () * I8_SIZE;
+                    if (Write (value.data (), size) != size) {
+                        THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
+                            "Write (value.data (), " THEKOGANS_UTIL_SIZE_T_FORMAT ") != " THEKOGANS_UTIL_SIZE_T_FORMAT,
+                            size,
+                            size);
+                    }
+                }
+                return *this;
+            }
             /// \brief
             /// Extract a std::vector<i8>.
             /// \param[out] value Where to place the extracted value.
             /// \return *this.
             template<>
-            Serializer &operator >> (std::vector<i8> &value);
+            Serializer &operator >> (std::vector<i8> &value) {
+                SizeT length;
+                *this >> length;
+                if (length > 0) {
+                    std::vector<i8> temp (length);
+                    std::size_t size = length * I8_SIZE;
+                    if (Read (temp.data (), size) != size) {
+                        THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
+                            "Read (value.data (), " THEKOGANS_UTIL_SIZE_T_FORMAT ") != " THEKOGANS_UTIL_SIZE_T_FORMAT,
+                            size,
+                            size);
+                    }
+                    value.swap (temp);
+                }
+                else {
+                    value.clear ();
+                }
+                return *this;
+            }
 
             /// \brief
             /// Return serialized size of const std::vector<ui8> &.
@@ -556,13 +586,43 @@ namespace thekogans {
             /// \param[in] value Value to serialize.
             /// \return *this.
             template<>
-            Serializer &operator << (const std::vector<ui8> &value);
+            Serializer &operator << (const std::vector<ui8> &value) {
+                *this << SizeT (value.size ());
+                if (value.size () > 0) {
+                    std::size_t size = value.size () * UI8_SIZE;
+                    if (Write (value.data (), size) != size) {
+                        THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
+                            "Write (value.data (), " THEKOGANS_UTIL_SIZE_T_FORMAT ") != " THEKOGANS_UTIL_SIZE_T_FORMAT,
+                            size,
+                            size);
+                    }
+                }
+                return *this;
+            }
             /// \brief
             /// Extract a std::vector<ui8>.
             /// \param[out] value Where to place the extracted value.
             /// \return *this.
             template<>
-            Serializer &operator >> (std::vector<ui8> &value);
+            Serializer &operator >> (std::vector<ui8> &value) {
+                SizeT length;
+                *this >> length;
+                if (length > 0) {
+                    std::vector<ui8> temp (length);
+                    std::size_t size = length * UI8_SIZE;
+                    if (Read (temp.data (), size) != size) {
+                        THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
+                            "Read (value.data (), " THEKOGANS_UTIL_SIZE_T_FORMAT ") != " THEKOGANS_UTIL_SIZE_T_FORMAT,
+                            size,
+                            size);
+                    }
+                    value.swap (temp);
+                }
+                else {
+                    value.clear ();
+                }
+                return *this;
+            }
 
             /// \brief
             /// Return serialized size of const \see{SecureVector}<T> &.
@@ -624,13 +684,43 @@ namespace thekogans {
             /// \param[in] value Value to serialize.
             /// \return *this.
             template<>
-            Serializer &operator << (const SecureVector<i8> &value);
+            Serializer &operator << (const SecureVector<i8> &value) {
+                *this << SizeT (value.size ());
+                if (value.size () > 0) {
+                    std::size_t size = value.size () * I8_SIZE;
+                    if (Write (value.data (), size) != size) {
+                        THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
+                            "Write (value.data (), " THEKOGANS_UTIL_SIZE_T_FORMAT ") != " THEKOGANS_UTIL_SIZE_T_FORMAT,
+                            size,
+                            size);
+                    }
+                }
+                return *this;
+            }
             /// \brief
             /// Extract a \see{SecureVector}<i8>.
             /// \param[out] value Where to place the extracted value.
             /// \return *this.
             template<>
-            Serializer &operator >> (SecureVector<i8> &value);
+            Serializer &operator >> (SecureVector<i8> &value) {
+                SizeT length;
+                *this >> length;
+                if (length > 0) {
+                    SecureVector<i8> temp (length);
+                    std::size_t size = length * I8_SIZE;
+                    if (Read (temp.data (), size) != size) {
+                        THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
+                            "Read (value.data (), " THEKOGANS_UTIL_SIZE_T_FORMAT ") != " THEKOGANS_UTIL_SIZE_T_FORMAT,
+                            size,
+                            size);
+                    }
+                    value.swap (temp);
+                }
+                else {
+                    value.clear ();
+                }
+                return *this;
+            }
 
             /// \brief
             /// Return serialized size of const \see{SecureVector}<ui8> &.
@@ -644,13 +734,43 @@ namespace thekogans {
             /// \param[in] value Value to serialize.
             /// \return *this.
             template<>
-            Serializer &operator << (const SecureVector<ui8> &value);
+            Serializer &operator << (const SecureVector<ui8> &value) {
+                *this << SizeT (value.size ());
+                if (value.size () > 0) {
+                    std::size_t size = value.size () * UI8_SIZE;
+                    if (Write (value.data (), size) != size) {
+                        THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
+                            "Write (value.data (), " THEKOGANS_UTIL_SIZE_T_FORMAT ") != " THEKOGANS_UTIL_SIZE_T_FORMAT,
+                            size,
+                            size);
+                    }
+                }
+                return *this;
+            }
             /// \brief
             /// Extract a \see{SecureVector}<ui8>.
             /// \param[out] value Where to place the extracted value.
             /// \return *this.
             template<>
-            Serializer &operator >> (SecureVector<ui8> &value);
+            Serializer &operator >> (SecureVector<ui8> &value) {
+                SizeT length;
+                *this >> length;
+                if (length > 0) {
+                    SecureVector<ui8> temp (length);
+                    std::size_t size = length * UI8_SIZE;
+                    if (Read (temp.data (), size) != size) {
+                        THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
+                            "Read (value.data (), " THEKOGANS_UTIL_SIZE_T_FORMAT ") != " THEKOGANS_UTIL_SIZE_T_FORMAT,
+                            size,
+                            size);
+                    }
+                    value.swap (temp);
+                }
+                else {
+                    value.clear ();
+                }
+                return *this;
+            }
 
             /// \brief
             /// Return serialized size of const std::list<T> &.
