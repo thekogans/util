@@ -310,16 +310,6 @@ namespace thekogans {
                     THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (WindowClass)
                 };
 
-                /// \brief
-                /// Forward declaration of Window.
-                struct Window;
-
-                /// \brief
-                /// Convenient typedef for RefCountedRegistry<Window>.
-                /// NOTE: It's one and only instance is accessed like this;
-                /// thekogans::util::os::windows::WindowRegistry::Instance ().
-                typedef RefCountedRegistry<Window> WindowRegistry;
-
                 /// \struct Window WindowsUtils.h thekogans/util/os/windows/WindowsUtils.h
                 ///
                 /// \brief
@@ -332,11 +322,15 @@ namespace thekogans {
                     THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (Window)
 
                     /// \brief
+                    /// Convenient typedef for RefCountedRegistry<Window>.
+                    typedef RefCountedRegistry<Window> Registry;
+
+                    /// \brief
                     /// Windows window handle.
                     HWND wnd;
                     /// \brief
                     /// Used to retrieve a Window::SharedPtr from the window registry.
-                    const WindowRegistry::Token token;
+                    const Registry::Token token;
 
                     /// \brief
                     /// ctor.
@@ -362,9 +356,9 @@ namespace thekogans {
                     virtual ~Window ();
 
                     /// \brief
-                    /// Return the WindowRegistry token for this window.
-                    /// \return WindowRegistry token for this window.
-                    inline WindowRegistry::Token::ValueType GetToken () const {
+                    /// Return the Registry token for this window.
+                    /// \return Registry token for this window.
+                    inline Registry::Token::ValueType GetToken () const {
                         return token.GetValue ();
                     }
 

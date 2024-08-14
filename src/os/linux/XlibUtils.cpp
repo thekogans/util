@@ -70,7 +70,8 @@ namespace thekogans {
                          gotEntry; gotEntry = directory.GetNextEntry (entry)) {
                         i32 dispayNumber;
                         if (sscanf (entry.name.c_str (), pattern, &dispayNumber) == 1) {
-                            Display *display = XOpenDisplay (FormatString (":%d", dispayNumber).c_str ());
+                            Display *display = XOpenDisplay (
+                                FormatString (":%d", dispayNumber).c_str ());
                             if (display != nullptr) {
                                 displays.push_back (display);
                             }
@@ -102,12 +103,12 @@ namespace thekogans {
                 namespace {
                     struct XlibWindowMap :
                             public Singleton<XlibWindowMap>,
-                            private std::map<Window, XlibWindowRegistry::Token::ValueType> {
+                            private std::map<Window, XlibWindow::Registry::Token::ValueType> {
                         SpinLock spinLok;
 
                         void Add (
                                 Window window,
-                                XlibWindowRegistry::Token::ValueType token) {
+                                XlibWindow::Registry::Token::ValueType token) {
                             LockGuard<SpinLock> guard (spinLock);
                             insert (value_type (window, token));
                         }
@@ -119,7 +120,7 @@ namespace thekogans {
                             LockGuard<SpinLock> guard (spinLock);
                             const_iterator it = find (window);
                             return it != end () ?
-                                XlibWindowRegistry::Instance ()->Get (it->second) :
+                                XlibWindow::Registry::Instance ()->Get (it->second) :
                                 XlibWindow::SharedPtr ();
                         }
                     };
@@ -194,7 +195,8 @@ namespace thekogans {
                             close (handle);
                         }
                     } epoll (DEFAULT_MAX_SIZE);
-                    for (std::size_t i = 0, count = XlibDisplays::Instance ()->displays.size (); i < count; ++i) {
+                    for (std::size_t i = 0,
+                            count = XlibDisplays::Instance ()->displays.size (); i < count; ++i) {
                         epoll_event event = {0};
                         event.events = EPOLLIN;
                         event.data.ptr = XlibDisplays::Instance ()->displays[i];

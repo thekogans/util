@@ -86,10 +86,6 @@ namespace thekogans {
                     ~XlibDisplayGuard ();
                 };
 
-                /// \brief
-                /// Convenient typedef for RefCountedRegistry<XlibWindow>.
-                typedef RefCountedRegistry<XlibWindow> XlibWindowRegistry;
-
                 /// \struct SystemRunLoop::XlibWindow SystemRunLoop.h thekogans/util/SystemRunLoop.h
                 ///
                 /// \brief
@@ -105,6 +101,10 @@ namespace thekogans {
                     /// Declare \see{util::RefCounted} pointers.
                     THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (XlibWindow)
 
+                    /// \brief
+                    /// Convenient typedef for RefCountedRegistry<XlibWindow>.
+                    typedef RefCountedRegistry<XlibWindow> Registry;
+
                 protected:
                     /// \brief
                     /// Xlib Display.
@@ -113,8 +113,8 @@ namespace thekogans {
                     /// Xlib Window.
                     Window window;
                     /// \brief
-                    /// XlibWindowRegistry token.
-                    const XlibWindowRegistry::Token token;
+                    /// Registry token.
+                    const Registry::Token token;
 
                 public:
                     /// \brief
