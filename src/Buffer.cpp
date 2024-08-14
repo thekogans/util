@@ -330,7 +330,9 @@ namespace thekogans {
                     zStream.avail_out = (uInt)tmpOutBuffer.size ();
                     result = inflate (&zStream, Z_NO_FLUSH);
                     assert (result != Z_STREAM_ERROR);
-                    outBuffer.Write (tmpOutBuffer.data (), tmpOutBuffer.size () - zStream.avail_out);
+                    outBuffer.Write (
+                        tmpOutBuffer.data (),
+                        tmpOutBuffer.size () - zStream.avail_out);
                 } while (zStream.avail_out == 0);
                 result = inflateEnd (&zStream);
                 assert (result == Z_OK);
@@ -341,7 +343,10 @@ namespace thekogans {
             if (allocator != nullptr) {
                 if (GetDataAvailableForReading () != 0) {
                     OutBuffer outBuffer (allocator);
-                    DeflateHelper (GetReadPtr (), GetDataAvailableForReading (), outBuffer);
+                    DeflateHelper (
+                        GetReadPtr (),
+                        GetDataAvailableForReading (),
+                        outBuffer);
                     return SharedPtr (
                         new Buffer (
                             endianness,
@@ -363,7 +368,10 @@ namespace thekogans {
             if (allocator != nullptr) {
                 if (GetDataAvailableForReading () != 0) {
                     OutBuffer outBuffer (allocator);
-                    InflateHelper (GetReadPtr (), GetDataAvailableForReading (), outBuffer);
+                    InflateHelper (
+                        GetReadPtr (),
+                        GetDataAvailableForReading (),
+                        outBuffer);
                     return SharedPtr (
                         new Buffer (
                             endianness,
@@ -451,7 +459,10 @@ namespace thekogans {
         Buffer::SharedPtr SecureBuffer::Deflate (Allocator::SharedPtr /*allocator*/) const {
             if (GetDataAvailableForReading () != 0) {
                 OutBuffer outBuffer (SecureAllocator::Instance ());
-                DeflateHelper (GetReadPtr (), GetDataAvailableForReading (), outBuffer);
+                DeflateHelper (
+                    GetReadPtr (),
+                    GetDataAvailableForReading (),
+                    outBuffer);
                 return SharedPtr (
                     new SecureBuffer (
                         endianness,

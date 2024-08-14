@@ -142,7 +142,9 @@ namespace thekogans {
                 references (new References) {}
             /// \brief
             /// dtor.
-            virtual ~RefCounted ();
+            virtual ~RefCounted () {
+                references->ReleaseWeakRef ();
+            }
 
             /// \brief
             /// Increment the shared reference count.

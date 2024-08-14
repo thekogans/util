@@ -347,30 +347,5 @@ namespace thekogans {
             return false;
         }
 
-        RefCounted::~RefCounted () {
-            // We're going out of scope. If there are still
-            // shared references remaining, we have a problem.
-            if (references->GetSharedCount () != 0) {
-                // Here we both log the problem and assert to give the
-                // engineer the best chance of figuring out what happened.
-                std::string message =
-                    FormatString ("%s : %u\n",
-                        typeid (*this).name (),
-                        references->GetSharedCount ());
-                Log (
-                    SubsystemAll,
-                    THEKOGANS_UTIL,
-                    Error,
-                    __FILE__,
-                    __FUNCTION__,
-                    __LINE__,
-                    __DATE__ " " __TIME__,
-                    "%s",
-                    message.c_str ());
-                THEKOGANS_UTIL_ASSERT (references->GetSharedCount () == 0, message);
-            }
-            references->ReleaseWeakRef ();
-        }
-
     } // namespace util
 } // namespace thekogans
