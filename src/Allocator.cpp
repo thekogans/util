@@ -27,7 +27,7 @@
         #include "thekogans/util/os/windows/HeapAllocator.h"
     #endif // defined (TOOLCHAIN_OS_Windows)
     //#include "thekogans/util/AlignedAllocator.h"
-    //#include "thekogans/util/SharedAllocator.h"
+    #include "thekogans/util/SharedAllocator.h"
     #include "thekogans/util/NullAllocator.h"
 #endif // defined (THEKOGANS_UTIL_TYPE_Static)
 
@@ -45,17 +45,17 @@ namespace thekogans {
             os::windows::HeapAllocator::StaticInit ();
         #endif // defined (TOOLCHAIN_OS_Windows)
             //AlignedAllocator::StaticInit ();
-            //SharedAllocator::StaticInit ();
+            GlobalSharedAllocator::StaticInit ();
             NullAllocator::StaticInit ();
         }
     #endif // defined (THEKOGANS_UTIL_TYPE_Static)
 
         std::string Allocator::GetSerializedType () const {
-            std::string allocatorType = Type ();
-            if (CreateType (allocatorType) == nullptr) {
-                allocatorType = DefaultAllocator::Instance ()->Type ();
+            std::string type = Type ();
+            if (CreateType (type) == nullptr) {
+                type = DefaultAllocator::Instance ()->Type ();
             }
-            return allocatorType;
+            return type;
         }
 
     } // namespace util

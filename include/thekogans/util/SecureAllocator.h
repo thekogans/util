@@ -25,9 +25,7 @@
     defined (THEKOGANS_UTIL_USE_DEFAULT_SECURE_ALLOCATOR)
 
 #include <cstddef>
-#if __cplusplus >= 201103L
-    #include <utility>
-#endif // __cplusplus >= 201103L
+#include <utility>
 #include "thekogans/util/Config.h"
 #include "thekogans/util/Types.h"
 #include "thekogans/util/Allocator.h"

@@ -154,5 +154,7 @@ namespace thekogans {
             return header->rootObject != 0 ? GetPtrFromOffset (header->rootObject) : nullptr;
         }
 
+        THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_SINGLETON (GlobalSharedAllocator)
+
     } // namespace util
 } // namespace thekogans

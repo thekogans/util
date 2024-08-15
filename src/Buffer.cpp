@@ -129,6 +129,13 @@ namespace thekogans {
             }
         }
 
+        void Buffer::Rewind (bool readOnly) {
+            readOffset = 0;
+            if (!readOnly) {
+                writeOffset = 0;
+            }
+        }
+
         void Buffer::Resize (
                 std::size_t length_,
                 Allocator::SharedPtr allocator_) {

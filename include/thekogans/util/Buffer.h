@@ -212,12 +212,7 @@ namespace thekogans {
             /// Reset the readOffset and the writeOffset to prepare the
             /// buffer for reuse.
             /// \param[in] readOnly true == Reset for reading only.
-            inline void Rewind (bool readOnly = false) {
-                readOffset = 0;
-                if (!readOnly) {
-                    writeOffset = 0;
-                }
-            }
+            void Rewind (bool readOnly = false);
 
             /// \brief
             /// Resize the buffer. Adjust readOffset and writeOffset to stay within [0, length).

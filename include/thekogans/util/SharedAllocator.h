@@ -381,7 +381,16 @@ namespace thekogans {
         /// The one and only global shared allocator instance.
         struct _LIB_THEKOGANS_UTIL_DECL GlobalSharedAllocator :
                 public SharedAllocator,
-                public Singleton<GlobalSharedAllocator> {
+                public Singleton<
+                    GlobalSharedAllocator,
+                    SpinLock,
+                    RefCountedInstanceCreator<GlobalSharedAllocator>,
+                    RefCountedInstanceDestroyer<GlobalSharedAllocator>> {
+            /// \brief
+            /// DefaultAllocator participates in the \see{DynamicCreatable}
+            /// dynamic discovery and creation.
+            THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE (GlobalSharedAllocator)
+
             /// \brief
             /// Create a global shared allocator with custom ctor arguments.
             /// \param[in] name Global name used to identify the shared region.
