@@ -44,7 +44,7 @@ namespace thekogans {
         /// using namespace thekogans;
         /// util::SecureBuffer randomBytes (util::HostEndian, randomBytesNeeded);
         /// randomBytes.AdvanceWriteOffset (
-        ///     util::GlobalRandomSource::Instance ()->GetBytes (
+        ///     util::RandomSource::Instance ()->GetBytes (
         ///         randomBytes.GetWritePtr (),
         ///         randomBytes.GetDataAvailableForWriting ()));
         /// \endcode

@@ -41,9 +41,11 @@ namespace thekogans {
         /// canonical example illustrating the intended usage:
         ///
         /// \code{.cpp}
-        /// std::vector<thekogans::blas::Point3> result;
-        /// std::vector<thekogans::blas::Point3> vertices;
-        /// thekogans::blas::Matrix3 xform;
+        /// using namespace thekogans;
+        ///
+        /// std::vector<blas::Point3> result;
+        /// std::vector<blas::Point3> vertices;
+        /// blas::Matrix3 xform;
         /// \endcode
         ///
         /// Traditional loop:
@@ -57,17 +59,17 @@ namespace thekogans {
         /// Vectorized loop:
         ///
         /// \code{.cpp}
-        /// struct XformVerticesJob : public thekogans::util::Vectorizer::Job {
+        /// struct XformVerticesJob : public util::Vectorizer::Job {
         /// private:
-        ///     std::vector<thekogans::blas::Point3> &result;
-        ///     const std::vector<thekogans::blas::Point3> &vertices;
-        ///     const thekogans::blas::Matrix3 &xform;
+        ///     std::vector<blas::Point3> &result;
+        ///     const std::vector<blas::Point3> &vertices;
+        ///     const blas::Matrix3 &xform;
         ///
         /// public:
         ///     XformVerticesJob (
-        ///         std::vector<thekogans::blas::Point3> &result_,
-        ///         const std::vector<thekogans::blas::Point3> &vertices_,
-        ///         const thekogans::blas::Matrix3 &xform_) :
+        ///         std::vector<blas::Point3> &result_,
+        ///         const std::vector<blas::Point3> &vertices_,
+        ///         const blas::Matrix3 &xform_) :
         ///         result (result_),
         ///         vertices (vertices_),
         ///         xform (xform_) {}
@@ -85,10 +87,10 @@ namespace thekogans {
         ///         return vertices.size ();
         ///     }
         /// } job (result, vertices, xform);
-        /// GlobalVectorizer::Instance ()->Execute (job);
+        /// util::Vectorizer::Instance ()->Execute (job);
         /// \endcode
 
-        struct _LIB_THEKOGANS_UTIL_DECL Vectorizer {
+        struct _LIB_THEKOGANS_UTIL_DECL Vectorizer : public Singleton<Vectorizer> {
             /// \struct Vectorizer::Job Vectorizer.h thekogans/util/Vectorizer.h
             ///
             /// \brief
@@ -226,30 +228,6 @@ namespace thekogans {
             /// \brief
             /// Chunk size each worker should execute.
             std::size_t chunkSize;
-        };
-
-        /// \struct GlobalVectorizer Vectorizer.h thekogans/util/Vectorizer.h
-        ///
-        /// \brief
-        /// A global vectorizer instance. The Vectorizer is designed to be as
-        /// flexible as possible. To be useful in different situations the
-        /// vectorizer's worker pool needs to be parametrized as we might need
-        /// to support different vector widths. That said, the most basic (and
-        /// the most useful) use will have a single vectorizer using the defaults.
-        /// This struct exists to aid in that. If all you need is a global
-        /// vectorizer then GlobalVectorizer::Instance () will do the trick.
-
-        struct _LIB_THEKOGANS_UTIL_DECL GlobalVectorizer :
-                public Vectorizer,
-                public Singleton<GlobalVectorizer> {
-            /// \brief
-            /// Create a global vectorizer with custom ctor arguments.
-            /// \param[in] workerCount The width of the vector.
-            /// \param[in] workerPriority Worker thread priority.
-            GlobalVectorizer (
-                std::size_t workerCount = SystemInfo::Instance ()->GetCPUCount (),
-                i32 workerPriority = THEKOGANS_UTIL_NORMAL_THREAD_PRIORITY) :
-                Vectorizer (workerCount, workerPriority) {}
         };
 
     } // namespace util
