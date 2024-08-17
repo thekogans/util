@@ -224,10 +224,7 @@ namespace thekogans {
             /// in the debugger.
             RunLoopScheduler (const std::string &name = "RunLoopScheduler") :
                     timer (Timer::Create (name)) {
-                Subscribe (
-                    *timer,
-                    Producer<TimerEvents>::EventDeliveryPolicy::SharedPtr (
-                        new Producer<TimerEvents>::ImmediateEventDeliveryPolicy));
+                Subscribe (*timer);
             }
             /// \brief
             /// dtor.
@@ -335,7 +332,11 @@ namespace thekogans {
         /// A global run loop scheduler instance.
         struct _LIB_THEKOGANS_UTIL_DECL GlobalRunLoopScheduler :
                 public RunLoopScheduler,
-                public Singleton<GlobalRunLoopScheduler> {
+                public Singleton<
+                    GlobalRunLoopScheduler,
+                    SpinLock,
+                    RefCountedInstanceCreator<GlobalRunLoopScheduler>,
+                    RefCountedInstanceDestroyer<GlobalRunLoopScheduler>> {
             /// \brief
             /// Create a global run loop scheduler with custom ctor arguments.
             /// \param[in] name RunLoopScheduler name.
