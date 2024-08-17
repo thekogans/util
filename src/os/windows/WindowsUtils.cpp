@@ -29,15 +29,16 @@ _LIB_THEKOGANS_UTIL_DECL int _LIB_THEKOGANS_UTIL_API pipe (
     static std::atomic<ULONG> serialNumber (1);
     std::string name =
         thekogans::util::FormatString (
-            "\\\\.\\Pipe\\thekogans_util.%08x.%08x",
+            "\\\\.\\pipe\\thekogans_util.%08x.%08x",
             GetCurrentProcessId (),
             serialNumber++);
     SECURITY_ATTRIBUTES securityAttributes;
     securityAttributes.nLength = sizeof (SECURITY_ATTRIBUTES);
     securityAttributes.bInheritHandle = TRUE;
     securityAttributes.lpSecurityDescriptor = 0;
-    fildes[0] = CreateNamedPipeA (
-        name.c_str (),
+    std::wstring utf16Name = thekogans::util::os::windows::UTF8ToUTF16 (name);
+    fildes[0] = CreateNamedPipeW (
+        utf16Name.c_str (),
         PIPE_ACCESS_INBOUND | FILE_FLAG_OVERLAPPED,
         PIPE_TYPE_BYTE | PIPE_WAIT,
         1,
@@ -48,8 +49,8 @@ _LIB_THEKOGANS_UTIL_DECL int _LIB_THEKOGANS_UTIL_API pipe (
     if (fildes[0] == THEKOGANS_UTIL_INVALID_HANDLE_VALUE) {
         return -1;
     }
-    fildes[1] = CreateFileA (
-        name.c_str (),
+    fildes[1] = CreateFileW (
+        utf16Name.c_str (),
         GENERIC_WRITE,
         0,
         &securityAttributes,
@@ -70,7 +71,8 @@ namespace thekogans {
         namespace os {
             namespace windows {
 
-                _LIB_THEKOGANS_UTIL_DECL FILETIME _LIB_THEKOGANS_UTIL_API i64ToFILETIME (i64 value) {
+                _LIB_THEKOGANS_UTIL_DECL FILETIME _LIB_THEKOGANS_UTIL_API i64ToFILETIME (
+                        i64 value) {
                     ULARGE_INTEGER ul;
                     ul.QuadPart = (value + THEKOGANS_UTIL_UI64_LITERAL (11644473600)) *
                         THEKOGANS_UTIL_UI64_LITERAL (10000000);
@@ -80,7 +82,8 @@ namespace thekogans {
                     return ft;
                 }
 
-                _LIB_THEKOGANS_UTIL_DECL i64 _LIB_THEKOGANS_UTIL_API FILETIMEToi64 (const FILETIME &value) {
+                _LIB_THEKOGANS_UTIL_DECL i64 _LIB_THEKOGANS_UTIL_API FILETIMEToi64 (
+                        const FILETIME &value) {
                     ULARGE_INTEGER ul;
                     ul.LowPart = value.dwLowDateTime;
                     ul.HighPart = value.dwHighDateTime;

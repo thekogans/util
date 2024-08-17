@@ -289,7 +289,8 @@ namespace thekogans {
             /// \brief
             /// Set the list of environment variables.
             /// \param[in] environmentVariables_ List of environment variables to set.
-            inline void SetEnvironmentVariables (const std::list<std::string> &environmentVariables_) {
+            inline void SetEnvironmentVariables (
+                    const std::list<std::string> &environmentVariables_) {
                 environmentVariables = environmentVariables_;
             }
 
@@ -390,7 +391,7 @@ namespace thekogans {
             /// util::ChildProcess lsProcess ("ls");
             /// util::MainRunLoop::Instance ()->EnqJob (lsProcess.CreateSpawnJob (), true);
             /// if (lsProcess.GetProcessId () != THEKOGANS_UTIL_INVALID_PROCESS_ID_VALUE) {
-            ///     util::Buffer lsOutput = ls.CollectOutput (ls.GetOutPipe ());
+            ///     util::Buffer::SharedPtr lsOutput = ls.CollectOutput (ls.GetOutPipe ());
             /// }
             /// else {
             ///     // Unable to spawn ls. Handle error.
@@ -400,8 +401,8 @@ namespace thekogans {
             /// NOTE: This technique works with either stdOut or stdErr. If your
             /// io needs are more involved (bidirectional?), this wont work as this
             /// function blocks until the child process has exited. In that case
-            /// you'll need to use async io and use AsyncIoEvent[Queue | Sink] found
-            /// in thekogans stream.
+            /// you'll need to use async io and use AsyncIoEventQueue found in
+            /// thekogans stream.
             /// \param[in] handle GetOutPipe () or GetErrPipe ().
             /// \param[in] chunkSize \see{File::Read) chunk size.
             /// \param[in] reap Reap the child process after collecting the output.

@@ -165,23 +165,6 @@ namespace thekogans {
                 return references->GetSharedCount ();
             }
 
-            /// \brief
-            /// This function template allows you to coexist with libraries that use
-            /// std::shared_ptr.
-            /// \return std::shared_ptr<T>.
-            template<typename T>
-            std::shared_ptr<T> CreateStdSharedPtr () {
-                AddRef ();
-                return std::shared_ptr<T> (
-                    this,
-                    [] (T *object) {
-                        if (object != nullptr) {
-                            object->Release ();
-                        }
-                    }
-                );
-            }
-
             /// \struct RefCounted::SharedPtr RefCounted.h thekogans/util/RefCounted.h
             ///
             /// \brief
