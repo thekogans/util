@@ -295,11 +295,6 @@ namespace thekogans {
             if (newWeak == 0) {
                 delete this;
             }
-            else if (newWeak == UI32_MAX) {
-                THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                    "weak counter underflow in an instance of %s.",
-                    typeid (*this).name ());
-            }
             return newWeak;
         }
 
@@ -315,11 +310,6 @@ namespace thekogans {
             ui32 newShared = operations::fetch_sub (shared, 1, boost::memory_order_release) - 1;
             if (newShared == 0) {
                 object->Harakiri ();
-            }
-            else if (newShared == UI32_MAX) {
-                THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                    "shared counter underflow in an instance of %s.",
-                    typeid (*this).name ());
             }
             return newShared;
         }
