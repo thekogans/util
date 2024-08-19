@@ -41,6 +41,18 @@ namespace thekogans {
             THEKOGANS_UTIL_DEFAULT_HEAP_ITEMS_IN_PAGE,
             SecureAllocator::Instance ())
 
+        Buffer::Buffer (const Buffer &other) :
+                Serializer (other.endianness),
+                data ((ui8 *)other.allocator->Alloc (other.length)),
+                length (other.length),
+                readOffset (other.readOffset),
+                writeOffset (other.writeOffset),
+                allocator (other.allocator) {
+            if (length > 0) {
+                memcpy (data, other.data, length);
+            }
+        }
+
         Buffer::Buffer (
                 Endianness endianness,
                 const void *begin,
@@ -57,6 +69,30 @@ namespace thekogans {
             if (length > 0) {
                 memcpy (data, begin, length);
             }
+        }
+
+        Buffer &Buffer::operator = (const Buffer &other) {
+            if (this != &other) {
+                Resize (0);
+                endianness = other.endianness;
+                data = (ui8 *)other.allocator->Alloc (other.length);
+                length = other.length;
+                readOffset = other.readOffset;
+                writeOffset = other.writeOffset;
+                allocator = other.allocator;
+                if (length > 0) {
+                    memcpy (data, other.data, length);
+                }
+            }
+            return *this;
+        }
+
+        Buffer &Buffer::operator = (Buffer &&other) {
+            if (this != &other) {
+                Buffer temp (std::move (other));
+                swap (temp);
+            }
+            return *this;
         }
 
         void Buffer::swap (Buffer &other) {
@@ -437,6 +473,30 @@ namespace thekogans {
 
         SecureBuffer::~SecureBuffer () {
             Clear ();
+        }
+
+        SecureBuffer &SecureBuffer::operator = (const SecureBuffer &other) {
+            if (this != &other) {
+                Resize (0);
+                endianness = other.endianness;
+                data = (ui8 *)other.allocator->Alloc (other.length);
+                length = other.length;
+                readOffset = other.readOffset;
+                writeOffset = other.writeOffset;
+                allocator = other.allocator;
+                if (length > 0) {
+                    memcpy (data, other.data, length);
+                }
+            }
+            return *this;
+        }
+
+        SecureBuffer &SecureBuffer::operator = (SecureBuffer &&other) {
+            if (this != &other) {
+                SecureBuffer temp (std::move (other));
+                swap (temp);
+            }
+            return *this;
         }
 
         void SecureBuffer::Resize (

@@ -109,6 +109,22 @@ namespace thekogans {
             Allocator::SharedPtr allocator;
 
             /// \brief
+            /// Copy ctor.
+            /// \param[in] other Buffer to copy.
+            Buffer (const Buffer &other);
+            /// \brief
+            /// Move ctor.
+            /// \param[in,out] other Buffer to move.
+            Buffer (Buffer &&other) :
+                    Serializer (HostEndian),
+                    data (nullptr),
+                    length (0),
+                    readOffset (0),
+                    writeOffset (0),
+                    allocator (DefaultAllocator::Instance ().Get ()) {
+                swap (other);
+            }
+            /// \brief
             /// ctor for wrapping a raw data pointer.
             /// \param[in] endianness How multi-byte values are stored.
             /// \param[in] data_ Pointer to wrap.
@@ -170,9 +186,20 @@ namespace thekogans {
             }
 
             /// \brief
+            /// Copy assignment operator.
+            /// \param[in] other Buffer to copy.
+            /// \return *this.
+            Buffer &operator = (const Buffer &other);
+            /// \brief
+            /// Move assignment operator.
+            /// \param[in,out] other Buffer to move.
+            /// \return *this.
+            Buffer &operator = (Buffer &&other);
+
+            /// \brief
             /// std::swap for Buffer.
-            /// \param[in,out] other Buffer to swap.
-            void swap (Buffer &other);
+            /// \param[in,out] buffer Buffer to swap.
+            void swap (Buffer &buffer);
 
             // Serializer
             /// \brief
@@ -421,10 +448,6 @@ namespace thekogans {
             /// \return HGLOBAL containing the buffers contents.
             HGLOBAL ToHGLOBAL (UINT flags = GMEM_MOVEABLE) const;
         #endif // defined (TOOLCHAIN_OS_Windows)
-
-            /// \brief
-            /// Buffer is neither copy constructable, nor assignable.
-            THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (Buffer)
         };
 
         /// \struct SecureBuffer Buffer.h thekogans/util/Buffer.h
@@ -440,6 +463,16 @@ namespace thekogans {
             /// management, performance, and global heap fragmentation.
             THEKOGANS_UTIL_DECLARE_STD_ALLOCATOR_FUNCTIONS
 
+            /// \brief
+            /// Copy ctor.
+            /// \param[in,out] other SecureBuffer to move.
+            SecureBuffer (const SecureBuffer &other) :
+                Buffer (other) {}
+            /// \brief
+            /// Move ctor.
+            /// \param[in,out] other SecureBuffer to move.
+            SecureBuffer (SecureBuffer &&other) :
+                Buffer (std::move (other)) {}
             /// \brief
             /// ctor for wrapping a raw data pointer.
             /// \param[in] endianness How multi-byte values are stored.
@@ -502,6 +535,17 @@ namespace thekogans {
             virtual ~SecureBuffer ();
 
             /// \brief
+            /// Copy assignment operator.
+            /// \param[in,out] other SecureBuffer to move.
+            /// \return *this.
+            SecureBuffer &operator = (const SecureBuffer &other);
+            /// \brief
+            /// Move assignment operator.
+            /// \param[in,out] other SecureBuffer to move.
+            /// \return *this.
+            SecureBuffer &operator = (SecureBuffer &&other);
+
+            /// \brief
             /// Resize the buffer. Adjust readOffset and writeOffset to stay within [0, length).
             /// \param[in] length New buffer length.
             /// \param[in] allocator Allocator to use to allocate new data.
@@ -554,43 +598,102 @@ namespace thekogans {
                 Allocator::SharedPtr /*allocator*/ =
                     DefaultAllocator::Instance ()) const override;
         #endif // defined (THEKOGANS_UTIL_HAVE_ZLIB)
-
-            /// \brief
-            /// SecureBuffer is neither copy constructable, nor assignable.
-            THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (SecureBuffer)
         };
 
-        /// \struct TenantBuffer Buffer.h thekogans/util/Buffer.h
+        /// \struct TenantReadBuffer Buffer.h thekogans/util/Buffer.h
         ///
         /// \brief
-        /// TenantBuffer is used to wrap a raw byte stream.
+        /// TenantReadBuffer is used to wrap a raw byte stream for reading.
 
-        struct TenantBuffer : public Buffer {
+        struct TenantReadBuffer : public Buffer {
+            /// \brief
+            /// ctor.
+            /// \param[in] buffer \see{Buffer} to wrap.
+            TenantReadBuffer (const Buffer &buffer) :
+                Buffer (
+                    buffer.endianness,
+                    const_cast<void *> ((const void *)buffer.data),
+                    buffer.length,
+                    buffer.readOffset,
+                    buffer.writeOffset,
+                    NullAllocator::Instance ().Get ()) {}
             /// \brief
             /// ctor for wrapping a raw data pointer.
             /// \param[in] endianness How multi-byte values are stored.
             /// \param[in] data Pointer to wrap.
-            /// NOTE: The data pointer must survive the lifetime of the TenantBuffer.
             /// \param[in] length Length of data.
             /// \param[in] readOffset Offset at which to read.
+            TenantReadBuffer (
+                Endianness endianness,
+                const void *data,
+                std::size_t length,
+                std::size_t readOffset = 0) :
+                Buffer (
+                    endianness,
+                    const_cast<void *> (data),
+                    length,
+                    readOffset,
+                    length,
+                    NullAllocator::Instance ().Get ()) {}
+
+            /// \brief
+            /// Copy assignment operator.
+            /// \param[in] buffer Buffer to wrap.
+            /// \return *this.
+            TenantReadBuffer &operator = (const Buffer &buffer) {
+                if (&buffer != this) {
+                    allocator = buffer.allocator;
+                    data = buffer.data;
+                    length = buffer.length;
+                    readOffset = buffer.readOffset;
+                    writeOffset = buffer.writeOffset;
+                }
+                return *this;
+            }
+
+            /// \brief
+            /// Write raw bytes to a buffer.
+            /// \param[in] buffer Bytes to write.
+            /// \param[in] count Number of bytes to write.
+            /// \return Number of bytes actually written.
+            virtual std::size_t Write (
+                    const void * /*buffer*/,
+                    std::size_t /*count*/) override {
+                assert (0);
+                THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
+                    "%s", "TenantReadBuffer can't Write.");
+                return -1;
+            }
+        };
+
+        /// \struct TenantWriteBuffer Buffer.h thekogans/util/Buffer.h
+        ///
+        /// \brief
+        /// TenantWriteBuffer is used to wrap a raw byte stream for writing.
+
+        struct TenantWriteBuffer : public Buffer {
+            /// \brief
+            /// ctor for wrapping a raw data pointer.
+            /// \param[in] endianness How multi-byte values are stored.
+            /// \param[in] data Pointer to wrap.
+            /// \param[in] length Length of data.
             /// \param[in] writeOffset Offset at which to write.
-            TenantBuffer (
+            TenantWriteBuffer (
                 Endianness endianness,
                 void *data,
                 std::size_t length,
-                std::size_t readOffset = 0,
-                std::size_t writeOffset = SIZE_T_MAX) :
+                std::size_t writeOffset = 0) :
                 Buffer (
                     endianness,
                     data,
                     length,
-                    readOffset,
-                    writeOffset == SIZE_T_MAX ? length : writeOffset,
-                    NullAllocator::Instance ()) {}
+                    0,
+                    writeOffset,
+                    NullAllocator::Instance ().Get ()) {}
 
             /// \brief
-            /// TenantBuffer is neither copy constructable, nor assignable.
-            THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (TenantBuffer)
+            /// TenantWriteBuffer is neither copy constructable, nor assignable.
+            THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (TenantWriteBuffer)
         };
 
         /// \brief

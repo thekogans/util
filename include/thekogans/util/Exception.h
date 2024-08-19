@@ -34,6 +34,7 @@
 #include <vector>
 #include <list>
 #include <exception>
+#include <functional>
 #include <ostream>
 #include "pugixml/pugixml.hpp"
 #include "thekogans/util/Config.h"
@@ -65,35 +66,10 @@ namespace thekogans {
         #pragma warning (disable : 4275)
     #endif // defined (TOOLCHAIN_COMPILER_cl)
 
-        struct _LIB_THEKOGANS_UTIL_DECL Exception :
-                public virtual RefCounted,
-                public std::exception {
+        struct _LIB_THEKOGANS_UTIL_DECL Exception : public std::exception {
             /// \brief
-            /// Declare \see{RefCounted} pointers.
-            THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (Exception)
-
-        public:
-            /// \struct Exception::Filter Exception.h thekogans/util/Exception.h
-            ///
-            /// \brief
-            /// Base class for Exception filters. Filters provide a hook to allow
-            /// an application to determine which exceptions get logged and which
-            /// get dropped.
-            struct Filter {
-                /// \brief
-                /// Convenient typedef for std::unique_ptr<Filter>.
-                typedef std::unique_ptr<Filter> UniquePtr;
-
-                /// \brief
-                /// dtor.
-                virtual ~Filter () {}
-
-                /// \brief
-                /// Called by LoggerMgr before logging an entry.
-                /// \param[in] exception Exception to filter.
-                /// \return true = log the exception. false = drop the exception.
-                virtual bool FilterException (const Exception &exception) throw () = 0;
-            };
+            /// Convenient typedef for std::unique_ptr<Filter>.
+            typedef std::function<bool (const Exception & /*exception*/)> Filter;
 
             /// \struct Exception::Location Exception.h thekogans/util/Exception.h
             ///
@@ -153,7 +129,7 @@ namespace thekogans {
             mutable std::vector<Location> traceback;
             /// \brief
             /// Convenient typedef for std::list<Filter::UniquePtr>.
-            typedef std::list<Filter::UniquePtr> FilterList;
+            typedef std::list<Filter> FilterList;
             /// \brief
             /// List of registered filters.
             static FilterList filterList;
@@ -236,7 +212,7 @@ namespace thekogans {
             /// \brief
             /// Add a filter to the Exception.
             /// \param[in] filter Filter to add.
-            static void AddFilter (Filter::UniquePtr filter);
+            static void AddFilter (const Filter &filter);
 
             /// \brief
             /// Return true if exception passed all registered filters.
