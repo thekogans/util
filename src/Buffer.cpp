@@ -144,16 +144,6 @@ namespace thekogans {
             }
         }
 
-        Buffer &Buffer::operator += (const Buffer &buffer) {
-            if (buffer.GetDataAvailableForReading () > 0) {
-                if (GetDataAvailableForWriting () < buffer.GetDataAvailableForReading ()) {
-                    Resize (GetDataAvailableForReading () + buffer.GetDataAvailableForReading ());
-                }
-                Write (buffer.GetReadPtr (), buffer.GetDataAvailableForReading ());
-            }
-            return *this;
-        }
-
         void Buffer::Clear (
                 bool rewind,
                 bool readOnly) {

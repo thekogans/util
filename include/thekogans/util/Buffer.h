@@ -220,12 +220,6 @@ namespace thekogans {
                 std::size_t count) override;
 
             /// \brief
-            /// Append the contents of the given buffer to this one.
-            /// \param[in] buffer Buffer whose contents to append.
-            /// \return *this
-            Buffer &operator += (const Buffer &buffer);
-
-            /// \brief
             /// Clear the buffer (set to '\0').
             /// NOTE: This method does not respect read and write offsets.
             /// It clears from data to data + length.
