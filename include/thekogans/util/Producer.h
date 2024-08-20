@@ -116,7 +116,7 @@ namespace thekogans {
                 /// \param[in] event Event to deliver.
                 /// \param[in] subscriber \see{Subscriber} to whom to deliver the event.
                 virtual void DeliverEvent (
-                    Event event,
+                    const Event &event,
                     typename Subscriber<T>::SharedPtr subscriber) = 0;
             };
 
@@ -131,7 +131,7 @@ namespace thekogans {
                 /// \param[in] event Event to deliver.
                 /// \param[in] subscriber \see{Subscriber} to whom to deliver the event.
                 virtual void DeliverEvent (
-                        typename EventDeliveryPolicy::Event event,
+                        const typename EventDeliveryPolicy::Event &event,
                         typename Subscriber<T>::SharedPtr subscriber) override {
                     event (subscriber.Get ());
                 }
@@ -159,7 +159,7 @@ namespace thekogans {
                 /// \param[in] event Event to deliver.
                 /// \param[in] subscriber \see{Subscriber} to whom to deliver the event.
                 virtual void DeliverEvent (
-                        typename EventDeliveryPolicy::Event event,
+                        const typename EventDeliveryPolicy::Event &event,
                         typename Subscriber<T>::SharedPtr subscriber) override {
                     auto job = [event, subscriber] (
                             const RunLoop::LambdaJob &job,
@@ -318,7 +318,7 @@ namespace thekogans {
             /// \brief
             /// Produce an event for subscribers to consume.
             /// \param[in] event Event to deliver to all registered subscribers.
-            void Produce (typename EventDeliveryPolicy::Event event) {
+            void Produce (const typename EventDeliveryPolicy::Event &event) {
                 Subscribers subscribers_;
                 {
                     // Copy the subscribers map in to a local
