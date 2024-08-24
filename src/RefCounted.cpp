@@ -47,8 +47,8 @@ namespace thekogans {
         // And in the interest of performance I removed all redundant checking and
         // parameterezation. If there's a crash in this code it is most likely
         // because of heap corruption which happened somewhere else. This code is
-        // very input sensative and as long as you give it back what it gave you
-        // should never cause any problems.
+        // very input sensative and as long as you give it back (Free) what it
+        // gave you (Alloc) should never cause any problems.
 
         struct RefCounted::References::Heap : public Singleton<Heap> {
         private:
@@ -58,18 +58,21 @@ namespace thekogans {
                 // and 64 bit architectures. It's even future proof
                 // for 128 bit architectures if they ever become common.
                 Page *next;
-                const std::size_t maxItems;
-                std::size_t itemCount;
                 union Item {
                     Item *next;
                     ui8 block[sizeof (RefCounted::References)];
-                } *freeItem, items[1];
+                } *freeItem, *lastItem, items[1];
 
-                Page (std::size_t maxItems_) :
-                    next (nullptr),
-                    maxItems (maxItems_),
-                    itemCount (0),
-                    freeItem (nullptr) {}
+                Page (std::size_t itemsInPage) :
+                        next (nullptr),
+                        freeItem (items),
+                        lastItem (items + itemsInPage - 1) {
+                    // Chain the items together to create the free list.
+                    for (Item *item = items; item != lastItem; ++item) {
+                        item->next = item + 1;
+                    }
+                    lastItem->next = nullptr;
+                }
 
                 // Size of raw block of memory to allocate for the page.
                 static std::size_t Size (std::size_t itemsInPage) {
@@ -77,27 +80,21 @@ namespace thekogans {
                     return sizeof (Page) + sizeof (Item) * (itemsInPage - 1);
                 }
 
-                inline bool IsEmpty () const {
-                    return itemCount == 0;
-                }
                 inline bool IsFull () const {
-                    return itemCount == maxItems;
+                    return freeItem == nullptr;
                 }
                 // Check to see if the given pointer belongs to this page.
                 inline bool IsItem (const void *ptr) const {
-                    return ptr >= items && ptr < &items[maxItems];
+                    return ptr >= items && ptr <= lastItem;
                 }
 
                 inline void *Alloc () {
-                    Item *item;
-                    if (freeItem != nullptr) {
-                        item = freeItem;
-                        freeItem = freeItem->next;
-                    }
-                    else {
-                        item = &items[itemCount];
-                    }
-                    ++itemCount;
+                    // Note the lack of any and all safety features.
+                    // This code is used only by Heap::Alloc below
+                    // and it makes sure that this method is never
+                    // called on a full page.
+                    Item *item = freeItem;
+                    freeItem = freeItem->next;
                     return item->block;
                 }
 
@@ -105,7 +102,6 @@ namespace thekogans {
                     Item *item = (Item *)ptr;
                     item->next = freeItem;
                     freeItem = item;
-                    --itemCount;
                 }
             };
 
@@ -175,7 +171,7 @@ namespace thekogans {
                     return ptr;
                 }
 
-                void Free (
+                inline void Free (
                         void *ptr,
                         std::size_t size) {
                     delete [] *(ui8 **)((std::size_t)ptr + size);
@@ -211,22 +207,8 @@ namespace thekogans {
                     // page it will no longer be full and needs
                     // to go to the head of partialPages list.
                     partialPages.push_front (page);
-                    prev = nullptr;
                 }
                 page->Free (ptr);
-                if (page->IsEmpty ()) {
-                    partialPages.erase (prev, page);
-                    // If I did my job right, this is a noop and
-                    // any good compiler should optimize it away.
-                    // It is only here for symmetry with the placement
-                    // new below (GetPage).
-                    page->~Page ();
-                    allocator.Free (page, Page::Size (page->maxItems));
-                    // Shrink itemsInPage for the next page
-                    // to keep the page size relative to the
-                    // total number of pages.
-                    itemsInPage >>= 1;
-                }
             }
 
         private:
