@@ -24,6 +24,7 @@
 #include <list>
 #include <map>
 #include <sstream>
+#include "thekogans/util/Environment.h"
 #include "thekogans/util/Config.h"
 #include "thekogans/util/Types.h"
 #include "thekogans/util/Flags.h"

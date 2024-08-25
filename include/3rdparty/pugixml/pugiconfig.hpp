@@ -14,6 +14,8 @@
 #ifndef HEADER_PUGICONFIG_HPP
 #define HEADER_PUGICONFIG_HPP
 
+#include "thekogans/util/Environment.h"
+
 #if defined (TOOLCHAIN_OS_Windows)
     #if defined (TOOLCHAIN_TYPE_Shared)
         #if defined (_LIB_THEKOGANS_UTIL_BUILD)

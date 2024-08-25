@@ -18,10 +18,9 @@
 #if !defined (__thekogans_util_MainRunLoop_h)
 #define __thekogans_util_MainRunLoop_h
 
-#include "thekogans/util/Environment.h"
-
 #include <memory>
 #include <list>
+#include "thekogans/util/Environment.h"
 #include "thekogans/util/Config.h"
 #include "thekogans/util/SpinLock.h"
 #include "thekogans/util/Singleton.h"

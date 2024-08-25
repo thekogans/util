@@ -217,14 +217,9 @@ namespace thekogans {
                     partialPages.push_front (
                         new (allocator.Alloc (Page::Size (itemsInPage))) Page (itemsInPage));
                     // Similar to the algorithm in RefCountedRegistry, Heap
-                    // grows the page size with every page allocation. Unlike
-                    // RefCountedRegistry, Heap also shrinks the page size
-                    // with every page deallocation (above). This is because
-                    // while Alloc is O(1), Free is O(n) (n = partialPages +
-                    // fullPages). By adjusting the page size we keep the
-                    // page count relatively low for GetPage (below).
-                    // RefCountedRegistry has no such limitation as both
-                    // Add and Remove are O(1).
+                    // grows the page size with every page allocation.
+                    // By growing the page size we keep the page count
+                    // relatively small for GetPage (below).
                     // ASIDE: It has not escaped me that this is a policy and,
                     // from the design perspective, should be treated as such and
                     // be parametarized. Perhaps, in the future, if the need arizes
