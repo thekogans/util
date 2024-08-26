@@ -541,7 +541,7 @@ namespace thekogans {
         }
 
         void LoggerMgr::AddFilter (Filter::UniquePtr filter) {
-            if (filter.get () != nullptr) {
+            if (filter != nullptr) {
                 LockGuard<Mutex> guard (mutex);
                 filterList.push_back (std::move (filter));
             }

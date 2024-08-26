@@ -74,7 +74,7 @@ namespace thekogans {
                 std::string DescriptionFromSecOSStatus (OSStatus errorCode) {
                     CFStringRefPtr description (SecCopyErrorMessageString (errorCode, 0));
                     const char *str = nullptr;
-                    if (description.get () != nullptr) {
+                    if (description != nullptr) {
                         str = CFStringGetCStringPtr (description.get (), kCFStringEncodingUTF8);
                     }
                     return str != nullptr ? str : "Unknown error.";
@@ -96,7 +96,7 @@ namespace thekogans {
                 std::string DescriptionFromCFErrorRef (CFErrorRef error) {
                     CFStringRefPtr description (CFErrorCopyDescription (error));
                     const char *str = nullptr;
-                    if (description.get () != nullptr) {
+                    if (description != nullptr) {
                         str = CFStringGetCStringPtr (description.get (), kCFStringEncodingUTF8);
                     }
                     return str != nullptr ? str : "Unknown error.";
@@ -381,7 +381,7 @@ namespace thekogans {
                     CFRunLoopSourceContext context = {0};
                     context.perform = DoNothingRunLoopCallback;
                     CFRunLoopSourceRefPtr runLoopSource (CFRunLoopSourceCreate (0, 0, &context));
-                    if (runLoopSource.get () != nullptr) {
+                    if (runLoopSource != nullptr) {
                         CFRunLoopAddSource (runLoop, runLoopSource.get (), kCFRunLoopCommonModes);
                         CFRunLoopRun ();
                         CFRunLoopRemoveSource (runLoop, runLoopSource.get (), kCFRunLoopCommonModes);

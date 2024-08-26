@@ -395,7 +395,7 @@ namespace thekogans {
             if (pid > 0) {
                 // parent process
                 if (hookStdIO != HOOK_NONE) {
-                    assert (stdIO.get () != nullptr);
+                    assert (stdIO != nullptr);
                     stdIO->SetupParent ();
                 }
             }
@@ -410,7 +410,7 @@ namespace thekogans {
                             THEKOGANS_UTIL_OS_ERROR_CODE);
                     }
                     if (hookStdIO != HOOK_NONE) {
-                        assert (stdIO.get () != nullptr);
+                        assert (stdIO != nullptr);
                         stdIO->SetupChild ();
                     }
                     if (!envp.empty ()) {

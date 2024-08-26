@@ -128,7 +128,7 @@ namespace thekogans {
             for (Map::const_iterator it = map.begin (),
                     end = map.end (); it != end; ++it) {
                 Diagnostics::Stats::UniquePtr stats = it->second->GetStats ();
-                if (stats.get () != nullptr) {
+                if (stats != nullptr) {
                     stats->Dump (stream);
                 }
             }

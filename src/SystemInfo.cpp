@@ -394,7 +394,7 @@ namespace thekogans {
                 }
             #elif defined (TOOLCHAIN_OS_OSX)
                 CFStringRefPtr consoleUser (SCDynamicStoreCopyConsoleUser (nullptr, nullptr, nullptr));
-                if (consoleUser.get () != nullptr) {
+                if (consoleUser != nullptr) {
                     struct CFDataRefDeleter {
                         void operator () (CFDataRef dataRef) {
                             if (dataRef != nullptr) {
@@ -406,7 +406,7 @@ namespace thekogans {
                     CFDataRefPtr UTF8String (
                         CFStringCreateExternalRepresentation (
                             nullptr, consoleUser.get (), kCFStringEncodingUTF8, '?'));
-                    if (UTF8String.get () != nullptr) {
+                    if (UTF8String != nullptr) {
                         const UInt8 *data = CFDataGetBytePtr (UTF8String.get ());
                         CFIndex length = CFDataGetLength (UTF8String.get ());
                         result = std::string (data, data + length);

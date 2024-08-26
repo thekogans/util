@@ -302,8 +302,8 @@ namespace thekogans {
                 EventSink &evenSink) {
             LockGuard<SpinLock> guard (spinLock);
             Watch::UniquePtr watch (new Watch (directory, evenSink));
-            assert (watch.get () != nullptr);
-            if (watch.get () == nullptr) {
+            assert (watch != nullptr);
+            if (watch == nullptr) {
                 THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
                     "Unable to create a watch for: %s", directory.c_str ());
             }

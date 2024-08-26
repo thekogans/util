@@ -224,7 +224,7 @@ namespace thekogans {
             /// NOTE: You can use this handle as a parameter
             /// to \see{TenantFile}.
             inline THEKOGANS_UTIL_HANDLE GetInPipe () const {
-                return stdIO.get () != nullptr ?
+                return stdIO != nullptr ?
                     stdIO->inPipe[1] : THEKOGANS_UTIL_INVALID_HANDLE_VALUE;
             }
             /// \brief
@@ -233,7 +233,7 @@ namespace thekogans {
             /// NOTE: You can use this handle as a parameter
             /// to \see{TenantFile}.
             inline THEKOGANS_UTIL_HANDLE GetOutPipe () const {
-                return stdIO.get () != nullptr ?
+                return stdIO != nullptr ?
                     stdIO->outPipe[0] : THEKOGANS_UTIL_INVALID_HANDLE_VALUE;
             }
             /// \brief
@@ -242,7 +242,7 @@ namespace thekogans {
             /// NOTE: You can use this handle as a parameter
             /// to \see{TenantFile}.
             inline THEKOGANS_UTIL_HANDLE GetErrPipe () const {
-                return stdIO.get () != nullptr ?
+                return stdIO != nullptr ?
                     stdIO->errPipe[0] : THEKOGANS_UTIL_INVALID_HANDLE_VALUE;
             }
 
