@@ -123,6 +123,7 @@ namespace thekogans {
                 /// Return the count of shared references held.
                 /// \return Count of shared references held.
                 ui32 GetSharedCount () const;
+
                 /// \brief
                 /// Used by \see{WeakPtr<T>::GetSharedPtr} below to atomically
                 /// take out a shared reference on a weak pointer.
@@ -605,12 +606,21 @@ namespace thekogans {
             THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (RefCounted)
         };
 
-        /// \def THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS(type)
+        /// \def THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS(_T)
         /// Use this macro inside a \see{RefCounted} derived class to declare the pointers.
-        #define THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS(type)\
+        /// Ex:
+        /// \code{.cpp}
+        /// struct _LIB_THEKOGANS_UTIL_DECL JobQueue : public RunLoop {
+        ///     /// \brief
+        ///     /// Declare \see{RefCounted} pointers.
+        ///     THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (JobQueue)
+        ///     ...
+        /// };
+        /// \endcode
+        #define THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS(_T)\
         public:\
-            typedef thekogans::util::RefCounted::SharedPtr<type> SharedPtr;\
-            typedef thekogans::util::RefCounted::WeakPtr<type> WeakPtr;
+            typedef thekogans::util::RefCounted::SharedPtr<_T> SharedPtr;\
+            typedef thekogans::util::RefCounted::WeakPtr<_T> WeakPtr;
 
         /// \brief
         /// \see{RefCounted::SharedPtr} static cast operator.

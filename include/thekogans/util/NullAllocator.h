@@ -37,11 +37,7 @@ namespace thekogans {
 
         struct _LIB_THEKOGANS_UTIL_DECL NullAllocator :
                 public Allocator,
-                public Singleton<
-                    NullAllocator,
-                    SpinLock,
-                    RefCountedInstanceCreator<NullAllocator>,
-                    RefCountedInstanceDestroyer<NullAllocator>> {
+                public RefCountedSingleton<NullAllocator> {
             /// \brief
             /// NullAllocator participates in the \see{DynamicCreatable}
             /// dynamic discovery and creation.

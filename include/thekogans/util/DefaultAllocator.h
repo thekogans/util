@@ -36,11 +36,7 @@ namespace thekogans {
 
         struct _LIB_THEKOGANS_UTIL_DECL DefaultAllocator :
                 public Allocator,
-                public Singleton<
-                    DefaultAllocator,
-                    SpinLock,
-                    RefCountedInstanceCreator<DefaultAllocator>,
-                    RefCountedInstanceDestroyer<DefaultAllocator>> {
+                public RefCountedSingleton<DefaultAllocator> {
             /// \brief
             /// DefaultAllocator participates in the \see{DynamicCreatable}
             /// dynamic discovery and creation.

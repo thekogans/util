@@ -27,7 +27,6 @@
 #include "thekogans/util/Thread.h"
 #include "thekogans/util/RunLoop.h"
 #include "thekogans/util/SystemRunLoop.h"
-#include "thekogans/util/ThreadRunLoop.h"
 
 namespace thekogans {
     namespace util {
@@ -38,7 +37,7 @@ namespace thekogans {
         /// Call MainRunLoop::CreateInstance before the first use of
         /// MainRunLoop::Instance to supply custom arguments to SystemRunLoop ctor.
         /// If you don't call MainRunLoop::CreateInstance, MainRunLoop
-        /// will create a \see{ThreadRunLoop} on it's first invocation of Instance.
+        /// will create a \see{SystemRunLoop} on it's first invocation of Instance.
         ///
         /// VERY IMPORTANT: MainRunLoop::CreateInstance performs initialization
         /// (calls Thread::SetMainThread ()) that only makes sense when called from the

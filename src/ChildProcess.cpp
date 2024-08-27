@@ -699,11 +699,7 @@ namespace thekogans {
             RunLoop::Job *failureExit = new exitJob (EXIT_FAILURE);
             RunLoop::Job *successExit = new exitJob (EXIT_SUCCESS);
 
-            typedef Singleton<
-                JobQueue,
-                SpinLock,
-                RefCountedInstanceCreator<JobQueue>,
-                RefCountedInstanceDestroyer<JobQueue>> DaemonizeJobQueue;
+            typedef RefCountedSingleton<JobQueue> DaemonizeJobQueue;
 
             void SignalHandlerSIGCHLD (int /*signum*/) {
                 DaemonizeJobQueue::Instance ()->EnqJob (RunLoop::Job::SharedPtr (failureExit));

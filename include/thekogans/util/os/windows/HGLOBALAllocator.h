@@ -42,11 +42,7 @@ namespace thekogans {
 
                 struct _LIB_THEKOGANS_UTIL_DECL HGLOBALAllocator :
                         public Allocator,
-                        public Singleton<
-                            HGLOBALAllocator,
-                            SpinLock,
-                            RefCountedInstanceCreator<HGLOBALAllocator>,
-                            RefCountedInstanceDestroyer<HGLOBALAllocator>> {
+                        public RefCountedSingleton<HGLOBALAllocator> {
                     /// \brief
                     /// HGLOBALAllocator participates in the \see{DynamicCreatable} dynamic
                     /// discovery and creation.

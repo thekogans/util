@@ -21,9 +21,6 @@
 #include <string>
 #include "thekogans/util/Config.h"
 #include "thekogans/util/Types.h"
-#include "thekogans/util/GUID.h"
-#include "thekogans/util/Mutex.h"
-#include "thekogans/util/Condition.h"
 #include "thekogans/util/RunLoop.h"
 
 namespace thekogans {
@@ -32,91 +29,34 @@ namespace thekogans {
         /// \struct ThreadRunLoop ThreadRunLoop.h thekogans/util/ThreadRunLoop.h
         ///
         /// \brief
-        /// ThreadRunLoop implements a very simple thread run loop. To use it as your main thread
-        /// run loop, all you need to do is call thekogans::util::MainRunLoop::Instance ()->Start ()
-        /// from main. If you initialized the \see{Console}, then the ctrl-break handler will call
-        /// thekogans::util::MainRunLoop::Instance ()->Stop () and your main thread will exit.
-        /// Alternatively, you can call thekogans::util::MainRunLoop::Stop () from a secondary
-        /// (worker) thread yourself (if ctrl-break is not appropriate). If your main thread needs
-        /// to process UI events, use \see{SystemRunLoop} instead. It's designed to integrate
-        /// with various system facilities (Windows: HWND, Linux: Display, OS X: CFRunLoop).
+        /// ThreadRunLoop implements a very simple thread run loop.
         ///
-        /// To Use a ThreadRunLoop in the main thread (main, WinMain), use the following template:
-        ///
-        /// On Windows:
+        /// To turn any thread in to a run loop, use the following template:
         ///
         /// \code{.cpp}
         /// using namespace thekogans;
         ///
-        /// int CALLBACK WinMain (
-        ///         HINSTANCE /*hInstance*/,
-        ///         HINSTANCE /*hPrevInstance*/,
-        ///         LPSTR /*lpCmdLine*/,
-        ///         int /*nCmdShow*/) {
-        ///     ...
-        ///     util::MainRunLoop::Instance ()->Start ();
-        ///     ...
-        ///     return 0;
-        /// }
-        /// \endcode
-        ///
-        /// On Linux and OS X:
-        ///
-        /// \code{.cpp}
-        /// using namespace thekogans;
-        ///
-        /// int main (
-        ///         int /*argc*/,
-        ///         const char * /*argv*/ []) {
-        ///     ...
-        ///     util::MainRunLoop::Instance ()->Start ();
-        ///     ...
-        ///     return 0;
-        /// }
-        /// \endcode
-        ///
-        /// To Use a ThreadRunLoop in secondary (worker) threads, use the following template:
-        ///
-        /// \code{.cpp}
-        /// using namespace thekogans;
-        ///
-        /// struct MyThread : public util::Thread (
-        /// private:
-        ///     util::ThreadRunLoop runLoop;
+        /// struct MyRunLoopThread :
+        ///        public util::ThreadRunLoop,
+        ///        public util::Thread {
         ///
         /// public:
         ///     MyThread (
         ///             const std::string &name = std::string (),
+        ///             util::RunLoop::JobExecutionPolicy::SharedPtr jobExecutionPolicy =
+        ///                 new util::RunLoop::FIFOJobExecutionPolicy,
         ///             util::i32 priority = THEKOGANS_UTIL_NORMAL_THREAD_PRIORITY,
-        ///             util::ui32 affinity = THEKOGANS_UTIL_MAX_THREAD_AFFINITY,
-        ///             const util::TimeSpec &sleepTimeSpec = util::TimeSpec::FromMilliseconds (50),
-        ///             const util::TimeSpec &waitTimeSpec = util::TimeSpec::FromSeconds (3)) :
+        ///             util::ui32 affinity = THEKOGANS_UTIL_MAX_THREAD_AFFINITY) :
+        ///             ThreadRunLoop (name, jobExecutionPolicy),
         ///             Thread (name) {
         ///         Create (priority, affinity);
-        ///     }
-        ///
-        ///     bool Stop (
-        ///             bool cancelRunningJobs = true,
-        ///             bool cancelPendingJobs = true,
-        ///             const TimeSpec &timeSpec = TimeSpec::Infinite) {
-        ///         TimeSpec deadline = GetCurrentTime () + timeSpec;
-        ///         retunr
-        ///             runLoop.Stop (cancelRunningJobs, cancelPendingJobs, timeSpec) &&
-        ///             Wait (deadline - GetCurrentTime ());
-        ///     }
-        ///
-        ///     bool EnqJob (
-        ///             util::RunLoop::Job::SharedPtr job,
-        ///             bool wait = false,
-        ///             const TimeSpec &timeSpec = TimeSpec::Infinite) {
-        ///         return runLoop.EnqJob (job, wait, timeSpec);
         ///     }
         ///
         /// private:
         ///     // util::Thread
         ///     virtual void Run () throw () override {
         ///         THEKOGANS_UTIL_TRY {
-        ///             runLoop.Start ();
+        ///             Start ();
         ///         }
         ///         THEKOGANS_UTIL_CATCH_AND_LOG
         ///     }

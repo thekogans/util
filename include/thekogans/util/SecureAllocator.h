@@ -65,11 +65,7 @@ namespace thekogans {
 
         struct _LIB_THEKOGANS_UTIL_DECL SecureAllocator :
                 public Allocator,
-                public Singleton<
-                    SecureAllocator,
-                    SpinLock,
-                    RefCountedInstanceCreator<SecureAllocator>,
-                    RefCountedInstanceDestroyer<SecureAllocator>> {
+                public RefCountedSingleton<SecureAllocator> {
             /// \brief
             /// SecureAllocator participates in the \see{Allocator} dynamic
             /// discovery and creation.

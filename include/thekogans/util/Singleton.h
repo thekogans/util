@@ -71,73 +71,6 @@ namespace thekogans {
             }
         };
 
-        /// \struct RefCountedInstanceCreator Singleton.h thekogans/util/Singleton.h
-        ///
-        /// \brief
-        /// Implements the \see{RefCounted} singleton creation method. Used to parameterize singleton
-        /// ctors. If your singleton ctor needs custom creation, you can package it in a class
-        /// like this and pass it as the third argument to Singleton (below). You can then
-        /// call an appropriate ctor inside the class function call operator. All global
-        /// singletons take a template parameter like this to allow you to customize their
-        /// instance creation before using them.
-        ///
-        /// \code{.cpp}
-        /// struct _LIB_THEKOGANS_STREAM_DECL DefaultAllocator :
-        ///         public Allocator,
-        ///         public util::Singleton<
-        ///             DefaultAllocator,
-        ///             util::SpinLock,
-        ///             util::RefCountedInstanceCreator<DefaultAllocator>,
-        ///             util::RefCountedInstanceDestroyer<DefaultAllocator>>,
-        ///         ... {
-        ///     ...
-        /// };
-        /// \endcode
-
-        template<typename T>
-        struct RefCountedInstanceCreator {
-            /// \brief
-            /// Returns RefCounted::SharedPtr<T> to instance.
-            typedef RefCounted::SharedPtr<T> ReturnType;
-
-            /// \brief
-            /// Create the instance using the supplied ctor arguments.
-            /// \param[in] args List of arguments to the instance ctor.
-            /// \return Singleton instance.
-            template<typename... Args>
-            inline ReturnType operator () (Args... args) {
-                return ReturnType (new T (std::forward<Args> (args)...));
-            }
-        };
-
-        /// \struct RefCountedInstanceDestroyer Singleton.h thekogans/util/Singleton.h
-        ///
-        /// \brief
-        /// Implements a \see{RefCounted} singleton destruction method.
-        ///
-        /// \code{.cpp}
-        /// struct _LIB_THEKOGANS_STREAM_DECL DefaultAllocator :
-        ///         public Allocator,
-        ///         public util::Singleton<
-        ///             DefaultAllocator,
-        ///             util::SpinLock,
-        ///             util::RefCountedInstanceCreator<DefaultAllocator>,
-        ///             util::RefCountedInstanceDestroyer<DefaultAllocator>>,
-        ///         ... {
-        ///     ...
-        /// };
-        /// \endcode
-
-        template<typename T>
-        struct RefCountedInstanceDestroyer {
-            /// \brief
-            /// Destroy the singleton instance.
-            /// \param[in] instance Singleton instance to destroy.
-            inline void operator () (typename RefCountedInstanceCreator<T>::ReturnType /*instance*/) {
-                // Nothing to do.
-            }
-        };
-
         /// \struct Singleton Singleton.h thekogans/util/Singleton.h
         ///
         /// \brief
@@ -293,6 +226,90 @@ namespace thekogans {
             /// \brief
             /// Singleton is neither copy constructable, nor assignable.
             THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (Singleton)
+        };
+
+        /// \struct RefCountedInstanceCreator Singleton.h thekogans/util/Singleton.h
+        ///
+        /// \brief
+        /// Implements the \see{RefCounted} singleton creation method. Used to parameterize singleton
+        /// ctors. If your singleton ctor needs custom creation, you can package it in a class
+        /// like this and pass it as the third argument to Singleton (below). You can then
+        /// call an appropriate ctor inside the class function call operator. All global
+        /// singletons take a template parameter like this to allow you to customize their
+        /// instance creation before using them.
+        ///
+        /// \code{.cpp}
+        /// struct _LIB_THEKOGANS_STREAM_DECL DefaultAllocator :
+        ///         public Allocator,
+        ///         public RefCountedSingleton<DefaultAllocator> {
+        ///     ...
+        /// };
+        /// \endcode
+
+        template<typename T>
+        struct RefCountedInstanceCreator {
+            /// \brief
+            /// Returns RefCounted::SharedPtr<T> to instance.
+            typedef RefCounted::SharedPtr<T> ReturnType;
+
+            /// \brief
+            /// Create the instance using the supplied ctor arguments.
+            /// \param[in] args List of arguments to the instance ctor.
+            /// \return Singleton instance.
+            template<typename... Args>
+            inline ReturnType operator () (Args... args) {
+                return ReturnType (new T (std::forward<Args> (args)...));
+            }
+        };
+
+        /// \struct RefCountedInstanceDestroyer Singleton.h thekogans/util/Singleton.h
+        ///
+        /// \brief
+        /// Implements a \see{RefCounted} singleton destruction method.
+        ///
+        /// \code{.cpp}
+        /// struct _LIB_THEKOGANS_STREAM_DECL DefaultAllocator :
+        ///         public Allocator,
+        ///         public RefCountedSingleton<DefaultAllocator> {
+        ///     ...
+        /// };
+        /// \endcode
+
+        template<typename T>
+        struct RefCountedInstanceDestroyer {
+            /// \brief
+            /// Destroy the singleton instance.
+            /// \param[in] instance Singleton instance to destroy.
+            inline void operator () (typename RefCountedInstanceCreator<T>::ReturnType /*instance*/) {
+                // Nothing to do.
+            }
+        };
+
+        /// \struct RefCountedSingleton Singleton.h thekogans/util/Singleton.h
+        ///
+        /// \brief
+        /// Convenience template for \see{RefCounted} singletons.
+
+        template<
+            typename T,
+            typename Lock = SpinLock>
+        struct RefCountedSingleton :
+            public Singleton<
+                T,
+                Lock,
+                RefCountedInstanceCreator<T>,
+                RefCountedInstanceDestroyer<T>> {
+        protected:
+            /// \brief
+            /// ctor.
+            RefCountedSingleton () {}
+            /// \brief
+            /// dtor.
+            ~RefCountedSingleton () {}
+
+            /// \brief
+            /// RefCountedSingleton is neither copy constructable, nor assignable.
+            THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (RefCountedSingleton)
         };
 
     } // namespace util

@@ -16,7 +16,6 @@
 // along with libthekogans_util. If not, see <http://www.gnu.org/licenses/>.
 
 #include "thekogans/util/HRTimer.h"
-#include "thekogans/util/LockGuard.h"
 #include "thekogans/util/ThreadRunLoop.h"
 
 namespace thekogans {

@@ -861,11 +861,7 @@ namespace thekogans {
 
         struct _LIB_THEKOGANS_UTIL_DECL GlobalPipeline :
                 public Pipeline,
-                public Singleton<
-                    GlobalPipeline,
-                    SpinLock,
-                    RefCountedInstanceCreator<GlobalPipeline>,
-                    RefCountedInstanceDestroyer<GlobalPipeline>> {
+                public RefCountedSingleton<GlobalPipeline> {
             /// \brief
             /// Create a global pipeline with custom ctor arguments.
             /// \param[in] begin Pointer to the beginning of the Pipeline::Stage array.

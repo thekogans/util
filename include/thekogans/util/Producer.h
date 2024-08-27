@@ -56,11 +56,7 @@ namespace thekogans {
         /// };
         ///
         /// struct Producer :
-        ///         public Singleton<
-        ///             Producer,
-        ///             SpinLock,
-        ///             util::RefCountedInstanceCreator<Producer>,
-        ///             util::RefCountedInstanceDestroyer<Producer>>,
+        ///         public util::RefCountedSingleton<Producer>,
         ///         public util::Producer<Events1>,
         ///         public util::Producer<Events2> {
         ///     void foo () {
@@ -161,26 +157,22 @@ namespace thekogans {
                 virtual void DeliverEvent (
                         const typename EventDeliveryPolicy::Event &event,
                         typename Subscriber<T>::SharedPtr subscriber) override {
-                    auto job = [event, subscriber] (
-                            const RunLoop::LambdaJob &job,
-                            const std::atomic<bool> &done) {
-                        if (job.IsRunning (done)) {
-                            event (subscriber.Get ());
-                        }
-                    };
-                    runLoop->EnqJob (job);
+                    runLoop->EnqJob (
+                        [event, subscriber] (
+                                const RunLoop::LambdaJob &job,
+                                const std::atomic<bool> &done) {
+                            if (job.IsRunning (done)) {
+                                event (subscriber.Get ());
+                            }
+                        });
                 }
             };
 
             /// \struct Producer::JobQueueEventDeliveryPolicy Producer.h thekogans/util/Producer.h
             ///
             /// \brief
-            /// Gives each \see{Subscrivber} it's own delivery \see{JobQueue}.
+            /// Gives each \see{Subscriber} it's own delivery \see{JobQueue}.
             struct JobQueueEventDeliveryPolicy : public RunLoopEventDeliveryPolicy {
-                /// \brief
-                /// \see{JobQueue} on which to queue the event delivery job.
-                JobQueue::SharedPtr jobQueue;
-
                 /// \brief
                 /// ctor.
                 /// \param[in] name \see{JobQueue} name. If set, \see{JobQueue::State::Worker}
@@ -190,7 +182,8 @@ namespace thekogans {
                 /// \param[in] workerCount Max workers to service the queue.
                 /// \param[in] workerPriority Worker thread priority.
                 /// \param[in] workerAffinity Worker thread processor affinity.
-                /// \param[in] workerCallback Called to initialize/uninitialize the worker thread(s).
+                /// \param[in] workerCallback Called to initialize/uninitialize
+                /// the worker thread(s).
                 JobQueueEventDeliveryPolicy (
                     const std::string &name = std::string (),
                     RunLoop::JobExecutionPolicy::SharedPtr jobExecutionPolicy =
@@ -199,15 +192,14 @@ namespace thekogans {
                     i32 workerPriority = THEKOGANS_UTIL_NORMAL_THREAD_PRIORITY,
                     ui32 workerAffinity = THEKOGANS_UTIL_MAX_THREAD_AFFINITY,
                     JobQueue::WorkerCallback *workerCallback = nullptr) :
-                    jobQueue (
+                    RunLoopEventDeliveryPolicy (
                         new JobQueue (
                             name,
                             jobExecutionPolicy,
                             workerCount,
                             workerPriority,
                             workerAffinity,
-                            workerCallback)),
-                    RunLoopEventDeliveryPolicy (jobQueue) {}
+                            workerCallback)) {}
             };
 
         private:
@@ -238,12 +230,8 @@ namespace thekogans {
             /// \brief
             /// Called by \see{Subscriber} to add itself to the subscribers map.
             /// \param[in] subscriber \see{Subscriber} to add to the subscribers map.
-            /// \param[in] eventDeliveryPolicy \see{EventDeliveryPolicy} by which events are delivered.
-            /// NOTE: We respect the fact that some producers are designed for lazy initialization
-            /// by waiting for the first subscriber before commiting potentially expensive resources.
-            /// That's why we call OnSubscribe under lock to make sure the count they get acurately
-            /// reflects that fact. It's important that you don't call back in to the Producer as
-            /// deadlock will occur.
+            /// \param[in] eventDeliveryPolicy \see{EventDeliveryPolicy} by which
+            /// events are delivered.
             /// \return true == subscribed, false == already subscribed.
             bool Subscribe (
                     Subscriber<T> &subscriber,
@@ -269,11 +257,6 @@ namespace thekogans {
             /// \brief
             /// Called by \see{Subscriber} to remove itself from the subscribers map.
             /// \param[in] subscriber \see{Subscriber} to remove from the subscribers map.
-            /// NOTE: We respect the fact that some producers are designed for lazy cleanup
-            /// by waiting for the last subscriber to unsubscribe before deallocating resources.
-            /// That's why we call OnUnsubscribe under lock to make sure the count they get acurately
-            /// reflects that fact. It's important that you don't call back in to the Producer as
-            /// deadlock will occur.
             /// \return true == unsubscribed, false == was not subscribed.
             bool Unsubscribe (Subscriber<T> &subscriber) {
                 {
@@ -302,13 +285,16 @@ namespace thekogans {
                 for (typename Subscribers::iterator
                         it = subscribers_.begin (),
                         end = subscribers_.end (); it != end; ++it) {
-                    // NOTE: If we get a NULL pointer here it simply means that that particular subscriber
-                    // is in the porocess of deallocating. It just hasn't removed itself from our subscriber
-                    // list (~Subscriber) in time for us to include it in subscribers_ above.
-                    // This race is unavoidable but harmless. We want to preserve the right of
-                    // the \see{Subscriber} to be able to call back in to the producer while
-                    // processing a particular event.
-                    typename Subscriber<T>::SharedPtr subscriber = it->second.first.GetSharedPtr ();
+                    // NOTE: If we get a NULL pointer here it simply means
+                    // that that particular subscriber is in the porocess
+                    // of deallocating. It just hasn't removed itself from
+                    // our subscriber list (~Subscriber) in time for us to
+                    // include it in subscribers_ above. This race is unavoidable
+                    // but harmless. We want to preserve the right of the
+                    // \see{Subscriber} to be able to call back in to the
+                    // producer while processing a particular event.
+                    typename Subscriber<T>::SharedPtr subscriber =
+                        it->second.first.GetSharedPtr ();
                     if (subscriber != nullptr) {
                         OnUnsubscribe (*subscriber);
                     }
@@ -330,13 +316,16 @@ namespace thekogans {
                 for (typename Subscribers::iterator
                         it = subscribers_.begin (),
                         end = subscribers_.end (); it != end; ++it) {
-                    // NOTE: If we get a NULL pointer here it simply means that that particular subscriber
-                    // is in the porocess of deallocating. It just hasn't removed itself from our subscriber
-                    // list (~Subscriber) in time for us to include it in subscribers_ above.
-                    // This race is unavoidable but harmless. We want to preserve the right of
-                    // the \see{Subscriber} to be able to call back in to the producer while
-                    // processing a particular event.
-                    typename Subscriber<T>::SharedPtr subscriber = it->second.first.GetSharedPtr ();
+                    // NOTE: If we get a NULL pointer here it simply means
+                    // that that particular subscriber is in the porocess
+                    // of deallocating. It just hasn't removed itself from
+                    // our subscriber list (~Subscriber) in time for us to
+                    // include it in subscribers_ above. This race is unavoidable
+                    // but harmless. We want to preserve the right of the
+                    // \see{Subscriber} to be able to call back in to the
+                    // producer while processing a particular event.
+                    typename Subscriber<T>::SharedPtr subscriber =
+                        it->second.first.GetSharedPtr ();
                     if (subscriber != nullptr) {
                         it->second.second->DeliverEvent (event, subscriber);
                     }
@@ -354,7 +343,8 @@ namespace thekogans {
             /// \brief
             /// Override this methid to react to a new \see{Subscriber}.
             /// \param[in] subscriber \see{Subscriber} to add to the subscribers list.
-            /// \param[in] eventDeliveryPolicy \see{EventDeliveryPolicy} by which events are delivered.
+            /// \param[in] eventDeliveryPolicy \see{EventDeliveryPolicy} by
+            /// which events are delivered.
             virtual void OnSubscribe (
                 Subscriber<T> & /*subscriber*/,
                 typename EventDeliveryPolicy::SharedPtr /*eventDeliveryPolicy*/) {}

@@ -42,7 +42,7 @@ namespace thekogans {
         typedef os::windows::RunLoop OSThreadRunLoopType;
     #elif defined (TOOLCHAIN_OS_Linux)
         /// \brief
-        /// Convenient typedef for os::linux::RunLoop.
+        /// Convenient typedef for os::linux::XlibRunLoop.
         typedef os::linux::XlibRunLoop OSThreadRunLoopType;
     #elif defined (TOOLCHAIN_OS_OSX)
         /// \brief
@@ -53,12 +53,13 @@ namespace thekogans {
         /// \struct SystemRunLoop SystemRunLoop.h thekogans/util/SystemRunLoop.h
         ///
         /// \brief
-        /// SystemRunLoop is a marriage between a \see{util::RunLoop} and an \see{os::RunLoop}.
-        /// It alows the user to make any thread using os specific run loop facilities in to
-        /// a thread that supports \see{util::RunLoop::Job} scheduling and execution. SystemRunLoop
-        /// is used by \see{MainRunLoop} to make sure the main thread is responsible for UI
-        /// updates and other system notifications. But you can use SystemRunLoop in any
-        /// thread that requires those facilities.
+        /// SystemRunLoop is a marriage between a \see{util::RunLoop} and
+        /// an \see{os::RunLoop}. It allows the user to make any thread using
+        /// os specific run loop facilities in to a thread that supports
+        /// \see{util::RunLoop::Job} scheduling and execution. SystemRunLoop
+        /// is used by \see{MainRunLoop} to make sure the main thread is
+        /// responsible for UI updates and other system notifications. But you
+        /// can use SystemRunLoop in any thread that requires those facilities.
 
         template<typename OSRunLoopType = OSThreadRunLoopType>
         struct SystemRunLoop :

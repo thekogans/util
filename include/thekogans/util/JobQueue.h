@@ -237,11 +237,7 @@ namespace thekogans {
 
         struct _LIB_THEKOGANS_UTIL_DECL GlobalJobQueue :
                 public JobQueue,
-                public Singleton<
-                    GlobalJobQueue,
-                    SpinLock,
-                    RefCountedInstanceCreator<GlobalJobQueue>,
-                    RefCountedInstanceDestroyer<GlobalJobQueue>> {
+                public RefCountedSingleton<GlobalJobQueue> {
             /// \brief
             /// Create a global job queue with custom ctor arguments.
             /// \param[in] name JobQueue name. If set, \see{JobQueue::Worker}

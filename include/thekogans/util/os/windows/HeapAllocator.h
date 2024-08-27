@@ -42,11 +42,7 @@ namespace thekogans {
 
                 struct _LIB_THEKOGANS_UTIL_DECL HeapAllocator :
                         public Allocator,
-                        public Singleton<
-                            HeapAllocator,
-                            SpinLock,
-                            RefCountedInstanceCreator<HeapAllocator>,
-                            RefCountedInstanceDestroyer<HeapAllocator>> {
+                        public RefCountedSingleton<HeapAllocator> {
                 private:
                     HANDLE handle;
 
