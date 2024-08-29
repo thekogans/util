@@ -168,9 +168,11 @@ namespace thekogans {
             serializer << seconds << nanoseconds;
         }
 
-        const char * const TimeSpec::TAG_TIME_SPEC = "TimeSpec";
-        const char * const TimeSpec::ATTR_SECONDS = "Seconds";
-        const char * const TimeSpec::ATTR_NANOSECONDS = "Nanoseconds";
+        namespace {
+            const char * const TAG_TIME_SPEC = "TimeSpec";
+            const char * const ATTR_SECONDS = "Seconds";
+            const char * const ATTR_NANOSECONDS = "Nanoseconds";
+        }
 
         void TimeSpec::Read (
                 const TextHeader & /*header*/,

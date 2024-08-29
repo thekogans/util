@@ -653,6 +653,26 @@ namespace thekogans {
 
         const Directory::Entry Directory::Entry::Empty;
 
+        namespace {
+            const char * const TAG_ENTRY = "Entry";
+            const char * const ATTR_FILE_SYSTEM = "FileSystem";
+            const char * const VALUE_WINDOWS = "Windows";
+            const char * const VALUE_POSIX = "POSIX";
+            const char * const ATTR_TYPE = "Type";
+            const char * const VALUE_INVALID = "invalid";
+            const char * const VALUE_FILE = "file";
+            const char * const VALUE_FOLDER = "folder";
+            const char * const VALUE_LINK = "link";
+            const char * const ATTR_NAME = "Name";
+            const char * const ATTR_ATTRIBUTES = "Attributes";
+            const char * const ATTR_CREATION_DATE = "CreationDate";
+            const char * const ATTR_MODE = "Mode";
+            const char * const ATTR_LAST_STATUS_DATE = "LastStatusDate";
+            const char * const ATTR_LAST_ACCESSED_DATE = "LastAccessedDate";
+            const char * const ATTR_LAST_MODIFIED_DATE = "LastModifiedDate";
+            const char * const ATTR_SIZE = "Size";
+        }
+
         std::string Directory::Entry::fileSystemTostring (ui8 fileSystem) {
             return fileSystem == Windows ? VALUE_WINDOWS : VALUE_POSIX;
         }
@@ -711,24 +731,6 @@ namespace thekogans {
             }
             serializer << lastAccessedDate << lastModifiedDate << size;
         }
-
-        const char * const Directory::Entry::TAG_ENTRY = "Entry";
-        const char * const Directory::Entry::ATTR_FILE_SYSTEM = "FileSystem";
-        const char * const Directory::Entry::VALUE_WINDOWS = "Windows";
-        const char * const Directory::Entry::VALUE_POSIX = "POSIX";
-        const char * const Directory::Entry::ATTR_TYPE = "Type";
-        const char * const Directory::Entry::VALUE_INVALID = "invalid";
-        const char * const Directory::Entry::VALUE_FILE = "file";
-        const char * const Directory::Entry::VALUE_FOLDER = "folder";
-        const char * const Directory::Entry::VALUE_LINK = "link";
-        const char * const Directory::Entry::ATTR_NAME = "Name";
-        const char * const Directory::Entry::ATTR_ATTRIBUTES = "Attributes";
-        const char * const Directory::Entry::ATTR_CREATION_DATE = "CreationDate";
-        const char * const Directory::Entry::ATTR_MODE = "Mode";
-        const char * const Directory::Entry::ATTR_LAST_STATUS_DATE = "LastStatusDate";
-        const char * const Directory::Entry::ATTR_LAST_ACCESSED_DATE = "LastAccessedDate";
-        const char * const Directory::Entry::ATTR_LAST_MODIFIED_DATE = "LastModifiedDate";
-        const char * const Directory::Entry::ATTR_SIZE = "Size";
 
         void Directory::Entry::Read (
                 const TextHeader & /*header*/,

@@ -167,25 +167,6 @@ namespace thekogans {
             virtual void Write (Serializer &serializer) const override;
 
             /// \brief
-            /// "Fraction"
-            static const char * const TAG_FRACTION;
-            /// \brief
-            /// "Numerator"
-            static const char * const ATTR_NUMERATOR;
-            /// \brief
-            /// "Denominator"
-            static const char * const ATTR_DENOMINATOR;
-            /// \brief
-            /// "Sign"
-            static const char * const ATTR_SIGN;
-            /// \brief
-            /// "Positive"
-            static const char * const VALUE_POSITIVE;
-            /// \brief
-            /// "Negative"
-            static const char * const VALUE_NEGATIVE;
-
-            /// \brief
             /// Read the Serializable from an XML DOM.
             /// \param[in] header \see{Serializable::TextHeader}.
             /// \param[in] node XML DOM representation of a Serializable.

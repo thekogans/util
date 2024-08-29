@@ -358,16 +358,6 @@ namespace thekogans {
             virtual void Write (Serializer &serializer) const override;
 
             /// \brief
-            /// "TimeSpec"
-            static const char * const TAG_TIME_SPEC;
-            /// \brief
-            /// "Seconds"
-            static const char * const ATTR_SECONDS;
-            /// \brief
-            /// "Nanoseconds"
-            static const char * const ATTR_NANOSECONDS;
-
-            /// \brief
             /// Read the Serializable from an XML DOM.
             /// \param[in] header \see{Serializable::TextHeader}.
             /// \param[in] node XML DOM representation of a Serializable.

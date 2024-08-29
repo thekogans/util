@@ -204,11 +204,13 @@ namespace thekogans {
             serializer << id << startTime << endTime << totalTime;
         }
 
-        const char * const RunLoop::Stats::Job::TAG_JOB = "Job";
-        const char * const RunLoop::Stats::Job::ATTR_ID = "Id";
-        const char * const RunLoop::Stats::Job::ATTR_START_TIME = "StartTime";
-        const char * const RunLoop::Stats::Job::ATTR_END_TIME = "EndTime";
-        const char * const RunLoop::Stats::Job::ATTR_TOTAL_TIME = "TotalTime";
+        namespace {
+            const char * const TAG_JOB = "Job";
+            const char * const ATTR_ID = "Id";
+            const char * const ATTR_START_TIME = "StartTime";
+            const char * const ATTR_END_TIME = "EndTime";
+            const char * const ATTR_TOTAL_TIME = "TotalTime";
+        }
 
         void RunLoop::Stats::Job::Read (
                 const TextHeader & /*header*/,
@@ -285,14 +287,15 @@ namespace thekogans {
             serializer << id << name << totalJobs << totalJobTime << lastJob << minJob << maxJob;
         }
 
-        const char * const RunLoop::Stats::TAG_RUN_LOOP = "RunLoop";
-        const char * const RunLoop::Stats::ATTR_ID = "Id";
-        const char * const RunLoop::Stats::ATTR_NAME = "Name";
-        const char * const RunLoop::Stats::ATTR_TOTAL_JOBS = "TotalJobs";
-        const char * const RunLoop::Stats::ATTR_TOTAL_JOB_TIME = "TotalJobTime";
-        const char * const RunLoop::Stats::TAG_LAST_JOB = "LastJob";
-        const char * const RunLoop::Stats::TAG_MIN_JOB = "MinJob";
-        const char * const RunLoop::Stats::TAG_MAX_JOB = "MaxJob";
+        namespace {
+            const char * const TAG_RUN_LOOP = "RunLoop";
+            const char * const ATTR_NAME = "Name";
+            const char * const ATTR_TOTAL_JOBS = "TotalJobs";
+            const char * const ATTR_TOTAL_JOB_TIME = "TotalJobTime";
+            const char * const TAG_LAST_JOB = "LastJob";
+            const char * const TAG_MIN_JOB = "MinJob";
+            const char * const TAG_MAX_JOB = "MaxJob";
+        }
 
         void RunLoop::Stats::Read (
                 const TextHeader & /*header*/,

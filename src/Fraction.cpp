@@ -29,6 +29,11 @@ namespace thekogans {
         const Fraction Fraction::Zero (0, 1);
         const Fraction Fraction::One (1, 1);
 
+        namespace {
+            const char * const VALUE_POSITIVE = "Positive";
+            const char * const VALUE_NEGATIVE = "Negative";
+        }
+
         std::string Fraction::signTostring (Sign sign) {
             return sign == Positive ? VALUE_POSITIVE : VALUE_NEGATIVE;
         }
@@ -162,12 +167,12 @@ namespace thekogans {
             serializer << numerator << denominator << (ui8)sign;
         }
 
-        const char * const Fraction::TAG_FRACTION = "Fraction";
-        const char * const Fraction::ATTR_NUMERATOR = "Numerator";
-        const char * const Fraction::ATTR_DENOMINATOR = "Denominator";
-        const char * const Fraction::ATTR_SIGN = "Sign";
-        const char * const Fraction::VALUE_POSITIVE = "Positive";
-        const char * const Fraction::VALUE_NEGATIVE = "Negative";
+        namespace {
+            const char * const TAG_FRACTION = "Fraction";
+            const char * const ATTR_NUMERATOR = "Numerator";
+            const char * const ATTR_DENOMINATOR = "Denominator";
+            const char * const ATTR_SIGN = "Sign";
+        }
 
         void Fraction::Read (
                 const TextHeader & /*header*/,

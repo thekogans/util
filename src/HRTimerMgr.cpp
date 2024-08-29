@@ -37,10 +37,12 @@ namespace thekogans {
             serializer << name << attributes;
         }
 
-        const char * const HRTimerMgr::TimerInfoBase::TAG_ATTRIBUTES = "Attributes";
-        const char * const HRTimerMgr::TimerInfoBase::TAG_ATTRIBUTE = "Attribute";
-        const char * const HRTimerMgr::TimerInfoBase::ATTR_NAME = "Name";
-        const char * const HRTimerMgr::TimerInfoBase::ATTR_VALUE = "Value";
+        namespace {
+            const char * const TAG_ATTRIBUTES = "Attributes";
+            const char * const TAG_ATTRIBUTE = "Attribute";
+            const char * const ATTR_NAME = "Name";
+            const char * const ATTR_VALUE = "Value";
+        }
 
         void HRTimerMgr::TimerInfoBase::Read (
                 const TextHeader & /*header*/,
@@ -124,6 +126,9 @@ namespace thekogans {
         }
 
         namespace {
+            const char * const TAG_TIMER = "Timer";
+            const char * const ATTR_START = "Start";
+            const char * const ATTR_STOP = "Stop";
             const char * const ATTR_ELAPSED = "Elapsed";
         }
 
@@ -184,10 +189,6 @@ namespace thekogans {
             TimerInfoBase::Write (serializer);
             serializer << start << stop;
         }
-
-        const char * const HRTimerMgr::TimerInfo::TAG_TIMER = "Timer";
-        const char * const HRTimerMgr::TimerInfo::ATTR_START = "Start";
-        const char * const HRTimerMgr::TimerInfo::ATTR_STOP = "Stop";
 
         void HRTimerMgr::TimerInfo::Read (
                 const TextHeader &header,
@@ -263,6 +264,8 @@ namespace thekogans {
             const char * const ATTR_MAX = "Max";
             const char * const ATTR_AVERAGE = "Average";
             const char * const ATTR_TOTAL = "Total";
+            const char * const TAG_OPEN_SCOPES = "OpenScopes";
+            const char * const TAG_CLOSED_SCOPES = "ClosedScopes";
         }
 
         void HRTimerMgr::ScopeInfo::ToXML (pugi::xml_node &node) const {
@@ -275,10 +278,14 @@ namespace thekogans {
             node.set_name (TAG_SCOPE);
             node.append_attribute (ATTR_NAME).set_value (Encodestring (name).c_str ());
             node.append_attribute (ATTR_COUNT).set_value (ui32Tostring (count).c_str ());
-            node.append_attribute (ATTR_MIN).set_value (f64Tostring (HRTimer::ToSeconds (min)).c_str ());
-            node.append_attribute (ATTR_MAX).set_value (f64Tostring (HRTimer::ToSeconds (max)).c_str ());
-            node.append_attribute (ATTR_AVERAGE).set_value (f64Tostring (HRTimer::ToSeconds (average)).c_str ());
-            node.append_attribute (ATTR_TOTAL).set_value (f64Tostring (HRTimer::ToSeconds (total)).c_str ());
+            node.append_attribute (ATTR_MIN).set_value (
+                f64Tostring (HRTimer::ToSeconds (min)).c_str ());
+            node.append_attribute (ATTR_MAX).set_value (
+                f64Tostring (HRTimer::ToSeconds (max)).c_str ());
+            node.append_attribute (ATTR_AVERAGE).set_value (
+                f64Tostring (HRTimer::ToSeconds (average)).c_str ());
+            node.append_attribute (ATTR_TOTAL).set_value (
+                f64Tostring (HRTimer::ToSeconds (total)).c_str ());
             for (std::size_t i = 0, count = attributes.size (); i < count; ++i) {
                 node.append_attribute (attributes[i].first.c_str ()).set_value (
                     Encodestring (attributes[i].second).c_str ());
@@ -413,10 +420,6 @@ namespace thekogans {
             }
         }
 
-        const char * const HRTimerMgr::ScopeInfo::TAG_SCOPE = "Scope";
-        const char * const HRTimerMgr::ScopeInfo::TAG_OPEN_SCOPES = "OpenScopes";
-        const char * const HRTimerMgr::ScopeInfo::TAG_CLOSED_SCOPES = "ClosedScopes";
-
         void HRTimerMgr::ScopeInfo::Read (
                 const TextHeader &header,
                 const pugi::xml_node &node) {
@@ -483,7 +486,8 @@ namespace thekogans {
                     object.Get<util::JSON::Array> (TAG_OPEN_SCOPES);
                 if (openScopes != nullptr) {
                     for (std::size_t i = 0, count = openScopes->GetValueCount (); i < count; ++i) {
-                        util::JSON::Object::SharedPtr openScope = openScopes->Get<util::JSON::Object> (i);
+                        util::JSON::Object::SharedPtr openScope =
+                            openScopes->Get<util::JSON::Object> (i);
                         TimerInfoBase::SharedPtr timerInfo;
                         *openScope >> timerInfo;
                         open.push_back (timerInfo);
@@ -496,7 +500,8 @@ namespace thekogans {
                     object.Get<util::JSON::Array> (TAG_CLOSED_SCOPES);
                 if (closedScopes != nullptr) {
                     for (std::size_t i = 0, count = closedScopes->GetValueCount (); i < count; ++i) {
-                        util::JSON::Object::SharedPtr closedScope = closedScopes->Get<util::JSON::Object> (i);
+                        util::JSON::Object::SharedPtr closedScope =
+                            closedScopes->Get<util::JSON::Object> (i);
                         TimerInfoBase::SharedPtr timerInfo;
                         *closedScope >> timerInfo;
                         closed.push_back (timerInfo);

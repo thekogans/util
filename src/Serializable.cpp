@@ -72,10 +72,6 @@ namespace thekogans {
         }
     #endif // defined (THEKOGANS_UTIL_TYPE_Static)
 
-        bool Serializable::ValidateType (const std::string &type) {
-            return Map::Instance ()->find (type) != Map::Instance ()->end ();
-        }
-
         std::size_t Serializable::GetSize () const {
             BinHeader header (Type (), Version (), Size ());
             return header.Size () + header.size;
@@ -104,7 +100,7 @@ namespace thekogans {
             }
             if (state == STATE_TYPE) {
                 if (typeParser.ParseValue (serializer)) {
-                    if (Serializable::ValidateType (value.type)) {
+                    if (Serializable::IsType (value.type)) {
                         state = STATE_VERSION;
                     }
                     else {

@@ -234,19 +234,6 @@ namespace thekogans {
                 virtual void Write (Serializer &serializer) const override;
 
                 /// \brief
-                /// "Attributes"
-                static const char * const TAG_ATTRIBUTES;
-                /// \brief
-                /// "Attribute"
-                static const char * const TAG_ATTRIBUTE;
-                /// \brief
-                /// "Name"
-                static const char * const ATTR_NAME;
-                /// \brief
-                /// "Value"
-                static const char * const ATTR_VALUE;
-
-                /// \brief
                 /// Read the Serializable from an XML DOM.
                 /// \param[in] header \see{Serializable::TextHeader}.
                 /// \param[in] node XML DOM representation of a Serializable.
@@ -361,16 +348,6 @@ namespace thekogans {
                 virtual void Write (Serializer &serializer) const override;
 
                 /// \brief
-                /// "Timer"
-                static const char * const TAG_TIMER;
-                /// \brief
-                /// "Start"
-                static const char * const ATTR_START;
-                /// \brief
-                /// "Stop"
-                static const char * const ATTR_STOP;
-
-                /// \brief
                 /// Read the Serializable from an XML DOM.
                 /// \param[in] header \see{Serializable::TextHeader}.
                 /// \param[in] node XML DOM representation of a Serializable.
@@ -476,16 +453,6 @@ namespace thekogans {
                 /// Write the key to the given serializer.
                 /// \param[out] serializer \see{Serializer} to write the key to.
                 virtual void Write (Serializer &serializer) const override;
-
-                /// \brief
-                /// "Scope"
-                static const char * const TAG_SCOPE;
-                /// \brief
-                /// "OpenScopes"
-                static const char * const TAG_OPEN_SCOPES;
-                /// \brief
-                /// "ClosedScopes"
-                static const char * const TAG_CLOSED_SCOPES;
 
                 /// \brief
                 /// Read the Serializable from an XML DOM.

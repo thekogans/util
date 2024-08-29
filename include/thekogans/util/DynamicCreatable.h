@@ -34,22 +34,30 @@ namespace thekogans {
     namespace util {
 
         /// \def THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE_BASE(_T)
-        /// This macro is used in DynamicCreatable base classes. It cast's
+        /// This macro is used in DynamicCreatable base classes. It casts
         /// it's return types to the base they were derived from to make
         /// the code cleaner without the dynamic_refcounted_sharedptr_cast
         /// clutter.
         #define THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE_BASE(_T)\
         public:\
             THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (_T)\
+            static bool IsType (const std::string &type);\
             static void GetTypes (std::list<std::string> &types);\
             static SharedPtr CreateType (const std::string &type);
 
         /// \def THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_BASE(_T)
-        /// This macro is used in DynamicCreatable base classes. It cast's
+        /// This macro is used in DynamicCreatable base classes. It casts
         /// it's return types to the base they were derived from to make
         /// the code cleaner without the dynamic_refcounted_sharedptr_cast
         /// clutter.
         #define THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_BASE(_T)\
+            bool _T::IsType (const std::string &type) {\
+                thekogans::util::DynamicCreatable::MapType::iterator it =\
+                    thekogans::util::DynamicCreatable::Map::Instance ()->find (type);\
+                return it != thekogans::util::DynamicCreatable::Map::Instance ()->end () &&\
+                    thekogans::util::dynamic_refcounted_sharedptr_cast<_T> (it->second ()) !=\
+                        nullptr;\
+            }\
             void _T::GetTypes (std::list<std::string> &types) {\
                 for (thekogans::util::DynamicCreatable::MapType::const_iterator it =\
                         thekogans::util::DynamicCreatable::Map::Instance ()->begin (),\

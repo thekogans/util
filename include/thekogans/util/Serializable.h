@@ -184,11 +184,6 @@ namespace thekogans {
         #endif // defined (THEKOGANS_UTIL_TYPE_Static)
 
             /// \brief
-            /// Check the map for the given type.
-            /// \return true == The given type is in the map.
-            static bool ValidateType (const std::string &type);
-
-            /// \brief
             /// Return the size of the serializable including the header.
             /// \return Size of the serializable including the header.
             std::size_t GetSize () const;

@@ -618,22 +618,6 @@ namespace thekogans {
                     virtual void Write (Serializer &serializer) const override;
 
                     /// \brief
-                    /// "Job"
-                    static const char * const TAG_JOB;
-                    /// \brief
-                    /// "Id"
-                    static const char * const ATTR_ID;
-                    /// \brief
-                    /// "StartTime"
-                    static const char * const ATTR_START_TIME;
-                    /// \brief
-                    /// "EndTime"
-                    static const char * const ATTR_END_TIME;
-                    /// \brief
-                    /// "TotalTime"
-                    static const char * const ATTR_TOTAL_TIME;
-
-                    /// \brief
                     /// Read the Serializable from an XML DOM.
                     /// \param[in] header \see{Serializable::TextHeader}.
                     /// \param[in] node XML DOM representation of a Serializable.
@@ -716,31 +700,6 @@ namespace thekogans {
                 /// Write the key to the given serializer.
                 /// \param[out] serializer \see{Serializer} to write the key to.
                 virtual void Write (Serializer &serializer) const override;
-
-                /// \brief
-                /// "RunLoop"
-                static const char * const TAG_RUN_LOOP;
-                /// \brief
-                /// "Id"
-                static const char * const ATTR_ID;
-                /// \brief
-                /// "Name"
-                static const char * const ATTR_NAME;
-                /// \brief
-                /// "TotalJobs"
-                static const char * const ATTR_TOTAL_JOBS;
-                /// \brief
-                /// "TotalJobTime"
-                static const char * const ATTR_TOTAL_JOB_TIME;
-                /// \brief
-                /// "LastJob"
-                static const char * const TAG_LAST_JOB;
-                /// \brief
-                /// "MinJob"
-                static const char * const TAG_MIN_JOB;
-                /// \brief
-                /// "MaxJob"
-                static const char * const TAG_MAX_JOB;
 
                 /// \brief
                 /// Read the Serializable from an XML DOM.

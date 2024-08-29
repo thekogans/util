@@ -474,58 +474,6 @@ namespace thekogans {
                 virtual void Write (Serializer &serializer) const override;
 
                 /// \brief
-                /// "Entry"
-                static const char * const TAG_ENTRY;
-                /// \brief
-                /// "FileSystem"
-                static const char * const ATTR_FILE_SYSTEM;
-                /// \brief
-                /// "Windows"
-                static const char * const VALUE_WINDOWS;
-                /// \brief
-                /// "POSIX"
-                static const char * const VALUE_POSIX;
-                /// \brief
-                /// "Type"
-                static const char * const ATTR_TYPE;
-                /// \brief
-                /// "invalid"
-                static const char * const VALUE_INVALID;
-                /// \brief
-                /// "file"
-                static const char * const VALUE_FILE;
-                /// \brief
-                /// "folder"
-                static const char * const VALUE_FOLDER;
-                /// \brief
-                /// "link"
-                static const char * const VALUE_LINK;
-                /// \brief
-                /// "Name"
-                static const char * const ATTR_NAME;
-                /// \brief
-                /// "Attributes"
-                static const char * const ATTR_ATTRIBUTES;
-                /// \brief
-                /// "CreationDate"
-                static const char * const ATTR_CREATION_DATE;
-                /// \brief
-                /// "Mode"
-                static const char * const ATTR_MODE;
-                /// \brief
-                /// "LastStatusDate"
-                static const char * const ATTR_LAST_STATUS_DATE;
-                /// \brief
-                /// "LastAccessedDate"
-                static const char * const ATTR_LAST_ACCESSED_DATE;
-                /// \brief
-                /// "LastModifiedDate"
-                static const char * const ATTR_LAST_MODIFIED_DATE;
-                /// \brief
-                /// "Size"
-                static const char * const ATTR_SIZE;
-
-                /// \brief
                 /// Read the Serializable from an XML DOM.
                 /// \param[in] header \see{Serializable::TextHeader}.
                 /// \param[in] node XML DOM representation of a Serializable.
