@@ -72,13 +72,13 @@ namespace thekogans {
         /// planning and execution. To that end, if you're using
         /// a buffer in a multithreaded (async) environment (to pass
         /// as argument to a \see{Producer} event), you should treat
-        /// any buffer passed to you as const and use TenantBuffer
+        /// any buffer passed to you as const and use \see{TenantReadBuffer}
         /// as your own local set of buffer variables. This way any
         /// other event consumers that will receive the same buffer
         /// pointer will get correct read/write offsets as the caller
         /// intended. If you can't process the buffer during the
-        /// callback and you don't know if there are other recipients
-        /// it's best to make a copy.
+        /// callback and you don't know if there are other event
+        /// recipients it's best to make a copy.
 
         struct _LIB_THEKOGANS_UTIL_DECL Buffer :
                 public virtual RefCounted,
@@ -121,7 +121,7 @@ namespace thekogans {
                     length (0),
                     readOffset (0),
                     writeOffset (0),
-                    allocator (DefaultAllocator::Instance ().Get ()) {
+                    allocator (DefaultAllocator::Instance ()) {
                 swap (other);
             }
             /// \brief
@@ -610,7 +610,7 @@ namespace thekogans {
                     buffer.length,
                     buffer.readOffset,
                     buffer.writeOffset,
-                    NullAllocator::Instance ().Get ()) {}
+                    NullAllocator::Instance ()) {}
             /// \brief
             /// ctor for wrapping a raw data pointer.
             /// \param[in] endianness How multi-byte values are stored.
@@ -628,7 +628,7 @@ namespace thekogans {
                     length,
                     readOffset,
                     length,
-                    NullAllocator::Instance ().Get ()) {}
+                    NullAllocator::Instance ()) {}
 
             /// \brief
             /// Copy assignment operator.
@@ -683,7 +683,7 @@ namespace thekogans {
                     length,
                     0,
                     writeOffset,
-                    NullAllocator::Instance ().Get ()) {}
+                    NullAllocator::Instance ()) {}
 
             /// \brief
             /// TenantWriteBuffer is neither copy constructable, nor assignable.

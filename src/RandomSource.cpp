@@ -174,10 +174,7 @@ namespace thekogans {
                 return bufferLength;
             #endif // defined (TOOLCHAIN_OS_Windows)
             }
-            else {
-                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
-            }
+            return 0;
         }
 
         std::size_t RandomSource::GetSeed (
@@ -256,12 +253,8 @@ namespace thekogans {
                     return bufferLength;
                 }
             #endif // defined (TOOLCHAIN_ARCH_i386) || defined (TOOLCHAIN_ARCH_x86_64)
-                return 0;
             }
-            else {
-                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
-            }
+            return 0;
         }
 
         std::size_t RandomSource::GetSeedOrBytes (

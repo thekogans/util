@@ -529,7 +529,7 @@ namespace thekogans {
                         magic1 (MAGIC),
                         maxItems (maxItems_),
                         allocatedItems (0),
-                        freeItem (0),
+                        freeItem (nullptr),
                         magic2 (MAGIC) {
                 #if defined (THEKOGANS_UTIL_CONFIG_Debug) || defined (THEKOGANS_UTIL_DEBUG_HEAP)
                     memset (items, 0, maxItems * sizeof (Item));

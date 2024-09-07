@@ -88,7 +88,8 @@ namespace thekogans {
             /// \brief
             /// Given a \see{Producer} of particular events, subscribe to them.
             /// \param[in] producer \see{Producer} whose events we want to subscribe to.
-            /// \param[in] eventDeliveryPolicy \see{Producer::EventDeliveryPolicy} by which events are delivered.
+            /// \param[in] eventDeliveryPolicy \see{Producer::EventDeliveryPolicy}
+            /// by which events are delivered.
             /// \return true == subscribed, false == already subscribed.
             bool Subscribe (
                     Producer<T> &producer,

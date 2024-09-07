@@ -170,6 +170,17 @@ namespace thekogans {
             /// This function template allows you to coexist with libraries that use
             /// std::shared_ptr.
             /// \return std::shared_ptr<T>.
+            /// IMPORTANT WARNING: This method exists for convenience and interoperability.
+            /// It's important to understand its semantic limitations. RefCounted objects
+            /// and std::shared_ptr are fundamentally different beasts. RefCounted is an
+            /// invasive mixin class that is part of the object DNA. It allows you to take
+            /// a reference on an existing object regrdless of how that object was presented
+            /// to you (even as a raw pointer). std::shared_ptr on the other hand maintains
+            /// seperate counters outside the object scope. As a result, one has to be especially
+            /// careful when wrapping objects in std::shared_ptr to maintain the proper count.
+            /// This is why helper classes like std::enable_shared_from_this and methods like
+            /// std::make_shared exist. They allow you to get arround these inherent design
+            /// limitations.
             template<typename T>
             std::shared_ptr<T> CreateStdSharedPtr () {
                 AddRef ();
