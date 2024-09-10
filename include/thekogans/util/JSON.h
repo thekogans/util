@@ -181,6 +181,35 @@ namespace thekogans {
                     const std::string &str,
                     const void *delimiter = "\n",
                     std::size_t delimiterLength = 1);
+                /// \brief
+                /// Copy ctor.
+                /// \param[in] other Array to copy.
+                Array (const Array &other) :
+                    values (other.values) {}
+                /// \brief
+                /// Move ctor.
+                /// \param[in, out] other Array to move.
+                Array (Array &&other) :
+                    values (std::move (other.values)) {}
+
+                /// \brief
+                /// Assignment operator.
+                /// \param[in] other Array to copy.
+                Array &operator = (const Array &other) {
+                    if (&other != this) {
+                        values = other.values;
+                    }
+                    return *this;
+                }
+                /// \brief
+                /// Move operator.
+                /// \param[in] other Array to move.
+                Array &operator = (Array &&other) {
+                    if (&other != this) {
+                        values = std::move (other.values);
+                    }
+                    return *this;
+                }
 
                 /// \brief
                 /// JSON's string handling is fucking abysmal (and that's putting it mildly).
@@ -272,6 +301,35 @@ namespace thekogans {
                 /// \brief
                 /// ctor.
                 Object () {}
+                /// \brief
+                /// Copy ctor.
+                /// \param[in] other Object to copy.
+                Object (const Object &other) :
+                    values (other.values) {}
+                /// \brief
+                /// Move ctor.
+                /// \param[in, out] other Object to move.
+                Object (Object &&other) :
+                    values (std::move (other.values)) {}
+
+                /// \brief
+                /// Assignment operator.
+                /// \param[in] other Object to copy.
+                Object &operator = (const Object &other) {
+                    if (&other != this) {
+                        values = other.values;
+                    }
+                    return *this;
+                }
+                /// \brief
+                /// Move operator.
+                /// \param[in] other Object to move.
+                Object &operator = (Object &&other) {
+                    if (&other != this) {
+                        values = std::move (other.values);
+                    }
+                    return *this;
+                }
 
                 /// \brief
                 /// Return count of name/values in the object.

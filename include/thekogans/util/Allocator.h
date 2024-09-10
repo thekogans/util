@@ -65,7 +65,7 @@ namespace thekogans {
             virtual void *Alloc (std::size_t size) = 0;
             /// \brief
             /// Free a previously Alloc(ated) block.
-            /// NOTE: Allocator policy is to do nothing if ptr == 0.
+            /// NOTE: Allocator policy is to do nothing if ptr == nullptr.
             /// \param[in] ptr Pointer to the block returned by Alloc.
             /// \param[in] size Same size parameter previously passed in to Alloc.
             virtual void Free (

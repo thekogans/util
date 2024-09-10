@@ -59,7 +59,7 @@ namespace thekogans {
                     const T *array_,
                     std::size_t count_,
                     bool clearUnused = false) {
-                if (array_ != 0 && count_ <= count) {
+                if (array_ != nullptr && count_ <= count) {
                     std::size_t usedBytes = sizeof (T) * count_;
                     memcpy (array, array_, usedBytes);
                     if (clearUnused) {

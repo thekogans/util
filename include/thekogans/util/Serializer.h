@@ -36,12 +36,12 @@ namespace thekogans {
         /// \struct Serializer Serializer.h thekogans/util/Serializer.h
         ///
         /// \brief
-        /// Serializer is an abstract base class. Derivatives of
-        /// Serializer provide stream insertion and extraction
-        /// capabilities. Serializer provides a convenient base
-        /// for reading/writing binary protocols. Insertion/extraction
-        /// operators for all thekogans util (See \see{Types.h}) basic
-        /// types are provided.
+        /// Serializer provides the abstract base (Read and Write) for streamming
+        /// binary data. Derivatives of Serializer provide implementations appropriate
+        /// to them. Insertion/extraction operators for all thekogans util (See \see{Types.h})
+        /// basic types as well as most other types (\see{Exception}, \see{Buffer}...)
+        /// are provided. Serializer uses endianness to convert between in stream and
+        /// in memory types.
 
         struct _LIB_THEKOGANS_UTIL_DECL Serializer {
             /// \brief

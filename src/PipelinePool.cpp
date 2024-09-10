@@ -97,7 +97,7 @@ namespace thekogans {
                 std::size_t retries,
                 const TimeSpec &timeSpec) {
             Pipeline *pipeline = AcquirePipeline ();
-            while (pipeline == 0 && retries-- > 0) {
+            while (pipeline == nullptr && retries-- > 0) {
                 Sleep (timeSpec);
                 pipeline = AcquirePipeline ();
             }

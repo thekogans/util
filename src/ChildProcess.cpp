@@ -733,7 +733,7 @@ namespace thekogans {
             // Drop user if there is one, and we were run as root.
             if (userName != nullptr && (getuid () == 0 || geteuid () == 0)) {
                 passwd *pw = getpwnam (userName);
-                if (pw == 0 || setuid (pw->pw_uid) < 0) {
+                if (pw == nullptr || setuid (pw->pw_uid) < 0) {
                     THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
                         THEKOGANS_UTIL_OS_ERROR_CODE);
                 }

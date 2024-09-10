@@ -35,7 +35,7 @@ namespace thekogans {
                     void *ptr = 0;
                     if (size > 0) {
                         ptr = HeapAlloc (handle, 0,  size);
-                        if (ptr == 0) {
+                        if (ptr == nullptr) {
                             THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
                                 THEKOGANS_UTIL_OS_ERROR_CODE_ENOMEM);
                         }

@@ -40,9 +40,10 @@ namespace thekogans {
         /// \struct Serializable Serializable.h thekogans/util/Serializable.h
         ///
         /// \brief
-        /// Serializable is an abstract base for all supported serializable types (See
-        /// \see{Serializer}). It exposes machinery used by descendants to register
-        /// themselves for dynamic discovery, creation and serializable insertion and
+        /// Serializable extends \see{DynamicCreatable} to provide object storage/retrieval
+        /// facilities for three distinct protocols; binary, XML and JSON. It is an abstract
+        /// base for all supported serializable types and exposes machinery used by descendants
+        /// to register themselves for dynamic discovery, creation and serializable insertion and
         /// extraction. Serializable has built in support for binary, XML and JSON
         /// serialization and de-serialization. (For a good real world example have a
         /// look at \see{crypto::Serializable} and it's derivatives.)
@@ -82,7 +83,7 @@ namespace thekogans {
                 /// \param[in] version_ Serializable version.
                 /// \param[in] size_ Serializable size in bytes (not including the header).
                 BinHeader (
-                    const char *type_,
+                    const std::string &type_,
                     ui16 version_,
                     std::size_t size_) :
                     magic (MAGIC32),
@@ -157,7 +158,7 @@ namespace thekogans {
                 /// \param[in] type_ Serializable type (it's class name).
                 /// \param[in] version_ Serializable version.
                 TextHeader (
-                    const char *type_,
+                    const std::string &type_,
                     ui16 version_) :
                     type (type_),
                     version (version_) {}
@@ -233,21 +234,169 @@ namespace thekogans {
             virtual void Write (JSON::Object & /*object*/) const = 0;
         };
 
-        /// \def THEKOGANS_UTIL_DECLARE_SERIALIZABLE(_T)
-        /// Common code used by Static and Shared versions THEKOGANS_UTIL_DECLARE_SERIALIZABLE.
-        #define THEKOGANS_UTIL_DECLARE_SERIALIZABLE(_T)\
-            THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE (_T)\
+        /// \def THEKOGANS_UTIL_DECLARE_SERIALIZABLE_OVERRIDE(_T)
+        /// Common defines for Serializable.
+        #define THEKOGANS_UTIL_DECLARE_SERIALIZABLE_OVERRIDE(_T)\
         public:\
             static const thekogans::util::ui16 VERSION;\
             virtual thekogans::util::ui16 Version () const override;
 
+        /// \def THEKOGANS_UTIL_DECLARE_SERIALIZABLE(_T)
+        #define THEKOGANS_UTIL_DECLARE_SERIALIZABLE(_T)\
+            THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE (_T)\
+            THEKOGANS_UTIL_DECLARE_SERIALIZABLE_OVERRIDE (_T)
+
         /// \def THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE(_T, version)
-        #define THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE(_T, version)\
-            THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE (_T)\
+        /// Serializable overrides.
+        #define THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_OVERRIDE(_T, version)\
             const thekogans::util::ui16 _T::VERSION = version;\
             thekogans::util::ui16 _T::Version () const {\
                 return VERSION;\
             }
+
+        /// \def THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE(_T, version)
+        #define THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE(_T, version)\
+            THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE (_T)\
+            THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_OVERRIDE (_T, version)
+
+        /// \struct Blob Serializable.h thekogans/util/Serializable.h
+        ///
+        /// \brief
+        /// Blob is a standin for unrecognized types. Serializable is designed to
+        /// marshal \see{DynamicCreatable} structured types. During marshaling the
+        /// code might come accross a type that has not been registered. Instead of
+        /// ignoring the data and potentially loosing information or throwing
+        /// exceptions, Blob is used to contain unstructured bits. Blob is designed
+        /// to put the bits back exactly as it found them. The limitation is that if
+        /// you made a binary blob, you cannot store it as an XML or JSON blob. That
+        /// kind of conversion requires knowledge of the underlying type.
+
+        struct _LIB_THEKOGANS_UTIL_DECL Blob : public Serializable {
+            /// \brief
+            /// Underlying blob type.
+            std::string type;
+            /// \brief
+            /// Serializable version.
+            ui16 version;
+            /// \brief
+            /// Serializable size in bytes (not including the header).
+            std::size_t size;
+            /// \brief
+            /// Binary blob.
+            Buffer buffer;
+            /// \brief
+            /// XML blob.
+            pugi::xml_node node;
+            /// \brief
+            /// JSON blob.
+            JSON::Object object;
+
+
+            /// \brief
+            /// ctor.
+            Blob () :
+                version (0),
+                size (0) {}
+
+            /// \brief
+            /// Return DynamicCreatable type (it's class name).
+            /// \return DynamicCreatable type (it's class name).
+            virtual const std::string &Type () const override {
+                return type;
+            }
+
+            /// \brief
+            /// Return the serializable version.
+            /// \return Serializable version.
+            virtual ui16 Version () const override {
+                return version;
+            }
+
+            /// \brief
+            /// Return the serializable size (not including the header).
+            /// \return Serializable size.
+            virtual std::size_t Size () const override {
+                return size;
+            }
+
+            /// \brief
+            /// Write the serializable from the given serializer.
+            /// \param[in] header Serializable::BinHeader to deserialize.
+            /// \param[in] serializer Serializer to read the serializable from.
+            virtual void Read (
+                    const BinHeader &header,
+                    Serializer &serializer) override {
+                type = header.type;
+                version = header.version;
+                size = header.size;
+                buffer.Resize (size);
+                buffer.Rewind ();
+                buffer.AdvanceWriteOffset (
+                    serializer.Read (
+                        buffer.GetWritePtr (),
+                        buffer.GetDataAvailableForWriting ()));
+            }
+            /// \brief
+            /// Write the serializable to the given serializer.
+            /// \param[out] serializer Serializer to write the serializable to.
+            virtual void Write (Serializer &serializer) const override {
+                serializer.Write (
+                    buffer.GetReadPtr (),
+                    buffer.GetDataAvailableForReading ());
+            }
+
+            /// \brief
+            /// Read a Serializable from an XML DOM.
+            /// \param[in] header Serializable::TextHeader to deserialize.
+            /// \param[in] node XML DOM representation of a Serializable.
+            virtual void Read (
+                    const TextHeader &header,
+                    const pugi::xml_node &node_) override {
+                type = header.type;
+                version = header.version;
+                size = 0;
+                for (pugi::xml_attribute attribute = node_.first_attribute ();
+                        attribute; attribute = attribute.next_attribute ()) {
+                    node.append_copy (attribute);
+                }
+                for (pugi::xml_node child = node_.first_child ();
+                        child; child = child.next_sibling ()) {
+                    node.append_copy (child);
+                }
+            }
+            /// \brief
+            /// Write a Serializable to the XML DOM.
+            /// \param[out] node_ Parent node.
+            virtual void Write (pugi::xml_node &node_) const override {
+                for (pugi::xml_attribute attribute = node.first_attribute ();
+                        attribute; attribute = attribute.next_attribute ()) {
+                    node_.append_copy (attribute);
+                }
+                for (pugi::xml_node child = node.first_child ();
+                        child; child = child.next_sibling ()) {
+                    node_.append_copy (child);
+                }
+            }
+
+            /// \brief
+            /// Read a Serializable from an JSON DOM.
+            /// \param[in] header Serializable::Texteader to deserialize.
+            /// \param[in] object_ JSON DOM representation of a Serializable.
+            virtual void Read (
+                    const TextHeader &header,
+                    const JSON::Object &object_) override {
+                type = header.type;
+                version = header.version;
+                size = 0;
+                object = object_;
+            }
+            /// \brief
+            /// Write a Serializable to the JSON DOM.
+            /// \param[out] object_ Parent node.
+            virtual void Write (JSON::Object &object_) const override {
+                object_ = object;
+            }
+        };
 
         /// \brief
         /// Serializable::BinHeader insertion operator.

@@ -356,7 +356,7 @@ namespace thekogans {
                 /// \param[in] function_ Lambda to execute.
                 explicit LambdaJob (const Function &function_) :
                         function (function_) {
-                    if (function == 0) {
+                    if (function == nullptr) {
                         THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
                             THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
                     }
@@ -1126,7 +1126,7 @@ namespace thekogans {
                 /// \param[in] function_ Lambda to execute.
                 explicit LambdaEqualityTest (const Function &function_) :
                         function (function_) {
-                    if (function == 0) {
+                    if (function == nullptr) {
                         THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
                             THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
                     }

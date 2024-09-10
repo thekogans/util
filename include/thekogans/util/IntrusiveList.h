@@ -161,8 +161,8 @@ namespace thekogans {
             /// \param[in,out] other IntrusiveList to concatenate.
             /// \return *this.
             inline IntrusiveList &operator += (IntrusiveList<T, ID> &other) {
-                if (other.head != 0) {
-                    if (tail != 0) {
+                if (other.head != nullptr) {
+                    if (tail != nullptr) {
                         next (tail) = other.head;
                         prev (other.head) = tail;
                     }

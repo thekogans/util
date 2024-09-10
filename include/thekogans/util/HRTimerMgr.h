@@ -111,7 +111,7 @@ namespace thekogans {
         ///                         metadata = db::Metadata::Get (db,
         ///                             (*it)->Type (), (*it)->category, (*it)->id);
         ///                     }
-        ///                     if (metadata.get () != 0) {
+        ///                     if (metadata.get () != nullptr) {
         ///                         {
         ///                             THEKOGANS_UTIL_HRTIMER_MGR_SCOPE_TIMER (
         ///                                 "metadata->Extract (db, **it);");
@@ -179,9 +179,6 @@ namespace thekogans {
                 /// \param[in] name_ TimerInfoBase name.
                 TimerInfoBase (const std::string &name_ = std::string ()) :
                     name (name_) {}
-                /// \brief
-                /// dtor.
-                virtual ~TimerInfoBase () {}
 
                 /// \brief
                 /// Add a used defined key/value pair to be included

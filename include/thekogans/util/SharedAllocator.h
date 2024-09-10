@@ -336,7 +336,7 @@ namespace thekogans {
             /// \param[in] block Block pointer.
             /// \return Block offset.
             inline ui64 GetOffsetFromBlock (Block *block) const {
-                return block != 0 ? (ui64)((ui8 *)block - (ui8 *)header) : 0;
+                return block != nullptr ? (ui64)((ui8 *)block - (ui8 *)header) : 0;
             }
             /// \brief
             /// Given a block, calculate the offset of the next block.

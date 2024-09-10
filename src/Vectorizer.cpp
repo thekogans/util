@@ -81,7 +81,7 @@ namespace thekogans {
                     // resource. It is not re-entrant. We therefore need to
                     // serialize access to the one and only entry point.
                     LockGuard<Mutex> guard (mutex);
-                    assert (job == 0);
+                    assert (job == nullptr);
                     assert (workerCount == 0);
                     assert (chunkSize == 0);
                     job = &job_;

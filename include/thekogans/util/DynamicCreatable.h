@@ -80,7 +80,19 @@ namespace thekogans {
         /// \struct DynamicCreatable DynamicCreatable.h thekogans/util/DynamicCreatable.h
         ///
         /// \brief
-        /// Base class used to represent a dynamically creatable object.
+        /// Base class used to represent a dynamically creatable object. Dynamically
+        /// creatable objects are everywhere. Any time you need to rebuild a structured
+        /// data stream from a wire or long term storage (disc), think DynamicCreatable!
+        /// A huge chunk of thekogans_util is dedicated to object lifetime management.
+        /// That umbrella term includes both immediate as well as long term storage. To
+        /// facilitate designing and implementing robust, easy to maintain, well behaved
+        /// systems a lot of supporting sub-systems are provided; \see{Serializer} and
+        /// its concrete derivatives \see{File}, \see{Buffer} and \see{FixedBuffer}.
+        /// \see{Serializable} adds object stream insertion/extraction capabilities for
+        /// three distinct protocols; binary, XML and JSON. \see{RefCounted} provides
+        /// object lifetime management needed in dynamical systems. \see{RefCountedRegistry}
+        /// allows \see{RefCounted} objects to interoperate with async os callback apis
+        /// without fear of leakage or corruption.
 
         struct _LIB_THEKOGANS_UTIL_DECL DynamicCreatable : public virtual RefCounted {
             /// \brief
@@ -134,7 +146,7 @@ namespace thekogans {
             /// \brief
             /// Return DynamicCreatable type (it's class name).
             /// \return DynamicCreatable type (it's class name).
-            virtual const char *Type () const = 0;
+            virtual const std::string &Type () const = 0;
         };
 
     #if defined (THEKOGANS_UTIL_TYPE_Static)
@@ -177,10 +189,11 @@ namespace thekogans {
     #endif // defined (THEKOGANS_UTIL_TYPE_Static)
 
         /// \def THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE_OVERRIDE(_T)
+        /// Common defines for DynamicCreatable.
         #define THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE_OVERRIDE(_T)\
         public:\
-            static const char *TYPE;\
-            virtual const char *Type () const override;
+            static const std::string TYPE;\
+            virtual const std::string &Type () const override;
 
         /// \def THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE(_T)
         #define THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE(_T)\
@@ -192,10 +205,10 @@ namespace thekogans {
             static thekogans::util::DynamicCreatable::SharedPtr Create ();
 
         /// \def THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_OVERRIDE(_T)
-        /// Common defines for DynamicCreatable.
+        /// DynamicCreatable overrides.
         #define THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_OVERRIDE(_T)\
-            const char *_T::TYPE = #_T;\
-            const char *_T::Type () const {\
+            const std::string _T::TYPE = #_T;\
+            const std::string &_T::Type () const {\
                 return TYPE;\
             }
 

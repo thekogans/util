@@ -93,7 +93,7 @@ namespace thekogans {
                 std::size_t retries,
                 const TimeSpec &timeSpec) {
             JobQueue *jobQueue = AcquireJobQueue ();
-            while (jobQueue == 0 && retries-- > 0) {
+            while (jobQueue == nullptr && retries-- > 0) {
                 Sleep (timeSpec);
                 jobQueue = AcquireJobQueue ();
             }

@@ -118,7 +118,7 @@ namespace thekogans {
                         INetFwAuthorizedApplication *app;
                         App (INetFwAuthorizedApplication *app_ = 0) :
                                 app (app_) {
-                            if (app == 0) {
+                            if (app == nullptr) {
                                 HRESULT hr = CoCreateInstance (
                                     __uuidof (NetFwAuthorizedApplication),
                                     0,
@@ -235,7 +235,7 @@ namespace thekogans {
                         INetFwOpenPort *port;
                         Port (INetFwOpenPort *port_ = 0) :
                                 port (port_) {
-                            if (port == 0) {
+                            if (port == nullptr) {
                                 HRESULT hr = CoCreateInstance (
                                     __uuidof (NetFwOpenPort),
                                     0,

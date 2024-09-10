@@ -168,7 +168,7 @@ namespace thekogans {
                 const char *utf8,
                 std::size_t length) {
             std::size_t utf8Length = 0;
-            return IsUTF8String (utf8, length, &utf8Length) == 0 ? utf8Length : 0;
+            return IsUTF8String (utf8, length, &utf8Length) == nullptr ? utf8Length : 0;
         }
         /// \brief
         /// Return the length (in UTF8 characters) of the given UTF8 string.

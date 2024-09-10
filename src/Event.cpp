@@ -193,7 +193,7 @@ namespace thekogans {
                         sizeof (EventImpl),
                         false,
                         EventImplConstructor (manualReset, initialState))) {
-            if (event == 0) {
+            if (event == nullptr) {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
                     THEKOGANS_UTIL_OS_ERROR_CODE_ENOMEM);
             }
