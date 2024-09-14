@@ -275,7 +275,7 @@ namespace thekogans {
                         payload.GetWritePtr (),
                         payload.GetDataAvailableForWriting ()));
                 if (payload.IsFull ()) {
-                    value = CreateType (header.type);
+                    value = Serializable::CreateType (header.type);
                     if (value == nullptr) {
                         value.Reset (new Blob);
                     }
