@@ -185,8 +185,8 @@ namespace thekogans {
         #endif // defined (THEKOGANS_UTIL_TYPE_Static)
 
             /// \brief
-            /// Return the size of the serializable including the header.
-            /// \return Size of the serializable including the header.
+            /// Return the binary size of the serializable including the header.
+            /// \return Size of the binary serializable including the header.
             std::size_t GetSize () const;
 
             /// \brief
@@ -195,8 +195,8 @@ namespace thekogans {
             virtual ui16 Version () const = 0;
 
             /// \brief
-            /// Return the serializable size (not including the header).
-            /// \return Serializable size.
+            /// Return the serializable binary size (not including the header).
+            /// \return Serializable binary size.
             virtual std::size_t Size () const = 0;
 
             /// \brief
@@ -276,10 +276,10 @@ namespace thekogans {
             /// Underlying blob type.
             std::string type;
             /// \brief
-            /// Serializable version.
+            /// Underlying blob version.
             ui16 version;
             /// \brief
-            /// Serializable size in bytes (not including the header).
+            /// Underlying blob size in bytes (not including the header).
             std::size_t size;
             /// \brief
             /// Binary blob.
@@ -291,7 +291,6 @@ namespace thekogans {
             /// JSON blob.
             JSON::Object object;
 
-
             /// \brief
             /// ctor.
             Blob () :
@@ -301,101 +300,53 @@ namespace thekogans {
             /// \brief
             /// Return DynamicCreatable type (it's class name).
             /// \return DynamicCreatable type (it's class name).
-            virtual const std::string &Type () const override {
-                return type;
-            }
+            virtual const std::string &Type () const override;
 
             /// \brief
             /// Return the serializable version.
             /// \return Serializable version.
-            virtual ui16 Version () const override {
-                return version;
-            }
+            virtual ui16 Version () const override;
 
             /// \brief
             /// Return the serializable size (not including the header).
             /// \return Serializable size.
-            virtual std::size_t Size () const override {
-                return size;
-            }
+            virtual std::size_t Size () const override;
 
             /// \brief
             /// Write the serializable from the given serializer.
             /// \param[in] header Serializable::BinHeader to deserialize.
             /// \param[in] serializer Serializer to read the serializable from.
             virtual void Read (
-                    const BinHeader &header,
-                    Serializer &serializer) override {
-                type = header.type;
-                version = header.version;
-                size = header.size;
-                buffer.Resize (size);
-                buffer.Rewind ();
-                buffer.AdvanceWriteOffset (
-                    serializer.Read (
-                        buffer.GetWritePtr (),
-                        buffer.GetDataAvailableForWriting ()));
-            }
+                const BinHeader &header,
+                Serializer &serializer) override;
             /// \brief
             /// Write the serializable to the given serializer.
             /// \param[out] serializer Serializer to write the serializable to.
-            virtual void Write (Serializer &serializer) const override {
-                serializer.Write (
-                    buffer.GetReadPtr (),
-                    buffer.GetDataAvailableForReading ());
-            }
+            virtual void Write (Serializer &serializer) const override;
 
             /// \brief
             /// Read a Serializable from an XML DOM.
             /// \param[in] header Serializable::TextHeader to deserialize.
             /// \param[in] node XML DOM representation of a Serializable.
             virtual void Read (
-                    const TextHeader &header,
-                    const pugi::xml_node &node_) override {
-                type = header.type;
-                version = header.version;
-                size = 0;
-                for (pugi::xml_attribute attribute = node_.first_attribute ();
-                        attribute; attribute = attribute.next_attribute ()) {
-                    node.append_copy (attribute);
-                }
-                for (pugi::xml_node child = node_.first_child ();
-                        child; child = child.next_sibling ()) {
-                    node.append_copy (child);
-                }
-            }
+                const TextHeader &header,
+                const pugi::xml_node &node_) override;
             /// \brief
             /// Write a Serializable to the XML DOM.
             /// \param[out] node_ Parent node.
-            virtual void Write (pugi::xml_node &node_) const override {
-                for (pugi::xml_attribute attribute = node.first_attribute ();
-                        attribute; attribute = attribute.next_attribute ()) {
-                    node_.append_copy (attribute);
-                }
-                for (pugi::xml_node child = node.first_child ();
-                        child; child = child.next_sibling ()) {
-                    node_.append_copy (child);
-                }
-            }
+            virtual void Write (pugi::xml_node &node_) const override;
 
             /// \brief
             /// Read a Serializable from an JSON DOM.
             /// \param[in] header Serializable::Texteader to deserialize.
             /// \param[in] object_ JSON DOM representation of a Serializable.
             virtual void Read (
-                    const TextHeader &header,
-                    const JSON::Object &object_) override {
-                type = header.type;
-                version = header.version;
-                size = 0;
-                object = object_;
-            }
+                const TextHeader &header,
+                const JSON::Object &object_) override;
             /// \brief
             /// Write a Serializable to the JSON DOM.
             /// \param[out] object_ Parent node.
-            virtual void Write (JSON::Object &object_) const override {
-                object_ = object;
-            }
+            virtual void Write (JSON::Object &object_) const override;
         };
 
         /// \brief
@@ -455,8 +406,8 @@ namespace thekogans {
                 const pugi::xml_node &node,
                 Serializable::TextHeader &header) {
             header.type = node.attribute (Serializable::TextHeader::ATTR_TYPE).value ();
-            header.version = stringToui16 (node.attribute (
-                    Serializable::TextHeader::ATTR_VERSION).value ());
+            header.version = stringToui16 (
+                node.attribute (Serializable::TextHeader::ATTR_VERSION).value ());
             return node;
         }
 
@@ -541,6 +492,16 @@ namespace thekogans {
             return object;
         }
 
+        _LIB_THEKOGANS_UTIL_DECL Serializer & _LIB_THEKOGANS_UTIL_API operator >> (
+            Serializer &serializer,
+            Serializable::SharedPtr &serializable);
+        _LIB_THEKOGANS_UTIL_DECL const pugi::xml_node & _LIB_THEKOGANS_UTIL_API operator >> (
+            const pugi::xml_node &node,
+            Serializable::SharedPtr &serializable);
+        _LIB_THEKOGANS_UTIL_DECL const JSON::Object & _LIB_THEKOGANS_UTIL_API operator >> (
+            const JSON::Object &object,
+            Serializable::SharedPtr &serializable);
+
         /// \struct ValueParser<Serializable::BinHeader> Serializable.h thekogans/util/Serializable.h
         ///
         /// \brief
@@ -606,6 +567,53 @@ namespace thekogans {
             bool ParseValue (Serializer &serializer);
         };
 
+        /// \struct ValueParser<Serializable::SharedPtr> Serializable.h thekogans/util/Serializable.h
+        ///
+        /// \brief
+        /// Specialization of \see{ValueParser} for \see{Serializable::SharedPtr}.
+
+        template<>
+        struct _LIB_THEKOGANS_UTIL_DECL ValueParser<Serializable::SharedPtr> {
+        private:
+            Serializable::SharedPtr &value;
+            enum {
+                DEFAULT_MAX_SERIALIZABLE_SIZE = 2 * 1024 * 1024
+            };
+            const std::size_t maxSerializableSize;
+            Serializable::BinHeader header;
+            Buffer payload;
+            ValueParser<Serializable::BinHeader> headerParser;
+            enum {
+                STATE_BIN_HEADER,
+                STATE_SERIALIZABLE
+            } state;
+
+        public:
+            /// \brief
+            /// ctor.
+            /// \param[out] value_ Value to parse.
+            /// \param[in] maxSerializableSize_ Used to protect the code against malicious actors.
+            ValueParser (
+                Serializable::SharedPtr &value_,
+                std::size_t maxSerializableSize_ = DEFAULT_MAX_SERIALIZABLE_SIZE) :
+                value (value_),
+                maxSerializableSize (maxSerializableSize_),
+                payload (NetworkEndian),
+                headerParser (header),
+                state (STATE_BIN_HEADER) {}
+
+            /// \brief
+            /// Rewind the sub-parsers to get them ready for the next value.
+            void Reset ();
+
+            /// \brief
+            /// Try to parse a \see{Serializable::SharedPtr} from the given serializer.
+            /// \param[in] serializer Contains a complete or partial \see{Serializable::SharedPtr}.
+            /// \return true == \see{Serializable::SharedPtr} was successfully parsed,
+            /// false == call back with more data.
+            bool ParseValue (Serializer &serializer);
+        };
+
         /// \def THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_REF_EXTRACTION_OPERATORS(_T)
         /// Implement \see{Serializable} extraction operators.
         #define THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_REF_EXTRACTION_OPERATORS(_T)\
@@ -623,7 +631,7 @@ namespace thekogans {
                     THEKOGANS_UTIL_THROW_STRING_EXCEPTION (\
                         "Corrupt serializable header. Got %s, expecting %s.",\
                         header.type.c_str (),\
-                        serializable.Type ());\
+                        serializable.Type ().c_str ());\
                 }\
             }\
             inline const pugi::xml_node & _LIB_THEKOGANS_UTIL_API operator >> (\
@@ -639,7 +647,7 @@ namespace thekogans {
                     THEKOGANS_UTIL_THROW_STRING_EXCEPTION (\
                         "Corrupt serializable header. Got %s, expecting %s.",\
                         header.type.c_str (),\
-                        serializable.Type ());\
+                        serializable.Type ().c_str ());\
                 }\
             }\
             inline const thekogans::util::JSON::Object & _LIB_THEKOGANS_UTIL_API operator >> (\
@@ -655,7 +663,7 @@ namespace thekogans {
                     THEKOGANS_UTIL_THROW_STRING_EXCEPTION (\
                         "Corrupt serializable header. Got %s, expecting %s.",\
                         header.type.c_str (),\
-                        serializable.Type ());\
+                        serializable.Type ().c_str ());\
                 }\
             }
 
@@ -726,10 +734,6 @@ namespace thekogans {
         #define THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_EXTRACTION_OPERATORS(_T)\
             THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_REF_EXTRACTION_OPERATORS (_T)\
             THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_PTR_EXTRACTION_OPERATORS (_T)
-
-        /// \brief
-        /// Implement \see{Serializable} extraction operators.
-        THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_PTR_EXTRACTION_OPERATORS (Serializable)
 
         /// \def THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_REF_VALUE_PARSER(_T)
         /// Implement \see{Serializable} \see{ValueParser}.
@@ -881,10 +885,6 @@ namespace thekogans {
         #define THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_VALUE_PARSER(_T)\
             THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_REF_VALUE_PARSER (_T)\
             THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_PTR_VALUE_PARSER (_T)
-
-        /// \brief
-        /// Implement \see{Serializable} \see{ValueParser}.
-        THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_PTR_VALUE_PARSER (Serializable)
 
     } // namespace util
 } // namespace thekogans

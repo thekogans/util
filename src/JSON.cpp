@@ -673,7 +673,8 @@ namespace thekogans {
                             if (i < count - 1) {
                                 stream << ",";
                             }
-                            stream << "\n" << std::string (indentationLevel * indentationWidth, SPACE);
+                            stream << "\n" <<
+                                std::string (indentationLevel * indentationWidth, SPACE);
                         }
                     }
                     stream << "}";
@@ -681,7 +682,7 @@ namespace thekogans {
                 else {
                     THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
                         "Unknown value type %s.",
-                        value.Type ());
+                        value.Type ().c_str ());
                 }
             }
         }
