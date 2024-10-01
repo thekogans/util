@@ -690,6 +690,232 @@ namespace thekogans {
             THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (TenantWriteBuffer)
         };
 
+        /// \struct NetworkBuffer Buffer.h thekogans/util/Buffer.h
+        ///
+        /// \brief
+        /// A convenience class to obviate the need to provide NetworkEndian all the time.
+
+        struct _LIB_THEKOGANS_UTIL_DECL NetworkBuffer : public Buffer {
+            /// \brief
+            /// Copy ctor.
+            /// \param[in,out] other NetworkBuffer to move.
+            NetworkBuffer (const NetworkBuffer &other) :
+                Buffer (other) {}
+            /// \brief
+            /// Move ctor.
+            /// \param[in,out] other NetworkBuffer to move.
+            NetworkBuffer (NetworkBuffer &&other) :
+                Buffer (std::move (other)) {}
+            /// \brief
+            /// ctor for wrapping a raw data pointer.
+            /// \param[in] endianness How multi-byte values are stored.
+            /// \param[in] data Pointer to wrap.
+            /// \param[in] length Length of data.
+            /// \param[in] readOffset Offset at which to read.
+            /// \param[in] writeOffset Offset at which to write.
+            NetworkBuffer (
+                void *data = nullptr,
+                std::size_t length = 0,
+                std::size_t readOffset = 0,
+                std::size_t writeOffset = 0,
+                Allocator::SharedPtr allocator = DefaultAllocator::Instance ()) :
+                Buffer (NetworkEndian, data, length, readOffset, writeOffset, allocator) {}
+            /// \brief
+            /// ctor for creating a buffer of a given length.
+            /// \param[in] endianness Specifies how multi-byte values are stored.
+            /// \param[in] length Length of data.
+            /// \param[in] readOffset Offset at which to read.
+            /// \param[in] writeOffset Offset at which to write.
+            NetworkBuffer (
+                std::size_t length,
+                std::size_t readOffset = 0,
+                std::size_t writeOffset = 0,
+                Allocator::SharedPtr allocator = DefaultAllocator::Instance ()) :
+                Buffer (NetworkEndian, length, readOffset, writeOffset, allocator) {}
+            /// \brief
+            /// ctor for creating a buffer from a given range.
+            /// \param[in] endianness Specifies how multi-byte values are stored.
+            /// \param[in] begin Start of range.
+            /// \param[in] end Just past the end of range.
+            /// \param[in] readOffset Offset at which to read.
+            /// \param[in] writeOffset Offset at which to write.
+            NetworkBuffer (
+                const void *begin,
+                const void *end,
+                std::size_t readOffset = 0,
+                std::size_t writeOffset = SIZE_T_MAX,
+                Allocator::SharedPtr allocator = DefaultAllocator::Instance ()) :
+                Buffer (NetworkEndian, begin, end, readOffset, writeOffset, allocator) {}
+        };
+
+        /// \struct SecureNetworkBuffer Buffer.h thekogans/util/Buffer.h
+        ///
+        /// \brief
+        /// A convenience class to obviate the need to provide NetworkEndian all the time.
+
+        struct _LIB_THEKOGANS_UTIL_DECL SecureNetworkBuffer : public SecureBuffer {
+            /// \brief
+            /// Copy ctor.
+            /// \param[in,out] other SecureNetworkBuffer to move.
+            SecureNetworkBuffer (const SecureNetworkBuffer &other) :
+                SecureBuffer (other) {}
+            /// \brief
+            /// Move ctor.
+            /// \param[in,out] other SecureNetworkBuffer to move.
+            SecureNetworkBuffer (SecureNetworkBuffer &&other) :
+                SecureBuffer (std::move (other)) {}
+            /// \brief
+            /// ctor for wrapping a raw data pointer.
+            /// \param[in] endianness How multi-byte values are stored.
+            /// \param[in] data Pointer to wrap.
+            /// \param[in] length Length of data.
+            /// \param[in] readOffset Offset at which to read.
+            /// \param[in] writeOffset Offset at which to write.
+            SecureNetworkBuffer (
+                void *data = nullptr,
+                std::size_t length = 0,
+                std::size_t readOffset = 0,
+                std::size_t writeOffset = 0) :
+                SecureBuffer (NetworkEndian, data, length, readOffset, writeOffset) {}
+            /// \brief
+            /// ctor for creating a buffer of a given length.
+            /// \param[in] endianness Specifies how multi-byte values are stored.
+            /// \param[in] length Length of data.
+            /// \param[in] readOffset Offset at which to read.
+            /// \param[in] writeOffset Offset at which to write.
+            SecureNetworkBuffer (
+                std::size_t length,
+                std::size_t readOffset = 0,
+                std::size_t writeOffset = 0) :
+                SecureBuffer (NetworkEndian, length, readOffset, writeOffset) {}
+            /// \brief
+            /// ctor for creating a buffer from a given range.
+            /// \param[in] endianness Specifies how multi-byte values are stored.
+            /// \param[in] begin Start of range.
+            /// \param[in] end Just past the end of range.
+            /// \param[in] readOffset Offset at which to read.
+            /// \param[in] writeOffset Offset at which to write.
+            SecureNetworkBuffer (
+                const void *begin,
+                const void *end,
+                std::size_t readOffset = 0,
+                std::size_t writeOffset = SIZE_T_MAX) :
+                SecureBuffer (NetworkEndian, begin, end, readOffset, writeOffset) {}
+        };
+
+        /// \struct HostBuffer Buffer.h thekogans/util/Buffer.h
+        ///
+        /// \brief
+        /// A convenience class to obviate the need to provide HostEndian all the time.
+
+        struct _LIB_THEKOGANS_UTIL_DECL HostBuffer : public Buffer {
+            /// \brief
+            /// Copy ctor.
+            /// \param[in,out] other HostBuffer to move.
+            HostBuffer (const HostBuffer &other) :
+                Buffer (other) {}
+            /// \brief
+            /// Move ctor.
+            /// \param[in,out] other HostBuffer to move.
+            HostBuffer (HostBuffer &&other) :
+                Buffer (std::move (other)) {}
+            /// \brief
+            /// ctor for wrapping a raw data pointer.
+            /// \param[in] endianness How multi-byte values are stored.
+            /// \param[in] data Pointer to wrap.
+            /// \param[in] length Length of data.
+            /// \param[in] readOffset Offset at which to read.
+            /// \param[in] writeOffset Offset at which to write.
+            HostBuffer (
+                void *data = nullptr,
+                std::size_t length = 0,
+                std::size_t readOffset = 0,
+                std::size_t writeOffset = 0,
+                Allocator::SharedPtr allocator = DefaultAllocator::Instance ()) :
+                Buffer (HostEndian, data, length, readOffset, writeOffset, allocator) {}
+            /// \brief
+            /// ctor for creating a buffer of a given length.
+            /// \param[in] endianness Specifies how multi-byte values are stored.
+            /// \param[in] length Length of data.
+            /// \param[in] readOffset Offset at which to read.
+            /// \param[in] writeOffset Offset at which to write.
+            HostBuffer (
+                std::size_t length,
+                std::size_t readOffset = 0,
+                std::size_t writeOffset = 0,
+                Allocator::SharedPtr allocator = DefaultAllocator::Instance ()) :
+                Buffer (HostEndian, length, readOffset, writeOffset, allocator) {}
+            /// \brief
+            /// ctor for creating a buffer from a given range.
+            /// \param[in] endianness Specifies how multi-byte values are stored.
+            /// \param[in] begin Start of range.
+            /// \param[in] end Just past the end of range.
+            /// \param[in] readOffset Offset at which to read.
+            /// \param[in] writeOffset Offset at which to write.
+            HostBuffer (
+                const void *begin,
+                const void *end,
+                std::size_t readOffset = 0,
+                std::size_t writeOffset = SIZE_T_MAX,
+                Allocator::SharedPtr allocator = DefaultAllocator::Instance ()) :
+                Buffer (HostEndian, begin, end, readOffset, writeOffset, allocator) {}
+        };
+
+        /// \struct SecureHostBuffer Buffer.h thekogans/util/Buffer.h
+        ///
+        /// \brief
+        /// A convenience class to obviate the need to provide HostEndian all the time.
+
+        struct _LIB_THEKOGANS_UTIL_DECL SecureHostBuffer : public SecureBuffer {
+            /// \brief
+            /// Copy ctor.
+            /// \param[in,out] other SecureHostBuffer to move.
+            SecureHostBuffer (const SecureHostBuffer &other) :
+                SecureBuffer (other) {}
+            /// \brief
+            /// Move ctor.
+            /// \param[in,out] other SecureHostBuffer to move.
+            SecureHostBuffer (SecureHostBuffer &&other) :
+                SecureBuffer (std::move (other)) {}
+            /// \brief
+            /// ctor for wrapping a raw data pointer.
+            /// \param[in] endianness How multi-byte values are stored.
+            /// \param[in] data Pointer to wrap.
+            /// \param[in] length Length of data.
+            /// \param[in] readOffset Offset at which to read.
+            /// \param[in] writeOffset Offset at which to write.
+            SecureHostBuffer (
+                void *data = nullptr,
+                std::size_t length = 0,
+                std::size_t readOffset = 0,
+                std::size_t writeOffset = 0) :
+                SecureBuffer (HostEndian, data, length, readOffset, writeOffset) {}
+            /// \brief
+            /// ctor for creating a buffer of a given length.
+            /// \param[in] endianness Specifies how multi-byte values are stored.
+            /// \param[in] length Length of data.
+            /// \param[in] readOffset Offset at which to read.
+            /// \param[in] writeOffset Offset at which to write.
+            SecureHostBuffer (
+                std::size_t length,
+                std::size_t readOffset = 0,
+                std::size_t writeOffset = 0) :
+                SecureBuffer (HostEndian, length, readOffset, writeOffset) {}
+            /// \brief
+            /// ctor for creating a buffer from a given range.
+            /// \param[in] endianness Specifies how multi-byte values are stored.
+            /// \param[in] begin Start of range.
+            /// \param[in] end Just past the end of range.
+            /// \param[in] readOffset Offset at which to read.
+            /// \param[in] writeOffset Offset at which to write.
+            SecureHostBuffer (
+                const void *begin,
+                const void *end,
+                std::size_t readOffset = 0,
+                std::size_t writeOffset = SIZE_T_MAX) :
+                SecureBuffer (HostEndian, begin, end, readOffset, writeOffset) {}
+        };
+
         /// \brief
         /// Write the given buffer to the given \see{Serializer}.
         /// \param[in] serializer Where to write the given buffer.

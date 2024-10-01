@@ -631,7 +631,7 @@ namespace thekogans {
                 std::size_t chunkSize,
                 bool reap,
                 const TimeSpec &timeSpec) {
-            Buffer::SharedPtr buffer (new Buffer (HostEndian, chunkSize));
+            Buffer::SharedPtr buffer (new HostBuffer (chunkSize));
             TenantFile stdOut (HostEndian, handle, std::string ());
             while (buffer->AdvanceWriteOffset (
                     stdOut.Read (buffer->GetWritePtr (),

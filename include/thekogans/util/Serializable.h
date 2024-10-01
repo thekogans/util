@@ -581,7 +581,7 @@ namespace thekogans {
             };
             const std::size_t maxSerializableSize;
             Serializable::BinHeader header;
-            Buffer payload;
+            NetworkBuffer payload;
             ValueParser<Serializable::BinHeader> headerParser;
             enum {
                 STATE_BIN_HEADER,
@@ -598,7 +598,6 @@ namespace thekogans {
                 std::size_t maxSerializableSize_ = DEFAULT_MAX_SERIALIZABLE_SIZE) :
                 value (value_),
                 maxSerializableSize (maxSerializableSize_),
-                payload (NetworkEndian),
                 headerParser (header),
                 state (STATE_BIN_HEADER) {}
 
@@ -747,7 +746,7 @@ namespace thekogans {
                 };\
                 const std::size_t maxSerializableSize;\
                 thekogans::util::Serializable::BinHeader header;\
-                thekogans::util::Buffer payload;\
+                thekogans::util::NetworkBuffer payload;\
                 thekogans::util::ValueParser<thekogans::util::Serializable::BinHeader> headerParser;\
                 enum {\
                     STATE_BIN_HEADER,\
@@ -759,7 +758,6 @@ namespace thekogans {
                     std::size_t maxSerializableSize_ = DEFAULT_MAX_SERIALIZABLE_SIZE) :\
                     value (value_),\
                     maxSerializableSize (maxSerializableSize_),\
-                    payload (NetworkEndian),\
                     headerParser (header),\
                     state (STATE_BIN_HEADER) {}\
                 inline void Reset () {\
@@ -815,7 +813,7 @@ namespace thekogans {
                 };\
                 const std::size_t maxSerializableSize;\
                 thekogans::util::Serializable::BinHeader header;\
-                thekogans::util::Buffer payload;\
+                thekogans::util::NetworkBuffer payload;\
                 thekogans::util::ValueParser<thekogans::util::Serializable::BinHeader> headerParser;\
                 enum {\
                     STATE_BIN_HEADER,\
@@ -827,7 +825,6 @@ namespace thekogans {
                     std::size_t maxSerializableSize_ = DEFAULT_MAX_SERIALIZABLE_SIZE) :\
                     value (value_),\
                     maxSerializableSize (maxSerializableSize_),\
-                    payload (NetworkEndian),\
                     headerParser (header),\
                     state (STATE_BIN_HEADER) {}\
                 inline void Reset () {\
