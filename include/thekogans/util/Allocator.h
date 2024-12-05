@@ -58,10 +58,10 @@ namespace thekogans {
 
             /// \brief
             /// Allocate a block.
-            /// NOTE: Allocator policy is to return (void *)0 if size == 0.
+            /// NOTE: Allocator policy is to return nullptr if size == 0.
             /// if size > 0 and an error occurs, Allocator will throw an exception.
             /// \param[in] size Size of block to allocate.
-            /// \return Pointer to the allocated block ((void *)0 if size == 0).
+            /// \return Pointer to the allocated block (nullptr if size == 0).
             virtual void *Alloc (std::size_t size) = 0;
             /// \brief
             /// Free a previously Alloc(ated) block.

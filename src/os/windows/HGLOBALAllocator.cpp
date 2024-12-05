@@ -46,7 +46,7 @@ namespace thekogans {
                 void *HGLOBALAllocator::Alloc (
                         ui32 flags,
                         std::size_t size) {
-                    void *ptr = 0;
+                    void *ptr = nullptr;
                     if (size > 0) {
                         ptr = GlobalAlloc (flags,  size);
                         if (ptr == nullptr) {

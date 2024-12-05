@@ -159,7 +159,7 @@ namespace thekogans {
         }
 
         PipelinePool::Pipeline *PipelinePool::AcquirePipeline () {
-            Pipeline *pipeline = 0;
+            Pipeline *pipeline = nullptr;
             {
                 LockGuard<Mutex> guard (mutex);
                 if (!availablePipelines.empty ()) {

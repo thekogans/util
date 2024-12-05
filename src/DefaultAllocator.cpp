@@ -25,7 +25,7 @@ namespace thekogans {
         THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_SINGLETON (DefaultAllocator)
 
         void *DefaultAllocator::Alloc (std::size_t size) {
-            void *ptr = 0;
+            void *ptr = nullptr;
             if (size > 0) {
                 THEKOGANS_UTIL_TRY {
                     ptr = ::operator new (size);

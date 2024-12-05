@@ -32,7 +32,7 @@ namespace thekogans {
                 THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_SINGLETON (HeapAllocator)
 
                 void *HeapAllocator::Alloc (std::size_t size) {
-                    void *ptr = 0;
+                    void *ptr = nullptr;
                     if (size > 0) {
                         ptr = HeapAlloc (handle, 0,  size);
                         if (ptr == nullptr) {

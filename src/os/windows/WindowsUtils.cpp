@@ -35,7 +35,7 @@ _LIB_THEKOGANS_UTIL_DECL int _LIB_THEKOGANS_UTIL_API pipe (
     SECURITY_ATTRIBUTES securityAttributes;
     securityAttributes.nLength = sizeof (SECURITY_ATTRIBUTES);
     securityAttributes.bInheritHandle = TRUE;
-    securityAttributes.lpSecurityDescriptor = 0;
+    securityAttributes.lpSecurityDescriptor = nullptr;
     std::wstring utf16Name = thekogans::util::os::windows::UTF8ToUTF16 (name);
     fildes[0] = CreateNamedPipeW (
         utf16Name.c_str (),
@@ -188,17 +188,17 @@ namespace thekogans {
                 void HGLOBALPtr::Attach (
                         HGLOBAL hglobal_,
                         bool owner_) {
-                    if (hglobal != 0) {
+                    if (hglobal != nullptr) {
                         GlobalUnlock (hglobal);
                         if (owner) {
                             GlobalFree (hglobal);
                         }
-                        ptr = 0;
+                        ptr = nullptr;
                         length = 0;
                     }
                     hglobal = hglobal_;
                     owner = owner_;
-                    if (hglobal != 0) {
+                    if (hglobal != nullptr) {
                         ptr = GlobalLock (hglobal);
                         if (ptr != nullptr) {
                             length = GlobalSize (hglobal);
@@ -212,9 +212,9 @@ namespace thekogans {
 
                 HGLOBAL HGLOBALPtr::Release () {
                     HGLOBAL result = hglobal;
-                    if (hglobal != 0) {
+                    if (hglobal != nullptr) {
                         GlobalUnlock (hglobal);
-                        hglobal = 0;
+                        hglobal = nullptr;
                         owner = false;
                         ptr = nullptr;
                         length = 0;
@@ -248,7 +248,7 @@ namespace thekogans {
                         name (name_),
                         instance (instance_),
                         atom (0) {
-                    if (!name.empty () && instance != 0) {
+                    if (!name.empty () && instance != nullptr) {
                         WNDCLASSEXW wndClassEx;
                         memset (&wndClassEx, 0, sizeof (WNDCLASSEXW));
                         wndClassEx.cbSize = sizeof (WNDCLASSEXW);
@@ -266,7 +266,7 @@ namespace thekogans {
                         std::wstring wname = UTF8ToUTF16 (name);
                         wndClassEx.lpszClassName = wname.c_str ();
                         atom = RegisterClassExW (&wndClassEx);
-                        if (atom == 0) {
+                        if (atom == nullptr) {
                             THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
                                 THEKOGANS_UTIL_OS_ERROR_CODE);
                         }
@@ -305,7 +305,7 @@ namespace thekogans {
                                 windowClass.instance,
                                 userInfo)),
                         token (this) {
-                    if (wnd != 0) {
+                    if (wnd != nullptr) {
                         SetWindowLongPtrW (wnd, GWLP_USERDATA, (LONG_PTR)token.GetValue ());
                     }
                     else {
@@ -315,7 +315,7 @@ namespace thekogans {
                 }
 
                 Window::~Window () {
-                    if (wnd != 0) {
+                    if (wnd != nullptr) {
                         DestroyWindow (wnd);
                     }
                 }

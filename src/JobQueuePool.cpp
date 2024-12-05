@@ -156,7 +156,7 @@ namespace thekogans {
         }
 
         JobQueuePool::JobQueue *JobQueuePool::AcquireJobQueue () {
-            JobQueue *jobQueue = 0;
+            JobQueue *jobQueue = nullptr;
             {
                 LockGuard<Mutex> guard (mutex);
                 if (!availableJobQueues.empty ()) {

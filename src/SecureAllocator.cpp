@@ -63,7 +63,7 @@ namespace thekogans {
         }
 
         void *SecureAllocator::Alloc (std::size_t size) {
-            void *ptr = 0;
+            void *ptr = nullptr;
             if (size > 0) {
             #if defined (TOOLCHAIN_OS_Windows)
                 ptr = VirtualAlloc (0, size, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE);

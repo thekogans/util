@@ -347,7 +347,7 @@ namespace thekogans {
                 char *fullPath;
                 FullPath (const std::string &path) :
                         fullPath (realpath (path.c_str (), 0)) {
-                    if (fullPath == 0) {
+                    if (fullPath == nullptr) {
                         THEKOGANS_UTIL_THROW_POSIX_ERROR_CODE_EXCEPTION (
                             THEKOGANS_UTIL_POSIX_OS_ERROR_CODE);
                     }

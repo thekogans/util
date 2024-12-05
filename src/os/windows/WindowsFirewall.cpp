@@ -63,7 +63,7 @@ namespace thekogans {
                         BSTR bstr;
                         explicit BStr (const std::string &str) :
                                 bstr (SysAllocString (UTF8ToUTF16 (str).c_str ())) {
-                            if (bstr != 0) {
+                            if (bstr != nullptr) {
                                 THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
                                     "Unable to covert '%s' to BSTR.",
                                     str.c_str ());
@@ -88,7 +88,7 @@ namespace thekogans {
                         }
 
                         INetFwAuthorizedApplication *GetApp (const std::string &path) {
-                            INetFwAuthorizedApplication *app = 0;
+                            INetFwAuthorizedApplication *app = nullptr;
                             HRESULT hr = apps->Item (BStr (path).bstr, &app);
                             if (SUCCEEDED (hr) || HRESULT_FROM_WIN32 (ERROR_FILE_NOT_FOUND)) {
                                 return app;
@@ -116,7 +116,7 @@ namespace thekogans {
 
                     struct App {
                         INetFwAuthorizedApplication *app;
-                        App (INetFwAuthorizedApplication *app_ = 0) :
+                        App (INetFwAuthorizedApplication *app_ = nullptr) :
                                 app (app_) {
                             if (app == nullptr) {
                                 HRESULT hr = CoCreateInstance (
@@ -203,7 +203,7 @@ namespace thekogans {
                         INetFwOpenPort *GetPort (
                                 ui16 portNumber,
                                 NET_FW_IP_PROTOCOL protocol) {
-                            INetFwOpenPort *port = 0;
+                            INetFwOpenPort *port = nullptr;
                             HRESULT hr = ports->Item (portNumber, protocol, &port);
                             if (SUCCEEDED (hr) || HRESULT_FROM_WIN32 (ERROR_FILE_NOT_FOUND)) {
                                 return port;
@@ -233,7 +233,7 @@ namespace thekogans {
 
                     struct Port {
                         INetFwOpenPort *port;
-                        Port (INetFwOpenPort *port_ = 0) :
+                        Port (INetFwOpenPort *port_ = nullptr) :
                                 port (port_) {
                             if (port == nullptr) {
                                 HRESULT hr = CoCreateInstance (

@@ -28,7 +28,7 @@ namespace thekogans {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
                     THEKOGANS_UTIL_OS_ERROR_CODE_ENOMEM);
             }
-            return 0;
+            return nullptr;
         }
 
         void NullAllocator::Free (

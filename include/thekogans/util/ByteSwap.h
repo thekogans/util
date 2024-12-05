@@ -77,11 +77,17 @@ namespace thekogans {
         #if defined (TOOLCHAIN_ENDIAN_Little)
             /// \brief
             /// Host endian is little endian.
-            HostEndian = LittleEndian
+            HostEndian = LittleEndian,
+            /// \brief
+            /// Used by \see{Serializer} to swap bytes.
+            GuestEndian = BigEndian
         #elif defined (TOOLCHAIN_ENDIAN_Big)
             /// \brief
             /// Host endian is big endian.
-            HostEndian = BigEndian
+            HostEndian = BigEndian,
+            /// \brief
+            /// Used by \see{Serializer} to swap bytes.
+            GuestEndian = LittleEndian
         #else // defined (TOOLCHAIN_ENDIAN_Big)
             #error "Unable to determine system endianness."
         #endif // defined (TOOLCHAIN_ENDIAN_Little)

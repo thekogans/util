@@ -215,15 +215,17 @@ namespace thekogans {
         #define THEKOGANS_UTIL_IMPLEMENT_HEAP_FUNCTIONS_EX(_T, lock, itemsInPage, allocator)\
         void *_T::operator new (std::size_t size) {\
             assert (size == sizeof (_T));\
-            return thekogans::util::Heap<_T, lock>::CreateInstance (\
-                itemsInPage, allocator)->Alloc (false);\
+            static thekogans::util::Heap<_T, lock> *heap =\
+                thekogans::util::Heap<_T, lock>::CreateInstance (itemsInPage, allocator);\
+            return heap->Alloc (false);\
         }\
         void *_T::operator new (\
                 std::size_t size,\
                 std::nothrow_t) throw () {\
             assert (size == sizeof (_T));\
-            return thekogans::util::Heap<_T, lock>::CreateInstance (\
-                itemsInPage, allocator)->Alloc (true);\
+            static thekogans::util::Heap<_T, lock> *heap =\
+                thekogans::util::Heap<_T, lock>::CreateInstance (itemsInPage, allocator);\
+            return heap->Alloc (true);\
         }\
         void *_T::operator new (\
                 std::size_t size,\
@@ -232,14 +234,16 @@ namespace thekogans {
             return ptr;\
         }\
         void _T::operator delete (void *ptr) {\
-            thekogans::util::Heap<_T, lock>::CreateInstance (\
-                itemsInPage, allocator)->Free (ptr, false);\
+            static thekogans::util::Heap<_T, lock> *heap =\
+                thekogans::util::Heap<_T, lock>::CreateInstance (itemsInPage, allocator);\
+            heap->Free (ptr, false);\
         }\
         void _T::operator delete (\
                 void *ptr,\
                 std::nothrow_t) throw () {\
-            thekogans::util::Heap<_T, lock>::CreateInstance (\
-                itemsInPage, allocator)->Free (ptr, true);\
+            static thekogans::util::Heap<_T, lock> *heap =\
+                thekogans::util::Heap<_T, lock>::CreateInstance (itemsInPage, allocator);\
+            heap->Free (ptr, true);\
         }\
         void _T::operator delete (\
             void *,\
@@ -263,16 +267,18 @@ namespace thekogans {
         template<>\
         THEKOGANS_UTIL_EXPORT void *_T::operator new (std::size_t size) {\
             assert (size == sizeof (_T));\
-            return thekogans::util::Heap<_T, lock>::CreateInstance (\
-                itemsInPage, allocator)->Alloc (false);\
+            static thekogans::util::Heap<_T, lock> *heap =\
+                thekogans::util::Heap<_T, lock>::CreateInstance (itemsInPage, allocator);\
+            return heap->Alloc (false);\
         }\
         template<>\
         THEKOGANS_UTIL_EXPORT void *_T::operator new (\
                 std::size_t size,\
                 std::nothrow_t) throw () {\
             assert (size == sizeof (_T));\
-            return thekogans::util::Heap<_T, lock>::CreateInstance (\
-                itemsInPage, allocator)->Alloc (true);\
+            static thekogans::util::Heap<_T, lock> *heap =\
+                thekogans::util::Heap<_T, lock>::CreateInstance (itemsInPage, allocator);\
+            return heap->Alloc (true);\
         }\
         template<>\
         THEKOGANS_UTIL_EXPORT void *_T::operator new (\
@@ -283,15 +289,17 @@ namespace thekogans {
         }\
         template<>\
         THEKOGANS_UTIL_EXPORT void _T::operator delete (void *ptr) {\
-            thekogans::util::Heap<_T, lock>::CreateInstance (\
-                itemsInPage, allocator)->Free (ptr, false);\
+            static thekogans::util::Heap<_T, lock> *heap =\
+                thekogans::util::Heap<_T, lock>::CreateInstance (itemsInPage, allocator);\
+            heap->Free (ptr, false);\
         }\
         template<>\
         THEKOGANS_UTIL_EXPORT void _T::operator delete (\
                 void *ptr,\
                 std::nothrow_t) throw () {\
-            thekogans::util::Heap<_T, lock>::CreateInstance (\
-                itemsInPage, allocator)->Free (ptr, true);\
+            static thekogans::util::Heap<_T, lock> *heap =\
+                thekogans::util::Heap<_T, lock>::CreateInstance (itemsInPage, allocator);\
+            heap->Free (ptr, true);\
         }\
         template<>\
         THEKOGANS_UTIL_EXPORT void _T::operator delete (\
