@@ -242,8 +242,8 @@ namespace thekogans {
 
         /// \brief
         /// Compare rectangle extents for equality.
-        /// \paran[in] extents1 First extents to compare.
-        /// \paran[in] extents2 Second extents to compare.
+        /// \param[in] extents1 First extents to compare.
+        /// \param[in] extents2 Second extents to compare.
         /// \return true = equal, false = not equal.
         inline bool _LIB_THEKOGANS_UTIL_API operator == (
                 const Rectangle::Extents &extents1,
@@ -254,8 +254,8 @@ namespace thekogans {
 
         /// \brief
         /// Compare rectangle extents for inequality.
-        /// \paran[in] extents1 First extents to compare.
-        /// \paran[in] extents2 Second extents to compare.
+        /// \param[in] extents1 First extents to compare.
+        /// \param[in] extents2 Second extents to compare.
         /// \return true = not equal, false = equal.
         inline bool _LIB_THEKOGANS_UTIL_API operator != (
                 const Rectangle::Extents &extents1,
@@ -266,8 +266,8 @@ namespace thekogans {
 
         /// \brief
         /// Scale the given rectangle extents by the given factor.
-        /// \paran[in] extents Rectangle extents to scale.
-        /// \paran[in] scale Factor to scale the extents by.
+        /// \param[in] extents Rectangle extents to scale.
+        /// \param[in] scale Factor to scale the extents by.
         /// \return Scaled rectangle extents.
         inline Rectangle::Extents _LIB_THEKOGANS_UTIL_API operator * (
                 const Rectangle::Extents &extents,
@@ -279,8 +279,8 @@ namespace thekogans {
 
         /// \brief
         /// Add an offset to the given rectangle extents.
-        /// \paran[in] extents Rectangle extents to add an offset too.
-        /// \paran[in] offset Offset to add.
+        /// \param[in] extents Rectangle extents to add an offset too.
+        /// \param[in] offset Offset to add.
         /// \return Offset rectangle extents.
         inline Rectangle::Extents operator + (
                 const Rectangle::Extents &extents,
@@ -290,8 +290,8 @@ namespace thekogans {
 
         /// \brief
         /// Subtract an offset from the given rectangle extents.
-        /// \paran[in] extents Rectangle extents to subtract an offset from.
-        /// \paran[in] offset Offset to subtract.
+        /// \param[in] extents Rectangle extents to subtract an offset from.
+        /// \param[in] offset Offset to subtract.
         /// \return Offset rectangle extents.
         inline Rectangle::Extents operator - (
                 const Rectangle::Extents &extents,
@@ -301,8 +301,8 @@ namespace thekogans {
 
         /// \brief
         /// Compare rectangles for equality.
-        /// \paran[in] rectangle1 First rectangle to compare.
-        /// \paran[in] rectangle2 Second rectangle to compare.
+        /// \param[in] rectangle1 First rectangle to compare.
+        /// \param[in] rectangle2 Second rectangle to compare.
         /// \return true = equal, false = not equal.
         inline bool _LIB_THEKOGANS_UTIL_API operator == (
                 const Rectangle &rectangle1,
@@ -313,8 +313,8 @@ namespace thekogans {
 
         /// \brief
         /// Compare rectangles for inequality.
-        /// \paran[in] rectangle1 First rectangle to compare.
-        /// \paran[in] rectangle2 Second rectangle to compare.
+        /// \param[in] rectangle1 First rectangle to compare.
+        /// \param[in] rectangle2 Second rectangle to compare.
         /// \return true = not equal, false = equal.
         inline bool _LIB_THEKOGANS_UTIL_API operator != (
                 const Rectangle &rectangle1,
@@ -325,8 +325,8 @@ namespace thekogans {
 
         /// \brief
         /// Scale the given rectangle by the given factor.
-        /// \paran[in] rectangle Rectangle to scale.
-        /// \paran[in] scale Factor to scale the rectangle by.
+        /// \param[in] rectangle Rectangle to scale.
+        /// \param[in] scale Factor to scale the rectangle by.
         /// \return Scaled rectangle.
         inline Rectangle _LIB_THEKOGANS_UTIL_API operator * (
                 const Rectangle &rectangle,
@@ -336,8 +336,8 @@ namespace thekogans {
 
         /// \brief
         /// Translate the given rectangle origin by the given offset.
-        /// \paran[in] rectangle Rectangle to translate.
-        /// \paran[in] offset How much to translate by.
+        /// \param[in] rectangle Rectangle to translate.
+        /// \param[in] offset How much to translate by.
         /// \return Translated rectangle.
         inline Rectangle _LIB_THEKOGANS_UTIL_API operator + (
                 const Rectangle &rectangle,
@@ -347,8 +347,8 @@ namespace thekogans {
 
         /// \brief
         /// Translate the given rectangle origin by the given offset.
-        /// \paran[in] rectangle Rectangle to translate.
-        /// \paran[in] offset How much to translate by.
+        /// \param[in] rectangle Rectangle to translate.
+        /// \param[in] offset How much to translate by.
         /// \return Translated rectangle.
         inline Rectangle _LIB_THEKOGANS_UTIL_API operator - (
                 const Rectangle &rectangle,

@@ -42,14 +42,14 @@ namespace thekogans {
         ///
         /// \code{.cpp}
         /// using namespace thekogans;
-        /// util::SecureBuffer randomBytes (util::HostEndian, randomBytesNeeded);
+        /// util::SecureHostBuffer randomBytes (randomBytesNeeded);
         /// randomBytes.AdvanceWriteOffset (
         ///     util::RandomSource::Instance ()->GetBytes (
         ///         randomBytes.GetWritePtr (),
         ///         randomBytes.GetDataAvailableForWriting ()));
         /// \endcode
         ///
-        /// The use of \see{SecureBuffer} will guarantee that buffer will be
+        /// The use of \see{SecureHostBuffer} will guarantee that buffer will be
         /// properly cleared when it goes out of scope and that it won't be
         /// swapped out to disc in an event of a core dump.
 

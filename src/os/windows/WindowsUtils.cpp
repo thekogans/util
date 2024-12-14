@@ -266,7 +266,7 @@ namespace thekogans {
                         std::wstring wname = UTF8ToUTF16 (name);
                         wndClassEx.lpszClassName = wname.c_str ();
                         atom = RegisterClassExW (&wndClassEx);
-                        if (atom == nullptr) {
+                        if (atom == 0) {
                             THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
                                 THEKOGANS_UTIL_OS_ERROR_CODE);
                         }

@@ -15,6 +15,9 @@
 // You should have received a copy of the GNU General Public License
 // along with libthekogans_util. If not, see <http://www.gnu.org/licenses/>.
 
+#if defined (THEKOGANS_UTIL_TYPE_Static)
+    #include "thekogans/util/DynamicCreatable.h"
+#endif // defined (THEKOGANS_UTIL_TYPE_Static)
 #include "thekogans/util/LoggerMgr.h"
 #include "thekogans/util/StringUtils.h"
 #include "thekogans/util/LockGuard.h"
@@ -25,6 +28,12 @@
 
 namespace thekogans {
     namespace util {
+
+    #if defined (THEKOGANS_UTIL_TYPE_Static)
+        void StaticInit () {
+            DynamicCreatable::StaticInit ();
+        }
+    #endif // defined (THEKOGANS_UTIL_TYPE_Static)
 
         _LIB_THEKOGANS_UTIL_DECL void Log (
                 unsigned int decorations,
