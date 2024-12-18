@@ -21,6 +21,7 @@
 #include <cstddef>
 #include <string>
 #include <functional>
+#include <list>
 #include <map>
 #include "thekogans/util/Config.h"
 #include "thekogans/util/Types.h"
@@ -42,7 +43,7 @@ namespace thekogans {
         public:\
             THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (_T)\
             static bool IsType (const std::string &type);\
-            static void GetTypes (std::list<std::string> &types);\
+            static thekogans::util::DynamicCreatable::ListType GetTypes ();\
             static _T::SharedPtr CreateType (\
                 const std::string &type,\
                 thekogans::util::DynamicCreatable::Parameters::SharedPtr parameters = nullptr);
@@ -60,16 +61,20 @@ namespace thekogans {
                     thekogans::util::dynamic_refcounted_sharedptr_cast<_T> (it->second (nullptr)) !=\
                         nullptr;\
             }\
-            void _T::GetTypes (std::list<std::string> &types) {\
+            thekogans::util::DynamicCreatable::ListType _T::GetTypes () {\
+                thekogans::util::DynamicCreatable::ListType types;\
                 for (thekogans::util::DynamicCreatable::MapType::const_iterator it =\
                         thekogans::util::DynamicCreatable::Map::Instance ()->begin (),\
                         end = thekogans::util::DynamicCreatable::Map::Instance ()->end ();\
                         it != end; ++it) {\
                     if (thekogans::util::dynamic_refcounted_sharedptr_cast<_T> (\
                             it->second (nullptr)) != nullptr) {\
-                        types.push_back (it->first);\
+                        types.push_back (\
+                            thekogans::util::DynamicCreatable::TypeInfo (\
+                                it->first, it->second));\
                     }\
                 }\
+                return types;\
             }\
             _T::SharedPtr _T::CreateType (\
                     const std::string &type,\
@@ -99,6 +104,8 @@ namespace thekogans {
         /// without fear of leakage or corruption.
 
         struct _LIB_THEKOGANS_UTIL_DECL DynamicCreatable : public virtual RefCounted {
+            /// \struct DynamicCreatable::Parameters DynamicCreatable.h thekogans/util/DynamicCreatable.h
+            ///
             /// \brief
             /// Parameters allow you to parametarize type creation. All
             /// DynamicCreatable derived types must be default constructable,
@@ -121,22 +128,30 @@ namespace thekogans {
                 /// the passed in instance.
                 /// \param[in] dynamicCreatable DynamicCreatable to apply the
                 /// encapsulated parameters to.
-                virtual void Apply (DynamicCreatable & /*dynamicCreatable*/) = 0;
+                virtual void Apply (
+                    util::RefCounted::SharedPtr<DynamicCreatable> /*dynamicCreatable*/) = 0;
             };
 
             /// \brief
-            /// Declare DynamicCreatable boilerplate.
-            THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE_BASE (DynamicCreatable)
-
-            /// \brief
             /// typedef for the DynamicCreatable factory function.
-            typedef std::function<SharedPtr (Parameters::SharedPtr)> Factory;
+            typedef std::function<util::RefCounted::SharedPtr<DynamicCreatable> (
+                Parameters::SharedPtr)> Factory;
+            /// \brief
+            /// typedef for the DynamicCreatable type info.
+            typedef std::pair<std::string, Factory> TypeInfo;
+            /// \brief
+            /// typedef for the DynamicCreatable list.
+            typedef std::list<TypeInfo> ListType;
             /// \brief
             /// typedef for the DynamicCreatable map.
             typedef std::map<std::string, Factory> MapType;
             /// \brief
             /// Controls Map's lifetime.
             typedef Singleton<MapType> Map;
+
+            /// \brief
+            /// Declare DynamicCreatable boilerplate.
+            THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE_BASE (DynamicCreatable)
 
         #if defined (THEKOGANS_UTIL_TYPE_Static)
             /// \brief
@@ -256,7 +271,7 @@ namespace thekogans {
                     thekogans::util::DynamicCreatable::Parameters::SharedPtr parameters) {\
                 thekogans::util::DynamicCreatable::SharedPtr dynamicCreatable (new _T);\
                 if (parameters != nullptr) {\
-                    parameters->Apply (*dynamicCreatable);\
+                    parameters->Apply (dynamicCreatable);\
                 }\
                 return dynamicCreatable;\
             }
