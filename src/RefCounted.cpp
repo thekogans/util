@@ -144,6 +144,9 @@ namespace thekogans {
                     Item *item = (Item *)ptr;
                     item->next = freeItem;
                     freeItem = item;
+                #if !defined (THEKOGANS_UTIL_REF_COUNED_REFERENCES_HEAP_BUILD_FREE_LIST)
+                    --itemCount;
+                #endif // !defined (THEKOGANS_UTIL_REF_COUNED_REFERENCES_HEAP_BUILD_FREE_LIST)
                 }
             };
 
