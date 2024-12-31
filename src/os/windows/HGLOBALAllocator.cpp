@@ -29,7 +29,9 @@ namespace thekogans {
         namespace os {
             namespace windows {
 
-                THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_SINGLETON (HGLOBALAllocator)
+                THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_SINGLETON (
+                    thekogans::util::os::windows::HGLOBALAllocator,
+                    Allocator)
 
                 void *HGLOBALAllocator::Alloc (std::size_t size) {
                     return Alloc (GMEM_FIXED,  size);

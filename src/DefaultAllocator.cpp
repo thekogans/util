@@ -22,7 +22,9 @@
 namespace thekogans {
     namespace util {
 
-        THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_SINGLETON (DefaultAllocator)
+        THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_SINGLETON (
+            thekogans::util::DefaultAllocator,
+            Allocator)
 
         void *DefaultAllocator::Alloc (std::size_t size) {
             void *ptr = nullptr;

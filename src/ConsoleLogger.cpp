@@ -22,7 +22,9 @@
 namespace thekogans {
     namespace util {
 
-        THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE (ConsoleLogger)
+        THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE (
+            thekogans::util::ConsoleLogger,
+            Logger)
 
         Console::ColorType ConsoleLogger::DefaultColorScheme::GetColorForLevel (ui32 level) {
             return

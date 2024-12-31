@@ -37,7 +37,9 @@ namespace thekogans {
         namespace os {
             namespace osx {
 
-                THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE (NSLogLogger)
+                THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE (
+                    thekogans::util::NSLogLogger,
+                    Logger)
 
                 void NSLogLogger::Log (
                         const std::string & /*subsystem*/,

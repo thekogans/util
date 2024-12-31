@@ -38,7 +38,9 @@
 namespace thekogans {
     namespace util {
 
-        THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_SINGLETON (SecureAllocator)
+        THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_SINGLETON (
+            thekogans::util::SecureAllocator,
+            Allocator)
 
         void SecureAllocator::ReservePages (
                 ui64 minWorkingSetSize,

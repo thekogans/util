@@ -58,7 +58,9 @@ namespace thekogans {
             #define THEKOGANS_UTIL_MIN_HASH_SHA1_IN_PAGE 5
         #endif // !defined (THEKOGANS_UTIL_MIN_HASH_SHA1_IN_PAGE)
 
-        THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE (SHA1)
+        THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE (
+            thekogans::util::SHA1,
+            Hash)
 
         namespace {
             // Initial hash value H for SHA-256:

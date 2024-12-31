@@ -26,7 +26,9 @@ namespace thekogans {
             #define THEKOGANS_UTIL_MIN_HASH_SHA2_IN_PAGE 5
         #endif // !defined (THEKOGANS_UTIL_MIN_HASH_SHA2_IN_PAGE)
 
-        THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE (SHA2)
+        THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE (
+            thekogans::util::SHA2,
+            Hash)
 
         void SHA2::GetDigestSizes (std::list<std::size_t> &digestSizes) const {
             digestSizes.push_back (DIGEST_SIZE_224);

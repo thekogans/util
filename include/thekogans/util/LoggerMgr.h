@@ -908,7 +908,8 @@ namespace thekogans {
         #define THEKOGANS_UTIL_IMPLEMENT_LOG_FLUSHER\
             struct LogFlusher {\
                 thekogans::util::TimeSpec timeSpec;\
-                LogFlusher (const thekogans::util::TimeSpec &timeSpec_ = thekogans::util::TimeSpec::Infinite) :\
+                LogFlusher (const thekogans::util::TimeSpec &timeSpec_ =\
+                        thekogans::util::TimeSpec::Infinite) :\
                     timeSpec (timeSpec_) {}\
                 ~LogFlusher () {\
                     THEKOGANS_UTIL_LOG_FLUSH_EX (timeSpec)\

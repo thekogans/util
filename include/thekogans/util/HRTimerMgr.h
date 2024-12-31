@@ -166,6 +166,16 @@ namespace thekogans {
                 /// Declare \see{DynamicCreatable} boilerplate.
                 THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE_BASE (TimerInfoBase)
 
+            #if defined (THEKOGANS_UTIL_TYPE_Static)
+                /// \brief
+                /// Because TimerInfoBase uses dynamic initialization, when using
+                /// it in static builds call this method to have the TimerInfoBase
+                /// explicitly include all internally derived types. Without
+                /// calling this api, the only timer info that will be available
+                /// to your application are the ones you explicitly link to.
+                static void StaticInit ();
+            #endif // defined (THEKOGANS_UTIL_TYPE_Static)
+
                 /// \btief
                 /// Label by which this TimerInfoBase is identified.
                 std::string name;
@@ -260,10 +270,13 @@ namespace thekogans {
                 THEKOGANS_UTIL_DECLARE_SERIALIZABLE (_T)\
                 THEKOGANS_UTIL_DECLARE_STD_ALLOCATOR_FUNCTIONS
 
-            /// \def THEKOGANS_UTIL_HRTIMERMGR_TIMERINFOBASE(_T, version)
+            /// \def THEKOGANS_UTIL_HRTIMERMGR_TIMERINFOBASE(_T, _B, version, minItemsInPage)
             /// Common implementations used by all Value derivatives.
-            #define THEKOGANS_UTIL_IMPLEMENT_HRTIMERMGR_TIMERINFOBASE(_T, version, minItemsInPage)\
-                THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE (_T, version)\
+            #define THEKOGANS_UTIL_IMPLEMENT_HRTIMERMGR_TIMERINFOBASE(_T, _B, version, minItemsInPage)\
+                THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE (\
+                    _T,\
+                    _B,\
+                    version)\
                 THEKOGANS_UTIL_IMPLEMENT_HEAP_FUNCTIONS_EX (\
                     _T,\
                     SpinLock,\

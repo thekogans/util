@@ -21,7 +21,15 @@
 namespace thekogans {
     namespace util {
 
-        THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_BASE (HRTimerMgr::TimerInfoBase)
+        THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_BASE (
+            thekogans::util::HRTimerMgr::TimerInfoBase)
+
+    #if defined (THEKOGANS_UTIL_TYPE_Static)
+        void HRTimerMgr::TimerInfoBase::StaticInit () {
+            HRTimerMgr::TimerInfo::StaticInit ();
+            HRTimerMgr::ScopeInfo::StaticInit ();
+        }
+    #endif // defined (THEKOGANS_UTIL_TYPE_Static)
 
         std::size_t HRTimerMgr::TimerInfoBase::Size () const {
             return Serializer::Size (name) + Serializer::Size (attributes);
@@ -113,7 +121,8 @@ namespace thekogans {
         #endif // !defined (THEKOGANS_UTIL_MIN_TIMER_INFOS_IN_PAGE)
 
         THEKOGANS_UTIL_IMPLEMENT_HRTIMERMGR_TIMERINFOBASE (
-            HRTimerMgr::TimerInfo,
+            thekogans::util::HRTimerMgr::TimerInfo,
+            HRTimerMgr::TimerInfoBase,
             1,
             THEKOGANS_UTIL_MIN_TIMER_INFOS_IN_PAGE)
 
@@ -225,7 +234,8 @@ namespace thekogans {
         #endif // !defined (THEKOGANS_UTIL_MIN_SCOPE_INFOS_IN_PAGE)
 
         THEKOGANS_UTIL_IMPLEMENT_HRTIMERMGR_TIMERINFOBASE (
-            HRTimerMgr::ScopeInfo,
+            thekogans::util::HRTimerMgr::ScopeInfo,
+            HRTimerMgr::TimerInfoBase,
             1,
             THEKOGANS_UTIL_MIN_SCOPE_INFOS_IN_PAGE)
 
@@ -536,7 +546,10 @@ namespace thekogans {
 
         ////////////////////////////////////////////////////////////////////////////////////////
 
-        THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE (HRTimerMgr, 1)
+        THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE (
+            thekogans::util::HRTimerMgr,
+            Serializable,
+            1)
 
 
         std::string HRTimerMgr::ToXMLString (

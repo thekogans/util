@@ -21,8 +21,6 @@
     #include "thekogans/util/Directory.h"
     #include "thekogans/util/Fraction.h"
     #include "thekogans/util/HRTimerMgr.h"
-    #include "thekogans/util/HRTimerMgr.h"
-    #include "thekogans/util/RunLoop.h"
     #include "thekogans/util/RunLoop.h"
     #include "thekogans/util/TimeSpec.h"
 #endif // defined (THEKOGANS_UTIL_TYPE_Static)
@@ -30,7 +28,7 @@
 namespace thekogans {
     namespace util {
 
-        THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_BASE (Serializable)
+        THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_BASE (thekogans::util::Serializable)
 
         const char * const Serializable::BinHeader::TAG_BIN_HEADER = "BinHeader";
         const char * const Serializable::BinHeader::ATTR_MAGIC = "Magic";
@@ -63,8 +61,7 @@ namespace thekogans {
         void Serializable::StaticInit () {
             Directory::Entry::StaticInit ();
             Fraction::StaticInit ();
-            HRTimerMgr::TimerInfo::StaticInit ();
-            HRTimerMgr::ScopeInfo::StaticInit ();
+            HRTimerMgr::TimerInfoBase::StaticInit ();
             HRTimerMgr::StaticInit ();
             RunLoop::Stats::Job::StaticInit ();
             RunLoop::Stats::StaticInit ();
@@ -79,6 +76,10 @@ namespace thekogans {
 
         const std::string &Blob::Type () const {
             return type;
+        }
+
+        const std::string &Blob::Base () const {
+            return Serializable::TYPE;
         }
 
         ui16 Blob::Version () const {

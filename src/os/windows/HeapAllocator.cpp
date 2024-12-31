@@ -29,7 +29,9 @@ namespace thekogans {
         namespace os {
             namespace windows {
 
-                THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_SINGLETON (HeapAllocator)
+                THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_SINGLETON (
+                    thekogans::util::os::windows::HeapAllocator,
+                    Allocator)
 
                 void *HeapAllocator::Alloc (std::size_t size) {
                     void *ptr = nullptr;

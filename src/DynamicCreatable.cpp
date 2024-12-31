@@ -27,7 +27,7 @@
 namespace thekogans {
     namespace util {
 
-        THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_BASE (DynamicCreatable)
+        THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_BASE (thekogans::util::DynamicCreatable)
 
     #if defined (THEKOGANS_UTIL_TYPE_Static)
         void DynamicCreatable::StaticInit () {
@@ -40,10 +40,27 @@ namespace thekogans {
     #else // defined (THEKOGANS_UTIL_TYPE_Static)
         DynamicCreatable::MapInitializer::MapInitializer (
                 const std::string &type,
-                Factory factory) {
-            Map::Instance ()->insert (MapType::value_type (type, factory));
+                const std::string &base,
+                FactoryType factory) {
+            (*BaseMap::Instance ())[base][type] = factory;
+            if (base != TYPE) {
+                (*BaseMap::Instance ())[TYPE][type] = factory;
+            }
         }
     #endif // defined (THEKOGANS_UTIL_TYPE_Static)
+
+        void DynamicCreatable::DumpBaseMap () {
+            for (BaseMapType::const_iterator
+                     it = BaseMap::Instance ()->begin (),
+                     end = BaseMap::Instance ()->end (); it != end; ++it) {
+                std::cout << it->first << ":" << std::endl;
+                for (TypeMap::const_iterator
+                         jt = it->second.begin (),
+                         end = it->second.end (); jt != end; ++jt) {
+                    std::cout << "  " << jt->first << std::endl;
+                }
+            }
+        }
 
     } // namespace util
 } // namespace thekogans

@@ -32,7 +32,9 @@
 namespace thekogans {
     namespace util {
 
-        THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_OVERRIDE (SharedAllocator)
+        THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_OVERRIDE (
+            thekogans::util::SharedAllocator,
+            Allocator)
 
         void *SharedAllocator::Alloc (std::size_t size) {
             if (size > 0) {
@@ -154,7 +156,9 @@ namespace thekogans {
             return header->rootObject != 0 ? GetPtrFromOffset (header->rootObject) : nullptr;
         }
 
-        THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_SINGLETON (GlobalSharedAllocator)
+        THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_SINGLETON (
+            thekogans::util::GlobalSharedAllocator,
+            Allocator)
 
     } // namespace util
 } // namespace thekogans

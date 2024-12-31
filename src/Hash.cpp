@@ -32,7 +32,7 @@
 namespace thekogans {
     namespace util {
 
-        THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_BASE (Hash)
+        THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_BASE (thekogans::util::Hash)
 
     #if defined (THEKOGANS_UTIL_TYPE_Static)
         void Hash::StaticInit () {

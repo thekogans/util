@@ -254,9 +254,9 @@ namespace thekogans {
                 return VERSION;\
             }
 
-        /// \def THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE(_T, version)
-        #define THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE(_T, version)\
-            THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE (_T)\
+        /// \def THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE(_T, _B, version)
+        #define THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE(_T, _B, version)\
+            THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE (_T, _B)\
             THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_OVERRIDE (_T, version)
 
         /// \struct Blob Serializable.h thekogans/util/Serializable.h
@@ -301,6 +301,11 @@ namespace thekogans {
             /// Return DynamicCreatable type (it's class name).
             /// \return DynamicCreatable type (it's class name).
             virtual const std::string &Type () const override;
+
+            /// \brief
+            /// Return DynamicCreatable type (it's class name).
+            /// \return DynamicCreatable type (it's class name).
+            virtual const std::string &Base () const override;
 
             /// \brief
             /// Return the serializable version.
@@ -676,7 +681,7 @@ namespace thekogans {
                 serializer >> header;\
                 if (header.magic == thekogans::util::MAGIC32) {\
                     serializable = thekogans::util::dynamic_refcounted_sharedptr_cast<_T> (\
-                        thekogans::util::Serializable::CreateType (header.type));\
+                        thekogans::util::DynamicCreatable::CreateType (header.type));\
                     if (serializable != nullptr) {\
                         serializable->Read (header, serializer);\
                         return serializer;\
@@ -699,7 +704,7 @@ namespace thekogans {
                 thekogans::util::Serializable::TextHeader header;\
                 node >> header;\
                 serializable = thekogans::util::dynamic_refcounted_sharedptr_cast<_T> (\
-                    thekogans::util::Serializable::CreateType (header.type));\
+                    thekogans::util::DynamicCreatable::CreateType (header.type));\
                 if (serializable != nullptr) {\
                     serializable->Read (header, node);\
                     return node;\
@@ -716,7 +721,7 @@ namespace thekogans {
                 thekogans::util::Serializable::TextHeader header;\
                 object >> header;\
                 serializable = thekogans::util::dynamic_refcounted_sharedptr_cast<_T> (\
-                    thekogans::util::Serializable::CreateType (header.type));\
+                    thekogans::util::DynamicCreatable::CreateType (header.type));\
                 if (serializable != nullptr) {\
                     serializable->Read (header, object);\
                     return object;\
@@ -860,7 +865,7 @@ namespace thekogans {
                                 payload.GetDataAvailableForWriting ()));\
                         if (payload.IsFull ()) {\
                             value = thekogans::util::dynamic_refcounted_sharedptr_cast<_T> (\
-                                thekogans::util::Serializable::CreateType (header.type));\
+                                thekogans::util::DynamicCreatable::CreateType (header.type));\
                             if (value != nullptr) {\
                                 value->Read (header, payload);\
                                 Reset ();\

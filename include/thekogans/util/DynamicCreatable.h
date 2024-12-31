@@ -42,8 +42,9 @@ namespace thekogans {
         #define THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE_BASE(_T)\
         public:\
             THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (_T)\
+            static const std::string TYPE;\
             static bool IsType (const std::string &type);\
-            static thekogans::util::DynamicCreatable::ListType GetTypes ();\
+            static const thekogans::util::DynamicCreatable::TypeMap &GetTypes ();\
             static _T::SharedPtr CreateType (\
                 const std::string &type,\
                 thekogans::util::DynamicCreatable::Parameters::SharedPtr parameters = nullptr);
@@ -54,36 +55,34 @@ namespace thekogans {
         /// the code cleaner without the dynamic_refcounted_sharedptr_cast
         /// clutter.
         #define THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_BASE(_T)\
+            const std::string _T::TYPE = #_T;\
             bool _T::IsType (const std::string &type) {\
-                thekogans::util::DynamicCreatable::MapType::iterator it =\
-                    thekogans::util::DynamicCreatable::Map::Instance ()->find (type);\
-                return it != thekogans::util::DynamicCreatable::Map::Instance ()->end () &&\
-                    thekogans::util::dynamic_refcounted_sharedptr_cast<_T> (it->second (nullptr)) !=\
-                        nullptr;\
+                thekogans::util::DynamicCreatable::BaseMapType::const_iterator it =\
+                    thekogans::util::DynamicCreatable::BaseMap::Instance ()->find (TYPE);\
+                return it != thekogans::util::DynamicCreatable::BaseMap::Instance ()->end () &&\
+                    it->second.find (type) != it->second.end ();\
             }\
-            thekogans::util::DynamicCreatable::ListType _T::GetTypes () {\
-                thekogans::util::DynamicCreatable::ListType types;\
-                for (thekogans::util::DynamicCreatable::MapType::const_iterator it =\
-                        thekogans::util::DynamicCreatable::Map::Instance ()->begin (),\
-                        end = thekogans::util::DynamicCreatable::Map::Instance ()->end ();\
-                        it != end; ++it) {\
-                    if (thekogans::util::dynamic_refcounted_sharedptr_cast<_T> (\
-                            it->second (nullptr)) != nullptr) {\
-                        types.push_back (\
-                            thekogans::util::DynamicCreatable::TypeInfo (\
-                                it->first, it->second));\
-                    }\
-                }\
-                return types;\
+            const thekogans::util::DynamicCreatable::TypeMap &_T::GetTypes () {\
+                static const thekogans::util::DynamicCreatable::TypeMap empty;\
+                thekogans::util::DynamicCreatable::BaseMapType::const_iterator it =\
+                    thekogans::util::DynamicCreatable::BaseMap::Instance ()->find (TYPE);\
+                return it != thekogans::util::DynamicCreatable::BaseMap::Instance ()->end () ?\
+                    it->second : empty;\
             }\
             _T::SharedPtr _T::CreateType (\
                     const std::string &type,\
                     thekogans::util::DynamicCreatable::Parameters::SharedPtr parameters) {\
-                thekogans::util::DynamicCreatable::MapType::iterator it =\
-                    thekogans::util::DynamicCreatable::Map::Instance ()->find (type);\
-                return it != thekogans::util::DynamicCreatable::Map::Instance ()->end () ?\
-                    thekogans::util::dynamic_refcounted_sharedptr_cast<_T> (it->second (parameters)) :\
-                    nullptr;\
+                thekogans::util::DynamicCreatable::BaseMapType::const_iterator it =\
+                    thekogans::util::DynamicCreatable::BaseMap::Instance ()->find (TYPE);\
+                if (it != thekogans::util::DynamicCreatable::BaseMap::Instance ()->end ()) {\
+                    thekogans::util::DynamicCreatable::TypeMap::const_iterator jt =\
+                        it->second.find (type);\
+                    if (jt != it->second.end ()) {\
+                        return thekogans::util::dynamic_refcounted_sharedptr_cast<_T> (\
+                            jt->second (parameters));\
+                    }\
+                }\
+                return nullptr;\
             }
 
         /// \struct DynamicCreatable DynamicCreatable.h thekogans/util/DynamicCreatable.h
@@ -133,21 +132,18 @@ namespace thekogans {
             };
 
             /// \brief
-            /// typedef for the DynamicCreatable factory function.
-            typedef std::function<util::RefCounted::SharedPtr<DynamicCreatable> (
-                Parameters::SharedPtr)> Factory;
+            /// Type factory method.
+            using FactoryType =
+                std::function<util::RefCounted::SharedPtr<DynamicCreatable> (Parameters::SharedPtr)>;
             /// \brief
-            /// typedef for the DynamicCreatable type info.
-            typedef std::pair<std::string, Factory> TypeInfo;
+            /// Maps type name to it's factory method.
+            using TypeMap = std::map<std::string, FactoryType>;
             /// \brief
-            /// typedef for the DynamicCreatable list.
-            typedef std::list<TypeInfo> ListType;
+            /// Maps type to it's derived types.
+            using BaseMapType = std::map<std::string, TypeMap>;
             /// \brief
-            /// typedef for the DynamicCreatable map.
-            typedef std::map<std::string, Factory> MapType;
-            /// \brief
-            /// Controls Map's lifetime.
-            typedef Singleton<MapType> Map;
+            /// The one and only base to derived type map.
+            using BaseMap = Singleton<BaseMapType>;
 
             /// \brief
             /// Declare DynamicCreatable boilerplate.
@@ -176,21 +172,29 @@ namespace thekogans {
                 /// \brief
                 /// ctor.
                 /// \param[in] type DynamicCreatable type (it's class name).
+                /// \param[in] base DynamicCreatable base type (it's parents class name).
                 /// \param[in] factory DynamicCreatable creation factory.
                 MapInitializer (
                     const std::string &type,
-                    Factory factory);
+                    const std::string &base,
+                    FactoryType factory);
             };
         #endif // defined (THEKOGANS_UTIL_TYPE_Shared)
 
             /// \brief
-            /// Virtual dtor.
-            virtual ~DynamicCreatable () {}
+            /// Pretty print the BaseMap to the std::cout.
+            /// Use this to take a look inside your map when debugging.
+            static void DumpBaseMap ();
 
             /// \brief
             /// Return DynamicCreatable type (it's class name).
             /// \return DynamicCreatable type (it's class name).
             virtual const std::string &Type () const = 0;
+
+            /// \brief
+            /// Return DynamicCreatable type (it's class name).
+            /// \return DynamicCreatable type (it's class name).
+            virtual const std::string &Base () const = 0;
         };
 
     #if defined (THEKOGANS_UTIL_TYPE_Static)
@@ -202,16 +206,20 @@ namespace thekogans {
         /// \def THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE_SHARED(_T)
         #define THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE_SHARED(_T)
 
-        /// \def THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_STATIC(_T)
+        /// \def THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_STATIC(_T, _B)
         /// Common code for static initialization of a DynamicCreatable.
-        #define THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_STATIC(_T)\
+        #define THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_STATIC(_T, _B)\
             void _T::StaticInit () {\
-                thekogans::util::DynamicCreatable::Map::Instance ()->insert (\
-                    thekogans::util::DynamicCreatable::MapType::value_type (#_T, _T::Create));\
+                (*thekogans::util::DynamicCreatable::BaseMap::Instance ())[_B::TYPE][_T::TYPE] =\
+                    _T::Create;\
+                if (_B::TYPE != thekogans::util::DynamicCreatable::TYPE) {\
+                    (*thekogans::util::DynamicCreatable::BaseMap::Instance ())[\
+                        thekogans::util::DynamicCreatable::TYPE][_T::TYPE] = _T::Create;\
+                }\
             }
 
-        /// \def THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_SHARED(_T)
-        #define THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_SHARED(_T)
+        /// \def THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_SHARED(_T, _B)
+        #define THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_SHARED(_T, _B)
     #else // defined (THEKOGANS_UTIL_TYPE_Static)
         /// \def THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE_STATIC(_T)
         #define THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE_STATIC(_T)
@@ -221,15 +229,15 @@ namespace thekogans {
         public:\
             static const thekogans::util::DynamicCreatable::MapInitializer mapInitializer;
 
-        /// \def THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_STATIC(_T)
+        /// \def THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_STATIC(_T, _B)
         /// Common code for static initialization of a DynamicCreatable.
-        #define THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_STATIC(_T)
+        #define THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_STATIC(_T, _B)
 
-        /// \def THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_SHARED(_T)
+        /// \def THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_SHARED(_T, _B)
         /// Common code for shared initialization of a DynamicCreatable.
-        #define THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_SHARED(_T)\
+        #define THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_SHARED(_T, _B)\
             const thekogans::util::DynamicCreatable::MapInitializer _T::mapInitializer (\
-                #_T, _T::Create);
+                _T::TYPE, _B::TYPE, _T::Create);
     #endif // defined (THEKOGANS_UTIL_TYPE_Static)
 
         /// \def THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE_OVERRIDE(_T)
@@ -237,7 +245,9 @@ namespace thekogans {
         #define THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE_OVERRIDE(_T)\
         public:\
             static const std::string TYPE;\
-            virtual const std::string &Type () const override;
+            static const std::string BASE;\
+            virtual const std::string &Type () const override;\
+            virtual const std::string &Base () const override;
 
         /// \def THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE(_T)
         #define THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE(_T)\
@@ -249,24 +259,28 @@ namespace thekogans {
             static thekogans::util::DynamicCreatable::SharedPtr Create (\
                 thekogans::util::DynamicCreatable::Parameters::SharedPtr parameters);
 
-        /// \def THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_OVERRIDE(_T)
+        /// \def THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_OVERRIDE(_T, _B)
         /// DynamicCreatable overrides.
-        #define THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_OVERRIDE(_T)\
+        #define THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_OVERRIDE(_T, _B)\
             const std::string _T::TYPE = #_T;\
+            const std::string _T::BASE = _B::TYPE;\
             const std::string &_T::Type () const {\
                 return TYPE;\
+            }\
+            const std::string &_T::Base () const {\
+                return BASE;\
             }
 
-        /// \def THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE(_T)
+        /// \def THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE(_T, _B)
         /// Dynamic discovery macro. Instantiate one of these in the class cpp file.
         /// Example:
         /// \code{.cpp}
         /// THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE (SHA1)
         /// \endcode
-        #define THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE(_T)\
-            THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_STATIC (_T)\
-            THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_SHARED (_T)\
-            THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_OVERRIDE (_T)\
+        #define THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE(_T, _B)\
+            THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_STATIC (_T, _B)\
+            THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_SHARED (_T, _B)\
+            THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_OVERRIDE (_T, _B)\
             thekogans::util::DynamicCreatable::SharedPtr _T::Create (\
                     thekogans::util::DynamicCreatable::Parameters::SharedPtr parameters) {\
                 thekogans::util::DynamicCreatable::SharedPtr dynamicCreatable (new _T);\
@@ -276,7 +290,7 @@ namespace thekogans {
                 return dynamicCreatable;\
             }
 
-        /// \def THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_SINGLETON(_T)
+        /// \def THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_SINGLETON(_T, _B)
         /// Dynamic discovery macro. Instantiate one of these in the class cpp file.
         /// Example:
         /// \code{.cpp}
@@ -286,12 +300,12 @@ namespace thekogans {
         /// (\see{DynamicCreatable::Parameters}) as it has it's own mechanism for static
         /// ctor parameterization (\see{Singleton::CreateInstance}) more appropriate
         /// for template programming.
-        #define THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_SINGLETON(_T)\
-            THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_STATIC (_T)\
-            THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_SHARED (_T)\
-            THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_OVERRIDE (_T)\
+        #define THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_SINGLETON(_T, _B)\
+            THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_STATIC (_T, _B)\
+            THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_SHARED (_T, _B)\
+            THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_OVERRIDE (_T, _B)\
             thekogans::util::DynamicCreatable::SharedPtr _T::Create (\
-                    thekogans::util::DynamicCreatable::Parameters::SharedPtr /*parameters*/) { \
+                    thekogans::util::DynamicCreatable::Parameters::SharedPtr /*parameters*/) {\
                 return _T::Instance ();\
             }
 

@@ -45,7 +45,7 @@ namespace thekogans {
             /// \brief
             /// Base for all JSON value types.
             struct _LIB_THEKOGANS_UTIL_DECL Value : public DynamicCreatable {
-                THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE_BASE (Value)
+                THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE_BASE (JSON::Value)
 
             #if defined (THEKOGANS_UTIL_TYPE_Static)
                 /// \brief
@@ -70,10 +70,10 @@ namespace thekogans {
                 THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE (_T)\
                 THEKOGANS_UTIL_DECLARE_STD_ALLOCATOR_FUNCTIONS
 
-            /// \def THEKOGANS_UTIL_IMPLEMENT_JSON_VALUE(_T)
+            /// \def THEKOGANS_UTIL_IMPLEMENT_JSON_VALUE(_T, _B)
             /// Common implementations used by all Value derivatives.
-            #define THEKOGANS_UTIL_IMPLEMENT_JSON_VALUE(_T)\
-                THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE (_T)\
+            #define THEKOGANS_UTIL_IMPLEMENT_JSON_VALUE(_T, _B)\
+                THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE (_T, _B)\
                 THEKOGANS_UTIL_IMPLEMENT_HEAP_FUNCTIONS (_T)
 
             /// \struct JSON::Bool JSON.h thekogans/util/JSON.h

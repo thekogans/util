@@ -34,7 +34,7 @@
 namespace thekogans {
     namespace util {
 
-        THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_BASE (Allocator)
+        THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_BASE (thekogans::util::Allocator)
 
     #if defined (THEKOGANS_UTIL_TYPE_Static)
         void Allocator::StaticInit () {
@@ -53,7 +53,7 @@ namespace thekogans {
         std::string Allocator::GetSerializedType () const {
             std::string type = Type ();
             if (CreateType (type) == nullptr) {
-                type = DefaultAllocator::Instance ()->Type ();
+                type = DefaultAllocator::TYPE;
             }
             return type;
         }

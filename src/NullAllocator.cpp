@@ -21,7 +21,9 @@
 namespace thekogans {
     namespace util {
 
-        THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_SINGLETON (NullAllocator)
+        THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_SINGLETON (
+            thekogans::util::NullAllocator,
+            Allocator)
 
         void *NullAllocator::Alloc (std::size_t size) {
             if (size > 0) {

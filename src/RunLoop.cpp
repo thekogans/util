@@ -168,7 +168,10 @@ namespace thekogans {
             return !state.pendingJobs.empty () ? state.pendingJobs.pop_front () : nullptr;
         }
 
-        THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE (RunLoop::Stats::Job, 1)
+        THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE (
+            thekogans::util::RunLoop::Stats::Job,
+            Serializable,
+            1)
 
         RunLoop::Stats::Job &RunLoop::Stats::Job::operator = (const Job &job) {
             if (&job != this) {
@@ -244,7 +247,10 @@ namespace thekogans {
             object.Add (ATTR_TOTAL_TIME, totalTime);
         }
 
-        THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE (RunLoop::Stats, 1)
+        THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE (
+            thekogans::util::RunLoop::Stats,
+            Serializable,
+            1)
 
         RunLoop::Stats &RunLoop::Stats::operator = (const Stats &stats) {
             if (&stats != this) {

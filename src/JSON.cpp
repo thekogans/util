@@ -28,7 +28,7 @@
 namespace thekogans {
     namespace util {
 
-        THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_BASE (JSON::Value)
+        THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_BASE (thekogans::util::JSON::Value)
 
     #if defined (THEKOGANS_UTIL_TYPE_Static)
         void JSON::Value::StaticInit () {
@@ -41,12 +41,12 @@ namespace thekogans {
         }
     #endif // defined (THEKOGANS_UTIL_TYPE_Static)
 
-        THEKOGANS_UTIL_IMPLEMENT_JSON_VALUE (JSON::Bool)
-        THEKOGANS_UTIL_IMPLEMENT_JSON_VALUE (JSON::Null)
-        THEKOGANS_UTIL_IMPLEMENT_JSON_VALUE (JSON::Number)
-        THEKOGANS_UTIL_IMPLEMENT_JSON_VALUE (JSON::String)
-        THEKOGANS_UTIL_IMPLEMENT_JSON_VALUE (JSON::Array)
-        THEKOGANS_UTIL_IMPLEMENT_JSON_VALUE (JSON::Object)
+        THEKOGANS_UTIL_IMPLEMENT_JSON_VALUE (thekogans::util::JSON::Bool, JSON::Value)
+        THEKOGANS_UTIL_IMPLEMENT_JSON_VALUE (thekogans::util::JSON::Null, JSON::Value)
+        THEKOGANS_UTIL_IMPLEMENT_JSON_VALUE (thekogans::util::JSON::Number, JSON::Value)
+        THEKOGANS_UTIL_IMPLEMENT_JSON_VALUE (thekogans::util::JSON::String, JSON::Value)
+        THEKOGANS_UTIL_IMPLEMENT_JSON_VALUE (thekogans::util::JSON::Array, JSON::Value)
+        THEKOGANS_UTIL_IMPLEMENT_JSON_VALUE (thekogans::util::JSON::Object, JSON::Value)
 
         JSON::Array::Array (
                 const std::string &str,
