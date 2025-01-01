@@ -707,11 +707,11 @@ namespace thekogans {
 
         /// \brief
         /// Implement HRTimerMgr::TimerInfoBase extraction operators.
-        THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_PTR_EXTRACTION_OPERATORS (HRTimerMgr::TimerInfoBase)
+        THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_EXTRACTION_OPERATORS (HRTimerMgr::TimerInfoBase)
 
         /// \brief
         /// Implement HRTimerMgr::TimerInfoBase value parser.
-        THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_PTR_VALUE_PARSER (HRTimerMgr::TimerInfoBase)
+        THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_VALUE_PARSER (HRTimerMgr::TimerInfoBase)
 
         /// \brief
         /// Implement HRTimerMgr::TimerInfo extraction operators.
