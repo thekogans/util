@@ -241,11 +241,6 @@ namespace thekogans {
             static const thekogans::util::ui16 VERSION;\
             virtual thekogans::util::ui16 Version () const override;
 
-        /// \def THEKOGANS_UTIL_DECLARE_SERIALIZABLE(_T)
-        #define THEKOGANS_UTIL_DECLARE_SERIALIZABLE(_T)\
-            THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE (_T)\
-            THEKOGANS_UTIL_DECLARE_SERIALIZABLE_OVERRIDE (_T)
-
         /// \def THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE(_T, version)
         /// Serializable overrides.
         #define THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_OVERRIDE(_T, version)\
@@ -253,6 +248,11 @@ namespace thekogans {
             thekogans::util::ui16 _T::Version () const {\
                 return VERSION;\
             }
+
+        /// \def THEKOGANS_UTIL_DECLARE_SERIALIZABLE(_T)
+        #define THEKOGANS_UTIL_DECLARE_SERIALIZABLE(_T)\
+            THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE (_T)\
+            THEKOGANS_UTIL_DECLARE_SERIALIZABLE_OVERRIDE (_T)
 
         /// \def THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE(_T, _B, version)
         #define THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE(_T, _B, version)\

@@ -21,7 +21,6 @@
 #include <cstddef>
 #include <string>
 #include <functional>
-#include <list>
 #include <map>
 #include "thekogans/util/Config.h"
 #include "thekogans/util/Types.h"
