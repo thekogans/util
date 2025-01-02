@@ -52,7 +52,7 @@ namespace thekogans {
 
             /// \brief
             /// Digest type.
-            typedef std::vector<ui8> Digest;
+            using Digest = std::vector<ui8>;
             /// \brief
             /// Convert a given digest to it's string representation.
             /// \param[in] digest Digest to convert.

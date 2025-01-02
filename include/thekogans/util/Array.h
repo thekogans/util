@@ -50,7 +50,7 @@ namespace thekogans {
             T *array;
             /// \brief
             /// Convenient typedef for std::function<void (T * /*array*/)>.
-            typedef std::function<void (T * /*array*/)> Deleter;
+            using Deleter = std::function<void (T * /*array*/)>;
             /// \brief
             /// Deleter used to deallocate the array pointer.
             Deleter deleter;

@@ -175,16 +175,6 @@ namespace thekogans {
             /// Declare DynamicCreatable base functions.
             THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE_BASE_FUNCTIONS (DynamicCreatable)
 
-            static bool IsBaseType (
-                const std::string &base,
-                const std::string &type);
-            static const TypeMap &GetBaseTypes (
-                const std::string &base);
-            static SharedPtr CreateBaseType (
-                const std::string &base,
-                const std::string &type,
-                Parameters::SharedPtr parameters);
-
         #if defined (THEKOGANS_UTIL_TYPE_Static)
             /// \brief
             /// Register all known bases. This method is meant to be added
@@ -216,6 +206,16 @@ namespace thekogans {
                     FactoryType factory);
             };
         #endif // defined (THEKOGANS_UTIL_TYPE_Shared)
+
+            static bool IsBaseType (
+                const std::string &base,
+                const std::string &type);
+            static const TypeMap &GetBaseTypes (
+                const std::string &base);
+            static SharedPtr CreateBaseType (
+                const std::string &base,
+                const std::string &type,
+                Parameters::SharedPtr parameters);
 
             /// \brief
             /// Pretty print the BaseMap to the std::cout.

@@ -75,11 +75,11 @@ namespace thekogans {
         #if defined (TOOLCHAIN_OS_Windows)
             /// \brief
             /// Color type.
-            typedef WORD ColorType;
+            using ColorType = WORD;
         #else // defined (TOOLCHAIN_OS_Windows)
             /// \brief
             /// Color type.
-            typedef char *ColorType;
+            using ColorType = char *;
         #endif // defined (TOOLCHAIN_OS_Windows)
             /// \brief
             /// Red.

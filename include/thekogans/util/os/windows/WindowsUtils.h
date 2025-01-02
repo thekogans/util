@@ -316,7 +316,7 @@ namespace thekogans {
                 /// A helper for creating windows. Hides a lot of Windows specific code and
                 /// defaults almost everything. Used by \see{SystemRunLoop}.
 
-                struct _LIB_THEKOGANS_UTIL_DECL Window : public RefCounted {
+                struct _LIB_THEKOGANS_UTIL_DECL Window : public virtual RefCounted {
                     /// \brief
                     /// Declare \see{util::RefCounted} pointers.
                     THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (Window)

@@ -159,7 +159,7 @@ namespace thekogans {
                     public Thread {
                 /// \brief
                 /// Convenient typedef for THEKOGANS_UTIL_HANDLE.
-                typedef THEKOGANS_UTIL_HANDLE WatchId;
+                using WatchId = THEKOGANS_UTIL_HANDLE;
 
                 /// \struct Directory::Watcher::EventSink Directory.h thekogans/util/Directory.h
                 ///
@@ -224,7 +224,7 @@ namespace thekogans {
             #endif // defined (TOOLCHAIN_OS_Linux)
                 /// \brief
                 /// typedef for OwnerMap<WatchId, Watch>.
-                typedef OwnerMap<WatchId, Watch> Watches;
+                using Watches = OwnerMap<WatchId, Watch>;
                 /// \brief
                 /// Current watches.
                 Watches watches;

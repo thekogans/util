@@ -245,7 +245,7 @@ namespace thekogans {
                 /// \param[in] counter_ Object counter.
                 /// \param[in] next_ Next index in free list.
                 Entry (
-                    typename RefCounted::WeakPtr<T> object_ = RefCounted::WeakPtr<T> (),
+                    typename RefCounted::WeakPtr<T> object_ = nullptr,
                     typename Token::CounterType counter_ = 0,
                     typename Token::IndexType next_ = BAD_INDEX) :
                     object (object_),
@@ -345,8 +345,7 @@ namespace thekogans {
                     // NOTE: Because of WeakPtr<T> () in Entry below, Get after Remove is
                     // harmless, though it's still semantically wrong. Double Remove on the
                     // other hand would lead to freeList corruption.
-                    entries[index] = Entry (
-                        typename RefCounted::WeakPtr<T> (), ++counter, freeList);
+                    entries[index] = Entry (nullptr, ++counter, freeList);
                     freeList = index;
                     --count;
                 }
@@ -367,7 +366,7 @@ namespace thekogans {
                     // Yes? Ask the WeakPtr<T> registered to return a SharedPtr<T>.
                     entries[index].object.GetSharedPtr () :
                     // No? Return NULL pointer.
-                    typename RefCounted::SharedPtr<T> ();
+                    nullptr;
             }
         };
 

@@ -76,14 +76,14 @@ namespace thekogans {
         struct _LIB_THEKOGANS_UTIL_DECL Event {
             /// \brief
             /// Event state.
-            typedef enum {
+            using State = enum {
                 /// \brief
                 /// Not signalled.
                 NotSignalled,
                 /// \brief
                 /// Signalled.
                 Signalled
-            } State;
+            };
 
         private:
         #if defined (TOOLCHAIN_OS_Windows)

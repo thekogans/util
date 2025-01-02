@@ -69,7 +69,7 @@ namespace thekogans {
         struct _LIB_THEKOGANS_UTIL_DECL Exception : public std::exception {
             /// \brief
             /// Convenient typedef for std::unique_ptr<Filter>.
-            typedef std::function<bool (const Exception & /*exception*/)> Filter;
+            using Filter = std::function<bool (const Exception & /*exception*/)>;
 
             /// \struct Exception::Location Exception.h thekogans/util/Exception.h
             ///
@@ -129,7 +129,7 @@ namespace thekogans {
             mutable std::vector<Location> traceback;
             /// \brief
             /// Convenient typedef for std::list<Filter::UniquePtr>.
-            typedef std::list<Filter> FilterList;
+            using FilterList = std::list<Filter>;
             /// \brief
             /// List of registered filters.
             static FilterList filterList;

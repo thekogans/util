@@ -139,7 +139,7 @@ namespace thekogans {
             struct _LIB_THEKOGANS_UTIL_DECL StdIO {
                 /// \brief
                 /// Convenient typedef for std::unique_ptr<StdIO>.
-                typedef std::unique_ptr<StdIO> UniquePtr;
+                using UniquePtr = std::unique_ptr<StdIO>;
 
                 /// \brief
                 /// Type of io to hook.

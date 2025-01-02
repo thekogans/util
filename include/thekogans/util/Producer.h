@@ -100,11 +100,8 @@ namespace thekogans {
 
                 /// \brief
                 /// Convenient typedef for std::function<void (T *)>.
-                typedef std::function<void (T *)> Event;
+                using Event = std::function<void (T *)>;
 
-                /// \brief
-                /// dtor.
-                virtual ~EventDeliveryPolicy () {}
 
                 /// \brief
                 /// Must be overridden by concrete classes to deliver events using whatever

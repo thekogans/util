@@ -54,7 +54,7 @@ namespace thekogans {
             struct _LIB_THEKOGANS_UTIL_DECL ColorScheme {
                 /// \brief
                 /// Convenient typedef for std::unique_ptr<ColorScheme>.
-                typedef std::unique_ptr<ColorScheme> UniquePtr;
+                using UniquePtr = std::unique_ptr<ColorScheme>;
 
                 /// \brief
                 /// dtor.

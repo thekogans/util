@@ -161,9 +161,6 @@ namespace thekogans {
                     state (Completed),
                     disposition (Unknown),
                     sleeping (false) {}
-                /// \brief
-                /// dtor.
-                virtual ~Job () {}
 
                 /// \brief
                 /// Return the job id.
@@ -412,9 +409,6 @@ namespace thekogans {
                 /// ctor.
                 /// \param[in] maxJobs_ Max pending run loop jobs.
                 JobExecutionPolicy (std::size_t maxJobs_ = SIZE_T_MAX);
-                /// \brief
-                /// dtor.
-                virtual ~JobExecutionPolicy () {}
 
                 /// \brief
                 /// Enqueue a job on the given RunLoops pendingJobs to be performed
@@ -966,9 +960,6 @@ namespace thekogans {
                         THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
                 }
             }
-            /// \brief
-            /// dtor.
-            virtual ~RunLoop () {}
 
             /// \brief
             /// Return RunLoop id.

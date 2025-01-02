@@ -22,6 +22,7 @@
 #include <cstring>
 #include <cassert>
 #include <memory>
+#include <functional>
 #include <map>
 #include <iostream>
 #include "thekogans/util/Config.h"
@@ -336,7 +337,7 @@ namespace thekogans {
             };
             /// \brief
             /// Convenient typedef for void (*HeapErrorCallback) (HeapError heapError, const char *type).
-            typedef void (*HeapErrorCallback) (HeapError heapError, const char *type);
+            using HeapErrorCallback = std::function<void (HeapError heapError, const char *type)>;
             /// \brief
             /// Heap error callback.
             HeapErrorCallback heapErrorCallback;
@@ -362,7 +363,7 @@ namespace thekogans {
                 struct Stats {
                     /// \brief
                     /// Convenient typedef for std::unique_ptr<Stats>.
-                    typedef std::unique_ptr<Stats> UniquePtr;
+                    using UniquePtr = std::unique_ptr<Stats>;
                     /// \brief
                     /// dtor.
                     virtual ~Stats () {}
@@ -379,7 +380,7 @@ namespace thekogans {
             };
             /// \brief
             /// Convenient typedef for std::map<const char *, Diagnostics *>.
-            typedef std::map<const char *, Diagnostics *> Map;
+            using Map = std::map<const char *, Diagnostics *>;
             /// \brief
             /// Heap map.
             Map map;
@@ -457,7 +458,7 @@ namespace thekogans {
             };
             /// \brief
             /// Convenient typedef for IntrusiveList<Page, PAGE_LIST_ID>.
-            typedef IntrusiveList<Page, PAGE_LIST_ID> PageList;
+            using PageList = IntrusiveList<Page, PAGE_LIST_ID>;
             /// \struct Heap::Page Heap.h thekogans/util/Heap.h
             ///
             /// \brief

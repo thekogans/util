@@ -96,7 +96,7 @@ namespace thekogans {
                 /// thread and you're going to create Xlib windows you must derive your windows from
                 /// XlibWindow.
 
-                struct XlibWindow : public RefCounted {
+                struct XlibWindow : public virtual RefCounted {
                     /// \brief
                     /// Declare \see{util::RefCounted} pointers.
                     THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (XlibWindow)

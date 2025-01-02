@@ -71,7 +71,6 @@ namespace thekogans {
                     const TimeSpec &deadline_) :
                     job (job_),
                     deadline (deadline_) {}
-                virtual ~JobInfo () {}
 
                 /// \struct RunLoopScheduler::JobInfo::Compare RunLoopScheduler.h thekogans/util/RunLoopScheduler.h
                 ///

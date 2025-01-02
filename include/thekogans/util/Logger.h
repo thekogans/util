@@ -61,9 +61,6 @@ namespace thekogans {
             /// \param[in] level_ \see{LoggerMgr::level} this logger will log up to.
             Logger (ui32 level_ = MaxLevel) :
                 level (level_) {}
-            /// \brief
-            /// dtor.
-            virtual ~Logger () {}
 
             /// \brief
             /// Do whatever is appropriate for this logger to

@@ -29,6 +29,26 @@ namespace thekogans {
 
         THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_BASE (thekogans::util::DynamicCreatable)
 
+    #if defined (THEKOGANS_UTIL_TYPE_Static)
+        void DynamicCreatable::StaticInit () {
+            JSON::Value::StaticInit ();
+            Allocator::StaticInit ();
+            Hash::StaticInit ();
+            Logger::StaticInit ();
+            Serializable::StaticInit ();
+        }
+    #else // defined (THEKOGANS_UTIL_TYPE_Static)
+        DynamicCreatable::BaseMapInitializer::BaseMapInitializer (
+                const std::string &base,
+                const std::string &type,
+                FactoryType factory) {
+            (*BaseMap::Instance ())[base][type] = factory;
+            if (base != TYPE) {
+                (*BaseMap::Instance ())[TYPE][type] = factory;
+            }
+        }
+    #endif // defined (THEKOGANS_UTIL_TYPE_Static)
+
         bool DynamicCreatable::IsBaseType (
                 const std::string &base,
                 const std::string &type) {
@@ -56,26 +76,6 @@ namespace thekogans {
             }
             return nullptr;
         }
-
-    #if defined (THEKOGANS_UTIL_TYPE_Static)
-        void DynamicCreatable::StaticInit () {
-            JSON::Value::StaticInit ();
-            Allocator::StaticInit ();
-            Hash::StaticInit ();
-            Logger::StaticInit ();
-            Serializable::StaticInit ();
-        }
-    #else // defined (THEKOGANS_UTIL_TYPE_Static)
-        DynamicCreatable::BaseMapInitializer::BaseMapInitializer (
-                const std::string &base,
-                const std::string &type,
-                FactoryType factory) {
-            (*BaseMap::Instance ())[base][type] = factory;
-            if (base != TYPE) {
-                (*BaseMap::Instance ())[TYPE][type] = factory;
-            }
-        }
-    #endif // defined (THEKOGANS_UTIL_TYPE_Static)
 
         void DynamicCreatable::DumpBaseMap (const std::string &base) {
             BaseMapType::const_iterator it = BaseMap::Instance ()->end ();

@@ -84,7 +84,8 @@ namespace thekogans {
                 std::string workerName;
                 if (!state->name.empty ()) {
                     if (state->workerCount > 1) {
-                        workerName = FormatString ("%s-" THEKOGANS_UTIL_SIZE_T_FORMAT, state->name.c_str (), i);
+                        workerName = FormatString (
+                            "%s-" THEKOGANS_UTIL_SIZE_T_FORMAT, state->name.c_str (), i);
                     }
                     else {
                         workerName = state->name;
@@ -134,7 +135,7 @@ namespace thekogans {
         }
 
         JobQueue::JobQueue (State::SharedPtr state_) :
-                RunLoop (dynamic_refcounted_sharedptr_cast<RunLoop::State> (state_)),
+                RunLoop (state_),
                 state (state_) {
             if (state != nullptr) {
                 Start ();

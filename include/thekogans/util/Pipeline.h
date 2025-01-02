@@ -100,9 +100,6 @@ namespace thekogans {
                 /// ctor.
                 /// \param[in] maxJobs_ Max pending pipeline jobs.
                 JobExecutionPolicy (std::size_t maxJobs_ = SIZE_T_MAX);
-                /// \brief
-                /// dtor.
-                virtual ~JobExecutionPolicy () {}
 
                 /// \brief
                 /// Enqueue a job on the given Pipelines pendingJobs to be performed

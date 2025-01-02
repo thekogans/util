@@ -189,16 +189,16 @@ namespace thekogans {
 
         /// \brief
         /// Synonym for Flags<ui8>.
-        typedef Flags<ui8> Flags8;
+        using Flags8 = Flags<ui8>;
         /// \brief
         /// Synonym for Flags<ui16>.
-        typedef Flags<ui16> Flags16;
+        using Flags16 = Flags<ui16>;
         /// \brief
         /// Synonym for Flags<ui32>.
-        typedef Flags<ui32> Flags32;
+        using Flags32 = Flags<ui32>;
         /// \brief
         /// Synonym for Flags<ui64>.
-        typedef Flags<ui64> Flags64;
+        using Flags64 = Flags<ui64>;
 
         /// \brief
         /// Serialize a Flags<T>. endianness is used to properly
