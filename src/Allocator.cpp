@@ -50,7 +50,7 @@ namespace thekogans {
     #endif // defined (THEKOGANS_UTIL_TYPE_Static)
 
         std::string Allocator::GetSerializedType () const {
-            std::string type = Type ();
+            const char *type = Type ();
             if (CreateType (type) == nullptr) {
                 type = DefaultAllocator::TYPE;
             }

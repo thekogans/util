@@ -578,7 +578,7 @@ namespace thekogans {
             SizeT writeOffset;
             std::string allocatorType;
             serializer >> endianness >> length >> readOffset >> writeOffset >> allocatorType;
-            Allocator::SharedPtr allocator = Allocator::CreateType (allocatorType);
+            Allocator::SharedPtr allocator = Allocator::CreateType (allocatorType.c_str ());
             if (allocator == nullptr) {
                 allocator = DefaultAllocator::Instance ();
             }
@@ -706,7 +706,8 @@ namespace thekogans {
             SizeT writeOffset =
                 object.Get<JSON::Number> (ATTR_WRITE_OFFSET)->To<ui64> ();
             Allocator::SharedPtr allocator =
-                Allocator::CreateType (object.Get<JSON::String> (ATTR_ALLOCATOR)->value);
+                Allocator::CreateType (
+                    object.Get<JSON::String> (ATTR_ALLOCATOR)->value.c_str ());
             if (allocator == nullptr) {
                 allocator = DefaultAllocator::Instance ();
             }

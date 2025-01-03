@@ -39,9 +39,9 @@ namespace thekogans {
         }
     #else // defined (THEKOGANS_UTIL_TYPE_Static)
         DynamicCreatable::BaseMapInitializer::BaseMapInitializer (
-                const std::string bases[],
+                const char *bases[],
                 std::size_t basesSize,
-                const std::string &type,
+                const char *type,
                 FactoryType factory) {
             for (std::size_t i = 0; i < basesSize; ++i) {
                 (*BaseMap::Instance ())[bases[i]][type] = factory;
@@ -50,23 +50,23 @@ namespace thekogans {
     #endif // defined (THEKOGANS_UTIL_TYPE_Static)
 
         bool DynamicCreatable::IsBaseType (
-                const std::string &base,
-                const std::string &type) {
+                const char *base,
+                const char *type) {
             BaseMapType::const_iterator it = BaseMap::Instance ()->find (base);
             return it != BaseMap::Instance ()->end () &&
                 it->second.find (type) != it->second.end ();
         }
 
         const DynamicCreatable::TypeMapType &DynamicCreatable::GetBaseTypes (
-                const std::string &base) {
+                const char *base) {
             static const TypeMapType empty;
             BaseMapType::const_iterator it = BaseMap::Instance ()->find (base);
             return it != BaseMap::Instance ()->end () ? it->second : empty;
         }
 
         DynamicCreatable::SharedPtr DynamicCreatable::CreateBaseType (
-                const std::string &base,
-                const std::string &type,
+                const char *base,
+                const char *type,
                 Parameters::SharedPtr parameters) {
             BaseMapType::const_iterator it = BaseMap::Instance ()->find (base);
             if (it != BaseMap::Instance ()->end ()) {
@@ -78,10 +78,10 @@ namespace thekogans {
             return nullptr;
         }
 
-        void DynamicCreatable::DumpBaseMap (const std::string &base) {
+        void DynamicCreatable::DumpBaseMap (const char *base) {
             BaseMapType::const_iterator it = BaseMap::Instance ()->begin ();
             BaseMapType::const_iterator end = BaseMap::Instance ()->end ();
-            if (!base.empty ()) {
+            if (base != nullptr) {
                 it = end = BaseMap::Instance ()->find (base);
                 if (end != BaseMap::Instance ()->end ()) {
                     ++end;

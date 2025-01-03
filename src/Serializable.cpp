@@ -203,7 +203,7 @@ namespace thekogans {
             Serializable::BinHeader header;
             serializer >> header;
             if (header.magic == MAGIC32) {
-                serializable = Serializable::CreateType (header.type);
+                serializable = Serializable::CreateType (header.type.c_str ());
                 if (serializable == nullptr) {
                     serializable.Reset (new Blob);
                 }
@@ -222,7 +222,7 @@ namespace thekogans {
                 Serializable::SharedPtr &serializable) {
             Serializable::TextHeader header;
             node >> header;
-            serializable = Serializable::CreateType (header.type);
+            serializable = Serializable::CreateType (header.type.c_str ());
             if (serializable == nullptr) {
                 serializable.Reset (new Blob);
             }
@@ -235,7 +235,7 @@ namespace thekogans {
                 Serializable::SharedPtr &serializable) {
             Serializable::TextHeader header;
             object >> header;
-            serializable = Serializable::CreateType (header.type);
+            serializable = Serializable::CreateType (header.type.c_str ());
             if (serializable == nullptr) {
                 serializable.Reset (new Blob);
             }
@@ -266,7 +266,7 @@ namespace thekogans {
             }
             if (state == STATE_TYPE) {
                 if (typeParser.ParseValue (serializer)) {
-                    if (Serializable::IsType (value.type)) {
+                    if (Serializable::IsType (value.type.c_str ())) {
                         state = STATE_VERSION;
                     }
                     else {
@@ -364,7 +364,7 @@ namespace thekogans {
                         payload.GetWritePtr (),
                         payload.GetDataAvailableForWriting ()));
                 if (payload.IsFull ()) {
-                    value = Serializable::CreateType (header.type);
+                    value = Serializable::CreateType (header.type.c_str ());
                     if (value == nullptr) {
                         value.Reset (new Blob);
                     }

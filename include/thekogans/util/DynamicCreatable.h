@@ -18,7 +18,7 @@
 #if !defined (__thekogans_util_DynamicCreatable_h)
 #define __thekogans_util_DynamicCreatable_h
 
-#include <string>
+#include <cstring>
 #include <functional>
 #include <map>
 #include "thekogans/util/Config.h"
@@ -45,14 +45,14 @@ namespace thekogans {
 
         #define THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE_BASE_FUNCTIONS(_T)\
         public:\
-            static bool IsType (const std::string &type);\
+            static bool IsType (const char *type);\
             static const thekogans::util::DynamicCreatable::TypeMapType &GetTypes ();\
             static _T::SharedPtr CreateType (\
-                const std::string &type,\
+                const char *type,\
                 thekogans::util::DynamicCreatable::Parameters::SharedPtr parameters = nullptr);
 
         #define THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_BASE_FUNCTIONS(_T)\
-            bool _T::IsType (const std::string &type) {\
+            bool _T::IsType (const char *type) {\
                 static const thekogans::util::DynamicCreatable::TypeMapType &types =\
                     (*thekogans::util::DynamicCreatable::BaseMap::Instance ())[_T::TYPE];\
                 return types.find (type) != types.end ();\
@@ -63,7 +63,7 @@ namespace thekogans {
                 return types;\
             }\
             _T::SharedPtr _T::CreateType (\
-                    const std::string &type,\
+                    const char *type,\
                     thekogans::util::DynamicCreatable::Parameters::SharedPtr parameters) {\
                 static const thekogans::util::DynamicCreatable::TypeMapType &types =\
                     (*thekogans::util::DynamicCreatable::BaseMap::Instance ())[_T::TYPE];\
@@ -146,7 +146,8 @@ namespace thekogans {
         struct _LIB_THEKOGANS_UTIL_DECL DynamicCreatable : public virtual RefCounted {
             THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (DynamicCreatable)
 
-            /// \struct DynamicCreatable::Parameters DynamicCreatable.h thekogans/util/DynamicCreatable.h
+            /// \struct DynamicCreatable::Parameters DynamicCreatable.h
+            /// thekogans/util/DynamicCreatable.h
             ///
             /// \brief
             /// Parameters allow you to parametarize type creation. All
@@ -172,12 +173,25 @@ namespace thekogans {
             /// \brief
             /// Type factory method.
             using FactoryType = std::function<SharedPtr (Parameters::SharedPtr)>;
+            /// \struct DynamicCreatable::StringCompare DynamicCreatable.h
+            /// thekogans/util/DynamicCreatable.h
+            ///
+            /// \brief
+            /// For compactness we use const char * as map keys. This struct
+            /// exposes a operator () that is used to treat the keys like strings.
+            struct StringCompare {
+                inline bool operator () (
+                        const char *lhs,
+                        const char *rhs) const {
+                    return std::strcmp (lhs, rhs) < 0;
+                }
+            };
             /// \brief
             /// Maps type name to it's factory method.
-            using TypeMapType = std::map<std::string, FactoryType>;
+            using TypeMapType = std::map<const char *, FactoryType, StringCompare>;
             /// \brief
             /// Maps base type to it's derived types.
-            using BaseMapType = std::map<std::string, TypeMapType>;
+            using BaseMapType = std::map<const char *, TypeMapType, StringCompare>;
             /// \brief
             /// The one and only base to derived type map.
             using BaseMap = Singleton<BaseMapType>;
@@ -198,12 +212,14 @@ namespace thekogans {
             /// to register their derived classes.
             static void StaticInit ();
         #else // defined (THEKOGANS_UTIL_TYPE_Static)
-            /// \struct DynamicCreatable::BaseMapInitializer DynamicCreatable.h thekogans/util/DynamicCreatable.h
+            /// \struct DynamicCreatable::BaseMapInitializer DynamicCreatable.h
+            /// thekogans/util/DynamicCreatable.h
             ///
             /// \brief
             /// BaseMapInitializer is used to initialize the DynamicCreatable::Map.
             /// It should not be used directly, and instead is included
-            /// in THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE/THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE.
+            /// in THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE/
+            /// THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE.
             /// If you are deriving from DynamicCreatable, add
             /// THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE_BASE (for base classes) or
             /// THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE (for derived classes) to it's
@@ -211,31 +227,32 @@ namespace thekogans {
             struct _LIB_THEKOGANS_UTIL_DECL BaseMapInitializer {
                 /// \brief
                 /// ctor.
-                /// \param[in] base DynamicCreatable base type (it's parents class name).
+                /// \param[in] bases DynamicCreatable base type (it's parents class name).
+                /// \param[in] basesSize DynamicCreatable base type (it's parents class name).
                 /// \param[in] type DynamicCreatable type (it's class name).
                 /// \param[in] factory DynamicCreatable creation factory.
                 BaseMapInitializer (
-                    const std::string bases[],
+                    const char *bases[],
                     std::size_t basesSize,
-                    const std::string &type,
+                    const char *type,
                     FactoryType factory);
             };
         #endif // defined (THEKOGANS_UTIL_TYPE_Shared)
 
             static bool IsBaseType (
-                const std::string &base,
-                const std::string &type);
+                const char *base,
+                const char *type);
             static const TypeMapType &GetBaseTypes (
-                const std::string &base);
+                const char *base);
             static SharedPtr CreateBaseType (
-                const std::string &base,
-                const std::string &type,
+                const char *base,
+                const char *type,
                 Parameters::SharedPtr parameters);
 
             /// \brief
             /// Pretty print the BaseMap to the std::cout.
             /// Use this to take a look inside your map when debugging.
-            static void DumpBaseMap (const std::string &base = std::string ());
+            static void DumpBaseMap (const char *base = nullptr);
         };
 
         /// \def THEKOGANS_UTIL_DYNAMIC_CREATABLE_BASES_BEGIN(_T)
