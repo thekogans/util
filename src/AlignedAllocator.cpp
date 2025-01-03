@@ -22,9 +22,7 @@
 namespace thekogans {
     namespace util {
 
-        THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_OVERRIDE (
-            thekogans::util::AlignedAllocator,
-            Allocator)
+        THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_OVERRIDE (thekogans::util::AlignedAllocator)
 
         AlignedAllocator::AlignedAllocator (
                 std::size_t alignment_,

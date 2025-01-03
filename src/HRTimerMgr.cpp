@@ -122,7 +122,6 @@ namespace thekogans {
 
         THEKOGANS_UTIL_IMPLEMENT_HRTIMERMGR_TIMERINFOBASE (
             thekogans::util::HRTimerMgr::TimerInfo,
-            HRTimerMgr::TimerInfoBase,
             1,
             THEKOGANS_UTIL_MIN_TIMER_INFOS_IN_PAGE)
 
@@ -235,7 +234,6 @@ namespace thekogans {
 
         THEKOGANS_UTIL_IMPLEMENT_HRTIMERMGR_TIMERINFOBASE (
             thekogans::util::HRTimerMgr::ScopeInfo,
-            HRTimerMgr::TimerInfoBase,
             1,
             THEKOGANS_UTIL_MIN_SCOPE_INFOS_IN_PAGE)
 
@@ -546,10 +544,7 @@ namespace thekogans {
 
         ////////////////////////////////////////////////////////////////////////////////////////
 
-        THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE (
-            thekogans::util::HRTimerMgr,
-            Serializable,
-            1)
+        THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE (thekogans::util::HRTimerMgr, 1)
 
 
         std::string HRTimerMgr::ToXMLString (

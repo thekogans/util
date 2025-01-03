@@ -52,7 +52,7 @@ namespace thekogans {
 
         THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE (
             thekogans::util::MD5,
-            Hash)
+            Hash::TYPE)
 
         namespace {
             // Initial hash value H for MD5:

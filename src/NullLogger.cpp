@@ -22,7 +22,7 @@ namespace thekogans {
 
         THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE (
             thekogans::util::NullLogger,
-            Logger)
+            Logger::TYPE)
 
         void NullLogger::Log (
                 const std::string & /*subsystem*/,

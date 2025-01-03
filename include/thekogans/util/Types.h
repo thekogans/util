@@ -32,9 +32,9 @@
 /// For compatibility only.
 #if defined (TOOLCHAIN_OS_Windows)
     #if defined (TOOLCHAIN_ARCH_i386)
-        typedef long ssize_t;
+        using ssize_t = long ;
     #elif defined (TOOLCHAIN_ARCH_x86_64)
-        typedef __int64 ssize_t;
+        using ssize_t = __int64;
     #else // defined (TOOLCHAIN_ARCH_x86_64)
         #error Unknown TOOLCHAIN_ARCH.
     #endif // defined (TOOLCHAIN_ARCH_i386)
@@ -55,43 +55,43 @@ namespace thekogans {
 
         /// \brief
         /// Signed 8 bit type.
-        typedef signed char i8;
+        using i8 = signed char;
         /// \brief
         /// Unsigned 8 bit type.
-        typedef unsigned char ui8;
+        using ui8 = unsigned char;
         /// \brief
         /// Signed 16 bit type.
-        typedef signed short i16;
+        using i16 = signed short;
         /// \brief
         /// Unsigned 16 bit type.
-        typedef unsigned short ui16;
+        using ui16 = unsigned short;
         /// \brief
         /// Signed 32 bit type.
-        typedef signed int i32;
+        using i32 = signed int;
         /// \brief
         /// Unsigned 32 bit type.
-        typedef unsigned int ui32;
+        using ui32 = unsigned int;
     #if defined (TOOLCHAIN_OS_Windows)
         /// \brief
         /// Signed 64 bit type.
-        typedef signed __int64 i64;
+        using i64 = signed __int64;
         /// \brief
         /// Unsigned 64 bit type.
-        typedef unsigned __int64 ui64;
+        using ui64 = unsigned __int64;
     #else // defined (TOOLCHAIN_OS_Windows)
         /// \brief
         /// Signed 64 bit type.
-        typedef signed long long i64;
+        using i64 = signed long long;
         /// \brief
         /// Unsigned 64 bit type.
-        typedef unsigned long long ui64;
+        using ui64 = unsigned long long;
     #endif // defined (TOOLCHAIN_OS_Windows)
         /// \brief
         /// 32 bit float type.
-        typedef float f32;
+        using f32 = float;
         /// \brief
         /// 64 bit float type.
-        typedef double f64;
+        using f64 = double;
 
         /// \brief
         /// bool type size.
@@ -140,13 +140,13 @@ namespace thekogans {
         /// \brief
         /// Architecture dependent natural word (register) type (size).
     #if (TOOLCHAIN_ARCH_WORD_SIZE == 1)
-        typedef ui8 MachineWord;
+        using MachineWord = ui8;
     #elif (TOOLCHAIN_ARCH_WORD_SIZE == 2)
-        typedef ui16 MachineWord;
+        using MachineWord = ui16;
     #elif (TOOLCHAIN_ARCH_WORD_SIZE == 4)
-        typedef ui32 MachineWord;
+        using MachineWord = ui32;
     #elif (TOOLCHAIN_ARCH_WORD_SIZE == 8)
-        typedef ui64 MachineWord;
+        using MachineWord = ui64;
     #else // (TOOLCHAIN_ARCH_WORD_SIZE == 8)
         #error Unknown TOOLCHAIN_ARCH_WORD_SIZE.
     #endif // (TOOLCHAIN_ARCH_WORD_SIZE == 1)

@@ -40,7 +40,7 @@ namespace thekogans {
 
         THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_SINGLETON (
             thekogans::util::SecureAllocator,
-            Allocator)
+            Allocator::TYPE)
 
         void SecureAllocator::ReservePages (
                 ui64 minWorkingSetSize,

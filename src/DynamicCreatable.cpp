@@ -39,12 +39,12 @@ namespace thekogans {
         }
     #else // defined (THEKOGANS_UTIL_TYPE_Static)
         DynamicCreatable::BaseMapInitializer::BaseMapInitializer (
-                const std::string &base,
+                const std::string bases[],
+                std::size_t basesSize,
                 const std::string &type,
                 FactoryType factory) {
-            (*BaseMap::Instance ())[base][type] = factory;
-            if (base != TYPE) {
-                (*BaseMap::Instance ())[TYPE][type] = factory;
+            for (std::size_t i = 0; i < basesSize; ++i) {
+                (*BaseMap::Instance ())[bases[i]][type] = factory;
             }
         }
     #endif // defined (THEKOGANS_UTIL_TYPE_Static)
@@ -57,8 +57,9 @@ namespace thekogans {
                 it->second.find (type) != it->second.end ();
         }
 
-        const DynamicCreatable::TypeMap &DynamicCreatable::GetBaseTypes (const std::string &base) {
-            static const TypeMap empty;
+        const DynamicCreatable::TypeMapType &DynamicCreatable::GetBaseTypes (
+                const std::string &base) {
+            static const TypeMapType empty;
             BaseMapType::const_iterator it = BaseMap::Instance ()->find (base);
             return it != BaseMap::Instance ()->end () ? it->second : empty;
         }
@@ -69,7 +70,7 @@ namespace thekogans {
                 Parameters::SharedPtr parameters) {
             BaseMapType::const_iterator it = BaseMap::Instance ()->find (base);
             if (it != BaseMap::Instance ()->end ()) {
-                TypeMap::const_iterator jt = it->second.find (type);
+                TypeMapType::const_iterator jt = it->second.find (type);
                 if (jt != it->second.end ()) {
                     return jt->second (parameters);
                 }
@@ -78,7 +79,7 @@ namespace thekogans {
         }
 
         void DynamicCreatable::DumpBaseMap (const std::string &base) {
-            BaseMapType::const_iterator it = BaseMap::Instance ()->end ();
+            BaseMapType::const_iterator it = BaseMap::Instance ()->begin ();
             BaseMapType::const_iterator end = BaseMap::Instance ()->end ();
             if (!base.empty ()) {
                 it = end = BaseMap::Instance ()->find (base);
@@ -86,12 +87,9 @@ namespace thekogans {
                     ++end;
                 }
             }
-            else {
-                it = BaseMap::Instance ()->begin ();
-            }
             for (; it != end; ++it) {
                 std::cout << it->first << ":" << std::endl;
-                for (TypeMap::const_iterator
+                for (TypeMapType::const_iterator
                          jt = it->second.begin (),
                          end = it->second.end (); jt != end; ++jt) {
                     std::cout << "  " << jt->first << std::endl;

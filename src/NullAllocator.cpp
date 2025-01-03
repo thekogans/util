@@ -23,7 +23,7 @@ namespace thekogans {
 
         THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_SINGLETON (
             thekogans::util::NullAllocator,
-            Allocator)
+            Allocator::TYPE)
 
         void *NullAllocator::Alloc (std::size_t size) {
             if (size > 0) {

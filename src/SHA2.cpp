@@ -28,7 +28,7 @@ namespace thekogans {
 
         THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE (
             thekogans::util::SHA2,
-            Hash)
+            Hash::TYPE)
 
         void SHA2::GetDigestSizes (std::list<std::size_t> &digestSizes) const {
             digestSizes.push_back (DIGEST_SIZE_224);

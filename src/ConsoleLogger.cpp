@@ -24,7 +24,7 @@ namespace thekogans {
 
         THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE (
             thekogans::util::ConsoleLogger,
-            Logger)
+            Logger::TYPE)
 
         Console::ColorType ConsoleLogger::DefaultColorScheme::GetColorForLevel (ui32 level) {
             return

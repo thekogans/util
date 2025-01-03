@@ -387,7 +387,7 @@ namespace thekogans {
         /// Build an Exception from errorCode and message.
         #define THEKOGANS_UTIL_EXCEPTION(errorCode, format, ...)\
             THEKOGANS_UTIL_EXCEPTION_EX (__FILE__, __FUNCTION__, __LINE__,\
-                __DATE__ " " __TIME__, format, __VA_ARGS__)
+                __DATE__ " " __TIME__, errorCode, format, __VA_ARGS__)
 
         /// \def THEKOGANS_UTIL_THROW_EXCEPTION_EX(
         ///          file, function, line, buildTime, errorCode, format, ...)

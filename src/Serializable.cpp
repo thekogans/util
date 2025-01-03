@@ -74,12 +74,8 @@ namespace thekogans {
             return header.Size () + header.size;
         }
 
-        const std::string &Blob::Type () const {
-            return type;
-        }
-
-        const std::string &Blob::Base () const {
-            return Serializable::TYPE;
+        const char *Blob::Type () const {
+            return type.c_str ();
         }
 
         ui16 Blob::Version () const {
@@ -161,8 +157,9 @@ namespace thekogans {
             }
             else {
                 THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                    "Corrupt serializable '%s' header.",
-                    header.type.c_str ());
+                    "Header type (%s) is not the same as Serializable type (%s).",
+                    header.type.c_str (),
+                    serializable.Type ());
             }
         }
 
@@ -177,8 +174,9 @@ namespace thekogans {
             }
             else {
                 THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                    "Corrupt serializable '%s' header.",
-                    header.type.c_str ());
+                    "Header type (%s) is not the same as Serializable type (%s).",
+                    header.type.c_str (),
+                    serializable.Type ());
             }
         }
 
@@ -193,8 +191,9 @@ namespace thekogans {
             }
             else {
                 THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                    "Corrupt serializable '%s' header.",
-                    header.type.c_str ());
+                    "Header type (%s) is not the same as Serializable type (%s).",
+                    header.type.c_str (),
+                    serializable.Type ());
             }
         }
 
@@ -204,7 +203,7 @@ namespace thekogans {
             Serializable::BinHeader header;
             serializer >> header;
             if (header.magic == MAGIC32) {
-                serializable = DynamicCreatable::CreateType (header.type);
+                serializable = Serializable::CreateType (header.type);
                 if (serializable == nullptr) {
                     serializable.Reset (new Blob);
                 }
@@ -223,7 +222,7 @@ namespace thekogans {
                 Serializable::SharedPtr &serializable) {
             Serializable::TextHeader header;
             node >> header;
-            serializable = DynamicCreatable::CreateType (header.type);
+            serializable = Serializable::CreateType (header.type);
             if (serializable == nullptr) {
                 serializable.Reset (new Blob);
             }
@@ -236,7 +235,7 @@ namespace thekogans {
                 Serializable::SharedPtr &serializable) {
             Serializable::TextHeader header;
             object >> header;
-            serializable = DynamicCreatable::CreateType (header.type);
+            serializable = Serializable::CreateType (header.type);
             if (serializable == nullptr) {
                 serializable.Reset (new Blob);
             }
@@ -267,7 +266,7 @@ namespace thekogans {
             }
             if (state == STATE_TYPE) {
                 if (typeParser.ParseValue (serializer)) {
-                    if (DynamicCreatable::IsType (value.type)) {
+                    if (Serializable::IsType (value.type)) {
                         state = STATE_VERSION;
                     }
                     else {
@@ -365,7 +364,7 @@ namespace thekogans {
                         payload.GetWritePtr (),
                         payload.GetDataAvailableForWriting ()));
                 if (payload.IsFull ()) {
-                    value = DynamicCreatable::CreateType (header.type);
+                    value = Serializable::CreateType (header.type);
                     if (value == nullptr) {
                         value.Reset (new Blob);
                     }

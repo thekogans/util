@@ -31,7 +31,7 @@ namespace thekogans {
 
                 THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE (
                     thekogans::util::os::windows::OutputDebugStringLogger,
-                    Logger)
+                    Logger::TYPE)
 
                 void OutputDebugStringLogger::Log (
                         const std::string & /*subsystem*/,

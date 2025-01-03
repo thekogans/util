@@ -19,7 +19,6 @@
 #include "thekogans/util/DefaultAllocator.h"
 #include "thekogans/util/Allocator.h"
 #if defined (THEKOGANS_UTIL_TYPE_Static)
-    #include "thekogans/util/Environment.h"
     #include "thekogans/util/DefaultAllocator.h"
     #include "thekogans/util/SecureAllocator.h"
     #if defined (TOOLCHAIN_OS_Windows)

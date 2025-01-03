@@ -270,13 +270,13 @@ namespace thekogans {
                 THEKOGANS_UTIL_DECLARE_SERIALIZABLE (_T)\
                 THEKOGANS_UTIL_DECLARE_STD_ALLOCATOR_FUNCTIONS
 
-            /// \def THEKOGANS_UTIL_HRTIMERMGR_TIMERINFOBASE(_T, _B, version, minItemsInPage)
+            /// \def THEKOGANS_UTIL_HRTIMERMGR_TIMERINFOBASE(_T, version, minItemsInPage)
             /// Common implementations used by all Value derivatives.
-            #define THEKOGANS_UTIL_IMPLEMENT_HRTIMERMGR_TIMERINFOBASE(_T, _B, version, minItemsInPage)\
+            #define THEKOGANS_UTIL_IMPLEMENT_HRTIMERMGR_TIMERINFOBASE(_T, version, minItemsInPage)\
                 THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE (\
                     _T,\
-                    _B,\
-                    version)\
+                    version,\
+                    TimerInfoBase::TYPE)\
                 THEKOGANS_UTIL_IMPLEMENT_HEAP_FUNCTIONS_EX (\
                     _T,\
                     SpinLock,\

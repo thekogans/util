@@ -24,7 +24,7 @@ namespace thekogans {
 
         THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE (
             thekogans::util::MemoryLogger,
-            Logger)
+            Logger::TYPE)
         THEKOGANS_UTIL_IMPLEMENT_HEAP_FUNCTIONS (MemoryLogger::Entry)
 
         MemoryLogger::~MemoryLogger () {

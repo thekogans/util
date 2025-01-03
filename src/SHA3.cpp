@@ -30,7 +30,7 @@ namespace thekogans {
 
         THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE (
             thekogans::util::SHA3,
-            Hash)
+            Hash::TYPE)
 
         void SHA3::Init (std::size_t digestSize_) {
             if (digestSize_ == DIGEST_SIZE_224 || digestSize_ == DIGEST_SIZE_256 ||

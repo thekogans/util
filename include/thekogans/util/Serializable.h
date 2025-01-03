@@ -254,9 +254,10 @@ namespace thekogans {
             THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE (_T)\
             THEKOGANS_UTIL_DECLARE_SERIALIZABLE_OVERRIDE (_T)
 
-        /// \def THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE(_T, _B, version)
-        #define THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE(_T, _B, version)\
-            THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE (_T, _B)\
+        /// \def THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE(_T, version, ...)
+        #define THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE(_T, version, ...)\
+            THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE (_T,\
+                thekogans::util::Serializable::TYPE, __VA_ARGS__)\
             THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_OVERRIDE (_T, version)
 
         /// \struct Blob Serializable.h thekogans/util/Serializable.h
@@ -300,12 +301,7 @@ namespace thekogans {
             /// \brief
             /// Return DynamicCreatable type (it's class name).
             /// \return DynamicCreatable type (it's class name).
-            virtual const std::string &Type () const override;
-
-            /// \brief
-            /// Return DynamicCreatable type (it's class name).
-            /// \return DynamicCreatable type (it's class name).
-            virtual const std::string &Base () const override;
+            virtual const char *Type () const override;
 
             /// \brief
             /// Return the serializable version.

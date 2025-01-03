@@ -41,12 +41,12 @@ namespace thekogans {
         }
     #endif // defined (THEKOGANS_UTIL_TYPE_Static)
 
-        THEKOGANS_UTIL_IMPLEMENT_JSON_VALUE (thekogans::util::JSON::Bool, JSON::Value)
-        THEKOGANS_UTIL_IMPLEMENT_JSON_VALUE (thekogans::util::JSON::Null, JSON::Value)
-        THEKOGANS_UTIL_IMPLEMENT_JSON_VALUE (thekogans::util::JSON::Number, JSON::Value)
-        THEKOGANS_UTIL_IMPLEMENT_JSON_VALUE (thekogans::util::JSON::String, JSON::Value)
-        THEKOGANS_UTIL_IMPLEMENT_JSON_VALUE (thekogans::util::JSON::Array, JSON::Value)
-        THEKOGANS_UTIL_IMPLEMENT_JSON_VALUE (thekogans::util::JSON::Object, JSON::Value)
+        THEKOGANS_UTIL_IMPLEMENT_JSON_VALUE (thekogans::util::JSON::Bool)
+        THEKOGANS_UTIL_IMPLEMENT_JSON_VALUE (thekogans::util::JSON::Null)
+        THEKOGANS_UTIL_IMPLEMENT_JSON_VALUE (thekogans::util::JSON::Number)
+        THEKOGANS_UTIL_IMPLEMENT_JSON_VALUE (thekogans::util::JSON::String)
+        THEKOGANS_UTIL_IMPLEMENT_JSON_VALUE (thekogans::util::JSON::Array)
+        THEKOGANS_UTIL_IMPLEMENT_JSON_VALUE (thekogans::util::JSON::Object)
 
         JSON::Array::Array (
                 const std::string &str,
@@ -304,7 +304,9 @@ namespace thekogans {
                                                 ch = 0;
                                                 for (int i = 0; i < 4; ++i, ++json) {
                                                     if (isxdigit (*json)) {
-                                                        ch = ch * 16 + ((*json <= '9') ? (*json - '0') : ((*json & ~SPACE) - 'A' + 10));
+                                                        ch = ch * 16 + ((*json <= '9') ?
+                                                            (*json - '0') :
+                                                            ((*json & ~SPACE) - 'A' + 10));
                                                     }
                                                     else {
                                                         THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
@@ -385,7 +387,8 @@ namespace thekogans {
                                 // Check for [+ | -]Inf[inity].
                                 if (json[0] == 'I' && json[1] == 'n' && json[2] == 'f') {
                                     json += 3;
-                                    if (json[0] == 'i' && json[1] == 'n' && json[2] == 'i' && json[3] == 't' && json[4] == 'y') {
+                                    if (json[0] == 'i' && json[1] == 'n' &&
+                                            json[2] == 'i' && json[3] == 't' && json[4] == 'y') {
                                         json += 5;
                                     }
                                     if (isdelim (*json)) {
@@ -407,7 +410,9 @@ namespace thekogans {
                                 // Create proper variant type based on the format of the number.
                                 Variant value ((*json == '.' || *json == 'e' || *json == 'E') ?
                                     stringTof64 (start, (char **)&json) :
-                                    minus ? stringToi64 (start, (char **)&json) : stringToui64 (start, (char **)&json));
+                                    minus ?
+                                        stringToi64 (start, (char **)&json) :
+                                        stringToui64 (start, (char **)&json));
                                 if (json > start && isdelim (*json)) {
                                     return Token (std::string (start, json), value);
                                 }
@@ -682,7 +687,7 @@ namespace thekogans {
                 else {
                     THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
                         "Unknown value type %s.",
-                        value.Type ().c_str ());
+                        value.Type ());
                 }
             }
         }

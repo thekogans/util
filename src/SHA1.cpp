@@ -60,7 +60,7 @@ namespace thekogans {
 
         THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE (
             thekogans::util::SHA1,
-            Hash)
+            Hash::TYPE)
 
         namespace {
             // Initial hash value H for SHA-256:
