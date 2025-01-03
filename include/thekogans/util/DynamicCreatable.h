@@ -18,18 +18,14 @@
 #if !defined (__thekogans_util_DynamicCreatable_h)
 #define __thekogans_util_DynamicCreatable_h
 
-#include <cstddef>
 #include <string>
 #include <functional>
-#include <vector>
 #include <map>
 #include "thekogans/util/Config.h"
 #include "thekogans/util/Types.h"
 #include "thekogans/util/RefCounted.h"
 #include "thekogans/util/Exception.h"
 #include "thekogans/util/Singleton.h"
-#include "thekogans/util/SpinLock.h"
-#include "thekogans/util/LockGuard.h"
 
 namespace thekogans {
     namespace util {
