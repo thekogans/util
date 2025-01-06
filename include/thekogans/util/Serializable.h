@@ -181,6 +181,9 @@ namespace thekogans {
             };
 
         #if defined (THEKOGANS_UTIL_TYPE_Static)
+            /// \brief
+            /// Register all known bases. This method is meant to be added
+            /// to as new Serializable derivatives are added to the system.
             static void StaticInit ();
         #endif // defined (THEKOGANS_UTIL_TYPE_Static)
 

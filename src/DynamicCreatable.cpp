@@ -79,13 +79,17 @@ namespace thekogans {
         }
 
         void DynamicCreatable::DumpBaseMap (const char *base) {
-            BaseMapType::const_iterator it = BaseMap::Instance ()->begin ();
-            BaseMapType::const_iterator end = BaseMap::Instance ()->end ();
+            BaseMapType::const_iterator it;
+            BaseMapType::const_iterator end;
             if (base != nullptr) {
                 it = end = BaseMap::Instance ()->find (base);
                 if (end != BaseMap::Instance ()->end ()) {
                     ++end;
                 }
+            }
+            else {
+                it = BaseMap::Instance ()->begin ();
+                end = BaseMap::Instance ()->end ();
             }
             for (; it != end; ++it) {
                 std::cout << it->first << ":" << std::endl;

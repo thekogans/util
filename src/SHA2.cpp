@@ -22,10 +22,6 @@
 namespace thekogans {
     namespace util {
 
-        #if !defined (THEKOGANS_UTIL_MIN_HASH_SHA2_IN_PAGE)
-            #define THEKOGANS_UTIL_MIN_HASH_SHA2_IN_PAGE 5
-        #endif // !defined (THEKOGANS_UTIL_MIN_HASH_SHA2_IN_PAGE)
-
         THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE (
             thekogans::util::SHA2,
             Hash::TYPE)
