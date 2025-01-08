@@ -143,14 +143,14 @@ namespace thekogans {
         /// macro.
         #define THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE_OVERRIDE(_T)\
         public:\
-            static const char *TYPE;\
+            static const char * const TYPE;\
             virtual const char *Type () const;
 
         /// \def THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_OVERRIDE(_T)
         /// Implement DynamicCreatable::TYPE. This macro is usually private
         /// (see ..._DECLARE_..._OVERRIDE above).
         #define THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_OVERRIDE(_T)\
-            const char *_T::TYPE = #_T;\
+            const char * const _T::TYPE = #_T;\
             const char *_T::Type () const {\
                 return TYPE;\
             }
