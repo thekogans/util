@@ -253,11 +253,36 @@ namespace thekogans {
             }
 
         /// \def THEKOGANS_UTIL_DECLARE_SERIALIZABLE(_T)
+        /// Serializable declaration macro. Instantiate one of these
+        /// in your class declaration. Ex;
+        ///
+        /// namespace thekogans {
+        ///     namespace util {
+        ///
+        ///         struct _LIB_THEKOGANS_UTIL_DECL TimeSpec : public Serializable {
+        ///             /// \brief
+        ///             /// TimeSpec is a \see{Serializable}.
+        ///             THEKOGANS_UTIL_DECLARE_SERIALIZABLE (TimeSpec)
+        ///             ...
+        ///         };
+        ///
+        ///     } // namespace util
+        /// } // namespace thekogans
         #define THEKOGANS_UTIL_DECLARE_SERIALIZABLE(_T)\
             THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE (_T)\
             THEKOGANS_UTIL_DECLARE_SERIALIZABLE_OVERRIDE (_T)
 
         /// \def THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE(_T, version, ...)
+        /// Serializable implementation macro. Instantiate one of these
+        /// in your class cpp. Ex;
+        ///
+        /// namespace thekogans {
+        ///     namespace util {
+        ///
+        ///         THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE (thekogans::util::TimeSpec, 1)
+        ///
+        ///     } // namespace util
+        /// } // namespace thekogans
         #define THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE(_T, version, ...)\
             THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE (_T,\
                 thekogans::util::Serializable::TYPE, __VA_ARGS__)\
@@ -496,27 +521,58 @@ namespace thekogans {
             return object;
         }
 
+        /// \brief
+        /// Serializable extraction operator.
+        /// \param[in] serializer Serializer to extract from.
+        /// \param[out] serializable Serializable to extract.
+        /// \return serializer.
         _LIB_THEKOGANS_UTIL_DECL Serializer & _LIB_THEKOGANS_UTIL_API operator >> (
             Serializer &serializer,
             Serializable &serializable);
+        /// \brief
+        /// Serializable extraction operator.
+        /// \param[in] node Serializer to extract from.
+        /// \param[out] serializable Serializable to extract.
+        /// \return serializer.
         _LIB_THEKOGANS_UTIL_DECL const pugi::xml_node & _LIB_THEKOGANS_UTIL_API operator >> (
             const pugi::xml_node &node,
             Serializable &serializable);
+        /// \brief
+        /// Serializable extraction operator.
+        /// \param[in] object Serializer to extract from.
+        /// \param[out] serializable Serializable to extract.
+        /// \return serializer.
         _LIB_THEKOGANS_UTIL_DECL const JSON::Object & _LIB_THEKOGANS_UTIL_API operator >> (
             const JSON::Object &object,
             Serializable &serializable);
 
+        /// \brief
+        /// Serializable::SharedPtr extraction operator.
+        /// \param[in] serializer Serializer to extract from.
+        /// \param[out] serializable Serializable to extract.
+        /// \return serializer.
         _LIB_THEKOGANS_UTIL_DECL Serializer & _LIB_THEKOGANS_UTIL_API operator >> (
             Serializer &serializer,
             Serializable::SharedPtr &serializable);
+        /// \brief
+        /// Serializable::SharedPtr extraction operator.
+        /// \param[in] node Serializer to extract from.
+        /// \param[out] serializable Serializable to extract.
+        /// \return serializer.
         _LIB_THEKOGANS_UTIL_DECL const pugi::xml_node & _LIB_THEKOGANS_UTIL_API operator >> (
             const pugi::xml_node &node,
             Serializable::SharedPtr &serializable);
+        /// \brief
+        /// Serializable::SharedPtr extraction operator.
+        /// \param[in] object Serializer to extract from.
+        /// \param[out] serializable Serializable to extract.
+        /// \return serializer.
         _LIB_THEKOGANS_UTIL_DECL const JSON::Object & _LIB_THEKOGANS_UTIL_API operator >> (
             const JSON::Object &object,
             Serializable::SharedPtr &serializable);
 
         /// \def THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_EXTRACTION_OPERATORS(_T)
+        /// Implement extraction operators for _T::SharedPtr.
         #define THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_EXTRACTION_OPERATORS(_T)\
             inline thekogans::util::Serializer & _LIB_THEKOGANS_UTIL_API operator >> (\
                     thekogans::util::Serializer &serializer,\
@@ -610,16 +666,35 @@ namespace thekogans {
         template<>
         struct _LIB_THEKOGANS_UTIL_DECL ValueParser<Serializable> {
         protected:
+            /// \brief
+            /// Serializable to parse.
             Serializable &value;
+            /// \brief
+            /// Default serializable size;
             enum {
                 DEFAULT_MAX_SERIALIZABLE_SIZE = 2 * 1024 * 1024
             };
+            /// \brief
+            /// Used to twart ddos attacks. The generic 2MB might be too much.
+            /// Tune this value to protect your application.
             const std::size_t maxSerializableSize;
+            /// \brief
+            /// Parsed serializable header.
             Serializable::BinHeader header;
+            /// \brief
+            /// Parsed serializable payload.
             NetworkBuffer payload;
+            /// \brief
+            /// Serializable header parser.
             ValueParser<Serializable::BinHeader> headerParser;
+            /// \brief
+            /// The parser is a state machine. It has two states.
             enum {
+                /// \brief
+                /// We're looking for a header.
                 STATE_BIN_HEADER,
+                /// \brief
+                /// We're looting for the payload.
                 STATE_SERIALIZABLE
             } state;
 
@@ -656,16 +731,35 @@ namespace thekogans {
         template<>
         struct _LIB_THEKOGANS_UTIL_DECL ValueParser<Serializable::SharedPtr> {
         protected:
+            /// \brief
+            /// Serializable to parse.
             Serializable::SharedPtr &value;
+            /// \brief
+            /// Default serializable size;
             enum {
                 DEFAULT_MAX_SERIALIZABLE_SIZE = 2 * 1024 * 1024
             };
+            /// \brief
+            /// Used to twart ddos attacks. The generic 2MB might be too much.
+            /// Tune this value to protect your application.
             const std::size_t maxSerializableSize;
+            /// \brief
+            /// Parsed serializable header.
             Serializable::BinHeader header;
+            /// \brief
+            /// Parsed serializable payload.
             NetworkBuffer payload;
+            /// \brief
+            /// Serializable header parser.
             ValueParser<Serializable::BinHeader> headerParser;
+            /// \brief
+            /// The parser is a state machine. It has two states.
             enum {
+                /// \brief
+                /// We're looking for a header.
                 STATE_BIN_HEADER,
+                /// \brief
+                /// We're looting for the payload.
                 STATE_SERIALIZABLE
             } state;
 
@@ -695,6 +789,7 @@ namespace thekogans {
         };
 
         /// \def THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_VALUE_PARSER(_T)
+        /// Implement a value parser for _T::SharedPtr.
         #define THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_VALUE_PARSER(_T)\
             template<>\
             struct _LIB_THEKOGANS_UTIL_DECL ValueParser<_T::SharedPtr> :\

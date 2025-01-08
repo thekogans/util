@@ -222,10 +222,16 @@ namespace thekogans {
         /// is specified as "thekogans::util::Serializable"). Ex:
         ///
         /// \code{.cpp}
-        /// struct _LIB_THEKOGANS_UTIL_DECL Serializable : public DynamicCreatable {
-        ///     THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE_BASE (Serializable)
-        ///     ...
-        /// };
+        /// namespace thekogans {
+        ///     namespace util {
+        ///
+        ///         struct _LIB_THEKOGANS_UTIL_DECL Serializable : public DynamicCreatable {
+        ///             THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE_BASE (Serializable)
+        ///             ...
+        ///         };
+        ///
+        ///     } // namespace thekogans
+        /// } // namespace util
         /// \endcode
         #define THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE_BASE(_T)\
         public:\
@@ -240,7 +246,13 @@ namespace thekogans {
         /// clutter. Ex:
         ///
         /// \code{.cpp}
-        /// THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_BASE (thekogans::util::Serializable)
+        /// namespace thekogans {
+        ///     namespace util {
+        ///
+        ///         THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_BASE (thekogans::util::Serializable)
+        ///
+        ///     } // namespace thekogans
+        /// } // namespace util
         /// \endcode
         ///
         /// VERY IMPORTANT: To twart name space collisions, note the fully qualified name.
