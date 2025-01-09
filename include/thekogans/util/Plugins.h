@@ -56,7 +56,7 @@ namespace thekogans {
             /// Represents a plugin found in the xml file.
             struct _LIB_THEKOGANS_UTIL_DECL Plugin : public virtual RefCounted {
                 /// \brief
-                /// Convenient typedef for RefCounted::SharedPtr<Plugin>.
+                /// Alias for RefCounted::SharedPtr<Plugin>.
                 THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (Plugin)
 
                 /// \brief
@@ -74,8 +74,8 @@ namespace thekogans {
                 /// Plugin signature used for integrity checks.
                 std::string SHA2_256;
                 /// \brief
-                /// Convenient typedef for std::set<std::string>.
-                typedef std::set<std::string> Dependencies;
+                /// Alias for std::set<std::string>.
+                using Dependencies = std::set<std::string>;
                 /// \brief
                 /// Plugin dependencies.
                 Dependencies dependencies;
@@ -119,7 +119,7 @@ namespace thekogans {
                 };
 
                 /// \brief
-                /// Convenient typedef for Interface & (_LIB_THEKOGANS_UTIL_API *) ().
+                /// Alias for Interface & (_LIB_THEKOGANS_UTIL_API *) ().
                 typedef Interface & (_LIB_THEKOGANS_UTIL_API *GetPluginInterfaceProc) ();
 
                 /// \brief
@@ -152,8 +152,8 @@ namespace thekogans {
             };
 
             /// \brief
-            /// Convenient typedef std::map<std::string, Plugin::SharedPtr>.
-            typedef std::map<std::string, Plugin::SharedPtr> PluginMap;
+            /// Alias std::map<std::string, Plugin::SharedPtr>.
+            using PluginMap = std::map<std::string, Plugin::SharedPtr>;
 
         private:
             /// \brief

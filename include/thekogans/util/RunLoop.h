@@ -59,8 +59,8 @@ namespace thekogans {
             THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (RunLoop)
 
             /// \brief
-            /// Convenient typedef for std::string.
-            typedef std::string Id;
+            /// Alias for std::string.
+            using Id = std::string;
 
             /// \brief
             /// Forward declaration of Job.
@@ -76,8 +76,8 @@ namespace thekogans {
                 LAST_JOB_LIST_ID
             };
             /// \brief
-            /// Convenient typedef for IntrusiveList<Job, JOB_LIST_ID>.
-            typedef IntrusiveList<Job, JOB_LIST_ID> JobList;
+            /// Alias for IntrusiveList<Job, JOB_LIST_ID>.
+            using JobList = IntrusiveList<Job, JOB_LIST_ID>;
 
         #if defined (TOOLCHAIN_COMPILER_cl)
             #pragma warning (push)
@@ -95,8 +95,8 @@ namespace thekogans {
                 THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (Job)
 
                 /// \brief
-                /// Convenient typedef for std::string.
-                typedef std::string Id;
+                /// Alias for std::string.
+                using Id = std::string;
 
                 /// \enum
                 /// Job states.
@@ -333,14 +333,14 @@ namespace thekogans {
 
             struct _LIB_THEKOGANS_UTIL_DECL LambdaJob : public Job {
                 /// \brief
-                /// Convenient typedef for std::function<void (Job & /*job*/,
+                /// Alias for std::function<void (Job & /*job*/,
                 /// const std::atomic<bool> & /*done*/)>.
                 /// \param[in] job Job that is executing the lambda.
                 /// \param[in] done Call job.ShouldStop (done) to respond to
                 /// cancel requests and termination events.
-                typedef std::function<void (
+                using Function = std::function<void (
                     const LambdaJob & /*job*/,
-                    const std::atomic<bool> & /*done*/)> Function;
+                    const std::atomic<bool> & /*done*/)>;
 
             private:
                 /// \brief
@@ -502,8 +502,8 @@ namespace thekogans {
             };
 
             /// \brief
-            /// Convenient typedef for std::list<Job::SharedPtr>.
-            typedef std::list<Job::SharedPtr> UserJobList;
+            /// Alias for std::list<Job::SharedPtr>.
+            using UserJobList = std::list<Job::SharedPtr>;
 
             /// \struct RunLoop::Stats RunLoop.h thekogans/util/RunLoop.h
             ///
@@ -1097,14 +1097,14 @@ namespace thekogans {
 
             struct _LIB_THEKOGANS_UTIL_DECL LambdaEqualityTest : public EqualityTest {
                 /// \brief
-                /// Convenient typedef for;
+                /// Alias for;
                 /// std::function<bool (const EqualityTest & /*equalityTest*/, const Job & /*job*/)>.
                 /// \param[in] equalityTest EqualityTest that is executing the lambda.
                 /// \param[in] job Job to compare for equality.
                 /// \return true == equal, false == not equal.
-                typedef std::function<bool (
+                using Function = std::function<bool (
                     const EqualityTest & /*equalityTest*/,
-                    const Job & /*job*/)> Function;
+                    const Job & /*job*/)>;
 
             private:
                 /// \brief

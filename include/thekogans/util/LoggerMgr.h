@@ -216,8 +216,8 @@ namespace thekogans {
             };
 
             /// \brief
-            /// Convenient typedef for std::list<Logger::SharedPtr>.
-            typedef std::list<Logger::SharedPtr> LoggerList;
+            /// Alias for std::list<Logger::SharedPtr>.
+            using LoggerList = std::list<Logger::SharedPtr>;
 
             /// \struct LoggerMgr::Entry LoggerMgr.h thekogans/util/LoggerMgr.h
             ///
@@ -225,8 +225,8 @@ namespace thekogans {
             /// Formated log entry.
             struct Entry {
                 /// \brief
-                /// Convenient typedef for std::unique_ptr<Entry>.
-                typedef std::unique_ptr<Entry> UniquePtr;
+                /// Alias for std::unique_ptr<Entry>.
+                using UniquePtr = std::unique_ptr<Entry>;
 
                 /// \brief
                 /// Entry has a private heap to help with memory
@@ -285,8 +285,8 @@ namespace thekogans {
             /// to transform an entry before logging it.
             struct Filter {
                 /// \brief
-                /// Convenient typedef for std::unique_ptr<Filter>.
-                typedef std::unique_ptr<Filter> UniquePtr;
+                /// Alias for std::unique_ptr<Filter>.
+                using UniquePtr = std::unique_ptr<Filter>;
 
                 /// \brief
                 /// dtor.
@@ -307,8 +307,8 @@ namespace thekogans {
             /// Decorations currently in effect.
             Flags32 decorations;
             /// \brief
-            /// Convenient typedef for std::map<std::string, LoggerList>.
-            typedef std::map<std::string, LoggerList> LoggerMap;
+            /// Alias for std::map<std::string, LoggerList>.
+            using LoggerMap = std::map<std::string, LoggerList>;
             /// \brief
             /// Map of all loggers.
             LoggerMap loggerMap;
@@ -318,8 +318,8 @@ namespace thekogans {
             /// loggers in this list.
             LoggerList defaultLoggers;
             /// \brief
-            /// Convenient typedef for std::list<Filter::UniquePtr>.
-            typedef std::list<Filter::UniquePtr> FilterList;
+            /// Alias for std::list<Filter::UniquePtr>.
+            using FilterList = std::list<Filter::UniquePtr>;
             /// \brief
             /// List of registered filters.
             FilterList filterList;

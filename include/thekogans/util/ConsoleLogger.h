@@ -53,7 +53,7 @@ namespace thekogans {
             /// Color scheme base. Provides colors based on log level.
             struct _LIB_THEKOGANS_UTIL_DECL ColorScheme {
                 /// \brief
-                /// Convenient typedef for std::unique_ptr<ColorScheme>.
+                /// Alias for std::unique_ptr<ColorScheme>.
                 using UniquePtr = std::unique_ptr<ColorScheme>;
 
                 /// \brief

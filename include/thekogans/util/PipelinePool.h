@@ -113,8 +113,8 @@ namespace thekogans {
                 PIPELINE_LIST_ID
             };
             /// \brief
-            /// Convenient typedef for IntrusiveList<Pipeline, PIPELINE_LIST_ID>.
-            typedef IntrusiveList<Pipeline, PIPELINE_LIST_ID> PipelineList;
+            /// Alias for IntrusiveList<Pipeline, PIPELINE_LIST_ID>.
+            using PipelineList = IntrusiveList<Pipeline, PIPELINE_LIST_ID>;
         #if defined (TOOLCHAIN_COMPILER_cl)
             #pragma warning (push)
             #pragma warning (disable : 4275)

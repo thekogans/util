@@ -138,26 +138,26 @@ namespace thekogans {
         struct stdSecureAllocator {
         public:
             /// \brief
-            /// Convenient typedef for T.
-            typedef T value_type;
+            /// Alias for T.
+            using value_type = T;
             /// \brief
-            /// Convenient typedef for T *.
-            typedef T *pointer;
+            /// Alias for T *.
+            using pointer = T *;
             /// \brief
-            /// Convenient typedef for const T *.
-            typedef const T *const_pointer;
+            /// Alias for const T *.
+            using const_pointer = const T *;
             /// \brief
-            /// Convenient typedef for T &.
-            typedef T &reference;
+            /// Alias for T &.
+            using reference = T &;
             /// \brief
-            /// Convenient typedef for const T &.
-            typedef const T &const_reference;
+            /// Alias for const T &.
+            using const_reference = const T &;
             /// \brief
-            /// Convenient typedef for std::size_t.
-            typedef std::size_t size_type;
+            /// Alias for std::size_t.
+            using size_type = std::size_t ;
             /// \brief
-            /// Convenient typedef for std::ptrdiff_t.
-            typedef std::ptrdiff_t difference_type;
+            /// Alias for std::ptrdiff_t.
+            using difference_type = std::ptrdiff_t;
 
             /// \brief
             /// ctor.
@@ -264,10 +264,12 @@ namespace thekogans {
         }
 
         /// \brief
-        /// Convenient typedef for std::basic_string<char, std::char_traits<char>, stdSecureAllocator<char>>.
-        typedef std::basic_string<char, std::char_traits<char>, stdSecureAllocator<char>> SecureString;
+        /// Alias for std::basic_string<char, std::char_traits<char>, stdSecureAllocator<char>>.
+        using SecureString = std::basic_string<
+            char, std::char_traits<char>,
+            stdSecureAllocator<char>>;
         /// \brief
-        /// Convenient typedef for std::vector<T, stdSecureAllocator<T>>.
+        /// Alias for std::vector<T, stdSecureAllocator<T>>.
         template<typename T> using SecureVector = std::vector<T, stdSecureAllocator<T>>;
 
     } // namespace util

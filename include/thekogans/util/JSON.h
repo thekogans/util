@@ -292,8 +292,8 @@ namespace thekogans {
                 THEKOGANS_UTIL_DECLARE_JSON_VALUE (Object)
 
                 /// \brief
-                /// Convenient typedef for std::pair<std::string, Value::SharedPtr>.
-                typedef std::pair<std::string, Value::SharedPtr> NameValue;
+                /// Alias for std::pair<std::string, Value::SharedPtr>.
+                using NameValue = std::pair<std::string, Value::SharedPtr>;
                 /// \brief
                 /// Array of name/value pairs.
                 std::vector<NameValue> values;

@@ -84,8 +84,8 @@ namespace thekogans {
                     WORKER_LIST_ID
                 };
                 /// \brief
-                /// Convenient typedef for IntrusiveList<Worker, WORKER_LIST_ID>.
-                typedef IntrusiveList<Worker, WORKER_LIST_ID> WorkerList;
+                /// Alias for IntrusiveList<Worker, WORKER_LIST_ID>.
+                using WorkerList = IntrusiveList<Worker, WORKER_LIST_ID>;
                 /// \struct JobQueue::Worker JobQueue.h thekogans/util/JobQueue.h
                 ///
                 /// \brief

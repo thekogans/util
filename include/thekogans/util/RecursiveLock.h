@@ -104,11 +104,11 @@ namespace thekogans {
         };
 
         /// \brief
-        /// Convenient typedef for RecursiveLock<SpinLock>.
-        typedef RecursiveLock<SpinLock> RecursiveSpinLock;
+        /// Alias for RecursiveLock<SpinLock>.
+        using RecursiveSpinLock = RecursiveLock<SpinLock>;
         /// \brief
-        /// Convenient typedef for RecursiveLock<Mutex>.
-        typedef RecursiveLock<Mutex> RecursiveMutex;
+        /// Alias for RecursiveLock<Mutex>.
+        using RecursiveMutex = RecursiveLock<Mutex>;
 
     } // namespace util
 } // namespace thekogans

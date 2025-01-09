@@ -34,11 +34,11 @@ namespace thekogans {
         template<typename T>
         struct OwnerVector : public std::vector<T *> {
             /// \brief
-            /// Convenient typedef to reduce code clutter.
-            typedef THEKOGANS_UTIL_TYPENAME std::vector<T *>::iterator iterator;
+            /// Alias to reduce code clutter.
+            using iterator = THEKOGANS_UTIL_TYPENAME std::vector<T *>::iterator;
             /// \brief
-            /// Convenient typedef to reduce code clutter.
-            typedef THEKOGANS_UTIL_TYPENAME std::vector<T *>::const_iterator const_iterator;
+            /// Alias to reduce code clutter.
+            using const_iterator = THEKOGANS_UTIL_TYPENAME std::vector<T *>::const_iterator;
 
             /// \brief
             /// Default ctor.
@@ -113,8 +113,8 @@ namespace thekogans {
         template<typename T>
         struct OwnerVectorWithCopyCtor : public OwnerVector<T> {
             /// \brief
-            /// Convenient typedef to reduce code clutter.
-            typedef THEKOGANS_UTIL_TYPENAME std::vector<T *>::const_iterator const_iterator;
+            /// Alias to reduce code clutter.
+            using const_iterator = THEKOGANS_UTIL_TYPENAME std::vector<T *>::const_iterator;
 
             /// \brief
             /// Default ctor.

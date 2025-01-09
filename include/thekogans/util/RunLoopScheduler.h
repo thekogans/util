@@ -185,12 +185,12 @@ namespace thekogans {
                 THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (PipelineJobInfo)
             };
             /// \brief
-            /// Convenient typedef for
-            /// std::priority_queue<JobInfo::SharedPtr, std::vector<JobInfo::SharedPtr>, JobInfo::Compare>.
-            typedef std::priority_queue<
+            /// Alias for std::priority_queue<JobInfo::SharedPtr,
+            /// std::vector<JobInfo::SharedPtr>, JobInfo::Compare>.
+            using QueueType = std::priority_queue<
                 JobInfo::SharedPtr,
                 std::vector<JobInfo::SharedPtr>,
-                JobInfo::Compare> QueueType;
+                JobInfo::Compare>;
             /// \struct RunLoopScheduler::Queue RunLoopScheduler.h thekogans/util/RunLoopScheduler.h
             ///
             /// \brief

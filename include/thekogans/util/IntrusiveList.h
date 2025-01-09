@@ -48,8 +48,8 @@ namespace thekogans {
         ///     LIST2_ID = 2
         /// };
         ///
-        /// typedef util::IntrusiveList<bar, LIST1_ID> List1;
-        /// typedef util::IntrusiveList<bar, LIST2_ID> List2;
+        /// using List1 = util::IntrusiveList<bar, LIST1_ID>;
+        /// using List2 = util::IntrusiveList<bar, LIST2_ID>;
         ///
         /// struct bar :
         ///         public List1::Node,
@@ -294,10 +294,10 @@ namespace thekogans {
             struct unary_function {
                 /// \brief
                 /// Expose ArgumentType template argument for derivatives to use.
-                typedef ArgumentType argument_type;
+                using argument_type = ArgumentType;
                 /// \brief
                 /// Expose ResultType template argument for derivatives to use.
-                typedef ResultType result_type;
+                using result_type = ResultType;
             };
 
             /// \struct IntrusiveList::Callback IntrusiveList.h thekogans/stream/IntrusiveList.h
@@ -306,11 +306,11 @@ namespace thekogans {
             /// Base class for callbacks passed to clear and for_each.
             struct Callback : public unary_function<T *, bool> {
                 /// \brief
-                /// Convenient typedef for unary_function<T *, bool>::result_type.
-                typedef typename unary_function<T *, bool>::result_type result_type;
+                /// Alias for unary_function<T *, bool>::result_type.
+                using result_type = typename unary_function<T *, bool>::result_type;
                 /// \brief
-                /// Convenient typedef for unary_function<T *, bool>::argument_type.
-                typedef typename unary_function<T *, bool>::argument_type argument_type;
+                /// Alias for unary_function<T *, bool>::argument_type.
+                using argument_type = typename unary_function<T *, bool>::argument_type;
                 /// \brief
                 /// dtor.
                 virtual ~Callback () {}
@@ -327,11 +327,11 @@ namespace thekogans {
             /// Default no op callback.
             struct DefaultCallback : public Callback {
                 /// \brief
-                /// Convenient typedef for Callback::result_type.
-                typedef typename Callback::result_type result_type;
+                /// Alias for Callback::result_type.
+                using result_type = typename Callback::result_type;
                 /// \brief
-                /// Convenient typedef for Callback::argument_type.
-                typedef typename Callback::argument_type argument_type;
+                /// Alias for Callback::argument_type.
+                using argument_type = typename Callback::argument_type;
                 /// \brief
                 /// No op.
                 virtual result_type operator () (argument_type /*node*/) override {
@@ -377,10 +377,10 @@ namespace thekogans {
             }
 
             /// \brief
-            /// Convenient typedef for std::function<bool (T * /*node*/)>.
+            /// Alias for std::function<bool (T * /*node*/)>.
             /// \param[in] node T *.
             /// \return true = continue enumeration, false = stop enumeration.
-            typedef std::function<bool (T * /*node*/)> Function;
+            using Function = std::function<bool (T * /*node*/)>;
 
             /// \brief
             /// Remove all nodes from the list.

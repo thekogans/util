@@ -27,6 +27,7 @@
 #include <IOKit/IOReturn.h>
 #include <sys/stat.h>
 #include <string>
+#include <functional>
 #include "thekogans/util/Config.h"
 #include "thekogans/util/os/RunLoop.h"
 
@@ -97,8 +98,8 @@ namespace thekogans {
                 std::string GetHomeDirectory ();
 
                 /// \brief
-                /// typedef for KQueueTimer alarm callback.
-                typedef void (*KQueueTimerCallback) (void * /*userData*/);
+                /// Alias for KQueueTimer alarm callback.
+                using KQueueTimerCallback = std::function<void (void * /*userData*/)>;
 
                 /// \brief
                 /// Forward declaration for KQueueTimer.

@@ -62,11 +62,11 @@ namespace thekogans {
         }
 
         /// \brief
-        /// A convenient typedef for std::pair<std::string, std::string>.
-        typedef std::pair<std::string, std::string> Attribute;
+        /// Alias for std::pair<std::string, std::string>.
+        using Attribute = std::pair<std::string, std::string>;
         /// \brief
-        /// A convenient typedef for std::list<Attribute>.
-        typedef std::vector<Attribute> Attributes;
+        /// Alias for std::list<Attribute>.
+        using Attributes = std::vector<Attribute>;
 
         /// \brief
         /// Format an XML open tag (i.e. <tag>).

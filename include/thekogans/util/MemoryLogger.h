@@ -58,8 +58,8 @@ namespace thekogans {
                 ENTRY_LIST_ID
             };
             /// \brief
-            /// Convenient typedef for IntrusiveList<Page, ENTRY_LIST_ID>.
-            typedef IntrusiveList<Entry, ENTRY_LIST_ID> EntryList;
+            /// Alias for IntrusiveList<Page, ENTRY_LIST_ID>.
+            using EntryList = IntrusiveList<Entry, ENTRY_LIST_ID>;
             /// \struct LoggerMgr::Entry LoggerMgr.h thekogans/util/LoggerMgr.h
             ///
             /// \brief
@@ -71,8 +71,8 @@ namespace thekogans {
                 THEKOGANS_UTIL_DECLARE_STD_ALLOCATOR_FUNCTIONS
 
                 /// \brief
-                /// Convenient typedef for std::unique_ptr<Entry>.
-                typedef std::unique_ptr<Entry> UniquePtr;
+                /// Alias for std::unique_ptr<Entry>.
+                using UniquePtr = std::unique_ptr<Entry>;
 
                 /// \brief
                 /// Subsystem that generated this log entry.

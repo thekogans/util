@@ -37,11 +37,11 @@ namespace thekogans {
         struct OwnerMap : public std::map<Key, T *, Compare> {
         public:
             /// \brief
-            /// Convenient typedef to reduce code clutter.
-            typedef THEKOGANS_UTIL_TYPENAME std::map<Key, T *, Compare>::iterator iterator;
+            /// Alias to reduce code clutter.
+            using iterator = THEKOGANS_UTIL_TYPENAME std::map<Key, T *, Compare>::iterator;
             /// \brief
-            /// Convenient typedef to reduce code clutter.
-            typedef THEKOGANS_UTIL_TYPENAME std::map<Key, T *, Compare>::const_iterator const_iterator;
+            /// Alias to reduce code clutter.
+            using const_iterator = THEKOGANS_UTIL_TYPENAME std::map<Key, T *, Compare>::const_iterator;
 
             /// \brief
             /// Default ctor.

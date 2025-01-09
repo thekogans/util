@@ -65,8 +65,8 @@ namespace thekogans {
                 LAST_JOB_LIST_ID
             };
             /// \brief
-            /// Convenient typedef for IntrusiveList<Job, JOB_LIST_ID>.
-            typedef IntrusiveList<Job, JOB_LIST_ID> JobList;
+            /// Alias for IntrusiveList<Job, JOB_LIST_ID>.
+            using JobList = IntrusiveList<Job, JOB_LIST_ID>;
 
             struct State;
 
@@ -298,13 +298,15 @@ namespace thekogans {
 
             struct _LIB_THEKOGANS_UTIL_DECL LambdaJob : public Job {
                 /// \brief
-                /// Convenient typedef for std::function<void (Job & /*job*/, const std::atomic<bool> & /*done*/)>.
+                /// Alias for std::function<void (Job & /*job*/,
+                /// const std::atomic<bool> & /*done*/)>.
                 /// \param[in] job Job that is executing the lambda.
-                /// \param[in] done Call job.ShouldStop (done) to respond to cancel requests and termination events.
-                typedef std::function<
+                /// \param[in] done Call job.ShouldStop (done) to respond to
+                /// cancel requests and termination events.
+                using Function = std::function<
                     void (
                         LambdaJob & /*job*/,
-                        const std::atomic<bool> & /*done*/)> Function;
+                        const std::atomic<bool> & /*done*/)>;
 
             private:
                 /// \brief
@@ -456,8 +458,8 @@ namespace thekogans {
                     WORKER_LIST_ID
                 };
                 /// \brief
-                /// Convenient typedef for IntrusiveList<Worker, WORKER_LIST_ID>.
-                typedef IntrusiveList<Worker, WORKER_LIST_ID> WorkerList;
+                /// Alias for IntrusiveList<Worker, WORKER_LIST_ID>.
+                using WorkerList = IntrusiveList<Worker, WORKER_LIST_ID>;
                 /// \struct Pipeline::Worker Pipeline.h thekogans/util/Pipeline.h
                 ///
                 /// \brief

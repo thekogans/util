@@ -28,7 +28,7 @@ namespace thekogans {
         ///
         /// \brief
         /// Flags implements a convenient bit flag template. All
-        /// standard bit test/set/flip api's are provided. The typedefs
+        /// standard bit test/set/flip api's are provided. The aliases
         /// below instantiate the template for four of the most common
         /// types (ui8, ui16, ui32, ui64).
 

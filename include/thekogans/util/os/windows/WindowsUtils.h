@@ -322,8 +322,8 @@ namespace thekogans {
                     THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (Window)
 
                     /// \brief
-                    /// Convenient typedef for RefCountedRegistry<Window>.
-                    typedef RefCountedRegistry<Window> Registry;
+                    /// Alias for RefCountedRegistry<Window>.
+                    using Registry = RefCountedRegistry<Window>;
 
                     /// \brief
                     /// Windows window handle.

@@ -138,7 +138,7 @@ namespace thekogans {
             /// Holds the hooked std io pipes.
             struct _LIB_THEKOGANS_UTIL_DECL StdIO {
                 /// \brief
-                /// Convenient typedef for std::unique_ptr<StdIO>.
+                /// Alias for std::unique_ptr<StdIO>.
                 using UniquePtr = std::unique_ptr<StdIO>;
 
                 /// \brief

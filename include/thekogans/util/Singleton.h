@@ -42,7 +42,7 @@ namespace thekogans {
         struct DefaultInstanceCreator {
             /// \brief
             /// Returns raw pointer to instance.
-            typedef T *ReturnType;
+            using ReturnType = T *;
 
             /// \brief
             /// Create the instance using the supplied ctor arguments.
@@ -103,7 +103,7 @@ namespace thekogans {
         ///     ...
         /// };
         ///
-        /// typedef thekogans::util::Singleton<foo, thekogans::util::SpinLock> FooSingleton;
+        /// using FooSingleton = thekogans::util::Singleton<foo, thekogans::util::SpinLock>;
         /// \endcode
         ///
         /// FooSingleton will now be a singleton of type foo, and it's one and only instance
@@ -250,7 +250,7 @@ namespace thekogans {
         struct RefCountedInstanceCreator {
             /// \brief
             /// Returns RefCounted::SharedPtr<T> to instance.
-            typedef RefCounted::SharedPtr<T> ReturnType;
+            using ReturnType = RefCounted::SharedPtr<T>;
 
             /// \brief
             /// Create the instance using the supplied ctor arguments.

@@ -34,11 +34,11 @@ namespace thekogans {
         template<typename T>
         struct OwnerList : public std::list<T *> {
             /// \brief
-            /// Convenient typedef to reduce code clutter.
-            typedef THEKOGANS_UTIL_TYPENAME std::list<T *>::iterator iterator;
+            /// Alias to reduce code clutter.
+            using iterator = THEKOGANS_UTIL_TYPENAME std::list<T *>::iterator;
             /// \brief
-            /// Convenient typedef to reduce code clutter.
-            typedef THEKOGANS_UTIL_TYPENAME std::list<T *>::const_iterator const_iterator;
+            /// Alias to reduce code clutter.
+            using const_iterator = THEKOGANS_UTIL_TYPENAME std::list<T *>::const_iterator;
 
             /// \brief
             /// Default ctor.

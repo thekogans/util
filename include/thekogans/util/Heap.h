@@ -336,7 +336,7 @@ namespace thekogans {
                 Overflow
             };
             /// \brief
-            /// Convenient typedef for void (*HeapErrorCallback) (HeapError heapError, const char *type).
+            /// Alias for void (*HeapErrorCallback) (HeapError heapError, const char *type).
             using HeapErrorCallback = std::function<void (HeapError heapError, const char *type)>;
             /// \brief
             /// Heap error callback.
@@ -362,7 +362,7 @@ namespace thekogans {
                 /// Heap stats.
                 struct Stats {
                     /// \brief
-                    /// Convenient typedef for std::unique_ptr<Stats>.
+                    /// Alias for std::unique_ptr<Stats>.
                     using UniquePtr = std::unique_ptr<Stats>;
                     /// \brief
                     /// dtor.
@@ -379,7 +379,7 @@ namespace thekogans {
                 virtual Stats::UniquePtr GetStats () = 0;
             };
             /// \brief
-            /// Convenient typedef for std::map<const char *, Diagnostics *>.
+            /// Alias for std::map<const char *, Diagnostics *>.
             using Map = std::map<const char *, Diagnostics *>;
             /// \brief
             /// Heap map.
@@ -457,7 +457,7 @@ namespace thekogans {
                 PAGE_LIST_ID
             };
             /// \brief
-            /// Convenient typedef for IntrusiveList<Page, PAGE_LIST_ID>.
+            /// Alias for IntrusiveList<Page, PAGE_LIST_ID>.
             using PageList = IntrusiveList<Page, PAGE_LIST_ID>;
             /// \struct Heap::Page Heap.h thekogans/util/Heap.h
             ///

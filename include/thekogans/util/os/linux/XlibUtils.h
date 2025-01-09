@@ -102,8 +102,8 @@ namespace thekogans {
                     THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (XlibWindow)
 
                     /// \brief
-                    /// Convenient typedef for RefCountedRegistry<XlibWindow>.
-                    typedef RefCountedRegistry<XlibWindow> Registry;
+                    /// Alias for RefCountedRegistry<XlibWindow>.
+                    using Registry = RefCountedRegistry<XlibWindow>;
 
                 protected:
                     /// \brief

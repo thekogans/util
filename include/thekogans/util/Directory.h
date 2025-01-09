@@ -158,7 +158,7 @@ namespace thekogans {
                     public Singleton<Watcher>,
                     public Thread {
                 /// \brief
-                /// Convenient typedef for THEKOGANS_UTIL_HANDLE.
+                /// Alias for THEKOGANS_UTIL_HANDLE.
                 using WatchId = THEKOGANS_UTIL_HANDLE;
 
                 /// \struct Directory::Watcher::EventSink Directory.h thekogans/util/Directory.h
@@ -223,7 +223,7 @@ namespace thekogans {
                 THEKOGANS_UTIL_HANDLE epollHandle;
             #endif // defined (TOOLCHAIN_OS_Linux)
                 /// \brief
-                /// typedef for OwnerMap<WatchId, Watch>.
+                /// Alias for OwnerMap<WatchId, Watch>.
                 using Watches = OwnerMap<WatchId, Watch>;
                 /// \brief
                 /// Current watches.

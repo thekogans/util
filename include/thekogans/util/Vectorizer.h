@@ -180,8 +180,8 @@ namespace thekogans {
             /// Vectorizer worker thread.
             struct Worker : public Thread {
                 /// \brief
-                /// Convenient typedef for std::unique_ptr<Worker>.
-                typedef std::unique_ptr<Worker> UniquePtr;
+                /// Alias for std::unique_ptr<Worker>.
+                using UniquePtr = std::unique_ptr<Worker>;
 
             private:
                 /// \brief

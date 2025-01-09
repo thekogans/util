@@ -54,8 +54,8 @@ namespace thekogans {
                 JOB_QUEUE_LIST_ID
             };
             /// \brief
-            /// Convenient typedef for IntrusiveList<JobQueue, JOB_QUEUE_LIST_ID>.
-            typedef IntrusiveList<JobQueue, JOB_QUEUE_LIST_ID> JobQueueList;
+            /// Alias for IntrusiveList<JobQueue, JOB_QUEUE_LIST_ID>.
+            using JobQueueList = IntrusiveList<JobQueue, JOB_QUEUE_LIST_ID>;
 
         public:
         #if defined (TOOLCHAIN_COMPILER_cl)

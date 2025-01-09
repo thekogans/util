@@ -43,14 +43,14 @@ namespace thekogans {
 
         struct _LIB_THEKOGANS_UTIL_DECL MimeTypeMapper : public Singleton<MimeTypeMapper> {
             /// \brief
-            /// Convenient typedef for std::list<std::string>.
-            typedef std::list<std::string> ExtensionList;
+            /// Alias for std::list<std::string>.
+            using ExtensionList = std::list<std::string>;
             /// \brief
-            /// Convenient typedef for std::map<std::string, ExtensionList>.
-            typedef std::map<std::string, ExtensionList> MimeTypeMap;
+            /// Alias for std::map<std::string, ExtensionList>.
+            using MimeTypeMap = std::map<std::string, ExtensionList>;
             /// \brief
-            /// Convenient typedef for std::map<std::string, std::string>.
-            typedef std::map<std::string, std::string> ExtensionMap;
+            /// Alias for std::map<std::string, std::string>.
+            using ExtensionMap = std::map<std::string, std::string>;
             /// \brief
             /// Forward map (mime type -> extensions)
             MimeTypeMap mimeTypeToExtensions;

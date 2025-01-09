@@ -630,8 +630,8 @@ namespace thekogans {
         /// \endcode
         #define THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS(_T)\
         public:\
-            typedef thekogans::util::RefCounted::SharedPtr<_T> SharedPtr;\
-            typedef thekogans::util::RefCounted::WeakPtr<_T> WeakPtr;
+            using SharedPtr = thekogans::util::RefCounted::SharedPtr<_T>;\
+            using WeakPtr = thekogans::util::RefCounted::WeakPtr<_T>;
 
         /// \brief
         /// \see{RefCounted::SharedPtr} static cast operator.

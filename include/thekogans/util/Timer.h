@@ -141,8 +141,8 @@ namespace thekogans {
             /// Timer name.
             const std::string name;
             /// \brief
-            /// Convenient typedef for RefCountedRegistry<Timer>.
-            typedef RefCountedRegistry<Timer> Registry;
+            /// Alias for RefCountedRegistry<Timer>.
+            using Registry = RefCountedRegistry<Timer>;
             /// \brief
             /// This token is the key between the c++ and the c async io worlds (os).
             /// This token is registered with os specific apis (io completion port on

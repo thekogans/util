@@ -46,7 +46,7 @@ namespace thekogans {
         struct _LIB_THEKOGANS_UTIL_DECL MainRunLoopInstanceCreator {
             /// \brief
             /// Returns RefCounted::SharedPtr<T> to instance.
-            typedef RunLoop::SharedPtr ReturnType;
+            using ReturnType = RunLoop::SharedPtr;
 
             /// \brief
             /// Create a main thread run loop with custom ctor arguments.

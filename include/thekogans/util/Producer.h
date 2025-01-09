@@ -99,7 +99,7 @@ namespace thekogans {
                 THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (EventDeliveryPolicy)
 
                 /// \brief
-                /// Convenient typedef for std::function<void (T *)>.
+                /// Alias for std::function<void (T *)>.
                 using Event = std::function<void (T *)>;
 
 
@@ -201,14 +201,14 @@ namespace thekogans {
 
         private:
             /// \brief
-            /// Convenient typedef for std::pair<typename Subscriber<T>::WeakPtr,
+            /// Alias for std::pair<typename Subscriber<T>::WeakPtr,
             /// typename EventDeliveryPolicy::SharedPtr>.
-            typedef std::pair<
+            using SubscriberInfo = std::pair<
                 typename Subscriber<T>::WeakPtr,
-                typename EventDeliveryPolicy::SharedPtr> SubscriberInfo;
+                typename EventDeliveryPolicy::SharedPtr>;
             /// \brief
-            /// Convenient typedef for std::map<Subscriber<T> *, SubscriberInfo>.
-            typedef std::map<Subscriber<T> *, SubscriberInfo> Subscribers;
+            /// Alias for std::map<Subscriber<T> *, SubscriberInfo>.
+            using Subscribers = std::map<Subscriber<T> *, SubscriberInfo>;
             /// \brief
             /// Map of registered subscribers.
             Subscribers subscribers;

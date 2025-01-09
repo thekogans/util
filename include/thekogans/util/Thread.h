@@ -38,10 +38,10 @@
 #if defined (TOOLCHAIN_OS_Windows)
     /// \brief
     /// Window specific thread handle type.
-    typedef THEKOGANS_UTIL_HANDLE THEKOGANS_UTIL_THREAD_HANDLE;
+    using THEKOGANS_UTIL_THREAD_HANDLE = THEKOGANS_UTIL_HANDLE;
     /// \brief
     /// Window specific thread id type.
-    typedef DWORD THEKOGANS_UTIL_THREAD_ID;
+    using THEKOGANS_UTIL_THREAD_ID = DWORD;
     /// \def THEKOGANS_UTIL_IDLE_THREAD_PRIORITY
     /// Idle thread priority.
     #define THEKOGANS_UTIL_IDLE_THREAD_PRIORITY THREAD_PRIORITY_IDLE
@@ -66,10 +66,10 @@
 #else // defined (TOOLCHAIN_OS_Windows)
     /// \brief
     /// POSIX specific thread id type.
-    typedef pthread_t THEKOGANS_UTIL_THREAD_HANDLE;
+    using THEKOGANS_UTIL_THREAD_HANDLE = pthread_t;
     /// \brief
     /// Window specific thread id type.
-    typedef uint64_t THEKOGANS_UTIL_THREAD_ID;
+    using THEKOGANS_UTIL_THREAD_ID = uint64_t;
     /// \brief
     /// This is a virtual priority range. When you call
     /// Thread::SetThreadPriority, it gets adjusted to a
@@ -120,8 +120,8 @@ namespace thekogans {
 
         struct _LIB_THEKOGANS_UTIL_DECL Thread {
             /// \brief
-            /// Convenient typedef for std::unique_ptr<Thread>.
-            typedef std::unique_ptr<Thread> UniquePtr;
+            /// Alias for std::unique_ptr<Thread>.
+            using UniquePtr = std::unique_ptr<Thread>;
 
         protected:
             /// \brief
@@ -154,11 +154,11 @@ namespace thekogans {
             /// true = thread function has exited.
             volatile bool exited;
             /// \brief
-            /// Convenient typedef for void (*) (THEKOGANS_UTIL_THREAD_HANDLE thread).
-            typedef void (*ExitFunc) (THEKOGANS_UTIL_THREAD_HANDLE thread);
+            /// Alias for void (*) (THEKOGANS_UTIL_THREAD_HANDLE thread).
+            using ExitFunc = std::function<void (THEKOGANS_UTIL_THREAD_HANDLE thread)>;
             /// \brief
-            /// Convenient typedef for std::vector<ExitFunc>.
-            typedef std::vector<ExitFunc> ExitFuncList;
+            /// Alias for std::vector<ExitFunc>.
+            using ExitFuncList = std::vector<ExitFunc>;
             /// \brief
             /// List of at exit functions.
             static ExitFuncList exitFuncList;
@@ -209,7 +209,7 @@ namespace thekogans {
             /// Priority range.
             /// first = lowest
             /// second = highest
-            typedef std::pair<i32, i32> PriorityRange;
+            using PriorityRange = std::pair<i32, i32>;
             /// \brief
             /// Get policy priority range.
             /// \param[in] policy Policy for which to return priority range.
@@ -587,8 +587,8 @@ namespace thekogans {
                 public Thread,
                 public Singleton<ThreadReaper> {
             /// \brief
-            /// Convenient typedef for std::function<void (Thread * /*thread*/)>.
-            typedef std::function<void (Thread * /*thread*/)> Deleter;
+            /// Alias for std::function<void (Thread * /*thread*/)>.
+            using Deleter = std::function<void (Thread * /*thread*/)>;
 
         private:
             /// \brief

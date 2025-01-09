@@ -38,16 +38,16 @@ namespace thekogans {
 
     #if defined (TOOLCHAIN_OS_Windows)
         /// \brief
-        /// Convenient typedef for os::windows::RunLoop.
-        typedef os::windows::RunLoop OSThreadRunLoopType;
+        /// Alias for os::windows::RunLoop.
+        using OSThreadRunLoopType = os::windows::RunLoop;
     #elif defined (TOOLCHAIN_OS_Linux)
         /// \brief
-        /// Convenient typedef for os::linux::XlibRunLoop.
-        typedef os::linux::XlibRunLoop OSThreadRunLoopType;
+        /// Alias for os::linux::XlibRunLoop.
+        using OSThreadRunLoopType = os::linux::XlibRunLoop;
     #elif defined (TOOLCHAIN_OS_OSX)
         /// \brief
-        /// Convenient typedef for os::osx::CFRunLoop.
-        typedef os::osx::CFRunLoop OSThreadRunLoopType;
+        /// Alias for os::osx::CFRunLoop.
+        using OSThreadRunLoopType = os::osx::CFRunLoop;
     #endif // defined (TOOLCHAIN_OS_Windows)
 
         /// \struct SystemRunLoop SystemRunLoop.h thekogans/util/SystemRunLoop.h

@@ -74,7 +74,7 @@ namespace thekogans {
             ///
             /// Ex:
             /// \code{.cpp}
-            /// typedef thekogans::util::RefCountedRegistry<foo> fooRegistry;
+            /// using fooRegistry = thekogans::util::RefCountedRegistry<foo>;
             ///
             /// struct foo : public thekogans::util::RefCounted {
             ///     THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (foo)
@@ -104,29 +104,29 @@ namespace thekogans {
             struct Token {
             #if defined (THEKOGANS_UTIL_REF_COUNTED_REGISTRY_TOKEN_COUNTER_UI16)
                 /// \brief
-                /// Convenient typedef for ui64.
-                typedef ui64 IndexType;
+                /// Alias for ui64.
+                using IndexType = ui64;
                 /// \brief
-                /// Convenient typedef for ui16.
-                typedef ui16 CounterType;
+                /// Alias for ui16.
+                using CounterType = ui16;
             #elif defined (THEKOGANS_UTIL_REF_COUNTED_REGISTRY_TOKEN_COUNTER_UI8)
                 /// \brief
-                /// Convenient typedef for ui64.
-                typedef ui64 IndexType;
+                /// Alias for ui64.
+                using IndexType = ui64;
                 /// \brief
-                /// Convenient typedef for ui8.
-                typedef ui8 CounterType;
+                /// Alias for ui8.
+                using CounterType = ui8;
             #else // defined (THEKOGANS_UTIL_REF_COUNTED_REGISTRY_TOKEN_COUNTER_UI8)
                 /// \brief
-                /// Convenient typedef for ui32.
-                typedef ui32 IndexType;
+                /// Alias for ui32.
+                using IndexType = ui32;
                 /// \brief
-                /// Convenient typedef for ui32.
-                typedef ui32 CounterType;
+                /// Alias for ui32.
+                using CounterType = ui32;
             #endif // defined (THEKOGANS_UTIL_REF_COUNTED_REGISTRY_TOKEN_COUNTER_UI16)
                 /// \brief
-                /// Convenient typedef for ui64.
-                typedef ui64 ValueType;
+                /// Alias for ui64.
+                using ValueType = ui64;
 
             private:
                 /// \brief
