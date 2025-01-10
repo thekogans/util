@@ -418,6 +418,15 @@ namespace thekogans {
             }
 
             /// \brief
+            /// Convert the buffer to a \see{SecureWString}.
+            /// \return see{SecureWString} containing the buffers contents.
+            inline SecureWString ToSecureWString () const {
+                return GetDataAvailableForReading () > 0 ?
+                    SecureWString (GetReadPtr (), GetReadPtrEnd ()) :
+                    SecureWString ();
+            }
+
+            /// \brief
             /// Convert the buffer to a std::vector.
             /// \return std::vector containing the buffers contents.
             inline std::vector<ui8> Tovector () const {

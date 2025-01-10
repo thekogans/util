@@ -22,7 +22,6 @@
 #include <functional>
 #include <map>
 #include "thekogans/util/Config.h"
-#include "thekogans/util/Types.h"
 #include "thekogans/util/RefCounted.h"
 #include "thekogans/util/Singleton.h"
 
@@ -31,7 +30,7 @@ namespace thekogans {
 
         /// \brief
         /// One of the shortcomings of c++ is it's inability to dynamically
-        /// create a type at runtime given a string representation of it's name.
+        /// create a type at runtime given a string representation of it's type.
         /// DynamicCreatable and it's supporting macros below are my attempt at
         /// pluggin that hole. For any scheme to ultimately be useful it needs
         /// to scale well with addition of more types. One can easily envision
@@ -70,7 +69,7 @@ namespace thekogans {
         ///
         /// namespace foo {
         ///
-        ///     struct bar : public DynamicCreatable {
+        ///     struct bar : public thekogans::util::DynamicCreatable {
         ///         THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE (bar)
         ///         ...
         ///     };
@@ -92,7 +91,7 @@ namespace thekogans {
         ///
         /// namespace foo {
         ///
-        ///     struct bar : public DynamicCreatable {
+        ///     struct bar : public thekogans::util::DynamicCreatable {
         ///         THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE_BASE (bar)
         ///         ...
         ///     };
@@ -116,10 +115,10 @@ namespace thekogans {
         /// namespace foo {
         ///
         ///     struct baz : public bar {
-        ///     // If baz happens to be a \see{Singleton}.
+        ///     // If baz happens to be a \see{thekogans::util::Singleton}.
         ///     struct baz :
         ///             public bar,
-        ///             public Singleton<baz> {
+        ///             public thekogans::util::Singleton<baz> {
         ///         THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE (baz)
         ///         ...
         ///     };
@@ -217,7 +216,7 @@ namespace thekogans {
         /// NOTE: Your DynamicCreatable derived types can eventually wind up
         /// in a bigger system with DynamicCreatable types from other organizations.
         /// To facilitate interoperability and to avoid name space collisions
-        /// it's best practice to declare your types fully qualified including
+        /// it's best practice to define your types fully qualified including
         /// the namespace they came from (Ex: \see{Serializable}, it's type name
         /// is specified as "thekogans::util::Serializable"). Ex:
         ///

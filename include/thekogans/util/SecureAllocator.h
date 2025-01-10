@@ -269,6 +269,11 @@ namespace thekogans {
             char, std::char_traits<char>,
             stdSecureAllocator<char>>;
         /// \brief
+        /// Alias for std::basic_string<wchar_t, std::char_traits<wchar_t>, stdSecureAllocator<wchar_t>>.
+        using SecureWString = std::basic_string<
+            wchar_t, std::char_traits<wchar_t>,
+            stdSecureAllocator<wchar_t>>;
+        /// \brief
         /// Alias for std::vector<T, stdSecureAllocator<T>>.
         template<typename T> using SecureVector = std::vector<T, stdSecureAllocator<T>>;
 
