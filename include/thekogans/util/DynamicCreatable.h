@@ -371,7 +371,7 @@ namespace thekogans {
                 /// \param[in] type DynamicCreatable type (it's class name).
                 /// \param[in] factory DynamicCreatable creation factory.
                 BaseMapInitializer (
-                    const char *bases[],
+                    const char * const bases[],
                     std::size_t basesSize,
                     const char *type,
                     FactoryType factory);

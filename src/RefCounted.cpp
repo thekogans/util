@@ -115,7 +115,7 @@ namespace thekogans {
                 #if defined (THEKOGANS_UTIL_REF_COUNED_REFERENCES_HEAP_BUILD_FREE_LIST)
                     return ptr >= items && ptr <= lastItem;
                 #else // defined (THEKOGANS_UTIL_REF_COUNED_REFERENCES_HEAP_BUILD_FREE_LIST)
-                    return ptr >= items && ptr < &items[itemsInPage];
+                    return ptr >= items && ptr < items + itemsInPage;
                 #endif // defined (THEKOGANS_UTIL_REF_COUNED_REFERENCES_HEAP_BUILD_FREE_LIST)
                 }
 
@@ -133,7 +133,7 @@ namespace thekogans {
                 #if !defined (THEKOGANS_UTIL_REF_COUNED_REFERENCES_HEAP_BUILD_FREE_LIST)
                     }
                     else {
-                        item = &items[itemCount];
+                        item = items + itemCount;
                     }
                     ++itemCount;
                 #endif // !defined (THEKOGANS_UTIL_REF_COUNED_REFERENCES_HEAP_BUILD_FREE_LIST)

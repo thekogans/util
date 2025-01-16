@@ -39,7 +39,7 @@ namespace thekogans {
         }
     #else // defined (THEKOGANS_UTIL_TYPE_Static)
         DynamicCreatable::BaseMapInitializer::BaseMapInitializer (
-                const char *bases[],
+                const char * const bases[],
                 std::size_t basesSize,
                 const char *type,
                 FactoryType factory) {
