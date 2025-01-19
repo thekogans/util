@@ -222,7 +222,7 @@ namespace thekogans {
         }\
         void *_T::operator new (\
                 std::size_t size,\
-                std::nothrow_t) throw () {\
+                std::nothrow_t) noexcept {\
             assert (size == sizeof (_T));\
             static thekogans::util::Heap<_T, lock> *heap =\
                 thekogans::util::Heap<_T, lock>::CreateInstance (itemsInPage, allocator);\
@@ -241,7 +241,7 @@ namespace thekogans {
         }\
         void _T::operator delete (\
                 void *ptr,\
-                std::nothrow_t) throw () {\
+                std::nothrow_t) noexcept {\
             static thekogans::util::Heap<_T, lock> *heap =\
                 thekogans::util::Heap<_T, lock>::CreateInstance (itemsInPage, allocator);\
             heap->Free (ptr, true);\
@@ -275,7 +275,7 @@ namespace thekogans {
         template<>\
         THEKOGANS_UTIL_EXPORT void *_T::operator new (\
                 std::size_t size,\
-                std::nothrow_t) throw () {\
+                std::nothrow_t) noexcept {\
             assert (size == sizeof (_T));\
             static thekogans::util::Heap<_T, lock> *heap =\
                 thekogans::util::Heap<_T, lock>::CreateInstance (itemsInPage, allocator);\
@@ -297,7 +297,7 @@ namespace thekogans {
         template<>\
         THEKOGANS_UTIL_EXPORT void _T::operator delete (\
                 void *ptr,\
-                std::nothrow_t) throw () {\
+                std::nothrow_t) noexcept {\
             static thekogans::util::Heap<_T, lock> *heap =\
                 thekogans::util::Heap<_T, lock>::CreateInstance (itemsInPage, allocator);\
             heap->Free (ptr, true);\
@@ -354,7 +354,7 @@ namespace thekogans {
                 /// Return true if the given pointer is one of ours.
                 /// \param[in] ptr Pointer to check.
                 /// \return true == we own the pointer, false == the pointer is not one of ours.
-                virtual bool IsValidPtr (void *ptr) throw () = 0;
+                virtual bool IsValidPtr (void *ptr) noexcept = 0;
 
                 /// \struct HeapRegistry::Diagnostics::Stats Heap.h thekogans/util/Heap.h
                 ///
@@ -419,12 +419,12 @@ namespace thekogans {
 
             /// \brief
             /// Return true if the given pointer belongs to any of the heaps we manage.
-            /// NOTE: In order to honor the throw () we cannot de-reference the pointer.
+            /// NOTE: In order to honor the noexcept we cannot de-reference the pointer.
             /// We therefore search all pages in all heaps comparing range. Depending
             /// on the state of your heaps, this could be a very costly operation.
             /// \param[in] ptr Pointer to check.
             /// \return true == heap pointer, false == not a heap pointer.
-            bool IsValidPtr (void *ptr) throw ();
+            bool IsValidPtr (void *ptr) noexcept;
 
             /// \brief
             /// Use this method to dump the state of all
@@ -733,7 +733,7 @@ namespace thekogans {
             /// Return true if the given pointer is one of ours.
             /// \param[in] ptr Pointer to check.
             /// \return true == we own the pointer, false == the pointer is not one of ours.
-            virtual bool IsValidPtr (void *ptr) throw () override {
+            virtual bool IsValidPtr (void *ptr) noexcept override {
                 if (ptr != nullptr) {
                     LockGuard<Lock> guard (lock);
                     // To honor the no throw promise, we can't assume the

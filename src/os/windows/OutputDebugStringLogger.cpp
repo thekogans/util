@@ -37,9 +37,10 @@ namespace thekogans {
                         const std::string & /*subsystem*/,
                         ui32 level,
                         const std::string &header,
-                        const std::string &message) throw () {
+                        const std::string &message) noexcept {
                     if (level <= this->level && (!header.empty () || !message.empty ())) {
-                        std::string logEntry = FormatString ("%s%s", header.c_str (), message.c_str ());
+                        std::string logEntry = FormatString (
+                            "%s%s", header.c_str (), message.c_str ());
                         // These are log entries. There's no need to for high fidelity conversion.
                         OutputDebugStringW (UTF8ToUTF16 (logEntry, 0).c_str ());
                     }

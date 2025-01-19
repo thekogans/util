@@ -54,7 +54,7 @@ namespace thekogans {
         ///
         /// private:
         ///     // util::Thread
-        ///     virtual void Run () throw () override {
+        ///     virtual void Run () noexcept override {
         ///         THEKOGANS_UTIL_TRY {
         ///             Start ();
         ///         }

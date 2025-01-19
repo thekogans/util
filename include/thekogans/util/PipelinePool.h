@@ -59,7 +59,7 @@ namespace thekogans {
         ///             ... {}
         ///
         ///         // util::Pipeline::Job
-        ///         virtual void Execute (const std::atomic<bool> &) throw () override {
+        ///         virtual void Execute (const std::atomic<bool> &) noexcept override {
         ///             ...
         ///         }
         ///     };

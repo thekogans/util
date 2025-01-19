@@ -59,8 +59,8 @@ namespace thekogans {
                 virtual void Execute (
                     std::size_t /*startIndex*/,
                     std::size_t /*endIndex*/,
-                    std::size_t /*rank*/) throw () {}
-                virtual std::size_t Size () const throw () {
+                    std::size_t /*rank*/) noexcept {}
+                virtual std::size_t Size () const noexcept {
                     return workerCount;
                 }
             } doneJob (workers.size ());
@@ -132,7 +132,7 @@ namespace thekogans {
             }
         }
 
-        void Vectorizer::Worker::Run () throw () {
+        void Vectorizer::Worker::Run () noexcept {
             // NOTE: No exception handling here. If we were to wrap
             // the while loop with try/catch, the first exception
             // thrown would leave the vectorizer with one (or more)

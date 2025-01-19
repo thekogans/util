@@ -104,7 +104,7 @@ namespace thekogans {
         }\
         void *_T::operator new (\
                 std::size_t size,\
-                std::nothrow_t) throw () {\
+                std::nothrow_t) noexcept {\
             assert (size == sizeof (_T));\
             return thekogans::util::SecureAllocator::Instance ()->Alloc (size);\
         }\
@@ -119,7 +119,7 @@ namespace thekogans {
         }\
         void _T::operator delete (\
                 void *ptr,\
-                std::nothrow_t) throw () {\
+                std::nothrow_t) noexcept {\
             thekogans::util::SecureAllocator::Instance ()->Free (ptr, sizeof (_T));\
         }\
         void _T::operator delete (\
@@ -161,29 +161,29 @@ namespace thekogans {
 
             /// \brief
             /// ctor.
-            stdSecureAllocator () throw () {}
+            stdSecureAllocator () noexcept {}
 
             /// \brief
             /// ctor.
             /// \param[in] allocator stdSecureAllocator to copy construct.
             template<typename _U>
-            stdSecureAllocator (const stdSecureAllocator<_U> & /*allocator*/) throw () {}
+            stdSecureAllocator (const stdSecureAllocator<_U> & /*allocator*/) noexcept {}
             /// \brief
             /// dtor.
-            ~stdSecureAllocator () throw () {}
+            ~stdSecureAllocator () noexcept {}
 
             /// \brief
             /// Return address of value.
             /// \param[in] value Object whose address to return.
             /// \return Address of value.
-            pointer address (reference value) const throw () {
+            pointer address (reference value) const noexcept {
                 return std::addressof (value);
             }
             /// \brief
             /// Return address of value.
             /// \param[in] value Object whose address to return.
             /// \return Address of value.
-            const_pointer address (const_reference value) const throw () {
+            const_pointer address (const_reference value) const noexcept {
                 return std::addressof (value);
             }
 
@@ -210,7 +210,7 @@ namespace thekogans {
             /// \brief
             /// Returns the largest supported allocation size.
             /// \return Largest supported allocation size.
-            size_type max_size () const throw () {
+            size_type max_size () const noexcept {
                 return static_cast<size_type> (-1) / sizeof (T);
             }
 

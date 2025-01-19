@@ -480,7 +480,7 @@ namespace thekogans {
                 }
 
                 // Thread
-                virtual void Run () throw () {
+                virtual void Run () noexcept {
                     pid = waitpid (pid, status, options);
                     {
                         LockGuard<Mutex> guard (mutex);
@@ -592,7 +592,7 @@ namespace thekogans {
                     childProcess (childProcess_),
                     detached (detached_) {}
                 // RunLoop::Job
-                virtual void Execute (const std::atomic<bool> &done) throw () {
+                virtual void Execute (const std::atomic<bool> &done) noexcept {
                     if (!ShouldStop (done)) {
                         THEKOGANS_UTIL_TRY {
                             childProcess.Spawn (detached);
@@ -614,7 +614,7 @@ namespace thekogans {
                     childProcess (childProcess_),
                     status (status_) {}
                 // RunLoop::Job
-                virtual void Execute (const std::atomic<bool> &done) throw () {
+                virtual void Execute (const std::atomic<bool> &done) noexcept {
                     if (!ShouldStop (done)) {
                         THEKOGANS_UTIL_TRY {
                             status = childProcess.Exec ();
@@ -692,14 +692,14 @@ namespace thekogans {
                     runLoopId = GUID::FromRandom ().ToString ();
                 }
             protected:
-                virtual void Execute (const std::atomic<bool> & /*done*/) throw () {
+                virtual void Execute (const std::atomic<bool> & /*done*/) noexcept {
                     exit (exitCode);
                 }
             };
             RunLoop::Job *failureExit = new exitJob (EXIT_FAILURE);
             RunLoop::Job *successExit = new exitJob (EXIT_SUCCESS);
 
-            typedef RefCountedSingleton<JobQueue> DaemonizeJobQueue;
+            using DaemonizeJobQueue = RefCountedSingleton<JobQueue>;
 
             void SignalHandlerSIGCHLD (int /*signum*/) {
                 DaemonizeJobQueue::Instance ()->EnqJob (RunLoop::Job::SharedPtr (failureExit));

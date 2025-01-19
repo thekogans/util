@@ -248,7 +248,7 @@ namespace thekogans {
                         }
                     }
                 };
-                typedef std::unique_ptr<const __CFString, CFStringRefDeleter> CFStringRefPtr;
+                using CFStringRefPtr = std::unique_ptr<const __CFString, CFStringRefDeleter>;
             }
         #endif // defined (TOOLCHAIN_OS_OSX)
 
@@ -393,7 +393,8 @@ namespace thekogans {
                         THEKOGANS_UTIL_OS_ERROR_CODE);
                 }
             #elif defined (TOOLCHAIN_OS_OSX)
-                CFStringRefPtr consoleUser (SCDynamicStoreCopyConsoleUser (nullptr, nullptr, nullptr));
+                CFStringRefPtr consoleUser (
+                    SCDynamicStoreCopyConsoleUser (nullptr, nullptr, nullptr));
                 if (consoleUser != nullptr) {
                     struct CFDataRefDeleter {
                         void operator () (CFDataRef dataRef) {
@@ -402,7 +403,7 @@ namespace thekogans {
                             }
                         }
                     };
-                    typedef std::unique_ptr<const __CFData, CFDataRefDeleter> CFDataRefPtr;
+                    using CFDataRefPtr = std::unique_ptr<const __CFData, CFDataRefDeleter>;
                     CFDataRefPtr UTF8String (
                         CFStringCreateExternalRepresentation (
                             nullptr, consoleUser.get (), kCFStringEncodingUTF8, '?'));

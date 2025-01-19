@@ -372,7 +372,7 @@ namespace thekogans {
                     virtual LRESULT OnEvent (
                             UINT message,
                             WPARAM wParam = 0,
-                            LPARAM lParam = 0) throw () {
+                            LPARAM lParam = 0) noexcept {
                         return DefWindowProc (wnd, message, wParam, lParam);
                     }
 

@@ -56,7 +56,7 @@ namespace thekogans {
             /// \brief
             /// Called every time the timer fires.
             /// \param[in] timer Timer that fired.
-            virtual void OnTimerAlarm (RefCounted::SharedPtr<Timer> /*timer*/) throw () {}
+            virtual void OnTimerAlarm (RefCounted::SharedPtr<Timer> /*timer*/) noexcept {}
         };
 
         /// \struct Timer Timer.h thekogans/util/Timer.h
@@ -108,7 +108,7 @@ namespace thekogans {
         ///
         /// private:
         ///     // TimerEvents
-        ///     virtual void OnTimerAlarm (util::Timer::SharedPtr /*timer*/) throw () {
+        ///     virtual void OnTimerAlarm (util::Timer::SharedPtr /*timer*/) noexcept {
         ///         // queue idle jobs.
         ///         jobQueue.EnqJob (...);
         ///     }

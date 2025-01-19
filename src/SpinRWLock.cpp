@@ -25,7 +25,7 @@ namespace thekogans {
     namespace util {
 
         namespace {
-            typedef boost::atomics::detail::operations<4u, false> operations;
+            using operations = boost::atomics::detail::operations<4u, false>;
         }
 
         // This algorithm comes straight out of Intel TBB. I

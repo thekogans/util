@@ -268,14 +268,14 @@ namespace thekogans {
                 /// global level.
                 /// \param[in] done If true, this flag indicates that
                 /// the job should stop what it's doing, and exit.
-                virtual void Begin (const std::atomic<bool> &done) throw () {}
+                virtual void Begin (const std::atomic<bool> &done) noexcept {}
                 /// \brief
                 /// Provides the same functionality as
                 /// Job::Epilogue, except at pipeline
                 /// global level.
                 /// \param[in] done If true, this flag indicates that
                 /// the job should stop what it's doing, and exit.
-                virtual void End (const std::atomic<bool> &done) throw () {}
+                virtual void End (const std::atomic<bool> &done) noexcept {}
 
                 /// \brief
                 /// Pipeline uses Reset.
@@ -329,7 +329,7 @@ namespace thekogans {
                 /// \brief
                 /// If our run loop is still running, execute the lambda function.
                 /// \param[in] done true == The run loop is done and nothing can be executed on it.
-                virtual void Execute (const std::atomic<bool> &done) throw () override {
+                virtual void Execute (const std::atomic<bool> &done) noexcept override {
                     if (!ShouldStop (done) && functions[stage] != nullptr) {
                         functions[stage] (*this, done);
                     }
@@ -490,7 +490,7 @@ namespace thekogans {
                     // Thread
                     /// \brief
                     /// Worker thread.
-                    virtual void Run () throw () override;
+                    virtual void Run () noexcept override;
                 };
                 /// \brief
                 /// List of workers.

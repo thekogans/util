@@ -108,14 +108,14 @@ namespace thekogans {
                     /// \brief
                     /// Return plugin version.
                     /// \return Plugin version.
-                    virtual const Version &GetVersion () const throw () = 0;
+                    virtual const Version &GetVersion () const noexcept = 0;
 
                     /// \brief
                     /// Called after loading to allow the plugin to initialize itself.
-                    virtual void Initialize () throw () {}
+                    virtual void Initialize () noexcept {}
                     /// \brief
                     /// Called before unloading to allow the plugin to clean up after itself.
-                    virtual void Shutdown () throw () {}
+                    virtual void Shutdown () noexcept {}
                 };
 
                 /// \brief

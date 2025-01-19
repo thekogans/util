@@ -74,7 +74,7 @@ namespace thekogans {
                 const std::string & /*subsystem*/,
                 ui32 /*level*/,
                 const std::string & /*header*/,
-                const std::string & /*message*/) throw () = 0;
+                const std::string & /*message*/) noexcept = 0;
 
             /// \brief
             /// Flush the logger buffers. After this function returns,

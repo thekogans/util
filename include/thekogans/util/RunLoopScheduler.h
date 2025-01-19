@@ -308,7 +308,7 @@ namespace thekogans {
             /// \brief
             /// Called every time the timer fires.
             /// \param[in] timer Timer that fired.
-            virtual void OnTimerAlarm (Timer::SharedPtr /*timer*/) throw ();
+            virtual void OnTimerAlarm (Timer::SharedPtr /*timer*/) noexcept;
 
             /// \brief
             /// Schedule helper.

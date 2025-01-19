@@ -288,19 +288,19 @@ namespace thekogans {
                 /// the job to perform one time initialization.
                 /// \param[in] done If true, this flag indicates that
                 /// the job should stop what it's doing, and exit.
-                virtual void Prologue (const std::atomic<bool> & /*done*/) throw () {}
+                virtual void Prologue (const std::atomic<bool> & /*done*/) noexcept {}
                 /// \brief
                 /// Called to execute the job. This is the only api
                 /// the job MUST implement.
                 /// \param[in] done If true, this flag indicates that
                 /// the job should stop what it's doing, and exit.
-                virtual void Execute (const std::atomic<bool> & /*done*/) throw () = 0;
+                virtual void Execute (const std::atomic<bool> & /*done*/) noexcept = 0;
                 /// \brief
                 /// Called after the job is executed. Allows
                 /// the job to perform one time cleanup.
                 /// \param[in] done If true, this flag indicates that
                 /// the job should stop what it's doing, and exit.
-                virtual void Epilogue (const std::atomic<bool> & /*done*/) throw () {}
+                virtual void Epilogue (const std::atomic<bool> & /*done*/) noexcept {}
 
                 /// \brief
                 /// RunLoop needs acces to protected members.
@@ -362,7 +362,7 @@ namespace thekogans {
                 /// \brief
                 /// If our run loop is still running, execute the lambda function.
                 /// \param[in] done true == The run loop is done and nothing can be executed on it.
-                virtual void Execute (const std::atomic<bool> &done) throw () override {
+                virtual void Execute (const std::atomic<bool> &done) noexcept override {
                     if (!ShouldStop (done)) {
                         function (*this, done);
                     }
@@ -748,10 +748,10 @@ namespace thekogans {
 
                 /// \brief
                 /// Called by the worker before entering the job execution loop.
-                virtual void InitializeWorker () throw () {}
+                virtual void InitializeWorker () noexcept {}
                 /// \brief
                 /// Called by the worker before exiting the thread.
-                virtual void UninitializeWorker () throw () {}
+                virtual void UninitializeWorker () noexcept {}
             };
 
         #if defined (TOOLCHAIN_OS_Windows)
@@ -773,10 +773,10 @@ namespace thekogans {
                 // WorkerCallback
                 /// \brief
                 /// Called by the worker before entering the job execution loop.
-                virtual void InitializeWorker () throw () override;
+                virtual void InitializeWorker () noexcept override;
                 /// \brief
                 /// Called by the worker before exiting the thread.
-                virtual void UninitializeWorker () throw () override;
+                virtual void UninitializeWorker () noexcept override;
             };
 
             /// \struct RunLoop::OLEInitializer RunLoop.h thekogans/util/RunLoop.h
@@ -787,10 +787,10 @@ namespace thekogans {
                 // WorkerCallback
                 /// \brief
                 /// Called by the worker before entering the job execution loop.
-                virtual void InitializeWorker () throw () override;
+                virtual void InitializeWorker () noexcept override;
                 /// \brief
                 /// Called by the worker before exiting the thread.
-                virtual void UninitializeWorker () throw () override;
+                virtual void UninitializeWorker () noexcept override;
             };
         #elif defined (TOOLCHAIN_OS_Linux)
             /// \struct RunLoop::XlibInitializer RunLoop.h thekogans/util/RunLoop.h
@@ -801,10 +801,10 @@ namespace thekogans {
                 // WorkerCallback
                 /// \brief
                 /// Called by the worker before entering the job execution loop.
-                virtual void InitializeWorker () throw () override;
+                virtual void InitializeWorker () noexcept override;
                 /// \brief
                 /// Called by the worker before exiting the thread.
-                virtual void UninitializeWorker () throw () override;
+                virtual void UninitializeWorker () noexcept override;
             };
         #elif defined (TOOLCHAIN_OS_OSX)
             /// \struct RunLoop::NSApplicationInitializer RunLoop.h thekogans/util/RunLoop.h
@@ -815,10 +815,10 @@ namespace thekogans {
                 // WorkerCallback
                 /// \brief
                 /// Called by the worker before entering the job execution loop.
-                virtual void InitializeWorker () throw () override;
+                virtual void InitializeWorker () noexcept override;
                 /// \brief
                 /// Called by the worker before exiting the thread.
-                virtual void UninitializeWorker () throw () override;
+                virtual void UninitializeWorker () noexcept override;
             };
         #endif // defined (TOOLCHAIN_OS_Windows)
 
@@ -1087,7 +1087,7 @@ namespace thekogans {
                 /// Reimplement this function to test for equality.
                 /// \param[in] job Instance to test for equality.
                 /// \return true == equal.
-                virtual bool operator () (const Job & /*job*/) const throw () = 0;
+                virtual bool operator () (const Job & /*job*/) const noexcept = 0;
             };
 
             /// \struct RunLoop::LambdaEqualityTest RunLoop.h thekogans/util/RunLoop.h
@@ -1127,7 +1127,7 @@ namespace thekogans {
                 /// Reimplement this function to test for equality.
                 /// \param[in] job Instance to test for equality.
                 /// \return true == equal.
-                virtual bool operator () (const Job &job) const throw () override {
+                virtual bool operator () (const Job &job) const noexcept override {
                     return function (*this, job);
                 }
             };

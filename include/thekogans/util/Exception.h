@@ -198,7 +198,7 @@ namespace thekogans {
             /// \brief
             /// Return the message text.
             /// \return '\0' terminated message text.
-            virtual const char *what () const throw () override {
+            virtual const char *what () const noexcept override {
                 return message.c_str ();
             }
 

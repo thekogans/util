@@ -87,7 +87,7 @@ namespace thekogans {
                 }\
                 void *_T::operator new (\
                         std::size_t size,\
-                        std::nothrow_t) throw () {\
+                        std::nothrow_t) noexcept {\
                     assert (size == sizeof (_T));\
                     return thekogans::util::HeapAllocator::Instance ()->Alloc (size);\
                 }\
@@ -102,7 +102,7 @@ namespace thekogans {
                 }\
                 void _T::operator delete (\
                         void *ptr,\
-                        std::nothrow_t) throw () {\
+                        std::nothrow_t) noexcept {\
                     thekogans::util::HeapAllocator::Instance ()->Free (ptr, sizeof (_T));\
                 }\
                 void _T::operator delete (\

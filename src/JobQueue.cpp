@@ -26,7 +26,7 @@
 namespace thekogans {
     namespace util {
 
-        void JobQueue::State::Worker::Run () throw () {
+        void JobQueue::State::Worker::Run () noexcept {
             RunLoop::WorkerInitializer workerInitializer (state->workerCallback);
             while (!state->done) {
                 Job *job = state->DeqJob ();

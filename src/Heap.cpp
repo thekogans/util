@@ -114,7 +114,7 @@ namespace thekogans {
             }
         }
 
-        bool HeapRegistry::IsValidPtr (void *ptr) throw () {
+        bool HeapRegistry::IsValidPtr (void *ptr) noexcept {
             if (ptr != nullptr) {
                 LockGuard<SpinLock> guard (spinLock);
                 for (Map::const_iterator it = map.begin (),

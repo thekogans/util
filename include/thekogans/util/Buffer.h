@@ -239,22 +239,25 @@ namespace thekogans {
             /// Resize the buffer. Adjust readOffset and writeOffset to stay within [0, length).
             /// \param[in] length_ New buffer length.
             /// \param[in] allocator_ Allocator to use to allocate new data.
+            /// If nullptr than use the buffers allocator.
             virtual void Resize (
                 std::size_t length_,
-                Allocator::SharedPtr allocator_ = DefaultAllocator::Instance ());
+                Allocator::SharedPtr allocator_ = nullptr);
 
             /// \brief
             /// Clone the buffer.
-            /// \param[in] allocator Allocator for the returned buffer.
+            /// \param[in] allocator_ Allocator for the returned buffer.
+            /// If nullptr than use the buffers allocator.
             /// \return A clone of this buffer.
             virtual SharedPtr Clone (
-                Allocator::SharedPtr allocator = DefaultAllocator::Instance ()) const;
+                Allocator::SharedPtr allocator_ = nullptr) const;
 
             /// \brief
             /// Return subset of the buffer.
             /// \param[in] offset Beginning of sub-buffer.
             /// \param[in] count Size of sub-buffer.
-            /// \param[in] allocator Allocator for the returned buffer.
+            /// \param[in] allocator_ Allocator for the returned buffer.
+            /// If nullptr than use the buffers allocator.
             /// \return A subset of this buffer.
             /// NOTE: Unlike other methods, this one does NOT take
             /// readOffset and writeOffset in to account. A straight
@@ -262,7 +265,7 @@ namespace thekogans {
             virtual SharedPtr Subset (
                 std::size_t offset,
                 std::size_t count = SIZE_T_MAX,
-                Allocator::SharedPtr allocator = DefaultAllocator::Instance ()) const;
+                Allocator::SharedPtr allocator_ = nullptr) const;
 
             /// \brief
             /// Return the serialized size of this buffer.
@@ -354,16 +357,18 @@ namespace thekogans {
         #if defined (THEKOGANS_UTIL_HAVE_ZLIB)
             /// \brief
             /// Use zlib to compress the buffer.
-            /// \param[in] allocator Allocator for the returned buffer.
+            /// \param[in] allocator_ Allocator for the returned buffer.
+            /// If nullptr than use the buffers allocator.
             /// \return A buffer containing deflated data.
             virtual SharedPtr Deflate (
-                Allocator::SharedPtr allocator = DefaultAllocator::Instance ()) const;
+                Allocator::SharedPtr allocator_ = nullptr) const;
             /// \brief
             /// Use zlib to decompress the buffer.
-            /// \param[in] allocator Allocator for the returned buffer.
+            /// \param[in] allocator_ Allocator for the returned buffer.
+            /// If nullptr than use the buffers allocator.
             /// \return A buffer containing inflated data.
             virtual SharedPtr Inflate (
-                Allocator::SharedPtr allocator = DefaultAllocator::Instance ()) const;
+                Allocator::SharedPtr allocator_ = nullptr) const;
         #endif // defined (THEKOGANS_UTIL_HAVE_ZLIB)
 
             /// \brief
@@ -371,13 +376,14 @@ namespace thekogans {
             /// \param[in] endianness Specifies how multi-byte values are stored.
             /// \param[in] hexBuffer Hex encoded string.
             /// \param[in] hexBufferLength hexBuffer length (must be even).
-            /// \param[in] allocator Allocator for the returned buffer.
+            /// \param[in] allocator_ Allocator for the returned buffer.
+            /// If nullptr than use the buffers allocator.
             /// \return Buffer containing the decoded hex string.
             static SharedPtr FromHexBuffer (
                 Endianness endianness,
                 const char *hexBuffer,
                 std::size_t hexBufferLength,
-                Allocator::SharedPtr allocator = DefaultAllocator::Instance ());
+                Allocator::SharedPtr allocator_ = nullptr);
             /// \brief
             /// Convert the buffer to a hex string.
             /// \return std::string containing the buffers hex encoded contents.
@@ -555,8 +561,7 @@ namespace thekogans {
             /// NOTE: The allocator paramater is ignored as SecureBuffer uses the SecureAllocator.
             virtual void Resize (
                 std::size_t length,
-                Allocator::SharedPtr /*allocator*/ =
-                    DefaultAllocator::Instance ()) override;
+                Allocator::SharedPtr /*allocator*/ = nullptr) override;
 
             /// \brief
             /// Clone the buffer.
@@ -564,8 +569,7 @@ namespace thekogans {
             /// NOTE: The allocator paramater is ignored as SecureBuffer uses the SecureAllocator.
             /// \return A clone of this buffer.
             virtual SharedPtr Clone (
-                Allocator::SharedPtr /*allocator*/ =
-                    DefaultAllocator::Instance ()) const override;
+                Allocator::SharedPtr /*allocator*/ = nullptr) const override;
 
             /// \brief
             /// Return subset of the buffer.
@@ -580,8 +584,7 @@ namespace thekogans {
             virtual SharedPtr Subset (
                 std::size_t offset,
                 std::size_t count,
-                Allocator::SharedPtr /*allocator*/ =
-                    DefaultAllocator::Instance ()) const override;
+                Allocator::SharedPtr /*allocator*/ = nullptr) const override;
 
         #if defined (THEKOGANS_UTIL_HAVE_ZLIB)
             /// \brief
@@ -590,16 +593,14 @@ namespace thekogans {
             /// NOTE: The allocator paramater is ignored as SecureBuffer uses the SecureAllocator.
             /// \return A buffer containing deflated data.
             virtual SharedPtr Deflate (
-                Allocator::SharedPtr /*allocator*/ =
-                    DefaultAllocator::Instance ()) const override;
+                Allocator::SharedPtr /*allocator*/ = nullptr) const override;
             /// \brief
             /// Use zlib to decompress the buffer.
             /// \param[in] allocator Allocator for the returned buffer.
             /// NOTE: The allocator paramater is ignored as SecureBuffer uses the SecureAllocator.
             /// \return A buffer containing inflated data.
             virtual SharedPtr Inflate (
-                Allocator::SharedPtr /*allocator*/ =
-                    DefaultAllocator::Instance ()) const override;
+                Allocator::SharedPtr /*allocator*/ = nullptr) const override;
         #endif // defined (THEKOGANS_UTIL_HAVE_ZLIB)
         };
 

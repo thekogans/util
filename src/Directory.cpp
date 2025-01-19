@@ -63,7 +63,7 @@ namespace thekogans {
         struct Directory::Watcher::Watch {
             THEKOGANS_UTIL_DECLARE_STD_ALLOCATOR_FUNCTIONS
 
-            typedef std::unique_ptr<Watch> UniquePtr;
+            using UniquePtr = std::unique_ptr<Watch>;
 
             std::string directory;
             Directory::Watcher::EventSink &eventSink;
@@ -78,7 +78,7 @@ namespace thekogans {
             struct Entry {
                 THEKOGANS_UTIL_DECLARE_STD_ALLOCATOR_FUNCTIONS
 
-                typedef std::unique_ptr<Entry> UniquePtr;
+                using UniquePtr = std::unique_ptr<Entry>;
 
                 Directory::Entry entry;
                 THEKOGANS_UTIL_HANDLE handle;
@@ -111,7 +111,7 @@ namespace thekogans {
                     }
                 }
             };
-            typedef OwnerMap<std::string, Entry> Entries;
+            using Entries = OwnerMap<std::string, Entry>;
             Entries entries;
         #endif // defined (TOOLCHAIN_OS_Windows)
 
@@ -329,7 +329,7 @@ namespace thekogans {
             }
         }
 
-        void Directory::Watcher::Run () throw () {
+        void Directory::Watcher::Run () noexcept {
             while (1) {
                 THEKOGANS_UTIL_TRY {
                 #if defined (TOOLCHAIN_OS_Windows)
@@ -539,7 +539,7 @@ namespace thekogans {
             }
 
             namespace {
-                typedef Flags<DWORD> FlagsDWORD;
+                using FlagsDWORD = Flags<DWORD>;
 
                 inline bool IsLink (DWORD dwFileAttributes) {
                     return FlagsDWORD (dwFileAttributes).Test (FILE_ATTRIBUTE_REPARSE_POINT);

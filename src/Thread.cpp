@@ -239,7 +239,7 @@ namespace thekogans {
                 }
 
                 // Thread
-                virtual void Run () throw () {
+                virtual void Run () noexcept {
                     pthread_join (threadToJoin, result);
                     {
                         LockGuard<Mutex> guard (mutex);
@@ -505,7 +505,7 @@ namespace thekogans {
             }
         }
 
-        void ThreadReaper::Run () throw () {
+        void ThreadReaper::Run () noexcept {
             runLoop.Start ();
         }
 

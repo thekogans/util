@@ -35,7 +35,7 @@ namespace thekogans {
                 const std::string &subsystem,
                 ui32 level,
                 const std::string &header,
-                const std::string &message) throw () {
+                const std::string &message) noexcept {
             if (level <= this->level && (!header.empty () || !message.empty ())) {
                 LockGuard<SpinLock> guard (spinLock);
                 entryList.push_back (new Entry (subsystem, level, header, message));

@@ -75,7 +75,7 @@ namespace thekogans {
         }
 
     #if defined (TOOLCHAIN_OS_Windows)
-        void RunLoop::COMInitializer::InitializeWorker () throw () {
+        void RunLoop::COMInitializer::InitializeWorker () noexcept {
             THEKOGANS_UTIL_TRY {
                 HRESULT result = CoInitializeEx (0, dwCoInit);
                 if (FAILED (result)) {
@@ -85,11 +85,11 @@ namespace thekogans {
             THEKOGANS_UTIL_CATCH_AND_LOG_SUBSYSTEM (THEKOGANS_UTIL)
         }
 
-        void RunLoop::COMInitializer::UninitializeWorker () throw () {
+        void RunLoop::COMInitializer::UninitializeWorker () noexcept {
             CoUninitialize ();
         }
 
-        void RunLoop::OLEInitializer::InitializeWorker () throw () {
+        void RunLoop::OLEInitializer::InitializeWorker () noexcept {
             THEKOGANS_UTIL_TRY {
                 HRESULT result = OleInitialize (0);
                 if (FAILED (result)) {
@@ -99,7 +99,7 @@ namespace thekogans {
             THEKOGANS_UTIL_CATCH_AND_LOG_SUBSYSTEM (THEKOGANS_UTIL)
         }
 
-        void RunLoop::OLEInitializer::UninitializeWorker () throw () {
+        void RunLoop::OLEInitializer::UninitializeWorker () noexcept {
             OleUninitialize ();
         }
     #endif // defined (TOOLCHAIN_OS_Windows)

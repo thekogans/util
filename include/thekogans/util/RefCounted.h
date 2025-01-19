@@ -641,7 +641,7 @@ namespace thekogans {
             typename To,
             typename From>
         inline RefCounted::SharedPtr<To> _LIB_THEKOGANS_UTIL_API static_refcounted_sharedptr_cast (
-                const RefCounted::SharedPtr<From> &from) throw () {
+                const RefCounted::SharedPtr<From> &from) noexcept {
             return RefCounted::SharedPtr<To> (static_cast<To *> (from.Get ()));
         }
 
@@ -653,7 +653,7 @@ namespace thekogans {
             typename To,
             typename From>
         inline RefCounted::SharedPtr<To> _LIB_THEKOGANS_UTIL_API dynamic_refcounted_sharedptr_cast (
-                const RefCounted::SharedPtr<From> &from) throw () {
+                const RefCounted::SharedPtr<From> &from) noexcept {
             return RefCounted::SharedPtr<To> (dynamic_cast<To *> (from.Get ()));
         }
 
@@ -665,7 +665,7 @@ namespace thekogans {
             typename To,
             typename From>
         inline RefCounted::SharedPtr<To> _LIB_THEKOGANS_UTIL_API const_refcounted_sharedptr_cast (
-                RefCounted::SharedPtr<From> &from) throw () {
+                RefCounted::SharedPtr<From> &from) noexcept {
             return RefCounted::SharedPtr<To> (const_cast<To *> (from.Get ()));
         }
 
@@ -677,7 +677,7 @@ namespace thekogans {
             typename To,
             typename From>
         inline RefCounted::SharedPtr<To> _LIB_THEKOGANS_UTIL_API reinterpret_refcounted_sharedptr_cast (
-                RefCounted::SharedPtr<From> &from) throw () {
+                RefCounted::SharedPtr<From> &from) noexcept {
             return RefCounted::SharedPtr<To> (reinterpret_cast<To *> (from.Get ()));
         }
 
@@ -691,7 +691,7 @@ namespace thekogans {
             typename T2>
         inline bool _LIB_THEKOGANS_UTIL_API operator == (
                 const RefCounted::SharedPtr<T1> &item1,
-                const RefCounted::SharedPtr<T2> &item2) throw () {
+                const RefCounted::SharedPtr<T2> &item2) noexcept {
             return item1.Get () == item2.Get ();
         }
 
@@ -705,7 +705,7 @@ namespace thekogans {
             typename T2>
         inline bool _LIB_THEKOGANS_UTIL_API operator != (
                 const RefCounted::SharedPtr<T1> &item1,
-                const RefCounted::SharedPtr<T2> &item2) throw () {
+                const RefCounted::SharedPtr<T2> &item2) noexcept {
             return item1.Get () != item2.Get ();
         }
 
@@ -719,7 +719,7 @@ namespace thekogans {
             typename T2>
         inline bool _LIB_THEKOGANS_UTIL_API operator < (
                 const RefCounted::SharedPtr<T1> &item1,
-                const RefCounted::SharedPtr<T2> &item2) throw () {
+                const RefCounted::SharedPtr<T2> &item2) noexcept {
             return item1.Get () < item2.Get ();
         }
 
@@ -733,7 +733,7 @@ namespace thekogans {
             typename T2>
         inline bool _LIB_THEKOGANS_UTIL_API operator <= (
                 const RefCounted::SharedPtr<T1> &item1,
-                const RefCounted::SharedPtr<T2> &item2) throw () {
+                const RefCounted::SharedPtr<T2> &item2) noexcept {
             return item1.Get () <= item2.Get ();
         }
 
@@ -747,7 +747,7 @@ namespace thekogans {
             typename T2>
         inline bool _LIB_THEKOGANS_UTIL_API operator > (
                 const RefCounted::SharedPtr<T1> &item1,
-                const RefCounted::SharedPtr<T2> &item2) throw () {
+                const RefCounted::SharedPtr<T2> &item2) noexcept {
             return item1.Get () > item2.Get ();
         }
 
@@ -761,7 +761,7 @@ namespace thekogans {
             typename T2>
         inline bool _LIB_THEKOGANS_UTIL_API operator >= (
                 const RefCounted::SharedPtr<T1> &item1,
-                const RefCounted::SharedPtr<T2> &item2) throw () {
+                const RefCounted::SharedPtr<T2> &item2) noexcept {
             return item1.Get () >= item2.Get ();
         }
 
@@ -773,7 +773,7 @@ namespace thekogans {
             typename To,
             typename From>
         inline RefCounted::WeakPtr<To> _LIB_THEKOGANS_UTIL_API static_refcounted_weakptr_cast (
-                const RefCounted::WeakPtr<From> &from) throw () {
+                const RefCounted::WeakPtr<From> &from) noexcept {
             return RefCounted::WeakPtr<To> (static_cast<To *> (from.Get ()));
         }
 
@@ -785,7 +785,7 @@ namespace thekogans {
             typename To,
             typename From>
         inline RefCounted::WeakPtr<To> _LIB_THEKOGANS_UTIL_API dynamic_refcounted_weakptr_cast (
-                const RefCounted::WeakPtr<From> &from) throw () {
+                const RefCounted::WeakPtr<From> &from) noexcept {
             return RefCounted::WeakPtr<To> (dynamic_cast<To *> (from.Get ()));
         }
 
@@ -797,7 +797,7 @@ namespace thekogans {
             typename To,
             typename From>
         inline RefCounted::WeakPtr<To> _LIB_THEKOGANS_UTIL_API const_refcounted_weakptr_cast (
-                RefCounted::WeakPtr<From> &from) throw () {
+                RefCounted::WeakPtr<From> &from) noexcept {
             return RefCounted::WeakPtr<To> (const_cast<To *> (from.Get ()));
         }
 
@@ -809,7 +809,7 @@ namespace thekogans {
             typename To,
             typename From>
         inline RefCounted::WeakPtr<To> _LIB_THEKOGANS_UTIL_API reinterpret_refcounted_weakptr_cast (
-                RefCounted::WeakPtr<From> &from) throw () {
+                RefCounted::WeakPtr<From> &from) noexcept {
             return RefCounted::WeakPtr<To> (reinterpret_cast<To *> (from.Get ()));
         }
 
@@ -823,7 +823,7 @@ namespace thekogans {
             typename T2>
         inline bool _LIB_THEKOGANS_UTIL_API operator == (
                 const RefCounted::WeakPtr<T1> &item1,
-                const RefCounted::WeakPtr<T2> &item2) throw () {
+                const RefCounted::WeakPtr<T2> &item2) noexcept {
             return item1.Get () == item2.Get ();
         }
 
@@ -837,7 +837,7 @@ namespace thekogans {
             typename T2>
         inline bool _LIB_THEKOGANS_UTIL_API operator != (
                 const RefCounted::WeakPtr<T1> &item1,
-                const RefCounted::WeakPtr<T2> &item2) throw () {
+                const RefCounted::WeakPtr<T2> &item2) noexcept {
             return item1.Get () != item2.Get ();
         }
 
@@ -851,7 +851,7 @@ namespace thekogans {
             typename T2>
         inline bool _LIB_THEKOGANS_UTIL_API operator < (
                 const RefCounted::WeakPtr<T1> &item1,
-                const RefCounted::WeakPtr<T2> &item2) throw () {
+                const RefCounted::WeakPtr<T2> &item2) noexcept {
             return item1.Get () < item2.Get ();
         }
 
@@ -865,7 +865,7 @@ namespace thekogans {
             typename T2>
         inline bool _LIB_THEKOGANS_UTIL_API operator <= (
                 const RefCounted::WeakPtr<T1> &item1,
-                const RefCounted::WeakPtr<T2> &item2) throw () {
+                const RefCounted::WeakPtr<T2> &item2) noexcept {
             return item1.Get () <= item2.Get ();
         }
 
@@ -879,7 +879,7 @@ namespace thekogans {
             typename T2>
         inline bool _LIB_THEKOGANS_UTIL_API operator > (
                 const RefCounted::WeakPtr<T1> &item1,
-                const RefCounted::WeakPtr<T2> &item2) throw () {
+                const RefCounted::WeakPtr<T2> &item2) noexcept {
             return item1.Get () > item2.Get ();
         }
 
@@ -893,7 +893,7 @@ namespace thekogans {
             typename T2>
         inline bool _LIB_THEKOGANS_UTIL_API operator >= (
                 const RefCounted::WeakPtr<T1> &item1,
-                const RefCounted::WeakPtr<T2> &item2) throw () {
+                const RefCounted::WeakPtr<T2> &item2) noexcept {
             return item1.Get () >= item2.Get ();
         }
 

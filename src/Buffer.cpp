@@ -166,6 +166,9 @@ namespace thekogans {
                 std::size_t length_,
                 Allocator::SharedPtr allocator_) {
             if (length != length_) {
+                if (allocator_ == nullptr) {
+                    allocator_ = allocator;
+                }
                 if (length_ > 0) {
                     ui8 *data_ = (ui8 *)allocator_->Alloc (length_);
                     if (data != nullptr) {
@@ -192,28 +195,22 @@ namespace thekogans {
             }
         }
 
-        Buffer::SharedPtr Buffer::Clone (Allocator::SharedPtr allocator) const {
-            if (allocator != nullptr) {
-                return SharedPtr (
-                    new Buffer (
-                        endianness,
-                        data,
-                        data + length,
-                        readOffset,
-                        writeOffset,
-                        allocator));
-            }
-            else {
-                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
-            }
+        Buffer::SharedPtr Buffer::Clone (Allocator::SharedPtr allocator_) const {
+            return SharedPtr (
+                new Buffer (
+                    endianness,
+                    data,
+                    data + length,
+                    readOffset,
+                    writeOffset,
+                    allocator_ != nullptr ? allocator_ : allocator));
         }
 
         Buffer::SharedPtr Buffer::Subset (
                 std::size_t offset,
                 std::size_t count,
-                Allocator::SharedPtr allocator) const {
-            if (offset < length && count > 0 && allocator != nullptr) {
+                Allocator::SharedPtr allocator_) const {
+            if (offset < length && count > 0) {
                 if (count == SIZE_T_MAX || offset + count > length) {
                     count = length - offset;
                 }
@@ -224,7 +221,7 @@ namespace thekogans {
                         data + offset + count,
                         0,
                         SIZE_T_MAX,
-                        allocator));
+                        allocator_ != nullptr ? allocator_ : allocator));
             }
             else {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
@@ -372,54 +369,48 @@ namespace thekogans {
             }
         }
 
-        Buffer::SharedPtr Buffer::Deflate (Allocator::SharedPtr allocator) const {
-            if (allocator != nullptr) {
-                if (GetDataAvailableForReading () != 0) {
-                    OutBuffer outBuffer (allocator);
-                    DeflateHelper (
-                        GetReadPtr (),
-                        GetDataAvailableForReading (),
-                        outBuffer);
-                    return SharedPtr (
-                        new Buffer (
-                            endianness,
-                            outBuffer.data,
-                            outBuffer.length,
-                            0,
-                            outBuffer.length,
-                            allocator));
+        Buffer::SharedPtr Buffer::Deflate (Allocator::SharedPtr allocator_) const {
+            if (GetDataAvailableForReading () != 0) {
+                if (allocator_ == nullptr) {
+                    allocator_ = allocator;
                 }
-                return SharedPtr ();
+                OutBuffer outBuffer (allocator_);
+                DeflateHelper (
+                    GetReadPtr (),
+                    GetDataAvailableForReading (),
+                    outBuffer);
+                return SharedPtr (
+                    new Buffer (
+                        endianness,
+                        outBuffer.data,
+                        outBuffer.length,
+                        0,
+                        outBuffer.length,
+                        allocator_));
             }
-            else {
-                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
-            }
+            return nullptr;
         }
 
-        Buffer::SharedPtr Buffer::Inflate (Allocator::SharedPtr allocator) const {
-            if (allocator != nullptr) {
-                if (GetDataAvailableForReading () != 0) {
-                    OutBuffer outBuffer (allocator);
-                    InflateHelper (
-                        GetReadPtr (),
-                        GetDataAvailableForReading (),
-                        outBuffer);
-                    return SharedPtr (
-                        new Buffer (
-                            endianness,
-                            outBuffer.data,
-                            outBuffer.length,
-                            0,
-                            outBuffer.length,
-                            allocator));
+        Buffer::SharedPtr Buffer::Inflate (Allocator::SharedPtr allocator_) const {
+            if (GetDataAvailableForReading () != 0) {
+                if (allocator_ == nullptr) {
+                    allocator_ = allocator;
                 }
-                return SharedPtr ();
+                OutBuffer outBuffer (allocator_);
+                InflateHelper (
+                    GetReadPtr (),
+                    GetDataAvailableForReading (),
+                    outBuffer);
+                return SharedPtr (
+                    new Buffer (
+                        endianness,
+                        outBuffer.data,
+                        outBuffer.length,
+                        0,
+                        outBuffer.length,
+                        allocator_));
             }
-            else {
-                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
-            }
+            return nullptr;
         }
     #endif // defined (THEKOGANS_UTIL_HAVE_ZLIB)
 
@@ -427,13 +418,15 @@ namespace thekogans {
                 Endianness endianness,
                 const char *hexBuffer,
                 std::size_t hexBufferLength,
-                Allocator::SharedPtr allocator) {
-            if (hexBuffer != nullptr && hexBufferLength > 0 &&
-                    IS_EVEN (hexBufferLength) && allocator != nullptr) {
-                void *data = allocator->Alloc (hexBufferLength / 2);
+                Allocator::SharedPtr allocator_) {
+            if (hexBuffer != nullptr && hexBufferLength > 0 && IS_EVEN (hexBufferLength)) {
+                if (allocator_ == nullptr) {
+                    allocator_ = allocator;
+                }
+                void *data = allocator_->Alloc (hexBufferLength / 2);
                 std::size_t length = HexDecodeBuffer (hexBuffer, hexBufferLength, data);
                 return SharedPtr (
-                    new Buffer (endianness, data, length, 0, length, allocator));
+                    new Buffer (endianness, data, length, 0, length, allocator_));
             }
             else {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (

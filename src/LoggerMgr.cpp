@@ -502,7 +502,7 @@ namespace thekogans {
                     entry (std::move (entry_)),
                     loggerList (loggerList_) {}
 
-                virtual void Execute (const std::atomic<bool> & /*done*/) throw () {
+                virtual void Execute (const std::atomic<bool> & /*done*/) noexcept {
                     LogSubsystem (*entry, loggerList);
                 }
             };

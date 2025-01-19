@@ -296,7 +296,7 @@ namespace thekogans {
                 /// Called by LoggerMgr before logging an entry.
                 /// \param[in, out] entry Entry to filter.
                 /// \return true = log the entry. false = skip the entry.
-                virtual bool FilterEntry (Entry &entry) throw () = 0;
+                virtual bool FilterEntry (Entry &entry) noexcept = 0;
             };
 
         private:

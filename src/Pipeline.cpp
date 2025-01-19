@@ -140,7 +140,7 @@ namespace thekogans {
             }
         }
 
-        void Pipeline::State::Worker::Run () throw () {
+        void Pipeline::State::Worker::Run () noexcept {
             RunLoop::WorkerInitializer workerInitializer (state->workerCallback);
             while (!state->done) {
                 Job *job = state->DeqJob ();

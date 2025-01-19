@@ -143,9 +143,10 @@ namespace thekogans {
                             jobQueue (jobQueue_),
                             scheduler (scheduler_) {}
 
-                        virtual void Execute (const std::atomic<bool> &done) throw () {
+                        virtual void Execute (const std::atomic<bool> &done) noexcept {
                             JobQueue *jobQueue;
-                            while (!ShouldStop (done) && (jobQueue = scheduler.GetNextJobQueue ()) != nullptr) {
+                            while (!ShouldStop (done) &&
+                                    (jobQueue = scheduler.GetNextJobQueue ()) != nullptr) {
                                 RunLoop::Job *job = nullptr;
                                 bool cancelled = false;
                                 // Skip over cancelled jobs.

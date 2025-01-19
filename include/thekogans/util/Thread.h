@@ -417,10 +417,10 @@ namespace thekogans {
             /// \brief
             /// Derivative classes must override this method
             /// to provide their own thread implementation.
-            /// IMPORTANT: Note the throw (). It's there to remind
+            /// IMPORTANT: Note the noexcept. It's there to remind
             /// you that if your Run implementation leaks exceptions,
             /// your application will crash.
-            virtual void Run () throw () = 0;
+            virtual void Run () noexcept = 0;
 
         private:
             /// \brief
@@ -615,7 +615,7 @@ namespace thekogans {
             // Thread
             /// \brief
             /// Worker thread.
-            virtual void Run () throw () override;
+            virtual void Run () noexcept override;
         };
 
     } // namespace util

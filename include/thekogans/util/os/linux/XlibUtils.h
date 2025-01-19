@@ -133,7 +133,7 @@ namespace thekogans {
                     /// \brief
                     /// Override this method in your derivatives to react to events sent to your window.
                     /// \param[in] event XEvent sent.
-                    virtual void OnEvent (const XEvent & /*event*/) throw () {}
+                    virtual void OnEvent (const XEvent & /*event*/) noexcept {}
 
                     /// \brief
                     /// XlibWindow is neither copy constructable, nor assignable.
@@ -188,7 +188,7 @@ namespace thekogans {
                     /// \brief
                     /// Override this method in your derivatives to react to events sent to your windows.
                     /// \param[in] event XEvent sent.
-                    virtual void OnEvent (const XEvent & /*event*/) throw () {}
+                    virtual void OnEvent (const XEvent & /*event*/) noexcept {}
 
                 private:
                     /// \brief

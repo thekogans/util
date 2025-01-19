@@ -196,7 +196,7 @@ namespace thekogans {
                         where (where_),
                         color (color_) {}
 
-                    virtual void Execute (const std::atomic<bool> &done) throw () {
+                    virtual void Execute (const std::atomic<bool> &done) noexcept {
                         if (!ShouldStop (done)) {
                             PrintStringWithColor (str, where, color);
                         }

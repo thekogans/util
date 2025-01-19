@@ -111,7 +111,7 @@ namespace thekogans {
             queue.swap (empty);
         }
 
-        void RunLoopScheduler::OnTimerAlarm (Timer::SharedPtr /*timer*/) throw () {
+        void RunLoopScheduler::OnTimerAlarm (Timer::SharedPtr /*timer*/) noexcept {
             LockGuard<SpinLock> guard (spinLock);
             TimeSpec now = GetCurrentTime ();
             while (!queue.empty () && queue.top ()->deadline <= now) {

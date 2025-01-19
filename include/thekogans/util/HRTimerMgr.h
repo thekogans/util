@@ -70,7 +70,7 @@ namespace thekogans {
         /// struct ExtractMetadataJob : public thekogans::util::RunLoop::Job {
         ///     // Nonessential members, and methods omitted for clarity.
         ///
-        ///     virtual void Execute (const std::atomic<bool> &done) throw () override {
+        ///     virtual void Execute (const std::atomic<bool> &done) noexcept override {
         ///         THEKOGANS_UTIL_HRTIMER_MGR ("ExtractMetadataJob::Execute");
         ///         {
         ///             THEKOGANS_UTIL_HRTIMER_MGR_SCOPE ("categories");

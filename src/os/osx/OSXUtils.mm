@@ -38,7 +38,7 @@
 namespace thekogans {
     namespace util {
 
-        void RunLoop::NSApplicationInitializer::InitializeWorker () throw () {
+        void RunLoop::NSApplicationInitializer::InitializeWorker () noexcept {
             THEKOGANS_UTIL_TRY {
                 if (NSApplicationLoad () == YES) {
                 #if !__has_feature (objc_arc)
@@ -54,7 +54,7 @@ namespace thekogans {
             THEKOGANS_UTIL_CATCH_AND_LOG_SUBSYSTEM (THEKOGANS_UTIL)
         }
 
-        void RunLoop::NSApplicationInitializer::UninitializeWorker () throw () {
+        void RunLoop::NSApplicationInitializer::UninitializeWorker () noexcept {
         }
 
         namespace os {
@@ -68,7 +68,7 @@ namespace thekogans {
                             }
                         }
                     };
-                    typedef std::unique_ptr<const __CFString, CFStringRefDeleter> CFStringRefPtr;
+                    using CFStringRefPtr = std::unique_ptr<const __CFString, CFStringRefDeleter>;
                 }
 
                 std::string DescriptionFromSecOSStatus (OSStatus errorCode) {
@@ -177,7 +177,7 @@ namespace thekogans {
                 }
 
                 namespace {
-                    typedef RefCountedRegistry<KQueueTimer> KQueueTimerRegistry;
+                    using KQueueTimerRegistry = RefCountedRegistry<KQueueTimer>;
                 }
 
                 struct KQueueTimer : public RefCounted {
@@ -316,7 +316,7 @@ namespace thekogans {
                         }
 
                     private:
-                        virtual void Run () throw () {
+                        virtual void Run () noexcept {
                             const int MaxEventsBatch = 32;
                             keventStruct kqueueEvents[MaxEventsBatch];
                             while (1) {
@@ -369,7 +369,8 @@ namespace thekogans {
                             }
                         }
                     };
-                    typedef std::unique_ptr<__CFRunLoopSource, CFRunLoopSourceRefDeleter> CFRunLoopSourceRefPtr;
+                    using CFRunLoopSourceRefPtr =
+                        std::unique_ptr<__CFRunLoopSource, CFRunLoopSourceRefDeleter>;
 
                     void DoNothingRunLoopCallback (void * /*info*/) {
                     }

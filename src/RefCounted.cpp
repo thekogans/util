@@ -317,7 +317,7 @@ namespace thekogans {
         }
 
         namespace {
-            typedef boost::atomics::detail::operations<4u, false> operations;
+            using operations = boost::atomics::detail::operations<4u, false>;
         }
 
         ui32 RefCounted::References::AddWeakRef () {

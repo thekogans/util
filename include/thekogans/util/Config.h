@@ -116,10 +116,10 @@
 #define THEKOGANS_UTIL_DECLARE_STD_ALLOCATOR_FUNCTIONS  \
 public:\
     static void *operator new (std::size_t);\
-    static void *operator new (std::size_t, std::nothrow_t) throw ();\
+    static void *operator new (std::size_t, std::nothrow_t) noexcept;\
     static void *operator new (std::size_t, void *);\
     static void operator delete (void *);\
-    static void operator delete (void *, std::nothrow_t) throw ();\
+    static void operator delete (void *, std::nothrow_t) noexcept;\
     static void operator delete (void *, void *);
 
 /// \def THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN(_T)

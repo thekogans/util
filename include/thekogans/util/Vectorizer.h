@@ -77,7 +77,7 @@ namespace thekogans {
         ///     virtual void Execute (
         ///             std::size_t startIndex,
         ///             std::size_t endIndex,
-        ///             std::size_t /*rank*/) throw () {
+        ///             std::size_t /*rank*/) noexcept {
         ///         for (; startIndex < endIndex; ++startIndex) {
         ///             result[startIndex] = vertices[startIndex] * xform;
         ///         }
@@ -118,7 +118,7 @@ namespace thekogans {
                 /// Use it to initialize the space where partial
                 /// results will be stored by each stage.
                 /// \param[in] chunks Number of chunks this job will be broken up in to.
-                virtual void Prolog (std::size_t /*chunks*/) throw () {}
+                virtual void Prolog (std::size_t /*chunks*/) noexcept {}
                 /// \brief
                 /// Called by each worker with appropriate chunk range.
                 /// \param[in] startIndex Vector index where execution begins.
@@ -129,15 +129,15 @@ namespace thekogans {
                 virtual void Execute (
                     std::size_t /*startIndex*/,
                     std::size_t /*endIndex*/,
-                    std::size_t /*rank*/) throw () = 0;
+                    std::size_t /*rank*/) noexcept = 0;
                 /// \brief
                 /// Called after the job is vectorized. This api
                 /// implements the gather part of scatter/gather.
-                virtual void Epilog () throw () {}
+                virtual void Epilog () noexcept {}
                 /// \brief
                 /// Return total size of job (usually std::vector::size ()).
                 /// \return Size of job.
-                virtual std::size_t Size () const throw () = 0;
+                virtual std::size_t Size () const noexcept = 0;
             };
 
             /// \brief
@@ -213,7 +213,7 @@ namespace thekogans {
                 // Thread
                 /// \brief
                 /// Worker thread.
-                virtual void Run () throw () override;
+                virtual void Run () noexcept override;
             };
             /// \brief
             /// Vectorizer workers.

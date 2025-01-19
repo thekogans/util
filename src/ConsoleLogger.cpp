@@ -38,7 +38,7 @@ namespace thekogans {
                 const std::string & /*subsystem*/,
                 ui32 level,
                 const std::string &header,
-                const std::string &message) throw () {
+                const std::string &message) noexcept {
             if (level <= this->level && (!header.empty () || !message.empty ())) {
                 Console::Instance ()->PrintString (
                     FormatString ("%s%s", header.c_str (), message.c_str ()),
