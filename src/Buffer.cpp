@@ -418,15 +418,15 @@ namespace thekogans {
                 Endianness endianness,
                 const char *hexBuffer,
                 std::size_t hexBufferLength,
-                Allocator::SharedPtr allocator_) {
+                Allocator::SharedPtr allocator) {
             if (hexBuffer != nullptr && hexBufferLength > 0 && IS_EVEN (hexBufferLength)) {
-                if (allocator_ == nullptr) {
-                    allocator_ = DefaultAllocator::Instance ();
+                if (allocator == nullptr) {
+                    allocator = DefaultAllocator::Instance ();
                 }
-                void *data = allocator_->Alloc (hexBufferLength / 2);
+                void *data = allocator->Alloc (hexBufferLength / 2);
                 std::size_t length = HexDecodeBuffer (hexBuffer, hexBufferLength, data);
                 return SharedPtr (
-                    new Buffer (endianness, data, length, 0, length, allocator_));
+                    new Buffer (endianness, data, length, 0, length, allocator));
             }
             else {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (

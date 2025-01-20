@@ -376,14 +376,14 @@ namespace thekogans {
             /// \param[in] endianness Specifies how multi-byte values are stored.
             /// \param[in] hexBuffer Hex encoded string.
             /// \param[in] hexBufferLength hexBuffer length (must be even).
-            /// \param[in] allocator_ Allocator for the returned buffer.
-            /// If nullptr than use the buffers allocator.
+            /// \param[in] allocator Allocator for the returned buffer.
+            /// If nullptr than use \see{DefaultAllocator}::Instance () allocator.
             /// \return Buffer containing the decoded hex string.
             static SharedPtr FromHexBuffer (
                 Endianness endianness,
                 const char *hexBuffer,
                 std::size_t hexBufferLength,
-                Allocator::SharedPtr allocator_ = nullptr);
+                Allocator::SharedPtr allocator = nullptr);
             /// \brief
             /// Convert the buffer to a hex string.
             /// \return std::string containing the buffers hex encoded contents.
