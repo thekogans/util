@@ -48,17 +48,21 @@ namespace thekogans {
 
                 Node (
                     BTree &btree_,
-                    const GUID &id_ = GUID::Empty);
+                    const GUID &id_ = GUID::FromRandom ());
                 ~Node ();
 
                 static std::size_t Size (ui32 entriesPerNode);
                 static Node *Alloc (
                     BTree &btree,
-                    const GUID &id_ = GUID::Empty);
+                    const GUID &id_ = GUID::FromRandom ());
                 static void Free (
                     BTree &btree,
                     Node *node);
+                static void Delete (
+                    BTree &btree,
+                    Node *node);
 
+                void Save ();
                 Node *GetChild (ui32 index);
                 bool Search (
                     const Key &key,
@@ -123,8 +127,8 @@ namespace thekogans {
                 ui32 index,
                 Node *left,
                 Node *right);
+            void Save ();
             void SetRoot (Node *node);
-            void DeleteNode (Node *node);
 
             friend Serializer &operator << (
                 Serializer &serializer,
