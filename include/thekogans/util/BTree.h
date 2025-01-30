@@ -1,11 +1,10 @@
 #if !defined (__thekogans_util_BTree_h)
 #define __thekogans_util_BTree_h
 
-#include <string>
 #include "thekogans/util/Config.h"
 #include "thekogans/util/Types.h"
+#include "thekogans/util/GUID.h"
 #include "thekogans/util/Constants.h"
-#include "thekogans/util/ByteSwap.h"
 #include "thekogans/util/Serializer.h"
 #include "thekogans/util/File.h"
 
@@ -24,41 +23,42 @@ namespace thekogans {
             std::string path;
             struct _LIB_THEKOGANS_UTIL_DECL Header {
                 ui32 entriesPerNode;
-                ui64 nodeCounter;
-                ui64 rootNumber;
+                GUID rootId;
                 Header (ui32 entriesPerNode_ = DEFAULT_ENTRIES_PER_NODE) :
                     entriesPerNode (entriesPerNode_),
-                    nodeCounter (2),
-                    rootNumber (1) {}
+                    rootId (GUID::Empty) {}
             } header;
-            struct _LIB_THEKOGANS_UTIL_DECL Node : public RefCounted {
-                THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (Node)
-                THEKOGANS_UTIL_DECLARE_STD_ALLOCATOR_FUNCTIONS
-
+            struct _LIB_THEKOGANS_UTIL_DECL Node {
                 BTree &btree;
-                ui64 number;
-                ui32 entriesPerNode;
+                GUID id;
                 ui32 count;
-                ui64 leftNumber;
-                SharedPtr leftNode;
+                GUID leftId;
+                Node *leftNode;
                 struct Entry {
                     Key key;
-                    ui64 rightNumber;
-                    SharedPtr rightNode;
+                    GUID rightId;
+                    Node *rightNode;
 
                     Entry (const Key &key_ = Key (NIDX64, NIDX64)) :
                         key (key_),
-                        rightNumber (NIDX64) {}
+                        rightId (GUID::Empty),
+                        rightNode (nullptr) {}
                 };
-                std::vector<Entry> entries;
+                Entry entries[1];
 
                 Node (
                     BTree &btree_,
-                    ui64 number_ = NIDX64);
+                    const GUID &id_ = GUID::Empty);
+                ~Node ();
 
-                void Save ();
-                void Delete ();
-                std::string GetPath () const;
+                static std::size_t Size (ui32 entriesPerNode);
+                static Node *Alloc (
+                    BTree &btree,
+                    const GUID &id_ = GUID::Empty);
+                static void Free (
+                    BTree &btree,
+                    Node *node);
+
                 Node *GetChild (ui32 index);
                 bool Search (
                     const Key &key,
@@ -67,7 +67,7 @@ namespace thekogans {
                     Node *node,
                     ui32 index);
                 void Concatenate (Node *node);
-                inline void Concatenate (Entry &entry) {
+                inline void Concatenate (const Entry &entry) {
                     InsertEntry (entry, count);
                 }
                 void InsertEntry (
@@ -86,13 +86,13 @@ namespace thekogans {
                 inline bool IsPlentiful () const {
                     return count > btree.header.entriesPerNode / 2;
                 }
-            };
-            Node::SharedPtr root;
+            } *root;
 
         public:
             BTree (
                 const std::string &path_,
                 ui32 entriesPerNode = DEFAULT_ENTRIES_PER_NODE);
+            ~BTree ();
 
             Key Search (const Key &key);
             void Add (const Key &key);
@@ -101,30 +101,30 @@ namespace thekogans {
         private:
             bool Insert (
                 Node::Entry &entry,
-                Node::SharedPtr node);
+                Node *node);
             bool Remove (
                 const Key &key,
-                Node::SharedPtr node);
+                Node *node);
             void RestoreBalance (
-                Node::SharedPtr node,
+                Node *node,
                 ui32 index);
             void RotateRight (
-                Node::SharedPtr node,
+                Node *node,
                 ui32 index,
-                Node::SharedPtr left,
-                Node::SharedPtr right);
+                Node *left,
+                Node *right);
             void RotateLeft (
-                Node::SharedPtr node,
+                Node *node,
                 ui32 index,
-                Node::SharedPtr left,
-                Node::SharedPtr right);
+                Node *left,
+                Node *right);
             void Merge (
-                Node::SharedPtr node,
+                Node *node,
                 ui32 index,
-                Node::SharedPtr left,
-                Node::SharedPtr right);
-            void Save ();
-            void SetRoot (Node::SharedPtr node);
+                Node *left,
+                Node *right);
+            void SetRoot (Node *node);
+            void DeleteNode (Node *node);
 
             friend Serializer &operator << (
                 Serializer &serializer,
