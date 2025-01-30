@@ -421,7 +421,7 @@ namespace thekogans {
                 Allocator::SharedPtr allocator_) {
             if (hexBuffer != nullptr && hexBufferLength > 0 && IS_EVEN (hexBufferLength)) {
                 if (allocator_ == nullptr) {
-                    allocator_ = allocator;
+                    allocator_ = DefaultAllocator::Instance ();
                 }
                 void *data = allocator_->Alloc (hexBufferLength / 2);
                 std::size_t length = HexDecodeBuffer (hexBuffer, hexBufferLength, data);

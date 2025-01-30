@@ -143,14 +143,14 @@ namespace thekogans {
         #define THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE_OVERRIDE(_T)\
         public:\
             static const char * const TYPE;\
-            virtual const char *Type () const;
+            virtual const char *Type () const noexcept;
 
         /// \def THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_OVERRIDE(_T)
         /// Implement DynamicCreatable::TYPE. This macro is usually private
         /// (see ..._DECLARE_..._OVERRIDE above).
         #define THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_OVERRIDE(_T)\
             const char * const _T::TYPE = #_T;\
-            const char *_T::Type () const {\
+            const char *_T::Type () const noexcept {\
                 return TYPE;\
             }
 
@@ -171,9 +171,7 @@ namespace thekogans {
         /// look up types descendant from them. This macro is private.
         #define THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_BASE_FUNCTIONS(_T)\
             bool _T::IsType (const char *type) {\
-                static const thekogans::util::DynamicCreatable::TypeMapType &types =\
-                    (*thekogans::util::DynamicCreatable::BaseMap::Instance ())[_T::TYPE];\
-                return types.find (type) != types.end ();\
+                return GetTypes ().find (type) != GetTypes ().end ();\
             }\
             const thekogans::util::DynamicCreatable::TypeMapType &_T::GetTypes () {\
                 static const thekogans::util::DynamicCreatable::TypeMapType &types =\
@@ -183,11 +181,9 @@ namespace thekogans {
             _T::SharedPtr _T::CreateType (\
                     const char *type,\
                     thekogans::util::DynamicCreatable::Parameters::SharedPtr parameters) {\
-                static const thekogans::util::DynamicCreatable::TypeMapType &types =\
-                    (*thekogans::util::DynamicCreatable::BaseMap::Instance ())[_T::TYPE];\
                 thekogans::util::DynamicCreatable::TypeMapType::const_iterator it =\
-                    types.find (type);\
-                if (it != types.end ()) {\
+                    GetTypes ().find (type);\
+                if (it != GetTypes ().end ()) {\
                     return it->second (parameters);\
                 }\
                 return nullptr;\

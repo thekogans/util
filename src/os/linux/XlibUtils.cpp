@@ -201,7 +201,8 @@ namespace thekogans {
                         event.events = EPOLLIN;
                         event.data.ptr = XlibDisplays::Instance ()->displays[i];
                         if (epoll_ctl (epoll.handle, EPOLL_CTL_ADD,
-                                ConnectionNumber (XlibDisplays::Instance ()->displays[i]), &event) < 0) {
+                                ConnectionNumber (
+                                    XlibDisplays::Instance ()->displays[i]), &event) < 0) {
                             THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
                                 THEKOGANS_UTIL_OS_ERROR_CODE);
                         }
@@ -241,28 +242,31 @@ namespace thekogans {
                                                     event.type == ClientMessage &&
                                                     event.xclient.window == window->window &&
                                                     event.xclient.message_type == message_type) {
-                                                if (event.xclient.data.l[0] == ID_RUN_LOOP_EXECUTE_JOB) {
+                                                if (event.xclient.data.l[0] ==
+                                                        ID_RUN_LOOP_EXECUTE_JOB) {
                                                     ExecuteJob ();
                                                 }
-                                                else if (event.xclient.data.l[0] == ID_RUN_LOOP_STOP) {
+                                                else if (event.xclient.data.l[0] ==
+                                                        ID_RUN_LOOP_STOP) {
                                                     return;
                                                 }
                                             }
                                             else {
-                                                // Unlike Windows there's no window class registering a
-                                                // callback function for a particular Xlib window on Linux.
-                                                // Therefore we provide our own version of DispatchMessage.
-                                                // For this to work user Xlib windows need to inherit from
-                                                // XlibWindow.
+                                                // Unlike Windows there's no window class registering
+                                                // a callback function for a particular Xlib window
+                                                // on Linux. Therefore we provide our own version of
+                                                // DispatchMessage. For this to work user Xlib windows
+                                                // need to inherit from XlibWindow.
                                                 XlibWindow::SharedPtr window =
-                                                    XlibWindowMap::Instance ()->Get (event.xclient.window);
+                                                    XlibWindowMap::Instance ()->Get (
+                                                        event.xclient.window);
                                                 if (window != nullptr) {
                                                     window->OnEvent (event);
                                                 }
                                                 else {
-                                                    // As a last ditch effort to process the event call our OnEvent
-                                                    // method. Derivatives should override this to provide catch all
-                                                    // processing.
+                                                    // As a last ditch effort to process the event
+                                                    // call our OnEvent method. Derivatives should
+                                                    // override this to provide catch all processing.
                                                     OnEvent (event);
                                                 }
                                             }

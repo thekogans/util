@@ -1,5 +1,6 @@
 #include <cstring>
 #include "thekogans/util/Exception.h"
+#include "thekogans/util/Path.h"
 #include "thekogans/util/BTree.h"
 
 namespace thekogans {
@@ -32,90 +33,73 @@ namespace thekogans {
                 serializer >> key.first >> key.second;
                 return serializer;
             }
-
-            const std::size_t BTREE_SIZE = UI32_SIZE + UI32_SIZE + UI64_SIZE;
-
-            inline std::size_t BTREE_NODE_SIZE (ui32 entriesPerNode) {
-                // key + rightOffset
-                const ui32 ENTRY_SIZE = UI64_SIZE + UI64_SIZE + UI64_SIZE;
-                // count + leftOffset + entries
-                return UI32_SIZE + UI64_SIZE + entriesPerNode * ENTRY_SIZE;
-            }
         }
 
         BTree::Node::Node (
                 BTree &btree_,
-                ui64 offset_) :
+                ui64 number_) :
                 btree (btree_),
-                offset (offset_),
+                number (number_),
                 count (0),
-                leftOffset (NIDX64),
-                leftNode (nullptr),
-                dirty (false) {
-            if (offset != NIDX64) {
-                btree.file.Seek (offset, SEEK_SET);
-                btree.file >> count >> leftOffset;
-                for (ui32 i = 0; i < count; ++i) {
-                    btree.file >> entries[i];
+                leftNumber (NIDX64),
+                entries (btree.header.entriesPerNode) {
+            Path nodePath (GetPath ());
+            if (nodePath.Exists ()) {
+                ReadOnlyFile file (HostEndian, nodePath.path);
+                ui32 magic;
+                file >> magic;
+                if (magic == MAGIC32) {
+                    // File is host endian.
                 }
-            }
-            else {
-                offset = btree.file.Alloc (
-                    BTREE_NODE_SIZE (btree.header.entriesPerNode));
-                btree.file.Seek (offset, SEEK_SET);
-                btree.file << count << leftOffset;
-            }
-        }
-
-        BTree::Node::~Node () {
-            if (dirty) {
-                btree.file.Seek (offset, SEEK_SET);
-                btree.file << count << leftOffset;
-                for (ui32 i = 0; i < count; ++i) {
-                    btree.file << entries[i];
+                else if (ByteSwap<GuestEndian, HostEndian> (magic) == MAGIC32) {
+                    file.endianness = GuestEndian;
                 }
-            }
-            if (count > 0) {
-                Free (btree, leftNode);
+                else {
+                    // FIXME: throw something.
+                    assert (0);
+                }
+                file >> count >> leftNumber;
                 for (ui32 i = 0; i < count; ++i) {
-                    Free (btree, entries[i].rightNode);
+                    file >> entries[i];
                 }
             }
         }
 
-        std::size_t BTree::Node::Size (ui32 entriesPerNode) {
-            return sizeof (Node) + (entriesPerNode - 1) * sizeof (Entry);
-        }
-
-        BTree::Node *BTree::Node::Alloc (
-                BTree &btree,
-                ui64 offset) {
-            return new (
-                DefaultAllocator::Instance ()->Alloc (
-                    Size (btree.header.entriesPerNode))) Node (btree, offset);
-        }
-
-        void BTree::Node::Free (
-                BTree &btree,
-                Node *node) {
-            if (node != nullptr) {
-                node->~Node ();
-                DefaultAllocator::Instance ()->Free (
-                    node, Size (btree.header.entriesPerNode));
+        void BTree::Node::Save () {
+            SimpleFile file (
+                HostEndian,
+                GetPath (),
+                SimpleFile::ReadWrite | SimpleFile::Create | SimpleFile::Truncate);
+            file << MAGIC32 << count << leftNumber;
+            for (ui32 i = 0; i < count; ++i) {
+                file << entries[i];
             }
         }
 
-        BTree::Node *BTree::Node::GetChild (ui32 index) {
+        void BTree::Node::Delete () {
+            Path nodePath (GetPath ());
+            if (nodePath.Exists ()) {
+                nodePath.Delete ();
+            }
+        }
+
+        std::string BTree::Node::GetPath () const {
+            std::string name (16, ' ');
+            HexEncodeBuffer (&number, 8, name.data ());
+            return MakePath (btree.path, name);
+        }
+
+        BTree::Node::SharedPtr BTree::Node::GetChild (ui32 index) {
             if (index == 0) {
-                if (leftNode == nullptr && leftOffset != NIDX64) {
-                    leftNode = Alloc (btree, leftOffset);
+                if (leftNode == nullptr && leftNumber != NIDX64) {
+                    leftNode.Reset (new Node (btree, leftNumber));
                 }
                 return leftNode;
             }
             if (entries[index - 1].rightNode == nullptr &&
-                    entries[index - 1].rightOffset != NIDX64) {
-                entries[index - 1].rightNode = Alloc (
-                    btree, entries[index - 1].rightOffset);
+                    entries[index - 1].rightNumber != NIDX64) {
+                entries[index - 1].rightNode.Reset (
+                    new Node (btree, entries[index - 1].rightNumber));
             }
             return entries[index - 1].rightNode;
         }
@@ -151,26 +135,19 @@ namespace thekogans {
 #endif
 
         void BTree::Node::Split (
-                Node *node,
+                SharedPtr node,
                 ui32 index) {
-            node->count = count - index;
-            std::memcpy (
-                node->entries,
-                entries + index,
-                node->count * sizeof (Entry));
-            node->dirty = true;
+            for (ui32 i = index; i < count; ++i) {
+                node->entries[node->count++] = entries[i];
+            }
             count = index;
-            dirty = true;
         }
 
-        void BTree::Node::Concatenate (Node *node) {
-            std::memcpy (
-                entries + count,
-                node->entries,
-                node->count * sizeof (Entry));
-            count += node->count;
-            dirty = true;
-            btree.DeleteNode (node);
+        void BTree::Node::Concatenate (SharedPtr node) {
+            for (ui32 i = 0; i < node->count; ++i) {
+                entries[count++] = node->entries[i];
+            }
+            node->count = 0;
         }
 
         void BTree::Node::InsertEntry (
@@ -181,49 +158,43 @@ namespace thekogans {
                 entries + index,
                 (count++ - index) * sizeof (Entry));
             entries[index] = entry;
-            dirty = true;
         }
 
         void BTree::Node::RemoveEntry (ui32 index) {
-            std::memcpy (
-                entries + index,
-                entries + index + 1,
-                (--count - index) * sizeof (Entry));
-            dirty = true;
+            for (ui32 i = index; i < count; ++i) {
+                entries[i] = entries[i + 1];
+            }
+            --count;
         }
 
         BTree::BTree (
-                File &file_,
-                ui64 offset_,
+                const std::string &path_,
                 ui32 entriesPerNode) :
-                file (file_),
-                offset (offset_),
-                header (entriesPerNode),
-                root (nullptr),
-                dirty (false) {
-            if (offset != NIDX64) {
-                file.Seek (offset, SEEK_SET);
+                path (path_),
+                header (entriesPerNode) {
+            Path btreePath (MakePath (path, "btree"));
+            if (btreePath.Exists ()) {
+                ReadOnlyFile file (HostEndian, btreePath.path);
+                ui32 magic;
+                file >> magic;
+                if (magic == MAGIC32) {
+                    // File is host endian.
+                }
+                else if (ByteSwap<GuestEndian, HostEndian> (magic) == MAGIC32) {
+                    file.endianness = GuestEndian;
+                }
+                else {
+                    // FIXME: throw something.
+                    assert (0);
+                }
                 file >> header;
             }
-            else {
-                offset = file.Alloc (BTREE_SIZE);
-                file.Seek (offset, SEEK_SET);
-                file << header;
-            }
-            SetRoot (Node::Alloc (*this, header.rootOffset));
-        }
-
-        BTree::~BTree () {
-            if (dirty) {
-                file.Seek (offset, SEEK_SET);
-                file << header;
-            }
-            Node::Free (*this, root);
+            SetRoot (new Node (*this, header.rootNumber));
         }
 
         BTree::Key BTree::Search (const Key &key) {
             Key result (NIDX64, NIDX64);
-            Node *node = root;
+            Node::SharedPtr node = root;
             while (node != nullptr) {
                 ui32 index;
                 if (node->Search (key, index)) {
@@ -244,25 +215,27 @@ namespace thekogans {
                 // The path to the leaf node is all full.
                 // Create a new root node and make the entry
                 // its first.
-                Node *node = Node::Alloc (*this);
-                node->leftOffset = root->offset;
+                Node::SharedPtr node (new Node (*this, header.nodeCounter++));
+                Save ();
+                node->leftNumber = root->number;
                 node->leftNode = root;
                 node->InsertEntry (entry, 0);
+                node->Save ();
                 SetRoot (node);
             }
         }
 
         void BTree::Delete (const Key &key) {
             if (Remove (key, root) && root->IsEmpty () && root->GetChild (0) != nullptr) {
-				Node *node = root;
+                Node::SharedPtr node = root;
                 SetRoot (root->GetChild (0));
-                DeleteNode (node);
+                node->Delete ();
             }
         }
 
         bool BTree::Insert (
                 Node::Entry &entry,
-                Node *node) {
+                Node::SharedPtr node) {
             if (node != nullptr) {
                 ui32 index;
                 // This search collapses all duplicate nodes in to one.
@@ -279,7 +252,8 @@ namespace thekogans {
                         // in to the proper daughter node. Return the
                         // entry at the split point to be added up the
                         // parent chain.
-                        Node *right = Node::Alloc (*this);
+                        Node::SharedPtr right (new Node (*this, header.nodeCounter++));
+                        Save ();
                         ui32 splitIndex = header.entriesPerNode / 2;
                         node->Split (right, splitIndex);
                         if (index != splitIndex) {
@@ -292,12 +266,14 @@ namespace thekogans {
                             entry = right->entries[0];
                             right->RemoveEntry (0);
                         }
-                        right->leftOffset = entry.rightOffset;
+                        right->leftNumber = entry.rightNumber;
                         right->leftNode = entry.rightNode;
-                        entry.rightOffset = right->offset;
+                        right->Save ();
+                        entry.rightNumber = right->number;
                         entry.rightNode = right;
                         return false;
                     }
+                    node->Save ();
                 }
                 return true;
             }
@@ -306,18 +282,17 @@ namespace thekogans {
 
         bool BTree::Remove (
                 const Key &key,
-                Node *node) {
+                Node::SharedPtr node) {
             ui32 index;
             bool found = node->Search (key, index);
-            Node *child = node->GetChild (found ? index + 1 : index);
+            Node::SharedPtr child = node->GetChild (found ? index + 1 : index);
             if (found) {
                 if (child != nullptr) {
-                    Node *leaf = child;
-                    while (leaf->leftOffset != NIDX64) {
+                    Node::SharedPtr leaf = child;
+                    while (leaf->leftNumber != NIDX64) {
                         leaf = leaf->GetChild (0);
                     }
                     node->entries[index].key = leaf->entries[0].key;
-                    node->dirty = true;
                     Remove (leaf->entries[0].key, child);
                     if (child->IsPoor ()) {
                         RestoreBalance (node, index);
@@ -326,6 +301,7 @@ namespace thekogans {
                 else {
                     node->RemoveEntry (index);
                 }
+                node->Save ();
                 return true;
             }
             else if (child != nullptr && Remove (key, child)) {
@@ -338,11 +314,11 @@ namespace thekogans {
         }
 
         void BTree::RestoreBalance (
-                Node *node,
+                Node::SharedPtr node,
                 ui32 index) {
             if (index == node->count) {
-                Node *left = node->GetChild (index - 1);
-                Node *right = node->GetChild (index);
+                Node::SharedPtr left = node->GetChild (index - 1);
+                Node::SharedPtr right = node->GetChild (index);
                 if (left != nullptr && right != nullptr) {
                     if (left->IsPlentiful ()) {
                         RotateRight (node, index - 1, left, right);
@@ -353,8 +329,8 @@ namespace thekogans {
                 }
             }
             else {
-                Node *left = node->GetChild (index);
-                Node *right = node->GetChild (index + 1);
+                Node::SharedPtr left = node->GetChild (index);
+                Node::SharedPtr right = node->GetChild (index + 1);
                 if (left != nullptr && right != nullptr) {
                     if (left->IsPlentiful ()) {
                         RotateRight (node, index, left, right);
@@ -370,79 +346,87 @@ namespace thekogans {
         }
 
         void BTree::RotateRight (
-                Node *node,
+                Node::SharedPtr node,
                 ui32 index,
-                Node *left,
-                Node *right) {
-            node->entries[index].rightOffset = right->leftOffset;
+                Node::SharedPtr left,
+                Node::SharedPtr right) {
+            node->entries[index].rightNumber = right->leftNumber;
             node->entries[index].rightNode = right->leftNode;
-            node->dirty = true;
             right->InsertEntry (node->entries[index], 0);
             ui32 lastIndex = left->count - 1;
-            right->leftOffset = left->entries[lastIndex].rightOffset;
+            right->leftNumber = left->entries[lastIndex].rightNumber;
             right->leftNode = left->entries[lastIndex].rightNode;
-            left->entries[lastIndex].rightOffset = right->offset;
+            left->entries[lastIndex].rightNumber = right->number;
             left->entries[lastIndex].rightNode = right;
             node->entries[index] = left->entries[lastIndex];
             left->RemoveEntry (lastIndex);
+            node->Save ();
+            left->Save ();
+            right->Save ();
         }
 
         void BTree::RotateLeft (
-                Node *node,
+                Node::SharedPtr node,
                 ui32 index,
-                Node *left,
-                Node *right) {
-            node->entries[index].rightOffset = right->leftOffset;
+                Node::SharedPtr left,
+                Node::SharedPtr right) {
+            node->entries[index].rightNumber = right->leftNumber;
             node->entries[index].rightNode = right->leftNode;
-            node->dirty = true;
-            right->leftOffset = right->entries[0].rightOffset;
+            right->leftNumber = right->entries[0].rightNumber;
             right->leftNode = right->entries[0].rightNode;
-            right->entries[0].rightOffset = right->offset;
+            right->entries[0].rightNumber = right->number;
             right->entries[0].rightNode = right;
             left->Concatenate (node->entries[index]);
             node->entries[index] = right->entries[0];
             right->RemoveEntry (0);
+            node->Save ();
+            left->Save ();
+            right->Save ();
         }
 
         void BTree::Merge (
-                Node *node,
+                Node::SharedPtr node,
                 ui32 index,
-                Node *left,
-                Node *right) {
+                Node::SharedPtr left,
+                Node::SharedPtr right) {
             assert (left->count + right->count < header.entriesPerNode);
-            node->entries[index].rightOffset = right->leftOffset;
+            node->entries[index].rightNumber = right->leftNumber;
             node->entries[index].rightNode = right->leftNode;
             left->Concatenate (node->entries[index]);
             left->Concatenate (right);
+            right->Delete ();
             node->RemoveEntry (index);
+            node->Save ();
+            left->Save ();
         }
 
-        void BTree::SetRoot (Node *node) {
+        void BTree::Save () {
+            SimpleFile file (
+                HostEndian,
+                MakePath (path, "btree"),
+                SimpleFile::ReadWrite | SimpleFile::Create | SimpleFile::Truncate);
+            file << MAGIC32 << header;
+        }
+
+        void BTree::SetRoot (Node::SharedPtr node) {
             root = node;
-            if (header.rootOffset != root->offset) {
-                header.rootOffset = root->offset;
-                dirty = true;
+            if (header.rootNumber != root->number) {
+                header.rootNumber = root->number;
+                Save ();
             }
-        }
-
-        void BTree::DeleteNode (Node *node) {
-            file.Free (node->offset);
-            node->count = 0;
-            node->dirty = false;
-            Node::Free (*this, node);
         }
 
         Serializer &operator << (
                 Serializer &serializer,
                 const BTree::Node::Entry &entry) {
-            serializer << entry.key << entry.rightOffset;
+            serializer << entry.key << entry.rightNumber;
             return serializer;
         }
 
         Serializer &operator >> (
                 Serializer &serializer,
                 BTree::Node::Entry &entry) {
-            serializer >> entry.key >> entry.rightOffset;
+            serializer >> entry.key >> entry.rightNumber;
             return serializer;
         }
 
@@ -450,9 +434,9 @@ namespace thekogans {
                 Serializer &serializer,
                 const BTree::Header &header) {
             serializer <<
-                header.magic <<
                 header.entriesPerNode <<
-                header.rootOffset;
+                header.nodeCounter <<
+                header.rootNumber;
             return serializer;
         }
 
@@ -460,9 +444,9 @@ namespace thekogans {
                 Serializer &serializer,
                 BTree::Header &header) {
             serializer >>
-                header.magic >>
                 header.entriesPerNode >>
-                header.rootOffset;
+                header.nodeCounter >>
+                header.rootNumber;
             return serializer;
         }
 

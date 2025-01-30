@@ -32,7 +32,7 @@
 /// For compatibility only.
 #if defined (TOOLCHAIN_OS_Windows)
     #if defined (TOOLCHAIN_ARCH_i386)
-        using ssize_t = long ;
+        using ssize_t = long;
     #elif defined (TOOLCHAIN_ARCH_x86_64)
         using ssize_t = __int64;
     #else // defined (TOOLCHAIN_ARCH_x86_64)

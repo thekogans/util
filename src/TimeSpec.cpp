@@ -154,7 +154,7 @@ namespace thekogans {
             return *this + FromNanoseconds (nanoseconds);
         }
 
-        std::size_t TimeSpec::Size () const {
+        std::size_t TimeSpec::Size () const noexcept {
             return Serializer::Size (seconds) + Serializer::Size (nanoseconds);
         }
 

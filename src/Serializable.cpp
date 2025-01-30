@@ -69,20 +69,20 @@ namespace thekogans {
         }
     #endif // defined (THEKOGANS_UTIL_TYPE_Static)
 
-        std::size_t Serializable::GetSize () const {
+        std::size_t Serializable::GetSize () const noexcept {
             BinHeader header (Type (), Version (), Size ());
             return header.Size () + header.size;
         }
 
-        const char *Blob::Type () const {
+        const char *Blob::Type () const noexcept {
             return type.c_str ();
         }
 
-        ui16 Blob::Version () const {
+        ui16 Blob::Version () const noexcept {
             return version;
         }
 
-        std::size_t Blob::Size () const {
+        std::size_t Blob::Size () const noexcept {
             return size;
         }
 

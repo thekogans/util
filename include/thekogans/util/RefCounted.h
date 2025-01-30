@@ -241,7 +241,7 @@ namespace thekogans {
                 }
                 /// \brief
                 /// move ctor.
-                /// \param[in] ptr Pointer to copy.
+                /// \param[in] ptr Pointer to move.
                 SharedPtr (SharedPtr<T> &&ptr) :
                         object (nullptr) {
                     Swap (ptr);

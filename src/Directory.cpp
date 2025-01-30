@@ -693,7 +693,7 @@ namespace thekogans {
                 type == VALUE_LINK ? Link : Invalid;
         }
 
-        std::size_t Directory::Entry::Size () const {
+        std::size_t Directory::Entry::Size () const noexcept {
             return
                 Serializer::Size (fileSystem) +
                 Serializer::Size (type) +

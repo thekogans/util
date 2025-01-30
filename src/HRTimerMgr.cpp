@@ -31,7 +31,7 @@ namespace thekogans {
         }
     #endif // defined (THEKOGANS_UTIL_TYPE_Static)
 
-        std::size_t HRTimerMgr::TimerInfoBase::Size () const {
+        std::size_t HRTimerMgr::TimerInfoBase::Size () const noexcept {
             return Serializer::Size (name) + Serializer::Size (attributes);
         }
 
@@ -180,7 +180,7 @@ namespace thekogans {
             min = max = average = total = HRTimer::ComputeElapsedTime (start, stop);
         }
 
-        std::size_t HRTimerMgr::TimerInfo::Size () const {
+        std::size_t HRTimerMgr::TimerInfo::Size () const noexcept {
             return TimerInfoBase::Size () +
                 Serializer::Size (start) +
                 Serializer::Size (stop);
@@ -365,7 +365,7 @@ namespace thekogans {
             }
         }
 
-        std::size_t HRTimerMgr::ScopeInfo::Size () const {
+        std::size_t HRTimerMgr::ScopeInfo::Size () const noexcept {
             std::size_t size = TimerInfoBase::Size ();
             {
                 size += util::SizeT (open.size ()).Size ();
@@ -564,7 +564,7 @@ namespace thekogans {
             return JSON::FormatValue (object, indentationLevel, indentationWidth);
         }
 
-        std::size_t HRTimerMgr::Size () const {
+        std::size_t HRTimerMgr::Size () const noexcept {
             return root.Size ();
         }
 

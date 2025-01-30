@@ -187,7 +187,7 @@ namespace thekogans {
             totalTime = 0;
         }
 
-        std::size_t RunLoop::Stats::Job::Size () const {
+        std::size_t RunLoop::Stats::Job::Size () const noexcept {
             return Serializer::Size (id) +
                 Serializer::Size (startTime) +
                 Serializer::Size (endTime) +
@@ -267,7 +267,7 @@ namespace thekogans {
             maxJob.Reset ();
         }
 
-        std::size_t RunLoop::Stats::Size () const {
+        std::size_t RunLoop::Stats::Size () const noexcept {
             return Serializer::Size (id) +
                 Serializer::Size (name) +
                 Serializer::Size (totalJobs) +

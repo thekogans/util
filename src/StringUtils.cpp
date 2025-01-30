@@ -58,10 +58,10 @@ namespace thekogans {
         _LIB_THEKOGANS_UTIL_DECL std::string _LIB_THEKOGANS_UTIL_API TrimLeftSpaces (
                 const char *str) {
             if (str != nullptr) {
-                while (*str != 0 && isspace (*str)) {
+                while (*str != '\0' && isspace (*str)) {
                     ++str;
                 }
-                if (*str != 0) {
+                if (*str != '\0') {
                     return str;
                 }
             }
@@ -83,7 +83,7 @@ namespace thekogans {
         _LIB_THEKOGANS_UTIL_DECL std::string _LIB_THEKOGANS_UTIL_API TrimSpaces (
                 const char *str) {
             if (str != nullptr) {
-                while (*str != 0 && isspace (*str)) {
+                while (*str != '\0' && isspace (*str)) {
                     ++str;
                 }
                 for (const char *end = str + strlen (str); end > str; --end) {
@@ -99,7 +99,7 @@ namespace thekogans {
                 const char *str) {
             std::string upper;
             if (str != nullptr) {
-                while (*str != 0) {
+                while (*str != '\0') {
                     upper += toupper (*str++);
                 }
             }
@@ -110,7 +110,7 @@ namespace thekogans {
                 const char *str) {
             std::string lower;
             if (str != nullptr) {
-                while (*str != 0) {
+                while (*str != '\0') {
                     lower += tolower (*str++);
                 }
             }
@@ -192,7 +192,7 @@ namespace thekogans {
                         return (const char *)start;
                     }
                 }
-                if (utf8Length != 0) {
+                if (utf8Length != nullptr) {
                     *utf8Length = utf8Length_;
                 }
                 return nullptr;

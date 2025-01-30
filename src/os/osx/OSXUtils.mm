@@ -82,7 +82,8 @@ namespace thekogans {
 
                 std::string DescriptionFromOSStatus (OSStatus errorCode) {
                     std::string UTF8String;
-                    NSError *error = [NSError errorWithDomain: NSOSStatusErrorDomain code: errorCode userInfo: nil];
+                    NSError *error = [NSError errorWithDomain: NSOSStatusErrorDomain
+                        code: errorCode userInfo: nil];
                     if (error != nullptr) {
                         NSString *description = [error description];
                         if (description != nullptr) {
@@ -158,7 +159,8 @@ namespace thekogans {
                         {kIOReturnNotResponding, "device is not responding"},
                         {kIOReturnInvalid, "unanticipated driver error"}
                     };
-                    const std::size_t descriptionTableSize = THEKOGANS_UTIL_ARRAY_SIZE (descriptionTable);
+                    const std::size_t descriptionTableSize =
+                        THEKOGANS_UTIL_ARRAY_SIZE (descriptionTable);
                     for (std::size_t i = 0; i < descriptionTableSize; ++i) {
                         if (descriptionTable[i].errorCode == errorCode) {
                             return descriptionTable[i].description;
@@ -228,7 +230,8 @@ namespace thekogans {
                                 KQueueTimerCallback timerCallback,
                                 void *userData) {
                             if (timerCallback != nullptr) {
-                                KQueueTimer *timer = new KQueueTimer (++idPool, timerCallback, userData);
+                                KQueueTimer *timer = new KQueueTimer (
+                                    ++idPool, timerCallback, userData);
                                 // We own the timer. Call DestroyTimer below to release.
                                 timer->AddRef ();
                                 return timer;
@@ -320,10 +323,12 @@ namespace thekogans {
                             const int MaxEventsBatch = 32;
                             keventStruct kqueueEvents[MaxEventsBatch];
                             while (1) {
-                                int count = keventFunc (handle, 0, 0, kqueueEvents, MaxEventsBatch, 0);
+                                int count = keventFunc (
+                                    handle, 0, 0, kqueueEvents, MaxEventsBatch, 0);
                                 for (int i = 0; i < count; ++i) {
-                                    KQueueTimer::SharedPtr timer = KQueueTimerRegistry::Instance ()->Get (
-                                        (KQueueTimerRegistry::Token::ValueType)kqueueEvents[i].udata);
+                                    KQueueTimer::SharedPtr timer =
+                                        KQueueTimerRegistry::Instance ()->Get (
+                                            (KQueueTimerRegistry::Token::ValueType)kqueueEvents[i].udata);
                                     if (timer != nullptr) {
                                         if ((kqueueEvents[i].flags & EV_ONESHOT) == EV_ONESHOT) {
                                             timer->running = false;

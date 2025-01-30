@@ -153,7 +153,7 @@ namespace thekogans {
             denominator /= gcd;
         }
 
-        std::size_t Fraction::Size () const {
+        std::size_t Fraction::Size () const noexcept {
             return UI32_SIZE + UI32_SIZE + UI8_SIZE;
         }
 

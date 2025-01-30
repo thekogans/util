@@ -190,17 +190,17 @@ namespace thekogans {
             /// \brief
             /// Return the binary size of the serializable including the header.
             /// \return Size of the binary serializable including the header.
-            std::size_t GetSize () const;
+            std::size_t GetSize () const noexcept;
 
             /// \brief
             /// Return the serializable version.
             /// \return Serializable version.
-            virtual ui16 Version () const = 0;
+            virtual ui16 Version () const noexcept = 0;
 
             /// \brief
             /// Return the serializable binary size (not including the header).
             /// \return Serializable binary size.
-            virtual std::size_t Size () const = 0;
+            virtual std::size_t Size () const noexcept = 0;
 
             /// \brief
             /// Write the serializable from the given serializer.
@@ -242,13 +242,13 @@ namespace thekogans {
         #define THEKOGANS_UTIL_DECLARE_SERIALIZABLE_OVERRIDE(_T)\
         public:\
             static const thekogans::util::ui16 VERSION;\
-            virtual thekogans::util::ui16 Version () const override;
+            virtual thekogans::util::ui16 Version () const noexcept override;
 
         /// \def THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE(_T, version)
         /// Serializable overrides.
         #define THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_OVERRIDE(_T, version)\
             const thekogans::util::ui16 _T::VERSION = version;\
-            thekogans::util::ui16 _T::Version () const {\
+            thekogans::util::ui16 _T::Version () const noexcept {\
                 return VERSION;\
             }
 
@@ -329,17 +329,17 @@ namespace thekogans {
             /// \brief
             /// Return DynamicCreatable type (it's class name).
             /// \return DynamicCreatable type (it's class name).
-            virtual const char *Type () const override;
+            virtual const char *Type () const noexcept override;
 
             /// \brief
             /// Return the serializable version.
             /// \return Serializable version.
-            virtual ui16 Version () const override;
+            virtual ui16 Version () const noexcept override;
 
             /// \brief
             /// Return the serializable size (not including the header).
             /// \return Serializable size.
-            virtual std::size_t Size () const override;
+            virtual std::size_t Size () const noexcept override;
 
             /// \brief
             /// Write the serializable from the given serializer.
