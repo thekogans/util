@@ -102,6 +102,8 @@ namespace thekogans {
             void Add (const Key &key);
             bool Delete (const Key &key);
 
+            void Flush ();
+
         private:
             bool Insert (
                 Node::Entry &entry,

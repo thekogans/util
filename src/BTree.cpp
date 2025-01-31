@@ -47,9 +47,12 @@ namespace thekogans {
                     // FIXME: throw something.
                     assert (0);
                 }
-                file >> count >> leftId;
-                for (ui32 i = 0; i < count; ++i) {
-                    file >> entries[i];
+                file >> count;
+                if (count > 0) {
+                    file >> leftId;
+                    for (ui32 i = 0; i < count; ++i) {
+                        file >> entries[i];
+                    }
                 }
             }
         }
@@ -106,9 +109,12 @@ namespace thekogans {
                 HostEndian,
                 path,
                 SimpleFile::ReadWrite | SimpleFile::Create | SimpleFile::Truncate);
-            file << MAGIC32 << count << leftId;
-            for (ui32 i = 0; i < count; ++i) {
-                file << entries[i];
+            file << MAGIC32 << count;
+            if (count > 0) {
+                file << leftId;
+                for (ui32 i = 0; i < count; ++i) {
+                    file << entries[i];
+                }
             }
         }
 
@@ -267,6 +273,11 @@ namespace thekogans {
                 Node::Delete (*this, node);
             }
             return removed;
+        }
+
+        void BTree::Flush () {
+            Node::Free (*this, root);
+            root = Node::Alloc (*this, header.rootId);
         }
 
         bool BTree::Insert (
