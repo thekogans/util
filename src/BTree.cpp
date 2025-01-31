@@ -154,15 +154,6 @@ namespace thekogans {
             return false;
         }
 
-#if 0
-        1, 2, 4, 6, 8, 10, 12
-        0, 0, 1, 1, 2, 2, 3
-
-        +---+ --+----+
-        | 2 | 6 | 10 |
-        +---+---+----+
-#endif
-
         void BTree::Node::Split (
                 Node *node,
                 ui32 index) {
@@ -479,18 +470,14 @@ namespace thekogans {
         Serializer &operator << (
                 Serializer &serializer,
                 const BTree::Header &header) {
-            serializer <<
-                header.entriesPerNode <<
-                header.rootId;
+            serializer << header.entriesPerNode << header.rootId;
             return serializer;
         }
 
         Serializer &operator >> (
                 Serializer &serializer,
                 BTree::Header &header) {
-            serializer >>
-                header.entriesPerNode >>
-                header.rootId;
+            serializer >> header.entriesPerNode >> header.rootId;
             return serializer;
         }
 

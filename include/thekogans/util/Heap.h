@@ -499,8 +499,7 @@ namespace thekogans {
                 #endif // defined (THEKOGANS_UTIL_CONFIG_Debug) || defined (THEKOGANS_UTIL_DEBUG_HEAP)
                     union {
                         /// \brief
-                        /// Either a pointer to the next item in
-                        /// the free list or,
+                        /// Either a pointer to the next item in the free list or,
                         Item *next;
                         /// \brief
                         /// the item itself.
