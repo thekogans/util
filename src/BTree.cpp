@@ -41,11 +41,13 @@ namespace thekogans {
                     // File is host endian.
                 }
                 else if (ByteSwap<GuestEndian, HostEndian> (magic) == MAGIC32) {
+                    // File is guest endian.
                     file.endianness = GuestEndian;
                 }
                 else {
-                    // FIXME: throw something.
-                    assert (0);
+                    THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
+                        "Corrupt btree node file (%s)",
+                        path.c_str ());
                 }
                 file >> count;
                 if (count > 0) {
@@ -92,15 +94,16 @@ namespace thekogans {
                 BTree &btree,
                 Node *node) {
             if (node->count == 0) {
-                Path nodePath (MakePath (btree.path, node->id.ToString ()));
+                Path nodePath (node->path);
                 if (nodePath.Exists ()) {
                     nodePath.Delete ();
                 }
                 Free (btree, node);
             }
             else {
-                // FIXME: throw something.
-                assert (0);
+                THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
+                    "Logic error: trying to delete a node with count > 0 (%s)",
+                    node->path.c_str ());
             }
         }
 
@@ -125,12 +128,15 @@ namespace thekogans {
                 }
                 return leftNode;
             }
-            if (entries[index - 1].rightNode == nullptr &&
-                    entries[index - 1].rightId != GUID::Empty) {
-                entries[index - 1].rightNode = Alloc (
-                    btree, entries[index - 1].rightId);
+            else {
+                --index;
+                if (entries[index].rightNode == nullptr &&
+                        entries[index].rightId != GUID::Empty) {
+                    entries[index].rightNode = Alloc (
+                        btree, entries[index].rightId);
+                }
+                return entries[index].rightNode;
             }
-            return entries[index - 1].rightNode;
         }
 
         bool BTree::Node::Search (
@@ -206,11 +212,13 @@ namespace thekogans {
                     // File is host endian.
                 }
                 else if (ByteSwap<GuestEndian, HostEndian> (magic) == MAGIC32) {
+                    // File is guest endian.
                     file.endianness = GuestEndian;
                 }
                 else {
-                    // FIXME: throw something.
-                    assert (0);
+                    THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
+                        "Corrupt btree header file (%s)",
+                        btreePath.path.c_str ());
                 }
                 file >> header;
             }
