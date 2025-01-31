@@ -6,7 +6,6 @@
 #include "thekogans/util/GUID.h"
 #include "thekogans/util/Constants.h"
 #include "thekogans/util/Serializer.h"
-#include "thekogans/util/File.h"
 
 namespace thekogans {
     namespace util {
@@ -21,16 +20,17 @@ namespace thekogans {
 
         private:
             std::string path;
-            struct _LIB_THEKOGANS_UTIL_DECL Header {
+            struct Header {
                 ui32 entriesPerNode;
                 GUID rootId;
                 Header (ui32 entriesPerNode_ = DEFAULT_ENTRIES_PER_NODE) :
                     entriesPerNode (entriesPerNode_),
-                    rootId (GUID::Empty) {}
+                    rootId (GUID::FromRandom ()) {}
             } header;
-            struct _LIB_THEKOGANS_UTIL_DECL Node {
+            struct Node {
                 BTree &btree;
                 GUID id;
+                std::string path;
                 ui32 count;
                 GUID leftId;
                 Node *leftNode;
@@ -100,7 +100,7 @@ namespace thekogans {
 
             Key Search (const Key &key);
             void Add (const Key &key);
-            void Delete (const Key &key);
+            bool Delete (const Key &key);
 
         private:
             bool Insert (
@@ -143,6 +143,24 @@ namespace thekogans {
                 Serializer &serializer,
                 Header &header);
         };
+
+        inline bool operator == (
+                const BTree::Key &key1,
+                const BTree::Key &key2) {
+            return key1.first == key2.first && key1.second == key2.second;
+        }
+        inline bool operator != (
+                const BTree::Key &key1,
+                const BTree::Key &key2) {
+            return key1.first != key2.first || key1.second != key2.second;
+        }
+
+        inline bool operator < (
+                const BTree::Key &key1,
+                const BTree::Key &key2) {
+            return key1.first < key2.first ||
+                (key1.first == key2.first && key1.second < key2.second);
+        }
 
     } // namespace util
 } // namespace thekogans

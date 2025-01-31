@@ -8,19 +8,6 @@ namespace thekogans {
     namespace util {
 
         namespace {
-            inline bool operator == (
-                    const BTree::Key &key1,
-                    const BTree::Key &key2) {
-                return key1.first == key2.first && key1.second == key2.second;
-            }
-
-            inline bool operator < (
-                    const BTree::Key &key1,
-                    const BTree::Key &key2) {
-                return key1.first < key2.first ||
-                    (key1.first == key2.first && key1.second < key2.second);
-            }
-
             inline Serializer &operator << (
                     Serializer &serializer,
                     const BTree::Key &key) {
@@ -41,10 +28,11 @@ namespace thekogans {
                 const GUID &id_) :
                 btree (btree_),
                 id (id_),
+                path (MakePath (btree.path, id.ToString ())),
                 count (0),
                 leftId (GUID::Empty),
                 leftNode (nullptr) {
-            Path nodePath (MakePath (btree.path, id.ToString ()));
+            Path nodePath (path);
             if (nodePath.Exists ()) {
                 ReadOnlyFile file (HostEndian, nodePath.path);
                 ui32 magic;
@@ -100,18 +88,23 @@ namespace thekogans {
         void BTree::Node::Delete (
                 BTree &btree,
                 Node *node) {
-            Path nodePath (MakePath (btree.path, node->id.ToString ()));
-            if (nodePath.Exists ()) {
-                nodePath.Delete ();
+            if (node->count == 0) {
+                Path nodePath (MakePath (btree.path, node->id.ToString ()));
+                if (nodePath.Exists ()) {
+                    nodePath.Delete ();
+                }
+                Free (btree, node);
             }
-            node->count = 0;
-            Free (btree, node);
+            else {
+                // FIXME: throw something.
+                assert (0);
+            }
         }
 
         void BTree::Node::Save () {
             SimpleFile file (
                 HostEndian,
-                MakePath (btree.path, id.ToString ()),
+                path,
                 SimpleFile::ReadWrite | SimpleFile::Create | SimpleFile::Truncate);
             file << MAGIC32 << count << leftId;
             for (ui32 i = 0; i < count; ++i) {
@@ -181,6 +174,7 @@ namespace thekogans {
                 node->entries,
                 node->count * sizeof (Entry));
             count += node->count;
+            node->count = 0;
         }
 
         void BTree::Node::InsertEntry (
@@ -223,7 +217,10 @@ namespace thekogans {
                 }
                 file >> header;
             }
-            SetRoot (Node::Alloc (*this, header.rootId));
+            else {
+                Save ();
+            }
+            root = Node::Alloc (*this, header.rootId);
         }
 
         BTree::~BTree () {
@@ -262,12 +259,14 @@ namespace thekogans {
             }
         }
 
-        void BTree::Delete (const Key &key) {
-            if (Remove (key, root) && root->IsEmpty () && root->GetChild (0) != nullptr) {
+        bool BTree::Delete (const Key &key) {
+            bool removed = Remove (key, root);
+            if (removed && root->IsEmpty () && root->GetChild (0) != nullptr) {
 				Node *node = root;
                 SetRoot (root->GetChild (0));
                 Node::Delete (*this, node);
             }
+            return removed;
         }
 
         bool BTree::Insert (
@@ -283,6 +282,7 @@ namespace thekogans {
                         !Insert (entry, node->GetChild (index))) {
                     if (!node->IsFull ()) {
                         node->InsertEntry (entry, index);
+                        node->Save ();
                     }
                     else {
                         // Node is full. Split it and insert the entry
@@ -302,6 +302,7 @@ namespace thekogans {
                             entry = right->entries[0];
                             right->RemoveEntry (0);
                         }
+                        node->Save ();
                         right->leftId = entry.rightId;
                         right->leftNode = entry.rightNode;
                         right->Save ();
@@ -309,7 +310,6 @@ namespace thekogans {
                         entry.rightNode = right;
                         return false;
                     }
-                    node->Save ();
                 }
                 return true;
             }
@@ -446,10 +446,8 @@ namespace thekogans {
 
         void BTree::SetRoot (Node *node) {
             root = node;
-            if (header.rootId != root->id) {
-                header.rootId = root->id;
-                Save ();
-            }
+            header.rootId = root->id;
+            Save ();
         }
 
         Serializer &operator << (
@@ -463,6 +461,7 @@ namespace thekogans {
                 Serializer &serializer,
                 BTree::Node::Entry &entry) {
             serializer >> entry.key >> entry.rightId;
+            entry.rightNode = nullptr;
             return serializer;
         }
 
