@@ -103,14 +103,9 @@ namespace thekogans {
             /// \brief
             /// Forward declaration of JobQueue.
             struct JobQueue;
-            enum {
-                /// \brief
-                /// JobQueueList list id.
-                JOB_QUEUE_LIST_ID
-            };
             /// \brief
-            /// Alias for IntrusiveList<JobQueue, JOB_QUEUE_LIST_ID>.
-            using JobQueueList = IntrusiveList<JobQueue, JOB_QUEUE_LIST_ID>;
+            /// Alias for IntrusiveList<JobQueue>.
+            using JobQueueList = IntrusiveList<JobQueue>;
         #if defined (TOOLCHAIN_COMPILER_cl)
             #pragma warning (push)
             #pragma warning (disable : 4275)

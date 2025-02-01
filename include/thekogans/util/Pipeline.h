@@ -56,18 +56,12 @@ namespace thekogans {
             /// \brief
             /// Forward declaration of Job.
             struct Job;
-            enum {
-                /// \brief
-                /// JobList ID.
-                JOB_LIST_ID = RunLoop::LAST_JOB_LIST_ID,
-                /// \brief
-                /// Use this sentinel to create your own job lists.
-                LAST_JOB_LIST_ID
-            };
             /// \brief
-            /// Alias for IntrusiveList<Job, JOB_LIST_ID>.
-            using JobList = IntrusiveList<Job, JOB_LIST_ID>;
+            /// Alias for IntrusiveList<Job, 1>.
+            using JobList = IntrusiveList<Job, 1>;
 
+            /// \brief
+            /// Forward declaration of State.
             struct State;
 
             /// \struct Pipeline::JobExecutionPolicy Pipeline.h thekogans/util/Pipeline.h
@@ -452,14 +446,9 @@ namespace thekogans {
                 /// \brief
                 /// Forward declaration of Worker.
                 struct Worker;
-                enum {
-                    /// \brief
-                    /// WorkerList ID.
-                    WORKER_LIST_ID
-                };
                 /// \brief
-                /// Alias for IntrusiveList<Worker, WORKER_LIST_ID>.
-                using WorkerList = IntrusiveList<Worker, WORKER_LIST_ID>;
+                /// Alias for IntrusiveList<Worker>.
+                using WorkerList = IntrusiveList<Worker>;
                 /// \struct Pipeline::Worker Pipeline.h thekogans/util/Pipeline.h
                 ///
                 /// \brief

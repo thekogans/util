@@ -451,14 +451,9 @@ namespace thekogans {
             /// \brief
             /// Forward declaration of Page.
             struct Page;
-            enum {
-                /// \brief
-                /// PageList ID.
-                PAGE_LIST_ID
-            };
             /// \brief
-            /// Alias for IntrusiveList<Page, PAGE_LIST_ID>.
-            using PageList = IntrusiveList<Page, PAGE_LIST_ID>;
+            /// Alias for IntrusiveList<Page>.
+            using PageList = IntrusiveList<Page>;
             /// \struct Heap::Page Heap.h thekogans/util/Heap.h
             ///
             /// \brief
@@ -469,11 +464,6 @@ namespace thekogans {
             /// | Page Header | Item 0 | ... | Item maxItems - 1 |\n
             /// +------------------------------------------------+
             struct Page : public PageList::Node {
-                /// \brief
-                /// A watermark. A way to identify that this
-                /// block of memory does indeed point to a
-                /// page.
-                const std::size_t magic1;
                 /// \brief
                 /// Total number of items this page can hold.
                 /// The above three are const for a very
@@ -511,16 +501,10 @@ namespace thekogans {
                     /// free, and buffer overrun.
                     std::size_t magic2;
                 #endif // defined (THEKOGANS_UTIL_CONFIG_Debug) || defined (THEKOGANS_UTIL_DEBUG_HEAP)
+                /// \brief
                 /// Within each page, freed items are stored
                 /// in a singly linked list.
                 } *freeItem;
-                /// \brief
-                /// A watermark. A way to identify that this
-                /// block of memory does indeed point to a
-                /// page.
-                /// The header will be 32/64 bytes, depending
-                /// on sizeof (std::size_t and Page/Item *).
-                const std::size_t magic2;
                 /// \brief
                 /// The list of items. Directly following
                 /// the Page Header.
@@ -532,13 +516,11 @@ namespace thekogans {
 
                 /// \brief
                 /// ctor.
-                /// \param[in] size_ Page size.
+                /// \param[in] maxItems_ Maximum items per page.
                 Page (std::size_t maxItems_) :
-                        magic1 (MAGIC),
                         maxItems (maxItems_),
                         allocatedItems (0),
-                        freeItem (nullptr),
-                        magic2 (MAGIC) {
+                        freeItem (nullptr) {
                 #if defined (THEKOGANS_UTIL_CONFIG_Debug) || defined (THEKOGANS_UTIL_DEBUG_HEAP)
                     memset (items, 0, maxItems * sizeof (Item));
                 #endif // defined (THEKOGANS_UTIL_CONFIG_Debug) || defined (THEKOGANS_UTIL_DEBUG_HEAP)

@@ -66,18 +66,8 @@ namespace thekogans {
             /// Forward declaration of Job.
             struct Job;
             /// \brief
-            /// Job list id.
-            enum {
-                /// \brief
-                /// JobList ID.
-                JOB_LIST_ID,
-                /// \brief
-                /// Use this sentinel to create your own job lists (\see{Pipeline}).
-                LAST_JOB_LIST_ID
-            };
-            /// \brief
-            /// Alias for IntrusiveList<Job, JOB_LIST_ID>.
-            using JobList = IntrusiveList<Job, JOB_LIST_ID>;
+            /// Alias for IntrusiveList<Job>.
+            using JobList = IntrusiveList<Job>;
 
         #if defined (TOOLCHAIN_COMPILER_cl)
             #pragma warning (push)

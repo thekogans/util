@@ -2,6 +2,7 @@
 #include "thekogans/util/Exception.h"
 #include "thekogans/util/Path.h"
 #include "thekogans/util/File.h"
+#include "thekogans/util/BlockAllocator.h"
 #include "thekogans/util/BTree.h"
 
 namespace thekogans {
@@ -61,9 +62,9 @@ namespace thekogans {
 
         BTree::Node::~Node () {
             if (count > 0) {
-                Free (btree, leftNode);
+                Free (leftNode);
                 for (ui32 i = 0; i < count; ++i) {
-                    Free (btree, entries[i].rightNode);
+                    Free (entries[i].rightNode);
                 }
             }
         }
@@ -76,29 +77,25 @@ namespace thekogans {
                 BTree &btree,
                 const GUID &id) {
             return new (
-                DefaultAllocator::Instance ()->Alloc (
+                btree.allocator->Alloc (
                     Size (btree.header.entriesPerNode))) Node (btree, id);
         }
 
-        void BTree::Node::Free (
-                BTree &btree,
-                Node *node) {
+        void BTree::Node::Free (Node *node) {
             if (node != nullptr) {
                 node->~Node ();
-                DefaultAllocator::Instance ()->Free (
-                    node, Size (btree.header.entriesPerNode));
+                node->btree.allocator->Free (
+                    node, Size (node->btree.header.entriesPerNode));
             }
         }
 
-        void BTree::Node::Delete (
-                BTree &btree,
-                Node *node) {
+        void BTree::Node::Delete (Node *node) {
             if (node->count == 0) {
                 Path nodePath (node->path);
                 if (nodePath.Exists ()) {
                     nodePath.Delete ();
                 }
-                Free (btree, node);
+                Free (node);
             }
             else {
                 THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
@@ -199,9 +196,15 @@ namespace thekogans {
 
         BTree::BTree (
                 const std::string &path_,
-                ui32 entriesPerNode) :
+                ui32 entriesPerNode,
+                Allocator::SharedPtr allocator_) :
                 path (path_),
                 header (entriesPerNode),
+                allocator (
+                    BlockAllocator::Pool::Instance ()->GetBlockAllocator (
+                        Node::Size (entriesPerNode),
+                        BlockAllocator::DEFAULT_BLOCKS_PER_PAGE,
+                        allocator_)),
                 root (nullptr) {
             Path btreePath (MakePath (path, "btree"));
             if (btreePath.Exists ()) {
@@ -229,7 +232,7 @@ namespace thekogans {
         }
 
         BTree::~BTree () {
-            Node::Free (*this, root);
+            Node::Free (root);
         }
 
         BTree::Key BTree::Search (const Key &key) {
@@ -252,7 +255,7 @@ namespace thekogans {
         void BTree::Add (const Key &key) {
             Node::Entry entry (key);
             if (!Insert (entry, root)) {
-                // The path to the leaf node is all full.
+                // The path to the leaf node is full.
                 // Create a new root node and make the entry
                 // its first.
                 Node *node = Node::Alloc (*this);
@@ -267,15 +270,15 @@ namespace thekogans {
         bool BTree::Delete (const Key &key) {
             bool removed = Remove (key, root);
             if (removed && root->IsEmpty () && root->GetChild (0) != nullptr) {
-				Node *node = root;
+                Node *node = root;
                 SetRoot (root->GetChild (0));
-                Node::Delete (*this, node);
+                Node::Delete (node);
             }
             return removed;
         }
 
         void BTree::Flush () {
-            Node::Free (*this, root);
+            Node::Free (root);
             root = Node::Alloc (*this, header.rootId);
         }
 
@@ -443,7 +446,7 @@ namespace thekogans {
             node->RemoveEntry (index);
             node->Save ();
             left->Save ();
-            Node::Delete (*this, right);
+            Node::Delete (right);
         }
 
         void BTree::Save () {

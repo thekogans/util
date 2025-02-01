@@ -1,3 +1,20 @@
+// Copyright 2011 Boris Kogan (boris@thekogans.net)
+//
+// This file is part of libthekogans_util.
+//
+// libthekogans_util is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// libthekogans_util is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with libthekogans_util. If not, see <http://www.gnu.org/licenses/>.
+
 #if !defined (__thekogans_util_BTree_h)
 #define __thekogans_util_BTree_h
 
@@ -6,61 +23,126 @@
 #include "thekogans/util/GUID.h"
 #include "thekogans/util/Constants.h"
 #include "thekogans/util/Serializer.h"
+#include "thekogans/util/DefaultAllocator.h"
 
 namespace thekogans {
     namespace util {
 
+        /// \struct BTree BTree.h thekogans/util/BTree.h
+        ///
+        /// \brief
+
         struct _LIB_THEKOGANS_UTIL_DECL BTree {
             // {size, offset}
+            /// \brief
+            /// Keys are structured to allow for greater flexibility.
             using Key = std::pair<ui64, ui64>;
 
+            /// \brief
+            /// Default number of entries per node.
             enum {
                 DEFAULT_ENTRIES_PER_NODE = 32
             };
 
         private:
+            /// \brief
+            /// Directory where btree files are stored.
             std::string path;
+            /// \struct BTree::Header BTree.h thekogans/util/BTree.h
+            ///
+            /// \brief
+            /// Header contains global btree info.
             struct Header {
+                /// \brief
+                /// Entries per node.
                 ui32 entriesPerNode;
+                /// \brief
+                /// Root node id.
                 GUID rootId;
+                /// \brief
+                /// ctor.
+                /// \param[in] entriesPerNode_ Entries per node.
                 Header (ui32 entriesPerNode_ = DEFAULT_ENTRIES_PER_NODE) :
                     entriesPerNode (entriesPerNode_),
                     rootId (GUID::FromRandom ()) {}
             } header;
+            Allocator::SharedPtr allocator;
+            /// \struct BTree::Node BTree.h thekogans/util/BTree.h
+            ///
+            /// \brief
+            /// BTree nodes store sorted keys and pointers to children nodes.
             struct Node {
+                /// \brief
+                /// BTree to whch this node belongs.
                 BTree &btree;
+                /// \brief
+                /// Node id (will be converted to a file name).
                 GUID id;
+                /// \brief
+                /// Node file path.
                 std::string path;
+                /// \brief
+                /// Count of entries.
                 ui32 count;
+                /// \brief
+                /// Left most child node id.
                 GUID leftId;
+                /// \brief
+                /// Left most child node.
                 Node *leftNode;
+                /// \struct BTree::Node::Entry BTree.h thekogans/util/BTree.h
+                ///
+                /// \brief
+                /// Node entries contain keys and right (grater then) children.
                 struct Entry {
+                    /// \brief
+                    /// Entry key.
                     Key key;
+                    /// \brief
+                    /// Right child node id.
                     GUID rightId;
+                    /// \brief
+                    /// Right child node.
                     Node *rightNode;
 
+                    /// \brief
+                    /// ctor.
+                    /// \param[in] key_ Entry key.
                     Entry (const Key &key_ = Key (NIDX64, NIDX64)) :
                         key (key_),
                         rightId (GUID::Empty),
                         rightNode (nullptr) {}
                 };
+                /// \brief
+                /// Entry array. The rest of the entries are
+                /// allocated when the node is allocated.
                 Entry entries[1];
 
+                /// \brief
+                /// ctor.
+                /// \param[in] btree_ BTree to whch this node belongs.
+                /// \param[in] id_ Node id (will be converted to a file name).
                 Node (
                     BTree &btree_,
                     const GUID &id_ = GUID::FromRandom ());
+                /// \brief
+                /// dtor.
                 ~Node ();
 
+                /// \brief
+                /// Given the number of entries, return the node size in bytes.
                 static std::size_t Size (ui32 entriesPerNode);
+                /// \brief
+                /// Allocate a node.
+                /// \param[in] btree BTree to which this node belongs.
+                /// \param[in] id Node id.
                 static Node *Alloc (
                     BTree &btree,
-                    const GUID &id_ = GUID::FromRandom ());
-                static void Free (
-                    BTree &btree,
-                    Node *node);
-                static void Delete (
-                    BTree &btree,
-                    Node *node);
+                    const GUID &id = GUID::FromRandom ());
+                /// \brief
+                /// Free the given node.
+                static void Free (Node *node);
+                static void Delete (Node *node);
 
                 void Save ();
                 Node *GetChild (ui32 index);
@@ -74,34 +156,68 @@ namespace thekogans {
                 inline void Concatenate (const Entry &entry) {
                     InsertEntry (entry, count);
                 }
+                /// \brief
+                /// Insert the given entry at the given index.
                 void InsertEntry (
                     const Entry &entry,
                     ui32 index);
+                /// \brief
+                /// Remove the entry at the given index.
                 void RemoveEntry (ui32 index);
+                /// \brief
+                /// Return true if the node is empty.
                 inline bool IsEmpty () const {
                     return count == 0;
                 }
+                /// \brief
+                /// Return true if the node is full.
                 inline bool IsFull () const {
                     return count == btree.header.entriesPerNode;
                 }
+                /// \brief
+                /// Return true if less than half the node is occupied.
                 inline bool IsPoor () const {
                     return count < btree.header.entriesPerNode / 2;
                 }
+                /// \brief
+                /// Return true if more than half the node is occupied.
                 inline bool IsPlentiful () const {
                     return count > btree.header.entriesPerNode / 2;
                 }
             } *root;
 
         public:
+            /// \brief
+            /// ctor.
+            /// \param[in] path_ Directory where the btree files are stored.
+            /// \param[in] entriesPerNode If the btree is just being created
+            /// use this value for entries per node.
             BTree (
                 const std::string &path_,
-                ui32 entriesPerNode = DEFAULT_ENTRIES_PER_NODE);
+                ui32 entriesPerNode = DEFAULT_ENTRIES_PER_NODE,
+                Allocator::SharedPtr allocator_ = DefaultAllocator::Instance ());
+            /// \brief
+            /// dtor.
             ~BTree ();
 
+            /// \brief
+            /// Find the given key in the btree.
+            /// \param[in] key Key to find.
+            /// \return If found the given key will be returned.
+            /// If not found, return the nearest largest key.
             Key Search (const Key &key);
+            /// \brief
+            /// Add the given key to the btree.
+            /// \param[in] key Key to add.
+            /// NOTE: Duplicate keys are ignored.
             void Add (const Key &key);
+            /// \brief
+            /// Delete the given key from the btree.
+            /// \param[in] key Key whose entry to delete.
+            /// \return true == entry deleted. false == entry not found.
             bool Delete (const Key &key);
-
+            /// \brief
+            /// Flush the node cache (used in tight memory situations).
             void Flush ();
 
         private:

@@ -78,14 +78,9 @@ namespace thekogans {
                 /// \brief
                 /// Forward declaration of Worker.
                 struct Worker;
-                enum {
-                    /// \brief
-                    /// WorkerList ID.
-                    WORKER_LIST_ID
-                };
                 /// \brief
-                /// Alias for IntrusiveList<Worker, WORKER_LIST_ID>.
-                using WorkerList = IntrusiveList<Worker, WORKER_LIST_ID>;
+                /// Alias for IntrusiveList<Worker>.
+                using WorkerList = IntrusiveList<Worker>;
                 /// \struct JobQueue::Worker JobQueue.h thekogans/util/JobQueue.h
                 ///
                 /// \brief

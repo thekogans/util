@@ -52,14 +52,9 @@ namespace thekogans {
             /// \brief
             /// Forward declaration of Entry.
             struct Entry;
-            enum {
-                /// \brief
-                /// EntryList list id.
-                ENTRY_LIST_ID
-            };
             /// \brief
-            /// Alias for IntrusiveList<Page, ENTRY_LIST_ID>.
-            using EntryList = IntrusiveList<Entry, ENTRY_LIST_ID>;
+            /// Alias for IntrusiveList<Entry>.
+            using EntryList = IntrusiveList<Entry>;
             /// \struct LoggerMgr::Entry LoggerMgr.h thekogans/util/LoggerMgr.h
             ///
             /// \brief

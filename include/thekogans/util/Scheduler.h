@@ -48,14 +48,9 @@ namespace thekogans {
             struct JobQueue;
 
         private:
-            enum {
-                /// \brief
-                /// JobQueueList ID.
-                JOB_QUEUE_LIST_ID
-            };
             /// \brief
-            /// Alias for IntrusiveList<JobQueue, JOB_QUEUE_LIST_ID>.
-            using JobQueueList = IntrusiveList<JobQueue, JOB_QUEUE_LIST_ID>;
+            /// Alias for IntrusiveList<JobQueue>.
+            using JobQueueList = IntrusiveList<JobQueue>;
 
         public:
         #if defined (TOOLCHAIN_COMPILER_cl)

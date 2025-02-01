@@ -18,11 +18,7 @@
 #if !defined (__thekogans_util_Allocator_h)
 #define __thekogans_util_Allocator_h
 
-#include <cstddef>
-#include <memory>
 #include <string>
-#include <list>
-#include <map>
 #include "thekogans/util/Config.h"
 #include "thekogans/util/DynamicCreatable.h"
 

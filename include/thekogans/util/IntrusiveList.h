@@ -85,7 +85,7 @@ namespace thekogans {
 
         template<
             typename T,
-            i32 ID>
+            i32 ID = 0>
         struct IntrusiveList {
             /// \struct IntrusiveList::Node IntrusiveList.h thekogans/util/IntrusiveList.h
             ///

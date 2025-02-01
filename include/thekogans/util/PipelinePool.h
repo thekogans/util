@@ -107,14 +107,9 @@ namespace thekogans {
             /// \brief
             /// Forward declaration of Pipeline.
             struct Pipeline;
-            enum {
-                /// \brief
-                /// PipelineList list id.
-                PIPELINE_LIST_ID
-            };
             /// \brief
-            /// Alias for IntrusiveList<Pipeline, PIPELINE_LIST_ID>.
-            using PipelineList = IntrusiveList<Pipeline, PIPELINE_LIST_ID>;
+            /// Alias for IntrusiveList<Pipeline>.
+            using PipelineList = IntrusiveList<Pipeline>;
         #if defined (TOOLCHAIN_COMPILER_cl)
             #pragma warning (push)
             #pragma warning (disable : 4275)
