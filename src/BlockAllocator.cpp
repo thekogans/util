@@ -59,8 +59,8 @@ namespace thekogans {
                 allocator->Free (page, Page::Size (page->blockSize, page->blocksPerPage));
                 return true;
             };
-            fullPages.erase (callback);
-            partialPages.erase (callback);
+            fullPages.clear (callback);
+            partialPages.clear (callback);
         }
 
         bool BlockAllocator::IsValidPtr (void *ptr) noexcept {

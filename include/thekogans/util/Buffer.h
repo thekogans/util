@@ -646,11 +646,11 @@ namespace thekogans {
             /// \return *this.
             TenantReadBuffer &operator = (const Buffer &buffer) {
                 if (&buffer != this) {
-                    allocator = buffer.allocator;
                     data = buffer.data;
                     length = buffer.length;
                     readOffset = buffer.readOffset;
                     writeOffset = buffer.writeOffset;
+                    allocator = NullAllocator::Instance ();
                 }
                 return *this;
             }
@@ -694,10 +694,6 @@ namespace thekogans {
                     0,
                     writeOffset,
                     NullAllocator::Instance ()) {}
-
-            /// \brief
-            /// TenantWriteBuffer is neither copy constructable, nor assignable.
-            THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (TenantWriteBuffer)
         };
 
         /// \struct NetworkBuffer Buffer.h thekogans/util/Buffer.h

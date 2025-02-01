@@ -216,12 +216,12 @@ namespace thekogans {
                 ui32 entriesPerNode,
                 Allocator::SharedPtr allocator_) :
                 path (path_),
-                header (entriesPerNode),
+                header (entriesPerNode > 0 ? entriesPerNode : DEFAULT_ENTRIES_PER_NODE),
                 allocator (
                     BlockAllocator::Pool::Instance ()->GetBlockAllocator (
-                        Node::Size (entriesPerNode),
+                        Node::Size (header.entriesPerNode),
                         BlockAllocator::DEFAULT_BLOCKS_PER_PAGE,
-                        allocator_)),
+                        allocator_ != nullptr ? allocator_ : DefaultAllocator::Instance ())),
                 root (nullptr) {
             Path btreePath (MakePath (path, "btree"));
             if (btreePath.Exists ()) {
