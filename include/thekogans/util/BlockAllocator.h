@@ -20,6 +20,8 @@
 
 #include <map>
 #include "thekogans/util/Config.h"
+#include "thekogans/util/Types.h"
+#include "thekogans/util/SpinLock.h"
 #include "thekogans/util/Singleton.h"
 #include "thekogans/util/Allocator.h"
 #include "thekogans/util/DefaultAllocator.h"
@@ -31,7 +33,10 @@ namespace thekogans {
         /// \struct BlockAllocator BlockAllocator.h thekogans/util/BlockAllocator.h
         ///
         /// \brief
-        /// BlockAllocator
+        /// BlockAllocator is an adapter class. It takes a regular \see{Allocator} and
+        /// turns it in to a fixed block allocator. Each block allocated by BlockAllocator
+        /// is the same size. This makes BlockAllocator::Alloc and BlockAllocator::Free
+        /// run in O(1). Like all other allocators BlockAllocator is thread safe.
 
         struct _LIB_THEKOGANS_UTIL_DECL BlockAllocator : public Allocator {
             /// \brief
@@ -45,16 +50,46 @@ namespace thekogans {
             /// \brief
             /// Alias for IntrusiveList<Page>.
             using PageList = IntrusiveList<Page>;
+            /// \struct BlockAllocator::Page BlockAllocator.h thekogans/util/BlockAllocator.h
+            ///
+            /// \brief
+            /// Blocks are allocated from pages. Each page has the
+            /// following layout:
+            ///
+            /// +-----------------------------------------------------+\n
+            /// | Page data | Block 0 | ... | Block blocksPerPage - 1 |\n
+            /// +-----------------------------------------------------+
             struct Page : public PageList::Node {
+                /// \brief
+                /// Block size.
                 const std::size_t blockSize;
+                /// \brief
+                /// Number of blocks per page.
                 const std::size_t blocksPerPage;
+                /// \brief
+                /// Number of allocated blocks.
                 std::size_t blockCount;
+                /// \union BlockAllocator::Page::Block BlockAllocator.h thekogans/util/BlockAllocator.h
+                ///
+                /// \brief
                 union Block {
+                    /// \brief
+                    /// Pointer to next free block.
                     Block *next;
+                    /// \brief
+                    /// Block data.
                     ui8 block[1];
+                /// \brief
+                /// Pointer to first free block.a
                 } *freeBlock;
+                /// \brief
+                /// Array of blocks following the page.
                 ui8 blocks[1];
 
+                /// \brief
+                /// ctor.
+                /// \param[in] blockSize_ Block size.
+                /// \param[in] blocksPerPage_ Number of blocks per page.
                 Page (std::size_t blockSize_,
                     std::size_t blocksPerPage_) :
                     blockSize (blockSize_),
@@ -62,64 +97,56 @@ namespace thekogans {
                     blockCount (0),
                     freeBlock (nullptr) {}
 
+                /// \brief
+                /// Given a block size and blocks per page, return
+                /// the size of the allocated page in bytes.
+                /// \param[in] blockSize Block size.
+                /// \param[in] blocksPerPage Number of blocks per page.
+                /// \return Size of allocated page in bytes.
                 static std::size_t Size (
                         std::size_t blockSize,
                         std::size_t blocksPerPage) {
                     return sizeof (Page) - sizeof (blocks) + blockSize * blocksPerPage;
                 }
 
+                /// \brief
+                /// Return true if page is empty.
+                /// \return true if page is empty.
                 inline bool IsEmpty () const {
                     return blockCount == 0;
                 }
+                /// \brief
+                /// Return true if page is full.
+                /// \return true if page is full.
                 inline bool IsFull () const {
                     return blockCount == blocksPerPage;
                 }
 
-                inline void *Alloc () {
-                    if (freeBlock != nullptr) {
-                        Block *block = freeBlock;
-                        freeBlock = freeBlock->next;
-                        ++blockCount;
-                        return block->block;
-                    }
-                    else if (!IsFull ()) {
-                        return blocks + blockSize * blockCount++;
-                    }
-                    // We are allocating from a full page!
-                    assert (0);
-                    return 0;
-                }
+                /// \brief
+                /// Allocate a block.
+                /// \return Pointer to block.
+                void *Alloc ();
+                /// \brief
+                /// Free a previously allocated block.
+                /// \param[in] ptr Previously allocated block.
+                void Free (void *ptr);
 
-                inline void Free (void *ptr) {
-                    Block *block = (Block *)ptr;
-                    block->next = freeBlock;
-                    freeBlock = block;
-                    --blockCount;
-                }
-
-                inline bool IsValidPtr (void *ptr) {
-                    Block *block = (Block *)ptr;
-                    return
-                        // Verify that the given pointer points to the
-                        // beginning of an block.
-                        block->block >= blocks && block->block < blocks + blocksPerPage * blockSize &&
-                        (std::ptrdiff_t)((const std::size_t)block->block -
-                            (const std::size_t)blocks) % blockSize == 0;
-                }
+                /// \brief
+                /// Return true if the given pointer is one of ours.
+                /// \param[in] ptr Pointer to check.
+                /// \return true == we own the pointer, false == the pointer is not one of ours.
+                bool IsValidPtr (void *ptr);
             };
 
             /// \brief
-            /// Bloc size.
+            /// Block size.
             const std::size_t blockSize;
             /// \brief
-            /// BlockAllocator minimum blocks in page.
+            /// Minimum blocks in page.
             std::size_t blocksPerPage;
             /// \brief
-            /// Pages need to be aligned on a page size boundary.
+            /// Page allocator.
             Allocator::SharedPtr allocator;
-            /// \brief
-            /// Current number of blocks on the heap.
-            std::size_t blockCount;
             /// \brief
             /// Full pages.
             PageList fullPages;
@@ -132,28 +159,25 @@ namespace thekogans {
 
         public:
             enum {
+                /// \brief
+                /// Default number of blocks per page.
                 DEFAULT_BLOCKS_PER_PAGE = 256
             };
 
             /// \brief
             /// ctor.
-            /// \param[in] blocksPerPage_ BlockAllocator minimum blocks in page.
-            /// NOTE: The heap uses an \see{AlignedAllocator} to allocate its pages.
-            /// To maximize memory efficiency, any given page may contain
-            /// more or less blocks then any other (depends on alignment. See
-            /// AlignedAllocator.h). Therefore you cannot dictate the exact
-            /// count of blocks per page, only the minimum.
-            /// \param[in] allocator_ Page allocator.
+            /// \param[in] blockSize_ Block size.
+            /// \param[in] blocksPerPage_ Minimum blocks per page.
+            /// \param[in] allocator_ \see{Allocator} used to allocate pages.
             BlockAllocator (
                 std::size_t blockSize_,
                 std::size_t blocksPerPage_ = DEFAULT_BLOCKS_PER_PAGE,
                 Allocator::SharedPtr allocator_ = DefaultAllocator::Instance ()) :
                 blockSize (blockSize_ >= sizeof (Page::Block) ? blockSize_ : sizeof (Page::Block)),
                 blocksPerPage (blocksPerPage_ > 0 ? blocksPerPage_ : 1),
-                allocator (allocator_ != nullptr ? allocator_ : DefaultAllocator::Instance ()),
-                blockCount (0) {}
+                allocator (allocator_ != nullptr ? allocator_ : DefaultAllocator::Instance ()) {}
             /// \brief
-            /// dtor. Remove the heap from the registrty.
+            /// dtor.
             virtual ~BlockAllocator ();
 
             /// \brief
@@ -164,27 +188,42 @@ namespace thekogans {
 
             /// \brief
             /// Allocate a block.
-            /// NOTE: BlockAllocator policy is to return nullptr if size == 0.
-            /// if size > 0 and an error occurs, BlockAllocator will throw an exception.
-            /// \param[in] size Size of block to allocate.
-            /// \return Pointer to the allocated block (nullptr if size == 0).
+            /// \param[in] size Size of block to allocate (ignored).
+            /// \return Pointer to the allocated block.
             virtual void *Alloc (std::size_t /*size*/) override;
             /// \brief
             /// Free a previously Alloc(ated) block.
             /// NOTE: BlockAllocator policy is to do nothing if ptr == nullptr.
             /// \param[in] ptr Pointer to the block returned by Alloc.
-            /// \param[in] size Same size parameter previously passed in to Alloc.
+            /// \param[in] size Size of block to free (ignored).
             virtual void Free (
                 void *ptr,
                 std::size_t /*size*/) override;
 
+            /// \struct BlockAllocator::Pool BlockAllocator.h thekogans/util/BlockAllocator.h
+            ///
+            /// \brief
+            /// Use Pool to recycle and reuse block allocators.
             struct _LIB_THEKOGANS_UTIL_DECL Pool : public Singleton<Pool> {
             private:
+                /// \brief
+                /// BlockAllocator map type (keyed on block size).
                 using Map = std::map<std::size_t, Allocator::SharedPtr>;
+                /// \brief
+                /// BlockAllocator map.
                 Map map;
+                /// \brief
+                /// Synchronization lock.
                 SpinLock spinLock;
 
             public:
+                /// \brief
+                /// Given a block size, return a matching block allocator.
+                /// If we don't have one, create it.
+                /// \param[in] blockSize Block size.
+                /// \param[in] blocksPerPage Minimum blocks per page.
+                /// \param[in] allocator \see{Allocator} used to allocate pages.
+                /// \return BlockAllocator matching the given block size.
                 Allocator::SharedPtr GetBlockAllocator (
                     std::size_t blockSize,
                     std::size_t blocksPerPage = DEFAULT_BLOCKS_PER_PAGE,
@@ -195,14 +234,16 @@ namespace thekogans {
             /// \brief
             /// Return first partially allocated page (presumably for allocation).
             /// If no partially allocated pages left, allocate a new one.
-            /// \return Pointer to partialPages.head
+            /// \return Pointer to partialPages.head.
             Page *GetPage ();
             /// \brief
             /// Get the Page to which a given pointer belongs.
             /// \param[in] ptr Pointer whose page we are asked to return.
-            /// \return Page for a given pointer, or 0 if the pointer is not ours.
+            /// \return Page for a given pointer, or nullptr if the pointer is not ours.
             Page *GetPage (void *ptr) const;
 
+            /// \brief
+            /// BlockAllocator is neither copy constructable, nor assignable.
             THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (BlockAllocator)
         };
 

@@ -23,13 +23,44 @@ namespace thekogans {
 
         THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_OVERRIDE (thekogans::util::BlockAllocator)
 
+        void *BlockAllocator::Page::Alloc () {
+            if (freeBlock != nullptr) {
+                Block *block = freeBlock;
+                freeBlock = freeBlock->next;
+                ++blockCount;
+                return block->block;
+            }
+            return blocks + blockSize * blockCount++;
+        }
+
+        void BlockAllocator::Page::Free (void *ptr) {
+            Block *block = (Block *)ptr;
+            block->next = freeBlock;
+            freeBlock = block;
+            --blockCount;
+        }
+
+        bool BlockAllocator::Page::IsValidPtr (void *ptr) {
+            Block *block = (Block *)ptr;
+            return
+                // Verify that the given pointer points to the
+                // beginning of an block.
+                block->block >= blocks && block->block < blocks + blocksPerPage * blockSize &&
+                    (std::ptrdiff_t)((const std::size_t)block->block -
+                        (const std::size_t)blocks) % blockSize == 0;
+        }
+
         BlockAllocator::~BlockAllocator () {
             // We're going out of scope. If there are still
             // pages remaining, we have a memory leak.
-            if (!fullPages.empty () || !partialPages.empty ()) {
-                // FIXME throw
-                assert (0);
-            }
+            assert (fullPages.empty () && partialPages.empty ());
+            auto callback = [allocator = allocator] (Page *page) -> bool {
+                page->~Page ();
+                allocator->Free (page, Page::Size (page->blockSize, page->blocksPerPage));
+                return true;
+            };
+            fullPages.erase (callback);
+            partialPages.erase (callback);
         }
 
         bool BlockAllocator::IsValidPtr (void *ptr) noexcept {
@@ -51,20 +82,12 @@ namespace thekogans {
         void *BlockAllocator::Alloc (std::size_t /*size*/) {
             LockGuard<SpinLock> guard (spinLock);
             Page *page = GetPage ();
-            assert (page != nullptr);
-            if (page != nullptr) {
-                void *ptr = page->Alloc ();
-                assert (ptr != nullptr);
-                if (page->IsFull ()) {
-                    // GetPage will always return a page from the
-                    // partialPages list.
-                    partialPages.erase (page);
-                    fullPages.push_back (page);
-                }
-                ++blockCount;
-                return ptr;
+            void *ptr = page->Alloc ();
+            if (page->IsFull ()) {
+                partialPages.erase (page);
+                fullPages.push_back (page);
             }
-            return nullptr;
+            return ptr;
         }
 
         void BlockAllocator::Free (
@@ -72,27 +95,23 @@ namespace thekogans {
                 std::size_t /*size*/) {
             LockGuard<SpinLock> guard (spinLock);
             Page *page = GetPage (ptr);
-            assert (page != nullptr);
-            if (page != nullptr) {
-                // This logic is necessary to accommodate pages
-                // with one block. They become full after one
-                // allocation, and empty after one deletion.
-                if (page->IsFull ()) {
-                    fullPages.erase (page);
-                    // Put the page at the head of the partial
-                    // pages list. If the next allocation happens
-                    // soon enough, this page should still be in
-                    // cache.
-                    partialPages.push_front (page);
-                }
-                page->Free (ptr);
-                --blockCount;
-                if (page->IsEmpty ()) {
-                    partialPages.erase (page);
-                    page->~Page ();
-                    allocator->Free (page, Page::Size (page->blockSize, page->blocksPerPage));
-                    blocksPerPage >>= 1;
-                }
+            // This logic is necessary to accommodate pages
+            // with one block. They become full after one
+            // allocation, and empty after one deletion.
+            if (page->IsFull ()) {
+                fullPages.erase (page);
+                // Put the page at the head of the partial
+                // pages list. If the next allocation happens
+                // soon enough, this page should still be in
+                // cache.
+                partialPages.push_front (page);
+            }
+            page->Free (ptr);
+            if (page->IsEmpty ()) {
+                partialPages.erase (page);
+                page->~Page ();
+                allocator->Free (page, Page::Size (page->blockSize, page->blocksPerPage));
+                blocksPerPage >>= 1;
             }
         }
 
@@ -112,13 +131,9 @@ namespace thekogans {
 
         BlockAllocator::Page *BlockAllocator::GetPage () {
             if (partialPages.empty ()) {
-                void *page = allocator->Alloc (Page::Size (blockSize, blocksPerPage));
-                assert (page != nullptr);
-                if (page != nullptr) {
-                    // This is safe, as neither placement new, nor
-                    // Page ctor, nor push_back will throw.
-                    partialPages.push_back (new (page) Page (blockSize, blocksPerPage));
-                }
+                partialPages.push_back (
+                    new (allocator->Alloc (Page::Size (blockSize, blocksPerPage)))
+                        Page (blockSize, blocksPerPage));
                 blocksPerPage <<= 1;
             }
             return partialPages.front ();

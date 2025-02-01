@@ -57,40 +57,20 @@ namespace thekogans {
                 // weak counters in RefCounted::References on both 32
                 // and 64 bit architectures. It's even future proof
                 // for 128 bit architectures if they ever become common.
-            #if !defined (THEKOGANS_UTIL_REF_COUNED_REFERENCES_HEAP_BUILD_FREE_LIST)
                 std::size_t itemsInPage;
                 std::size_t itemCount;
-            #endif // !defined (THEKOGANS_UTIL_REF_COUNED_REFERENCES_HEAP_BUILD_FREE_LIST)
                 Page *next;
                 union Item {
                     Item *next;
                     ui8 block[sizeof (RefCounted::References)];
-                } *freeItem,
-                #if defined (THEKOGANS_UTIL_REF_COUNED_REFERENCES_HEAP_BUILD_FREE_LIST)
-                    *lastItem,
-                #endif // defined (THEKOGANS_UTIL_REF_COUNED_REFERENCES_HEAP_BUILD_FREE_LIST)
-                    items[1];
+                } *freeItem;
+                Item items[1];
 
                 Page (std::size_t itemsInPage_) :
-                    #if !defined (THEKOGANS_UTIL_REF_COUNED_REFERENCES_HEAP_BUILD_FREE_LIST)
-                        itemsInPage (itemsInPage_),
-                        itemCount (0),
-                    #endif // !defined (THEKOGANS_UTIL_REF_COUNED_REFERENCES_HEAP_BUILD_FREE_LIST)
-                        next (nullptr),
-                    #if defined (THEKOGANS_UTIL_REF_COUNED_REFERENCES_HEAP_BUILD_FREE_LIST)
-                        freeItem (items),
-                        lastItem (items + itemsInPage_ - 1) {
-                    #else // defined (THEKOGANS_UTIL_REF_COUNED_REFERENCES_HEAP_BUILD_FREE_LIST)
-                        freeItem (nullptr) {
-                    #endif // defined (THEKOGANS_UTIL_REF_COUNED_REFERENCES_HEAP_BUILD_FREE_LIST)
-                #if defined (THEKOGANS_UTIL_REF_COUNED_REFERENCES_HEAP_BUILD_FREE_LIST)
-                    // Chain the items together to create the free list.
-                    for (Item *item = items; item != lastItem; ++item) {
-                        item->next = item + 1;
-                    }
-                    lastItem->next = nullptr;
-                #endif // defined (THEKOGANS_UTIL_REF_COUNED_REFERENCES_HEAP_BUILD_FREE_LIST)
-                }
+                    itemsInPage (itemsInPage_),
+                    itemCount (0),
+                    next (nullptr),
+                    freeItem (nullptr) {}
 
                 // Size of raw block of memory to allocate for the page.
                 static std::size_t Size (std::size_t itemsInPage) {
@@ -98,25 +78,15 @@ namespace thekogans {
                     return sizeof (Page) + sizeof (Item) * (itemsInPage - 1);
                 }
 
-            #if !defined (THEKOGANS_UTIL_REF_COUNED_REFERENCES_HEAP_BUILD_FREE_LIST)
                 inline bool IsEmpty () const {
                     return itemCount == 0;
                 }
-            #endif // !defined (THEKOGANS_UTIL_REF_COUNED_REFERENCES_HEAP_BUILD_FREE_LIST)
                 inline bool IsFull () const {
-                #if defined (THEKOGANS_UTIL_REF_COUNED_REFERENCES_HEAP_BUILD_FREE_LIST)
-                    return freeItem == nullptr;
-                #else // defined (THEKOGANS_UTIL_REF_COUNED_REFERENCES_HEAP_BUILD_FREE_LIST)
                     return itemCount == itemsInPage;
-                #endif // defined (THEKOGANS_UTIL_REF_COUNED_REFERENCES_HEAP_BUILD_FREE_LIST)
                 }
                 // Check to see if the given pointer belongs to this page.
                 inline bool IsItem (const void *ptr) const {
-                #if defined (THEKOGANS_UTIL_REF_COUNED_REFERENCES_HEAP_BUILD_FREE_LIST)
-                    return ptr >= items && ptr <= lastItem;
-                #else // defined (THEKOGANS_UTIL_REF_COUNED_REFERENCES_HEAP_BUILD_FREE_LIST)
                     return ptr >= items && ptr < items + itemsInPage;
-                #endif // defined (THEKOGANS_UTIL_REF_COUNED_REFERENCES_HEAP_BUILD_FREE_LIST)
                 }
 
                 inline void *Alloc () {
@@ -125,18 +95,14 @@ namespace thekogans {
                     // and it makes sure that this method is never
                     // called on a full page.
                     Item *item;
-                #if !defined (THEKOGANS_UTIL_REF_COUNED_REFERENCES_HEAP_BUILD_FREE_LIST)
                     if (freeItem != nullptr) {
-                #endif // !defined (THEKOGANS_UTIL_REF_COUNED_REFERENCES_HEAP_BUILD_FREE_LIST)
                         item = freeItem;
                         freeItem = freeItem->next;
-                #if !defined (THEKOGANS_UTIL_REF_COUNED_REFERENCES_HEAP_BUILD_FREE_LIST)
                     }
                     else {
                         item = items + itemCount;
                     }
                     ++itemCount;
-                #endif // !defined (THEKOGANS_UTIL_REF_COUNED_REFERENCES_HEAP_BUILD_FREE_LIST)
                     return item->block;
                 }
 
@@ -144,9 +110,7 @@ namespace thekogans {
                     Item *item = (Item *)ptr;
                     item->next = freeItem;
                     freeItem = item;
-                #if !defined (THEKOGANS_UTIL_REF_COUNED_REFERENCES_HEAP_BUILD_FREE_LIST)
                     --itemCount;
-                #endif // !defined (THEKOGANS_UTIL_REF_COUNED_REFERENCES_HEAP_BUILD_FREE_LIST)
                 }
             };
 
@@ -255,7 +219,6 @@ namespace thekogans {
                     prev = nullptr;
                 }
                 page->Free (ptr);
-            #if !defined (THEKOGANS_UTIL_REF_COUNED_REFERENCES_HEAP_BUILD_FREE_LIST)
                 if (page->IsEmpty ()) {
                     partialPages.erase (prev, page);
                     page->~Page ();
@@ -265,7 +228,6 @@ namespace thekogans {
                     allocator.Free (page, Page::Size (page->itemsInPage));
                     itemsInPage >>= 1;
                 }
-            #endif // !defined (THEKOGANS_UTIL_REF_COUNED_REFERENCES_HEAP_BUILD_FREE_LIST)
             }
 
         private:
