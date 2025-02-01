@@ -19,7 +19,6 @@
 #include "thekogans/util/Exception.h"
 #include "thekogans/util/Path.h"
 #include "thekogans/util/File.h"
-#include "thekogans/util/BlockAllocator.h"
 #include "thekogans/util/BTree.h"
 
 namespace thekogans {
@@ -214,14 +213,15 @@ namespace thekogans {
         BTree::BTree (
                 const std::string &path_,
                 ui32 entriesPerNode,
+                std::size_t nodesPerPage,
                 Allocator::SharedPtr allocator_) :
                 path (path_),
                 header (entriesPerNode > 0 ? entriesPerNode : DEFAULT_ENTRIES_PER_NODE),
                 allocator (
                     BlockAllocator::Pool::Instance ()->GetBlockAllocator (
                         Node::Size (header.entriesPerNode),
-                        BlockAllocator::DEFAULT_BLOCKS_PER_PAGE,
-                        allocator_ != nullptr ? allocator_ : DefaultAllocator::Instance ())),
+                        nodesPerPage,
+                        allocator_)),
                 root (nullptr) {
             Path btreePath (MakePath (path, "btree"));
             if (btreePath.Exists ()) {

@@ -24,6 +24,7 @@
 #include "thekogans/util/Constants.h"
 #include "thekogans/util/Serializer.h"
 #include "thekogans/util/DefaultAllocator.h"
+#include "thekogans/util/BlockAllocator.h"
 
 namespace thekogans {
     namespace util {
@@ -38,9 +39,9 @@ namespace thekogans {
             /// Keys are structured to allow for greater flexibility.
             using Key = std::pair<ui64, ui64>;
 
-            /// \brief
-            /// Default number of entries per node.
             enum {
+                /// \brief
+                /// Default number of entries per node.
                 DEFAULT_ENTRIES_PER_NODE = 32
             };
 
@@ -200,6 +201,7 @@ namespace thekogans {
             BTree (
                 const std::string &path_,
                 ui32 entriesPerNode = DEFAULT_ENTRIES_PER_NODE,
+                std::size_t nodesPerPage = BlockAllocator::DEFAULT_BLOCKS_PER_PAGE,
                 Allocator::SharedPtr allocator_ = DefaultAllocator::Instance ());
             /// \brief
             /// dtor.
