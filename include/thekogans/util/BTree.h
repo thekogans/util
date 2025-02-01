@@ -141,7 +141,12 @@ namespace thekogans {
                     const GUID &id = GUID::FromRandom ());
                 /// \brief
                 /// Free the given node.
+                /// \param[in] node Node to free.
                 static void Free (Node *node);
+                /// \brief
+                /// Delete the file associated with and free the given empty node.
+                /// If the node is not empty, throw exception.
+                /// \param[in] node Node to delete.
                 static void Delete (Node *node);
 
                 void Save ();

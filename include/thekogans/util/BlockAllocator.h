@@ -147,7 +147,11 @@ namespace thekogans {
             BlockAllocator (
                 std::size_t blockSize_,
                 std::size_t blocksPerPage_ = DEFAULT_BLOCKS_PER_PAGE,
-                Allocator::SharedPtr allocator_ = DefaultAllocator::Instance ());
+                Allocator::SharedPtr allocator_ = DefaultAllocator::Instance ()) :
+                blockSize (blockSize_ >= sizeof (Page::Block) ? blockSize_ : sizeof (Page::Block)),
+                blocksPerPage (blocksPerPage_ > 0 ? blocksPerPage_ : 1),
+                allocator (allocator_ != nullptr ? allocator_ : DefaultAllocator::Instance ()),
+                blockCount (0) {}
             /// \brief
             /// dtor. Remove the heap from the registrty.
             virtual ~BlockAllocator ();

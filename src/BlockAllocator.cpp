@@ -23,25 +23,6 @@ namespace thekogans {
 
         THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_OVERRIDE (thekogans::util::BlockAllocator)
 
-        BlockAllocator::BlockAllocator (
-                std::size_t blockSize_,
-                std::size_t blocksPerPage_,
-                Allocator::SharedPtr allocator_) :
-                blockSize (blockSize_),
-                blocksPerPage (blocksPerPage_),
-                allocator (allocator_),
-                blockCount (0) {
-            if (blockSize < sizeof (Page::Block)) {
-                blockSize = sizeof (Page::Block);
-            }
-            if (blocksPerPage == 0) {
-                blocksPerPage = 1;
-            }
-            if (allocator == nullptr) {
-                allocator = DefaultAllocator::Instance ();
-            }
-        }
-
         BlockAllocator::~BlockAllocator () {
             // We're going out of scope. If there are still
             // pages remaining, we have a memory leak.
