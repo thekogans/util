@@ -72,6 +72,7 @@ namespace thekogans {
                 /// \union BlockAllocator::Page::Block BlockAllocator.h thekogans/util/BlockAllocator.h
                 ///
                 /// \brief
+                /// A convenient union to make dereferencing the structured data easier.
                 union Block {
                     /// \brief
                     /// Pointer to next free block.
@@ -80,7 +81,7 @@ namespace thekogans {
                     /// Block data.
                     ui8 block[1];
                 /// \brief
-                /// Pointer to first free block.a
+                /// Pointer to first free block.
                 } *freeBlock;
                 /// \brief
                 /// Array of blocks following the page.
