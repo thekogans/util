@@ -40,16 +40,16 @@ namespace thekogans {
 
         BTree::Node::Node (
                 BTree &btree_,
-                FileBlockAllocator::PtrType offset_) :
+                FileAllocator::PtrType offset_) :
                 btree (btree_),
                 offset (offset_),
                 count (0),
                 leftOffset (nullptr),
                 leftNode (nullptr) {
             if (offset != nullptr) {
-                FileBlockAllocator::Block::SharedPtr block =
-                    btree.fileNodeAllocator->CreateBlock (offset);
-                btree.fileNodeAllocator->ReadBlock (block);
+                FileAllocator::Block::SharedPtr block =
+                    btree.fileNodeAllocator->CreateBlock (
+                        offset, FileSize (btree.header.entriesPerNode), true);
                 *block >> count;
                 if (count > 0) {
                     *block >> leftOffset;
@@ -75,8 +75,8 @@ namespace thekogans {
         }
 
         std::size_t BTree::Node::FileSize (ui32 entriesPerNode) {
-            const std::size_t ENTRY_SIZE = UI64_SIZE + UI64_SIZE + FileBlockAllocator::PtrTypeSize;
-            return UI32_SIZE + FileBlockAllocator::PtrTypeSize + entriesPerNode * ENTRY_SIZE;
+            const std::size_t ENTRY_SIZE = UI64_SIZE + UI64_SIZE + FileAllocator::PtrTypeSize;
+            return UI32_SIZE + FileAllocator::PtrTypeSize + entriesPerNode * ENTRY_SIZE;
         }
 
         std::size_t BTree::Node::Size (ui32 entriesPerNode) {
@@ -85,7 +85,7 @@ namespace thekogans {
 
         BTree::Node *BTree::Node::Alloc (
                 BTree &btree,
-                FileBlockAllocator::PtrType offset) {
+                FileAllocator::PtrType offset) {
             return new (
                 btree.nodeAllocator->Alloc (
                     Size (btree.header.entriesPerNode))) Node (btree, offset);
@@ -115,8 +115,9 @@ namespace thekogans {
         }
 
         void BTree::Node::Save () {
-            FileBlockAllocator::Block::SharedPtr block =
-                btree.fileNodeAllocator->CreateBlock (offset);
+            FileAllocator::Block::SharedPtr block =
+                btree.fileNodeAllocator->CreateBlock (
+                    offset, FileSize (btree.header.entriesPerNode));
             *block << count;
             if (count > 0) {
                 *block << leftOffset;
@@ -203,17 +204,22 @@ namespace thekogans {
                 (--count - index) * sizeof (Entry));
         }
 
-        BTree::BTree (
-                const std::string &path,
-                ui32 entriesPerNode,
-                std::size_t nodesPerPage,
-                Allocator::SharedPtr allocator) :
-                fileNodeAllocator (
-                    FileBlockAllocator::Pool::Instance ()->GetFileBlockAllocator (
+        /*
+                    FileAllocator::Pool::Instance ()->GetFileAllocator (
                         path,
                         Node::FileSize (entriesPerNode),
                         nodesPerPage,
                         allocator)),
+         */
+
+        BTree::BTree (
+                FileAllocator::SharedPtr fileNodeAllocator_,
+                FileAllocator::PtrType offset_,
+                ui32 entriesPerNode,
+                std::size_t nodesPerPage,
+                Allocator::SharedPtr allocator) :
+                fileNodeAllocator (fileNodeAllocator_),
+                offset (offset_),
                 header (entriesPerNode),
                 nodeAllocator (
                     BlockAllocator::Pool::Instance ()->GetBlockAllocator (
@@ -221,10 +227,9 @@ namespace thekogans {
                         nodesPerPage,
                         allocator)),
                 root (nullptr) {
-            if (fileNodeAllocator->GetRootBlock () != nullptr) {
-                FileBlockAllocator::Block::SharedPtr block =
-                    fileNodeAllocator->CreateBlock (fileNodeAllocator->GetRootBlock ());
-                fileNodeAllocator->ReadBlock (block);
+            if (offset != nullptr) {
+                FileAllocator::Block::SharedPtr block =
+                    fileNodeAllocator->CreateBlock (offset, Header::SIZE, true);
                 *block >> header;
                 if (header.entriesPerNode != entriesPerNode) {
                     nodeAllocator =
@@ -235,8 +240,7 @@ namespace thekogans {
                 }
             }
             else {
-                fileNodeAllocator->SetRootBlock (
-                    fileNodeAllocator->Alloc (Header::SIZE));
+                offset = fileNodeAllocator->Alloc (Header::SIZE);
                 Save ();
             }
             root = Node::Alloc (*this, header.rootOffset);
@@ -461,8 +465,8 @@ namespace thekogans {
         }
 
         void BTree::Save () {
-            FileBlockAllocator::Block::SharedPtr block =
-                fileNodeAllocator->CreateBlock (fileNodeAllocator->GetRootBlock ());
+            FileAllocator::Block::SharedPtr block =
+                fileNodeAllocator->CreateBlock (offset, Header::SIZE);
             *block << header;
             fileNodeAllocator->WriteBlock (block);
         }

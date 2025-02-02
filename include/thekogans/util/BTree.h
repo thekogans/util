@@ -24,7 +24,7 @@
 #include "thekogans/util/Serializer.h"
 #include "thekogans/util/DefaultAllocator.h"
 #include "thekogans/util/BlockAllocator.h"
-#include "thekogans/util/FileBlockAllocator.h"
+#include "thekogans/util/FileAllocator.h"
 
 namespace thekogans {
     namespace util {
@@ -47,7 +47,8 @@ namespace thekogans {
 
         private:
             /// \brief
-            FileBlockAllocator::SharedPtr fileNodeAllocator;
+            FileAllocator::SharedPtr fileNodeAllocator;
+            FileAllocator::PtrType offset;
             /// \struct BTree::Header BTree.h thekogans/util/BTree.h
             ///
             /// \brief
@@ -58,10 +59,10 @@ namespace thekogans {
                 ui32 entriesPerNode;
                 /// \brief
                 /// Root node offset.
-                FileBlockAllocator::PtrType rootOffset;
+                FileAllocator::PtrType rootOffset;
 
                 enum {
-                    SIZE = UI32_SIZE + FileBlockAllocator::PtrTypeSize
+                    SIZE = UI32_SIZE + FileAllocator::PtrTypeSize
                 };
 
                 /// \brief
@@ -82,13 +83,13 @@ namespace thekogans {
                 BTree &btree;
                 /// \brief
                 /// Node block offset.
-                FileBlockAllocator::PtrType offset;
+                FileAllocator::PtrType offset;
                 /// \brief
                 /// Count of entries.
                 ui32 count;
                 /// \brief
                 /// Left most child node offset.
-                FileBlockAllocator::PtrType leftOffset;
+                FileAllocator::PtrType leftOffset;
                 /// \brief
                 /// Left most child node.
                 Node *leftNode;
@@ -102,7 +103,7 @@ namespace thekogans {
                     Key key;
                     /// \brief
                     /// Right child node offset.
-                    FileBlockAllocator::PtrType rightOffset;
+                    FileAllocator::PtrType rightOffset;
                     /// \brief
                     /// Right child node.
                     Node *rightNode;
@@ -126,7 +127,7 @@ namespace thekogans {
                 /// \param[in] offset_ Node offset.
                 Node (
                     BTree &btree_,
-                    FileBlockAllocator::PtrType offset_ = nullptr);
+                    FileAllocator::PtrType offset_ = nullptr);
                 /// \brief
                 /// dtor.
                 ~Node ();
@@ -143,7 +144,7 @@ namespace thekogans {
                 /// \param[in] offset Node offset.
                 static Node *Alloc (
                     BTree &btree,
-                    FileBlockAllocator::PtrType offset = nullptr);
+                    FileAllocator::PtrType offset = nullptr);
                 /// \brief
                 /// Free the given node.
                 /// \param[in] node Node to free.
@@ -199,17 +200,19 @@ namespace thekogans {
         public:
             /// \brief
             /// ctor.
-            /// \param[in] path Directory where the btree files are stored.
-            /// \param[in] entriesPerNode If the btree is just being created
-            /// use this value for entries per node.
             BTree (
-                const std::string &path,
+                FileAllocator::SharedPtr fileNodeAllocator_,
+                FileAllocator::PtrType offset_,
                 ui32 entriesPerNode = DEFAULT_ENTRIES_PER_NODE,
                 std::size_t nodesPerPage = BlockAllocator::DEFAULT_BLOCKS_PER_PAGE,
                 Allocator::SharedPtr allocator = DefaultAllocator::Instance ());
             /// \brief
             /// dtor.
             ~BTree ();
+
+            inline FileAllocator::PtrType GetOffset () const {
+                return offset;
+            }
 
             /// \brief
             /// Find the given key in the btree.

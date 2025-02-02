@@ -101,10 +101,11 @@
     <cpp_header>$(organization)/$(project_directory)/Event.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/Exception.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/File.h</cpp_header>
-    <cpp_header>$(organization)/$(project_directory)/FileBlockAllocator.h</cpp_header>
+    <cpp_header>$(organization)/$(project_directory)/FileAllocator.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/FileLogger.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/FixedArray.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/FixedBuffer.h</cpp_header>
+    <cpp_header>$(organization)/$(project_directory)/FixedSizeFileAllocator.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/Flags.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/Fraction.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/GUID.h</cpp_header>
@@ -136,6 +137,7 @@
     <cpp_header>$(organization)/$(project_directory)/Plugins.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/Point.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/Producer.h</cpp_header>
+    <cpp_header>$(organization)/$(project_directory)/RandomSizeFileAllocator.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/RandomSource.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/Rectangle.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/RecursiveLock.h</cpp_header>
@@ -636,8 +638,10 @@
     <cpp_source>Event.cpp</cpp_source>
     <cpp_source>Exception.cpp</cpp_source>
     <cpp_source>File.cpp</cpp_source>
+    <cpp_source>FileAllocator.cpp</cpp_source>
     <cpp_source>FileBlockAllocator.cpp</cpp_source>
     <cpp_source>FileLogger.cpp</cpp_source>
+    <cpp_source>FixedSizeFileAllocator.cpp</cpp_source>
     <cpp_source>Fraction.cpp</cpp_source>
     <cpp_source>GUID.cpp</cpp_source>
     <cpp_source>HRTimer.cpp</cpp_source>
@@ -661,6 +665,7 @@
     <cpp_source>PipelinePool.cpp</cpp_source>
     <cpp_source>Plugins.cpp</cpp_source>
     <cpp_source>Point.cpp</cpp_source>
+    <cpp_source>RandomSizeFileAllocator.cpp</cpp_source>
     <cpp_source>RandomSource.cpp</cpp_source>
     <cpp_source>Rectangle.cpp</cpp_source>
     <cpp_source>RefCounted.cpp</cpp_source>

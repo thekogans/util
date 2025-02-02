@@ -15,9 +15,10 @@
 // You should have received a copy of the GNU General Public License
 // along with libthekogans_util. If not, see <http://www.gnu.org/licenses/>.
 
-#if !defined (__thekogans_util_FileBlockAllocator_h)
-#define __thekogans_util_FileBlockAllocator_h
+#if !defined (__thekogans_util_FileAllocator_h)
+#define __thekogans_util_FileAllocator_h
 
+#include <map>
 #include "thekogans/util/Config.h"
 #include "thekogans/util/Types.h"
 #include "thekogans/util/File.h"
@@ -29,24 +30,24 @@
 namespace thekogans {
     namespace util {
 
-        /// \struct FileBlockAllocator FileBlockAllocator.h thekogans/util/FileBlockAllocator.h
+        /// \struct FileAllocator FileAllocator.h thekogans/util/FileAllocator.h
         ///
         /// \brief
-        /// FileBlockAllocator
+        /// FileAllocator
 
-        struct _LIB_THEKOGANS_UTIL_DECL FileBlockAllocator : public Allocator {
+        struct _LIB_THEKOGANS_UTIL_DECL FileAllocator : public Allocator {
             /// \brief
             /// Declare \see{RefCounted} pointers.
-            THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (FileBlockAllocator)
+            THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (FileAllocator)
 
             /// \brief
             /// Declare \see{DynamicCreatable} boilerplate.
-            THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE_OVERRIDE (FileBlockAllocator)
+            THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE_OVERRIDE (FileAllocator)
 
             using PtrType = void *;
             static_assert (
                 sizeof (PtrType) >= UI64_SIZE,
-                "Invalid assumption about FileBlockAllocator::PtrType size.");
+                "Invalid assumption about FileAllocator::PtrType size.");
             static const std::size_t PtrTypeSize = UI64_SIZE;
 
             struct _LIB_THEKOGANS_UTIL_DECL Block : public Buffer {
@@ -67,16 +68,19 @@ namespace thekogans {
                     offset (offset_),
                     Buffer (endianness, length, readOffset, writeOffset, allocator) {}
 
-                friend struct FileBlockAllocator;
+                friend struct FileAllocator;
             };
 
-        private:
             SimpleFile file;
             Allocator::SharedPtr blockAllocator;
             struct Header {
                 ui32 blockSize;
                 PtrType freeBlock;
                 PtrType rootBlock;
+
+                enum {
+                    SIZE = UI32_SIZE + PtrTypeSize + PtrTypeSize
+                };
 
                 Header (ui32 blockSize_) :
                     blockSize (blockSize_ >= PtrTypeSize ? blockSize_ : PtrTypeSize),
@@ -90,7 +94,7 @@ namespace thekogans {
                 DEFAULT_BLOCK_SIZE = 512
             };
 
-            FileBlockAllocator (
+            FileAllocator (
                 const std::string &path,
                 std::size_t blockSize = DEFAULT_BLOCK_SIZE,
                 std::size_t blocksPerPage = BlockAllocator::DEFAULT_BLOCKS_PER_PAGE,
@@ -103,11 +107,6 @@ namespace thekogans {
             PtrType GetRootBlock ();
             void SetRootBlock (PtrType rootBlock);
 
-            virtual PtrType Alloc (std::size_t size) override;
-            virtual void Free (
-                PtrType offset,
-                std::size_t size) override;
-
             std::size_t Read (
                 PtrType offset,
                 void *data,
@@ -117,15 +116,22 @@ namespace thekogans {
                 const void *data,
                 std::size_t length);
 
-
-            inline Block::SharedPtr CreateBlock (PtrType offset) const {
-                return new Block (
-                    offset,
-                    GetFileEndianness (),
-                    header.blockSize,
-                    0,
-                    0,
-                    blockAllocator);
+            inline Block::SharedPtr CreateBlock (
+                    PtrType offset,
+                    std::size_t size = 0,
+                    bool read = false) {
+                Block::SharedPtr block (
+                    new Block (
+                        offset,
+                        GetFileEndianness (),
+                        size > 0 ? size : header.blockSize,
+                        0,
+                        0,
+                        blockAllocator));
+                if (read) {
+                    ReadBlock (block);
+                }
+                return block;
             }
             inline std::size_t ReadBlock (Block::SharedPtr block) {
                 return block->AdvanceWriteOffset (
@@ -149,10 +155,10 @@ namespace thekogans {
             struct _LIB_THEKOGANS_UTIL_DECL Pool : public Singleton<Pool> {
             private:
                 /// \brief
-                /// FileBlockAllocator map type (keyed on path).
-                using Map = std::map<std::string, FileBlockAllocator::SharedPtr>;
+                /// FileAllocator map type (keyed on path).
+                using Map = std::map<std::string, FileAllocator::SharedPtr>;
                 /// \brief
-                /// FileBlockAllocator map.
+                /// FileAllocator map.
                 Map map;
                 /// \brief
                 /// Synchronization lock.
@@ -163,15 +169,15 @@ namespace thekogans {
                 /// Given a block size, return a matching block allocator.
                 /// If we don't have one, create it.
                 /// \param[in] blockSize Block size.
-                /// \return FileBlockAllocator matching the given path.
-                FileBlockAllocator::SharedPtr GetFileBlockAllocator (
+                /// \return FileAllocator matching the given path.
+                FileAllocator::SharedPtr GetFileAllocator (
                     const std::string &path,
                     std::size_t blockSize = DEFAULT_BLOCK_SIZE,
                     std::size_t blocksPerPage = BlockAllocator::DEFAULT_BLOCKS_PER_PAGE,
                     Allocator::SharedPtr allocator = DefaultAllocator::Instance ());
             };
 
-        private:
+        protected:
             void Save ();
 
             friend Serializer &operator << (
@@ -182,20 +188,20 @@ namespace thekogans {
                 Header &header);
 
             /// \brief
-            /// FileBlockAllocator is neither copy constructable, nor assignable.
-            THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (FileBlockAllocator)
+            /// FileAllocator is neither copy constructable, nor assignable.
+            THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (FileAllocator)
         };
 
         inline Serializer &operator << (
                 Serializer &serializer,
-                FileBlockAllocator::PtrType ptr) {
+                FileAllocator::PtrType ptr) {
             serializer << (ui64)ptr;
             return serializer;
         }
 
         inline Serializer &operator >> (
                 Serializer &serializer,
-                FileBlockAllocator::PtrType &ptr) {
+                FileAllocator::PtrType &ptr) {
             serializer >> (ui64 &)ptr;
             return serializer;
         }
@@ -203,4 +209,4 @@ namespace thekogans {
     } // namespace util
 } // namespace thekogans
 
-#endif // !defined (__thekogans_util_FileBlockAllocator_h)
+#endif // !defined (__thekogans_util_FileAllocator_h)
