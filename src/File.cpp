@@ -210,6 +210,7 @@ namespace thekogans {
 
         void File::SetSize (ui64 newSize) {
         #if defined (TOOLCHAIN_OS_Windows)
+            ui64 position = PlatformSeek (0, SEEK_CUR);
             PlatformSeek (newSize, SEEK_SET);
             if (!SetEndOfFile (handle)) {
         #else // defined (TOOLCHAIN_OS_Windows)
@@ -218,6 +219,9 @@ namespace thekogans {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_AND_MESSAGE_EXCEPTION (
                     THEKOGANS_UTIL_OS_ERROR_CODE, " (%s)", path.c_str ());
             }
+        #if defined (TOOLCHAIN_OS_Windows)
+            PlatformSeek (position, SEEK_SET);
+        #endif // defined (TOOLCHAIN_OS_Windows)
         }
 
     #if defined (TOOLCHAIN_OS_Windows)

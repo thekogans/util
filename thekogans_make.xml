@@ -101,6 +101,7 @@
     <cpp_header>$(organization)/$(project_directory)/Event.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/Exception.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/File.h</cpp_header>
+    <cpp_header>$(organization)/$(project_directory)/FileBlockAllocator.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/FileLogger.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/FixedArray.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/FixedBuffer.h</cpp_header>
@@ -635,6 +636,7 @@
     <cpp_source>Event.cpp</cpp_source>
     <cpp_source>Exception.cpp</cpp_source>
     <cpp_source>File.cpp</cpp_source>
+    <cpp_source>FileBlockAllocator.cpp</cpp_source>
     <cpp_source>FileLogger.cpp</cpp_source>
     <cpp_source>Fraction.cpp</cpp_source>
     <cpp_source>GUID.cpp</cpp_source>

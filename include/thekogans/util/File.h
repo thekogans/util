@@ -158,7 +158,7 @@ namespace thekogans {
             /// \return Number of bytes actually read.
             virtual std::size_t Read (
                 void *buffer,
-                std::size_t count);
+                std::size_t count) override;
             /// \brief
             /// Write bytes to a file.
             /// \param[in] buffer Where the bytes come from.
@@ -166,7 +166,7 @@ namespace thekogans {
             /// \return Number of bytes actually written.
             virtual std::size_t Write (
                 const void *buffer,
-                std::size_t count);
+                std::size_t count) override;
 
             /// \brief
             /// Return the file pointer position.
