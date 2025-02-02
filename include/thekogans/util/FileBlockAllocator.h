@@ -49,6 +49,27 @@ namespace thekogans {
                 "Invalid assumption about FileBlockAllocator::PtrType size.");
             static const std::size_t PtrTypeSize = UI64_SIZE;
 
+            struct _LIB_THEKOGANS_UTIL_DECL Block : public Buffer {
+                /// \brief
+                /// Declare \see{RefCounted} pointers.
+                THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (Block)
+
+                PtrType offset;
+
+            protected:
+                Block (
+                    PtrType offset_,
+                    Endianness endianness,
+                    std::size_t length,
+                    std::size_t readOffset = 0,
+                    std::size_t writeOffset = 0,
+                    Allocator::SharedPtr allocator = DefaultAllocator::Instance ()) :
+                    offset (offset_),
+                    Buffer (endianness, length, readOffset, writeOffset, allocator) {}
+
+                friend struct FileBlockAllocator;
+            };
+
         private:
             SimpleFile file;
             Allocator::SharedPtr blockAllocator;
@@ -91,21 +112,32 @@ namespace thekogans {
                 PtrType offset,
                 void *data,
                 std::size_t length);
-            Buffer::SharedPtr ReadBlock (PtrType offset);
-            inline Buffer::SharedPtr CreateBlock () const {
-                return new Buffer (
-                    GetFileEndianness (), header.blockSize, 0, 0, blockAllocator);
-            }
             std::size_t Write (
                 PtrType offset,
                 const void *data,
                 std::size_t length);
-            inline std::size_t WriteBlock (
-                    PtrType offset,
-                    Buffer::SharedPtr block) {
+
+
+            inline Block::SharedPtr CreateBlock (PtrType offset) const {
+                return new Block (
+                    offset,
+                    GetFileEndianness (),
+                    header.blockSize,
+                    0,
+                    0,
+                    blockAllocator);
+            }
+            inline std::size_t ReadBlock (Block::SharedPtr block) {
+                return block->AdvanceWriteOffset (
+                    Read (
+                        block->offset,
+                        block->GetWritePtr (),
+                        block->GetDataAvailableForWriting ()));
+            }
+            inline std::size_t WriteBlock (Block::SharedPtr block) {
                 return block->AdvanceReadOffset (
                     Write (
-                        offset,
+                        block->offset,
                         block->GetReadPtr (),
                         block->GetDataAvailableForReading ()));
             }

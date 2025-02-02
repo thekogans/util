@@ -134,16 +134,6 @@ namespace thekogans {
             return file.Read (data, length);
         }
 
-        Buffer::SharedPtr FileBlockAllocator::ReadBlock (PtrType offset) {
-            Buffer::SharedPtr block = CreateBlock ();
-            block->AdvanceWriteOffset (
-                Read (
-                    offset,
-                    block->GetWritePtr (),
-                    block->GetDataAvailableForWriting ()));
-            return block;
-        }
-
         std::size_t FileBlockAllocator::Write (
                 PtrType offset,
                 const void *data,

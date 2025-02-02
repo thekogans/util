@@ -47,7 +47,9 @@ namespace thekogans {
                 leftOffset (nullptr),
                 leftNode (nullptr) {
             if (offset != nullptr) {
-                Buffer::SharedPtr block = btree.fileNodeAllocator->ReadBlock (offset);
+                FileBlockAllocator::Block::SharedPtr block =
+                    btree.fileNodeAllocator->CreateBlock (offset);
+                btree.fileNodeAllocator->ReadBlock (block);
                 *block >> count;
                 if (count > 0) {
                     *block >> leftOffset;
@@ -113,7 +115,8 @@ namespace thekogans {
         }
 
         void BTree::Node::Save () {
-            Buffer::SharedPtr block = btree.fileNodeAllocator->CreateBlock ();
+            FileBlockAllocator::Block::SharedPtr block =
+                btree.fileNodeAllocator->CreateBlock (offset);
             *block << count;
             if (count > 0) {
                 *block << leftOffset;
@@ -121,7 +124,7 @@ namespace thekogans {
                     *block << entries[i];
                 }
             }
-            btree.fileNodeAllocator->WriteBlock (offset, block);
+            btree.fileNodeAllocator->WriteBlock (block);
         }
 
         BTree::Node *BTree::Node::GetChild (ui32 index) {
@@ -219,8 +222,9 @@ namespace thekogans {
                         allocator)),
                 root (nullptr) {
             if (fileNodeAllocator->GetRootBlock () != nullptr) {
-                Buffer::SharedPtr block =
-                    fileNodeAllocator->ReadBlock (fileNodeAllocator->GetRootBlock ());
+                FileBlockAllocator::Block::SharedPtr block =
+                    fileNodeAllocator->CreateBlock (fileNodeAllocator->GetRootBlock ());
+                fileNodeAllocator->ReadBlock (block);
                 *block >> header;
                 if (header.entriesPerNode != entriesPerNode) {
                     nodeAllocator =
@@ -457,9 +461,10 @@ namespace thekogans {
         }
 
         void BTree::Save () {
-            Buffer::SharedPtr block = fileNodeAllocator->CreateBlock ();
+            FileBlockAllocator::Block::SharedPtr block =
+                fileNodeAllocator->CreateBlock (fileNodeAllocator->GetRootBlock ());
             *block << header;
-            fileNodeAllocator->WriteBlock (fileNodeAllocator->GetRootBlock (), block);
+            fileNodeAllocator->WriteBlock (block);
         }
 
         void BTree::SetRoot (Node *node) {
