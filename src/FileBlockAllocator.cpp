@@ -22,11 +22,20 @@
 namespace thekogans {
     namespace util {
 
+        THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_OVERRIDE (thekogans::util::FileBlockAllocator)
+
         FileBlockAllocator::FileBlockAllocator (
                 const std::string &path,
-                ui32 blockSize) :
+                std::size_t blockSize,
+                std::size_t blocksPerPage,
+                Allocator::SharedPtr allocator) :
                 file (HostEndian, path, SimpleFile::ReadWrite | SimpleFile::Create),
-                header (blockSize) {
+                blockAllocator (
+                    BlockAllocator::Pool::Instance ()->GetBlockAllocator (
+                        blockSize,
+                        blocksPerPage,
+                        allocator)),
+                header ((ui32)blockSize) {
             if (file.GetSize () > 0) {
                 ui32 magic;
                 file >> magic;
@@ -43,67 +52,72 @@ namespace thekogans {
                         path.c_str ());
                 }
                 file >> header;
+                if (header.blockSize != blockSize) {
+                    blockAllocator =
+                        BlockAllocator::Pool::Instance ()->GetBlockAllocator (
+                            header.blockSize,
+                            blocksPerPage,
+                            allocator);
+                }
             }
             else {
                 Save ();
             }
         }
 
-        ui64 FileBlockAllocator::GetRootBlock () {
+        FileBlockAllocator::PtrType FileBlockAllocator::GetRootBlock () {
             LockGuard<SpinLock> guard (spinLock);
             return header.rootBlock;
         }
 
-        void FileBlockAllocator::SetRootBlock (ui64 rootBlock) {
+        void FileBlockAllocator::SetRootBlock (PtrType rootBlock) {
             LockGuard<SpinLock> guard (spinLock);
             header.rootBlock = rootBlock;
             Save ();
         }
 
-        ui64 FileBlockAllocator::Alloc (std::size_t size) {
-            ui64 offset = NIDX64;
+        FileBlockAllocator::PtrType FileBlockAllocator::Alloc (std::size_t size) {
+            PtrType offset = nullptr;
             if (size <= header.blockSize) {
                 LockGuard<SpinLock> guard (spinLock);
-                if (header.freeBlock != NIDX64) {
+                if (header.freeBlock != nullptr) {
                     offset = header.freeBlock;
-                    file.Seek (offset, SEEK_SET);
+                    file.Seek ((ui64)offset, SEEK_SET);
                     file >> header.freeBlock;
                     Save ();
                 }
                 else {
-                    offset = file.GetSize ();
-                    file.SetSize (offset + header.blockSize);
+                    offset = (FileBlockAllocator::PtrType)file.GetSize ();
+                    file.SetSize ((ui64)offset + header.blockSize);
                 }
             }
             return offset;
         }
 
         void FileBlockAllocator::Free (
-                ui64 offset,
+                PtrType offset,
                 std::size_t size) {
             if (size <= header.blockSize) {
                 bool save = false;
                 LockGuard<SpinLock> guard (spinLock);
                 if (header.rootBlock == offset) {
-                    header.rootBlock = NIDX64;
+                    header.rootBlock = nullptr;
                     save = true;
                 }
-                if (offset + header.blockSize < file.GetSize ()) {
-                    file.Seek (offset, SEEK_SET);
+                if ((ui64)offset + header.blockSize < file.GetSize ()) {
+                    file.Seek ((ui64)offset, SEEK_SET);
                     file << header.freeBlock;
                     header.freeBlock = offset;
                     save = true;
                 }
                 else {
-                    if (header.freeBlock == offset - header.blockSize) {
-                        while (header.freeBlock == offset - header.blockSize) {
-                            offset = header.freeBlock;
-                            file.Seek (header.freeBlock, SEEK_SET);
-                            file >> header.freeBlock;
-                        }
+                    while ((ui64)header.freeBlock == (ui64)offset - header.blockSize) {
+                        offset = header.freeBlock;
+                        file.Seek ((ui64)header.freeBlock, SEEK_SET);
+                        file >> header.freeBlock;
                         save = true;
                     }
-                    file.SetSize (offset);
+                    file.SetSize ((ui64)offset);
                 }
                 if (save) {
                     Save ();
@@ -112,21 +126,46 @@ namespace thekogans {
         }
 
         std::size_t FileBlockAllocator::Read (
-                ui64 offset,
+                PtrType offset,
                 void *data,
                 std::size_t length) {
             LockGuard<SpinLock> guard (spinLock);
-            file.Seek (offset, SEEK_SET);
+            file.Seek ((ui64)offset, SEEK_SET);
             return file.Read (data, length);
         }
 
+        Buffer::SharedPtr FileBlockAllocator::ReadBlock (PtrType offset) {
+            Buffer::SharedPtr block = CreateBlock ();
+            block->AdvanceWriteOffset (
+                Read (
+                    offset,
+                    block->GetWritePtr (),
+                    block->GetDataAvailableForWriting ()));
+            return block;
+        }
+
         std::size_t FileBlockAllocator::Write (
-                ui64 offset,
+                PtrType offset,
                 const void *data,
                 std::size_t length) {
             LockGuard<SpinLock> guard (spinLock);
-            file.Seek (offset, SEEK_SET);
+            file.Seek ((ui64)offset, SEEK_SET);
             return file.Write (data, length);
+        }
+
+        FileBlockAllocator::SharedPtr FileBlockAllocator::Pool::GetFileBlockAllocator (
+                const std::string &path,
+                std::size_t blockSize,
+                std::size_t blocksPerPage,
+                Allocator::SharedPtr allocator) {
+            LockGuard<SpinLock> guard (spinLock);
+            std::pair<Map::iterator, bool> result =
+                map.insert (Map::value_type (path, nullptr));
+            if (result.second) {
+                result.first->second.Reset (
+                    new FileBlockAllocator (path, blockSize, blocksPerPage, allocator));
+            }
+            return result.first->second;
         }
 
         void FileBlockAllocator::Save () {

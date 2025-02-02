@@ -47,7 +47,7 @@ namespace thekogans {
 
         private:
             /// \brief
-            FileBlockAllocator fileBlockAllocator;
+            FileBlockAllocator::SharedPtr fileNodeAllocator;
             /// \struct BTree::Header BTree.h thekogans/util/BTree.h
             ///
             /// \brief
@@ -58,10 +58,10 @@ namespace thekogans {
                 ui32 entriesPerNode;
                 /// \brief
                 /// Root node offset.
-                ui64 rootOffset;
+                FileBlockAllocator::PtrType rootOffset;
 
                 enum {
-                    SIZE = UI32_SIZE + UI64_SIZE
+                    SIZE = UI32_SIZE + FileBlockAllocator::PtrTypeSize
                 };
 
                 /// \brief
@@ -69,9 +69,8 @@ namespace thekogans {
                 /// \param[in] entriesPerNode_ Entries per node.
                 Header (ui32 entriesPerNode_ = DEFAULT_ENTRIES_PER_NODE) :
                     entriesPerNode (entriesPerNode_),
-                    rootOffset (NIDX64) {}
+                    rootOffset (nullptr) {}
             } header;
-            Allocator::SharedPtr fileNodeAllocator;
             Allocator::SharedPtr nodeAllocator;
             /// \struct BTree::Node BTree.h thekogans/util/BTree.h
             ///
@@ -83,13 +82,13 @@ namespace thekogans {
                 BTree &btree;
                 /// \brief
                 /// Node block offset.
-                ui64 offset;
+                FileBlockAllocator::PtrType offset;
                 /// \brief
                 /// Count of entries.
                 ui32 count;
                 /// \brief
                 /// Left most child node offset.
-                ui64 leftOffset;
+                FileBlockAllocator::PtrType leftOffset;
                 /// \brief
                 /// Left most child node.
                 Node *leftNode;
@@ -103,7 +102,7 @@ namespace thekogans {
                     Key key;
                     /// \brief
                     /// Right child node offset.
-                    ui64 rightOffset;
+                    FileBlockAllocator::PtrType rightOffset;
                     /// \brief
                     /// Right child node.
                     Node *rightNode;
@@ -113,7 +112,7 @@ namespace thekogans {
                     /// \param[in] key_ Entry key.
                     Entry (const Key &key_ = Key (NIDX64, NIDX64)) :
                         key (key_),
-                        rightOffset (NIDX64),
+                        rightOffset (nullptr),
                         rightNode (nullptr) {}
                 };
                 /// \brief
@@ -127,7 +126,7 @@ namespace thekogans {
                 /// \param[in] offset_ Node offset.
                 Node (
                     BTree &btree_,
-                    ui64 offset_ = NIDX64);
+                    FileBlockAllocator::PtrType offset_ = nullptr);
                 /// \brief
                 /// dtor.
                 ~Node ();
@@ -144,7 +143,7 @@ namespace thekogans {
                 /// \param[in] offset Node offset.
                 static Node *Alloc (
                     BTree &btree,
-                    ui64 offset = NIDX64);
+                    FileBlockAllocator::PtrType offset = nullptr);
                 /// \brief
                 /// Free the given node.
                 /// \param[in] node Node to free.

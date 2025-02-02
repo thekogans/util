@@ -206,7 +206,7 @@ namespace thekogans {
             private:
                 /// \brief
                 /// BlockAllocator map type (keyed on block size).
-                using Map = std::map<std::size_t, Allocator::SharedPtr>;
+                using Map = std::map<std::size_t, BlockAllocator::SharedPtr>;
                 /// \brief
                 /// BlockAllocator map.
                 Map map;
@@ -222,7 +222,7 @@ namespace thekogans {
                 /// \param[in] blocksPerPage Minimum blocks per page.
                 /// \param[in] allocator \see{Allocator} used to allocate pages.
                 /// \return BlockAllocator matching the given block size.
-                Allocator::SharedPtr GetBlockAllocator (
+                BlockAllocator::SharedPtr GetBlockAllocator (
                     std::size_t blockSize,
                     std::size_t blocksPerPage = DEFAULT_BLOCKS_PER_PAGE,
                     Allocator::SharedPtr allocator = DefaultAllocator::Instance ());

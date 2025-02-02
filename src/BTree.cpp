@@ -40,34 +40,24 @@ namespace thekogans {
 
         BTree::Node::Node (
                 BTree &btree_,
-                ui64 offset_) :
+                FileBlockAllocator::PtrType offset_) :
                 btree (btree_),
                 offset (offset_),
                 count (0),
-                leftOffset (NIDX64),
+                leftOffset (nullptr),
                 leftNode (nullptr) {
-            if (offset != NIDX64) {
-                Buffer buffer (
-                    btree.fileBlockAllocator.GetFileEndianness (),
-                    FileSize (btree.header.entriesPerNode),
-                    0,
-                    0,
-                    btree.fileNodeAllocator);
-                buffer.AdvanceWriteOffset (
-                    btree.fileBlockAllocator.Read (
-                        offset,
-                        buffer.GetWritePtr (),
-                        buffer.GetDataAvailableForWriting ()));
-                buffer >> count;
+            if (offset != nullptr) {
+                Buffer::SharedPtr block = btree.fileNodeAllocator->ReadBlock (offset);
+                *block >> count;
                 if (count > 0) {
-                    buffer >> leftOffset;
+                    *block >> leftOffset;
                     for (ui32 i = 0; i < count; ++i) {
-                        buffer >> entries[i];
+                        *block >> entries[i];
                     }
                 }
             }
             else {
-                offset = btree.fileBlockAllocator.Alloc (
+                offset = btree.fileNodeAllocator->Alloc (
                     FileSize (btree.header.entriesPerNode));
                 Save ();
             }
@@ -83,8 +73,8 @@ namespace thekogans {
         }
 
         std::size_t BTree::Node::FileSize (ui32 entriesPerNode) {
-            const std::size_t ENTRY_SIZE = UI64_SIZE + UI64_SIZE + UI64_SIZE;
-            return UI32_SIZE + UI64_SIZE + entriesPerNode * ENTRY_SIZE;
+            const std::size_t ENTRY_SIZE = UI64_SIZE + UI64_SIZE + FileBlockAllocator::PtrTypeSize;
+            return UI32_SIZE + FileBlockAllocator::PtrTypeSize + entriesPerNode * ENTRY_SIZE;
         }
 
         std::size_t BTree::Node::Size (ui32 entriesPerNode) {
@@ -93,7 +83,7 @@ namespace thekogans {
 
         BTree::Node *BTree::Node::Alloc (
                 BTree &btree,
-                ui64 offset) {
+                FileBlockAllocator::PtrType offset) {
             return new (
                 btree.nodeAllocator->Alloc (
                     Size (btree.header.entriesPerNode))) Node (btree, offset);
@@ -109,7 +99,7 @@ namespace thekogans {
 
         void BTree::Node::Delete (Node *node) {
             if (node->count == 0) {
-                node->btree.fileBlockAllocator.Free (
+                node->btree.fileNodeAllocator->Free (
                     node->offset,
                     FileSize (node->btree.header.entriesPerNode));
                 Free (node);
@@ -123,29 +113,20 @@ namespace thekogans {
         }
 
         void BTree::Node::Save () {
-            Buffer buffer (
-                btree.fileBlockAllocator.GetFileEndianness (),
-                FileSize (btree.header.entriesPerNode),
-                0,
-                0,
-                btree.fileNodeAllocator);
-            buffer << count;
+            Buffer::SharedPtr block = btree.fileNodeAllocator->CreateBlock ();
+            *block << count;
             if (count > 0) {
-                buffer << leftOffset;
+                *block << leftOffset;
                 for (ui32 i = 0; i < count; ++i) {
-                    buffer << entries[i];
+                    *block << entries[i];
                 }
             }
-            buffer.AdvanceReadOffset (
-                btree.fileBlockAllocator.Write (
-                    offset,
-                    buffer.GetReadPtr (),
-                    buffer.GetDataAvailableForReading ()));
+            btree.fileNodeAllocator->WriteBlock (offset, block);
         }
 
         BTree::Node *BTree::Node::GetChild (ui32 index) {
             if (index == 0) {
-                if (leftNode == nullptr && leftOffset != NIDX64) {
+                if (leftNode == nullptr && leftOffset != nullptr) {
                     leftNode = Alloc (btree, leftOffset);
                 }
                 return leftNode;
@@ -153,7 +134,7 @@ namespace thekogans {
             else {
                 --index;
                 if (entries[index].rightNode == nullptr &&
-                        entries[index].rightOffset != NIDX64) {
+                        entries[index].rightOffset != nullptr) {
                     entries[index].rightNode = Alloc (
                         btree, entries[index].rightOffset);
                 }
@@ -224,48 +205,34 @@ namespace thekogans {
                 ui32 entriesPerNode,
                 std::size_t nodesPerPage,
                 Allocator::SharedPtr allocator) :
-                fileBlockAllocator (path, (ui32)Node::FileSize (entriesPerNode)),
-                header (entriesPerNode),
                 fileNodeAllocator (
-                    BlockAllocator::Pool::Instance ()->GetBlockAllocator (
+                    FileBlockAllocator::Pool::Instance ()->GetFileBlockAllocator (
+                        path,
                         Node::FileSize (entriesPerNode),
                         nodesPerPage,
                         allocator)),
+                header (entriesPerNode),
                 nodeAllocator (
                     BlockAllocator::Pool::Instance ()->GetBlockAllocator (
                         Node::Size (entriesPerNode),
                         nodesPerPage,
                         allocator)),
                 root (nullptr) {
-            if (fileBlockAllocator.GetRootBlock () != NIDX64) {
-                Buffer buffer (
-                    fileBlockAllocator.GetFileEndianness (),
-                    Header::SIZE,
-                    0,
-                    0,
-                    fileNodeAllocator);
-                buffer.AdvanceWriteOffset (
-                    fileBlockAllocator.Read (
-                        fileBlockAllocator.GetRootBlock (),
-                        buffer.GetWritePtr (),
-                        buffer.GetDataAvailableForWriting ()));
-                buffer >> header;
+            if (fileNodeAllocator->GetRootBlock () != nullptr) {
+                Buffer::SharedPtr block =
+                    fileNodeAllocator->ReadBlock (fileNodeAllocator->GetRootBlock ());
+                *block >> header;
                 if (header.entriesPerNode != entriesPerNode) {
-                    fileNodeAllocator =
-                        BlockAllocator::Pool::Instance ()->GetBlockAllocator (
-                            Node::FileSize (header.entriesPerNode),
-                            nodesPerPage,
-                            allocator);
                     nodeAllocator =
                         BlockAllocator::Pool::Instance ()->GetBlockAllocator (
-                            Node::FileSize (header.entriesPerNode),
+                            Node::Size (header.entriesPerNode),
                             nodesPerPage,
                             allocator);
                 }
             }
             else {
-                fileBlockAllocator.SetRootBlock (
-                    fileBlockAllocator.Alloc (Header::SIZE));
+                fileNodeAllocator->SetRootBlock (
+                    fileNodeAllocator->Alloc (Header::SIZE));
                 Save ();
             }
             root = Node::Alloc (*this, header.rootOffset);
@@ -378,7 +345,7 @@ namespace thekogans {
             if (found) {
                 if (child != nullptr) {
                     Node *leaf = child;
-                    while (leaf->leftOffset != NIDX64) {
+                    while (leaf->leftOffset != nullptr) {
                         leaf = leaf->GetChild (0);
                     }
                     node->entries[index].key = leaf->entries[0].key;
@@ -490,18 +457,9 @@ namespace thekogans {
         }
 
         void BTree::Save () {
-            Buffer buffer (
-                fileBlockAllocator.GetFileEndianness (),
-                Header::SIZE,
-                0,
-                0,
-                fileNodeAllocator);
-            buffer << header;
-            buffer.AdvanceReadOffset (
-                fileBlockAllocator.Write (
-                    fileBlockAllocator.GetRootBlock (),
-                    buffer.GetReadPtr (),
-                    buffer.GetDataAvailableForReading ()));
+            Buffer::SharedPtr block = fileNodeAllocator->CreateBlock ();
+            *block << header;
+            fileNodeAllocator->WriteBlock (fileNodeAllocator->GetRootBlock (), block);
         }
 
         void BTree::SetRoot (Node *node) {

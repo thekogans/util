@@ -133,7 +133,7 @@ namespace thekogans {
             }
         }
 
-        Allocator::SharedPtr BlockAllocator::Pool::GetBlockAllocator (
+        BlockAllocator::SharedPtr BlockAllocator::Pool::GetBlockAllocator (
                 std::size_t blockSize,
                 std::size_t blocksPerPage,
                 Allocator::SharedPtr allocator) {

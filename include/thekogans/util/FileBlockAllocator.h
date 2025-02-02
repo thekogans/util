@@ -22,6 +22,9 @@
 #include "thekogans/util/Types.h"
 #include "thekogans/util/File.h"
 #include "thekogans/util/SpinLock.h"
+#include "thekogans/util/Allocator.h"
+#include "thekogans/util/BlockAllocator.h"
+#include "thekogans/util/Singleton.h"
 
 namespace thekogans {
     namespace util {
@@ -31,18 +34,33 @@ namespace thekogans {
         /// \brief
         /// FileBlockAllocator
 
-        struct _LIB_THEKOGANS_UTIL_DECL FileBlockAllocator {
+        struct _LIB_THEKOGANS_UTIL_DECL FileBlockAllocator : public Allocator {
+            /// \brief
+            /// Declare \see{RefCounted} pointers.
+            THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (FileBlockAllocator)
+
+            /// \brief
+            /// Declare \see{DynamicCreatable} boilerplate.
+            THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE_OVERRIDE (FileBlockAllocator)
+
+            using PtrType = void *;
+            static_assert (
+                sizeof (PtrType) >= UI64_SIZE,
+                "Invalid assumption about FileBlockAllocator::PtrType size.");
+            static const std::size_t PtrTypeSize = UI64_SIZE;
+
         private:
             SimpleFile file;
+            Allocator::SharedPtr blockAllocator;
             struct Header {
                 ui32 blockSize;
-                ui64 freeBlock;
-                ui64 rootBlock;
+                PtrType freeBlock;
+                PtrType rootBlock;
 
                 Header (ui32 blockSize_) :
-                    blockSize (blockSize_ >= UI64_SIZE ? blockSize_ : UI64_SIZE),
-                    freeBlock (NIDX64),
-                    rootBlock (NIDX64) {}
+                    blockSize (blockSize_ >= PtrTypeSize ? blockSize_ : PtrTypeSize),
+                    freeBlock (nullptr),
+                    rootBlock (nullptr) {}
             } header;
             SpinLock spinLock;
 
@@ -53,28 +71,73 @@ namespace thekogans {
 
             FileBlockAllocator (
                 const std::string &path,
-                ui32 blockSize = DEFAULT_BLOCK_SIZE);
+                std::size_t blockSize = DEFAULT_BLOCK_SIZE,
+                std::size_t blocksPerPage = BlockAllocator::DEFAULT_BLOCKS_PER_PAGE,
+                Allocator::SharedPtr allocator = DefaultAllocator::Instance ());
 
             inline Endianness GetFileEndianness () const {
                 return file.endianness;
             }
 
-            ui64 GetRootBlock ();
-            void SetRootBlock (ui64 rootBlock);
+            PtrType GetRootBlock ();
+            void SetRootBlock (PtrType rootBlock);
 
-            ui64 Alloc (std::size_t size);
-            void Free (
-                ui64 offset,
-                std::size_t size);
+            virtual PtrType Alloc (std::size_t size) override;
+            virtual void Free (
+                PtrType offset,
+                std::size_t size) override;
 
             std::size_t Read (
-                ui64 offset,
+                PtrType offset,
                 void *data,
                 std::size_t length);
+            Buffer::SharedPtr ReadBlock (PtrType offset);
+            inline Buffer::SharedPtr CreateBlock () const {
+                return new Buffer (
+                    GetFileEndianness (), header.blockSize, 0, 0, blockAllocator);
+            }
             std::size_t Write (
-                ui64 offset,
+                PtrType offset,
                 const void *data,
                 std::size_t length);
+            inline std::size_t WriteBlock (
+                    PtrType offset,
+                    Buffer::SharedPtr block) {
+                return block->AdvanceReadOffset (
+                    Write (
+                        offset,
+                        block->GetReadPtr (),
+                        block->GetDataAvailableForReading ()));
+            }
+
+            /// \struct BlockAllocator::Pool BlockAllocator.h thekogans/util/BlockAllocator.h
+            ///
+            /// \brief
+            /// Use Pool to recycle and reuse block allocators.
+            struct _LIB_THEKOGANS_UTIL_DECL Pool : public Singleton<Pool> {
+            private:
+                /// \brief
+                /// FileBlockAllocator map type (keyed on path).
+                using Map = std::map<std::string, FileBlockAllocator::SharedPtr>;
+                /// \brief
+                /// FileBlockAllocator map.
+                Map map;
+                /// \brief
+                /// Synchronization lock.
+                SpinLock spinLock;
+
+            public:
+                /// \brief
+                /// Given a block size, return a matching block allocator.
+                /// If we don't have one, create it.
+                /// \param[in] blockSize Block size.
+                /// \return FileBlockAllocator matching the given path.
+                FileBlockAllocator::SharedPtr GetFileBlockAllocator (
+                    const std::string &path,
+                    std::size_t blockSize = DEFAULT_BLOCK_SIZE,
+                    std::size_t blocksPerPage = BlockAllocator::DEFAULT_BLOCKS_PER_PAGE,
+                    Allocator::SharedPtr allocator = DefaultAllocator::Instance ());
+            };
 
         private:
             void Save ();
@@ -90,6 +153,20 @@ namespace thekogans {
             /// FileBlockAllocator is neither copy constructable, nor assignable.
             THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (FileBlockAllocator)
         };
+
+        inline Serializer &operator << (
+                Serializer &serializer,
+                FileBlockAllocator::PtrType ptr) {
+            serializer << (ui64)ptr;
+            return serializer;
+        }
+
+        inline Serializer &operator >> (
+                Serializer &serializer,
+                FileBlockAllocator::PtrType &ptr) {
+            serializer >> (ui64 &)ptr;
+            return serializer;
+        }
 
     } // namespace util
 } // namespace thekogans
