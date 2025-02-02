@@ -173,10 +173,7 @@ namespace thekogans {
             BlockAllocator (
                 std::size_t blockSize_,
                 std::size_t blocksPerPage_ = DEFAULT_BLOCKS_PER_PAGE,
-                Allocator::SharedPtr allocator_ = DefaultAllocator::Instance ()) :
-                blockSize (blockSize_ >= sizeof (Page::Block) ? blockSize_ : sizeof (Page::Block)),
-                blocksPerPage (blocksPerPage_ > 0 ? blocksPerPage_ : 1),
-                allocator (allocator_ != nullptr ? allocator_ : DefaultAllocator::Instance ()) {}
+                Allocator::SharedPtr allocator_ = DefaultAllocator::Instance ());
             /// \brief
             /// dtor.
             virtual ~BlockAllocator ();
@@ -189,17 +186,17 @@ namespace thekogans {
 
             /// \brief
             /// Allocate a block.
-            /// \param[in] size Size of block to allocate (ignored).
+            /// \param[in] size Size of block to allocate (checked if <= blockSize).
             /// \return Pointer to the allocated block.
-            virtual void *Alloc (std::size_t /*size*/) override;
+            virtual void *Alloc (std::size_t size) override;
             /// \brief
             /// Free a previously Alloc(ated) block.
             /// NOTE: BlockAllocator policy is to do nothing if ptr == nullptr.
             /// \param[in] ptr Pointer to the block returned by Alloc.
-            /// \param[in] size Size of block to free (ignored).
+            /// \param[in] size Size of block to free (checked if <= blockSize).
             virtual void Free (
                 void *ptr,
-                std::size_t /*size*/) override;
+                std::size_t size) override;
 
             /// \struct BlockAllocator::Pool BlockAllocator.h thekogans/util/BlockAllocator.h
             ///

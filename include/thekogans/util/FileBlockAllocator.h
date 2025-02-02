@@ -47,22 +47,34 @@ namespace thekogans {
             SpinLock spinLock;
 
         public:
+            enum {
+                DEFAULT_BLOCK_SIZE = 512
+            };
+
             FileBlockAllocator (
                 const std::string &path,
-                ui32 blockSize);
+                ui32 blockSize = DEFAULT_BLOCK_SIZE);
+
+            inline Endianness GetFileEndianness () const {
+                return file.endianness;
+            }
 
             ui64 GetRootBlock ();
             void SetRootBlock (ui64 rootBlock);
 
-            ui64 Alloc ();
-            void Free (ui64 offset);
+            ui64 Alloc (std::size_t size);
+            void Free (
+                ui64 offset,
+                std::size_t size);
 
-            void Read (
+            std::size_t Read (
                 ui64 offset,
-                void *data);
-            void Write (
+                void *data,
+                std::size_t length);
+            std::size_t Write (
                 ui64 offset,
-                const void *data);
+                const void *data,
+                std::size_t length);
 
         private:
             void Save ();

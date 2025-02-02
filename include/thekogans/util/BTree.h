@@ -20,11 +20,11 @@
 
 #include "thekogans/util/Config.h"
 #include "thekogans/util/Types.h"
-#include "thekogans/util/GUID.h"
 #include "thekogans/util/Constants.h"
 #include "thekogans/util/Serializer.h"
 #include "thekogans/util/DefaultAllocator.h"
 #include "thekogans/util/BlockAllocator.h"
+#include "thekogans/util/FileBlockAllocator.h"
 
 namespace thekogans {
     namespace util {
@@ -47,8 +47,7 @@ namespace thekogans {
 
         private:
             /// \brief
-            /// Directory where btree files are stored.
-            std::string path;
+            FileBlockAllocator fileBlockAllocator;
             /// \struct BTree::Header BTree.h thekogans/util/BTree.h
             ///
             /// \brief
@@ -58,16 +57,22 @@ namespace thekogans {
                 /// Entries per node.
                 ui32 entriesPerNode;
                 /// \brief
-                /// Root node id.
-                GUID rootId;
+                /// Root node offset.
+                ui64 rootOffset;
+
+                enum {
+                    SIZE = UI32_SIZE + UI64_SIZE
+                };
+
                 /// \brief
                 /// ctor.
                 /// \param[in] entriesPerNode_ Entries per node.
                 Header (ui32 entriesPerNode_ = DEFAULT_ENTRIES_PER_NODE) :
                     entriesPerNode (entriesPerNode_),
-                    rootId (GUID::FromRandom ()) {}
+                    rootOffset (NIDX64) {}
             } header;
-            Allocator::SharedPtr allocator;
+            Allocator::SharedPtr fileNodeAllocator;
+            Allocator::SharedPtr nodeAllocator;
             /// \struct BTree::Node BTree.h thekogans/util/BTree.h
             ///
             /// \brief
@@ -77,17 +82,14 @@ namespace thekogans {
                 /// BTree to whch this node belongs.
                 BTree &btree;
                 /// \brief
-                /// Node id (will be converted to a file name).
-                GUID id;
-                /// \brief
-                /// Node file path.
-                std::string path;
+                /// Node block offset.
+                ui64 offset;
                 /// \brief
                 /// Count of entries.
                 ui32 count;
                 /// \brief
-                /// Left most child node id.
-                GUID leftId;
+                /// Left most child node offset.
+                ui64 leftOffset;
                 /// \brief
                 /// Left most child node.
                 Node *leftNode;
@@ -100,8 +102,8 @@ namespace thekogans {
                     /// Entry key.
                     Key key;
                     /// \brief
-                    /// Right child node id.
-                    GUID rightId;
+                    /// Right child node offset.
+                    ui64 rightOffset;
                     /// \brief
                     /// Right child node.
                     Node *rightNode;
@@ -111,7 +113,7 @@ namespace thekogans {
                     /// \param[in] key_ Entry key.
                     Entry (const Key &key_ = Key (NIDX64, NIDX64)) :
                         key (key_),
-                        rightId (GUID::Empty),
+                        rightOffset (NIDX64),
                         rightNode (nullptr) {}
                 };
                 /// \brief
@@ -122,24 +124,27 @@ namespace thekogans {
                 /// \brief
                 /// ctor.
                 /// \param[in] btree_ BTree to whch this node belongs.
-                /// \param[in] id_ Node id (will be converted to a file name).
+                /// \param[in] offset_ Node offset.
                 Node (
                     BTree &btree_,
-                    const GUID &id_ = GUID::FromRandom ());
+                    ui64 offset_ = NIDX64);
                 /// \brief
                 /// dtor.
                 ~Node ();
 
+                /// \brief
+                /// Given the number of entries, return the node file size in bytes.
+                static std::size_t FileSize (ui32 entriesPerNode);
                 /// \brief
                 /// Given the number of entries, return the node size in bytes.
                 static std::size_t Size (ui32 entriesPerNode);
                 /// \brief
                 /// Allocate a node.
                 /// \param[in] btree BTree to which this node belongs.
-                /// \param[in] id Node id.
+                /// \param[in] offset Node offset.
                 static Node *Alloc (
                     BTree &btree,
-                    const GUID &id = GUID::FromRandom ());
+                    ui64 offset = NIDX64);
                 /// \brief
                 /// Free the given node.
                 /// \param[in] node Node to free.
@@ -195,14 +200,14 @@ namespace thekogans {
         public:
             /// \brief
             /// ctor.
-            /// \param[in] path_ Directory where the btree files are stored.
+            /// \param[in] path Directory where the btree files are stored.
             /// \param[in] entriesPerNode If the btree is just being created
             /// use this value for entries per node.
             BTree (
-                const std::string &path_,
+                const std::string &path,
                 ui32 entriesPerNode = DEFAULT_ENTRIES_PER_NODE,
                 std::size_t nodesPerPage = BlockAllocator::DEFAULT_BLOCKS_PER_PAGE,
-                Allocator::SharedPtr allocator_ = DefaultAllocator::Instance ());
+                Allocator::SharedPtr allocator = DefaultAllocator::Instance ());
             /// \brief
             /// dtor.
             ~BTree ();
@@ -211,7 +216,7 @@ namespace thekogans {
             /// Find the given key in the btree.
             /// \param[in] key Key to find.
             /// \return If found the given key will be returned.
-            /// If not found, return the nearest largest key.
+            /// If not found, return the nearest larger key.
             Key Search (const Key &key);
             /// \brief
             /// Add the given key to the btree.

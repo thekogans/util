@@ -60,44 +60,73 @@ namespace thekogans {
             Save ();
         }
 
-        ui64 FileBlockAllocator::Alloc () {
-            LockGuard<SpinLock> guard (spinLock);
-            ui64 offset;
-            if (header.freeBlock != NIDX64) {
-                offset = header.freeBlock;
-                file.Seek (offset, SEEK_SET);
-                file >> header.freeBlock;
-                Save ();
-            }
-            else {
-                offset = file.GetSize ();
-                file.SetSize (offset + header.blockSize);
+        ui64 FileBlockAllocator::Alloc (std::size_t size) {
+            ui64 offset = NIDX64;
+            if (size <= header.blockSize) {
+                LockGuard<SpinLock> guard (spinLock);
+                if (header.freeBlock != NIDX64) {
+                    offset = header.freeBlock;
+                    file.Seek (offset, SEEK_SET);
+                    file >> header.freeBlock;
+                    Save ();
+                }
+                else {
+                    offset = file.GetSize ();
+                    file.SetSize (offset + header.blockSize);
+                }
             }
             return offset;
         }
 
-        void FileBlockAllocator::Free (ui64 offset) {
-            LockGuard<SpinLock> guard (spinLock);
-            file.Seek (offset, SEEK_SET);
-            file << header.freeBlock;
-            header.freeBlock = offset;
-            Save ();
+        void FileBlockAllocator::Free (
+                ui64 offset,
+                std::size_t size) {
+            if (size <= header.blockSize) {
+                bool save = false;
+                LockGuard<SpinLock> guard (spinLock);
+                if (header.rootBlock == offset) {
+                    header.rootBlock = NIDX64;
+                    save = true;
+                }
+                if (offset + header.blockSize < file.GetSize ()) {
+                    file.Seek (offset, SEEK_SET);
+                    file << header.freeBlock;
+                    header.freeBlock = offset;
+                    save = true;
+                }
+                else {
+                    if (header.freeBlock == offset - header.blockSize) {
+                        while (header.freeBlock == offset - header.blockSize) {
+                            offset = header.freeBlock;
+                            file.Seek (header.freeBlock, SEEK_SET);
+                            file >> header.freeBlock;
+                        }
+                        save = true;
+                    }
+                    file.SetSize (offset);
+                }
+                if (save) {
+                    Save ();
+                }
+            }
         }
 
-        void FileBlockAllocator::Read (
+        std::size_t FileBlockAllocator::Read (
                 ui64 offset,
-                void *data) {
+                void *data,
+                std::size_t length) {
             LockGuard<SpinLock> guard (spinLock);
             file.Seek (offset, SEEK_SET);
-            file.Read (data, header.blockSize);
+            return file.Read (data, length);
         }
 
-        void FileBlockAllocator::Write (
+        std::size_t FileBlockAllocator::Write (
                 ui64 offset,
-                const void *data) {
+                const void *data,
+                std::size_t length) {
             LockGuard<SpinLock> guard (spinLock);
             file.Seek (offset, SEEK_SET);
-            file.Write (data, header.blockSize);
+            return file.Write (data, length);
         }
 
         void FileBlockAllocator::Save () {

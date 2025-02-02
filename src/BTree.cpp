@@ -17,8 +17,6 @@
 
 #include <cstring>
 #include "thekogans/util/Exception.h"
-#include "thekogans/util/Path.h"
-#include "thekogans/util/File.h"
 #include "thekogans/util/BTree.h"
 
 namespace thekogans {
@@ -42,37 +40,36 @@ namespace thekogans {
 
         BTree::Node::Node (
                 BTree &btree_,
-                const GUID &id_) :
+                ui64 offset_) :
                 btree (btree_),
-                id (id_),
-                path (MakePath (btree.path, id.ToString ())),
+                offset (offset_),
                 count (0),
-                leftId (GUID::Empty),
+                leftOffset (NIDX64),
                 leftNode (nullptr) {
-            Path nodePath (path);
-            if (nodePath.Exists ()) {
-                ReadOnlyFile file (HostEndian, nodePath.path);
-                ui32 magic;
-                file >> magic;
-                if (magic == MAGIC32) {
-                    // File is host endian.
-                }
-                else if (ByteSwap<GuestEndian, HostEndian> (magic) == MAGIC32) {
-                    // File is guest endian.
-                    file.endianness = GuestEndian;
-                }
-                else {
-                    THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                        "Corrupt btree node file (%s)",
-                        path.c_str ());
-                }
-                file >> count;
+            if (offset != NIDX64) {
+                Buffer buffer (
+                    btree.fileBlockAllocator.GetFileEndianness (),
+                    FileSize (btree.header.entriesPerNode),
+                    0,
+                    0,
+                    btree.fileNodeAllocator);
+                buffer.AdvanceWriteOffset (
+                    btree.fileBlockAllocator.Read (
+                        offset,
+                        buffer.GetWritePtr (),
+                        buffer.GetDataAvailableForWriting ()));
+                buffer >> count;
                 if (count > 0) {
-                    file >> leftId;
+                    buffer >> leftOffset;
                     for (ui32 i = 0; i < count; ++i) {
-                        file >> entries[i];
+                        buffer >> entries[i];
                     }
                 }
+            }
+            else {
+                offset = btree.fileBlockAllocator.Alloc (
+                    FileSize (btree.header.entriesPerNode));
+                Save ();
             }
         }
 
@@ -85,68 +82,80 @@ namespace thekogans {
             }
         }
 
+        std::size_t BTree::Node::FileSize (ui32 entriesPerNode) {
+            const std::size_t ENTRY_SIZE = UI64_SIZE + UI64_SIZE + UI64_SIZE;
+            return UI32_SIZE + UI64_SIZE + entriesPerNode * ENTRY_SIZE;
+        }
+
         std::size_t BTree::Node::Size (ui32 entriesPerNode) {
             return sizeof (Node) + (entriesPerNode - 1) * sizeof (Entry);
         }
 
         BTree::Node *BTree::Node::Alloc (
                 BTree &btree,
-                const GUID &id) {
+                ui64 offset) {
             return new (
-                btree.allocator->Alloc (
-                    Size (btree.header.entriesPerNode))) Node (btree, id);
+                btree.nodeAllocator->Alloc (
+                    Size (btree.header.entriesPerNode))) Node (btree, offset);
         }
 
         void BTree::Node::Free (Node *node) {
             if (node != nullptr) {
                 node->~Node ();
-                node->btree.allocator->Free (
+                node->btree.nodeAllocator->Free (
                     node, Size (node->btree.header.entriesPerNode));
             }
         }
 
         void BTree::Node::Delete (Node *node) {
             if (node->count == 0) {
-                Path nodePath (node->path);
-                if (nodePath.Exists ()) {
-                    nodePath.Delete ();
-                }
+                node->btree.fileBlockAllocator.Free (
+                    node->offset,
+                    FileSize (node->btree.header.entriesPerNode));
                 Free (node);
             }
             else {
                 THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                    "Logic error: trying to delete a node with count > 0 (%s)",
-                    node->path.c_str ());
+                    "Logic error: trying to delete a node with count > 0 "
+                    THEKOGANS_UTIL_UI64_FORMAT,
+                    node->offset);
             }
         }
 
         void BTree::Node::Save () {
-            SimpleFile file (
-                HostEndian,
-                path,
-                SimpleFile::ReadWrite | SimpleFile::Create | SimpleFile::Truncate);
-            file << MAGIC32 << count;
+            Buffer buffer (
+                btree.fileBlockAllocator.GetFileEndianness (),
+                FileSize (btree.header.entriesPerNode),
+                0,
+                0,
+                btree.fileNodeAllocator);
+            buffer << count;
             if (count > 0) {
-                file << leftId;
+                buffer << leftOffset;
                 for (ui32 i = 0; i < count; ++i) {
-                    file << entries[i];
+                    buffer << entries[i];
                 }
             }
+            buffer.AdvanceReadOffset (
+                btree.fileBlockAllocator.Write (
+                    offset,
+                    buffer.GetReadPtr (),
+                    buffer.GetDataAvailableForReading ()));
         }
 
         BTree::Node *BTree::Node::GetChild (ui32 index) {
             if (index == 0) {
-                if (leftNode == nullptr && leftId != GUID::Empty) {
-                    leftNode = Alloc (btree, leftId);
+                if (leftNode == nullptr && leftOffset != NIDX64) {
+                    leftNode = Alloc (btree, leftOffset);
                 }
                 return leftNode;
             }
             else {
                 --index;
                 if (entries[index].rightNode == nullptr &&
-                        entries[index].rightId != GUID::Empty) {
+                        entries[index].rightOffset != NIDX64) {
                     entries[index].rightNode = Alloc (
-                        btree, entries[index].rightId);
+                        btree, entries[index].rightOffset);
                 }
                 return entries[index].rightNode;
             }
@@ -211,41 +220,55 @@ namespace thekogans {
         }
 
         BTree::BTree (
-                const std::string &path_,
+                const std::string &path,
                 ui32 entriesPerNode,
                 std::size_t nodesPerPage,
-                Allocator::SharedPtr allocator_) :
-                path (path_),
-                header (entriesPerNode > 0 ? entriesPerNode : DEFAULT_ENTRIES_PER_NODE),
-                allocator (
+                Allocator::SharedPtr allocator) :
+                fileBlockAllocator (path, (ui32)Node::FileSize (entriesPerNode)),
+                header (entriesPerNode),
+                fileNodeAllocator (
                     BlockAllocator::Pool::Instance ()->GetBlockAllocator (
-                        Node::Size (header.entriesPerNode),
+                        Node::FileSize (entriesPerNode),
                         nodesPerPage,
-                        allocator_)),
+                        allocator)),
+                nodeAllocator (
+                    BlockAllocator::Pool::Instance ()->GetBlockAllocator (
+                        Node::Size (entriesPerNode),
+                        nodesPerPage,
+                        allocator)),
                 root (nullptr) {
-            Path btreePath (MakePath (path, "btree"));
-            if (btreePath.Exists ()) {
-                ReadOnlyFile file (HostEndian, btreePath.path);
-                ui32 magic;
-                file >> magic;
-                if (magic == MAGIC32) {
-                    // File is host endian.
+            if (fileBlockAllocator.GetRootBlock () != NIDX64) {
+                Buffer buffer (
+                    fileBlockAllocator.GetFileEndianness (),
+                    Header::SIZE,
+                    0,
+                    0,
+                    fileNodeAllocator);
+                buffer.AdvanceWriteOffset (
+                    fileBlockAllocator.Read (
+                        fileBlockAllocator.GetRootBlock (),
+                        buffer.GetWritePtr (),
+                        buffer.GetDataAvailableForWriting ()));
+                buffer >> header;
+                if (header.entriesPerNode != entriesPerNode) {
+                    fileNodeAllocator =
+                        BlockAllocator::Pool::Instance ()->GetBlockAllocator (
+                            Node::FileSize (header.entriesPerNode),
+                            nodesPerPage,
+                            allocator);
+                    nodeAllocator =
+                        BlockAllocator::Pool::Instance ()->GetBlockAllocator (
+                            Node::FileSize (header.entriesPerNode),
+                            nodesPerPage,
+                            allocator);
                 }
-                else if (ByteSwap<GuestEndian, HostEndian> (magic) == MAGIC32) {
-                    // File is guest endian.
-                    file.endianness = GuestEndian;
-                }
-                else {
-                    THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                        "Corrupt btree header file (%s)",
-                        btreePath.path.c_str ());
-                }
-                file >> header;
             }
             else {
+                fileBlockAllocator.SetRootBlock (
+                    fileBlockAllocator.Alloc (Header::SIZE));
                 Save ();
             }
-            root = Node::Alloc (*this, header.rootId);
+            root = Node::Alloc (*this, header.rootOffset);
         }
 
         BTree::~BTree () {
@@ -276,7 +299,7 @@ namespace thekogans {
                 // Create a new root node and make the entry
                 // its first.
                 Node *node = Node::Alloc (*this);
-                node->leftId = root->id;
+                node->leftOffset = root->offset;
                 node->leftNode = root;
                 node->InsertEntry (entry, 0);
                 node->Save ();
@@ -296,7 +319,7 @@ namespace thekogans {
 
         void BTree::Flush () {
             Node::Free (root);
-            root = Node::Alloc (*this, header.rootId);
+            root = Node::Alloc (*this, header.rootOffset);
         }
 
         bool BTree::Insert (
@@ -333,10 +356,10 @@ namespace thekogans {
                             right->RemoveEntry (0);
                         }
                         node->Save ();
-                        right->leftId = entry.rightId;
+                        right->leftOffset = entry.rightOffset;
                         right->leftNode = entry.rightNode;
                         right->Save ();
-                        entry.rightId = right->id;
+                        entry.rightOffset = right->offset;
                         entry.rightNode = right;
                         return false;
                     }
@@ -355,7 +378,7 @@ namespace thekogans {
             if (found) {
                 if (child != nullptr) {
                     Node *leaf = child;
-                    while (leaf->leftId != GUID::Empty) {
+                    while (leaf->leftOffset != NIDX64) {
                         leaf = leaf->GetChild (0);
                     }
                     node->entries[index].key = leaf->entries[0].key;
@@ -416,13 +439,13 @@ namespace thekogans {
                 ui32 index,
                 Node *left,
                 Node *right) {
-            node->entries[index].rightId = right->leftId;
+            node->entries[index].rightOffset = right->leftOffset;
             node->entries[index].rightNode = right->leftNode;
             right->InsertEntry (node->entries[index], 0);
             ui32 lastIndex = left->count - 1;
-            right->leftId = left->entries[lastIndex].rightId;
+            right->leftOffset = left->entries[lastIndex].rightOffset;
             right->leftNode = left->entries[lastIndex].rightNode;
-            left->entries[lastIndex].rightId = right->id;
+            left->entries[lastIndex].rightOffset = right->offset;
             left->entries[lastIndex].rightNode = right;
             node->entries[index] = left->entries[lastIndex];
             left->RemoveEntry (lastIndex);
@@ -436,11 +459,11 @@ namespace thekogans {
                 ui32 index,
                 Node *left,
                 Node *right) {
-            node->entries[index].rightId = right->leftId;
+            node->entries[index].rightOffset = right->leftOffset;
             node->entries[index].rightNode = right->leftNode;
-            right->leftId = right->entries[0].rightId;
+            right->leftOffset = right->entries[0].rightOffset;
             right->leftNode = right->entries[0].rightNode;
-            right->entries[0].rightId = right->id;
+            right->entries[0].rightOffset = right->offset;
             right->entries[0].rightNode = right;
             left->Concatenate (node->entries[index]);
             node->entries[index] = right->entries[0];
@@ -456,7 +479,7 @@ namespace thekogans {
                 Node *left,
                 Node *right) {
             assert (left->count + right->count < header.entriesPerNode);
-            node->entries[index].rightId = right->leftId;
+            node->entries[index].rightOffset = right->leftOffset;
             node->entries[index].rightNode = right->leftNode;
             left->Concatenate (node->entries[index]);
             left->Concatenate (right);
@@ -467,30 +490,37 @@ namespace thekogans {
         }
 
         void BTree::Save () {
-            SimpleFile file (
-                HostEndian,
-                MakePath (path, "btree"),
-                SimpleFile::ReadWrite | SimpleFile::Create | SimpleFile::Truncate);
-            file << MAGIC32 << header;
+            Buffer buffer (
+                fileBlockAllocator.GetFileEndianness (),
+                Header::SIZE,
+                0,
+                0,
+                fileNodeAllocator);
+            buffer << header;
+            buffer.AdvanceReadOffset (
+                fileBlockAllocator.Write (
+                    fileBlockAllocator.GetRootBlock (),
+                    buffer.GetReadPtr (),
+                    buffer.GetDataAvailableForReading ()));
         }
 
         void BTree::SetRoot (Node *node) {
             root = node;
-            header.rootId = root->id;
+            header.rootOffset = root->offset;
             Save ();
         }
 
         Serializer &operator << (
                 Serializer &serializer,
                 const BTree::Node::Entry &entry) {
-            serializer << entry.key << entry.rightId;
+            serializer << entry.key << entry.rightOffset;
             return serializer;
         }
 
         Serializer &operator >> (
                 Serializer &serializer,
                 BTree::Node::Entry &entry) {
-            serializer >> entry.key >> entry.rightId;
+            serializer >> entry.key >> entry.rightOffset;
             entry.rightNode = nullptr;
             return serializer;
         }
@@ -498,14 +528,14 @@ namespace thekogans {
         Serializer &operator << (
                 Serializer &serializer,
                 const BTree::Header &header) {
-            serializer << header.entriesPerNode << header.rootId;
+            serializer << header.entriesPerNode << header.rootOffset;
             return serializer;
         }
 
         Serializer &operator >> (
                 Serializer &serializer,
                 BTree::Header &header) {
-            serializer >> header.entriesPerNode >> header.rootId;
+            serializer >> header.entriesPerNode >> header.rootOffset;
             return serializer;
         }
 
