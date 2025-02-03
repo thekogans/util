@@ -78,7 +78,6 @@
     <cpp_header>$(organization)/$(project_directory)/AlignedAllocator.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/Allocator.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/Array.h</cpp_header>
-    <cpp_header>$(organization)/$(project_directory)/BTree.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/Barrier.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/Base64.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/BitSet.h</cpp_header>
@@ -616,7 +615,6 @@
   <cpp_sources prefix = "src">
     <cpp_source>AlignedAllocator.cpp</cpp_source>
     <cpp_source>Allocator.cpp</cpp_source>
-    <cpp_source>BTree.cpp</cpp_source>
     <cpp_source>Barrier.cpp</cpp_source>
     <cpp_source>Base64.cpp</cpp_source>
     <cpp_source>BitSet.cpp</cpp_source>
@@ -637,6 +635,7 @@
     <cpp_source>Exception.cpp</cpp_source>
     <cpp_source>File.cpp</cpp_source>
     <cpp_source>FileAllocator.cpp</cpp_source>
+    <cpp_source>FileAllocatorBTree.cpp</cpp_source>
     <cpp_source>FileLogger.cpp</cpp_source>
     <cpp_source>Fraction.cpp</cpp_source>
     <cpp_source>GUID.cpp</cpp_source>

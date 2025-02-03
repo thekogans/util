@@ -21,6 +21,7 @@
 #include <map>
 #include "thekogans/util/Config.h"
 #include "thekogans/util/Types.h"
+#include "thekogans/util/Flags.h"
 #include "thekogans/util/File.h"
 #include "thekogans/util/SpinLock.h"
 #include "thekogans/util/Allocator.h"
@@ -94,6 +95,9 @@ namespace thekogans {
             SimpleFile file;
             Allocator::SharedPtr blockAllocator;
             struct Header {
+                enum {
+                    FLAGS_FIXED = 1
+                };
                 ui32 flags;
                 ui32 blockSize;
                 PtrType headFreeFixedBlockOffset;
@@ -104,185 +108,304 @@ namespace thekogans {
                     SIZE =
                         UI32_SIZE +
                         UI32_SIZE +
+                        UI32_SIZE +
                         PtrTypeSize +
                         PtrTypeSize +
                         PtrTypeSize
                 };
 
                 Header (
-                    ui32 flags_,
-                    ui32 blockSize_) :
+                    ui32 flags_ = 0,
+                    ui32 blockSize_ = 0) :
                     flags (flags_),
                     blockSize (blockSize_),
                     headFreeFixedBlockOffset (nullptr),
-                    btreeOffset (nullptr),
+                    freeListOffset (nullptr),
                     rootBlockOffset (nullptr) {}
+
+                inline bool IsFixed () {
+                    return Flags32 (flags).Test (FLAGS_FIXED);
+                }
             } header;
-            struct BlockInfo : public RefCounted {
+            /// \struct BTree BTree.h thekogans/util/BTree.h
+            ///
+            /// \brief
+            struct BTree {
+                // {size, offset}
                 /// \brief
-                /// Declare \see{RefCounted} pointers.
-                THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (BlockInfo)
+                /// Keys are structured to allow for greater flexibility.
+                using Key = std::pair<ui64, FileAllocator::PtrType>;
+                static const std::size_t KEY_SIZE = UI64_SIZE + FileAllocator::PtrTypeSize;
 
-                /// \brief
-                /// Declare \see{DynamicCreatable} boilerplate.
-                THEKOGANS_UTIL_DECLARE_STD_ALLOCATOR_FUNCTIONS
-
-                File &file;
-                PtrType offset;
                 enum {
-                    FLAGS_IN_USE = 1,
-                    FLAGS_FREE = 2,
-                    FLAGS_FIXED_BLOCK = 4
+                    /// \brief
+                    /// Default number of entries per node.
+                    DEFAULT_ENTRIES_PER_NODE = 32
                 };
+
+            private:
+                /// \brief
+                FileAllocator &fileNodeAllocator;
+                FileAllocator::PtrType offset;
+                /// \struct BTree::Header BTree.h thekogans/util/BTree.h
+                ///
+                /// \brief
+                /// Header contains global btree info.
                 struct Header {
-                    ui32 flags;
-                    ui64 size;
-                    PtrType prevOffset;
-                    PtrType nextOffset;
+                    /// \brief
+                    /// Entries per node.
+                    ui32 entriesPerNode;
+                    /// \brief
+                    /// Root node offset.
+                    FileAllocator::PtrType rootOffset;
 
                     enum {
-                        SIZE =
-                            UI32_SIZE +
-                            UI32_SIZE +
-                            UI64_SIZE +
-                            PtrTypeSize +
-                            PtrTypeSize
+                        SIZE = UI32_SIZE + FileAllocator::PtrTypeSize
                     };
 
-                    Header (
-                        ui32 flags_ = 0,
-                        ui64 size_ = 0,
-                        PtrType prevOffset_ = nullptr,
-                        PtrType nextOffset_ = nullptr) :
-                        flags (flags_),
-                        size (size_),
-                        prevOffset (prevOffset_),
-                        nextOffset (nextOffset_) {}
-
-                    void Read (
-                            File &file,
-                            FileAllocator::PtrType offset) {
-                        file.Seek ((ui64)offset, SEEK_SET);
-                        ui32 magic;
-                        file >> magic;
-                        if (magic == MAGIC32) {
-                            file >> flags >> size >> prevOffset >> nextOffset;
-                        }
-                        else {
-                            // FIXME: throw
-                            assert (0);
-                        }
-                    }
-                    void Write (
-                            File &file,
-                            FileAllocator::PtrType offset) {
-                        file.Seek ((ui64)offset, SEEK_SET);
-                        file << MAGIC32 << flags << size << prevOffset << nextOffset;
-                    }
+                    /// \brief
+                    /// ctor.
+                    /// \param[in] entriesPerNode_ Entries per node.
+                    Header (ui32 entriesPerNode_ = DEFAULT_ENTRIES_PER_NODE) :
+                    entriesPerNode (entriesPerNode_),
+                        rootOffset (nullptr) {}
                 } header;
-                struct Footer {
-                    ui32 flags;
-                    ui64 size;
+                Allocator::SharedPtr nodeAllocator;
+                /// \struct BTree::Node BTree.h thekogans/util/BTree.h
+                ///
+                /// \brief
+                /// BTree nodes store sorted keys and pointers to children nodes.
+                struct Node {
+                    /// \brief
+                    /// BTree to whch this node belongs.
+                    BTree &btree;
+                    /// \brief
+                    /// Node block offset.
+                    FileAllocator::PtrType offset;
+                    /// \brief
+                    /// Count of entries.
+                    ui32 count;
+                    /// \brief
+                    /// Left most child node offset.
+                    FileAllocator::PtrType leftOffset;
+                    /// \brief
+                    /// Left most child node.
+                    Node *leftNode;
+                    /// \struct BTree::Node::Entry BTree.h thekogans/util/BTree.h
+                    ///
+                    /// \brief
+                    /// Node entries contain keys and right (grater then) children.
+                    struct Entry {
+                        /// \brief
+                        /// Entry key.
+                        Key key;
+                        /// \brief
+                        /// Right child node offset.
+                        FileAllocator::PtrType rightOffset;
+                        /// \brief
+                        /// Right child node.
+                        Node *rightNode;
 
-                    enum {
-                        SIZE = UI32_SIZE + UI32_SIZE + UI64_SIZE
+                        /// \brief
+                        /// ctor.
+                        /// \param[in] key_ Entry key.
+                        Entry (const Key &key_ = Key (UI64_MAX, nullptr)) :
+                        key (key_),
+                            rightOffset (nullptr),
+                            rightNode (nullptr) {}
                     };
+                    /// \brief
+                    /// Entry array. The rest of the entries are
+                    /// allocated when the node is allocated.
+                    Entry entries[1];
 
-                    void Read (
-                            File &file,
-                            FileAllocator::PtrType offset) {
-                        file.Seek ((ui64)offset, SEEK_SET);
-                        ui32 magic;
-                        file >> magic;
-                        if (magic == MAGIC32) {
-                            file >> flags >> size;
-                        }
-                        else {
-                            // FIXME: throw
-                            assert (0);
-                        }
+                    /// \brief
+                    /// ctor.
+                    /// \param[in] btree_ BTree to whch this node belongs.
+                    /// \param[in] offset_ Node offset.
+                    Node (
+                        BTree &btree_,
+                        FileAllocator::PtrType offset_ = nullptr);
+                    /// \brief
+                    /// dtor.
+                    ~Node ();
+
+                    /// \brief
+                    /// Given the number of entries, return the node file size in bytes.
+                    static std::size_t FileSize (ui32 entriesPerNode);
+                    /// \brief
+                    /// Given the number of entries, return the node size in bytes.
+                    static std::size_t Size (ui32 entriesPerNode);
+                    /// \brief
+                    /// Allocate a node.
+                    /// \param[in] btree BTree to which this node belongs.
+                    /// \param[in] offset Node offset.
+                    static Node *Alloc (
+                        BTree &btree,
+                        FileAllocator::PtrType offset = nullptr);
+                    /// \brief
+                    /// Free the given node.
+                    /// \param[in] node Node to free.
+                    static void Free (Node *node);
+                    /// \brief
+                    /// Delete the file associated with and free the given empty node.
+                    /// If the node is not empty, throw exception.
+                    /// \param[in] node Node to delete.
+                    static void Delete (Node *node);
+
+                    void Save ();
+                    Node *GetChild (ui32 index);
+                    bool Search (
+                        const Key &key,
+                        ui32 &index) const;
+                    void Split (
+                        Node *node,
+                        ui32 index);
+                    void Concatenate (Node *node);
+                    inline void Concatenate (const Entry &entry) {
+                        InsertEntry (entry, count);
                     }
-                    void Write (
-                            File &file,
-                            FileAllocator::PtrType offset) {
-                        file.Seek ((ui64)offset, SEEK_SET);
-                        file << MAGIC32 << flags << size;
+                    /// \brief
+                    /// Insert the given entry at the given index.
+                    void InsertEntry (
+                        const Entry &entry,
+                        ui32 index);
+                    /// \brief
+                    /// Remove the entry at the given index.
+                    void RemoveEntry (ui32 index);
+                    /// \brief
+                    /// Return true if the node is empty.
+                    inline bool IsEmpty () const {
+                        return count == 0;
                     }
-                } footer;
-
-                BlockInfo (
-                    File &file_,
-                    PtrType offset_ = nullptr) :
-                    file (file_),
-                    offset (offset_) {}
-
-                inline bool IsFirst () const {
-                    return (ui64)offset == Header::SIZE;
-                }
-                inline bool IsLast () const {
-                    return (ui64)offset + header.size == file.GetSize ();
-                }
-
-                Block::SharedPtr Prev (File &file) {
-                    Block::SharedPtr prev (new Block (file));
-                    prev->footer.Read (file, (ui64)offset - Footer::SIZE);
-                    prev->offset = (ui64)offset - prev.footer.size;
-                    prev->header.Read (prev.offset);
-                    if (prev->header != prev->footer) {
-                        // FIXME: throw
-                        assert (0);
+                    /// \brief
+                    /// Return true if the node is full.
+                    inline bool IsFull () const {
+                        return count == btree.header.entriesPerNode;
                     }
-                    return prev;
-                }
-                Block::SharedPtr Next () {
-                    Block::SharedPtr next (
-                        new Block (file, (ui64)offset + header.size));
-                    next->Read ();
-                    return next;
+                    /// \brief
+                    /// Return true if less than half the node is occupied.
+                    inline bool IsPoor () const {
+                        return count < btree.header.entriesPerNode / 2;
+                    }
+                    /// \brief
+                    /// Return true if more than half the node is occupied.
+                    inline bool IsPlentiful () const {
+                        return count > btree.header.entriesPerNode / 2;
+                    }
+                } *root;
+
+            public:
+                /// \brief
+                /// ctor.
+                BTree (
+                    FileAllocator::SharedPtr fileNodeAllocator_,
+                    FileAllocator::PtrType offset_,
+                    ui32 entriesPerNode = DEFAULT_ENTRIES_PER_NODE,
+                    std::size_t nodesPerPage = BlockAllocator::DEFAULT_BLOCKS_PER_PAGE,
+                    Allocator::SharedPtr allocator = DefaultAllocator::Instance ());
+                /// \brief
+                /// dtor.
+                ~BTree ();
+
+                inline FileAllocator::PtrType GetOffset () const {
+                    return offset;
                 }
 
-                void Read () {
-                    header.Read (file, offset);
-                    footer.Read (file, (ui64)offset + header.size - Footer::SIZE);
-                    if (header != footer) {
-                        // FIXME: throw
-                        assert (0);
-                    }
+                inline bool IsFixed () const {
+                    return header.IsFixed ();
                 }
-                void Write () {
-                    header.Write (file, offset);
-                    footer.Write (file, (ui64)offset + header.size - Footer::SIZE);
-                }
+
+                /// \brief
+                /// Find the given key in the btree.
+                /// \param[in] key Key to find.
+                /// \return If found the given key will be returned.
+                /// If not found, return the nearest larger key.
+                Key Search (const Key &key);
+                /// \brief
+                /// Add the given key to the btree.
+                /// \param[in] key Key to add.
+                /// NOTE: Duplicate keys are ignored.
+                void Add (const Key &key);
+                /// \brief
+                /// Delete the given key from the btree.
+                /// \param[in] key Key whose entry to delete.
+                /// \return true == entry deleted. false == entry not found.
+                bool Delete (const Key &key);
+                /// \brief
+                /// Flush the node cache (used in tight memory situations).
+                void Flush ();
+
+            private:
+                bool Insert (
+                    Node::Entry &entry,
+                    Node *node);
+                bool Remove (
+                    const Key &key,
+                    Node *node);
+                void RestoreBalance (
+                    Node *node,
+                    ui32 index);
+                void RotateRight (
+                    Node *node,
+                    ui32 index,
+                    Node *left,
+                    Node *right);
+                void RotateLeft (
+                    Node *node,
+                    ui32 index,
+                    Node *left,
+                    Node *right);
+                void Merge (
+                    Node *node,
+                    ui32 index,
+                    Node *left,
+                    Node *right);
+                void Save ();
+                void SetRoot (Node *node);
+
+                friend Serializer &operator << (
+                    Serializer &serializer,
+                    const Node::Entry &entry);
+                friend Serializer &operator >> (
+                    Serializer &serializer,
+                    Node::Entry &header);
+                friend Serializer &operator << (
+                    Serializer &serializer,
+                    const Header &header);
+                friend Serializer &operator >> (
+                    Serializer &serializer,
+                    Header &header);
+
+                /// \brief
+                /// BTree is neither copy constructable, nor assignable.
+                THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (BTree)
             };
+            BTree::SharedPt freeList;
             SpinLock spinLock;
 
         public:
             enum {
-                DEFAULT_BLOCK_SIZE = 512
+                DEFAULT_BTREE_ENTRIES_PER_NODE = 32
             };
 
             FileAllocator (
                 const std::string &path,
-                std::size_t blockSize = DEFAULT_BLOCK_SIZE,
-                std::size_t blocksPerPage = BlockAllocator::DEFAULT_BLOCKS_PER_PAGE,
+                std::size_t blockSize = 0,
+                std::size_t blocksPerPage = DEFAULT_BTREE_ENTRIES_PER_NODE,
                 Allocator::SharedPtr allocator = DefaultAllocator::Instance ());
 
             inline Endianness GetFileEndianness () const {
                 return file.endianness;
             }
 
+            PtrType GetRootBlock ();
+            void SetRootBlock (PtrType rootBlock);
+
             virtual PtrType Alloc (std::size_t size) override;
             virtual void Free (
                 PtrType offset,
                 std::size_t size) override;
-
-            PtrType AllocFixedBlock (std::size_t size);
-            void FreeFixedBlock (
-                PtrType offset,
-                std::size_t size);
-
-            PtrType GetRootBlock ();
-            void SetRootBlock (PtrType rootBlock);
 
             std::size_t Read (
                 PtrType offset,
@@ -293,23 +416,10 @@ namespace thekogans {
                 const void *data,
                 std::size_t length);
 
-            inline BlockData::SharedPtr CreateBlockData (
-                    PtrType offset,
-                    std::size_t size = 0,
-                    bool read = false) {
-                BlockData::SharedPtr blockData (
-                    new BlockData (
-                        offset,
-                        GetFileEndianness (),
-                        size > 0 ? size : header.blockSize,
-                        0,
-                        0,
-                        blockAllocator));
-                if (read) {
-                    blockData->Read (*this);
-                }
-                return blockData;
-            }
+            BlockData::SharedPtr CreateBlockData (
+                PtrType offset,
+                std::size_t size = 0,
+                bool read = false);
 
             /// \struct BlockAllocator::Pool BlockAllocator.h thekogans/util/BlockAllocator.h
             ///
@@ -343,6 +453,9 @@ namespace thekogans {
         protected:
             void Save ();
 
+            PtrType AllocFixedBlock ();
+            void FreeFixedBlock (PtrType offset);
+
             friend Serializer &operator << (
                 Serializer &serializer,
                 const Header &header);
@@ -367,6 +480,24 @@ namespace thekogans {
                 FileAllocator::PtrType &ptr) {
             serializer >> (ui64 &)ptr;
             return serializer;
+        }
+
+        inline bool operator == (
+                const FileAllocator::BTree::Key &key1,
+                const FileAllocator::BTree::Key &key2) {
+            return key1.first == key2.first && key1.second == key2.second;
+        }
+        inline bool operator != (
+                const FileAllocator::BTree::Key &key1,
+                const FileAllocator::BTree::Key &key2) {
+            return key1.first != key2.first || key1.second != key2.second;
+        }
+
+        inline bool operator < (
+                const FileAllocator::BTree::Key &key1,
+                const FileAllocator::BTree::Key &key2) {
+            return key1.first < key2.first ||
+                (key1.first == key2.first && key1.second < key2.second);
         }
 
     } // namespace util
