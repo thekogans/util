@@ -37,7 +37,8 @@ namespace thekogans {
             // {size, offset}
             /// \brief
             /// Keys are structured to allow for greater flexibility.
-            using Key = std::pair<ui64, ui64>;
+            using Key = std::pair<ui64, FileAllocator::PtrType>;
+            static const std::size_t KEY_SIZE = UI64_SIZE + FileAllocator::PtrTypeSize;
 
             enum {
                 /// \brief
@@ -111,7 +112,7 @@ namespace thekogans {
                     /// \brief
                     /// ctor.
                     /// \param[in] key_ Entry key.
-                    Entry (const Key &key_ = Key (NIDX64, NIDX64)) :
+                    Entry (const Key &key_ = Key (UI64_MAX, nullptr)) :
                         key (key_),
                         rightOffset (nullptr),
                         rightNode (nullptr) {}

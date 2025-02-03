@@ -36,8 +36,8 @@ namespace thekogans {
                 Allocator::SharedPtr allocator = DefaultAllocator::Instance ()) :
                 FileAllocator (path, blockSize, blocksPerPage, allocator) {}
 
-            virtual PtrType Alloc (std::size_t size) override;
-            virtual void Free (
+            virtual PtrType AllocBTreeNode (std::size_t size) override;
+            virtual void FreeBTreeNode (
                 PtrType offset,
                 std::size_t size) override;
 

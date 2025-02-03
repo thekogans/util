@@ -47,7 +47,7 @@ namespace thekogans {
                 leftOffset (nullptr),
                 leftNode (nullptr) {
             if (offset != nullptr) {
-                FileAllocator::Block::SharedPtr block =
+                FileAllocator::BlockData::SharedPtr block =
                     btree.fileNodeAllocator->CreateBlock (
                         offset, FileSize (btree.header.entriesPerNode), true);
                 *block >> count;
@@ -59,7 +59,7 @@ namespace thekogans {
                 }
             }
             else {
-                offset = btree.fileNodeAllocator->Alloc (
+                offset = btree.fileNodeAllocator->AllocFixedBlock (
                     FileSize (btree.header.entriesPerNode));
                 Save ();
             }
@@ -75,7 +75,7 @@ namespace thekogans {
         }
 
         std::size_t BTree::Node::FileSize (ui32 entriesPerNode) {
-            const std::size_t ENTRY_SIZE = UI64_SIZE + UI64_SIZE + FileAllocator::PtrTypeSize;
+            const std::size_t ENTRY_SIZE = KEY_SIZE + FileAllocator::PtrTypeSize;
             return UI32_SIZE + FileAllocator::PtrTypeSize + entriesPerNode * ENTRY_SIZE;
         }
 
@@ -101,7 +101,7 @@ namespace thekogans {
 
         void BTree::Node::Delete (Node *node) {
             if (node->count == 0) {
-                node->btree.fileNodeAllocator->Free (
+                node->btree.fileNodeAllocator->FreeBTreeNode (
                     node->offset,
                     FileSize (node->btree.header.entriesPerNode));
                 Free (node);
@@ -240,7 +240,7 @@ namespace thekogans {
                 }
             }
             else {
-                offset = fileNodeAllocator->Alloc (Header::SIZE);
+                offset = fileNodeAllocator->AllocBTreeNode (Header::SIZE);
                 Save ();
             }
             root = Node::Alloc (*this, header.rootOffset);
@@ -251,7 +251,7 @@ namespace thekogans {
         }
 
         BTree::Key BTree::Search (const Key &key) {
-            Key result (NIDX64, NIDX64);
+            Key result (UI64_MAX, nullptr);
             Node *node = root;
             while (node != nullptr) {
                 ui32 index;

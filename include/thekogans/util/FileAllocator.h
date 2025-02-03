@@ -50,15 +50,34 @@ namespace thekogans {
                 "Invalid assumption about FileAllocator::PtrType size.");
             static const std::size_t PtrTypeSize = UI64_SIZE;
 
-            struct _LIB_THEKOGANS_UTIL_DECL Block : public Buffer {
+            struct _LIB_THEKOGANS_UTIL_DECL BlockData : public Buffer {
                 /// \brief
                 /// Declare \see{RefCounted} pointers.
-                THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (Block)
+                THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (BlockData)
+
+                /// \brief
+                /// Declare \see{DynamicCreatable} boilerplate.
+                THEKOGANS_UTIL_DECLARE_STD_ALLOCATOR_FUNCTIONS
 
                 PtrType offset;
 
+                inline std::size_t Read (FileAllocator &allocator) {
+                    return AdvanceWriteOffset (
+                        allocator.Read (
+                            offset,
+                            GetWritePtr (),
+                            GetDataAvailableForWriting ()));
+                }
+                inline std::size_t Write (FileAllocator &allocator) {
+                    return AdvanceReadOffset (
+                        allocator.Write (
+                            offset,
+                            GetReadPtr (),
+                            GetDataAvailableForReading ()));
+                }
+
             protected:
-                Block (
+                BlockData (
                     PtrType offset_,
                     Endianness endianness,
                     std::size_t length,
@@ -71,22 +90,170 @@ namespace thekogans {
                 friend struct FileAllocator;
             };
 
+        private:
             SimpleFile file;
             Allocator::SharedPtr blockAllocator;
             struct Header {
+                ui32 flags;
                 ui32 blockSize;
-                PtrType freeBlock;
-                PtrType rootBlock;
+                PtrType headFreeFixedBlockOffset;
+                PtrType btreeOffset;
+                PtrType rootBlockOffset;
 
                 enum {
-                    SIZE = UI32_SIZE + PtrTypeSize + PtrTypeSize
+                    SIZE =
+                        UI32_SIZE +
+                        UI32_SIZE +
+                        PtrTypeSize +
+                        PtrTypeSize +
+                        PtrTypeSize
                 };
 
-                Header (ui32 blockSize_) :
-                    blockSize (blockSize_ >= PtrTypeSize ? blockSize_ : PtrTypeSize),
-                    freeBlock (nullptr),
-                    rootBlock (nullptr) {}
+                Header (
+                    ui32 flags_,
+                    ui32 blockSize_) :
+                    flags (flags_),
+                    blockSize (blockSize_),
+                    headFreeFixedBlockOffset (nullptr),
+                    btreeOffset (nullptr),
+                    rootBlockOffset (nullptr) {}
             } header;
+            struct BlockInfo : public RefCounted {
+                /// \brief
+                /// Declare \see{RefCounted} pointers.
+                THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (BlockInfo)
+
+                /// \brief
+                /// Declare \see{DynamicCreatable} boilerplate.
+                THEKOGANS_UTIL_DECLARE_STD_ALLOCATOR_FUNCTIONS
+
+                File &file;
+                PtrType offset;
+                enum {
+                    FLAGS_IN_USE = 1,
+                    FLAGS_FREE = 2,
+                    FLAGS_FIXED_BLOCK = 4
+                };
+                struct Header {
+                    ui32 flags;
+                    ui64 size;
+                    PtrType prevOffset;
+                    PtrType nextOffset;
+
+                    enum {
+                        SIZE =
+                            UI32_SIZE +
+                            UI32_SIZE +
+                            UI64_SIZE +
+                            PtrTypeSize +
+                            PtrTypeSize
+                    };
+
+                    Header (
+                        ui32 flags_ = 0,
+                        ui64 size_ = 0,
+                        PtrType prevOffset_ = nullptr,
+                        PtrType nextOffset_ = nullptr) :
+                        flags (flags_),
+                        size (size_),
+                        prevOffset (prevOffset_),
+                        nextOffset (nextOffset_) {}
+
+                    void Read (
+                            File &file,
+                            FileAllocator::PtrType offset) {
+                        file.Seek ((ui64)offset, SEEK_SET);
+                        ui32 magic;
+                        file >> magic;
+                        if (magic == MAGIC32) {
+                            file >> flags >> size >> prevOffset >> nextOffset;
+                        }
+                        else {
+                            // FIXME: throw
+                            assert (0);
+                        }
+                    }
+                    void Write (
+                            File &file,
+                            FileAllocator::PtrType offset) {
+                        file.Seek ((ui64)offset, SEEK_SET);
+                        file << MAGIC32 << flags << size << prevOffset << nextOffset;
+                    }
+                } header;
+                struct Footer {
+                    ui32 flags;
+                    ui64 size;
+
+                    enum {
+                        SIZE = UI32_SIZE + UI32_SIZE + UI64_SIZE
+                    };
+
+                    void Read (
+                            File &file,
+                            FileAllocator::PtrType offset) {
+                        file.Seek ((ui64)offset, SEEK_SET);
+                        ui32 magic;
+                        file >> magic;
+                        if (magic == MAGIC32) {
+                            file >> flags >> size;
+                        }
+                        else {
+                            // FIXME: throw
+                            assert (0);
+                        }
+                    }
+                    void Write (
+                            File &file,
+                            FileAllocator::PtrType offset) {
+                        file.Seek ((ui64)offset, SEEK_SET);
+                        file << MAGIC32 << flags << size;
+                    }
+                } footer;
+
+                BlockInfo (
+                    File &file_,
+                    PtrType offset_ = nullptr) :
+                    file (file_),
+                    offset (offset_) {}
+
+                inline bool IsFirst () const {
+                    return (ui64)offset == Header::SIZE;
+                }
+                inline bool IsLast () const {
+                    return (ui64)offset + header.size == file.GetSize ();
+                }
+
+                Block::SharedPtr Prev (File &file) {
+                    Block::SharedPtr prev (new Block (file));
+                    prev->footer.Read (file, (ui64)offset - Footer::SIZE);
+                    prev->offset = (ui64)offset - prev.footer.size;
+                    prev->header.Read (prev.offset);
+                    if (prev->header != prev->footer) {
+                        // FIXME: throw
+                        assert (0);
+                    }
+                    return prev;
+                }
+                Block::SharedPtr Next () {
+                    Block::SharedPtr next (
+                        new Block (file, (ui64)offset + header.size));
+                    next->Read ();
+                    return next;
+                }
+
+                void Read () {
+                    header.Read (file, offset);
+                    footer.Read (file, (ui64)offset + header.size - Footer::SIZE);
+                    if (header != footer) {
+                        // FIXME: throw
+                        assert (0);
+                    }
+                }
+                void Write () {
+                    header.Write (file, offset);
+                    footer.Write (file, (ui64)offset + header.size - Footer::SIZE);
+                }
+            };
             SpinLock spinLock;
 
         public:
@@ -104,6 +271,16 @@ namespace thekogans {
                 return file.endianness;
             }
 
+            virtual PtrType Alloc (std::size_t size) override;
+            virtual void Free (
+                PtrType offset,
+                std::size_t size) override;
+
+            PtrType AllocFixedBlock (std::size_t size);
+            void FreeFixedBlock (
+                PtrType offset,
+                std::size_t size);
+
             PtrType GetRootBlock ();
             void SetRootBlock (PtrType rootBlock);
 
@@ -116,12 +293,12 @@ namespace thekogans {
                 const void *data,
                 std::size_t length);
 
-            inline Block::SharedPtr CreateBlock (
+            inline BlockData::SharedPtr CreateBlockData (
                     PtrType offset,
                     std::size_t size = 0,
                     bool read = false) {
-                Block::SharedPtr block (
-                    new Block (
+                BlockData::SharedPtr blockData (
+                    new BlockData (
                         offset,
                         GetFileEndianness (),
                         size > 0 ? size : header.blockSize,
@@ -129,23 +306,9 @@ namespace thekogans {
                         0,
                         blockAllocator));
                 if (read) {
-                    ReadBlock (block);
+                    blockData->Read (*this);
                 }
-                return block;
-            }
-            inline std::size_t ReadBlock (Block::SharedPtr block) {
-                return block->AdvanceWriteOffset (
-                    Read (
-                        block->offset,
-                        block->GetWritePtr (),
-                        block->GetDataAvailableForWriting ()));
-            }
-            inline std::size_t WriteBlock (Block::SharedPtr block) {
-                return block->AdvanceReadOffset (
-                    Write (
-                        block->offset,
-                        block->GetReadPtr (),
-                        block->GetDataAvailableForReading ()));
+                return blockData;
             }
 
             /// \struct BlockAllocator::Pool BlockAllocator.h thekogans/util/BlockAllocator.h
