@@ -22,20 +22,18 @@
 namespace thekogans {
     namespace util {
 
-        namespace {
-            inline Serializer &operator << (
-                    Serializer &serializer,
-                    const FileAllocator::BTree::Key &key) {
-                serializer << key.first << key.second;
-                return serializer;
-            }
+        Serializer &operator << (
+               Serializer &serializer,
+               const FileAllocator::BTree::Key &key) {
+            serializer << key.first << key.second;
+            return serializer;
+        }
 
-            inline Serializer &operator >> (
-                    Serializer &serializer,
-                    FileAllocator::BTree::Key &key) {
-                serializer >> key.first >> key.second;
-                return serializer;
-            }
+        Serializer &operator >> (
+                Serializer &serializer,
+                FileAllocator::BTree::Key &key) {
+            serializer >> key.first >> key.second;
+            return serializer;
         }
 
         FileAllocator::BTree::Node::Node (
@@ -44,9 +42,9 @@ namespace thekogans {
                 btree (btree_),
                 offset (offset_),
                 count (0),
-                leftOffset (nullptr),
-                leftNode (nullptr) {
-            if (offset != nullptr) {
+                leftOffset (0),
+                leftNode (0) {
+            if (offset != 0) {
                 BlockData::SharedPtr block =
                     btree.fileNodeAllocator.CreateBlockData (
                         offset, FileSize (btree.header.entriesPerNode), true);
@@ -73,12 +71,12 @@ namespace thekogans {
             }
         }
 
-        std::size_t FileAllocator::BTree::Node::FileSize (ui32 entriesPerNode) {
+        std::size_t FileAllocator::BTree::Node::FileSize (std::size_t entriesPerNode) {
             const std::size_t ENTRY_SIZE = KEY_SIZE + PtrTypeSize;
             return UI32_SIZE + PtrTypeSize + entriesPerNode * ENTRY_SIZE;
         }
 
-        std::size_t FileAllocator::BTree::Node::Size (ui32 entriesPerNode) {
+        std::size_t FileAllocator::BTree::Node::Size (std::size_t entriesPerNode) {
             return sizeof (Node) + (entriesPerNode - 1) * sizeof (Entry);
         }
 
@@ -127,15 +125,15 @@ namespace thekogans {
 
         FileAllocator::BTree::Node *FileAllocator::BTree::Node::GetChild (ui32 index) {
             if (index == 0) {
-                if (leftNode == nullptr && leftOffset != nullptr) {
+                if (leftNode == 0 && leftOffset != 0) {
                     leftNode = Alloc (btree, leftOffset);
                 }
                 return leftNode;
             }
             else {
                 --index;
-                if (entries[index].rightNode == nullptr &&
-                        entries[index].rightOffset != nullptr) {
+                if (entries[index].rightNode == 0 &&
+                        entries[index].rightOffset != 0) {
                     entries[index].rightNode = Alloc (
                         btree, entries[index].rightOffset);
                 }
@@ -212,19 +210,19 @@ namespace thekogans {
         FileAllocator::BTree::BTree (
                 FileAllocator &fileNodeAllocator_,
                 PtrType offset_,
-                ui32 entriesPerNode,
+                std::size_t entriesPerNode,
                 std::size_t nodesPerPage,
                 Allocator::SharedPtr allocator) :
                 fileNodeAllocator (fileNodeAllocator_),
                 offset (offset_),
-                header (entriesPerNode),
+                header ((ui32)entriesPerNode),
                 nodeAllocator (
                     BlockAllocator::Pool::Instance ()->GetBlockAllocator (
                         Node::Size (entriesPerNode),
                         nodesPerPage,
                         allocator)),
                 root (nullptr) {
-            if (offset != nullptr) {
+            if (offset != 0) {
                 BlockData::SharedPtr block =
                     fileNodeAllocator.CreateBlockData (offset, Header::SIZE, true);
                 *block >> header;
@@ -248,7 +246,7 @@ namespace thekogans {
         }
 
         FileAllocator::BTree::Key FileAllocator::BTree::Search (const Key &key) {
-            Key result (UI64_MAX, nullptr);
+            Key result (UI64_MAX, 0);
             Node *node = root;
             while (node != nullptr) {
                 ui32 index;
@@ -350,7 +348,7 @@ namespace thekogans {
             if (found) {
                 if (child != nullptr) {
                     Node *leaf = child;
-                    while (leaf->leftOffset != nullptr) {
+                    while (leaf->leftOffset != 0) {
                         leaf = leaf->GetChild (0);
                     }
                     node->entries[index].key = leaf->entries[0].key;

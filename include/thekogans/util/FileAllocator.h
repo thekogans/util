@@ -20,11 +20,11 @@
 
 #include <map>
 #include "thekogans/util/Config.h"
+#include "thekogans/util/RefCounted.h"
 #include "thekogans/util/Types.h"
 #include "thekogans/util/Flags.h"
 #include "thekogans/util/File.h"
 #include "thekogans/util/SpinLock.h"
-#include "thekogans/util/Allocator.h"
 #include "thekogans/util/BlockAllocator.h"
 #include "thekogans/util/Singleton.h"
 
@@ -36,19 +36,12 @@ namespace thekogans {
         /// \brief
         /// FileAllocator
 
-        struct _LIB_THEKOGANS_UTIL_DECL FileAllocator : public Allocator {
+        struct _LIB_THEKOGANS_UTIL_DECL FileAllocator : public RefCounted {
             /// \brief
             /// Declare \see{RefCounted} pointers.
             THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (FileAllocator)
 
-            /// \brief
-            /// Declare \see{DynamicCreatable} boilerplate.
-            THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE_OVERRIDE (FileAllocator)
-
-            using PtrType = void *;
-            static_assert (
-                sizeof (PtrType) >= UI64_SIZE,
-                "Invalid assumption about FileAllocator::PtrType size.");
+            using PtrType = ui64;
             static const std::size_t PtrTypeSize = UI64_SIZE;
 
             struct _LIB_THEKOGANS_UTIL_DECL BlockData : public Buffer {
@@ -101,12 +94,12 @@ namespace thekogans {
                 ui32 flags;
                 ui32 blockSize;
                 PtrType headFreeFixedBlockOffset;
-                PtrType btreeOffset;
+                PtrType freeListOffset;
                 PtrType rootBlockOffset;
 
                 enum {
                     SIZE =
-                        UI32_SIZE +
+                        UI32_SIZE + // magic
                         UI32_SIZE +
                         UI32_SIZE +
                         PtrTypeSize +
@@ -119,23 +112,27 @@ namespace thekogans {
                     ui32 blockSize_ = 0) :
                     flags (flags_),
                     blockSize (blockSize_),
-                    headFreeFixedBlockOffset (nullptr),
-                    freeListOffset (nullptr),
-                    rootBlockOffset (nullptr) {}
+                    headFreeFixedBlockOffset (0),
+                    freeListOffset (0),
+                    rootBlockOffset (0) {}
 
-                inline bool IsFixed () {
+                inline bool IsFixed () const {
                     return Flags32 (flags).Test (FLAGS_FIXED);
                 }
             } header;
             /// \struct BTree BTree.h thekogans/util/BTree.h
             ///
             /// \brief
-            struct BTree {
+            struct BTree : public RefCounted {
+                /// \brief
+                /// Declare \see{RefCounted} pointers.
+                THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (BTree)
+
                 // {size, offset}
                 /// \brief
                 /// Keys are structured to allow for greater flexibility.
-                using Key = std::pair<ui64, FileAllocator::PtrType>;
-                static const std::size_t KEY_SIZE = UI64_SIZE + FileAllocator::PtrTypeSize;
+                using Key = std::pair<ui64, PtrType>;
+                static const std::size_t KEY_SIZE = UI64_SIZE + PtrTypeSize;
 
                 enum {
                     /// \brief
@@ -146,7 +143,7 @@ namespace thekogans {
             private:
                 /// \brief
                 FileAllocator &fileNodeAllocator;
-                FileAllocator::PtrType offset;
+                PtrType offset;
                 /// \struct BTree::Header BTree.h thekogans/util/BTree.h
                 ///
                 /// \brief
@@ -157,10 +154,10 @@ namespace thekogans {
                     ui32 entriesPerNode;
                     /// \brief
                     /// Root node offset.
-                    FileAllocator::PtrType rootOffset;
+                    PtrType rootOffset;
 
                     enum {
-                        SIZE = UI32_SIZE + FileAllocator::PtrTypeSize
+                        SIZE = UI32_SIZE + PtrTypeSize
                     };
 
                     /// \brief
@@ -168,7 +165,7 @@ namespace thekogans {
                     /// \param[in] entriesPerNode_ Entries per node.
                     Header (ui32 entriesPerNode_ = DEFAULT_ENTRIES_PER_NODE) :
                     entriesPerNode (entriesPerNode_),
-                        rootOffset (nullptr) {}
+                        rootOffset (0) {}
                 } header;
                 Allocator::SharedPtr nodeAllocator;
                 /// \struct BTree::Node BTree.h thekogans/util/BTree.h
@@ -181,13 +178,13 @@ namespace thekogans {
                     BTree &btree;
                     /// \brief
                     /// Node block offset.
-                    FileAllocator::PtrType offset;
+                    PtrType offset;
                     /// \brief
                     /// Count of entries.
                     ui32 count;
                     /// \brief
                     /// Left most child node offset.
-                    FileAllocator::PtrType leftOffset;
+                    PtrType leftOffset;
                     /// \brief
                     /// Left most child node.
                     Node *leftNode;
@@ -201,7 +198,7 @@ namespace thekogans {
                         Key key;
                         /// \brief
                         /// Right child node offset.
-                        FileAllocator::PtrType rightOffset;
+                        PtrType rightOffset;
                         /// \brief
                         /// Right child node.
                         Node *rightNode;
@@ -209,10 +206,10 @@ namespace thekogans {
                         /// \brief
                         /// ctor.
                         /// \param[in] key_ Entry key.
-                        Entry (const Key &key_ = Key (UI64_MAX, nullptr)) :
+                        Entry (const Key &key_ = Key (UI64_MAX, 0)) :
                         key (key_),
-                            rightOffset (nullptr),
-                            rightNode (nullptr) {}
+                            rightOffset (0),
+                            rightNode (0) {}
                     };
                     /// \brief
                     /// Entry array. The rest of the entries are
@@ -225,24 +222,24 @@ namespace thekogans {
                     /// \param[in] offset_ Node offset.
                     Node (
                         BTree &btree_,
-                        FileAllocator::PtrType offset_ = nullptr);
+                        PtrType offset_ = 0);
                     /// \brief
                     /// dtor.
                     ~Node ();
 
                     /// \brief
                     /// Given the number of entries, return the node file size in bytes.
-                    static std::size_t FileSize (ui32 entriesPerNode);
+                    static std::size_t FileSize (std::size_t entriesPerNode);
                     /// \brief
                     /// Given the number of entries, return the node size in bytes.
-                    static std::size_t Size (ui32 entriesPerNode);
+                    static std::size_t Size (std::size_t entriesPerNode);
                     /// \brief
                     /// Allocate a node.
                     /// \param[in] btree BTree to which this node belongs.
                     /// \param[in] offset Node offset.
                     static Node *Alloc (
                         BTree &btree,
-                        FileAllocator::PtrType offset = nullptr);
+                        PtrType offset = 0);
                     /// \brief
                     /// Free the given node.
                     /// \param[in] node Node to free.
@@ -299,21 +296,17 @@ namespace thekogans {
                 /// \brief
                 /// ctor.
                 BTree (
-                    FileAllocator::SharedPtr fileNodeAllocator_,
-                    FileAllocator::PtrType offset_,
-                    ui32 entriesPerNode = DEFAULT_ENTRIES_PER_NODE,
+                    FileAllocator &fileNodeAllocator_,
+                    PtrType offset_,
+                    std::size_t entriesPerNode = DEFAULT_ENTRIES_PER_NODE,
                     std::size_t nodesPerPage = BlockAllocator::DEFAULT_BLOCKS_PER_PAGE,
                     Allocator::SharedPtr allocator = DefaultAllocator::Instance ());
                 /// \brief
                 /// dtor.
                 ~BTree ();
 
-                inline FileAllocator::PtrType GetOffset () const {
+                inline PtrType GetOffset () const {
                     return offset;
-                }
-
-                inline bool IsFixed () const {
-                    return header.IsFixed ();
                 }
 
                 /// \brief
@@ -364,6 +357,8 @@ namespace thekogans {
                 void Save ();
                 void SetRoot (Node *node);
 
+                friend struct FileAllocator;
+
                 friend Serializer &operator << (
                     Serializer &serializer,
                     const Node::Entry &entry);
@@ -381,31 +376,31 @@ namespace thekogans {
                 /// BTree is neither copy constructable, nor assignable.
                 THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (BTree)
             };
-            BTree::SharedPt freeList;
+            BTree::SharedPtr freeList;
             SpinLock spinLock;
 
         public:
-            enum {
-                DEFAULT_BTREE_ENTRIES_PER_NODE = 32
-            };
-
             FileAllocator (
                 const std::string &path,
                 std::size_t blockSize = 0,
-                std::size_t blocksPerPage = DEFAULT_BTREE_ENTRIES_PER_NODE,
+                std::size_t blocksPerPage = BTree::DEFAULT_ENTRIES_PER_NODE,
                 Allocator::SharedPtr allocator = DefaultAllocator::Instance ());
 
             inline Endianness GetFileEndianness () const {
                 return file.endianness;
             }
 
+            inline bool IsFixed () const {
+                return header.IsFixed ();
+            }
+
             PtrType GetRootBlock ();
             void SetRootBlock (PtrType rootBlock);
 
-            virtual PtrType Alloc (std::size_t size) override;
-            virtual void Free (
+            PtrType Alloc (std::size_t size);
+            void Free (
                 PtrType offset,
-                std::size_t size) override;
+                std::size_t size);
 
             std::size_t Read (
                 PtrType offset,
@@ -445,8 +440,8 @@ namespace thekogans {
                 /// \return FileAllocator matching the given path.
                 FileAllocator::SharedPtr GetFileAllocator (
                     const std::string &path,
-                    std::size_t blockSize = DEFAULT_BLOCK_SIZE,
-                    std::size_t blocksPerPage = BlockAllocator::DEFAULT_BLOCKS_PER_PAGE,
+                    std::size_t blockSize = 0,
+                    std::size_t blocksPerPage = BTree::DEFAULT_ENTRIES_PER_NODE,
                     Allocator::SharedPtr allocator = DefaultAllocator::Instance ());
             };
 
@@ -463,24 +458,40 @@ namespace thekogans {
                 Serializer &serializer,
                 Header &header);
 
+            friend bool operator == (
+                const BTree::Key &key1,
+                const BTree::Key &key2);
+            friend bool operator != (
+                const BTree::Key &key1,
+                const BTree::Key &key2);
+            friend bool operator < (
+                const BTree::Key &key1,
+                const BTree::Key &key2);
+
+            friend Serializer &operator << (
+               Serializer &serializer,
+               const BTree::Key &key);
+            friend Serializer &operator >> (
+                Serializer &serializer,
+                BTree::Key &key);
+
+            friend Serializer &operator << (
+                Serializer &serializer,
+                const BTree::Node::Entry &entry);
+            friend Serializer &operator >> (
+                Serializer &serializer,
+                BTree::Node::Entry &entry);
+            friend Serializer &operator << (
+                Serializer &serializer,
+                const BTree::Header &header);
+            friend Serializer &operator >> (
+                Serializer &serializer,
+                BTree::Header &header);
+
             /// \brief
             /// FileAllocator is neither copy constructable, nor assignable.
             THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (FileAllocator)
         };
-
-        inline Serializer &operator << (
-                Serializer &serializer,
-                FileAllocator::PtrType ptr) {
-            serializer << (ui64)ptr;
-            return serializer;
-        }
-
-        inline Serializer &operator >> (
-                Serializer &serializer,
-                FileAllocator::PtrType &ptr) {
-            serializer >> (ui64 &)ptr;
-            return serializer;
-        }
 
         inline bool operator == (
                 const FileAllocator::BTree::Key &key1,
