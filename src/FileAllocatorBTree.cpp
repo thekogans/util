@@ -22,20 +22,6 @@
 namespace thekogans {
     namespace util {
 
-        Serializer &operator << (
-               Serializer &serializer,
-               const FileAllocator::BTree::Key &key) {
-            serializer << key.first << key.second;
-            return serializer;
-        }
-
-        Serializer &operator >> (
-                Serializer &serializer,
-                FileAllocator::BTree::Key &key) {
-            serializer >> key.first >> key.second;
-            return serializer;
-        }
-
         FileAllocator::BTree::Node::Node (
                 BTree &btree_,
                 ui64 offset_) :
@@ -60,8 +46,9 @@ namespace thekogans {
                     }
                 }
                 else {
-                    // FIXME: throw
-                    assert (0);
+                    THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
+                        "Corrupt BTree::Node: " THEKOGANS_UTIL_UI64_FORMAT,
+                        offset);
                 }
             }
             else {
@@ -207,14 +194,6 @@ namespace thekogans {
                 (--count - index) * sizeof (Entry));
         }
 
-        /*
-                    FileAllocator::Pool::Instance ()->GetFileAllocator (
-                        path,
-                        Node::FileSize (entriesPerNode),
-                        nodesPerPage,
-                        allocator)),
-         */
-
         FileAllocator::BTree::BTree (
                 FileAllocator &fileAllocator_,
                 ui64 offset_,
@@ -246,8 +225,9 @@ namespace thekogans {
                     }
                 }
                 else {
-                    // FIXME: throw
-                    assert (0);
+                    THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
+                        "Corrupt BTree: " THEKOGANS_UTIL_UI64_FORMAT,
+                        offset);
                 }
             }
             else {
@@ -488,14 +468,46 @@ namespace thekogans {
             Save ();
         }
 
-        Serializer &operator << (
+        inline bool operator == (
+                const FileAllocator::BTree::Key &key1,
+                const FileAllocator::BTree::Key &key2) {
+            return key1.first == key2.first && key1.second == key2.second;
+        }
+        inline bool operator != (
+                const FileAllocator::BTree::Key &key1,
+                const FileAllocator::BTree::Key &key2) {
+            return key1.first != key2.first || key1.second != key2.second;
+        }
+
+        inline bool operator < (
+                const FileAllocator::BTree::Key &key1,
+                const FileAllocator::BTree::Key &key2) {
+            return key1.first < key2.first ||
+                (key1.first == key2.first && key1.second < key2.second);
+        }
+
+        inline Serializer &operator << (
+               Serializer &serializer,
+               const FileAllocator::BTree::Key &key) {
+            serializer << key.first << key.second;
+            return serializer;
+        }
+
+        inline Serializer &operator >> (
+                Serializer &serializer,
+                FileAllocator::BTree::Key &key) {
+            serializer >> key.first >> key.second;
+            return serializer;
+        }
+
+        inline Serializer &operator << (
                 Serializer &serializer,
                 const FileAllocator::BTree::Node::Entry &entry) {
             serializer << entry.key << entry.rightOffset;
             return serializer;
         }
 
-        Serializer &operator >> (
+        inline Serializer &operator >> (
                 Serializer &serializer,
                 FileAllocator::BTree::Node::Entry &entry) {
             serializer >> entry.key >> entry.rightOffset;
@@ -503,14 +515,14 @@ namespace thekogans {
             return serializer;
         }
 
-        Serializer &operator << (
+        inline Serializer &operator << (
                 Serializer &serializer,
                 const FileAllocator::BTree::Header &header) {
             serializer << header.entriesPerNode << header.rootOffset;
             return serializer;
         }
 
-        Serializer &operator >> (
+        inline Serializer &operator >> (
                 Serializer &serializer,
                 FileAllocator::BTree::Header &header) {
             serializer >> header.entriesPerNode >> header.rootOffset;

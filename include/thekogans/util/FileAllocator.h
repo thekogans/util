@@ -84,7 +84,7 @@ namespace thekogans {
                 friend struct FileAllocator;
 
                 /// \brief
-                /// BTree is neither copy constructable, nor assignable.
+                /// BlockData is neither copy constructable, nor assignable.
                 THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (BlockData)
             };
 
@@ -98,7 +98,7 @@ namespace thekogans {
                 ui32 flags;
                 ui32 blockSize;
                 ui64 headFreeFixedBlockOffset;
-                ui64 freeListOffset;
+                ui64 btreeOffset;
                 ui64 rootBlockOffset;
 
                 enum {
@@ -117,7 +117,7 @@ namespace thekogans {
                     flags (flags_),
                     blockSize (blockSize_),
                     headFreeFixedBlockOffset (0),
-                    freeListOffset (0),
+                    btreeOffset (0),
                     rootBlockOffset (0) {}
 
                 inline bool IsFixed () const {
@@ -382,7 +382,7 @@ namespace thekogans {
                 /// BTree is neither copy constructable, nor assignable.
                 THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (BTree)
             };
-            BTree::SharedPtr freeList;
+            BTree::SharedPtr btree;
             SpinLock spinLock;
 
         public:
@@ -499,24 +499,6 @@ namespace thekogans {
             /// FileAllocator is neither copy constructable, nor assignable.
             THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (FileAllocator)
         };
-
-        inline bool operator == (
-                const FileAllocator::BTree::Key &key1,
-                const FileAllocator::BTree::Key &key2) {
-            return key1.first == key2.first && key1.second == key2.second;
-        }
-        inline bool operator != (
-                const FileAllocator::BTree::Key &key1,
-                const FileAllocator::BTree::Key &key2) {
-            return key1.first != key2.first || key1.second != key2.second;
-        }
-
-        inline bool operator < (
-                const FileAllocator::BTree::Key &key1,
-                const FileAllocator::BTree::Key &key2) {
-            return key1.first < key2.first ||
-                (key1.first == key2.first && key1.second < key2.second);
-        }
 
     } // namespace util
 } // namespace thekogans
