@@ -48,12 +48,20 @@ namespace thekogans {
                 BlockData::SharedPtr block =
                     btree.fileAllocator.CreateBlockData (
                         offset, FileSize (btree.header.entriesPerNode), true);
-                *block >> count;
-                if (count > 0) {
-                    *block >> leftOffset;
-                    for (ui32 i = 0; i < count; ++i) {
-                        *block >> entries[i];
+                ui32 magic;
+                *block >> magic;
+                if (magic == MAGIC32) {
+                    *block >> count;
+                    if (count > 0) {
+                        *block >> leftOffset;
+                        for (ui32 i = 0; i < count; ++i) {
+                            *block >> entries[i];
+                        }
                     }
+                }
+                else {
+                    // FIXME: throw
+                    assert (0);
                 }
             }
             else {
@@ -73,7 +81,7 @@ namespace thekogans {
 
         std::size_t FileAllocator::BTree::Node::FileSize (std::size_t entriesPerNode) {
             const std::size_t ENTRY_SIZE = KEY_SIZE + PtrTypeSize;
-            return UI32_SIZE + PtrTypeSize + entriesPerNode * ENTRY_SIZE;
+            return UI32_SIZE + UI32_SIZE + PtrTypeSize + entriesPerNode * ENTRY_SIZE;
         }
 
         std::size_t FileAllocator::BTree::Node::Size (std::size_t entriesPerNode) {
@@ -113,7 +121,7 @@ namespace thekogans {
             BlockData::SharedPtr block =
                 btree.fileAllocator.CreateBlockData (
                     offset, FileSize (btree.header.entriesPerNode));
-            *block << count;
+            *block << MAGIC32 << count;
             if (count > 0) {
                 *block << leftOffset;
                 for (ui32 i = 0; i < count; ++i) {
@@ -225,13 +233,21 @@ namespace thekogans {
             if (offset != 0) {
                 BlockData::SharedPtr block =
                     fileAllocator.CreateBlockData (offset, Header::SIZE, true);
-                *block >> header;
-                if (header.entriesPerNode != entriesPerNode) {
-                    nodeAllocator =
-                        BlockAllocator::Pool::Instance ()->GetBlockAllocator (
-                            Node::Size (header.entriesPerNode),
-                            nodesPerPage,
-                            allocator);
+                ui32 magic;
+                *block >> magic;
+                if (magic == MAGIC32) {
+                    *block >> header;
+                    if (header.entriesPerNode != entriesPerNode) {
+                        nodeAllocator =
+                            BlockAllocator::Pool::Instance ()->GetBlockAllocator (
+                                Node::Size (header.entriesPerNode),
+                                nodesPerPage,
+                                allocator);
+                    }
+                }
+                else {
+                    // FIXME: throw
+                    assert (0);
                 }
             }
             else {
@@ -462,7 +478,7 @@ namespace thekogans {
         void FileAllocator::BTree::Save () {
             BlockData::SharedPtr block =
                 fileAllocator.CreateBlockData (offset, Header::SIZE);
-            *block << header;
+            *block << MAGIC32 << header;
             block->Write ();
         }
 

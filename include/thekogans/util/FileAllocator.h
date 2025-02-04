@@ -164,7 +164,7 @@ namespace thekogans {
                     PtrType rootOffset;
 
                     enum {
-                        SIZE = UI32_SIZE + PtrTypeSize
+                        SIZE = UI32_SIZE + UI32_SIZE + PtrTypeSize
                     };
 
                     /// \brief
@@ -422,6 +422,7 @@ namespace thekogans {
                 PtrType offset,
                 std::size_t size = 0,
                 bool read = false);
+            std::size_t GetBlockSize (PtrType offset);
 
             /// \struct BlockAllocator::Pool BlockAllocator.h thekogans/util/BlockAllocator.h
             ///

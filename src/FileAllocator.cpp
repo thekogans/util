@@ -404,6 +404,17 @@ namespace thekogans {
             return blockData;
         }
 
+        std::size_t FileAllocator::GetBlockSize (PtrType offset) {
+            if (offset != 0) {
+                LockGuard<SpinLock> guard (spinLock);
+                offset -= BlockInfo::Header::SIZE;
+                BlockInfo block (file, offset);
+                block.Read ();
+                return block.header.size - BlockInfo::SIZE;
+            }
+            return 0;
+        }
+
         FileAllocator::SharedPtr FileAllocator::Pool::GetFileAllocator (
                 const std::string &path,
                 std::size_t blockSize,
