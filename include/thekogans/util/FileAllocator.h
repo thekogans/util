@@ -41,10 +41,10 @@ namespace thekogans {
             /// Declare \see{RefCounted} pointers.
             THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (FileAllocator)
 
-            struct _LIB_THEKOGANS_UTIL_DECL BlockData : public Buffer {
+            struct _LIB_THEKOGANS_UTIL_DECL BlockBuffer : public Buffer {
                 /// \brief
                 /// Declare \see{RefCounted} pointers.
-                THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (BlockData)
+                THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (BlockBuffer)
 
                 /// \brief
                 /// Declare \see{DynamicCreatable} boilerplate.
@@ -71,7 +71,7 @@ namespace thekogans {
                 }
 
             protected:
-                BlockData (
+                BlockBuffer (
                     FileAllocator &allocator_,
                     ui64 offset_,
                     Endianness endianness,
@@ -86,8 +86,8 @@ namespace thekogans {
                 friend struct FileAllocator;
 
                 /// \brief
-                /// BlockData is neither copy constructable, nor assignable.
-                THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (BlockData)
+                /// BlockBuffer is neither copy constructable, nor assignable.
+                THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (BlockBuffer)
             };
 
         private:
@@ -427,13 +427,14 @@ namespace thekogans {
             ui64 Alloc (std::size_t size);
             void Free (
                 ui64 offset,
-                std::size_t size);
+                std::size_t /*size*/ = 0);
             std::size_t GetBlockSize (ui64 offset);
 
-            BlockData::SharedPtr CreateBlockData (
+            BlockBuffer::SharedPtr CreateBlockBuffer (
                 ui64 offset,
                 std::size_t size = 0,
-                bool read = false);
+                bool read = false,
+                std::size_t offset_ = 0);
 
             /// \struct BlockAllocator::Pool BlockAllocator.h thekogans/util/BlockAllocator.h
             ///

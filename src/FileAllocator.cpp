@@ -235,7 +235,7 @@ namespace thekogans {
             }
         }
 
-        THEKOGANS_UTIL_IMPLEMENT_HEAP_FUNCTIONS (FileAllocator::BlockData)
+        THEKOGANS_UTIL_IMPLEMENT_HEAP_FUNCTIONS (FileAllocator::BlockBuffer)
 
         FileAllocator::FileAllocator (
                 const std::string &path,
@@ -360,12 +360,12 @@ namespace thekogans {
 
         void FileAllocator::Free (
                 ui64 offset,
-                std::size_t size) {
+                std::size_t /*size*/) {
             if (IsFixed ()) {
                 LockGuard<SpinLock> guard (spinLock);
                 FreeFixedBlock (offset);
             }
-            else if (offset >= minUserBlockOffset && size > 0) {
+            else if (offset >= minUserBlockOffset) {
                 offset -= BlockInfo::Header::SIZE;
                 LockedFilePtr file (*this);
                 if (header.rootBlockOffset == offset) {
@@ -403,31 +403,33 @@ namespace thekogans {
             }
         }
 
-        FileAllocator::BlockData::SharedPtr FileAllocator::CreateBlockData (
+        FileAllocator::BlockBuffer::SharedPtr FileAllocator::CreateBlockBuffer (
                 ui64 offset,
                 std::size_t size,
-                bool read) {
-            BlockData::SharedPtr blockData;
+                bool read,
+                std::size_t offset_) {
+            BlockBuffer::SharedPtr buffer;
             if (offset >= minUserBlockOffset) {
-                {
+                if (size == 0) {
                     LockedFilePtr file (*this);
                     BlockInfo block (*file, offset - BlockInfo::Header::SIZE);
                     block.Read ();
-                    blockData.Reset (
-                        new BlockData (
-                            *this,
-                            offset,
-                            GetFileEndianness (),
-                            size > 0 ? size : block.GetSize () - BlockInfo::SIZE,
-                            0,
-                            0,
-                            blockAllocator));
+                    size = block.GetSize () - BlockInfo::SIZE;
                 }
+                buffer.Reset (
+                    new BlockBuffer (
+                        *this,
+                        offset,
+                        GetFileEndianness (),
+                        size,
+                        0,
+                        0,
+                        blockAllocator));
                 if (read) {
-                    blockData->Read ();
+                    buffer->Read (offset_);
                 }
             }
-            return blockData;
+            return buffer;
         }
 
         std::size_t FileAllocator::GetBlockSize (ui64 offset) {
