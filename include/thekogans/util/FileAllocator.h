@@ -53,16 +53,17 @@ namespace thekogans {
                 /// Declare \see{DynamicCreatable} boilerplate.
                 THEKOGANS_UTIL_DECLARE_STD_ALLOCATOR_FUNCTIONS
 
+                FileAllocator &allocator;
                 PtrType offset;
 
-                inline std::size_t Read (FileAllocator &allocator) {
+                inline std::size_t Read () {
                     return AdvanceWriteOffset (
                         allocator.Read (
                             offset,
                             GetWritePtr (),
                             GetDataAvailableForWriting ()));
                 }
-                inline std::size_t Write (FileAllocator &allocator) {
+                inline std::size_t Write () {
                     return AdvanceReadOffset (
                         allocator.Write (
                             offset,
@@ -72,16 +73,22 @@ namespace thekogans {
 
             protected:
                 BlockData (
+                    FileAllocator &allocator_,
                     PtrType offset_,
                     Endianness endianness,
                     std::size_t length,
                     std::size_t readOffset = 0,
                     std::size_t writeOffset = 0,
                     Allocator::SharedPtr allocator = DefaultAllocator::Instance ()) :
+                    allocator (allocator_),
                     offset (offset_),
                     Buffer (endianness, length, readOffset, writeOffset, allocator) {}
 
                 friend struct FileAllocator;
+
+                /// \brief
+                /// BTree is neither copy constructable, nor assignable.
+                THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (BlockData)
             };
 
         private:

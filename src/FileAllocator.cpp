@@ -385,6 +385,7 @@ namespace thekogans {
                 bool read) {
             BlockData::SharedPtr blockData (
                 new BlockData (
+                    *this,
                     offset,
                     GetFileEndianness (),
                     size > 0 ? size : header.blockSize,
@@ -392,7 +393,7 @@ namespace thekogans {
                     0,
                     blockAllocator));
             if (read) {
-                blockData->Read (*this);
+                blockData->Read ();
             }
             return blockData;
         }

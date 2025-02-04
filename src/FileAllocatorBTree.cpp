@@ -120,7 +120,7 @@ namespace thekogans {
                     *block << entries[i];
                 }
             }
-            block->Write (btree.fileNodeAllocator);
+            block->Write ();
         }
 
         FileAllocator::BTree::Node *FileAllocator::BTree::Node::GetChild (ui32 index) {
@@ -463,7 +463,7 @@ namespace thekogans {
             BlockData::SharedPtr block =
                 fileNodeAllocator.CreateBlockData (offset, Header::SIZE);
             *block << header;
-            block->Write (fileNodeAllocator);
+            block->Write ();
         }
 
         void FileAllocator::BTree::SetRoot (Node *node) {
