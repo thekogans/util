@@ -303,19 +303,19 @@ namespace thekogans {
         }
 
         ui64 FileAllocator::GetRootBlockOffset () {
-            LockedFilePtr guard (*this);
+            LockGuard<SpinLock> guard (spinLock);
             return header.rootBlockOffset;
         }
 
         void FileAllocator::SetRootBlockOffset (ui64 rootBlockOffset) {
-            LockedFilePtr guard (*this);
+            LockGuard<SpinLock> guard (spinLock);
             header.rootBlockOffset = rootBlockOffset;
             Save ();
         }
 
         ui64 FileAllocator::Alloc (std::size_t size) {
             if (IsFixed ()) {
-                LockedFilePtr guard (*this);
+                LockGuard<SpinLock> guard (spinLock);
                 return AllocFixedBlock ();
             }
             else {
@@ -362,7 +362,7 @@ namespace thekogans {
                 ui64 offset,
                 std::size_t size) {
             if (IsFixed ()) {
-                LockedFilePtr guard (*this);
+                LockGuard<SpinLock> guard (spinLock);
                 FreeFixedBlock (offset);
             }
             else if (offset >= minUserBlockOffset && size > 0) {
