@@ -421,7 +421,7 @@ namespace thekogans {
                 bool read) {
             BlockData::SharedPtr blockData;
             if (offset >= minUserBlockOffset) {
-                BlockInfo block (file, offset -= BlockInfo::Header::SIZE);
+                BlockInfo block (file, offset - BlockInfo::Header::SIZE);
                 LockGuard<SpinLock> guard (spinLock);
                 block.Read ();
                 blockData.Reset (
@@ -429,7 +429,7 @@ namespace thekogans {
                         *this,
                         offset,
                         GetFileEndianness (),
-                        block.GetSize (),
+                        block.GetSize () - BlockInfo::SIZE,
                         0,
                         0,
                         blockAllocator));
