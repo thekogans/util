@@ -38,7 +38,7 @@ namespace thekogans {
 
         FileAllocator::BTree::Node::Node (
                 BTree &btree_,
-                PtrType offset_) :
+                ui64 offset_) :
                 btree (btree_),
                 offset (offset_),
                 count (0),
@@ -80,8 +80,8 @@ namespace thekogans {
         }
 
         std::size_t FileAllocator::BTree::Node::FileSize (std::size_t entriesPerNode) {
-            const std::size_t ENTRY_SIZE = KEY_SIZE + PtrTypeSize;
-            return UI32_SIZE + UI32_SIZE + PtrTypeSize + entriesPerNode * ENTRY_SIZE;
+            const std::size_t ENTRY_SIZE = KEY_SIZE + UI64_SIZE;
+            return UI32_SIZE + UI32_SIZE + UI64_SIZE + entriesPerNode * ENTRY_SIZE;
         }
 
         std::size_t FileAllocator::BTree::Node::Size (std::size_t entriesPerNode) {
@@ -90,7 +90,7 @@ namespace thekogans {
 
         FileAllocator::BTree::Node *FileAllocator::BTree::Node::Alloc (
                 BTree &btree,
-                PtrType offset) {
+                ui64 offset) {
             return new (
                 btree.nodeAllocator->Alloc (
                     Size (btree.header.entriesPerNode))) Node (btree, offset);
@@ -217,7 +217,7 @@ namespace thekogans {
 
         FileAllocator::BTree::BTree (
                 FileAllocator &fileAllocator_,
-                PtrType offset_,
+                ui64 offset_,
                 std::size_t entriesPerNode,
                 std::size_t nodesPerPage,
                 Allocator::SharedPtr allocator) :

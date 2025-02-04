@@ -41,9 +41,6 @@ namespace thekogans {
             /// Declare \see{RefCounted} pointers.
             THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (FileAllocator)
 
-            using PtrType = ui64;
-            static const std::size_t PtrTypeSize = UI64_SIZE;
-
             struct _LIB_THEKOGANS_UTIL_DECL BlockData : public Buffer {
                 /// \brief
                 /// Declare \see{RefCounted} pointers.
@@ -54,7 +51,7 @@ namespace thekogans {
                 THEKOGANS_UTIL_DECLARE_STD_ALLOCATOR_FUNCTIONS
 
                 FileAllocator &allocator;
-                PtrType offset;
+                ui64 offset;
 
                 inline std::size_t Read () {
                     return AdvanceWriteOffset (
@@ -74,7 +71,7 @@ namespace thekogans {
             protected:
                 BlockData (
                     FileAllocator &allocator_,
-                    PtrType offset_,
+                    ui64 offset_,
                     Endianness endianness,
                     std::size_t length,
                     std::size_t readOffset = 0,
@@ -100,18 +97,18 @@ namespace thekogans {
                 };
                 ui32 flags;
                 ui32 blockSize;
-                PtrType headFreeFixedBlockOffset;
-                PtrType freeListOffset;
-                PtrType rootBlockOffset;
+                ui64 headFreeFixedBlockOffset;
+                ui64 freeListOffset;
+                ui64 rootBlockOffset;
 
                 enum {
                     SIZE =
                         UI32_SIZE + // magic
                         UI32_SIZE +
                         UI32_SIZE +
-                        PtrTypeSize +
-                        PtrTypeSize +
-                        PtrTypeSize
+                        UI64_SIZE +
+                        UI64_SIZE +
+                        UI64_SIZE
                 };
 
                 Header (
@@ -127,6 +124,8 @@ namespace thekogans {
                     return Flags32 (flags).Test (FLAGS_FIXED);
                 }
             } header;
+            std::size_t minUserBlockSize;
+            ui64 minUserBlockOffset;
             /// \struct BTree BTree.h thekogans/util/BTree.h
             ///
             /// \brief
@@ -138,8 +137,8 @@ namespace thekogans {
                 // {size, offset}
                 /// \brief
                 /// Keys are structured to allow for greater flexibility.
-                using Key = std::pair<ui64, PtrType>;
-                static const std::size_t KEY_SIZE = UI64_SIZE + PtrTypeSize;
+                using Key = std::pair<ui64, ui64>;
+                static const std::size_t KEY_SIZE = UI64_SIZE + UI64_SIZE;
 
                 enum {
                     /// \brief
@@ -150,7 +149,7 @@ namespace thekogans {
             private:
                 /// \brief
                 FileAllocator &fileAllocator;
-                PtrType offset;
+                ui64 offset;
                 /// \struct BTree::Header BTree.h thekogans/util/BTree.h
                 ///
                 /// \brief
@@ -161,10 +160,10 @@ namespace thekogans {
                     ui32 entriesPerNode;
                     /// \brief
                     /// Root node offset.
-                    PtrType rootOffset;
+                    ui64 rootOffset;
 
                     enum {
-                        SIZE = UI32_SIZE + UI32_SIZE + PtrTypeSize
+                        SIZE = UI32_SIZE + UI32_SIZE + UI64_SIZE
                     };
 
                     /// \brief
@@ -185,13 +184,13 @@ namespace thekogans {
                     BTree &btree;
                     /// \brief
                     /// Node block offset.
-                    PtrType offset;
+                    ui64 offset;
                     /// \brief
                     /// Count of entries.
                     ui32 count;
                     /// \brief
                     /// Left most child node offset.
-                    PtrType leftOffset;
+                    ui64 leftOffset;
                     /// \brief
                     /// Left most child node.
                     Node *leftNode;
@@ -205,7 +204,7 @@ namespace thekogans {
                         Key key;
                         /// \brief
                         /// Right child node offset.
-                        PtrType rightOffset;
+                        ui64 rightOffset;
                         /// \brief
                         /// Right child node.
                         Node *rightNode;
@@ -229,7 +228,7 @@ namespace thekogans {
                     /// \param[in] offset_ Node offset.
                     Node (
                         BTree &btree_,
-                        PtrType offset_ = 0);
+                        ui64 offset_ = 0);
                     /// \brief
                     /// dtor.
                     ~Node ();
@@ -246,7 +245,7 @@ namespace thekogans {
                     /// \param[in] offset Node offset.
                     static Node *Alloc (
                         BTree &btree,
-                        PtrType offset = 0);
+                        ui64 offset = 0);
                     /// \brief
                     /// Free the given node.
                     /// \param[in] node Node to free.
@@ -304,7 +303,7 @@ namespace thekogans {
                 /// ctor.
                 BTree (
                     FileAllocator &fileAllocator_,
-                    PtrType offset_,
+                    ui64 offset_,
                     std::size_t entriesPerNode = DEFAULT_ENTRIES_PER_NODE,
                     std::size_t nodesPerPage = BlockAllocator::DEFAULT_BLOCKS_PER_PAGE,
                     Allocator::SharedPtr allocator = DefaultAllocator::Instance ());
@@ -312,7 +311,7 @@ namespace thekogans {
                 /// dtor.
                 ~BTree ();
 
-                inline PtrType GetOffset () const {
+                inline ui64 GetOffset () const {
                     return offset;
                 }
 
@@ -401,28 +400,28 @@ namespace thekogans {
                 return header.IsFixed ();
             }
 
-            PtrType GetRootBlock ();
-            void SetRootBlock (PtrType rootBlock);
+            ui64 GetRootBlock ();
+            void SetRootBlock (ui64 rootBlock);
 
-            PtrType Alloc (std::size_t size);
+            ui64 Alloc (std::size_t size);
             void Free (
-                PtrType offset,
+                ui64 offset,
                 std::size_t size);
 
             std::size_t Read (
-                PtrType offset,
+                ui64 offset,
                 void *data,
                 std::size_t length);
             std::size_t Write (
-                PtrType offset,
+                ui64 offset,
                 const void *data,
                 std::size_t length);
 
             BlockData::SharedPtr CreateBlockData (
-                PtrType offset,
+                ui64 offset,
                 std::size_t size = 0,
                 bool read = false);
-            std::size_t GetBlockSize (PtrType offset);
+            std::size_t GetBlockSize (ui64 offset);
 
             /// \struct BlockAllocator::Pool BlockAllocator.h thekogans/util/BlockAllocator.h
             ///
@@ -456,8 +455,8 @@ namespace thekogans {
         protected:
             void Save ();
 
-            PtrType AllocFixedBlock ();
-            void FreeFixedBlock (PtrType offset);
+            ui64 AllocFixedBlock ();
+            void FreeFixedBlock (ui64 offset);
 
             friend Serializer &operator << (
                 Serializer &serializer,
