@@ -205,7 +205,7 @@ namespace thekogans {
             BlockInfo BlockInfo::Prev () {
                 BlockInfo prev (file);
                 prev.footer.Read (file, offset - Footer::SIZE);
-                prev.offset -= prev.footer.size;
+                prev.offset = offset - prev.footer.size;
                 prev.header.Read (file, prev.offset);
                 if (prev.header != prev.footer) {
                     // FIXME: throw
