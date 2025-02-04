@@ -52,6 +52,10 @@ namespace thekogans {
         /// File is a platform independent file system file.
 
         struct _LIB_THEKOGANS_UTIL_DECL File : public Serializer {
+            /// \brief
+            /// Declare \see{RefCounted} pointers.
+            THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE (File)
+
         protected:
             /// \brief
             /// OS specific file handle.

@@ -23,6 +23,8 @@
 namespace thekogans {
     namespace util {
 
+        THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_BASE (thekogans::util::Serializer)
+
         Serializer &Serializer::operator << (Endianness value) {
             if (Write (&value, ENDIANNESS_SIZE) != ENDIANNESS_SIZE) {
                 THEKOGANS_UTIL_THROW_STRING_EXCEPTION (

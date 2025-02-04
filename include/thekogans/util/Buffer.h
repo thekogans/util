@@ -80,12 +80,10 @@ namespace thekogans {
         /// callback and you don't know if there are other event
         /// recipients it's best to make a copy.
 
-        struct _LIB_THEKOGANS_UTIL_DECL Buffer :
-                public virtual RefCounted,
-                public Serializer {
+        struct _LIB_THEKOGANS_UTIL_DECL Buffer : public Serializer {
             /// \brief
             /// Declare \see{RefCounted} pointers.
-            THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (Buffer)
+            THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE (Buffer)
 
             /// \brief
             /// Buffer has a private heap to help with memory

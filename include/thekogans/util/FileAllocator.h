@@ -53,17 +53,19 @@ namespace thekogans {
                 FileAllocator &allocator;
                 ui64 offset;
 
-                inline std::size_t Read () {
+                inline std::size_t Read (std::size_t offset_ = 0) {
+                    LockedFilePtr file (allocator);
+                    file->Seek (offset + offset_, SEEK_SET);
                     return AdvanceWriteOffset (
-                        allocator.Read (
-                            offset,
+                        file->Read (
                             GetWritePtr (),
                             GetDataAvailableForWriting ()));
                 }
-                inline std::size_t Write () {
+                inline std::size_t Write (std::size_t offset_ = 0) {
+                    LockedFilePtr file (allocator);
+                    file->Seek (offset + offset_, SEEK_SET);
                     return AdvanceReadOffset (
-                        allocator.Write (
-                            offset,
+                        file->Write (
                             GetReadPtr (),
                             GetDataAvailableForReading ()));
                 }
@@ -392,6 +394,25 @@ namespace thekogans {
                 std::size_t blocksPerPage = BTree::DEFAULT_ENTRIES_PER_NODE,
                 Allocator::SharedPtr allocator = DefaultAllocator::Instance ());
 
+            struct LockedFilePtr {
+                FileAllocator &fileAllocator;
+
+                LockedFilePtr (FileAllocator &fileAllocator_) :
+                        fileAllocator (fileAllocator_) {
+                     fileAllocator.spinLock.Acquire ();
+                }
+                ~LockedFilePtr () {
+                    fileAllocator.spinLock.Release ();
+                }
+
+                inline File &operator * () const {
+                    return fileAllocator.file;
+                }
+                inline File *operator -> () const {
+                    return &fileAllocator.file;
+                }
+            };
+
             inline Endianness GetFileEndianness () const {
                 return file.endianness;
             }
@@ -407,20 +428,12 @@ namespace thekogans {
             void Free (
                 ui64 offset,
                 std::size_t size);
-
-            std::size_t Read (
-                ui64 offset,
-                void *data,
-                std::size_t length);
-            std::size_t Write (
-                ui64 offset,
-                const void *data,
-                std::size_t length);
+            std::size_t GetBlockSize (ui64 offset);
 
             BlockData::SharedPtr CreateBlockData (
                 ui64 offset,
+                std::size_t size = 0,
                 bool read = false);
-            std::size_t GetBlockSize (ui64 offset);
 
             /// \struct BlockAllocator::Pool BlockAllocator.h thekogans/util/BlockAllocator.h
             ///

@@ -32,7 +32,7 @@ namespace thekogans {
                 leftNode (0) {
             if (offset != 0) {
                 BlockData::SharedPtr block =
-                    btree.fileAllocator.CreateBlockData (offset, true);
+                    btree.fileAllocator.CreateBlockData (offset, 0, true);
                 ui32 magic;
                 *block >> magic;
                 if (magic == MAGIC32) {
@@ -208,7 +208,7 @@ namespace thekogans {
                 root (nullptr) {
             if (offset != 0) {
                 BlockData::SharedPtr block =
-                    fileAllocator.CreateBlockData (offset, true);
+                    fileAllocator.CreateBlockData (offset, Header::SIZE, true);
                 ui32 magic;
                 *block >> magic;
                 if (magic == MAGIC32) {
@@ -453,7 +453,8 @@ namespace thekogans {
         }
 
         void FileAllocator::BTree::Save () {
-            BlockData::SharedPtr block = fileAllocator.CreateBlockData (offset);
+            BlockData::SharedPtr block =
+                fileAllocator.CreateBlockData (offset, Header::SIZE);
             *block << MAGIC32 << header;
             block->Write ();
         }

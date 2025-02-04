@@ -40,6 +40,10 @@
 namespace thekogans {
     namespace util {
 
+        THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE (
+            thekogans::util::File,
+            Serializer::TYPE)
+
         File::File (
                 Endianness endianness,
                 const std::string &path,

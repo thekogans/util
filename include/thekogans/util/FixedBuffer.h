@@ -50,6 +50,10 @@ namespace thekogans {
         template<std::size_t length>
         struct FixedBuffer : public Serializer {
             /// \brief
+            /// Declare \see{RefCounted} pointers.
+            THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE (FixedBuffer)
+
+            /// \brief
             /// FixedBuffer data.
             ui8 data[length];
             /// \brief
@@ -347,7 +351,8 @@ namespace thekogans {
                 fixedBuffer.writeOffset;
             if (serializer.Write (fixedBuffer.data, length) != length) {
                 THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                    "serializer.Write (fixedBuffer.data, " THEKOGANS_UTIL_SIZE_T_FORMAT ") != " THEKOGANS_UTIL_SIZE_T_FORMAT,
+                    "serializer.Write (fixedBuffer.data, "
+                    THEKOGANS_UTIL_SIZE_T_FORMAT ") != " THEKOGANS_UTIL_SIZE_T_FORMAT,
                     length,
                     length);
             }
@@ -369,7 +374,8 @@ namespace thekogans {
                 fixedBuffer.writeOffset;
             if (serializer.Read (fixedBuffer.data, length) != length) {
                 THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                    "serializxer.Read (fixedBuffer.data, " THEKOGANS_UTIL_SIZE_T_FORMAT ") != " THEKOGANS_UTIL_SIZE_T_FORMAT,
+                    "serializxer.Read (fixedBuffer.data, "
+                    THEKOGANS_UTIL_SIZE_T_FORMAT ") != " THEKOGANS_UTIL_SIZE_T_FORMAT,
                     length,
                     length);
             }

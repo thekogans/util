@@ -27,6 +27,7 @@
 #include "thekogans/util/Types.h"
 #include "thekogans/util/ByteSwap.h"
 #include "thekogans/util/SizeT.h"
+#include "thekogans/util/DynamicCreatable.h"
 #include "thekogans/util/SecureAllocator.h"
 #include "thekogans/util/XMLUtils.h"
 
@@ -43,18 +44,20 @@ namespace thekogans {
         /// are provided. Serializer uses endianness to convert between in stream and
         /// in memory types.
 
-        struct _LIB_THEKOGANS_UTIL_DECL Serializer {
+        struct _LIB_THEKOGANS_UTIL_DECL Serializer : public DynamicCreatable {
+            /// \brief
+            /// Declare \see{RefCounted} pointers.
+            THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE_BASE (Serializer)
+
             /// \brief
             /// Serializer endianness (LittleEndian or BigEndian).
             Endianness endianness;
 
             /// \brief
-            /// Default ctor. Init all members.
+            /// ctor.
+            /// \param[in] endianness Serializer endianness.
             Serializer (Endianness endianness_ = HostEndian) :
                 endianness (endianness_) {}
-            /// \brief
-            /// Default dtor.
-            virtual ~Serializer () {}
 
             /// \brief
             /// Read raw bytes.

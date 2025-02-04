@@ -528,6 +528,34 @@ namespace thekogans {
                 return dynamicCreatable;\
             }
 
+        /// \def THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_T(_T, ...)
+        /// Dynamic discovery macro. Instantiate one of these in the class cpp file.
+        ///
+        /// Example:
+        ///
+        /// \code{.cpp}
+        /// namespace thekogans {
+        ///     namespace util {
+        ///
+        ///         THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_T (
+        ///             thekogans::crypto::SymmetricKey::KeyType,
+        ///             Serializer::TYPE)
+        ///
+        ///     } // namespace thekogans
+        /// } // namespace util
+        /// \endcode
+        #define THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_T(_T, ...)\
+            THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_COMMON (_T, __VA_ARGS__)\
+            template<>\
+            thekogans::util::DynamicCreatable::SharedPtr _T::Create (\
+                    thekogans::util::DynamicCreatable::Parameters::SharedPtr parameters) {\
+                thekogans::util::DynamicCreatable::SharedPtr dynamicCreatable (new _T);\
+                if (parameters != nullptr) {\
+                    parameters->Apply (dynamicCreatable);\
+                }\
+                return dynamicCreatable;\
+            }
+
         /// \def THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_SINGLETON(_T, ...)
         /// Dynamic discovery macro. Instantiate one of these in the class cpp file.
         ///
