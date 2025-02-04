@@ -149,7 +149,7 @@ namespace thekogans {
 
             private:
                 /// \brief
-                FileAllocator &fileNodeAllocator;
+                FileAllocator &fileAllocator;
                 PtrType offset;
                 /// \struct BTree::Header BTree.h thekogans/util/BTree.h
                 ///
@@ -303,7 +303,7 @@ namespace thekogans {
                 /// \brief
                 /// ctor.
                 BTree (
-                    FileAllocator &fileNodeAllocator_,
+                    FileAllocator &fileAllocator_,
                     PtrType offset_,
                     std::size_t entriesPerNode = DEFAULT_ENTRIES_PER_NODE,
                     std::size_t nodesPerPage = BlockAllocator::DEFAULT_BLOCKS_PER_PAGE,

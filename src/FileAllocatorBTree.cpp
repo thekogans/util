@@ -46,7 +46,7 @@ namespace thekogans {
                 leftNode (0) {
             if (offset != 0) {
                 BlockData::SharedPtr block =
-                    btree.fileNodeAllocator.CreateBlockData (
+                    btree.fileAllocator.CreateBlockData (
                         offset, FileSize (btree.header.entriesPerNode), true);
                 *block >> count;
                 if (count > 0) {
@@ -57,7 +57,7 @@ namespace thekogans {
                 }
             }
             else {
-                offset = btree.fileNodeAllocator.AllocFixedBlock ();
+                offset = btree.fileAllocator.AllocFixedBlock ();
                 Save ();
             }
         }
@@ -98,7 +98,7 @@ namespace thekogans {
 
         void FileAllocator::BTree::Node::Delete (Node *node) {
             if (node->count == 0) {
-                node->btree.fileNodeAllocator.FreeFixedBlock (node->offset);
+                node->btree.fileAllocator.FreeFixedBlock (node->offset);
                 Free (node);
             }
             else {
@@ -111,7 +111,7 @@ namespace thekogans {
 
         void FileAllocator::BTree::Node::Save () {
             BlockData::SharedPtr block =
-                btree.fileNodeAllocator.CreateBlockData (
+                btree.fileAllocator.CreateBlockData (
                     offset, FileSize (btree.header.entriesPerNode));
             *block << count;
             if (count > 0) {
@@ -208,12 +208,12 @@ namespace thekogans {
          */
 
         FileAllocator::BTree::BTree (
-                FileAllocator &fileNodeAllocator_,
+                FileAllocator &fileAllocator_,
                 PtrType offset_,
                 std::size_t entriesPerNode,
                 std::size_t nodesPerPage,
                 Allocator::SharedPtr allocator) :
-                fileNodeAllocator (fileNodeAllocator_),
+                fileAllocator (fileAllocator_),
                 offset (offset_),
                 header ((ui32)entriesPerNode),
                 nodeAllocator (
@@ -224,7 +224,7 @@ namespace thekogans {
                 root (nullptr) {
             if (offset != 0) {
                 BlockData::SharedPtr block =
-                    fileNodeAllocator.CreateBlockData (offset, Header::SIZE, true);
+                    fileAllocator.CreateBlockData (offset, Header::SIZE, true);
                 *block >> header;
                 if (header.entriesPerNode != entriesPerNode) {
                     nodeAllocator =
@@ -235,7 +235,7 @@ namespace thekogans {
                 }
             }
             else {
-                offset = fileNodeAllocator.AllocFixedBlock ();
+                offset = fileAllocator.AllocFixedBlock ();
                 Save ();
             }
             root = Node::Alloc (*this, header.rootOffset);
@@ -461,7 +461,7 @@ namespace thekogans {
 
         void FileAllocator::BTree::Save () {
             BlockData::SharedPtr block =
-                fileNodeAllocator.CreateBlockData (offset, Header::SIZE);
+                fileAllocator.CreateBlockData (offset, Header::SIZE);
             *block << header;
             block->Write ();
         }
