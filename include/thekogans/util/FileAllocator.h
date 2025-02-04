@@ -400,8 +400,8 @@ namespace thekogans {
                 return header.IsFixed ();
             }
 
-            ui64 GetRootBlock ();
-            void SetRootBlock (ui64 rootBlock);
+            ui64 GetRootBlockOffset ();
+            void SetRootBlockOffset (ui64 rootBlockOffset);
 
             ui64 Alloc (std::size_t size);
             void Free (
@@ -419,7 +419,6 @@ namespace thekogans {
 
             BlockData::SharedPtr CreateBlockData (
                 ui64 offset,
-                std::size_t size = 0,
                 bool read = false);
             std::size_t GetBlockSize (ui64 offset);
 
