@@ -51,7 +51,6 @@ namespace thekogans {
                             UI32_SIZE +
                             UI32_SIZE +
                             UI64_SIZE +
-                            FileAllocator::PtrTypeSize +
                             FileAllocator::PtrTypeSize
                     };
 
@@ -173,8 +172,8 @@ namespace thekogans {
             }
 
             void BlockInfo::Footer::Write (
-                File &file,
-                FileAllocator::PtrType offset) {
+                    File &file,
+                    FileAllocator::PtrType offset) {
                 file.Seek (offset, SEEK_SET);
                 file << MAGIC32 << flags << size;
             }
@@ -233,10 +232,13 @@ namespace thekogans {
                         BlockAllocator::Pool::Instance ()->GetBlockAllocator (
                             blockSize,
                             blocksPerPage,
-                            allocator) : allocator),
+                            allocator) :
+                        allocator),
                 header (
                     blockSize > 0 ? Header::FLAGS_FIXED : 0,
-                    blockSize > 0 ? (ui32)blockSize : (ui32)BTree::Node::FileSize (blocksPerPage)) {
+                    blockSize > 0 ?
+                        (ui32)blockSize :
+                        (ui32)BTree::Node::FileSize (blocksPerPage)) {
             if (file.GetSize () >= Header::SIZE) {
                 file.Seek (0, SEEK_SET);
                 ui32 magic;
@@ -260,7 +262,8 @@ namespace thekogans {
                             BlockAllocator::Pool::Instance ()->GetBlockAllocator (
                                 header.blockSize,
                                 blocksPerPage,
-                                allocator) : allocator;
+                                allocator) :
+                            allocator;
                 }
             }
             else {
@@ -269,8 +272,8 @@ namespace thekogans {
             if (!IsFixed ()) {
                 freeList.Reset (
                     new BTree (*this, header.freeListOffset, blocksPerPage, allocator));
-                if (header.freeListOffset == 0) {
-                    header.freeListOffset = freeList->offset;
+                if (header.freeListOffset != freeList->GetOffset ()) {
+                    header.freeListOffset = freeList->GetOffset ();
                     Save ();
                 }
             }
@@ -300,17 +303,20 @@ namespace thekogans {
                     freeList->Delete (result);
                     offset = result.second;
                     if (result.first > size) {
-                        ui64 remainder = result.first - size;
-                        if (remainder > BlockInfo::SIZE) {
-                            PtrType nextOffset = offset + size;
-                            freeList->Add (BTree::Key (remainder, nextOffset));
-                            BlockInfo block (file, nextOffset, BlockInfo::FLAGS_FREE, remainder);
+                        result.first -= size;
+                        if (result.first > BlockInfo::SIZE) {
+                            freeList->Add (BTree::Key (result.first, offset + size));
+                            BlockInfo block (
+                                file,
+                                offset + size,
+                                BlockInfo::FLAGS_FREE,
+                                result.first);
                             block.Write ();
                         }
                     }
                 }
                 else {
-                    offset = (PtrType)file.GetSize ();
+                    offset = file.GetSize ();
                     file.SetSize (offset + size);
                 }
                 BlockInfo block (file, offset, 0, size);
@@ -432,9 +438,10 @@ namespace thekogans {
                 }
             }
             else {
-                offset = (PtrType)file.GetSize ();
-                file.SetSize (offset + header.blockSize);
-                BlockInfo block (file, offset, BlockInfo::FLAGS_FIXED, header.blockSize);
+                offset = file.GetSize ();
+                std::size_t size = BlockInfo::SIZE + header.blockSize;
+                file.SetSize (offset + size);
+                BlockInfo block (file, offset, BlockInfo::FLAGS_FIXED, size);
                 block.Write ();
             }
             offset += BlockInfo::Header::SIZE;
