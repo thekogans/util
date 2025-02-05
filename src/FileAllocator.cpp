@@ -16,7 +16,7 @@
 // along with libthekogans_util. If not, see <http://www.gnu.org/licenses/>.
 
 
-#include "thekogans/util/Config.h"
+#include "thekogans/util/Exception.h"
 #include "thekogans/util/Heap.h"
 #include "thekogans/util/File.h"
 #include "thekogans/util/LockGuard.h"
@@ -25,217 +25,127 @@
 namespace thekogans {
     namespace util {
 
-        namespace {
-            struct BlockInfo {
-                File &file;
-                ui64 offset;
-                enum {
-                    FLAGS_FREE = 1,
-                    FLAGS_FIXED = 2
-                };
-                struct Header {
-                    ui32 flags;
-                    ui64 size;
-                    ui64 nextOffset;
-
-                    enum {
-                        SIZE =
-                            UI32_SIZE +
-                            UI32_SIZE +
-                            UI64_SIZE +
-                            UI64_SIZE
-                    };
-
-                    Header (
-                        ui32 flags_ = 0,
-                        ui64 size_ = 0,
-                        ui64 nextOffset_ = 0) :
-                        flags (flags_),
-                        size (size_),
-                        nextOffset (nextOffset_) {}
-
-                    void Read (
-                        File &file,
-                        ui64 offset);
-                    void Write (
-                        File &file,
-                        ui64 offset);
-                } header;
-                struct Footer {
-                    ui32 flags;
-                    ui64 size;
-
-                    enum {
-                        SIZE = UI32_SIZE + UI32_SIZE + UI64_SIZE
-                    };
-
-                    Footer (
-                        ui32 flags_ = 0,
-                        ui64 size_ = 0) :
-                        flags (flags_),
-                        size (size_) {}
-
-                    void Read (
-                        File &file,
-                        ui64 offset);
-                    void Write (
-                        File &file,
-                        ui64 offset);
-                } footer;
-
-                enum {
-                    SIZE = Header::SIZE + Footer::SIZE
-                };
-
-                BlockInfo (
-                    File &file_,
-                    ui64 offset_ = 0,
-                    ui32 flags = 0,
-                    ui64 size = 0,
-                    ui64 nextOffset = 0) :
-                    file (file_),
-                    offset (offset_),
-                    header (flags, size, nextOffset),
-                    footer (flags, size) {}
-
-                inline ui64 GetOffset () const {
-                    return offset;
-                }
-                inline void SetOffset (ui64 offset_) {
-                    offset = offset_;
-                }
-                inline bool IsFirst () const {
-                    return offset == Header::SIZE;
-                }
-                inline bool IsLast () const {
-                    return offset + GetSize () == file.GetSize ();
-                }
-
-                inline bool IsFree () const {
-                    return Flags32 (header.flags).Test (FLAGS_FREE);
-                }
-                inline void SetIsFree (bool isFree) {
-                    Flags32 (header.flags).Set (FLAGS_FREE, isFree);
-                    Flags32 (footer.flags).Set (FLAGS_FREE, isFree);
-                }
-                inline bool IsFixed () const {
-                    return Flags32 (header.flags).Test (FLAGS_FIXED);
-                }
-                inline void SetFixed (bool fixed) {
-                    Flags32 (header.flags).Set (FLAGS_FIXED, fixed);
-                    Flags32 (footer.flags).Set (FLAGS_FIXED, fixed);
-                }
-
-                inline ui64 GetSize () const {
-                    return header.size;
-                }
-                inline void SetSize (ui64 size) {
-                    header.size = size;
-                    footer.size = size;
-                }
-
-                inline ui64 GetNextOffset () const {
-                    return header.nextOffset;
-                }
-                inline void SetNextOffset (ui64 nextOffset) {
-                    header.nextOffset = nextOffset;
-                }
-
-                BlockInfo Prev ();
-                BlockInfo Next ();
-
-                void Read ();
-                void Write ();
-
-                friend bool operator != (
-                    const Header &header,
-                    const Footer &footer);
-            };
-
-            void BlockInfo::Header::Read (
-                    File &file,
-                    ui64 offset) {
-                file.Seek (offset, SEEK_SET);
-                ui32 magic;
-                file >> magic;
-                if (magic == MAGIC32) {
-                    file >> flags >> size >> nextOffset;
-                }
-                else {
-                    // FIXME: throw
-                    assert (0);
-                }
+        void FileAllocator::BlockInfo::Header::Read (
+                File &file,
+                ui64 offset) {
+            file.Seek (offset, SEEK_SET);
+            ui32 magic;
+            file >> magic;
+            if (magic == MAGIC32) {
+                file >> flags >> size >> nextOffset;
             }
-
-            void BlockInfo::Header::Write (
-                    File &file,
-                    ui64 offset) {
-                file.Seek (offset, SEEK_SET);
-                file << MAGIC32 << flags << size << nextOffset;
-            }
-
-            void BlockInfo::Footer::Read (
-                    File &file,
-                    ui64 offset) {
-                file.Seek (offset, SEEK_SET);
-                ui32 magic;
-                file >> magic;
-                if (magic == MAGIC32) {
-                    file >> flags >> size;
-                }
-                else {
-                    // FIXME: throw
-                    assert (0);
-                }
-            }
-
-            void BlockInfo::Footer::Write (
-                    File &file,
-                    ui64 offset) {
-                file.Seek (offset, SEEK_SET);
-                file << MAGIC32 << flags << size;
-            }
-
-            inline bool operator != (
-                    const BlockInfo::Header &header,
-                    const BlockInfo::Footer &footer) {
-                return header.flags != footer.flags || header.size != footer.size;
-            }
-
-            BlockInfo BlockInfo::Prev () {
-                BlockInfo prev (file);
-                prev.footer.Read (file, offset - Footer::SIZE);
-                prev.offset = offset - prev.footer.size;
-                prev.header.Read (file, prev.offset);
-                if (prev.header != prev.footer) {
-                    // FIXME: throw
-                    assert (0);
-                }
-                return prev;
-            }
-
-            BlockInfo BlockInfo::Next () {
-                BlockInfo next (file, offset + header.size);
-                next.Read ();
-                return next;
-            }
-
-            void BlockInfo::Read () {
-                header.Read (file, offset);
-                footer.Read (file, offset + header.size - Footer::SIZE);
-                if (header != footer) {
-                    // FIXME: throw
-                    assert (0);
-                }
-            }
-
-            void BlockInfo::Write () {
-                header.Write (file, offset);
-                footer.Write (file, offset + header.size - Footer::SIZE);
+            else {
+                THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
+                    "Corrupt FileAllocator FileAllocator::BlockInfo::Header: "
+                    THEKOGANS_UTIL_UI64_FORMAT,
+                    offset);
             }
         }
 
+        void FileAllocator::BlockInfo::Header::Write (
+                File &file,
+                ui64 offset) {
+            file.Seek (offset, SEEK_SET);
+            file << MAGIC32 << flags << size << nextOffset;
+        }
+
+        void FileAllocator::BlockInfo::Footer::Read (
+                File &file,
+                ui64 offset) {
+            file.Seek (offset, SEEK_SET);
+            ui32 magic;
+            file >> magic;
+            if (magic == MAGIC32) {
+                file >> size;
+            }
+            else {
+                THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
+                    "Corrupt FileAllocator FileAllocator::BlockInfo::Footer: "
+                    THEKOGANS_UTIL_UI64_FORMAT,
+                    offset);
+            }
+        }
+
+        void FileAllocator::BlockInfo::Footer::Write (
+                File &file,
+                ui64 offset) {
+            file.Seek (offset, SEEK_SET);
+            file << MAGIC32 << size;
+        }
+
+        FileAllocator::BlockInfo FileAllocator::BlockInfo::Prev () {
+            BlockInfo prev (file);
+            prev.footer.Read (file, offset - Footer::SIZE);
+            prev.offset = offset - prev.footer.size;
+            prev.header.Read (file, prev.offset);
+            if (prev.header.size != prev.footer.size) {
+                THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
+                    "Corrupt BlockInfo: " THEKOGANS_UTIL_UI64_FORMAT
+                    "prev.header.size: " THEKOGANS_UTIL_UI64_FORMAT
+                    "!= prev.footer.size: " THEKOGANS_UTIL_UI64_FORMAT,
+                    offset,
+                    header.size,
+                    footer.size);
+            }
+            return prev;
+        }
+
+        FileAllocator::BlockInfo FileAllocator::BlockInfo::Next () {
+            BlockInfo next (file, offset + header.size);
+            next.Read ();
+            return next;
+        }
+
+        void FileAllocator::BlockInfo::Read () {
+            header.Read (file, offset);
+            footer.Read (file, offset + header.size - Footer::SIZE);
+            if (header.size != footer.size) {
+                THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
+                    "Corrupt BlockInfo: " THEKOGANS_UTIL_UI64_FORMAT
+                    "header.size: " THEKOGANS_UTIL_UI64_FORMAT
+                    "!= footer.size: " THEKOGANS_UTIL_UI64_FORMAT,
+                    offset,
+                    header.size,
+                    footer.size);
+            }
+        }
+
+        void FileAllocator::BlockInfo::Write () {
+            header.Write (file, offset);
+            footer.Write (file, offset + header.size - Footer::SIZE);
+        }
+
         THEKOGANS_UTIL_IMPLEMENT_HEAP_FUNCTIONS (FileAllocator::BlockBuffer)
+
+        std::size_t FileAllocator::BlockBuffer::Read (std::size_t offset_) {
+            LockedFilePtr file (allocator);
+            BlockInfo block (*file, offset - BlockInfo::Header::SIZE);
+            block.Read ();
+            if (offset_ < block.GetSize () - BlockInfo::SIZE) {
+                ui64 availableToRead = block.GetSize () - BlockInfo::SIZE - offset_;
+                if (availableToRead > GetDataAvailableForWriting ()) {
+                    availableToRead = GetDataAvailableForWriting ();
+                }
+                file->Seek (offset + offset_, SEEK_SET);
+                return AdvanceWriteOffset (file->Read (GetWritePtr (), availableToRead));
+            }
+            return 0;
+        }
+
+        std::size_t FileAllocator::BlockBuffer::Write (std::size_t offset_) {
+            LockedFilePtr file (allocator);
+            BlockInfo block (*file, offset - BlockInfo::Header::SIZE);
+            block.Read ();
+            if (offset_ < block.GetSize () - BlockInfo::SIZE) {
+                ui64 availableToWrite = block.GetSize () - BlockInfo::SIZE - offset_;
+                if (availableToWrite > GetDataAvailableForReading ()) {
+                    availableToWrite = GetDataAvailableForReading ();
+                }
+                file->Seek (offset + offset_, SEEK_SET);
+                return AdvanceReadOffset (file->Write (GetReadPtr (), availableToWrite));
+            }
+            return 0;
+        }
 
         FileAllocator::FileAllocator (
                 const std::string &path,
@@ -469,6 +379,7 @@ namespace thekogans {
                     header.fixedFreeListHeadOffset = block.GetNextOffset ();
                     Save ();
                     block.SetIsFree (false);
+                    block.SetNextOffset (0);
                     block.Write ();
                 }
             }
@@ -501,8 +412,6 @@ namespace thekogans {
                         Save ();
                     }
                     else {
-                        // FIXME: see if we can consolidate and
-                        // remove previous free blocks.
                         file.SetSize (block.GetOffset ());
                     }
                 }

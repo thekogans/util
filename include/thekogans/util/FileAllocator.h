@@ -41,6 +41,124 @@ namespace thekogans {
             /// Declare \see{RefCounted} pointers.
             THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (FileAllocator)
 
+            struct _LIB_THEKOGANS_UTIL_DECL BlockInfo {
+                File &file;
+                ui64 offset;
+                enum {
+                    FLAGS_FREE = 1,
+                    FLAGS_FIXED = 2
+                };
+                struct Header {
+                    ui32 flags;
+                    ui64 size;
+                    ui64 nextOffset;
+
+                    enum {
+                        SIZE =
+                            UI32_SIZE + // magic
+                            UI32_SIZE +
+                            UI64_SIZE +
+                            UI64_SIZE
+                    };
+
+                    Header (
+                        ui32 flags_ = 0,
+                        ui64 size_ = 0,
+                        ui64 nextOffset_ = 0) :
+                        flags (flags_),
+                        size (size_),
+                        nextOffset (nextOffset_) {}
+
+                    void Read (
+                        File &file,
+                        ui64 offset);
+                    void Write (
+                        File &file,
+                        ui64 offset);
+                } header;
+                struct Footer {
+                    ui64 size;
+
+                    enum {
+                        SIZE =
+                            UI32_SIZE + // magic
+                            UI64_SIZE
+                    };
+
+                    Footer (ui64 size_ = 0) :
+                        size (size_) {}
+
+                    void Read (
+                        File &file,
+                        ui64 offset);
+                    void Write (
+                        File &file,
+                        ui64 offset);
+                } footer;
+
+                enum {
+                    SIZE = Header::SIZE + Footer::SIZE
+                };
+
+                BlockInfo (
+                    File &file_,
+                    ui64 offset_ = 0,
+                    ui32 flags = 0,
+                    ui64 size = 0,
+                    ui64 nextOffset = 0) :
+                    file (file_),
+                    offset (offset_),
+                    header (flags, size, nextOffset),
+                    footer (size) {}
+
+                inline ui64 GetOffset () const {
+                    return offset;
+                }
+                inline void SetOffset (ui64 offset_) {
+                    offset = offset_;
+                }
+                inline bool IsFirst () const {
+                    return offset == Header::SIZE;
+                }
+                inline bool IsLast () const {
+                    return offset + GetSize () == file.GetSize ();
+                }
+
+                inline bool IsFree () const {
+                    return Flags32 (header.flags).Test (FLAGS_FREE);
+                }
+                inline void SetIsFree (bool isFree) {
+                    Flags32 (header.flags).Set (FLAGS_FREE, isFree);
+                }
+                inline bool IsFixed () const {
+                    return Flags32 (header.flags).Test (FLAGS_FIXED);
+                }
+                inline void SetFixed (bool fixed) {
+                    Flags32 (header.flags).Set (FLAGS_FIXED, fixed);
+                }
+
+                inline ui64 GetSize () const {
+                    return header.size;
+                }
+                inline void SetSize (ui64 size) {
+                    header.size = size;
+                    footer.size = size;
+                }
+
+                inline ui64 GetNextOffset () const {
+                    return header.nextOffset;
+                }
+                inline void SetNextOffset (ui64 nextOffset) {
+                    header.nextOffset = nextOffset;
+                }
+
+                BlockInfo Prev ();
+                BlockInfo Next ();
+
+                void Read ();
+                void Write ();
+            };
+
             struct _LIB_THEKOGANS_UTIL_DECL BlockBuffer : public Buffer {
                 /// \brief
                 /// Declare \see{RefCounted} pointers.
@@ -53,22 +171,8 @@ namespace thekogans {
                 FileAllocator &allocator;
                 ui64 offset;
 
-                inline std::size_t Read (std::size_t offset_ = 0) {
-                    LockedFilePtr file (allocator);
-                    file->Seek (offset + offset_, SEEK_SET);
-                    return AdvanceWriteOffset (
-                        file->Read (
-                            GetWritePtr (),
-                            GetDataAvailableForWriting ()));
-                }
-                inline std::size_t Write (std::size_t offset_ = 0) {
-                    LockedFilePtr file (allocator);
-                    file->Seek (offset + offset_, SEEK_SET);
-                    return AdvanceReadOffset (
-                        file->Write (
-                            GetReadPtr (),
-                            GetDataAvailableForReading ()));
-                }
+                std::size_t Read (std::size_t offset_ = 0);
+                std::size_t Write (std::size_t offset_ = 0);
 
             protected:
                 BlockBuffer (
