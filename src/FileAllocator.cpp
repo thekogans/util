@@ -270,13 +270,10 @@ namespace thekogans {
                         btree->Delete (result);
                         offset = result.second;
                         result.first -= size;
-                        if (result.first > BlockInfo::SIZE + minUserBlockSize) {
+                        if (result.first >= BlockInfo::SIZE + minUserBlockSize) {
                             btree->Add (BTree::Key (result.first, offset + size));
-                            BlockInfo block (
-                                *file,
-                                offset + size,
-                                BlockInfo::FLAGS_FREE,
-                                result.first);
+                            BlockInfo block (*file, offset + size,
+                                BlockInfo::FLAGS_FREE, result.first);
                             block.Write ();
                         }
                         else {
@@ -312,7 +309,7 @@ namespace thekogans {
                 if (!block.IsFree () && !block.IsFixed ()) {
                     // Consolidate adjacent free non fixed blocks.
                     if (!block.IsFirst ()) {
-                        BlockInfo prev = block.Prev ();
+                        BlockInfo prev  = block.Prev ();
                         if (prev.IsFree () && !prev.IsFixed ()) {
                             btree->Delete (BTree::Key (prev.GetSize (), prev.GetOffset ()));
                             block.SetOffset (block.GetOffset () - prev.GetSize ());
@@ -328,7 +325,7 @@ namespace thekogans {
                     }
                     if (!block.IsLast ()) {
                         btree->Add (BTree::Key (block.GetSize (), block.GetOffset ()));
-                        block.SetIsFree (true);
+                        block.SetFree (true);
                         block.Write ();
                     }
                     else {
@@ -360,14 +357,8 @@ namespace thekogans {
                     size = GetBlockSize (offset);
                 }
                 buffer.Reset (
-                    new BlockBuffer (
-                        *this,
-                        offset,
-                        file.endianness,
-                        size,
-                        0,
-                        0,
-                        blockAllocator));
+                    new BlockBuffer (*this, offset,
+                        file.endianness, size, 0, 0, blockAllocator));
                 if (read) {
                     buffer->Read (blockOffset);
                 }
@@ -389,7 +380,7 @@ namespace thekogans {
                 if (block.IsFree () && block.IsFixed ()) {
                     header.fixedFreeListHeadOffset = block.GetNextOffset ();
                     Save ();
-                    block.SetIsFree (false);
+                    block.SetFree (false);
                     block.SetNextOffset (0);
                     block.Write ();
                 }
@@ -416,7 +407,7 @@ namespace thekogans {
                 block.Read ();
                 if (!block.IsFree () && block.IsFixed ()) {
                     if (!block.IsLast ()) {
-                        block.SetIsFree (true);
+                        block.SetFree (true);
                         block.SetNextOffset (header.fixedFreeListHeadOffset);
                         block.Write ();
                         header.fixedFreeListHeadOffset = offset;

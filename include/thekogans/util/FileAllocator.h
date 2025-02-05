@@ -154,7 +154,7 @@ namespace thekogans {
                 inline bool IsFree () const {
                     return Flags32 (header.flags).Test (FLAGS_FREE);
                 }
-                inline void SetIsFree (bool isFree) {
+                inline void SetFree (bool isFree) {
                     Flags32 (header.flags).Set (FLAGS_FREE, isFree);
                 }
                 inline bool IsFixed () const {
