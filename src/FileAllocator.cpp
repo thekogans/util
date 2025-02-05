@@ -161,6 +161,21 @@ namespace thekogans {
             return 0;
         }
 
+        FileAllocator::SharedPtr FileAllocator::Pool::GetFileAllocator (
+                const std::string &path,
+                std::size_t blockSize,
+                std::size_t blocksPerPage,
+                Allocator::SharedPtr allocator) {
+            LockGuard<SpinLock> guard (spinLock);
+            std::pair<Map::iterator, bool> result =
+                map.insert (Map::value_type (path, nullptr));
+            if (result.second) {
+                result.first->second.Reset (
+                    new FileAllocator (path, blockSize, blocksPerPage, allocator));
+            }
+            return result.first->second;
+        }
+
         FileAllocator::FileAllocator (
                 const std::string &path,
                 std::size_t blockSize,
@@ -178,7 +193,7 @@ namespace thekogans {
                     blockSize > 0 ? Header::FLAGS_FIXED : 0,
                     blockSize > 0 ?
                         (ui32)blockSize :
-                    (ui32)BTree::Node::FileSize (blocksPerPage)),
+                        (ui32)BTree::Node::FileSize (blocksPerPage)),
                 minUserBlockSize (16),
                 minUserBlockOffset (Header::SIZE + BlockInfo::Header::SIZE) {
             if (file.GetSize () >= Header::SIZE) {
@@ -327,7 +342,7 @@ namespace thekogans {
                 ui64 offset,
                 std::size_t size,
                 bool read,
-                std::size_t offset_) {
+                std::size_t blockOffset) {
             BlockBuffer::SharedPtr buffer;
             if (offset >= minUserBlockOffset) {
                 if (size == 0) {
@@ -346,7 +361,7 @@ namespace thekogans {
                         0,
                         blockAllocator));
                 if (read) {
-                    buffer->Read (offset_);
+                    buffer->Read (blockOffset);
                 }
             }
             return buffer;
@@ -361,21 +376,6 @@ namespace thekogans {
                 return block.GetSize () - BlockInfo::SIZE;
             }
             return 0;
-        }
-
-        FileAllocator::SharedPtr FileAllocator::Pool::GetFileAllocator (
-                const std::string &path,
-                std::size_t blockSize,
-                std::size_t blocksPerPage,
-                Allocator::SharedPtr allocator) {
-            LockGuard<SpinLock> guard (spinLock);
-            std::pair<Map::iterator, bool> result =
-                map.insert (Map::value_type (path, nullptr));
-            if (result.second) {
-                result.first->second.Reset (
-                    new FileAllocator (path, blockSize, blocksPerPage, allocator));
-            }
-            return result.first->second;
         }
 
         void FileAllocator::Save () {

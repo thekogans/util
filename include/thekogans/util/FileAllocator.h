@@ -43,6 +43,25 @@ namespace thekogans {
             /// Declare \see{RefCounted} pointers.
             THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (FileAllocator)
 
+            struct LockedFilePtr {
+                FileAllocator &fileAllocator;
+
+                LockedFilePtr (FileAllocator &fileAllocator_) :
+                        fileAllocator (fileAllocator_) {
+                    fileAllocator.spinLock.Acquire ();
+                }
+                ~LockedFilePtr () {
+                    fileAllocator.spinLock.Release ();
+                }
+
+                inline File &operator * () const {
+                    return fileAllocator.file;
+                }
+                inline File *operator -> () const {
+                    return &fileAllocator.file;
+                }
+            };
+
             struct _LIB_THEKOGANS_UTIL_DECL BlockInfo {
                 File &file;
                 ui64 offset;
@@ -200,6 +219,35 @@ namespace thekogans {
                 THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (BlockBuffer)
             };
 
+            /// \struct BlockAllocator::Pool BlockAllocator.h thekogans/util/BlockAllocator.h
+            ///
+            /// \brief
+            /// Use Pool to recycle and reuse block allocators.
+            struct _LIB_THEKOGANS_UTIL_DECL Pool : public Singleton<Pool> {
+            private:
+                /// \brief
+                /// FileAllocator map type (keyed on path).
+                using Map = std::map<std::string, FileAllocator::SharedPtr>;
+                /// \brief
+                /// FileAllocator map.
+                Map map;
+                /// \brief
+                /// Synchronization lock.
+                SpinLock spinLock;
+
+            public:
+                /// \brief
+                /// Given a block size, return a matching block allocator.
+                /// If we don't have one, create it.
+                /// \param[in] blockSize Block size.
+                /// \return FileAllocator matching the given path.
+                FileAllocator::SharedPtr GetFileAllocator (
+                    const std::string &path,
+                    std::size_t blockSize = 0,
+                    std::size_t blocksPerPage = BTree::DEFAULT_ENTRIES_PER_NODE,
+                    Allocator::SharedPtr allocator = DefaultAllocator::Instance ());
+            };
+
         private:
             SimpleFile file;
             Allocator::SharedPtr blockAllocator;
@@ -246,9 +294,8 @@ namespace thekogans {
                 /// Declare \see{RefCounted} pointers.
                 THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (BTree)
 
-                // {size, offset}
                 /// \brief
-                /// Keys are structured to allow for greater flexibility.
+                /// Keys are structured on block {size, offset}
                 using Key = std::pair<ui64, ui64>;
                 static const std::size_t KEY_SIZE = UI64_SIZE + UI64_SIZE;
 
@@ -275,14 +322,17 @@ namespace thekogans {
                     ui64 rootOffset;
 
                     enum {
-                        SIZE = UI32_SIZE + UI32_SIZE + UI64_SIZE
+                        SIZE =
+                            UI32_SIZE + // magic
+                            UI32_SIZE +
+                            UI64_SIZE
                     };
 
                     /// \brief
                     /// ctor.
                     /// \param[in] entriesPerNode_ Entries per node.
                     Header (ui32 entriesPerNode_ = DEFAULT_ENTRIES_PER_NODE) :
-                    entriesPerNode (entriesPerNode_),
+                        entriesPerNode (entriesPerNode_),
                         rootOffset (0) {}
                 } header;
                 Allocator::SharedPtr nodeAllocator;
@@ -325,7 +375,7 @@ namespace thekogans {
                         /// ctor.
                         /// \param[in] key_ Entry key.
                         Entry (const Key &key_ = Key (0, 0)) :
-                        key (key_),
+                            key (key_),
                             rightOffset (0),
                             rightNode (0) {}
                     };
@@ -504,25 +554,6 @@ namespace thekogans {
                 std::size_t blocksPerPage = BTree::DEFAULT_ENTRIES_PER_NODE,
                 Allocator::SharedPtr allocator = DefaultAllocator::Instance ());
 
-            struct LockedFilePtr {
-                FileAllocator &fileAllocator;
-
-                LockedFilePtr (FileAllocator &fileAllocator_) :
-                        fileAllocator (fileAllocator_) {
-                    fileAllocator.spinLock.Acquire ();
-                }
-                ~LockedFilePtr () {
-                    fileAllocator.spinLock.Release ();
-                }
-
-                inline File &operator * () const {
-                    return fileAllocator.file;
-                }
-                inline File *operator -> () const {
-                    return &fileAllocator.file;
-                }
-            };
-
             inline Endianness GetFileEndianness () const {
                 return file.endianness;
             }
@@ -542,36 +573,7 @@ namespace thekogans {
                 ui64 offset,
                 std::size_t size = 0,
                 bool read = false,
-                std::size_t offset_ = 0);
-
-            /// \struct BlockAllocator::Pool BlockAllocator.h thekogans/util/BlockAllocator.h
-            ///
-            /// \brief
-            /// Use Pool to recycle and reuse block allocators.
-            struct _LIB_THEKOGANS_UTIL_DECL Pool : public Singleton<Pool> {
-            private:
-                /// \brief
-                /// FileAllocator map type (keyed on path).
-                using Map = std::map<std::string, FileAllocator::SharedPtr>;
-                /// \brief
-                /// FileAllocator map.
-                Map map;
-                /// \brief
-                /// Synchronization lock.
-                SpinLock spinLock;
-
-            public:
-                /// \brief
-                /// Given a block size, return a matching block allocator.
-                /// If we don't have one, create it.
-                /// \param[in] blockSize Block size.
-                /// \return FileAllocator matching the given path.
-                FileAllocator::SharedPtr GetFileAllocator (
-                    const std::string &path,
-                    std::size_t blockSize = 0,
-                    std::size_t blocksPerPage = BTree::DEFAULT_ENTRIES_PER_NODE,
-                    Allocator::SharedPtr allocator = DefaultAllocator::Instance ());
-            };
+                std::size_t blockOffset = 0);
 
         protected:
             void Save ();

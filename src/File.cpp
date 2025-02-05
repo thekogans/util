@@ -42,7 +42,7 @@ namespace thekogans {
 
         THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE (
             thekogans::util::File,
-            Serializer::TYPE)
+            Serializer::TYPE, RandomSeekSerializer::TYPE)
 
         File::File (
                 Endianness endianness,
@@ -56,7 +56,7 @@ namespace thekogans {
                 int flags,
                 int mode) :
             #endif // defined (TOOLCHAIN_OS_Windows)
-                Serializer (endianness),
+                RandomSeekSerializer (endianness),
                 handle (THEKOGANS_UTIL_INVALID_HANDLE_VALUE) {
             Open (
                 path,

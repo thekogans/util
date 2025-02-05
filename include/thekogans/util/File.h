@@ -39,7 +39,7 @@
 #include "thekogans/util/Config.h"
 #include "thekogans/util/Types.h"
 #include "thekogans/util/TimeSpec.h"
-#include "thekogans/util/Serializer.h"
+#include "thekogans/util/RandomSeekSerializer.h"
 #include "thekogans/util/GUID.h"
 #include "thekogans/util/Exception.h"
 
@@ -51,7 +51,7 @@ namespace thekogans {
         /// \brief
         /// File is a platform independent file system file.
 
-        struct _LIB_THEKOGANS_UTIL_DECL File : public Serializer {
+        struct _LIB_THEKOGANS_UTIL_DECL File : public RandomSeekSerializer {
             /// \brief
             /// Declare \see{RefCounted} pointers.
             THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE (File)
@@ -74,7 +74,7 @@ namespace thekogans {
                 Endianness endianness = HostEndian,
                 THEKOGANS_UTIL_HANDLE handle_ = THEKOGANS_UTIL_INVALID_HANDLE_VALUE,
                 const std::string &path_ = std::string ()) :
-                Serializer (endianness),
+                RandomSeekSerializer (endianness),
                 handle (handle_),
                 path (path_) {}
         #if defined (TOOLCHAIN_OS_Windows)
@@ -172,6 +172,7 @@ namespace thekogans {
                 const void *buffer,
                 std::size_t count) override;
 
+            // RandomSeekSerializer
             /// \brief
             /// Return the file pointer position.
             /// \return The file pointer position.
@@ -184,6 +185,7 @@ namespace thekogans {
             virtual i64 Seek (
                 i64 offset,
                 i32 fromWhere);
+
             /// \brief
             /// Return file size in bytes.
             /// \return File size in bytes.

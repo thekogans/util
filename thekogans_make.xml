@@ -135,6 +135,7 @@
     <cpp_header>$(organization)/$(project_directory)/Plugins.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/Point.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/Producer.h</cpp_header>
+    <cpp_header>$(organization)/$(project_directory)/RandomSeekSerializer.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/RandomSource.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/Rectangle.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/RecursiveLock.h</cpp_header>
@@ -660,6 +661,7 @@
     <cpp_source>PipelinePool.cpp</cpp_source>
     <cpp_source>Plugins.cpp</cpp_source>
     <cpp_source>Point.cpp</cpp_source>
+    <cpp_source>RandomSeekSerializer.cpp</cpp_source>
     <cpp_source>RandomSource.cpp</cpp_source>
     <cpp_source>Rectangle.cpp</cpp_source>
     <cpp_source>RefCounted.cpp</cpp_source>
