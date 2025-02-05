@@ -129,16 +129,19 @@ namespace thekogans {
             footer.Write (file, offset + header.size - Footer::SIZE);
         }
 
-        THEKOGANS_UTIL_IMPLEMENT_HEAP_FUNCTIONS (FileAllocator::BlockBuffer)
-
-        std::size_t FileAllocator::BlockBuffer::Read (std::size_t blockOffset) {
+        std::size_t FileAllocator::BlockBuffer::Read (
+                std::size_t blockOffset,
+                std::size_t length) {
             LockedFilePtr file (allocator);
             BlockInfo block (*file, offset - BlockInfo::HEADER_SIZE);
             block.Read ();
             if (blockOffset < block.GetSize () - BlockInfo::SIZE) {
+                if (length == 0) {
+                    length = GetDataAvailableForWriting ();
+                }
                 ui64 availableToRead = block.GetSize () - BlockInfo::SIZE - blockOffset;
-                if (availableToRead > GetDataAvailableForWriting ()) {
-                    availableToRead = GetDataAvailableForWriting ();
+                if (availableToRead > length) {
+                    availableToRead = length;
                 }
                 file->Seek (offset + blockOffset, SEEK_SET);
                 return AdvanceWriteOffset (file->Read (GetWritePtr (), availableToRead));
@@ -146,14 +149,19 @@ namespace thekogans {
             return 0;
         }
 
-        std::size_t FileAllocator::BlockBuffer::Write (std::size_t blockOffset) {
+        std::size_t FileAllocator::BlockBuffer::Write (
+                std::size_t blockOffset,
+                std::size_t length) {
             LockedFilePtr file (allocator);
             BlockInfo block (*file, offset - BlockInfo::HEADER_SIZE);
             block.Read ();
             if (blockOffset < block.GetSize () - BlockInfo::SIZE) {
+                if (length == 0) {
+                    length = GetDataAvailableForReading ();
+                }
                 ui64 availableToWrite = block.GetSize () - BlockInfo::SIZE - blockOffset;
-                if (availableToWrite > GetDataAvailableForReading ()) {
-                    availableToWrite = GetDataAvailableForReading ();
+                if (availableToWrite > length) {
+                    availableToWrite = length;
                 }
                 file->Seek (offset + blockOffset, SEEK_SET);
                 return AdvanceReadOffset (file->Write (GetReadPtr (), availableToWrite));
@@ -333,6 +341,10 @@ namespace thekogans {
                     }
                 }
             }
+            else {
+                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
+            }
         }
 
         std::size_t FileAllocator::GetBlockSize (ui64 offset) {
@@ -343,27 +355,10 @@ namespace thekogans {
                 block.Read ();
                 return block.GetSize () - BlockInfo::SIZE;
             }
-            return 0;
-        }
-
-        FileAllocator::BlockBuffer::SharedPtr FileAllocator::CreateBlockBuffer (
-                ui64 offset,
-                std::size_t size,
-                bool read,
-                std::size_t blockOffset) {
-            BlockBuffer::SharedPtr buffer;
-            if (offset >= minUserBlockOffset) {
-                if (size == 0) {
-                    size = GetBlockSize (offset);
-                }
-                buffer.Reset (
-                    new BlockBuffer (*this, offset,
-                        file.endianness, size, 0, 0, blockAllocator));
-                if (read) {
-                    buffer->Read (blockOffset);
-                }
+            else {
+                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
             }
-            return buffer;
         }
 
         void FileAllocator::Save () {
@@ -417,6 +412,10 @@ namespace thekogans {
                         file.SetSize (block.GetOffset ());
                     }
                 }
+            }
+            else {
+                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
             }
         }
 

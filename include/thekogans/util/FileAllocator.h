@@ -43,22 +43,22 @@ namespace thekogans {
 
             struct _LIB_THEKOGANS_UTIL_DECL LockedFilePtr {
             private:
-                FileAllocator &fileAllocator;
+                FileAllocator &allocator;
 
             public:
-                LockedFilePtr (FileAllocator &fileAllocator_) :
-                        fileAllocator (fileAllocator_) {
-                    fileAllocator.spinLock.Acquire ();
+                LockedFilePtr (FileAllocator &allocator_) :
+                        allocator (allocator_) {
+                    allocator.spinLock.Acquire ();
                 }
                 ~LockedFilePtr () {
-                    fileAllocator.spinLock.Release ();
+                    allocator.spinLock.Release ();
                 }
 
                 inline File &operator * () const {
-                    return fileAllocator.file;
+                    return allocator.file;
                 }
                 inline File *operator -> () const {
-                    return &fileAllocator.file;
+                    return &allocator.file;
                 }
 
                 /// \brief
@@ -191,34 +191,32 @@ namespace thekogans {
             };
 
             struct _LIB_THEKOGANS_UTIL_DECL BlockBuffer : public Buffer {
-                /// \brief
-                /// Declare \see{RefCounted} pointers.
-                THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (BlockBuffer)
-
-                /// \brief
-                /// Declare \see{DynamicCreatable} boilerplate.
-                THEKOGANS_UTIL_DECLARE_STD_ALLOCATOR_FUNCTIONS
-
+            private:
                 FileAllocator &allocator;
                 ui64 offset;
 
-                std::size_t Read (std::size_t blockOffset = 0);
-                std::size_t Write (std::size_t blockOffset = 0);
-
-            protected:
+            public:
                 BlockBuffer (
                     FileAllocator &allocator_,
                     ui64 offset_,
-                    Endianness endianness,
-                    std::size_t length,
+                    std::size_t length = 0,
                     std::size_t readOffset = 0,
-                    std::size_t writeOffset = 0,
-                    Allocator::SharedPtr allocator = DefaultAllocator::Instance ()) :
+                    std::size_t writeOffset = 0) :
+                    Buffer (
+                        allocator_.file.endianness,
+                        length == 0 ? allocator_.GetBlockSize (offset_) : length,
+                        readOffset,
+                        writeOffset,
+                        allocator_.blockAllocator),
                     allocator (allocator_),
-                    offset (offset_),
-                    Buffer (endianness, length, readOffset, writeOffset, allocator) {}
+                    offset (offset_) {}
 
-                friend struct FileAllocator;
+                std::size_t Read (
+                    std::size_t blockOffset = 0,
+                    std::size_t length = 0);
+                std::size_t Write (
+                    std::size_t blockOffset = 0,
+                    std::size_t length = 0);
 
                 /// \brief
                 /// BlockBuffer is neither copy constructable, nor assignable.
@@ -244,6 +242,10 @@ namespace thekogans {
                 SpinLock spinLock;
 
             public:
+                /// \brief
+                /// ctor.
+                Pool () {}
+
                 /// \brief
                 /// Given a block size, return a matching block allocator.
                 /// If we don't have one, create it.
@@ -580,12 +582,6 @@ namespace thekogans {
             ui64 Alloc (std::size_t size);
             void Free (ui64 offset);
             std::size_t GetBlockSize (ui64 offset);
-
-            BlockBuffer::SharedPtr CreateBlockBuffer (
-                ui64 offset,
-                std::size_t size = 0,
-                bool read = false,
-                std::size_t blockOffset = 0);
 
         protected:
             void Save ();
