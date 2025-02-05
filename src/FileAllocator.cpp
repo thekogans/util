@@ -87,8 +87,7 @@ namespace thekogans {
             file << size;
         }
 
-        FileAllocator::BlockInfo FileAllocator::BlockInfo::Prev () {
-            BlockInfo prev (file);
+        void FileAllocator::BlockInfo::Prev (BlockInfo &prev) {
             prev.footer.Read (file, offset - Footer::SIZE);
             prev.offset = offset - prev.footer.size;
             prev.header.Read (file, prev.offset);
@@ -101,13 +100,11 @@ namespace thekogans {
                     header.size,
                     footer.size);
             }
-            return prev;
         }
 
-        FileAllocator::BlockInfo FileAllocator::BlockInfo::Next () {
-            BlockInfo next (file, offset + header.size);
+        void FileAllocator:: FileAllocator::BlockInfo::Next (BlockInfo &next) {
+            next.offset = offset + header.size;
             next.Read ();
-            return next;
         }
 
         void FileAllocator::BlockInfo::Read () {
@@ -317,7 +314,8 @@ namespace thekogans {
                 if (!block.IsFree () && !block.IsFixed ()) {
                     // Consolidate adjacent free non fixed blocks.
                     if (!block.IsFirst ()) {
-                        BlockInfo prev  = block.Prev ();
+                        BlockInfo prev (*file);
+                        block.Prev (prev);
                         if (prev.IsFree () && !prev.IsFixed ()) {
                             btree->Delete (BTree::Key (prev.GetSize (), prev.GetOffset ()));
                             block.SetOffset (block.GetOffset () - prev.GetSize ());
@@ -325,7 +323,8 @@ namespace thekogans {
                         }
                     }
                     if (!block.IsLast ()) {
-                        BlockInfo next = block.Next ();
+                        BlockInfo next (*file);
+                        block.Next (next);
                         if (next.IsFree () && !next.IsFixed ()) {
                             btree->Delete (BTree::Key (next.GetSize (), next.GetOffset ()));
                             block.SetSize (block.GetSize () + next.GetSize ());

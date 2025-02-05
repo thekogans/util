@@ -183,11 +183,15 @@ namespace thekogans {
                     header.nextOffset = nextOffset;
                 }
 
-                BlockInfo Prev ();
-                BlockInfo Next ();
+                void Prev (BlockInfo &prev);
+                void Next (BlockInfo &next);
 
                 void Read ();
                 void Write ();
+
+                /// \brief
+                /// BlockInfo is neither copy constructable, nor assignable.
+                THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (BlockInfo)
             };
 
             struct _LIB_THEKOGANS_UTIL_DECL BlockBuffer : public Buffer {
