@@ -60,6 +60,10 @@ namespace thekogans {
                 inline File *operator -> () const {
                     return &fileAllocator.file;
                 }
+
+                /// \brief
+                /// LockedFilePtr is neither copy constructable, nor assignable.
+                THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (LockedFilePtr)
             };
 
             struct _LIB_THEKOGANS_UTIL_DECL BlockInfo {
@@ -250,6 +254,10 @@ namespace thekogans {
                     std::size_t blockSize = 0,
                     std::size_t blocksPerPage = BTree::DEFAULT_ENTRIES_PER_NODE,
                     Allocator::SharedPtr allocator = DefaultAllocator::Instance ());
+
+                /// \brief
+                /// Pool is neither copy constructable, nor assignable.
+                THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (Pool)
             };
 
         private:
