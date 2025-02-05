@@ -29,10 +29,13 @@ namespace thekogans {
                 File &file,
                 ui64 offset) {
             file.Seek (offset, SEEK_SET);
+        #if defined (THEKOGANS_UTIL_FILE_ALLOCATOR_BLOCK_INFO_USE_MAGIC)
             ui32 magic;
             file >> magic;
             if (magic == MAGIC32) {
+        #endif // defined (THEKOGANS_UTIL_FILE_ALLOCATOR_BLOCK_INFO_USE_MAGIC)
                 file >> flags >> size >> nextOffset;
+        #if defined (THEKOGANS_UTIL_FILE_ALLOCATOR_BLOCK_INFO_USE_MAGIC)
             }
             else {
                 THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
@@ -40,23 +43,30 @@ namespace thekogans {
                     THEKOGANS_UTIL_UI64_FORMAT,
                     offset);
             }
+        #endif // defined (THEKOGANS_UTIL_FILE_ALLOCATOR_BLOCK_INFO_USE_MAGIC)
         }
 
         void FileAllocator::BlockInfo::Header::Write (
                 File &file,
                 ui64 offset) {
             file.Seek (offset, SEEK_SET);
-            file << MAGIC32 << flags << size << nextOffset;
+        #if defined (THEKOGANS_UTIL_FILE_ALLOCATOR_BLOCK_INFO_USE_MAGIC)
+            file << MAGIC32;
+        #endif // defined (THEKOGANS_UTIL_FILE_ALLOCATOR_BLOCK_INFO_USE_MAGIC)
+            file << flags << size << nextOffset;
         }
 
         void FileAllocator::BlockInfo::Footer::Read (
                 File &file,
                 ui64 offset) {
             file.Seek (offset, SEEK_SET);
+        #if defined (THEKOGANS_UTIL_FILE_ALLOCATOR_BLOCK_INFO_USE_MAGIC)
             ui32 magic;
             file >> magic;
             if (magic == MAGIC32) {
+        #endif // defined (THEKOGANS_UTIL_FILE_ALLOCATOR_BLOCK_INFO_USE_MAGIC)
                 file >> size;
+        #if defined (THEKOGANS_UTIL_FILE_ALLOCATOR_BLOCK_INFO_USE_MAGIC)
             }
             else {
                 THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
@@ -64,13 +74,17 @@ namespace thekogans {
                     THEKOGANS_UTIL_UI64_FORMAT,
                     offset);
             }
+        #endif // defined (THEKOGANS_UTIL_FILE_ALLOCATOR_BLOCK_INFO_USE_MAGIC)
         }
 
         void FileAllocator::BlockInfo::Footer::Write (
                 File &file,
                 ui64 offset) {
             file.Seek (offset, SEEK_SET);
-            file << MAGIC32 << size;
+        #if defined (THEKOGANS_UTIL_FILE_ALLOCATOR_BLOCK_INFO_USE_MAGIC)
+            file << MAGIC32;
+        #endif // defined (THEKOGANS_UTIL_FILE_ALLOCATOR_BLOCK_INFO_USE_MAGIC)
+            file << size;
         }
 
         FileAllocator::BlockInfo FileAllocator::BlockInfo::Prev () {

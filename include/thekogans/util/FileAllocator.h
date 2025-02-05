@@ -31,6 +31,8 @@
 namespace thekogans {
     namespace util {
 
+        #define THEKOGANS_UTIL_FILE_ALLOCATOR_BLOCK_INFO_USE_MAGIC
+
         /// \struct FileAllocator FileAllocator.h thekogans/util/FileAllocator.h
         ///
         /// \brief
@@ -48,14 +50,16 @@ namespace thekogans {
                     FLAGS_FREE = 1,
                     FLAGS_FIXED = 2
                 };
-                struct Header {
+                struct _LIB_THEKOGANS_UTIL_DECL Header {
                     ui32 flags;
                     ui64 size;
                     ui64 nextOffset;
 
                     enum {
                         SIZE =
+                        #if defined (THEKOGANS_UTIL_FILE_ALLOCATOR_BLOCK_INFO_USE_MAGIC)
                             UI32_SIZE + // magic
+                        #endif // defined (THEKOGANS_UTIL_FILE_ALLOCATOR_BLOCK_INFO_USE_MAGIC)
                             UI32_SIZE +
                             UI64_SIZE +
                             UI64_SIZE
@@ -76,12 +80,14 @@ namespace thekogans {
                         File &file,
                         ui64 offset);
                 } header;
-                struct Footer {
+                struct _LIB_THEKOGANS_UTIL_DECL Footer {
                     ui64 size;
 
                     enum {
                         SIZE =
+                        #if defined (THEKOGANS_UTIL_FILE_ALLOCATOR_BLOCK_INFO_USE_MAGIC)
                             UI32_SIZE + // magic
+                        #endif // defined (THEKOGANS_UTIL_FILE_ALLOCATOR_BLOCK_INFO_USE_MAGIC)
                             UI64_SIZE
                     };
 
@@ -118,10 +124,10 @@ namespace thekogans {
                     offset = offset_;
                 }
                 inline bool IsFirst () const {
-                    return offset == Header::SIZE;
+                    return GetOffset () == FileAllocator::Header::SIZE;
                 }
                 inline bool IsLast () const {
-                    return offset + GetSize () == file.GetSize ();
+                    return GetOffset () + GetSize () == file.GetSize ();
                 }
 
                 inline bool IsFree () const {
