@@ -99,9 +99,9 @@ namespace thekogans {
                 };
                 ui32 flags;
                 ui32 blockSize;
-                ui64 headFreeFixedBlockOffset;
-                ui64 btreeOffset;
-                ui64 rootBlockOffset;
+                ui64 fixedFreeListHeadOffset;
+                ui64 btreeHeaderOffset;
+                ui64 rootOffset;
 
                 enum {
                     SIZE =
@@ -118,9 +118,9 @@ namespace thekogans {
                     ui32 blockSize_ = 0) :
                     flags (flags_),
                     blockSize (blockSize_),
-                    headFreeFixedBlockOffset (0),
-                    btreeOffset (0),
-                    rootBlockOffset (0) {}
+                    fixedFreeListHeadOffset (0),
+                    btreeHeaderOffset (0),
+                    rootOffset (0) {}
 
                 inline bool IsFixed () const {
                     return Flags32 (flags).Test (FLAGS_FIXED);
@@ -214,7 +214,7 @@ namespace thekogans {
                         /// \brief
                         /// ctor.
                         /// \param[in] key_ Entry key.
-                        Entry (const Key &key_ = Key (UI64_MAX, 0)) :
+                        Entry (const Key &key_ = Key (0, 0)) :
                         key (key_),
                             rightOffset (0),
                             rightNode (0) {}
@@ -399,7 +399,7 @@ namespace thekogans {
 
                 LockedFilePtr (FileAllocator &fileAllocator_) :
                         fileAllocator (fileAllocator_) {
-                     fileAllocator.spinLock.Acquire ();
+                    fileAllocator.spinLock.Acquire ();
                 }
                 ~LockedFilePtr () {
                     fileAllocator.spinLock.Release ();
@@ -421,13 +421,11 @@ namespace thekogans {
                 return header.IsFixed ();
             }
 
-            ui64 GetRootBlockOffset ();
-            void SetRootBlockOffset (ui64 rootBlockOffset);
+            ui64 GetRootOffset ();
+            void SetRootOffset (ui64 rootOffset);
 
             ui64 Alloc (std::size_t size);
-            void Free (
-                ui64 offset,
-                std::size_t /*size*/ = 0);
+            void Free (ui64 offset);
             std::size_t GetBlockSize (ui64 offset);
 
             BlockBuffer::SharedPtr CreateBlockBuffer (
