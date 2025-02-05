@@ -21,6 +21,9 @@
           <feature>THEKOGANS_UTIL_HAVE_WTS</feature>
         </if>
     -->
+    <!-- If you don't know what this is, it's safer to leave it on.
+         See FileAllocator for explanation. -->
+    <feature>THEKOGANS_UTIL_FILE_ALLOCATOR_BLOCK_INFO_USE_MAGIC</feature>
   </features>
   <dependencies>
     <if condition = "$(have_feature -f:THEKOGANS_UTIL_HAVE_XERCES)">

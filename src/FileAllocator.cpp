@@ -70,7 +70,7 @@ namespace thekogans {
             }
             else {
                 THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                    "Corrupt FileAllocator FileAllocator::BlockInfo::Footer: "
+                    "Corrupt FileAllocator::BlockInfo::Footer: "
                     THEKOGANS_UTIL_UI64_FORMAT,
                     offset);
             }
@@ -94,7 +94,7 @@ namespace thekogans {
             prev.header.Read (file, prev.offset);
             if (prev.header.size != prev.footer.size) {
                 THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                    "Corrupt BlockInfo: " THEKOGANS_UTIL_UI64_FORMAT
+                    "Corrupt FileAllocator::BlockInfo: " THEKOGANS_UTIL_UI64_FORMAT
                     "prev.header.size: " THEKOGANS_UTIL_UI64_FORMAT
                     "!= prev.footer.size: " THEKOGANS_UTIL_UI64_FORMAT,
                     offset,
@@ -115,7 +115,7 @@ namespace thekogans {
             footer.Read (file, offset + header.size - Footer::SIZE);
             if (header.size != footer.size) {
                 THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                    "Corrupt BlockInfo: " THEKOGANS_UTIL_UI64_FORMAT
+                    "Corrupt FileAllocator::BlockInfo: " THEKOGANS_UTIL_UI64_FORMAT
                     "header.size: " THEKOGANS_UTIL_UI64_FORMAT
                     "!= footer.size: " THEKOGANS_UTIL_UI64_FORMAT,
                     offset,
@@ -133,7 +133,7 @@ namespace thekogans {
 
         std::size_t FileAllocator::BlockBuffer::Read (std::size_t blockOffset) {
             LockedFilePtr file (allocator);
-            BlockInfo block (*file, offset - BlockInfo::Header::SIZE);
+            BlockInfo block (*file, offset - BlockInfo::HEADER_SIZE);
             block.Read ();
             if (blockOffset < block.GetSize () - BlockInfo::SIZE) {
                 ui64 availableToRead = block.GetSize () - BlockInfo::SIZE - blockOffset;
@@ -148,7 +148,7 @@ namespace thekogans {
 
         std::size_t FileAllocator::BlockBuffer::Write (std::size_t blockOffset) {
             LockedFilePtr file (allocator);
-            BlockInfo block (*file, offset - BlockInfo::Header::SIZE);
+            BlockInfo block (*file, offset - BlockInfo::HEADER_SIZE);
             block.Read ();
             if (blockOffset < block.GetSize () - BlockInfo::SIZE) {
                 ui64 availableToWrite = block.GetSize () - BlockInfo::SIZE - blockOffset;
@@ -195,7 +195,7 @@ namespace thekogans {
                         (ui32)blockSize :
                         (ui32)BTree::Node::FileSize (blocksPerPage)),
                 minUserBlockSize (16),
-                minUserBlockOffset (Header::SIZE + BlockInfo::Header::SIZE) {
+                minUserBlockOffset (Header::SIZE + BlockInfo::HEADER_SIZE) {
             if (file.GetSize () >= Header::SIZE) {
                 file.Seek (0, SEEK_SET);
                 ui32 magic;
@@ -289,7 +289,7 @@ namespace thekogans {
                     }
                     BlockInfo block (*file, offset, 0, size);
                     block.Write ();
-                    offset += BlockInfo::Header::SIZE;
+                    offset += BlockInfo::HEADER_SIZE;
                 }
                 return offset;
             }
@@ -301,7 +301,7 @@ namespace thekogans {
                 FreeFixedBlock (offset);
             }
             else if (offset >= minUserBlockOffset) {
-                offset -= BlockInfo::Header::SIZE;
+                offset -= BlockInfo::HEADER_SIZE;
                 LockedFilePtr file (*this);
                 if (header.rootOffset == offset) {
                     header.rootOffset = 0;
@@ -338,6 +338,17 @@ namespace thekogans {
             }
         }
 
+        std::size_t FileAllocator::GetBlockSize (ui64 offset) {
+            if (offset >= minUserBlockOffset) {
+                offset -= BlockInfo::HEADER_SIZE;
+                LockedFilePtr file (*this);
+                BlockInfo block (*file, offset);
+                block.Read ();
+                return block.GetSize () - BlockInfo::SIZE;
+            }
+            return 0;
+        }
+
         FileAllocator::BlockBuffer::SharedPtr FileAllocator::CreateBlockBuffer (
                 ui64 offset,
                 std::size_t size,
@@ -346,16 +357,13 @@ namespace thekogans {
             BlockBuffer::SharedPtr buffer;
             if (offset >= minUserBlockOffset) {
                 if (size == 0) {
-                    LockedFilePtr file (*this);
-                    BlockInfo block (*file, offset - BlockInfo::Header::SIZE);
-                    block.Read ();
-                    size = block.GetSize () - BlockInfo::SIZE;
+                    size = GetBlockSize (offset);
                 }
                 buffer.Reset (
                     new BlockBuffer (
                         *this,
                         offset,
-                        GetFileEndianness (),
+                        file.endianness,
                         size,
                         0,
                         0,
@@ -365,17 +373,6 @@ namespace thekogans {
                 }
             }
             return buffer;
-        }
-
-        std::size_t FileAllocator::GetBlockSize (ui64 offset) {
-            if (offset >= minUserBlockOffset) {
-                offset -= BlockInfo::Header::SIZE;
-                LockedFilePtr file (*this);
-                BlockInfo block (*file, offset);
-                block.Read ();
-                return block.GetSize () - BlockInfo::SIZE;
-            }
-            return 0;
         }
 
         void FileAllocator::Save () {
@@ -404,13 +401,13 @@ namespace thekogans {
                 BlockInfo block (file, offset, BlockInfo::FLAGS_FIXED, size);
                 block.Write ();
             }
-            offset += BlockInfo::Header::SIZE;
+            offset += BlockInfo::HEADER_SIZE;
             return offset;
         }
 
         void FileAllocator::FreeFixedBlock (ui64 offset) {
             if (offset >= minUserBlockOffset) {
-                offset -= BlockInfo::Header::SIZE;
+                offset -= BlockInfo::HEADER_SIZE;
                 if (header.rootOffset == offset) {
                     header.rootOffset = 0;
                     Save ();

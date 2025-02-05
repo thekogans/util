@@ -46,7 +46,7 @@ namespace thekogans {
                 }
                 else {
                     THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                        "Corrupt BTree::Node: " THEKOGANS_UTIL_UI64_FORMAT,
+                        "Corrupt FileAllocator::BTree::Node: " THEKOGANS_UTIL_UI64_FORMAT,
                         offset);
                 }
             }
@@ -224,7 +224,7 @@ namespace thekogans {
                 }
                 else {
                     THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                        "Corrupt BTree: " THEKOGANS_UTIL_UI64_FORMAT,
+                        "Corrupt FileAllocator::BTree: " THEKOGANS_UTIL_UI64_FORMAT,
                         offset);
                 }
             }
@@ -471,6 +471,7 @@ namespace thekogans {
                 const FileAllocator::BTree::Key &key2) {
             return key1.first == key2.first && key1.second == key2.second;
         }
+
         inline bool operator != (
                 const FileAllocator::BTree::Key &key1,
                 const FileAllocator::BTree::Key &key2) {

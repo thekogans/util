@@ -31,8 +31,6 @@
 namespace thekogans {
     namespace util {
 
-        #define THEKOGANS_UTIL_FILE_ALLOCATOR_BLOCK_INFO_USE_MAGIC
-
         /// \struct FileAllocator FileAllocator.h thekogans/util/FileAllocator.h
         ///
         /// \brief
@@ -44,8 +42,10 @@ namespace thekogans {
             THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (FileAllocator)
 
             struct _LIB_THEKOGANS_UTIL_DECL LockedFilePtr {
+            private:
                 FileAllocator &fileAllocator;
 
+            public:
                 LockedFilePtr (FileAllocator &fileAllocator_) :
                         fileAllocator (fileAllocator_) {
                     fileAllocator.spinLock.Acquire ();
@@ -63,12 +63,14 @@ namespace thekogans {
             };
 
             struct _LIB_THEKOGANS_UTIL_DECL BlockInfo {
-                File &file;
-                ui64 offset;
                 enum {
                     FLAGS_FREE = 1,
                     FLAGS_FIXED = 2
                 };
+
+            private:
+                File &file;
+                ui64 offset;
                 struct _LIB_THEKOGANS_UTIL_DECL Header {
                     ui32 flags;
                     ui64 size;
@@ -121,8 +123,11 @@ namespace thekogans {
                         ui64 offset);
                 } footer;
 
+            public:
                 enum {
-                    SIZE = Header::SIZE + Footer::SIZE
+                    HEADER_SIZE = Header::SIZE,
+                    FOOTER_SIZE = Footer::SIZE,
+                    SIZE = HEADER_SIZE + FOOTER_SIZE
                 };
 
                 BlockInfo (
@@ -556,14 +561,14 @@ namespace thekogans {
                 std::size_t blocksPerPage = BTree::DEFAULT_ENTRIES_PER_NODE,
                 Allocator::SharedPtr allocator = DefaultAllocator::Instance ());
 
-            inline Endianness GetFileEndianness () const {
-                return file.endianness;
-            }
-
             inline bool IsFixed () const {
+                // header.flags is read only after ctor so no need to lock.
                 return header.IsFixed ();
             }
-
+            inline std::size_t GetBlockSize () const {
+                // header.blockSize is read only after ctor so no need to lock.
+                return header.blockSize;
+            }
             ui64 GetRootOffset ();
             void SetRootOffset (ui64 rootOffset);
 
