@@ -63,11 +63,6 @@ namespace thekogans {
             };
 
             struct _LIB_THEKOGANS_UTIL_DECL BlockInfo {
-                enum {
-                    FLAGS_FREE = 1,
-                    FLAGS_FIXED = 2
-                };
-
             private:
                 File &file;
                 ui64 offset;
@@ -125,6 +120,8 @@ namespace thekogans {
 
             public:
                 enum {
+                    FLAGS_FREE = 1,
+                    FLAGS_FIXED = 2,
                     HEADER_SIZE = Header::SIZE,
                     FOOTER_SIZE = Footer::SIZE,
                     SIZE = HEADER_SIZE + FOOTER_SIZE
