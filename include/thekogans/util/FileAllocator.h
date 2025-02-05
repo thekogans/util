@@ -43,7 +43,7 @@ namespace thekogans {
             /// Declare \see{RefCounted} pointers.
             THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (FileAllocator)
 
-            struct LockedFilePtr {
+            struct _LIB_THEKOGANS_UTIL_DECL LockedFilePtr {
                 FileAllocator &fileAllocator;
 
                 LockedFilePtr (FileAllocator &fileAllocator_) :
@@ -196,8 +196,8 @@ namespace thekogans {
                 FileAllocator &allocator;
                 ui64 offset;
 
-                std::size_t Read (std::size_t offset_ = 0);
-                std::size_t Write (std::size_t offset_ = 0);
+                std::size_t Read (std::size_t blockOffset = 0);
+                std::size_t Write (std::size_t blockOffset = 0);
 
             protected:
                 BlockBuffer (
@@ -222,7 +222,9 @@ namespace thekogans {
             /// \struct BlockAllocator::Pool BlockAllocator.h thekogans/util/BlockAllocator.h
             ///
             /// \brief
-            /// Use Pool to recycle and reuse block allocators.
+            /// Each instance of a FileAllocator attached to a particular
+            /// file should be treated as a singleton. Use Pool to recycle
+            /// and reuse file allocators based on a given path.
             struct _LIB_THEKOGANS_UTIL_DECL Pool : public Singleton<Pool> {
             private:
                 /// \brief

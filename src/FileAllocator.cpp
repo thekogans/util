@@ -131,31 +131,31 @@ namespace thekogans {
 
         THEKOGANS_UTIL_IMPLEMENT_HEAP_FUNCTIONS (FileAllocator::BlockBuffer)
 
-        std::size_t FileAllocator::BlockBuffer::Read (std::size_t offset_) {
+        std::size_t FileAllocator::BlockBuffer::Read (std::size_t blockOffset) {
             LockedFilePtr file (allocator);
             BlockInfo block (*file, offset - BlockInfo::Header::SIZE);
             block.Read ();
-            if (offset_ < block.GetSize () - BlockInfo::SIZE) {
-                ui64 availableToRead = block.GetSize () - BlockInfo::SIZE - offset_;
+            if (blockOffset < block.GetSize () - BlockInfo::SIZE) {
+                ui64 availableToRead = block.GetSize () - BlockInfo::SIZE - blockOffset;
                 if (availableToRead > GetDataAvailableForWriting ()) {
                     availableToRead = GetDataAvailableForWriting ();
                 }
-                file->Seek (offset + offset_, SEEK_SET);
+                file->Seek (offset + blockOffset, SEEK_SET);
                 return AdvanceWriteOffset (file->Read (GetWritePtr (), availableToRead));
             }
             return 0;
         }
 
-        std::size_t FileAllocator::BlockBuffer::Write (std::size_t offset_) {
+        std::size_t FileAllocator::BlockBuffer::Write (std::size_t blockOffset) {
             LockedFilePtr file (allocator);
             BlockInfo block (*file, offset - BlockInfo::Header::SIZE);
             block.Read ();
-            if (offset_ < block.GetSize () - BlockInfo::SIZE) {
-                ui64 availableToWrite = block.GetSize () - BlockInfo::SIZE - offset_;
+            if (blockOffset < block.GetSize () - BlockInfo::SIZE) {
+                ui64 availableToWrite = block.GetSize () - BlockInfo::SIZE - blockOffset;
                 if (availableToWrite > GetDataAvailableForReading ()) {
                     availableToWrite = GetDataAvailableForReading ();
                 }
-                file->Seek (offset + offset_, SEEK_SET);
+                file->Seek (offset + blockOffset, SEEK_SET);
                 return AdvanceReadOffset (file->Write (GetReadPtr (), availableToWrite));
             }
             return 0;
