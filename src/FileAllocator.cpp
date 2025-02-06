@@ -34,7 +34,10 @@ namespace thekogans {
             file >> magic;
             if (magic == MAGIC32) {
         #endif // defined (THEKOGANS_UTIL_FILE_ALLOCATOR_BLOCK_INFO_USE_MAGIC)
-                file >> flags >> size >> nextOffset;
+                file >> flags >> size;
+                if (IsFree () && IsFixed ()) {
+                    file >> nextOffset;
+                }
         #if defined (THEKOGANS_UTIL_FILE_ALLOCATOR_BLOCK_INFO_USE_MAGIC)
             }
             else {
@@ -53,7 +56,10 @@ namespace thekogans {
         #if defined (THEKOGANS_UTIL_FILE_ALLOCATOR_BLOCK_INFO_USE_MAGIC)
             file << MAGIC32;
         #endif // defined (THEKOGANS_UTIL_FILE_ALLOCATOR_BLOCK_INFO_USE_MAGIC)
-            file << flags << size << nextOffset;
+            file << flags << size;
+            if (IsFree () && IsFixed ()) {
+                file << nextOffset;
+            }
         }
 
         void FileAllocator::BlockInfo::Footer::Read (
@@ -65,7 +71,7 @@ namespace thekogans {
             file >> magic;
             if (magic == MAGIC32) {
         #endif // defined (THEKOGANS_UTIL_FILE_ALLOCATOR_BLOCK_INFO_USE_MAGIC)
-                file >> size;
+                file >> flags >> size;
         #if defined (THEKOGANS_UTIL_FILE_ALLOCATOR_BLOCK_INFO_USE_MAGIC)
             }
             else {
@@ -84,21 +90,27 @@ namespace thekogans {
         #if defined (THEKOGANS_UTIL_FILE_ALLOCATOR_BLOCK_INFO_USE_MAGIC)
             file << MAGIC32;
         #endif // defined (THEKOGANS_UTIL_FILE_ALLOCATOR_BLOCK_INFO_USE_MAGIC)
-            file << size;
+            file << flags << size;
+        }
+
+        inline bool operator != (
+                const FileAllocator::BlockInfo::Header &header,
+                const FileAllocator::BlockInfo::Footer &footer) {
+            return header.flags != footer.flags || header.size != footer.size;
         }
 
         void FileAllocator::BlockInfo::Prev (BlockInfo &prev) {
             prev.footer.Read (file, offset - Footer::SIZE);
             prev.offset = offset - prev.footer.size;
             prev.header.Read (file, prev.offset);
-            if (prev.header.size != prev.footer.size) {
+            if (prev.header != prev.footer) {
                 THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
                     "Corrupt FileAllocator::BlockInfo: " THEKOGANS_UTIL_UI64_FORMAT
-                    "prev.header.size: " THEKOGANS_UTIL_UI64_FORMAT
-                    "!= prev.footer.size: " THEKOGANS_UTIL_UI64_FORMAT,
+                    "prev.header.flags: %u prev.header.size: " THEKOGANS_UTIL_UI64_FORMAT
+                    "prev.footer.flags: %u prev.footer.size: " THEKOGANS_UTIL_UI64_FORMAT,
                     offset,
-                    header.size,
-                    footer.size);
+                    header.flags, header.size,
+                    footer.flags, footer.size);
             }
         }
 
@@ -110,14 +122,14 @@ namespace thekogans {
         void FileAllocator::BlockInfo::Read () {
             header.Read (file, offset);
             footer.Read (file, offset + header.size - Footer::SIZE);
-            if (header.size != footer.size) {
+            if (header != footer) {
                 THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
                     "Corrupt FileAllocator::BlockInfo: " THEKOGANS_UTIL_UI64_FORMAT
-                    "header.size: " THEKOGANS_UTIL_UI64_FORMAT
-                    "!= footer.size: " THEKOGANS_UTIL_UI64_FORMAT,
+                    "prev.header.flags: %u prev.header.size: " THEKOGANS_UTIL_UI64_FORMAT
+                    "prev.footer.flags: %u prev.footer.size: " THEKOGANS_UTIL_UI64_FORMAT,
                     offset,
-                    header.size,
-                    footer.size);
+                    header.flags, header.size,
+                    footer.flags, footer.size);
             }
         }
 
@@ -210,9 +222,7 @@ namespace thekogans {
                 file (HostEndian, path, SimpleFile::ReadWrite | SimpleFile::Create),
                 header (
                     blockSize > 0 ? Header::FLAGS_FIXED : 0,
-                    (ui32)(blockSize > 0 ? blockSize : BTree::Node::FileSize (blocksPerPage))),
-                minUserBlockSize (16),
-                minUserBlockOffset (Header::SIZE + BlockInfo::HEADER_SIZE) {
+                    (ui32)(blockSize > 0 ? blockSize : BTree::Node::FileSize (blocksPerPage))) {
             if (file.GetSize () >= Header::SIZE) {
                 file.Seek (0, SEEK_SET);
                 ui32 magic;
@@ -281,8 +291,8 @@ namespace thekogans {
             else {
                 ui64 offset = 0;
                 if (size > 0) {
-                    if (size < minUserBlockSize) {
-                        size = minUserBlockSize;
+                    if (size < MIN_USER_DATA_SIZE) {
+                        size = MIN_USER_DATA_SIZE;
                     }
                     size += BlockInfo::SIZE;
                     LockedFilePtr file (*this);
@@ -292,7 +302,7 @@ namespace thekogans {
                         btree->Delete (result);
                         offset = result.second;
                         result.first -= size;
-                        if (result.first >= BlockInfo::SIZE + minUserBlockSize) {
+                        if (result.first >= MIN_USER_DATA_SIZE) {
                             btree->Add (BTree::Key (result.first, offset + size));
                             BlockInfo block (*file, offset + size,
                                 BlockInfo::FLAGS_FREE, result.first);
@@ -319,7 +329,7 @@ namespace thekogans {
                 LockGuard<SpinLock> guard (spinLock);
                 FreeFixedBlock (offset);
             }
-            else if (offset >= minUserBlockOffset) {
+            else if (offset >= MIN_USER_DATA_OFFSET) {
                 offset -= BlockInfo::HEADER_SIZE;
                 LockedFilePtr file (*this);
                 if (header.rootOffset == offset) {
@@ -394,7 +404,7 @@ namespace thekogans {
         }
 
         void FileAllocator::FreeFixedBlock (ui64 offset) {
-            if (offset >= minUserBlockOffset) {
+            if (offset >= MIN_USER_DATA_OFFSET) {
                 offset -= BlockInfo::HEADER_SIZE;
                 if (header.rootOffset == offset) {
                     header.rootOffset = 0;

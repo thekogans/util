@@ -57,7 +57,7 @@ namespace thekogans {
                 blockSize (blockSize_),
                 blocksPerPage (blocksPerPage_),
                 allocator (allocator_) {
-            if (blockSize < sizeof (Page::Block) || blocksPerPage == 0 || allocator == nullptr) {
+            if (blockSize < MIN_BLOCK_SIZE || blocksPerPage == 0 || allocator == nullptr) {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
                     THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
             }

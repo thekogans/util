@@ -81,8 +81,8 @@ namespace thekogans {
                             UI32_SIZE + // magic
                         #endif // defined (THEKOGANS_UTIL_FILE_ALLOCATOR_BLOCK_INFO_USE_MAGIC)
                             UI32_SIZE +
-                            UI64_SIZE +
-                            UI64_SIZE
+                            UI64_SIZE /*+
+                            UI64_SIZE nextOffset is ommited because it shares space with user data.*/
                     };
 
                     Header (
@@ -93,6 +93,19 @@ namespace thekogans {
                         size (size_),
                         nextOffset (nextOffset_) {}
 
+                    inline bool IsFree () const {
+                        return Flags32 (flags).Test (FLAGS_FREE);
+                    }
+                    inline void SetFree (bool isFree) {
+                        Flags32 (flags).Set (FLAGS_FREE, isFree);
+                    }
+                    inline bool IsFixed () const {
+                        return Flags32 (flags).Test (FLAGS_FIXED);
+                    }
+                    inline void SetFixed (bool fixed) {
+                        Flags32 (flags).Set (FLAGS_FIXED, fixed);
+                    }
+
                     void Read (
                         File &file,
                         ui64 offset);
@@ -101,6 +114,7 @@ namespace thekogans {
                         ui64 offset);
                 } header;
                 struct _LIB_THEKOGANS_UTIL_DECL Footer {
+                    ui32 flags;
                     ui64 size;
 
                     enum {
@@ -108,11 +122,28 @@ namespace thekogans {
                         #if defined (THEKOGANS_UTIL_FILE_ALLOCATOR_BLOCK_INFO_USE_MAGIC)
                             UI32_SIZE + // magic
                         #endif // defined (THEKOGANS_UTIL_FILE_ALLOCATOR_BLOCK_INFO_USE_MAGIC)
+                            UI32_SIZE +
                             UI64_SIZE
                     };
 
-                    Footer (ui64 size_ = 0) :
+                    Footer (
+                        ui32 flags_ = 0,
+                        ui64 size_ = 0) :
+                        flags (flags_),
                         size (size_) {}
+
+                    inline bool IsFree () const {
+                        return Flags32 (flags).Test (FLAGS_FREE);
+                    }
+                    inline void SetFree (bool isFree) {
+                        Flags32 (flags).Set (FLAGS_FREE, isFree);
+                    }
+                    inline bool IsFixed () const {
+                        return Flags32 (flags).Test (FLAGS_FIXED);
+                    }
+                    inline void SetFixed (bool fixed) {
+                        Flags32 (flags).Set (FLAGS_FIXED, fixed);
+                    }
 
                     void Read (
                         File &file,
@@ -140,7 +171,7 @@ namespace thekogans {
                     file (file_),
                     offset (offset_),
                     header (flags, size, nextOffset),
-                    footer (size) {}
+                    footer (flags, size) {}
 
                 inline ui64 GetOffset () const {
                     return offset;
@@ -156,16 +187,18 @@ namespace thekogans {
                 }
 
                 inline bool IsFree () const {
-                    return Flags32 (header.flags).Test (FLAGS_FREE);
+                    return header.IsFree ();
                 }
-                inline void SetFree (bool isFree) {
-                    Flags32 (header.flags).Set (FLAGS_FREE, isFree);
+                inline void SetFree (bool free) {
+                    header.SetFree (free);
+                    footer.SetFree (free);
                 }
                 inline bool IsFixed () const {
-                    return Flags32 (header.flags).Test (FLAGS_FIXED);
+                    return header.IsFixed ();
                 }
                 inline void SetFixed (bool fixed) {
-                    Flags32 (header.flags).Set (FLAGS_FIXED, fixed);
+                    header.SetFixed (fixed);
+                    footer.SetFixed (fixed);
                 }
 
                 inline ui64 GetSize () const {
@@ -191,6 +224,10 @@ namespace thekogans {
 
                 void Read ();
                 void Write ();
+
+                friend bool operator != (
+                    const Header &header,
+                    const Footer &footer);
 
                 /// \brief
                 /// BlockInfo is neither copy constructable, nor assignable.
@@ -295,8 +332,6 @@ namespace thekogans {
                     return Flags32 (flags).Test (FLAGS_FIXED);
                 }
             } header;
-            std::size_t minUserBlockSize;
-            ui64 minUserBlockOffset;
             Allocator::SharedPtr blockAllocator;
             Allocator::SharedPtr fixedAllocator;
             /// \struct BTree BTree.h thekogans/util/BTree.h
@@ -561,6 +596,16 @@ namespace thekogans {
             SpinLock spinLock;
 
         public:
+            enum {
+                /// \brief
+                /// Minimum user data size.
+                MIN_USER_DATA_SIZE = UI64_SIZE, // BlockInfo::Header::nextOffset
+                MIN_USER_DATA_OFFSET = Header::SIZE + BlockInfo::HEADER_SIZE,
+                /// \brief
+                /// Minimum block size.
+                MIN_BLOCK_SIZE = sizeof (BlockInfo::SIZE) + MIN_USER_DATA_SIZE
+            };
+
             FileAllocator (
                 const std::string &path,
                 std::size_t blockSize = 0,

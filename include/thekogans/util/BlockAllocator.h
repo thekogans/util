@@ -36,7 +36,7 @@ namespace thekogans {
         /// BlockAllocator is an adapter class. It takes a regular \see{Allocator} and
         /// turns it in to a fixed block allocator. Each block allocated by BlockAllocator
         /// is the same size. This makes BlockAllocator::Alloc and BlockAllocator::Free
-        /// run in O(1). Like all other allocators BlockAllocator is thread safe.
+        /// run in amortized O(1). Like all other allocators BlockAllocator is thread safe.
 
         struct _LIB_THEKOGANS_UTIL_DECL BlockAllocator : public Allocator {
             /// \brief
@@ -160,6 +160,9 @@ namespace thekogans {
 
         public:
             enum {
+                /// \brief
+                /// Minimum block size.
+                MIN_BLOCK_SIZE = sizeof (Page::Block),
                 /// \brief
                 /// Default number of blocks per page.
                 DEFAULT_BLOCKS_PER_PAGE = 256
