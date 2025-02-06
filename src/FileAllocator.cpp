@@ -222,9 +222,7 @@ namespace thekogans {
                         allocator)),
                 header (
                     blockSize > 0 ? Header::FLAGS_FIXED : 0,
-                    blockSize > 0 ?
-                        (ui32)blockSize :
-                        (ui32)BTree::Node::FileSize (blocksPerPage)),
+                    (ui32)(blockSize > 0 ? blockSize : BTree::Node::FileSize (blocksPerPage))),
                 minUserBlockSize (16),
                 minUserBlockOffset (Header::SIZE + BlockInfo::HEADER_SIZE) {
             if (file.GetSize () >= Header::SIZE) {
