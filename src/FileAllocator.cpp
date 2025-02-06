@@ -144,7 +144,7 @@ namespace thekogans {
             Resize (
                 length,
                 allocator.IsFixed () || !block.IsFixed () ?
-                allocator.blockAllocator : allocator.fixedAllocator);
+                    allocator.blockAllocator : allocator.fixedAllocator);
         }
 
         std::size_t FileAllocator::BlockBuffer::Read (
