@@ -15,12 +15,21 @@
 // You should have received a copy of the GNU General Public License
 // along with libthekogans_util. If not, see <http://www.gnu.org/licenses/>.
 
+#if defined (THEKOGANS_UTIL_TYPE_Static)
+    #include "thekogans/util/File.h"
+#endif // defined (THEKOGANS_UTIL_TYPE_Static)
 #include "thekogans/util/RandomSeekSerializer.h"
 
 namespace thekogans {
     namespace util {
 
         THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_BASE (thekogans::util::RandomSeekSerializer)
+
+    #if defined (THEKOGANS_UTIL_TYPE_Static)
+        void RandomSeekSerializer::StaticInit () {
+            File::StaticInit ();
+        }
+    #endif // defined (THEKOGANS_UTIL_TYPE_Static)
 
     } // namespace util
 } // namespace thekogans

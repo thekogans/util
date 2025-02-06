@@ -18,12 +18,23 @@
 #include <cassert>
 #include <cwchar>
 #include "thekogans/util/Exception.h"
+#if defined (THEKOGANS_UTIL_TYPE_Static)
+    #include "thekogans/util/Buffer.h"
+    #include "thekogans/util/RandomSeekSerializer.h"
+#endif // defined (THEKOGANS_UTIL_TYPE_Static)
 #include "thekogans/util/Serializer.h"
 
 namespace thekogans {
     namespace util {
 
         THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_BASE (thekogans::util::Serializer)
+
+    #if defined (THEKOGANS_UTIL_TYPE_Static)
+        void Serializer::StaticInit () {
+            Buffer::StaticInit ();
+            RandomSeekSerializer::StaticInit ();
+        }
+    #endif // defined (THEKOGANS_UTIL_TYPE_Static)
 
         Serializer &Serializer::operator << (Endianness value) {
             if (Write (&value, ENDIANNESS_SIZE) != ENDIANNESS_SIZE) {

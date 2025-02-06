@@ -35,6 +35,16 @@ namespace thekogans {
             /// Declare \see{RefCounted} pointers.
             THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE_BASE (RandomSeekSerializer)
 
+        #if defined (THEKOGANS_UTIL_TYPE_Static)
+            /// \brief
+            /// Register all known bases. This method is meant to be added
+            /// to as new RandomSeekSerializer bases are added to the system.
+            /// NOTE: If you create RandomSeekSerializer bases (see \see{Hash},
+            /// \see{Allocator}, \see{Serializer}...) you should add your own
+            /// static initializer to register their derived classes.
+            static void StaticInit ();
+        #endif // defined (THEKOGANS_UTIL_TYPE_Static)
+
             /// \brief
             /// ctor.
             /// \param[in] endianness Serializer endianness.

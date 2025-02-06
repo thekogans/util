@@ -20,6 +20,7 @@
     #include "thekogans/util/Allocator.h"
     #include "thekogans/util/Hash.h"
     #include "thekogans/util/Logger.h"
+    #include "thekogans/util/Serializer.h"
     #include "thekogans/util/Serializable.h"
 #endif // defined (THEKOGANS_UTIL_TYPE_Static)
 #include "thekogans/util/DynamicCreatable.h"
@@ -35,6 +36,7 @@ namespace thekogans {
             Allocator::StaticInit ();
             Hash::StaticInit ();
             Logger::StaticInit ();
+            Serializer::StaticInit ();
             Serializable::StaticInit ();
         }
     #else // defined (THEKOGANS_UTIL_TYPE_Static)

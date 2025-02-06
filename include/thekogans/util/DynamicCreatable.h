@@ -285,7 +285,8 @@ namespace thekogans {
             /// DynamicCreatable derived types must be default constructable,
             /// but there are times when you need to provide specific instance
             /// parameters. By deriving a class from Parameters and passing
-            /// it to CreateType you can shortcircuit the default behavior.
+            /// it to CreateType you can hook in to the creation pipeline and
+            /// change the default behavior.
             struct _LIB_THEKOGANS_UTIL_DECL Parameters : public virtual RefCounted {
                 /// \brief
                 /// Declare \see{RefCounted} pointers.
@@ -501,6 +502,18 @@ namespace thekogans {
             THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_BASES_END (_T)\
             THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_BASE_MAP_INIT (_T)
 
+        /// \def THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_CREATE(_T)
+        /// Common implementation of the type factory. This macro is private
+        #define THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_CREATE(_T)\
+            thekogans::util::DynamicCreatable::SharedPtr _T::Create (\
+                    thekogans::util::DynamicCreatable::Parameters::SharedPtr parameters) {\
+                thekogans::util::DynamicCreatable::SharedPtr dynamicCreatable (new _T);\
+                if (parameters != nullptr) {\
+                    parameters->Apply (dynamicCreatable);\
+                }\
+                return dynamicCreatable;\
+            }
+
         /// \def THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE(_T, ...)
         /// Dynamic discovery macro. Instantiate one of these in the class cpp file.
         ///
@@ -519,14 +532,7 @@ namespace thekogans {
         /// \endcode
         #define THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE(_T, ...)\
             THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_COMMON (_T, __VA_ARGS__)\
-            thekogans::util::DynamicCreatable::SharedPtr _T::Create (\
-                    thekogans::util::DynamicCreatable::Parameters::SharedPtr parameters) {\
-                thekogans::util::DynamicCreatable::SharedPtr dynamicCreatable (new _T);\
-                if (parameters != nullptr) {\
-                    parameters->Apply (dynamicCreatable);\
-                }\
-                return dynamicCreatable;\
-            }
+            THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_CREATE(_T)
 
         /// \def THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_T(_T, ...)
         /// Dynamic discovery macro. Instantiate one of these in the class cpp file.
@@ -547,14 +553,7 @@ namespace thekogans {
         #define THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_T(_T, ...)\
             THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_COMMON (_T, __VA_ARGS__)\
             template<>\
-            thekogans::util::DynamicCreatable::SharedPtr _T::Create (\
-                    thekogans::util::DynamicCreatable::Parameters::SharedPtr parameters) {\
-                thekogans::util::DynamicCreatable::SharedPtr dynamicCreatable (new _T);\
-                if (parameters != nullptr) {\
-                    parameters->Apply (dynamicCreatable);\
-                }\
-                return dynamicCreatable;\
-            }
+            THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_CREATE(_T)
 
         /// \def THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_SINGLETON(_T, ...)
         /// Dynamic discovery macro. Instantiate one of these in the class cpp file.
