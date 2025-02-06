@@ -232,6 +232,10 @@ namespace thekogans {
                 Save ();
             }
             root = Node::Alloc (*this, header.rootOffset);
+            if (header.rootOffset != root->offset) {
+                header.rootOffset = root->offset;
+                Save ();
+            }
         }
 
         FileAllocator::BTree::~BTree () {

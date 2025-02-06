@@ -278,12 +278,12 @@ namespace thekogans {
 
         ui64 FileAllocator::GetRootOffset () {
             LockGuard<SpinLock> guard (spinLock);
-            return header.rootOffset;
+            return header.rootOffset + BlockInfo::HEADER_SIZE;
         }
 
         void FileAllocator::SetRootOffset (ui64 rootOffset) {
             LockGuard<SpinLock> guard (spinLock);
-            header.rootOffset = rootOffset;
+            header.rootOffset = rootOffset - BlockInfo::HEADER_SIZE;
             Save ();
         }
 
