@@ -200,11 +200,6 @@ namespace thekogans {
                 fileAllocator (fileAllocator_),
                 offset (offset_),
                 header ((ui32)entriesPerNode),
-                nodeAllocator (
-                    BlockAllocator::Pool::Instance ()->GetBlockAllocator (
-                        Node::Size (entriesPerNode),
-                        nodesPerPage,
-                        allocator)),
                 root (nullptr) {
             if (offset != 0) {
                 BlockBuffer buffer (fileAllocator, offset, Header::SIZE);
@@ -213,13 +208,6 @@ namespace thekogans {
                 buffer >> magic;
                 if (magic == MAGIC32) {
                     buffer >> header;
-                    if (header.entriesPerNode != entriesPerNode) {
-                        nodeAllocator =
-                            BlockAllocator::Pool::Instance ()->GetBlockAllocator (
-                                Node::Size (header.entriesPerNode),
-                                nodesPerPage,
-                                allocator);
-                    }
                 }
                 else {
                     THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
@@ -231,6 +219,11 @@ namespace thekogans {
                 offset = fileAllocator.AllocFixedBlock ();
                 Save ();
             }
+            nodeAllocator =
+                BlockAllocator::Pool::Instance ()->GetBlockAllocator (
+                    Node::Size (header.entriesPerNode),
+                    nodesPerPage,
+                    allocator);
             root = Node::Alloc (*this, header.rootOffset);
             if (header.rootOffset != root->offset) {
                 header.rootOffset = root->offset;

@@ -208,18 +208,6 @@ namespace thekogans {
                 std::size_t blocksPerPage,
                 Allocator::SharedPtr allocator) :
                 file (HostEndian, path, SimpleFile::ReadWrite | SimpleFile::Create),
-                blockAllocator (
-                    blockSize > 0 ?
-                        BlockAllocator::Pool::Instance ()->GetBlockAllocator (
-                            blockSize,
-                            blocksPerPage,
-                            allocator) :
-                        allocator),
-                fixedAllocator (
-                    BlockAllocator::Pool::Instance ()->GetBlockAllocator (
-                        blockSize > 0 ? blockSize : BTree::Node::FileSize (blocksPerPage),
-                        blocksPerPage,
-                        allocator)),
                 header (
                     blockSize > 0 ? Header::FLAGS_FIXED : 0,
                     (ui32)(blockSize > 0 ? blockSize : BTree::Node::FileSize (blocksPerPage))),
@@ -242,25 +230,23 @@ namespace thekogans {
                         path.c_str ());
                 }
                 file >> header;
-                if (header.blockSize != blockSize) {
-                    blockAllocator = header.blockSize > 0 ?
-                        BlockAllocator::Pool::Instance ()->GetBlockAllocator (
-                            header.blockSize,
-                            blocksPerPage,
-                            allocator) :
-                        allocator;
-                    fixedAllocator =
-                        BlockAllocator::Pool::Instance ()->GetBlockAllocator (
-                            header.blockSize > 0 ?
-                                header.blockSize :
-                                BTree::Node::FileSize (blocksPerPage),
-                            blocksPerPage,
-                            allocator);
-                }
             }
             else {
                 Save ();
             }
+            blockAllocator = header.blockSize > 0 ?
+                BlockAllocator::Pool::Instance ()->GetBlockAllocator (
+                    header.blockSize,
+                    blocksPerPage,
+                    allocator) :
+                allocator;
+            fixedAllocator =
+                BlockAllocator::Pool::Instance ()->GetBlockAllocator (
+                    header.blockSize > 0 ?
+                    header.blockSize :
+                    BTree::Node::FileSize (blocksPerPage),
+                    blocksPerPage,
+                    allocator);
             if (!IsFixed ()) {
                 btree.Reset (
                     new BTree (

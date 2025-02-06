@@ -262,8 +262,6 @@ namespace thekogans {
 
         private:
             SimpleFile file;
-            Allocator::SharedPtr blockAllocator;
-            Allocator::SharedPtr fixedAllocator;
             struct Header {
                 enum {
                     FLAGS_FIXED = 1
@@ -299,6 +297,8 @@ namespace thekogans {
             } header;
             std::size_t minUserBlockSize;
             ui64 minUserBlockOffset;
+            Allocator::SharedPtr blockAllocator;
+            Allocator::SharedPtr fixedAllocator;
             /// \struct BTree BTree.h thekogans/util/BTree.h
             ///
             /// \brief
