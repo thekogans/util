@@ -139,7 +139,7 @@ namespace thekogans {
                 block.Read ();
             }
             if (length == 0) {
-                length = block.GetSize () - BlockInfo::SIZE;
+                length = block.GetUserSize ();
             }
             Resize (
                 length,
@@ -153,11 +153,11 @@ namespace thekogans {
             LockedFilePtr file (allocator);
             BlockInfo block (*file, offset - BlockInfo::HEADER_SIZE);
             block.Read ();
-            if (blockOffset < block.GetSize () - BlockInfo::SIZE) {
+            if (blockOffset < block.GetUserSize ()) {
                 if (length == 0) {
                     length = GetDataAvailableForWriting ();
                 }
-                ui64 availableToRead = block.GetSize () - BlockInfo::SIZE - blockOffset;
+                ui64 availableToRead = block.GetUserSize () - blockOffset;
                 if (availableToRead > length) {
                     availableToRead = length;
                 }
@@ -173,11 +173,11 @@ namespace thekogans {
             LockedFilePtr file (allocator);
             BlockInfo block (*file, offset - BlockInfo::HEADER_SIZE);
             block.Read ();
-            if (blockOffset < block.GetSize () - BlockInfo::SIZE) {
+            if (blockOffset < block.GetUserSize ()) {
                 if (length == 0) {
                     length = GetDataAvailableForReading ();
                 }
-                ui64 availableToWrite = block.GetSize () - BlockInfo::SIZE - blockOffset;
+                ui64 availableToWrite = block.GetUserSize () - blockOffset;
                 if (availableToWrite > length) {
                     availableToWrite = length;
                 }
@@ -370,34 +370,6 @@ namespace thekogans {
                         file->SetSize (block.GetOffset ());
                     }
                 }
-            }
-            else {
-                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
-            }
-        }
-
-        bool FileAllocator::IsBlockFixed (ui64 offset) {
-            if (offset >= minUserBlockOffset) {
-                offset -= BlockInfo::HEADER_SIZE;
-                LockedFilePtr file (*this);
-                BlockInfo block (*file, offset);
-                block.Read ();
-                return block.IsFixed ();
-            }
-            else {
-                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
-            }
-        }
-
-        std::size_t FileAllocator::GetBlockSize (ui64 offset) {
-            if (offset >= minUserBlockOffset) {
-                offset -= BlockInfo::HEADER_SIZE;
-                LockedFilePtr file (*this);
-                BlockInfo block (*file, offset);
-                block.Read ();
-                return block.GetSize () - BlockInfo::SIZE;
             }
             else {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (

@@ -171,6 +171,9 @@ namespace thekogans {
                 inline ui64 GetSize () const {
                     return header.size;
                 }
+                inline ui64 GetUserSize () const {
+                    return header.size - SIZE;
+                }
                 inline void SetSize (ui64 size) {
                     header.size = size;
                     footer.size = size;
@@ -577,8 +580,6 @@ namespace thekogans {
 
             ui64 Alloc (std::size_t size);
             void Free (ui64 offset);
-            bool IsBlockFixed (ui64 offset);
-            std::size_t GetBlockSize (ui64 offset);
 
         protected:
             void Save ();
