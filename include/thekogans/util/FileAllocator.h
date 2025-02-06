@@ -599,7 +599,7 @@ namespace thekogans {
             enum {
                 /// \brief
                 /// Minimum user data size.
-                MIN_USER_DATA_SIZE = UI64_SIZE, // BlockInfo::Header::nextOffset
+                MIN_USER_DATA_SIZE = 32, // BlockInfo::Header::nextOffset
                 MIN_USER_DATA_OFFSET = Header::SIZE + BlockInfo::HEADER_SIZE,
                 /// \brief
                 /// Minimum block size.
@@ -627,10 +627,10 @@ namespace thekogans {
             void Free (ui64 offset);
 
         protected:
-            void Save ();
-
             ui64 AllocFixedBlock ();
             void FreeFixedBlock (ui64 offset);
+
+            void Save ();
 
             friend Serializer &operator << (
                 Serializer &serializer,

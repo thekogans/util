@@ -162,41 +162,43 @@ namespace thekogans {
         std::size_t FileAllocator::BlockBuffer::Read (
                 std::size_t blockOffset,
                 std::size_t length) {
-            LockedFilePtr file (allocator);
-            BlockInfo block (*file, offset - BlockInfo::HEADER_SIZE);
-            block.Read ();
+            std::size_t counRead = 0;
             if (blockOffset < block.GetUserSize ()) {
-                if (length == 0) {
+                if (length == 0 || length > GetDataAvailableForWriting ()) {
                     length = GetDataAvailableForWriting ();
                 }
-                ui64 availableToRead = block.GetUserSize () - blockOffset;
-                if (availableToRead > length) {
-                    availableToRead = length;
+                if (length > 0) {
+                    ui64 availableToRead = block.GetUserSize () - blockOffset;
+                    if (availableToRead > length) {
+                        availableToRead = length;
+                    }
+                    LockedFilePtr file (allocator);
+                    file->Seek (offset + blockOffset, SEEK_SET);
+                    counRead = AdvanceWriteOffset (file->Read (GetWritePtr (), availableToRead));
                 }
-                file->Seek (offset + blockOffset, SEEK_SET);
-                return AdvanceWriteOffset (file->Read (GetWritePtr (), availableToRead));
             }
-            return 0;
+            return counRead;
         }
 
         std::size_t FileAllocator::BlockBuffer::Write (
                 std::size_t blockOffset,
                 std::size_t length) {
-            LockedFilePtr file (allocator);
-            BlockInfo block (*file, offset - BlockInfo::HEADER_SIZE);
-            block.Read ();
+            std::size_t counWritten = 0;
             if (blockOffset < block.GetUserSize ()) {
-                if (length == 0) {
+                if (length == 0 || length > GetDataAvailableForReading ()) {
                     length = GetDataAvailableForReading ();
                 }
-                ui64 availableToWrite = block.GetUserSize () - blockOffset;
-                if (availableToWrite > length) {
-                    availableToWrite = length;
+                if (length > 0) {
+                    ui64 availableToWrite = block.GetUserSize () - blockOffset;
+                    if (availableToWrite > length) {
+                        availableToWrite = length;
+                    }
+                    LockedFilePtr file (allocator);
+                    file->Seek (offset + blockOffset, SEEK_SET);
+                    counWritten = AdvanceReadOffset (file->Write (GetReadPtr (), availableToWrite));
                 }
-                file->Seek (offset + blockOffset, SEEK_SET);
-                return AdvanceReadOffset (file->Write (GetReadPtr (), availableToWrite));
             }
-            return 0;
+            return counWritten;
         }
 
         FileAllocator::SharedPtr FileAllocator::Pool::GetFileAllocator (
@@ -253,8 +255,8 @@ namespace thekogans {
             fixedAllocator =
                 BlockAllocator::Pool::Instance ()->GetBlockAllocator (
                     header.blockSize > 0 ?
-                    header.blockSize :
-                    BTree::Node::FileSize (blocksPerPage),
+                        header.blockSize :
+                        BTree::Node::FileSize (blocksPerPage),
                     blocksPerPage,
                     allocator);
             if (!IsFixed ()) {
@@ -373,11 +375,6 @@ namespace thekogans {
             }
         }
 
-        void FileAllocator::Save () {
-            file.Seek (0, SEEK_SET);
-            file << MAGIC32 << header;
-        }
-
         ui64 FileAllocator::AllocFixedBlock () {
             ui64 offset = 0;
             if (header.fixedFreeListHeadOffset != 0) {
@@ -429,6 +426,11 @@ namespace thekogans {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
                     THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
             }
+        }
+
+        void FileAllocator::Save () {
+            file.Seek (0, SEEK_SET);
+            file << MAGIC32 << header;
         }
 
         inline Serializer &operator << (
