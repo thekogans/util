@@ -198,22 +198,13 @@ namespace thekogans {
             private:
                 FileAllocator &allocator;
                 ui64 offset;
+                BlockInfo block;
 
             public:
                 BlockBuffer (
                     FileAllocator &allocator_,
                     ui64 offset_,
-                    std::size_t length = 0,
-                    std::size_t readOffset = 0,
-                    std::size_t writeOffset = 0) :
-                    Buffer (
-                        allocator_.file.endianness,
-                        length == 0 ? allocator_.GetBlockSize (offset_) : length,
-                        readOffset,
-                        writeOffset,
-                        allocator_.blockAllocator),
-                    allocator (allocator_),
-                    offset (offset_) {}
+                    std::size_t length = 0);
 
                 std::size_t Read (
                     std::size_t blockOffset = 0,
@@ -269,6 +260,7 @@ namespace thekogans {
         private:
             SimpleFile file;
             Allocator::SharedPtr blockAllocator;
+            Allocator::SharedPtr fixedAllocator;
             struct Header {
                 enum {
                     FLAGS_FIXED = 1
@@ -585,6 +577,7 @@ namespace thekogans {
 
             ui64 Alloc (std::size_t size);
             void Free (ui64 offset);
+            bool IsBlockFixed (ui64 offset);
             std::size_t GetBlockSize (ui64 offset);
 
         protected:

@@ -126,6 +126,27 @@ namespace thekogans {
             footer.Write (file, offset + header.size - Footer::SIZE);
         }
 
+        FileAllocator::BlockBuffer::BlockBuffer (
+                FileAllocator &allocator_,
+                ui64 offset_,
+                std::size_t length) :
+                Buffer (allocator_.file.endianness),
+                allocator (allocator_),
+                offset (offset_),
+                block (allocator.file, offset - BlockInfo::HEADER_SIZE) {
+            {
+                LockedFilePtr file (allocator);
+                block.Read ();
+            }
+            if (length == 0) {
+                length = block.GetSize () - BlockInfo::SIZE;
+            }
+            Resize (
+                length,
+                allocator.IsFixed () || !block.IsFixed () ?
+                allocator.blockAllocator : allocator.fixedAllocator);
+        }
+
         std::size_t FileAllocator::BlockBuffer::Read (
                 std::size_t blockOffset,
                 std::size_t length) {
@@ -194,6 +215,11 @@ namespace thekogans {
                             blocksPerPage,
                             allocator) :
                         allocator),
+                fixedAllocator (
+                    BlockAllocator::Pool::Instance ()->GetBlockAllocator (
+                        blockSize > 0 ? blockSize : BTree::Node::FileSize (blocksPerPage),
+                        blocksPerPage,
+                        allocator)),
                 header (
                     blockSize > 0 ? Header::FLAGS_FIXED : 0,
                     blockSize > 0 ?
@@ -225,6 +251,13 @@ namespace thekogans {
                             blocksPerPage,
                             allocator) :
                         allocator;
+                    fixedAllocator =
+                        BlockAllocator::Pool::Instance ()->GetBlockAllocator (
+                            header.blockSize > 0 ?
+                                header.blockSize :
+                                BTree::Node::FileSize (blocksPerPage),
+                            blocksPerPage,
+                            allocator);
                 }
             }
             else {
@@ -339,6 +372,20 @@ namespace thekogans {
                         file->SetSize (block.GetOffset ());
                     }
                 }
+            }
+            else {
+                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
+            }
+        }
+
+        bool FileAllocator::IsBlockFixed (ui64 offset) {
+            if (offset >= minUserBlockOffset) {
+                offset -= BlockInfo::HEADER_SIZE;
+                LockedFilePtr file (*this);
+                BlockInfo block (*file, offset);
+                block.Read ();
+                return block.IsFixed ();
             }
             else {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
