@@ -115,7 +115,7 @@ namespace thekogans {
         }
 
         void FileAllocator:: FileAllocator::BlockInfo::Next (BlockInfo &next) {
-            next.offset = offset + header.size;
+            next.offset = offset + header.size + FOOTER_SIZE;
             next.Read ();
         }
 
