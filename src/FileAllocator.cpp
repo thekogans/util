@@ -310,8 +310,9 @@ namespace thekogans {
                         offset = result.second;
                         result.first -= size;
                         if (result.first >= BlockInfo::SIZE + MIN_USER_DATA_SIZE) {
-                            btree->Add (BTree::Key (result.first, offset + size));
-                            BlockInfo block (*file, offset + size,
+                            btree->Add (
+                                BTree::Key (result.first, offset + size + BlockInfo::SIZE));
+                            BlockInfo block (*file, offset + size + BlockInfo::SIZE,
                                 BlockInfo::FLAGS_FREE, result.first);
                             block.Write ();
                         }
