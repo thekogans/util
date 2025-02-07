@@ -180,10 +180,10 @@ namespace thekogans {
                     offset = offset_;
                 }
                 inline bool IsFirst () const {
-                    return GetOffset () == FileAllocator::Header::SIZE;
+                    return GetOffset () == FileAllocator::Header::SIZE + Header::SIZE;
                 }
                 inline bool IsLast () const {
-                    return GetOffset () + GetSize () == file.GetSize ();
+                    return GetOffset () + GetSize () + Footer::SIZE == file.GetSize ();
                 }
 
                 inline bool IsFree () const {
@@ -203,9 +203,6 @@ namespace thekogans {
 
                 inline ui64 GetSize () const {
                     return header.size;
-                }
-                inline ui64 GetUserSize () const {
-                    return header.size - SIZE;
                 }
                 inline void SetSize (ui64 size) {
                     header.size = size;
@@ -305,8 +302,8 @@ namespace thekogans {
                 };
                 ui32 flags;
                 ui32 blockSize;
-                ui64 fixedFreeListHeadOffset;
-                ui64 btreeHeaderOffset;
+                ui64 fixedFreeListOffset;
+                ui64 btreeOffset;
                 ui64 rootOffset;
 
                 enum {
@@ -324,8 +321,8 @@ namespace thekogans {
                     ui32 blockSize_ = 0) :
                     flags (flags_),
                     blockSize (blockSize_),
-                    fixedFreeListHeadOffset (0),
-                    btreeHeaderOffset (0),
+                    fixedFreeListOffset (0),
+                    btreeOffset (0),
                     rootOffset (0) {}
 
                 inline bool IsFixed () const {
