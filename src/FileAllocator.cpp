@@ -172,9 +172,12 @@ namespace thekogans {
                     if (availableToRead > length) {
                         availableToRead = length;
                     }
-                    LockedFilePtr file (allocator);
-                    file->Seek (offset + blockOffset, SEEK_SET);
-                    counRead = AdvanceWriteOffset (file->Read (GetWritePtr (), availableToRead));
+                    {
+                        LockedFilePtr file (allocator);
+                        file->Seek (offset + blockOffset, SEEK_SET);
+                        counRead = AdvanceWriteOffset (
+                            file->Read (GetWritePtr (), availableToRead));
+                    }
                 }
             }
             return counRead;
@@ -193,9 +196,12 @@ namespace thekogans {
                     if (availableToWrite > length) {
                         availableToWrite = length;
                     }
-                    LockedFilePtr file (allocator);
-                    file->Seek (offset + blockOffset, SEEK_SET);
-                    counWritten = AdvanceReadOffset (file->Write (GetReadPtr (), availableToWrite));
+                    {
+                        LockedFilePtr file (allocator);
+                        file->Seek (offset + blockOffset, SEEK_SET);
+                        counWritten = AdvanceReadOffset (
+                            file->Write (GetReadPtr (), availableToWrite));
+                    }
                 }
             }
             return counWritten;
