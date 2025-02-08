@@ -595,11 +595,11 @@ namespace thekogans {
         public:
             enum {
                 /// \brief
+                /// Based on the layout of the file, the smallest valid user offset is;
+                MIN_OFFSET = Header::SIZE + BlockInfo::HEADER_SIZE,
+                /// \brief
                 /// Minimum user data size.
                 MIN_USER_DATA_SIZE = 32,
-                /// \brief
-                /// Based on the layout of the file, the smallest valid user offset is;
-                MIN_USER_DATA_OFFSET = Header::SIZE + BlockInfo::HEADER_SIZE,
                 /// \brief
                 /// Minimum block size.
                 /// BlockInfo::SIZE happens to be 32 bytes, together with 32 for
