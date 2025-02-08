@@ -163,7 +163,7 @@ namespace thekogans {
         std::size_t FileAllocator::BlockBuffer::Read (
                 std::size_t blockOffset,
                 std::size_t length) {
-            std::size_t counRead = 0;
+            std::size_t countRead = 0;
             if (blockOffset < block.GetSize ()) {
                 if (length == 0 || length > GetDataAvailableForWriting ()) {
                     length = GetDataAvailableForWriting ();
@@ -176,18 +176,18 @@ namespace thekogans {
                     {
                         LockedFilePtr file (allocator);
                         file->Seek (offset + blockOffset, SEEK_SET);
-                        counRead = AdvanceWriteOffset (
+                        countRead = AdvanceWriteOffset (
                             file->Read (GetWritePtr (), availableToRead));
                     }
                 }
             }
-            return counRead;
+            return countRead;
         }
 
         std::size_t FileAllocator::BlockBuffer::Write (
                 std::size_t blockOffset,
                 std::size_t length) {
-            std::size_t counWritten = 0;
+            std::size_t countWritten = 0;
             if (blockOffset < block.GetSize ()) {
                 if (length == 0 || length > GetDataAvailableForReading ()) {
                     length = GetDataAvailableForReading ();
@@ -200,12 +200,12 @@ namespace thekogans {
                     {
                         LockedFilePtr file (allocator);
                         file->Seek (offset + blockOffset, SEEK_SET);
-                        counWritten = AdvanceReadOffset (
+                        countWritten = AdvanceReadOffset (
                             file->Write (GetReadPtr (), availableToWrite));
                     }
                 }
             }
-            return counWritten;
+            return countWritten;
         }
 
         FileAllocator::SharedPtr FileAllocator::Pool::GetFileAllocator (
