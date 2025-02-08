@@ -356,8 +356,6 @@ namespace thekogans {
 namespace thekogans {
     namespace util {
 
-        /// \struct ByteSwap ByteSwap.h thekogans/util/ByteSwap.h
-        ///
         /// \brief
         /// Implements a ByteSwap template to deal with host endianess.
         ///
