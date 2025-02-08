@@ -253,7 +253,7 @@ namespace thekogans {
             else {
                 Save ();
             }
-            blockAllocator = header.blockSize > 0 ?
+            blockAllocator = IsFixed () ?
                 BlockAllocator::Pool::Instance ()->GetBlockAllocator (
                     header.blockSize,
                     blocksPerPage,
@@ -261,9 +261,7 @@ namespace thekogans {
                 allocator;
             fixedAllocator =
                 BlockAllocator::Pool::Instance ()->GetBlockAllocator (
-                    header.blockSize > 0 ?
-                        header.blockSize :
-                        BTree::Node::FileSize (blocksPerPage),
+                    header.blockSize :
                     blocksPerPage,
                     allocator);
             if (!IsFixed ()) {
@@ -328,7 +326,7 @@ namespace thekogans {
                     }
                     else {
                         offset = file->GetSize () + BlockInfo::HEADER_SIZE;
-                        file->SetSize (offset + BlockInfo::FOOTER_SIZE + size);
+                        file->SetSize (offset + size + BlockInfo::FOOTER_SIZE);
                     }
                     BlockInfo block (*file, offset, 0, size);
                     block.Write ();
@@ -387,18 +385,18 @@ namespace thekogans {
 
         ui64 FileAllocator::AllocFixedBlock () {
             ui64 offset = 0;
-            if (header.fixedFreeListOffset != 0) {
-                offset = header.fixedFreeListOffset;
+            if (header.freeBlockOffset != 0) {
+                offset = header.freeBlockOffset;
                 BlockInfo block (file, offset);
                 block.Read ();
                 if (block.IsFree () && block.IsFixed ()) {
-                    header.fixedFreeListOffset = block.GetNextOffset ();
+                    header.freeBlockOffset = block.GetNextOffset ();
                     Save ();
                 }
             }
             else {
                 offset = file.GetSize () + BlockInfo::HEADER_SIZE;
-                file.SetSize (offset + BlockInfo::FOOTER_SIZE + header.blockSize);
+                file.SetSize (offset + header.blockSize + BlockInfo::FOOTER_SIZE);
             }
             BlockInfo block (file, offset, BlockInfo::FLAGS_FIXED, header.blockSize);
             block.Write ();
@@ -416,9 +414,9 @@ namespace thekogans {
                 if (!block.IsFree () && block.IsFixed ()) {
                     if (!block.IsLast ()) {
                         block.SetFree (true);
-                        block.SetNextOffset (header.fixedFreeListOffset);
+                        block.SetNextOffset (header.freeBlockOffset);
                         block.Write ();
-                        header.fixedFreeListOffset = offset;
+                        header.freeBlockOffset = offset;
                         Save ();
                     }
                     else {
@@ -443,7 +441,7 @@ namespace thekogans {
             serializer <<
                 header.flags <<
                 header.blockSize <<
-                header.fixedFreeListOffset <<
+                header.freeBlockOffset <<
                 header.btreeOffset <<
                 header.rootOffset;
             return serializer;
@@ -455,7 +453,7 @@ namespace thekogans {
             serializer >>
                 header.flags >>
                 header.blockSize >>
-                header.fixedFreeListOffset >>
+                header.freeBlockOffset >>
                 header.btreeOffset >>
                 header.rootOffset;
             return serializer;

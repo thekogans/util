@@ -306,7 +306,7 @@ namespace thekogans {
                 };
                 Flags32 flags;
                 ui32 blockSize;
-                ui64 fixedFreeListOffset;
+                ui64 freeBlockOffset;
                 ui64 btreeOffset;
                 ui64 rootOffset;
 
@@ -325,7 +325,7 @@ namespace thekogans {
                     ui32 blockSize_ = 0) :
                     flags (flags_),
                     blockSize (blockSize_),
-                    fixedFreeListOffset (0),
+                    freeBlockOffset (0),
                     btreeOffset (0),
                     rootOffset (0) {}
 
