@@ -80,8 +80,8 @@ namespace thekogans {
                         #if defined (THEKOGANS_UTIL_FILE_ALLOCATOR_BLOCK_INFO_USE_MAGIC)
                             UI32_SIZE + // magic
                         #endif // defined (THEKOGANS_UTIL_FILE_ALLOCATOR_BLOCK_INFO_USE_MAGIC)
-                            UI32_SIZE +
-                            UI64_SIZE /*+
+                            UI32_SIZE + // flags
+                            UI64_SIZE /* size +
                             UI64_SIZE nextBlockOffset is ommited because it shares space
                                       with user data. This makes Header and Footer
                                       identical as far as BlockInfo is concerned.
@@ -126,8 +126,8 @@ namespace thekogans {
                         #if defined (THEKOGANS_UTIL_FILE_ALLOCATOR_BLOCK_INFO_USE_MAGIC)
                             UI32_SIZE + // magic
                         #endif // defined (THEKOGANS_UTIL_FILE_ALLOCATOR_BLOCK_INFO_USE_MAGIC)
-                            UI32_SIZE +
-                            UI64_SIZE
+                            UI32_SIZE + // flags
+                            UI64_SIZE // size
                     };
 
                     Footer (
@@ -312,11 +312,11 @@ namespace thekogans {
                 enum {
                     SIZE =
                         UI32_SIZE + // magic
-                        UI32_SIZE +
-                        UI64_SIZE +
-                        UI64_SIZE +
-                        UI64_SIZE +
-                        UI64_SIZE
+                        UI32_SIZE + // flags
+                        UI64_SIZE + // blockSize
+                        UI64_SIZE + // freeBlockOffset
+                        UI64_SIZE + // btreeOffset
+                        UI64_SIZE // rootOffset
                 };
 
                 Header (
@@ -368,8 +368,8 @@ namespace thekogans {
                     enum {
                         SIZE =
                             UI32_SIZE + // magic
-                            UI32_SIZE +
-                            UI64_SIZE
+                            UI32_SIZE + // entriesPerNode
+                            UI64_SIZE // rootOffset
                     };
 
                     /// \brief
