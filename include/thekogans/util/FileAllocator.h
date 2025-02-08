@@ -73,7 +73,7 @@ namespace thekogans {
                 struct _LIB_THEKOGANS_UTIL_DECL Header {
                     Flags32 flags;
                     ui64 size;
-                    ui64 nextOffset;
+                    ui64 nextBlockOffset;
 
                     enum {
                         SIZE =
@@ -82,20 +82,20 @@ namespace thekogans {
                         #endif // defined (THEKOGANS_UTIL_FILE_ALLOCATOR_BLOCK_INFO_USE_MAGIC)
                             UI32_SIZE +
                             UI64_SIZE /*+
-                            UI64_SIZE nextOffset is ommited because it shares space
+                            UI64_SIZE nextBlockOffset is ommited because it shares space
                                       with user data. This makes Header and Footer
                                       identical as far as BlockInfo is concerned.
-                                      nextOffset is maintaned only in
+                                      nextBlockOffset is maintaned only in
                                       FileAllocator::AllocFixedBlock/FreeFixedBlock. */
                     };
 
                     Header (
                         Flags32 flags_ = 0,
                         ui64 size_ = 0,
-                        ui64 nextOffset_ = 0) :
+                        ui64 nextBlockOffset_ = 0) :
                         flags (flags_),
                         size (size_),
-                        nextOffset (nextOffset_) {}
+                        nextBlockOffset (nextBlockOffset_) {}
 
                     inline bool IsFree () const {
                         return flags.Test (FLAGS_FREE);
@@ -171,10 +171,10 @@ namespace thekogans {
                     ui64 offset_ = 0,
                     Flags32 flags = 0,
                     ui64 size = 0,
-                    ui64 nextOffset = 0) :
+                    ui64 nextBlockOffset = 0) :
                     file (file_),
                     offset (offset_),
-                    header (flags, size, nextOffset),
+                    header (flags, size, nextBlockOffset),
                     footer (flags, size) {}
 
                 inline ui64 GetOffset () const {
@@ -213,11 +213,11 @@ namespace thekogans {
                     footer.size = size;
                 }
 
-                inline ui64 GetNextOffset () const {
-                    return header.nextOffset;
+                inline ui64 GetNextBlockOffset () const {
+                    return header.nextBlockOffset;
                 }
-                inline void SetNextOffset (ui64 nextOffset) {
-                    header.nextOffset = nextOffset;
+                inline void SetNextBlockOffset (ui64 nextBlockOffset) {
+                    header.nextBlockOffset = nextBlockOffset;
                 }
 
                 void Prev (BlockInfo &prev);
@@ -605,7 +605,7 @@ namespace thekogans {
                 /// BlockInfo::SIZE happens to be 32 bytes, together with 32 for
                 /// MIN_USER_DATA_SIZE above means that the smallest block we can
                 /// allocate is 64 bytes.
-                MIN_BLOCK_SIZE = sizeof (BlockInfo::SIZE) + MIN_USER_DATA_SIZE
+                MIN_BLOCK_SIZE = BlockInfo::SIZE + MIN_USER_DATA_SIZE
             };
 
             FileAllocator (

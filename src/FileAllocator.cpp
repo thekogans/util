@@ -36,7 +36,7 @@ namespace thekogans {
         #endif // defined (THEKOGANS_UTIL_FILE_ALLOCATOR_BLOCK_INFO_USE_MAGIC)
                 file >> flags >> size;
                 if (IsFree () && IsFixed ()) {
-                    file >> nextOffset;
+                    file >> nextBlockOffset;
                 }
         #if defined (THEKOGANS_UTIL_FILE_ALLOCATOR_BLOCK_INFO_USE_MAGIC)
             }
@@ -58,7 +58,7 @@ namespace thekogans {
         #endif // defined (THEKOGANS_UTIL_FILE_ALLOCATOR_BLOCK_INFO_USE_MAGIC)
             file << flags << size;
             if (IsFree () && IsFixed ()) {
-                file << nextOffset;
+                file << nextBlockOffset;
             }
         }
 
@@ -309,14 +309,12 @@ namespace thekogans {
                         btree->Delete (result);
                         offset = result.second;
                         result.first -= size;
-                        if (result.first >= BlockInfo::SIZE + MIN_USER_DATA_SIZE) {
-                            btree->Add (
-                                BTree::Key (result.first, offset + size + BlockInfo::SIZE));
+                        if (result.first >= MIN_BLOCK_SIZE) {
+                            ui64 nextBlockOffset = offset + size + BlockInfo::SIZE;
+                            ui64 nextBlockSize = result.first - BlockInfo::SIZE;
+                            btree->Add (BTree::Key (nextBlockSize, nextBlockOffset));
                             BlockInfo block (
-                                *file,
-                                offset + size + BlockInfo::SIZE,
-                                BlockInfo::FLAGS_FREE,
-                                result.first);
+                                *file, nextBlockOffset, BlockInfo::FLAGS_FREE, nextBlockSize);
                             block.Write ();
                         }
                         else {
@@ -389,7 +387,7 @@ namespace thekogans {
                 BlockInfo block (file, offset);
                 block.Read ();
                 if (block.IsFree () && block.IsFixed ()) {
-                    header.freeBlockOffset = block.GetNextOffset ();
+                    header.freeBlockOffset = block.GetNextBlockOffset ();
                     Save ();
                 }
                 else {
@@ -418,7 +416,7 @@ namespace thekogans {
                 if (!block.IsFree () && block.IsFixed ()) {
                     if (!block.IsLast ()) {
                         block.SetFree (true);
-                        block.SetNextOffset (header.freeBlockOffset);
+                        block.SetNextBlockOffset (header.freeBlockOffset);
                         block.Write ();
                         header.freeBlockOffset = offset;
                         Save ();
