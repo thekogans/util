@@ -155,8 +155,9 @@ namespace thekogans {
             }
             Resize (
                 length,
-                allocator.IsFixed () || !block.IsFixed () ?
-                    allocator.blockAllocator : allocator.fixedAllocator);
+                block.IsFixed () ?
+                    allocator.fixedAllocator :
+                    allocator.blockAllocator);
         }
 
         std::size_t FileAllocator::BlockBuffer::Read (
@@ -232,7 +233,7 @@ namespace thekogans {
                     blockSize > 0 ? Header::FLAGS_FIXED : 0,
                     (ui32)(blockSize > 0 ? blockSize : BTree::Node::FileSize (blocksPerPage))),
                 btree (nullptr) {
-            if (file.GetSize () >= Header::SIZE) {
+            if (file.GetSize () > 0) {
                 file.Seek (0, SEEK_SET);
                 ui32 magic;
                 file >> magic;
@@ -261,7 +262,7 @@ namespace thekogans {
                 allocator;
             fixedAllocator =
                 BlockAllocator::Pool::Instance ()->GetBlockAllocator (
-                    header.blockSize :
+                    header.blockSize,
                     blocksPerPage,
                     allocator);
             if (!IsFixed ()) {

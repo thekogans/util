@@ -165,6 +165,10 @@ namespace thekogans {
         const std::size_t WCHAR_T_SIZE = sizeof (wchar_t);
 
         /// \brief
+        /// Serialized size of Endianness.
+        const std::size_t ENDIANNESS_SIZE = UI8_SIZE;
+
+        /// \brief
         /// Error code type.
         #define THEKOGANS_UTIL_POSIX_ERROR_CODE thekogans::util::i32
         /// \brief

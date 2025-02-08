@@ -18,6 +18,8 @@
 #if !defined (__thekogans_util_Environment_h)
 #define __thekogans_util_Environment_h
 
+#include <string>
+
 // thekogans libraries are used in environments that don't call
 // $TOOLCHAIN_COMMON_BIN/setenvironment, and don't use thekogans_make.
 // In that case try to deduce the environment we're running on top of.
@@ -350,5 +352,90 @@ namespace thekogans {
     #undef THEKOGANS_UTIL_BIG_ENDIAN
     #undef THEKOGANS_UTIL_ENDIAN_ORDER
 #endif // !defined (TOOLCHAIN_ENDIAN_Little) && !defined (TOOLCHAIN_ENDIAN_Big)
+
+namespace thekogans {
+    namespace util {
+
+        /// \struct ByteSwap ByteSwap.h thekogans/util/ByteSwap.h
+        ///
+        /// \brief
+        /// Implements a ByteSwap template to deal with host endianess.
+        ///
+        /// This code came from: http://www.cplusplus.com/forum/general/27544/\n
+        /// I cleaned it up a bit to use my type system, and style.
+        /// Thanks goes to the original author: Steve Lorimer
+        ///
+        /// Little-endian operating systems:\n
+        /// --------------------------------\n
+        /// Linux on x86, x64, Alpha and Itanium\n
+        /// Mac OS on x86, x64\n
+        /// Solaris on x86, x64, PowerPC\n
+        /// Tru64 on Alpha\n
+        /// Windows on x86, x64 and Itanium
+        ///
+        /// Big-endian operating systems:\n
+        /// -----------------------------\n
+        /// AIX on POWER\n
+        /// AmigaOS on PowerPC and 680x0\n
+        /// HP-UX on Itanium and PA-RISC\n
+        /// Linux on MIPS, SPARC, PA-RISC, POWER, PowerPC, and 680x0\n
+        /// Mac OS on PowerPC and 680x0\n
+        /// Solaris on SPARC\n
+
+        /// \enum
+        /// Endianess constants.
+        enum Endianness {
+            /// \brief
+            /// Unknown endian.
+            UnknownEndian,
+            /// \brief
+            /// Little endian.
+            LittleEndian,
+            /// \brief
+            /// Big endian.
+            BigEndian,
+            /// \brief
+            /// Network endian.
+            NetworkEndian = BigEndian,
+        #if defined (TOOLCHAIN_ENDIAN_Little)
+            /// \brief
+            /// Host endian is little endian.
+            HostEndian = LittleEndian,
+            /// \brief
+            /// Used by \see{Serializer} to swap bytes.
+            GuestEndian = BigEndian
+        #elif defined (TOOLCHAIN_ENDIAN_Big)
+            /// \brief
+            /// Host endian is big endian.
+            HostEndian = BigEndian,
+            /// \brief
+            /// Used by \see{Serializer} to swap bytes.
+            GuestEndian = LittleEndian
+        #else // defined (TOOLCHAIN_ENDIAN_Big)
+            #error "Unable to determine system endianness."
+        #endif // defined (TOOLCHAIN_ENDIAN_Little)
+        };
+
+        /// \brief
+        /// Given an endianness value, convert to a string representation.
+        /// \param[in] endianness One of the above Endianness
+        /// values (LittleEndian or BigEndian).
+        /// \return String representation of the given endianness value.
+        inline std::string EndiannessToString (Endianness endianness) {
+            return
+                endianness == LittleEndian ? "LittleEndian" :
+                endianness == BigEndian ? "BigEndian" : "UnknownEndian";
+        }
+        /// \brief
+        /// Given a string representation of an Endianness, return the value.
+        /// \param[in] endianness A string representing the Endianness value.
+        /// \return The corresponding Endianness value.
+        inline Endianness StringToEndianness (const std::string &endianness) {
+            return endianness == "LittleEndian" ? LittleEndian :
+                endianness == "BigEndian" ? BigEndian : UnknownEndian;
+        }
+
+    } // namespace util
+} // namespace thekogans
 
 #endif // !defined (__thekogans_util_Environment_h)

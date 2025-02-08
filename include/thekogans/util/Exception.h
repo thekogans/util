@@ -68,7 +68,7 @@ namespace thekogans {
 
         struct _LIB_THEKOGANS_UTIL_DECL Exception : public std::exception {
             /// \brief
-            /// Alias for std::unique_ptr<Filter>.
+            /// Alias for std::function<bool (const Exception & /*exception*/)>.
             using Filter = std::function<bool (const Exception & /*exception*/)>;
 
             /// \struct Exception::Location Exception.h thekogans/util/Exception.h
