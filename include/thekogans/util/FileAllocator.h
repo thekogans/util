@@ -71,7 +71,7 @@ namespace thekogans {
                 File &file;
                 ui64 offset;
                 struct _LIB_THEKOGANS_UTIL_DECL Header {
-                    ui32 flags;
+                    Flags32 flags;
                     ui64 size;
                     ui64 nextOffset;
 
@@ -82,11 +82,15 @@ namespace thekogans {
                         #endif // defined (THEKOGANS_UTIL_FILE_ALLOCATOR_BLOCK_INFO_USE_MAGIC)
                             UI32_SIZE +
                             UI64_SIZE /*+
-                            UI64_SIZE nextOffset is ommited because it shares space with user data.*/
+                            UI64_SIZE nextOffset is ommited because it shares space
+                                      with user data. This makes Header and Footer
+                                      identical as far as BlockInfo is concerned.
+                                      nextOffset is maintaned only in
+                                      FileAllocator::AllocFixedBlock/FreeFixedBlock. */
                     };
 
                     Header (
-                        ui32 flags_ = 0,
+                        Flags32 flags_ = 0,
                         ui64 size_ = 0,
                         ui64 nextOffset_ = 0) :
                         flags (flags_),
@@ -94,16 +98,16 @@ namespace thekogans {
                         nextOffset (nextOffset_) {}
 
                     inline bool IsFree () const {
-                        return Flags32 (flags).Test (FLAGS_FREE);
+                        return flags.Test (FLAGS_FREE);
                     }
-                    inline void SetFree (bool isFree) {
-                        Flags32 (flags).Set (FLAGS_FREE, isFree);
+                    inline void SetFree (bool free) {
+                        flags.Set (FLAGS_FREE, free);
                     }
                     inline bool IsFixed () const {
-                        return Flags32 (flags).Test (FLAGS_FIXED);
+                        return flags.Test (FLAGS_FIXED);
                     }
                     inline void SetFixed (bool fixed) {
-                        Flags32 (flags).Set (FLAGS_FIXED, fixed);
+                        flags.Set (FLAGS_FIXED, fixed);
                     }
 
                     void Read (
@@ -114,7 +118,7 @@ namespace thekogans {
                         ui64 offset);
                 } header;
                 struct _LIB_THEKOGANS_UTIL_DECL Footer {
-                    ui32 flags;
+                    Flags32 flags;
                     ui64 size;
 
                     enum {
@@ -127,22 +131,22 @@ namespace thekogans {
                     };
 
                     Footer (
-                        ui32 flags_ = 0,
+                        Flags32 flags_ = 0,
                         ui64 size_ = 0) :
                         flags (flags_),
                         size (size_) {}
 
                     inline bool IsFree () const {
-                        return Flags32 (flags).Test (FLAGS_FREE);
+                        return flags.Test (FLAGS_FREE);
                     }
-                    inline void SetFree (bool isFree) {
-                        Flags32 (flags).Set (FLAGS_FREE, isFree);
+                    inline void SetFree (bool free) {
+                        flags.Set (FLAGS_FREE, free);
                     }
                     inline bool IsFixed () const {
-                        return Flags32 (flags).Test (FLAGS_FIXED);
+                        return flags.Test (FLAGS_FIXED);
                     }
                     inline void SetFixed (bool fixed) {
-                        Flags32 (flags).Set (FLAGS_FIXED, fixed);
+                        flags.Set (FLAGS_FIXED, fixed);
                     }
 
                     void Read (
@@ -165,7 +169,7 @@ namespace thekogans {
                 BlockInfo (
                     File &file_,
                     ui64 offset_ = 0,
-                    ui32 flags = 0,
+                    Flags32 flags = 0,
                     ui64 size = 0,
                     ui64 nextOffset = 0) :
                     file (file_),
@@ -180,10 +184,10 @@ namespace thekogans {
                     offset = offset_;
                 }
                 inline bool IsFirst () const {
-                    return GetOffset () == FileAllocator::Header::SIZE + Header::SIZE;
+                    return GetOffset () == FileAllocator::Header::SIZE + HEADER_SIZE;
                 }
                 inline bool IsLast () const {
-                    return GetOffset () + GetSize () + Footer::SIZE == file.GetSize ();
+                    return GetOffset () + GetSize () + FOOTER_SIZE == file.GetSize ();
                 }
 
                 inline bool IsFree () const {
@@ -300,7 +304,7 @@ namespace thekogans {
                 enum {
                     FLAGS_FIXED = 1
                 };
-                ui32 flags;
+                Flags32 flags;
                 ui32 blockSize;
                 ui64 fixedFreeListOffset;
                 ui64 btreeOffset;
@@ -317,7 +321,7 @@ namespace thekogans {
                 };
 
                 Header (
-                    ui32 flags_ = 0,
+                    Flags32 flags_ = 0,
                     ui32 blockSize_ = 0) :
                     flags (flags_),
                     blockSize (blockSize_),
@@ -326,7 +330,7 @@ namespace thekogans {
                     rootOffset (0) {}
 
                 inline bool IsFixed () const {
-                    return Flags32 (flags).Test (FLAGS_FIXED);
+                    return flags.Test (FLAGS_FIXED);
                 }
             } header;
             Allocator::SharedPtr blockAllocator;
@@ -334,11 +338,7 @@ namespace thekogans {
             /// \struct BTree BTree.h thekogans/util/BTree.h
             ///
             /// \brief
-            struct BTree : public RefCounted {
-                /// \brief
-                /// Declare \see{RefCounted} pointers.
-                THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (BTree)
-
+            struct BTree {
                 /// \brief
                 /// Keys are structured on block {size, offset}
                 using Key = std::pair<ui64, ui64>;
@@ -589,17 +589,22 @@ namespace thekogans {
                 /// BTree is neither copy constructable, nor assignable.
                 THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (BTree)
             };
-            BTree::SharedPtr btree;
+            BTree *btree;
             SpinLock spinLock;
 
         public:
             enum {
                 /// \brief
                 /// Minimum user data size.
-                MIN_USER_DATA_SIZE = 32, // BlockInfo::Header::nextOffset
+                MIN_USER_DATA_SIZE = 32,
+                /// \brief
+                /// Based on the layout of the file, the smallest valid user offset is;
                 MIN_USER_DATA_OFFSET = Header::SIZE + BlockInfo::HEADER_SIZE,
                 /// \brief
                 /// Minimum block size.
+                /// BlockInfo::SIZE happens to be 32 bytes, together with 32 for
+                /// MIN_USER_DATA_SIZE above means that the smallest block we can
+                /// allocate is 64 bytes.
                 MIN_BLOCK_SIZE = sizeof (BlockInfo::SIZE) + MIN_USER_DATA_SIZE
             };
 
@@ -608,6 +613,7 @@ namespace thekogans {
                 std::size_t blockSize = 0,
                 std::size_t blocksPerPage = BTree::DEFAULT_ENTRIES_PER_NODE,
                 Allocator::SharedPtr allocator = DefaultAllocator::Instance ());
+            virtual ~FileAllocator ();
 
             inline bool IsFixed () const {
                 // header.flags is read only after ctor so no need to lock.

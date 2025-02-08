@@ -120,7 +120,7 @@ namespace thekogans {
         }
 
         void FileAllocator::BlockInfo::Read () {
-            header.Read (file, offset - Header::SIZE);
+            header.Read (file, offset - HEADER_SIZE);
             footer.Read (file, offset + header.size);
             if (header != footer) {
                 THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
@@ -134,7 +134,7 @@ namespace thekogans {
         }
 
         void FileAllocator::BlockInfo::Write () {
-            header.Write (file, offset - Header::SIZE);
+            header.Write (file, offset - HEADER_SIZE);
             footer.Write (file, offset + header.size);
         }
 
@@ -230,7 +230,8 @@ namespace thekogans {
                 file (HostEndian, path, SimpleFile::ReadWrite | SimpleFile::Create),
                 header (
                     blockSize > 0 ? Header::FLAGS_FIXED : 0,
-                    (ui32)(blockSize > 0 ? blockSize : BTree::Node::FileSize (blocksPerPage))) {
+                    (ui32)(blockSize > 0 ? blockSize : BTree::Node::FileSize (blocksPerPage))),
+                btree (nullptr) {
             if (file.GetSize () >= Header::SIZE) {
                 file.Seek (0, SEEK_SET);
                 ui32 magic;
@@ -266,17 +267,22 @@ namespace thekogans {
                     blocksPerPage,
                     allocator);
             if (!IsFixed ()) {
-                btree.Reset (
-                    new BTree (
-                        *this,
-                        header.btreeOffset,
-                        blocksPerPage,
-                        BlockAllocator::DEFAULT_BLOCKS_PER_PAGE,
-                        allocator));
+                btree = new BTree (
+                    *this,
+                    header.btreeOffset,
+                    blocksPerPage,
+                    BlockAllocator::DEFAULT_BLOCKS_PER_PAGE,
+                    allocator);
                 if (header.btreeOffset != btree->GetOffset ()) {
                     header.btreeOffset = btree->GetOffset ();
                     Save ();
                 }
+            }
+        }
+
+        FileAllocator::~FileAllocator () {
+            if (btree != nullptr) {
+                delete btree;
             }
         }
 

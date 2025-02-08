@@ -201,6 +201,30 @@ namespace thekogans {
         using Flags64 = Flags<ui64>;
 
         /// \brief
+        /// Compare two given flags for equality.
+        /// \params[in] flags1 First flags to compare.
+        /// \params[in] flags2 Second flags to compare.
+        /// \return true if flag1 == flags2.
+        template<typename T>
+        inline bool _LIB_THEKOGANS_UTIL_API operator == (
+                const Flags<T> &flags1,
+                const Flags<T> &flags2) {
+            return (const T)flags1 == (const T)flags2;
+        }
+
+        /// \brief
+        /// Compare two given flags for inequality.
+        /// \params[in] flags1 First flags to compare.
+        /// \params[in] flags2 Second flags to compare.
+        /// \return true if flag1 != flags2.
+        template<typename T>
+        inline bool _LIB_THEKOGANS_UTIL_API operator != (
+                const Flags<T> &flags1,
+                const Flags<T> &flags2) {
+            return (const T)flags1 != (const T)flags2;
+        }
+
+        /// \brief
         /// Serialize a Flags<T>. endianness is used to properly
         /// convert between serializer and host byte order.
         /// \param[in] serializer Where to write Flags<T>.
