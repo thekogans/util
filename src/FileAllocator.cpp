@@ -102,7 +102,7 @@ namespace thekogans {
         void FileAllocator::BlockInfo::Prev (BlockInfo &prev) {
             prev.footer.Read (file, offset - SIZE);
             prev.offset = offset - prev.footer.size - SIZE;
-            prev.header.Read (file, prev.offset);
+            prev.header.Read (file, prev.offset - HEADER_SIZE);
             if (prev.header != prev.footer) {
                 THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
                     "Corrupt FileAllocator::BlockInfo: " THEKOGANS_UTIL_UI64_FORMAT
@@ -115,7 +115,7 @@ namespace thekogans {
         }
 
         void FileAllocator:: FileAllocator::BlockInfo::Next (BlockInfo &next) {
-            next.offset = offset + header.size + FOOTER_SIZE;
+            next.offset = offset + header.size + SIZE;
             next.Read ();
         }
 
