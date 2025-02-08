@@ -33,6 +33,30 @@
 namespace thekogans {
     namespace util {
 
+        /// \brief
+        /// Implements a ByteSwap template to deal with host endianess.
+        ///
+        /// This code came from: http://www.cplusplus.com/forum/general/27544/\n
+        /// I cleaned it up a bit to use my type system, and style.
+        /// Thanks goes to the original author: Steve Lorimer
+        ///
+        /// Little-endian operating systems:\n
+        /// --------------------------------\n
+        /// Linux on x86, x64, Alpha and Itanium\n
+        /// Mac OS on x86, x64\n
+        /// Solaris on x86, x64, PowerPC\n
+        /// Tru64 on Alpha\n
+        /// Windows on x86, x64 and Itanium
+        ///
+        /// Big-endian operating systems:\n
+        /// -----------------------------\n
+        /// AIX on POWER\n
+        /// AmigaOS on PowerPC and 680x0\n
+        /// HP-UX on Itanium and PA-RISC\n
+        /// Linux on MIPS, SPARC, PA-RISC, POWER, PowerPC, and 680x0\n
+        /// Mac OS on PowerPC and 680x0\n
+        /// Solaris on SPARC\n
+
         namespace detail {
             /// \brief
             /// Swap bytes template.
