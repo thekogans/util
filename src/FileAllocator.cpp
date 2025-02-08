@@ -327,7 +327,7 @@ namespace thekogans {
                 LockGuard<SpinLock> guard (spinLock);
                 FreeFixedBlock (offset);
             }
-            else if (offset >= MIN_OFFSET) {
+            else if (offset >= MIN_BLOCK_OFFSET) {
                 LockedFilePtr file (*this);
                 if (header.rootOffset == offset) {
                     header.rootOffset = 0;
@@ -396,7 +396,7 @@ namespace thekogans {
         }
 
         void FileAllocator::FreeFixedBlock (ui64 offset) {
-            if (offset >= MIN_OFFSET) {
+            if (offset >= MIN_BLOCK_OFFSET) {
                 if (header.rootOffset == offset) {
                     header.rootOffset = 0;
                     Save ();
