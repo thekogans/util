@@ -333,8 +333,8 @@ namespace thekogans {
                     return flags.Test (FLAGS_FIXED);
                 }
             } header;
-            Allocator::SharedPtr blockAllocator;
             Allocator::SharedPtr fixedAllocator;
+            Allocator::SharedPtr blockAllocator;
             /// \struct BTree BTree.h thekogans/util/BTree.h
             ///
             /// \brief

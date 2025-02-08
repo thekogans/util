@@ -254,17 +254,12 @@ namespace thekogans {
             else {
                 Save ();
             }
-            blockAllocator = IsFixed () ?
-                BlockAllocator::Pool::Instance ()->GetBlockAllocator (
-                    header.blockSize,
-                    blocksPerPage,
-                    allocator) :
-                allocator;
             fixedAllocator =
                 BlockAllocator::Pool::Instance ()->GetBlockAllocator (
                     header.blockSize,
                     blocksPerPage,
                     allocator);
+            blockAllocator = IsFixed () ? fixedAllocator : allocator;
             if (!IsFixed ()) {
                 btree = new BTree (
                     *this,
@@ -317,8 +312,11 @@ namespace thekogans {
                         if (result.first >= BlockInfo::SIZE + MIN_USER_DATA_SIZE) {
                             btree->Add (
                                 BTree::Key (result.first, offset + size + BlockInfo::SIZE));
-                            BlockInfo block (*file, offset + size + BlockInfo::SIZE,
-                                BlockInfo::FLAGS_FREE, result.first);
+                            BlockInfo block (
+                                *file,
+                                offset + size + BlockInfo::SIZE,
+                                BlockInfo::FLAGS_FREE,
+                                result.first);
                             block.Write ();
                         }
                         else {
@@ -394,6 +392,11 @@ namespace thekogans {
                     header.freeBlockOffset = block.GetNextOffset ();
                     Save ();
                 }
+                else {
+                    THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
+                        "Heap corruption @ " THEKOGANS_UTIL_UI64_FORMAT,
+                        offset);
+                }
             }
             else {
                 offset = file.GetSize () + BlockInfo::HEADER_SIZE;
@@ -423,6 +426,10 @@ namespace thekogans {
                     else {
                         file.SetSize (block.GetOffset () - BlockInfo::HEADER_SIZE);
                     }
+                }
+                else {
+                    THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                        THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
                 }
             }
             else {
