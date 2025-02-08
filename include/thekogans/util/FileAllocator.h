@@ -41,44 +41,24 @@ namespace thekogans {
             /// Declare \see{RefCounted} pointers.
             THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (FileAllocator)
 
-            struct _LIB_THEKOGANS_UTIL_DECL LockedPtr {
+            struct _LIB_THEKOGANS_UTIL_DECL LockedFilePtr {
             private:
                 FileAllocator &fileAllocator;
 
             public:
-                LockedPtr (FileAllocator &fileAllocator_) :
+                LockedFilePtr (FileAllocator &fileAllocator_) :
                         fileAllocator (fileAllocator_) {
                     fileAllocator.spinLock.Acquire ();
                 }
-                ~LockedPtr () {
+                ~LockedFilePtr () {
                     fileAllocator.spinLock.Release ();
                 }
 
-                inline FileAllocator &operator * () const {
-                    return fileAllocator;
-                }
-                inline FileAllocator *operator -> () const {
-                    return &fileAllocator;
-                }
-
-                /// \brief
-                /// LockedPtr is neither copy constructable, nor assignable.
-                THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (LockedPtr)
-            };
-
-            struct _LIB_THEKOGANS_UTIL_DECL LockedFilePtr {
-            private:
-                LockedPtr fileAllocator;
-
-            public:
-                LockedFilePtr (FileAllocator &fileAllocator_) :
-                    fileAllocator (fileAllocator_) {}
-
                 inline File &operator * () const {
-                    return fileAllocator->file;
+                    return fileAllocator.file;
                 }
                 inline File *operator -> () const {
-                    return &fileAllocator->file;
+                    return &fileAllocator.file;
                 }
 
                 /// \brief
