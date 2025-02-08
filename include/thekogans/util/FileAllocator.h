@@ -304,7 +304,7 @@ namespace thekogans {
                     FLAGS_FIXED = 1
                 };
                 Flags32 flags;
-                ui32 blockSize;
+                ui64 blockSize;
                 ui64 freeBlockOffset;
                 ui64 btreeOffset;
                 ui64 rootOffset;
@@ -313,7 +313,7 @@ namespace thekogans {
                     SIZE =
                         UI32_SIZE + // magic
                         UI32_SIZE +
-                        UI32_SIZE +
+                        UI64_SIZE +
                         UI64_SIZE +
                         UI64_SIZE +
                         UI64_SIZE
@@ -321,7 +321,7 @@ namespace thekogans {
 
                 Header (
                     Flags32 flags_ = 0,
-                    ui32 blockSize_ = 0) :
+                    ui64 blockSize_ = 0) :
                     flags (flags_),
                     blockSize (blockSize_),
                     freeBlockOffset (0),

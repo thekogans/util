@@ -221,7 +221,7 @@ namespace thekogans {
                 file (HostEndian, path, SimpleFile::ReadWrite | SimpleFile::Create),
                 header (
                     blockSize > 0 ? Header::FLAGS_FIXED : 0,
-                    (ui32)(blockSize > 0 ? blockSize : BTree::Node::FileSize (blocksPerPage))),
+                    blockSize > 0 ? blockSize : BTree::Node::FileSize (blocksPerPage)),
                 btree (nullptr) {
             if (file.GetSize () > 0) {
                 file.Seek (0, SEEK_SET);
