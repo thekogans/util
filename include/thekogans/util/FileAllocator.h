@@ -41,24 +41,44 @@ namespace thekogans {
             /// Declare \see{RefCounted} pointers.
             THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (FileAllocator)
 
-            struct _LIB_THEKOGANS_UTIL_DECL LockedFilePtr {
+            struct _LIB_THEKOGANS_UTIL_DECL LockedPtr {
             private:
-                FileAllocator &allocator;
+                FileAllocator &fileAllocator;
 
             public:
-                LockedFilePtr (FileAllocator &allocator_) :
-                        allocator (allocator_) {
-                    allocator.spinLock.Acquire ();
+                LockedPtr (FileAllocator &fileAllocator_) :
+                        fileAllocator (fileAllocator_) {
+                    fileAllocator.spinLock.Acquire ();
                 }
-                ~LockedFilePtr () {
-                    allocator.spinLock.Release ();
+                ~LockedPtr () {
+                    fileAllocator.spinLock.Release ();
                 }
 
+                inline FileAllocator &operator * () const {
+                    return fileAllocator;
+                }
+                inline FileAllocator *operator -> () const {
+                    return &fileAllocator;
+                }
+
+                /// \brief
+                /// LockedPtr is neither copy constructable, nor assignable.
+                THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (LockedPtr)
+            };
+
+            struct _LIB_THEKOGANS_UTIL_DECL LockedFilePtr {
+            private:
+                LockedPtr fileAllocator;
+
+            public:
+                LockedFilePtr (FileAllocator &fileAllocator_) :
+                    fileAllocator (fileAllocator_) {}
+
                 inline File &operator * () const {
-                    return allocator.file;
+                    return fileAllocator->file;
                 }
                 inline File *operator -> () const {
-                    return &allocator.file;
+                    return &fileAllocator->file;
                 }
 
                 /// \brief
@@ -237,14 +257,13 @@ namespace thekogans {
 
             struct _LIB_THEKOGANS_UTIL_DECL BlockBuffer : public Buffer {
             private:
-                FileAllocator &allocator;
-                ui64 offset;
+                FileAllocator &fileAllocator;
                 BlockInfo block;
 
             public:
                 BlockBuffer (
-                    FileAllocator &allocator_,
-                    ui64 offset_,
+                    FileAllocator &fileAllocator_,
+                    ui64 offset,
                     std::size_t length = 0);
 
                 std::size_t Read (
@@ -259,7 +278,7 @@ namespace thekogans {
                 THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (BlockBuffer)
             };
 
-            /// \struct BlockAllocator::Pool BlockAllocator.h thekogans/util/BlockAllocator.h
+            /// \struct FileAllocator::Pool FileAllocator.h thekogans/util/FileAllocator.h
             ///
             /// \brief
             /// Each instance of a FileAllocator attached to a particular
@@ -615,6 +634,9 @@ namespace thekogans {
                 Allocator::SharedPtr allocator = DefaultAllocator::Instance ());
             virtual ~FileAllocator ();
 
+            inline File &GetFile () {
+                return file;
+            }
             inline bool IsFixed () const {
                 // header.flags is read only after ctor so no need to lock.
                 return header.IsFixed ();

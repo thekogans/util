@@ -139,25 +139,21 @@ namespace thekogans {
         }
 
         FileAllocator::BlockBuffer::BlockBuffer (
-                FileAllocator &allocator_,
-                ui64 offset_,
+                FileAllocator &fileAllocator_,
+                ui64 offset,
                 std::size_t length) :
-                Buffer (allocator_.file.endianness),
-                allocator (allocator_),
-                offset (offset_),
-                block (allocator.file, offset) {
-            {
-                LockedFilePtr file (allocator);
-                block.Read ();
-            }
+                Buffer (fileAllocator_.file.endianness),
+                fileAllocator (fileAllocator_),
+                block (fileAllocator.file, offset) {
+            block.Read ();
             if (length == 0) {
                 length = block.GetSize ();
             }
             Resize (
                 length,
                 block.IsFixed () ?
-                    allocator.fixedAllocator :
-                    allocator.blockAllocator);
+                    fileAllocator.fixedAllocator :
+                    fileAllocator.blockAllocator);
         }
 
         std::size_t FileAllocator::BlockBuffer::Read (
@@ -173,12 +169,9 @@ namespace thekogans {
                     if (availableToRead > length) {
                         availableToRead = length;
                     }
-                    {
-                        LockedFilePtr file (allocator);
-                        file->Seek (offset + blockOffset, SEEK_SET);
-                        countRead = AdvanceWriteOffset (
-                            file->Read (GetWritePtr (), availableToRead));
-                    }
+                    fileAllocator.file.Seek (block.GetOffset () + blockOffset, SEEK_SET);
+                    countRead = AdvanceWriteOffset (
+                        fileAllocator.file.Read (GetWritePtr (), availableToRead));
                 }
             }
             return countRead;
@@ -197,12 +190,9 @@ namespace thekogans {
                     if (availableToWrite > length) {
                         availableToWrite = length;
                     }
-                    {
-                        LockedFilePtr file (allocator);
-                        file->Seek (offset + blockOffset, SEEK_SET);
-                        countWritten = AdvanceReadOffset (
-                            file->Write (GetReadPtr (), availableToWrite));
-                    }
+                    fileAllocator.file.Seek (block.GetOffset () + blockOffset, SEEK_SET);
+                    countWritten = AdvanceReadOffset (
+                        fileAllocator.file.Write (GetReadPtr (), availableToWrite));
                 }
             }
             return countWritten;
@@ -352,8 +342,8 @@ namespace thekogans {
                         block.Prev (prev);
                         if (prev.IsFree () && !prev.IsFixed ()) {
                             btree->Delete (BTree::Key (prev.GetSize (), prev.GetOffset ()));
-                            block.SetOffset (block.GetOffset () - prev.GetSize ());
-                            block.SetSize (block.GetSize () + prev.GetSize ());
+                            block.SetOffset (block.GetOffset () - BlockInfo::SIZE - prev.GetSize ());
+                            block.SetSize (block.GetSize () + prev.GetSize () + BlockInfo::SIZE);
                         }
                     }
                     if (!block.IsLast ()) {
@@ -361,7 +351,7 @@ namespace thekogans {
                         block.Next (next);
                         if (next.IsFree () && !next.IsFixed ()) {
                             btree->Delete (BTree::Key (next.GetSize (), next.GetOffset ()));
-                            block.SetSize (block.GetSize () + next.GetSize ());
+                            block.SetSize (block.GetSize () + BlockInfo::SIZE + next.GetSize ());
                         }
                     }
                     if (!block.IsLast ()) {
