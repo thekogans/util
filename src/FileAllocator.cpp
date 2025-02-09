@@ -25,6 +25,21 @@
 namespace thekogans {
     namespace util {
 
+        FileAllocator::SharedPtr FileAllocator::Pool::GetFileAllocator (
+                const std::string &path,
+                std::size_t blockSize,
+                std::size_t blocksPerPage,
+                Allocator::SharedPtr allocator) {
+            LockGuard<SpinLock> guard (spinLock);
+            std::pair<Map::iterator, bool> result =
+                map.insert (Map::value_type (path, nullptr));
+            if (result.second) {
+                result.first->second.Reset (
+                    new FileAllocator (path, blockSize, blocksPerPage, allocator));
+            }
+            return result.first->second;
+        }
+
         void FileAllocator::BlockInfo::Header::Read (
                 File &file,
                 ui64 offset) {
@@ -196,21 +211,6 @@ namespace thekogans {
                 }
             }
             return countWritten;
-        }
-
-        FileAllocator::SharedPtr FileAllocator::Pool::GetFileAllocator (
-                const std::string &path,
-                std::size_t blockSize,
-                std::size_t blocksPerPage,
-                Allocator::SharedPtr allocator) {
-            LockGuard<SpinLock> guard (spinLock);
-            std::pair<Map::iterator, bool> result =
-                map.insert (Map::value_type (path, nullptr));
-            if (result.second) {
-                result.first->second.Reset (
-                    new FileAllocator (path, blockSize, blocksPerPage, allocator));
-            }
-            return result.first->second;
         }
 
         FileAllocator::FileAllocator (

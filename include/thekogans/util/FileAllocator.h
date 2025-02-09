@@ -41,6 +41,45 @@ namespace thekogans {
             /// Declare \see{RefCounted} pointers.
             THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (FileAllocator)
 
+            /// \struct FileAllocator::Pool FileAllocator.h thekogans/util/FileAllocator.h
+            ///
+            /// \brief
+            /// Each instance of a FileAllocator attached to a particular
+            /// file should be treated as a singleton. Use Pool to recycle
+            /// and reuse file allocators based on a given path.
+            struct _LIB_THEKOGANS_UTIL_DECL Pool : public Singleton<Pool> {
+            private:
+                /// \brief
+                /// FileAllocator map type (keyed on path).
+                using Map = std::map<std::string, FileAllocator::SharedPtr>;
+                /// \brief
+                /// FileAllocator map.
+                Map map;
+                /// \brief
+                /// Synchronization lock.
+                SpinLock spinLock;
+
+            public:
+                /// \brief
+                /// ctor.
+                Pool () {}
+
+                /// \brief
+                /// Given a block size, return a matching block allocator.
+                /// If we don't have one, create it.
+                /// \param[in] blockSize Block size.
+                /// \return FileAllocator matching the given path.
+                FileAllocator::SharedPtr GetFileAllocator (
+                    const std::string &path,
+                    std::size_t blockSize = 0,
+                    std::size_t blocksPerPage = BTree::DEFAULT_ENTRIES_PER_NODE,
+                    Allocator::SharedPtr allocator = DefaultAllocator::Instance ());
+
+                /// \brief
+                /// Pool is neither copy constructable, nor assignable.
+                THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (Pool)
+            };
+
             struct _LIB_THEKOGANS_UTIL_DECL LockedFilePtr {
             private:
                 FileAllocator &fileAllocator;
@@ -184,7 +223,7 @@ namespace thekogans {
                     offset = offset_;
                 }
                 inline bool IsFirst () const {
-                    return GetOffset () == FileAllocator::Header::SIZE + HEADER_SIZE;
+                    return GetOffset () == FileAllocator::MIN_BLOCK_OFFSET;
                 }
                 inline bool IsLast () const {
                     return GetOffset () + GetSize () + FOOTER_SIZE == file.GetSize ();
@@ -256,45 +295,6 @@ namespace thekogans {
                 /// \brief
                 /// BlockBuffer is neither copy constructable, nor assignable.
                 THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (BlockBuffer)
-            };
-
-            /// \struct FileAllocator::Pool FileAllocator.h thekogans/util/FileAllocator.h
-            ///
-            /// \brief
-            /// Each instance of a FileAllocator attached to a particular
-            /// file should be treated as a singleton. Use Pool to recycle
-            /// and reuse file allocators based on a given path.
-            struct _LIB_THEKOGANS_UTIL_DECL Pool : public Singleton<Pool> {
-            private:
-                /// \brief
-                /// FileAllocator map type (keyed on path).
-                using Map = std::map<std::string, FileAllocator::SharedPtr>;
-                /// \brief
-                /// FileAllocator map.
-                Map map;
-                /// \brief
-                /// Synchronization lock.
-                SpinLock spinLock;
-
-            public:
-                /// \brief
-                /// ctor.
-                Pool () {}
-
-                /// \brief
-                /// Given a block size, return a matching block allocator.
-                /// If we don't have one, create it.
-                /// \param[in] blockSize Block size.
-                /// \return FileAllocator matching the given path.
-                FileAllocator::SharedPtr GetFileAllocator (
-                    const std::string &path,
-                    std::size_t blockSize = 0,
-                    std::size_t blocksPerPage = BTree::DEFAULT_ENTRIES_PER_NODE,
-                    Allocator::SharedPtr allocator = DefaultAllocator::Instance ());
-
-                /// \brief
-                /// Pool is neither copy constructable, nor assignable.
-                THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (Pool)
             };
 
         private:
@@ -614,9 +614,6 @@ namespace thekogans {
                 Allocator::SharedPtr allocator = DefaultAllocator::Instance ());
             virtual ~FileAllocator ();
 
-            inline File &GetFile () {
-                return file;
-            }
             inline bool IsFixed () const {
                 // header.flags is read only after ctor so no need to lock.
                 return header.IsFixed ();
