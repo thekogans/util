@@ -46,7 +46,14 @@ namespace thekogans {
             /// \brief
             /// Each instance of a FileAllocator attached to a particular
             /// file should be treated as a singleton. Use Pool to recycle
-            /// and reuse file allocators based on a given path.
+            /// and reuse file allocators based on a given path. Ex:
+            ///
+            /// \code{.cpp}
+            /// using namespace thekogans;
+            ///
+            /// util::FileAllocator::SharedPtr allocator =
+            ///     util::FileAllocator::Pool::Instance ()->GetFileAllocator ("test.allocator");
+            /// \endcode
             struct _LIB_THEKOGANS_UTIL_DECL Pool : public Singleton<Pool> {
             private:
                 /// \brief
@@ -65,9 +72,12 @@ namespace thekogans {
                 Pool () {}
 
                 /// \brief
-                /// Given a block size, return a matching block allocator.
+                /// Given a path, return the matching file allocator.
                 /// If we don't have one, create it.
-                /// \param[in] blockSize Block size.
+                /// \param[in] path FileAllocator path.
+                /// \param[in] blockSize If > 0, create a fixed block file allocator.
+                /// \param[in] blocksPerPage If blockSize is > 0, this allows you to
+                /// parameterize the page size for the containing \see{BlockAllocator}.
                 /// \return FileAllocator matching the given path.
                 FileAllocator::SharedPtr GetFileAllocator (
                     const std::string &path,
@@ -80,19 +90,45 @@ namespace thekogans {
                 THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (Pool)
             };
 
+            /// \struct FileAllocator::LockedFilePtr FileAllocator.h thekogans/util/FileAllocator.h
+            ///
+            /// \brief
+            /// FileAllocator's public api is thread safe. It uses a \see{SpinLock}
+            /// to protect shared resources. Unfortunatelly, past experience indicates
+            /// that for objects like FileAllocator, a public api is not enough. That's
+            /// why I exposed the file. This has a number of implications; I purposely
+            /// chose \see{SpinLock} to avoid a heavy penalty for lock aquisition. But
+            /// because other threads sit and spin when the lock is busy, it's very
+            /// important to not hold on to the lock too long. Ex:
+            ///
+            /// \code{.cpp}
+            /// LockedFilePtr file (*this);
+            /// BlockInfo block (*file, offset);
+            /// block.Read ();
+            /// ...
+            /// \endcode
             struct _LIB_THEKOGANS_UTIL_DECL LockedFilePtr {
             private:
+                /// \brief
+                /// FileAllocator we're about to take out a lock on.
                 FileAllocator &fileAllocator;
 
             public:
+                /// \brief
+                /// ctor.
+                /// \param[in] fileAllocator_ FileAllocator we're about to take out a lock on.
                 LockedFilePtr (FileAllocator &fileAllocator_) :
                         fileAllocator (fileAllocator_) {
                     fileAllocator.spinLock.Acquire ();
                 }
+                /// \brief
+                /// dtor.
                 ~LockedFilePtr () {
                     fileAllocator.spinLock.Release ();
                 }
 
+                /// \brief
+                ///
                 inline File &operator * () const {
                     return fileAllocator.file;
                 }
@@ -105,6 +141,9 @@ namespace thekogans {
                 THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (LockedFilePtr)
             };
 
+            /// \struct FileAllocator::BlockInfo FileAllocator.h thekogans/util/FileAllocator.h
+            ///
+            /// \brief
             struct _LIB_THEKOGANS_UTIL_DECL BlockInfo {
             private:
                 File &file;
@@ -274,6 +313,9 @@ namespace thekogans {
                 THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (BlockInfo)
             };
 
+            /// \struct FileAllocator::BlockBuffer FileAllocator.h thekogans/util/FileAllocator.h
+            ///
+            /// \brief
             struct _LIB_THEKOGANS_UTIL_DECL BlockBuffer : public Buffer {
             private:
                 FileAllocator &fileAllocator;
@@ -400,6 +442,9 @@ namespace thekogans {
                     /// \brief
                     /// Left most child node.
                     Node *leftNode;
+                    /// \brief
+                    /// We accumulate all changes and update the file block in the dtor.
+                    bool dirty;
                     /// \struct BTree::Node::Entry BTree.h thekogans/util/BTree.h
                     ///
                     /// \brief
@@ -462,7 +507,9 @@ namespace thekogans {
                     /// \param[in] node Node to delete.
                     static void Delete (Node *node);
 
-                    void Save ();
+                    inline void Save () {
+                        dirty = true;
+                    }
                     Node *GetChild (ui32 index);
                     bool Search (
                         const Key &key,
@@ -502,6 +549,8 @@ namespace thekogans {
                     inline bool IsPlentiful () const {
                         return count > btree.header.entriesPerNode / 2;
                     }
+
+                    void Dump ();
                 } *root;
 
             public:
@@ -540,6 +589,7 @@ namespace thekogans {
                 /// \brief
                 /// Flush the node cache (used in tight memory situations).
                 void Flush ();
+                void Dump ();
 
             private:
                 bool Insert (
@@ -587,8 +637,10 @@ namespace thekogans {
                 /// \brief
                 /// BTree is neither copy constructable, nor assignable.
                 THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (BTree)
-            };
-            BTree *btree;
+            } *btree;
+            /// \brief
+            /// FileAllocator is meant to be shared between threads allocating
+            /// from the same file.
             SpinLock spinLock;
 
         public:
@@ -607,26 +659,51 @@ namespace thekogans {
                 MIN_BLOCK_SIZE = BlockInfo::SIZE + MIN_USER_DATA_SIZE
             };
 
+            /// \brief
+            /// ctor.
+            /// \param[in] blockSize If > 0, this is a fixed size block allocator.
+            /// If == 0, this is a random size block allocator.
+            /// \param[in] blocksPerPage If fixed contains the number of fixed
+            /// blocks per page to initialize \see{BlockAllocator}. If random
+            /// size contains the number of entries per node in the btree below.
+            /// \param[in] allocator If fixed points to an \see{Allocator} that
+            /// will allocate block pages for the internal \see{BlockAllocator}.
+            /// If random size points to an \see{Allocaor} that will back up file
+            /// allocator blocks with in memory buffers (\see{BlockBuffer} above).
             FileAllocator (
                 const std::string &path,
                 std::size_t blockSize = 0,
                 std::size_t blocksPerPage = BTree::DEFAULT_ENTRIES_PER_NODE,
                 Allocator::SharedPtr allocator = DefaultAllocator::Instance ());
+            /// \brief
+            /// dtor.
             virtual ~FileAllocator ();
 
+            /// \brief
+            /// Return true if fixed block allocator.
+            /// \return true == Fixed block allocator. false == random size block allocator.
             inline bool IsFixed () const {
                 // header.flags is read only after ctor so no need to lock.
                 return header.IsFixed ();
             }
+            /// \brief
+            /// Return the fixed block size.
+            /// \return If fixed, fixed block size. if random size, btree node size.
             inline std::size_t GetBlockSize () const {
                 // header.blockSize is read only after ctor so no need to lock.
                 return header.blockSize;
             }
+            /// NOTE: If you hold a LockedFilePtr this function is off limits.
             ui64 GetRootOffset ();
+            /// NOTE: If you hold a LockedFilePtr this function is off limits.
             void SetRootOffset (ui64 rootOffset);
 
+            /// NOTE: If you hold a LockedFilePtr this function is off limits.
             ui64 Alloc (std::size_t size);
+            /// NOTE: If you hold a LockedFilePtr this function is off limits.
             void Free (ui64 offset);
+
+            void DumpBTree ();
 
         protected:
             ui64 AllocFixedBlock ();

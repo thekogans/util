@@ -370,6 +370,12 @@ namespace thekogans {
             }
         }
 
+        void FileAllocator::DumpBTree () {
+            if (btree != nullptr) {
+                btree->Dump ();
+            }
+        }
+
         ui64 FileAllocator::AllocFixedBlock () {
             ui64 offset = 0;
             if (header.freeBlockOffset != 0) {

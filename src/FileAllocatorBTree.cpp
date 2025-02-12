@@ -29,7 +29,8 @@ namespace thekogans {
                 offset (offset_),
                 count (0),
                 leftOffset (0),
-                leftNode (0) {
+                leftNode (0),
+                dirty (false) {
             if (offset != 0) {
                 BlockBuffer buffer (btree.fileAllocator, offset);
                 buffer.Read ();
@@ -57,6 +58,17 @@ namespace thekogans {
         }
 
         FileAllocator::BTree::Node::~Node () {
+            if (dirty) {
+                BlockBuffer buffer (btree.fileAllocator, offset);
+                buffer << MAGIC32 << count;
+                if (count > 0) {
+                    buffer << leftOffset;
+                    for (ui32 i = 0; i < count; ++i) {
+                        buffer << entries[i];
+                    }
+                }
+                buffer.Write ();
+            }
             if (count > 0) {
                 Free (leftNode);
                 for (ui32 i = 0; i < count; ++i) {
@@ -93,6 +105,8 @@ namespace thekogans {
         void FileAllocator::BTree::Node::Delete (Node *node) {
             if (node->count == 0) {
                 node->btree.fileAllocator.FreeFixedBlock (node->offset);
+                // We've just deleted it's block, writting to it now would be a bad idea.
+                node->dirty = false;
                 Free (node);
             }
             else {
@@ -101,18 +115,6 @@ namespace thekogans {
                     THEKOGANS_UTIL_UI64_FORMAT,
                     node->offset);
             }
-        }
-
-        void FileAllocator::BTree::Node::Save () {
-            BlockBuffer buffer (btree.fileAllocator, offset);
-            buffer << MAGIC32 << count;
-            if (count > 0) {
-                buffer << leftOffset;
-                for (ui32 i = 0; i < count; ++i) {
-                    buffer << entries[i];
-                }
-            }
-            buffer.Write ();
         }
 
         FileAllocator::BTree::Node *FileAllocator::BTree::Node::GetChild (ui32 index) {
@@ -189,6 +191,23 @@ namespace thekogans {
                 entries + index,
                 entries + index + 1,
                 (--count - index) * sizeof (Entry));
+        }
+
+        void FileAllocator::BTree::Node::Dump () {
+            if (count > 0) {
+                std::cout << offset << ": " << leftOffset;
+                for (ui32 i = 0; i < count; ++i) {
+                    std::cout << " ; [" << entries[i].key.first << ", " <<
+                        entries[i].key.second << "] ; " << entries[i].rightOffset;
+                }
+                std::cout << "\n";
+                for (ui32 i = 0; i < count; ++i) {
+                    Node *child = GetChild (i);
+                    if (child != nullptr) {
+                        child->Dump ();
+                    }
+                }
+            }
         }
 
         FileAllocator::BTree::BTree (
@@ -280,6 +299,12 @@ namespace thekogans {
         void FileAllocator::BTree::Flush () {
             Node::Free (root);
             root = Node::Alloc (*this, header.rootOffset);
+        }
+
+        void FileAllocator::BTree::Dump () {
+            if (root != nullptr) {
+                root->Dump ();
+            }
         }
 
         bool FileAllocator::BTree::Insert (
