@@ -34,7 +34,38 @@ namespace thekogans {
         /// \struct FileAllocator FileAllocator.h thekogans/util/FileAllocator.h
         ///
         /// \brief
-        /// FileAllocator
+        /// FileAllocator manages a heap on permanent storage.
+        /// +--------+---------+-----+---------+
+        /// | Header | Block 1 | ... | Block N |
+        /// +--------+---------+-----+---------+
+        ///
+        /// Header header
+        /// +-------+-------+-----------+-----------------+-------------+------------+
+        /// | magic | flags | blockSize | freeBlockOffset | btreeOffset | rootOffset |
+        /// +-------+-------+-----------+-----------------+-------------+------------+
+        ///    4        4         8              8               8             8
+        ///
+        /// Header::SIZE = 40
+        ///
+        /// Block
+        /// +--------+------+--------+
+        /// | Header | Data | Footer |
+        /// +--------+------+--------+
+        ///     16     var      16
+        ///
+        /// Header/Footer
+        /// +-------+-------+------+
+        /// | magic | flags | size |
+        /// +-------+-------+------+
+        ///     4       4       8
+        ///
+        /// Heade/Footer::SIZE = 16
+        ///
+        /// Data
+        /// +-----------------+-----------------------+
+        /// | nextBlockOffset |          ...          |
+        /// +-----------------+-----------------------+
+        ///          8                   var
 
         struct _LIB_THEKOGANS_UTIL_DECL FileAllocator : public RefCounted {
             /// \brief
@@ -102,10 +133,15 @@ namespace thekogans {
             /// important to not hold on to the lock too long. Ex:
             ///
             /// \code{.cpp}
-            /// LockedFilePtr file (*this);
-            /// BlockInfo block (*file, offset);
-            /// block.Read ();
-            /// ...
+            /// using namespace thekogans;
+            ///
+            /// {
+            ///     util::FileAllocator::LockedFilePtr file (*fileAllocator);
+            ///     util::FileAllocator::BlockInfo block (*file, offset);
+            ///     block.Read ();
+            ///     ...
+            ///     // Automatically release the lock at end of scope.
+            /// }
             /// \endcode
             struct _LIB_THEKOGANS_UTIL_DECL LockedFilePtr {
             private:
@@ -128,10 +164,14 @@ namespace thekogans {
                 }
 
                 /// \brief
-                ///
+                /// Standard pointer operator. Provides access to the file.
+                /// \return File &.
                 inline File &operator * () const {
                     return fileAllocator.file;
                 }
+                /// \brief
+                /// Standard pointer operator. Provides access to the file.
+                /// \return File *.
                 inline File *operator -> () const {
                     return &fileAllocator.file;
                 }
@@ -144,29 +184,39 @@ namespace thekogans {
             /// \struct FileAllocator::BlockInfo FileAllocator.h thekogans/util/FileAllocator.h
             ///
             /// \brief
+            /// BlockInfo encapsulates the structure of the heap. It provides
+            /// an api to read and write as well as to navigate (Prev/Next)
+            /// heap blocks in chronological order.
             struct _LIB_THEKOGANS_UTIL_DECL BlockInfo {
             private:
                 File &file;
                 ui64 offset;
+                /// \struct FileAllocator::BlockInfo::Header FileAllocator.h thekogans/util/FileAllocator.h
+                ///
+                /// \brief
                 struct _LIB_THEKOGANS_UTIL_DECL Header {
                     Flags32 flags;
                     ui64 size;
                     ui64 nextBlockOffset;
 
-                    enum {
-                        SIZE =
-                        #if defined (THEKOGANS_UTIL_FILE_ALLOCATOR_BLOCK_INFO_USE_MAGIC)
-                            UI32_SIZE + // magic
-                        #endif // defined (THEKOGANS_UTIL_FILE_ALLOCATOR_BLOCK_INFO_USE_MAGIC)
-                            UI32_SIZE + // flags
-                            UI64_SIZE /* size +
-                            UI64_SIZE nextBlockOffset is ommited because it shares space
-                                      with user data. This makes Header and Footer
-                                      identical as far as BlockInfo is concerned.
-                                      nextBlockOffset is maintaned only in
-                                      FileAllocator::AllocFixedBlock/FreeFixedBlock. */
-                    };
+                    static const std::size_t SIZE =
+                    #if defined (THEKOGANS_UTIL_FILE_ALLOCATOR_BLOCK_INFO_USE_MAGIC)
+                        UI32_SIZE + // magic
+                    #endif // defined (THEKOGANS_UTIL_FILE_ALLOCATOR_BLOCK_INFO_USE_MAGIC)
+                        UI32_SIZE + // flags
+                        UI64_SIZE; /* size +
+                        UI64_SIZE nextBlockOffset is ommited because it shares space
+                                  with user data. This makes Header and Footer
+                                  identical as far as BlockInfo is concerned.
+                                  nextBlockOffset is maintaned only in
+                                  FileAllocator::AllocFixedBlock/FreeFixedBlock. */
 
+                    /// \brief
+                    /// ctor.
+                    /// \param[in] flags_ Combination of FLAGS_FREE and FLAGS_FIXED.
+                    /// \param[in] size_ Block user data size.
+                    /// \param[in] nextBlockOffset_ If FLAGS_FREE and FLAGS_FIXED are set,
+                    /// this field contains the next free fixed block offset.
                     Header (
                         Flags32 flags_ = 0,
                         ui64 size_ = 0,
@@ -175,15 +225,27 @@ namespace thekogans {
                         size (size_),
                         nextBlockOffset (nextBlockOffset_) {}
 
+                    /// \brief
+                    /// Return true if FLAGS_FREE set.
+                    /// \return true == FLAGS_FREE set.
                     inline bool IsFree () const {
                         return flags.Test (FLAGS_FREE);
                     }
+                    /// \brief
+                    /// Set/unset the FLAGS_FREE flag.
+                    /// \param[in] free true == set, false == unset
                     inline void SetFree (bool free) {
                         flags.Set (FLAGS_FREE, free);
                     }
+                    /// \brief
+                    /// Return true if FLAGS_FIXED set.
+                    /// \return true == FLAGS_FIXED set.
                     inline bool IsFixed () const {
                         return flags.Test (FLAGS_FIXED);
                     }
+                    /// \brief
+                    /// Set/unset the FLAGS_FIXED flag.
+                    /// \param[in] free true == set, false == unset
                     inline void SetFixed (bool fixed) {
                         flags.Set (FLAGS_FIXED, fixed);
                     }
@@ -195,18 +257,19 @@ namespace thekogans {
                         File &file,
                         ui64 offset);
                 } header;
+                /// \struct FileAllocator::BlockInfo::Footer FileAllocator.h thekogans/util/FileAllocator.h
+                ///
+                /// \brief
                 struct _LIB_THEKOGANS_UTIL_DECL Footer {
                     Flags32 flags;
                     ui64 size;
 
-                    enum {
-                        SIZE =
-                        #if defined (THEKOGANS_UTIL_FILE_ALLOCATOR_BLOCK_INFO_USE_MAGIC)
-                            UI32_SIZE + // magic
-                        #endif // defined (THEKOGANS_UTIL_FILE_ALLOCATOR_BLOCK_INFO_USE_MAGIC)
-                            UI32_SIZE + // flags
-                            UI64_SIZE // size
-                    };
+                    static const std::size_t SIZE =
+                    #if defined (THEKOGANS_UTIL_FILE_ALLOCATOR_BLOCK_INFO_USE_MAGIC)
+                        UI32_SIZE + // magic
+                    #endif // defined (THEKOGANS_UTIL_FILE_ALLOCATOR_BLOCK_INFO_USE_MAGIC)
+                        UI32_SIZE + // flags
+                        UI64_SIZE;  // size
 
                     Footer (
                         Flags32 flags_ = 0,
@@ -236,13 +299,11 @@ namespace thekogans {
                 } footer;
 
             public:
-                enum {
-                    FLAGS_FREE = 1,
-                    FLAGS_FIXED = 2,
-                    HEADER_SIZE = Header::SIZE,
-                    FOOTER_SIZE = Footer::SIZE,
-                    SIZE = HEADER_SIZE + FOOTER_SIZE
-                };
+                static const std::size_t FLAGS_FREE = 1;
+                static const std::size_t FLAGS_FIXED = 2;
+                static const std::size_t HEADER_SIZE = Header::SIZE;
+                static const std::size_t FOOTER_SIZE = Footer::SIZE;
+                static const std::size_t SIZE = HEADER_SIZE + FOOTER_SIZE;
 
                 BlockInfo (
                     File &file_,
@@ -316,6 +377,12 @@ namespace thekogans {
             /// \struct FileAllocator::BlockBuffer FileAllocator.h thekogans/util/FileAllocator.h
             ///
             /// \brief
+            /// BlockBuffer provides access to the user data stored in the
+            /// heap blocks. Because it derives from \see{Buffer} it inherits
+            /// all the underlying serialization machinery defined in \see{Serializer}.
+            /// BlockBuffer is also flexible enough to provide access to sub
+            /// ranges. Making it efficient to update only the parts of the data
+            /// that have changed.
             struct _LIB_THEKOGANS_UTIL_DECL BlockBuffer : public Buffer {
             private:
                 FileAllocator &fileAllocator;
@@ -340,27 +407,52 @@ namespace thekogans {
             };
 
         private:
+            /// \brief
+            /// The file where the heap resides.
             SimpleFile file;
+            /// \struct FileAllocator::Header FileAllocator.h thekogans/util/FileAllocator.h
+            ///
+            /// \brief
+            /// Header contains the global heap vailues.
             struct Header {
-                enum {
-                    FLAGS_FIXED = 1
-                };
+                /// \brief
+                /// Flag to indicate that this heap is allocating fixed size blocks.
+                static const std::size_t FLAGS_FIXED = 1;
+                /// \brief
+                /// Heap flags.
                 Flags32 flags;
+                /// \brief
+                /// If fixed, contains the block size to allocate. Otherwise
+                /// contains the BTree::Node size on disk.
                 ui64 blockSize;
+                /// \brief
+                /// If fixed, contains the head of the first free fixed block list.
+                /// Otherwise contains the head of the first free BTree::Node block list.
                 ui64 freeBlockOffset;
+                /// \brief
+                /// If !fixed, contains the offset of the BTree::Header.
                 ui64 btreeOffset;
+                /// \brief
+                /// Contains the offset of the user set root block.
+                /// See GetRootOffset ()/SetRootOffset () below.
                 ui64 rootOffset;
 
-                enum {
-                    SIZE =
-                        UI32_SIZE + // magic
-                        UI32_SIZE + // flags
-                        UI64_SIZE + // blockSize
-                        UI64_SIZE + // freeBlockOffset
-                        UI64_SIZE + // btreeOffset
-                        UI64_SIZE // rootOffset
-                };
+                /// \brief
+                /// The size of the header on disk.
+                static const std::size_t SIZE =
+                    UI32_SIZE + // magic
+                    UI32_SIZE + // flags
+                    UI64_SIZE + // blockSize
+                    UI64_SIZE + // freeBlockOffset
+                    UI64_SIZE + // btreeOffset
+                    UI64_SIZE;  // rootOffset
 
+                /// \brief
+                /// ctor.
+                /// \param[in] flags_ 0 of FLAGS_FIXED.
+                /// \param[in] blockSize_ If FLAGS_FIXED, constains the
+                /// size of the block to allocate. Otherwise contains the
+                /// size of BTree::Node on disk.
                 Header (
                     Flags32 flags_ = 0,
                     ui64 blockSize_ = 0) :
@@ -370,30 +462,48 @@ namespace thekogans {
                     btreeOffset (0),
                     rootOffset (0) {}
 
+                /// \brief
+                /// Return true if this FileAllocator is allocating fixed size blocks.
+                /// \return true == FLAGS_FIXED is set.
                 inline bool IsFixed () const {
                     return flags.Test (FLAGS_FIXED);
                 }
             } header;
+            /// \brief
+            /// \see{BlockAllocator} for allocating fixed
+            /// block backing store \see{BlockBuffer}s.
             Allocator::SharedPtr fixedAllocator;
+            /// \see{Allocator} for allocating random sized
+            /// block backing store \see{BlockBuffer}s.
             Allocator::SharedPtr blockAllocator;
-            /// \struct BTree BTree.h thekogans/util/BTree.h
+            /// \struct FileAllocator::BTree FileAllocator.h thekogans/util/FileAllocator.h
             ///
             /// \brief
+            /// BTree for managing random sized block free list.
             struct BTree {
                 /// \brief
                 /// Keys are structured on block {size, offset}
                 using Key = std::pair<ui64, ui64>;
+                /// \brief
+                /// Key size on disk.
                 static const std::size_t KEY_SIZE = UI64_SIZE + UI64_SIZE;
 
-                enum {
-                    /// \brief
-                    /// Default number of entries per node.
-                    DEFAULT_ENTRIES_PER_NODE = 32
-                };
+                /// \brief
+                /// Default number of entries per node.
+                /// NOTE: This is a tunable parameter that should be used
+                /// during system integration to provide the best performance
+                /// for your needs. Once the heap is created though, this
+                /// value is set in stone and the only way to change it is
+                /// to delete the file and try again.
+                static const std::size_t DEFAULT_ENTRIES_PER_NODE = 256;
 
             private:
                 /// \brief
+                /// Reference back to the FileAllocator for
+                /// \see{Header} and \see{Node} blocks.
                 FileAllocator &fileAllocator;
+                /// \brief
+                /// Offset of the \see{Header} block.
                 ui64 offset;
                 /// \struct BTree::Header BTree.h thekogans/util/BTree.h
                 ///
@@ -407,12 +517,10 @@ namespace thekogans {
                     /// Root node offset.
                     ui64 rootOffset;
 
-                    enum {
-                        SIZE =
-                            UI32_SIZE + // magic
-                            UI32_SIZE + // entriesPerNode
-                            UI64_SIZE // rootOffset
-                    };
+                    static const std::size_t SIZE =
+                        UI32_SIZE + // magic
+                        UI32_SIZE + // entriesPerNode
+                        UI64_SIZE;  // rootOffset
 
                     /// \brief
                     /// ctor.
@@ -644,20 +752,18 @@ namespace thekogans {
             SpinLock spinLock;
 
         public:
-            enum {
-                /// \brief
-                /// Minimum user data size.
-                MIN_USER_DATA_SIZE = 32,
-                /// \brief
-                /// Based on the layout of the file, the smallest valid user offset is;
-                MIN_BLOCK_OFFSET = Header::SIZE + BlockInfo::HEADER_SIZE,
-                /// \brief
-                /// Minimum block size.
-                /// BlockInfo::SIZE happens to be 32 bytes, together with 32 for
-                /// MIN_USER_DATA_SIZE above means that the smallest block we can
-                /// allocate is 64 bytes.
-                MIN_BLOCK_SIZE = BlockInfo::SIZE + MIN_USER_DATA_SIZE
-            };
+            /// \brief
+            /// Minimum user data size.
+            static const std::size_t MIN_USER_DATA_SIZE = 32;
+            /// \brief
+            /// Based on the layout of the file, the smallest valid user offset is;
+            static const std::size_t MIN_BLOCK_OFFSET = Header::SIZE + BlockInfo::HEADER_SIZE;
+            /// \brief
+            /// Minimum block size.
+            /// BlockInfo::SIZE happens to be 32 bytes, together with 32 for
+            /// MIN_USER_DATA_SIZE above means that the smallest block we can
+            /// allocate is 64 bytes.
+            static const std::size_t MIN_BLOCK_SIZE = BlockInfo::SIZE + MIN_USER_DATA_SIZE;
 
             /// \brief
             /// ctor.
@@ -693,57 +799,105 @@ namespace thekogans {
                 // header.blockSize is read only after ctor so no need to lock.
                 return header.blockSize;
             }
+            /// \brief
+            /// Return the root offset.
             /// NOTE: If you hold a LockedFilePtr this function is off limits.
+            /// \return header.rootOffset.
             ui64 GetRootOffset ();
+            /// \brief
+            /// Set the root offset.
             /// NOTE: If you hold a LockedFilePtr this function is off limits.
+            /// \param[in] rootOffset New root offset to set.
             void SetRootOffset (ui64 rootOffset);
 
+            /// \brief
+            /// Alloc a block. If fixed, size is ignored and instead header.blockSize
+            /// is used.
             /// NOTE: If you hold a LockedFilePtr this function is off limits.
+            /// \param[in] size Size of block to allocate. Ignored if fixed.
+            /// \return Offset to the allocated block.
             ui64 Alloc (std::size_t size);
+            /// \brief
+            /// Free a previously Alloc(ated) block.
             /// NOTE: If you hold a LockedFilePtr this function is off limits.
+            /// \param[in] offset Offset of block to free.
             void Free (ui64 offset);
 
+            /// \brief
+            /// Debugging helper. Dumps \see{Btree::Node}s to stdout.
             void DumpBTree ();
 
         protected:
+            /// \brief
+            /// Used to allocate blocks when FLAGS_FIXED is true.
+            /// Uses \see{Header::blockSize}. This method is also
+            /// used directly by the internal \see{BTree::Node}.
+            /// \return Offset of allocated block.
             ui64 AllocFixedBlock ();
+            /// \brief
+            /// Used to free blocks prviously allocated with AllocFixedBlock.
+            /// \param[in] offset Offset of fixed block to free.
             void FreeFixedBlock (ui64 offset);
 
+            /// \brief
+            /// Write the \see{Header}.
             void Save ();
 
+            /// \brief
+            /// Needs access to private members.
             friend Serializer &operator << (
                 Serializer &serializer,
                 const Header &header);
+            /// \brief
+            /// Needs access to private members.
             friend Serializer &operator >> (
                 Serializer &serializer,
                 Header &header);
 
+            /// \brief
+            /// Needs access to private members.
             friend bool operator == (
                 const BTree::Key &key1,
                 const BTree::Key &key2);
+            /// \brief
+            /// Needs access to private members.
             friend bool operator != (
                 const BTree::Key &key1,
                 const BTree::Key &key2);
+            /// \brief
+            /// Needs access to private members.
             friend bool operator < (
                 const BTree::Key &key1,
                 const BTree::Key &key2);
 
+            /// \brief
+            /// Needs access to private members.
             friend Serializer &operator << (
                Serializer &serializer,
                const BTree::Key &key);
+            /// \brief
+            /// Needs access to private members.
             friend Serializer &operator >> (
                 Serializer &serializer,
                 BTree::Key &key);
 
+            /// \brief
+            /// Needs access to private members.
             friend Serializer &operator << (
                 Serializer &serializer,
                 const BTree::Node::Entry &entry);
+            /// \brief
+            /// Needs access to private members.
             friend Serializer &operator >> (
                 Serializer &serializer,
                 BTree::Node::Entry &entry);
+            /// \brief
+            /// Needs access to private members.
             friend Serializer &operator << (
                 Serializer &serializer,
                 const BTree::Header &header);
+            /// \brief
+            /// Needs access to private members.
             friend Serializer &operator >> (
                 Serializer &serializer,
                 BTree::Header &header);

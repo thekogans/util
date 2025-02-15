@@ -15,7 +15,6 @@
 // You should have received a copy of the GNU General Public License
 // along with libthekogans_util. If not, see <http://www.gnu.org/licenses/>.
 
-
 #include "thekogans/util/Exception.h"
 #include "thekogans/util/Heap.h"
 #include "thekogans/util/File.h"
@@ -221,7 +220,9 @@ namespace thekogans {
                 file (HostEndian, path, SimpleFile::ReadWrite | SimpleFile::Create),
                 header (
                     blockSize > 0 ? Header::FLAGS_FIXED : 0,
-                    blockSize > 0 ? blockSize : BTree::Node::FileSize (blocksPerPage)),
+                    blockSize > 0 ?
+                        util::MAX (blockSize, MIN_USER_DATA_SIZE) :
+                        BTree::Node::FileSize (blocksPerPage)),
                 btree (nullptr) {
             if (file.GetSize () > 0) {
                 file.Seek (0, SEEK_SET);
@@ -298,17 +299,19 @@ namespace thekogans {
                         assert (result.first >= size);
                         btree->Delete (result);
                         offset = result.second;
-                        result.first -= size;
-                        if (result.first >= MIN_BLOCK_SIZE) {
-                            ui64 nextBlockOffset = offset + size + BlockInfo::SIZE;
-                            ui64 nextBlockSize = result.first - BlockInfo::SIZE;
-                            btree->Add (BTree::Key (nextBlockSize, nextBlockOffset));
-                            BlockInfo block (
-                                *file, nextBlockOffset, BlockInfo::FLAGS_FREE, nextBlockSize);
-                            block.Write ();
-                        }
-                        else {
-                            size += result.first;
+                        if (result.first > size) {
+                            result.first -= size;
+                            if (result.first >= MIN_BLOCK_SIZE) {
+                                ui64 nextBlockOffset = offset + size + BlockInfo::SIZE;
+                                ui64 nextBlockSize = result.first - BlockInfo::SIZE;
+                                btree->Add (BTree::Key (nextBlockSize, nextBlockOffset));
+                                BlockInfo block (
+                                    *file, nextBlockOffset, BlockInfo::FLAGS_FREE, nextBlockSize);
+                                block.Write ();
+                            }
+                            else {
+                                size += result.first;
+                            }
                         }
                     }
                     else {
