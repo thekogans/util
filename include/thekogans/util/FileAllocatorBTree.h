@@ -37,7 +37,8 @@ private:
     /// \brief
     /// Offset of the \see{Header} block.
     ui64 offset;
-    /// \struct Fileallocator::BTree::Header FileallocatorBTree.h thekogans/util/FileallocatorBTree.h
+    /// \struct Fileallocator::BTree::Header FileallocatorBTree.h
+    /// thekogans/util/FileallocatorBTree.h
     ///
     /// \brief
     /// Header contains global btree info.
@@ -66,7 +67,8 @@ private:
     /// \brief
     /// An instance of \see{BlockAllocator} to allocate \see{Node}s.
     Allocator::SharedPtr nodeAllocator;
-    /// \struct Fileallocator::BTree::Node FileallocatorBTree.h thekogans/util/FileallocatorBTree.h
+    /// \struct Fileallocator::BTree::Node FileallocatorBTree.h
+    /// thekogans/util/FileallocatorBTree.h
     ///
     /// \brief
     /// BTree nodes store sorted keys and pointers to children nodes.
@@ -148,7 +150,7 @@ private:
         /// \brief
         /// Delete the file associated with and free the given empty node.
         /// If the node is not empty, throw exception.
-        /// \param[in] node Node to delete.
+        /// \param[in] node Empty node to delete.
         static void Delete (Node *node);
 
         /// \brief
@@ -168,45 +170,71 @@ private:
         /// (0 == left, !0 == entries[index-1].right).
         /// \return Child node at the given index. nullptr if no child at that index exists.
         Node *GetChild (ui32 index);
+        /// \brief
+        /// Search for a given key.
+        /// \param[in] key \see{Key} to search for.
+        /// \param[out] index If found will contain the index of the key.
+        /// If not found will contain the index of the closest larger key.
+        /// \return true == found the key.
         bool Search (
             const Key &key,
             ui32 &index) const;
+        /// \brief
+        /// Split the node at the index.
+        /// \param[out] node Node that will receive entries >= index.
+        /// \param[in] index Index at which to split the node.
         void Split (
             Node *node,
             ui32 index);
+        /// \brief
+        /// Concatenate the given node's entries to this one.
+        /// \param[in] node Node whose entries are to be concatenated.
+        /// The empty node is deleted after.
         void Concatenate (Node *node);
+        /// \brief
+        /// Concatenate the given entry.
+        /// \param[in] entry to concatenate.
         inline void Concatenate (const Entry &entry) {
             InsertEntry (entry, count);
         }
         /// \brief
         /// Insert the given entry at the given index.
+        /// \param[in] entry \see{Entry} to insert.
+        /// \param[in] index Index to insert at.
         void InsertEntry (
             const Entry &entry,
             ui32 index);
         /// \brief
         /// Remove the entry at the given index.
+        /// \param[in] index Index of entry to remove.
         void RemoveEntry (ui32 index);
         /// \brief
         /// Return true if the node is empty.
+        /// \return true == node is empty.
         inline bool IsEmpty () const {
             return count == 0;
         }
         /// \brief
         /// Return true if the node is full.
+        /// \return true == node is full.
         inline bool IsFull () const {
             return count == btree.header.entriesPerNode;
         }
         /// \brief
-        /// Return true if less than half the node is occupied.
+        /// Return true if less than half the nodes entries are occupied.
+        /// \return true if less than half the nodes entries are occupied.
         inline bool IsPoor () const {
             return count < btree.header.entriesPerNode / 2;
         }
         /// \brief
-        /// Return true if more than half the node is occupied.
+        /// Return true if more than half the nodes entries are occupied.
+        /// \return true if more than half the nodes entries are occupied.
         inline bool IsPlentiful () const {
             return count > btree.header.entriesPerNode / 2;
         }
 
+        /// \brief
+        /// Dump the nodes entries to stdout. Used to debug the implementation.
         void Dump ();
     } *root;
 
@@ -222,6 +250,19 @@ public:
 
     /// \brief
     /// ctor.
+    /// \param[in] fileAllocator_ \see{FileAllocator} to which this btree belongs.
+    /// \param[in] offset_ Offset of the \see{Header} block on disk.
+    /// \param[in] entriesPerNode If we're creating the heap, contains entries per
+    /// \see{Node}. If we're reading an existing heap, this value will come from the
+    /// \see{Header}.
+    /// \param[in] nodesPerPage \see{Node}s are allocated using a \see{BlockAllocator}.
+    /// This value sets the number of nodes that will fit on it's page. It's a subtle
+    /// tunning parameter that might result in slight performance gains (depending on
+    /// your situation). For the most part leaving it alone is the most sensible thing
+    /// to do.
+    /// \param[in] allocator This is the \see{Allocator} used to allocate pages
+    /// for the \see{BlockAllocator}. As with the previous parameter, the same
+    /// advice aplies.
     BTree (
         FileAllocator &fileAllocator_,
         ui64 offset_,
@@ -265,34 +306,62 @@ public:
     void Dump ();
 
 private:
+    /// \brief
+    /// Try to recursively insert the given entry starting with
+    /// the given 'root' node.
+    /// \param[in] entry \see{Node::Entry} to insert.
+    /// \param[in] node \see{Node} to insert in to.
+    /// \return true == node inserted. false == the entire sub-tree
+    /// rooted at node is full. Time to split the node.
     bool Insert (
         Node::Entry &entry,
         Node *node);
+    /// \brief
+    /// Try to recursively delete the given key starting with
+    /// the given 'root' node.
+    /// \param[in] key \see{Key} whose entry we want to delete.
+    /// \param[in] node \see{Node} to delete from.
+    /// \return true == entry was deleted. false == key not found.
     bool Remove (
         const Key &key,
         Node *node);
+    /// \brief
+    /// Maintain BTree structure.
     void RestoreBalance (
         Node *node,
         ui32 index);
+    /// \brief
+    /// Maintain BTree structure.
     void RotateRight (
         Node *node,
         ui32 index,
         Node *left,
         Node *right);
+    /// \brief
+    /// Maintain BTree structure.
     void RotateLeft (
         Node *node,
         ui32 index,
         Node *left,
         Node *right);
+    /// \brief
+    /// Maintain BTree structure.
     void Merge (
         Node *node,
         ui32 index,
         Node *left,
         Node *right);
 
+    /// \brief
+    /// Write the \see{Header} to disk.
     void Save ();
+    /// \brief
+    /// Set root node.
+    /// \param[in] node \see{Node} to set as new root.
     void SetRoot (Node *node);
 
+    /// \brief
+    /// Needs access to private members.
     friend struct FileAllocator;
 
     /// \brief
