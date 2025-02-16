@@ -17,7 +17,7 @@
 
 #include <cstring>
 #include "thekogans/util/Exception.h"
-#include "thekogans/util/FileAllocatorBTree.h"
+#include "thekogans/util/FileAllocator.h"
 
 namespace thekogans {
     namespace util {

@@ -113,7 +113,7 @@ namespace thekogans {
                 FileAllocator::SharedPtr GetFileAllocator (
                     const std::string &path,
                     std::size_t blockSize = 0,
-                    std::size_t blocksPerPage = DEFAULT_BTREE_ENTRIES_PER_NODE,
+                    std::size_t blocksPerPage = BTree::DEFAULT_ENTRIES_PER_NODE,
                     Allocator::SharedPtr allocator = DefaultAllocator::Instance ());
 
                 /// \brief
@@ -179,6 +179,39 @@ namespace thekogans {
                 /// \brief
                 /// LockedFilePtr is neither copy constructable, nor assignable.
                 THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (LockedFilePtr)
+            };
+
+            /// \struct FileAllocator::Flusher FileAllocator.h thekogans/util/FileAllocator.h
+            ///
+            /// \brief
+            /// FileAllocator uses a delayed approach to disc writes. To make sure
+            /// All FileAllocator cache is written out you need to call Flush at the
+            /// end of the operation (Alloc/Free). This can get tricky as exceptions
+            /// alter return paths. Use this class at the begining of a sequence of
+            /// operations and let it call Flush automativally. Ex:
+            ///
+            /// \code{.cpp}
+            /// using namespace thekogans;
+            ///
+            /// util::FileAllocator::SharedPtr allocator =
+            ///     util::FileAllocator::Pool::Instance ()->GetFileAllocator ("test.allocator");
+            /// util::FileAllocator::Flusher flusher (*allocator);
+            /// // Now you call call Alloc and Free as many times
+            /// // as you want and at the end of the scope, the
+            /// // FileAllocator will be flushed.
+            /// \endcode
+            struct _LIB_THEKOGANS_UTIL_DECL Flusher {
+                FileAllocator &fileAllocator;
+
+                Flusher (FileAllocator &fileAllocator_) :
+                    fileAllocator (fileAllocator_) {}
+                ~Flusher () {
+                    fileAllocator.Flush ();
+                }
+
+                /// \brief
+                /// Flusher is neither copy constructable, nor assignable.
+                THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (Flusher)
             };
 
             /// \struct FileAllocator::BlockInfo FileAllocator.h thekogans/util/FileAllocator.h
@@ -408,15 +441,6 @@ namespace thekogans {
 
             struct BTree;
 
-            /// \brief
-            /// Default number of entries per node.
-            /// NOTE: This is a tunable parameter that should be used
-            /// during system integration to provide the best performance
-            /// for your needs. Once the heap is created though, this
-            /// value is set in stone and the only way to change it is
-            /// to delete the file and try again.
-            static const std::size_t DEFAULT_BTREE_ENTRIES_PER_NODE = 256;
-
         private:
             /// \brief
             /// The file where the heap resides.
@@ -487,6 +511,7 @@ namespace thekogans {
             /// \see{Allocator} for allocating random sized
             /// block backing store \see{BlockBuffer}s.
             Allocator::SharedPtr blockAllocator;
+        #include "thekogans/util/FileAllocatorBTree.h"
             BTree *btree;
             /// \brief
             /// FileAllocator is meant to be shared between threads allocating
@@ -521,7 +546,7 @@ namespace thekogans {
             FileAllocator (
                 const std::string &path,
                 std::size_t blockSize = 0,
-                std::size_t blocksPerPage = DEFAULT_BTREE_ENTRIES_PER_NODE,
+                std::size_t blocksPerPage = BTree::DEFAULT_ENTRIES_PER_NODE,
                 Allocator::SharedPtr allocator = DefaultAllocator::Instance ());
             /// \brief
             /// dtor.
@@ -564,6 +589,12 @@ namespace thekogans {
             /// NOTE: If you hold a LockedFilePtr this function is off limits.
             /// \param[in] offset Offset of block to free.
             void Free (ui64 offset);
+
+            inline void Flush () {
+                if (btree != nullptr) {
+                    btree->Flush ();
+                }
+            }
 
             /// \brief
             /// Debugging helper. Dumps \see{Btree::Node}s to stdout.

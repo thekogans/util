@@ -19,7 +19,6 @@
 #include "thekogans/util/Heap.h"
 #include "thekogans/util/File.h"
 #include "thekogans/util/LockGuard.h"
-#include "thekogans/util/FileAllocatorBTree.h"
 #include "thekogans/util/FileAllocator.h"
 
 namespace thekogans {
