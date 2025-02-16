@@ -373,6 +373,12 @@ namespace thekogans {
             }
         }
 
+        void FileAllocator::FlushBTree () {
+            if (btree != nullptr) {
+                btree->Flush ();
+            }
+        }
+
         void FileAllocator::DumpBTree () {
             if (btree != nullptr) {
                 btree->Dump ();
@@ -391,7 +397,8 @@ namespace thekogans {
                 }
                 else {
                     THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                        "Heap corruption @ " THEKOGANS_UTIL_UI64_FORMAT,
+                        "Heap corruption @ " THEKOGANS_UTIL_UI64_FORMAT
+                        ", expecting a free fixed block.",
                         offset);
                 }
             }

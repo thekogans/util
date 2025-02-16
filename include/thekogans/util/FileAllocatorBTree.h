@@ -18,9 +18,10 @@
 /// \struct FileAllocator::BTree FileAllocatorBTree.h thekogans/util/FileAllocatorBTree.h
 ///
 /// \brief
-/// BTree for managing random size free block list.
+/// BTree for managing \see{FileAllocator} free, random size block list.
+/// It's broken out in to its own file because FileAllocator.h was getting too big to maintain.
 
-struct FileAllocator::BTree {
+struct BTree {
     /// \brief
     /// Keys are structured on block {size, offset}
     using Key = std::pair<ui64, ui64>;
@@ -48,6 +49,8 @@ private:
         /// Root node offset.
         ui64 rootOffset;
 
+        /// \brief
+        /// Size of header on disk.
         static const std::size_t SIZE =
             UI32_SIZE + // magic
             UI32_SIZE + // entriesPerNode
@@ -60,6 +63,8 @@ private:
             entriesPerNode (entriesPerNode_),
             rootOffset (0) {}
     } header;
+    /// \brief
+    /// An instance of \see{BlockAllocator} to allocate \see{Node}s.
     Allocator::SharedPtr nodeAllocator;
     /// \struct Fileallocator::BTree::Node FileallocatorBTree.h thekogans/util/FileallocatorBTree.h
     ///
@@ -146,9 +151,22 @@ private:
         /// \param[in] node Node to delete.
         static void Delete (Node *node);
 
+        /// \brief
+        /// Nodes delay writting themselves to disk until they are destroyed.
+        /// This way we amortize the cost of disk writes across multiple node
+        /// updates. As with any caching strategy, this one too trades in convenience
+        /// for performance. Performance gains are sizeable; 25% speedup on one
+        /// benchmark. The inconvenience is that you must make sure that the
+        /// \see{FileAllocator} is flushed before the application ends. To do
+        /// that, call \see{FileAllocator::FlushBTree}.
         inline void Save () {
             dirty = true;
         }
+        /// \brief
+        /// Return the child at the given index.
+        /// \param[in] index Index of child to retrieve
+        /// (0 == left, !0 == entries[index-1].right).
+        /// \return Child node at the given index. nullptr if no child at that index exists.
         Node *GetChild (ui32 index);
         bool Search (
             const Key &key,

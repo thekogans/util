@@ -39,7 +39,7 @@ namespace thekogans {
         /// | Header | Block 1 | ... | Block N |
         /// +--------+---------+-----+---------+
         ///
-        /// Header header
+        /// Header
         /// +-------+-------+-----------+-----------------+-------------+------------+
         /// | magic | flags | blockSize | freeBlockOffset | btreeOffset | rootOffset |
         /// +-------+-------+-----------+-----------------+-------------+------------+
@@ -121,6 +121,48 @@ namespace thekogans {
                 THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (Pool)
             };
 
+            /// \struct FileAllocator::Flusher FileAllocator.h thekogans/util/FileAllocator.h
+            ///
+            /// \brief
+            /// FileAllocator uses a delayed approach to disc writes. To make sure
+            /// All FileAllocator cache is written out you need to call Flush at the
+            /// end of the operation (Alloc/Free). This can get tricky as exceptions
+            /// alter return paths. Use this class at the begining of a sequence of
+            /// operations and let it call Flush automativally. Ex:
+            ///
+            /// \code{.cpp}
+            /// using namespace thekogans;
+            ///
+            /// {
+            ///     util::FileAllocator::SharedPtr allocator =
+            ///         util::FileAllocator::Pool::Instance ()->GetFileAllocator ("test.allocator");
+            ///     util::FileAllocator::Flusher flusher (*allocator);
+            ///     // Now you can call Alloc and Free as many times
+            ///     // as you want and at the end of the scope, the
+            ///     // FileAllocator will be flushed.
+            /// }
+            /// \endcode
+            struct _LIB_THEKOGANS_UTIL_DECL Flusher {
+                /// \brief
+                /// FileAllocator to flush in the dtor.
+                FileAllocator &fileAllocator;
+
+                /// \brief
+                /// ctor.
+                /// \param[in] fileAllocator_ FileAllocator to flush in the dtor.
+                Flusher (FileAllocator &fileAllocator_) :
+                    fileAllocator (fileAllocator_) {}
+                /// \brief
+                /// dtor.
+                ~Flusher () {
+                    fileAllocator.FlushBTree ();
+                }
+
+                /// \brief
+                /// Flusher is neither copy constructable, nor assignable.
+                THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (Flusher)
+            };
+
             /// \struct FileAllocator::LockedFilePtr FileAllocator.h thekogans/util/FileAllocator.h
             ///
             /// \brief
@@ -181,57 +223,57 @@ namespace thekogans {
                 THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (LockedFilePtr)
             };
 
-            /// \struct FileAllocator::Flusher FileAllocator.h thekogans/util/FileAllocator.h
-            ///
-            /// \brief
-            /// FileAllocator uses a delayed approach to disc writes. To make sure
-            /// All FileAllocator cache is written out you need to call Flush at the
-            /// end of the operation (Alloc/Free). This can get tricky as exceptions
-            /// alter return paths. Use this class at the begining of a sequence of
-            /// operations and let it call Flush automativally. Ex:
-            ///
-            /// \code{.cpp}
-            /// using namespace thekogans;
-            ///
-            /// util::FileAllocator::SharedPtr allocator =
-            ///     util::FileAllocator::Pool::Instance ()->GetFileAllocator ("test.allocator");
-            /// util::FileAllocator::Flusher flusher (*allocator);
-            /// // Now you call call Alloc and Free as many times
-            /// // as you want and at the end of the scope, the
-            /// // FileAllocator will be flushed.
-            /// \endcode
-            struct _LIB_THEKOGANS_UTIL_DECL Flusher {
-                FileAllocator &fileAllocator;
-
-                Flusher (FileAllocator &fileAllocator_) :
-                    fileAllocator (fileAllocator_) {}
-                ~Flusher () {
-                    fileAllocator.Flush ();
-                }
-
-                /// \brief
-                /// Flusher is neither copy constructable, nor assignable.
-                THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (Flusher)
-            };
-
             /// \struct FileAllocator::BlockInfo FileAllocator.h thekogans/util/FileAllocator.h
             ///
             /// \brief
             /// BlockInfo encapsulates the structure of the heap. It provides
             /// an api to read and write as well as to navigate (Prev/Next)
-            /// heap blocks in chronological order.
+            /// heap blocks in chronological order. Every block has the following
+            /// structure;
+            ///
+            /// +--------+------+--------+
+            /// | Header | Data | Footer |
+            /// +--------+------+--------+
+            ///
+            /// This design provides two benefits;
+            /// 1. Heap integrity. Header and Footer provide a nomans land
+            /// that BlockInfo uses to make sure the block has not been
+            /// corrupted by [over/under]flow writes.
+            /// 2. Ability to navigate the heap in chronological order.
+            /// (call BlockInfo::Prev/Next.)
             struct _LIB_THEKOGANS_UTIL_DECL BlockInfo {
             private:
+                /// \brief
+                /// FileAllocator file to read and write.
                 File &file;
+                /// \brief
+                /// Block offset.
                 ui64 offset;
-                /// \struct FileAllocator::BlockInfo::Header FileAllocator.h thekogans/util/FileAllocator.h
+                /// \struct FileAllocator::BlockInfo::Header FileAllocator.h
+                /// thekogans/util/FileAllocator.h
                 ///
                 /// \brief
+                /// Block header preceeds the user data and forms one half of
+                /// it's structure. BlockInfo uses the information found in
+                /// header to compare against what's fond in footer. If the
+                /// two match, the block is considered intact. If they don't
+                /// an exception is thrown indicating heap corruption.
                 struct _LIB_THEKOGANS_UTIL_DECL Header {
+                    /// \brief
+                    /// A combination of FLAGS_FREE and FLAGS_FIXED.
                     Flags32 flags;
+                    /// \brief
+                    /// Block size (not including header and footer).
                     ui64 size;
+                    /// \brief
+                    /// If FLAGS_FIXED and FLAGS_FREE are set this offset
+                    /// will point to the next fixed block in the free list.
+                    /// Otherwise this field is ignored. This is the only
+                    /// difference between header and footer.
                     ui64 nextBlockOffset;
 
+                    /// \brief
+                    /// Size of header on disk.
                     static const std::size_t SIZE =
                     #if defined (THEKOGANS_UTIL_FILE_ALLOCATOR_BLOCK_INFO_USE_MAGIC)
                         UI32_SIZE + // magic
@@ -283,20 +325,35 @@ namespace thekogans {
                         flags.Set (FLAGS_FIXED, fixed);
                     }
 
+                    /// \brief
+                    /// Read the header from the disk.
+                    /// \param[in] file File to read from.
+                    /// \param[in] offset Offset where the header begins.
                     void Read (
                         File &file,
                         ui64 offset);
+                    /// \brief
+                    /// Write the header to the disk.
+                    /// \param[in] file File to write to.
+                    /// \param[in] offset Offset where the header begins.
                     void Write (
                         File &file,
                         ui64 offset);
                 } header;
-                /// \struct FileAllocator::BlockInfo::Footer FileAllocator.h thekogans/util/FileAllocator.h
+                /// \struct FileAllocator::BlockInfo::Footer FileAllocator.h
+                /// thekogans/util/FileAllocator.h
                 ///
                 /// \brief
                 struct _LIB_THEKOGANS_UTIL_DECL Footer {
+                    /// \brief
+                    /// Combination of FLAGS_FREE and FLAGS_FIXED.
                     Flags32 flags;
+                    /// \brief
+                    /// Block size (not including header and footer).
                     ui64 size;
 
+                    /// \brief
+                    /// Size of footer on disk.
                     static const std::size_t SIZE =
                     #if defined (THEKOGANS_UTIL_FILE_ALLOCATOR_BLOCK_INFO_USE_MAGIC)
                         UI32_SIZE + // magic
@@ -304,40 +361,82 @@ namespace thekogans {
                         UI32_SIZE + // flags
                         UI64_SIZE;  // size
 
+                    /// \brief
+                    /// ctor.
+                    /// \param[in] flags_ Combination of FLAGS_FREE and FLAGS_FIXED.
+                    /// \param[in] size_ Block user data size.
                     Footer (
                         Flags32 flags_ = 0,
                         ui64 size_ = 0) :
                         flags (flags_),
                         size (size_) {}
 
+                    /// \brief
+                    /// Return true if FLAGS_FREE set.
+                    /// \return true == FLAGS_FREE set.
                     inline bool IsFree () const {
                         return flags.Test (FLAGS_FREE);
                     }
+                    /// \brief
+                    /// Set/unset the FLAGS_FREE flag.
+                    /// \param[in] free true == set, false == unset
                     inline void SetFree (bool free) {
                         flags.Set (FLAGS_FREE, free);
                     }
+                    /// \brief
+                    /// Return true if FLAGS_FIXED set.
+                    /// \return true == FLAGS_FIXED set.
                     inline bool IsFixed () const {
                         return flags.Test (FLAGS_FIXED);
                     }
+                    /// \brief
+                    /// Set/unset the FLAGS_FIXED flag.
+                    /// \param[in] free true == set, false == unset
                     inline void SetFixed (bool fixed) {
                         flags.Set (FLAGS_FIXED, fixed);
                     }
 
+                    /// \brief
+                    /// Read the footer from the disk.
+                    /// \param[in] file File to read from.
+                    /// \param[in] offset Offset where the footer begins.
                     void Read (
                         File &file,
                         ui64 offset);
+                    /// \brief
+                    /// Write the footer to the disk.
+                    /// \param[in] file File to write to.
+                    /// \param[in] offset Offset where the footer begins.
                     void Write (
                         File &file,
                         ui64 offset);
                 } footer;
 
             public:
+                /// \brief
+                /// If this flag is set, the block is free. Otherwise it's allocated.
                 static const std::size_t FLAGS_FREE = 1;
+                /// \brief
+                /// If this flag is set the block is fixed. Otherwise it's random size.
                 static const std::size_t FLAGS_FIXED = 2;
+                /// \brief
+                /// Exposed because header is private.
                 static const std::size_t HEADER_SIZE = Header::SIZE;
+                /// \brief
+                /// Exposed because footer is private.
                 static const std::size_t FOOTER_SIZE = Footer::SIZE;
+                /// \brief
+                /// BlockInfo size on disk.
                 static const std::size_t SIZE = HEADER_SIZE + FOOTER_SIZE;
 
+                /// \brief
+                /// ctor.
+                /// \param[in] file_ \see{File} containing the BlockInfo.
+                /// \param[in] offset_ Offset in the file where the BlockInfo resides.
+                /// \param[in] flags Combination of FLAGS_FIXED and FLAGS_FREE.
+                /// \param[in] size Size of the block (not including the size
+                /// of the BlockInfo itself).
+                /// \param[in] nextBlockOffset
                 BlockInfo (
                     File &file_,
                     ui64 offset_ = 0,
@@ -349,19 +448,34 @@ namespace thekogans {
                     header (flags, size, nextBlockOffset),
                     footer (flags, size) {}
 
+                /// \brief
+                /// Return the offset.
+                /// \return Offset to the begining of the block.
                 inline ui64 GetOffset () const {
                     return offset;
                 }
+                /// \brief
+                /// Set offset to the given value.
+                /// \param[in] offset_ New offset value.
                 inline void SetOffset (ui64 offset_) {
                     offset = offset_;
                 }
+                /// \brief
+                /// Return true if this is the first block in the heap.
+                /// \return true == first block in the heap.
                 inline bool IsFirst () const {
                     return GetOffset () == FileAllocator::MIN_BLOCK_OFFSET;
                 }
+                /// \brief
+                /// Return true if this is the last block in the heap.
+                /// \return true == last block in the heap.
                 inline bool IsLast () const {
                     return GetOffset () + GetSize () + FOOTER_SIZE == file.GetSize ();
                 }
 
+                /// \brief
+                /// Return true if FLAGS_FREE is set.
+                /// \return true if FLAGS_FREE is set.
                 inline bool IsFree () const {
                     return header.IsFree ();
                 }
@@ -418,7 +532,11 @@ namespace thekogans {
             /// that have changed.
             struct _LIB_THEKOGANS_UTIL_DECL BlockBuffer : public Buffer {
             private:
+                /// \brief
+                /// \see{FileAllocator} containing the block.
                 FileAllocator &fileAllocator;
+                /// \brief
+                /// Block info.
                 BlockInfo block;
 
             public:
@@ -438,8 +556,6 @@ namespace thekogans {
                 /// BlockBuffer is neither copy constructable, nor assignable.
                 THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (BlockBuffer)
             };
-
-            struct BTree;
 
         private:
             /// \brief
@@ -511,7 +627,12 @@ namespace thekogans {
             /// \see{Allocator} for allocating random sized
             /// block backing store \see{BlockBuffer}s.
             Allocator::SharedPtr blockAllocator;
-        #include "thekogans/util/FileAllocatorBTree.h"
+            /// \brief
+            /// Include the \see{BTree} header.
+            /// I split it out because this file was getting too big to maintain.
+            #include "thekogans/util/FileAllocatorBTree.h"
+            /// \brief
+            /// \see{BTree} to manage heap free space (for random size heaps only).
             BTree *btree;
             /// \brief
             /// FileAllocator is meant to be shared between threads allocating
@@ -590,11 +711,9 @@ namespace thekogans {
             /// \param[in] offset Offset of block to free.
             void Free (ui64 offset);
 
-            inline void Flush () {
-                if (btree != nullptr) {
-                    btree->Flush ();
-                }
-            }
+            /// \brief
+            /// Flush the btree cache to disk.
+            void FlushBTree ();
 
             /// \brief
             /// Debugging helper. Dumps \see{Btree::Node}s to stdout.
@@ -626,6 +745,54 @@ namespace thekogans {
             friend Serializer &operator >> (
                 Serializer &serializer,
                 Header &header);
+
+            /// \brief
+            /// Needs access to private members.
+            friend bool operator == (
+                const BTree::Key &key1,
+                const BTree::Key &key2);
+            /// \brief
+            /// Needs access to private members.
+            friend bool operator != (
+                const BTree::Key &key1,
+                const BTree::Key &key2);
+            /// \brief
+            /// Needs access to private members.
+            friend bool operator < (
+                const BTree::Key &key1,
+                const BTree::Key &key2);
+            /// \brief
+            /// Needs access to private members.
+            friend Serializer &operator << (
+               Serializer &serializer,
+               const BTree::Key &key);
+            /// \brief
+            /// Needs access to private members.
+            friend Serializer &operator >> (
+                Serializer &serializer,
+                BTree::Key &key);
+
+            /// \brief
+            /// Needs access to private members.
+            friend Serializer &operator << (
+                Serializer &serializer,
+                const BTree::Node::Entry &entry);
+            /// \brief
+            /// Needs access to private members.
+            friend Serializer &operator >> (
+                Serializer &serializer,
+                BTree::Node::Entry &entry);
+
+            /// \brief
+            /// Needs access to private members.
+            friend Serializer &operator << (
+                Serializer &serializer,
+                const BTree::Header &header);
+            /// \brief
+            /// Needs access to private members.
+            friend Serializer &operator >> (
+                Serializer &serializer,
+                BTree::Header &header);
 
             /// \brief
             /// FileAllocator is neither copy constructable, nor assignable.
