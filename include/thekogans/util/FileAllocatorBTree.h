@@ -180,6 +180,40 @@ private:
             const Key &key,
             ui32 &index) const;
         /// \brief
+        /// Try to recursively insert the given entry.
+        /// \param[in] entry \see{Entry} to insert.
+        /// \return true == entry inserted. false == the entire sub-tree
+        /// rooted at this node is full. Time to split the node.
+        bool Insert (Entry &entry);
+        /// \brief
+        /// Try to recursively delete the given key starting with
+        /// the given 'root' node.
+        /// \param[in] key \see{Key} whose entry we want to delete.
+        /// \param[in] node \see{Node} to delete from.
+        /// \return true == entry was deleted. false == key not found.
+        bool Remove (const Key &key);
+        /// \brief
+        /// Maintain BTree structure.
+        void RestoreBalance (ui32 index);
+        /// \brief
+        /// Maintain BTree structure.
+        void RotateRight (
+            ui32 index,
+            Node *left,
+            Node *right);
+        /// \brief
+        /// Maintain BTree structure.
+        void RotateLeft (
+            ui32 index,
+            Node *left,
+            Node *right);
+        /// \brief
+        /// Maintain BTree structure.
+        void Merge (
+            ui32 index,
+            Node *left,
+            Node *right);
+        /// \brief
         /// Split the node at the index.
         /// \param[out] node Node that will receive entries >= index.
         /// \param[in] index Index at which to split the node.
@@ -306,52 +340,6 @@ public:
     void Dump ();
 
 private:
-    /// \brief
-    /// Try to recursively insert the given entry starting with
-    /// the given 'root' node.
-    /// \param[in] entry \see{Node::Entry} to insert.
-    /// \param[in] node \see{Node} to insert in to.
-    /// \return true == node inserted. false == the entire sub-tree
-    /// rooted at node is full. Time to split the node.
-    bool Insert (
-        Node::Entry &entry,
-        Node *node);
-    /// \brief
-    /// Try to recursively delete the given key starting with
-    /// the given 'root' node.
-    /// \param[in] key \see{Key} whose entry we want to delete.
-    /// \param[in] node \see{Node} to delete from.
-    /// \return true == entry was deleted. false == key not found.
-    bool Remove (
-        const Key &key,
-        Node *node);
-    /// \brief
-    /// Maintain BTree structure.
-    void RestoreBalance (
-        Node *node,
-        ui32 index);
-    /// \brief
-    /// Maintain BTree structure.
-    void RotateRight (
-        Node *node,
-        ui32 index,
-        Node *left,
-        Node *right);
-    /// \brief
-    /// Maintain BTree structure.
-    void RotateLeft (
-        Node *node,
-        ui32 index,
-        Node *left,
-        Node *right);
-    /// \brief
-    /// Maintain BTree structure.
-    void Merge (
-        Node *node,
-        ui32 index,
-        Node *left,
-        Node *right);
-
     /// \brief
     /// Write the \see{Header} to disk.
     void Save ();

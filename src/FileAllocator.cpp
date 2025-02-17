@@ -160,14 +160,22 @@ namespace thekogans {
                 fileAllocator (fileAllocator_),
                 block (fileAllocator.file, offset) {
             block.Read ();
-            if (length == 0) {
-                length = block.GetSize ();
+            if (!block.IsFree ()) {
+                if (length == 0) {
+                    length = block.GetSize ();
+                }
+                Resize (
+                    length,
+                    block.IsFixed () ?
+                        fileAllocator.fixedAllocator :
+                        fileAllocator.blockAllocator);
             }
-            Resize (
-                length,
-                block.IsFixed () ?
-                    fileAllocator.fixedAllocator :
-                    fileAllocator.blockAllocator);
+            else {
+                THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
+                    "Trying to acquire a FileAllocator::BlockBuffer "
+                    "on an unallocated block: " THEKOGANS_UTIL_UI64_FORMAT,
+                    offset);
+            }
         }
 
         std::size_t FileAllocator::BlockBuffer::Read (
@@ -297,6 +305,7 @@ namespace thekogans {
                     BTree::Key result = btree->Search (BTree::Key (size, 0));
                     if (result.second != 0) {
                         assert (result.first >= size);
+                        // FIXME: investigate how to combine this Delete and the Search above.
                         btree->Delete (result);
                         offset = result.second;
                         if (result.first > size) {
