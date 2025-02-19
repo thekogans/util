@@ -95,13 +95,20 @@ namespace thekogans {
         BTree::Node *BTree::Node::Alloc (
                 BTree &btree,
                 ui64 offset) {
-            return new (
+            Node *node = new (
                 btree.nodeAllocator->Alloc (
                     Size (btree.header.entriesPerNode))) Node (btree, offset);
+            for (std::size_t i = 1; i < btree.header.entriesPerNode; ++i) {
+                new (node->entries + i) Node::Entry ();
+            }
+            return node;
         }
 
         void BTree::Node::Free (Node *node) {
             if (node != nullptr) {
+                for (std::size_t i = 1; i < node->btree.header.entriesPerNode; ++i) {
+                    node->entries[i].~Entry ();
+                }
                 node->~Node ();
                 node->btree.nodeAllocator->Free (
                     node, Size (node->btree.header.entriesPerNode));

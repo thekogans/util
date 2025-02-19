@@ -29,7 +29,7 @@
 namespace thekogans {
     namespace util {
 
-        /// \struct FileAllocator::BTree FileAllocatorBTree.h thekogans/util/FileAllocatorBTree.h
+        /// \struct BTree BTree.h thekogans/util/BTree.h
         ///
         /// \brief
         /// BTree for managing \see{FileAllocator} free, random size block list.
@@ -54,8 +54,7 @@ namespace thekogans {
             /// \brief
             /// Offset of the \see{Header} block.
             ui64 offset;
-            /// \struct Fileallocator::BTree::Header FileallocatorBTree.h
-            /// thekogans/util/FileallocatorBTree.h
+            /// \struct BTree::Header BTree.h thekogans/util/BTree.h
             ///
             /// \brief
             /// Header contains global btree info.
@@ -84,8 +83,7 @@ namespace thekogans {
             /// \brief
             /// An instance of \see{BlockAllocator} to allocate \see{Node}s.
             Allocator::SharedPtr nodeAllocator;
-            /// \struct Fileallocator::BTree::Node FileallocatorBTree.h
-            /// thekogans/util/FileallocatorBTree.h
+            /// \struct BTree::Node BTree.h thekogans/util/BTree.h
             ///
             /// \brief
             /// BTree nodes store sorted keys and pointers to children nodes.
