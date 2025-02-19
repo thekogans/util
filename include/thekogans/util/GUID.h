@@ -37,6 +37,10 @@ namespace thekogans {
         /// created from file/buffer contents, and even randomly
         /// generated. GUID::FromRandom uses the \sse{RandomSource}
         /// to gather platform specific entropy.
+        /// NOTE: GUID::FromFile and GUID::FromBuffer use \see{MD5}
+        /// to hash the data in to a guid sized digest. While deprecated
+        /// for cryptographic work, it's perfectly safe to use in low
+        /// security situations. Keep that in mind when using GUID.
 
         struct _LIB_THEKOGANS_UTIL_DECL GUID {
             enum {

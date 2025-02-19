@@ -17,12 +17,13 @@
 
 #include <cstring>
 #include "thekogans/util/Exception.h"
-#include "thekogans/util/FileAllocator.h"
+#include "thekogans/util/LockGuard.h"
+#include "thekogans/util/BTree.h"
 
 namespace thekogans {
     namespace util {
 
-        FileAllocator::BTree::Node::Node (
+        BTree::Node::Node (
                 BTree &btree_,
                 ui64 offset_) :
                 btree (btree_),
@@ -32,7 +33,8 @@ namespace thekogans {
                 leftNode (0),
                 dirty (false) {
             if (offset != 0) {
-                BlockBuffer buffer (btree.fileAllocator, offset);
+                FileAllocator::LockedFilePtr file (*btree.fileAllocator);
+                FileAllocator::BlockBuffer buffer (*btree.fileAllocator, offset);
                 buffer.Read ();
                 ui32 magic;
                 buffer >> magic;
@@ -47,19 +49,21 @@ namespace thekogans {
                 }
                 else {
                     THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                        "Corrupt FileAllocator::BTree::Node: " THEKOGANS_UTIL_UI64_FORMAT,
+                        "Corrupt BTree::Node: " THEKOGANS_UTIL_UI64_FORMAT,
                         offset);
                 }
             }
             else {
-                offset = btree.fileAllocator.AllocFixedBlock ();
+                offset = btree.fileAllocator->Alloc (
+                    FileSize (btree.header.entriesPerNode));
                 Save ();
             }
         }
 
-        FileAllocator::BTree::Node::~Node () {
+        BTree::Node::~Node () {
             if (dirty) {
-                BlockBuffer buffer (btree.fileAllocator, offset);
+                FileAllocator::LockedFilePtr file (*btree.fileAllocator);
+                FileAllocator::BlockBuffer buffer (*btree.fileAllocator, offset);
                 buffer << MAGIC32 << count;
                 if (count > 0) {
                     buffer << leftOffset;
@@ -79,16 +83,16 @@ namespace thekogans {
             }
         }
 
-        std::size_t FileAllocator::BTree::Node::FileSize (std::size_t entriesPerNode) {
-            const std::size_t ENTRY_SIZE = KEY_SIZE + UI64_SIZE;
+        std::size_t BTree::Node::FileSize (std::size_t entriesPerNode) {
+            const std::size_t ENTRY_SIZE = KEY_SIZE + UI64_SIZE + UI64_SIZE;
             return UI32_SIZE + UI32_SIZE + UI64_SIZE + entriesPerNode * ENTRY_SIZE;
         }
 
-        std::size_t FileAllocator::BTree::Node::Size (std::size_t entriesPerNode) {
+        std::size_t BTree::Node::Size (std::size_t entriesPerNode) {
             return sizeof (Node) + (entriesPerNode - 1) * sizeof (Entry);
         }
 
-        FileAllocator::BTree::Node *FileAllocator::BTree::Node::Alloc (
+        BTree::Node *BTree::Node::Alloc (
                 BTree &btree,
                 ui64 offset) {
             return new (
@@ -96,7 +100,7 @@ namespace thekogans {
                     Size (btree.header.entriesPerNode))) Node (btree, offset);
         }
 
-        void FileAllocator::BTree::Node::Free (Node *node) {
+        void BTree::Node::Free (Node *node) {
             if (node != nullptr) {
                 node->~Node ();
                 node->btree.nodeAllocator->Free (
@@ -104,9 +108,9 @@ namespace thekogans {
             }
         }
 
-        void FileAllocator::BTree::Node::Delete (Node *node) {
+        void BTree::Node::Delete (Node *node) {
             if (node->count == 0) {
-                node->btree.fileAllocator.FreeFixedBlock (node->offset);
+                node->btree.fileAllocator->Free (node->offset);
                 // We've just deleted it's block, writting to it now would be a bad idea.
                 node->dirty = false;
                 Free (node);
@@ -119,7 +123,7 @@ namespace thekogans {
             }
         }
 
-        FileAllocator::BTree::Node *FileAllocator::BTree::Node::GetChild (ui32 index) {
+        BTree::Node *BTree::Node::GetChild (ui32 index) {
             if (index == 0) {
                 if (leftNode == 0 && leftOffset != 0) {
                     leftNode = Alloc (btree, leftOffset);
@@ -137,7 +141,7 @@ namespace thekogans {
             }
         }
 
-        bool FileAllocator::BTree::Node::Search (
+        bool BTree::Node::Search (
                 const Key &key,
                 ui32 &index) const {
             index = 0;
@@ -158,51 +162,52 @@ namespace thekogans {
             return false;
         }
 
-        bool FileAllocator::BTree::Node::Insert (Entry &entry) {
+        BTree::Node::InsertResult BTree::Node::Insert (Entry &entry) {
             ui32 index;
-            // This search collapses all duplicate nodes in to one.
-            // That means that you can insert the same node all you
-            // want, but it will only be inserted the first time with
-            // all subsequent ones being a noop.
-            if (!Search (entry.key, index)) {
-                Node *child = GetChild (index);
-                if (child == nullptr || !child->Insert (entry)) {
-                    if (!IsFull ()) {
-                        InsertEntry (entry, index);
-                        Save ();
-                    }
-                    else {
-                        // Node is full. Split it and insert the entry
-                        // in to the proper daughter node. Return the
-                        // entry at the split point to be added up the
-                        // parent chain.
-                        Node *right = Alloc (btree);
-                        ui32 splitIndex = btree.header.entriesPerNode / 2;
-                        Split (right, splitIndex);
-                        if (index != splitIndex) {
-                            if (index < splitIndex) {
-                                InsertEntry (entry, index);
-                            }
-                            else {
-                                right->InsertEntry (entry, index - splitIndex);
-                            }
-                            entry = right->entries[0];
-                            right->RemoveEntry (0);
-                        }
-                        Save ();
-                        right->leftOffset = entry.rightOffset;
-                        right->leftNode = entry.rightNode;
-                        right->Save ();
-                        entry.rightOffset = right->offset;
-                        entry.rightNode = right;
-                        return false;
-                    }
+            if (Search (entry.key, index)) {
+                return Duplicate;
+            }
+            Node *child = GetChild (index);
+            if (child != nullptr) {
+                InsertResult result = child->Insert (entry);
+                if (result == Inserted || result == Duplicate) {
+                    return result;
                 }
             }
-            return true;
+            if (!IsFull ()) {
+                InsertEntry (entry, index);
+                Save ();
+                return Inserted;
+            }
+            else {
+                // Node is full. Split it and insert the entry
+                // in to the proper daughter node. Return the
+                // entry at the split point to be added up the
+                // parent chain.
+                Node *right = Alloc (btree);
+                ui32 splitIndex = btree.header.entriesPerNode / 2;
+                Split (right, splitIndex);
+                if (index != splitIndex) {
+                    if (index < splitIndex) {
+                        InsertEntry (entry, index);
+                    }
+                    else {
+                        right->InsertEntry (entry, index - splitIndex);
+                    }
+                    entry = right->entries[0];
+                    right->RemoveEntry (0);
+                }
+                Save ();
+                right->leftOffset = entry.rightOffset;
+                right->leftNode = entry.rightNode;
+                right->Save ();
+                entry.rightOffset = right->offset;
+                entry.rightNode = right;
+                return Overflow;
+            }
         }
 
-        bool FileAllocator::BTree::Node::Remove (const Key &key) {
+        bool BTree::Node::Remove (const Key &key) {
             ui32 index;
             bool found = Search (key, index);
             Node *child = GetChild (found ? index + 1 : index);
@@ -213,6 +218,7 @@ namespace thekogans {
                         leaf = leaf->GetChild (0);
                     }
                     entries[index].key = leaf->entries[0].key;
+                    entries[index].value = leaf->entries[0].value;
                     child->Remove (leaf->entries[0].key);
                     if (child->IsPoor ()) {
                         RestoreBalance (index);
@@ -233,7 +239,7 @@ namespace thekogans {
             return false;
         }
 
-        void FileAllocator::BTree::Node::RestoreBalance (ui32 index) {
+        void BTree::Node::RestoreBalance (ui32 index) {
             if (index == count) {
                 Node *left = GetChild (index - 1);
                 Node *right = GetChild (index);
@@ -263,7 +269,7 @@ namespace thekogans {
             }
         }
 
-        void FileAllocator::BTree::Node::RotateRight (
+        void BTree::Node::RotateRight (
                 ui32 index,
                 Node *left,
                 Node *right) {
@@ -282,7 +288,7 @@ namespace thekogans {
             right->Save ();
         }
 
-        void FileAllocator::BTree::Node::RotateLeft (
+        void BTree::Node::RotateLeft (
                 ui32 index,
                 Node *left,
                 Node *right) {
@@ -300,7 +306,7 @@ namespace thekogans {
             right->Save ();
         }
 
-        void FileAllocator::BTree::Node::Merge (
+        void BTree::Node::Merge (
                 ui32 index,
                 Node *left,
                 Node *right) {
@@ -315,7 +321,7 @@ namespace thekogans {
             Delete (right);
         }
 
-        void FileAllocator::BTree::Node::Split (
+        void BTree::Node::Split (
                 Node *node,
                 ui32 index) {
             node->count = count - index;
@@ -326,7 +332,7 @@ namespace thekogans {
             count = index;
         }
 
-        void FileAllocator::BTree::Node::Concatenate (Node *node) {
+        void BTree::Node::Concatenate (Node *node) {
             std::memcpy (
                 entries + count,
                 node->entries,
@@ -335,7 +341,7 @@ namespace thekogans {
             node->count = 0;
         }
 
-        void FileAllocator::BTree::Node::InsertEntry (
+        void BTree::Node::InsertEntry (
                 const Entry &entry,
                 ui32 index) {
             std::memmove (
@@ -345,19 +351,19 @@ namespace thekogans {
             entries[index] = entry;
         }
 
-        void FileAllocator::BTree::Node::RemoveEntry (ui32 index) {
+        void BTree::Node::RemoveEntry (ui32 index) {
             std::memcpy (
                 entries + index,
                 entries + index + 1,
                 (--count - index) * sizeof (Entry));
         }
 
-        void FileAllocator::BTree::Node::Dump () {
+        void BTree::Node::Dump () {
             if (count > 0) {
                 std::cout << offset << ": " << leftOffset;
                 for (ui32 i = 0; i < count; ++i) {
-                    std::cout << " ; [" << entries[i].key.first << ", " <<
-                        entries[i].key.second << "] ; " << entries[i].rightOffset;
+                    std::cout << " ; [" << entries[i].key.ToString () << ", " <<
+                        entries[i].value << "] ; " << entries[i].rightOffset;
                 }
                 std::cout << "\n";
                 for (ui32 i = 0; i < count; ++i) {
@@ -369,8 +375,8 @@ namespace thekogans {
             }
         }
 
-        FileAllocator::BTree::BTree (
-                FileAllocator &fileAllocator_,
+        BTree::BTree (
+                FileAllocator::SharedPtr fileAllocator_,
                 ui64 offset_,
                 std::size_t entriesPerNode,
                 std::size_t nodesPerPage,
@@ -380,7 +386,8 @@ namespace thekogans {
                 header ((ui32)entriesPerNode),
                 root (nullptr) {
             if (offset != 0) {
-                BlockBuffer buffer (fileAllocator, offset, Header::SIZE);
+                FileAllocator::LockedFilePtr file (*fileAllocator);
+                FileAllocator::BlockBuffer buffer (*fileAllocator, offset, Header::SIZE);
                 buffer.Read ();
                 ui32 magic;
                 buffer >> magic;
@@ -389,12 +396,12 @@ namespace thekogans {
                 }
                 else {
                     THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                        "Corrupt FileAllocator::BTree: " THEKOGANS_UTIL_UI64_FORMAT,
+                        "Corrupt BTree: " THEKOGANS_UTIL_UI64_FORMAT,
                         offset);
                 }
             }
             else {
-                offset = fileAllocator.AllocFixedBlock ();
+                offset = fileAllocator->Alloc (Header::SIZE);
                 Save ();
             }
             nodeAllocator =
@@ -409,30 +416,31 @@ namespace thekogans {
             }
         }
 
-        FileAllocator::BTree::~BTree () {
+        BTree::~BTree () {
             Node::Free (root);
         }
 
-        FileAllocator::BTree::Key FileAllocator::BTree::Search (const Key &key) {
-            Key result (UI64_MAX, 0);
-            Node *node = root;
-            while (node != nullptr) {
-                ui32 index;
+        bool BTree::Search (
+                const Key &key,
+                ui64 &value) {
+            LockGuard<SpinLock> guard (spinLock);
+            ui32 index;
+            for (Node *node = root; node != nullptr; node = node->GetChild (index)) {
                 if (node->Search (key, index)) {
-                    return key;
+                    value = node->entries[index].value;
+                    return true;
                 }
-                if (index < node->count &&
-                        node->entries[index].key > key && node->entries[index].key < result) {
-                    result = node->entries[index].key;
-                }
-                node = node->GetChild (index);
             }
-            return result;
+            return false;
         }
 
-        void FileAllocator::BTree::Add (const Key &key) {
-            Node::Entry entry (key);
-            if (!root->Insert (entry)) {
+        bool BTree::Add (
+                const Key &key,
+                ui64 value) {
+            LockGuard<SpinLock> guard (spinLock);
+            Node::Entry entry (key, value);
+            Node::InsertResult result = root->Insert (entry);
+            if (result == Node::Overflow) {
                 // The path to the leaf node is full.
                 // Create a new root node and make the entry
                 // its first.
@@ -442,10 +450,13 @@ namespace thekogans {
                 node->InsertEntry (entry, 0);
                 node->Save ();
                 SetRoot (node);
+                result = Node::Inserted;
             }
+            return result == Node::Inserted;
         }
 
-        bool FileAllocator::BTree::Delete (const Key &key) {
+        bool BTree::Delete (const Key &key) {
+            LockGuard<SpinLock> guard (spinLock);
             bool removed = root->Remove (key);
             if (removed && root->IsEmpty () && root->GetChild (0) != nullptr) {
                 Node *node = root;
@@ -455,87 +466,57 @@ namespace thekogans {
             return removed;
         }
 
-        void FileAllocator::BTree::Flush () {
+        void BTree::Flush () {
+            LockGuard<SpinLock> guard (spinLock);
             Node::Free (root);
             root = Node::Alloc (*this, header.rootOffset);
         }
 
-        void FileAllocator::BTree::Dump () {
+        void BTree::Dump () {
+            LockGuard<SpinLock> guard (spinLock);
             if (root != nullptr) {
                 root->Dump ();
             }
         }
 
-        void FileAllocator::BTree::Save () {
-            BlockBuffer buffer (fileAllocator, offset, Header::SIZE);
+        void BTree::Save () {
+            FileAllocator::LockedFilePtr file (*fileAllocator);
+            FileAllocator::BlockBuffer buffer (*fileAllocator, offset, Header::SIZE);
             buffer << MAGIC32 << header;
             buffer.Write ();
         }
 
-        void FileAllocator::BTree::SetRoot (Node *node) {
+        void BTree::SetRoot (Node *node) {
             root = node;
             header.rootOffset = root->offset;
             Save ();
         }
 
-        inline bool operator == (
-                const FileAllocator::BTree::Key &key1,
-                const FileAllocator::BTree::Key &key2) {
-            return key1.first == key2.first && key1.second == key2.second;
-        }
-
-        inline bool operator != (
-                const FileAllocator::BTree::Key &key1,
-                const FileAllocator::BTree::Key &key2) {
-            return key1.first != key2.first || key1.second != key2.second;
-        }
-
-        inline bool operator < (
-                const FileAllocator::BTree::Key &key1,
-                const FileAllocator::BTree::Key &key2) {
-            return key1.first < key2.first ||
-                (key1.first == key2.first && key1.second < key2.second);
-        }
-
         inline Serializer &operator << (
-               Serializer &serializer,
-               const FileAllocator::BTree::Key &key) {
-            serializer << key.first << key.second;
+                Serializer &serializer,
+                const BTree::Node::Entry &entry) {
+            serializer << entry.key << entry.value << entry.rightOffset;
             return serializer;
         }
 
         inline Serializer &operator >> (
                 Serializer &serializer,
-                FileAllocator::BTree::Key &key) {
-            serializer >> key.first >> key.second;
-            return serializer;
-        }
-
-        inline Serializer &operator << (
-                Serializer &serializer,
-                const FileAllocator::BTree::Node::Entry &entry) {
-            serializer << entry.key << entry.rightOffset;
-            return serializer;
-        }
-
-        inline Serializer &operator >> (
-                Serializer &serializer,
-                FileAllocator::BTree::Node::Entry &entry) {
-            serializer >> entry.key >> entry.rightOffset;
+                BTree::Node::Entry &entry) {
+            serializer >> entry.key >> entry.value >> entry.rightOffset;
             entry.rightNode = nullptr;
             return serializer;
         }
 
         inline Serializer &operator << (
                 Serializer &serializer,
-                const FileAllocator::BTree::Header &header) {
+                const BTree::Header &header) {
             serializer << header.entriesPerNode << header.rootOffset;
             return serializer;
         }
 
         inline Serializer &operator >> (
                 Serializer &serializer,
-                FileAllocator::BTree::Header &header) {
+                BTree::Header &header) {
             serializer >> header.entriesPerNode >> header.rootOffset;
             return serializer;
         }

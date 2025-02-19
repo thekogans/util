@@ -74,7 +74,7 @@ private:
     /// BTree nodes store sorted keys and pointers to children nodes.
     struct Node {
         /// \brief
-        /// BTree to whch this node belongs.
+        /// BTree to which this node belongs.
         BTree &btree;
         /// \brief
         /// Node block offset.
@@ -121,7 +121,7 @@ private:
 
         /// \brief
         /// ctor.
-        /// \param[in] btree_ BTree to whch this node belongs.
+        /// \param[in] btree_ BTree to which this node belongs.
         /// \param[in] offset_ Node offset.
         Node (
             BTree &btree_,
@@ -186,8 +186,7 @@ private:
         /// rooted at this node is full. Time to split the node.
         bool Insert (Entry &entry);
         /// \brief
-        /// Try to recursively delete the given key starting with
-        /// the given 'root' node.
+        /// Try to recursively delete the given key.
         /// \param[in] key \see{Key} whose entry we want to delete.
         /// \param[in] node \see{Node} to delete from.
         /// \return true == entry was deleted. false == key not found.

@@ -143,10 +143,12 @@ namespace thekogans {
             /// }
             /// \endcode
             struct _LIB_THEKOGANS_UTIL_DECL Flusher {
+            private:
                 /// \brief
                 /// FileAllocator to flush in the dtor.
                 FileAllocator &fileAllocator;
 
+            public:
                 /// \brief
                 /// ctor.
                 /// \param[in] fileAllocator_ FileAllocator to flush in the dtor.
@@ -236,9 +238,9 @@ namespace thekogans {
             /// +--------+------+--------+
             ///
             /// This design provides two benefits;
-            /// 1. Heap integrity. Header and Footer provide a nomans land
-            /// that BlockInfo uses to make sure the block has not been
-            /// corrupted by [over/under]flow writes.
+            /// 1. Heap integrity. Header and Footer provide a no man's
+            /// land that BlockInfo uses to make sure the block has not
+            /// been corrupted by [over/under]flow writes.
             /// 2. Ability to navigate the heap in chronological order.
             /// (call BlockInfo::Prev/Next.)
             struct _LIB_THEKOGANS_UTIL_DECL BlockInfo {
@@ -479,26 +481,45 @@ namespace thekogans {
                 inline bool IsFree () const {
                     return header.IsFree ();
                 }
+                /// \brief
+                /// Set/unset the FLAGS_FREE flag.
+                /// \param[in] free true == set, false == unset
                 inline void SetFree (bool free) {
                     header.SetFree (free);
                     footer.SetFree (free);
                 }
+                /// \brief
+                /// Return true if FLAGS_FIXED set.
+                /// \return true == FLAGS_FIXED set.
                 inline bool IsFixed () const {
                     return header.IsFixed ();
                 }
+                /// \brief
+                /// Set/unset the FLAGS_FIXED flag.
+                /// \param[in] free true == set, false == unset
                 inline void SetFixed (bool fixed) {
                     header.SetFixed (fixed);
                     footer.SetFixed (fixed);
                 }
 
+                /// \brief
+                /// Return the block size (not including BlockInfo::SIZE).
+                /// \return Block size.
                 inline ui64 GetSize () const {
                     return header.size;
                 }
+                /// \brief
+                /// Set block size to the given value.
+                /// \param[in] size New block size.
                 inline void SetSize (ui64 size) {
                     header.size = size;
                     footer.size = size;
                 }
 
+                /// \brief
+                /// Return the next free fixed block offset.
+                /// NOTE: This value is only valid if IsFree and IsFixed.
+                /// \return Next free fixed block offset.
                 inline ui64 GetNextBlockOffset () const {
                     return header.nextBlockOffset;
                 }
@@ -506,8 +527,8 @@ namespace thekogans {
                     header.nextBlockOffset = nextBlockOffset;
                 }
 
-                void Prev (BlockInfo &prev);
-                void Next (BlockInfo &next);
+                bool Prev (BlockInfo &prev);
+                bool Next (BlockInfo &next);
 
                 void Read ();
                 void Write ();

@@ -73,7 +73,7 @@ namespace thekogans {
             /// \brief
             /// Return hasher name.
             /// \return Hasher name.
-            virtual std::string GetDigestName (std::size_t digestSize) const override{
+            virtual std::string GetDigestName (std::size_t digestSize) const override {
                 return FormatString ("SHA2-" THEKOGANS_UTIL_SIZE_T_FORMAT, digestSize * 8);
             }
             /// \brief

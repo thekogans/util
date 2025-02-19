@@ -113,24 +113,32 @@ namespace thekogans {
             return header.flags != footer.flags || header.size != footer.size;
         }
 
-        void FileAllocator::BlockInfo::Prev (BlockInfo &prev) {
-            prev.footer.Read (file, offset - SIZE);
-            prev.offset = offset - prev.footer.size - SIZE;
-            prev.header.Read (file, prev.offset - HEADER_SIZE);
-            if (prev.header != prev.footer) {
-                THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                    "Corrupt FileAllocator::BlockInfo: " THEKOGANS_UTIL_UI64_FORMAT
-                    " prev.header.flags: %u prev.header.size: " THEKOGANS_UTIL_UI64_FORMAT
-                    " prev.footer.flags: %u prev.footer.size: " THEKOGANS_UTIL_UI64_FORMAT,
-                    offset,
-                    header.flags, header.size,
-                    footer.flags, footer.size);
+        bool FileAllocator::BlockInfo::Prev (BlockInfo &prev) {
+            if (!IsFirst ()) {
+                prev.footer.Read (file, offset - SIZE);
+                prev.offset = offset - prev.footer.size - SIZE;
+                prev.header.Read (file, prev.offset - HEADER_SIZE);
+                if (prev.header != prev.footer) {
+                    THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
+                        "Corrupt FileAllocator::BlockInfo: " THEKOGANS_UTIL_UI64_FORMAT
+                        " prev.header.flags: %u prev.header.size: " THEKOGANS_UTIL_UI64_FORMAT
+                        " prev.footer.flags: %u prev.footer.size: " THEKOGANS_UTIL_UI64_FORMAT,
+                        offset,
+                        header.flags, header.size,
+                        footer.flags, footer.size);
+                }
+                return true;
             }
+            return false;
         }
 
-        void FileAllocator:: FileAllocator::BlockInfo::Next (BlockInfo &next) {
-            next.offset = offset + header.size + SIZE;
-            next.Read ();
+        bool FileAllocator:: FileAllocator::BlockInfo::Next (BlockInfo &next) {
+            if (!IsLast ()) {
+                next.offset = offset + header.size + SIZE;
+                next.Read ();
+                return true;
+            }
+            return false;
         }
 
         void FileAllocator::BlockInfo::Read () {
@@ -349,22 +357,16 @@ namespace thekogans {
                 block.Read ();
                 if (!block.IsFree () && !block.IsFixed ()) {
                     // Consolidate adjacent free non fixed blocks.
-                    if (!block.IsFirst ()) {
-                        BlockInfo prev (*file);
-                        block.Prev (prev);
-                        if (prev.IsFree () && !prev.IsFixed ()) {
-                            btree->Delete (BTree::Key (prev.GetSize (), prev.GetOffset ()));
-                            block.SetOffset (block.GetOffset () - BlockInfo::SIZE - prev.GetSize ());
-                            block.SetSize (block.GetSize () + prev.GetSize () + BlockInfo::SIZE);
-                        }
+                    BlockInfo prev (*file);
+                    if (block.Prev (prev) && prev.IsFree () && !prev.IsFixed ()) {
+                        btree->Delete (BTree::Key (prev.GetSize (), prev.GetOffset ()));
+                        block.SetOffset (block.GetOffset () - BlockInfo::SIZE - prev.GetSize ());
+                        block.SetSize (block.GetSize () + BlockInfo::SIZE + prev.GetSize ());
                     }
-                    if (!block.IsLast ()) {
-                        BlockInfo next (*file);
-                        block.Next (next);
-                        if (next.IsFree () && !next.IsFixed ()) {
-                            btree->Delete (BTree::Key (next.GetSize (), next.GetOffset ()));
-                            block.SetSize (block.GetSize () + BlockInfo::SIZE + next.GetSize ());
-                        }
+                    BlockInfo next (*file);
+                    if (block.Next (next) && next.IsFree () && !next.IsFixed ()) {
+                        btree->Delete (BTree::Key (next.GetSize (), next.GetOffset ()));
+                        block.SetSize (block.GetSize () + BlockInfo::SIZE + next.GetSize ());
                     }
                     if (!block.IsLast ()) {
                         btree->Add (BTree::Key (block.GetSize (), block.GetOffset ()));
