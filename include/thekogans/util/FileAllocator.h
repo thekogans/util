@@ -523,16 +523,34 @@ namespace thekogans {
                 inline ui64 GetNextBlockOffset () const {
                     return header.nextBlockOffset;
                 }
+                /// \brief
+                /// Set the next block offset. This will chain the
+                /// free fixed blocks in to a singly linked list.
+                /// \param[in] nextBlockOffset Next free fixed block offset.
                 inline void SetNextBlockOffset (ui64 nextBlockOffset) {
                     header.nextBlockOffset = nextBlockOffset;
                 }
 
+                /// \brief
+                /// If !IsFirst, return the block info right before this one.
+                /// \param[out] prev Where to put the previous block info.
+                /// \return true == prev is valid, false == IsFirst is true.
                 bool Prev (BlockInfo &prev);
+                /// \brief
+                /// If !IsLast, return the block info right after this one.
+                /// \param[out] next Where to put the next block info.
+                /// \return true == next is valid, false == IsLast is true.
                 bool Next (BlockInfo &next);
 
+                /// \brief
+                /// Read block info at offset.
                 void Read ();
+                /// \brief
+                /// Write block info at offset.
                 void Write ();
 
+                /// \brief
+                /// Needs access to \see{Header} and \see{Footer}.
                 friend bool operator != (
                     const Header &header,
                     const Footer &footer);
@@ -561,14 +579,27 @@ namespace thekogans {
                 BlockInfo block;
 
             public:
+                /// \brief
+                /// ctro.
+                /// \param[in] fileAllocator_ \see{FileAllocator} containing the block.
+                /// \param[in] offset Block offset.
+                /// \param[in] length How much of the block do we want (0 == get the whole block).
                 BlockBuffer (
                     FileAllocator &fileAllocator_,
                     ui64 offset,
                     std::size_t length = 0);
 
+                /// \brief
+                /// Read a range in to the buffer.
+                /// \param[in] blockOffset Logical offset within block.
+                /// \param[in] length How much of the block do we want (0 == get the whole block).
                 std::size_t Read (
                     std::size_t blockOffset = 0,
                     std::size_t length = 0);
+                /// \brief
+                /// Write a range from the buffer.
+                /// \param[in] blockOffset Logical offset within block.
+                /// \param[in] length How much of the block do we want (0 == write the whole block).
                 std::size_t Write (
                     std::size_t blockOffset = 0,
                     std::size_t length = 0);

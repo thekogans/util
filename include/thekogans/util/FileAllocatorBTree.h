@@ -19,7 +19,9 @@
 ///
 /// \brief
 /// BTree for managing \see{FileAllocator} free, random size block list.
-/// It's broken out in to its own file because FileAllocator.h was getting too big to maintain.
+/// This class is private to and is only included in \see{FileAllocator}.
+/// It's broken out in to its own file because FileAllocator.h was getting
+/// too big to maintain.
 
 struct BTree {
     /// \brief
