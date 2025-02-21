@@ -96,12 +96,12 @@ namespace thekogans {
             static const GUID Empty;
 
             /// \brief
-            /// Create a guid for a given file.
+            /// Create a guid for a given file. Uses \see{MD5::FromFile}.
             /// \param[in] path file to create a guid from (MD5 hash).
             /// \return MD5 hash of the file.
             static GUID FromFile (const std::string &path);
             /// \brief
-            /// Create a guid for a given buffer.
+            /// Create a guid for a given buffer. Uses \see{MD5::FromBuffer}.
             /// \param[in] buffer Pointer to the beginning of the buffer.
             /// \param[in] length Length of the buffer.
             /// \return MD5 hash of the buffer.
@@ -109,7 +109,7 @@ namespace thekogans {
                 const void *buffer,
                 std::size_t length);
             /// \brief
-            /// Create a random guid. Uses \see{RandomSource} to generate random bytes.
+            /// Create a random guid. Uses \see{MD5::FromRandom}.
             /// \param[in] length Length of random bytes.
             /// \return MD5 hash of the random bytes.
             static GUID FromRandom (std::size_t length = SIZE);
@@ -184,7 +184,8 @@ namespace thekogans {
                 const GUID &guid) {
             if (serializer.Write (guid.data, GUID_SIZE) != GUID_SIZE) {
                 THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                    "Write (guid.data, " THEKOGANS_UTIL_SIZE_T_FORMAT ") != " THEKOGANS_UTIL_SIZE_T_FORMAT,
+                    "Write (guid.data, "
+                    THEKOGANS_UTIL_SIZE_T_FORMAT ") != " THEKOGANS_UTIL_SIZE_T_FORMAT,
                     GUID_SIZE,
                     GUID_SIZE);
             }
@@ -201,7 +202,8 @@ namespace thekogans {
                 GUID &guid) {
             if (serializer.Read (guid.data, GUID_SIZE) != GUID_SIZE) {
                 THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                    "Read (guid.data, " THEKOGANS_UTIL_SIZE_T_FORMAT ") != " THEKOGANS_UTIL_SIZE_T_FORMAT,
+                    "Read (guid.data, "
+                    THEKOGANS_UTIL_SIZE_T_FORMAT ") != " THEKOGANS_UTIL_SIZE_T_FORMAT,
                     GUID_SIZE,
                     GUID_SIZE);
             }

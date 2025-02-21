@@ -66,9 +66,6 @@ private:
             entriesPerNode (entriesPerNode_),
             rootOffset (0) {}
     } header;
-    /// \brief
-    /// An instance of \see{BlockAllocator} to allocate \see{Node}s.
-    Allocator::SharedPtr nodeAllocator;
     /// \struct Fileallocator::BTree::Node FileallocatorBTree.h
     /// thekogans/util/FileallocatorBTree.h
     ///
@@ -273,6 +270,9 @@ private:
         /// Dump the nodes entries to stdout. Used to debug the implementation.
         void Dump ();
     } *root;
+    /// \brief
+    /// An instance of \see{BlockAllocator} to allocate \see{Node}s.
+    Allocator::SharedPtr nodeAllocator;
 
 public:
     /// \brief

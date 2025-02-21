@@ -313,11 +313,11 @@ namespace thekogans {
                     BTree::Key result = btree->Search (BTree::Key (size, 0));
                     if (result.second != 0) {
                         assert (result.first >= size);
-                        // FIXME: investigate how to combine this Delete and the Search above.
                         btree->Delete (result);
                         offset = result.second;
                         if (result.first > size) {
                             result.first -= size;
+                            // If the block we got is bigger than we need, split it.
                             if (result.first >= MIN_BLOCK_SIZE) {
                                 ui64 nextBlockOffset = offset + size + BlockInfo::SIZE;
                                 ui64 nextBlockSize = result.first - BlockInfo::SIZE;

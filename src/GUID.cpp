@@ -196,7 +196,7 @@ namespace thekogans {
             Hash::Digest digest;
             {
                 MD5 md5;
-                md5.FromBuffer ((const ui8 *)buffer, length, MD5::DIGEST_SIZE_128, digest);
+                md5.FromBuffer (buffer, length, MD5::DIGEST_SIZE_128, digest);
             }
             return GUID (digest.data ());
         }

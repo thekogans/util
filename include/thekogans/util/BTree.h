@@ -83,9 +83,6 @@ namespace thekogans {
                     entriesPerNode (entriesPerNode_),
                     rootOffset (0) {}
             } header;
-            /// \brief
-            /// An instance of \see{BlockAllocator} to allocate \see{Node}s.
-            Allocator::SharedPtr nodeAllocator;
             /// \struct BTree::Node BTree.h thekogans/util/BTree.h
             ///
             /// \brief
@@ -308,6 +305,9 @@ namespace thekogans {
                 /// Dump the nodes entries to stdout. Used to debug the implementation.
                 void Dump ();
             } *root;
+            /// \brief
+            /// An instance of \see{BlockAllocator} to allocate \see{Node}s.
+            Allocator::SharedPtr nodeAllocator;
             /// \break
             /// Synchronization lock.
             SpinLock spinLock;
@@ -324,8 +324,8 @@ namespace thekogans {
 
             /// \brief
             /// ctor.
-            /// \param[in] fileAllocator_ \see{FileAllocator} to which this btree belongs.
-            /// \param[in] offset_ Offset of the \see{Header} block on disk.
+            /// \param[in] fileAllocator_ BTree heap (see \see{FileAllocator}).
+            /// \param[in] offset_ Heap offset of the \see{Header} block.
             /// \param[in] entriesPerNode If we're creating the heap, contains entries per
             /// \see{Node}. If we're reading an existing heap, this value will come from the
             /// \see{Header}.
@@ -354,6 +354,13 @@ namespace thekogans {
             static void Delete (
                 FileAllocator &fileAllocator,
                 ui64 offset);
+
+            /// \brief
+            /// Return the offset of the btree \see{Header} block.
+            /// \return Offset of the btree \see{Header} block.
+            inline ui64 GetOffset () const {
+                return offset;
+            }
 
             /// \brief
             /// Find the given key in the btree.
