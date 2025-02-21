@@ -123,6 +123,43 @@ namespace thekogans {
             }
         }
 
+        void BTree::Node::Delete (
+                FileAllocator &fileAllocator,
+                ui64 offset) {
+            ui32 count;
+            ui64 leftOffset = 0;
+            std::vector<Entry> entries;
+            {
+                FileAllocator::LockedFilePtr file (fileAllocator);
+                FileAllocator::BlockBuffer buffer (fileAllocator, offset);
+                buffer.Read ();
+                ui32 magic;
+                buffer >> magic;
+                if (magic == MAGIC32) {
+                    buffer >> count;
+                    if (count > 0) {
+                        buffer >> leftOffset;
+                        entries.resize (count);
+                        for (ui32 i = 0; i < count; ++i) {
+                            buffer >> entries[i];
+                        }
+                    }
+                }
+                else {
+                    THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
+                        "Corrupt BTree::Node: " THEKOGANS_UTIL_UI64_FORMAT,
+                        offset);
+                }
+            }
+            if (count > 0) {
+                Delete (fileAllocator, leftOffset);
+                for (ui32 i = 0; i < count; ++i) {
+                    Delete (fileAllocator, entries[i].rightOffset);
+                }
+            }
+            fileAllocator.Free (offset);
+        }
+
         BTree::Node *BTree::Node::GetChild (ui32 index) {
             if (index == 0) {
                 if (leftNode == 0 && leftOffset != 0) {
@@ -417,6 +454,29 @@ namespace thekogans {
 
         BTree::~BTree () {
             Node::Free (root);
+        }
+
+        void BTree::Delete (
+                FileAllocator &fileAllocator,
+                ui64 offset) {
+            Header header;
+            {
+                FileAllocator::LockedFilePtr file (fileAllocator);
+                FileAllocator::BlockBuffer buffer (fileAllocator, offset, Header::SIZE);
+                buffer.Read ();
+                ui32 magic;
+                buffer >> magic;
+                if (magic == MAGIC32) {
+                    buffer >> header;
+                }
+                else {
+                    THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
+                        "Corrupt BTree: " THEKOGANS_UTIL_UI64_FORMAT,
+                        offset);
+                }
+            }
+            Node::Delete (fileAllocator, header.rootOffset);
+            fileAllocator.Free (offset);
         }
 
         bool BTree::Search (

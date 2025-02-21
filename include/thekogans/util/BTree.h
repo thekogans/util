@@ -47,8 +47,8 @@ namespace thekogans {
 
         private:
             /// \brief
-            /// Reference back to the FileAllocator for
-            /// \see{Header} and \see{Node} blocks.
+            /// \see{FileAllocator} where we allocate
+            /// \see{Header} and \see{Node} blocks from.
             FileAllocator::SharedPtr fileAllocator;
             /// \brief
             /// Offset of the \see{Header} block.
@@ -108,7 +108,7 @@ namespace thekogans {
                 /// \struct BTree::Node::Entry BTree.h thekogans/util/BTree.h
                 ///
                 /// \brief
-                /// Node entries contain keys and right (grater then) children.
+                /// Node entries contain keys, values and right (grater then) children.
                 struct Entry {
                     /// \brief
                     /// Entry key.
@@ -125,6 +125,10 @@ namespace thekogans {
 
                     /// \brief
                     /// ctor.
+                    /// NOTE: Because of the way we allocate Node this ctor
+                    /// is here for show. It will never be called as we're
+                    /// treating Entry as POT. It actually gets initialized
+                    /// in the operator >>.
                     /// \param[in] key_ Entry key.
                     Entry (
                         const Key &key_ = GUID::Empty,
@@ -152,9 +156,13 @@ namespace thekogans {
 
                 /// \brief
                 /// Given the number of entries, return the node file size in bytes.
+                /// \param[in] entriesPerNode Entries per node.
+                /// \return Size of node on disk.
                 static std::size_t FileSize (std::size_t entriesPerNode);
                 /// \brief
                 /// Given the number of entries, return the node size in bytes.
+                /// \param[in] entriesPerNode Entries per node.
+                /// \return Size of node in memory.
                 static std::size_t Size (std::size_t entriesPerNode);
                 /// \brief
                 /// Allocate a node.
@@ -172,6 +180,13 @@ namespace thekogans {
                 /// If the node is not empty, throw exception.
                 /// \param[in] node Empty node to delete.
                 static void Delete (Node *node);
+                /// \brief
+                /// Delete the node and it's sub-tree.
+                /// \param[in] fileAllocator Btree heap.
+                /// \param[in] offset Node offset.
+                static void Delete (
+                    FileAllocator &fileAllocator,
+                    ui64 offset);
 
                 /// \brief
                 /// Nodes delay writting themselves to disk until they are destroyed.
@@ -332,24 +347,25 @@ namespace thekogans {
             ~BTree ();
 
             /// \brief
-            /// Return the offset of the btree \see{Header} block.
-            /// \return Offset of the btree \see{Header} block.
-            inline ui64 GetOffset () const {
-                return offset;
-            }
+            /// Delete the btree from the heap.
+            /// \param[in] fileAllocator Heap where the btree resides.
+            /// \param[in] offset \see{Header} offset.
+            static void Delete (
+                FileAllocator &fileAllocator,
+                ui64 offset);
 
             /// \brief
             /// Find the given key in the btree.
             /// \param[in] key Key to find.
-            /// \return If found the given key will be returned.
-            /// If not found, return the nearest larger key.
+            /// \return true == found. If found the given key's
+            /// value will be returned in value.
             bool Search (
                 const Key &key,
                 ui64 &value);
             /// \brief
             /// Add the given key to the btree.
             /// \param[in] key Key to add.
-            /// NOTE: Duplicate keys are ignored.
+            /// \return true == added. false == duplicate.
             bool Add (
                 const Key &key,
                 ui64 value);

@@ -134,9 +134,13 @@ private:
 
         /// \brief
         /// Given the number of entries, return the node file size in bytes.
+        /// \param[in] entriesPerNode Entries per node.
+        /// \return Size of node on disk.
         static std::size_t FileSize (std::size_t entriesPerNode);
         /// \brief
         /// Given the number of entries, return the node size in bytes.
+        /// \param[in] entriesPerNode Entries per node.
+        /// \return Size of node in memory.
         static std::size_t Size (std::size_t entriesPerNode);
         /// \brief
         /// Allocate a node.
