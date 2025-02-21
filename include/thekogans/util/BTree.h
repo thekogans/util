@@ -32,6 +32,10 @@ namespace thekogans {
         /// \struct BTree BTree.h thekogans/util/BTree.h
         ///
         /// \brief
+        /// A BTree is a \see{FileAllocator} container. It's attributes are that
+        /// all searches, additions and deletions take O(N) where N is the
+        /// height of the tree. BTree keys are \see{GUID} and the values are
+        /// \see{ui64}.
 
         struct BTree : public RefCounted {
             /// \brief
@@ -191,11 +195,8 @@ namespace thekogans {
                 /// \brief
                 /// Nodes delay writting themselves to disk until they are destroyed.
                 /// This way we amortize the cost of disk writes across multiple node
-                /// updates. As with any caching strategy, this one too trades in convenience
-                /// for performance. Performance gains are sizeable; 25% speedup on one
-                /// benchmark. The inconvenience is that you must make sure that the
-                /// \see{FileAllocator} is flushed before the application ends. To do
-                /// that, call \see{FileAllocator::FlushBTree}.
+                /// updates. Call BTree::Flush to flush the cache in tight memory
+                /// situations.
                 inline void Save () {
                     dirty = true;
                 }
