@@ -19,8 +19,10 @@
 #include "thekogans/util/SpinLock.h"
 #include "thekogans/util/LockGuard.h"
 #include "thekogans/util/File.h"
+#include "thekogans/util/RandomSource.h"
 #include "thekogans/util/Exception.h"
 #include "thekogans/util/StringUtils.h"
+#include "thekogans/util/AlignedAllocator.h"
 #include "thekogans/util/Hash.h"
 #if defined (THEKOGANS_UTIL_TYPE_Static)
     #include "thekogans/util/MD5.h"
@@ -51,14 +53,42 @@ namespace thekogans {
             return HexDecodeBuffer (digest.c_str (), digest.size ());
         }
 
-        void Hash::FromBuffer (
-                const void *buffer,
-                std::size_t size,
+        void Hash::FromRandom (
+                std::size_t length,
                 std::size_t digestSize,
                 Digest &digest) {
-            if (buffer != nullptr && size > 0) {
+            if (length > 0) {
+                Buffer alignedBuffer (HostEndian, length, 0, 0, new AlignedAllocator (UI32_SIZE));
+                std::size_t written = alignedBuffer.AdvanceWriteOffset (
+                    RandomSource::Instance ()->GetBytes (
+                        alignedBuffer.GetWritePtr (),
+                        alignedBuffer.GetDataAvailableForWriting ()));
+                if (written == length) {
+                    FromBuffer (
+                        alignedBuffer.GetReadPtr (),
+                        alignedBuffer.GetDataAvailableForReading (),
+                        digestSize,
+                        digest);
+                }
+                else {
+                    THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
+                        "Unable to get " THEKOGANS_UTIL_SIZE_T_FORMAT " random bytes for hash.",
+                        length);
+                }
+            }
+            else {
+                digest.clear ();
+            }
+        }
+
+        void Hash::FromBuffer (
+                const void *buffer,
+                std::size_t length,
+                std::size_t digestSize,
+                Digest &digest) {
+            if (buffer != nullptr && length > 0) {
                 Init (digestSize);
-                Update (buffer, size);
+                Update (buffer, length);
                 Final (digest);
             }
             else {

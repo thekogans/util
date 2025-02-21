@@ -24,6 +24,7 @@
 #include <string>
 #include "thekogans/util/Config.h"
 #include "thekogans/util/Types.h"
+#include "thekogans/util/MD5.h"
 #include "thekogans/util/Serializer.h"
 #include "thekogans/util/Exception.h"
 
@@ -37,16 +38,17 @@ namespace thekogans {
         /// created from file/buffer contents, and even randomly
         /// generated. GUID::FromRandom uses the \sse{RandomSource}
         /// to gather platform specific entropy.
-        /// NOTE: GUID::FromFile and GUID::FromBuffer use \see{MD5}
-        /// to hash the data in to a guid sized digest. While deprecated
-        /// for cryptographic work, it's perfectly safe to use in low
-        /// security situations. Keep that in mind when using GUID.
+        /// NOTE: GUID::FromFile, GUID::FromBuffer and GUID::FromRandom
+        /// use \see{MD5} to hash the data in to a guid sized digest.
+        /// While deprecated for cryptographic work, it's perfectly
+        /// safe to use in low security situations. Keep that in mind
+        /// when using GUID.
 
         struct _LIB_THEKOGANS_UTIL_DECL GUID {
             enum {
                 /// \brief
                 /// GUID size.
-                SIZE = 16
+                SIZE = MD5::DIGEST_SIZE_128
             };
             /// \brief
             /// GUID data.
@@ -108,8 +110,9 @@ namespace thekogans {
                 std::size_t length);
             /// \brief
             /// Create a random guid. Uses \see{RandomSource} to generate random bytes.
+            /// \param[in] length Length of random bytes.
             /// \return MD5 hash of the random bytes.
-            static GUID FromRandom ();
+            static GUID FromRandom (std::size_t length = SIZE);
         };
 
         /// \brief

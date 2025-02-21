@@ -177,8 +177,8 @@ namespace thekogans {
                         // entry at the split point to be added up the
                         // parent chain.
                         Node *right = Alloc (btree);
+                        Split (right);
                         ui32 splitIndex = btree.header.entriesPerNode / 2;
-                        Split (right, splitIndex);
                         if (index != splitIndex) {
                             if (index < splitIndex) {
                                 InsertEntry (entry, index);
@@ -315,15 +315,14 @@ namespace thekogans {
             Delete (right);
         }
 
-        void FileAllocator::BTree::Node::Split (
-                Node *node,
-                ui32 index) {
-            node->count = count - index;
+        void FileAllocator::BTree::Node::Split (Node *node) {
+            ui32 splitIndex = btree.header.entriesPerNode / 2;
+            node->count = count - splitIndex;
             std::memcpy (
                 node->entries,
-                entries + index,
+                entries + splitIndex,
                 node->count * sizeof (Entry));
-            count = index;
+            count = splitIndex;
         }
 
         void FileAllocator::BTree::Node::Concatenate (Node *node) {
@@ -522,6 +521,10 @@ namespace thekogans {
                 Serializer &serializer,
                 FileAllocator::BTree::Node::Entry &entry) {
             serializer >> entry.key >> entry.rightOffset;
+            // Because of the way we allocate the BTree::Node the
+            // Entry cror is never called. In a way this extraction
+            // operator is our ctor. Make sure all members are
+            // properly initialized.
             entry.rightNode = nullptr;
             return serializer;
         }

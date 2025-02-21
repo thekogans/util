@@ -125,10 +125,10 @@ namespace thekogans {
             ///
             /// \brief
             /// FileAllocator uses a delayed approach to disc writes. To make sure
-            /// All FileAllocator cache is written out you need to call Flush at the
-            /// end of the operation (Alloc/Free). This can get tricky as exceptions
-            /// alter return paths. Use this class at the begining of a sequence of
-            /// operations and let it call Flush automativally. Ex:
+            /// FileAllocator cache is written out you need to call Flush at the end
+            /// of the operation (Alloc/Free). This can get tricky as exceptions
+            /// alter return paths. Use this class at the begining of a sequence
+            /// of operations and let it call Flush automativally. Ex:
             ///
             /// \code{.cpp}
             /// using namespace thekogans;

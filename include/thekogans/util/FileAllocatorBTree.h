@@ -215,12 +215,9 @@ private:
             Node *left,
             Node *right);
         /// \brief
-        /// Split the node at the index.
-        /// \param[out] node Node that will receive entries >= index.
-        /// \param[in] index Index at which to split the node.
-        void Split (
-            Node *node,
-            ui32 index);
+        /// Split the node in the middle (splitIndex = btree.header.entriesPerNode / 2).
+        /// \param[out] node Node that will receive entries >= splitIndex.
+        void Split (Node *node);
         /// \brief
         /// Concatenate the given node's entries to this one.
         /// \param[in] node Node whose entries are to be concatenated.

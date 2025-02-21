@@ -84,24 +84,33 @@ namespace thekogans {
             /// \brief
             /// Hash a buffer.
             /// \param[in] buffer Buffer to hash.
-            /// \param[in] size Size of buffer in bytes.
+            /// \param[in] length Length of buffer in bytes.
             virtual void Update (
                 const void * /*buffer*/,
-                std::size_t /*size*/) = 0;
+                std::size_t /*length*/) = 0;
             /// \brief
             /// Finalize the hashing operation, and retrieve the digest.
             /// \param[out] digest Result of the hashing operation.
             virtual void Final (Digest & /*digest*/) = 0;
 
             /// \brief
+            /// Create a digest from random bytes (\see{RandomSource}).
+            /// \param[in] length Length of buffer of random in bytes.
+            /// \param[in] digestSize Size of difest in bytes.
+            /// \param[out] digest Where to store the generated digest.
+            void FromRandom (
+                std::size_t length,
+                std::size_t digestSize,
+                Digest &digest);
+            /// \brief
             /// Create a digest from a given buffer.
             /// \param[in] buffer Beginning of buffer.
-            /// \param[in] size Size of buffer in bytes.
+            /// \param[in] length Length of buffer in bytes.
             /// \param[in] digestSize Size of difest in bytes.
             /// \param[out] digest Where to store the generated digest.
             void FromBuffer (
                 const void *buffer,
-                std::size_t size,
+                std::size_t length,
                 std::size_t digestSize,
                 Digest &digest);
             /// \brief

@@ -87,10 +87,10 @@ namespace thekogans {
             /// \brief
             /// Hash a buffer.
             /// \param[in] buffer Buffer to hash.
-            /// \param[in] size Size of buffer in bytes.
+            /// \param[in] length Length of buffer in bytes.
             virtual void Update (
                 const void *buffer,
-                std::size_t size) override;
+                std::size_t length) override;
             /// \brief
             /// Finalize the hashing operation, and retrieve the digest.
             /// \param[out] digest Result of the hashing operation.

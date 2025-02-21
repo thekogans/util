@@ -46,23 +46,23 @@ namespace thekogans {
 
         void SHA3::Update (
                 const void *buffer_,
-                std::size_t size) {
-            if (buffer_ != nullptr && size != 0) {
-                byteCount += size;
+                std::size_t length) {
+            if (buffer_ != nullptr && length != 0) {
+                byteCount += length;
                 const ui8 *ptr = (const ui8 *)buffer_;
                 do {
                     std::size_t bytesWritten = blockSize - bufferIndex;
-                    if (bytesWritten > size) {
-                        bytesWritten = size;
+                    if (bytesWritten > length) {
+                        bytesWritten = length;
                     }
                     memcpy (&buffer[bufferIndex], ptr, bytesWritten);
                     bufferIndex += bytesWritten;
                     ptr += bytesWritten;
-                    size -= bytesWritten;
+                    length -= bytesWritten;
                     if (bufferIndex == blockSize) {
                         Transform ();
                     }
-                } while (size != 0);
+                } while (length != 0);
             }
         }
 

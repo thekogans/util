@@ -95,20 +95,13 @@ namespace thekogans {
         BTree::Node *BTree::Node::Alloc (
                 BTree &btree,
                 ui64 offset) {
-            Node *node = new (
+            return new (
                 btree.nodeAllocator->Alloc (
                     Size (btree.header.entriesPerNode))) Node (btree, offset);
-            for (std::size_t i = 1; i < btree.header.entriesPerNode; ++i) {
-                new (node->entries + i) Node::Entry ();
-            }
-            return node;
         }
 
         void BTree::Node::Free (Node *node) {
             if (node != nullptr) {
-                for (std::size_t i = 1; i < node->btree.header.entriesPerNode; ++i) {
-                    node->entries[i].~Entry ();
-                }
                 node->~Node ();
                 node->btree.nodeAllocator->Free (
                     node, Size (node->btree.header.entriesPerNode));
@@ -192,8 +185,8 @@ namespace thekogans {
                 // entry at the split point to be added up the
                 // parent chain.
                 Node *right = Alloc (btree);
+                Split (right);
                 ui32 splitIndex = btree.header.entriesPerNode / 2;
-                Split (right, splitIndex);
                 if (index != splitIndex) {
                     if (index < splitIndex) {
                         InsertEntry (entry, index);
@@ -328,15 +321,14 @@ namespace thekogans {
             Delete (right);
         }
 
-        void BTree::Node::Split (
-                Node *node,
-                ui32 index) {
-            node->count = count - index;
+        void BTree::Node::Split (Node *node) {
+            ui32 splitIndex = btree.header.entriesPerNode / 2;
+            node->count = count - splitIndex;
             std::memcpy (
                 node->entries,
-                entries + index,
+                entries + splitIndex,
                 node->count * sizeof (Entry));
-            count = index;
+            count = splitIndex;
         }
 
         void BTree::Node::Concatenate (Node *node) {
@@ -510,6 +502,10 @@ namespace thekogans {
                 Serializer &serializer,
                 BTree::Node::Entry &entry) {
             serializer >> entry.key >> entry.value >> entry.rightOffset;
+            // Because of the way we allocate the BTree::Node the
+            // Entry cror is never called. In a way this extraction
+            // operator is our ctor. Make sure all members are
+            // properly initialized.
             entry.rightNode = nullptr;
             return serializer;
         }

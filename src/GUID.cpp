@@ -19,7 +19,6 @@
 #include <cctype>
 #include "thekogans/util/Hash.h"
 #include "thekogans/util/MD5.h"
-#include "thekogans/util/RandomSource.h"
 #include "thekogans/util/StringUtils.h"
 #include "thekogans/util/Constants.h"
 #include "thekogans/util/Exception.h"
@@ -202,15 +201,13 @@ namespace thekogans {
             return GUID (digest.data ());
         }
 
-        GUID GUID::FromRandom () {
-            GUID guid;
-            if (RandomSource::Instance ()->GetBytes (guid.data, SIZE) == SIZE) {
-                return guid;
+        GUID GUID::FromRandom (std::size_t length) {
+            Hash::Digest digest;
+            {
+                MD5 md5;
+                md5.FromRandom (length, MD5::DIGEST_SIZE_128, digest);
             }
-            else {
-                THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                    "Unable to get " THEKOGANS_UTIL_SIZE_T_FORMAT " random bytes for guid.", SIZE);
-            }
+            return GUID (digest.data ());
         }
 
     } // namespace util

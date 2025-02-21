@@ -52,15 +52,15 @@ namespace thekogans {
 
         void SHA2::Update (
                 const void *buffer,
-                std::size_t size) {
+                std::size_t length) {
             switch (digestSize) {
                 case DIGEST_SIZE_224:
                 case DIGEST_SIZE_256:
-                    hasher_224_256.Update (buffer, size);
+                    hasher_224_256.Update (buffer, length);
                     break;
                 case DIGEST_SIZE_384:
                 case DIGEST_SIZE_512:
-                    hasher_384_512.Update (buffer, size);
+                    hasher_384_512.Update (buffer, length);
                     break;
                 default:
                     THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
