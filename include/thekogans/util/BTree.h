@@ -357,14 +357,15 @@ namespace thekogans {
             /// \brief
             /// Find the given key in the btree.
             /// \param[in] key Key to find.
-            /// \return true == found. If found the given key's
-            /// value will be returned in value.
+            /// \param[out] value If found the given key's value will be returned in value.
+            /// \return true == found.
             bool Search (
                 const Key &key,
                 ui64 &value);
             /// \brief
             /// Add the given key to the btree.
             /// \param[in] key Key to add.
+            /// \param[in] value Value associated with the given key.
             /// \return true == added. false == duplicate.
             bool Add (
                 const Key &key,
