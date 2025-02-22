@@ -237,7 +237,7 @@ namespace thekogans {
                 header (
                     blockSize > 0 ? Header::FLAGS_FIXED : 0,
                     blockSize > 0 ?
-                        util::MAX (blockSize, MIN_USER_DATA_SIZE) :
+                        MAX (blockSize, MIN_USER_DATA_SIZE) :
                         BTree::Node::FileSize (blocksPerPage)),
                 btree (nullptr) {
             if (file.GetSize () > 0) {

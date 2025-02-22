@@ -461,6 +461,16 @@ namespace thekogans {
         template<
             typename _T,
             typename _U>
+        _T MIN (_T t, _U u) {
+            static_assert (
+                std::is_arithmetic<_T>::value && std::is_arithmetic<_U>::value,
+                "Template parameters must be an arithmetic type.");
+            return t < u ? t : u;
+        }
+
+        template<
+            typename _T,
+            typename _U>
         _T MAX (_T t, _U u) {
             static_assert (
                 std::is_arithmetic<_T>::value && std::is_arithmetic<_U>::value,

@@ -106,6 +106,7 @@
     <cpp_header>$(organization)/$(project_directory)/File.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/FileAllocator.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/FileAllocatorBTree.h</cpp_header>
+    <cpp_header>$(organization)/$(project_directory)/FileAllocatorRegistry.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/FileLogger.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/FixedArray.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/FixedBuffer.h</cpp_header>
@@ -643,6 +644,7 @@
     <cpp_source>File.cpp</cpp_source>
     <cpp_source>FileAllocator.cpp</cpp_source>
     <cpp_source>FileAllocatorBTree.cpp</cpp_source>
+    <cpp_source>FileAllocatorRegistry.cpp</cpp_source>
     <cpp_source>FileLogger.cpp</cpp_source>
     <cpp_source>Fraction.cpp</cpp_source>
     <cpp_source>GUID.cpp</cpp_source>
