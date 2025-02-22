@@ -26,9 +26,15 @@
 namespace thekogans {
     namespace util {
 
-        /// \struct FileAllocatorRegistry FileAllocatorRegistry.h thekogans/util/FileAllocatorRegistry.h
+        /// \struct FileAllocatorRegistry FileAllocatorRegistry.h
+        /// thekogans/util/FileAllocatorRegistry.h
         ///
         /// \brief
+        /// \see{FileAllocator} exposes a global heap value (rootOffset) that
+        /// can be used to access a known object location. It provides an api
+        /// for getting and setting it (GetRootOffset/SetRootOffset). If a single
+        /// heap will be used by more than one client use the FileAllocatorRegistry
+        /// to register an offset for each client.
 
         struct FileAllocatorRegistry : public BTree {
             /// \brief
@@ -38,11 +44,11 @@ namespace thekogans {
         public:
             /// \brief
             /// ctor.
-            /// \param[in] fileAllocator BTree heap (see \see{FileAllocator}).
-            /// \param[in] entriesPerNode If we're creating the heap, contains entries per
-            /// \see{Node}. If we're reading an existing heap, this value will come from the
-            /// \see{Header}.
-            /// \param[in] nodesPerPage \see{Node}s are allocated using a \see{BlockAllocator}.
+            /// \param[in] fileAllocator Registry heap (see \see{FileAllocator}).
+            /// \param[in] entriesPerNode If we're creating the registry, contains entries per
+            /// \see{Node}. If we're reading an existing registry, this value will come from the
+            /// \see{BTree::Header}.
+            /// \param[in] nodesPerPage \see{BTree::Node}s are allocated using a \see{BlockAllocator}.
             /// This value sets the number of nodes that will fit on it's page. It's a subtle
             /// tunning parameter that might result in slight performance gains (depending on
             /// your situation). For the most part leaving it alone is the most sensible thing
@@ -57,12 +63,12 @@ namespace thekogans {
                 Allocator::SharedPtr allocator = DefaultAllocator::Instance ());
 
             /// \brief
-            /// Delete the btree from the heap.
-            /// \param[in] fileAllocator Heap where the btree resides.
+            /// Delete the registry from the heap.
+            /// \param[in] fileAllocator Heap where the registry resides.
             static void Delete (FileAllocator &fileAllocator);
 
             /// \brief
-            /// BTree is neither copy constructable, nor assignable.
+            /// FileAllocatorRegistry is neither copy constructable, nor assignable.
             THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (FileAllocatorRegistry)
         };
 
