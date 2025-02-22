@@ -29,7 +29,8 @@ namespace thekogans {
                     fileAllocator,
                     fileAllocator->GetRootOffset (),
                     entriesPerNode,
-                    nodesPerPage, allocator) {
+                    nodesPerPage,
+                    allocator) {
             if (fileAllocator->GetRootOffset () != GetOffset ()) {
                 fileAllocator->SetRootOffset (GetOffset ());
             }
@@ -37,6 +38,7 @@ namespace thekogans {
 
         void FileAllocatorRegistry::Delete (FileAllocator &fileAllocator) {
             BTree::Delete (fileAllocator, fileAllocator.GetRootOffset ());
+            fileAllocator.SetRootOffset (0);
         }
 
     } // namespace util
