@@ -67,15 +67,13 @@ namespace thekogans {
                 buffer << MAGIC32 << count;
                 if (count > 0) {
                     buffer << leftOffset;
-                    Free (leftNode);
                     for (ui32 i = 0; i < count; ++i) {
                         buffer << entries[i];
-                        Free (entries[i].rightNode);
                     }
                 }
                 buffer.Write ();
             }
-            else if (count > 0) {
+            if (count > 0) {
                 Free (leftNode);
                 for (ui32 i = 0; i < count; ++i) {
                     Free (entries[i].rightNode);
