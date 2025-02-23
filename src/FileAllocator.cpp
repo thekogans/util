@@ -161,11 +161,10 @@ namespace thekogans {
         }
 
         FileAllocator::BlockBuffer::BlockBuffer (
-                FileAllocator &fileAllocator_,
+                FileAllocator &fileAllocator,
                 ui64 offset,
                 std::size_t length) :
-                Buffer (fileAllocator_.file.endianness),
-                fileAllocator (fileAllocator_),
+                Buffer (fileAllocator.file.endianness),
                 block (fileAllocator.file, offset) {
             block.Read ();
             if (!block.IsFree ()) {
@@ -199,9 +198,9 @@ namespace thekogans {
                     if (availableToRead > length) {
                         availableToRead = length;
                     }
-                    fileAllocator.file.Seek (block.GetOffset () + blockOffset, SEEK_SET);
+                    block.file.Seek (block.GetOffset () + blockOffset, SEEK_SET);
                     countRead = AdvanceWriteOffset (
-                        fileAllocator.file.Read (GetWritePtr (), availableToRead));
+                        block.file.Read (GetWritePtr (), availableToRead));
                 }
             }
             return countRead;
@@ -220,9 +219,9 @@ namespace thekogans {
                     if (availableToWrite > length) {
                         availableToWrite = length;
                     }
-                    fileAllocator.file.Seek (block.GetOffset () + blockOffset, SEEK_SET);
+                    block.file.Seek (block.GetOffset () + blockOffset, SEEK_SET);
                     countWritten = AdvanceReadOffset (
-                        fileAllocator.file.Write (GetReadPtr (), availableToWrite));
+                        block.file.Write (GetReadPtr (), availableToWrite));
                 }
             }
             return countWritten;

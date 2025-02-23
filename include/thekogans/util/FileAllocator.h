@@ -225,6 +225,10 @@ namespace thekogans {
                 THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (LockedFilePtr)
             };
 
+            /// \brief
+            /// Forward declaration to resolve circular dependence.
+            struct BlockBuffer;
+
             /// \struct FileAllocator::BlockInfo FileAllocator.h thekogans/util/FileAllocator.h
             ///
             /// \brief
@@ -556,6 +560,10 @@ namespace thekogans {
                     const Footer &footer);
 
                 /// \brief
+                /// Needs access to file.
+                friend struct BlockBuffer;
+
+                /// \brief
                 /// BlockInfo is neither copy constructable, nor assignable.
                 THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (BlockInfo)
             };
@@ -572,20 +580,17 @@ namespace thekogans {
             struct _LIB_THEKOGANS_UTIL_DECL BlockBuffer : public Buffer {
             private:
                 /// \brief
-                /// \see{FileAllocator} containing the block.
-                FileAllocator &fileAllocator;
-                /// \brief
                 /// Block info.
                 BlockInfo block;
 
             public:
                 /// \brief
                 /// ctro.
-                /// \param[in] fileAllocator_ \see{FileAllocator} containing the block.
+                /// \param[in] fileAllocator \see{FileAllocator} containing the block.
                 /// \param[in] offset Block offset.
                 /// \param[in] length How much of the block do we want (0 == get the whole block).
                 BlockBuffer (
-                    FileAllocator &fileAllocator_,
+                    FileAllocator &fileAllocator,
                     ui64 offset,
                     std::size_t length = 0);
 
