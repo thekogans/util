@@ -123,9 +123,9 @@ namespace thekogans {
                         "Corrupt FileAllocator::BlockInfo: " THEKOGANS_UTIL_UI64_FORMAT
                         " prev.header.flags: %u prev.header.size: " THEKOGANS_UTIL_UI64_FORMAT
                         " prev.footer.flags: %u prev.footer.size: " THEKOGANS_UTIL_UI64_FORMAT,
-                        offset,
-                        header.flags, header.size,
-                        footer.flags, footer.size);
+                        prev.offset,
+                        prev.header.flags, prev.header.size,
+                        prev.footer.flags, prev.footer.size);
                 }
                 return true;
             }
@@ -147,8 +147,8 @@ namespace thekogans {
             if (header != footer) {
                 THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
                     "Corrupt FileAllocator::BlockInfo: " THEKOGANS_UTIL_UI64_FORMAT
-                    " prev.header.flags: %u prev.header.size: " THEKOGANS_UTIL_UI64_FORMAT
-                    " prev.footer.flags: %u prev.footer.size: " THEKOGANS_UTIL_UI64_FORMAT,
+                    " header.flags: %u header.size: " THEKOGANS_UTIL_UI64_FORMAT
+                    " footer.flags: %u footer.size: " THEKOGANS_UTIL_UI64_FORMAT,
                     offset,
                     header.flags, header.size,
                     footer.flags, footer.size);

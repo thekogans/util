@@ -143,10 +143,10 @@ namespace thekogans {
                 i32 mode = S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
         #endif // defined (TOOLCHAIN_OS_Windows)
             /// \brief
-            /// Close file.
+            /// Close the file.
             virtual void Close ();
             /// \brief
-            /// Flush pending writes to a file.
+            /// Flush pending writes to disk.
             virtual void Flush ();
 
             /// \brief
