@@ -588,7 +588,8 @@ namespace thekogans {
                 /// ctro.
                 /// \param[in] fileAllocator \see{FileAllocator} containing the block.
                 /// \param[in] offset Block offset.
-                /// \param[in] length How much of the block do we want (0 == get the whole block).
+                /// \param[in] length How much of the block do we want
+                /// to back up (0 == the whole block).
                 BlockBuffer (
                     FileAllocator &fileAllocator,
                     ui64 offset,
@@ -597,7 +598,7 @@ namespace thekogans {
                 /// \brief
                 /// Read a range in to the buffer.
                 /// \param[in] blockOffset Logical offset within block.
-                /// \param[in] length How much of the block do we want (0 == get the whole block).
+                /// \param[in] length How much of the block do we want (0 == read the whole block).
                 std::size_t Read (
                     std::size_t blockOffset = 0,
                     std::size_t length = 0);

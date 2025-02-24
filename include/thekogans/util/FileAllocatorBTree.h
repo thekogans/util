@@ -191,7 +191,6 @@ private:
         /// \brief
         /// Try to recursively delete the given key.
         /// \param[in] key \see{Key} whose entry we want to delete.
-        /// \param[in] node \see{Node} to delete from.
         /// \return true == entry was deleted. false == key not found.
         bool Remove (const Key &key);
         /// \brief
