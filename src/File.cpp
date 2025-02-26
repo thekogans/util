@@ -78,61 +78,6 @@ namespace thekogans {
             THEKOGANS_UTIL_CATCH_AND_LOG_SUBSYSTEM (THEKOGANS_UTIL)
         }
 
-        void File::Open (
-                const std::string &path_,
-            #if defined (TOOLCHAIN_OS_Windows)
-                DWORD dwDesiredAccess,
-                DWORD dwShareMode,
-                DWORD dwCreationDisposition,
-                DWORD dwFlagsAndAttributes) {
-            #else // defined (TOOLCHAIN_OS_Windows)
-                i32 flags,
-                i32 mode) {
-            #endif // defined (TOOLCHAIN_OS_Windows)
-            Close ();
-        #if defined (TOOLCHAIN_OS_Windows)
-            handle = CreateFileW (os::windows::UTF8ToUTF16 (path_).c_str (),
-                dwDesiredAccess, dwShareMode, 0, dwCreationDisposition, dwFlagsAndAttributes, 0);
-        #else // defined (TOOLCHAIN_OS_Windows)
-            handle =  open (path_.c_str (), flags, mode);
-        #endif // defined (TOOLCHAIN_OS_Windows)
-            if (handle == THEKOGANS_UTIL_INVALID_HANDLE_VALUE) {
-                THEKOGANS_UTIL_THROW_ERROR_CODE_AND_MESSAGE_EXCEPTION (
-                    THEKOGANS_UTIL_OS_ERROR_CODE, " (%s)", path_.c_str ());
-            }
-            path = path_;
-        }
-
-        void File::Close () {
-            if (handle != THEKOGANS_UTIL_INVALID_HANDLE_VALUE) {
-            #if defined (TOOLCHAIN_OS_Windows)
-                if (!CloseHandle (handle)) {
-            #else // defined (TOOLCHAIN_OS_Windows)
-                if (close (handle) < 0) {
-            #endif // defined (TOOLCHAIN_OS_Windows)
-                    THEKOGANS_UTIL_THROW_ERROR_CODE_AND_MESSAGE_EXCEPTION (
-                        THEKOGANS_UTIL_OS_ERROR_CODE, " (%s)", path.c_str ());
-                }
-                handle = THEKOGANS_UTIL_INVALID_HANDLE_VALUE;
-                path.clear ();
-            }
-        }
-
-        void File::Flush () {
-        #if defined (TOOLCHAIN_OS_Windows)
-            if (!FlushFileBuffers (handle)) {
-        #else // defined (TOOLCHAIN_OS_Windows)
-            if (fsync (handle) < 0) {
-        #endif // defined (TOOLCHAIN_OS_Windows)
-                THEKOGANS_UTIL_THROW_ERROR_CODE_AND_MESSAGE_EXCEPTION (
-                    THEKOGANS_UTIL_OS_ERROR_CODE, " (%s)", path.c_str ());
-            }
-        }
-
-        ui64 File::GetDataAvailableForReading () const {
-            return GetSize () - Tell ();
-        }
-
     #if defined (TOOLCHAIN_OS_Windows)
         std::size_t File::Read (
                 void *buffer,
@@ -193,6 +138,61 @@ namespace thekogans {
                 i64 offset,
                 i32 fromWhere) {
             return PlatformSeek (offset, fromWhere);
+        }
+
+        void File::Open (
+                const std::string &path_,
+            #if defined (TOOLCHAIN_OS_Windows)
+                DWORD dwDesiredAccess,
+                DWORD dwShareMode,
+                DWORD dwCreationDisposition,
+                DWORD dwFlagsAndAttributes) {
+            #else // defined (TOOLCHAIN_OS_Windows)
+                i32 flags,
+                i32 mode) {
+            #endif // defined (TOOLCHAIN_OS_Windows)
+            Close ();
+        #if defined (TOOLCHAIN_OS_Windows)
+            handle = CreateFileW (os::windows::UTF8ToUTF16 (path_).c_str (),
+                dwDesiredAccess, dwShareMode, 0, dwCreationDisposition, dwFlagsAndAttributes, 0);
+        #else // defined (TOOLCHAIN_OS_Windows)
+            handle =  open (path_.c_str (), flags, mode);
+        #endif // defined (TOOLCHAIN_OS_Windows)
+            if (handle == THEKOGANS_UTIL_INVALID_HANDLE_VALUE) {
+                THEKOGANS_UTIL_THROW_ERROR_CODE_AND_MESSAGE_EXCEPTION (
+                    THEKOGANS_UTIL_OS_ERROR_CODE, " (%s)", path_.c_str ());
+            }
+            path = path_;
+        }
+
+        void File::Close () {
+            if (handle != THEKOGANS_UTIL_INVALID_HANDLE_VALUE) {
+            #if defined (TOOLCHAIN_OS_Windows)
+                if (!CloseHandle (handle)) {
+            #else // defined (TOOLCHAIN_OS_Windows)
+                if (close (handle) < 0) {
+            #endif // defined (TOOLCHAIN_OS_Windows)
+                    THEKOGANS_UTIL_THROW_ERROR_CODE_AND_MESSAGE_EXCEPTION (
+                        THEKOGANS_UTIL_OS_ERROR_CODE, " (%s)", path.c_str ());
+                }
+                handle = THEKOGANS_UTIL_INVALID_HANDLE_VALUE;
+                path.clear ();
+            }
+        }
+
+        void File::Flush () {
+        #if defined (TOOLCHAIN_OS_Windows)
+            if (!FlushFileBuffers (handle)) {
+        #else // defined (TOOLCHAIN_OS_Windows)
+            if (fsync (handle) < 0) {
+        #endif // defined (TOOLCHAIN_OS_Windows)
+                THEKOGANS_UTIL_THROW_ERROR_CODE_AND_MESSAGE_EXCEPTION (
+                    THEKOGANS_UTIL_OS_ERROR_CODE, " (%s)", path.c_str ());
+            }
+        }
+
+        ui64 File::GetDataAvailableForReading () const {
+            return GetSize () - Tell ();
         }
 
         ui64 File::GetSize () const {

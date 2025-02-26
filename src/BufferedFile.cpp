@@ -17,6 +17,8 @@
 
 #include <errno.h>
 #include "thekogans/util/Path.h"
+#include "thekogans/util/Exception.h"
+#include "thekogans/util/LoggerMgr.h"
 #include "thekogans/util/Constants.h"
 #include "thekogans/util/BufferedFile.h"
 
@@ -73,7 +75,7 @@ namespace thekogans {
                     }
                     file.SetSize (size);
                     Close ();
-                    _unlink (path.c_str ());
+                    File::Delete (path);
                 }
 
                 static void Commit (const std::string &path) {
@@ -98,8 +100,22 @@ namespace thekogans {
                                 }
                                 file.SetSize (size);
                             }
+                            else {
+                                THEKOGANS_UTIL_LOG_SUBSYSTEM_WARNING (
+                                    THEKOGANS_UTIL,
+                                    "The log (%s) for %s is dirty, skipping.",
+                                    logPath.c_str (),
+                                    path.c_str ());
+                            }
                             log.Close ();
-                            _unlink (logPath.c_str ());
+                            File::Delete (logPath);
+                        }
+                        else {
+                            THEKOGANS_UTIL_LOG_SUBSYSTEM_WARNING (
+                                THEKOGANS_UTIL,
+                                "The log (%s) for %s is corrupt, skipping.",
+                                logPath.c_str (),
+                                path.c_str ());
                         }
                     }
                 }
@@ -115,59 +131,15 @@ namespace thekogans {
             }
         }
 
+        BufferedFile::~BufferedFile () {
+            THEKOGANS_UTIL_TRY {
+                Close ();
+            }
+            THEKOGANS_UTIL_CATCH_AND_LOG_SUBSYSTEM (THEKOGANS_UTIL)
+        }
+
         void BufferedFile::CommitLog (const std::string &path) {
             __Log__::Commit (path);
-        }
-
-    #if defined (TOOLCHAIN_OS_Windows)
-        void BufferedFile::Open (
-                const std::string &path,
-                DWORD dwDesiredAccess,
-                DWORD dwShareMode,
-                DWORD dwCreationDisposition,
-                DWORD dwFlagsAndAttributes) {
-    #else // defined (TOOLCHAIN_OS_Windows)
-        void BufferedFile::Open (
-                const std::string &path,
-                i32 flags,
-                i32 mode) {
-    #endif // defined (TOOLCHAIN_OS_Windows)
-            __Log__::Commit (path);
-        #if defined (TOOLCHAIN_OS_Windows)
-            File::Open (
-                path,
-                dwDesiredAccess,
-                dwShareMode,
-                dwCreationDisposition,
-                dwFlagsAndAttributes);
-        #else // defined (TOOLCHAIN_OS_Windows)
-            File::Open (path, flags, mode);
-        #endif // defined (TOOLCHAIN_OS_Windows)
-            position = File::Tell ();
-            size = File::GetSize ();
-        }
-
-        void BufferedFile::Close () {
-            if (IsOpen ()) {
-                Flush ();
-                File::Close ();
-            }
-        }
-
-        void BufferedFile::Flush () {
-            if (!buffers.empty ()) {
-                __Log__ log (*this);
-                for (BufferMap::const_iterator
-                        it = buffers.begin (),
-                        end = buffers.end (); it != end; ++it) {
-                    if (it->second->dirty) {
-                        log << *it->second;
-                    }
-                }
-                buffers.deleteAndClear ();
-            }
-            // We need the log to commit (dtor) before flushing the file.
-            File::Flush ();
         }
 
         std::size_t BufferedFile::Read (
@@ -251,6 +223,57 @@ namespace thekogans {
             }
             errno = 0;
             return position;
+        }
+
+    #if defined (TOOLCHAIN_OS_Windows)
+        void BufferedFile::Open (
+                const std::string &path,
+                DWORD dwDesiredAccess,
+                DWORD dwShareMode,
+                DWORD dwCreationDisposition,
+                DWORD dwFlagsAndAttributes) {
+    #else // defined (TOOLCHAIN_OS_Windows)
+        void BufferedFile::Open (
+                const std::string &path,
+                i32 flags,
+                i32 mode) {
+    #endif // defined (TOOLCHAIN_OS_Windows)
+            __Log__::Commit (path);
+        #if defined (TOOLCHAIN_OS_Windows)
+            File::Open (
+                path,
+                dwDesiredAccess,
+                dwShareMode,
+                dwCreationDisposition,
+                dwFlagsAndAttributes);
+        #else // defined (TOOLCHAIN_OS_Windows)
+            File::Open (path, flags, mode);
+        #endif // defined (TOOLCHAIN_OS_Windows)
+            position = File::Tell ();
+            size = File::GetSize ();
+        }
+
+        void BufferedFile::Close () {
+            if (IsOpen ()) {
+                Flush ();
+                File::Close ();
+            }
+        }
+
+        void BufferedFile::Flush () {
+            if (!buffers.empty ()) {
+                __Log__ log (*this);
+                for (BufferMap::const_iterator
+                        it = buffers.begin (),
+                        end = buffers.end (); it != end; ++it) {
+                    if (it->second->dirty) {
+                        log << *it->second;
+                    }
+                }
+                buffers.deleteAndClear ();
+            }
+            // We need the log to commit (dtor) before flushing the file.
+            File::Flush ();
         }
 
         void BufferedFile::SetSize (ui64 newSize) {

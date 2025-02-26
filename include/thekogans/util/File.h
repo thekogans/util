@@ -111,6 +111,38 @@ namespace thekogans {
             /// Close the file.
             virtual ~File ();
 
+            // Serializer
+            /// \brief
+            /// Read bytes from a file.
+            /// \param[out] buffer Where to place the bytes.
+            /// \param[in] count Number of bytes to read.
+            /// \return Number of bytes actually read.
+            virtual std::size_t Read (
+                void *buffer,
+                std::size_t count) override;
+            /// \brief
+            /// Write bytes to a file.
+            /// \param[in] buffer Where the bytes come from.
+            /// \param[in] count Number of bytes to write.
+            /// \return Number of bytes actually written.
+            virtual std::size_t Write (
+                const void *buffer,
+                std::size_t count) override;
+
+            // RandomSeekSerializer
+            /// \brief
+            /// Return the file pointer position.
+            /// \return The file pointer position.
+            virtual i64 Tell () const override;
+            /// \brief
+            /// Reposition the file pointer.
+            /// \param[in] offset Offset to move relative to fromWhere.
+            /// \param[in] fromWhere SEEK_SET, SEEK_CUR or SEEK_END.
+            /// \return The new file pointer position.
+            virtual i64 Seek (
+                i64 offset,
+                i32 fromWhere) override;
+
             /// \brief
             /// Return true if file is open.
             /// \return true == file is open.
@@ -154,38 +186,6 @@ namespace thekogans {
             /// Return number of bytes available for reading.
             /// \return Number of bytes available for reading.
             virtual ui64 GetDataAvailableForReading () const;
-
-            // Serializer
-            /// \brief
-            /// Read bytes from a file.
-            /// \param[out] buffer Where to place the bytes.
-            /// \param[in] count Number of bytes to read.
-            /// \return Number of bytes actually read.
-            virtual std::size_t Read (
-                void *buffer,
-                std::size_t count) override;
-            /// \brief
-            /// Write bytes to a file.
-            /// \param[in] buffer Where the bytes come from.
-            /// \param[in] count Number of bytes to write.
-            /// \return Number of bytes actually written.
-            virtual std::size_t Write (
-                const void *buffer,
-                std::size_t count) override;
-
-            // RandomSeekSerializer
-            /// \brief
-            /// Return the file pointer position.
-            /// \return The file pointer position.
-            virtual i64 Tell () const;
-            /// \brief
-            /// Reposition the file pointer.
-            /// \param[in] offset Offset to move relative to fromWhere.
-            /// \param[in] fromWhere SEEK_SET, SEEK_CUR or SEEK_END.
-            /// \return The new file pointer position.
-            virtual i64 Seek (
-                i64 offset,
-                i32 fromWhere);
 
             /// \brief
             /// Return file size in bytes.

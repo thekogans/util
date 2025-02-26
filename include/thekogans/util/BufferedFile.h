@@ -20,8 +20,6 @@
 
 #include <string>
 #include "thekogans/util/Config.h"
-#include "thekogans/util/Exception.h"
-#include "thekogans/util/LoggerMgr.h"
 #include "thekogans/util/Types.h"
 #include "thekogans/util/Heap.h"
 #include "thekogans/util/OwnerMap.h"
@@ -55,7 +53,7 @@ namespace thekogans {
         private:
             i64 position;
             ui64 size;
-            using BufferMap = util::OwnerMap<ui64, Buffer>;
+            using BufferMap = OwnerMap<ui64, Buffer>;
             BufferMap buffers;
 
         public:
@@ -112,15 +110,45 @@ namespace thekogans {
                 position (IsOpen () ? File::Tell () : 0),
                 size (IsOpen () ? File::GetSize () : 0) {}
         #endif // defined (TOOLCHAIN_OS_Windows)
-            virtual ~BufferedFile () {
-                THEKOGANS_UTIL_TRY {
-                    Close ();
-                }
-                THEKOGANS_UTIL_CATCH_AND_LOG_SUBSYSTEM (THEKOGANS_UTIL)
-            }
+            virtual ~BufferedFile ();
 
             static void CommitLog (const std::string &path);
 
+            // Serializer
+            /// \brief
+            /// Read bytes from a file.
+            /// \param[out] buffer Where to place the bytes.
+            /// \param[in] count Number of bytes to read.
+            /// \return Number of bytes actually read.
+            virtual std::size_t Read (
+                void *buffer,
+                std::size_t count) override;
+            /// \brief
+            /// Write bytes to a file.
+            /// \param[in] buffer Where the bytes come from.
+            /// \param[in] count Number of bytes to write.
+            /// \return Number of bytes actually written.
+            virtual std::size_t Write (
+                const void *buffer,
+                std::size_t count) override;
+
+            // RandomSeekSerializer
+            /// \brief
+            /// Return the file pointer position.
+            /// \return The file pointer position.
+            virtual i64 Tell () const override {
+                return position;
+            }
+            /// \brief
+            /// Reposition the file pointer.
+            /// \param[in] offset Offset to move relative to fromWhere.
+            /// \param[in] fromWhere SEEK_SET, SEEK_CUR or SEEK_END.
+            /// \return The new file pointer position.
+            virtual i64 Seek (
+                i64 offset,
+                i32 fromWhere) override;
+
+            // File
         #if defined (TOOLCHAIN_OS_Windows)
             /// \brief
             /// Open the file.
@@ -156,31 +184,39 @@ namespace thekogans {
             /// \brief
             /// Return number of bytes available for reading.
             /// \return Number of bytes available for reading.
-            virtual ui64 GetDataAvailableForReading () const {
+            virtual ui64 GetDataAvailableForReading () const override {
                 return size - position;
             }
 
-            virtual std::size_t Read (
-                void *buffer,
-                std::size_t count) override;
-            virtual std::size_t Write (
-                const void *buffer,
-                std::size_t count) override;
-
-            virtual i64 Tell () const override {
-                return position;
-            }
-            virtual i64 Seek (
-                i64 offset,
-                i32 fromWhere) override;
-
+            /// \brief
+            /// Return file size in bytes.
+            /// \return File size in bytes.
             virtual ui64 GetSize () const override {
                 return size;
             }
+            /// \brief
+            /// Truncates or expands the file.
+            /// \param[in] newSize New size to set the file to.
             virtual void SetSize (ui64 newSize) override;
+
+            /// \brief
+            /// Lock a range of bytes in the file.
+            /// \region[in] region region to lock.
+            /// \region[in] exclusive lock for exclusive access.
+            virtual void LockRegion (
+                const Region & /*region*/,
+                bool /*exclusive*/) {}
+            /// \brief
+            /// Unlock a range of bytes in the file.
+            /// \region[in] region region to unlock.
+            virtual void UnlockRegion (const Region & /*region*/) {}
 
         private:
             Buffer *GetBuffer (bool create);
+
+            /// \brief
+            /// BufferedFile is neither copy constructable, nor assignable.
+            THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (BufferedFile)
         };
 
     } // namespace util
