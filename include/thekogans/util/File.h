@@ -38,6 +38,7 @@
 #include <string>
 #include "thekogans/util/Config.h"
 #include "thekogans/util/Types.h"
+#include "thekogans/util/Flags.h"
 #include "thekogans/util/TimeSpec.h"
 #include "thekogans/util/RandomSeekSerializer.h"
 #include "thekogans/util/GUID.h"
@@ -332,7 +333,15 @@ namespace thekogans {
             SimpleFile (
                 Endianness endianness,
                 const std::string &path,
-                i32 flags = ReadWrite | Create);
+                Flags32 flags = ReadWrite | Create);
+
+            /// \brief
+            /// Open the file.
+            /// \param[in] path File path.
+            /// \param[in] flags File open flags.
+            void Open (
+                const std::string &path,
+                Flags32 flags = ReadWrite | Create);
 
             /// \brief
             /// SimpleFile is neither copy constructable, nor assignable.

@@ -86,8 +86,8 @@ namespace thekogans {
                 DWORD dwCreationDisposition,
                 DWORD dwFlagsAndAttributes) {
             #else // defined (TOOLCHAIN_OS_Windows)
-                int flags,
-                int mode) {
+                i32 flags,
+                i32 mode) {
             #endif // defined (TOOLCHAIN_OS_Windows)
             Close ();
         #if defined (TOOLCHAIN_OS_Windows)
@@ -295,34 +295,29 @@ namespace thekogans {
     #endif // defined (TOOLCHAIN_OS_Windows)
 
         GUID File::GetId () const {
+            HostBuffer buffer (GUID_SIZE);
         #if defined (TOOLCHAIN_OS_Windows)
             BY_HANDLE_FILE_INFORMATION fileInformation;
             if (!GetFileInformationByHandle (handle, &fileInformation)) {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_AND_MESSAGE_EXCEPTION (
                     THEKOGANS_UTIL_OS_ERROR_CODE, " (%s)", path.c_str ());
             }
-            GUID guid;
-            Buffer buffer (HostEndian, guid.data, GUID_SIZE, false);
-            ui32 zero = 0;
             buffer <<
-                zero <<
+                (ui32)0 <<
                 (ui32)fileInformation.dwVolumeSerialNumber <<
                 (ui32)fileInformation.nFileIndexHigh <<
                 (ui32)fileInformation.nFileIndexLow;
-            return guid;
         #else // defined (TOOLCHAIN_OS_Windows)
             STAT_STRUCT buf;
             if (FSTAT_FUNC (handle, &buf) < 0) {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_AND_MESSAGE_EXCEPTION (
                     THEKOGANS_UTIL_OS_ERROR_CODE, " (%s)", path.c_str ());
             }
-            GUID guid;
-            Buffer buffer (HostEndian, guid.data, GUID_SIZE, false);
-            ui64 zero = 0;
-            ui64 inode = buf.st_ino;
-            buffer << zero << inode;
-            return guid;
+            buffer << (ui64)0 << (ui64)buf.st_ino;
         #endif // defined (TOOLCHAIN_OS_Windows)
+            return GUID::FromBuffer (
+                buffer.GetReadPtr (),
+                buffer.GetDataAvailableForReading ());
         }
 
         void File::Delete (const std::string &path) {
@@ -417,33 +412,38 @@ namespace thekogans {
         SimpleFile::SimpleFile (
                 Endianness endianness,
                 const std::string &path,
-                i32 flags) :
+                Flags32 flags) :
                 File (endianness) {
+            Open (path, flags);
+        }
+
+        void SimpleFile::Open (
+                const std::string &path,
+                Flags32 flags) {
         #if defined (TOOLCHAIN_OS_Windows)
             DWORD dwDesiredAccess = 0;
             DWORD dwShareMode = 0;
-            Flags<i32> flags_ (flags);
-            if (flags_.Test (ReadOnly)) {
+            if (flags.Test (ReadOnly)) {
                 dwDesiredAccess |= GENERIC_READ;
                 dwShareMode |= FILE_SHARE_READ;
             }
-            if (flags_.Test (WriteOnly)) {
+            if (flags.Test (WriteOnly)) {
                 dwDesiredAccess |= GENERIC_WRITE;
                 dwShareMode |= FILE_SHARE_WRITE | FILE_SHARE_DELETE;
             }
-            if (flags_.Test (Append)) {
+            if (flags.Test (Append)) {
                 dwDesiredAccess |= FILE_APPEND_DATA;
             }
             DWORD dwCreationDisposition = 0;
-            if (flags_.Test (Create)) {
-                if (flags_.Test (Truncate)) {
+            if (flags.Test (Create)) {
+                if (flags.Test (Truncate)) {
                     dwCreationDisposition |= CREATE_ALWAYS;
                 }
                 else {
                     dwCreationDisposition |= OPEN_ALWAYS;
                 }
             }
-            else if (flags_.Test (Truncate)) {
+            else if (flags.Test (Truncate)) {
                 dwCreationDisposition |= TRUNCATE_EXISTING;
             }
             else {
@@ -457,30 +457,29 @@ namespace thekogans {
                 dwCreationDisposition,
                 dwFlagsAndAttributes);
         #else // defined (TOOLCHAIN_OS_Windows)
-            Flags<i32> flags_ (flags);
-            flags = 0;
-            if (flags_.Test (ReadOnly)) {
-                if (flags_.Test (WriteOnly)) {
-                    flags |= O_RDWR;
+            i32 flags_ = 0;
+            if (flags.Test (ReadOnly)) {
+                if (flags.Test (WriteOnly)) {
+                    flags_ |= O_RDWR;
                 }
                 else {
-                    flags |= O_RDONLY;
+                    flags_ |= O_RDONLY;
                 }
             }
-            else if (flags_.Test (WriteOnly)) {
-                flags |= O_WRONLY;
+            else if (flags.Test (WriteOnly)) {
+                flags_ |= O_WRONLY;
             }
-            if (flags_.Test (Create)) {
-                flags |= O_CREAT;
+            if (flags.Test (Create)) {
+                flags_ |= O_CREAT;
             }
-            if (flags_.Test (Truncate)) {
-                flags |= O_TRUNC;
+            if (flags.Test (Truncate)) {
+                flags_ |= O_TRUNC;
             }
-            if (flags_.Test (Append)) {
-                flags |= O_APPEND;
+            if (flags.Test (Append)) {
+                flags_ |= O_APPEND;
             }
             i32 mode = S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH;
-            File::Open (path, flags, mode);
+            File::Open (path, flags_, mode);
         #endif // defined (TOOLCHAIN_OS_Windows)
         }
 

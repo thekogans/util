@@ -87,6 +87,7 @@
     <cpp_header>$(organization)/$(project_directory)/BitSet.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/BlockAllocator.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/Buffer.h</cpp_header>
+    <cpp_header>$(organization)/$(project_directory)/BufferedFile.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/ByteSwap.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/ChildProcess.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/CommandLineOptions.h</cpp_header>
@@ -628,6 +629,7 @@
     <cpp_source>BitSet.cpp</cpp_source>
     <cpp_source>BlockAllocator.cpp</cpp_source>
     <cpp_source>Buffer.cpp</cpp_source>
+    <cpp_source>BufferedFile.cpp</cpp_source>
     <cpp_source>ChildProcess.cpp</cpp_source>
     <cpp_source>CommandLineOptions.cpp</cpp_source>
     <cpp_source>Condition.cpp</cpp_source>
