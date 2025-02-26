@@ -32,8 +32,7 @@ namespace thekogans {
         ///
         /// \brief
         /// BufferedFile will accumulate all changes in memory and will commit them
-        /// all at once in \see{Flush}. It will use an intermediate file (log) to
-        /// maintain transformational semantics and file integrity.
+        /// all at once in \see{Flush}.
 
         struct _LIB_THEKOGANS_UTIL_DECL BufferedFile : public File {
             /// \brief
@@ -41,6 +40,13 @@ namespace thekogans {
             /// dynamic discovery and creation.
             THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE (BufferedFile)
 
+        private:
+            /// \brief
+            /// Current read/write position.
+            i64 position;
+            /// \brief
+            /// File size.
+            ui64 size;
             /// \struct BufferedFile::Buffer BufferedFile.h thekogans/util/BufferedFile.h
             ///
             /// \brief
@@ -60,7 +66,7 @@ namespace thekogans {
                 ui64 length;
                 /// \brief
                 /// Buffer size.
-                static const std::size_t PAGE_SIZE = 0x00001000;
+                static const std::size_t PAGE_SIZE = 0x00010000;
                 /// \brief
                 /// Buffer.
                 ui8 data[PAGE_SIZE];
@@ -79,14 +85,6 @@ namespace thekogans {
                     length (length_),
                     dirty (false) {}
             };
-
-        private:
-            /// \brief
-            /// Current read/write position.
-            i64 position;
-            /// \brief
-            /// File size.
-            ui64 size;
             /// \brief
             /// Alias for OwnerMap<ui64, Buffer>.
             using BufferMap = OwnerMap<ui64, Buffer>;
@@ -151,12 +149,6 @@ namespace thekogans {
             /// \brief
             /// dtor.
             virtual ~BufferedFile ();
-
-            /// \brief
-            /// BufferedFile will commit all changes in \see{Flush} and \see{Close}.
-            /// In case manual maintenence is needed, call this method directly.
-            /// \param[in] path File path (not log path).
-            static void CommitLog (const std::string &path);
 
             // Serializer
             /// \brief

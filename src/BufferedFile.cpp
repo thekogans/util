@@ -31,71 +31,11 @@ namespace thekogans {
 
         THEKOGANS_UTIL_IMPLEMENT_HEAP_FUNCTIONS (BufferedFile::Buffer)
 
-        namespace {
-            Serializer &operator >> (
-                    Serializer &serializer,
-                    BufferedFile::Buffer &buffer) {
-                serializer >> buffer.offset >> buffer.length;
-                serializer.Read (buffer.data, BufferedFile::Buffer::PAGE_SIZE);
-                return serializer;
-            }
-
-            Serializer &operator << (
-                    Serializer &serializer,
-                    BufferedFile::Buffer &buffer) {
-                serializer << buffer.offset << buffer.length;
-                serializer.Write (buffer.data, BufferedFile::Buffer::PAGE_SIZE);
-                return serializer;
-            }
-        }
-
         BufferedFile::~BufferedFile () {
             THEKOGANS_UTIL_TRY {
                 Close ();
             }
             THEKOGANS_UTIL_CATCH_AND_LOG_SUBSYSTEM (THEKOGANS_UTIL)
-        }
-
-        void BufferedFile::CommitLog (const std::string &path) {
-            std::string logPath = path + ".log";
-            if (Path (path).Exists () && Path (logPath).Exists ()) {
-                SimpleFile file (HostEndian, path, SimpleFile::ReadWrite);
-                ReadOnlyFile log (HostEndian, logPath);
-                ui32 magic;
-                log >> magic;
-                if (magic == MAGIC32) {
-                    ui32 isClean;
-                    log >> isClean;
-                    if (isClean == 1) {
-                        ui64 count;
-                        ui64 size;
-                        log >> count >> size;
-                        BufferedFile::Buffer buffer;
-                        while (count-- != 0) {
-                            log >> buffer;
-                            file.Seek (buffer.offset, SEEK_SET);
-                            file.Write (buffer.data, buffer.length);
-                        }
-                        file.SetSize (size);
-                    }
-                    else {
-                        THEKOGANS_UTIL_LOG_SUBSYSTEM_WARNING (
-                            THEKOGANS_UTIL,
-                            "The log (%s) for %s is dirty, skipping.",
-                            logPath.c_str (),
-                            path.c_str ());
-                    }
-                    log.Close ();
-                    File::Delete (logPath);
-                }
-                else {
-                    THEKOGANS_UTIL_LOG_SUBSYSTEM_WARNING (
-                        THEKOGANS_UTIL,
-                        "The log (%s) for %s is corrupt, skipping.",
-                        logPath.c_str (),
-                        path.c_str ());
-                }
-            }
         }
 
         std::size_t BufferedFile::Read (
@@ -197,7 +137,6 @@ namespace thekogans {
                 i32 flags,
                 i32 mode) {
     #endif // defined (TOOLCHAIN_OS_Windows)
-            CommitLog (path);
         #if defined (TOOLCHAIN_OS_Windows)
             File::Open (
                 path,
@@ -220,40 +159,16 @@ namespace thekogans {
         }
 
         void BufferedFile::Flush () {
-            if (!buffers.empty ()) {
-                SimpleFile log (
-                    HostEndian,
-                    path + ".log",
-                    SimpleFile::ReadWrite |
-                    SimpleFile::Create |
-                    SimpleFile::Truncate);
-                ui32 isClean = 0;
-                ui64 count = 0;
-                log << MAGIC32 << isClean << count << size;
-                for (BufferMap::const_iterator
-                        it = buffers.begin (),
-                        end = buffers.end (); it != end; ++it) {
-                    if (it->second->dirty) {
-                        log << *it->second;
-                        ++count;
-                    }
+            for (BufferMap::const_iterator
+                    it = buffers.begin (),
+                    end = buffers.end (); it != end; ++it) {
+                if (it->second->dirty) {
+                    File::Seek (it->second->offset, SEEK_SET);
+                    File::Write (it->second->data, it->second->length);
                 }
-                buffers.deleteAndClear ();
-                isClean = 1;
-                log.Seek (0, SEEK_SET);
-                log << MAGIC32 << isClean << count << size;
-                TenantFile file (endianness, handle, path);
-                BufferedFile::Buffer buffer;
-                while (count-- != 0) {
-                    log >> buffer;
-                    file.Seek (buffer.offset, SEEK_SET);
-                    file.Write (buffer.data, buffer.length);
-                }
-                file.SetSize (size);
-                log.Close ();
-                File::Delete (path + ".log");
             }
-            // We need the log to commit (dtor) before flushing the file.
+            buffers.deleteAndClear ();
+            File::SetSize (size);
             File::Flush ();
         }
 
