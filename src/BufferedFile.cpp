@@ -80,7 +80,7 @@ namespace thekogans {
 
                 static void Commit (const std::string &path) {
                     std::string logPath = path + ".log";
-                    if (Path (logPath).Exists ()) {
+                    if (Path (path).Exists () && Path (logPath).Exists ()) {
                         SimpleFile file (HostEndian, path, SimpleFile::ReadWrite);
                         ReadOnlyFile log (HostEndian, logPath);
                         ui32 magic;
@@ -105,7 +105,7 @@ namespace thekogans {
                                     THEKOGANS_UTIL,
                                     "The log (%s) for %s is dirty, skipping.",
                                     logPath.c_str (),
-                                    path.c_str ());
+                                        path.c_str ());
                             }
                             log.Close ();
                             File::Delete (logPath);
@@ -154,6 +154,9 @@ namespace thekogans {
                 }
                 std::size_t index = position - buffer_->offset;
                 std::size_t countToRead = MIN (buffer_->length - index, count);
+                if (countToRead == 0) {
+                    break;
+                }
                 memcpy (ptr, &buffer_->data[index], countToRead);
                 ptr += countToRead;
                 countRead += countToRead;
@@ -211,11 +214,11 @@ namespace thekogans {
                     position += offset;
                     break;
                 case SEEK_END:
-                    if (size + offset < 0) {
+                    if ((i64)size + offset < 0) {
                         errno = EOVERFLOW;
                         return -1;
                     }
-                    position = size + offset;
+                    position = (i64)size + offset;
                     break;
                 default:
                     errno = EINVAL;

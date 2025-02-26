@@ -153,8 +153,14 @@ namespace thekogans {
             #endif // defined (TOOLCHAIN_OS_Windows)
             Close ();
         #if defined (TOOLCHAIN_OS_Windows)
-            handle = CreateFileW (os::windows::UTF8ToUTF16 (path_).c_str (),
-                dwDesiredAccess, dwShareMode, 0, dwCreationDisposition, dwFlagsAndAttributes, 0);
+            handle = CreateFileW (
+                os::windows::UTF8ToUTF16 (path_).c_str (),
+                dwDesiredAccess,
+                dwShareMode,
+                0,
+                dwCreationDisposition,
+                dwFlagsAndAttributes,
+                0);
         #else // defined (TOOLCHAIN_OS_Windows)
             handle =  open (path_.c_str (), flags, mode);
         #endif // defined (TOOLCHAIN_OS_Windows)
@@ -176,7 +182,7 @@ namespace thekogans {
                         THEKOGANS_UTIL_OS_ERROR_CODE, " (%s)", path.c_str ());
                 }
                 handle = THEKOGANS_UTIL_INVALID_HANDLE_VALUE;
-                path.clear ();
+                //path.clear ();
             }
         }
 

@@ -28,21 +28,50 @@
 namespace thekogans {
     namespace util {
 
+        /// \struct BufferedFile BufferedFile.h thekogans/util/BufferedFile.h
+        ///
+        /// \brief
+        /// BufferedFile will accumulate all changes in memory and will commit them
+        /// all at once in \see{Flush}. It will use an intermediate file (log) to
+        /// maintain transformational semantics and file integrity.
+
         struct _LIB_THEKOGANS_UTIL_DECL BufferedFile : public File {
             /// \brief
             /// BufferedFile participates in the \see{DynamicCreatable}
             /// dynamic discovery and creation.
             THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE (BufferedFile)
 
+            /// \struct BufferedFile::Buffer BufferedFile.h thekogans/util/BufferedFile.h
+            ///
+            /// \brief
+            /// Buffer tiles the file address space providing incremental,
+            /// sparse access to the data. Use \see{Flush} to manage memory
+            /// usage.
             struct Buffer {
+                /// \brief
+                /// Buffer has a private heap.
                 THEKOGANS_UTIL_DECLARE_STD_ALLOCATOR_FUNCTIONS
 
+                /// \brief
+                /// Buffer offset (multiple of PAGE_SIZE).
                 ui64 offset;
+                /// \brief
+                /// Buffer length (max PAGE_SIZE).
                 ui64 length;
+                /// \brief
+                /// Buffer size.
                 static const std::size_t PAGE_SIZE = 0x00001000;
+                /// \brief
+                /// Buffer.
                 ui8 data[PAGE_SIZE];
+                /// \brief
+                /// true == modified.
                 bool dirty;
 
+                /// \brief
+                /// ctor.
+                /// \param[in] offset_ Buffer offset (multiple of PAGE_SIZE).
+                /// \param[in] length_ Buffer length (max PAGE_SIZE).
                 Buffer (
                     ui64 offset_ = 0,
                     ui64 length_ = 0) :
@@ -52,14 +81,22 @@ namespace thekogans {
             };
 
         private:
+            /// \brief
+            /// Current read/write position.
             i64 position;
+            /// \brief
+            /// File size.
             ui64 size;
+            /// \brief
+            /// Alias for OwnerMap<ui64, Buffer>.
             using BufferMap = OwnerMap<ui64, Buffer>;
+            /// \bref
+            /// Buffers covering the file address space.
             BufferMap buffers;
 
         public:
             /// \brief
-            /// Default ctor.
+            /// ctor.
             /// \param[in] endianness File endianness.
             /// \param[in] handle OS file handle.
             /// \param[in] path File path.
@@ -71,8 +108,8 @@ namespace thekogans {
                 position (IsOpen () ? File::Tell () : 0),
                 size (IsOpen () ? File::GetSize () : 0) {}
         #if defined (TOOLCHAIN_OS_Windows)
-            /// \brief ctor
-            /// Open the file.
+            /// \brief
+            /// ctor. Open the file.
             /// \param[in] endianness File endianness.
             /// \param[in] path Path to file to open.
             /// \param[in] dwDesiredAccess Windows CreateFile parameter.
@@ -96,8 +133,8 @@ namespace thekogans {
                 position (IsOpen () ? File::Tell () : 0),
                 size (IsOpen () ? File::GetSize () : 0) {}
         #else // defined (TOOLCHAIN_OS_Windows)
-            /// \brief ctor
-            /// Open the file.
+            /// \brief
+            /// ctor. Open the file.
             /// \param[in] endianness File endianness.
             /// \param[in] path Path to file to open.
             /// \param[in] flags POSIX open parameter.
@@ -111,8 +148,14 @@ namespace thekogans {
                 position (IsOpen () ? File::Tell () : 0),
                 size (IsOpen () ? File::GetSize () : 0) {}
         #endif // defined (TOOLCHAIN_OS_Windows)
+            /// \brief
+            /// dtor.
             virtual ~BufferedFile ();
 
+            /// \brief
+            /// BufferedFile will commit all changes in \see{Flush} and \see{Close}.
+            /// In case manual maintenence is needed, call this method directly.
+            /// \param[in] path File path (not log path).
             static void CommitLog (const std::string &path);
 
             // Serializer
@@ -213,6 +256,9 @@ namespace thekogans {
             virtual void UnlockRegion (const Region & /*region*/) {}
 
         private:
+            /// \brief
+            /// Get the buffer that will cover position (create if asked).
+            /// \param[in] create true == create if not found.
             Buffer *GetBuffer (bool create);
 
             /// \brief
@@ -223,7 +269,7 @@ namespace thekogans {
         /// \struct SimpleBufferedFile BufferedFile.h thekogans/util/BufferedFile.h
         ///
         /// \brief
-        /// SimpleFile exposes the basic flags supported by the standard
+        /// SimpleBufferedFile exposes the basic flags supported by the standard
         /// library open that are portable across Windows, Linux and OS X.
         /// NOTE: On Linux and OS X if a file needs to be created, it's
         /// mode will be 0644. This is fine for most cases but might not
