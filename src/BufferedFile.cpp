@@ -333,5 +333,79 @@ namespace thekogans {
             return nullptr;
         }
 
+        SimpleBufferedFile::SimpleBufferedFile (
+                Endianness endianness,
+                const std::string &path,
+                Flags32 flags) :
+                BufferedFile (endianness) {
+            Open (path, flags);
+        }
+
+        void SimpleBufferedFile::Open (
+                const std::string &path,
+                Flags32 flags) {
+        #if defined (TOOLCHAIN_OS_Windows)
+            DWORD dwDesiredAccess = 0;
+            DWORD dwShareMode = 0;
+            if (flags.Test (SimpleFile::ReadOnly)) {
+                dwDesiredAccess |= GENERIC_READ;
+                dwShareMode |= FILE_SHARE_READ;
+            }
+            if (flags.Test (SimpleFile::WriteOnly)) {
+                dwDesiredAccess |= GENERIC_WRITE;
+                dwShareMode |= FILE_SHARE_WRITE | FILE_SHARE_DELETE;
+            }
+            if (flags.Test (SimpleFile::Append)) {
+                dwDesiredAccess |= FILE_APPEND_DATA;
+            }
+            DWORD dwCreationDisposition = 0;
+            if (flags.Test (SimpleFile::Create)) {
+                if (flags.Test (SimpleFile::Truncate)) {
+                    dwCreationDisposition |= CREATE_ALWAYS;
+                }
+                else {
+                    dwCreationDisposition |= OPEN_ALWAYS;
+                }
+            }
+            else if (flags.Test (SimpleFile::Truncate)) {
+                dwCreationDisposition |= TRUNCATE_EXISTING;
+            }
+            else {
+                dwCreationDisposition |= OPEN_EXISTING;
+            }
+            DWORD dwFlagsAndAttributes = FILE_ATTRIBUTE_NORMAL;
+            BufferedFile::Open (
+                path,
+                dwDesiredAccess,
+                dwShareMode,
+                dwCreationDisposition,
+                dwFlagsAndAttributes);
+        #else // defined (TOOLCHAIN_OS_Windows)
+            i32 flags_ = 0;
+            if (flags.Test (SimpleFile::ReadOnly)) {
+                if (flags.Test (WriteOnly)) {
+                    flags_ |= O_RDWR;
+                }
+                else {
+                    flags_ |= O_RDONLY;
+                }
+            }
+            else if (flags.Test (SimpleFile::WriteOnly)) {
+                flags_ |= O_WRONLY;
+            }
+            if (flags.Test (SimpleFile::Create)) {
+                flags_ |= O_CREAT;
+            }
+            if (flags.Test (SimpleFile::Truncate)) {
+                flags_ |= O_TRUNC;
+            }
+            if (flags.Test (SimpleFile::Append)) {
+                flags_ |= O_APPEND;
+            }
+            i32 mode = S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH;
+            BufferedFile::Open (path, flags_, mode);
+        #endif // defined (TOOLCHAIN_OS_Windows)
+        }
+
     } // namespace util
 } // namespace thekogans

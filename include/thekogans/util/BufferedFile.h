@@ -30,7 +30,8 @@ namespace thekogans {
 
         struct _LIB_THEKOGANS_UTIL_DECL BufferedFile : public File {
             /// \brief
-            /// Declare \see{RefCounted} pointers.
+            /// BufferedFile participates in the \see{DynamicCreatable}
+            /// dynamic discovery and creation.
             THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE (BufferedFile)
 
             struct Buffer {
@@ -217,6 +218,50 @@ namespace thekogans {
             /// \brief
             /// BufferedFile is neither copy constructable, nor assignable.
             THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (BufferedFile)
+        };
+
+        /// \struct SimpleBufferedFile BufferedFile.h thekogans/util/BufferedFile.h
+        ///
+        /// \brief
+        /// SimpleFile exposes the basic flags supported by the standard
+        /// library open that are portable across Windows, Linux and OS X.
+        /// NOTE: On Linux and OS X if a file needs to be created, it's
+        /// mode will be 0644. This is fine for most cases but might not
+        /// be appropriate for some. If you need to control the mode of
+        /// the created file use BufferedFile instead.
+
+        struct _LIB_THEKOGANS_UTIL_DECL SimpleBufferedFile : public BufferedFile {
+            /// \brief
+            /// Default ctor.
+            /// \param[in] endianness File endianness.
+            /// \param[in] handle OS file handle.
+            /// \param[in] path File path.
+            SimpleBufferedFile (
+                Endianness endianness = HostEndian,
+                THEKOGANS_UTIL_HANDLE handle = THEKOGANS_UTIL_INVALID_HANDLE_VALUE,
+                const std::string &path = std::string ()) :
+                BufferedFile (endianness, handle, path) {}
+            /// \brief
+            /// ctor. Abstracts most useful functionality from POSIX open.
+            /// \param[in] endianness File endianness.
+            /// \param[in] path Path to file to open.
+            /// \param[in] flags Most useful POSIX open flags.
+            SimpleBufferedFile (
+                Endianness endianness,
+                const std::string &path,
+                Flags32 flags = SimpleFile::ReadWrite | SimpleFile::Create);
+
+            /// \brief
+            /// Open the file.
+            /// \param[in] path File path.
+            /// \param[in] flags File open flags.
+            void Open (
+                const std::string &path,
+                Flags32 flags = SimpleFile::ReadWrite | SimpleFile::Create);
+
+            /// \brief
+            /// SimpleBufferedFile is neither copy constructable, nor assignable.
+            THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (SimpleBufferedFile)
         };
 
     } // namespace util

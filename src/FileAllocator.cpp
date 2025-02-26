@@ -386,6 +386,7 @@ namespace thekogans {
         void FileAllocator::FlushBTree () {
             if (btree != nullptr) {
                 btree->Flush ();
+                file.Flush ();
             }
         }
 

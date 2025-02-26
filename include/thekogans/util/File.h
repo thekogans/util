@@ -54,7 +54,8 @@ namespace thekogans {
 
         struct _LIB_THEKOGANS_UTIL_DECL File : public RandomSeekSerializer {
             /// \brief
-            /// Declare \see{RefCounted} pointers.
+            /// File participates in the \see{DynamicCreatable}
+            /// dynamic discovery and creation.
             THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE (File)
 
         protected:

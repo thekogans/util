@@ -23,7 +23,7 @@
 #include "thekogans/util/RefCounted.h"
 #include "thekogans/util/Types.h"
 #include "thekogans/util/Flags.h"
-#include "thekogans/util/File.h"
+#include "thekogans/util/BufferedFile.h"
 #include "thekogans/util/SpinLock.h"
 #include "thekogans/util/BlockAllocator.h"
 #include "thekogans/util/Singleton.h"
@@ -618,7 +618,7 @@ namespace thekogans {
         private:
             /// \brief
             /// The file where the heap resides.
-            SimpleFile file;
+            SimpleBufferedFile file;
             /// \struct FileAllocator::Header FileAllocator.h thekogans/util/FileAllocator.h
             ///
             /// \brief
