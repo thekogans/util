@@ -384,13 +384,15 @@ namespace thekogans {
         }
 
         void FileAllocator::FlushBTree () {
+            LockedFilePtr file (*this);
             if (btree != nullptr) {
                 btree->Flush ();
-                file.Flush ();
+                file->Flush ();
             }
         }
 
         void FileAllocator::DumpBTree () {
+            LockGuard<SpinLock> guard (spinLock);
             if (btree != nullptr) {
                 btree->Dump ();
             }

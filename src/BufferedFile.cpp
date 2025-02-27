@@ -43,16 +43,10 @@ namespace thekogans {
                 std::size_t count) {
             std::size_t countRead = 0;
             ui8 *ptr = (ui8 *)buffer;
-            while (count > 0) {
-                Buffer *buffer_ = GetBuffer (false);
-                if (buffer_ == nullptr) {
-                    break;
-                }
+            while (count > 0 && (ui64)position < size) {
+                Buffer *buffer_ = GetBuffer ();
                 std::size_t index = position - buffer_->offset;
                 std::size_t countToRead = MIN (buffer_->length - index, count);
-                if (countToRead == 0) {
-                    break;
-                }
                 memcpy (ptr, &buffer_->data[index], countToRead);
                 ptr += countToRead;
                 countRead += countToRead;
@@ -68,7 +62,7 @@ namespace thekogans {
             std::size_t countWritten = 0;
             ui8 *ptr = (ui8 *)buffer;
             while (count > 0) {
-                Buffer *buffer_ = GetBuffer (true);
+                Buffer *buffer_ = GetBuffer ();
                 std::size_t index = position - buffer_->offset;
                 if (index + count > buffer_->length) {
                     buffer_->length = MIN (index + count, Buffer::PAGE_SIZE);
@@ -199,34 +193,23 @@ namespace thekogans {
             size = newSize;
         }
 
-        BufferedFile::Buffer *BufferedFile::GetBuffer (bool create) {
+        BufferedFile::Buffer *BufferedFile::GetBuffer () {
             static const ui64 OFFSET_MASK = Buffer::PAGE_SIZE - 1;
             ui64 offset = position & ~OFFSET_MASK;
-            BufferMap::iterator it = buffers.find (offset);
-            if (it != buffers.end ()) {
-                return it->second;
-            }
-            if (create || offset < size) {
+            std::pair<BufferMap::iterator, bool> result = buffers.insert (
+                BufferMap::value_type (offset, nullptr));
+            if (result.second) {
                 ui64 length = offset < size ? size - offset : 0;
                 if (length > Buffer::PAGE_SIZE) {
                     length = Buffer::PAGE_SIZE;
                 }
-                std::unique_ptr<Buffer> buffer (new Buffer (offset, length));
+                result.first->second = new Buffer (offset, length);
                 if (offset < size) {
                     File::Seek (offset, SEEK_SET);
-                    File::Read (buffer->data, length);
-                }
-                std::pair<BufferMap::iterator, bool> result = buffers.insert (
-                    BufferMap::value_type (offset, buffer.get ()));
-                if (result.second) {
-                    return buffer.release ();
-                }
-                else {
-                    // FIXME: throw
-                    assert (0);
+                    File::Read (result.first->second->data, length);
                 }
             }
-            return nullptr;
+            return result.first->second;
         }
 
         SimpleBufferedFile::SimpleBufferedFile (

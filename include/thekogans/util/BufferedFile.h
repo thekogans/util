@@ -249,9 +249,8 @@ namespace thekogans {
 
         private:
             /// \brief
-            /// Get the buffer that will cover position (create if asked).
-            /// \param[in] create true == create if not found.
-            Buffer *GetBuffer (bool create);
+            /// Get the buffer that will cover the neighborhood around position.
+            Buffer *GetBuffer ();
 
             /// \brief
             /// BufferedFile is neither copy constructable, nor assignable.
