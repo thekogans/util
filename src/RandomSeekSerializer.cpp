@@ -17,6 +17,7 @@
 
 #if defined (THEKOGANS_UTIL_TYPE_Static)
     #include "thekogans/util/File.h"
+    #include "thekogans/util/BufferedFile.h"
 #endif // defined (THEKOGANS_UTIL_TYPE_Static)
 #include "thekogans/util/RandomSeekSerializer.h"
 
@@ -28,6 +29,7 @@ namespace thekogans {
     #if defined (THEKOGANS_UTIL_TYPE_Static)
         void RandomSeekSerializer::StaticInit () {
             File::StaticInit ();
+            BufferedFile::StaticInit ();
         }
     #endif // defined (THEKOGANS_UTIL_TYPE_Static)
 
