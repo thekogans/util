@@ -381,11 +381,11 @@ namespace thekogans {
             /// \region[in] exclusive lock for exclusive access.
             virtual void LockRegion (
                 const Region & /*region*/,
-                bool /*exclusive*/) {}
+                bool /*exclusive*/) override {}
             /// \brief
             /// Unlock a range of bytes in the file.
             /// \region[in] region region to unlock.
-            virtual void UnlockRegion (const Region & /*region*/) {}
+            virtual void UnlockRegion (const Region & /*region*/) override {}
 
         private:
             /// \brief
