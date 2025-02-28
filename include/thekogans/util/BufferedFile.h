@@ -44,8 +44,8 @@ namespace thekogans {
             /// Current read/write position.
             i64 position;
             /// \brief
-            /// Original file size on disk.
-            ui64 originalSize;
+            /// File size on disk.
+            ui64 sizeOnDisk;
             /// \brief
             /// File size.
             ui64 size;
@@ -177,6 +177,7 @@ namespace thekogans {
                 virtual Node *GetNode (
                         ui8 /*index*/,
                         bool /*segment*/ = false) override {
+                    assert (0);
                     return nullptr;
                 }
             };
@@ -219,7 +220,7 @@ namespace thekogans {
                 /// false == a buffer was encoutered whose offset was < newSize, stop iterating.
                 virtual bool SetSize (ui64 newSize) override;
                 /// \brief
-                /// Return either an \see{Internal} scafolding node
+                /// Return either an \see{Internal} scaffolding node
                 /// or a \see{Segment} leaf node. Create if null.
                 /// \param[in] index Index of node to return.
                 /// \param[in] segment If null, true == create \see{Segment},
@@ -242,8 +243,8 @@ namespace thekogans {
                 const std::string &path = std::string ()) :
                 File (endianness, handle, path),
                 position (IsOpen () ? File::Tell () : 0),
-                originalSize (IsOpen () ? File::GetSize () : 0),
-                size (originalSize) {}
+                sizeOnDisk (IsOpen () ? File::GetSize () : 0),
+                size (sizeOnDisk) {}
         #if defined (TOOLCHAIN_OS_Windows)
             /// \brief
             /// ctor. Open the file.
@@ -268,8 +269,8 @@ namespace thekogans {
                     dwCreationDisposition,
                     dwFlagsAndAttributes),
                 position (IsOpen () ? File::Tell () : 0),
-                originalSize (IsOpen () ? File::GetSize () : 0),
-                size (originalSize) {}
+                sizeOnDisk (IsOpen () ? File::GetSize () : 0),
+                size (sizeOnDisk) {}
         #else // defined (TOOLCHAIN_OS_Windows)
             /// \brief
             /// ctor. Open the file.
@@ -284,8 +285,8 @@ namespace thekogans {
                 i32 mode = S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH) :
                 File (endianness, path, flags, mode),
                 position (IsOpen () ? File::Tell () : 0),
-                originalSize (IsOpen () ? File::GetSize () : 0),
-                size (originalSize) {}
+                sizeOnDisk (IsOpen () ? File::GetSize () : 0),
+                size (sizeOnDisk) {}
         #endif // defined (TOOLCHAIN_OS_Windows)
             /// \brief
             /// dtor.
@@ -362,7 +363,7 @@ namespace thekogans {
             /// Return number of bytes available for reading.
             /// \return Number of bytes available for reading.
             virtual ui64 GetDataAvailableForReading () const override {
-                return size - position;
+                return size > position ? size - position : 0;
             }
 
             /// \brief

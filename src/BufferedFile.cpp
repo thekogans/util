@@ -230,8 +230,8 @@ namespace thekogans {
             File::Open (path, flags, mode);
         #endif // defined (TOOLCHAIN_OS_Windows)
             position = File::Tell ();
-            originalSize = File::GetSize ();
-            size = originalSize;
+            sizeOnDisk = File::GetSize ();
+            size = sizeOnDisk;
         }
 
         void BufferedFile::Close () {
@@ -243,9 +243,9 @@ namespace thekogans {
 
         void BufferedFile::Flush () {
             root.Flush (TenantFile (endianness, handle, path));
-            if (originalSize != size) {
+            if (sizeOnDisk != size) {
                 File::SetSize (size);
-                originalSize = size;
+                sizeOnDisk = size;
             }
             File::Flush ();
         }
@@ -267,6 +267,7 @@ namespace thekogans {
                 THEKOGANS_UTIL_UI32_GET_UI8_AT_INDEX (segmentIndex, 1));
             internal = internal->GetNode (
                 THEKOGANS_UTIL_UI32_GET_UI8_AT_INDEX (segmentIndex, 2));
+            // Leafs are segments.
             Segment *segment = (Segment *)internal->GetNode (
                 THEKOGANS_UTIL_UI32_GET_UI8_AT_INDEX (segmentIndex, 3), true);
             // -- We've just sparsely traversed the first 4
@@ -275,26 +276,22 @@ namespace thekogans {
             ui32 bufferIndex =
                 THEKOGANS_UTIL_UI64_GET_UI32_AT_INDEX (position, 1) >> Buffer::SHIFT_COUNT;
             if (segment->buffers[bufferIndex] == nullptr) {
-                static const ui64 OFFSET_MASK = Buffer::PAGE_SIZE - 1;
-                ui64 bufferOffset = position & ~OFFSET_MASK;
-                ui64 bufferLength = bufferOffset < size ? size - bufferOffset : 0;
-                if (bufferLength > Buffer::PAGE_SIZE) {
-                    bufferLength = Buffer::PAGE_SIZE;
-                }
+                ui64 bufferOffset = position & ~(Buffer::PAGE_SIZE - 1);
+                ui64 bufferLength = MIN (
+                    bufferOffset < size ? size - bufferOffset : 0,
+                    Buffer::PAGE_SIZE);
                 segment->buffers[bufferIndex] = new Buffer (bufferOffset, bufferLength);
-                if (bufferOffset < originalSize) {
+                if (bufferOffset < sizeOnDisk) {
                     File::Seek (bufferOffset, SEEK_SET);
-                    ui64 readLength = originalSize - bufferOffset;
-                    if (readLength > bufferLength) {
-                        readLength = bufferLength;
-                    }
-                    File::Read (segment->buffers[bufferIndex]->data, readLength);
+                    File::Read (
+                        segment->buffers[bufferIndex]->data,
+                        MIN (sizeOnDisk - bufferOffset, bufferLength));
                 }
             }
             // -- After potentially creating the buffer above,
-            // we've arrived at the end of the 5 later deep sparse index.
+            // we've arrived at the end of the 5 layer deep sparse index.
             // This mapping is constant (with the create code being amortized
-            // accross multiple buffer accesses). It's O(c) where c = a few shifts.
+            // accross multiple buffer accesses). It's O(c) where c = 5 shifts.
             return segment->buffers[bufferIndex];
         }
 
