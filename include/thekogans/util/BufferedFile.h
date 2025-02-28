@@ -22,7 +22,6 @@
 #include "thekogans/util/Config.h"
 #include "thekogans/util/Types.h"
 #include "thekogans/util/Heap.h"
-#include "thekogans/util/OwnerMap.h"
 #include "thekogans/util/File.h"
 
 namespace thekogans {
@@ -45,6 +44,9 @@ namespace thekogans {
             /// Current read/write position.
             i64 position;
             /// \brief
+            /// Original file size on disk.
+            ui64 originalSize;
+            /// \brief
             /// File size.
             ui64 size;
             /// \struct BufferedFile::Buffer BufferedFile.h thekogans/util/BufferedFile.h
@@ -65,8 +67,16 @@ namespace thekogans {
                 /// Buffer length (max PAGE_SIZE).
                 ui64 length;
                 /// \brief
-                /// Buffer size.
-                static const std::size_t PAGE_SIZE = 0x00010000;
+                /// Buffer size. This (and the coresponding
+                /// \see{SHIFT_COUNT} below) is a tunning parameter.
+                /// Set it based on your typical file sizes. Meaning that,
+                /// if your files never go above 100KB then a 1MB PAGE_SIZE
+                /// is overkill.
+                static const std::size_t PAGE_SIZE = 0x00100000;
+                /// \brief
+                /// Look at \see{PAGE_SIZE} above. This number
+                /// represents the trailing zeros.
+                static const std::size_t SHIFT_COUNT = 20;
                 /// \brief
                 /// Buffer.
                 ui8 data[PAGE_SIZE];
@@ -85,12 +95,139 @@ namespace thekogans {
                     length (length_),
                     dirty (false) {}
             };
+
+            /// \struct BufferedFile::Node BufferedFile.h thekogans/util/BufferedFile.h
+            ///
             /// \brief
-            /// Alias for OwnerMap<ui64, Buffer>.
-            using BufferMap = OwnerMap<ui64, Buffer>;
-            /// \bref
-            /// Buffers covering the file address space.
-            BufferMap buffers;
+            /// The file 64 bit address space is partitioned such that it can be
+            /// represented using a fixed depth multiway tree. The high order 32 bits
+            /// are used to represent 4G of 4GB segments. The low order 32 bits are
+            /// used to represent 4GB segments partitioned in to 4K of 1MB tiles.
+            /// The entire address space is sparce and fits in to a tree of depth 5
+            /// like this;
+            /// - The high order 32 bits are split in to 4 8 bit hierarchical indexes.
+            ///   Each index is used to access an internal tree node. (depth = 4).
+            /// - The low order 32 bits are split in to a 12 bit index to access one
+            ///   of 4K 20 bit, 4GB segment tiles (Buffer). (depth = 5)
+            struct Node {
+                /// \brief
+                /// dtor.
+                virtual ~Node () {}
+
+                /// \brief
+                /// Write dirty buffers to file and clear the cache.
+                /// \param[in] file \see{File} to save to.
+                virtual void Flush (File &file) = 0;
+                /// \brief
+                /// Delete all buffers whose offset > newSize.
+                /// \param[in] newSize New size to clip the node to.
+                /// \return true == the entire node was clipped, continue iterating.
+                /// false == a buffer was encoutered whose offset was < newSize, stop iterating.
+                virtual bool SetSize (ui64 newSize) = 0;
+                /// \brief
+                /// Return either an \see{Internal} scafolding node
+                /// or a \see{Segment} leaf node. Create if null.
+                /// \param[in] index Index of node to return.
+                /// \param[in] segment If null, true == create \see{Segment},
+                /// otherwise create \see{Internal}
+                /// \retrun \see{Segment} or \see{Internal} node at index.
+                virtual Node *GetNode (
+                    ui8 index,
+                    bool segment = false) = 0;
+            };
+
+            /// \struct BufferedFile::Segment BufferedFile.h thekogans/util/BufferedFile.h
+            ///
+            /// \brief
+            /// Leaf node representing a 4GB chunk of the file.
+            struct Segment : public Node {
+                /// \brief
+                /// Segment has a private heap.
+                THEKOGANS_UTIL_DECLARE_STD_ALLOCATOR_FUNCTIONS
+
+                /// \brief
+                /// The segment is split in to 4K of 1MB tiles (\see{Buffer}).
+                static const std::size_t BRANCHING_LEVEL = 0x00001000;
+                /// \brief
+                /// \see{Buffers} tiling the 4GB segment.
+                Buffer *buffers[BRANCHING_LEVEL];
+
+                /// \brief
+                /// ctor.
+                Segment () {
+                    memset (buffers, 0, BRANCHING_LEVEL * sizeof (Buffer *));
+                }
+                /// \brief
+                /// dtor.
+                virtual ~Segment ();
+
+                /// \brief
+                /// Write dirty buffers to file and clear the cache.
+                /// \param[in] file \see{File} to save to.
+                virtual void Flush (File &file) override;
+                /// \brief
+                /// Delete all buffers whose offset > newSize.
+                /// \param[in] newSize New size to clip the node to.
+                /// \return true == the entire node was clipped, continue iterating.
+                /// false == a buffer was encoutered whose offset was < newSize, stop iterating.
+                virtual bool SetSize (ui64 newSize) override;
+                /// \brief
+                /// We're a leaf. We don't have any children.
+                virtual Node *GetNode (
+                        ui8 /*index*/,
+                        bool /*segment*/ = false) override {
+                    return nullptr;
+                }
+            };
+
+            /// \struct BufferedFile::Internal BufferedFile.h thekogans/util/BufferedFile.h
+            ///
+            /// \brief
+            /// Internal structure node representing a 4G of 4GB segments.
+            struct Internal : public Node {
+                /// \brief
+                /// Internal has a private heap.
+                THEKOGANS_UTIL_DECLARE_STD_ALLOCATOR_FUNCTIONS
+
+                /// \brief
+                /// The upper 32 bits of the 64 bit address is split
+                /// evenly in to 4 8 bit higherarchical indeces. That's
+                /// what makes the first 4 layers of the 5 layer deep tree.
+                static const std::size_t BRANCHING_LEVEL = 0x00000100;
+                /// \brief
+                /// These are the internal 4G of 4GB segments.
+                Node *nodes[BRANCHING_LEVEL];
+
+                /// \brief
+                /// ctor.
+                Internal () {
+                    memset (nodes, 0, BRANCHING_LEVEL * sizeof (Node *));
+                }
+                /// \brief
+                /// dtor.
+                virtual ~Internal ();
+
+                /// \brief
+                /// Write dirty buffers to file and clear the cache.
+                /// \param[in] file \see{File} to save to.
+                virtual void Flush (File &file) override;
+                /// \brief
+                /// Delete all buffers whose offset > newSize.
+                /// \param[in] newSize New size to clip the node to.
+                /// \return true == the entire node was clipped, continue iterating.
+                /// false == a buffer was encoutered whose offset was < newSize, stop iterating.
+                virtual bool SetSize (ui64 newSize) override;
+                /// \brief
+                /// Return either an \see{Internal} scafolding node
+                /// or a \see{Segment} leaf node. Create if null.
+                /// \param[in] index Index of node to return.
+                /// \param[in] segment If null, true == create \see{Segment},
+                /// otherwise create \see{Internal}
+                /// \retrun \see{Segment} or \see{Internal} node at index.
+                virtual Node *GetNode (
+                    ui8 index,
+                    bool segment = false) override;
+            } root;
 
         public:
             /// \brief
@@ -104,7 +241,8 @@ namespace thekogans {
                 const std::string &path = std::string ()) :
                 File (endianness, handle, path),
                 position (IsOpen () ? File::Tell () : 0),
-                size (IsOpen () ? File::GetSize () : 0) {}
+                originalSize (IsOpen () ? File::GetSize () : 0),
+                size (originalSize) {}
         #if defined (TOOLCHAIN_OS_Windows)
             /// \brief
             /// ctor. Open the file.
@@ -129,7 +267,8 @@ namespace thekogans {
                     dwCreationDisposition,
                     dwFlagsAndAttributes),
                 position (IsOpen () ? File::Tell () : 0),
-                size (IsOpen () ? File::GetSize () : 0) {}
+                originalSize (IsOpen () ? File::GetSize () : 0),
+                size (originalSize) {}
         #else // defined (TOOLCHAIN_OS_Windows)
             /// \brief
             /// ctor. Open the file.
@@ -144,7 +283,8 @@ namespace thekogans {
                 i32 mode = S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH) :
                 File (endianness, path, flags, mode),
                 position (IsOpen () ? File::Tell () : 0),
-                size (IsOpen () ? File::GetSize () : 0) {}
+                originalSize (IsOpen () ? File::GetSize () : 0),
+                size (originalSize) {}
         #endif // defined (TOOLCHAIN_OS_Windows)
             /// \brief
             /// dtor.

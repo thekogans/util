@@ -30,6 +30,94 @@ namespace thekogans {
             Serializer::TYPE, RandomSeekSerializer::TYPE)
 
         THEKOGANS_UTIL_IMPLEMENT_HEAP_FUNCTIONS (BufferedFile::Buffer)
+        THEKOGANS_UTIL_IMPLEMENT_HEAP_FUNCTIONS (BufferedFile::Segment)
+        THEKOGANS_UTIL_IMPLEMENT_HEAP_FUNCTIONS (BufferedFile::Internal)
+
+        BufferedFile::Segment::~Segment () {
+            for (std::size_t i = 0; i < BRANCHING_LEVEL; ++i) {
+                if (buffers[i] != nullptr) {
+                    delete buffers[i];
+                }
+            }
+        }
+
+        void BufferedFile::Segment::Flush (File &file) {
+            for (std::size_t i = 0; i < BRANCHING_LEVEL; ++i) {
+                if (buffers[i] != nullptr) {
+                    if (buffers[i]->dirty) {
+                        file.Seek (buffers[i]->offset, SEEK_SET);
+                        file.Write (buffers[i]->data, buffers[i]->length);
+                    }
+                    delete buffers[i];
+                    buffers[i] = nullptr;
+                }
+            }
+        }
+
+        bool BufferedFile::Segment::SetSize (ui64 newSize) {
+            for (std::size_t i = BRANCHING_LEVEL; i-- != 0;) {
+                if (buffers[i] != nullptr) {
+                    if (buffers[i]->offset > newSize) {
+                        delete buffers[i];
+                        buffers[i] = nullptr;
+                    }
+                    else {
+                        if (buffers[i]->offset + buffers[i]->length > newSize) {
+                            buffers[i]->length = newSize - buffers[i]->offset;
+                            if (buffers[i]->length == 0) {
+                                delete buffers[i];
+                                buffers[i] = nullptr;
+                            }
+                        }
+                        return false;
+                    }
+                }
+            }
+            return true;
+        }
+
+        BufferedFile::Internal::~Internal () {
+            for (std::size_t i = 0; i < BRANCHING_LEVEL; ++i) {
+                if (nodes[i] != nullptr) {
+                    delete nodes[i];
+                }
+            }
+        }
+
+        void BufferedFile::Internal::Flush (File &file) {
+            for (std::size_t i = 0; i < BRANCHING_LEVEL; ++i) {
+                if (nodes[i] != nullptr) {
+                    nodes[i]->Flush (file);
+                    delete nodes[i];
+                    nodes[i] = nullptr;
+                }
+            }
+        }
+
+        bool BufferedFile::Internal::SetSize (ui64 newSize) {
+            for (std::size_t i = BRANCHING_LEVEL; i-- != 0;) {
+                if (nodes[i] != nullptr && !nodes[i]->SetSize (newSize)) {
+                    return false;
+                }
+                delete nodes[i];
+                nodes[i] = nullptr;
+            }
+            return true;
+        }
+
+        BufferedFile::Internal::Node *BufferedFile::Internal::GetNode (
+                ui8 index,
+                bool segment) {
+            if (nodes[index] == nullptr) {
+                if (segment) {
+                    nodes[index] = new Segment;
+                }
+                else {
+                    nodes[index] = new Internal;
+                }
+            }
+            return nodes[index];
+        }
 
         BufferedFile::~BufferedFile () {
             THEKOGANS_UTIL_TRY {
@@ -142,7 +230,8 @@ namespace thekogans {
             File::Open (path, flags, mode);
         #endif // defined (TOOLCHAIN_OS_Windows)
             position = File::Tell ();
-            size = File::GetSize ();
+            originalSize = File::GetSize ();
+            size = originalSize;
         }
 
         void BufferedFile::Close () {
@@ -153,63 +242,69 @@ namespace thekogans {
         }
 
         void BufferedFile::Flush () {
-            for (BufferMap::const_iterator
-                    it = buffers.begin (),
-                    end = buffers.end (); it != end; ++it) {
-                if (it->second->dirty) {
-                    File::Seek (it->second->offset, SEEK_SET);
-                    File::Write (it->second->data, it->second->length);
+            TenantFile file (endianness, handle, path);
+            for (std::size_t i = 0; i < Internal::BRANCHING_LEVEL; ++i) {
+                if (root.nodes[i] != nullptr) {
+                    root.nodes[i]->Flush (file);
                 }
             }
-            buffers.deleteAndClear ();
-            File::SetSize (size);
+            if (originalSize != size) {
+                File::SetSize (size);
+                originalSize = size;
+            }
             File::Flush ();
         }
 
         void BufferedFile::SetSize (ui64 newSize) {
             if (size > newSize) {
                 // shrinking
-                if (!buffers.empty ()) {
-                    BufferMap::iterator first = buffers.begin ();
-                    BufferMap::iterator last = buffers.end ();
-                    while (last-- != first) {
-                        if (last->second->offset > newSize) {
-                            delete last->second;
-                        }
-                        else {
-                            if (last->second->offset + last->second->length > newSize) {
-                                last->second->length = newSize - last->second->offset;
-                                if (last->second->length == 0) {
-                                    delete last->second;
-                                    --last;
-                                }
-                            }
-                            break;
-                        }
+                for (std::size_t i = Internal::BRANCHING_LEVEL; i-- != 0;) {
+                    if (root.nodes[i] != nullptr && !root.nodes[i]->SetSize (newSize)) {
+                        break;
                     }
-                    buffers.erase (++last, buffers.end ());
                 }
             }
             size = newSize;
         }
 
         BufferedFile::Buffer *BufferedFile::GetBuffer () {
-            static const ui64 OFFSET_MASK = Buffer::PAGE_SIZE - 1;
-            ui64 offset = position & ~OFFSET_MASK;
-            std::pair<BufferMap::iterator, bool> result = buffers.insert (
-                BufferMap::value_type (offset, nullptr));
-            if (result.second) {
-                ui64 length = offset < size ? size - offset : 0;
-                if (length > Buffer::PAGE_SIZE) {
-                    length = Buffer::PAGE_SIZE;
+            // --
+            ui32 segmentIndex = THEKOGANS_UTIL_UI64_GET_UI32_AT_INDEX (position, 0);
+            Node *internal = root.GetNode (
+                THEKOGANS_UTIL_UI32_GET_UI8_AT_INDEX (segmentIndex, 0));
+            internal = internal->GetNode (
+                THEKOGANS_UTIL_UI32_GET_UI8_AT_INDEX (segmentIndex, 1));
+            internal = internal->GetNode (
+                THEKOGANS_UTIL_UI32_GET_UI8_AT_INDEX (segmentIndex, 2));
+            Segment *segment = (Segment *)internal->GetNode (
+                THEKOGANS_UTIL_UI32_GET_UI8_AT_INDEX (segmentIndex, 3), true);
+            // -- We've just sparsely traversed the first 4
+            // layers of the 5 layer 64 bit index.
+            // --
+            ui32 bufferIndex =
+                THEKOGANS_UTIL_UI64_GET_UI32_AT_INDEX (position, 1) >> Buffer::SHIFT_COUNT;
+            if (segment->buffers[bufferIndex] == nullptr) {
+                static const ui64 OFFSET_MASK = Buffer::PAGE_SIZE - 1;
+                ui64 bufferOffset = position & ~OFFSET_MASK;
+                ui64 bufferLength = bufferOffset < size ? size - bufferOffset : 0;
+                if (bufferLength > Buffer::PAGE_SIZE) {
+                    bufferLength = Buffer::PAGE_SIZE;
                 }
-                result.first->second = new Buffer (offset, length);
-                if (offset < size) {
-                    File::Seek (offset, SEEK_SET);
-                    File::Read (result.first->second->data, length);
+                segment->buffers[bufferIndex] = new Buffer (bufferOffset, bufferLength);
+                if (bufferOffset < originalSize) {
+                    File::Seek (bufferOffset, SEEK_SET);
+                    ui64 readLength = originalSize - bufferOffset;
+                    if (readLength > bufferLength) {
+                        readLength = bufferLength;
+                    }
+                    File::Read (segment->buffers[bufferIndex]->data, readLength);
                 }
             }
-            return result.first->second;
+            // -- After potentially creating the buffer above,
+            // we've arrived at the end of the 5 later deep sparse index.
+            // This mapping is constant (with the create code being amortized
+            // accross multiple buffer accesses). It's O(c) where c = a few shifts.
+            return segment->buffers[bufferIndex];
         }
 
         SimpleBufferedFile::SimpleBufferedFile (
