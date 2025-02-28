@@ -156,7 +156,7 @@ namespace thekogans {
                 /// \brief
                 /// ctor.
                 Segment () {
-                    memset (buffers, 0, BRANCHING_LEVEL * sizeof (Buffer *));
+                    std::memset (buffers, 0, sizeof (buffers));
                 }
                 /// \brief
                 /// dtor.
@@ -202,7 +202,7 @@ namespace thekogans {
                 /// \brief
                 /// ctor.
                 Internal () {
-                    memset (nodes, 0, BRANCHING_LEVEL * sizeof (Node *));
+                    std::memset (nodes, 0, sizeof (nodes));
                 }
                 /// \brief
                 /// dtor.

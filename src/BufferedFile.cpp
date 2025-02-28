@@ -135,7 +135,7 @@ namespace thekogans {
                 Buffer *buffer_ = GetBuffer ();
                 std::size_t index = position - buffer_->offset;
                 std::size_t countToRead = MIN (buffer_->length - index, count);
-                memcpy (ptr, &buffer_->data[index], countToRead);
+                std::memcpy (ptr, &buffer_->data[index], countToRead);
                 ptr += countToRead;
                 countRead += countToRead;
                 position += countToRead;
@@ -156,7 +156,7 @@ namespace thekogans {
                     buffer_->length = MIN (index + count, Buffer::PAGE_SIZE);
                 }
                 std::size_t countToWrite = MIN (buffer_->length - index, count);
-                memcpy (&buffer_->data[index], ptr, countToWrite);
+                std::memcpy (&buffer_->data[index], ptr, countToWrite);
                 buffer_->dirty = true;
                 ptr += countToWrite;
                 countWritten += countToWrite;
