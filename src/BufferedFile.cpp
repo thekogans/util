@@ -242,12 +242,7 @@ namespace thekogans {
         }
 
         void BufferedFile::Flush () {
-            TenantFile file (endianness, handle, path);
-            for (std::size_t i = 0; i < Internal::BRANCHING_LEVEL; ++i) {
-                if (root.nodes[i] != nullptr) {
-                    root.nodes[i]->Flush (file);
-                }
-            }
+            root.Flush (TenantFile (endianness, handle, path));
             if (originalSize != size) {
                 File::SetSize (size);
                 originalSize = size;
@@ -258,11 +253,7 @@ namespace thekogans {
         void BufferedFile::SetSize (ui64 newSize) {
             if (size > newSize) {
                 // shrinking
-                for (std::size_t i = Internal::BRANCHING_LEVEL; i-- != 0;) {
-                    if (root.nodes[i] != nullptr && !root.nodes[i]->SetSize (newSize)) {
-                        break;
-                    }
-                }
+                root.SetSize (newSize);
             }
             size = newSize;
         }

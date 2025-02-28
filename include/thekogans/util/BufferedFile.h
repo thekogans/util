@@ -71,11 +71,12 @@ namespace thekogans {
                 /// \see{SHIFT_COUNT} below) is a tunning parameter.
                 /// Set it based on your typical file sizes. Meaning that,
                 /// if your files never go above 100KB then a 1MB PAGE_SIZE
-                /// is overkill.
+                /// is overkill. But if you typically manage multi gigabyte
+                /// (terabyte?) databases you might want to bump this value up.
                 static const std::size_t PAGE_SIZE = 0x00100000;
                 /// \brief
                 /// Look at \see{PAGE_SIZE} above. This number
-                /// represents the trailing zeros.
+                /// represents the trailing zeros in binary.
                 static const std::size_t SHIFT_COUNT = 20;
                 /// \brief
                 /// Buffer.
@@ -183,7 +184,7 @@ namespace thekogans {
             /// \struct BufferedFile::Internal BufferedFile.h thekogans/util/BufferedFile.h
             ///
             /// \brief
-            /// Internal structure node representing a 4G of 4GB segments.
+            /// Internal structure node representing 4G of 4GB segments.
             struct Internal : public Node {
                 /// \brief
                 /// Internal has a private heap.
