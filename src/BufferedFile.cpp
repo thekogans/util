@@ -276,9 +276,10 @@ namespace thekogans {
         void BufferedFile::Flush () {
             if (flags.Test (FLAG_DIRTY)) {
                 if (flags.Test (FLAG_TRANSACTION)) {
+                    std::string logPath = GetLogPath (path);
                     SimpleFile log (
                         endianness,
-                        GetLogPath (path),
+                        logPath,
                         SimpleFile::ReadWrite |
                         SimpleFile::Create);
                     ui32 isClean = 0;
@@ -291,8 +292,9 @@ namespace thekogans {
                             log.Seek (0, SEEK_END);
                         }
                         else {
-                            // FIXME: throw
-                            assert (0);
+                            THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
+                                "Corrupt log %s",
+                                logPath.c_str ());
                         }
                     }
                     else {
@@ -329,10 +331,11 @@ namespace thekogans {
         }
 
         void BufferedFile::CommitLog (const std::string &path) {
-            if (Path (path).Exists () && Path (GetLogPath (path)).Exists ()) {
+            std::string logPath = GetLogPath (path);
+            if (Path (path).Exists () && Path (logPath).Exists ()) {
                 {
                     SimpleFile file (HostEndian, path, SimpleFile::ReadWrite);
-                    ReadOnlyFile log (HostEndian, GetLogPath (path));
+                    ReadOnlyFile log (HostEndian, logPath);
                     ui32 magic;
                     log >> magic;
                     if (magic == MAGIC32) {
@@ -346,7 +349,7 @@ namespace thekogans {
                     else {
                         THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
                             "Corrupt log %s",
-                            GetLogPath (path).c_str ());
+                            logPath.c_str ());
                     }
                     ui32 isClean;
                     log >> isClean;
@@ -364,8 +367,10 @@ namespace thekogans {
                                 if (length > buffer.length) {
                                     length = buffer.length;
                                 }
-                                file.Seek (buffer.offset, SEEK_SET);
-                                file.Write (buffer.data, length);
+                                if (length != 0) {
+                                    file.Seek (buffer.offset, SEEK_SET);
+                                    file.Write (buffer.data, length);
+                                }
                             }
                         }
                         if (sizeOnDisk != size) {
@@ -373,7 +378,7 @@ namespace thekogans {
                         }
                     }
                 }
-                File::Delete (GetLogPath (path));
+                File::Delete (logPath);
             }
         }
 
@@ -391,7 +396,8 @@ namespace thekogans {
                 if (flags.Test (FLAG_DIRTY)) {
                     Flush ();
                 }
-                if (Path (GetLogPath (path)).Exists ()) {
+                std::string logPath = GetLogPath (path);
+                if (Path (logPath).Exists ()) {
                     {
                         SimpleFile log (
                             endianness,
@@ -413,15 +419,17 @@ namespace thekogans {
                                     if (length > buffer.length) {
                                         length = buffer.length;
                                     }
-                                    File::Seek (buffer.offset, SEEK_SET);
-                                    File::Write (buffer.data, length);
+                                    if (length != 0) {
+                                        File::Seek (buffer.offset, SEEK_SET);
+                                        File::Write (buffer.data, length);
+                                    }
                                 }
                             }
                         }
                         else {
                             THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
                                 "Corrupt log %s",
-                                GetLogPath (path).c_str ());
+                                logPath.c_str ());
                         }
                         if (sizeOnDisk != size) {
                             File::SetSize (size);
@@ -429,7 +437,7 @@ namespace thekogans {
                         }
                         File::Flush ();
                     }
-                    File::Delete (GetLogPath (path));
+                    File::Delete (logPath);
                 }
                 flags.Set (FLAG_TRANSACTION, false);
             }

@@ -459,9 +459,7 @@ namespace thekogans {
             /// Start a new transaction. If a transaction is
             /// already in progress do nothing. If the cache
             /// was dirty before the transaction began it will
-            /// become part of the transaction and will be
-            /// commited (CommitTransaction) or aborted
-            /// (AbortTransaction).
+            /// be \see{Flush}ed first.
             void BeginTransaction ();
             /// \brief
             /// Commit the current transaction.
