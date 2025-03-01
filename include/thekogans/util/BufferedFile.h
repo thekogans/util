@@ -458,6 +458,13 @@ namespace thekogans {
             Buffer *GetBuffer ();
 
             /// \brief
+            /// Given a file path, use the full file name to create
+            /// a GUID to append to the path to act as the log path.
+            /// \param[in] path File path to turn in to log path.
+            /// \return Log path based on the passed in file path.
+            static std::string GetLogPath (const std::string &path);
+
+            /// \brief
             /// BufferedFile is neither copy constructable, nor assignable.
             THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (BufferedFile)
         };

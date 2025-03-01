@@ -16,7 +16,9 @@
 // along with libthekogans_util. If not, see <http://www.gnu.org/licenses/>.
 
 #include <errno.h>
+#include <string>
 #include "thekogans/util/Path.h"
+#include "thekogans/util/GUID.h"
 #include "thekogans/util/Exception.h"
 #include "thekogans/util/LoggerMgr.h"
 #include "thekogans/util/Constants.h"
@@ -283,7 +285,7 @@ namespace thekogans {
                 if (flags.Test (FLAG_TRANSACTION)) {
                     SimpleFile log (
                         endianness,
-                        path + ".log",
+                        GetLogPath (path),
                         SimpleFile::ReadWrite |
                         SimpleFile::Create);
                     ui32 isClean = 0;
@@ -334,40 +336,51 @@ namespace thekogans {
         }
 
         void BufferedFile::CommitLog (const std::string &path) {
-            if (Path (path).Exists () && Path (path + ".log").Exists ()) {
+            if (Path (path).Exists () && Path (GetLogPath (path)).Exists ()) {
                 {
                     SimpleFile file (HostEndian, path, SimpleFile::ReadWrite);
-                    ReadOnlyFile log (HostEndian, path + ".log");
+                    ReadOnlyFile log (HostEndian, GetLogPath (path));
                     ui32 magic;
                     log >> magic;
                     if (magic == MAGIC32) {
-                        ui32 isClean;
-                        log >> isClean;
-                        if (isClean == 1) {
-                            ui64 count;
-                            ui64 sizeOnDisk;
-                            ui64 size;
-                            log >> count >> sizeOnDisk >> size;
-                            Buffer buffer;
-                            while (count-- != 0) {
-                                log >> buffer.offset >> buffer.length;
-                                log.Read (buffer.data, buffer.length);
-                                if (buffer.offset < size) {
-                                    ui64 length = size - buffer.offset;
-                                    if (length > buffer.length) {
-                                        length = buffer.length;
-                                    }
-                                    file.Seek (buffer.offset, SEEK_SET);
-                                    file.Write (buffer.data, length);
+                        // File is host endian.
+                    }
+                    else if (ByteSwap<GuestEndian, HostEndian> (magic) == MAGIC32) {
+                        // Assume log is guest endian. File endianness doesn't
+                        // mater as it is just being patched up with dirty tiles.
+                        log.endianness = GuestEndian;
+                    }
+                    else {
+                        THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
+                            "Corrupt log %s",
+                            GetLogPath (path).c_str ());
+                    }
+                    ui32 isClean;
+                    log >> isClean;
+                    if (isClean == 1) {
+                        ui64 count;
+                        ui64 sizeOnDisk;
+                        ui64 size;
+                        log >> count >> sizeOnDisk >> size;
+                        Buffer buffer;
+                        while (count-- != 0) {
+                            log >> buffer.offset >> buffer.length;
+                            log.Read (buffer.data, buffer.length);
+                            if (buffer.offset < size) {
+                                ui64 length = size - buffer.offset;
+                                if (length > buffer.length) {
+                                    length = buffer.length;
                                 }
+                                file.Seek (buffer.offset, SEEK_SET);
+                                file.Write (buffer.data, length);
                             }
-                            if (sizeOnDisk != size) {
-                                file.SetSize (size);
-                            }
+                        }
+                        if (sizeOnDisk != size) {
+                            file.SetSize (size);
                         }
                     }
                 }
-                File::Delete (path + ".log");
+                File::Delete (GetLogPath (path));
             }
         }
 
@@ -385,7 +398,7 @@ namespace thekogans {
                 if (flags.Test (FLAG_DIRTY)) {
                     Flush ();
                 }
-                if (Path (path + ".log").Exists ()) {
+                if (Path (GetLogPath (path)).Exists ()) {
                     {
                         SimpleFile log (
                             endianness,
@@ -411,14 +424,19 @@ namespace thekogans {
                                     File::Write (buffer.data, length);
                                 }
                             }
-                            if (sizeOnDisk != size) {
-                                File::SetSize (size);
-                                sizeOnDisk = size;
-                            }
-                            File::Flush ();
                         }
+                        else {
+                            THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
+                                "Corrupt log %s",
+                                GetLogPath (path).c_str ());
+                        }
+                        if (sizeOnDisk != size) {
+                            File::SetSize (size);
+                            sizeOnDisk = size;
+                        }
+                        File::Flush ();
                     }
-                    File::Delete (path + ".log");
+                    File::Delete (GetLogPath (path));
                 }
                 flags.Set (FLAG_TRANSACTION, false);
             }
@@ -430,8 +448,8 @@ namespace thekogans {
                     root.Clear ();
                     size = sizeOnDisk;
                 }
-                if (Path (path + ".log").Exists ()) {
-                    File::Delete (path + ".log");
+                if (Path (GetLogPath (path)).Exists ()) {
+                    File::Delete (GetLogPath (path));
                 }
                 flags.Set (FLAG_TRANSACTION, false);
             }
@@ -472,6 +490,11 @@ namespace thekogans {
             // This mapping is constant (with the create code being amortized
             // accross multiple buffer accesses). It's O(c) where c = 5 shifts.
             return segment->buffers[bufferIndex];
+        }
+
+        std::string BufferedFile::GetLogPath (const std::string &path) {
+            std::string name = Path (path).GetFullFileName ();
+            return path + "-" + GUID::FromBuffer (name.data (), name.size ()).ToString () + ".log";
         }
 
         SimpleBufferedFile::SimpleBufferedFile (
