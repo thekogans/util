@@ -34,9 +34,31 @@ namespace thekogans {
         THEKOGANS_UTIL_IMPLEMENT_HEAP_FUNCTIONS (BufferedFile::Internal)
 
         BufferedFile::Segment::~Segment () {
+            Clear ();
+        }
+
+        void BufferedFile::Segment::Clear () {
             for (std::size_t i = 0; i < BRANCHING_LEVEL; ++i) {
                 if (buffers[i] != nullptr) {
                     delete buffers[i];
+                    buffers[i] = nullptr;
+                }
+            }
+        }
+
+        void BufferedFile::Segment::Save (
+                File &file,
+                ui64 &count) {
+            for (std::size_t i = 0; i < BRANCHING_LEVEL; ++i) {
+                if (buffers[i] != nullptr) {
+                    if (buffers[i]->dirty) {
+                        file << buffers[i]->offset << buffers[i]->length;
+                        file.Write (buffers[i]->data, buffers[i]->length);
+                        buffers[i]->dirty = false;
+                        ++count;
+                    }
+                    delete buffers[i];
+                    buffers[i] = nullptr;
                 }
             }
         }
@@ -77,9 +99,26 @@ namespace thekogans {
         }
 
         BufferedFile::Internal::~Internal () {
+            Clear ();
+        }
+
+        void BufferedFile::Internal::Clear () {
             for (std::size_t i = 0; i < BRANCHING_LEVEL; ++i) {
                 if (nodes[i] != nullptr) {
                     delete nodes[i];
+                    nodes[i] = nullptr;
+                }
+            }
+        }
+
+        void BufferedFile::Internal::Save (
+                File &file,
+                ui64 &count) {
+            for (std::size_t i = 0; i < BRANCHING_LEVEL; ++i) {
+                if (nodes[i] != nullptr) {
+                    nodes[i]->Save (file, count);
+                    delete nodes[i];
+                    nodes[i] = nullptr;
                 }
             }
         }
@@ -158,6 +197,7 @@ namespace thekogans {
                 std::size_t countToWrite = MIN (buffer_->length - index, count);
                 std::memcpy (&buffer_->data[index], ptr, countToWrite);
                 buffer_->dirty = true;
+                flags.Set (FLAG_DIRTY, true);
                 ptr += countToWrite;
                 countWritten += countToWrite;
                 position += countToWrite;
@@ -219,6 +259,7 @@ namespace thekogans {
                 i32 flags,
                 i32 mode) {
     #endif // defined (TOOLCHAIN_OS_Windows)
+            CommitLog (path);
         #if defined (TOOLCHAIN_OS_Windows)
             File::Open (
                 path,
@@ -242,20 +283,141 @@ namespace thekogans {
         }
 
         void BufferedFile::Flush () {
-            root.Flush (TenantFile (endianness, handle, path));
-            if (sizeOnDisk != size) {
-                File::SetSize (size);
-                sizeOnDisk = size;
+            if (flags.Test (FLAG_DIRTY)) {
+                if (flags.Test (FLAG_TRANSACTION)) {
+                    SimpleFile log (
+                        endianness,
+                        path + ".log",
+                        SimpleFile::ReadWrite |
+                        SimpleFile::Create);
+                    ui32 isClean = 0;
+                    ui64 count = 0;
+                    if (log.GetSize () > 0) {
+                        ui32 magic;
+                        log >> magic;
+                        if (magic == MAGIC32) {
+                            log >> isClean >> count;
+                        }
+                        log.Seek (0, SEEK_END);
+                    }
+                    else {
+                        log << MAGIC32 << isClean << count << sizeOnDisk << size;
+                    }
+                    root.Save (log, count);
+                    log.Seek (0, SEEK_SET);
+                    log << MAGIC32 << isClean << count << sizeOnDisk << size;
+                }
+                else {
+                    root.Flush (TenantFile (endianness, handle, path));
+                    if (sizeOnDisk != size) {
+                        File::SetSize (size);
+                        sizeOnDisk = size;
+                    }
+                    File::Flush ();
+                }
+                flags.Set (FLAG_DIRTY, false);
             }
-            File::Flush ();
+            else {
+                root.Clear ();
+            }
         }
 
         void BufferedFile::SetSize (ui64 newSize) {
-            if (size > newSize) {
-                // shrinking
-                root.SetSize (newSize);
+            if (size != newSize) {
+                if (size > newSize) {
+                    // shrinking
+                    root.SetSize (newSize);
+                }
+                size = newSize;
+                flags.Set (FLAG_DIRTY, true);
             }
-            size = newSize;
+        }
+
+        void BufferedFile::CommitLog (const std::string &path) {
+            if (Path (path).Exists () && Path (path + ".log").Exists ()) {
+                SimpleFile file (HostEndian, path, SimpleFile::ReadWrite);
+                SimpleFile log (HostEndian, path + ".log", SimpleFile::ReadWrite);
+                ui32 magic;
+                log >> magic;
+                if (magic == MAGIC32) {
+                    ui32 isClean;
+                    log >> isClean;
+                    if (isClean == 1) {
+                        ui64 count;
+                        ui64 sizeOnDisk;
+                        ui64 size;
+                        log >> count >> sizeOnDisk >> size;
+                        Buffer buffer;
+                        while (count-- != 0) {
+                            log >> buffer.offset >> buffer.length;
+                            log.Read (buffer.data, buffer.length);
+                            file.Seek (buffer.offset, SEEK_SET);
+                            file.Write (buffer.data, buffer.length);
+                        }
+                        if (sizeOnDisk != size) {
+                            file.SetSize (size);
+                            sizeOnDisk = size;
+                        }
+                        file.Flush ();
+                    }
+                }
+            }
+            File::Delete (path + ".log");
+        }
+
+        void BufferedFile::BeginTransaction () {
+            flags.Set (FLAG_TRANSACTION, true);
+        }
+
+        void BufferedFile::CommitTransaction () {
+            if (flags.Test (FLAG_TRANSACTION)) {
+                if (flags.Test (FLAG_DIRTY)) {
+                    Flush ();
+                }
+                if (Path (path + ".log").Exists ()) {
+                    {
+                        SimpleFile log (
+                            endianness,
+                            path + ".log",
+                            SimpleFile::ReadWrite);
+                        ui32 magic;
+                        log >> magic;
+                        if (magic == MAGIC32) {
+                            ui32 isClean = 1;
+                            log << isClean;
+                            ui64 count;
+                            log >> count >> sizeOnDisk >> size;
+                            Buffer buffer;
+                            while (count-- != 0) {
+                                log >> buffer.offset >> buffer.length;
+                                log.Read (buffer.data, buffer.length);
+                                File::Seek (buffer.offset, SEEK_SET);
+                                File::Write (buffer.data, buffer.length);
+                            }
+                            if (sizeOnDisk != size) {
+                                File::SetSize (size);
+                                sizeOnDisk = size;
+                            }
+                            File::Flush ();
+                        }
+                    }
+                    File::Delete (path + ".log");
+                }
+                flags.Set (FLAG_TRANSACTION, false);
+            }
+        }
+
+        void BufferedFile::AbortTransaction () {
+            if (flags.Test (FLAG_TRANSACTION)) {
+                if (flags.Test (FLAG_DIRTY)) {
+                    root.Clear ();
+                    size = sizeOnDisk;
+                }
+                if (Path (path + ".log").Exists ()) {
+                    File::Delete (path + ".log");
+                }
+                flags.Set (FLAG_TRANSACTION, false);
+            }
         }
 
         BufferedFile::Buffer *BufferedFile::GetBuffer () {

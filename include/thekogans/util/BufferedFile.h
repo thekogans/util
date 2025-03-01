@@ -21,6 +21,7 @@
 #include <string>
 #include "thekogans/util/Config.h"
 #include "thekogans/util/Types.h"
+#include "thekogans/util/Flags.h"
 #include "thekogans/util/Heap.h"
 #include "thekogans/util/File.h"
 
@@ -116,6 +117,16 @@ namespace thekogans {
                 virtual ~Node () {}
 
                 /// \brief
+                /// Clear the buffer cache.
+                virtual void Clear () = 0;
+                /// \brief
+                /// Write dirty buffers to file.
+                /// \param[in] file \see{File} to save to.
+                /// \param[out] count Incremental count of the dirty buffers.
+                virtual void Save (
+                    File &file,
+                    ui64 &count) = 0;
+                /// \brief
                 /// Write dirty buffers to file and clear the cache.
                 /// \param[in] file \see{File} to save to.
                 virtual void Flush (File &file) = 0;
@@ -162,6 +173,16 @@ namespace thekogans {
                 /// dtor.
                 virtual ~Segment ();
 
+                /// \brief
+                /// Clear the buffer cache.
+                virtual void Clear () override;
+                /// \brief
+                /// Write dirty buffers to file.
+                /// \param[in] file \see{File} to save to.
+                /// \param[out] count Incremental count of the dirty buffers.
+                virtual void Save (
+                    File &file,
+                    ui64 &count) override;
                 /// \brief
                 /// Write dirty buffers to file and clear the cache.
                 /// \param[in] file \see{File} to save to.
@@ -210,6 +231,16 @@ namespace thekogans {
                 virtual ~Internal ();
 
                 /// \brief
+                /// Clear the buffer cache.
+                virtual void Clear () override;
+                /// \brief
+                /// Write dirty buffers to file.
+                /// \param[in] file \see{File} to save to.
+                /// \param[out] count Incremental count of the dirty buffers.
+                virtual void Save (
+                    File &file,
+                    ui64 &count) override;
+                /// \brief
                 /// Write dirty buffers to file and clear the cache.
                 /// \param[in] file \see{File} to save to.
                 virtual void Flush (File &file) override;
@@ -230,6 +261,15 @@ namespace thekogans {
                     ui8 index,
                     bool segment = false) override;
             } root;
+            /// \brief
+            /// Set if the buffer cache is dirty.
+            static const ui32 FLAG_DIRTY = 1;
+            /// \brief
+            /// Set if we're in the middle of a transaction.
+            static const ui32 FLAG_TRANSACTION = 2;
+            /// \brief
+            /// Combination of the above flags.
+            Flags32 flags;
 
         public:
             /// \brief
@@ -244,7 +284,8 @@ namespace thekogans {
                 File (endianness, handle, path),
                 position (IsOpen () ? File::Tell () : 0),
                 sizeOnDisk (IsOpen () ? File::GetSize () : 0),
-                size (sizeOnDisk) {}
+                size (sizeOnDisk),
+                flags (0) {}
         #if defined (TOOLCHAIN_OS_Windows)
             /// \brief
             /// ctor. Open the file.
@@ -270,7 +311,8 @@ namespace thekogans {
                     dwFlagsAndAttributes),
                 position (IsOpen () ? File::Tell () : 0),
                 sizeOnDisk (IsOpen () ? File::GetSize () : 0),
-                size (sizeOnDisk) {}
+                size (sizeOnDisk),
+                flags (0) {}
         #else // defined (TOOLCHAIN_OS_Windows)
             /// \brief
             /// ctor. Open the file.
@@ -286,7 +328,8 @@ namespace thekogans {
                 File (endianness, path, flags, mode),
                 position (IsOpen () ? File::Tell () : 0),
                 sizeOnDisk (IsOpen () ? File::GetSize () : 0),
-                size (sizeOnDisk) {}
+                size (sizeOnDisk),
+                flags (0) {}
         #endif // defined (TOOLCHAIN_OS_Windows)
             /// \brief
             /// dtor.
@@ -363,7 +406,7 @@ namespace thekogans {
             /// Return number of bytes available for reading.
             /// \return Number of bytes available for reading.
             virtual ui64 GetDataAvailableForReading () const override {
-                return size > position ? size - position : 0;
+                return size > (ui64)position ? size - (ui64)position : 0;
             }
 
             /// \brief
@@ -388,6 +431,26 @@ namespace thekogans {
             /// Unlock a range of bytes in the file.
             /// \region[in] region region to unlock.
             virtual void UnlockRegion (const Region & /*region*/) override {}
+
+            /// \brief
+            /// Used by Open to apply the log before opening the file.
+            /// \path path File path.
+            static void CommitLog (const std::string &path);
+
+            /// \brief
+            /// Start a new transaction. If a transaction is
+            /// already in progress do nothing. If the cache
+            /// was dirty before the transaction began it will
+            /// become part of the transaction and will be
+            /// commited (CommitTransaction) or aborted
+            /// (AbortTransaction).
+            void BeginTransaction ();
+            /// \brief
+            /// Commit the current transaction.
+            void CommitTransaction ();
+            /// \brief
+            /// Abort the current transaction.
+            void AbortTransaction ();
 
         private:
             /// \brief

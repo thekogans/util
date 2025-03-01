@@ -240,7 +240,6 @@ namespace thekogans {
                         BTree::Node::FileSize (blocksPerPage)),
                 btree (nullptr) {
             if (file.GetSize () > 0) {
-                file.Seek (0, SEEK_SET);
                 ui32 magic;
                 file >> magic;
                 if (magic == MAGIC32) {
