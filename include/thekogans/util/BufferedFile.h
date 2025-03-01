@@ -120,11 +120,11 @@ namespace thekogans {
                 /// Clear the buffer cache.
                 virtual void Clear () = 0;
                 /// \brief
-                /// Write dirty buffers to file.
-                /// \param[in] file \see{File} to save to.
+                /// Write dirty buffers to log.
+                /// \param[in] log Log \see{File} to save to.
                 /// \param[out] count Incremental count of the dirty buffers.
                 virtual void Save (
-                    File &file,
+                    File &log,
                     ui64 &count) = 0;
                 /// \brief
                 /// Write dirty buffers to file and clear the cache.
@@ -177,11 +177,11 @@ namespace thekogans {
                 /// Clear the buffer cache.
                 virtual void Clear () override;
                 /// \brief
-                /// Write dirty buffers to file.
-                /// \param[in] file \see{File} to save to.
+                /// Write dirty buffers to log.
+                /// \param[in] log Log \see{File} to save to.
                 /// \param[out] count Incremental count of the dirty buffers.
                 virtual void Save (
-                    File &file,
+                    File &log,
                     ui64 &count) override;
                 /// \brief
                 /// Write dirty buffers to file and clear the cache.
@@ -234,11 +234,11 @@ namespace thekogans {
                 /// Clear the buffer cache.
                 virtual void Clear () override;
                 /// \brief
-                /// Write dirty buffers to file.
-                /// \param[in] file \see{File} to save to.
+                /// Write dirty buffers to log.
+                /// \param[in] log Log \see{File} to save to.
                 /// \param[out] count Incremental count of the dirty buffers.
                 virtual void Save (
-                    File &file,
+                    File &log,
                     ui64 &count) override;
                 /// \brief
                 /// Write dirty buffers to file and clear the cache.

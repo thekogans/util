@@ -47,18 +47,16 @@ namespace thekogans {
         }
 
         void BufferedFile::Segment::Save (
-                File &file,
+                File &log,
                 ui64 &count) {
             for (std::size_t i = 0; i < BRANCHING_LEVEL; ++i) {
                 if (buffers[i] != nullptr) {
                     if (buffers[i]->dirty) {
-                        file << buffers[i]->offset << buffers[i]->length;
-                        file.Write (buffers[i]->data, buffers[i]->length);
+                        log << buffers[i]->offset << buffers[i]->length;
+                        log.Write (buffers[i]->data, buffers[i]->length);
                         buffers[i]->dirty = false;
                         ++count;
                     }
-                    delete buffers[i];
-                    buffers[i] = nullptr;
                 }
             }
         }
@@ -112,13 +110,11 @@ namespace thekogans {
         }
 
         void BufferedFile::Internal::Save (
-                File &file,
+                File &log,
                 ui64 &count) {
             for (std::size_t i = 0; i < BRANCHING_LEVEL; ++i) {
                 if (nodes[i] != nullptr) {
-                    nodes[i]->Save (file, count);
-                    delete nodes[i];
-                    nodes[i] = nullptr;
+                    nodes[i]->Save (log, count);
                 }
             }
         }
@@ -297,8 +293,12 @@ namespace thekogans {
                         log >> magic;
                         if (magic == MAGIC32) {
                             log >> isClean >> count;
+                            log.Seek (0, SEEK_END);
                         }
-                        log.Seek (0, SEEK_END);
+                        else {
+                            // FIXME: throw
+                            assert (0);
+                        }
                     }
                     else {
                         log << MAGIC32 << isClean << count << sizeOnDisk << size;
@@ -335,38 +335,49 @@ namespace thekogans {
 
         void BufferedFile::CommitLog (const std::string &path) {
             if (Path (path).Exists () && Path (path + ".log").Exists ()) {
-                SimpleFile file (HostEndian, path, SimpleFile::ReadWrite);
-                SimpleFile log (HostEndian, path + ".log", SimpleFile::ReadWrite);
-                ui32 magic;
-                log >> magic;
-                if (magic == MAGIC32) {
-                    ui32 isClean;
-                    log >> isClean;
-                    if (isClean == 1) {
-                        ui64 count;
-                        ui64 sizeOnDisk;
-                        ui64 size;
-                        log >> count >> sizeOnDisk >> size;
-                        Buffer buffer;
-                        while (count-- != 0) {
-                            log >> buffer.offset >> buffer.length;
-                            log.Read (buffer.data, buffer.length);
-                            file.Seek (buffer.offset, SEEK_SET);
-                            file.Write (buffer.data, buffer.length);
+                {
+                    SimpleFile file (HostEndian, path, SimpleFile::ReadWrite);
+                    ReadOnlyFile log (HostEndian, path + ".log");
+                    ui32 magic;
+                    log >> magic;
+                    if (magic == MAGIC32) {
+                        ui32 isClean;
+                        log >> isClean;
+                        if (isClean == 1) {
+                            ui64 count;
+                            ui64 sizeOnDisk;
+                            ui64 size;
+                            log >> count >> sizeOnDisk >> size;
+                            Buffer buffer;
+                            while (count-- != 0) {
+                                log >> buffer.offset >> buffer.length;
+                                log.Read (buffer.data, buffer.length);
+                                if (buffer.offset < size) {
+                                    ui64 length = size - buffer.offset;
+                                    if (length > buffer.length) {
+                                        length = buffer.length;
+                                    }
+                                    file.Seek (buffer.offset, SEEK_SET);
+                                    file.Write (buffer.data, length);
+                                }
+                            }
+                            if (sizeOnDisk != size) {
+                                file.SetSize (size);
+                            }
                         }
-                        if (sizeOnDisk != size) {
-                            file.SetSize (size);
-                            sizeOnDisk = size;
-                        }
-                        file.Flush ();
                     }
                 }
+                File::Delete (path + ".log");
             }
-            File::Delete (path + ".log");
         }
 
         void BufferedFile::BeginTransaction () {
-            flags.Set (FLAG_TRANSACTION, true);
+            if (!flags.Test (FLAG_TRANSACTION)) {
+                if (flags.Test (FLAG_DIRTY)) {
+                    Flush ();
+                }
+                flags.Set (FLAG_TRANSACTION, true);
+            }
         }
 
         void BufferedFile::CommitTransaction () {
@@ -391,8 +402,14 @@ namespace thekogans {
                             while (count-- != 0) {
                                 log >> buffer.offset >> buffer.length;
                                 log.Read (buffer.data, buffer.length);
-                                File::Seek (buffer.offset, SEEK_SET);
-                                File::Write (buffer.data, buffer.length);
+                                if (buffer.offset < size) {
+                                    ui64 length = size - buffer.offset;
+                                    if (length > buffer.length) {
+                                        length = buffer.length;
+                                    }
+                                    File::Seek (buffer.offset, SEEK_SET);
+                                    File::Write (buffer.data, length);
+                                }
                             }
                             if (sizeOnDisk != size) {
                                 File::SetSize (size);
