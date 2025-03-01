@@ -42,8 +42,7 @@ namespace thekogans {
         void BufferedFile::Segment::Clear () {
             for (std::size_t i = 0; i < BRANCHING_LEVEL; ++i) {
                 if (buffers[i] != nullptr) {
-                    delete buffers[i];
-                    buffers[i] = nullptr;
+                    DeleteBuffer (i);
                 }
             }
         }
@@ -70,8 +69,7 @@ namespace thekogans {
                         file.Seek (buffers[i]->offset, SEEK_SET);
                         file.Write (buffers[i]->data, buffers[i]->length);
                     }
-                    delete buffers[i];
-                    buffers[i] = nullptr;
+                    DeleteBuffer (i);
                 }
             }
         }
@@ -80,15 +78,13 @@ namespace thekogans {
             for (std::size_t i = BRANCHING_LEVEL; i-- != 0;) {
                 if (buffers[i] != nullptr) {
                     if (buffers[i]->offset > newSize) {
-                        delete buffers[i];
-                        buffers[i] = nullptr;
+                        DeleteBuffer (i);
                     }
                     else {
                         if (buffers[i]->offset + buffers[i]->length > newSize) {
                             buffers[i]->length = newSize - buffers[i]->offset;
                             if (buffers[i]->length == 0) {
-                                delete buffers[i];
-                                buffers[i] = nullptr;
+                                DeleteBuffer (i);
                             }
                         }
                         return false;
@@ -105,8 +101,7 @@ namespace thekogans {
         void BufferedFile::Internal::Clear () {
             for (std::size_t i = 0; i < BRANCHING_LEVEL; ++i) {
                 if (nodes[i] != nullptr) {
-                    delete nodes[i];
-                    nodes[i] = nullptr;
+                    DeleteNode (i);
                 }
             }
         }
@@ -125,8 +120,7 @@ namespace thekogans {
             for (std::size_t i = 0; i < BRANCHING_LEVEL; ++i) {
                 if (nodes[i] != nullptr) {
                     nodes[i]->Flush (file);
-                    delete nodes[i];
-                    nodes[i] = nullptr;
+                    DeleteNode (i);
                 }
             }
         }
@@ -136,8 +130,7 @@ namespace thekogans {
                 if (nodes[i] != nullptr && !nodes[i]->SetSize (newSize)) {
                     return false;
                 }
-                delete nodes[i];
-                nodes[i] = nullptr;
+                DeleteNode (i);
             }
             return true;
         }

@@ -201,6 +201,15 @@ namespace thekogans {
                     assert (0);
                     return nullptr;
                 }
+
+            private:
+                /// \brief
+                /// Delete a buffer at index.
+                /// \param[in] index Index of buffer to delete.
+                inline void DeleteBuffer (std::size_t index) {
+                    delete buffers[index];
+                    buffers[index] = nullptr;
+                }
             };
 
             /// \struct BufferedFile::Internal BufferedFile.h thekogans/util/BufferedFile.h
@@ -260,6 +269,15 @@ namespace thekogans {
                 virtual Node *GetNode (
                     ui8 index,
                     bool segment = false) override;
+
+            private:
+                /// \brief
+                /// Delete a node at index.
+                /// \param[in] index Index of node to delete.
+                inline void DeleteNode (std::size_t index) {
+                    delete nodes[index];
+                    nodes[index] = nullptr;
+                }
             } root;
             /// \brief
             /// Set if the buffer cache is dirty.

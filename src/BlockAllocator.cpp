@@ -44,7 +44,7 @@ namespace thekogans {
             Block *block = (Block *)ptr;
             return
                 // Verify that the given pointer points to the
-                // beginning of an block.
+                // beginning of a block.
                 block->block >= blocks && block->block < blocks + blocksPerPage * blockSize &&
                     (std::ptrdiff_t)((const std::size_t)block->block -
                         (const std::size_t)blocks) % blockSize == 0;
