@@ -407,18 +407,18 @@ namespace thekogans {
                         ui64 sizeOnDisk;
                         ui64 size;
                         log >> count >> sizeOnDisk >> size;
-                        Buffer buffer;
+                        std::auto_ptr<Buffer> buffer (new Buffer);
                         while (count-- != 0) {
-                            log >> buffer.offset >> buffer.length;
-                            log.Read (buffer.data, buffer.length);
-                            if (buffer.offset < size) {
-                                ui64 length = size - buffer.offset;
-                                if (length > buffer.length) {
-                                    length = buffer.length;
+                            log >> buffer->offset >> buffer->length;
+                            log.Read (buffer->data, buffer->length);
+                            if (buffer->offset < size) {
+                                ui64 length = size - buffer->offset;
+                                if (length > buffer->length) {
+                                    length = buffer->length;
                                 }
                                 if (length != 0) {
-                                    file.Seek (buffer.offset, SEEK_SET);
-                                    file.Write (buffer.data, length);
+                                    file.Seek (buffer->offset, SEEK_SET);
+                                    file.Write (buffer->data, length);
                                 }
                             }
                         }
@@ -466,18 +466,18 @@ namespace thekogans {
                                 log << isClean;
                                 ui64 count;
                                 log >> count >> sizeOnDisk >> size;
-                                Buffer buffer;
+                                std::auto_ptr<Buffer> buffer (new Buffer);
                                 while (count-- != 0) {
-                                    log >> buffer.offset >> buffer.length;
-                                    log.Read (buffer.data, buffer.length);
-                                    if (buffer.offset < size) {
-                                        ui64 length = size - buffer.offset;
-                                        if (length > buffer.length) {
-                                            length = buffer.length;
+                                    log >> buffer->offset >> buffer->length;
+                                    log.Read (buffer->data, buffer->length);
+                                    if (buffer->offset < size) {
+                                        ui64 length = size - buffer->offset;
+                                        if (length > buffer->length) {
+                                            length = buffer->length;
                                         }
                                         if (length != 0) {
-                                            File::Seek (buffer.offset, SEEK_SET);
-                                            File::Write (buffer.data, length);
+                                            File::Seek (buffer->offset, SEEK_SET);
+                                            File::Write (buffer->data, length);
                                         }
                                     }
                                 }
