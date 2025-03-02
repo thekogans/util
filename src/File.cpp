@@ -82,51 +82,75 @@ namespace thekogans {
         std::size_t File::Read (
                 void *buffer,
                 std::size_t count) {
-            DWORD countRead = 0;
-            if (!ReadFile (handle, buffer, (DWORD)count, &countRead, 0)) {
-                THEKOGANS_UTIL_THROW_ERROR_CODE_AND_MESSAGE_EXCEPTION (
-                    THEKOGANS_UTIL_OS_ERROR_CODE, " (%s)", path.c_str ());
+            if (buffer != nullptr && count > 0) {
+                DWORD countRead = 0;
+                if (!ReadFile (handle, buffer, (DWORD)count, &countRead, 0)) {
+                    THEKOGANS_UTIL_THROW_ERROR_CODE_AND_MESSAGE_EXCEPTION (
+                        THEKOGANS_UTIL_OS_ERROR_CODE, " (%s)", path.c_str ());
+                }
+                return countRead;
             }
-            return countRead;
+            else {
+                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
+            }
         }
 
         std::size_t File::Write (
                 const void *buffer,
                 std::size_t count) {
-            DWORD countWritten = 0;
-            if (!WriteFile (handle, buffer, (DWORD)count, &countWritten, 0)) {
-                THEKOGANS_UTIL_THROW_ERROR_CODE_AND_MESSAGE_EXCEPTION (
-                    THEKOGANS_UTIL_OS_ERROR_CODE, " (%s)", path.c_str ());
+            if (buffer != nullptr && count > 0) {
+                DWORD countWritten = 0;
+                if (!WriteFile (handle, buffer, (DWORD)count, &countWritten, 0)) {
+                    THEKOGANS_UTIL_THROW_ERROR_CODE_AND_MESSAGE_EXCEPTION (
+                        THEKOGANS_UTIL_OS_ERROR_CODE, " (%s)", path.c_str ());
+                }
+                return countWritten;
             }
-            return countWritten;
+            else {
+                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
+            }
         }
     #else // defined (TOOLCHAIN_OS_Windows)
         std::size_t File::Read (
                 void *buffer,
                 std::size_t count) {
-            ssize_t countRead;
-            do {
-                countRead = read (handle, buffer, count);
-                if (countRead < 0 && THEKOGANS_UTIL_OS_ERROR_CODE != EINTR) {
-                    THEKOGANS_UTIL_THROW_ERROR_CODE_AND_MESSAGE_EXCEPTION (
-                        THEKOGANS_UTIL_OS_ERROR_CODE, " (%s)", path.c_str ());
-                }
-            } while (countRead < 0);
-            return (std::size_t)countRead;
+            if (buffer != nullptr && count > 0) {
+                ssize_t countRead;
+                do {
+                    countRead = read (handle, buffer, count);
+                    if (countRead < 0 && THEKOGANS_UTIL_OS_ERROR_CODE != EINTR) {
+                        THEKOGANS_UTIL_THROW_ERROR_CODE_AND_MESSAGE_EXCEPTION (
+                            THEKOGANS_UTIL_OS_ERROR_CODE, " (%s)", path.c_str ());
+                    }
+                } while (countRead < 0);
+                return (std::size_t)countRead;
+            }
+            else {
+                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
+            }
         }
 
         std::size_t File::Write (
                 const void *buffer,
                 std::size_t count) {
-            ssize_t countWritten;
-            do {
-                countWritten = write (handle, buffer, count);
-                if (countWritten < 0 && THEKOGANS_UTIL_OS_ERROR_CODE != EINTR) {
-                    THEKOGANS_UTIL_THROW_ERROR_CODE_AND_MESSAGE_EXCEPTION (
-                        THEKOGANS_UTIL_OS_ERROR_CODE, " (%s)", path.c_str ());
-                }
-            } while (countWritten < 0);
-            return (std::size_t)countWritten;
+            if (buffer != nullptr && count > 0) {
+                ssize_t countWritten;
+                do {
+                    countWritten = write (handle, buffer, count);
+                    if (countWritten < 0 && THEKOGANS_UTIL_OS_ERROR_CODE != EINTR) {
+                        THEKOGANS_UTIL_THROW_ERROR_CODE_AND_MESSAGE_EXCEPTION (
+                            THEKOGANS_UTIL_OS_ERROR_CODE, " (%s)", path.c_str ());
+                    }
+                } while (countWritten < 0);
+                return (std::size_t)countWritten;
+            }
+            else {
+                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
+            }
         }
     #endif // defined (TOOLCHAIN_OS_Windows)
 

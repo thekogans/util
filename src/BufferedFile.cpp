@@ -159,56 +159,68 @@ namespace thekogans {
         std::size_t BufferedFile::Read (
                 void *buffer,
                 std::size_t count) {
-            if (IsOpen ()) {
-                std::size_t countRead = 0;
-                ui8 *ptr = (ui8 *)buffer;
-                while (count > 0 && (ui64)position < size) {
-                    Buffer *buffer_ = GetBuffer ();
-                    std::size_t index = position - buffer_->offset;
-                    std::size_t countToRead = MIN (buffer_->length - index, count);
-                    std::memcpy (ptr, &buffer_->data[index], countToRead);
-                    ptr += countToRead;
-                    countRead += countToRead;
-                    position += countToRead;
-                    count -= countToRead;
+            if (buffer != nullptr && count > 0) {
+                if (IsOpen ()) {
+                    std::size_t countRead = 0;
+                    ui8 *ptr = (ui8 *)buffer;
+                    while (count > 0 && (ui64)position < size) {
+                        Buffer *buffer_ = GetBuffer ();
+                        std::size_t index = position - buffer_->offset;
+                        std::size_t countToRead = MIN (buffer_->length - index, count);
+                        std::memcpy (ptr, &buffer_->data[index], countToRead);
+                        ptr += countToRead;
+                        countRead += countToRead;
+                        position += countToRead;
+                        count -= countToRead;
+                    }
+                    return countRead;
                 }
-                return countRead;
+                else {
+                    THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                        THEKOGANS_UTIL_OS_ERROR_CODE_EBADF);
+                }
             }
             else {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                    THEKOGANS_UTIL_OS_ERROR_CODE_EBADF);
+                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
             }
         }
 
         std::size_t BufferedFile::Write (
                 const void *buffer,
                 std::size_t count) {
-            if (IsOpen ()) {
-                std::size_t countWritten = 0;
-                ui8 *ptr = (ui8 *)buffer;
-                while (count > 0) {
-                    Buffer *buffer_ = GetBuffer ();
-                    std::size_t index = position - buffer_->offset;
-                    if (index + count > buffer_->length) {
-                        buffer_->length = MIN (index + count, Buffer::PAGE_SIZE);
+            if (buffer != nullptr && count > 0) {
+                if (IsOpen ()) {
+                    std::size_t countWritten = 0;
+                    ui8 *ptr = (ui8 *)buffer;
+                    while (count > 0) {
+                        Buffer *buffer_ = GetBuffer ();
+                        std::size_t index = position - buffer_->offset;
+                        if (index + count > buffer_->length) {
+                            buffer_->length = MIN (index + count, Buffer::PAGE_SIZE);
+                        }
+                        std::size_t countToWrite = MIN (buffer_->length - index, count);
+                        std::memcpy (&buffer_->data[index], ptr, countToWrite);
+                        buffer_->dirty = true;
+                        flags.Set (FLAG_DIRTY, true);
+                        ptr += countToWrite;
+                        countWritten += countToWrite;
+                        position += countToWrite;
+                        if (size < (ui64)position) {
+                            size = position;
+                        }
+                        count -= countToWrite;
                     }
-                    std::size_t countToWrite = MIN (buffer_->length - index, count);
-                    std::memcpy (&buffer_->data[index], ptr, countToWrite);
-                    buffer_->dirty = true;
-                    flags.Set (FLAG_DIRTY, true);
-                    ptr += countToWrite;
-                    countWritten += countToWrite;
-                    position += countToWrite;
-                    if (size < (ui64)position) {
-                        size = position;
-                    }
-                    count -= countToWrite;
+                    return countWritten;
                 }
-                return countWritten;
+                else {
+                    THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                        THEKOGANS_UTIL_OS_ERROR_CODE_EBADF);
+                }
             }
             else {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                    THEKOGANS_UTIL_OS_ERROR_CODE_EBADF);
+                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
             }
         }
 
