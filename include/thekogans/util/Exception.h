@@ -352,6 +352,12 @@ namespace thekogans {
         /// \def THEKOGANS_UTIL_OS_ERROR_CODE_TIMEOUT
         /// OS specific timeout error code.
         #define THEKOGANS_UTIL_OS_ERROR_CODE_TIMEOUT WAIT_TIMEOUT
+        /// \def THEKOGANS_UTIL_OS_ERROR_CODE_EBADF
+        /// OS specific file not open error code.
+        #define THEKOGANS_UTIL_OS_ERROR_CODE_EBADF ERROR_INVALID_HANDLE
+        /// \def THEKOGANS_UTIL_OS_ERROR_CODE_EOVERFLOW
+        /// OS specific overflow error code.
+        #define THEKOGANS_UTIL_OS_ERROR_CODE_EOVERFLOW ERROR_BUFFER_OVERFLOW
     #else // defined (TOOLCHAIN_OS_Windows)
         /// \def THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL
         /// OS specific invalid parameter error code.
@@ -362,6 +368,12 @@ namespace thekogans {
         /// \def THEKOGANS_UTIL_OS_ERROR_CODE_TIMEOUT
         /// OS specific timeout error code.
         #define THEKOGANS_UTIL_OS_ERROR_CODE_TIMEOUT ETIMEDOUT
+        /// \def THEKOGANS_UTIL_OS_ERROR_CODE_EBADF
+        /// OS specific file not open error code.
+        #define THEKOGANS_UTIL_OS_ERROR_CODE_EBADF EBADF
+        /// \def THEKOGANS_UTIL_OS_ERROR_CODE_EOVERFLOW
+        /// OS specific overflow error code.
+        #define THEKOGANS_UTIL_OS_ERROR_CODE_EOVERFLOW EOVERFLOW
     #endif // defined (TOOLCHAIN_OS_Windows)
 
         /// \brief

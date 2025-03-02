@@ -159,82 +159,95 @@ namespace thekogans {
         std::size_t BufferedFile::Read (
                 void *buffer,
                 std::size_t count) {
-            std::size_t countRead = 0;
-            ui8 *ptr = (ui8 *)buffer;
-            while (count > 0 && (ui64)position < size) {
-                Buffer *buffer_ = GetBuffer ();
-                std::size_t index = position - buffer_->offset;
-                std::size_t countToRead = MIN (buffer_->length - index, count);
-                std::memcpy (ptr, &buffer_->data[index], countToRead);
-                ptr += countToRead;
-                countRead += countToRead;
-                position += countToRead;
-                count -= countToRead;
+            if (IsOpen ()) {
+                std::size_t countRead = 0;
+                ui8 *ptr = (ui8 *)buffer;
+                while (count > 0 && (ui64)position < size) {
+                    Buffer *buffer_ = GetBuffer ();
+                    std::size_t index = position - buffer_->offset;
+                    std::size_t countToRead = MIN (buffer_->length - index, count);
+                    std::memcpy (ptr, &buffer_->data[index], countToRead);
+                    ptr += countToRead;
+                    countRead += countToRead;
+                    position += countToRead;
+                    count -= countToRead;
+                }
+                return countRead;
             }
-            return countRead;
+            else {
+                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                    THEKOGANS_UTIL_OS_ERROR_CODE_EBADF);
+            }
         }
 
         std::size_t BufferedFile::Write (
                 const void *buffer,
                 std::size_t count) {
-            std::size_t countWritten = 0;
-            ui8 *ptr = (ui8 *)buffer;
-            while (count > 0) {
-                Buffer *buffer_ = GetBuffer ();
-                std::size_t index = position - buffer_->offset;
-                if (index + count > buffer_->length) {
-                    buffer_->length = MIN (index + count, Buffer::PAGE_SIZE);
+            if (IsOpen ()) {
+                std::size_t countWritten = 0;
+                ui8 *ptr = (ui8 *)buffer;
+                while (count > 0) {
+                    Buffer *buffer_ = GetBuffer ();
+                    std::size_t index = position - buffer_->offset;
+                    if (index + count > buffer_->length) {
+                        buffer_->length = MIN (index + count, Buffer::PAGE_SIZE);
+                    }
+                    std::size_t countToWrite = MIN (buffer_->length - index, count);
+                    std::memcpy (&buffer_->data[index], ptr, countToWrite);
+                    buffer_->dirty = true;
+                    flags.Set (FLAG_DIRTY, true);
+                    ptr += countToWrite;
+                    countWritten += countToWrite;
+                    position += countToWrite;
+                    if (size < (ui64)position) {
+                        size = position;
+                    }
+                    count -= countToWrite;
                 }
-                std::size_t countToWrite = MIN (buffer_->length - index, count);
-                std::memcpy (&buffer_->data[index], ptr, countToWrite);
-                buffer_->dirty = true;
-                flags.Set (FLAG_DIRTY, true);
-                ptr += countToWrite;
-                countWritten += countToWrite;
-                position += countToWrite;
-                if (size < (ui64)position) {
-                    size = position;
-                }
-                count -= countToWrite;
+                return countWritten;
             }
-            return countWritten;
+            else {
+                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                    THEKOGANS_UTIL_OS_ERROR_CODE_EBADF);
+            }
         }
 
         i64 BufferedFile::Seek (
                 i64 offset,
                 i32 fromWhere) {
-            if (!IsOpen ()) {
-                errno = EBADF;
-                return -1;
+            if (IsOpen ()) {
+                switch (fromWhere) {
+                    case SEEK_SET:
+                        if (offset < 0) {
+                            THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                                THEKOGANS_UTIL_OS_ERROR_CODE_EOVERFLOW);
+                        }
+                        position = offset;
+                        break;
+                    case SEEK_CUR:
+                        if (position + offset < 0) {
+                            THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                                THEKOGANS_UTIL_OS_ERROR_CODE_EOVERFLOW);
+                        }
+                        position += offset;
+                        break;
+                    case SEEK_END:
+                        if ((i64)size + offset < 0) {
+                            THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                                THEKOGANS_UTIL_OS_ERROR_CODE_EOVERFLOW);
+                        }
+                        position = (i64)size + offset;
+                        break;
+                    default:
+                        THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                            THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
+                }
+                return position;
             }
-            switch (fromWhere) {
-                case SEEK_SET:
-                    if (offset < 0) {
-                        errno = EOVERFLOW;
-                        return -1;
-                    }
-                    position = offset;
-                    break;
-                case SEEK_CUR:
-                    if (position + offset < 0) {
-                        errno = EOVERFLOW;
-                        return -1;
-                    }
-                    position += offset;
-                    break;
-                case SEEK_END:
-                    if ((i64)size + offset < 0) {
-                        errno = EOVERFLOW;
-                        return -1;
-                    }
-                    position = (i64)size + offset;
-                    break;
-                default:
-                    errno = EINVAL;
-                    return -1;
+            else {
+                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                    THEKOGANS_UTIL_OS_ERROR_CODE_EBADF);
             }
-            errno = 0;
-            return position;
         }
 
     #if defined (TOOLCHAIN_OS_Windows)
@@ -264,69 +277,93 @@ namespace thekogans {
             position = File::Tell ();
             sizeOnDisk = File::GetSize ();
             size = sizeOnDisk;
+            flags = 0;
+            root.Clear ();
         }
 
         void BufferedFile::Close () {
             if (IsOpen ()) {
-                Flush ();
+                if (flags.Test (FLAG_TRANSACTION)) {
+                    AbortTransaction ();
+                }
+                else {
+                    Flush ();
+                }
+                position = 0;
+                sizeOnDisk = 0;
+                size = 0;
+                flags = 0;
+                root.Clear ();
                 File::Close ();
             }
         }
 
         void BufferedFile::Flush () {
-            if (flags.Test (FLAG_DIRTY)) {
-                if (flags.Test (FLAG_TRANSACTION)) {
-                    std::string logPath = GetLogPath (path);
-                    SimpleFile log (
-                        endianness,
-                        logPath,
-                        SimpleFile::ReadWrite |
-                        SimpleFile::Create);
-                    ui32 isClean = 0;
-                    ui64 count = 0;
-                    if (log.GetSize () > 0) {
-                        ui32 magic;
-                        log >> magic;
-                        if (magic == MAGIC32) {
-                            log >> isClean >> count;
-                            log.Seek (0, SEEK_END);
+            if (IsOpen ()) {
+                if (flags.Test (FLAG_DIRTY)) {
+                    if (flags.Test (FLAG_TRANSACTION)) {
+                        std::string logPath = GetLogPath (path);
+                        SimpleFile log (
+                            endianness,
+                            logPath,
+                            SimpleFile::ReadWrite |
+                            SimpleFile::Create);
+                        ui32 isClean = 0;
+                        ui64 count = 0;
+                        if (log.GetSize () > 0) {
+                            ui32 magic;
+                            log >> magic;
+                            if (magic == MAGIC32) {
+                                log >> isClean >> count;
+                                log.Seek (0, SEEK_END);
+                            }
+                            else {
+                                THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
+                                    "Corrupt log %s",
+                                    logPath.c_str ());
+                            }
                         }
                         else {
-                            THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                                "Corrupt log %s",
-                                logPath.c_str ());
+                            log << MAGIC32 << isClean << count << sizeOnDisk << size;
                         }
-                    }
-                    else {
+                        root.Save (log, count);
+                        log.Seek (0, SEEK_SET);
                         log << MAGIC32 << isClean << count << sizeOnDisk << size;
                     }
-                    root.Save (log, count);
-                    log.Seek (0, SEEK_SET);
-                    log << MAGIC32 << isClean << count << sizeOnDisk << size;
+                    else {
+                        root.Flush (TenantFile (endianness, handle, path));
+                        if (sizeOnDisk != size) {
+                            File::SetSize (size);
+                            sizeOnDisk = size;
+                        }
+                        File::Flush ();
+                    }
+                    flags.Set (FLAG_DIRTY, false);
                 }
                 else {
-                    root.Flush (TenantFile (endianness, handle, path));
-                    if (sizeOnDisk != size) {
-                        File::SetSize (size);
-                        sizeOnDisk = size;
-                    }
-                    File::Flush ();
+                    root.Clear ();
                 }
-                flags.Set (FLAG_DIRTY, false);
             }
             else {
-                root.Clear ();
+                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                    THEKOGANS_UTIL_OS_ERROR_CODE_EBADF);
             }
         }
 
         void BufferedFile::SetSize (ui64 newSize) {
-            if (size != newSize) {
-                if (size > newSize) {
-                    // shrinking
-                    root.SetSize (newSize);
+            if (IsOpen ()) {
+                if (size != newSize) {
+                    if (size > newSize) {
+                        // shrinking
+                        root.SetSize (newSize);
+                    }
+                    size = newSize;
+                    flags.Set (FLAG_DIRTY, true);
                 }
-                size = newSize;
-                flags.Set (FLAG_DIRTY, true);
+            }
+            else {
+                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                    THEKOGANS_UTIL_OS_ERROR_CODE_EBADF);
             }
         }
 
@@ -383,76 +420,94 @@ namespace thekogans {
         }
 
         void BufferedFile::BeginTransaction () {
-            if (!flags.Test (FLAG_TRANSACTION)) {
-                if (flags.Test (FLAG_DIRTY)) {
-                    Flush ();
+            if (IsOpen ()) {
+                if (!flags.Test (FLAG_TRANSACTION)) {
+                    if (flags.Test (FLAG_DIRTY)) {
+                        Flush ();
+                    }
+                    flags.Set (FLAG_TRANSACTION, true);
                 }
-                flags.Set (FLAG_TRANSACTION, true);
+            }
+            else {
+                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                    THEKOGANS_UTIL_OS_ERROR_CODE_EBADF);
             }
         }
 
         void BufferedFile::CommitTransaction () {
-            if (flags.Test (FLAG_TRANSACTION)) {
-                if (flags.Test (FLAG_DIRTY)) {
-                    Flush ();
-                }
-                std::string logPath = GetLogPath (path);
-                if (Path (logPath).Exists ()) {
-                    {
-                        SimpleFile log (
-                            endianness,
-                            path + ".log",
-                            SimpleFile::ReadWrite);
-                        ui32 magic;
-                        log >> magic;
-                        if (magic == MAGIC32) {
-                            ui32 isClean = 1;
-                            log << isClean;
-                            ui64 count;
-                            log >> count >> sizeOnDisk >> size;
-                            Buffer buffer;
-                            while (count-- != 0) {
-                                log >> buffer.offset >> buffer.length;
-                                log.Read (buffer.data, buffer.length);
-                                if (buffer.offset < size) {
-                                    ui64 length = size - buffer.offset;
-                                    if (length > buffer.length) {
-                                        length = buffer.length;
-                                    }
-                                    if (length != 0) {
-                                        File::Seek (buffer.offset, SEEK_SET);
-                                        File::Write (buffer.data, length);
+            if (IsOpen ()) {
+                if (flags.Test (FLAG_TRANSACTION)) {
+                    if (flags.Test (FLAG_DIRTY)) {
+                        Flush ();
+                    }
+                    std::string logPath = GetLogPath (path);
+                    if (Path (logPath).Exists ()) {
+                        {
+                            SimpleFile log (
+                                endianness,
+                                path + ".log",
+                                SimpleFile::ReadWrite);
+                            ui32 magic;
+                            log >> magic;
+                            if (magic == MAGIC32) {
+                                ui32 isClean = 1;
+                                log << isClean;
+                                ui64 count;
+                                log >> count >> sizeOnDisk >> size;
+                                Buffer buffer;
+                                while (count-- != 0) {
+                                    log >> buffer.offset >> buffer.length;
+                                    log.Read (buffer.data, buffer.length);
+                                    if (buffer.offset < size) {
+                                        ui64 length = size - buffer.offset;
+                                        if (length > buffer.length) {
+                                            length = buffer.length;
+                                        }
+                                        if (length != 0) {
+                                            File::Seek (buffer.offset, SEEK_SET);
+                                            File::Write (buffer.data, length);
+                                        }
                                     }
                                 }
                             }
+                            else {
+                                THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
+                                    "Corrupt log %s",
+                                    logPath.c_str ());
+                            }
+                            if (sizeOnDisk != size) {
+                                File::SetSize (size);
+                                sizeOnDisk = size;
+                            }
+                            File::Flush ();
                         }
-                        else {
-                            THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                                "Corrupt log %s",
-                                logPath.c_str ());
-                        }
-                        if (sizeOnDisk != size) {
-                            File::SetSize (size);
-                            sizeOnDisk = size;
-                        }
-                        File::Flush ();
+                        File::Delete (logPath);
                     }
-                    File::Delete (logPath);
+                    flags.Set (FLAG_TRANSACTION, false);
                 }
-                flags.Set (FLAG_TRANSACTION, false);
+            }
+            else {
+                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                    THEKOGANS_UTIL_OS_ERROR_CODE_EBADF);
             }
         }
 
         void BufferedFile::AbortTransaction () {
-            if (flags.Test (FLAG_TRANSACTION)) {
-                if (flags.Test (FLAG_DIRTY)) {
-                    root.Clear ();
-                    size = sizeOnDisk;
+            if (IsOpen ()) {
+                if (flags.Test (FLAG_TRANSACTION)) {
+                    if (flags.Test (FLAG_DIRTY)) {
+                        root.Clear ();
+                        size = sizeOnDisk;
+                    }
+                    if (Path (GetLogPath (path)).Exists ()) {
+                        File::Delete (GetLogPath (path));
+                    }
+                    flags.Set (FLAG_TRANSACTION, false);
                 }
-                if (Path (GetLogPath (path)).Exists ()) {
-                    File::Delete (GetLogPath (path));
-                }
-                flags.Set (FLAG_TRANSACTION, false);
+            }
+            else {
+                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                    THEKOGANS_UTIL_OS_ERROR_CODE_EBADF);
             }
         }
 
