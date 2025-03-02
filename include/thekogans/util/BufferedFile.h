@@ -32,7 +32,22 @@ namespace thekogans {
         ///
         /// \brief
         /// BufferedFile will accumulate all changes in memory and will commit them
-        /// all at once in \see{Flush}.
+        /// all at once in \see{Flush} or \see{CommitTransaction}. BufferedFile
+        /// has support for simple, not nested transactions (see \see{BeginTransaction}).
+        /// BufferedFile design principle is; if you have it, might as well use it.
+        /// Meaning today's (early March 2025) state of the art has some servers
+        /// sporting up to 6TB of main memory. All that memory is there for a
+        /// reason. You paid good money for it. BufferedFile will use as much
+        /// as you have (give it). By default, BufferedFile uses 1MB tiles (\see{Buffer}).
+        /// It will load and hold available as much of the file as you have room.
+        /// That's where \see{Flush} and \see{CommitTransaction} come in. As you
+        /// eventually start to run out of room (even with 6TB it's a drop in
+        /// the bucket compared to 64 bit address space), call \see{Flush} to commit
+        /// the changes to disk and release the buffers. While with proper tuning
+        /// BufferedFile should work just fine for 'small' (under 1MB) files, it's
+        /// strength lies with it's ability to handle multi GB or even TB files
+        /// with ease. It's hierarchical address space partitioning alows for
+        /// very efficient, sparse file handling.
 
         struct _LIB_THEKOGANS_UTIL_DECL BufferedFile : public File {
             /// \brief
@@ -65,6 +80,9 @@ namespace thekogans {
             /// Buffer tiles the file address space providing incremental,
             /// sparse access to the data. Use \see{Flush} to manage memory
             /// usage.
+            /// WARNING: Spent an hour chasing my tail looking for a stack
+            /// overflow bug. Long story short, don't allocate buffers on
+            /// the stack. They're too big.
             struct Buffer {
                 /// \brief
                 /// Buffer has a private heap.
