@@ -202,7 +202,7 @@ namespace thekogans {
                         std::size_t countToWrite = MIN (buffer_->length - index, count);
                         std::memcpy (&buffer_->data[index], ptr, countToWrite);
                         buffer_->dirty = true;
-                        flags.Set (FLAG_DIRTY, true);
+                        flags.Set (FLAGS_DIRTY, true);
                         ptr += countToWrite;
                         countWritten += countToWrite;
                         position += countToWrite;
@@ -295,7 +295,7 @@ namespace thekogans {
 
         void BufferedFile::Close () {
             if (IsOpen ()) {
-                if (flags.Test (FLAG_TRANSACTION)) {
+                if (flags.Test (FLAGS_TRANSACTION)) {
                     AbortTransaction ();
                 }
                 else {
@@ -312,8 +312,8 @@ namespace thekogans {
 
         void BufferedFile::Flush () {
             if (IsOpen ()) {
-                if (flags.Test (FLAG_DIRTY)) {
-                    if (flags.Test (FLAG_TRANSACTION)) {
+                if (flags.Test (FLAGS_DIRTY)) {
+                    if (flags.Test (FLAGS_TRANSACTION)) {
                         std::string logPath = GetLogPath (path);
                         SimpleFile log (
                             endianness,
@@ -350,7 +350,7 @@ namespace thekogans {
                         }
                         File::Flush ();
                     }
-                    flags.Set (FLAG_DIRTY, false);
+                    flags.Set (FLAGS_DIRTY, false);
                 }
                 else {
                     root.Clear ();
@@ -370,7 +370,7 @@ namespace thekogans {
                         root.SetSize (newSize);
                     }
                     size = newSize;
-                    flags.Set (FLAG_DIRTY, true);
+                    flags.Set (FLAGS_DIRTY, true);
                 }
             }
             else {
@@ -433,11 +433,11 @@ namespace thekogans {
 
         void BufferedFile::BeginTransaction () {
             if (IsOpen ()) {
-                if (!flags.Test (FLAG_TRANSACTION)) {
-                    if (flags.Test (FLAG_DIRTY)) {
+                if (!flags.Test (FLAGS_TRANSACTION)) {
+                    if (flags.Test (FLAGS_DIRTY)) {
                         Flush ();
                     }
-                    flags.Set (FLAG_TRANSACTION, true);
+                    flags.Set (FLAGS_TRANSACTION, true);
                 }
             }
             else {
@@ -448,8 +448,8 @@ namespace thekogans {
 
         void BufferedFile::CommitTransaction () {
             if (IsOpen ()) {
-                if (flags.Test (FLAG_TRANSACTION)) {
-                    if (flags.Test (FLAG_DIRTY)) {
+                if (flags.Test (FLAGS_TRANSACTION)) {
+                    if (flags.Test (FLAGS_DIRTY)) {
                         Flush ();
                     }
                     std::string logPath = GetLogPath (path);
@@ -495,7 +495,7 @@ namespace thekogans {
                         }
                         File::Delete (logPath);
                     }
-                    flags.Set (FLAG_TRANSACTION, false);
+                    flags.Set (FLAGS_TRANSACTION, false);
                 }
             }
             else {
@@ -506,15 +506,15 @@ namespace thekogans {
 
         void BufferedFile::AbortTransaction () {
             if (IsOpen ()) {
-                if (flags.Test (FLAG_TRANSACTION)) {
-                    if (flags.Test (FLAG_DIRTY)) {
+                if (flags.Test (FLAGS_TRANSACTION)) {
+                    if (flags.Test (FLAGS_DIRTY)) {
                         root.Clear ();
                         size = sizeOnDisk;
                     }
                     if (Path (GetLogPath (path)).Exists ()) {
                         File::Delete (GetLogPath (path));
                     }
-                    flags.Set (FLAG_TRANSACTION, false);
+                    flags.Set (FLAGS_TRANSACTION, false);
                 }
             }
             else {

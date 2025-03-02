@@ -234,7 +234,7 @@ namespace thekogans {
             /// \brief
             /// BlockInfo encapsulates the structure of the heap. It provides
             /// an api to read and write as well as to navigate (Prev/Next)
-            /// heap blocks in chronological order. Every block has the following
+            /// heap blocks in linear order. Every block has the following
             /// structure;
             ///
             /// +--------+------+--------+
@@ -245,7 +245,7 @@ namespace thekogans {
             /// 1. Heap integrity. Header and Footer provide a no man's
             /// land that BlockInfo uses to make sure the block has not
             /// been corrupted by [over/under]flow writes.
-            /// 2. Ability to navigate the heap in chronological order.
+            /// 2. Ability to navigate the heap in linear order.
             /// (call BlockInfo::Prev/Next.)
             struct _LIB_THEKOGANS_UTIL_DECL BlockInfo {
             private:

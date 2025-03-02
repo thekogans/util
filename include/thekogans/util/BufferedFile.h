@@ -67,10 +67,10 @@ namespace thekogans {
             ui64 size;
             /// \brief
             /// Set if the buffer cache is dirty.
-            static const ui32 FLAG_DIRTY = 1;
+            static const ui32 FLAGS_DIRTY = 1;
             /// \brief
             /// Set if we're in the middle of a transaction.
-            static const ui32 FLAG_TRANSACTION = 2;
+            static const ui32 FLAGS_TRANSACTION = 2;
             /// \brief
             /// Combination of the above flags.
             Flags32 flags;
@@ -489,6 +489,7 @@ namespace thekogans {
         private:
             /// \brief
             /// Get the buffer that will cover the neighborhood around position.
+            /// \return Buffer that covers the neighborhood around position.
             Buffer *GetBuffer ();
 
             /// \brief
