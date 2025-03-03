@@ -16,6 +16,7 @@
 // along with libthekogans_util. If not, see <http://www.gnu.org/licenses/>.
 
 #include <errno.h>
+#include <memory>
 #include <string>
 #include "thekogans/util/Path.h"
 #include "thekogans/util/GUID.h"
@@ -36,13 +37,23 @@ namespace thekogans {
         THEKOGANS_UTIL_IMPLEMENT_HEAP_FUNCTIONS (BufferedFile::Internal)
 
         BufferedFile::Segment::~Segment () {
-            Clear ();
+            Delete ();
+        }
+
+        void BufferedFile::Segment::Delete () {
+            for (std::size_t i = 0; i < BRANCHING_LEVEL; ++i) {
+                if (buffers[i] != nullptr) {
+                    DeleteBuffer (i);
+                }
+            }
         }
 
         void BufferedFile::Segment::Clear () {
             for (std::size_t i = 0; i < BRANCHING_LEVEL; ++i) {
                 if (buffers[i] != nullptr) {
-                    DeleteBuffer (i);
+                    if (buffers[i]->dirty) {
+                        DeleteBuffer (i);
+                    }
                 }
             }
         }
@@ -68,8 +79,8 @@ namespace thekogans {
                     if (buffers[i]->dirty) {
                         file.Seek (buffers[i]->offset, SEEK_SET);
                         file.Write (buffers[i]->data, buffers[i]->length);
+                        buffers[i]->dirty = false;
                     }
-                    DeleteBuffer (i);
                 }
             }
         }
@@ -95,13 +106,21 @@ namespace thekogans {
         }
 
         BufferedFile::Internal::~Internal () {
-            Clear ();
+            Delete ();
+        }
+
+        void BufferedFile::Internal::Delete () {
+            for (std::size_t i = 0; i < BRANCHING_LEVEL; ++i) {
+                if (nodes[i] != nullptr) {
+                    DeleteNode (i);
+                }
+            }
         }
 
         void BufferedFile::Internal::Clear () {
             for (std::size_t i = 0; i < BRANCHING_LEVEL; ++i) {
                 if (nodes[i] != nullptr) {
-                    DeleteNode (i);
+                    nodes[i]->Clear ();
                 }
             }
         }
@@ -120,7 +139,6 @@ namespace thekogans {
             for (std::size_t i = 0; i < BRANCHING_LEVEL; ++i) {
                 if (nodes[i] != nullptr) {
                     nodes[i]->Flush (file);
-                    DeleteNode (i);
                 }
             }
         }
@@ -289,8 +307,6 @@ namespace thekogans {
             position = File::Tell ();
             sizeOnDisk = File::GetSize ();
             size = sizeOnDisk;
-            flags = 0;
-            root.Clear ();
         }
 
         void BufferedFile::Close () {
@@ -305,7 +321,7 @@ namespace thekogans {
                 sizeOnDisk = 0;
                 size = 0;
                 flags = 0;
-                root.Clear ();
+                root.Delete ();
                 File::Close ();
             }
         }
@@ -352,9 +368,6 @@ namespace thekogans {
                     }
                     flags.Set (FLAGS_DIRTY, false);
                 }
-                else {
-                    root.Clear ();
-                }
             }
             else {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
@@ -388,11 +401,12 @@ namespace thekogans {
                     ui32 magic;
                     log >> magic;
                     if (magic == MAGIC32) {
-                        // File is host endian.
+                        // Log is host endian.
                     }
                     else if (ByteSwap<GuestEndian, HostEndian> (magic) == MAGIC32) {
                         // Assume log is guest endian. File endianness doesn't
                         // mater as it is just being patched up with dirty tiles.
+                        // Although it is assumed to be the same as the log endianness.
                         log.endianness = GuestEndian;
                     }
                     else {
@@ -407,7 +421,7 @@ namespace thekogans {
                         ui64 sizeOnDisk;
                         ui64 size;
                         log >> count >> sizeOnDisk >> size;
-                        std::auto_ptr<Buffer> buffer (new Buffer);
+                        std::unique_ptr<Buffer> buffer (new Buffer);
                         while (count-- != 0) {
                             log >> buffer->offset >> buffer->length;
                             log.Read (buffer->data, buffer->length);
@@ -434,9 +448,7 @@ namespace thekogans {
         void BufferedFile::BeginTransaction () {
             if (IsOpen ()) {
                 if (!flags.Test (FLAGS_TRANSACTION)) {
-                    if (flags.Test (FLAGS_DIRTY)) {
-                        Flush ();
-                    }
+                    Flush ();
                     flags.Set (FLAGS_TRANSACTION, true);
                 }
             }
@@ -449,9 +461,7 @@ namespace thekogans {
         void BufferedFile::CommitTransaction () {
             if (IsOpen ()) {
                 if (flags.Test (FLAGS_TRANSACTION)) {
-                    if (flags.Test (FLAGS_DIRTY)) {
-                        Flush ();
-                    }
+                    Flush ();
                     std::string logPath = GetLogPath (path);
                     if (Path (logPath).Exists ()) {
                         {
@@ -466,7 +476,7 @@ namespace thekogans {
                                 log << isClean;
                                 ui64 count;
                                 log >> count >> sizeOnDisk >> size;
-                                std::auto_ptr<Buffer> buffer (new Buffer);
+                                std::unique_ptr<Buffer> buffer (new Buffer);
                                 while (count-- != 0) {
                                     log >> buffer->offset >> buffer->length;
                                     log.Read (buffer->data, buffer->length);
@@ -510,12 +520,37 @@ namespace thekogans {
                     if (flags.Test (FLAGS_DIRTY)) {
                         root.Clear ();
                         size = sizeOnDisk;
+                        flags.Set (FLAGS_DIRTY, false);
                     }
-                    if (Path (GetLogPath (path)).Exists ()) {
-                        File::Delete (GetLogPath (path));
+                    std::string logPath = GetLogPath (path);
+                    if (Path (logPath).Exists ()) {
+                        File::Delete (logPath);
                     }
                     flags.Set (FLAGS_TRANSACTION, false);
                 }
+            }
+            else {
+                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                    THEKOGANS_UTIL_OS_ERROR_CODE_EBADF);
+            }
+        }
+
+        void BufferedFile::DeleteCache (bool commitChanges) {
+            if (IsOpen ()) {
+                if (flags.Test (FLAGS_DIRTY)) {
+                    if (flags.Test (FLAGS_TRANSACTION)) {
+                        if (commitChanges) {
+                            CommitTransaction ();
+                        }
+                        else {
+                            AbortTransaction ();
+                        }
+                    }
+                    else if (commitChanges) {
+                        Flush ();
+                    }
+                }
+                root.Delete ();
             }
             else {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (

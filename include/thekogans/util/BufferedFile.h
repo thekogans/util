@@ -144,7 +144,10 @@ namespace thekogans {
                 virtual ~Node () {}
 
                 /// \brief
-                /// Clear the buffer cache.
+                /// Delete the buffer cache.
+                virtual void Delete () = 0;
+                /// \brief
+                /// Delete the dirty buffers.
                 virtual void Clear () = 0;
                 /// \brief
                 /// Write dirty buffers to log.
@@ -154,7 +157,7 @@ namespace thekogans {
                     File &log,
                     ui64 &count) = 0;
                 /// \brief
-                /// Write dirty buffers to file and clear the cache.
+                /// Write dirty buffers to file.
                 /// \param[in] file \see{File} to save to.
                 virtual void Flush (File &file) = 0;
                 /// \brief
@@ -201,7 +204,10 @@ namespace thekogans {
                 virtual ~Segment ();
 
                 /// \brief
-                /// Clear the buffer cache.
+                /// Delete the buffer cache.
+                virtual void Delete ();
+                /// \brief
+                /// Delete dirty buffers.
                 virtual void Clear () override;
                 /// \brief
                 /// Write dirty buffers to log.
@@ -211,7 +217,7 @@ namespace thekogans {
                     File &log,
                     ui64 &count) override;
                 /// \brief
-                /// Write dirty buffers to file and clear the cache.
+                /// Write dirty buffers to file.
                 /// \param[in] file \see{File} to save to.
                 virtual void Flush (File &file) override;
                 /// \brief
@@ -267,7 +273,10 @@ namespace thekogans {
                 virtual ~Internal ();
 
                 /// \brief
-                /// Clear the buffer cache.
+                /// Delete the buffer cache.
+                virtual void Delete ();
+                /// \brief
+                /// Delete dirty buffers.
                 virtual void Clear () override;
                 /// \brief
                 /// Write dirty buffers to log.
@@ -277,7 +286,7 @@ namespace thekogans {
                     File &log,
                     ui64 &count) override;
                 /// \brief
-                /// Write dirty buffers to file and clear the cache.
+                /// Write dirty buffers to file.
                 /// \param[in] file \see{File} to save to.
                 virtual void Flush (File &file) override;
                 /// \brief
@@ -485,6 +494,19 @@ namespace thekogans {
             /// \brief
             /// Abort the current transaction.
             void AbortTransaction ();
+
+            /// \brief
+            /// BufferedFile is very delicate when it comes to it's internal
+            /// cache (\see{Buffer}s). After all, its very expensive to create
+            /// and maintain. So it goes through great lengths to preserve it
+            /// as much as posible. There are times however when you need to
+            /// release the cache so that you can start anew (presumably in some
+            /// other remote part of the same file). Only you know when you
+            /// need to do that. That's where this function comes in.
+            /// \param[in] commitChanges true == Commits the open transaction
+            /// or flushes dirty buffers. false == Aborts the open transaction
+            /// or deletes the dirty buffers.
+            void DeleteCache (bool commitChanges = true);
 
         private:
             /// \brief
