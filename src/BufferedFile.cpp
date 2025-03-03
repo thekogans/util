@@ -467,7 +467,7 @@ namespace thekogans {
                         {
                             SimpleFile log (
                                 endianness,
-                                path + ".log",
+                                logPath,
                                 SimpleFile::ReadWrite);
                             ui32 magic;
                             log >> magic;
@@ -548,6 +548,11 @@ namespace thekogans {
                     }
                     else if (commitChanges) {
                         Flush ();
+                    }
+                    else {
+                        root.Clear ();
+                        size = sizeOnDisk;
+                        flags.Set (FLAGS_DIRTY, false);
                     }
                 }
                 root.Delete ();

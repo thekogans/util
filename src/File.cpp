@@ -206,7 +206,7 @@ namespace thekogans {
                         THEKOGANS_UTIL_OS_ERROR_CODE, " (%s)", path.c_str ());
                 }
                 handle = THEKOGANS_UTIL_INVALID_HANDLE_VALUE;
-                //path.clear ();
+                path.clear ();
             }
         }
 
