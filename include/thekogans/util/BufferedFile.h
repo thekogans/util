@@ -205,7 +205,7 @@ namespace thekogans {
 
                 /// \brief
                 /// Delete the buffer cache.
-                virtual void Delete ();
+                virtual void Delete () override;
                 /// \brief
                 /// Delete dirty buffers.
                 virtual void Clear () override;
@@ -274,7 +274,7 @@ namespace thekogans {
 
                 /// \brief
                 /// Delete the buffer cache.
-                virtual void Delete ();
+                virtual void Delete () override;
                 /// \brief
                 /// Delete dirty buffers.
                 virtual void Clear () override;
