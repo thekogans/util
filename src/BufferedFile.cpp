@@ -220,7 +220,6 @@ namespace thekogans {
                         std::size_t countToWrite = MIN (buffer_->length - index, count);
                         std::memcpy (&buffer_->data[index], ptr, countToWrite);
                         buffer_->dirty = true;
-                        flags.Set (FLAGS_DIRTY, true);
                         ptr += countToWrite;
                         countWritten += countToWrite;
                         position += countToWrite;
@@ -229,6 +228,7 @@ namespace thekogans {
                         }
                         count -= countToWrite;
                     }
+                    flags.Set (FLAGS_DIRTY, true);
                     return countWritten;
                 }
                 else {
