@@ -36,6 +36,17 @@ namespace thekogans {
         /// all searches, additions and deletions take O(N) where N is the
         /// height of the tree. BTree keys are \see{GUID} and the values are
         /// \see{ui64}.
+        /// NOTE: I thought long and hard about the types that should
+        /// represent keys and values. On the surface this screams TEMPLATES!
+        /// Unfortunatelly BTrees need to adjust their types dynamically (at
+        /// run time) not statically (at compile time). Imagine creating a
+        /// BTree type of a specific type and then using it to read a file
+        /// with different types for keys and values, disaster! A \see{GUID}
+        /// may not seem big enough to support all types of keys we might want,
+        /// but thats deceiving. \see{GUID} supports \see{Hash}ing values and
+        /// can be used to compute keys from any block of bytes. As for ui64
+        /// values, use them as offsets in to files to read/write as much data
+        /// as you need.
 
         struct BTree : public RefCounted {
             /// \brief
@@ -177,7 +188,7 @@ namespace thekogans {
                 /// \param[in] node Node to free.
                 static void Free (Node *node);
                 /// \brief
-                /// Delete the file associated with and free the given empty node.
+                /// Delete and free the given empty node.
                 /// If the node is not empty, throw exception.
                 /// \param[in] node Empty node to delete.
                 static void Delete (Node *node);

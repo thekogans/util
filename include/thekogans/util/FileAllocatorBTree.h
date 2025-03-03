@@ -20,6 +20,11 @@
 /// \brief
 /// BTree for managing \see{FileAllocator} free, random size block list.
 /// This class is private to and is only included in \see{FileAllocator}.
+/// This implementation is specifically tuned to act as \see{FileAllocator}
+/// free list manager. It's logic is subtly different from the general
+/// purpose \see{BTree} implementation. It has no need for values, just
+/// properly structured keys. Its search is also different as it results
+/// in near by entries being returned if they suit the need of an allocation.
 /// It's broken out in to its own file because FileAllocator.h was getting
 /// too big to maintain.
 
