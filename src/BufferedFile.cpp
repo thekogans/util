@@ -434,6 +434,11 @@ namespace thekogans {
                             file.SetSize (size);
                         }
                     }
+                    else {
+                        THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
+                            "Log is not clean %s",
+                            logPath.c_str ());
+                    }
                 }
                 File::Delete (logPath);
             }
