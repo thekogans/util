@@ -311,17 +311,11 @@ namespace thekogans {
 
         void BufferedFile::Close () {
             if (IsOpen ()) {
-                if (flags.Test (FLAGS_TRANSACTION)) {
-                    AbortTransaction ();
-                }
-                else {
-                    Flush ();
-                }
+                DeleteCache (false);
                 position = 0;
                 sizeOnDisk = 0;
                 size = 0;
                 flags = 0;
-                root.Delete ();
                 File::Close ();
             }
         }
