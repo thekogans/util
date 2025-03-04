@@ -543,8 +543,8 @@ namespace thekogans {
                 /// buffers.
                 /// \param[in] fileAllocator \see{FileAllocator} containing the block.
                 /// \param[in] offset Block offset.
-                /// \param[in] bufferLength How much of the block do we want
-                /// to buffer (0 == the whole block).
+                /// \param[in] bufferLength How much of the block we want to buffer
+                /// (0 == buffer the whole block).
                 BlockBuffer (
                     FileAllocator &fileAllocator,
                     PtrType offset,
@@ -553,7 +553,7 @@ namespace thekogans {
                 /// \brief
                 /// Read a block range in to the buffer.
                 /// \param[in] blockOffset Logical offset within block.
-                /// \param[in] blockLength How much of the block do we want
+                /// \param[in] blockLength How much of the block we want to read.
                 /// (0 == read the whole block).
                 std::size_t Read (
                     File &file,
@@ -562,7 +562,7 @@ namespace thekogans {
                 /// \brief
                 /// Write a block range from the buffer.
                 /// \param[in] blockOffset Logical offset within block.
-                /// \param[in] blockLength How much of the block do we want
+                /// \param[in] blockLength How much of the block we want to write.
                 /// (0 == write the whole block).
                 std::size_t Write (
                     File &file,
@@ -741,6 +741,10 @@ namespace thekogans {
             /// \param[in] offset Offset of block to free.
             void Free (PtrType offset);
 
+            /// \brief
+            /// Given a properly constructed \see{BlockInfo}, return its information.
+            /// \param[in, out] block \see{BlockInfo} with properly initialized offset.
+            /// On return will contain the block info.
             void GetBlockInfo (BlockInfo &block);
 
             /// \brief
@@ -756,7 +760,22 @@ namespace thekogans {
                 bool read = true,
                 std::size_t blockOffset = 0,
                 std::size_t blockLength = 0);
-
+            /// \brief
+            /// Read a range of the block in to the given \see{BlockBuffer}.
+            /// \param[in] buffer \see{BlockBuffer} to read in to.
+            /// \param[in] blockOffset Logical offset within block.
+            /// \param[in] blockLength How much of the block we want to read
+            /// (0 == read the whole block).
+            void ReadBlockBuffer (
+                BlockBuffer &buffer,
+                std::size_t blockOffset = 0,
+                std::size_t blockLength = 0);
+            /// \brief
+            /// Write the given \see{BlockBuffer} to disk.
+            /// \param[in] buffer \see{BlockBuffer} to write to disk.
+            /// \param[in] blockOffset Logical offset within block.
+            /// \param[in] blockLength How much of the block we want to write
+            /// (0 == write the whole block).
             void WriteBlockBuffer (
                 BlockBuffer &buffer,
                 std::size_t blockOffset = 0,

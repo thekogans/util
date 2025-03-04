@@ -417,6 +417,14 @@ namespace thekogans {
             return buffer;
         }
 
+        void FileAllocator::ReadBlockBuffer (
+                BlockBuffer &buffer,
+                std::size_t blockOffset,
+                std::size_t blockLength) {
+            LockGuard<SpinLock> guard (spinLock);
+            buffer.Read (file, blockOffset, blockLength);
+        }
+
         void FileAllocator::WriteBlockBuffer (
                 BlockBuffer &buffer,
                 std::size_t blockOffset,
