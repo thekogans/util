@@ -508,6 +508,8 @@ namespace thekogans {
                     const Header &header,
                     const Footer &footer);
 
+                /// \brief
+                /// FileAllocator needs access to private members.
                 friend struct FileAllocator;
             };
 
