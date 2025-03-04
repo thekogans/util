@@ -578,14 +578,26 @@ namespace thekogans {
             /// ranges. Making it efficient to update only the parts of the data
             /// that have changed.
             struct _LIB_THEKOGANS_UTIL_DECL BlockBuffer : public Buffer {
+                /// \brief
+                /// Declare \see{RefCounted} pointers.
+                THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (BlockBuffer)
+
+                /// \brief
+                /// BlockBuffer has a private heap to help with memory
+                /// management, performance, and global heap fragmentation.
+                THEKOGANS_UTIL_DECLARE_STD_ALLOCATOR_FUNCTIONS
+
             private:
                 /// \brief
                 /// Block info.
                 BlockInfo block;
 
-            public:
                 /// \brief
-                /// ctro.
+                /// ctor.
+                /// NOTE: The reason its private is that we don't trust the
+                /// user to do the right thing and lock the FileAllocator.
+                /// Use FileAllocator::CreateBuffer to create input and output
+                /// buffers.
                 /// \param[in] fileAllocator \see{FileAllocator} containing the block.
                 /// \param[in] offset Block offset.
                 /// \param[in] length How much of the block do we want
@@ -595,6 +607,14 @@ namespace thekogans {
                     ui64 offset,
                     std::size_t length = 0);
 
+                /// \brief
+                /// We trust FileAllocator to do the right thing.
+                friend struct FileAllocator;
+                /// \brief
+                /// We trust BTree to do the right thing.
+                friend struct BTree;
+
+            public:
                 /// \brief
                 /// Read a range in to the buffer.
                 /// \param[in] blockOffset Logical offset within block.
@@ -776,6 +796,18 @@ namespace thekogans {
             /// \brief
             /// Debugging helper. Dumps \see{Btree::Node}s to stdout.
             void DumpBTree ();
+
+            /// \brief
+            /// Create a \see{BlockBuffer} for reading or writing. If for reading
+            /// read it's contents.
+            /// \param[in] offset Block offset.
+            /// \param[in] length Block length (0 == cover the whole block).
+            /// \param[in] read true == read block contents (while still holding the lock).
+            /// \return \see{BlockBuffer::SharedPtr}.
+            BlockBuffer::SharedPtr CreateBuffer (
+                ui64 offset,
+                std::size_t length = 0,
+                bool read = true);
 
         protected:
             /// \brief

@@ -33,17 +33,16 @@ namespace thekogans {
                 leftNode (0),
                 dirty (false) {
             if (offset != 0) {
-                FileAllocator::LockedFilePtr file (*btree.fileAllocator);
-                FileAllocator::BlockBuffer buffer (*btree.fileAllocator, offset);
-                buffer.Read ();
+                FileAllocator::BlockBuffer::SharedPtr buffer =
+                    btree.fileAllocator->CreateBuffer (offset);
                 ui32 magic;
-                buffer >> magic;
+                *buffer >> magic;
                 if (magic == MAGIC32) {
-                    buffer >> count;
+                    *buffer >> count;
                     if (count > 0) {
-                        buffer >> leftOffset;
+                        *buffer >> leftOffset;
                         for (ui32 i = 0; i < count; ++i) {
-                            buffer >> entries[i];
+                            *buffer >> entries[i];
                         }
                     }
                 }
@@ -62,16 +61,19 @@ namespace thekogans {
 
         BTree::Node::~Node () {
             if (dirty) {
-                FileAllocator::LockedFilePtr file (*btree.fileAllocator);
-                FileAllocator::BlockBuffer buffer (*btree.fileAllocator, offset);
-                buffer << MAGIC32 << count;
+                FileAllocator::BlockBuffer::SharedPtr buffer =
+                    btree.fileAllocator->CreateBuffer (offset, 0, false);
+                *buffer << MAGIC32 << count;
                 if (count > 0) {
-                    buffer << leftOffset;
+                    *buffer << leftOffset;
                     for (ui32 i = 0; i < count; ++i) {
-                        buffer << entries[i];
+                        *buffer << entries[i];
                     }
                 }
-                buffer.Write ();
+                {
+                    FileAllocator::LockedFilePtr file (*btree.fileAllocator);
+                    buffer->Write ();
+                }
             }
             if (count > 0) {
                 Free (leftNode);
@@ -127,27 +129,24 @@ namespace thekogans {
             ui32 count;
             ui64 leftOffset = 0;
             std::vector<Entry> entries;
-            {
-                FileAllocator::LockedFilePtr file (fileAllocator);
-                FileAllocator::BlockBuffer buffer (fileAllocator, offset);
-                buffer.Read ();
-                ui32 magic;
-                buffer >> magic;
-                if (magic == MAGIC32) {
-                    buffer >> count;
-                    if (count > 0) {
-                        buffer >> leftOffset;
-                        entries.resize (count);
-                        for (ui32 i = 0; i < count; ++i) {
-                            buffer >> entries[i];
-                        }
+            FileAllocator::BlockBuffer::SharedPtr buffer =
+                fileAllocator.CreateBuffer (offset);
+            ui32 magic;
+            *buffer >> magic;
+            if (magic == MAGIC32) {
+                *buffer >> count;
+                if (count > 0) {
+                    *buffer >> leftOffset;
+                    entries.resize (count);
+                    for (ui32 i = 0; i < count; ++i) {
+                        *buffer >> entries[i];
                     }
                 }
-                else {
-                    THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                        "Corrupt BTree::Node: " THEKOGANS_UTIL_UI64_FORMAT,
-                        offset);
-                }
+            }
+            else {
+                THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
+                    "Corrupt BTree::Node: " THEKOGANS_UTIL_UI64_FORMAT,
+                    offset);
             }
             if (count > 0) {
                 Delete (fileAllocator, leftOffset);
@@ -420,13 +419,12 @@ namespace thekogans {
                 header ((ui32)entriesPerNode),
                 root (nullptr) {
             if (offset != 0) {
-                FileAllocator::LockedFilePtr file (*fileAllocator);
-                FileAllocator::BlockBuffer buffer (*fileAllocator, offset, Header::SIZE);
-                buffer.Read ();
+                FileAllocator::BlockBuffer::SharedPtr buffer =
+                    fileAllocator->CreateBuffer (offset, Header::SIZE);
                 ui32 magic;
-                buffer >> magic;
+                *buffer >> magic;
                 if (magic == MAGIC32) {
-                    buffer >> header;
+                    *buffer >> header;
                 }
                 else {
                     THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
@@ -458,20 +456,17 @@ namespace thekogans {
                 FileAllocator &fileAllocator,
                 ui64 offset) {
             Header header;
-            {
-                FileAllocator::LockedFilePtr file (fileAllocator);
-                FileAllocator::BlockBuffer buffer (fileAllocator, offset, Header::SIZE);
-                buffer.Read ();
-                ui32 magic;
-                buffer >> magic;
-                if (magic == MAGIC32) {
-                    buffer >> header;
-                }
-                else {
-                    THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                        "Corrupt BTree: " THEKOGANS_UTIL_UI64_FORMAT,
-                        offset);
-                }
+            FileAllocator::BlockBuffer::SharedPtr buffer =
+                fileAllocator.CreateBuffer (offset, Header::SIZE);
+            ui32 magic;
+            *buffer >> magic;
+            if (magic == MAGIC32) {
+                *buffer >> header;
+            }
+            else {
+                THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
+                    "Corrupt BTree: " THEKOGANS_UTIL_UI64_FORMAT,
+                    offset);
             }
             Node::Delete (fileAllocator, header.rootOffset);
             fileAllocator.Free (offset);
@@ -537,10 +532,13 @@ namespace thekogans {
         }
 
         void BTree::Save () {
-            FileAllocator::LockedFilePtr file (*fileAllocator);
-            FileAllocator::BlockBuffer buffer (*fileAllocator, offset, Header::SIZE);
-            buffer << MAGIC32 << header;
-            buffer.Write ();
+            FileAllocator::BlockBuffer::SharedPtr buffer =
+                fileAllocator->CreateBuffer (offset, Header::SIZE, false);
+            *buffer << MAGIC32 << header;
+            {
+                FileAllocator::LockedFilePtr file (*fileAllocator);
+                buffer->Write ();
+            }
         }
 
         void BTree::SetRoot (Node *node) {

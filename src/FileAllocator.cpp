@@ -160,6 +160,8 @@ namespace thekogans {
             footer.Write (file, offset + header.size);
         }
 
+        THEKOGANS_UTIL_IMPLEMENT_HEAP_FUNCTIONS (FileAllocator::BlockBuffer)
+
         FileAllocator::BlockBuffer::BlockBuffer (
                 FileAllocator &fileAllocator,
                 ui64 offset,
@@ -395,6 +397,18 @@ namespace thekogans {
             if (btree != nullptr) {
                 btree->Dump ();
             }
+        }
+
+        FileAllocator::BlockBuffer::SharedPtr FileAllocator::CreateBuffer (
+                ui64 offset,
+                std::size_t length,
+                bool read) {
+            LockGuard<SpinLock> guard (spinLock);
+            BlockBuffer::SharedPtr buffer (new BlockBuffer (*this, offset, length));
+            if (read) {
+                buffer->Read ();
+            }
+            return buffer;
         }
 
         ui64 FileAllocator::AllocFixedBlock () {
