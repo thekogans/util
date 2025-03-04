@@ -165,70 +165,6 @@ namespace thekogans {
                 THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (Flusher)
             };
 
-            /// \struct FileAllocator::LockedFilePtr FileAllocator.h thekogans/util/FileAllocator.h
-            ///
-            /// \brief
-            /// FileAllocator's public api is thread safe. It uses a \see{SpinLock}
-            /// to protect shared resources. Unfortunatelly, past experience indicates
-            /// that for objects like FileAllocator, a public api is not enough. That's
-            /// why I exposed the file. This has a number of implications; I purposely
-            /// chose \see{SpinLock} to avoid a heavy penalty for lock aquisition. But
-            /// because other threads sit and spin when the lock is busy, it's very
-            /// important to not hold on to the lock too long. Ex:
-            ///
-            /// \code{.cpp}
-            /// using namespace thekogans;
-            ///
-            /// {
-            ///     util::FileAllocator::LockedFilePtr file (*fileAllocator);
-            ///     util::FileAllocator::BlockInfo block (*file, offset);
-            ///     block.Read ();
-            ///     ...
-            ///     // Automatically release the lock at end of scope.
-            /// }
-            /// \endcode
-            struct _LIB_THEKOGANS_UTIL_DECL LockedFilePtr {
-            private:
-                /// \brief
-                /// FileAllocator we're about to take out a lock on.
-                FileAllocator &fileAllocator;
-
-            public:
-                /// \brief
-                /// ctor.
-                /// \param[in] fileAllocator_ FileAllocator we're about to take out a lock on.
-                LockedFilePtr (FileAllocator &fileAllocator_) :
-                        fileAllocator (fileAllocator_) {
-                    fileAllocator.spinLock.Acquire ();
-                }
-                /// \brief
-                /// dtor.
-                ~LockedFilePtr () {
-                    fileAllocator.spinLock.Release ();
-                }
-
-                /// \brief
-                /// Standard pointer operator. Provides access to the file.
-                /// \return File &.
-                inline File &operator * () const {
-                    return fileAllocator.file;
-                }
-                /// \brief
-                /// Standard pointer operator. Provides access to the file.
-                /// \return File *.
-                inline File *operator -> () const {
-                    return &fileAllocator.file;
-                }
-
-                /// \brief
-                /// LockedFilePtr is neither copy constructable, nor assignable.
-                THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (LockedFilePtr)
-            };
-
-            /// \brief
-            /// Forward declaration to resolve circular dependence.
-            struct BlockBuffer;
-
             /// \struct FileAllocator::BlockInfo FileAllocator.h thekogans/util/FileAllocator.h
             ///
             /// \brief
@@ -249,9 +185,6 @@ namespace thekogans {
             /// (call BlockInfo::Prev/Next.)
             struct _LIB_THEKOGANS_UTIL_DECL BlockInfo {
             private:
-                /// \brief
-                /// FileAllocator file to read and write.
-                File &file;
                 /// \brief
                 /// Block offset.
                 ui64 offset;
@@ -418,7 +351,6 @@ namespace thekogans {
                         ui64 offset);
                 } footer;
 
-            public:
                 /// \brief
                 /// If this flag is set, the block is free. Otherwise it's allocated.
                 static const std::size_t FLAGS_FREE = 1;
@@ -435,21 +367,19 @@ namespace thekogans {
                 /// BlockInfo size on disk.
                 static const std::size_t SIZE = HEADER_SIZE + FOOTER_SIZE;
 
+            public:
                 /// \brief
                 /// ctor.
-                /// \param[in] file_ \see{File} containing the BlockInfo.
                 /// \param[in] offset_ Offset in the file where the BlockInfo resides.
                 /// \param[in] flags Combination of FLAGS_FIXED and FLAGS_FREE.
                 /// \param[in] size Size of the block (not including the size
                 /// of the BlockInfo itself).
                 /// \param[in] nextBlockOffset
                 BlockInfo (
-                    File &file_,
                     ui64 offset_ = 0,
                     Flags32 flags = 0,
                     ui64 size = 0,
                     ui64 nextBlockOffset = 0) :
-                    file (file_),
                     offset (offset_),
                     header (flags, size, nextBlockOffset),
                     footer (flags, size) {}
@@ -460,6 +390,28 @@ namespace thekogans {
                 inline ui64 GetOffset () const {
                     return offset;
                 }
+
+                /// \brief
+                /// Return true if FLAGS_FREE is set.
+                /// \return true if FLAGS_FREE is set.
+                inline bool IsFree () const {
+                    return header.IsFree ();
+                }
+                /// \brief
+                /// Return true if FLAGS_FIXED set.
+                /// \return true == FLAGS_FIXED set.
+                inline bool IsFixed () const {
+                    return header.IsFixed ();
+                }
+
+                /// \brief
+                /// Return the block size (not including BlockInfo::SIZE).
+                /// \return Block size.
+                inline ui64 GetSize () const {
+                    return header.size;
+                }
+
+            private:
                 /// \brief
                 /// Set offset to the given value.
                 /// \param[in] offset_ New offset value.
@@ -475,16 +427,10 @@ namespace thekogans {
                 /// \brief
                 /// Return true if this is the last block in the heap.
                 /// \return true == last block in the heap.
-                inline bool IsLast () const {
-                    return GetOffset () + GetSize () + FOOTER_SIZE == file.GetSize ();
+                inline bool IsLast (ui64 heapSize) const {
+                    return GetOffset () + GetSize () + FOOTER_SIZE == heapSize;
                 }
 
-                /// \brief
-                /// Return true if FLAGS_FREE is set.
-                /// \return true if FLAGS_FREE is set.
-                inline bool IsFree () const {
-                    return header.IsFree ();
-                }
                 /// \brief
                 /// Set/unset the FLAGS_FREE flag.
                 /// \param[in] free true == set, false == unset
@@ -492,12 +438,7 @@ namespace thekogans {
                     header.SetFree (free);
                     footer.SetFree (free);
                 }
-                /// \brief
-                /// Return true if FLAGS_FIXED set.
-                /// \return true == FLAGS_FIXED set.
-                inline bool IsFixed () const {
-                    return header.IsFixed ();
-                }
+
                 /// \brief
                 /// Set/unset the FLAGS_FIXED flag.
                 /// \param[in] free true == set, false == unset
@@ -506,12 +447,6 @@ namespace thekogans {
                     footer.SetFixed (fixed);
                 }
 
-                /// \brief
-                /// Return the block size (not including BlockInfo::SIZE).
-                /// \return Block size.
-                inline ui64 GetSize () const {
-                    return header.size;
-                }
                 /// \brief
                 /// Set block size to the given value.
                 /// \param[in] size New block size.
@@ -539,19 +474,25 @@ namespace thekogans {
                 /// If !IsFirst, return the block info right before this one.
                 /// \param[out] prev Where to put the previous block info.
                 /// \return true == prev is valid, false == IsFirst is true.
-                bool Prev (BlockInfo &prev);
+                bool Prev (
+                    File &file,
+                    BlockInfo &prev);
                 /// \brief
                 /// If !IsLast, return the block info right after this one.
                 /// \param[out] next Where to put the next block info.
                 /// \return true == next is valid, false == IsLast is true.
-                bool Next (BlockInfo &next);
+                bool Next (
+                    File &file,
+                    BlockInfo &next);
 
                 /// \brief
-                /// Read block info at offset.
-                void Read ();
+                /// Read block info.
+                /// \param[in] file FileAllocator file to read.
+                void Read (File &file);
                 /// \brief
-                /// Write block info at offset.
-                void Write ();
+                /// Write block info.
+                /// \param[in] file FileAllocator file to write.
+                void Write (File &file);
 
                 /// \brief
                 /// Needs access to \see{Header} and \see{Footer}.
@@ -559,9 +500,7 @@ namespace thekogans {
                     const Header &header,
                     const Footer &footer);
 
-                /// \brief
-                /// Needs access to file.
-                friend struct BlockBuffer;
+                friend struct FileAllocator;
 
                 /// \brief
                 /// BlockInfo is neither copy constructable, nor assignable.
@@ -600,12 +539,31 @@ namespace thekogans {
                 /// buffers.
                 /// \param[in] fileAllocator \see{FileAllocator} containing the block.
                 /// \param[in] offset Block offset.
-                /// \param[in] length How much of the block do we want
-                /// to back up (0 == the whole block).
+                /// \param[in] bufferLength How much of the block do we want
+                /// to buffer (0 == the whole block).
                 BlockBuffer (
                     FileAllocator &fileAllocator,
                     ui64 offset,
-                    std::size_t length = 0);
+                    std::size_t bufferLength = 0);
+
+                /// \brief
+                /// Read a block range in to the buffer.
+                /// \param[in] blockOffset Logical offset within block.
+                /// \param[in] blockLength How much of the block do we want
+                /// (0 == read the whole block).
+                std::size_t Read (
+                    File &file,
+                    std::size_t blockOffset = 0,
+                    std::size_t blockLength = 0);
+                /// \brief
+                /// Write a block range from the buffer.
+                /// \param[in] blockOffset Logical offset within block.
+                /// \param[in] blockLength How much of the block do we want
+                /// (0 == write the whole block).
+                std::size_t Write (
+                    File &file,
+                    std::size_t blockOffset = 0,
+                    std::size_t blockLength = 0);
 
                 /// \brief
                 /// We trust FileAllocator to do the right thing.
@@ -613,22 +571,6 @@ namespace thekogans {
                 /// \brief
                 /// We trust BTree to do the right thing.
                 friend struct BTree;
-
-            public:
-                /// \brief
-                /// Read a range in to the buffer.
-                /// \param[in] blockOffset Logical offset within block.
-                /// \param[in] length How much of the block do we want (0 == read the whole block).
-                std::size_t Read (
-                    std::size_t blockOffset = 0,
-                    std::size_t length = 0);
-                /// \brief
-                /// Write a range from the buffer.
-                /// \param[in] blockOffset Logical offset within block.
-                /// \param[in] length How much of the block do we want (0 == write the whole block).
-                std::size_t Write (
-                    std::size_t blockOffset = 0,
-                    std::size_t length = 0);
 
                 /// \brief
                 /// BlockBuffer is neither copy constructable, nor assignable.
@@ -766,6 +708,12 @@ namespace thekogans {
                 return header.blockSize;
             }
             /// \brief
+            /// Return the size of an allocated block.
+            /// \param[in] offset Offset of an allocated block whose size to return.
+            /// \return If fixed, fixed block size. if random size, allocated block size.
+            /// NOTE: If block is free, returns 0.
+            std::size_t GetBlockSize (ui64 offset);
+            /// \brief
             /// Return the root offset.
             /// NOTE: If you hold a LockedFilePtr this function is off limits.
             /// \return header.rootOffset.
@@ -789,13 +737,7 @@ namespace thekogans {
             /// \param[in] offset Offset of block to free.
             void Free (ui64 offset);
 
-            /// \brief
-            /// Flush the btree cache to disk.
-            void FlushBTree ();
-
-            /// \brief
-            /// Debugging helper. Dumps \see{Btree::Node}s to stdout.
-            void DumpBTree ();
+            void GetBlockInfo (BlockInfo &block);
 
             /// \brief
             /// Create a \see{BlockBuffer} for reading or writing. If for reading
@@ -804,10 +746,25 @@ namespace thekogans {
             /// \param[in] length Block length (0 == cover the whole block).
             /// \param[in] read true == read block contents (while still holding the lock).
             /// \return \see{BlockBuffer::SharedPtr}.
-            BlockBuffer::SharedPtr CreateBuffer (
+            BlockBuffer::SharedPtr CreateBlockBuffer (
                 ui64 offset,
-                std::size_t length = 0,
-                bool read = true);
+                std::size_t bufferLength = 0,
+                bool read = true,
+                std::size_t blockOffset = 0,
+                std::size_t blockLength = 0);
+
+            void WriteBlockBuffer (
+                BlockBuffer &buffer,
+                std::size_t blockOffset = 0,
+                std::size_t blockLength = 0);
+
+            /// \brief
+            /// Flush the btree cache to disk.
+            void FlushBTree ();
+
+            /// \brief
+            /// Debugging helper. Dumps \see{Btree::Node}s to stdout.
+            void DumpBTree ();
 
         protected:
             /// \brief

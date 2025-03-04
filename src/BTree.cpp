@@ -34,7 +34,7 @@ namespace thekogans {
                 dirty (false) {
             if (offset != 0) {
                 FileAllocator::BlockBuffer::SharedPtr buffer =
-                    btree.fileAllocator->CreateBuffer (offset);
+                    btree.fileAllocator->CreateBlockBuffer (offset);
                 ui32 magic;
                 *buffer >> magic;
                 if (magic == MAGIC32) {
@@ -62,7 +62,7 @@ namespace thekogans {
         BTree::Node::~Node () {
             if (dirty) {
                 FileAllocator::BlockBuffer::SharedPtr buffer =
-                    btree.fileAllocator->CreateBuffer (offset, 0, false);
+                    btree.fileAllocator->CreateBlockBuffer (offset, 0, false);
                 *buffer << MAGIC32 << count;
                 if (count > 0) {
                     *buffer << leftOffset;
@@ -70,10 +70,7 @@ namespace thekogans {
                         *buffer << entries[i];
                     }
                 }
-                {
-                    FileAllocator::LockedFilePtr file (*btree.fileAllocator);
-                    buffer->Write ();
-                }
+                btree.fileAllocator->WriteBlockBuffer (*buffer);
             }
             if (count > 0) {
                 Free (leftNode);
@@ -130,7 +127,7 @@ namespace thekogans {
             ui64 leftOffset = 0;
             std::vector<Entry> entries;
             FileAllocator::BlockBuffer::SharedPtr buffer =
-                fileAllocator.CreateBuffer (offset);
+                fileAllocator.CreateBlockBuffer (offset);
             ui32 magic;
             *buffer >> magic;
             if (magic == MAGIC32) {
@@ -420,7 +417,7 @@ namespace thekogans {
                 root (nullptr) {
             if (offset != 0) {
                 FileAllocator::BlockBuffer::SharedPtr buffer =
-                    fileAllocator->CreateBuffer (offset, Header::SIZE);
+                    fileAllocator->CreateBlockBuffer (offset, Header::SIZE);
                 ui32 magic;
                 *buffer >> magic;
                 if (magic == MAGIC32) {
@@ -457,7 +454,7 @@ namespace thekogans {
                 ui64 offset) {
             Header header;
             FileAllocator::BlockBuffer::SharedPtr buffer =
-                fileAllocator.CreateBuffer (offset, Header::SIZE);
+                fileAllocator.CreateBlockBuffer (offset, Header::SIZE);
             ui32 magic;
             *buffer >> magic;
             if (magic == MAGIC32) {
@@ -533,12 +530,9 @@ namespace thekogans {
 
         void BTree::Save () {
             FileAllocator::BlockBuffer::SharedPtr buffer =
-                fileAllocator->CreateBuffer (offset, Header::SIZE, false);
+                fileAllocator->CreateBlockBuffer (offset, Header::SIZE, false);
             *buffer << MAGIC32 << header;
-            {
-                FileAllocator::LockedFilePtr file (*fileAllocator);
-                buffer->Write ();
-            }
+            fileAllocator->WriteBlockBuffer (*buffer);
         }
 
         void BTree::SetRoot (Node *node) {

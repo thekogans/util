@@ -33,7 +33,7 @@ namespace thekogans {
                 dirty (false) {
             if (offset != 0) {
                 BlockBuffer buffer (btree.fileAllocator, offset);
-                buffer.Read ();
+                buffer.Read (btree.fileAllocator.file);
                 ui32 magic;
                 buffer >> magic;
                 if (magic == MAGIC32) {
@@ -67,7 +67,7 @@ namespace thekogans {
                         buffer << entries[i];
                     }
                 }
-                buffer.Write ();
+                buffer.Write (btree.fileAllocator.file);
             }
             if (count > 0) {
                 Free (leftNode);
@@ -378,7 +378,7 @@ namespace thekogans {
                 root (nullptr) {
             if (offset != 0) {
                 BlockBuffer buffer (fileAllocator, offset, Header::SIZE);
-                buffer.Read ();
+                buffer.Read (fileAllocator.file);
                 ui32 magic;
                 buffer >> magic;
                 if (magic == MAGIC32) {
@@ -466,7 +466,7 @@ namespace thekogans {
         void FileAllocator::BTree::Save () {
             BlockBuffer buffer (fileAllocator, offset, Header::SIZE);
             buffer << MAGIC32 << header;
-            buffer.Write ();
+            buffer.Write (fileAllocator.file);
         }
 
         void FileAllocator::BTree::SetRoot (Node *node) {

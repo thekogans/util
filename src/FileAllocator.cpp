@@ -113,7 +113,9 @@ namespace thekogans {
             return header.flags != footer.flags || header.size != footer.size;
         }
 
-        bool FileAllocator::BlockInfo::Prev (BlockInfo &prev) {
+        bool FileAllocator::BlockInfo::Prev (
+                File &file,
+                BlockInfo &prev) {
             if (!IsFirst ()) {
                 prev.footer.Read (file, offset - SIZE);
                 prev.offset = offset - prev.footer.size - SIZE;
@@ -132,16 +134,18 @@ namespace thekogans {
             return false;
         }
 
-        bool FileAllocator:: FileAllocator::BlockInfo::Next (BlockInfo &next) {
-            if (!IsLast ()) {
+        bool FileAllocator:: FileAllocator::BlockInfo::Next (
+                File &file,
+                BlockInfo &next) {
+            if (!IsLast (file.GetSize ())) {
                 next.offset = offset + header.size + SIZE;
-                next.Read ();
+                next.Read (file);
                 return true;
             }
             return false;
         }
 
-        void FileAllocator::BlockInfo::Read () {
+        void FileAllocator::BlockInfo::Read (File &file) {
             header.Read (file, offset - HEADER_SIZE);
             footer.Read (file, offset + header.size);
             if (header != footer) {
@@ -155,7 +159,7 @@ namespace thekogans {
             }
         }
 
-        void FileAllocator::BlockInfo::Write () {
+        void FileAllocator::BlockInfo::Write (File &file) {
             header.Write (file, offset - HEADER_SIZE);
             footer.Write (file, offset + header.size);
         }
@@ -165,16 +169,16 @@ namespace thekogans {
         FileAllocator::BlockBuffer::BlockBuffer (
                 FileAllocator &fileAllocator,
                 ui64 offset,
-                std::size_t length) :
+                std::size_t bufferLength) :
                 Buffer (fileAllocator.file.endianness),
-                block (fileAllocator.file, offset) {
-            block.Read ();
+                block (offset) {
+            block.Read (fileAllocator.file);
             if (!block.IsFree ()) {
-                if (length == 0) {
-                    length = block.GetSize ();
+                if (bufferLength == 0) {
+                    bufferLength = block.GetSize ();
                 }
                 Resize (
-                    length,
+                    bufferLength,
                     block.IsFixed () ?
                         fileAllocator.fixedAllocator :
                         fileAllocator.blockAllocator);
@@ -188,6 +192,7 @@ namespace thekogans {
         }
 
         std::size_t FileAllocator::BlockBuffer::Read (
+                File &file,
                 std::size_t blockOffset,
                 std::size_t length) {
             std::size_t countRead = 0;
@@ -200,15 +205,16 @@ namespace thekogans {
                     if (availableToRead > length) {
                         availableToRead = length;
                     }
-                    block.file.Seek (block.GetOffset () + blockOffset, SEEK_SET);
+                    file.Seek (block.GetOffset () + blockOffset, SEEK_SET);
                     countRead = AdvanceWriteOffset (
-                        block.file.Read (GetWritePtr (), availableToRead));
+                        file.Read (GetWritePtr (), availableToRead));
                 }
             }
             return countRead;
         }
 
         std::size_t FileAllocator::BlockBuffer::Write (
+                File &file,
                 std::size_t blockOffset,
                 std::size_t length) {
             std::size_t countWritten = 0;
@@ -221,9 +227,9 @@ namespace thekogans {
                     if (availableToWrite > length) {
                         availableToWrite = length;
                     }
-                    block.file.Seek (block.GetOffset () + blockOffset, SEEK_SET);
+                    file.Seek (block.GetOffset () + blockOffset, SEEK_SET);
                     countWritten = AdvanceReadOffset (
-                        block.file.Write (GetReadPtr (), availableToWrite));
+                        file.Write (GetReadPtr (), availableToWrite));
                 }
             }
             return countWritten;
@@ -287,6 +293,13 @@ namespace thekogans {
             }
         }
 
+        std::size_t FileAllocator::GetBlockSize (ui64 offset) {
+            LockGuard<SpinLock> guard (spinLock);
+            BlockInfo block (offset);
+            block.Read (file);
+            return !block.IsFree () ? block.GetSize () : 0;
+        }
+
         ui64 FileAllocator::GetRootOffset () {
             LockGuard<SpinLock> guard (spinLock);
             return header.rootOffset;
@@ -309,7 +322,7 @@ namespace thekogans {
                     if (size < MIN_USER_DATA_SIZE) {
                         size = MIN_USER_DATA_SIZE;
                     }
-                    LockedFilePtr file (*this);
+                    LockGuard<SpinLock> guard (spinLock);
                     BTree::Key result = btree->Search (BTree::Key (size, 0));
                     if (result.second != 0) {
                         assert (result.first >= size);
@@ -323,8 +336,9 @@ namespace thekogans {
                                 ui64 nextBlockSize = result.first - BlockInfo::SIZE;
                                 btree->Add (BTree::Key (nextBlockSize, nextBlockOffset));
                                 BlockInfo block (
-                                    *file, nextBlockOffset, BlockInfo::FLAGS_FREE, nextBlockSize);
-                                block.Write ();
+                                    nextBlockOffset,
+                                    BlockInfo::FLAGS_FREE, nextBlockSize);
+                                block.Write (file);
                             }
                             else {
                                 size += result.first;
@@ -332,11 +346,11 @@ namespace thekogans {
                         }
                     }
                     else {
-                        offset = file->GetSize () + BlockInfo::HEADER_SIZE;
-                        file->SetSize (offset + size + BlockInfo::FOOTER_SIZE);
+                        offset = file.GetSize () + BlockInfo::HEADER_SIZE;
+                        file.SetSize (offset + size + BlockInfo::FOOTER_SIZE);
                     }
-                    BlockInfo block (*file, offset, 0, size);
-                    block.Write ();
+                    BlockInfo block (offset, 0, size);
+                    block.Write (file);
                 }
                 return offset;
             }
@@ -348,33 +362,33 @@ namespace thekogans {
                 FreeFixedBlock (offset);
             }
             else if (offset >= MIN_BLOCK_OFFSET) {
-                LockedFilePtr file (*this);
+                LockGuard<SpinLock> guard (spinLock);
                 if (header.rootOffset == offset) {
                     header.rootOffset = 0;
                     Save ();
                 }
-                BlockInfo block (*file, offset);
-                block.Read ();
+                BlockInfo block (offset);
+                block.Read (file);
                 if (!block.IsFree () && !block.IsFixed ()) {
                     // Consolidate adjacent free non fixed blocks.
-                    BlockInfo prev (*file);
-                    if (block.Prev (prev) && prev.IsFree () && !prev.IsFixed ()) {
+                    BlockInfo prev;
+                    if (block.Prev (file, prev) && prev.IsFree () && !prev.IsFixed ()) {
                         btree->Delete (BTree::Key (prev.GetSize (), prev.GetOffset ()));
                         block.SetOffset (block.GetOffset () - BlockInfo::SIZE - prev.GetSize ());
                         block.SetSize (block.GetSize () + BlockInfo::SIZE + prev.GetSize ());
                     }
-                    BlockInfo next (*file);
-                    if (block.Next (next) && next.IsFree () && !next.IsFixed ()) {
+                    BlockInfo next;
+                    if (block.Next (file, next) && next.IsFree () && !next.IsFixed ()) {
                         btree->Delete (BTree::Key (next.GetSize (), next.GetOffset ()));
                         block.SetSize (block.GetSize () + BlockInfo::SIZE + next.GetSize ());
                     }
-                    if (!block.IsLast ()) {
+                    if (!block.IsLast (file.GetSize ())) {
                         btree->Add (BTree::Key (block.GetSize (), block.GetOffset ()));
                         block.SetFree (true);
-                        block.Write ();
+                        block.Write (file);
                     }
                     else {
-                        file->SetSize (block.GetOffset () - BlockInfo::HEADER_SIZE);
+                        file.SetSize (block.GetOffset () - BlockInfo::HEADER_SIZE);
                     }
                 }
             }
@@ -384,11 +398,39 @@ namespace thekogans {
             }
         }
 
+        void FileAllocator::GetBlockInfo (BlockInfo &block) {
+            LockGuard<SpinLock> guard (spinLock);
+            block.Read (file);
+        }
+
+        FileAllocator::BlockBuffer::SharedPtr FileAllocator::CreateBlockBuffer (
+                ui64 offset,
+                std::size_t bufferLength,
+                bool read,
+                std::size_t blockOffset,
+                std::size_t blockLength) {
+            LockGuard<SpinLock> guard (spinLock);
+            BlockBuffer::SharedPtr buffer (
+                new BlockBuffer (*this, offset, bufferLength));
+            if (read) {
+                buffer->Read (file, blockOffset, blockLength);
+            }
+            return buffer;
+        }
+
+        void FileAllocator::WriteBlockBuffer (
+                BlockBuffer &buffer,
+                std::size_t blockOffset,
+                std::size_t blockLength) {
+            LockGuard<SpinLock> guard (spinLock);
+            buffer.Write (file, blockOffset, blockLength);
+        }
+
         void FileAllocator::FlushBTree () {
-            LockedFilePtr file (*this);
+            LockGuard<SpinLock> guard (spinLock);
             if (btree != nullptr) {
                 btree->Flush ();
-                file->Flush ();
+                file.Flush ();
             }
         }
 
@@ -399,24 +441,12 @@ namespace thekogans {
             }
         }
 
-        FileAllocator::BlockBuffer::SharedPtr FileAllocator::CreateBuffer (
-                ui64 offset,
-                std::size_t length,
-                bool read) {
-            LockGuard<SpinLock> guard (spinLock);
-            BlockBuffer::SharedPtr buffer (new BlockBuffer (*this, offset, length));
-            if (read) {
-                buffer->Read ();
-            }
-            return buffer;
-        }
-
         ui64 FileAllocator::AllocFixedBlock () {
             ui64 offset = 0;
             if (header.freeBlockOffset != 0) {
                 offset = header.freeBlockOffset;
-                BlockInfo block (file, offset);
-                block.Read ();
+                BlockInfo block (offset);
+                block.Read (file);
                 if (block.IsFree () && block.IsFixed ()) {
                     header.freeBlockOffset = block.GetNextBlockOffset ();
                     Save ();
@@ -432,8 +462,8 @@ namespace thekogans {
                 offset = file.GetSize () + BlockInfo::HEADER_SIZE;
                 file.SetSize (offset + header.blockSize + BlockInfo::FOOTER_SIZE);
             }
-            BlockInfo block (file, offset, BlockInfo::FLAGS_FIXED, header.blockSize);
-            block.Write ();
+            BlockInfo block (offset, BlockInfo::FLAGS_FIXED, header.blockSize);
+            block.Write (file);
             return offset;
         }
 
@@ -443,13 +473,13 @@ namespace thekogans {
                     header.rootOffset = 0;
                     Save ();
                 }
-                BlockInfo block (file, offset);
-                block.Read ();
+                BlockInfo block (offset);
+                block.Read (file);
                 if (!block.IsFree () && block.IsFixed ()) {
-                    if (!block.IsLast ()) {
+                    if (!block.IsLast (file.GetSize ())) {
                         block.SetFree (true);
                         block.SetNextBlockOffset (header.freeBlockOffset);
-                        block.Write ();
+                        block.Write (file);
                         header.freeBlockOffset = offset;
                         Save ();
                     }
