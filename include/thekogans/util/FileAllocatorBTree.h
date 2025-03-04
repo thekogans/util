@@ -30,11 +30,11 @@
 
 struct BTree {
     /// \brief
-    /// Keys are structured on block {size, offset}
-    using Key = std::pair<ui64, ui64>;
+    /// KeyType is structured on block {size, offset}.
+    using KeyType = std::pair<ui64, PtrType>;
     /// \brief
-    /// Key size on disk.
-    static const std::size_t KEY_SIZE = UI64_SIZE + UI64_SIZE;
+    /// KeyType size on disk.
+    static const std::size_t KEY_TYPE_SIZE = UI64_SIZE + PTR_TYPE_SIZE;
 
 private:
     /// \brief
@@ -43,7 +43,7 @@ private:
     FileAllocator &fileAllocator;
     /// \brief
     /// Offset of the \see{Header} block.
-    ui64 offset;
+    PtrType offset;
     /// \struct Fileallocator::BTree::Header FileallocatorBTree.h
     /// thekogans/util/FileallocatorBTree.h
     ///
@@ -55,14 +55,14 @@ private:
         ui32 entriesPerNode;
         /// \brief
         /// Root node offset.
-        ui64 rootOffset;
+        PtrType rootOffset;
 
         /// \brief
         /// Size of header on disk.
         static const std::size_t SIZE =
             UI32_SIZE + // magic
             UI32_SIZE + // entriesPerNode
-            UI64_SIZE;  // rootOffset
+            PTR_TYPE_SIZE;  // rootOffset
 
         /// \brief
         /// ctor.
@@ -82,13 +82,13 @@ private:
         BTree &btree;
         /// \brief
         /// Node block offset.
-        ui64 offset;
+        PtrType offset;
         /// \brief
         /// Count of entries.
         ui32 count;
         /// \brief
         /// Left most child node offset.
-        ui64 leftOffset;
+        PtrType leftOffset;
         /// \brief
         /// Left most child node.
         Node *leftNode;
@@ -102,10 +102,10 @@ private:
         struct Entry {
             /// \brief
             /// Entry key.
-            Key key;
+            KeyType key;
             /// \brief
             /// Right child node offset.
-            ui64 rightOffset;
+            PtrType rightOffset;
             /// \brief
             /// Right child node.
             Node *rightNode;
@@ -113,7 +113,7 @@ private:
             /// \brief
             /// ctor.
             /// \param[in] key_ Entry key.
-            Entry (const Key &key_ = Key (0, 0)) :
+            Entry (const KeyType &key_ = KeyType (0, 0)) :
                 key (key_),
                 rightOffset (0),
                 rightNode (0) {}
@@ -129,7 +129,7 @@ private:
         /// \param[in] offset_ Node offset.
         Node (
             BTree &btree_,
-            ui64 offset_ = 0);
+            PtrType offset_ = 0);
         /// \brief
         /// dtor.
         ~Node ();
@@ -150,7 +150,7 @@ private:
         /// \param[in] offset Node offset.
         static Node *Alloc (
             BTree &btree,
-            ui64 offset = 0);
+            PtrType offset = 0);
         /// \brief
         /// Free the given node.
         /// \param[in] node Node to free.
@@ -185,7 +185,7 @@ private:
         /// If not found will contain the index of the closest larger key.
         /// \return true == found the key.
         bool Search (
-            const Key &key,
+            const KeyType &key,
             ui32 &index) const;
         /// \brief
         /// Try to recursively insert the given entry.
@@ -195,9 +195,9 @@ private:
         bool Insert (Entry &entry);
         /// \brief
         /// Try to recursively delete the given key.
-        /// \param[in] key \see{Key} whose entry we want to delete.
+        /// \param[in] key \see{KeyType} whose entry we want to delete.
         /// \return true == entry was deleted. false == key not found.
-        bool Remove (const Key &key);
+        bool Remove (const KeyType &key);
         /// \brief
         /// Maintain BTree structure.
         void RestoreBalance (ui32 index);
@@ -305,7 +305,7 @@ public:
     /// advice aplies.
     BTree (
         FileAllocator &fileAllocator_,
-        ui64 offset_,
+        PtrType offset_,
         std::size_t entriesPerNode = DEFAULT_ENTRIES_PER_NODE,
         std::size_t nodesPerPage = BlockAllocator::DEFAULT_BLOCKS_PER_PAGE,
         Allocator::SharedPtr allocator = DefaultAllocator::Instance ());
@@ -316,26 +316,26 @@ public:
     /// \brief
     /// Return the offset of the btree \see{Header} block.
     /// \return Offset of the btree \see{Header} block.
-    inline ui64 GetOffset () const {
+    inline PtrType GetOffset () const {
         return offset;
     }
 
     /// \brief
     /// Find the given key in the btree.
-    /// \param[in] key Key to find.
+    /// \param[in] key KeyType to find.
     /// \return If found the given key will be returned.
     /// If not found, return the nearest larger key.
-    Key Search (const Key &key);
+    KeyType Search (const KeyType &key);
     /// \brief
     /// Add the given key to the btree.
-    /// \param[in] key Key to add.
+    /// \param[in] key KeyType to add.
     /// NOTE: Duplicate keys are ignored.
-    void Add (const Key &key);
+    void Add (const KeyType &key);
     /// \brief
     /// Delete the given key from the btree.
-    /// \param[in] key Key whose entry to delete.
+    /// \param[in] key KeyType whose entry to delete.
     /// \return true == entry deleted. false == entry not found.
-    bool Delete (const Key &key);
+    bool Delete (const KeyType &key);
 
     /// \brief
     /// Flush the node cache (used in tight memory situations).
@@ -361,29 +361,29 @@ private:
     /// \brief
     /// Needs access to private members.
     friend bool operator == (
-        const Key &key1,
-        const Key &key2);
+        const KeyType &key1,
+        const KeyType &key2);
     /// \brief
     /// Needs access to private members.
     friend bool operator != (
-        const Key &key1,
-        const Key &key2);
+        const KeyType &key1,
+        const KeyType &key2);
     /// \brief
     /// Needs access to private members.
     friend bool operator < (
-        const Key &key1,
-        const Key &key2);
+        const KeyType &key1,
+        const KeyType &key2);
 
     /// \brief
     /// Needs access to private members.
     friend Serializer &operator << (
         Serializer &serializer,
-        const Key &key);
+        const KeyType &key);
     /// \brief
     /// Needs access to private members.
     friend Serializer &operator >> (
         Serializer &serializer,
-        Key &key);
+        KeyType &key);
 
     /// \brief
     /// Needs access to private members.

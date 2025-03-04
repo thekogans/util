@@ -72,6 +72,13 @@ namespace thekogans {
             /// Declare \see{RefCounted} pointers.
             THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (FileAllocator)
 
+            /// \brief
+            /// PtrType is \see{ui64}.
+            using PtrType = ui64;
+            /// \brief
+            /// PtrType size on disk.
+            static const std::size_t PTR_TYPE_SIZE = UI64_SIZE;
+
             /// \struct FileAllocator::Pool FileAllocator.h thekogans/util/FileAllocator.h
             ///
             /// \brief
@@ -136,7 +143,7 @@ namespace thekogans {
             /// {
             ///     util::FileAllocator::SharedPtr allocator =
             ///         util::FileAllocator::Pool::Instance ()->GetFileAllocator ("test.allocator");
-            ///     util::FileAllocator::Flusher flusher (*allocator);
+            ///     util::FileAllocator::Flusher flusher (allocator);
             ///     // Now you can call Alloc and Free as many times
             ///     // as you want and at the end of the scope, the
             ///     // FileAllocator will be flushed.
@@ -146,18 +153,18 @@ namespace thekogans {
             private:
                 /// \brief
                 /// FileAllocator to flush in the dtor.
-                FileAllocator &fileAllocator;
+                FileAllocator::SharedPtr fileAllocator;
 
             public:
                 /// \brief
                 /// ctor.
                 /// \param[in] fileAllocator_ FileAllocator to flush in the dtor.
-                Flusher (FileAllocator &fileAllocator_) :
+                Flusher (FileAllocator::SharedPtr fileAllocator_) :
                     fileAllocator (fileAllocator_) {}
                 /// \brief
                 /// dtor.
                 ~Flusher () {
-                    fileAllocator.FlushBTree ();
+                    fileAllocator->FlushBTree ();
                 }
 
                 /// \brief
@@ -187,7 +194,7 @@ namespace thekogans {
             private:
                 /// \brief
                 /// Block offset.
-                ui64 offset;
+                PtrType offset;
                 /// \struct FileAllocator::BlockInfo::Header FileAllocator.h
                 /// thekogans/util/FileAllocator.h
                 ///
@@ -209,7 +216,7 @@ namespace thekogans {
                     /// will point to the next fixed block in the free list.
                     /// Otherwise this field is ignored. This is the only
                     /// difference between header and footer.
-                    ui64 nextBlockOffset;
+                    PtrType nextBlockOffset;
 
                     /// \brief
                     /// Size of header on disk.
@@ -219,7 +226,7 @@ namespace thekogans {
                     #endif // defined (THEKOGANS_UTIL_FILE_ALLOCATOR_BLOCK_INFO_USE_MAGIC)
                         UI32_SIZE + // flags
                         UI64_SIZE; /* size +
-                        UI64_SIZE nextBlockOffset is ommited because it shares space
+                        PTR_TYPE_SIZE nextBlockOffset is ommited because it shares space
                                   with user data. This makes Header and Footer
                                   identical as far as BlockInfo is concerned.
                                   nextBlockOffset is maintaned only in
@@ -234,7 +241,7 @@ namespace thekogans {
                     Header (
                         Flags32 flags_ = 0,
                         ui64 size_ = 0,
-                        ui64 nextBlockOffset_ = 0) :
+                        PtrType nextBlockOffset_ = 0) :
                         flags (flags_),
                         size (size_),
                         nextBlockOffset (nextBlockOffset_) {}
@@ -270,14 +277,14 @@ namespace thekogans {
                     /// \param[in] offset Offset where the header begins.
                     void Read (
                         File &file,
-                        ui64 offset);
+                        PtrType offset);
                     /// \brief
                     /// Write the header to the disk.
                     /// \param[in] file File to write to.
                     /// \param[in] offset Offset where the header begins.
                     void Write (
                         File &file,
-                        ui64 offset);
+                        PtrType offset);
                 } header;
                 /// \struct FileAllocator::BlockInfo::Footer FileAllocator.h
                 /// thekogans/util/FileAllocator.h
@@ -341,14 +348,14 @@ namespace thekogans {
                     /// \param[in] offset Offset where the footer begins.
                     void Read (
                         File &file,
-                        ui64 offset);
+                        PtrType offset);
                     /// \brief
                     /// Write the footer to the disk.
                     /// \param[in] file File to write to.
                     /// \param[in] offset Offset where the footer begins.
                     void Write (
                         File &file,
-                        ui64 offset);
+                        PtrType offset);
                 } footer;
 
                 /// \brief
@@ -374,12 +381,13 @@ namespace thekogans {
                 /// \param[in] flags Combination of FLAGS_FIXED and FLAGS_FREE.
                 /// \param[in] size Size of the block (not including the size
                 /// of the BlockInfo itself).
-                /// \param[in] nextBlockOffset
+                /// \param[in] nextBlockOffset If FLAGS_FREE and FLAGS_FIXED are
+                /// set, this field contains the next free fixed block offset.
                 BlockInfo (
-                    ui64 offset_ = 0,
+                    PtrType offset_ = 0,
                     Flags32 flags = 0,
                     ui64 size = 0,
-                    ui64 nextBlockOffset = 0) :
+                    PtrType nextBlockOffset = 0) :
                     offset (offset_),
                     header (flags, size, nextBlockOffset),
                     footer (flags, size) {}
@@ -387,7 +395,7 @@ namespace thekogans {
                 /// \brief
                 /// Return the offset.
                 /// \return Offset to the begining of the block.
-                inline ui64 GetOffset () const {
+                inline PtrType GetOffset () const {
                     return offset;
                 }
 
@@ -415,7 +423,7 @@ namespace thekogans {
                 /// \brief
                 /// Set offset to the given value.
                 /// \param[in] offset_ New offset value.
-                inline void SetOffset (ui64 offset_) {
+                inline void SetOffset (PtrType offset_) {
                     offset = offset_;
                 }
                 /// \brief
@@ -459,14 +467,14 @@ namespace thekogans {
                 /// Return the next free fixed block offset.
                 /// NOTE: This value is only valid if IsFree and IsFixed.
                 /// \return Next free fixed block offset.
-                inline ui64 GetNextBlockOffset () const {
+                inline PtrType GetNextBlockOffset () const {
                     return header.nextBlockOffset;
                 }
                 /// \brief
                 /// Set the next block offset. This will chain the
                 /// free fixed blocks in to a singly linked list.
                 /// \param[in] nextBlockOffset Next free fixed block offset.
-                inline void SetNextBlockOffset (ui64 nextBlockOffset) {
+                inline void SetNextBlockOffset (PtrType nextBlockOffset) {
                     header.nextBlockOffset = nextBlockOffset;
                 }
 
@@ -501,10 +509,6 @@ namespace thekogans {
                     const Footer &footer);
 
                 friend struct FileAllocator;
-
-                /// \brief
-                /// BlockInfo is neither copy constructable, nor assignable.
-                THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (BlockInfo)
             };
 
             /// \struct FileAllocator::BlockBuffer FileAllocator.h thekogans/util/FileAllocator.h
@@ -543,7 +547,7 @@ namespace thekogans {
                 /// to buffer (0 == the whole block).
                 BlockBuffer (
                     FileAllocator &fileAllocator,
-                    ui64 offset,
+                    PtrType offset,
                     std::size_t bufferLength = 0);
 
                 /// \brief
@@ -599,24 +603,24 @@ namespace thekogans {
                 /// \brief
                 /// If fixed, contains the head of the first free fixed block list.
                 /// Otherwise contains the head of the first free BTree::Node block list.
-                ui64 freeBlockOffset;
+                PtrType freeBlockOffset;
                 /// \brief
                 /// If !fixed, contains the offset of the BTree::Header.
-                ui64 btreeOffset;
+                PtrType btreeOffset;
                 /// \brief
                 /// Contains the offset of the user set root block.
                 /// See GetRootOffset ()/SetRootOffset () below.
-                ui64 rootOffset;
+                PtrType rootOffset;
 
                 /// \brief
                 /// The size of the header on disk.
                 static const std::size_t SIZE =
-                    UI32_SIZE + // magic
-                    UI32_SIZE + // flags
-                    UI64_SIZE + // blockSize
-                    UI64_SIZE + // freeBlockOffset
-                    UI64_SIZE + // btreeOffset
-                    UI64_SIZE;  // rootOffset
+                    UI32_SIZE +     // magic
+                    UI32_SIZE +     // flags
+                    UI64_SIZE +     // blockSize
+                    PTR_TYPE_SIZE + // freeBlockOffset
+                    PTR_TYPE_SIZE + // btreeOffset
+                    PTR_TYPE_SIZE;  // rootOffset
 
                 /// \brief
                 /// ctor.
@@ -712,17 +716,17 @@ namespace thekogans {
             /// \param[in] offset Offset of an allocated block whose size to return.
             /// \return If fixed, fixed block size. if random size, allocated block size.
             /// NOTE: If block is free, returns 0.
-            std::size_t GetBlockSize (ui64 offset);
+            std::size_t GetBlockSize (PtrType offset);
             /// \brief
             /// Return the root offset.
             /// NOTE: If you hold a LockedFilePtr this function is off limits.
             /// \return header.rootOffset.
-            ui64 GetRootOffset ();
+            PtrType GetRootOffset ();
             /// \brief
             /// Set the root offset.
             /// NOTE: If you hold a LockedFilePtr this function is off limits.
             /// \param[in] rootOffset New root offset to set.
-            void SetRootOffset (ui64 rootOffset);
+            void SetRootOffset (PtrType rootOffset);
 
             /// \brief
             /// Alloc a block. If fixed, size is ignored and instead header.blockSize
@@ -730,12 +734,12 @@ namespace thekogans {
             /// NOTE: If you hold a LockedFilePtr this function is off limits.
             /// \param[in] size Size of block to allocate. Ignored if fixed.
             /// \return Offset to the allocated block.
-            ui64 Alloc (std::size_t size);
+            PtrType Alloc (std::size_t size);
             /// \brief
             /// Free a previously Alloc(ated) block.
             /// NOTE: If you hold a LockedFilePtr this function is off limits.
             /// \param[in] offset Offset of block to free.
-            void Free (ui64 offset);
+            void Free (PtrType offset);
 
             void GetBlockInfo (BlockInfo &block);
 
@@ -747,7 +751,7 @@ namespace thekogans {
             /// \param[in] read true == read block contents (while still holding the lock).
             /// \return \see{BlockBuffer::SharedPtr}.
             BlockBuffer::SharedPtr CreateBlockBuffer (
-                ui64 offset,
+                PtrType offset,
                 std::size_t bufferLength = 0,
                 bool read = true,
                 std::size_t blockOffset = 0,
@@ -772,11 +776,11 @@ namespace thekogans {
             /// Uses \see{Header::blockSize}. This method is also
             /// used directly by the internal \see{BTree::Node}.
             /// \return Offset of allocated block.
-            ui64 AllocFixedBlock ();
+            PtrType AllocFixedBlock ();
             /// \brief
             /// Used to free blocks prviously allocated with AllocFixedBlock.
             /// \param[in] offset Offset of fixed block to free.
-            void FreeFixedBlock (ui64 offset);
+            void FreeFixedBlock (PtrType offset);
 
             /// \brief
             /// Write the \see{Header}.
@@ -796,28 +800,28 @@ namespace thekogans {
             /// \brief
             /// Needs access to private members.
             friend bool operator == (
-                const BTree::Key &key1,
-                const BTree::Key &key2);
+                const BTree::KeyType &key1,
+                const BTree::KeyType &key2);
             /// \brief
             /// Needs access to private members.
             friend bool operator != (
-                const BTree::Key &key1,
-                const BTree::Key &key2);
+                const BTree::KeyType &key1,
+                const BTree::KeyType &key2);
             /// \brief
             /// Needs access to private members.
             friend bool operator < (
-                const BTree::Key &key1,
-                const BTree::Key &key2);
+                const BTree::KeyType &key1,
+                const BTree::KeyType &key2);
             /// \brief
             /// Needs access to private members.
             friend Serializer &operator << (
                Serializer &serializer,
-               const BTree::Key &key);
+               const BTree::KeyType &key);
             /// \brief
             /// Needs access to private members.
             friend Serializer &operator >> (
                 Serializer &serializer,
-                BTree::Key &key);
+                BTree::KeyType &key);
 
             /// \brief
             /// Needs access to private members.

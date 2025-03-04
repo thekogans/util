@@ -24,7 +24,7 @@ namespace thekogans {
 
         FileAllocator::BTree::Node::Node (
                 BTree &btree_,
-                ui64 offset_) :
+                PtrType offset_) :
                 btree (btree_),
                 offset (offset_),
                 count (0),
@@ -78,8 +78,8 @@ namespace thekogans {
         }
 
         std::size_t FileAllocator::BTree::Node::FileSize (std::size_t entriesPerNode) {
-            const std::size_t ENTRY_SIZE = KEY_SIZE + UI64_SIZE;
-            return UI32_SIZE + UI32_SIZE + UI64_SIZE + entriesPerNode * ENTRY_SIZE;
+            const std::size_t ENTRY_SIZE = KEY_TYPE_SIZE + PTR_TYPE_SIZE;
+            return UI32_SIZE + UI32_SIZE + PTR_TYPE_SIZE + entriesPerNode * ENTRY_SIZE;
         }
 
         std::size_t FileAllocator::BTree::Node::Size (std::size_t entriesPerNode) {
@@ -88,7 +88,7 @@ namespace thekogans {
 
         FileAllocator::BTree::Node *FileAllocator::BTree::Node::Alloc (
                 BTree &btree,
-                ui64 offset) {
+                PtrType offset) {
             return new (
                 btree.nodeAllocator->Alloc (
                     Size (btree.header.entriesPerNode))) Node (btree, offset);
@@ -136,7 +136,7 @@ namespace thekogans {
         }
 
         bool FileAllocator::BTree::Node::Search (
-                const Key &key,
+                const KeyType &key,
                 ui32 &index) const {
             index = 0;
             ui32 last = count;
@@ -200,7 +200,7 @@ namespace thekogans {
             return true;
         }
 
-        bool FileAllocator::BTree::Node::Remove (const Key &key) {
+        bool FileAllocator::BTree::Node::Remove (const KeyType &key) {
             ui32 index;
             bool found = Search (key, index);
             Node *child = GetChild (found ? index + 1 : index);
@@ -368,7 +368,7 @@ namespace thekogans {
 
         FileAllocator::BTree::BTree (
                 FileAllocator &fileAllocator_,
-                ui64 offset_,
+                PtrType offset_,
                 std::size_t entriesPerNode,
                 std::size_t nodesPerPage,
                 Allocator::SharedPtr allocator) :
@@ -410,8 +410,8 @@ namespace thekogans {
             Node::Free (root);
         }
 
-        FileAllocator::BTree::Key FileAllocator::BTree::Search (const Key &key) {
-            Key result (UI64_MAX, 0);
+        FileAllocator::BTree::KeyType FileAllocator::BTree::Search (const KeyType &key) {
+            KeyType result (UI64_MAX, 0);
             Node *node = root;
             while (node != nullptr) {
                 ui32 index;
@@ -427,7 +427,7 @@ namespace thekogans {
             return result;
         }
 
-        void FileAllocator::BTree::Add (const Key &key) {
+        void FileAllocator::BTree::Add (const KeyType &key) {
             Node::Entry entry (key);
             if (!root->Insert (entry)) {
                 // The path to the leaf node is full.
@@ -442,7 +442,7 @@ namespace thekogans {
             }
         }
 
-        bool FileAllocator::BTree::Delete (const Key &key) {
+        bool FileAllocator::BTree::Delete (const KeyType &key) {
             bool removed = root->Remove (key);
             if (removed && root->IsEmpty () && root->GetChild (0) != nullptr) {
                 Node *node = root;
@@ -476,34 +476,34 @@ namespace thekogans {
         }
 
         inline bool operator == (
-                const FileAllocator::BTree::Key &key1,
-                const FileAllocator::BTree::Key &key2) {
+                const FileAllocator::BTree::KeyType &key1,
+                const FileAllocator::BTree::KeyType &key2) {
             return key1.first == key2.first && key1.second == key2.second;
         }
 
         inline bool operator != (
-                const FileAllocator::BTree::Key &key1,
-                const FileAllocator::BTree::Key &key2) {
+                const FileAllocator::BTree::KeyType &key1,
+                const FileAllocator::BTree::KeyType &key2) {
             return key1.first != key2.first || key1.second != key2.second;
         }
 
         inline bool operator < (
-                const FileAllocator::BTree::Key &key1,
-                const FileAllocator::BTree::Key &key2) {
+                const FileAllocator::BTree::KeyType &key1,
+                const FileAllocator::BTree::KeyType &key2) {
             return key1.first < key2.first ||
                 (key1.first == key2.first && key1.second < key2.second);
         }
 
         inline Serializer &operator << (
                Serializer &serializer,
-               const FileAllocator::BTree::Key &key) {
+               const FileAllocator::BTree::KeyType &key) {
             serializer << key.first << key.second;
             return serializer;
         }
 
         inline Serializer &operator >> (
                 Serializer &serializer,
-                FileAllocator::BTree::Key &key) {
+                FileAllocator::BTree::KeyType &key) {
             serializer >> key.first >> key.second;
             return serializer;
         }

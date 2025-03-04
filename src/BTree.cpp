@@ -25,7 +25,7 @@ namespace thekogans {
 
         BTree::Node::Node (
                 BTree &btree_,
-                ui64 offset_) :
+                FileAllocator::PtrType offset_) :
                 btree (btree_),
                 offset (offset_),
                 count (0),
@@ -81,8 +81,10 @@ namespace thekogans {
         }
 
         std::size_t BTree::Node::FileSize (std::size_t entriesPerNode) {
-            const std::size_t ENTRY_SIZE = KEY_SIZE + UI64_SIZE + UI64_SIZE;
-            return UI32_SIZE + UI32_SIZE + UI64_SIZE + entriesPerNode * ENTRY_SIZE;
+            const std::size_t ENTRY_SIZE =
+                KEY_TYPE_SIZE + VALUE_TYPE_SIZE + FileAllocator::PTR_TYPE_SIZE;
+            return UI32_SIZE + UI32_SIZE +
+                FileAllocator::PTR_TYPE_SIZE + entriesPerNode * ENTRY_SIZE;
         }
 
         std::size_t BTree::Node::Size (std::size_t entriesPerNode) {
@@ -91,7 +93,7 @@ namespace thekogans {
 
         BTree::Node *BTree::Node::Alloc (
                 BTree &btree,
-                ui64 offset) {
+                FileAllocator::PtrType offset) {
             return new (
                 btree.nodeAllocator->Alloc (
                     Size (btree.header.entriesPerNode))) Node (btree, offset);
@@ -122,9 +124,9 @@ namespace thekogans {
 
         void BTree::Node::Delete (
                 FileAllocator &fileAllocator,
-                ui64 offset) {
+                FileAllocator::PtrType offset) {
             ui32 count;
-            ui64 leftOffset = 0;
+            FileAllocator::PtrType leftOffset = 0;
             std::vector<Entry> entries;
             FileAllocator::BlockBuffer::SharedPtr buffer =
                 fileAllocator.CreateBlockBuffer (offset);
@@ -173,7 +175,7 @@ namespace thekogans {
         }
 
         bool BTree::Node::Search (
-                const Key &key,
+                const KeyType &key,
                 ui32 &index) const {
             index = 0;
             ui32 last = count;
@@ -238,7 +240,7 @@ namespace thekogans {
             }
         }
 
-        bool BTree::Node::Remove (const Key &key) {
+        bool BTree::Node::Remove (const KeyType &key) {
             ui32 index;
             bool found = Search (key, index);
             Node *child = GetChild (found ? index + 1 : index);
@@ -407,7 +409,7 @@ namespace thekogans {
 
         BTree::BTree (
                 FileAllocator::SharedPtr fileAllocator_,
-                ui64 offset_,
+                FileAllocator::PtrType offset_,
                 std::size_t entriesPerNode,
                 std::size_t nodesPerPage,
                 Allocator::SharedPtr allocator) :
@@ -451,7 +453,7 @@ namespace thekogans {
 
         void BTree::Delete (
                 FileAllocator &fileAllocator,
-                ui64 offset) {
+                FileAllocator::PtrType offset) {
             Header header;
             FileAllocator::BlockBuffer::SharedPtr buffer =
                 fileAllocator.CreateBlockBuffer (offset, Header::SIZE);
@@ -470,8 +472,8 @@ namespace thekogans {
         }
 
         bool BTree::Search (
-                const Key &key,
-                ui64 &value) {
+                const KeyType &key,
+                ValueType &value) {
             LockGuard<SpinLock> guard (spinLock);
             ui32 index;
             for (Node *node = root; node != nullptr; node = node->GetChild (index)) {
@@ -484,8 +486,8 @@ namespace thekogans {
         }
 
         bool BTree::Add (
-                const Key &key,
-                ui64 value) {
+                const KeyType &key,
+                ValueType value) {
             LockGuard<SpinLock> guard (spinLock);
             Node::Entry entry (key, value);
             Node::InsertResult result = root->Insert (entry);
@@ -504,7 +506,7 @@ namespace thekogans {
             return result == Node::Inserted;
         }
 
-        bool BTree::Delete (const Key &key) {
+        bool BTree::Delete (const KeyType &key) {
             LockGuard<SpinLock> guard (spinLock);
             bool removed = root->Remove (key);
             if (removed && root->IsEmpty () && root->GetChild (0) != nullptr) {

@@ -54,11 +54,18 @@ namespace thekogans {
             THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (BTree)
 
             /// \brief
-            /// Keys are \see{GUID}s.
-            using Key = GUID;
+            /// KeyType is \see{GUID}s.
+            using KeyType = GUID;
             /// \brief
-            /// Key size on disk.
-            static const std::size_t KEY_SIZE = GUID::SIZE;
+            /// KeyType size on disk.
+            static const std::size_t KEY_TYPE_SIZE = GUID::SIZE;
+
+            /// \brief
+            /// ValueType is \see{ui64}.
+            using ValueType = ui64;
+            /// \brief
+            /// ValueType size on disk.
+            static const std::size_t VALUE_TYPE_SIZE = UI64_SIZE;
 
         private:
             /// \brief
@@ -67,7 +74,7 @@ namespace thekogans {
             FileAllocator::SharedPtr fileAllocator;
             /// \brief
             /// Offset of the \see{Header} block.
-            ui64 offset;
+            FileAllocator::PtrType offset;
             /// \struct BTree::Header BTree.h thekogans/util/BTree.h
             ///
             /// \brief
@@ -78,14 +85,14 @@ namespace thekogans {
                 ui32 entriesPerNode;
                 /// \brief
                 /// Root node offset.
-                ui64 rootOffset;
+                FileAllocator::PtrType rootOffset;
 
                 /// \brief
                 /// Size of header on disk.
                 static const std::size_t SIZE =
-                    UI32_SIZE + // magic
-                    UI32_SIZE + // entriesPerNode
-                    UI64_SIZE;  // rootOffset
+                    UI32_SIZE +                    // magic
+                    UI32_SIZE +                    // entriesPerNode
+                    FileAllocator::PTR_TYPE_SIZE;  // rootOffset
 
                 /// \brief
                 /// ctor.
@@ -104,13 +111,13 @@ namespace thekogans {
                 BTree &btree;
                 /// \brief
                 /// Node block offset.
-                ui64 offset;
+                FileAllocator::PtrType offset;
                 /// \brief
                 /// Count of entries.
                 ui32 count;
                 /// \brief
                 /// Left most child node offset.
-                ui64 leftOffset;
+                FileAllocator::PtrType leftOffset;
                 /// \brief
                 /// Left most child node.
                 Node *leftNode;
@@ -124,13 +131,13 @@ namespace thekogans {
                 struct Entry {
                     /// \brief
                     /// Entry key.
-                    Key key;
+                    KeyType key;
                     /// \brief
                     /// Entry value.
-                    ui64 value;
+                    ValueType value;
                     /// \brief
                     /// Right child node offset.
-                    ui64 rightOffset;
+                    FileAllocator::PtrType rightOffset;
                     /// \brief
                     /// Right child node.
                     Node *rightNode;
@@ -143,8 +150,8 @@ namespace thekogans {
                     /// in the operator >>.
                     /// \param[in] key_ Entry key.
                     Entry (
-                        const Key &key_ = GUID::Empty,
-                        ui64 value_ = 0) :
+                        const KeyType &key_ = GUID::Empty,
+                        ValueType value_ = 0) :
                         key (key_),
                         value (value_),
                         rightOffset (0),
@@ -161,7 +168,7 @@ namespace thekogans {
                 /// \param[in] offset_ Node offset.
                 Node (
                     BTree &btree_,
-                    ui64 offset_ = 0);
+                    FileAllocator::PtrType offset_ = 0);
                 /// \brief
                 /// dtor.
                 ~Node ();
@@ -182,7 +189,7 @@ namespace thekogans {
                 /// \param[in] offset Node offset.
                 static Node *Alloc (
                     BTree &btree,
-                    ui64 offset = 0);
+                    FileAllocator::PtrType offset = 0);
                 /// \brief
                 /// Free the given node.
                 /// \param[in] node Node to free.
@@ -198,7 +205,7 @@ namespace thekogans {
                 /// \param[in] offset Node offset.
                 static void Delete (
                     FileAllocator &fileAllocator,
-                    ui64 offset);
+                    FileAllocator::PtrType offset);
 
                 /// \brief
                 /// Nodes delay writting themselves to disk until they are destroyed.
@@ -216,12 +223,12 @@ namespace thekogans {
                 Node *GetChild (ui32 index);
                 /// \brief
                 /// Search for a given key.
-                /// \param[in] key \see{Key} to search for.
+                /// \param[in] key \see{KeyType} to search for.
                 /// \param[out] index If found will contain the index of the key.
                 /// If not found will contain the index of the closest larger key.
                 /// \return true == found the key.
                 bool Search (
-                    const Key &key,
+                    const KeyType &key,
                     ui32 &index) const;
                 enum InsertResult {
                     Inserted,
@@ -236,9 +243,9 @@ namespace thekogans {
                 InsertResult Insert (Entry &entry);
                 /// \brief
                 /// Try to recursively delete the given key.
-                /// \param[in] key \see{Key} whose entry we want to delete.
+                /// \param[in] key \see{KeyType} whose entry we want to delete.
                 /// \return true == entry was deleted. false == key not found.
-                bool Remove (const Key &key);
+                bool Remove (const KeyType &key);
                 /// \brief
                 /// Maintain BTree structure.
                 void RestoreBalance (ui32 index);
@@ -349,7 +356,7 @@ namespace thekogans {
             /// advice aplies.
             BTree (
                 FileAllocator::SharedPtr fileAllocator_,
-                ui64 offset_,
+                FileAllocator::PtrType offset_,
                 std::size_t entriesPerNode = DEFAULT_ENTRIES_PER_NODE,
                 std::size_t nodesPerPage = BlockAllocator::DEFAULT_BLOCKS_PER_PAGE,
                 Allocator::SharedPtr allocator = DefaultAllocator::Instance ());
@@ -363,36 +370,36 @@ namespace thekogans {
             /// \param[in] offset \see{Header} offset.
             static void Delete (
                 FileAllocator &fileAllocator,
-                ui64 offset);
+                FileAllocator::PtrType offset);
 
             /// \brief
             /// Return the offset of the btree \see{Header} block.
             /// \return Offset of the btree \see{Header} block.
-            inline ui64 GetOffset () const {
+            inline FileAllocator::PtrType GetOffset () const {
                 return offset;
             }
 
             /// \brief
             /// Find the given key in the btree.
-            /// \param[in] key Key to find.
+            /// \param[in] key KeyType to find.
             /// \param[out] value If found the given key's value will be returned in value.
             /// \return true == found.
             bool Search (
-                const Key &key,
-                ui64 &value);
+                const KeyType &key,
+                ValueType &value);
             /// \brief
             /// Add the given key to the btree.
-            /// \param[in] key Key to add.
+            /// \param[in] key KeyType to add.
             /// \param[in] value Value associated with the given key.
             /// \return true == added. false == duplicate.
             bool Add (
-                const Key &key,
-                ui64 value);
+                const KeyType &key,
+                ValueType value);
             /// \brief
             /// Delete the given key from the btree.
-            /// \param[in] key Key whose entry to delete.
+            /// \param[in] key KeyType whose entry to delete.
             /// \return true == entry deleted. false == entry not found.
-            bool Delete (const Key &key);
+            bool Delete (const KeyType &key);
 
             /// \brief
             /// Flush the node cache (used in tight memory situations).
