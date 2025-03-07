@@ -292,6 +292,8 @@ namespace thekogans {
                 /// thekogans/util/FileAllocator.h
                 ///
                 /// \brief
+                /// Footer follows the user data and forms the second half
+                /// of the heap structure.
                 struct _LIB_THEKOGANS_UTIL_DECL Footer {
                     /// \brief
                     /// Combination of FLAGS_FREE and FLAGS_FIXED.
@@ -703,25 +705,19 @@ namespace thekogans {
             std::size_t GetBlockSize (PtrType offset);
             /// \brief
             /// Return the root offset.
-            /// NOTE: If you hold a LockedFilePtr this function is off limits.
-            /// \return header.rootOffset.
             PtrType GetRootOffset ();
             /// \brief
             /// Set the root offset.
-            /// NOTE: If you hold a LockedFilePtr this function is off limits.
-            /// \param[in] rootOffset New root offset to set.
             void SetRootOffset (PtrType rootOffset);
 
             /// \brief
             /// Alloc a block. If fixed, size is ignored and instead header.blockSize
             /// is used.
-            /// NOTE: If you hold a LockedFilePtr this function is off limits.
             /// \param[in] size Size of block to allocate. Ignored if fixed.
             /// \return Offset to the allocated block.
             PtrType Alloc (std::size_t size);
             /// \brief
             /// Free a previously Alloc(ated) block.
-            /// NOTE: If you hold a LockedFilePtr this function is off limits.
             /// \param[in] offset Offset of block to free.
             void Free (PtrType offset);
 

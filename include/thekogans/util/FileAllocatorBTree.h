@@ -60,8 +60,8 @@ private:
         /// \brief
         /// Size of header on disk.
         static const std::size_t SIZE =
-            UI32_SIZE + // magic
-            UI32_SIZE + // entriesPerNode
+            UI32_SIZE +     // magic
+            UI32_SIZE +     // entriesPerNode
             PTR_TYPE_SIZE;  // rootOffset
 
         /// \brief
