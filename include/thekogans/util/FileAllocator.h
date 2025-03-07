@@ -34,7 +34,9 @@ namespace thekogans {
         /// \struct FileAllocator FileAllocator.h thekogans/util/FileAllocator.h
         ///
         /// \brief
-        /// FileAllocator manages a heap on permanent storage.
+        /// FileAllocator manages a heap on permanent storage. The heap physical
+        /// layout looks like this:
+        ///
         /// +--------+---------+-----+---------+
         /// | Header | Block 1 | ... | Block N |
         /// +--------+---------+-----+---------+
@@ -680,26 +682,6 @@ namespace thekogans {
             static const std::size_t MIN_BLOCK_SIZE = BlockInfo::SIZE + MIN_USER_DATA_SIZE;
 
             /// \brief
-            /// ctor.
-            /// \param[in] blockSize If > 0, this is a fixed size block allocator.
-            /// If == 0, this is a random size block allocator.
-            /// \param[in] blocksPerPage If fixed contains the number of fixed
-            /// blocks per page to initialize \see{BlockAllocator}. If random
-            /// size contains the number of entries per node in the btree below.
-            /// \param[in] allocator If fixed points to an \see{Allocator} that
-            /// will allocate block pages for the internal \see{BlockAllocator}.
-            /// If random size points to an \see{Allocaor} that will back up file
-            /// allocator blocks with in memory buffers (\see{BlockBuffer} above).
-            FileAllocator (
-                const std::string &path,
-                std::size_t blockSize = 0,
-                std::size_t blocksPerPage = BTree::DEFAULT_ENTRIES_PER_NODE,
-                Allocator::SharedPtr allocator = DefaultAllocator::Instance ());
-            /// \brief
-            /// dtor.
-            virtual ~FileAllocator ();
-
-            /// \brief
             /// Return true if fixed block allocator.
             /// \return true == Fixed block allocator. false == random size block allocator.
             inline bool IsFixed () const {
@@ -791,7 +773,32 @@ namespace thekogans {
             /// Debugging helper. Dumps \see{Btree::Node}s to stdout.
             void DumpBTree ();
 
-        protected:
+        private:
+            /// \brief
+            /// ctor.
+            /// \param[in] path FileAllocator path.
+            /// \param[in] blockSize If > 0, this is a fixed size block allocator.
+            /// If == 0, this is a random size block allocator.
+            /// \param[in] blocksPerPage If fixed contains the number of fixed
+            /// blocks per page to initialize \see{BlockAllocator}. If random
+            /// size contains the number of entries per node in the btree below.
+            /// \param[in] allocator If fixed points to an \see{Allocator} that
+            /// will allocate block pages for the internal \see{BlockAllocator}.
+            /// If random size points to an \see{Allocaor} that will back up file
+            /// allocator blocks with in memory buffers (\see{BlockBuffer} above).
+            /// NOTE: This ctor is private because yo ushould not create FileAllocator
+            /// by yourself. Each path needs to be match with only one FileAllocator.
+            /// Use \see{Pool} above to maintain a map of available allocators and
+            /// create new ones when necessary.
+            FileAllocator (
+                const std::string &path,
+                std::size_t blockSize = 0,
+                std::size_t blocksPerPage = BTree::DEFAULT_ENTRIES_PER_NODE,
+                Allocator::SharedPtr allocator = DefaultAllocator::Instance ());
+            /// \brief
+            /// dtor.
+            virtual ~FileAllocator ();
+
             /// \brief
             /// Used to allocate blocks when FLAGS_FIXED is true.
             /// Uses \see{Header::blockSize}. This method is also

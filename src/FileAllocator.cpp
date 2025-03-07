@@ -235,64 +235,6 @@ namespace thekogans {
             return countWritten;
         }
 
-        FileAllocator::FileAllocator (
-                const std::string &path,
-                std::size_t blockSize,
-                std::size_t blocksPerPage,
-                Allocator::SharedPtr allocator) :
-                file (HostEndian, path, SimpleFile::ReadWrite | SimpleFile::Create),
-                header (
-                    blockSize > 0 ? Header::FLAGS_FIXED : 0,
-                    blockSize > 0 ?
-                        MAX (blockSize, MIN_USER_DATA_SIZE) :
-                        BTree::Node::FileSize (blocksPerPage)),
-                btree (nullptr) {
-            if (file.GetSize () > 0) {
-                ui32 magic;
-                file >> magic;
-                if (magic == MAGIC32) {
-                    // File is host endian.
-                }
-                else if (ByteSwap<GuestEndian, HostEndian> (magic) == MAGIC32) {
-                    // File is guest endian.
-                    file.endianness = GuestEndian;
-                }
-                else {
-                    THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                        "Corrupt FileAllocator file (%s)",
-                        path.c_str ());
-                }
-                file >> header;
-            }
-            else {
-                Save ();
-            }
-            fixedAllocator =
-                BlockAllocator::Pool::Instance ()->GetBlockAllocator (
-                    header.blockSize,
-                    blocksPerPage,
-                    allocator);
-            blockAllocator = IsFixed () ? fixedAllocator : allocator;
-            if (!IsFixed ()) {
-                btree = new BTree (
-                    *this,
-                    header.btreeOffset,
-                    blocksPerPage,
-                    BlockAllocator::DEFAULT_BLOCKS_PER_PAGE,
-                    allocator);
-                if (header.btreeOffset != btree->GetOffset ()) {
-                    header.btreeOffset = btree->GetOffset ();
-                    Save ();
-                }
-            }
-        }
-
-        FileAllocator::~FileAllocator () {
-            if (btree != nullptr) {
-                delete btree;
-            }
-        }
-
         std::size_t FileAllocator::GetBlockSize (PtrType offset) {
             LockGuard<SpinLock> guard (spinLock);
             BlockInfo block (offset);
@@ -445,6 +387,64 @@ namespace thekogans {
             LockGuard<SpinLock> guard (spinLock);
             if (btree != nullptr) {
                 btree->Dump ();
+            }
+        }
+
+        FileAllocator::FileAllocator (
+                const std::string &path,
+                std::size_t blockSize,
+                std::size_t blocksPerPage,
+                Allocator::SharedPtr allocator) :
+                file (HostEndian, path, SimpleFile::ReadWrite | SimpleFile::Create),
+                header (
+                    blockSize > 0 ? Header::FLAGS_FIXED : 0,
+                    blockSize > 0 ?
+                        MAX (blockSize, MIN_USER_DATA_SIZE) :
+                        BTree::Node::FileSize (blocksPerPage)),
+                btree (nullptr) {
+            if (file.GetSize () > 0) {
+                ui32 magic;
+                file >> magic;
+                if (magic == MAGIC32) {
+                    // File is host endian.
+                }
+                else if (ByteSwap<GuestEndian, HostEndian> (magic) == MAGIC32) {
+                    // File is guest endian.
+                    file.endianness = GuestEndian;
+                }
+                else {
+                    THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
+                        "Corrupt FileAllocator file (%s)",
+                        path.c_str ());
+                }
+                file >> header;
+            }
+            else {
+                Save ();
+            }
+            fixedAllocator =
+                BlockAllocator::Pool::Instance ()->GetBlockAllocator (
+                    header.blockSize,
+                    blocksPerPage,
+                    allocator);
+            blockAllocator = IsFixed () ? fixedAllocator : allocator;
+            if (!IsFixed ()) {
+                btree = new BTree (
+                    *this,
+                    header.btreeOffset,
+                    blocksPerPage,
+                    BlockAllocator::DEFAULT_BLOCKS_PER_PAGE,
+                    allocator);
+                if (header.btreeOffset != btree->GetOffset ()) {
+                    header.btreeOffset = btree->GetOffset ();
+                    Save ();
+                }
+            }
+        }
+
+        FileAllocator::~FileAllocator () {
+            if (btree != nullptr) {
+                delete btree;
             }
         }
 
