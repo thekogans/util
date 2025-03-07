@@ -116,7 +116,7 @@ private:
             Entry (const KeyType &key_ = KeyType (0, 0)) :
                 key (key_),
                 rightOffset (0),
-                rightNode (0) {}
+                rightNode (nullptr) {}
         };
         /// \brief
         /// Entry array. The rest of the entries are

@@ -29,7 +29,7 @@ namespace thekogans {
                 offset (offset_),
                 count (0),
                 leftOffset (0),
-                leftNode (0),
+                leftNode (nullptr),
                 dirty (false) {
             if (offset != 0) {
                 BlockBuffer buffer (btree.fileAllocator, offset);
@@ -126,7 +126,7 @@ namespace thekogans {
             }
             else {
                 --index;
-                if (entries[index].rightNode == 0 &&
+                if (entries[index].rightNode == nullptr &&
                         entries[index].rightOffset != 0) {
                     entries[index].rightNode = Alloc (
                         btree, entries[index].rightOffset);

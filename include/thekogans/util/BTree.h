@@ -155,7 +155,7 @@ namespace thekogans {
                         key (key_),
                         value (value_),
                         rightOffset (0),
-                        rightNode (0) {}
+                        rightNode (nullptr) {}
                 };
                 /// \brief
                 /// Entry array. The rest of the entries are
