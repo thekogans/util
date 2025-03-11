@@ -85,7 +85,8 @@ namespace thekogans {
             ///
             /// \brief
             /// Each instance of a FileAllocator attached to a particular
-            /// file should be treated as a singleton. Use Pool to recycle
+            /// file should be treated as a singleton. This is why the
+            /// \see{FileAllocator} ctor is private. Use Pool to recycle
             /// and reuse file allocators based on a given path. Ex:
             ///
             /// \code{.cpp}
