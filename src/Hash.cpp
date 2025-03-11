@@ -17,6 +17,7 @@
 
 #include <cassert>
 #include "thekogans/util/SpinLock.h"
+#include "thekogans/util/Array.h"
 #include "thekogans/util/LockGuard.h"
 #include "thekogans/util/File.h"
 #include "thekogans/util/RandomSource.h"
@@ -103,9 +104,10 @@ namespace thekogans {
             ReadOnlyFile file (HostEndian, path);
             if (file.GetSize () > 0) {
                 Init (digestSize);
-                ui8 buffer[4096];
-                for (std::size_t size = file.Read (buffer, 4096);
-                        size != 0; size = file.Read (buffer, 4096)) {
+                static const std::size_t BUFFER_LENGTH = 4096;
+                Array<ui8> buffer (BUFFER_LENGTH);
+                for (std::size_t size = file.Read (buffer, BUFFER_LENGTH);
+                        size != 0; size = file.Read (buffer, BUFFER_LENGTH)) {
                     Update (buffer, size);
                 }
                 Final (digest);

@@ -31,9 +31,10 @@ namespace thekogans {
         /// \struct BufferedFile BufferedFile.h thekogans/util/BufferedFile.h
         ///
         /// \brief
-        /// BufferedFile will accumulate all changes in memory and will commit them
-        /// all at once in \see{Flush} or \see{CommitTransaction}. BufferedFile
-        /// has support for simple, not nested transactions (see \see{BeginTransaction}).
+        /// BufferedFile is a drop in replacement for \see{File}. BufferedFile
+        /// will accumulate all changes in memory and will commit them all at
+        /// once in \see{Flush} or \see{CommitTransaction}. BufferedFile has
+        /// support for simple, flat (not nested) transactions (see \see{BeginTransaction}).
         /// BufferedFile design principle is; if you have it, might as well use it.
         /// Meaning today's (early March 2025) state of the art has some servers
         /// sporting up to 6TB of main memory. All that memory is there for a

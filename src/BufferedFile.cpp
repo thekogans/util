@@ -15,7 +15,6 @@
 // You should have received a copy of the GNU General Public License
 // along with libthekogans_util. If not, see <http://www.gnu.org/licenses/>.
 
-#include <errno.h>
 #include <memory>
 #include <string>
 #include "thekogans/util/Path.h"

@@ -39,6 +39,21 @@ namespace thekogans {
             return result.first->second;
         }
 
+        void FileAllocator::Pool::FlushFileAllocator (const std::string &path) {
+            LockGuard<SpinLock> guard (spinLock);
+            if (!path.empty ()) {
+                Map::iterator it = map.find (path);
+                if (it != map.end ()) {
+                    map.erase (it);
+                }
+            }
+            else {
+                for (Map::iterator it = map.begin (), end = map.end (); it != end; ++it) {
+                    it->second->FlushBTree ();
+                }
+            }
+        }
+
         void FileAllocator::BlockInfo::Header::Read (
                 File &file,
                 PtrType offset) {
@@ -194,16 +209,16 @@ namespace thekogans {
         std::size_t FileAllocator::BlockBuffer::Read (
                 File &file,
                 std::size_t blockOffset,
-                std::size_t length) {
+                std::size_t blockLength) {
             std::size_t countRead = 0;
             if (blockOffset < block.GetSize ()) {
-                if (length == 0 || length > GetDataAvailableForWriting ()) {
-                    length = GetDataAvailableForWriting ();
+                if (blockLength == 0 || blockLength > GetDataAvailableForWriting ()) {
+                    blockLength = GetDataAvailableForWriting ();
                 }
-                if (length > 0) {
+                if (blockLength > 0) {
                     ui64 availableToRead = block.GetSize () - blockOffset;
-                    if (availableToRead > length) {
-                        availableToRead = length;
+                    if (availableToRead > blockLength) {
+                        availableToRead = blockLength;
                     }
                     file.Seek (block.GetOffset () + blockOffset, SEEK_SET);
                     countRead = AdvanceWriteOffset (
@@ -216,16 +231,16 @@ namespace thekogans {
         std::size_t FileAllocator::BlockBuffer::Write (
                 File &file,
                 std::size_t blockOffset,
-                std::size_t length) {
+                std::size_t blockLength) {
             std::size_t countWritten = 0;
             if (blockOffset < block.GetSize ()) {
-                if (length == 0 || length > GetDataAvailableForReading ()) {
-                    length = GetDataAvailableForReading ();
+                if (blockLength == 0 || blockLength > GetDataAvailableForReading ()) {
+                    blockLength = GetDataAvailableForReading ();
                 }
-                if (length > 0) {
+                if (blockLength > 0) {
                     ui64 availableToWrite = block.GetSize () - blockOffset;
-                    if (availableToWrite > length) {
-                        availableToWrite = length;
+                    if (availableToWrite > blockLength) {
+                        availableToWrite = blockLength;
                     }
                     file.Seek (block.GetOffset () + blockOffset, SEEK_SET);
                     countWritten = AdvanceReadOffset (

@@ -126,6 +126,12 @@ namespace thekogans {
                     Allocator::SharedPtr allocator = DefaultAllocator::Instance ());
 
                 /// \brief
+                /// Given a FileAllocator path, flush it's changes to disk. If the path is
+                /// empty, flush them all.
+                /// \paam[in] path FileAllocator path to flush or empty for all.
+                void FlushFileAllocator (const std::string &path = std::string ());
+
+                /// \brief
                 /// Pool is neither copy constructable, nor assignable.
                 THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (Pool)
             };
@@ -711,9 +717,9 @@ namespace thekogans {
             void SetRootOffset (PtrType rootOffset);
 
             /// \brief
-            /// Alloc a block. If fixed, size is ignored and instead header.blockSize
+            /// Alloc a block. If IsFixed, size is ignored and instead header.blockSize
             /// is used.
-            /// \param[in] size Size of block to allocate. Ignored if fixed.
+            /// \param[in] size Size of block to allocate. Ignored if IsFixed.
             /// \return Offset to the allocated block.
             PtrType Alloc (std::size_t size);
             /// \brief
@@ -733,6 +739,9 @@ namespace thekogans {
             /// \param[in] offset Block offset.
             /// \param[in] length Block length (0 == cover the whole block).
             /// \param[in] read true == read block contents (while still holding the lock).
+            /// \param[in] blockOffset If read == true, logical offset within block.
+            /// \param[in] blockLength If read == true, how much of the block we want
+            /// to read (0 == read the whole block).
             /// \return \see{BlockBuffer::SharedPtr}.
             BlockBuffer::SharedPtr CreateBlockBuffer (
                 PtrType offset,
@@ -782,8 +791,8 @@ namespace thekogans {
             /// will allocate block pages for the internal \see{BlockAllocator}.
             /// If random size points to an \see{Allocaor} that will back up file
             /// allocator blocks with in memory buffers (\see{BlockBuffer} above).
-            /// NOTE: This ctor is private because yo ushould not create FileAllocator
-            /// by yourself. Each path needs to be match with only one FileAllocator.
+            /// NOTE: This ctor is private because you should not create FileAllocator
+            /// by yourself. Each path needs to be matched with only one FileAllocator.
             /// Use \see{Pool} above to maintain a map of available allocators and
             /// create new ones when necessary.
             FileAllocator (

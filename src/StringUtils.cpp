@@ -782,7 +782,7 @@ namespace thekogans {
             if (!name.empty ()) {
             #if defined (TOOLCHAIN_OS_Windows)
                 // Windows limit on value length.
-                const std::size_t MAX_VALUE_LENGTH = 32767;
+                static const std::size_t MAX_VALUE_LENGTH = 32767;
                 Array<wchar_t> value (MAX_VALUE_LENGTH);
                 std::size_t length = ::GetEnvironmentVariableW (
                     os::windows::UTF8ToUTF16 (name).c_str (),

@@ -19,12 +19,12 @@
 #define __thekogans_util_BTree_h
 
 #include "thekogans/util/Config.h"
-#include "thekogans/util/RefCounted.h"
 #include "thekogans/util/Types.h"
+#include "thekogans/util/RefCounted.h"
+#include "thekogans/util/GUID.h"
+#include "thekogans/util/BlockAllocator.h"
 #include "thekogans/util/FileAllocator.h"
 #include "thekogans/util/SpinLock.h"
-#include "thekogans/util/BlockAllocator.h"
-#include "thekogans/util/GUID.h"
 
 namespace thekogans {
     namespace util {
@@ -34,8 +34,10 @@ namespace thekogans {
         /// \brief
         /// A BTree is a \see{FileAllocator} container. It's attributes are that
         /// all searches, additions and deletions take O(N) where N is the
-        /// height of the tree. BTree keys are \see{GUID} and the values are
-        /// \see{ui64}.
+        /// height of the tree. These are BTree's bigest strengths. One of it's
+        /// biggest weaknesses is the fact that iterators don't survive modifications
+        /// (Inserions/Deletions). This is why I don't provide an iterator api.
+        /// BTree keys are \see{GUID} and the values are \see{ui64}.
         /// NOTE: I thought long and hard about the types that should
         /// represent keys and values. On the surface this screams TEMPLATES!
         /// Unfortunatelly BTrees need to adjust their types dynamically (at
@@ -150,7 +152,7 @@ namespace thekogans {
                     /// in the operator >>.
                     /// \param[in] key_ Entry key.
                     Entry (
-                        const KeyType &key_ = GUID::Empty,
+                        const KeyType &key_ = KeyType::Empty,
                         ValueType value_ = 0) :
                         key (key_),
                         value (value_),
@@ -230,9 +232,17 @@ namespace thekogans {
                 bool Search (
                     const KeyType &key,
                     ui32 &index) const;
+                /// \brief
+                /// Insert return codes.
                 enum InsertResult {
+                    /// \brief
+                    /// Entry was inserted.
                     Inserted,
+                    /// \brief
+                    /// Entry is a duplicate.
                     Duplicate,
+                    /// \brief
+                    /// Node is full.
                     Overflow
                 };
                 /// \brief
@@ -247,38 +257,59 @@ namespace thekogans {
                 /// \return true == entry was deleted. false == key not found.
                 bool Remove (const KeyType &key);
                 /// \brief
-                /// Maintain BTree structure.
+                /// The algorithm checks the left and right children @index for
+                /// conformity and performs necessary adjustments to maintain the
+                /// BTree structure. If one of the children is poor an entry is
+                /// rotated in to it from the other child. If they are both poor,
+                /// the algorithm merges the two children in to one.
+                /// \param[in] index Index of entry whos left and right child to check.
                 void RestoreBalance (ui32 index);
                 /// \brief
-                /// Maintain BTree structure.
+                /// Called by RestoreBalance to rotate an \see{Entry} from left
+                /// child to right child.
+                /// \param[in] index Index of \see{Entry}.
+                /// \param[in] left Left child.
+                /// \param[in] right Right child.
                 void RotateRight (
                     ui32 index,
                     Node *left,
                     Node *right);
                 /// \brief
-                /// Maintain BTree structure.
+                /// Called by RestoreBalance to rotate an \see{Entry} from right
+                /// child to left child.
+                /// \param[in] index Index of \see{Entry}.
+                /// \param[in] left Left child.
+                /// \param[in] right Right child.
                 void RotateLeft (
                     ui32 index,
                     Node *left,
                     Node *right);
                 /// \brief
-                /// Maintain BTree structure.
+                /// Called by RestoreBalance to merge two poor nodes in to one.
+                /// \param[in] index Index of the \see{Entry} whos left
+                /// and right children to merge.
+                /// \param[in] left \see{Entry} left child.
+                /// \param[in] right \see{Entry} right child.
+                /// NOTE: The algorithm merges the entries from right
+                /// together with entry @index in to the left child.
+                /// Right is deleted after.
                 void Merge (
                     ui32 index,
                     Node *left,
                     Node *right);
                 /// \brief
-                /// Split the node in the middle (splitIndex = btree.header.entriesPerNode / 2).
+                /// Split the full node in the middle
+                /// (splitIndex = btree.header.entriesPerNode / 2).
                 /// \param[out] node Node that will receive entries >= splitIndex.
                 void Split (Node *node);
                 /// \brief
-                /// Concatenate the given node's entries to this one.
-                /// \param[in] node Node whose entries are to be concatenated.
-                /// The empty node is deleted after.
+                /// Add the given node's entries to this one. The empty node
+                /// is deleted after.
+                /// \param[in] node Node whose entries are to be added.
                 void Concatenate (Node *node);
                 /// \brief
-                /// Concatenate the given entry.
-                /// \param[in] entry to concatenate.
+                /// Add the given \see{Entry} to the end of the list.
+                /// \param[in] entry \see{Entry} to add.
                 inline void Concatenate (const Entry &entry) {
                     InsertEntry (entry, count);
                 }
