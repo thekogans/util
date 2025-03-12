@@ -119,6 +119,10 @@ namespace thekogans {
                 /// \param[in] blockSize If > 0, create a fixed block file allocator.
                 /// \param[in] blocksPerPage If blockSize is > 0, this allows you to
                 /// parameterize the page size for the containing \see{BlockAllocator}.
+                /// \param[in] allocator If fixed points to an \see{Allocator} that
+                /// will allocate block pages for the internal \see{BlockAllocator}.
+                /// If random size points to an \see{Allocaor} that will back up file
+                /// allocator blocks with in memory buffers (\see{BlockBuffer} above).
                 /// \return FileAllocator matching the given path.
                 FileAllocator::SharedPtr GetFileAllocator (
                     const std::string &path,

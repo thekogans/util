@@ -449,6 +449,10 @@ namespace thekogans {
                     Flush ();
                     flags.Set (FLAGS_TRANSACTION, true);
                 }
+                else {
+                    THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
+                        "%s", "Nested transactions are not supported.");
+                }
             }
             else {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
@@ -505,6 +509,10 @@ namespace thekogans {
                     }
                     flags.Set (FLAGS_TRANSACTION, false);
                 }
+                else {
+                    THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
+                        "%s", "No open transaction to commit.");
+                }
             }
             else {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
@@ -525,6 +533,10 @@ namespace thekogans {
                         File::Delete (logPath);
                     }
                     flags.Set (FLAGS_TRANSACTION, false);
+                }
+                else {
+                    THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
+                        "%s", "No open transaction to abort.");
                 }
             }
             else {
