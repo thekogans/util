@@ -352,7 +352,10 @@ namespace thekogans {
                         log << MAGIC32 << isClean << count << sizeOnDisk << size;
                     }
                     else {
-                        root.Flush (TenantFile (endianness, handle, path));
+                        {
+                            TenantFile file (endianness, handle, path);
+                            root.Flush (file);
+                        }
                         if (sizeOnDisk != size) {
                             File::SetSize (size);
                             sizeOnDisk = size;
@@ -665,7 +668,7 @@ namespace thekogans {
         #else // defined (TOOLCHAIN_OS_Windows)
             i32 flags_ = 0;
             if (flags.Test (SimpleFile::ReadOnly)) {
-                if (flags.Test (WriteOnly)) {
+                if (flags.Test (SimpleFile::WriteOnly)) {
                     flags_ |= O_RDWR;
                 }
                 else {

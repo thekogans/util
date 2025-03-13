@@ -23,6 +23,39 @@
 namespace thekogans {
     namespace util {
 
+        inline Serializer &operator << (
+                Serializer &serializer,
+                const BTree::Node::Entry &entry) {
+            serializer << entry.key << entry.value << entry.rightOffset;
+            return serializer;
+        }
+
+        inline Serializer &operator >> (
+                Serializer &serializer,
+                BTree::Node::Entry &entry) {
+            serializer >> entry.key >> entry.value >> entry.rightOffset;
+            // Because of the way we allocate the BTree::Node the
+            // Entry cror is never called. In a way this extraction
+            // operator is our ctor. Make sure all members are
+            // properly initialized.
+            entry.rightNode = nullptr;
+            return serializer;
+        }
+
+        inline Serializer &operator << (
+                Serializer &serializer,
+                const BTree::Header &header) {
+            serializer << header.entriesPerNode << header.rootOffset;
+            return serializer;
+        }
+
+        inline Serializer &operator >> (
+                Serializer &serializer,
+                BTree::Header &header) {
+            serializer >> header.entriesPerNode >> header.rootOffset;
+            return serializer;
+        }
+
         BTree::Node::Node (
                 BTree &btree_,
                 FileAllocator::PtrType offset_) :
@@ -541,39 +574,6 @@ namespace thekogans {
             root = node;
             header.rootOffset = root->offset;
             Save ();
-        }
-
-        inline Serializer &operator << (
-                Serializer &serializer,
-                const BTree::Node::Entry &entry) {
-            serializer << entry.key << entry.value << entry.rightOffset;
-            return serializer;
-        }
-
-        inline Serializer &operator >> (
-                Serializer &serializer,
-                BTree::Node::Entry &entry) {
-            serializer >> entry.key >> entry.value >> entry.rightOffset;
-            // Because of the way we allocate the BTree::Node the
-            // Entry cror is never called. In a way this extraction
-            // operator is our ctor. Make sure all members are
-            // properly initialized.
-            entry.rightNode = nullptr;
-            return serializer;
-        }
-
-        inline Serializer &operator << (
-                Serializer &serializer,
-                const BTree::Header &header) {
-            serializer << header.entriesPerNode << header.rootOffset;
-            return serializer;
-        }
-
-        inline Serializer &operator >> (
-                Serializer &serializer,
-                BTree::Header &header) {
-            serializer >> header.entriesPerNode >> header.rootOffset;
-            return serializer;
         }
 
     } // namespace util
