@@ -795,10 +795,10 @@ namespace thekogans {
             struct _LIB_THEKOGANS_UTIL_DECL ValueParser<_T::SharedPtr> :\
                     public thekogans::util::ValueParser<thekogans::util::Serializable::SharedPtr> {\
                 ValueParser (\
-                    _T::SharedPtr &value_,\
+                    _T::SharedPtr &value,\
                     std::size_t maxSerializableSize = DEFAULT_MAX_SERIALIZABLE_SIZE) :\
                     thekogans::util::ValueParser<thekogans::util::Serializable::SharedPtr> (\
-                        value, maxSerializableSize) {}\
+                        (thekogans::util::Serializable::SharedPtr &)value, maxSerializableSize) {}\
             };
 
     } // namespace util
