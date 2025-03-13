@@ -214,7 +214,7 @@ namespace thekogans {
                         Buffer *buffer_ = GetBuffer ();
                         std::size_t index = position - buffer_->offset;
                         if (index + count > buffer_->length) {
-                            buffer_->length = MIN (index + count, Buffer::PAGE_SIZE);
+                            buffer_->length = MIN (index + count, Buffer::SIZE);
                         }
                         std::size_t countToWrite = MIN (buffer_->length - index, count);
                         std::memcpy (&buffer_->data[index], ptr, countToWrite);
@@ -591,10 +591,10 @@ namespace thekogans {
             ui32 bufferIndex =
                 THEKOGANS_UTIL_UI64_GET_UI32_AT_INDEX (position, 1) >> Buffer::SHIFT_COUNT;
             if (segment->buffers[bufferIndex] == nullptr) {
-                ui64 bufferOffset = position & ~(Buffer::PAGE_SIZE - 1);
+                ui64 bufferOffset = position & ~(Buffer::SIZE - 1);
                 ui64 bufferLength = MIN (
                     bufferOffset < size ? size - bufferOffset : 0,
-                    Buffer::PAGE_SIZE);
+                    Buffer::SIZE);
                 segment->buffers[bufferIndex] = new Buffer (bufferOffset, bufferLength);
                 if (bufferOffset < sizeOnDisk) {
                     File::Seek (bufferOffset, SEEK_SET);

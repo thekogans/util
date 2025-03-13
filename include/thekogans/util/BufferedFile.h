@@ -90,34 +90,34 @@ namespace thekogans {
                 THEKOGANS_UTIL_DECLARE_STD_ALLOCATOR_FUNCTIONS
 
                 /// \brief
-                /// Buffer offset (multiple of PAGE_SIZE).
+                /// Buffer offset (multiple of SIZE).
                 ui64 offset;
                 /// \brief
-                /// Buffer length (max PAGE_SIZE).
+                /// Buffer length (max SIZE).
                 ui64 length;
                 /// \brief
                 /// Buffer size. This (and the coresponding
                 /// \see{SHIFT_COUNT} below) is a tunning parameter.
                 /// Set it based on your typical file sizes. Meaning that,
-                /// if your files never go above 100KB then a 1MB PAGE_SIZE
+                /// if your files never go above 100KB then a 1MB SIZE
                 /// is overkill. But if you typically manage multi gigabyte
                 /// (terabyte?) databases you might want to bump this value up.
-                static const std::size_t PAGE_SIZE = 0x00100000;
+                static const std::size_t SIZE = 0x00100000;
                 /// \brief
-                /// Look at \see{PAGE_SIZE} above. This number
+                /// Look at \see{SIZE} above. This number
                 /// represents the trailing zeros in binary.
                 static const std::size_t SHIFT_COUNT = 20;
                 /// \brief
                 /// Buffer.
-                ui8 data[PAGE_SIZE];
+                ui8 data[SIZE];
                 /// \brief
                 /// true == modified.
                 bool dirty;
 
                 /// \brief
                 /// ctor.
-                /// \param[in] offset_ Buffer offset (multiple of PAGE_SIZE).
-                /// \param[in] length_ Buffer length (max PAGE_SIZE).
+                /// \param[in] offset_ Buffer offset (multiple of SIZE).
+                /// \param[in] length_ Buffer length (max SIZE).
                 Buffer (
                     ui64 offset_ = 0,
                     ui64 length_ = 0) :
