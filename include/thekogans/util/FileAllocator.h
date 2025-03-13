@@ -572,7 +572,7 @@ namespace thekogans {
                 /// \param[in] blockOffset Logical offset within block.
                 /// \param[in] blockLength How much of the block we want to read.
                 /// (0 == read the whole block).
-                std::size_t Read (
+                std::size_t BlockRead (
                     File &file,
                     std::size_t blockOffset = 0,
                     std::size_t blockLength = 0);
@@ -581,7 +581,7 @@ namespace thekogans {
                 /// \param[in] blockOffset Logical offset within block.
                 /// \param[in] blockLength How much of the block we want to write.
                 /// (0 == write the whole block).
-                std::size_t Write (
+                std::size_t BlockWrite (
                     File &file,
                     std::size_t blockOffset = 0,
                     std::size_t blockLength = 0);

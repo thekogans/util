@@ -206,7 +206,7 @@ namespace thekogans {
             }
         }
 
-        std::size_t FileAllocator::BlockBuffer::Read (
+        std::size_t FileAllocator::BlockBuffer::BlockRead (
                 File &file,
                 std::size_t blockOffset,
                 std::size_t blockLength) {
@@ -228,7 +228,7 @@ namespace thekogans {
             return countRead;
         }
 
-        std::size_t FileAllocator::BlockBuffer::Write (
+        std::size_t FileAllocator::BlockBuffer::BlockWrite (
                 File &file,
                 std::size_t blockOffset,
                 std::size_t blockLength) {
@@ -369,7 +369,7 @@ namespace thekogans {
             BlockBuffer::SharedPtr buffer (
                 new BlockBuffer (*this, offset, bufferLength));
             if (read) {
-                buffer->Read (file, blockOffset, blockLength);
+                buffer->BlockRead (file, blockOffset, blockLength);
             }
             return buffer;
         }
@@ -379,7 +379,7 @@ namespace thekogans {
                 std::size_t blockOffset,
                 std::size_t blockLength) {
             LockGuard<SpinLock> guard (spinLock);
-            buffer.Read (file, blockOffset, blockLength);
+            buffer.BlockRead (file, blockOffset, blockLength);
         }
 
         void FileAllocator::WriteBlockBuffer (
@@ -387,7 +387,7 @@ namespace thekogans {
                 std::size_t blockOffset,
                 std::size_t blockLength) {
             LockGuard<SpinLock> guard (spinLock);
-            buffer.Write (file, blockOffset, blockLength);
+            buffer.BlockWrite (file, blockOffset, blockLength);
         }
 
         void FileAllocator::FlushBTree () {

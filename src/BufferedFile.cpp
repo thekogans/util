@@ -626,10 +626,10 @@ namespace thekogans {
                 const std::string &path,
                 Flags32 flags) :
                 BufferedFile (endianness) {
-            Open (path, flags);
+            SimpleOpen (path, flags);
         }
 
-        void SimpleBufferedFile::Open (
+        void SimpleBufferedFile::SimpleOpen (
                 const std::string &path,
                 Flags32 flags) {
         #if defined (TOOLCHAIN_OS_Windows)

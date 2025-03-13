@@ -562,7 +562,7 @@ namespace thekogans {
             /// Open the file.
             /// \param[in] path File path.
             /// \param[in] flags File open flags.
-            void Open (
+            void SimpleOpen (
                 const std::string &path,
                 Flags32 flags = SimpleFile::ReadWrite | SimpleFile::Create);
 

@@ -444,10 +444,10 @@ namespace thekogans {
                 const std::string &path,
                 Flags32 flags) :
                 File (endianness) {
-            Open (path, flags);
+            SimpleOpen (path, flags);
         }
 
-        void SimpleFile::Open (
+        void SimpleFile::SimpleOpen (
                 const std::string &path,
                 Flags32 flags) {
         #if defined (TOOLCHAIN_OS_Windows)
