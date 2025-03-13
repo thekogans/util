@@ -169,7 +169,6 @@ namespace thekogans {
         }
 
         namespace {
-            const char * const TAG_TIME_SPEC = "TimeSpec";
             const char * const ATTR_SECONDS = "Seconds";
             const char * const ATTR_NANOSECONDS = "Nanoseconds";
         }

@@ -654,7 +654,6 @@ namespace thekogans {
         const Directory::Entry Directory::Entry::Empty;
 
         namespace {
-            const char * const TAG_ENTRY = "Entry";
             const char * const ATTR_FILE_SYSTEM = "FileSystem";
             const char * const VALUE_WINDOWS = "Windows";
             const char * const VALUE_POSIX = "POSIX";

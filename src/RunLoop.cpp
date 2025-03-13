@@ -205,7 +205,6 @@ namespace thekogans {
         }
 
         namespace {
-            const char * const TAG_JOB = "Job";
             const char * const ATTR_ID = "Id";
             const char * const ATTR_START_TIME = "StartTime";
             const char * const ATTR_END_TIME = "EndTime";
@@ -288,7 +287,6 @@ namespace thekogans {
         }
 
         namespace {
-            const char * const TAG_RUN_LOOP = "RunLoop";
             const char * const ATTR_NAME = "Name";
             const char * const ATTR_TOTAL_JOBS = "TotalJobs";
             const char * const ATTR_TOTAL_JOB_TIME = "TotalJobTime";
