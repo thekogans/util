@@ -140,10 +140,19 @@ namespace thekogans {
         /// Define DynamicCreatable::TYPE. Unless you have a special need
         /// (\see{FileLogger}), you should not need to directly use this
         /// macro.
-        #define THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE_OVERRIDE(_T)\
+        #define THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE_VIRTUAL(_T)\
         public:\
             static const char * const TYPE;\
             virtual const char *Type () const noexcept;
+
+        /// \def THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE_OVERRIDE(_T)
+        /// Define DynamicCreatable::TYPE. Unless you have a special need
+        /// (\see{FileLogger}), you should not need to directly use this
+        /// macro.
+        #define THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE_OVERRIDE(_T)\
+        public:\
+            static const char * const TYPE;\
+            virtual const char *Type () const noexcept override;
 
         /// \def THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_OVERRIDE(_T)
         /// Implement DynamicCreatable::TYPE. This macro is usually private
@@ -334,7 +343,7 @@ namespace thekogans {
 
             /// \brief
             /// Declare DynamicCreatable TYPE.
-            THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE_OVERRIDE (DynamicCreatable)
+            THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE_VIRTUAL (DynamicCreatable)
             /// \brief
             /// Declare DynamicCreatable base functions.
             THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE_BASE_FUNCTIONS (DynamicCreatable)

@@ -353,6 +353,9 @@ namespace thekogans {
                     }
                     else {
                         {
+                            // Give Flush a \see{TenantFile} as it's interface is that of \see{File}.
+                            // If we were to pass *this, Flush would call in to our Seek and Write.
+                            // And thats not what we want!
                             TenantFile file (endianness, handle, path);
                             root.Flush (file);
                         }
