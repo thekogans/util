@@ -47,6 +47,9 @@ namespace thekogans {
         /// \struct TimerEvents Timer.h thekogans/util/Timer.h
         ///
         /// \brief
+        /// Every time a \see{Timer} fires it produces an OnTimerAlarm events.
+        /// If you want to be notified you need to subscrie. Look at the code
+        /// example under \see{Timer} for a canonical use case.
 
         struct _LIB_THEKOGANS_UTIL_DECL TimerEvents {
             /// \brief
