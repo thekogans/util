@@ -168,7 +168,6 @@ namespace thekogans {
         }
 
         namespace {
-            const char * const TAG_FRACTION = "Fraction";
             const char * const ATTR_NUMERATOR = "Numerator";
             const char * const ATTR_DENOMINATOR = "Denominator";
             const char * const ATTR_SIGN = "Sign";
