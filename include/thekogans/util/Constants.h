@@ -458,6 +458,7 @@ namespace thekogans {
             return (value % 2) == 1;
         }
 
+    #if !defined (MIN)
         template<
             typename _T,
             typename _U>
@@ -467,7 +468,9 @@ namespace thekogans {
                 "Template parameters must be an arithmetic type.");
             return t < u ? t : u;
         }
+    #endif // !defined (MIN)
 
+    #if !defined (MAX)
         template<
             typename _T,
             typename _U>
@@ -477,6 +480,7 @@ namespace thekogans {
                 "Template parameters must be an arithmetic type.");
             return t < u ? u : t;
         }
+    #endif // !defined (MAX)
 
     } // namespace util
 } // namespace thekogans
