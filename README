@@ -69,8 +69,18 @@ Here is a complete feature list:
 
     - An extensible collection of allocators (Allocator.h,
       DefaultAllocator.h, AlignedAllocator.h, SecureAllocator.h,
-      SharedAllocator.h, HGLOBALAllocator.h, NullAllocator.h) that
-      plug in to Heap and Buffer.
+      SharedAllocator.h, HGLOBALAllocator.h, BlockAllocator.h,
+      NullAllocator.h) that plug in to Heap and Buffer and are
+      usefull on their own.
+
+    - A FIleAllocator (FileAllocator.h) which uses a BufferedFile
+      (BufferedFile.h) and a BTree (FileAllocatorBTree.h) to manage
+      free space.
+
+    - A BTree (BTree.h) designed to work with FileAllocator.
+
+    - A DynamicCreatable (DynamicCreatable.h) framework allowing
+      you to build systems using dynamic typing.
 
     - A set of concurrency/synchronization wrappers (Thread.h,
       NullLock.h, SpinLock.h, Mutex.h, Semaphore.h, Barrier.h,
