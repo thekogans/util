@@ -50,7 +50,7 @@ namespace thekogans {
         ///
         /// 2. The two layer map hierarchy design (see below) provides a huge performance
         /// boost as every time you need to create a type derived from a base, you can
-        /// call base::CreateType (type) instead of DynamicCreatable::CreateType (type).
+        /// call base::CreateType (type) instead of DynamicCreatable::CreateBaseType (base, type).
         /// That one change alows for much faster searches. While the map higherarchy
         /// is only two layes deep (base, type), its very flexible and if used properly
         /// (i.e. with type namespaces) can service any application type higherarchy.
@@ -144,6 +144,7 @@ namespace thekogans {
         ///     THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_T (foo::baz<some type>, bar::TYPE)
         ///     // If baz happens to be a \see{Singleton} template.
         ///     THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_ST (foo::baz<some type>, bar::TYPE)
+        ///     // If bar happens to be a template, substitute bar<some type> for bar above.
         ///
         /// } // namespace foo
         /// \endcode
@@ -360,7 +361,7 @@ namespace thekogans {
 
                 /// \brief
                 /// The Create method below will call this method if
-                /// a Parameters derived class is passed to CreateType.
+                /// a Parameters derived class is passed to CreateType/CreateBaseType.
                 /// Here's where you apply encapsulated parameters to
                 /// the passed in instance.
                 /// \param[in] dynamicCreatable DynamicCreatable to apply the
