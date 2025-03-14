@@ -29,6 +29,11 @@ namespace thekogans {
     namespace util {
 
         /// \brief
+        /// Dynamic typing is the practice by which the system creates and interacts
+        /// with instances of types it did not see @compile time. This technique
+        /// is very useful in systems where services need to be extended with
+        /// plugins without bringing the whole system down.
+        ///
         /// One of the shortcomings of c++ is it's inability to dynamically
         /// create a type at runtime given a string representation of it's type.
         /// DynamicCreatable and it's supporting macros below are my attempt at
@@ -59,6 +64,12 @@ namespace thekogans {
         /// the DynamicCreatable::BaseMap is read only! This means that there's no
         /// need for locking to achieve thread safety. No locking means much faster
         /// performance which means greater scalability.
+        ///
+        /// NOTE: My design and implementation is very heavily macro based. This design
+        /// allows me to reuse macros without duplicating code. The macros have a very
+        /// logical structure where _DECLARE_ macros are used in class declaration (*.h)
+        /// and _IMPLEMENT_ macros are used in class definition (*.cpp). Most are
+        /// private and are labeled as such (you don't need to concern yourself with them).
         ///
         /// Below are a few exmples of how to use the DynamicCreatable machinery.
         ///
@@ -261,14 +272,14 @@ namespace thekogans {
         /// all known derived classes.
         /// - Some sort of static _T::SharedPtr Create'TYPE' (that potentially
         /// takes parameters).
-        /// - Some sort of _DEFINE_ and _IMPLEMENT_ macros to hide base type registration.
+        /// - Some sort of _DECLARE_ and _IMPLEMENT_ macros to hide base type registration.
         ///
         /// NOTE: Your DynamicCreatable derived types can eventually wind up
         /// in a bigger system with DynamicCreatable types from other organizations.
         /// To facilitate interoperability and to avoid name space collisions
-        /// it's best practice to define your types fully qualified including
-        /// the namespace they came from (Ex: \see{Serializable}, it's type name
-        /// is specified as "thekogans::util::Serializable"). Ex:
+        /// it's best practice to define your types fully qualified (in the _IMPLEMENT_
+        /// macro) including the namespace they came from (Ex: \see{Serializable}, it's
+        /// type name is specified as "thekogans::util::Serializable"). Ex:
         ///
         /// \code{.cpp}
         /// namespace thekogans {
@@ -487,8 +498,7 @@ namespace thekogans {
         /// Declare the DynamicCreatable bases array. This macro is private.
         #define THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE_BASES(_T)\
         public:\
-            static const char * const BASES[];\
-            static const std::size_t BASES_SIZE;
+            static const char * const BASES[];
 
         /// \def THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_BASES_BEGIN(_T)
         /// Used to start the creation of DynamicCreatable bases array. This
@@ -502,6 +512,12 @@ namespace thekogans {
         /// macro is private.
         #define THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_BASES_END(_T)\
             };
+
+        /// \def THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE_BASES_SIZE(_T)
+        /// Declare the DynamicCreatable bases size. This macro is private.
+        #define THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE_BASES_SIZE(_T)\
+        public:\
+            static const std::size_t BASES_SIZE;
 
         /// \def THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_BASES_SIZE(_T)
         /// Used to end the creation of DynamicCreatable bases array. A list
@@ -592,6 +608,7 @@ namespace thekogans {
             THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (_T)\
             THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE_OVERRIDE (_T)\
             THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE_BASES (_T)\
+            THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE_BASES_SIZE (_T)\
             THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE_CREATE (_T)\
             THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE_BASE_MAP_INIT (_T)
 
