@@ -80,6 +80,12 @@ namespace thekogans {
         /// namespace foo {
         ///
         ///     THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE (foo::bar)
+        ///     // If bar happens to be a \see{Singleton}.
+        ///     THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_S (foo::bar)
+        ///     // If bar happens to be a template.
+        ///     THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_T (foo::bar<some type>)
+        ///     // If bar happens to be a \see{Singleton} template.
+        ///     THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_ST (foo::bar<some type>)
         ///
         /// } // namespace foo
         /// \endcode
@@ -103,6 +109,8 @@ namespace thekogans {
         /// namespace foo {
         ///
         ///     THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_BASE (foo::bar)
+        ///     // If bar happens to be a template.
+        ///     THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_BASE_T (foo::bar<some type>)
         ///
         /// } // namespace foo
         /// \endcode
@@ -131,7 +139,11 @@ namespace thekogans {
         ///
         ///     THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE (foo::baz, bar::TYPE)
         ///     // If baz happens to be a \see{Singleton}.
-        ///     THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_SINGLETON (foo::baz, bar::TYPE)
+        ///     THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_S (foo::baz, bar::TYPE)
+        ///     // If baz happens to be a template.
+        ///     THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_T (foo::baz<some type>, bar::TYPE)
+        ///     // If baz happens to be a \see{Singleton} template.
+        ///     THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_ST (foo::baz<some type>, bar::TYPE)
         ///
         /// } // namespace foo
         /// \endcode
@@ -174,6 +186,16 @@ namespace thekogans {
         /// macro.
         #define THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_OVERRIDE(_T)\
             THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_TYPE (_T)\
+            THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_Type (_T)
+
+        /// \def THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_OVERRIDE_T(_T)
+        /// Implement DynamicCreatable::TYPE/Type for template types. Unless
+        /// you have a special need, you should not need to directly use this
+        /// macro.
+        #define THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_OVERRIDE_T(_T)\
+            template<>\
+            THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_TYPE (_T)\
+            template<>\
             THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_Type (_T)
 
         /// \def THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE_BASE_FUNCTIONS(_T)
@@ -291,10 +313,7 @@ namespace thekogans {
         /// \def THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_BASE_T(_T)
         /// This macro is used in DynamicCreatable base classes for templete types.
         #define THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_BASE_T(_T)\
-            template<>\
-            THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_TYPE (_T)\
-            template<>\
-            THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_Type (_T)\
+            THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_OVERRIDE_T (_T)\
             template<>\
             THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_BASE_IS_TYPE (_T)\
             template<>\
@@ -521,6 +540,34 @@ namespace thekogans {
     #endif // defined (THEKOGANS_UTIL_TYPE_Static)
 
         /// \def THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE(_T)
+        /// Declaration of the type factory method. This macro is private.
+        #define THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE_CREATE(_T)\
+        public:\
+            static thekogans::util::DynamicCreatable::SharedPtr Create (\
+                thekogans::util::DynamicCreatable::Parameters::SharedPtr parameters = nullptr);
+
+        /// \def THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_CREATE(_T)
+        /// Implementation of the default type factory method. This macro is private.
+        #define THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_CREATE(_T)\
+            thekogans::util::DynamicCreatable::SharedPtr _T::Create (\
+                    thekogans::util::DynamicCreatable::Parameters::SharedPtr parameters) {\
+                thekogans::util::DynamicCreatable::SharedPtr dynamicCreatable (new _T);\
+                if (parameters != nullptr) {\
+                    parameters->Apply (dynamicCreatable);\
+                }\
+                return dynamicCreatable;\
+            }
+
+        /// \def THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_CREATE_S(_T)
+        /// Implementation of the default type factory method for \see{Singleton} types.
+        /// This macro is private.
+        #define THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_CREATE_S(_T)\
+            thekogans::util::DynamicCreatable::SharedPtr _T::Create (\
+                    thekogans::util::DynamicCreatable::Parameters::SharedPtr /*parameters*/) {\
+                return _T::Instance ();\
+            }\
+
+        /// \def THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE(_T)
         /// Dynamic discovery macro. Instantiate one of these in the class h file.
         ///
         /// Example:
@@ -541,36 +588,11 @@ namespace thekogans {
         /// \endcode
         #define THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE(_T)\
         public:\
-            static thekogans::util::DynamicCreatable::SharedPtr Create (\
-                thekogans::util::DynamicCreatable::Parameters::SharedPtr parameters = nullptr);\
             THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (_T)\
             THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE_OVERRIDE (_T)\
             THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE_BASES (_T)\
+            THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE_CREATE (_T)\
             THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE_BASE_MAP_INIT (_T)
-
-        /// \def THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_CREATE(_T)
-        /// Common implementation of the type factory. This macro is private
-        #define THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_CREATE(_T)\
-            thekogans::util::DynamicCreatable::SharedPtr _T::Create (\
-                    thekogans::util::DynamicCreatable::Parameters::SharedPtr parameters) {\
-                thekogans::util::DynamicCreatable::SharedPtr dynamicCreatable (new _T);\
-                if (parameters != nullptr) {\
-                    parameters->Apply (dynamicCreatable);\
-                }\
-                return dynamicCreatable;\
-            }
-
-        /// \def THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_COMMON(_T, ...)
-        /// Common defines for the macros below. This macro is private
-        #define THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_COMMON(_T, ...)\
-            THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_TYPE (_T)\
-            THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_Type (_T)\
-            THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_BASES_BEGIN (_T)\
-                thekogans::util::DynamicCreatable::TYPE,\
-                __VA_ARGS__\
-            THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_BASES_END (_T)\
-            THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_BASES_SIZE (_T)\
-            THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_BASE_MAP_INIT (_T)
 
         /// \def THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE(_T, ...)
         /// Dynamic discovery macro. Instantiate one of these in the class cpp file.
@@ -589,11 +611,18 @@ namespace thekogans {
         /// } // namespace util
         /// \endcode
         #define THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE(_T, ...)\
+            THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_OVERRIDE (_T)\
+            THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_BASES_BEGIN (_T)\
+                thekogans::util::DynamicCreatable::TYPE,\
+                __VA_ARGS__\
+            THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_BASES_END (_T)\
+            THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_BASES_SIZE (_T)\
             THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_CREATE (_T)\
-            THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_COMMON (_T, __VA_ARGS__)
+            THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_BASE_MAP_INIT (_T)
 
-        /// \def THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_SINGLETON(_T, ...)
-        /// Dynamic discovery macro. Instantiate one of these in the class cpp file.
+        /// \def THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_S(_T, ...)
+        /// Dynamic discovery macro for \see{Singleton} types. Instantiate one of these
+        /// in the class cpp file.
         ///
         /// Example:
         ///
@@ -601,7 +630,7 @@ namespace thekogans {
         /// namespace thekogans {
         ///     namespace util {
         ///
-        ///         THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_SINGLETON (
+        ///         THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_S (
         ///             thekogans::util::DefaultAllocator,
         ///             Allocator::TYPE)
         ///
@@ -613,15 +642,19 @@ namespace thekogans {
         /// (\see{DynamicCreatable::Parameters}) as it has it's own mechanism for static
         /// ctor parameterization (\see{Singleton::CreateInstance}) more appropriate
         /// for template programming.
-        #define THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_SINGLETON(_T, ...)\
-            thekogans::util::DynamicCreatable::SharedPtr _T::Create (\
-                    thekogans::util::DynamicCreatable::Parameters::SharedPtr /*parameters*/) {\
-                return _T::Instance ();\
-            }\
-            THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_COMMON (_T, __VA_ARGS__)
+        #define THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_S(_T, ...)\
+            THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_OVERRIDE (_T)\
+            THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_BASES_BEGIN (_T)\
+                thekogans::util::DynamicCreatable::TYPE,\
+                __VA_ARGS__\
+            THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_BASES_END (_T)\
+            THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_BASES_SIZE (_T)\
+            THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_CREATE_S (_T)\
+            THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_BASE_MAP_INIT (_T)
 
         /// \def THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_T(_T, ...)
-        /// Dynamic discovery macro. Instantiate one of these in the class cpp file.
+        /// Dynamic discovery macro for template types. Instantiate one of these
+        /// in the class cpp file of the template types you're specializing.
         ///
         /// Example:
         ///
@@ -637,12 +670,7 @@ namespace thekogans {
         /// } // namespace util
         /// \endcode
         #define THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_T(_T, ...)\
-            template<>\
-            THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_CREATE (_T)\
-            template<>\
-            THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_TYPE (_T)\
-            template<>\
-            THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_Type (_T)\
+            THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_OVERRIDE_T (_T)\
             template<>\
             THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_BASES_BEGIN (_T)\
                 thekogans::util::DynamicCreatable::TYPE,\
@@ -650,6 +678,26 @@ namespace thekogans {
             THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_BASES_END (_T)\
             template<>\
             THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_BASES_SIZE (_T)\
+            template<>\
+            THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_CREATE (_T)\
+            template<>\
+            THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_BASE_MAP_INIT (_T)
+
+        /// \def THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_ST(_T, ...)
+        /// Dynamic discovery macro for template types that are \see{Singleton}.
+        /// Instantiate one of these in the class cpp file of the template types
+        /// you're specializing.
+        #define THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_ST(_T, ...)\
+            THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_OVERRIDE_T (_T)\
+            template<>\
+            THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_BASES_BEGIN (_T)\
+                thekogans::util::DynamicCreatable::TYPE,\
+                __VA_ARGS__\
+            THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_BASES_END (_T)\
+            template<>\
+            THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_BASES_SIZE (_T)\
+            template<>\
+            THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_CREATE_S (_T)\
             template<>\
             THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_BASE_MAP_INIT (_T)
 

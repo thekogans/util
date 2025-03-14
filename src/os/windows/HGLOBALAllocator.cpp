@@ -29,7 +29,7 @@ namespace thekogans {
         namespace os {
             namespace windows {
 
-                THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_SINGLETON (
+                THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_S (
                     thekogans::util::os::windows::HGLOBALAllocator,
                     Allocator::TYPE)
 

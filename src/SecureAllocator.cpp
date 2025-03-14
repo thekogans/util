@@ -38,7 +38,7 @@
 namespace thekogans {
     namespace util {
 
-        THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_SINGLETON (
+        THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_S (
             thekogans::util::SecureAllocator,
             Allocator::TYPE)
 
