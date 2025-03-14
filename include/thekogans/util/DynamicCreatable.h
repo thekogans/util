@@ -620,9 +620,9 @@ namespace thekogans {
             template<>\
             THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_BASES_SIZE (_T)\
             template<>\
-            THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_BASE_MAP_INIT (_T)\
+            THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_CREATE (_T)\
             template<>\
-            THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_CREATE (_T)
+            THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_BASE_MAP_INIT (_T)
 
     } // namespace util
 } // namespace thekogans
