@@ -73,7 +73,7 @@ Here is a complete feature list:
       NullAllocator.h) that plug in to Heap and Buffer and are
       usefull on their own.
 
-    - A FIleAllocator (FileAllocator.h) which uses a BufferedFile
+    - A FileAllocator (FileAllocator.h) which uses a BufferedFile
       (BufferedFile.h) and a BTree (FileAllocatorBTree.h) to manage
       free space.
 
