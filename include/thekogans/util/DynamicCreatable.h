@@ -20,10 +20,11 @@
 
 #include <cstring>
 #include <functional>
-#include <map>
+#include <unordered_map>
 #include "thekogans/util/Config.h"
 #include "thekogans/util/RefCounted.h"
 #include "thekogans/util/Singleton.h"
+#include "thekogans/util/StringUtils.h"
 
 namespace thekogans {
     namespace util {
@@ -383,28 +384,47 @@ namespace thekogans {
             /// \brief
             /// Type factory method.
             using FactoryType = std::function<SharedPtr (Parameters::SharedPtr)>;
-            /// \struct DynamicCreatable::StringCompare DynamicCreatable.h
+            /// \struct DynamicCreatable::CharPtrHash DynamicCreatable.h
             /// thekogans/util/DynamicCreatable.h
             ///
             /// \brief
             /// For compactness we use const char * as map keys. This struct
             /// exposes a operator () that is used to treat the keys like strings.
-            struct StringCompare {
+            struct CharPtrHash {
                 /// \brief
-                /// Return true if a < b.
-                /// \return true if a < b.
+                /// Return string hash.
+                /// \param[in] str String whos hash to return.
+                /// \return String hash.
+                inline size_t operator () (const char *str) const {
+                    return HashString (str);
+                }
+            };
+            /// \struct DynamicCreatable::CharPtrEqual DynamicCreatable.h
+            /// thekogans/util/DynamicCreatable.h
+            ///
+            /// \brief
+            /// For compactness we use const char * as map keys. This struct
+            /// exposes a operator () that is used to treat the keys like strings.
+            struct CharPtrEqual {
+                /// \brief
+                /// Return true if std::strcmp (a, b) == 0.
+                /// \param[in] a First string to compare.
+                /// \param[in] b Second string to compare.
+                /// \return true if std::strcmp (a, b) == 0.
                 inline bool operator () (
                         const char *a,
                         const char *b) const {
-                    return std::strcmp (a, b) < 0;
+                    return std::strcmp (a, b) == 0;
                 }
             };
             /// \brief
             /// Maps type name to it's factory method.
-            using TypeMapType = std::map<const char *, FactoryType, StringCompare>;
+            using TypeMapType = std::unordered_map<
+                const char *, FactoryType, CharPtrHash, CharPtrEqual>;
             /// \brief
             /// Maps base type name to it's derived types.
-            using BaseMapType = std::map<const char *, TypeMapType, StringCompare>;
+            using BaseMapType = std::unordered_map<
+                const char *, TypeMapType, CharPtrHash, CharPtrEqual>;
             /// \brief
             /// The one and only base to derived type map. You can access it like this;
             /// thekogans::util::DynamicCreatable::BaseMap::Instance ()->.

@@ -239,7 +239,7 @@ namespace thekogans {
 
         /// \brief
         /// Force log a message to the \see{GlobalLoggerMgr} irrespective of it's level.
-        /// \param[in] decorations Decorations touse to format the entry header.
+        /// \param[in] decorations Decorations to use to format the entry header.
         /// \param[in] subsystem Subsystem to log to.
         /// \param[in] level Level at which to log.
         /// \param[in] file Translation unit of this entry.

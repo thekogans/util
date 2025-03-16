@@ -26,6 +26,7 @@
 #include "thekogans/util/Environment.h"
 #include "thekogans/util/Config.h"
 #include "thekogans/util/Types.h"
+#include "thekogans/util/Constants.h"
 
 namespace thekogans {
     namespace util {
@@ -288,11 +289,21 @@ namespace thekogans {
         /// -- Ralf S. Engelschall <rse@engelschall.com>
         ///
         /// \param[in] str String to hash.
+        /// \param[in] length String length.
+        /// \param[in] hashTableSize The final value will be 0 < value < hashTableSize.
+        /// \return String hash.
+        _LIB_THEKOGANS_UTIL_DECL std::size_t _LIB_THEKOGANS_UTIL_API HashString (
+            const char *str,
+            std::size_t length = SIZE_T_MAX,
+            std::size_t hashTableSize = SIZE_T_MAX);
+        /// \brief
+        /// Return a hash of the string mod hashTableSize.
+        /// \param[in] str String to hash.
         /// \param[in] hashTableSize The final value will be 0 < value < hashTableSize.
         /// \return String hash.
         _LIB_THEKOGANS_UTIL_DECL std::size_t _LIB_THEKOGANS_UTIL_API HashString (
             const std::string &str,
-            std::size_t hashTableSize);
+            std::size_t hashTableSize = SIZE_T_MAX);
 
         /// \brief
         /// Given a list of strings, return the longest common prefix.

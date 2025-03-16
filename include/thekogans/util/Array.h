@@ -21,6 +21,7 @@
 #include <cstddef>
 #include <memory>
 #include <functional>
+#include <algorithm>
 #include "thekogans/util/Config.h"
 
 namespace thekogans {
@@ -133,6 +134,68 @@ namespace thekogans {
             /// \brief
             /// Array is neither copy constructable, nor assignable.
             THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (Array)
+        };
+
+        /// \struct SortedArray Array.h thekogans/util/Array.h
+        ///
+        /// \brief
+        /// Extends the capabilities of Array by imposing order onit's elements.
+        /// It's a seperate class because it imposes additional properties on T.
+
+        template<typename T>
+        struct SortedArray : public Array<T> {
+            /// \brief
+            /// ctor. Create (or wrap) Array of length elements.
+            /// \param[in] length Number of elements in the array.
+            /// \param[in] array Optional array pointer to wrap.
+            /// \param[in] deleter Deleter used to deallocate the array pointer.
+            SortedArray (
+                std::size_t length,
+                T *array = nullptr,
+                const Deleter &deleter = [] (T * /*array*/) {}) :
+                Array (length, array, deleter) {}
+            /// \brief
+            /// Move ctor.
+            /// \param[in,out] other Array to move.
+            SortedArray (Array<T> &&other) :
+                Array (other) {}
+
+            /// \brief
+            /// Sort the array elements in assending order.
+            inline void Sort () {
+                std::sort (array, array + length);
+            }
+
+            /// \brief
+            /// Uses a binary search to locate elements in an ordered (Sort)ed array.
+            /// WARNING: If you don't want garbage answers call this method
+            /// only after you called Sort or you know a priori the array
+            /// elements are sorted in assending order.
+            /// \param[in] t Element to find.
+            /// \param[out] index If found, return the index of the element.
+            /// If not found, return the index where the element should be
+            /// inserted to maintain assending order.
+            /// \return true == found a match. false == no matching element found.
+            bool Find (
+                    const T &t,
+                    std::size_t &index) {
+                index = 0;
+                std::size_t last = length;
+                while (index < last) {
+                    std::size_t middle = (index + last) / 2;
+                    if (t == array[middle]) {
+                        index = middle;
+                        return true;
+                    }
+                    if (t < array[middle]) {
+                        last = middle;
+                    }
+                    else {
+                        index = middle + 1;
+                    }
+                }
+                return false;
+            }
         };
 
     } // namespace util
