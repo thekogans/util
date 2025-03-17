@@ -152,18 +152,18 @@ namespace thekogans {
             SortedArray (
                 std::size_t length,
                 T *array = nullptr,
-                const Deleter &deleter = [] (T * /*array*/) {}) :
-                Array (length, array, deleter) {}
+                const typename Array<T>::Deleter &deleter = [] (T * /*array*/) {}) :
+                Array<T> (length, array, deleter) {}
             /// \brief
             /// Move ctor.
             /// \param[in,out] other Array to move.
             SortedArray (Array<T> &&other) :
-                Array (other) {}
+                Array<T> (other) {}
 
             /// \brief
             /// Sort the array elements in assending order.
             inline void Sort () {
-                std::sort (array, array + length);
+                std::sort (this->array, this->array + this->length);
             }
 
             /// \brief
@@ -180,14 +180,14 @@ namespace thekogans {
                     const T &t,
                     std::size_t &index) {
                 index = 0;
-                std::size_t last = length;
+                std::size_t last = this->length;
                 while (index < last) {
                     std::size_t middle = (index + last) / 2;
-                    if (t == array[middle]) {
+                    if (t == this->array[middle]) {
                         index = middle;
                         return true;
                     }
-                    if (t < array[middle]) {
+                    if (t < this->array[middle]) {
                         last = middle;
                     }
                     else {
