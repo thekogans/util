@@ -18,7 +18,7 @@
 #if !defined (__thekogans_util_Subscriber_h)
 #define __thekogans_util_Subscriber_h
 
-#include <map>
+#include <unordered_map>
 #include "thekogans/util/SpinLock.h"
 #include "thekogans/util/LockGuard.h"
 #include "thekogans/util/Producer.h"
@@ -56,8 +56,8 @@ namespace thekogans {
 
         private:
             /// \brief
-            /// Alias for std::map<Producer<T> *, typename Producer<T>::WeakPtr>.
-            using Producers = std::map<Producer<T> *, typename Producer<T>::WeakPtr>;
+            /// Alias for std::unordered_map<Producer<T> *, typename Producer<T>::WeakPtr>.
+            using Producers = std::unordered_map<Producer<T> *, typename Producer<T>::WeakPtr>;
             /// \brief
             /// List of producers whos events we subscribe to.
             Producers producers;

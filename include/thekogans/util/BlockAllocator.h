@@ -18,7 +18,7 @@
 #if !defined (__thekogans_util_BlockAllocator_h)
 #define __thekogans_util_BlockAllocator_h
 
-#include <map>
+#include <unordered_map>
 #include "thekogans/util/Config.h"
 #include "thekogans/util/Types.h"
 #include "thekogans/util/SpinLock.h"
@@ -209,7 +209,7 @@ namespace thekogans {
             private:
                 /// \brief
                 /// BlockAllocator map type (keyed on block size).
-                using Map = std::map<std::size_t, BlockAllocator::SharedPtr>;
+                using Map = std::unordered_map<std::size_t, BlockAllocator::SharedPtr>;
                 /// \brief
                 /// BlockAllocator map.
                 Map map;

@@ -23,7 +23,7 @@
 #include <cassert>
 #include <memory>
 #include <functional>
-#include <map>
+#include <unordered_map>
 #include <iostream>
 #include "thekogans/util/Config.h"
 #include "thekogans/util/Types.h"
@@ -379,8 +379,8 @@ namespace thekogans {
                 virtual Stats::UniquePtr GetStats () = 0;
             };
             /// \brief
-            /// Alias for std::map<const char *, Diagnostics *>.
-            using Map = std::map<const char *, Diagnostics *>;
+            /// Alias for std::unordered_map<const char *, Diagnostics *>.
+            using Map = std::unordered_map<const char *, Diagnostics *>;
             /// \brief
             /// Heap map.
             Map map;

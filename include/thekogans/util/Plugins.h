@@ -21,7 +21,7 @@
 #include <memory>
 #include <string>
 #include <set>
-#include <map>
+#include <unordered_map>
 #include "pugixml/pugixml.hpp"
 #include "thekogans/util/Config.h"
 #include "thekogans/util/RefCounted.h"
@@ -152,8 +152,8 @@ namespace thekogans {
             };
 
             /// \brief
-            /// Alias std::map<std::string, Plugin::SharedPtr>.
-            using PluginMap = std::map<std::string, Plugin::SharedPtr>;
+            /// Alias std::unordered_map<std::string, Plugin::SharedPtr>.
+            using PluginMap = std::unordered_map<std::string, Plugin::SharedPtr>;
 
         private:
             /// \brief

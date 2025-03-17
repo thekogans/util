@@ -19,7 +19,7 @@
 #define __thekogans_util_Producer_h
 
 #include <functional>
-#include <map>
+#include <unordered_map>
 #include "thekogans/util/RefCounted.h"
 #include "thekogans/util/SpinLock.h"
 #include "thekogans/util/LockGuard.h"
@@ -207,8 +207,8 @@ namespace thekogans {
                 typename Subscriber<T>::WeakPtr,
                 typename EventDeliveryPolicy::SharedPtr>;
             /// \brief
-            /// Alias for std::map<Subscriber<T> *, SubscriberInfo>.
-            using Subscribers = std::map<Subscriber<T> *, SubscriberInfo>;
+            /// Alias for std::unordered_map<Subscriber<T> *, SubscriberInfo>.
+            using Subscribers = std::unordered_map<Subscriber<T> *, SubscriberInfo>;
             /// \brief
             /// Map of registered subscribers.
             Subscribers subscribers;

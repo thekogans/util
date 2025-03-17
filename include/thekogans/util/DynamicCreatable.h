@@ -739,6 +739,14 @@ namespace thekogans {
             template<>\
             THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_BASE_MAP_INIT (_T)
 
+        // NOTE: THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE[_ST] are just
+        // the examples I thought were interesting. There's nothing magical
+        // about them. As a mater of fact all you need to plug in to the
+        // DynamicCreatable machinery is to implement a Create factory
+        // method (THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_CREATE[_S]
+        // above) and construct your own THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE
+        // macro by copying one of the above and replacing the Create macro.
+
     } // namespace util
 } // namespace thekogans
 

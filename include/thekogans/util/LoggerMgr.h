@@ -22,7 +22,7 @@
 #include <memory>
 #include <string>
 #include <list>
-#include <map>
+#include <unordered_map>
 #include <sstream>
 #include "thekogans/util/Environment.h"
 #include "thekogans/util/Config.h"
@@ -307,8 +307,8 @@ namespace thekogans {
             /// Decorations currently in effect.
             Flags32 decorations;
             /// \brief
-            /// Alias for std::map<std::string, LoggerList>.
-            using LoggerMap = std::map<std::string, LoggerList>;
+            /// Alias for std::unordered_map<std::string, LoggerList>.
+            using LoggerMap = std::unordered_map<std::string, LoggerList>;
             /// \brief
             /// Map of all loggers.
             LoggerMap loggerMap;

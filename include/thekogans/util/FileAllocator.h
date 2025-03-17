@@ -18,7 +18,7 @@
 #if !defined (__thekogans_util_FileAllocator_h)
 #define __thekogans_util_FileAllocator_h
 
-#include <map>
+#include <unordered_map>
 #include "thekogans/util/Config.h"
 #include "thekogans/util/RefCounted.h"
 #include "thekogans/util/Types.h"
@@ -99,7 +99,7 @@ namespace thekogans {
             private:
                 /// \brief
                 /// FileAllocator map type (keyed on path).
-                using Map = std::map<std::string, FileAllocator::SharedPtr>;
+                using Map = std::unordered_map<std::string, FileAllocator::SharedPtr>;
                 /// \brief
                 /// FileAllocator map.
                 Map map;
