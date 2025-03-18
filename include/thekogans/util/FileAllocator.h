@@ -587,10 +587,11 @@ namespace thekogans {
                     std::size_t blockLength = 0);
 
                 /// \brief
-                /// We trust FileAllocator to do the right thing.
+                /// FileAllocator holds the lock so all calls go through it.
                 friend struct FileAllocator;
                 /// \brief
-                /// We trust BTree to do the right thing.
+                /// FileAllocator::BTree is the only class allowed to call in to
+                /// BlockBuffer without holding the lock.
                 friend struct BTree;
 
                 /// \brief

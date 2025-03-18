@@ -255,6 +255,13 @@ namespace thekogans {
                 return nullptr;\
             }
 
+        /// \def THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_BASE_FUNCTIONS(_T)
+        /// Implement base type functions. This macro is private.
+        #define THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_BASE_FUNCTIONS(_T)\
+            THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_BASE_IS_TYPE (_T)\
+            THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_BASE_GET_TYPES (_T)\
+            THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_BASE_CREATE_TYPE (_T)
+
         /// \def THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE_BASE(_T)
         /// This macro is used in DynamicCreatable base classes. It casts
         /// it's return types to the base they were derived from to make
@@ -319,9 +326,7 @@ namespace thekogans {
         /// VERY IMPORTANT: To twart name space collisions, note the fully qualified name.
         #define THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_BASE(_T)\
             THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_OVERRIDE (_T)\
-            THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_BASE_IS_TYPE (_T)\
-            THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_BASE_GET_TYPES (_T)\
-            THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_BASE_CREATE_TYPE (_T)
+            THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_BASE_FUNCTIONS(_T)
 
         /// \def THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_BASE_T(_T)
         /// This macro is used in DynamicCreatable base classes for templete types.
@@ -395,7 +400,7 @@ namespace thekogans {
                 /// Return string hash.
                 /// \param[in] str String whos hash to return.
                 /// \return String hash.
-                inline size_t operator () (const char *str) const {
+                inline std::size_t operator () (const char *str) const {
                     return HashString (str);
                 }
             };
@@ -475,36 +480,6 @@ namespace thekogans {
                     FactoryType factory);
             };
         #endif // defined (THEKOGANS_UTIL_TYPE_Shared)
-
-            /// This is the generic catch all interface to the BaseMap. It incurs
-            /// the overhead of a search for the base map. Much better to use
-            /// base::IsType/GetTypes/CreateType as they cache their base map.
-
-            /// \brief
-            /// Check if the given type was derived from the given base.
-            /// \param[in] base Base name to check.
-            /// \param[in] type Type name to check.
-            /// \return true == type is descendant from base.
-            static bool IsBaseType (
-                const char *base,
-                const char *type);
-            /// \brief
-            /// Return the type -> factory map for a given base.
-            /// \param[in] base Base whose type map to return.
-            /// \return const & to the map.
-            static const TypeMapType &GetBaseTypes (
-                const char *base);
-            /// \brief
-            /// Given a base create a given type and initialize it with optional parameters.
-            /// \param[in] base Base name whos derived type to create.
-            /// \param[in] type Base derived type to create.
-            /// \param[in] parameters Optional pointer to parameters
-            /// to initalize the newly created type.
-            /// \return An instance of a base derived type.
-            static SharedPtr CreateBaseType (
-                const char *base,
-                const char *type,
-                Parameters::SharedPtr parameters = nullptr);
 
             /// \brief
             /// Pretty print the BaseMap to the std::cout.

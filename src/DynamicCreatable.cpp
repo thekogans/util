@@ -51,35 +51,6 @@ namespace thekogans {
         }
     #endif // defined (THEKOGANS_UTIL_TYPE_Static)
 
-        bool DynamicCreatable::IsBaseType (
-                const char *base,
-                const char *type) {
-            BaseMapType::const_iterator it = BaseMap::Instance ()->find (base);
-            return it != BaseMap::Instance ()->end () &&
-                it->second.find (type) != it->second.end ();
-        }
-
-        const DynamicCreatable::TypeMapType &DynamicCreatable::GetBaseTypes (
-                const char *base) {
-            static const TypeMapType empty;
-            BaseMapType::const_iterator it = BaseMap::Instance ()->find (base);
-            return it != BaseMap::Instance ()->end () ? it->second : empty;
-        }
-
-        DynamicCreatable::SharedPtr DynamicCreatable::CreateBaseType (
-                const char *base,
-                const char *type,
-                Parameters::SharedPtr parameters) {
-            BaseMapType::const_iterator it = BaseMap::Instance ()->find (base);
-            if (it != BaseMap::Instance ()->end ()) {
-                TypeMapType::const_iterator jt = it->second.find (type);
-                if (jt != it->second.end ()) {
-                    return jt->second (parameters);
-                }
-            }
-            return nullptr;
-        }
-
         void DynamicCreatable::DumpBaseMap (const char *base) {
             BaseMapType::const_iterator it;
             BaseMapType::const_iterator end;
