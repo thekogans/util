@@ -237,20 +237,49 @@ namespace thekogans {
             virtual void Write (JSON::Object & /*object*/) const = 0;
         };
 
-        /// \def THEKOGANS_UTIL_DECLARE_SERIALIZABLE_OVERRIDE(_T)
+        /// \def THEKOGANS_UTIL_DECLARE_SERIALIZABLE_VERSION(_T)
         /// Common defines for Serializable.
-        #define THEKOGANS_UTIL_DECLARE_SERIALIZABLE_OVERRIDE(_T)\
+        #define THEKOGANS_UTIL_DECLARE_SERIALIZABLE_VERSION(_T)\
         public:\
-            static const thekogans::util::ui16 VERSION;\
+            static const thekogans::util::ui16 VERSION;
+
+        /// \def THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_VERSION(_T, version)
+        /// Serializable overrides.
+        #define THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_VERSION(_T, version)\
+            const thekogans::util::ui16 _T::VERSION = version;
+
+        /// \def THEKOGANS_UTIL_DECLARE_SERIALIZABLE_Version(_T)
+        /// Common defines for Serializable.
+        #define THEKOGANS_UTIL_DECLARE_SERIALIZABLE_Version(_T)\
+        public:\
             virtual thekogans::util::ui16 Version () const noexcept override;
 
-        /// \def THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE(_T, version)
+        /// \def THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_Version(_T)
         /// Serializable overrides.
-        #define THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_OVERRIDE(_T, version)\
-            const thekogans::util::ui16 _T::VERSION = version;\
+        #define THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_Version(_T)\
             thekogans::util::ui16 _T::Version () const noexcept {\
                 return VERSION;\
             }
+
+        /// \def THEKOGANS_UTIL_DECLARE_SERIALIZABLE_OVERRIDE(_T)
+        /// Common defines for Serializable.
+        #define THEKOGANS_UTIL_DECLARE_SERIALIZABLE_OVERRIDE(_T)\
+            THEKOGANS_UTIL_DECLARE_SERIALIZABLE_VERSION(_T)\
+            THEKOGANS_UTIL_DECLARE_SERIALIZABLE_Version(_T)
+
+        /// \def THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_OVERRIDE(_T, version)
+        /// Serializable overrides.
+        #define THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_OVERRIDE(_T, version)\
+            THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_VERSION(_T, version)\
+            THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_Version(_T)
+
+        /// \def THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_OVERRIDE(_T, version)
+        /// Serializable overrides.
+        #define THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_OVERRIDE_T(_T, version)\
+            templeate<>\
+            THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_VERSION(_T, version)\
+            templeate<>\
+            THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_Version(_T)
 
         /// \def THEKOGANS_UTIL_DECLARE_SERIALIZABLE(_T)
         /// Serializable declaration macro. Instantiate one of these
@@ -287,6 +316,30 @@ namespace thekogans {
             THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE (_T,\
                 thekogans::util::Serializable::TYPE, __VA_ARGS__)\
             THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_OVERRIDE (_T, version)
+
+        /// \def THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_S(_T, version, ...)
+        /// Serializable implementation macro. Instantiate one of these
+        /// in your \see{Singleton} derived class cpp.
+        #define THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_S(_T, version, ...)\
+            THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_S (_T,\
+                thekogans::util::Serializable::TYPE, __VA_ARGS__)\
+            THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_OVERRIDE (_T, version)
+
+        /// \def THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_T(_T, version, ...)
+        /// Serializable implementation macro. Instantiate one of these
+        /// in your template instantiation class cpp.
+        #define THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_T(_T, version, ...)\
+            THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_T (_T,\
+                thekogans::util::Serializable::TYPE, __VA_ARGS__)\
+            THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_OVERRIDE_T (_T, version)
+
+        /// \def THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_ST(_T, version, ...)
+        /// Serializable implementation macro. Instantiate one of these
+        /// in your \see{Singleton},  template instantiation class cpp.
+        #define THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_ST(_T, version, ...)\
+            THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_S (_T,\
+                thekogans::util::Serializable::TYPE, __VA_ARGS__)\
+            THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_OVERRIDE_T (_T, version)
 
         /// \struct Blob Serializable.h thekogans/util/Serializable.h
         ///

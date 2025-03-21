@@ -172,11 +172,11 @@ namespace thekogans {
         #define THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_TYPE(_T)\
             const char * const _T::TYPE = #_T;
 
-        /// \def THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE_Type(_T, ...)
+        /// \def THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE_Type(_T)
         /// Declare DynamicCreatable::Type. This macro is usually private.
-        #define THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE_Type(_T, ...)\
+        #define THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE_Type(_T)\
         public:\
-            virtual const char *Type () const noexcept __VA_ARGS__;
+            virtual const char *Type () const noexcept override;
 
         /// \def THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_Type(_T)
         /// Implement DynamicCreatable::Type. This macro is usually private.
@@ -191,7 +191,7 @@ namespace thekogans {
         /// macro.
         #define THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE_OVERRIDE(_T)\
             THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE_TYPE (_T)\
-            THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE_Type (_T, override)
+            THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE_Type (_T)
 
         /// \def THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_OVERRIDE(_T)
         /// Implement DynamicCreatable::TYPE/Type. Unless you have a special need
@@ -339,6 +339,20 @@ namespace thekogans {
             template<>\
             THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_BASE_CREATE_TYPE (_T)
 
+        /// \struct DynamicCreatableBase DynamicCreatable.h thekogans/util/DynamicCreatable.h
+        ///
+        /// \brief
+        /// DynamicCreatableBase exposes the Type () virtual method.
+
+        struct _LIB_THEKOGANS_UTIL_DECL DynamicCreatableBase : public virtual RefCounted {
+            /// \brief
+            /// All DynamicCreatable derived types need to be able to
+            /// dynamically identify themselves. Its what makes them
+            /// dinamically creatable.
+            /// \return Type name.
+            virtual const char *Type () const noexcept = 0;
+        };
+
         /// \struct DynamicCreatable DynamicCreatable.h thekogans/util/DynamicCreatable.h
         ///
         /// \brief
@@ -356,7 +370,7 @@ namespace thekogans {
         /// allows \see{RefCounted} objects to interoperate with async os callback apis
         /// without fear of leakage or corruption.
 
-        struct _LIB_THEKOGANS_UTIL_DECL DynamicCreatable : public virtual RefCounted {
+        struct _LIB_THEKOGANS_UTIL_DECL DynamicCreatable : public DynamicCreatableBase {
             /// \brief
             /// Declare \see{RefCounted} pointers.
             THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (DynamicCreatable)
@@ -437,10 +451,7 @@ namespace thekogans {
 
             /// \brief
             /// Declare DynamicCreatable TYPE.
-            THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE_TYPE (DynamicCreatable)
-            /// \brief
-            /// Declare DynamicCreatable Type.
-            THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE_Type (DynamicCreatable)
+            THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE_OVERRIDE (DynamicCreatable)
             /// \brief
             /// Declare DynamicCreatable base functions.
             THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE_BASE_FUNCTIONS (DynamicCreatable)

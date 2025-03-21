@@ -128,6 +128,12 @@ public:\
     _T (const _T &) = delete;\
     _T &operator = (const _T &) = delete;
 
+/// \def THEKOGANS_UTIL_DISALLOW_MOVE_AND_ASSIGN(_T)
+/// A convenient macro to suppress move construction and assignment.
+#define THEKOGANS_UTIL_DISALLOW_MOVE_AND_ASSIGN(_T)\
+    _T (_T &&) = delete;\
+    _T &operator = (_T &&) = delete;
+
 namespace thekogans {
     namespace util {
 
@@ -136,8 +142,8 @@ namespace thekogans {
         /// If you're linking to thekogans_util statically, call this
         /// method early on in main to initialize dynamically creatable
         /// (\see{DynamicCreatable}) types. If you don't call this method
-        /// the only available types that will be available to your
-        /// application are the ones you explicitly link to.
+        /// the only types that will be available to your application are
+        /// the ones you explicitly link to.
         void StaticInit ();
     #endif // defined (THEKOGANS_UTIL_TYPE_Static)
 
