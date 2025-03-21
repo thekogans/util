@@ -30,32 +30,8 @@ namespace thekogans {
 
         THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_BASE (thekogans::util::Serializable)
 
-        const char * const Serializable::BinHeader::TAG_BIN_HEADER = "BinHeader";
-        const char * const Serializable::BinHeader::ATTR_MAGIC = "Magic";
-        const char * const Serializable::BinHeader::ATTR_TYPE = "Type";
-        const char * const Serializable::BinHeader::ATTR_VERSION = "Version";
-        const char * const Serializable::BinHeader::ATTR_SIZE = "Size";
-
-        void Serializable::BinHeader::Parse (const pugi::xml_node &node) {
-            magic = stringToui32 (node.attribute (ATTR_MAGIC).value ());
-            type = Decodestring (node.attribute (ATTR_TYPE).value ());
-            version = stringToui16 (node.attribute (ATTR_VERSION).value ());
-            size = stringToui64 (node.attribute (ATTR_SIZE).value ());
-        }
-
-        std::string Serializable::BinHeader::ToString (
-                std::size_t indentationLevel,
-                const char *tagName) const {
-            Attributes attributes;
-            attributes.push_back (Attribute (ATTR_MAGIC, ui32Tostring (magic)));
-            attributes.push_back (Attribute (ATTR_TYPE, Encodestring (type)));
-            attributes.push_back (Attribute (ATTR_VERSION, ui32Tostring (version)));
-            attributes.push_back (Attribute (ATTR_SIZE, ui64Tostring (size)));
-            return OpenTag (0, tagName, attributes, true, true);
-        }
-
-        const char * const Serializable::TextHeader::ATTR_TYPE = "Type";
-        const char * const Serializable::TextHeader::ATTR_VERSION = "Version";
+        const char * const Serializable::Header::ATTR_TYPE = "Type";
+        const char * const Serializable::Header::ATTR_VERSION = "Version";
 
     #if defined (THEKOGANS_UTIL_TYPE_Static)
         void Serializable::StaticInit () {
@@ -70,29 +46,27 @@ namespace thekogans {
     #endif // defined (THEKOGANS_UTIL_TYPE_Static)
 
         std::size_t Serializable::GetSize () const noexcept {
-            BinHeader header (Type (), Version (), Size ());
+            Header header (Type (), Version (), Size ());
             return header.Size () + header.size;
         }
 
         const char *Blob::Type () const noexcept {
-            return type.c_str ();
+            return header.type.c_str ();
         }
 
         ui16 Blob::Version () const noexcept {
-            return version;
+            return header.version;
         }
 
         std::size_t Blob::Size () const noexcept {
-            return size;
+            return header.size;
         }
 
         void Blob::Read (
-                const BinHeader &header,
+                const Header &header_,
                 Serializer &serializer) {
-            type = header.type;
-            version = header.version;
-            size = header.size;
-            buffer.Resize (size);
+            header = header_;
+            buffer.Resize (header.size);
             buffer.Rewind ();
             buffer.AdvanceWriteOffset (
                 serializer.Read (
@@ -107,11 +81,9 @@ namespace thekogans {
         }
 
         void Blob::Read (
-                const TextHeader &header,
+                const Header &header_,
                 const pugi::xml_node &node_) {
-            type = header.type;
-            version = header.version;
-            size = 0;
+            header = header_;
             for (pugi::xml_attribute attribute = node_.first_attribute ();
                     attribute; attribute = attribute.next_attribute ()) {
                 node.append_copy (attribute);
@@ -134,11 +106,9 @@ namespace thekogans {
         }
 
         void Blob::Read (
-                const TextHeader &header,
+                const Header &header_,
                 const JSON::Object &object_) {
-            type = header.type;
-            version = header.version;
-            size = 0;
+            header = header_;
             object = object_;
         }
 
@@ -149,9 +119,9 @@ namespace thekogans {
         _LIB_THEKOGANS_UTIL_DECL Serializer & _LIB_THEKOGANS_UTIL_API operator >> (
                 Serializer &serializer,
                 Serializable &serializable) {
-            Serializable::BinHeader header;
+            Serializable::Header header;
             serializer >> header;
-            if (header.magic == MAGIC32 && header.type == serializable.Type ()) {
+            if (header.type == serializable.Type ()) {
                 serializable.Read (header, serializer);
                 return serializer;
             }
@@ -166,7 +136,7 @@ namespace thekogans {
         _LIB_THEKOGANS_UTIL_DECL const pugi::xml_node & _LIB_THEKOGANS_UTIL_API operator >> (
                 const pugi::xml_node &node,
                 Serializable &serializable) {
-            Serializable::TextHeader header;
+            Serializable::Header header;
             node >> header;
             if (header.type == serializable.Type ()) {
                 serializable.Read (header, node);
@@ -183,7 +153,7 @@ namespace thekogans {
         _LIB_THEKOGANS_UTIL_DECL const JSON::Object & _LIB_THEKOGANS_UTIL_API operator >> (
                 const JSON::Object &object,
                 Serializable &serializable) {
-            Serializable::TextHeader header;
+            Serializable::Header header;
             object >> header;
             if (header.type == serializable.Type ()) {
                 serializable.Read (header, object);
@@ -200,27 +170,20 @@ namespace thekogans {
         _LIB_THEKOGANS_UTIL_DECL Serializer & _LIB_THEKOGANS_UTIL_API operator >> (
                 Serializer &serializer,
                 Serializable::SharedPtr &serializable) {
-            Serializable::BinHeader header;
+            Serializable::Header header;
             serializer >> header;
-            if (header.magic == MAGIC32) {
-                serializable = Serializable::CreateType (header.type.c_str ());
-                if (serializable == nullptr) {
-                    serializable.Reset (new Blob);
-                }
-                serializable->Read (header, serializer);
-                return serializer;
+            serializable = Serializable::CreateType (header.type.c_str ());
+            if (serializable == nullptr) {
+                serializable.Reset (new Blob);
             }
-            else {
-                THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                    "Corrupt serializable '%s' header.",
-                    header.type.c_str ());
-            }
+            serializable->Read (header, serializer);
+            return serializer;
         }
 
         _LIB_THEKOGANS_UTIL_DECL const pugi::xml_node & _LIB_THEKOGANS_UTIL_API operator >> (
                 const pugi::xml_node &node,
                 Serializable::SharedPtr &serializable) {
-            Serializable::TextHeader header;
+            Serializable::Header header;
             node >> header;
             serializable = Serializable::CreateType (header.type.c_str ());
             if (serializable == nullptr) {
@@ -233,7 +196,7 @@ namespace thekogans {
         _LIB_THEKOGANS_UTIL_DECL const JSON::Object & _LIB_THEKOGANS_UTIL_API operator >> (
                 const JSON::Object &object,
                 Serializable::SharedPtr &serializable) {
-            Serializable::TextHeader header;
+            Serializable::Header header;
             object >> header;
             serializable = Serializable::CreateType (header.type.c_str ());
             if (serializable == nullptr) {
@@ -243,7 +206,8 @@ namespace thekogans {
             return object;
         }
 
-        void ValueParser<Serializable::BinHeader>::Reset () {
+        void ValueParser<Serializable::Header>::Reset () {
+            magic = 0;
             magicParser.Reset ();
             typeParser.Reset ();
             versionParser.Reset ();
@@ -251,16 +215,16 @@ namespace thekogans {
             state = STATE_MAGIC;
         }
 
-        bool ValueParser<Serializable::BinHeader>::ParseValue (Serializer &serializer) {
+        bool ValueParser<Serializable::Header>::ParseValue (Serializer &serializer) {
             if (state == STATE_MAGIC) {
                 if (magicParser.ParseValue (serializer)) {
-                    if (value.magic == MAGIC32) {
+                    if (magic == MAGIC32) {
                         state = STATE_TYPE;
                     }
                     else {
                         THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
                             "Corrupt serializable header: %u.",
-                            value.magic);
+                            magic);
                     }
                 }
             }

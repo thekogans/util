@@ -158,7 +158,7 @@ namespace thekogans {
         }
 
         void Fraction::Read (
-                const BinHeader & /*header*/,
+                const Header & /*header*/,
                 Serializer &serializer) {
             serializer >> numerator >> denominator >> (ui8 &)sign;
         }
@@ -174,7 +174,7 @@ namespace thekogans {
         }
 
         void Fraction::Read (
-                const TextHeader & /*header*/,
+                const Header & /*header*/,
                 const pugi::xml_node &node) {
             numerator = stringToui32 (node.attribute (ATTR_NUMERATOR).value ());
             denominator = stringToui32 (node.attribute (ATTR_DENOMINATOR).value ());
@@ -188,7 +188,7 @@ namespace thekogans {
         }
 
         void Fraction::Read (
-                const TextHeader & /*header*/,
+                const Header & /*header*/,
                 const JSON::Object &object) {
             numerator = object.Get<JSON::Number> (ATTR_NUMERATOR)->To<ui32> ();
             denominator = object.Get<JSON::Number> (ATTR_DENOMINATOR)->To<ui32> ();

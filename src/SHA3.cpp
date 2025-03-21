@@ -141,10 +141,12 @@ namespace thekogans {
                 // Theta
                 ui64 coefficients[5];
                 for (std::size_t i = 0; i < 5; ++i) {
-                    coefficients[i] = state[i] ^ state[i + 5] ^ state[i + 10] ^ state[i + 15] ^ state[i + 20];
+                    coefficients[i] =
+                        state[i] ^ state[i + 5] ^ state[i + 10] ^ state[i + 15] ^ state[i + 20];
                 }
                 for (std::size_t i = 0; i < 5; ++i) {
-                    ui64 one = coefficients[mod5 (i + 4)] ^ rotateLeft (coefficients[mod5 (i + 1)], 1);
+                    ui64 one =
+                        coefficients[mod5 (i + 4)] ^ rotateLeft (coefficients[mod5 (i + 1)], 1);
                     state[i] ^= one;
                     state[i + 5] ^= one;
                     state[i + 10] ^= one;

@@ -53,14 +53,11 @@ namespace thekogans {
             /// Declare \see{RefCounted} pointers.
             THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE_BASE (Serializable)
 
-            /// \struct Serializable::BinHeader Serializable.h thekogans/util/Serializable.h
+            /// \struct Serializable::Header Serializable.h thekogans/util/Serializable.h
             ///
             /// \brief
             /// Binary header containing enough info to deserialize the serializable instance.
-            struct _LIB_THEKOGANS_UTIL_DECL BinHeader {
-                /// \brief
-                /// MAGIC32
-                ui32 magic;
+            struct _LIB_THEKOGANS_UTIL_DECL Header {
                 /// \brief
                 /// Serializable type (it's class name).
                 std::string type;
@@ -73,8 +70,7 @@ namespace thekogans {
 
                 /// \brief
                 /// ctor.
-                BinHeader () :
-                    magic (0),
+                Header () :
                     version (0),
                     size (0) {}
                 /// \brief
@@ -82,102 +78,31 @@ namespace thekogans {
                 /// \param[in] type_ Serializable type (it's class name).
                 /// \param[in] version_ Serializable version.
                 /// \param[in] size_ Serializable size in bytes (not including the header).
-                BinHeader (
+                Header (
                     const std::string &type_,
                     ui16 version_,
                     std::size_t size_) :
-                    magic (MAGIC32),
                     type (type_),
                     version (version_),
                     size (size_) {}
 
                 /// \brief
-                /// Return the header size.
-                /// \return BinHeader size.
+                /// "Type"
+                static const char * const ATTR_TYPE;
+                /// \brief
+                /// "Version"
+                static const char * const ATTR_VERSION;
+
+                /// \brief
+                /// Return the binary header size.
+                /// \return Header binary size.
                 inline std::size_t Size () const {
                     return
-                        Serializer::Size (magic) +
+                        UI32_SIZE +
                         Serializer::Size (type) +
                         Serializer::Size (version) +
                         Serializer::Size (size);
                 }
-
-                /// \brief
-                /// "BinHeader"
-                static const char * const TAG_BIN_HEADER;
-                /// \brief
-                /// "Magic"
-                static const char * const ATTR_MAGIC;
-                /// \brief
-                /// "Type"
-                static const char * const ATTR_TYPE;
-                /// \brief
-                /// "Version"
-                static const char * const ATTR_VERSION;
-                /// \brief
-                /// "Size"
-                static const char * const ATTR_SIZE;
-
-                /// \brief
-                /// Parse the header from an xml dom that looks like this;
-                /// <Header Magic = "FARS"
-                ///         Type = ""
-                ///         Version = ""
-                ///         Size = ""
-                ///         ...>
-                /// \param[in] node DOM representation of a header.
-                void Parse (const pugi::xml_node &node);
-                /// \brief
-                /// Return the XML representation of a header.
-                /// \param[in] indentationLevel How far to indent the leading tag.
-                /// \param[in] tagName The name of the leading tag.
-                /// \return XML representation of a header.
-                std::string ToString (
-                    std::size_t indentationLevel = 0,
-                    const char *tagName = TAG_BIN_HEADER) const;
-            };
-
-            /// \struct Serializable::TextHeader Serializable.h thekogans/util/Serializable.h
-            ///
-            /// \brief
-            /// TextHeader containing enough info to deserialize the serializable instance.
-            struct _LIB_THEKOGANS_UTIL_DECL TextHeader {
-                /// \brief
-                /// Serializable type (it's class name).
-                std::string type;
-                /// \brief
-                /// Serializable version.
-                ui16 version;
-
-                /// \brief
-                /// ctor.
-                TextHeader () :
-                    version (0) {}
-                /// \brief
-                /// ctor.
-                /// \param[in] type_ Serializable type (it's class name).
-                /// \param[in] version_ Serializable version.
-                TextHeader (
-                    const std::string &type_,
-                    ui16 version_) :
-                    type (type_),
-                    version (version_) {}
-
-                /// \brief
-                /// "Type"
-                static const char * const ATTR_TYPE;
-                /// \brief
-                /// "Version"
-                static const char * const ATTR_VERSION;
-
-                /// \brief
-                /// Read header attributes from an xml dom.
-                /// \param[in] node Node containing header attributes.
-                void Read (const pugi::xml_node &node);
-                /// \brief
-                /// Write a header to the xml dom.
-                /// \param[out] node Node that will recieve the header attributes.
-                void Write (pugi::xml_node &node) const;
             };
 
         #if defined (THEKOGANS_UTIL_TYPE_Static)
@@ -207,7 +132,7 @@ namespace thekogans {
             /// \param[in] header
             /// \param[in] serializer Serializer to read the serializable from.
             virtual void Read (
-                const BinHeader & /*header*/,
+                const Header & /*header*/,
                 Serializer & /*serializer*/) = 0;
             /// \brief
             /// Write the serializable to the given serializer.
@@ -218,7 +143,7 @@ namespace thekogans {
             /// Read a Serializable from an XML DOM.
             /// \param[in] node XML DOM representation of a Serializable.
             virtual void Read (
-                const TextHeader & /*header*/,
+                const Header & /*header*/,
                 const pugi::xml_node & /*node*/) = 0;
             /// \brief
             /// Write a Serializable to the XML DOM.
@@ -229,7 +154,7 @@ namespace thekogans {
             /// Read a Serializable from an JSON DOM.
             /// \param[in] node JSON DOM representation of a Serializable.
             virtual void Read (
-                const TextHeader & /*header*/,
+                const Header & /*header*/,
                 const JSON::Object & /*object*/) = 0;
             /// \brief
             /// Write a Serializable to the JSON DOM.
@@ -355,14 +280,8 @@ namespace thekogans {
 
         struct _LIB_THEKOGANS_UTIL_DECL Blob : public Serializable {
             /// \brief
-            /// Underlying blob type.
-            std::string type;
-            /// \brief
-            /// Underlying blob version.
-            ui16 version;
-            /// \brief
-            /// Underlying blob size in bytes (not including the header).
-            std::size_t size;
+            /// Blob type.
+            Header header;
             /// \brief
             /// Binary blob.
             Buffer buffer;
@@ -372,12 +291,6 @@ namespace thekogans {
             /// \brief
             /// JSON blob.
             JSON::Object object;
-
-            /// \brief
-            /// ctor.
-            Blob () :
-                version (0),
-                size (0) {}
 
             /// \brief
             /// Return DynamicCreatable type (it's class name).
@@ -396,10 +309,10 @@ namespace thekogans {
 
             /// \brief
             /// Write the serializable from the given serializer.
-            /// \param[in] header Serializable::BinHeader to deserialize.
+            /// \param[in] header_ Serializable::Header to deserialize.
             /// \param[in] serializer Serializer to read the serializable from.
             virtual void Read (
-                const BinHeader &header,
+                const Header &header_,
                 Serializer &serializer) override;
             /// \brief
             /// Write the serializable to the given serializer.
@@ -408,10 +321,10 @@ namespace thekogans {
 
             /// \brief
             /// Read a Serializable from an XML DOM.
-            /// \param[in] header Serializable::TextHeader to deserialize.
+            /// \param[in] header_ Serializable::Header to deserialize.
             /// \param[in] node XML DOM representation of a Serializable.
             virtual void Read (
-                const TextHeader &header,
+                const Header &header_,
                 const pugi::xml_node &node_) override;
             /// \brief
             /// Write a Serializable to the XML DOM.
@@ -420,10 +333,10 @@ namespace thekogans {
 
             /// \brief
             /// Read a Serializable from an JSON DOM.
-            /// \param[in] header Serializable::Texteader to deserialize.
+            /// \param[in] header_ Serializable::Texteader to deserialize.
             /// \param[in] object_ JSON DOM representation of a Serializable.
             virtual void Read (
-                const TextHeader &header,
+                const Header &header_,
                 const JSON::Object &object_) override;
             /// \brief
             /// Write a Serializable to the JSON DOM.
@@ -432,96 +345,95 @@ namespace thekogans {
         };
 
         /// \brief
-        /// Serializable::BinHeader insertion operator.
+        /// Serializable::Header insertion operator.
         /// \param[in] serializer Where to serialize the serializable header.
-        /// \param[in] header Serializable::BinHeader to serialize.
+        /// \param[in] header Serializable::Header to serialize.
         /// \return serializer.
         inline Serializer & _LIB_THEKOGANS_UTIL_API operator << (
                 Serializer &serializer,
-                const Serializable::BinHeader &header) {
-            serializer <<
-                header.magic <<
-                header.type <<
-                header.version <<
-                header.size;
+                const Serializable::Header &header) {
+            serializer << MAGIC32 << header.type << header.version << header.size;
             return serializer;
         }
 
         /// \brief
-        /// Serializable::BinHeader extraction operator.
+        /// Serializable::Header extraction operator.
         /// \param[in] serializer Where to deserialize the serializable header.
-        /// \param[in] header Serializable::BinHeader to deserialize.
+        /// \param[in] header Serializable::Header to deserialize.
         /// \return serializer.
         inline Serializer & _LIB_THEKOGANS_UTIL_API operator >> (
                 Serializer &serializer,
-                Serializable::BinHeader &header) {
-            serializer >>
-                header.magic >>
-                header.type >>
-                header.version >>
-                header.size;
+                Serializable::Header &header) {
+            ui32 magic;
+            serializer >> magic;
+            if (magic != MAGIC32) {
+                THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
+                    "Corrupt serializable header: %u.",
+                    magic);
+            }
+            serializer >> header.type >> header.version >> header.size;
             return serializer;
         }
 
         /// \brief
-        /// Serializable::TextHeader insertion operator.
+        /// Serializable::Header insertion operator.
         /// \param[in] node Where to serialize the serializable header.
-        /// \param[in] header Serializable::TextHeader to serialize.
+        /// \param[in] header Serializable::Header to serialize.
         /// \return node.
         inline pugi::xml_node & _LIB_THEKOGANS_UTIL_API operator << (
                 pugi::xml_node &node,
-                const Serializable::TextHeader &header) {
+                const Serializable::Header &header) {
             node.append_attribute (
-                Serializable::TextHeader::ATTR_TYPE).set_value (header.type.c_str ());
+                Serializable::Header::ATTR_TYPE).set_value (header.type.c_str ());
             node.append_attribute (
-                Serializable::TextHeader::ATTR_VERSION).set_value (
+                Serializable::Header::ATTR_VERSION).set_value (
                     ui32Tostring (header.version).c_str ());
             return node;
         }
 
         /// \brief
-        /// Serializable::TextHeader extraction operator.
+        /// Serializable::Header extraction operator.
         /// \param[in] serializer Where to deserialize the serializable header.
-        /// \param[in] header Serializable::TextHeader to deserialize.
+        /// \param[in] header Serializable::Header to deserialize.
         /// \return node.
         inline const pugi::xml_node & _LIB_THEKOGANS_UTIL_API operator >> (
                 const pugi::xml_node &node,
-                Serializable::TextHeader &header) {
-            header.type = node.attribute (Serializable::TextHeader::ATTR_TYPE).value ();
+                Serializable::Header &header) {
+            header.type = node.attribute (Serializable::Header::ATTR_TYPE).value ();
             header.version = stringToui16 (
-                node.attribute (Serializable::TextHeader::ATTR_VERSION).value ());
+                node.attribute (Serializable::Header::ATTR_VERSION).value ());
             return node;
         }
 
         /// \brief
-        /// Serializable::TextHeader insertion operator.
+        /// Serializable::Header insertion operator.
         /// \param[in] object Where to serialize the serializable header.
-        /// \param[in] header Serializable::TextHeader to serialize.
+        /// \param[in] header Serializable::Header to serialize.
         /// \return node.
         inline JSON::Object & _LIB_THEKOGANS_UTIL_API operator << (
                 JSON::Object &object,
-                const Serializable::TextHeader &header) {
+                const Serializable::Header &header) {
             object.Add<const std::string &> (
-                Serializable::TextHeader::ATTR_TYPE,
+                Serializable::Header::ATTR_TYPE,
                 header.type);
             object.Add (
-                Serializable::TextHeader::ATTR_VERSION,
+                Serializable::Header::ATTR_VERSION,
                 header.version);
             return object;
         }
 
         /// \brief
-        /// Serializable::TextHeader extraction operator.
+        /// Serializable::Header extraction operator.
         /// \param[in] serializer Where to deserialize the serializable header.
-        /// \param[in] header Serializable::TextHeader to deserialize.
+        /// \param[in] header Serializable::Header to deserialize.
         /// \return node.
         inline const JSON::Object & _LIB_THEKOGANS_UTIL_API operator >> (
                 const JSON::Object &object,
-                Serializable::TextHeader &header) {
+                Serializable::Header &header) {
             header.type = object.Get<JSON::String> (
-                Serializable::TextHeader::ATTR_TYPE)->value;
+                Serializable::Header::ATTR_TYPE)->value;
             header.version = object.Get<JSON::Number> (
-                Serializable::TextHeader::ATTR_VERSION)->To<ui16> ();
+                Serializable::Header::ATTR_VERSION)->To<ui16> ();
             return object;
         }
 
@@ -534,7 +446,7 @@ namespace thekogans {
                 Serializer &serializer,
                 const Serializable &serializable) {
             serializer <<
-                Serializable::BinHeader (
+                Serializable::Header (
                     serializable.Type (),
                     serializable.Version (),
                     serializable.Size ());
@@ -551,9 +463,10 @@ namespace thekogans {
                 pugi::xml_node &node,
                 const Serializable &serializable) {
             node <<
-                Serializable::TextHeader (
+                Serializable::Header (
                     serializable.Type (),
-                    serializable.Version ());
+                    serializable.Version (),
+                    0);
             serializable.Write (node);
             return node;
         }
@@ -567,9 +480,10 @@ namespace thekogans {
                 JSON::Object &object,
                 const Serializable &serializable) {
             object <<
-                Serializable::TextHeader (
+                Serializable::Header (
                     serializable.Type (),
-                    serializable.Version ());
+                    serializable.Version (),
+                    0);
             serializable.Write (object);
             return object;
         }
@@ -646,44 +560,47 @@ namespace thekogans {
                 return object;\
             }
 
-        /// \struct ValueParser<Serializable::BinHeader> Serializable.h thekogans/util/Serializable.h
+        /// \struct ValueParser<Serializable::Header> Serializable.h thekogans/util/Serializable.h
         ///
         /// \brief
-        /// Specialization of \see{ValueParser} for \see{Serializable::BinHeader}.
+        /// Specialization of \see{ValueParser} for \see{Serializable::Header}.
 
         template<>
-        struct _LIB_THEKOGANS_UTIL_DECL ValueParser<Serializable::BinHeader> {
+        struct _LIB_THEKOGANS_UTIL_DECL ValueParser<Serializable::Header> {
         private:
             /// \brief
-            /// \see{Serializable::BinHeader} to parse.
-            Serializable::BinHeader &value;
+            /// \see{Serializable::Header} to parse.
+            Serializable::Header &value;
             /// \brief
-            /// Parses \see{Serializable::BinHeader::magic}.
+            /// Magic value preceeding every object.
+            ui32 magic;
+            /// \brief
+            /// Parses \see{Serializable::Header::magic}.
             ValueParser<ui32> magicParser;
             /// \brief
-            /// Parses \see{Serializable::BinHeader::type}.
+            /// Parses \see{Serializable::Header::type}.
             ValueParser<std::string> typeParser;
             /// \brief
-            /// Parses \see{Serializable::BinHeader::version}.
+            /// Parses \see{Serializable::Header::version}.
             ValueParser<ui16> versionParser;
             /// \brief
-            /// Parses \see{Serializable::BinHeader::size}.
+            /// Parses \see{Serializable::Header::size}.
             ValueParser<SizeT> sizeParser;
             /// \enum
-            /// \see{Serializable::BinHeader} parser is a state machine.
+            /// \see{Serializable::Header} parser is a state machine.
             /// These are it's various states.
             enum {
                 /// \brief
-                /// Next value is \see{Serializable::BinHeader::magic}.
+                /// Next value is \see{Serializable::Header::magic}.
                 STATE_MAGIC,
                 /// \brief
-                /// Next value is \see{Serializable::BinHeader::type}.
+                /// Next value is \see{Serializable::Header::type}.
                 STATE_TYPE,
                 /// \brief
-                /// Next value is \see{Serializable::BinHeader::version}.
+                /// Next value is \see{Serializable::Header::version}.
                 STATE_VERSION,
                 /// \brief
-                /// Next value is \see{Serializable::BinHeader::size}.
+                /// Next value is \see{Serializable::Header::size}.
                 STATE_SIZE
             } state;
 
@@ -691,9 +608,10 @@ namespace thekogans {
             /// \brief
             /// ctor.
             /// \param[out] value_ Value to parse.
-            explicit ValueParser (Serializable::BinHeader &value_) :
+            explicit ValueParser (Serializable::Header &value_) :
                 value (value_),
-                magicParser (value.magic),
+                magic (0),
+                magicParser (magic),
                 typeParser (value.type),
                 versionParser (value.version),
                 sizeParser (value.size),
@@ -704,9 +622,9 @@ namespace thekogans {
             void Reset ();
 
             /// \brief
-            /// Try to parse a \see{Serializable::BinHeader} from the given serializer.
-            /// \param[in] serializer Contains a complete or partial \see{Serializable::BinHeader}.
-            /// \return true == \see{Serializable::BinHeader} was successfully parsed,
+            /// Try to parse a \see{Serializable::Header} from the given serializer.
+            /// \param[in] serializer Contains a complete or partial \see{Serializable::Header}.
+            /// \return true == \see{Serializable::Header} was successfully parsed,
             /// false == call back with more data.
             bool ParseValue (Serializer &serializer);
         };
@@ -733,13 +651,13 @@ namespace thekogans {
             const std::size_t maxSerializableSize;
             /// \brief
             /// Parsed serializable header.
-            Serializable::BinHeader header;
+            Serializable::Header header;
             /// \brief
             /// Parsed serializable payload.
             NetworkBuffer payload;
             /// \brief
             /// Serializable header parser.
-            ValueParser<Serializable::BinHeader> headerParser;
+            ValueParser<Serializable::Header> headerParser;
             /// \brief
             /// The parser is a state machine. It has two states.
             enum {
@@ -798,13 +716,13 @@ namespace thekogans {
             const std::size_t maxSerializableSize;
             /// \brief
             /// Parsed serializable header.
-            Serializable::BinHeader header;
+            Serializable::Header header;
             /// \brief
             /// Parsed serializable payload.
             NetworkBuffer payload;
             /// \brief
             /// Serializable header parser.
-            ValueParser<Serializable::BinHeader> headerParser;
+            ValueParser<Serializable::Header> headerParser;
             /// \brief
             /// The parser is a state machine. It has two states.
             enum {

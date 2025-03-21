@@ -708,7 +708,7 @@ namespace thekogans {
         }
 
         void Directory::Entry::Read (
-                const BinHeader & /*header*/,
+                const Header & /*header*/,
                 Serializer &serializer) {
             serializer >> fileSystem >> type >> name;
             if (fileSystem == Windows) {
@@ -732,7 +732,7 @@ namespace thekogans {
         }
 
         void Directory::Entry::Read (
-                const TextHeader & /*header*/,
+                const Header & /*header*/,
                 const pugi::xml_node &node) {
             fileSystem = stringTofileSystem (node.attribute (ATTR_FILE_SYSTEM).value ());
             type = stringTotype (node.attribute (ATTR_TYPE).value ());
@@ -768,7 +768,7 @@ namespace thekogans {
         }
 
         void Directory::Entry::Read (
-                const TextHeader & /*header*/,
+                const Header & /*header*/,
                 const JSON::Object &object) {
             fileSystem = stringTofileSystem (object.Get<JSON::String> (ATTR_FILE_SYSTEM)->value);
             type = stringTotype (object.Get<JSON::String> (ATTR_TYPE)->value);

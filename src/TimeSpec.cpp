@@ -159,7 +159,7 @@ namespace thekogans {
         }
 
         void TimeSpec::Read (
-                const BinHeader & /*header*/,
+                const Header & /*header*/,
                 Serializer &serializer) {
             serializer >> seconds >> nanoseconds;
         }
@@ -174,7 +174,7 @@ namespace thekogans {
         }
 
         void TimeSpec::Read (
-                const TextHeader & /*header*/,
+                const Header & /*header*/,
                 const pugi::xml_node &node) {
             seconds = stringToui64 (node.attribute (ATTR_SECONDS).value ());
             nanoseconds = stringToi32 (node.attribute (ATTR_NANOSECONDS).value ());
@@ -186,7 +186,7 @@ namespace thekogans {
         }
 
         void TimeSpec::Read (
-                const TextHeader & /*header*/,
+                const Header & /*header*/,
                 const JSON::Object &object) {
             seconds = object.Get<JSON::Number> (ATTR_SECONDS)->To<i64> ();
             nanoseconds = object.Get<JSON::Number> (ATTR_NANOSECONDS)->To<i32> ();

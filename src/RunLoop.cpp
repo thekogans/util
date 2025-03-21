@@ -195,7 +195,7 @@ namespace thekogans {
         }
 
         void RunLoop::Stats::Job::Read (
-                const BinHeader & /*header*/,
+                const Header & /*header*/,
                 Serializer &serializer) {
             serializer >> id >> startTime >> endTime >> totalTime;
         }
@@ -212,7 +212,7 @@ namespace thekogans {
         }
 
         void RunLoop::Stats::Job::Read (
-                const TextHeader & /*header*/,
+                const Header & /*header*/,
                 const pugi::xml_node &node) {
             id = node.attribute (ATTR_ID).value ();
             startTime = stringToui64 (node.attribute (ATTR_START_TIME).value ());
@@ -228,7 +228,7 @@ namespace thekogans {
         }
 
         void RunLoop::Stats::Job::Read (
-                const TextHeader & /*header*/,
+                const Header & /*header*/,
                 const JSON::Object &object) {
             id = object.Get<JSON::String> (ATTR_ID)->value;
             startTime = object.Get<JSON::Number> (ATTR_START_TIME)->To<ui64> ();
@@ -277,7 +277,7 @@ namespace thekogans {
         }
 
         void RunLoop::Stats::Read (
-                const BinHeader & /*header*/,
+                const Header & /*header*/,
                 Serializer &serializer) {
             serializer >> id >> name >> totalJobs >> totalJobTime >> lastJob >> minJob >> maxJob;
         }
@@ -296,7 +296,7 @@ namespace thekogans {
         }
 
         void RunLoop::Stats::Read (
-                const TextHeader & /*header*/,
+                const Header & /*header*/,
                 const pugi::xml_node &node) {
             id = node.attribute (ATTR_ID).value ();
             name = Decodestring (node.attribute (ATTR_NAME).value ());
@@ -339,7 +339,7 @@ namespace thekogans {
         }
 
         void RunLoop::Stats::Read (
-                const TextHeader & /*header*/,
+                const Header & /*header*/,
                 const JSON::Object &object) {
             id = object.Get<JSON::String> (ATTR_ID)->value;
             name = object.Get<JSON::String> (ATTR_NAME)->value;
