@@ -255,7 +255,9 @@ namespace thekogans {
         _LIB_THEKOGANS_UTIL_DECL std::string _LIB_THEKOGANS_UTIL_API HexFormatstring (
             const std::string &str);
         /// \brief
-        /// Return a hash of the string mod hashTableSize.
+        /// Return a hash of the string.
+        /// NOTE: If your looking to hash an arbitrary buffer of bytes look at
+        /// \see{HashBuffer} and friends in \see{Hash.h}.
         ///
         /// DJBX33A (Daniel J. Bernstein, Times 33 with Addition)
         ///
@@ -290,20 +292,16 @@ namespace thekogans {
         ///
         /// \param[in] str String to hash.
         /// \param[in] length String length.
-        /// \param[in] hashTableSize The final value will be 0 < value < hashTableSize.
         /// \return String hash.
         _LIB_THEKOGANS_UTIL_DECL std::size_t _LIB_THEKOGANS_UTIL_API HashString (
             const char *str,
-            std::size_t length = SIZE_T_MAX,
-            std::size_t hashTableSize = SIZE_T_MAX);
+            std::size_t length = SIZE_T_MAX);
         /// \brief
-        /// Return a hash of the string mod hashTableSize.
+        /// Return a hash of the string.
         /// \param[in] str String to hash.
-        /// \param[in] hashTableSize The final value will be 0 < value < hashTableSize.
         /// \return String hash.
         _LIB_THEKOGANS_UTIL_DECL std::size_t _LIB_THEKOGANS_UTIL_API HashString (
-            const std::string &str,
-            std::size_t hashTableSize = SIZE_T_MAX);
+            const std::string &str);
 
         /// \brief
         /// Given a list of strings, return the longest common prefix.

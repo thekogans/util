@@ -378,14 +378,13 @@ namespace thekogans {
 
         _LIB_THEKOGANS_UTIL_DECL std::size_t _LIB_THEKOGANS_UTIL_API HashString (
                 const char *str,
-                std::size_t length,
-                std::size_t hashTableSize) {
-            if (str != nullptr) {
+                std::size_t length) {
+            if (str != nullptr && length > 0) {
                 std::size_t hash = 5381;
-                for (std::size_t i = 0; i < length && str[i] != '\0'; ++i) {
-                    hash = ((hash << 5) + hash) ^ str[i]; // hash * 33 ^ str[i]
+                while (*str != '\0' && length-- > 0) {
+                    hash = ((hash << 5) + hash) ^ *str++; // hash * 33 ^ *str
                 }
-                return hash % hashTableSize;
+                return hash;
             }
             else {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
@@ -394,9 +393,8 @@ namespace thekogans {
         }
 
         _LIB_THEKOGANS_UTIL_DECL std::size_t _LIB_THEKOGANS_UTIL_API HashString (
-                const std::string &str,
-                std::size_t hashTableSize) {
-            return HashString (str.c_str (), str.size (), hashTableSize);
+                const std::string &str) {
+            return HashString (str.c_str (), str.size ());
         }
 
         _LIB_THEKOGANS_UTIL_DECL std::string _LIB_THEKOGANS_UTIL_API GetLongestCommonPrefix (

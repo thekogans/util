@@ -18,6 +18,7 @@
 #if !defined (__thekogans_util_SizeT_h)
 #define __thekogans_util_SizeT_h
 
+#include <functional>
 #include "thekogans/util/Environment.h"
 #if defined (TOOLCHAIN_OS_Windows)
     #include <intrin.h>
@@ -273,5 +274,21 @@ namespace thekogans {
 
     } // namespace util
 } // namespace thekogans
+
+namespace std {
+
+    /// \struct hash<thekogans::util::SizeT> SizeT.h thekogans/util/SizeT.h
+    ///
+    /// \brief
+    /// Implementation of std::hash for thekogans::util::SizeT.
+
+    template <>
+    struct hash<thekogans::util::SizeT> {
+        size_t operator () (const thekogans::util::SizeT &value) const {
+            return hash<thekogans::util::ui64> () (value.value);
+        }
+    };
+
+} // namespace std
 
 #endif // !defined (__thekogans_util_SizeT_h)

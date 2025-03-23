@@ -20,6 +20,7 @@
 
 #include <cstddef>
 #include <memory.h>
+#include <functional>
 #include <iostream>
 #include <string>
 #include "thekogans/util/Config.h"
@@ -212,5 +213,23 @@ namespace thekogans {
 
     } // namespace util
 } // namespace thekogans
+
+namespace std {
+
+    /// \struct hash<thekogans::util::GUID> GUID.h thekogans/util/GUID.h
+    ///
+    /// \brief
+    /// Implementation of std::hash for thekogans::util::GUID.
+
+    template <>
+    struct hash<thekogans::util::GUID> {
+        size_t operator () (const thekogans::util::GUID &guid) const {
+            return thekogans::util::HashBuffer32 (
+                (const thekogans::util::ui32 *)guid.data,
+                thekogans::util::GUID::SIZE >> 2);
+        }
+    };
+
+} // namespace std
 
 #endif // !defined (__thekogans_util_GUID_h)

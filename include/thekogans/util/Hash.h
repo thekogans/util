@@ -23,6 +23,7 @@
 #include <string>
 #include <vector>
 #include <list>
+#include "thekogans/util/Environment.h"
 #include "thekogans/util/Config.h"
 #include "thekogans/util/Types.h"
 #include "thekogans/util/DynamicCreatable.h"
@@ -147,6 +148,80 @@ namespace thekogans {
             return digest1.size () != digest2.size () ||
                 memcmp (&digest1[0], &digest2[0], digest1.size ()) != 0;
         }
+
+        /// NOTE: If your looking to hash a char string look at
+        /// \see{HashString} in \see{StringUtils.h}.
+
+        /// By Bob Jenkins, 2006. bob_jenkins@burtleburtle.net. You may use this
+        /// code any way you wish, private, educational, or commercial. It's free.
+        /// Use for hash table lookup, or anything where one collision in 2^^32 is
+        /// acceptable. Do NOT use for cryptographic purposes.
+
+        /// \brief
+        /// This works on all machines. To be useful, it requires the buffer be an
+        /// array of ui32's, and  the length be the number of ui32's in the buffer.
+        /// Its identical to HashBufferLittle on little-endian machines, and identical
+        /// to HashBufferBig on big-endian machines, except that the length has to be
+        /// measured in ui32s rather than in bytes. HashBufferLittle is more complicated
+        /// than HashBuffer32 only because HashBufferLittle has to dance around fitting
+        /// the buffer bytes into registers.
+        /// \param[in] buffer An array of ui32 values.
+        /// \param[in] length Length of the buffer in ui32.
+        /// \param[in] seed Previous hash, or an arbitrary seed value.
+        /// \return 32-bit value. Every bit of the buffer affects every bit of
+        /// the return value. Two buffers differing by one or two bits will have
+        /// totally different hash values.
+        _LIB_THEKOGANS_UTIL_DECL ui32 _LIB_THEKOGANS_UTIL_API HashBuffer32 (
+            const ui32 *buffer,
+            std::size_t length,
+            ui32 seed = 0);
+        /// \brief
+        /// Hash a variable-length buffer into a 32-bit value. The best hash table
+        /// sizes are powers of 2. There is no need to do mod a prime (mod is sooo slow!).
+        /// If you need less than 32 bits, use a bitmask. For example, if you need only
+        /// 10 bits, do h = h & hashmask (10);  In which case, the hash table should
+        /// have hashsize (10) elements. If you are hashing n strings (ui8 **)buffer,
+        /// do it like this:
+        /// \code{.cpp}
+        /// util::ui32 hash = 0;
+        /// for (std::size_t i = 0; i < n; ++i) {
+        ///     hash = HashBufferLittle (buffer[i], length[i], hash);
+        /// }
+        /// \endcode
+        /// \param[in] buffer The buffer (the unaligned variable-length array of bytes).
+        /// \param[in] length The length of the buffer, counting by bytes.
+        /// \param[in] seed Can be any 4-byte value.
+        /// \return 32-bit value. Every bit of the buffer affects every bit of
+        /// the return value. Two buffers differing by one or two bits will have
+        /// totally different hash values.
+        _LIB_THEKOGANS_UTIL_DECL ui32 _LIB_THEKOGANS_UTIL_API HashBufferLittle (
+            const void *buffer,
+            std::size_t length,
+            ui32 seed = 0);
+        /// \brief
+        /// This is the same as HashBuffer32 on big-endian machines. It is different
+        /// from HashBufferLittle on all machines. HashBufferBig takes advantage of
+        /// big-endian byte ordering.
+        /// \param[in] buffer The buffer (the unaligned variable-length array of bytes).
+        /// \param[in] length The length of the buffer, counting by bytes.
+        /// \param[in] seed Can be any 4-byte value.
+        /// \return 32-bit value. Every bit of the buffer affects every bit of
+        /// the return value. Two buffers differing by one or two bits will have
+        /// totally different hash values.
+        _LIB_THEKOGANS_UTIL_DECL ui32 _LIB_THEKOGANS_UTIL_API HashBufferBig (
+            const void *buffer,
+            std::size_t length,
+            ui32 seed = 0);
+
+    /// \def
+    /// Define a buffer hasher based on the machine endianness.
+    #if defined (TOOLCHAIN_ENDIAN_Little)
+        #define HashBuffer HashBufferLittle
+    #elif defined (TOOLCHAIN_ENDIAN_Big)
+        #define HashBuffer HashBufferBig
+    #else // defined (TOOLCHAIN_ENDIAN_Big)
+        #error "Unable to determine system endianness."
+    #endif // defined (TOOLCHAIN_ENDIAN_Little)
 
     } // namespace util
 } // namespace thekogans

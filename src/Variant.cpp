@@ -15,7 +15,6 @@
 // You should have received a copy of the GNU General Public License
 // along with libthekogans_util. If not, see <http://www.gnu.org/licenses/>.
 
-#include <cassert>
 #include <cstdlib>
 #include <cmath>
 #include <sstream>
@@ -26,6 +25,7 @@
 #include "thekogans/util/Config.h"
 #include "thekogans/util/Variant.h"
 #include "thekogans/util/StringUtils.h"
+#include "thekogans/util/Hash.h"
 #include "thekogans/util/XMLUtils.h"
 
 namespace thekogans {
@@ -251,43 +251,6 @@ namespace thekogans {
                 }
             }
             return size;
-        }
-
-        std::size_t Variant::Hash (std::size_t radix) const {
-            switch (type) {
-                case Variant::TYPE_Invalid:
-                    return 0;
-                case Variant::TYPE_bool:
-                    return (value._bool ? 1 : 0) % radix;
-                case Variant::TYPE_i8:
-                    return value._i8 % radix;
-                case Variant::TYPE_ui8:
-                    return value._ui8 % radix;
-                case Variant::TYPE_i16:
-                    return value._i16 % radix;
-                case Variant::TYPE_ui16:
-                    return value._ui16 % radix;
-                case Variant::TYPE_i32:
-                    return value._i32 % radix;
-                case Variant::TYPE_ui32:
-                    return value._ui32 % radix;
-                case Variant::TYPE_i64:
-                    return value._i64 % radix;
-                case Variant::TYPE_ui64:
-                    return value._ui64 % radix;
-                case Variant::TYPE_f32:
-                    return (std::size_t)fmod (value._f32, (f32)radix);
-                case Variant::TYPE_f64:
-                    return (std::size_t)fmod (value._f64, (f64)radix);
-                case Variant::TYPE_SizeT:
-                    return *value._SizeT % radix;
-                case Variant::TYPE_string:
-                    return HashString (*value._string, radix);
-                case Variant::TYPE_GUID:
-                    return HashString (value._guid->ToString (), radix);
-            }
-            assert (0);
-            return 0;
         }
 
         void Variant::Clear () {

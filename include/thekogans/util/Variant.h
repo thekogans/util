@@ -18,6 +18,8 @@
 #if !defined (__thekogans_util_Variant_h)
 #define __thekogans_util_Variant_h
 
+#include <cassert>
+#include <functional>
 #include <string>
 #include "pugixml/pugixml.hpp"
 #include "thekogans/util/Config.h"
@@ -357,11 +359,6 @@ namespace thekogans {
             std::size_t Size () const;
 
             /// \brief
-            /// Hash the variant value.
-            /// \param[in] radix Modular radix.
-            /// \return 0 < hash < radix
-            std::size_t Hash (std::size_t radix) const;
-            /// \brief
             /// After calling this method, the variant is Invalid.
             void Clear ();
 
@@ -495,5 +492,54 @@ namespace thekogans {
 
     } // namespace util
 } // namespace thekogans
+
+namespace std {
+
+    /// \struct hash<thekogans::util::Variant> Variant.h thekogans/util/Variant.h
+    ///
+    /// \brief
+    /// Implementation of std::hash for thekogans::util::Variant.
+
+    template <>
+    struct hash<thekogans::util::Variant> {
+        size_t operator () (const thekogans::util::Variant &value) const {
+            switch (value.type) {
+                case thekogans::util::Variant::TYPE_Invalid:
+                    return 0;
+                case thekogans::util::Variant::TYPE_bool:
+                    return std::hash<bool> () (value.value._bool);
+                case thekogans::util::Variant::TYPE_i8:
+                    return std::hash<thekogans::util::i8> () (value.value._i8);
+                case thekogans::util::Variant::TYPE_ui8:
+                    return std::hash<thekogans::util::ui8> () (value.value._ui8);
+                case thekogans::util::Variant::TYPE_i16:
+                    return std::hash<thekogans::util::i16> () (value.value._i16);
+                case thekogans::util::Variant::TYPE_ui16:
+                    return std::hash<thekogans::util::ui16> () (value.value._ui16);
+                case thekogans::util::Variant::TYPE_i32:
+                    return std::hash<thekogans::util::i32> () (value.value._i32);
+                case thekogans::util::Variant::TYPE_ui32:
+                    return std::hash<thekogans::util::ui32> () (value.value._ui32);
+                case thekogans::util::Variant::TYPE_i64:
+                    return std::hash<thekogans::util::i64> () (value.value._i64);
+                case thekogans::util::Variant::TYPE_ui64:
+                    return std::hash<thekogans::util::ui64> () (value.value._ui64);
+                case thekogans::util::Variant::TYPE_f32:
+                    return std::hash<thekogans::util::f32> () (value.value._f32);
+                case thekogans::util::Variant::TYPE_f64:
+                    return std::hash<thekogans::util::f64> () (value.value._f64);
+                case thekogans::util::Variant::TYPE_SizeT:
+                    return std::hash<thekogans::util::SizeT> () (*value.value._SizeT);
+                case thekogans::util::Variant::TYPE_string:
+                    return hash<string> () (*value.value._string);
+                case thekogans::util::Variant::TYPE_GUID:
+                    return hash<thekogans::util::GUID> () (*value.value._guid);
+            }
+            assert (0);
+            return 0;
+        }
+    };
+
+} // namespace std
 
 #endif // !defined (__thekogans_util_Variant_h)

@@ -426,14 +426,14 @@ namespace thekogans {
             /// exposes a operator () that is used to treat the keys like strings.
             struct CharPtrEqual {
                 /// \brief
-                /// Return true if std::strcmp (a, b) == 0.
-                /// \param[in] a First string to compare.
-                /// \param[in] b Second string to compare.
-                /// \return true if std::strcmp (a, b) == 0.
+                /// Return true if std::strcmp (str1, str2) == 0.
+                /// \param[in] str1 First string to compare.
+                /// \param[in] str2 Second string to compare.
+                /// \return true if std::strcmp (str1, str2) == 0.
                 inline bool operator () (
-                        const char *a,
-                        const char *b) const {
-                    return std::strcmp (a, b) == 0;
+                        const char *str1,
+                        const char *str2) const {
+                    return std::strcmp (str1, str2) == 0;
                 }
             };
             /// \brief
