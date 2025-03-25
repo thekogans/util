@@ -277,6 +277,15 @@ namespace thekogans {
         /// Alias for std::vector<T, stdSecureAllocator<T>>.
         template<typename T> using SecureVector = std::vector<T, stdSecureAllocator<T>>;
 
+        /// \brief
+        /// Zero out the given memory block.
+        /// Do it in such a way as to not get optimized away.
+        /// \param[in] data Block t zero out.
+        /// \param[in] size Block size (in bytes).
+        _LIB_THEKOGANS_UTIL_DECL void _LIB_THEKOGANS_UTIL_API SecureZeroMemory (
+            void *data,
+            std::size_t size);
+
     } // namespace util
 } // namespace thekogans
 

@@ -227,10 +227,10 @@ namespace thekogans {
                     // Interpret CPU brand string if reported.
                     if (functionCount >= 0x80000004) {
                         FixedArray<ui32, 4> brand_[] = {
-                            FixedArray<ui32, 4> (0),
-                            FixedArray<ui32, 4> (0),
-                            FixedArray<ui32, 4> (0),
-                            FixedArray<ui32, 4> (0)
+                            FixedArray<ui32, 4> (0u),
+                            FixedArray<ui32, 4> (0u),
+                            FixedArray<ui32, 4> (0u),
+                            FixedArray<ui32, 4> (0u)
                         };
                         __cpuidex ((int *)brand_[0].array, 0x80000002, 0);
                         __cpuidex ((int *)brand_[1].array, 0x80000003, 0);

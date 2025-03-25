@@ -116,19 +116,6 @@ namespace thekogans {
             return ptr;
         }
 
-    #if !defined (TOOLCHAIN_OS_Windows)
-        namespace {
-            void SecureZeroMemory (
-                    void *data,
-                    std::size_t size) {
-                volatile ui8 *ptr = (volatile ui8 *)data;
-                while (size-- != 0) {
-                    *ptr++ = 0;
-                }
-            }
-        }
-    #endif // !defined (TOOLCHAIN_OS_Windows)
-
         void SecureAllocator::Free (
                 void *ptr,
                 std::size_t size) {
@@ -151,6 +138,17 @@ namespace thekogans {
             #endif // defined (TOOLCHAIN_OS_Windows)
                     THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
                         THEKOGANS_UTIL_OS_ERROR_CODE);
+                }
+            }
+        }
+
+        _LIB_THEKOGANS_UTIL_DECL void _LIB_THEKOGANS_UTIL_API SecureZeroMemory (
+                void *data,
+                std::size_t size) {
+            if (data != nullptr && size > 0) {
+                volatile ui8 *ptr = (volatile ui8 *)data;
+                while (size-- != 0) {
+                    *ptr++ = 0;
                 }
             }
         }

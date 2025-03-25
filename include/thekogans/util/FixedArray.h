@@ -18,10 +18,8 @@
 #if !defined (__thekogans_util_FixedArray_h)
 #define __thekogans_util_FixedArray_h
 
-#include <cstddef>
 #include <cstring>
-#include "thekogans/util/Config.h"
-#include "thekogans/util/Exception.h"
+#include "thekogans/util/Constants.h"
 
 namespace thekogans {
     namespace util {
@@ -49,27 +47,20 @@ namespace thekogans {
 
             /// \brief
             /// ctor.
-            FixedArray () {}
-            /// \brief
-            /// ctor.
             /// \param[in] array_ Elements to initialize the array with.
             /// \param[in] count_ Number of elements in array_.
             /// \param[in] clearUnused Clear unused array elements to 0.
             FixedArray (
-                    const T *array_,
-                    std::size_t count_,
+                    const T *array_ = 0,
+                    std::size_t count_ = 0,
                     bool clearUnused = false) {
-                if (array_ != nullptr && count_ <= count) {
-                    std::size_t usedBytes = sizeof (T) * count_;
-                    memcpy (array, array_, usedBytes);
-                    if (clearUnused) {
-                        std::size_t unusedBytes = sizeof (T) * (count - count_);
-                        memset (array + usedBytes, 0, unusedBytes);
+                if (array_ != nullptr && count_ > 0) {
+                    for (std::size_t i = 0, initCount = MIN (count_, count); i < initCount; ++i) {
+                        array[i] = array_[i];
                     }
                 }
-                else {
-                    THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                        THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
+                if (clearUnused && count_ < count) {
+                    memset (array + count_, 0, (count - count_) * sizeof (T));
                 }
             }
             /// \brief
@@ -79,6 +70,13 @@ namespace thekogans {
                 for (std::size_t i = 0; i < count; ++i) {
                     array[i] = value;
                 }
+            }
+
+            /// \brief
+            /// Return the size of the array.
+            /// \return Size of the array.
+            inline std::size_t Size () const {
+                return count;
             }
 
             /// \brief

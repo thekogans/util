@@ -434,7 +434,9 @@ namespace thekogans {
 
         std::string Path::GetExtension (bool includeDot) const {
             std::string::size_type dot = path.find_last_of (FILE_EXTENSION_DELIMITER);
-            return dot == std::string::npos ? std::string () : path.substr (dot + (!includeDot ? 1 : 0));
+            return dot != std::string::npos ?
+                path.substr (dot + (!includeDot ? 1 : 0)) :
+                std::string ();
         }
 
         bool Path::Exists () const {

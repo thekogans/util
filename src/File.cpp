@@ -119,6 +119,7 @@ namespace thekogans {
             if (buffer != nullptr && count > 0) {
                 ssize_t countRead;
                 do {
+                    THEKOGANS_UTIL_OS_ERROR_CODE = 0;
                     countRead = read (handle, buffer, count);
                     if (countRead < 0 && THEKOGANS_UTIL_OS_ERROR_CODE != EINTR) {
                         THEKOGANS_UTIL_THROW_ERROR_CODE_AND_MESSAGE_EXCEPTION (
@@ -139,6 +140,7 @@ namespace thekogans {
             if (buffer != nullptr && count > 0) {
                 ssize_t countWritten;
                 do {
+                    THEKOGANS_UTIL_OS_ERROR_CODE = 0;
                     countWritten = write (handle, buffer, count);
                     if (countWritten < 0 && THEKOGANS_UTIL_OS_ERROR_CODE != EINTR) {
                         THEKOGANS_UTIL_THROW_ERROR_CODE_AND_MESSAGE_EXCEPTION (
@@ -200,11 +202,17 @@ namespace thekogans {
             #if defined (TOOLCHAIN_OS_Windows)
                 if (!CloseHandle (handle)) {
             #else // defined (TOOLCHAIN_OS_Windows)
-                if (close (handle) < 0) {
+                do {
+                    THEKOGANS_UTIL_OS_ERROR_CODE = 0;
+                    int rc = close (handle);
+                    if (rc < 0 && THEKOGANS_UTIL_OS_ERROR_CODE != EINTR) {
             #endif // defined (TOOLCHAIN_OS_Windows)
-                    THEKOGANS_UTIL_THROW_ERROR_CODE_AND_MESSAGE_EXCEPTION (
-                        THEKOGANS_UTIL_OS_ERROR_CODE, " (%s)", path.c_str ());
-                }
+                        THEKOGANS_UTIL_THROW_ERROR_CODE_AND_MESSAGE_EXCEPTION (
+                            THEKOGANS_UTIL_OS_ERROR_CODE, " (%s)", path.c_str ());
+                    }
+            #if !defined (TOOLCHAIN_OS_Windows)
+                } while (rc < 0);
+            #endif // !defined (TOOLCHAIN_OS_Windows)
                 handle = THEKOGANS_UTIL_INVALID_HANDLE_VALUE;
                 path.clear ();
             }
@@ -214,11 +222,17 @@ namespace thekogans {
         #if defined (TOOLCHAIN_OS_Windows)
             if (!FlushFileBuffers (handle)) {
         #else // defined (TOOLCHAIN_OS_Windows)
-            if (fsync (handle) < 0) {
+            do {
+                THEKOGANS_UTIL_OS_ERROR_CODE = 0;
+                int rc = fsync (handle);
+                if (rc < 0 && THEKOGANS_UTIL_OS_ERROR_CODE != EINTR) {
         #endif // defined (TOOLCHAIN_OS_Windows)
-                THEKOGANS_UTIL_THROW_ERROR_CODE_AND_MESSAGE_EXCEPTION (
-                    THEKOGANS_UTIL_OS_ERROR_CODE, " (%s)", path.c_str ());
-            }
+                    THEKOGANS_UTIL_THROW_ERROR_CODE_AND_MESSAGE_EXCEPTION (
+                        THEKOGANS_UTIL_OS_ERROR_CODE, " (%s)", path.c_str ());
+                }
+        #if !defined (TOOLCHAIN_OS_Windows)
+            } while (rc < 0);
+        #endif // !defined (TOOLCHAIN_OS_Windows)
         }
 
         ui64 File::GetDataAvailableForReading () const {
@@ -248,13 +262,18 @@ namespace thekogans {
             PlatformSeek (newSize, SEEK_SET);
             if (!SetEndOfFile (handle)) {
         #else // defined (TOOLCHAIN_OS_Windows)
-            if (ftruncate (handle, newSize) < 0) {
+            do {
+                THEKOGANS_UTIL_OS_ERROR_CODE = 0;
+                int rc = ftruncate (handle, newSize);
+                if (rc < 0 && THEKOGANS_UTIL_OS_ERROR_CODE != EINTR) {
         #endif // defined (TOOLCHAIN_OS_Windows)
-                THEKOGANS_UTIL_THROW_ERROR_CODE_AND_MESSAGE_EXCEPTION (
-                    THEKOGANS_UTIL_OS_ERROR_CODE, " (%s)", path.c_str ());
-            }
+                    THEKOGANS_UTIL_THROW_ERROR_CODE_AND_MESSAGE_EXCEPTION (
+                        THEKOGANS_UTIL_OS_ERROR_CODE, " (%s)", path.c_str ());
+                }
         #if defined (TOOLCHAIN_OS_Windows)
             PlatformSeek (position, SEEK_SET);
+        #else // defined (TOOLCHAIN_OS_Windows)
+            } while (rc < 0);
         #endif // defined (TOOLCHAIN_OS_Windows)
         }
 
@@ -305,10 +324,14 @@ namespace thekogans {
             fl.l_whence = SEEK_SET;
             fl.l_start = region.offset;
             fl.l_len = region.length;
-            if (fcntl (handle, F_SETLK, &fl) < 0) {
-                THEKOGANS_UTIL_THROW_ERROR_CODE_AND_MESSAGE_EXCEPTION (
-                    THEKOGANS_UTIL_OS_ERROR_CODE, " (%s)", path.c_str ());
-            }
+            do {
+                THEKOGANS_UTIL_OS_ERROR_CODE = 0;
+                int rc = fcntl (handle, F_SETLK, &fl);
+                if (rc < 0 && THEKOGANS_UTIL_OS_ERROR_CODE != EINTR) {
+                    THEKOGANS_UTIL_THROW_ERROR_CODE_AND_MESSAGE_EXCEPTION (
+                        THEKOGANS_UTIL_OS_ERROR_CODE, " (%s)", path.c_str ());
+                }
+            } while (rc < 0);
         }
 
         void File::UnlockRegion (const Region &region) {
@@ -317,10 +340,14 @@ namespace thekogans {
             fl.l_whence = SEEK_SET;
             fl.l_start = region.offset;
             fl.l_len = region.length;
-            if (fcntl (handle, F_SETLK, &fl) < 0) {
-                THEKOGANS_UTIL_THROW_ERROR_CODE_AND_MESSAGE_EXCEPTION (
-                    THEKOGANS_UTIL_OS_ERROR_CODE, " (%s)", path.c_str ());
-            }
+            do {
+                THEKOGANS_UTIL_OS_ERROR_CODE = 0;
+                int rc = fcntl (handle, F_SETLK, &fl);
+                if (rc < 0 && THEKOGANS_UTIL_OS_ERROR_CODE != EINTR) {
+                    THEKOGANS_UTIL_THROW_ERROR_CODE_AND_MESSAGE_EXCEPTION (
+                        THEKOGANS_UTIL_OS_ERROR_CODE, " (%s)", path.c_str ());
+                }
+            } while (rc < 0);
         }
     #endif // defined (TOOLCHAIN_OS_Windows)
 
