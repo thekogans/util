@@ -51,7 +51,7 @@ namespace thekogans {
             /// \param[in] count_ Number of elements in array_.
             /// \param[in] clearUnused Clear unused array elements to 0.
             FixedArray (
-                    const T *array_ = 0,
+                    const T *array_ = nullptr,
                     std::size_t count_ = 0,
                     bool clearUnused = false) {
                 if (array_ != nullptr && count_ > 0) {
