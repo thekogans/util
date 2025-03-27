@@ -20,6 +20,7 @@
 
 #include <cstring>
 #include "thekogans/util/Constants.h"
+#include "thekogans/util/SecureAllocator.h"
 
 namespace thekogans {
     namespace util {
@@ -105,6 +106,34 @@ namespace thekogans {
             /// \return T *.
             inline operator T * () {
                 return array;
+            }
+        };
+
+
+        /// \struct SecureFixedArray FixedArray.h thekogans/util/FixedArray.h
+        ///
+        /// \brief
+        /// SecureFixedArray is a specialization of \see{FixedArray}.
+        /// Adds extra protection by zeroing out the uninitilized space
+        /// in the ctor and zeroing out the whole memory block in the dtor.
+
+        template<
+            typename T,
+            std::size_t count>
+        struct SecureFixedArray : public FixedArray<T, count> {
+            /// \brief
+            /// ctor.
+            /// \param[in] array Elements to initialize the array with.
+            /// \param[in] length Number of elements in array.
+            SecureFixedArray (
+                const T *array = nullptr,
+                std::size_t length = 0) :
+                FixedArray<T, count> (array, length, true) {}
+            /// \brief
+            /// dtor.
+            /// Zero out the sensitive memory block.
+            ~SecureFixedArray () {
+                SecureZeroMemory (array, Size ());
             }
         };
 
