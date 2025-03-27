@@ -56,7 +56,7 @@ namespace thekogans {
             /// \struct Serializable::Header Serializable.h thekogans/util/Serializable.h
             ///
             /// \brief
-            /// Binary header containing enough info to deserialize the serializable instance.
+            /// Header containing enough info to deserialize the serializable instance.
             struct _LIB_THEKOGANS_UTIL_DECL Header {
                 /// \brief
                 /// Serializable type (it's class name).
@@ -366,13 +366,15 @@ namespace thekogans {
                 Serializable::Header &header) {
             ui32 magic;
             serializer >> magic;
-            if (magic != MAGIC32) {
+            if (magic == MAGIC32) {
+                serializer >> header.type >> header.version >> header.size;
+                return serializer;
+            }
+            else {
                 THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
                     "Corrupt serializable header: %u.",
                     magic);
             }
-            serializer >> header.type >> header.version >> header.size;
-            return serializer;
         }
 
         /// \brief
