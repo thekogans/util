@@ -154,6 +154,7 @@ namespace thekogans {
                     // If existing block size is less than what we need,
                     // resize it.
                     if (blockSize < totalKeyValueSize) {
+                        // First, free the old block.
                         if (keyValueOffset != 0) {
                             btree.fileAllocator->Free (keyValueOffset);
                         }
@@ -170,6 +171,7 @@ namespace thekogans {
                                 largestKeyValueSize.second.Size () +
                                 largestKeyValueSize.second) *
                             btree.header.entriesPerNode;
+                        // Allocate a new key/value block.
                         keyValueOffset = btree.fileAllocator->Alloc (totalKeyValueSize);
                     }
                     *buffer << leftOffset << keyValueOffset;
@@ -383,7 +385,7 @@ namespace thekogans {
         }
 
         BTree2::Node::InsertResult BTree2::Node::Insert (Entry &entry) {
-            ui32 index;
+            ui32 index = 0;
             if (Search (*entry.key, index)) {
                 return Duplicate;
             }
@@ -428,7 +430,7 @@ namespace thekogans {
         }
 
         bool BTree2::Node::Remove (const Key &key) {
-            ui32 index;
+            ui32 index = 0;
             bool found = Search (key, index);
             Node *child = GetChild (found ? index + 1 : index);
             if (found) {
@@ -597,8 +599,8 @@ namespace thekogans {
         }
 
         bool BTree2::Iterator::Next () {
-            bool found = false;
             if (!finished) {
+                bool found = false;
                 ++node.second;
                 if (node.second < node.first->count) {
                     Node *child = node.first->GetChild (node.second);
@@ -632,7 +634,7 @@ namespace thekogans {
                     finished = true;
                 }
             }
-            return found;
+            return !finished;
         }
 
         BTree2::BTree2 (
@@ -705,7 +707,7 @@ namespace thekogans {
                 const Key &key,
                 Value::SharedPtr &value) {
             LockGuard<SpinLock> guard (spinLock);
-            ui32 index;
+            ui32 index = 0;
             for (Node *node = root; node != nullptr; node = node->GetChild (index)) {
                 if (node->Search (key, index)) {
                     value.Reset (node->entries[index].value);
@@ -755,35 +757,35 @@ namespace thekogans {
         bool BTree2::FindFirst (Iterator &it) {
             it.Clear ();
             LockGuard<SpinLock> guard (spinLock);
+            bool found = false;
             Node *node = root;
-            if (it.prefix == nullptr) {
-                if (node->count > 0) {
+            if (node != nullptr && node->count > 0) {
+                if (it.prefix == nullptr) {
                     do {
                         it.parents.push_back (Iterator::NodeInfo (node, 0));
                         node = node->GetChild (0);
                     } while (node != nullptr);
-                    it.node = it.parents.back ();
-                    it.parents.pop_back ();
-                    it.finished = false;
-                    return true;
+                    found = true;
                 }
-            }
-            else {
-                ui32 index = 0;
-                if (node->FindFirstPrefix (*it.prefix, index)) {
-                    it.parents.push_back (Iterator::NodeInfo (node, index));
-                    Node *child = node->GetChild (index);
-                    while (child != nullptr && child->FindFirstPrefix (*it.prefix, index)) {
-                        it.parents.push_back (Iterator::NodeInfo (child, index));
-                        child = child->GetChild (index);
+                else {
+                    ui32 index = 0;
+                    if (node->FindFirstPrefix (*it.prefix, index)) {
+                        it.parents.push_back (Iterator::NodeInfo (node, index));
+                        Node *child = node->GetChild (index);
+                        while (child != nullptr && child->FindFirstPrefix (*it.prefix, index)) {
+                            it.parents.push_back (Iterator::NodeInfo (child, index));
+                            child = child->GetChild (index);
+                        }
+                        found = true;
                     }
-                    it.node = it.parents.back ();
-                    it.parents.pop_back ();
-                    it.finished = false;
-                    return true;
                 }
             }
-            return false;
+            if (found) {
+                it.node = it.parents.back ();
+                it.parents.pop_back ();
+                it.finished = false;
+            }
+            return found;
         }
 
         void BTree2::Flush () {

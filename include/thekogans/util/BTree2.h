@@ -36,11 +36,12 @@ namespace thekogans {
         /// all searches, additions and deletions take O(N) where N is the
         /// height of the tree. These are BTree2's bigest strengths. One of it's
         /// biggest weaknesses is the fact that iterators don't survive modifications
-        /// (Inserions/Deletions). This is why I don't provide an iterator api.
-        /// BTree2 uses the full power of \see{DynamicCreatable} and \see{Serializable}
-        /// for it's key and values. That means that key and values can be practically
-        /// any random size object (as long as it derives from BTree2::Key/Value and
-        /// implements the interface).
+        /// (Additions/Deletions). This is why I provide a forward iterator only.
+        /// Use it to step through a range of nodes collecting their data. See an example
+        /// provided with \see{BTree2::Iterator}. BTree2 uses the full power of
+        /// \see{DynamicCreatable} and \see{Serializable} for it's key and value.
+        /// That means that key and values can be practically any random size object
+        /// (as long as it derives from BTree2::Key/Value and implements the interface).
 
         struct BTree2 : public RefCounted {
             /// \brief
@@ -476,10 +477,47 @@ namespace thekogans {
             /// \struct BTree2::Iterator BTree2.h thekogans/util/BTree2.h
             ///
             /// \brief
-            /// Iterator implements a forward iterator over a range of btree nodes.
+            /// Iterator implements a forward cursor over a range of btree nodes.
             /// Call \see{FindFirst} bellow with a reference to an iterator and then
             /// use it to move forward through the range of nodes. The range can either
-            /// be based on a prefix or the entire tree.
+            /// be based on a prefix or the entire tree. Since Iterator is unidirectional
+            /// (forward only), there's no backing up (the code complexity is just not
+            /// worth the added benefit). You get one shot through the range.
+            /// WARNING: The nature of BTrees is such that almost any modification
+            /// to its structure invalidates iterators currently in existance. This
+            /// also means that you CAN'T write code like this:
+            ///
+            /// Deleting a range of nodes:
+            ///
+            /// Ex:
+            ///
+            /// \code{.cpp}
+            /// // WARNING: This is wrong! DON'T do this.
+            /// Iterator it (some prefix);
+            /// if (btree.FindFirst (it)) {
+            ///     do {
+            ///         btree.Delete (*it.GetKey ());
+            ///     } while (it.Next ());
+            /// }
+            /// \endcode
+            ///
+            /// Instead you must write it like this:
+            ///
+            /// Ex:
+            ///
+            /// \code{.cpp}
+            /// // This is the right way.
+            /// std::vector<Key::SharedPtr> keys;
+            /// Iterator it (some prefix);
+            /// if (btree.FindFirst (it)) {
+            ///     do {
+            ///         keys.push_back (it.GetKey ());
+            ///     } while (it.Next ());
+            ///     for (std::size_t i = 0, count = keys.size (); i < count; ++i) {
+            ///         btree.Delete (*keys[i]);
+            ///     }
+            /// }
+            /// \endcode
             struct Iterator {
             protected:
                 /// \brief
@@ -504,28 +542,50 @@ namespace thekogans {
                 bool finished;
 
             public:
+                /// \brief
+                /// ctor.
+                /// \param[in] prefix_ Prefix to iterate over (nullptr == entire tree).
                 Iterator (Key::SharedPtr prefix_ = nullptr) :
                     prefix (prefix_),
                     node (NodeInfo (nullptr, 0)),
                     finished (true) {}
 
+                inline bool IsFinished () const {
+                    return finished;
+                }
+
+                /// \brief
+                /// Step to the next entry in the range.
+                /// \return true == Iterator is now pointing at the next entry.
+                /// Use GetKey and GetValue to examine it's contents. false ==
+                /// the iterator is finished through the range.
                 bool Next ();
 
+                /// \brief
+                /// Clear the internal state and reset the iterator.
                 inline void Clear () {
                     parents.clear ();
                     node = Iterator::NodeInfo (nullptr, 0);
                     finished = true;
                 }
 
+                /// \brief
+                /// If we're not finished, return the key associated with the current entry.
+                /// \return Key associated with the current entry.
                 inline Key::SharedPtr GetKey () const {
-                    return !finished && node.first != nullptr ?
+                    return !finished && node.first != nullptr && node.second < node.first->count ?
                         node.first->entries[node.second].key : nullptr;
                 }
+                /// \brief
+                /// If we're not finished, return the value associated with the current entry.
+                /// \return Value associated with the current entry.
                 inline Value::SharedPtr GetValue () const {
-                    return !finished && node.first != nullptr ?
+                    return !finished && node.first != nullptr && node.second < node.first->count ?
                         node.first->entries[node.second].value : nullptr;
                 }
 
+                /// \brief
+                /// BTree2 is the only one trusted to access sensitive protected data.
                 friend struct BTree2;
             };
 
