@@ -44,14 +44,12 @@ namespace thekogans {
             /// management, performance, and global heap fragmentation.
             THEKOGANS_UTIL_DECLARE_STD_ALLOCATOR_FUNCTIONS
 
-            enum {
-                /// \brief
-                /// Min serialized SizeT size.
-                MIN_SIZE = UI8_SIZE,
-                /// \brief
-                /// Max serialized SizeT size.
-                MAX_SIZE = UI8_SIZE + UI64_SIZE
-            };
+            /// \brief
+            /// Min serialized SizeT size.
+            static const std::size_t MIN_SIZE = UI8_SIZE;
+            /// \brief
+            /// Max serialized SizeT size.
+            static const std::size_t MAX_SIZE = UI8_SIZE + UI64_SIZE;
 
             /// \brief
             /// Use ui64 to represent architecture independent size (i386, x86_64...).

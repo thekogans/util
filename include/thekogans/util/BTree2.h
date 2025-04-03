@@ -15,8 +15,8 @@
 // You should have received a copy of the GNU General Public License
 // along with libthekogans_util. If not, see <http://www.gnu.org/licenses/>.
 
-#if !defined (__thekogans_util_BTree_h)
-#define __thekogans_util_BTree_h
+#if !defined (__thekogans_util_BTree2_h)
+#define __thekogans_util_BTree2_h
 
 #include "thekogans/util/Config.h"
 #include "thekogans/util/Types.h"
@@ -29,45 +29,55 @@
 namespace thekogans {
     namespace util {
 
-        /// \struct BTree BTree.h thekogans/util/BTree.h
+        /// \struct BTree2 BTree2.h thekogans/util/BTree2.h
         ///
         /// \brief
-        /// A BTree is a \see{FileAllocator} container. It's attributes are that
+        /// A BTree2 is a \see{FileAllocator} container. It's attributes are that
         /// all searches, additions and deletions take O(N) where N is the
-        /// height of the tree. These are BTree's bigest strengths. One of it's
+        /// height of the tree. These are BTree2's bigest strengths. One of it's
         /// biggest weaknesses is the fact that iterators don't survive modifications
         /// (Inserions/Deletions). This is why I don't provide an iterator api.
-        /// BTree keys are \see{GUID} and the values are \see{ui64}.
-        /// NOTE: I thought long and hard about the types that should
-        /// represent keys and values. On the surface this screams TEMPLATES!
-        /// Unfortunatelly BTrees need to adjust their types dynamically (at
-        /// run time) not statically (at compile time). Imagine creating a
-        /// BTree type of a specific type and then using it to read a file
-        /// with different types for keys and values, disaster! A \see{GUID}
-        /// may not seem big enough to support all types of keys we might want,
-        /// but thats deceiving. \see{GUID} supports \see{Hash}ing values and
-        /// can be used to compute keys from any block of bytes. As for ui64
-        /// values, use them as offsets in to files to read/write as much data
-        /// as you need.
+        /// BTree2 uses the full power of \see{DynamicCreatable} and \see{Serializable}
+        /// for it's key and values. That means that key and values can be practically
+        /// any random size object (as long as it derives from BTree2::Key/Value and
+        /// implements the interface).
 
-        struct BTree : public RefCounted {
+        struct BTree2 : public RefCounted {
             /// \brief
             /// Declare \see{RefCounted} pointers.
-            THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (BTree)
+            THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (BTree2)
 
-            /// \brief
-            /// KeyType is \see{GUID}s.
-            using KeyType = GUID;
-            /// \brief
-            /// KeyType size on disk.
-            static const std::size_t KEY_TYPE_SIZE = GUID::SIZE;
+            struct Key : public Serializable {
+                /// \brief
+                /// Declare \see{DynamicCreatable} boilerplate.
+                THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE_BASE (Key)
 
-            /// \brief
-            /// ValueType is \see{ui64}.
-            using ValueType = ui64;
-            /// \brief
-            /// ValueType size on disk.
-            static const std::size_t VALUE_TYPE_SIZE = UI64_SIZE;
+                /// \brief
+                /// Used to find keys with matching prefixs.
+                /// \param[in] prefix Key representing the prefix to compare against.
+                /// \return -1 == this is < key, 0 == this == key, 1 == this is greater than key.
+                virtual i32 PrefixCompare (const Key &prefix) const = 0;
+                /// \brief
+                /// Used to order keys.
+                /// \param[in] key Key to compare against.
+                /// \return -1 == this is < key, 0 == this == key, 1 == this is greater than key.
+                virtual i32 Compare (const Key &key) const = 0;
+                /// \brief
+                /// This method is only used in Dump for debugging purposes.
+                /// \return String representation of the key.
+                virtual std::string ToString () const = 0;
+            };
+
+            struct Value : public Serializable {
+                /// \brief
+                /// Declare \see{DynamicCreatable} boilerplate.
+                THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE_BASE (Value)
+
+                /// \brief
+                /// This method is only used in Dump for debugging purposes.
+                /// \return String representation of the value.
+                virtual std::string ToString () const = 0;
+            };
 
         private:
             /// \brief
@@ -77,11 +87,17 @@ namespace thekogans {
             /// \brief
             /// Offset of the \see{Header} block.
             FileAllocator::PtrType offset;
-            /// \struct BTree::Header BTree.h thekogans/util/BTree.h
+            /// \struct BTree2::Header BTree2.h thekogans/util/BTree2.h
             ///
             /// \brief
             /// Header contains global btree info.
             struct Header {
+                /// \brief
+                /// Key type.
+                std::string keyType;
+                /// \brief
+                /// Value type.
+                std::string valueType;
                 /// \brief
                 /// Entries per node.
                 ui32 entriesPerNode;
@@ -90,27 +106,38 @@ namespace thekogans {
                 FileAllocator::PtrType rootOffset;
 
                 /// \brief
-                /// Size of header on disk.
-                static const std::size_t SIZE =
-                    UI32_SIZE +                    // magic
-                    UI32_SIZE +                    // entriesPerNode
-                    FileAllocator::PTR_TYPE_SIZE;  // rootOffset
-
-                /// \brief
                 /// ctor.
+                /// \param[in] keyType_ \see{DynamicCreatable} type.
+                /// \param[in] valueType_ \see{DynamicCreatable} type.
                 /// \param[in] entriesPerNode_ Entries per node.
-                Header (ui32 entriesPerNode_ = DEFAULT_ENTRIES_PER_NODE) :
+                Header (
+                    const std::string &keyType_ = std::string (),
+                    const std::string &valueType_ = std::string (),
+                    ui32 entriesPerNode_ = DEFAULT_ENTRIES_PER_NODE) :
+                    keyType (keyType_),
+                    valueType (valueType_),
                     entriesPerNode (entriesPerNode_),
                     rootOffset (0) {}
+
+                /// \brief
+                /// Return the serialized size of the header.
+                inline std::size_t Size () const {
+                    return
+                        UI32_SIZE + // magic
+                        Serializer::Size (keyType) +
+                        Serializer::Size (valueType) +
+                        Serializer::Size (entriesPerNode) +
+                        Serializer::Size (rootOffset);
+                }
             } header;
-            /// \struct BTree::Node BTree.h thekogans/util/BTree.h
+            /// \struct BTree2::Node BTree2.h thekogans/util/BTree2.h
             ///
             /// \brief
-            /// BTree nodes store sorted keys and pointers to children nodes.
+            /// BTree2 nodes store sorted key/value pairs and pointers to children nodes.
             struct Node {
                 /// \brief
-                /// BTree to which this node belongs.
-                BTree &btree;
+                /// BTree2 to which this node belongs.
+                BTree2 &btree;
                 /// \brief
                 /// Node block offset.
                 FileAllocator::PtrType offset;
@@ -124,19 +151,22 @@ namespace thekogans {
                 /// Left most child node.
                 Node *leftNode;
                 /// \brief
+                /// Key/value array offset.
+                FileAllocator::PtrType keyValueOffset;
+                /// \brief
                 /// We accumulate all changes and update the file block in the dtor.
                 bool dirty;
-                /// \struct BTree::Node::Entry BTree.h thekogans/util/BTree.h
+                /// \struct BTree2::Node::Entry BTree2.h thekogans/util/BTree2.h
                 ///
                 /// \brief
                 /// Node entries contain keys, values and right (grater then) children.
                 struct Entry {
                     /// \brief
                     /// Entry key.
-                    KeyType key;
+                    Key *key;
                     /// \brief
                     /// Entry value.
-                    ValueType value;
+                    Value *value;
                     /// \brief
                     /// Right child node offset.
                     FileAllocator::PtrType rightOffset;
@@ -153,8 +183,8 @@ namespace thekogans {
                     /// \param[in] key_ Entry key.
                     /// \param[in] value_ Entry value.
                     Entry (
-                        const KeyType &key_ = KeyType::Empty,
-                        ValueType value_ = 0) :
+                        Key *key_ = nullptr,
+                        Value *value_ = nullptr) :
                         key (key_),
                         value (value_),
                         rightOffset (0),
@@ -167,10 +197,10 @@ namespace thekogans {
 
                 /// \brief
                 /// ctor.
-                /// \param[in] btree_ BTree to which this node belongs.
+                /// \param[in] btree_ BTree2 to which this node belongs.
                 /// \param[in] offset_ Node offset.
                 Node (
-                    BTree &btree_,
+                    BTree2 &btree_,
                     FileAllocator::PtrType offset_ = 0);
                 /// \brief
                 /// dtor.
@@ -188,10 +218,10 @@ namespace thekogans {
                 static std::size_t Size (std::size_t entriesPerNode);
                 /// \brief
                 /// Allocate a node.
-                /// \param[in] btree BTree to which this node belongs.
+                /// \param[in] btree BTree2 to which this node belongs.
                 /// \param[in] offset Node offset.
                 static Node *Alloc (
-                    BTree &btree,
+                    BTree2 &btree,
                     FileAllocator::PtrType offset = 0);
                 /// \brief
                 /// Free the given node.
@@ -213,7 +243,7 @@ namespace thekogans {
                 /// \brief
                 /// Nodes delay writting themselves to disk until they are destroyed.
                 /// This way we amortize the cost of disk writes across multiple node
-                /// updates. Call BTree::Flush to flush the cache in tight memory
+                /// updates. Call BTree2::Flush to flush the cache in tight memory
                 /// situations.
                 inline void Save () {
                     dirty = true;
@@ -224,14 +254,20 @@ namespace thekogans {
                 /// (0 == left, !0 == entries[index-1].right).
                 /// \return Child node at the given index. nullptr if no child at that index exists.
                 Node *GetChild (ui32 index);
+                bool PrefixSearch (
+                    const Key &prefix,
+                    ui32 &index) const;
+                bool FindFirstPrefix (
+                    const Key &prefix,
+                    ui32 &index) const;
                 /// \brief
                 /// Search for a given key.
-                /// \param[in] key \see{KeyType} to search for.
+                /// \param[in] key \see{Key} to search for.
                 /// \param[out] index If found will contain the index of the key.
                 /// If not found will contain the index of the closest larger key.
                 /// \return true == found the key.
                 bool Search (
-                    const KeyType &key,
+                    const Key &key,
                     ui32 &index) const;
                 /// \enum
                 /// Insert return codes.
@@ -254,13 +290,13 @@ namespace thekogans {
                 InsertResult Insert (Entry &entry);
                 /// \brief
                 /// Try to recursively delete the given key.
-                /// \param[in] key \see{KeyType} whose entry we want to delete.
+                /// \param[in] key \see{Key} whose entry we want to delete.
                 /// \return true == entry was deleted. false == key not found.
-                bool Remove (const KeyType &key);
+                bool Remove (const Key &key);
                 /// \brief
                 /// The algorithm checks the left and right children @index for
                 /// conformity and performs necessary adjustments to maintain the
-                /// BTree structure. If one of the children is poor an entry is
+                /// BTree2 structure. If one of the children is poor an entry is
                 /// rotated in to it from the other child. If they are both poor,
                 /// the algorithm merges the two children in to one.
                 /// \param[in] index Index of entry whos left and right child to check.
@@ -373,10 +409,12 @@ namespace thekogans {
 
             /// \brief
             /// ctor.
-            /// \param[in] fileAllocator_ BTree heap (see \see{FileAllocator}).
+            /// \param[in] fileAllocator_ BTree2 heap (see \see{FileAllocator}).
             /// \param[in] offset_ Heap offset of the \see{Header} block.
-            /// \param[in] entriesPerNode If we're creating the heap, contains entries per
-            /// \see{Node}. If we're reading an existing heap, this value will come from the
+            /// \param[in] keyType \see{DynamicCreatable} key type.
+            /// \param[in] valueType \see{DynamicCreatable} value type.
+            /// \param[in] entriesPerNode If we're creating the btree, contains entries per
+            /// \see{Node}. If we're reading an existing btree, this value will come from the
             /// \see{Header}.
             /// \param[in] nodesPerPage \see{Node}s are allocated using a \see{BlockAllocator}.
             /// This value sets the number of nodes that will fit on it's page. It's a subtle
@@ -386,15 +424,17 @@ namespace thekogans {
             /// \param[in] allocator This is the \see{Allocator} used to allocate pages
             /// for the \see{BlockAllocator}. As with the previous parameter, the same
             /// advice aplies.
-            BTree (
+            BTree2 (
                 FileAllocator::SharedPtr fileAllocator_,
                 FileAllocator::PtrType offset_,
+                const std::string &keyType = std::string (),
+                const std::string &valueType = std::string (),
                 std::size_t entriesPerNode = DEFAULT_ENTRIES_PER_NODE,
                 std::size_t nodesPerPage = BlockAllocator::DEFAULT_BLOCKS_PER_PAGE,
                 Allocator::SharedPtr allocator = DefaultAllocator::Instance ());
             /// \brief
             /// dtor.
-            ~BTree ();
+            ~BTree2 ();
 
             /// \brief
             /// Delete the btree from the heap.
@@ -413,25 +453,83 @@ namespace thekogans {
 
             /// \brief
             /// Find the given key in the btree.
-            /// \param[in] key KeyType to find.
+            /// \param[in] key \see{Key} to find.
             /// \param[out] value If found the given key's value will be returned in value.
             /// \return true == found.
             bool Search (
-                const KeyType &key,
-                ValueType &value);
+                const Key &key,
+                Value::SharedPtr &value);
             /// \brief
             /// Add the given key to the btree.
             /// \param[in] key KeyType to add.
             /// \param[in] value Value associated with the given key.
             /// \return true == added. false == duplicate.
             bool Add (
-                const KeyType &key,
-                ValueType value);
+                Key::SharedPtr key,
+                Value::SharedPtr value);
             /// \brief
             /// Delete the given key from the btree.
             /// \param[in] key KeyType whose entry to delete.
             /// \return true == entry deleted. false == entry not found.
-            bool Delete (const KeyType &key);
+            bool Delete (const Key &key);
+
+            /// \struct BTree2::Iterator BTree2.h thekogans/util/BTree2.h
+            ///
+            /// \brief
+            /// Iterator implements a forward iterator over a range of btree nodes.
+            /// Call \see{FindFirst} bellow with a reference to an iterator and then
+            /// use it to move forward through the range of nodes. The range can either
+            /// be based on a prefix or the entire tree.
+            struct Iterator {
+            protected:
+                /// \brief
+                /// Prefix to iterate over (nullptr == entire tree).
+                Key::SharedPtr prefix;
+                /// \brief
+                /// Alias for std::pair<Node *, ui32>.
+                using NodeInfo = std::pair<Node *, ui32>;
+                /// \brief
+                /// Stack of parents allowing us to navigate the tree.
+                /// The nodes store no parent pointers. They would be
+                /// a nightmare to maintain.
+                std::vector<NodeInfo> parents;
+                /// \brief
+                /// Current node we're iterating over.
+                NodeInfo node;
+                /// \brief
+                /// Flag indicating the iterator is done and will not
+                /// return true from Next again. It is only set in \see{FindFirst}
+                /// below and only after it made sure that it properly initialized
+                /// the iterator.
+                bool finished;
+
+            public:
+                Iterator (Key::SharedPtr prefix_ = nullptr) :
+                    prefix (prefix_),
+                    node (NodeInfo (nullptr, 0)),
+                    finished (true) {}
+
+                bool Next ();
+
+                inline void Clear () {
+                    parents.clear ();
+                    node = Iterator::NodeInfo (nullptr, 0);
+                    finished = true;
+                }
+
+                inline Key::SharedPtr GetKey () const {
+                    return !finished && node.first != nullptr ?
+                        node.first->entries[node.second].key : nullptr;
+                }
+                inline Value::SharedPtr GetValue () const {
+                    return !finished && node.first != nullptr ?
+                        node.first->entries[node.second].value : nullptr;
+                }
+
+                friend struct BTree2;
+            };
+
+            bool FindFirst (Iterator &it);
 
             /// \brief
             /// Flush the node cache (used in tight memory situations).
@@ -472,11 +570,11 @@ namespace thekogans {
                 Header &header);
 
             /// \brief
-            /// BTree is neither copy constructable, nor assignable.
-            THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (BTree)
+            /// BTree2 is neither copy constructable, nor assignable.
+            THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (BTree2)
         };
 
     } // namespace util
 } // namespace thekogans
 
-#endif // !defined (__thekogans_util_BTree_h)
+#endif // !defined (__thekogans_util_BTree2_h)

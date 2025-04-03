@@ -120,9 +120,9 @@ namespace thekogans {
             /// Synchronization spin lock.
             SpinLock spinLock;
 
-            enum {
-                DEFAULT_MAX_ENTRIES = 1000
-            };
+            /// \brief
+            /// Default maximum number of entries.
+            static const std::size_t DEFAULT_MAX_ENTRIES = 1000;
 
             /// \brief
             /// ctor.

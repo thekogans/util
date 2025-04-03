@@ -33,17 +33,15 @@ namespace thekogans {
 
         struct _LIB_THEKOGANS_UTIL_DECL SHA2_224_256 {
         private:
-            enum {
-                /// \brief
-                /// Size of the state vector in ui32.
-                STATE_SIZE = 8,
-                /// \brief
-                /// Block size in bytes.
-                BLOCK_SIZE = 64,
-                /// \brief
-                /// Block size, without the 8 bytes for bitCount, in bytes.
-                SHORT_BLOCK_SIZE = BLOCK_SIZE - 8
-            };
+            /// \brief
+            /// Size of the state vector in ui32.
+            static const std::size_t STATE_SIZE = 8;
+            /// \brief
+            /// Block size in bytes.
+            static const std::size_t BLOCK_SIZE = 64;
+            /// \brief
+            /// Block size, without the 8 bytes for bitCount, in bytes.
+            static const std::size_t SHORT_BLOCK_SIZE = BLOCK_SIZE - 8;
             /// \brief
             /// Digest size (DIGEST_SIZE_224 or DIGEST_SIZE_256).
             std::size_t digestSize;

@@ -56,7 +56,7 @@ namespace thekogans {
             /// Represents a plugin found in the xml file.
             struct _LIB_THEKOGANS_UTIL_DECL Plugin : public virtual RefCounted {
                 /// \brief
-                /// Alias for RefCounted::SharedPtr<Plugin>.
+                /// Declare \see{RefCounted} pointers.
                 THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (Plugin)
 
                 /// \brief
@@ -167,11 +167,9 @@ namespace thekogans {
             bool modified;
 
         public:
-            enum {
-                /// \brief
-                /// Default max plugins file size.
-                DEFAULT_MAX_PLUGINS_FILE_SIZE = 1024 * 1024
-            };
+            /// \brief
+            /// Default max plugins file size.
+            static const std::size_t DEFAULT_MAX_PLUGINS_FILE_SIZE = 1024 * 1024;
 
             /// \brief
             /// ctor.

@@ -121,7 +121,7 @@ namespace thekogans {
         /// (circular dependency)
 
         struct _LIB_THEKOGANS_UTIL_DECL LoggerMgr {
-            /// \brief
+            /// \enum
             /// Log levels. Each successive level builds on the previous ones.
             /// IMPORTANT: These constants are mirrored in Config.h. If we
             /// change this list, we need to update that one too.
@@ -149,7 +149,7 @@ namespace thekogans {
                 MaxLevel = Development
             };
 
-            /// \brief
+            /// \enum
             /// Log entry decorations.
             /// IMPORTANT: These constants are mirrored in Config.h. If we
             /// change this list, we need to update that one too.

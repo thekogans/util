@@ -50,14 +50,12 @@ namespace thekogans {
         template<typename T>
         struct RefCountedRegistry : public Singleton<RefCountedRegistry<T>> {
         public:
-            enum {
-                /// \brief
-                /// Default initial entry list size.
-                DEFAULT_ENTRIES_SIZE = 1024,
-                /// \brief
-                /// Bit pattern for an invalid token.
-                INVALID_TOKEN = NIDX64
-            };
+            /// \brief
+            /// Default initial entry list size.
+            static const std::size_t DEFAULT_ENTRIES_SIZE = 1024;
+            /// \brief
+            /// Bit pattern for an invalid token.
+            static const ui64 INVALID_TOKEN = NIDX64;
 
             /// \struct RefCountedRegistry::Token RefCountedRegistry.h thekogans/util/RefCountedRegistry.h
             ///

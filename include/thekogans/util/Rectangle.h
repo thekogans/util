@@ -70,11 +70,9 @@ namespace thekogans {
                 /// Extents (0, 0);
                 static const Extents Empty;
 
-                enum {
-                    /// \brief
-                    /// Serialized extent size.
-                    SIZE = UI32_SIZE + UI32_SIZE
-                };
+                /// \brief
+                /// Serialized extent size.
+                static const std::size_t SIZE = UI32_SIZE + UI32_SIZE;
 
                 /// \brief
                 /// Return the size of Extents.
@@ -147,11 +145,9 @@ namespace thekogans {
             /// Rectangle (0, 0, 0, 0);
             static const Rectangle Empty;
 
-            enum {
-                /// \brief
-                /// Serialized rectangle size.
-                SIZE = Point::SIZE + Extents::SIZE
-            };
+            /// \brief
+            /// Serialized rectangle size.
+            static const std::size_t SIZE = Point::SIZE + Extents::SIZE;
 
             /// \brief
             /// Return the size of Rectangle.

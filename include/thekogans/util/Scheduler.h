@@ -82,7 +82,7 @@ namespace thekogans {
                 /// management, performance, and global heap fragmentation.
                 THEKOGANS_UTIL_DECLARE_STD_ALLOCATOR_FUNCTIONS
 
-                /// \brief
+                /// \enum
                 /// JobQueue priority.
                 enum Priority {
                     /// \brief

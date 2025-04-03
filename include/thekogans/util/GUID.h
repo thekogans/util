@@ -46,11 +46,10 @@ namespace thekogans {
         /// when using GUID.
 
         struct _LIB_THEKOGANS_UTIL_DECL GUID {
-            enum {
-                /// \brief
-                /// GUID size.
-                SIZE = MD5::DIGEST_SIZE_128
-            };
+            /// \brief
+            /// GUID size.
+            static const std::size_t SIZE = MD5::DIGEST_SIZE_128;
+
             /// \brief
             /// GUID data.
             ui8 data[SIZE];

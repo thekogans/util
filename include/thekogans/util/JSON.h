@@ -45,6 +45,8 @@ namespace thekogans {
             /// \brief
             /// Base for all JSON value types.
             struct _LIB_THEKOGANS_UTIL_DECL Value : public DynamicCreatable {
+                /// \brief
+                /// Declare \see{DynamicCreatable} boilerplate.
                 THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE_BASE (JSON::Value)
 
             #if defined (THEKOGANS_UTIL_TYPE_Static)

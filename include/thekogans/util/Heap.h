@@ -329,10 +329,18 @@ namespace thekogans {
             /// \enum
             /// Various heap error types.
             enum HeapError {
+                /// \brief
+                /// Out of memory.
                 OutOfMemory,
+                /// \brief
+                /// Invalid pointer.
                 BadPointer,
                 // FIXME: Use these to pinpoint the type of corruption (BadPointer).
+                /// \brief
+                /// Underflow.
                 Underflow,
+                /// \brief
+                /// Overflow.
                 Overflow
             };
             /// \brief
@@ -657,7 +665,7 @@ namespace thekogans {
             /// Partial pages.
             PageList partialPages;
             /// \brief
-            /// Pages need to be aligned on a page size boundary.
+            /// Page allocator.
             Allocator::SharedPtr allocator;
             /// \brief
             /// Synchronization lock.

@@ -287,11 +287,10 @@ namespace thekogans {
             /// sharing algorithms to implement simple thread management to
             /// avoid the 'Thundering Herd' problem.
             struct _LIB_THEKOGANS_UTIL_DECL Backoff {
-                enum : ui32 {
-                    /// \brief
-                    /// Default max pause iterations before giving up the time slice.
-                    DEFAULT_MAX_PAUSE_BEFORE_YIELD = 16
-                };
+                /// \brief
+                /// Default max pause iterations before giving up the time slice.
+                static const ui32 DEFAULT_MAX_PAUSE_BEFORE_YIELD = 16;
+
                 /// \brief
                 /// Max pause iterations before giving up the time slice.
                 ui32 maxPauseBeforeYield;

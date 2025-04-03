@@ -78,11 +78,9 @@ namespace thekogans {
             /// Point (0, 0);
             static const Point Empty;
 
-            enum {
-                /// \brief
-                /// Serialized point size.
-                SIZE = I32_SIZE + I32_SIZE
-            };
+            /// \brief
+            /// Serialized point size.
+            static const std::size_t SIZE = I32_SIZE + I32_SIZE;
 
             /// \brief
             /// Return the size of Point.

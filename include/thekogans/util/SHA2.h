@@ -38,20 +38,18 @@ namespace thekogans {
             /// SHA2 participates in the Hash dynamic discovery and creation.
             THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE (SHA2)
 
-            enum {
-                /// \brief
-                /// SHA2 224 bit hash size in bytes.
-                DIGEST_SIZE_224 = 28,
-                /// \brief
-                /// SHA2 256 bit hash size in bytes.
-                DIGEST_SIZE_256 = 32,
-                /// \brief
-                /// SHA2 384 bit hash size in bytes.
-                DIGEST_SIZE_384 = 48,
-                /// \brief
-                /// SHA2 512 bit hash size in bytes.
-                DIGEST_SIZE_512 = 64
-            };
+            /// \brief
+            /// SHA2 224 bit hash size in bytes.
+            static const std::size_t DIGEST_SIZE_224 = 28;
+            /// \brief
+            /// SHA2 256 bit hash size in bytes.
+            static const std::size_t DIGEST_SIZE_256 = 32;
+            /// \brief
+            /// SHA2 384 bit hash size in bytes.
+            static const std::size_t DIGEST_SIZE_384 = 48;
+            /// \brief
+            /// SHA2 512 bit hash size in bytes.
+            static const std::size_t DIGEST_SIZE_512 = 64;
 
         private:
             /// \brief

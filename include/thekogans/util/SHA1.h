@@ -36,24 +36,20 @@ namespace thekogans {
             /// SHA1 participates in the Hash dynamic discovery and creation.
             THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE (SHA1)
 
-            enum {
-                /// \brief
-                /// SHA1 hash size in bytes.
-                DIGEST_SIZE_160 = 20
-            };
+            /// \brief
+            /// SHA1 hash size in bytes.
+            static const std::size_t DIGEST_SIZE_160 = 20;
 
         private:
-            enum {
-                /// \brief
-                /// Size of the state vector in ui32.
-                STATE_SIZE = 5,
-                /// \brief
-                /// Block size in bytes.
-                BLOCK_SIZE = 64,
-                /// \brief
-                /// Block size, without the 8 bytes for bitCount, in bytes.
-                SHORT_BLOCK_SIZE = BLOCK_SIZE - 8
-            };
+            /// \brief
+            /// Size of the state vector in ui32.
+            static const std::size_t STATE_SIZE = 5;
+            /// \brief
+            /// Block size in bytes.
+            static const std::size_t BLOCK_SIZE = 64;
+            /// \brief
+            /// Block size, without the 8 bytes for bitCount, in bytes.
+            static const std::size_t SHORT_BLOCK_SIZE = BLOCK_SIZE - 8;
             /// \brief
             /// Incremental state used during hashing.
             ui32 state[STATE_SIZE];

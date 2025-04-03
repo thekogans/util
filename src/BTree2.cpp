@@ -16,48 +16,62 @@
 // along with libthekogans_util. If not, see <http://www.gnu.org/licenses/>.
 
 #include <cstring>
+#include "thekogans/util/Array.h"
 #include "thekogans/util/Exception.h"
 #include "thekogans/util/LockGuard.h"
-#include "thekogans/util/BTree.h"
+#include "thekogans/util/BTree2.h"
 
 namespace thekogans {
     namespace util {
 
         inline Serializer &operator << (
                 Serializer &serializer,
-                const BTree::Node::Entry &entry) {
-            serializer << entry.key << entry.value << entry.rightOffset;
+                const BTree2::Node::Entry &entry) {
+            serializer << entry.rightOffset;
             return serializer;
         }
 
         inline Serializer &operator >> (
                 Serializer &serializer,
-                BTree::Node::Entry &entry) {
-            serializer >> entry.key >> entry.value >> entry.rightOffset;
-            // Because of the way we allocate the BTree::Node the
+                BTree2::Node::Entry &entry) {
+            serializer >> entry.rightOffset;
+            // Because of the way we allocate the BTree2::Node the
             // Entry cror is never called. In a way this extraction
             // operator is our ctor. Make sure all members are
             // properly initialized.
+            entry.key = nullptr;
+            entry.value = nullptr;
             entry.rightNode = nullptr;
             return serializer;
         }
 
         inline Serializer &operator << (
                 Serializer &serializer,
-                const BTree::Header &header) {
-            serializer << header.entriesPerNode << header.rootOffset;
+                const BTree2::Header &header) {
+            serializer <<
+                header.keyType <<
+                header.valueType <<
+                header.entriesPerNode <<
+                header.rootOffset;
             return serializer;
         }
 
         inline Serializer &operator >> (
                 Serializer &serializer,
-                BTree::Header &header) {
-            serializer >> header.entriesPerNode >> header.rootOffset;
+                BTree2::Header &header) {
+            serializer >>
+                header.keyType >>
+                header.valueType >>
+                header.entriesPerNode >>
+                header.rootOffset;
             return serializer;
         }
 
-        BTree::Node::Node (
-                BTree &btree_,
+        THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_BASE (thekogans::util::BTree2::Key)
+        THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_BASE (thekogans::util::BTree2::Value)
+
+        BTree2::Node::Node (
+                BTree2 &btree_,
                 FileAllocator::PtrType offset_) :
                 btree (btree_),
                 offset (offset_),
@@ -73,15 +87,31 @@ namespace thekogans {
                 if (magic == MAGIC32) {
                     *buffer >> count;
                     if (count > 0) {
-                        *buffer >> leftOffset;
+                        *buffer >> leftOffset >> keyValueOffset;
+                        FileAllocator::BlockBuffer::SharedPtr keyValueBuffer =
+                            btree.fileAllocator->CreateBlockBuffer (keyValueOffset);
+                        Serializable::Header keyHeader (btree.header.keyType, 0, 0);
+                        Serializable::Header valueHeader (btree.header.valueType, 0, 0);
                         for (ui32 i = 0; i < count; ++i) {
                             *buffer >> entries[i];
+                            {
+                                entries[i].key =
+                                    Key::CreateType (keyHeader.type.c_str ()).Release ();
+                                *keyValueBuffer >> keyHeader.version >> keyHeader.size;
+                                entries[i].key->Read (keyHeader, *keyValueBuffer);
+                            }
+                            {
+                                entries[i].value =
+                                    Value::CreateType (valueHeader.type.c_str ()).Release ();
+                                *keyValueBuffer >> valueHeader.version >> valueHeader.size;
+                                entries[i].value->Read (valueHeader, *keyValueBuffer);
+                            }
                         }
                     }
                 }
                 else {
                     THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                        "Corrupt BTree::Node: " THEKOGANS_UTIL_UI64_FORMAT,
+                        "Corrupt BTree2::Node: " THEKOGANS_UTIL_UI64_FORMAT,
                         offset);
                 }
             }
@@ -92,47 +122,129 @@ namespace thekogans {
             }
         }
 
-        BTree::Node::~Node () {
+        BTree2::Node::~Node () {
             if (dirty) {
                 FileAllocator::BlockBuffer::SharedPtr buffer =
                     btree.fileAllocator->CreateBlockBuffer (offset, 0, false);
                 *buffer << MAGIC32 << count;
                 if (count > 0) {
-                    *buffer << leftOffset;
+                    // Calculate key/value sizes.
+                    std::size_t totalKeyValueSize = 0;
+                    Array<std::pair<SizeT, SizeT>> keyValueSizes (count);
+                    std::pair<SizeT, SizeT> largestKeyValueSize (0, 0);
+                    for (ui32 i = 0; i < count; ++i) {
+                        std::pair<SizeT, SizeT> keyValueSize (
+                            entries[i].key->Size (), entries[i].value->Size ());
+                        if (largestKeyValueSize.first < keyValueSize.first) {
+                            largestKeyValueSize.first = keyValueSize.first;
+                        }
+                        if (largestKeyValueSize.second < keyValueSize.second) {
+                            largestKeyValueSize.second = keyValueSize.second;
+                        }
+                        keyValueSizes[i] = keyValueSize;
+                        totalKeyValueSize +=
+                            UI16_SIZE + keyValueSize.first.Size () + keyValueSize.first +
+                            UI16_SIZE + keyValueSize.second.Size () + keyValueSize.second;
+                    }
+                    // Get existing block size.
+                    ui64 blockSize = 0;
+                    if (keyValueOffset != 0) {
+                        blockSize = btree.fileAllocator->GetBlockSize (keyValueOffset);
+                    }
+                    // If existing block size is less than what we need,
+                    // resize it.
+                    if (blockSize < totalKeyValueSize) {
+                        if (keyValueOffset != 0) {
+                            btree.fileAllocator->Free (keyValueOffset);
+                        }
+                        // We mitigate the number of times we need to reallocate
+                        // the key/value block by trying to allocate enough space
+                        // for all entries containing the largest key and value.
+                        // Depending on the pathology of the combination and the
+                        // size of the node this can be very wasteful.
+                        totalKeyValueSize =
+                            (UI16_SIZE +
+                                largestKeyValueSize.first.Size () +
+                                largestKeyValueSize.first +
+                            UI16_SIZE +
+                                largestKeyValueSize.second.Size () +
+                                largestKeyValueSize.second) *
+                            btree.header.entriesPerNode;
+                        keyValueOffset = btree.fileAllocator->Alloc (totalKeyValueSize);
+                    }
+                    *buffer << leftOffset << keyValueOffset;
+                    FileAllocator::BlockBuffer::SharedPtr keyValueBuffer =
+                        btree.fileAllocator->CreateBlockBuffer (keyValueOffset, 0, false);
                     for (ui32 i = 0; i < count; ++i) {
                         *buffer << entries[i];
+                        *keyValueBuffer <<
+                            entries[i].key->Version () <<
+                            SizeT (keyValueSizes[i].first);
+                        entries[i].key->Write (*keyValueBuffer);
+                        *keyValueBuffer <<
+                            entries[i].value->Version () <<
+                            SizeT (keyValueSizes[i].second);
+                        entries[i].value->Write (*keyValueBuffer);
                     }
+                    // Zero out the unused portion of the keyValueBuffer to
+                    // prevent leaking sensitive data.
+                    if (keyValueBuffer->GetDataAvailableForWriting () > 0) {
+                        memset (
+                            keyValueBuffer->GetWritePtr (),
+                            0,
+                            keyValueBuffer->GetDataAvailableForWriting ());
+                        keyValueBuffer->AdvanceWriteOffset (
+                            keyValueBuffer->GetDataAvailableForWriting ());
+                    }
+                    btree.fileAllocator->WriteBlockBuffer (*keyValueBuffer);
+                }
+                else if (keyValueOffset != 0) {
+                    btree.fileAllocator->Free (keyValueOffset);
+                }
+                // See comment above keyValueBuffer.
+                if (buffer->GetDataAvailableForWriting () > 0) {
+                    memset (
+                        buffer->GetWritePtr (),
+                        0,
+                        buffer->GetDataAvailableForWriting ());
+                    buffer->AdvanceWriteOffset (buffer->GetDataAvailableForWriting ());
                 }
                 btree.fileAllocator->WriteBlockBuffer (*buffer);
             }
             if (count > 0) {
                 Free (leftNode);
                 for (ui32 i = 0; i < count; ++i) {
+                    entries[i].key->Release ();
+                    entries[i].value->Release ();
                     Free (entries[i].rightNode);
                 }
             }
         }
 
-        std::size_t BTree::Node::FileSize (std::size_t entriesPerNode) {
+        std::size_t BTree2::Node::FileSize (std::size_t entriesPerNode) {
             const std::size_t ENTRY_SIZE =
-                KEY_TYPE_SIZE + VALUE_TYPE_SIZE + FileAllocator::PTR_TYPE_SIZE;
-            return UI32_SIZE + UI32_SIZE +
-                FileAllocator::PTR_TYPE_SIZE + entriesPerNode * ENTRY_SIZE;
+                FileAllocator::PTR_TYPE_SIZE; // rightOffset
+            return
+                UI32_SIZE + // magic
+                UI32_SIZE + // count
+                FileAllocator::PTR_TYPE_SIZE + // leftOffset
+                FileAllocator::PTR_TYPE_SIZE + // keyValueOffset
+                entriesPerNode * ENTRY_SIZE;   // entries
         }
 
-        std::size_t BTree::Node::Size (std::size_t entriesPerNode) {
+        std::size_t BTree2::Node::Size (std::size_t entriesPerNode) {
             return sizeof (Node) + (entriesPerNode - 1) * sizeof (Entry);
         }
 
-        BTree::Node *BTree::Node::Alloc (
-                BTree &btree,
+        BTree2::Node *BTree2::Node::Alloc (
+                BTree2 &btree,
                 FileAllocator::PtrType offset) {
             return new (
                 btree.nodeAllocator->Alloc (
                     Size (btree.header.entriesPerNode))) Node (btree, offset);
         }
 
-        void BTree::Node::Free (Node *node) {
+        void BTree2::Node::Free (Node *node) {
             if (node != nullptr) {
                 node->~Node ();
                 node->btree.nodeAllocator->Free (
@@ -140,7 +252,7 @@ namespace thekogans {
             }
         }
 
-        void BTree::Node::Delete (Node *node) {
+        void BTree2::Node::Delete (Node *node) {
             if (node->count == 0) {
                 node->btree.fileAllocator->Free (node->offset);
                 // We've just deleted it's block, writting to it now would be a bad idea.
@@ -155,12 +267,13 @@ namespace thekogans {
             }
         }
 
-        void BTree::Node::Delete (
+        void BTree2::Node::Delete (
                 FileAllocator &fileAllocator,
                 FileAllocator::PtrType offset) {
             if (offset != 0) {
                 ui32 count;
                 FileAllocator::PtrType leftOffset = 0;
+                FileAllocator::PtrType keyValueOffset = 0;
                 Entry entry;
                 FileAllocator::BlockBuffer::SharedPtr buffer =
                     fileAllocator.CreateBlockBuffer (offset);
@@ -169,8 +282,9 @@ namespace thekogans {
                 if (magic == MAGIC32) {
                     *buffer >> count;
                     if (count > 0) {
-                        *buffer >> leftOffset;
+                        *buffer >> leftOffset >> keyValueOffset;
                         Delete (fileAllocator, leftOffset);
+                        fileAllocator.Free (keyValueOffset);
                         for (ui32 i = 0; i < count; ++i) {
                             *buffer >> entry;
                             Delete (fileAllocator, entry.rightOffset);
@@ -180,13 +294,13 @@ namespace thekogans {
                 }
                 else {
                     THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                        "Corrupt BTree::Node: " THEKOGANS_UTIL_UI64_FORMAT,
+                        "Corrupt BTree2::Node: " THEKOGANS_UTIL_UI64_FORMAT,
                         offset);
                 }
             }
         }
 
-        BTree::Node *BTree::Node::GetChild (ui32 index) {
+        BTree2::Node *BTree2::Node::GetChild (ui32 index) {
             if (index == 0) {
                 if (leftNode == 0 && leftOffset != 0) {
                     leftNode = Alloc (btree, leftOffset);
@@ -204,18 +318,19 @@ namespace thekogans {
             }
         }
 
-        bool BTree::Node::Search (
-                const KeyType &key,
+        bool BTree2::Node::PrefixSearch (
+                const Key &prefix,
                 ui32 &index) const {
+            ui32 last = index;
             index = 0;
-            ui32 last = count;
             while (index < last) {
                 ui32 middle = (index + last) / 2;
-                if (key == entries[middle].key) {
+                i32 result = entries[middle].key->PrefixCompare (prefix);
+                if (result == 0) {
                     index = middle;
                     return true;
                 }
-                if (key < entries[middle].key) {
+                if (result < 0) {
                     last = middle;
                 }
                 else {
@@ -225,9 +340,51 @@ namespace thekogans {
             return false;
         }
 
-        BTree::Node::InsertResult BTree::Node::Insert (Entry &entry) {
+        bool BTree2::Node::FindFirstPrefix (
+                const Key &prefix,
+                ui32 &index) const {
+            bool found = false;
+            ui32 lastIndex = index;
+            index = count;
+            while (PrefixSearch (prefix, index)) {
+                found = true;
+                lastIndex = index;
+                if (index > 0) {
+                    --index;
+                }
+                else {
+                    break;
+                }
+            }
+            index = lastIndex;
+            return found;
+        }
+
+        bool BTree2::Node::Search (
+                const Key &key,
+                ui32 &index) const {
+            ui32 last = count;
+            index = 0;
+            while (index < last) {
+                ui32 middle = (index + last) / 2;
+                i32 result = entries[middle].key->Compare (key);
+                if (result == 0) {
+                    index = middle;
+                    return true;
+                }
+                if (result < 0) {
+                    last = middle;
+                }
+                else {
+                    index = middle + 1;
+                }
+            }
+            return false;
+        }
+
+        BTree2::Node::InsertResult BTree2::Node::Insert (Entry &entry) {
             ui32 index;
-            if (Search (entry.key, index)) {
+            if (Search (*entry.key, index)) {
                 return Duplicate;
             }
             Node *child = GetChild (index);
@@ -270,7 +427,7 @@ namespace thekogans {
             }
         }
 
-        bool BTree::Node::Remove (const KeyType &key) {
+        bool BTree2::Node::Remove (const Key &key) {
             ui32 index;
             bool found = Search (key, index);
             Node *child = GetChild (found ? index + 1 : index);
@@ -282,12 +439,14 @@ namespace thekogans {
                     }
                     entries[index].key = leaf->entries[0].key;
                     entries[index].value = leaf->entries[0].value;
-                    child->Remove (leaf->entries[0].key);
+                    child->Remove (*leaf->entries[0].key);
                     if (child->IsPoor ()) {
                         RestoreBalance (index);
                     }
                 }
                 else {
+                    entries[index].key->Release ();
+                    entries[index].value->Release ();
                     RemoveEntry (index);
                 }
                 Save ();
@@ -302,7 +461,7 @@ namespace thekogans {
             return false;
         }
 
-        void BTree::Node::RestoreBalance (ui32 index) {
+        void BTree2::Node::RestoreBalance (ui32 index) {
             if (index == count) {
                 Node *left = GetChild (index - 1);
                 Node *right = GetChild (index);
@@ -332,7 +491,7 @@ namespace thekogans {
             }
         }
 
-        void BTree::Node::RotateRight (
+        void BTree2::Node::RotateRight (
                 ui32 index,
                 Node *left,
                 Node *right) {
@@ -351,7 +510,7 @@ namespace thekogans {
             right->Save ();
         }
 
-        void BTree::Node::RotateLeft (
+        void BTree2::Node::RotateLeft (
                 ui32 index,
                 Node *left,
                 Node *right) {
@@ -369,7 +528,7 @@ namespace thekogans {
             right->Save ();
         }
 
-        void BTree::Node::Merge (
+        void BTree2::Node::Merge (
                 ui32 index,
                 Node *left,
                 Node *right) {
@@ -384,7 +543,7 @@ namespace thekogans {
             Delete (right);
         }
 
-        void BTree::Node::Split (Node *node) {
+        void BTree2::Node::Split (Node *node) {
             ui32 splitIndex = btree.header.entriesPerNode / 2;
             node->count = count - splitIndex;
             std::memcpy (
@@ -394,7 +553,7 @@ namespace thekogans {
             count = splitIndex;
         }
 
-        void BTree::Node::Concatenate (Node *node) {
+        void BTree2::Node::Concatenate (Node *node) {
             std::memcpy (
                 entries + count,
                 node->entries,
@@ -403,7 +562,7 @@ namespace thekogans {
             node->count = 0;
         }
 
-        void BTree::Node::InsertEntry (
+        void BTree2::Node::InsertEntry (
                 const Entry &entry,
                 ui32 index) {
             std::memmove (
@@ -413,19 +572,19 @@ namespace thekogans {
             entries[index] = entry;
         }
 
-        void BTree::Node::RemoveEntry (ui32 index) {
+        void BTree2::Node::RemoveEntry (ui32 index) {
             std::memcpy (
                 entries + index,
                 entries + index + 1,
                 (--count - index) * sizeof (Entry));
         }
 
-        void BTree::Node::Dump () {
+        void BTree2::Node::Dump () {
             if (count > 0) {
                 std::cout << offset << ": " << leftOffset;
                 for (ui32 i = 0; i < count; ++i) {
-                    std::cout << " ; [" << entries[i].key.ToString () << ", " <<
-                        entries[i].value << "] ; " << entries[i].rightOffset;
+                    std::cout << " ; [" << entries[i].key->ToString () << ", " <<
+                        entries[i].value->ToString () << "] ; " << entries[i].rightOffset;
                 }
                 std::cout << "\n";
                 for (ui32 i = 0; i < count; ++i) {
@@ -437,19 +596,60 @@ namespace thekogans {
             }
         }
 
-        BTree::BTree (
+        bool BTree2::Iterator::Next () {
+            bool found = false;
+            if (!finished) {
+                ++node.second;
+                if (node.second < node.first->count) {
+                    Node *child = node.first->GetChild (node.second);
+                    if (child != nullptr) {
+                        parents.push_back (node);
+                        ui32 index = 0;
+                        while (child != nullptr &&
+                                (prefix == nullptr || child->FindFirstPrefix (*prefix, index))) {
+                            found = true;
+                            parents.push_back (NodeInfo (child, index));
+                            child = child->GetChild (index);
+                        }
+                        node = parents.back ();
+                        parents.pop_back ();
+                    }
+                    if (!found && (prefix == nullptr ||
+                            node.first->entries[node.second].key->PrefixCompare (*prefix))) {
+                        found = true;
+                    }
+                }
+                else if (!parents.empty ()) {
+                    NodeInfo parent = parents.back ();
+                    if (prefix == nullptr ||
+                            parent.first->entries[parent.second].key->PrefixCompare (*prefix)) {
+                        node = parent;
+                        parents.pop_back ();
+                        found = true;
+                    }
+                }
+                if (!found) {
+                    finished = true;
+                }
+            }
+            return found;
+        }
+
+        BTree2::BTree2 (
                 FileAllocator::SharedPtr fileAllocator_,
                 FileAllocator::PtrType offset_,
+                const std::string &keyType,
+                const std::string &valueType,
                 std::size_t entriesPerNode,
                 std::size_t nodesPerPage,
                 Allocator::SharedPtr allocator) :
                 fileAllocator (fileAllocator_),
                 offset (offset_),
-                header ((ui32)entriesPerNode),
+                header (keyType, valueType, (ui32)entriesPerNode),
                 root (nullptr) {
             if (offset != 0) {
                 FileAllocator::BlockBuffer::SharedPtr buffer =
-                    fileAllocator->CreateBlockBuffer (offset, Header::SIZE);
+                    fileAllocator->CreateBlockBuffer (offset);
                 ui32 magic;
                 *buffer >> magic;
                 if (magic == MAGIC32) {
@@ -457,12 +657,12 @@ namespace thekogans {
                 }
                 else {
                     THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                        "Corrupt BTree: " THEKOGANS_UTIL_UI64_FORMAT,
+                        "Corrupt BTree2: " THEKOGANS_UTIL_UI64_FORMAT,
                         offset);
                 }
             }
             else {
-                offset = fileAllocator->Alloc (Header::SIZE);
+                offset = fileAllocator->Alloc (header.Size ());
                 Save ();
             }
             nodeAllocator =
@@ -477,15 +677,15 @@ namespace thekogans {
             }
         }
 
-        BTree::~BTree () {
+        BTree2::~BTree2 () {
             Node::Free (root);
         }
 
-        void BTree::Delete (
+        void BTree2::Delete (
                 FileAllocator &fileAllocator,
                 FileAllocator::PtrType offset) {
             FileAllocator::BlockBuffer::SharedPtr buffer =
-                fileAllocator.CreateBlockBuffer (offset, Header::SIZE);
+                fileAllocator.CreateBlockBuffer (offset);
             ui32 magic;
             *buffer >> magic;
             if (magic == MAGIC32) {
@@ -496,30 +696,30 @@ namespace thekogans {
             }
             else {
                 THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                    "Corrupt BTree: " THEKOGANS_UTIL_UI64_FORMAT,
+                    "Corrupt BTree2: " THEKOGANS_UTIL_UI64_FORMAT,
                     offset);
             }
         }
 
-        bool BTree::Search (
-                const KeyType &key,
-                ValueType &value) {
+        bool BTree2::Search (
+                const Key &key,
+                Value::SharedPtr &value) {
             LockGuard<SpinLock> guard (spinLock);
             ui32 index;
             for (Node *node = root; node != nullptr; node = node->GetChild (index)) {
                 if (node->Search (key, index)) {
-                    value = node->entries[index].value;
+                    value.Reset (node->entries[index].value);
                     return true;
                 }
             }
             return false;
         }
 
-        bool BTree::Add (
-                const KeyType &key,
-                ValueType value) {
+        bool BTree2::Add (
+                Key::SharedPtr key,
+                Value::SharedPtr value) {
             LockGuard<SpinLock> guard (spinLock);
-            Node::Entry entry (key, value);
+            Node::Entry entry (key.Get (), value.Get ());
             Node::InsertResult result = root->Insert (entry);
             if (result == Node::Overflow) {
                 // The path to the leaf node is full.
@@ -533,10 +733,15 @@ namespace thekogans {
                 SetRoot (node);
                 result = Node::Inserted;
             }
+            // If we inserted the key/value pair, take ownership.
+            if (result == Node::Inserted) {
+                key.Release ();
+                value.Release ();
+            }
             return result == Node::Inserted;
         }
 
-        bool BTree::Delete (const KeyType &key) {
+        bool BTree2::Delete (const Key &key) {
             LockGuard<SpinLock> guard (spinLock);
             bool removed = root->Remove (key);
             if (removed && root->IsEmpty () && root->GetChild (0) != nullptr) {
@@ -547,27 +752,61 @@ namespace thekogans {
             return removed;
         }
 
-        void BTree::Flush () {
+        bool BTree2::FindFirst (Iterator &it) {
+            it.Clear ();
+            LockGuard<SpinLock> guard (spinLock);
+            Node *node = root;
+            if (it.prefix == nullptr) {
+                if (node->count > 0) {
+                    do {
+                        it.parents.push_back (Iterator::NodeInfo (node, 0));
+                        node = node->GetChild (0);
+                    } while (node != nullptr);
+                    it.node = it.parents.back ();
+                    it.parents.pop_back ();
+                    it.finished = false;
+                    return true;
+                }
+            }
+            else {
+                ui32 index = 0;
+                if (node->FindFirstPrefix (*it.prefix, index)) {
+                    it.parents.push_back (Iterator::NodeInfo (node, index));
+                    Node *child = node->GetChild (index);
+                    while (child != nullptr && child->FindFirstPrefix (*it.prefix, index)) {
+                        it.parents.push_back (Iterator::NodeInfo (child, index));
+                        child = child->GetChild (index);
+                    }
+                    it.node = it.parents.back ();
+                    it.parents.pop_back ();
+                    it.finished = false;
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        void BTree2::Flush () {
             LockGuard<SpinLock> guard (spinLock);
             Node::Free (root);
             root = Node::Alloc (*this, header.rootOffset);
         }
 
-        void BTree::Dump () {
+        void BTree2::Dump () {
             LockGuard<SpinLock> guard (spinLock);
             if (root != nullptr) {
                 root->Dump ();
             }
         }
 
-        void BTree::Save () {
+        void BTree2::Save () {
             FileAllocator::BlockBuffer::SharedPtr buffer =
-                fileAllocator->CreateBlockBuffer (offset, Header::SIZE, false);
+                fileAllocator->CreateBlockBuffer (offset, 0, false);
             *buffer << MAGIC32 << header;
             fileAllocator->WriteBlockBuffer (*buffer);
         }
 
-        void BTree::SetRoot (Node *node) {
+        void BTree2::SetRoot (Node *node) {
             root = node;
             header.rootOffset = root->offset;
             Save ();

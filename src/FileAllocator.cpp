@@ -313,44 +313,47 @@ namespace thekogans {
         }
 
         void FileAllocator::Free (PtrType offset) {
-            if (IsFixed ()) {
-                LockGuard<SpinLock> guard (spinLock);
-                FreeFixedBlock (offset);
-            }
-            else if (offset >= MIN_BLOCK_OFFSET) {
-                LockGuard<SpinLock> guard (spinLock);
-                if (header.rootOffset == offset) {
-                    header.rootOffset = 0;
-                    Save ();
+            // To honor the Allocator policy, we ignore NULL pointers.
+            if (offset != 0) {
+                if (IsFixed ()) {
+                    LockGuard<SpinLock> guard (spinLock);
+                    FreeFixedBlock (offset);
                 }
-                BlockInfo block (offset);
-                block.Read (file);
-                if (!block.IsFree () && !block.IsFixed ()) {
-                    // Consolidate adjacent free non fixed blocks.
-                    BlockInfo prev;
-                    if (block.Prev (file, prev) && prev.IsFree () && !prev.IsFixed ()) {
-                        btree->Delete (BTree::KeyType (prev.GetSize (), prev.GetOffset ()));
-                        block.SetOffset (block.GetOffset () - BlockInfo::SIZE - prev.GetSize ());
-                        block.SetSize (block.GetSize () + BlockInfo::SIZE + prev.GetSize ());
+                else if (offset >= MIN_BLOCK_OFFSET) {
+                    LockGuard<SpinLock> guard (spinLock);
+                    if (header.rootOffset == offset) {
+                        header.rootOffset = 0;
+                        Save ();
                     }
-                    BlockInfo next;
-                    if (block.Next (file, next) && next.IsFree () && !next.IsFixed ()) {
-                        btree->Delete (BTree::KeyType (next.GetSize (), next.GetOffset ()));
-                        block.SetSize (block.GetSize () + BlockInfo::SIZE + next.GetSize ());
-                    }
-                    if (!block.IsLast (file.GetSize ())) {
-                        btree->Add (BTree::KeyType (block.GetSize (), block.GetOffset ()));
-                        block.SetFree (true);
-                        block.Write (file);
-                    }
-                    else {
-                        file.SetSize (block.GetOffset () - BlockInfo::HEADER_SIZE);
+                    BlockInfo block (offset);
+                    block.Read (file);
+                    if (!block.IsFree () && !block.IsFixed ()) {
+                        // Consolidate adjacent free non fixed blocks.
+                        BlockInfo prev;
+                        if (block.Prev (file, prev) && prev.IsFree () && !prev.IsFixed ()) {
+                            btree->Delete (BTree::KeyType (prev.GetSize (), prev.GetOffset ()));
+                            block.SetOffset (block.GetOffset () - BlockInfo::SIZE - prev.GetSize ());
+                            block.SetSize (block.GetSize () + BlockInfo::SIZE + prev.GetSize ());
+                        }
+                        BlockInfo next;
+                        if (block.Next (file, next) && next.IsFree () && !next.IsFixed ()) {
+                            btree->Delete (BTree::KeyType (next.GetSize (), next.GetOffset ()));
+                            block.SetSize (block.GetSize () + BlockInfo::SIZE + next.GetSize ());
+                        }
+                        if (!block.IsLast (file.GetSize ())) {
+                            btree->Add (BTree::KeyType (block.GetSize (), block.GetOffset ()));
+                            block.SetFree (true);
+                            block.Write (file);
+                        }
+                        else {
+                            file.SetSize (block.GetOffset () - BlockInfo::HEADER_SIZE);
+                        }
                     }
                 }
-            }
-            else {
-                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
+                else {
+                    THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                        THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
+                }
             }
         }
 

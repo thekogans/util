@@ -35,8 +35,7 @@ namespace thekogans {
 
         struct _LIB_THEKOGANS_UTIL_DECL StorageSpinLock {
         public:
-            /// \enum
-            /// SpinLock state type.
+            // SpinLock state type.
             /// \brief
             /// Unlocked.
             static const ui32 Unlocked = 0;

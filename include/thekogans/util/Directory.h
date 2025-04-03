@@ -316,7 +316,7 @@ namespace thekogans {
                 /// Entry is a \see{Serializable}.
                 THEKOGANS_UTIL_DECLARE_SERIALIZABLE (Entry)
 
-                /// \brief
+                /// \enum
                 /// The file system this entry came from.
                 enum {
                     /// \brief
@@ -327,7 +327,7 @@ namespace thekogans {
                     POSIX
                 };
                 ui8 fileSystem;
-                /// \brief
+                /// \enum
                 /// Entry type.
                 enum {
                     /// \brief

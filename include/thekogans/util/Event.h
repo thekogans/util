@@ -74,7 +74,7 @@ namespace thekogans {
         /// to non-signaled and returns.
 
         struct _LIB_THEKOGANS_UTIL_DECL Event {
-            /// \brief
+            /// \enum
             /// Event state.
             using State = enum {
                 /// \brief

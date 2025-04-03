@@ -50,7 +50,7 @@ namespace thekogans {
 
         struct _LIB_THEKOGANS_UTIL_DECL Serializable : public DynamicCreatable {
             /// \brief
-            /// Declare \see{RefCounted} pointers.
+            /// Declare \see{DynamicCreatable} boilerplate.
             THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE_BASE (Serializable)
 
             /// \struct Serializable::Header Serializable.h thekogans/util/Serializable.h
@@ -333,7 +333,7 @@ namespace thekogans {
 
             /// \brief
             /// Read a Serializable from an JSON DOM.
-            /// \param[in] header_ Serializable::Texteader to deserialize.
+            /// \param[in] header_ Serializable::Header to deserialize.
             /// \param[in] object_ JSON DOM representation of a Serializable.
             virtual void Read (
                 const Header &header_,
@@ -577,7 +577,7 @@ namespace thekogans {
             /// Magic value preceeding every object.
             ui32 magic;
             /// \brief
-            /// Parses \see{Serializable::Header::magic}.
+            /// Parses magic.
             ValueParser<ui32> magicParser;
             /// \brief
             /// Parses \see{Serializable::Header::type}.
@@ -593,7 +593,7 @@ namespace thekogans {
             /// These are it's various states.
             enum {
                 /// \brief
-                /// Next value is \see{Serializable::Header::magic}.
+                /// Next value is magic.
                 STATE_MAGIC,
                 /// \brief
                 /// Next value is \see{Serializable::Header::type}.
@@ -644,9 +644,7 @@ namespace thekogans {
             Serializable &value;
             /// \brief
             /// Default serializable size;
-            enum {
-                DEFAULT_MAX_SERIALIZABLE_SIZE = 2 * 1024 * 1024
-            };
+            static const std::size_t DEFAULT_MAX_SERIALIZABLE_SIZE = 2 * 1024 * 1024;
             /// \brief
             /// Used to twart ddos attacks. The generic 2MB might be too much.
             /// Tune this value to protect your application.
@@ -660,7 +658,7 @@ namespace thekogans {
             /// \brief
             /// Serializable header parser.
             ValueParser<Serializable::Header> headerParser;
-            /// \brief
+            /// \enum
             /// The parser is a state machine. It has two states.
             enum {
                 /// \brief
@@ -709,9 +707,7 @@ namespace thekogans {
             Serializable::SharedPtr &value;
             /// \brief
             /// Default serializable size;
-            enum {
-                DEFAULT_MAX_SERIALIZABLE_SIZE = 2 * 1024 * 1024
-            };
+            static const std::size_t DEFAULT_MAX_SERIALIZABLE_SIZE = 2 * 1024 * 1024;
             /// \brief
             /// Used to twart ddos attacks. The generic 2MB might be too much.
             /// Tune this value to protect your application.
@@ -725,7 +721,7 @@ namespace thekogans {
             /// \brief
             /// Serializable header parser.
             ValueParser<Serializable::Header> headerParser;
-            /// \brief
+            /// \enum
             /// The parser is a state machine. It has two states.
             enum {
                 /// \brief

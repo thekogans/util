@@ -57,14 +57,12 @@ namespace thekogans {
             SimpleFile file;
 
         public:
-            enum {
-                /// \brief
-                /// Default number of archives before we start droping.
-                DEFAULT_ARCHIVE_COUNT = 2,
-                /// \brief
-                /// Default max log file size before archiving.
-                DEFAULT_MAX_LOG_FILE_SIZE = 2 * 1024 * 1024
-            };
+            /// \brief
+            /// Default number of archives before we start droping.
+            static const std::size_t DEFAULT_ARCHIVE_COUNT = 2;
+            /// \brief
+            /// Default max log file size before archiving.
+            static const std::size_t DEFAULT_MAX_LOG_FILE_SIZE = 2 * 1024 * 1024;
 
             /// \brief
             /// ctor.

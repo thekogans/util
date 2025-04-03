@@ -37,6 +37,9 @@ namespace thekogans {
         /// turns it in to a fixed block allocator. Each block allocated by BlockAllocator
         /// is the same size. This makes BlockAllocator::Alloc and BlockAllocator::Free
         /// run in amortized O(1). Like all other allocators BlockAllocator is thread safe.
+        /// BlockAllocator was created to expose the benefits of \see{Heap} to objects
+        /// don't know their size at compile time. At run time when object size is known,
+        /// use BlockAllocator::Pool to create/get a BlockAllocator for that object.
 
         struct _LIB_THEKOGANS_UTIL_DECL BlockAllocator : public Allocator {
             /// \brief
@@ -159,14 +162,12 @@ namespace thekogans {
             SpinLock spinLock;
 
         public:
-            enum {
-                /// \brief
-                /// Minimum block size.
-                MIN_BLOCK_SIZE = sizeof (Page::Block),
-                /// \brief
-                /// Default number of blocks per page.
-                DEFAULT_BLOCKS_PER_PAGE = 256
-            };
+            /// \brief
+            /// Minimum block size.
+            static const std::size_t MIN_BLOCK_SIZE = sizeof (Page::Block);
+            /// \brief
+            /// Default number of blocks per page.
+            static const std::size_t DEFAULT_BLOCKS_PER_PAGE = 256;
 
             /// \brief
             /// ctor.

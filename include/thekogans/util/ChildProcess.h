@@ -78,7 +78,7 @@ namespace thekogans {
         /// \endcode
 
         struct _LIB_THEKOGANS_UTIL_DECL ChildProcess {
-            /// \brief
+            /// \enum
             /// Specify how to hook the child's standard io.
             enum {
                 /// \brief
@@ -375,11 +375,9 @@ namespace thekogans {
             /// \return RunLoop::Job representing the exec job.
             RunLoop::Job::SharedPtr CreateExecJob (ChildStatus &status);
 
-            enum {
-                /// \brief
-                /// Default \see{File::Read} chunk size.
-                DEFAULT_CHUNK_SIZE = 1024
-            };
+            /// \brief
+            /// Default \see{File::Read} chunk size.
+            static const std::size_t DEFAULT_CHUNK_SIZE = 1024;
 
             /// \brief
             /// Used in conjunction with CreateSpawnJob above for convenient child

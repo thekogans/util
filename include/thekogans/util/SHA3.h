@@ -36,30 +36,26 @@ namespace thekogans {
             /// SHA3 participates in the Hash dynamic discovery and creation.
             THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE (SHA3)
 
-            enum {
-                /// \brief
-                /// SHA3 224 bit hash size in bytes.
-                DIGEST_SIZE_224 = 28,
-                /// \brief
-                /// SHA3 256 bit hash size in bytes.
-                DIGEST_SIZE_256 = 32,
-                /// \brief
-                /// SHA3 384 bit hash size in bytes.
-                DIGEST_SIZE_384 = 48,
-                /// \brief
-                /// SHA3 512 bit hash size in bytes.
-                DIGEST_SIZE_512 = 64
-            };
+            /// \brief
+            /// SHA3 224 bit hash size in bytes.
+            static const std::size_t DIGEST_SIZE_224 = 28;
+            /// \brief
+            /// SHA3 256 bit hash size in bytes.
+            static const std::size_t DIGEST_SIZE_256 = 32;
+            /// \brief
+            /// SHA3 384 bit hash size in bytes.
+            static const std::size_t DIGEST_SIZE_384 = 48;
+            /// \brief
+            /// SHA3 512 bit hash size in bytes.
+            static const std::size_t DIGEST_SIZE_512 = 64;
 
         private:
-            enum {
-                /// \brief
-                /// Max state size regardless of hash size.
-                MAX_STATE_SIZE = 1600 / (8 * 8),
-                /// \brief
-                /// Max block size regardless of hash size.
-                MAX_BLOCK_SIZE = 200 - 2 * (224 / 8)
-            };
+            /// \brief
+            /// Max state size regardless of hash size.
+            static const std::size_t MAX_STATE_SIZE = 1600 / (8 * 8);
+            /// \brief
+            /// Max block size regardless of hash size.
+            static const std::size_t MAX_BLOCK_SIZE = 200 - 2 * (224 / 8);
             /// \brief
             /// The size of digest the hash is being created for.
             std::size_t digestSize;

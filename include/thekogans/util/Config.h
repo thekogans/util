@@ -171,7 +171,7 @@ namespace thekogans {
             MaxLevel = Development
         };
 
-        /// \brief
+        /// \enum
         /// Log entry decorations.
         enum {
             /// \brief

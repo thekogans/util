@@ -77,9 +77,7 @@ namespace thekogans {
             struct Header {
                 /// \enum
                 /// Size of header.
-                enum {
-                    SIZE = UI32_SIZE + UI32_SIZE + UI64_SIZE + UI64_SIZE
-                };
+                static const std::size_t SIZE = UI32_SIZE + UI32_SIZE + UI64_SIZE + UI64_SIZE;
 
                 /// \brief
                 /// A watermark marking this region as a SharedAllocator.
@@ -133,22 +131,20 @@ namespace thekogans {
             /// \brief
             /// Heap block.
             struct Block {
-                enum {
-                    /// \brief
-                    /// Block header size.
-                #if defined (THEKOGANS_UTIL_CONFIG_Debug)
-                    HEADER_SIZE = UI64_SIZE + UI64_SIZE,
-                #else // defined (THEKOGANS_UTIL_CONFIG_Debug)
-                    HEADER_SIZE = UI64_SIZE,
-                #endif // defined (THEKOGANS_UTIL_CONFIG_Debug)
-                    /// \brief
-                    /// Smallest block size that the SharedAllocator
-                    /// can allocate.
-                    SMALLEST_BLOCK_SIZE = UI64_SIZE,
-                    /// \brief
-                    /// Free block size.
-                    FREE_BLOCK_SIZE = HEADER_SIZE + SMALLEST_BLOCK_SIZE
-                };
+                /// \brief
+                /// Block header size.
+            #if defined (THEKOGANS_UTIL_CONFIG_Debug)
+                static const std::size_t HEADER_SIZE = UI64_SIZE + UI64_SIZE,;
+            #else // defined (THEKOGANS_UTIL_CONFIG_Debug)
+                static const std::size_t HEADER_SIZE = UI64_SIZE;
+            #endif // defined (THEKOGANS_UTIL_CONFIG_Debug)
+                /// \brief
+                /// Smallest block size that the SharedAllocator
+                /// can allocate.
+                static const std::size_t SMALLEST_BLOCK_SIZE = UI64_SIZE;
+                /// \brief
+                /// Free block size.
+                static const std::size_t FREE_BLOCK_SIZE = HEADER_SIZE + SMALLEST_BLOCK_SIZE;
 
             #if defined (THEKOGANS_UTIL_CONFIG_Debug)
                 /// \brief
