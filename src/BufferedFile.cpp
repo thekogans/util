@@ -397,15 +397,19 @@ namespace thekogans {
                 {
                     SimpleFile file (HostEndian, path, SimpleFile::ReadWrite);
                     ReadOnlyFile log (HostEndian, logPath);
+                    // Magic serves two purposes. Firstly it gives us a quick
+                    // check to make sure we're dealing with a log file and second,
+                    // it allows us to move logs from little to big endian (and
+                    // vise versa) machines for analysis and resolution.
                     ui32 magic;
                     log >> magic;
                     if (magic == MAGIC32) {
                         // Log is host endian.
                     }
                     else if (ByteSwap<GuestEndian, HostEndian> (magic) == MAGIC32) {
-                        // Assume log is guest endian. File endianness doesn't
-                        // mater as it is just being patched up with dirty tiles.
-                        // Although it is assumed to be the same as the log endianness.
+                        // Log is guest endian. File endianness doesn't mater as it is
+                        // just being patched up with dirty tiles. Although it is assumed
+                        // to be the same as the log endianness.
                         log.endianness = GuestEndian;
                     }
                     else {

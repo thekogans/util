@@ -70,6 +70,15 @@ namespace thekogans {
         THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_BASE (thekogans::util::BTree2::Key)
         THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_BASE (thekogans::util::BTree2::Value)
 
+        THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE (
+            thekogans::util::BTree2::StringKey,
+            1,
+            BTree2::Key::TYPE)
+        THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE (
+            thekogans::util::BTree2::StringValue,
+            1,
+            BTree2::Value::TYPE)
+
         BTree2::Node::Node (
                 BTree2 &btree_,
                 FileAllocator::PtrType offset_) :
@@ -346,19 +355,14 @@ namespace thekogans {
                 const Key &prefix,
                 ui32 &index) const {
             bool found = false;
-            ui32 lastIndex = index;
-            index = count;
-            while (PrefixSearch (prefix, index)) {
+            ui32 lastIndex = count;
+            while (PrefixSearch (prefix, lastIndex)) {
                 found = true;
-                lastIndex = index;
-                if (index > 0) {
-                    --index;
-                }
-                else {
+                index = lastIndex;
+                if (lastIndex-- == 0) {
                     break;
                 }
             }
-            index = lastIndex;
             return found;
         }
 
@@ -768,15 +772,16 @@ namespace thekogans {
                     found = true;
                 }
                 else {
-                    ui32 index = 0;
-                    if (node->FindFirstPrefix (*it.prefix, index)) {
-                        it.parents.push_back (Iterator::NodeInfo (node, index));
-                        Node *child = node->GetChild (index);
-                        while (child != nullptr && child->FindFirstPrefix (*it.prefix, index)) {
-                            it.parents.push_back (Iterator::NodeInfo (child, index));
-                            child = child->GetChild (index);
+                    while (node != nullptr) {
+                        ui32 index = 0;
+                        if (node->FindFirstPrefix (*it.prefix, index)) {
+                            it.parents.push_back (Iterator::NodeInfo (node, index));
+                            found = true;
                         }
-                        found = true;
+                        else if (found) {
+                            break;
+                        }
+                        node = node->GetChild (index);
                     }
                 }
             }

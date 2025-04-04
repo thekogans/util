@@ -18,6 +18,7 @@
 #if !defined (__thekogans_util_BTree2_h)
 #define __thekogans_util_BTree2_h
 
+#include <string>
 #include "thekogans/util/Config.h"
 #include "thekogans/util/Types.h"
 #include "thekogans/util/RefCounted.h"
@@ -36,7 +37,7 @@ namespace thekogans {
         /// all searches, additions and deletions take O(N) where N is the
         /// height of the tree. These are BTree2's bigest strengths. One of it's
         /// biggest weaknesses is the fact that iterators don't survive modifications
-        /// (Additions/Deletions). This is why I provide a forward iterator only.
+        /// (Add/Delete). This is why I provide a forward iterator only.
         /// Use it to step through a range of nodes collecting their data. See an example
         /// provided with \see{BTree2::Iterator}. BTree2 uses the full power of
         /// \see{DynamicCreatable} and \see{Serializable} for it's key and value.
@@ -69,6 +70,117 @@ namespace thekogans {
                 virtual std::string ToString () const = 0;
             };
 
+            struct StringKey : public Key {
+                /// \brief
+                /// StringKey is a \see{Serializable}.
+                THEKOGANS_UTIL_DECLARE_SERIALIZABLE (StringKey)
+
+                /// \brief
+                /// The actual string.
+                std::string str;
+
+                /// \brief
+                /// ctor.
+                /// \param[in] str_ std::string to initialize this key with.
+                StringKey (const std::string &str_ = std::string ()) :
+                    str (str_) {}
+
+                // Key
+                /// \brief
+                /// Used to find keys with matching prefixs.
+                /// \param[in] prefix Key representing the prefix to compare against.
+                /// \return -1 == this is < key, 0 == this == key, 1 == this is greater than key.
+                virtual i32 PrefixCompare (const Key &prefix) const override {
+                    const StringKey *other = dynamic_cast<const StringKey *> (&prefix);
+                    if (other != nullptr) {
+                        return str.compare (0, other->str.size (), other->str);
+                    }
+                    else {
+                        THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                            THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
+                    }
+                }
+                /// \brief
+                /// Used to order keys.
+                /// \param[in] key Key to compare against.
+                /// \return -1 == this is < key, 0 == this == key, 1 == this is greater than key.
+                virtual i32 Compare (const Key &key) const override {
+                    const StringKey *other = dynamic_cast<const StringKey *> (&key);
+                    if (other != nullptr) {
+                        return str.compare (other->str);
+                    }
+                    else {
+                        THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                            THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
+                    }
+                }
+                /// \brief
+                /// This method is only used in Dump for debugging purposes.
+                /// \return String representation of the key.
+                virtual std::string ToString () const override {
+                    return str;
+                }
+
+                // Serializable
+                /// \brief
+                /// Return the serialized key size.
+                /// \return Serialized key size.
+                virtual std::size_t Size () const noexcept override {
+                    return Serializer::Size (str);
+                }
+
+                /// \brief
+                /// Read the key from the given serializer.
+                /// \param[in] header \see{Serializable::Header}.
+                /// \param[in] serializer \see{Serializer} to read the key from.
+                virtual void Read (
+                        const Header & /*header*/,
+                        Serializer &serializer) override {
+                    serializer >> str;
+                }
+                /// \brief
+                /// Write the key to the given serializer.
+                /// \param[out] serializer \see{Serializer} to write the key to.
+                virtual void Write (Serializer &serializer) const override {
+                    serializer << str;
+                }
+
+                /// \brief
+                /// Read the Serializable from an XML DOM.
+                /// \param[in] header \see{Serializable::Header}.
+                /// \param[in] node XML DOM representation of a Serializable.
+                virtual void Read (
+                        const Header & /*header*/,
+                        const pugi::xml_node &node) override {
+                    // FIXME: implement?
+                    assert (0);
+                }
+                /// \brief
+                /// Write the Serializable to the XML DOM.
+                /// \param[out] node Parent node.
+                virtual void Write (pugi::xml_node &node) const override {
+                    // FIXME: implement?
+                    assert (0);
+                }
+
+                /// \brief
+                /// Read a Serializable from an JSON DOM.
+                /// \param[in] node JSON DOM representation of a Serializable.
+                virtual void Read (
+                        const Header & /*header*/,
+                        const JSON::Object &object) override {
+                    // FIXME: implement?
+                    assert (0);
+                }
+                /// \brief
+                /// Write a Serializable to the JSON DOM.
+                /// \param[out] node Parent node.
+                virtual void Write (JSON::Object &object) const override {
+                    // FIXME: implement?
+                    assert (0);
+                }
+            };
+
             struct Value : public Serializable {
                 /// \brief
                 /// Declare \see{DynamicCreatable} boilerplate.
@@ -78,6 +190,89 @@ namespace thekogans {
                 /// This method is only used in Dump for debugging purposes.
                 /// \return String representation of the value.
                 virtual std::string ToString () const = 0;
+            };
+
+            struct StringValue : public Value {
+                /// \brief
+                /// StringValue is a \see{Serializable}.
+                THEKOGANS_UTIL_DECLARE_SERIALIZABLE (StringValue)
+
+                /// \brief
+                /// The actual string.
+                std::string str;
+
+                /// \brief
+                /// ctor.
+                /// \param[in] str_ std::string to initialize this value with.
+                StringValue (const std::string &str_ = std::string ()) :
+                    str (str_) {}
+
+                // Value
+                /// \brief
+                /// This method is only used in Dump for debugging purposes.
+                /// \return String representation of the key.
+                virtual std::string ToString () const override {
+                    return str;
+                }
+
+                // Serializable
+                /// \brief
+                /// Return the serialized key size.
+                /// \return Serialized key size.
+                virtual std::size_t Size () const noexcept override {
+                    return Serializer::Size (str);
+                }
+
+                /// \brief
+                /// Read the key from the given serializer.
+                /// \param[in] header \see{Serializable::Header}.
+                /// \param[in] serializer \see{Serializer} to read the key from.
+                virtual void Read (
+                        const Header & /*header*/,
+                        Serializer &serializer) override {
+                    serializer >> str;
+                }
+                /// \brief
+                /// Write the key to the given serializer.
+                /// \param[out] serializer \see{Serializer} to write the key to.
+                virtual void Write (Serializer &serializer) const override {
+                    serializer << str;
+                }
+
+                /// \brief
+                /// Read the Serializable from an XML DOM.
+                /// \param[in] header \see{Serializable::Header}.
+                /// \param[in] node XML DOM representation of a Serializable.
+                virtual void Read (
+                        const Header & /*header*/,
+                        const pugi::xml_node &node) override {
+                    // FIXME: implement?
+                    assert (0);
+                }
+                /// \brief
+                /// Write the Serializable to the XML DOM.
+                /// \param[out] node Parent node.
+                virtual void Write (pugi::xml_node &node) const override {
+                    // FIXME: implement?
+                    assert (0);
+                }
+
+                /// \brief
+                /// Read a Serializable from an JSON DOM.
+                /// \param[in] node JSON DOM representation of a Serializable.
+                virtual void Read (
+                        const Header & /*header*/,
+                        const JSON::Object &object) override {
+                    // FIXME: implement?
+                    assert (0);
+                }
+                /// \brief
+                /// Write a Serializable to the JSON DOM.
+                /// \param[out] node Parent node.
+                virtual void Write (JSON::Object &object) const override {
+                    // FIXME: implement?
+                    assert (0);
+                }
             };
 
         private:
@@ -146,7 +341,7 @@ namespace thekogans {
                 /// Count of entries.
                 ui32 count;
                 /// \brief
-                /// Left most child node offset.
+                /// Left most child node block offset.
                 FileAllocator::PtrType leftOffset;
                 /// \brief
                 /// Left most child node.
@@ -169,7 +364,7 @@ namespace thekogans {
                     /// Entry value.
                     Value *value;
                     /// \brief
-                    /// Right child node offset.
+                    /// Right child node block offset.
                     FileAllocator::PtrType rightOffset;
                     /// \brief
                     /// Right child node.
@@ -258,6 +453,16 @@ namespace thekogans {
                 bool PrefixSearch (
                     const Key &prefix,
                     ui32 &index) const;
+                /// \brief
+                /// Used by \see{BTree2::FindFirst} to locate the start of the prefix.
+                /// Due to the nature of binary search, \see{PrefixSearch} can return
+                /// true with a prefix found in the middle of the range. This method
+                /// keeps reducing the search space to (using \see{PrefixSearch}) to
+                /// locate the start of the range.
+                /// \param[in] prefix Prefix to find.
+                /// \param[out] index On true return, contains the index of the first
+                /// entry in the node that matches the given prefix.
+                /// \return true == found the prefix and it's the first occurence.
                 bool FindFirstPrefix (
                     const Key &prefix,
                     ui32 &index) const;
@@ -482,17 +687,22 @@ namespace thekogans {
             /// use it to move forward through the range of nodes. The range can either
             /// be based on a prefix or the entire tree. Since Iterator is unidirectional
             /// (forward only), there's no backing up (the code complexity is just not
-            /// worth the added benefit). You get one shot through the range.
+            /// worth the added benefit). You get one shot through the range. This
+            /// design also means that you cannot know, a priori, how many entries
+            /// are in the range. You need to step through it to count them up.
             /// WARNING: The nature of BTrees is such that almost any modification
             /// to its structure invalidates iterators currently in existance. This
-            /// also means that you CAN'T write code like this:
+            /// also means that you CAN'T (or at least shouldn't) write code like this:
             ///
             /// Deleting a range of nodes:
             ///
             /// Ex:
             ///
             /// \code{.cpp}
-            /// // WARNING: This is wrong! DON'T do this.
+            /// // WARNING: This is wrong! DON'T do this. It can lead
+            /// // to very hard to track down crashes as the posibility
+            /// // of a crash is completely dependent on the state of
+            /// // the BTree.
             /// Iterator it (some prefix);
             /// if (btree.FindFirst (it)) {
             ///     do {
@@ -550,6 +760,9 @@ namespace thekogans {
                     node (NodeInfo (nullptr, 0)),
                     finished (true) {}
 
+                /// \brief
+                /// Return true if the iterator is finished.
+                /// \return true == the iterator is finished.
                 inline bool IsFinished () const {
                     return finished;
                 }
@@ -589,6 +802,12 @@ namespace thekogans {
                 friend struct BTree2;
             };
 
+            /// \brief
+            /// Reset the iterator to point to the first occurence of it.prefix.
+            /// If the prefix is a nullptr, point to the smallest entry.
+            /// \param[in, out] it Iterator to reset.
+            /// \return true == The iterator pointing to the first occurance of it.prefix
+            /// (or smallest element if nullptr). false == the iterator is empty.
             bool FindFirst (Iterator &it);
 
             /// \brief

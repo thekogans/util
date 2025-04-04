@@ -468,6 +468,8 @@ namespace thekogans {
 
             /// \brief
             /// Lock a range of bytes in the file.
+            /// Since there's no direct access to the file,
+            /// BufferedFile does not support region locking.
             /// \region[in] region region to lock.
             /// \region[in] exclusive lock for exclusive access.
             virtual void LockRegion (
@@ -475,6 +477,7 @@ namespace thekogans {
                 bool /*exclusive*/) override {}
             /// \brief
             /// Unlock a range of bytes in the file.
+            /// See comment above LockRegion.
             /// \region[in] region region to unlock.
             virtual void UnlockRegion (const Region & /*region*/) override {}
 
@@ -483,6 +486,12 @@ namespace thekogans {
             /// \path path File path.
             static void CommitLog (const std::string &path);
 
+            /// \brief
+            /// Return true if we're in the middle of a transaction.
+            ///\return true == we're in the middle of a transaction.
+            inline bool IsTransactionPending () const {
+                return flags.Test (FLAGS_TRANSACTION);
+            }
             /// \brief
             /// Start a new transaction. If a transaction is
             /// already in progress do nothing. If the cache
