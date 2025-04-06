@@ -98,9 +98,9 @@ namespace thekogans {
                 /// \param[in] prefix Key representing the prefix to compare against.
                 /// \return -1 == this is < key, 0 == this == key, 1 == this is greater than key.
                 virtual i32 PrefixCompare (const Key &prefix) const override {
-                    const StringKey *other = dynamic_cast<const StringKey *> (&prefix);
-                    if (other != nullptr) {
-                        return str.compare (0, other->str.size (), other->str);
+                    const StringKey *stringKey = dynamic_cast<const StringKey *> (&prefix);
+                    if (stringKey != nullptr) {
+                        return str.compare (0, stringKey->str.size (), stringKey->str);
                     }
                     else {
                         THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
@@ -112,9 +112,9 @@ namespace thekogans {
                 /// \param[in] key Key to compare against.
                 /// \return -1 == this is < key, 0 == this == key, 1 == this is greater than key.
                 virtual i32 Compare (const Key &key) const override {
-                    const StringKey *other = dynamic_cast<const StringKey *> (&key);
-                    if (other != nullptr) {
-                        return str.compare (other->str);
+                    const StringKey *stringKey = dynamic_cast<const StringKey *> (&key);
+                    if (stringKey != nullptr) {
+                        return str.compare (stringKey->str);
                     }
                     else {
                         THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (

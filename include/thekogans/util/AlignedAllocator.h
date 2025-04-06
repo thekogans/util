@@ -36,6 +36,8 @@ namespace thekogans {
         /// Take a look at \see{Heap} to see an example of it's usage.
 
         struct _LIB_THEKOGANS_UTIL_DECL AlignedAllocator : public Allocator {
+            /// \brief
+            /// Declare DynamicCreatable boilerplate.
             THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE_OVERRIDE (AlignedAllocator)
 
         private:

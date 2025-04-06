@@ -336,7 +336,7 @@ namespace thekogans {
             index = 0;
             while (index < last) {
                 ui32 middle = (index + last) / 2;
-                i32 result = prefix->PrefixCompare (*entries[middle].key);
+                i32 result = prefix.PrefixCompare (*entries[middle].key);
                 if (result == 0) {
                     index = middle;
                     return true;

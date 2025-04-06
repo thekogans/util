@@ -279,6 +279,8 @@ namespace thekogans {
         /// kind of conversion requires knowledge of the underlying type.
 
         struct _LIB_THEKOGANS_UTIL_DECL Blob : public Serializable {
+            THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE_OVERRIDE (Blob)
+
             /// \brief
             /// Blob type.
             Header header;
@@ -291,11 +293,6 @@ namespace thekogans {
             /// \brief
             /// JSON blob.
             JSON::Object object;
-
-            /// \brief
-            /// Return DynamicCreatable type (it's class name).
-            /// \return DynamicCreatable type (it's class name).
-            virtual const char *Type () const noexcept override;
 
             /// \brief
             /// Return the serializable version.

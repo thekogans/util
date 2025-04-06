@@ -28,6 +28,14 @@
 namespace thekogans {
     namespace util {
 
+        const char * const *DynamicCreatable::Bases () const noexcept {
+            return nullptr;
+        }
+
+        std::size_t DynamicCreatable::BasesSize () const noexcept {
+            return 0;
+        }
+
         THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_BASE (thekogans::util::DynamicCreatable)
 
     #if defined (THEKOGANS_UTIL_TYPE_Static)
@@ -54,13 +62,14 @@ namespace thekogans {
         bool DynamicCreatable::IsDerivedFrom (const char *base) const noexcept {
             if (base != nullptr) {
                 CharPtrEqual compare;
-                for (std::size_t i = 0; i < BASES_SIZE; ++i) {
-                    if (compare (base, BASES[i])) {
+                const char * const *bases = Bases ();
+                for (std::size_t i = 0, basesSize = BasesSize (); i < basesSize; ++i) {
+                    if (compare (base, bases[i])) {
                         return true;
                     }
                 }
             }
-            rerurn false;
+            return false;
         }
 
         void DynamicCreatable::DumpBaseMap (const char *base) {
