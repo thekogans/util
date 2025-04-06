@@ -313,7 +313,7 @@ namespace thekogans {
 
         BTree2::Node *BTree2::Node::GetChild (ui32 index) {
             if (index == 0) {
-                if (leftNode == 0 && leftOffset != 0) {
+                if (leftNode == nullptr && leftOffset != 0) {
                     leftNode = Alloc (btree, leftOffset);
                 }
                 return leftNode;
@@ -336,7 +336,7 @@ namespace thekogans {
             index = 0;
             while (index < last) {
                 ui32 middle = (index + last) / 2;
-                i32 result = entries[middle].key->PrefixCompare (prefix);
+                i32 result = prefix->PrefixCompare (*entries[middle].key);
                 if (result == 0) {
                     index = middle;
                     return true;
@@ -354,16 +354,15 @@ namespace thekogans {
         bool BTree2::Node::FindFirstPrefix (
                 const Key &prefix,
                 ui32 &index) const {
-            bool found = false;
-            ui32 lastIndex = count;
+            index = count;
+            ui32 lastIndex = index;
             while (PrefixSearch (prefix, lastIndex)) {
-                found = true;
                 index = lastIndex;
                 if (lastIndex-- == 0) {
                     break;
                 }
             }
-            return found;
+            return index < count;
         }
 
         bool BTree2::Node::Search (
@@ -373,7 +372,7 @@ namespace thekogans {
             index = 0;
             while (index < last) {
                 ui32 middle = (index + last) / 2;
-                i32 result = entries[middle].key->Compare (key);
+                i32 result = key.Compare (*entries[middle].key);
                 if (result == 0) {
                     index = middle;
                     return true;
@@ -391,6 +390,10 @@ namespace thekogans {
         BTree2::Node::InsertResult BTree2::Node::Insert (Entry &entry) {
             ui32 index = 0;
             if (Search (*entry.key, index)) {
+                assert (index < count);
+                if (entry.value != nullptr) {
+                    entry.value = entries[index].value;
+                }
                 return Duplicate;
             }
             Node *child = GetChild (index);
@@ -604,39 +607,43 @@ namespace thekogans {
 
         bool BTree2::Iterator::Next () {
             if (!finished) {
-                bool found = false;
+                finished = true;
                 ++node.second;
                 if (node.second < node.first->count) {
                     Node *child = node.first->GetChild (node.second);
                     if (child != nullptr) {
-                        parents.push_back (node);
+                        // We back up an entry because when we're done iterating
+                        // over (left) children, we need to check the entry at
+                        // current index which has been incremented above.
+                        parents.push_back (NodeIndex (node.first, node.second - 1));
                         ui32 index = 0;
                         while (child != nullptr &&
                                 (prefix == nullptr || child->FindFirstPrefix (*prefix, index))) {
-                            found = true;
-                            parents.push_back (NodeInfo (child, index));
+                            finished = false;
+                            parents.push_back (NodeIndex (child, index));
                             child = child->GetChild (index);
                         }
                         node = parents.back ();
                         parents.pop_back ();
+                        // If we didn't encounter any eligible children above,
+                        // increment the index so that we can check the next
+                        // entry below.
+                        if (finished) {
+                            ++node.second;
+                        }
                     }
-                    if (!found && (prefix == nullptr ||
-                            node.first->entries[node.second].key->PrefixCompare (*prefix))) {
-                        found = true;
-                    }
+                    finished &= prefix != nullptr &&
+                        !node.first->entries[node.second].key->PrefixCompare (*prefix);
                 }
                 else if (!parents.empty ()) {
-                    NodeInfo parent = parents.back ();
-                    if (prefix == nullptr ||
-                            parent.first->entries[parent.second].key->PrefixCompare (*prefix)) {
-                        node = parent;
-                        parents.pop_back ();
-                        found = true;
-                    }
+                    node = parents.back ();
+                    parents.pop_back ();
+                    finished = prefix != nullptr &&
+                        !node.first->entries[node.second].key->PrefixCompare (*prefix);
                 }
-                if (!found) {
-                    finished = true;
-                }
+            }
+            if (finished) {
+                Clear ();
             }
             return !finished;
         }
@@ -723,7 +730,7 @@ namespace thekogans {
 
         bool BTree2::Add (
                 Key::SharedPtr key,
-                Value::SharedPtr value) {
+                Value::SharedPtr &value) {
             LockGuard<SpinLock> guard (spinLock);
             Node::Entry entry (key.Get (), value.Get ());
             Node::InsertResult result = root->Insert (entry);
@@ -744,6 +751,11 @@ namespace thekogans {
                 key.Release ();
                 value.Release ();
             }
+            else {
+                // Otherwise it's a duplicate.
+                assert (result == Node::Duplicate);
+                value.Reset (entry.value);
+            }
             return result == Node::Inserted;
         }
 
@@ -761,36 +773,34 @@ namespace thekogans {
         bool BTree2::FindFirst (Iterator &it) {
             it.Clear ();
             LockGuard<SpinLock> guard (spinLock);
-            bool found = false;
             Node *node = root;
             if (node != nullptr && node->count > 0) {
                 if (it.prefix == nullptr) {
                     do {
-                        it.parents.push_back (Iterator::NodeInfo (node, 0));
+                        it.parents.push_back (Iterator::NodeIndex (node, 0));
                         node = node->GetChild (0);
                     } while (node != nullptr);
-                    found = true;
+                    it.finished = false;
                 }
                 else {
                     while (node != nullptr) {
                         ui32 index = 0;
                         if (node->FindFirstPrefix (*it.prefix, index)) {
-                            it.parents.push_back (Iterator::NodeInfo (node, index));
-                            found = true;
+                            it.parents.push_back (Iterator::NodeIndex (node, index));
+                            it.finished = false;
                         }
-                        else if (found) {
+                        else if (!it.finished) {
                             break;
                         }
                         node = node->GetChild (index);
                     }
                 }
             }
-            if (found) {
+            if (!it.finished) {
                 it.node = it.parents.back ();
                 it.parents.pop_back ();
-                it.finished = false;
             }
-            return found;
+            return !it.finished;
         }
 
         void BTree2::Flush () {

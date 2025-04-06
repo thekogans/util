@@ -225,7 +225,7 @@ namespace thekogans {
         /// Implement base type IsType. This macro is private.
         #define THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_BASE_IS_TYPE(_T)\
             bool _T::IsType (const char *type) {\
-                return GetTypes ().find (type) != GetTypes ().end ();\
+                return type != nullptr && GetTypes ().find (type) != GetTypes ().end ();\
             }
 
         /// \def THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_BASE_GET_TYPES(_T)
@@ -247,10 +247,12 @@ namespace thekogans {
             _T::SharedPtr _T::CreateType (\
                     const char *type,\
                     thekogans::util::DynamicCreatable::Parameters::SharedPtr parameters) {\
-                thekogans::util::DynamicCreatable::TypeMapType::const_iterator it =\
-                    GetTypes ().find (type);\
-                if (it != GetTypes ().end ()) {\
-                    return it->second (parameters);\
+                if (type != nullptr) {\
+                    thekogans::util::DynamicCreatable::TypeMapType::const_iterator it =\
+                        GetTypes ().find (type);\
+                    if (it != GetTypes ().end ()) {\
+                        return it->second (parameters);\
+                    }\
                 }\
                 return nullptr;\
             }
@@ -491,6 +493,15 @@ namespace thekogans {
                     FactoryType factory);
             };
         #endif // defined (THEKOGANS_UTIL_TYPE_Shared)
+
+            /// \brief
+            /// Return true if base is found in the BASES list.
+            /// NOTE: Unlike 'true' polymorphism this method will
+            /// return true only if you setup a relationship between
+            /// the given base and this type. Actual inheritance has
+            /// nothing to do with it.
+            /// \return true == this type is derived from the given base.
+            bool IsDerivedFrom (const char *base) const noexcept;
 
             /// \brief
             /// Pretty print the BaseMap to the std::cout.

@@ -140,18 +140,18 @@ namespace thekogans {
             virtual void Write (Serializer & /*serializer*/) const = 0;
 
             /// \brief
-            /// Read a Serializable from an XML DOM.
+            /// Read the Serializable from an XML DOM.
             /// \param[in] node XML DOM representation of a Serializable.
             virtual void Read (
                 const Header & /*header*/,
                 const pugi::xml_node & /*node*/) = 0;
             /// \brief
-            /// Write a Serializable to the XML DOM.
+            /// Write the Serializable to the XML DOM.
             /// \param[out] node Parent node.
             virtual void Write (pugi::xml_node & /*node*/) const = 0;
 
             /// \brief
-            /// Read a Serializable from an JSON DOM.
+            /// Read the Serializable from an JSON DOM.
             /// \param[in] node JSON DOM representation of a Serializable.
             virtual void Read (
                 const Header & /*header*/,
@@ -320,7 +320,7 @@ namespace thekogans {
             virtual void Write (Serializer &serializer) const override;
 
             /// \brief
-            /// Read a Serializable from an XML DOM.
+            /// Read the Serializable from an XML DOM.
             /// \param[in] header_ Serializable::Header to deserialize.
             /// \param[in] node XML DOM representation of a Serializable.
             virtual void Read (
@@ -332,7 +332,7 @@ namespace thekogans {
             virtual void Write (pugi::xml_node &node_) const override;
 
             /// \brief
-            /// Read a Serializable from an JSON DOM.
+            /// Read the Serializable from an JSON DOM.
             /// \param[in] header_ Serializable::Header to deserialize.
             /// \param[in] object_ JSON DOM representation of a Serializable.
             virtual void Read (

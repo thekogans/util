@@ -486,13 +486,13 @@ namespace thekogans {
                 virtual void Write (pugi::xml_node &node) const override;
 
                 /// \brief
-                /// Read a Serializable from an JSON DOM.
+                /// Read the Serializable from an JSON DOM.
                 /// \param[in] node JSON DOM representation of a Serializable.
                 virtual void Read (
                     const Header & /*header*/,
                     const JSON::Object &object) override;
                 /// \brief
-                /// Write a Serializable to the JSON DOM.
+                /// Write the Serializable to the JSON DOM.
                 /// \param[out] node Parent node.
                 virtual void Write (JSON::Object &object) const override;
             };

@@ -188,7 +188,7 @@ namespace thekogans {
 
         BTree::Node *BTree::Node::GetChild (ui32 index) {
             if (index == 0) {
-                if (leftNode == 0 && leftOffset != 0) {
+                if (leftNode == nullptr && leftOffset != 0) {
                     leftNode = Alloc (btree, leftOffset);
                 }
                 return leftNode;

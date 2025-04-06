@@ -49,6 +49,10 @@ namespace thekogans {
             /// Declare \see{RefCounted} pointers.
             THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (BTree2)
 
+            /// \struct BTree2::Key BTree2.h thekogans/util/BTree2.h
+            ///
+            /// \brief
+            /// Key adds order to the \see{Serializable}.
             struct Key : public Serializable {
                 /// \brief
                 /// Declare \see{DynamicCreatable} boilerplate.
@@ -70,6 +74,9 @@ namespace thekogans {
                 virtual std::string ToString () const = 0;
             };
 
+            /// \struct BTree2::StringKey BTree2.h thekogans/util/BTree2.h
+            ///
+            /// \brief
             struct StringKey : public Key {
                 /// \brief
                 /// StringKey is a \see{Serializable}.
@@ -164,7 +171,7 @@ namespace thekogans {
                 }
 
                 /// \brief
-                /// Read a Serializable from an JSON DOM.
+                /// Read the Serializable from an JSON DOM.
                 /// \param[in] node JSON DOM representation of a Serializable.
                 virtual void Read (
                         const Header & /*header*/,
@@ -173,7 +180,7 @@ namespace thekogans {
                     assert (0);
                 }
                 /// \brief
-                /// Write a Serializable to the JSON DOM.
+                /// Write the Serializable to the JSON DOM.
                 /// \param[out] node Parent node.
                 virtual void Write (JSON::Object &object) const override {
                     // FIXME: implement?
@@ -181,6 +188,9 @@ namespace thekogans {
                 }
             };
 
+            /// \struct BTree2::Value BTree2.h thekogans/util/BTree2.h
+            ///
+            /// \brief
             struct Value : public Serializable {
                 /// \brief
                 /// Declare \see{DynamicCreatable} boilerplate.
@@ -192,6 +202,9 @@ namespace thekogans {
                 virtual std::string ToString () const = 0;
             };
 
+            /// \struct BTree2::StringValue BTree2.h thekogans/util/BTree2.h
+            ///
+            /// \brief
             struct StringValue : public Value {
                 /// \brief
                 /// StringValue is a \see{Serializable}.
@@ -258,7 +271,7 @@ namespace thekogans {
                 }
 
                 /// \brief
-                /// Read a Serializable from an JSON DOM.
+                /// Read the Serializable from an JSON DOM.
                 /// \param[in] node JSON DOM representation of a Serializable.
                 virtual void Read (
                         const Header & /*header*/,
@@ -267,7 +280,7 @@ namespace thekogans {
                     assert (0);
                 }
                 /// \brief
-                /// Write a Serializable to the JSON DOM.
+                /// Write the Serializable to the JSON DOM.
                 /// \param[out] node Parent node.
                 virtual void Write (JSON::Object &object) const override {
                     // FIXME: implement?
@@ -660,7 +673,8 @@ namespace thekogans {
             /// \brief
             /// Find the given key in the btree.
             /// \param[in] key \see{Key} to find.
-            /// \param[out] value If found the given key's value will be returned in value.
+            /// \param[out] value If found the given key's value will be
+            /// returned in value.
             /// \return true == found.
             bool Search (
                 const Key &key,
@@ -668,11 +682,14 @@ namespace thekogans {
             /// \brief
             /// Add the given key to the btree.
             /// \param[in] key KeyType to add.
-            /// \param[in] value Value associated with the given key.
-            /// \return true == added. false == duplicate.
+            /// \param[in,out] value Value associated with the given key.
+            /// If the given key is a duplicat, will contain the existing
+            /// value found at the entry.
+            /// \return true == added. false == duplicate. If false, return
+            /// the current value stored at the given key in value.
             bool Add (
                 Key::SharedPtr key,
-                Value::SharedPtr value);
+                Value::SharedPtr &value);
             /// \brief
             /// Delete the given key from the btree.
             /// \param[in] key KeyType whose entry to delete.
@@ -690,9 +707,11 @@ namespace thekogans {
             /// worth the added benefit). You get one shot through the range. This
             /// design also means that you cannot know, a priori, how many entries
             /// are in the range. You need to step through it to count them up.
-            /// WARNING: The nature of BTrees is such that almost any modification
-            /// to its structure invalidates iterators currently in existance. This
-            /// also means that you CAN'T (or at least shouldn't) write code like this:
+            /// WARNING: \see{FindFirst} will return a live iterator pointing in to the
+            /// actual data in the btree (not a copy). The nature of BTrees is such that
+            /// almost any modification to its structure invalidates iterators currently
+            /// in existance. This means that you CAN'T (or at least shouldn't) write
+            /// code like this:
             ///
             /// Deleting a range of nodes:
             ///
@@ -704,10 +723,8 @@ namespace thekogans {
             /// // of a crash is completely dependent on the state of
             /// // the BTree.
             /// Iterator it (some prefix);
-            /// if (btree.FindFirst (it)) {
-            ///     do {
-            ///         btree.Delete (*it.GetKey ());
-            ///     } while (it.Next ());
+            /// for (btree.FindFirst (it); !it.IsFinished (); it.Next ()) {
+            ///     btree.Delete (*it.GetKey ());
             /// }
             /// \endcode
             ///
@@ -719,13 +736,11 @@ namespace thekogans {
             /// // This is the right way.
             /// std::vector<Key::SharedPtr> keys;
             /// Iterator it (some prefix);
-            /// if (btree.FindFirst (it)) {
-            ///     do {
-            ///         keys.push_back (it.GetKey ());
-            ///     } while (it.Next ());
-            ///     for (std::size_t i = 0, count = keys.size (); i < count; ++i) {
-            ///         btree.Delete (*keys[i]);
-            ///     }
+            /// for (btree.FindFirst (it); !it.IsFinished (); it.Next ()) {
+            ///     keys.push_back (it.GetKey ());
+            /// }
+            /// for (std::size_t i = 0, count = keys.size (); i < count; ++i) {
+            ///     btree.Delete (*keys[i]);
             /// }
             /// \endcode
             struct Iterator {
@@ -735,20 +750,20 @@ namespace thekogans {
                 Key::SharedPtr prefix;
                 /// \brief
                 /// Alias for std::pair<Node *, ui32>.
-                using NodeInfo = std::pair<Node *, ui32>;
+                using NodeIndex = std::pair<Node *, ui32>;
                 /// \brief
                 /// Stack of parents allowing us to navigate the tree.
                 /// The nodes store no parent pointers. They would be
                 /// a nightmare to maintain.
-                std::vector<NodeInfo> parents;
+                std::vector<NodeIndex> parents;
                 /// \brief
                 /// Current node we're iterating over.
-                NodeInfo node;
+                NodeIndex node;
                 /// \brief
                 /// Flag indicating the iterator is done and will not
-                /// return true from Next again. It is only set in \see{FindFirst}
-                /// below and only after it made sure that it properly initialized
-                /// the iterator.
+                /// return true from Next again. It is only set in \see{BTree2::FindFirst}
+                /// and \see{Next} below and only after it made sure that it properly
+                /// initialized the iterator.
                 bool finished;
 
             public:
@@ -757,7 +772,7 @@ namespace thekogans {
                 /// \param[in] prefix_ Prefix to iterate over (nullptr == entire tree).
                 Iterator (Key::SharedPtr prefix_ = nullptr) :
                     prefix (prefix_),
-                    node (NodeInfo (nullptr, 0)),
+                    node (NodeIndex (nullptr, 0)),
                     finished (true) {}
 
                 /// \brief
@@ -768,19 +783,19 @@ namespace thekogans {
                 }
 
                 /// \brief
+                /// Clear the internal state and reset the iterator.
+                inline void Clear () {
+                    parents.clear ();
+                    node = Iterator::NodeIndex (nullptr, 0);
+                    finished = true;
+                }
+
+                /// \brief
                 /// Step to the next entry in the range.
                 /// \return true == Iterator is now pointing at the next entry.
                 /// Use GetKey and GetValue to examine it's contents. false ==
                 /// the iterator is finished through the range.
                 bool Next ();
-
-                /// \brief
-                /// Clear the internal state and reset the iterator.
-                inline void Clear () {
-                    parents.clear ();
-                    node = Iterator::NodeInfo (nullptr, 0);
-                    finished = true;
-                }
 
                 /// \brief
                 /// If we're not finished, return the key associated with the current entry.
@@ -796,6 +811,17 @@ namespace thekogans {
                     return !finished && node.first != nullptr && node.second < node.first->count ?
                         node.first->entries[node.second].value : nullptr;
                 }
+                /// \brief
+                /// If we're not finished, set the value associated with the current entry.
+                /// \param[in] value New \see{Value} to associated with the current entry.
+                inline void SetValue (Value::SharedPtr value) {
+                    if (!finished && node.first != nullptr && node.second < node.first->count &&
+                            value != nullptr) {
+                        node.first->entries[node.second].value->Release ();
+                        node.first->entries[node.second].value = value.Release ();
+                        node.first->Save ();
+                    }
+                }
 
                 /// \brief
                 /// BTree2 is the only one trusted to access sensitive protected data.
@@ -804,8 +830,15 @@ namespace thekogans {
 
             /// \brief
             /// Reset the iterator to point to the first occurence of it.prefix.
-            /// If the prefix is a nullptr, point to the smallest entry.
-            /// \param[in, out] it Iterator to reset.
+            /// If the prefix is a nullptr, point to the smallest entry (smallest
+            /// as returned by \see{Key::Compare}, which could actually be the largest
+            /// if the tree is in descending  order).
+            /// IMPORTANT: It's practically imposible to deduce that an iterator
+            /// has been invalidated by Add/Delete. To maintain the btree structure
+            /// the rotations and merges may delete some nodes while moving others.
+            /// It is therefore important that any iterator be created, used quickly,
+            /// and discarded.
+            /// \param[in,out] it Iterator to reset.
             /// \return true == The iterator pointing to the first occurance of it.prefix
             /// (or smallest element if nullptr). false == the iterator is empty.
             bool FindFirst (Iterator &it);

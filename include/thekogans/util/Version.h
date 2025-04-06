@@ -200,7 +200,7 @@ namespace thekogans {
         }
 
         /// \brief
-        /// Read an version from the given serializer.
+        /// Read a version from the given serializer.
         /// \param[in] serializer Where to read the version from.
         /// \param[out] version Version to read.
         /// \return serializer.

@@ -51,6 +51,18 @@ namespace thekogans {
         }
     #endif // defined (THEKOGANS_UTIL_TYPE_Static)
 
+        bool DynamicCreatable::IsDerivedFrom (const char *base) const noexcept {
+            if (base != nullptr) {
+                CharPtrEqual compare;
+                for (std::size_t i = 0; i < BASES_SIZE; ++i) {
+                    if (compare (base, BASES[i])) {
+                        return true;
+                    }
+                }
+            }
+            rerurn false;
+        }
+
         void DynamicCreatable::DumpBaseMap (const char *base) {
             BaseMapType::const_iterator it;
             BaseMapType::const_iterator end;
