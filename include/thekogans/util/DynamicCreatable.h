@@ -186,13 +186,13 @@ namespace thekogans {
             }
 
         /// \def THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE_BASES(_T)
-        /// Declare the DynamicCreatable bases array. This macro is private.
+        /// Declare the DynamicCreatable::BASES array. This macro is private.
         #define THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE_BASES(_T)\
         public:\
             static const char * const BASES[];
 
         /// \def THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_BASES_BEGIN(_T)
-        /// Used to start the creation of DynamicCreatable bases array. This
+        /// Used to start the creation of DynamicCreatable::BASES array. This
         /// macro is private.
         #define THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_BASES_BEGIN(_T)\
             const char * const _T::BASES[] = {
@@ -205,48 +205,45 @@ namespace thekogans {
             };
 
         /// \def THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE_Bases(_T)
-        /// Declare DynamicCreatable::Type. This macro is usually private.
+        /// Declare DynamicCreatable::Bases. This macro is usually private.
         #define THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE_Bases(_T)\
         public:\
             virtual const char * const *Bases () const noexcept override;
 
         /// \def THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_Bases(_T)
-        /// Implement DynamicCreatable::Type. This macro is usually private.
+        /// Implement DynamicCreatable::Bases. This macro is usually private.
         #define THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_Bases(_T)\
             const char * const *_T::Bases () const noexcept {\
                 return BASES;\
             }
 
         /// \def THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE_BASES_SIZE(_T)
-        /// Declare the DynamicCreatable bases size. This macro is private.
+        /// Declare the DynamicCreatable::BASES_SIZE. This macro is private.
         #define THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE_BASES_SIZE(_T)\
         public:\
             static const std::size_t BASES_SIZE;
 
         /// \def THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_BASES_SIZE(_T)
-        /// Used to end the creation of DynamicCreatable bases array. A list
-        /// of bases would go between the above and this macro. This
-        /// macro is private.
+        /// Implement DynamicCreatable::BASES_SIZE. This macro is private.
         #define THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_BASES_SIZE(_T)\
             const std::size_t _T::BASES_SIZE = THEKOGANS_UTIL_ARRAY_SIZE (_T::BASES);
 
         /// \def THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE_BasesSize(_T)
-        /// Declare DynamicCreatable::Type. This macro is usually private.
+        /// Declare DynamicCreatable::BasesSize. This macro is usually private.
         #define THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE_BasesSize(_T)\
         public:\
             virtual std::size_t BasesSize () const noexcept override;
 
         /// \def THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_BasesSize(_T)
-        /// Implement DynamicCreatable::Type. This macro is usually private.
+        /// Implement DynamicCreatable::BasesSize. This macro is usually private.
         #define THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_BasesSize(_T)\
             std::size_t _T::BasesSize () const noexcept {\
                 return BASES_SIZE;\
             }
 
         /// \def THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE_OVERRIDE(_T)
-        /// Declare DynamicCreatable::TYPE/Type. Unless you have a special need
-        /// (\see{FileLogger}), you should not need to directly use this
-        /// macro.
+        /// Declare DynamicCreatable overridables. Unless you have a special need
+        /// (\see{FileLogger}), you should not need to directly use this macro.
         #define THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE_OVERRIDE(_T)\
             THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE_TYPE (_T)\
             THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE_Type (_T)\
@@ -256,9 +253,8 @@ namespace thekogans {
             THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE_BasesSize (_T)
 
         /// \def THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_OVERRIDE(_T, ...)
-        /// Implement DynamicCreatable::TYPE/Type. Unless you have a special need
-        /// (\see{FileLogger}), you should not need to directly use this
-        /// macro.
+        /// Implement DynamicCreatable overridables. Unless you have a special need
+        /// (\see{FileLogger}), you should not need to directly use this macro.
         #define THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_OVERRIDE(_T, ...)\
             THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_BASES_BEGIN (_T)\
                 thekogans::util::DynamicCreatable::TYPE,\
@@ -271,7 +267,7 @@ namespace thekogans {
             THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_BasesSize (_T)
 
         /// \def THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_OVERRIDE_T(_T, ...)
-        /// Implement DynamicCreatable::TYPE/Type for template types. Unless
+        /// Implement DynamicCreatable overridables for template types. Unless
         /// you have a special need, you should not need to directly use this
         /// macro.
         #define THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_OVERRIDE_T(_T, ...)\
@@ -429,16 +425,25 @@ namespace thekogans {
         /// \struct DynamicCreatableBase DynamicCreatable.h thekogans/util/DynamicCreatable.h
         ///
         /// \brief
-        /// DynamicCreatableBase exposes the Type () virtual method.
+        /// DynamicCreatableBase exposes the Type (), Bases () and BasesSize () virtual methods.
 
         struct _LIB_THEKOGANS_UTIL_DECL DynamicCreatableBase : public virtual RefCounted {
             /// \brief
             /// All DynamicCreatable derived types need to be able to
             /// dynamically identify themselves. Its what makes them
             /// dinamically creatable.
-            /// \return Type name.
+            /// \return TYPE.
             virtual const char *Type () const noexcept = 0;
+
+            /// \brief
+            /// Return the list of base types that can create this type.
+            /// DynamicCreatable derived types will have at least one
+            /// base (DynamicCreatable itself).
+            /// \return BASES.
             virtual const char * const *Bases () const noexcept = 0;
+            /// \brief
+            /// Return the bumber if entries in BASES.
+            /// \return The bumber if entries in BASES.
             virtual std::size_t BasesSize () const noexcept = 0;
         };
 
