@@ -442,8 +442,8 @@ namespace thekogans {
             /// \return BASES.
             virtual const char * const *Bases () const noexcept = 0;
             /// \brief
-            /// Return the bumber if entries in BASES.
-            /// \return The bumber if entries in BASES.
+            /// Return the number of entries in BASES.
+            /// \return The number of entries in BASES.
             virtual std::size_t BasesSize () const noexcept = 0;
         };
 

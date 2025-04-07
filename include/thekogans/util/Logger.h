@@ -44,10 +44,10 @@ namespace thekogans {
 
         #if defined (THEKOGANS_UTIL_TYPE_Static)
             /// \brief
-            /// Because Allocator uses dynamic initialization, when using
-            /// it in static builds call this method to have the Allocator
-            /// explicitly include all internal allocator types. Without
-            /// calling this api, the only allocatorers that will be available
+            /// Because Logger uses dynamic initialization, when using
+            /// it in static builds call this method to have the Logger
+            /// explicitly include all internal logger types. Without
+            /// calling this api, the only loggers that will be available
             /// to your application are the ones you explicitly link to.
             static void StaticInit ();
         #endif // defined (THEKOGANS_UTIL_TYPE_Static)

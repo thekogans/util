@@ -58,6 +58,16 @@ namespace thekogans {
                 /// Declare \see{DynamicCreatable} boilerplate.
                 THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE_BASE (Key)
 
+            #if defined (THEKOGANS_UTIL_TYPE_Static)
+                /// \brief
+                /// Because Key uses dynamic initialization, when using
+                /// it in static builds call this method to have the Key
+                /// explicitly include all internal key types. Without
+                /// calling this api, the only keys that will be available
+                /// to your application are the ones you explicitly link to.
+                static void StaticInit ();
+            #endif // defined (THEKOGANS_UTIL_TYPE_Static)
+
                 /// \brief
                 /// Used to find keys with matching prefixs.
                 /// \param[in] prefix Key representing the prefix to compare against.
@@ -77,6 +87,7 @@ namespace thekogans {
             /// \struct BTree2::StringKey BTree2.h thekogans/util/BTree2.h
             ///
             /// \brief
+            /// Variable size string key.
             struct StringKey : public Key {
                 /// \brief
                 /// StringKey is a \see{Serializable}.
@@ -196,6 +207,16 @@ namespace thekogans {
                 /// Declare \see{DynamicCreatable} boilerplate.
                 THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE_BASE (Value)
 
+            #if defined (THEKOGANS_UTIL_TYPE_Static)
+                /// \brief
+                /// Because Value uses dynamic initialization, when using
+                /// it in static builds call this method to have the Value
+                /// explicitly include all internal value types. Without
+                /// calling this api, the only values that will be available
+                /// to your application are the ones you explicitly link to.
+                static void StaticInit ();
+            #endif // defined (THEKOGANS_UTIL_TYPE_Static)
+
                 /// \brief
                 /// This method is only used in Dump for debugging purposes.
                 /// \return String representation of the value.
@@ -205,6 +226,7 @@ namespace thekogans {
             /// \struct BTree2::StringValue BTree2.h thekogans/util/BTree2.h
             ///
             /// \brief
+            /// Variable size string value.
             struct StringValue : public Value {
                 /// \brief
                 /// StringValue is a \see{Serializable}.

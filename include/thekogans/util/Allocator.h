@@ -42,7 +42,7 @@ namespace thekogans {
             /// Because Allocator uses dynamic initialization, when using
             /// it in static builds call this method to have the Allocator
             /// explicitly include all internal allocator types. Without
-            /// calling this api, the only allocatorers that will be available
+            /// calling this api, the only allocators that will be available
             /// to your application are the ones you explicitly link to.
             static void StaticInit ();
         #endif // defined (THEKOGANS_UTIL_TYPE_Static)

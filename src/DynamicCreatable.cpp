@@ -16,6 +16,7 @@
 // along with libthekogans_util. If not, see <http://www.gnu.org/licenses/>.
 
 #if defined (THEKOGANS_UTIL_TYPE_Static)
+    #include "thekogans/util/BTree2.h"
     #include "thekogans/util/JSON.h"
     #include "thekogans/util/Allocator.h"
     #include "thekogans/util/Hash.h"
@@ -40,6 +41,8 @@ namespace thekogans {
 
     #if defined (THEKOGANS_UTIL_TYPE_Static)
         void DynamicCreatable::StaticInit () {
+            BTree2::Key::StaticInit ();
+            BTree2::Value::StaticInit ();
             JSON::Value::StaticInit ();
             Allocator::StaticInit ();
             Hash::StaticInit ();

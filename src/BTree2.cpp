@@ -70,6 +70,16 @@ namespace thekogans {
         THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_BASE (thekogans::util::BTree2::Key)
         THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_BASE (thekogans::util::BTree2::Value)
 
+    #if defined (THEKOGANS_UTIL_TYPE_Static)
+        void BTree2::Key::StaticInit () {
+            StringKey::StaticInit ();
+        }
+
+        void BTree2::Value::StaticInit () {
+            StringValue::StaticInit ();
+        }
+    #endif // defined (THEKOGANS_UTIL_TYPE_Static)
+
         THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE (
             thekogans::util::BTree2::StringKey,
             1,
