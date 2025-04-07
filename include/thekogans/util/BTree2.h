@@ -108,30 +108,12 @@ namespace thekogans {
                 /// Used to find keys with matching prefixs.
                 /// \param[in] prefix Key representing the prefix to compare against.
                 /// \return -1 == this is < key, 0 == this == key, 1 == this is greater than key.
-                virtual i32 PrefixCompare (const Key &prefix) const override {
-                    const StringKey *stringKey = dynamic_cast<const StringKey *> (&prefix);
-                    if (stringKey != nullptr) {
-                        return str.compare (0, stringKey->str.size (), stringKey->str);
-                    }
-                    else {
-                        THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                            THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
-                    }
-                }
+                virtual i32 PrefixCompare (const Key &prefix) const override;
                 /// \brief
                 /// Used to order keys.
                 /// \param[in] key Key to compare against.
                 /// \return -1 == this is < key, 0 == this == key, 1 == this is greater than key.
-                virtual i32 Compare (const Key &key) const override {
-                    const StringKey *stringKey = dynamic_cast<const StringKey *> (&key);
-                    if (stringKey != nullptr) {
-                        return str.compare (stringKey->str);
-                    }
-                    else {
-                        THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                            THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
-                    }
-                }
+                virtual i32 Compare (const Key &key) const override;
                 /// \brief
                 /// This method is only used in Dump for debugging purposes.
                 /// \return String representation of the key.
@@ -331,6 +313,9 @@ namespace thekogans {
                 std::string valueType;
                 /// \brief
                 /// Entries per node.
+                /// NOTE: Its type is ui32 because 1. we want something
+                /// fixed size and 2. if you need more than 4G enries in
+                /// one node, you don't need a tree. You need something else.
                 ui32 entriesPerNode;
                 /// \brief
                 /// Root node offset.
@@ -480,11 +465,26 @@ namespace thekogans {
                     dirty = true;
                 }
                 /// \brief
-                /// Return the child at the given index.
-                /// \param[in] index Index of child to retrieve
-                /// (0 == left, !0 == entries[index-1].right).
-                /// \return Child node at the given index. nullptr if no child at that index exists.
+                /// Return the left child of an entry at the given index.
+                /// NOTE: If you need the very last (rightNode) child, call
+                /// GetChild (node->count). If you find yourself with an entry
+                /// index and you need its right child, call GetChild (index + 1).
+                /// \param[in] index Index of entry whose left child to retrieve
+                /// (0 == leftNode, !0 == entries[index-1].rightNode).
+                /// \return Left child node at the given index. nullptr if no child
+                /// at that index exists.
                 Node *GetChild (ui32 index);
+                /// \brief
+                /// Just like Search but begins at whatever the index was set to at call
+                /// time. You should never need to call this method directly. The driver
+                /// which starts the whole process is FindFirstPrefix and it will do the
+                /// right thing. But if you ever find yourself callling this method directly
+                /// don't forget to initialize index prior to call.
+                /// \param[in] prefix Prefix to find.
+                /// \param[in,out] index index On entry contains the last index of entry
+                /// to search. On successful return will contain the index of the matching
+                /// entry.
+                /// \return true == found the prefix.
                 bool PrefixSearch (
                     const Key &prefix,
                     ui32 &index) const;
@@ -492,8 +492,8 @@ namespace thekogans {
                 /// Used by \see{BTree2::FindFirst} to locate the start of the prefix.
                 /// Due to the nature of binary search, \see{PrefixSearch} can return
                 /// true with a prefix found in the middle of the range. This method
-                /// keeps reducing the search space to (using \see{PrefixSearch}) to
-                /// locate the start of the range.
+                /// keeps reducing the search space (using \see{PrefixSearch}) to locate
+                /// the start of the range.
                 /// \param[in] prefix Prefix to find.
                 /// \param[out] index On true return, contains the index of the first
                 /// entry in the node that matches the given prefix.
@@ -721,9 +721,9 @@ namespace thekogans {
             /// \struct BTree2::Iterator BTree2.h thekogans/util/BTree2.h
             ///
             /// \brief
-            /// Iterator implements a forward cursor over a range of btree nodes.
+            /// Iterator implements a forward cursor over a range of btree entries.
             /// Call \see{FindFirst} bellow with a reference to an iterator and then
-            /// use it to move forward through the range of nodes. The range can either
+            /// use it to move forward through the range of entries. The range can either
             /// be based on a prefix or the entire tree. Since Iterator is unidirectional
             /// (forward only), there's no backing up (the code complexity is just not
             /// worth the added benefit). You get one shot through the range. This
@@ -836,14 +836,7 @@ namespace thekogans {
                 /// \brief
                 /// If we're not finished, set the value associated with the current entry.
                 /// \param[in] value New \see{Value} to associated with the current entry.
-                inline void SetValue (Value::SharedPtr value) {
-                    if (!finished && node.first != nullptr && node.second < node.first->count &&
-                            value != nullptr) {
-                        node.first->entries[node.second].value->Release ();
-                        node.first->entries[node.second].value = value.Release ();
-                        node.first->Save ();
-                    }
-                }
+                void SetValue (Value::SharedPtr value);
 
                 /// \brief
                 /// BTree2 is the only one trusted to access sensitive protected data.

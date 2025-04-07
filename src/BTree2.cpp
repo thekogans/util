@@ -84,6 +84,29 @@ namespace thekogans {
             thekogans::util::BTree2::StringKey,
             1,
             BTree2::Key::TYPE)
+
+        i32 BTree2::StringKey::PrefixCompare (const Key &prefix) const {
+            const StringKey *stringKey = dynamic_cast<const StringKey *> (&prefix);
+            if (stringKey != nullptr) {
+                return str.compare (0, stringKey->str.size (), stringKey->str);
+            }
+            else {
+                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
+            }
+        }
+
+        i32 BTree2::StringKey::Compare (const Key &key) const {
+            const StringKey *stringKey = dynamic_cast<const StringKey *> (&key);
+            if (stringKey != nullptr) {
+                return str.compare (stringKey->str);
+            }
+            else {
+                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
+            }
+        }
+
         THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE (
             thekogans::util::BTree2::StringValue,
             1,
@@ -656,6 +679,20 @@ namespace thekogans {
                 Clear ();
             }
             return !finished;
+        }
+
+        void BTree2::Iterator::SetValue (Value::SharedPtr value) {
+            if (value != nullptr) {
+                if (!finished && node.first != nullptr && node.second < node.first->count) {
+                    node.first->entries[node.second].value->Release ();
+                    node.first->entries[node.second].value = value.Release ();
+                    node.first->Save ();
+                }
+            }
+            else {
+                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
+            }
         }
 
         BTree2::BTree2 (
