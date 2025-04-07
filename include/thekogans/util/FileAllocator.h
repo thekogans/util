@@ -177,6 +177,10 @@ namespace thekogans {
                 /// \brief
                 /// dtor.
                 ~Flusher () {
+                    Flush ();
+                }
+
+                inline void Flush () {
                     fileAllocator->FlushBTree ();
                 }
 

@@ -586,6 +586,8 @@ namespace thekogans {
         }
 
         void BTree2::Node::Split (Node *node) {
+            // This assert checks IsFull as well.
+            assert (count == btree.header.entriesPerNode);
             ui32 splitIndex = btree.header.entriesPerNode / 2;
             node->count = count - splitIndex;
             std::memcpy (
@@ -713,17 +715,36 @@ namespace thekogans {
                 ui32 magic;
                 *buffer >> magic;
                 if (magic == MAGIC32) {
-                    *buffer >> header;
+                    Header header_;
+                    *buffer >> header_;
+                    if ((header.keyType.empty () || header.keyType == header_.keyType) &&
+                            (header.valueType.empty () || header.valueType == header_.valueType)) {
+                        header = header_;
+                    }
+                    else {
+                        THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
+                            "Requested key (%s)/value (%s) types do not "
+                            "match existing key (%s)/value (%s) types @" THEKOGANS_UTIL_UI64_FORMAT,
+                            header.keyType.c_str (), header.valueType.c_str (),
+                            header_.keyType.c_str (), header_.valueType.c_str (),
+                            offset);
+                    }
                 }
                 else {
                     THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                        "Corrupt BTree2: " THEKOGANS_UTIL_UI64_FORMAT,
+                        "Corrupt BTree2 @" THEKOGANS_UTIL_UI64_FORMAT,
                         offset);
                 }
             }
-            else {
+            else if (Key::IsType (header.keyType.c_str ()) &&
+                    Value::IsType (header.valueType.c_str ())) {
                 offset = fileAllocator->Alloc (header.Size ());
                 Save ();
+            }
+            else {
+                THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
+                    "key (%s) / value (%s) types are not valid.",
+                    keyType.c_str (), valueType.c_str ());
             }
             nodeAllocator =
                 BlockAllocator::Pool::Instance ()->GetBlockAllocator (

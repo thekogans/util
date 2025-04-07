@@ -7,7 +7,9 @@
                 guid = "e541acd69d9d020f7eac98d5bf9e0d7a"
                 schema_version = "2">
   <features>
-    <feature>THEKOGANS_UTIL_HAVE_XERCES</feature>
+    <!-- Xerces is still fully supported but is very seldom used.
+         Uncomment the following feature if you need it. -->
+    <!-- <feature>THEKOGANS_UTIL_HAVE_XERCES</feature> -->
     <feature>THEKOGANS_UTIL_HAVE_ZLIB</feature>
     <if condition = "$(TOOLCHAIN_OS) == 'Linux'">
       <feature>THEKOGANS_UTIL_HAVE_XLIB</feature>
