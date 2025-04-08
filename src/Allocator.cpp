@@ -33,7 +33,7 @@
 namespace thekogans {
     namespace util {
 
-        THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_BASE (thekogans::util::Allocator)
+        THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_ABSTRACT_BASE (thekogans::util::Allocator)
 
     #if defined (THEKOGANS_UTIL_TYPE_Static)
         void Allocator::StaticInit () {

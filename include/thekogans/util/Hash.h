@@ -38,8 +38,8 @@ namespace thekogans {
 
         struct _LIB_THEKOGANS_UTIL_DECL Hash : public DynamicCreatable {
             /// \brief
-            /// Declare \see{DynamicCreatable} boilerplate.
-            THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE_BASE (Hash)
+            /// Hash is a \see{util::DynamicCreatable} abstract base.
+            THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE_ABSTRACT_BASE (Hash)
 
         #if defined (THEKOGANS_UTIL_TYPE_Static)
             /// \brief

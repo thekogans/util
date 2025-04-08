@@ -39,8 +39,8 @@ namespace thekogans {
 
         struct _LIB_THEKOGANS_UTIL_DECL Logger : public DynamicCreatable {
             /// \brief
-            /// Declare \see{DynamicCreatable} boilerplate.
-            THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE_BASE (Logger)
+            /// Logger is a \see{util::DynamicCreatable} abstract base.
+            THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE_ABSTRACT_BASE (Logger)
 
         #if defined (THEKOGANS_UTIL_TYPE_Static)
             /// \brief

@@ -50,7 +50,7 @@ namespace thekogans {
         /// values, use them as offsets in to files to read/write as much data
         /// as you need.
 
-        struct BTree : public RefCounted {
+        struct _LIB_THEKOGANS_UTIL_DECL BTree : public RefCounted {
             /// \brief
             /// Declare \see{RefCounted} pointers.
             THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (BTree)

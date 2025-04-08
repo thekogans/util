@@ -32,7 +32,7 @@
 namespace thekogans {
     namespace util {
 
-        THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_BASE (thekogans::util::Logger)
+        THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_ABSTRACT_BASE (thekogans::util::Logger)
 
     #if defined (THEKOGANS_UTIL_TYPE_Static)
         void Logger::StaticInit () {

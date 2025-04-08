@@ -24,7 +24,8 @@
 namespace thekogans {
     namespace util {
 
-        THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_BASE (thekogans::util::RandomSeekSerializer)
+        THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_ABSTRACT_BASE (
+            thekogans::util::RandomSeekSerializer)
 
     #if defined (THEKOGANS_UTIL_TYPE_Static)
         void RandomSeekSerializer::StaticInit () {

@@ -21,7 +21,7 @@
 namespace thekogans {
     namespace util {
 
-        THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_BASE (
+        THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_ABSTRACT_BASE (
             thekogans::util::HRTimerMgr::TimerInfoBase)
 
     #if defined (THEKOGANS_UTIL_TYPE_Static)

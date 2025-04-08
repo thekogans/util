@@ -37,7 +37,7 @@ namespace thekogans {
             return 0;
         }
 
-        THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_BASE (thekogans::util::DynamicCreatable)
+        THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_ABSTRACT_BASE (thekogans::util::DynamicCreatable)
 
     #if defined (THEKOGANS_UTIL_TYPE_Static)
         void DynamicCreatable::StaticInit () {

@@ -28,7 +28,7 @@
 namespace thekogans {
     namespace util {
 
-        THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_BASE (thekogans::util::Serializable)
+        THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_ABSTRACT_BASE (thekogans::util::Serializable)
 
         const char * const Serializable::Header::ATTR_TYPE = "Type";
         const char * const Serializable::Header::ATTR_VERSION = "Version";

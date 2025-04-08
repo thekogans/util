@@ -180,6 +180,8 @@ namespace thekogans {
                     Flush ();
                 }
 
+                /// \brief
+                /// Call
                 inline void Flush () {
                     fileAllocator->FlushBTree ();
                 }

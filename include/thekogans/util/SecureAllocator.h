@@ -40,7 +40,7 @@ namespace thekogans {
         /// \brief
         /// SecureAllocator allocates physical pages. The pages are marked
         /// for reading and writing and are not swappable to disk. Before
-        /// freeing an allocated block, SecureAllocator clears it.
+        /// returning/freeing an allocated block, SecureAllocator clears it.
         ///
         /// This allocator is especially useful for creating heaps of secure
         /// objects. Here is how you would use it:

@@ -28,7 +28,7 @@
 namespace thekogans {
     namespace util {
 
-        THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_BASE (thekogans::util::JSON::Value)
+        THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_ABSTRACT_BASE (thekogans::util::JSON::Value)
 
     #if defined (THEKOGANS_UTIL_TYPE_Static)
         void JSON::Value::StaticInit () {

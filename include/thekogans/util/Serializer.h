@@ -42,12 +42,38 @@ namespace thekogans {
         /// to them. Insertion/extraction operators for all thekogans util (See \see{Types.h})
         /// basic types as well as most other types (\see{Exception}, \see{Buffer}...)
         /// are provided. Serializer uses endianness to convert between in stream and
-        /// in memory types.
+        /// in memory byte order.
+        ///
+        /// PRO TIP: If you want your code to be endianess agnostic, use signature (magic)
+        /// bytes to deduce Serializer endianess. Ex:
+        ///
+        /// \code{.cpp}
+        /// using namespace thekogans;x
+        /// util::SimpleFile file (util::HostEndian, path, util::SimpleFile::ReadWrite);
+        /// // Magic serves two purposes. Firstly it gives us a quick
+        /// // check to make sure we're dealing with our file and second,
+        /// // it allows us to move files from little to big endian (and
+        /// // vise versa) machines.
+        /// ui32 magic;
+        /// file >> magic;
+        /// if (magic == util::MAGIC32) {
+        ///     // File is host endian.
+        /// }
+        /// else if (util::ByteSwap<util::GuestEndian, util::HostEndian> (magic) == util::MAGIC32) {
+        ///     // File is guest endian.
+        ///     file.endianness = util::GuestEndian;
+        /// }
+        /// else {
+        ///     THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
+        ///         "Corrupt log %s",
+        ///         logPath.c_str ());
+        /// }
+        /// \endcode
 
         struct _LIB_THEKOGANS_UTIL_DECL Serializer : public DynamicCreatable {
             /// \brief
-            /// Declare \see{DynamicCreatable} boilerplate.
-            THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE_BASE (Serializer)
+            /// Serializer is a \see{util::DynamicCreatable} abstract base.
+            THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE_ABSTRACT_BASE (Serializer)
 
         #if defined (THEKOGANS_UTIL_TYPE_Static)
             /// \brief

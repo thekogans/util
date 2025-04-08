@@ -112,6 +112,7 @@ namespace thekogans {
                 ptr = DefaultAllocator::Instance ()->Alloc (size);
             #endif // defined (THEKOGANS_UTIL_HAVE_MMAP)
             #endif // defined (TOOLCHAIN_OS_Windows)
+                SecureZeroMemory (ptr, size);
             }
             return ptr;
         }

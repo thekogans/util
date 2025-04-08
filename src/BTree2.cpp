@@ -67,8 +67,8 @@ namespace thekogans {
             return serializer;
         }
 
-        THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_BASE (thekogans::util::BTree2::Key)
-        THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_BASE (thekogans::util::BTree2::Value)
+        THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_ABSTRACT_BASE (thekogans::util::BTree2::Key)
+        THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_ABSTRACT_BASE (thekogans::util::BTree2::Value)
 
     #if defined (THEKOGANS_UTIL_TYPE_Static)
         void BTree2::Key::StaticInit () {
@@ -86,8 +86,8 @@ namespace thekogans {
             BTree2::Key::TYPE)
 
         i32 BTree2::StringKey::PrefixCompare (const Key &prefix) const {
-            const StringKey *stringKey = dynamic_cast<const StringKey *> (&prefix);
-            if (stringKey != nullptr) {
+            if (prefix.Type () == StringKey::TYPE || prefix.IsDerivedFrom (StringKey::TYPE)) {
+                const StringKey *stringKey = static_cast<const StringKey *> (&prefix);
                 return str.compare (0, stringKey->str.size (), stringKey->str);
             }
             else {
@@ -97,8 +97,8 @@ namespace thekogans {
         }
 
         i32 BTree2::StringKey::Compare (const Key &key) const {
-            const StringKey *stringKey = dynamic_cast<const StringKey *> (&key);
-            if (stringKey != nullptr) {
+            if (key.Type () == StringKey::TYPE || key.IsDerivedFrom (StringKey::TYPE)) {
+                const StringKey *stringKey = static_cast<const StringKey *> (&key);
                 return str.compare (stringKey->str);
             }
             else {
@@ -108,7 +108,39 @@ namespace thekogans {
         }
 
         THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE (
+            thekogans::util::BTree2::GUIDKey,
+            1,
+            BTree2::Key::TYPE)
+
+        i32 BTree2::GUIDKey::PrefixCompare (const Key &prefix) const {
+            if (prefix.Type () == GUIDKey::TYPE || prefix.IsDerivedFrom (GUIDKey::TYPE)) {
+                const GUIDKey *guidKey = static_cast<const GUIDKey *> (&prefix);
+                return guid == guidKey->guid;
+            }
+            else {
+                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
+            }
+        }
+
+        i32 BTree2::GUIDKey::Compare (const Key &key) const {
+            if (key.Type () == GUIDKey::TYPE || key.IsDerivedFrom (GUIDKey::TYPE)) {
+                const GUIDKey *guidKey = static_cast<const GUIDKey *> (&key);
+                return guid == guidKey->guid;
+            }
+            else {
+                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
+            }
+        }
+
+        THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE (
             thekogans::util::BTree2::StringValue,
+            1,
+            BTree2::Value::TYPE)
+
+        THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE (
+            thekogans::util::BTree2::GUIDListValue,
             1,
             BTree2::Value::TYPE)
 

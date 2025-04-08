@@ -162,8 +162,8 @@ namespace thekogans {
             /// collects the statistics from various scopes.
             struct _LIB_THEKOGANS_UTIL_DECL TimerInfoBase : public Serializable {
                 /// \brief
-                /// Declare \see{DynamicCreatable} boilerplate.
-                THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE_BASE (TimerInfoBase)
+                /// TimerInfoBase is a \see{util::DynamicCreatable} abstract base.
+                THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE_ABSTRACT_BASE (TimerInfoBase)
 
             #if defined (THEKOGANS_UTIL_TYPE_Static)
                 /// \brief

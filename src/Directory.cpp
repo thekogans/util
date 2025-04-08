@@ -751,19 +751,25 @@ namespace thekogans {
         }
 
         void Directory::Entry::Write (pugi::xml_node &node) const {
-            node.append_attribute (ATTR_FILE_SYSTEM).set_value (fileSystemTostring (fileSystem).c_str ());
+            node.append_attribute (
+                ATTR_FILE_SYSTEM).set_value (fileSystemTostring (fileSystem).c_str ());
             node.append_attribute (ATTR_TYPE).set_value (typeTostring (type).c_str ());
             node.append_attribute (ATTR_NAME).set_value (Encodestring (name).c_str ());
             if (fileSystem == Windows) {
-                node.append_attribute (ATTR_ATTRIBUTES).set_value (ui32Tostring (this->attributes).c_str ());
-                node.append_attribute (ATTR_CREATION_DATE).set_value (i64Tostring (creationDate).c_str ());
+                node.append_attribute (
+                    ATTR_ATTRIBUTES).set_value (ui32Tostring (attributes).c_str ());
+                node.append_attribute (
+                    ATTR_CREATION_DATE).set_value (i64Tostring (creationDate).c_str ());
             }
             else {
                 node.append_attribute (ATTR_MODE).set_value (i32Tostring (mode).c_str ());
-                node.append_attribute (ATTR_LAST_STATUS_DATE).set_value (i64Tostring (lastStatusDate).c_str ());
+                node.append_attribute (
+                    ATTR_LAST_STATUS_DATE).set_value (i64Tostring (lastStatusDate).c_str ());
             }
-            node.append_attribute (ATTR_LAST_ACCESSED_DATE).set_value (i64Tostring (lastAccessedDate).c_str ());
-            node.append_attribute (ATTR_LAST_MODIFIED_DATE).set_value (i64Tostring (lastModifiedDate).c_str ());
+            node.append_attribute (
+                ATTR_LAST_ACCESSED_DATE).set_value (i64Tostring (lastAccessedDate).c_str ());
+            node.append_attribute (
+                ATTR_LAST_MODIFIED_DATE).set_value (i64Tostring (lastModifiedDate).c_str ());
             node.append_attribute (ATTR_SIZE).set_value (ui64Tostring (size).c_str ());
         }
 
@@ -901,7 +907,8 @@ namespace thekogans {
                     std::list<std::string> components;
                     {
                         if (!Path (path).IsAbsolute ()) {
-                            Path (MakePath (Path::GetCurrDirectory (), path)).GetComponents (components);
+                            Path (MakePath (Path::GetCurrDirectory (), path)).GetComponents (
+                                components);
                         }
                         else {
                             Path (path).GetComponents (components);
@@ -1024,7 +1031,8 @@ namespace thekogans {
                     std::list<std::string> components;
                     {
                         if (!Path (path).IsAbsolute ()) {
-                            Path (MakePath (Path::GetCurrDirectory (), path)).GetComponents (components);
+                            Path (MakePath (Path::GetCurrDirectory (), path)).GetComponents (
+                                components);
                         }
                         else {
                             Path (path).GetComponents (components);
