@@ -41,6 +41,7 @@
 #include "thekogans/util/ByteSwap.h"
 #include "thekogans/util/Exception.h"
 #include "thekogans/util/DefaultAllocator.h"
+#include "thekogans/util/SecureAllocator.h"
 #include "thekogans/util/MD5.h"
 
 namespace thekogans {

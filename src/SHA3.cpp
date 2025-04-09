@@ -19,6 +19,7 @@
 #include "thekogans/util/Constants.h"
 #include "thekogans/util/ByteSwap.h"
 #include "thekogans/util/Exception.h"
+#include "thekogans/util/SecureAllocator.h"
 #include "thekogans/util/SHA3.h"
 
 namespace thekogans {

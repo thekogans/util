@@ -48,6 +48,7 @@
 #include <cstring>
 #include "thekogans/util/Constants.h"
 #include "thekogans/util/ByteSwap.h"
+#include "thekogans/util/SecureAllocator.h"
 #include "thekogans/util/SHA2_384_512.h"
 
 namespace thekogans {

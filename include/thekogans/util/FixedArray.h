@@ -132,7 +132,7 @@ namespace thekogans {
             /// dtor.
             /// Zero out the sensitive memory block.
             ~SecureFixedArray () {
-                SecureZeroMemory (array, Size ());
+                SecureZeroMemory (this->array, Size ());
             }
         };
 
