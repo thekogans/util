@@ -222,10 +222,10 @@ namespace thekogans {
                         ptr += countToWrite;
                         countWritten += countToWrite;
                         position += countToWrite;
-                        if (size < (ui64)position) {
-                            size = position;
-                        }
                         count -= countToWrite;
+                    }
+                    if (size < (ui64)position) {
+                        size = position;
                     }
                     flags.Set (FLAGS_DIRTY, true);
                     return countWritten;

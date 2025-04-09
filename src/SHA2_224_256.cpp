@@ -111,7 +111,7 @@ namespace thekogans {
                 digestSize == 28 ? initialHashValue224 : initialHashValue256,
                 sizeof (state));
             bitCount = 0;
-            memset (buffer, 0, sizeof (buffer));
+            SecureZeroMemory (buffer, sizeof (buffer));
             bufferIndex = 0;
         }
 
@@ -144,10 +144,10 @@ namespace thekogans {
             // padding into a second block.
             buffer[bufferIndex++] = 0x80;
             if (bufferIndex > SHORT_BLOCK_SIZE) {
-                memset (&buffer[bufferIndex], 0, BLOCK_SIZE - bufferIndex);
+                SecureZeroMemory (&buffer[bufferIndex], BLOCK_SIZE - bufferIndex);
                 Transform ();
             }
-            memset (&buffer[bufferIndex], 0, SHORT_BLOCK_SIZE - bufferIndex);
+            SecureZeroMemory (&buffer[bufferIndex], SHORT_BLOCK_SIZE - bufferIndex);
             {
                 // Store the message size as the last 8 octets
                 union {
@@ -173,9 +173,9 @@ namespace thekogans {
 
         void SHA2_224_256::Reset () {
             digestSize = 0;
-            memset (state, 0, sizeof (state));
+            SecureZeroMemory (state, sizeof (state));
             bitCount = 0;
-            memset (buffer, 0, sizeof (buffer));
+            SecureZeroMemory (buffer, sizeof (buffer));
             bufferIndex = 0;
         }
 

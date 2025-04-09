@@ -152,7 +152,7 @@ namespace thekogans {
                 bool rewind,
                 bool readOnly) {
             if (data != nullptr) {
-                memset (data, 0, length);
+                SecureZeroMemory (data, length);
             }
             if (rewind) {
                 Rewind (readOnly);

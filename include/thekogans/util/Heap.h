@@ -30,6 +30,7 @@
 #include "thekogans/util/Constants.h"
 #include "thekogans/util/Allocator.h"
 #include "thekogans/util/DefaultAllocator.h"
+#include "thekogans/util/SecureAllocator.h"
 #include "thekogans/util/SpinLock.h"
 #include "thekogans/util/LockGuard.h"
 #include "thekogans/util/Exception.h"
@@ -530,7 +531,7 @@ namespace thekogans {
                         allocatedItems (0),
                         freeItem (nullptr) {
                 #if defined (THEKOGANS_UTIL_CONFIG_Debug) || defined (THEKOGANS_UTIL_DEBUG_HEAP)
-                    memset (items, 0, maxItems * sizeof (Item));
+                    SecureZeroMemory (items, maxItems * sizeof (Item));
                 #endif // defined (THEKOGANS_UTIL_CONFIG_Debug) || defined (THEKOGANS_UTIL_DEBUG_HEAP)
                 }
 

@@ -18,7 +18,6 @@
 #if !defined (__thekogans_util_FixedArray_h)
 #define __thekogans_util_FixedArray_h
 
-#include <cstring>
 #include "thekogans/util/Constants.h"
 #include "thekogans/util/SecureAllocator.h"
 
@@ -61,7 +60,7 @@ namespace thekogans {
                     }
                 }
                 if (clearUnused && count_ < count) {
-                    memset (array + count_, 0, (count - count_) * sizeof (T));
+                    SecureZeroMemory (array + count_, (count - count_) * sizeof (T));
                 }
             }
             /// \brief

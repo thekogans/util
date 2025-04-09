@@ -33,9 +33,9 @@ namespace thekogans {
                     digestSize_ == DIGEST_SIZE_384 || digestSize_ == DIGEST_SIZE_512) {
                 digestSize = digestSize_;
                 blockSize = 200 - 2 * digestSize;
-                memset (state, 0, sizeof (state));
+                SecureZeroMemory (state, sizeof (state));
                 byteCount = 0;
-                memset (buffer, 0, sizeof (buffer));
+                SecureZeroMemory (buffer, sizeof (buffer));
                 bufferIndex = 0;
             }
             else {
@@ -88,9 +88,9 @@ namespace thekogans {
         void SHA3::Reset () {
             digestSize = 0;
             blockSize = 0;
-            memset (state, 0, sizeof (state));
+            SecureZeroMemory (state, sizeof (state));
             byteCount = 0;
-            memset (buffer, 0, sizeof (buffer));
+            SecureZeroMemory (buffer, sizeof (buffer));
             bufferIndex = 0;
         }
 

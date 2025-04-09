@@ -193,7 +193,7 @@ namespace thekogans {
                             GetProcAddress (hmodule, "GetHostNameW"));
                         if (getHostNameW != nullptr) {
                             wchar_t name[256];
-                            memset (name, 0, 256);
+                            SecureZeroMemory (name, 256);
                             if (getHostNameW (name, 256) == 0) {
                                 return os::windows::UTF16ToUTF8 (name);
                             }
@@ -215,7 +215,7 @@ namespace thekogans {
                 else {
                     // Pre-Windows 8 host name is always ACP encoded.
                     char name[256];
-                    memset (name, 0, 256);
+                    SecureZeroMemory (name, 256);
                     if (gethostname (name, 256) == 0) {
                         // There is no direct way to convert ACP into
                         // UTF8, so perform the conversion in two steps.
@@ -228,7 +228,7 @@ namespace thekogans {
                 }
             #else // defined (TOOLCHAIN_OS_Windows)
                 char name[256];
-                memset (name, 0, 256);
+                SecureZeroMemory (name, 256);
                 if (gethostname (name, 256) == 0) {
                     return name;
                 }

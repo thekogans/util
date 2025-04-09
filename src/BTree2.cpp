@@ -265,9 +265,8 @@ namespace thekogans {
                     // Zero out the unused portion of the keyValueBuffer to
                     // prevent leaking sensitive data.
                     if (keyValueBuffer->GetDataAvailableForWriting () > 0) {
-                        memset (
+                        SecureZeroMemory (
                             keyValueBuffer->GetWritePtr (),
-                            0,
                             keyValueBuffer->GetDataAvailableForWriting ());
                         keyValueBuffer->AdvanceWriteOffset (
                             keyValueBuffer->GetDataAvailableForWriting ());
@@ -279,9 +278,8 @@ namespace thekogans {
                 }
                 // See comment above keyValueBuffer.
                 if (buffer->GetDataAvailableForWriting () > 0) {
-                    memset (
+                    SecureZeroMemory (
                         buffer->GetWritePtr (),
-                        0,
                         buffer->GetDataAvailableForWriting ());
                     buffer->AdvanceWriteOffset (buffer->GetDataAvailableForWriting ());
                 }

@@ -64,7 +64,7 @@ namespace thekogans {
             if (digestSize == DIGEST_SIZE_128) {
                 memcpy (state, initialHashValue, sizeof (state));
                 bitCount = 0;
-                memset (buffer, 0, sizeof (buffer));
+                SecureZeroMemory (buffer, sizeof (buffer));
                 bufferIndex = 0;
             }
             else {
@@ -107,10 +107,10 @@ namespace thekogans {
             // padding into a second block.
             buffer[bufferIndex++] = 0x80;
             if (bufferIndex >= SHORT_BLOCK_SIZE) {
-                memset (&buffer[bufferIndex], 0, BLOCK_SIZE - bufferIndex);
+                SecureZeroMemory (&buffer[bufferIndex], BLOCK_SIZE - bufferIndex);
                 Transform ();
             }
-            memset (&buffer[bufferIndex], 0, SHORT_BLOCK_SIZE - bufferIndex);
+            SecureZeroMemory (&buffer[bufferIndex], SHORT_BLOCK_SIZE - bufferIndex);
             {
                 // Store the message size as the last 8 octets
                 union {
@@ -135,9 +135,9 @@ namespace thekogans {
         }
 
         void MD5::Reset () {
-            memset (state, 0, sizeof (state));
+            SecureZeroMemory (state, sizeof (state));
             bitCount = 0;
-            memset (buffer, 0, sizeof (buffer));
+            SecureZeroMemory (buffer, sizeof (buffer));
             bufferIndex = 0;
         }
 
@@ -284,7 +284,7 @@ namespace thekogans {
             state[3] += d;
             bufferIndex = 0;
             // Zeroize sensitive information.
-            memset (x, 0, sizeof (x));
+            SecureZeroMemory (x, sizeof (x));
         }
 
     } // namespace util

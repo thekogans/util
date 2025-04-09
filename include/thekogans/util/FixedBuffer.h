@@ -82,7 +82,7 @@ namespace thekogans {
                         memcpy (data, data_, length_);
                     }
                     if (clearUnused) {
-                        memset (GetWritePtr (), 0, GetDataAvailableForWriting ());
+                        SecureZeroMemory (GetWritePtr (), GetDataAvailableForWriting ());
                     }
                 }
                 else {
@@ -109,7 +109,7 @@ namespace thekogans {
                         memcpy (data, begin, writeOffset);
                     }
                     if (clearUnused) {
-                        memset (GetWritePtr (), 0, GetDataAvailableForWriting ());
+                        SecureZeroMemory (GetWritePtr (), GetDataAvailableForWriting ());
                     }
                 }
                 else {

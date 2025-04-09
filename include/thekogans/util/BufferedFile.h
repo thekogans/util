@@ -24,6 +24,7 @@
 #include "thekogans/util/Flags.h"
 #include "thekogans/util/Heap.h"
 #include "thekogans/util/File.h"
+#include "thekogans/util/SecureAllocator.h"
 
 namespace thekogans {
     namespace util {
@@ -198,7 +199,7 @@ namespace thekogans {
                 /// \brief
                 /// ctor.
                 Segment () {
-                    std::memset (buffers, 0, sizeof (buffers));
+                    SecureZeroMemory (buffers, sizeof (buffers));
                 }
                 /// \brief
                 /// dtor.
@@ -267,7 +268,7 @@ namespace thekogans {
                 /// \brief
                 /// ctor.
                 Internal () {
-                    std::memset (nodes, 0, sizeof (nodes));
+                    SecureZeroMemory (nodes, sizeof (nodes));
                 }
                 /// \brief
                 /// dtor.

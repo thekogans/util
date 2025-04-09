@@ -73,7 +73,7 @@ namespace thekogans {
             if (digestSize == DIGEST_SIZE_160) {
                 memcpy (state, initialHashValue, sizeof (state));
                 bitCount = 0;
-                memset (buffer, 0, sizeof (buffer));
+                SecureZeroMemory (buffer, sizeof (buffer));
                 bufferIndex = 0;
             }
             else {
@@ -111,10 +111,10 @@ namespace thekogans {
             // padding into a second block.
             buffer[bufferIndex++] = 0x80;
             if (bufferIndex > SHORT_BLOCK_SIZE) {
-                memset (&buffer[bufferIndex], 0, BLOCK_SIZE - bufferIndex);
+                SecureZeroMemory (&buffer[bufferIndex], BLOCK_SIZE - bufferIndex);
                 Transform ();
             }
-            memset (&buffer[bufferIndex], 0, SHORT_BLOCK_SIZE - bufferIndex);
+            SecureZeroMemory (&buffer[bufferIndex], SHORT_BLOCK_SIZE - bufferIndex);
             {
                 // Store the message size as the last 8 octets
                 union {
@@ -139,9 +139,9 @@ namespace thekogans {
         }
 
         void SHA1::Reset () {
-            memset (state, 0, sizeof (state));
+            SecureZeroMemory (state, sizeof (state));
             bitCount = 0;
-            memset (buffer, 0, sizeof (buffer));
+            SecureZeroMemory (buffer, sizeof (buffer));
             bufferIndex = 0;
         }
 
@@ -225,7 +225,7 @@ namespace thekogans {
             bufferIndex = 0;
             // Clean up.
             A = B = C = D = E = 0;
-            memset (W, 0, sizeof (W));
+            SecureZeroMemory (W, sizeof (W));
         }
 
     } // namespace util
