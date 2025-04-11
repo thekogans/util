@@ -23,6 +23,7 @@
 #include <functional>
 #include <algorithm>
 #include "thekogans/util/Config.h"
+#include "thekogans/util/Exception.h"
 
 namespace thekogans {
     namespace util {
@@ -108,14 +109,26 @@ namespace thekogans {
             /// \param[in] index Element index to return.
             /// \return reference to element at index.
             inline const T &operator [] (std::size_t index) const {
-                return array[index];
+                if (index < length) {
+                    return array[index];
+                }
+                else {
+                    THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                        THEKOGANS_UTIL_OS_ERROR_CODE_EOVERFLOW);
+                }
             }
             /// \brief
             /// lvalue element accessor.
             /// \param[in] index Element index to return.
             /// \return Reference to element at index.
             inline T &operator [] (std::size_t index) {
-                return array[index];
+                if (index < length) {
+                    return array[index];
+                }
+                else {
+                    THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                        THEKOGANS_UTIL_OS_ERROR_CODE_EOVERFLOW);
+                }
             }
 
             /// \brief
@@ -139,7 +152,7 @@ namespace thekogans {
         /// \struct SortedArray Array.h thekogans/util/Array.h
         ///
         /// \brief
-        /// Extends the capabilities of Array by imposing order onit's elements.
+        /// Extends the capabilities of Array by imposing order on it's elements.
         /// It's a seperate class because it imposes additional properties on T.
 
         template<typename T>

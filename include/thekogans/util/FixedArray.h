@@ -19,6 +19,7 @@
 #define __thekogans_util_FixedArray_h
 
 #include "thekogans/util/Constants.h"
+#include "thekogans/util/Exception.h"
 #include "thekogans/util/SecureAllocator.h"
 
 namespace thekogans {
@@ -39,44 +40,71 @@ namespace thekogans {
 
         template<
             typename T,
-            std::size_t count>
+            std::size_t capacity>
         struct FixedArray {
             /// \brief
+            /// FixedArray length.
+            std::size_t length;
+            /// \brief
             /// FixedArray elements.
-            T array[count];
+            T array[capacity];
 
             /// \brief
             /// ctor.
             /// \param[in] array_ Elements to initialize the array with.
-            /// \param[in] count_ Number of elements in array_.
+            /// \param[in] length_ Number of elements in array_.
             /// \param[in] clearUnused Clear unused array elements to 0.
             FixedArray (
                     const T *array_ = nullptr,
-                    std::size_t count_ = 0,
-                    bool clearUnused = false) {
-                if (array_ != nullptr && count_ > 0) {
-                    for (std::size_t i = 0, initCount = MIN (count_, count); i < initCount; ++i) {
+                    std::size_t length_ = 0,
+                    bool clearUnused = false) :
+                    length (array_ != nullptr ? length_ : 0) {
+                if (length <= capacity) {
+                    for (std::size_t i = 0; i < length; ++i) {
                         array[i] = array_[i];
                     }
+                    if (clearUnused) {
+                        SecureZeroMemory (array + length, (capacity - length) * sizeof (T));
+                    }
                 }
-                if (clearUnused && count_ < count) {
-                    SecureZeroMemory (array + count_, (count - count_) * sizeof (T));
+                else {
+                    THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                        THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
                 }
             }
             /// \brief
             /// ctor.
             /// \param[in] value Value to initialize every element of the array to.
-            explicit FixedArray (const T &value) {
-                for (std::size_t i = 0; i < count; ++i) {
+            explicit FixedArray (
+                    const T &value,
+                    std::size_t length_ = capacity) :
+                    length (MIN (length_, capacity)) {
+                for (std::size_t i = 0; i < length; ++i) {
                     array[i] = value;
                 }
             }
 
             /// \brief
-            /// Return the size of the array.
-            /// \return Size of the array.
+            /// Return the number of elements the array can hold.
+            /// \return Number of elements in the array.
+            inline std::size_t GetCapacity () const {
+                return capacity;
+            }
+
+            /// \brief
+            /// Return the number of elements in the array.
+            /// \return Number of elements in the array.
+            inline std::size_t GetLength () const {
+                return length;
+            }
+
+            /// \brief
+            /// Return the size of the array in bytes.
+            /// NOTE: This is the same Size used by all objects
+            /// to return the binary serialized size on disk.
+            /// \return Serialized binary size, in bytes, of the array.
             inline std::size_t Size () const {
-                return count;
+                return length * sizeof (T);
             }
 
             /// \brief
@@ -84,14 +112,26 @@ namespace thekogans {
             /// \param[in] index Element index to return.
             /// \return reference to element at index.
             inline const T &operator [] (std::size_t index) const {
-                return array[index];
+                if (index < capacity) {
+                    return array[index];
+                }
+                else {
+                    THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                        THEKOGANS_UTIL_OS_ERROR_CODE_EOVERFLOW);
+                }
             }
             /// \brief
             /// lvalue element accessor.
             /// \param[in] index Element index to return.
             /// \return Reference to element at index.
             inline T &operator [] (std::size_t index) {
-                return array[index];
+                if (index < capacity) {
+                    return array[index];
+                }
+                else {
+                    THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                        THEKOGANS_UTIL_OS_ERROR_CODE_EOVERFLOW);
+                }
             }
 
             /// \brief
@@ -118,8 +158,8 @@ namespace thekogans {
 
         template<
             typename T,
-            std::size_t count>
-        struct SecureFixedArray : public FixedArray<T, count> {
+            std::size_t capacity>
+        struct SecureFixedArray : public FixedArray<T, capacity> {
             /// \brief
             /// ctor.
             /// \param[in] array Elements to initialize the array with.
@@ -127,12 +167,12 @@ namespace thekogans {
             SecureFixedArray (
                 const T *array = nullptr,
                 std::size_t length = 0) :
-                FixedArray<T, count> (array, length, true) {}
+                FixedArray<T, capacity> (array, length, true) {}
             /// \brief
             /// dtor.
             /// Zero out the sensitive memory block.
             ~SecureFixedArray () {
-                SecureZeroMemory (this->array, Size ());
+                SecureZeroMemory (this->array, GetCapacity () * sizeof (T));
             }
         };
 

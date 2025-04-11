@@ -134,7 +134,7 @@ namespace thekogans {
                 /// \brief
                 /// Block header size.
             #if defined (THEKOGANS_UTIL_CONFIG_Debug)
-                static const std::size_t HEADER_SIZE = UI64_SIZE + UI64_SIZE,;
+                static const std::size_t HEADER_SIZE = UI64_SIZE + UI64_SIZE;
             #else // defined (THEKOGANS_UTIL_CONFIG_Debug)
                 static const std::size_t HEADER_SIZE = UI64_SIZE;
             #endif // defined (THEKOGANS_UTIL_CONFIG_Debug)
