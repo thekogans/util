@@ -97,6 +97,18 @@ namespace thekogans {
             inline std::size_t GetLength () const {
                 return length;
             }
+            /// \brief
+            /// Set the length of the array.
+            /// \param[in] length_ New array length.
+            inline void SetLength (std::size_t length_) {
+                if (length_ <= capacity) {
+                    length = length_;
+                }
+                else {
+                    THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                        THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
+                }
+            }
 
             /// \brief
             /// Return the size of the array in bytes.
@@ -172,7 +184,7 @@ namespace thekogans {
             /// dtor.
             /// Zero out the sensitive memory block.
             ~SecureFixedArray () {
-                SecureZeroMemory (this->array, this->GetCapacity () * sizeof (T));
+                SecureZeroMemory (this->array, capacity * sizeof (T));
             }
         };
 
