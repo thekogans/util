@@ -28,6 +28,8 @@ namespace thekogans {
                 BTree (
                     fileAllocator,
                     fileAllocator->GetRootOffset (),
+                    BTree::GUIDKey::TYPE,
+                    BTree::PtrValue::TYPE,
                     entriesPerNode,
                     nodesPerPage,
                     allocator) {

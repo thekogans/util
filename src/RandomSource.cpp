@@ -167,7 +167,10 @@ namespace thekogans {
                     (ui8 *)buffer + hardwareCount,
                     bufferLength - hardwareCount);
             #elif defined (TOOLCHAIN_OS_OSX)
-                OSStatus errorCode = SecRandomCopyBytes (kSecRandomDefault, bufferLength, buffer);
+                OSStatus errorCode = SecRandomCopyBytes (
+                    kSecRandomDefault,
+                    bufferLength - hardwareCount,
+                    (ui8 *)buffer + hardwareCount);
                 if (errorCode != noErr) {
                     THEKOGANS_UTIL_THROW_SEC_OSSTATUS_ERROR_CODE_EXCEPTION (errorCode);
                 }

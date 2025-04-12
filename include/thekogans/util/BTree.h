@@ -344,13 +344,13 @@ namespace thekogans {
 
                 /// \brief
                 /// The actual string.
-                GUID guid;
+                GUID key;
 
                 /// \brief
                 /// ctor.
                 /// \param[in] str_ std::string to initialize this key with.
-                GUIDKey (const GUID &guid_ = GUID::Empty) :
-                    guid (guid_) {}
+                GUIDKey (const GUID &key_ = GUID::Empty) :
+                    key (key_) {}
 
                 // Key
                 /// \brief
@@ -367,7 +367,7 @@ namespace thekogans {
                 /// This method is only used in Dump for debugging purposes.
                 /// \return String representation of the key.
                 virtual std::string ToString () const override {
-                    return guid.ToString ();
+                    return key.ToString ();
                 }
 
                 // Serializable
@@ -375,7 +375,7 @@ namespace thekogans {
                 /// Return the serialized key size.
                 /// \return Serialized key size.
                 virtual std::size_t Size () const noexcept override {
-                    return Serializer::Size (guid);
+                    return Serializer::Size (key);
                 }
 
                 /// \brief
@@ -385,13 +385,13 @@ namespace thekogans {
                 virtual void Read (
                         const Header & /*header*/,
                         Serializer &serializer) override {
-                    serializer >> guid;
+                    serializer >> key;
                 }
                 /// \brief
                 /// Write the key to the given serializer.
                 /// \param[out] serializer \see{Serializer} to write the key to.
                 virtual void Write (Serializer &serializer) const override {
-                    serializer << guid;
+                    serializer << key;
                 }
 
                 /// \brief
@@ -441,20 +441,20 @@ namespace thekogans {
 
                 /// \brief
                 /// The actual string.
-                std::string str;
+                std::string value;
 
                 /// \brief
                 /// ctor.
-                /// \param[in] str_ std::string to initialize this value with.
-                StringValue (const std::string &str_ = std::string ()) :
-                    str (str_) {}
+                /// \param[in] value_ std::string to initialize this value with.
+                StringValue (const std::string &value_ = std::string ()) :
+                    value (value_) {}
 
                 // Value
                 /// \brief
                 /// This method is only used in Dump for debugging purposes.
                 /// \return String representation of the value.
                 virtual std::string ToString () const override {
-                    return str;
+                    return value;
                 }
 
                 // Serializable
@@ -462,7 +462,7 @@ namespace thekogans {
                 /// Return the serialized value size.
                 /// \return Serialized value size.
                 virtual std::size_t Size () const noexcept override {
-                    return Serializer::Size (str);
+                    return Serializer::Size (value);
                 }
 
                 /// \brief
@@ -472,13 +472,100 @@ namespace thekogans {
                 virtual void Read (
                         const Header & /*header*/,
                         Serializer &serializer) override {
-                    serializer >> str;
+                    serializer >> value;
                 }
                 /// \brief
                 /// Write the value to the given serializer.
                 /// \param[out] serializer \see{Serializer} to write the value to.
                 virtual void Write (Serializer &serializer) const override {
-                    serializer << str;
+                    serializer << value;
+                }
+
+                /// \brief
+                /// Read the Serializable from an XML DOM.
+                /// \param[in] header \see{Serializable::Header}.
+                /// \param[in] node XML DOM representation of a Serializable.
+                virtual void Read (
+                        const Header & /*header*/,
+                        const pugi::xml_node &node) override {
+                    // FIXME: implement?
+                    assert (0);
+                }
+                /// \brief
+                /// Write the Serializable to the XML DOM.
+                /// \param[out] node Parent node.
+                virtual void Write (pugi::xml_node &node) const override {
+                    // FIXME: implement?
+                    assert (0);
+                }
+
+                /// \brief
+                /// Read the Serializable from an JSON DOM.
+                /// \param[in] node JSON DOM representation of a Serializable.
+                virtual void Read (
+                        const Header & /*header*/,
+                        const JSON::Object &object) override {
+                    // FIXME: implement?
+                    assert (0);
+                }
+                /// \brief
+                /// Write the Serializable to the JSON DOM.
+                /// \param[out] node Parent node.
+                virtual void Write (JSON::Object &object) const override {
+                    // FIXME: implement?
+                    assert (0);
+                }
+            };
+
+            /// \struct BTree::PtrValue BTree.h thekogans/util/BTree.h
+            ///
+            /// \brief
+            /// \see{FileAllocator::PtrType} value.
+            struct _LIB_THEKOGANS_UTIL_DECL PtrValue : public Value {
+                /// \brief
+                /// PtrValue is a \see{Serializable}.
+                THEKOGANS_UTIL_DECLARE_SERIALIZABLE (PtrValue)
+
+                /// \brief
+                /// The actual ptr.
+                FileAllocator::PtrType value;
+
+                /// \brief
+                /// ctor.
+                /// \param[in] str_ std::ptr to initialize this value with.
+                PtrValue (FileAllocator::PtrType value_ = 0) :
+                    value (value_) {}
+
+                // Value
+                /// \brief
+                /// This method is only used in Dump for debugging purposes.
+                /// \return String representation of the value.
+                virtual std::string ToString () const override {
+                    return ui64Tostring (value);
+                }
+
+                // Serializable
+                /// \brief
+                /// Return the serialized value size.
+                /// \return Serialized value size.
+                virtual std::size_t Size () const noexcept override {
+                    return Serializer::Size (value);
+                }
+
+                /// \brief
+                /// Read the value from the given serializer.
+                /// \param[in] header \see{Serializable::Header}.
+                /// \param[in] serializer \see{Serializer} to read the value from.
+                virtual void Read (
+                        const Header & /*header*/,
+                        Serializer &serializer) override {
+                    serializer >> value;
+                }
+                /// \brief
+                /// Write the value to the given serializer.
+                /// \param[out] serializer \see{Serializer} to write the value to.
+                virtual void Write (Serializer &serializer) const override {
+                    serializer << value;
                 }
 
                 /// \brief
@@ -528,7 +615,7 @@ namespace thekogans {
 
                 /// \brief
                 /// The actual list.
-                std::vector<GUID> guids;
+                std::vector<GUID> values;
 
                 // Value
                 /// \brief
@@ -545,7 +632,7 @@ namespace thekogans {
                 /// Return the serialized value size.
                 /// \return Serialized value size.
                 virtual std::size_t Size () const noexcept override {
-                    return Serializer::Size (guids);
+                    return Serializer::Size (values);
                 }
 
                 /// \brief
@@ -555,13 +642,13 @@ namespace thekogans {
                 virtual void Read (
                         const Header & /*header*/,
                         Serializer &serializer) override {
-                    serializer >> guids;
+                    serializer >> values;
                 }
                 /// \brief
                 /// Write the value to the given serializer.
                 /// \param[out] serializer \see{Serializer} to write the value to.
                 virtual void Write (Serializer &serializer) const override {
-                    serializer << guids;
+                    serializer << values;
                 }
 
                 /// \brief

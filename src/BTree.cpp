@@ -73,10 +73,13 @@ namespace thekogans {
     #if defined (THEKOGANS_UTIL_TYPE_Static)
         void BTree::Key::StaticInit () {
             StringKey::StaticInit ();
+            GUIDKey::StaticInit ();
         }
 
         void BTree::Value::StaticInit () {
             StringValue::StaticInit ();
+            PtrValue::StaticInit ();
+            GUIDListValue::StaticInit ();
         }
     #endif // defined (THEKOGANS_UTIL_TYPE_Static)
 
@@ -196,7 +199,7 @@ namespace thekogans {
         i32 BTree::GUIDKey::PrefixCompare (const Key &prefix) const {
             if (prefix.Type () == GUIDKey::TYPE || prefix.IsDerivedFrom (GUIDKey::TYPE)) {
                 const GUIDKey *guidKey = static_cast<const GUIDKey *> (&prefix);
-                return guid == guidKey->guid;
+                return key == guidKey->key;
             }
             else {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
@@ -207,7 +210,7 @@ namespace thekogans {
         i32 BTree::GUIDKey::Compare (const Key &key) const {
             if (key.Type () == GUIDKey::TYPE || key.IsDerivedFrom (GUIDKey::TYPE)) {
                 const GUIDKey *guidKey = static_cast<const GUIDKey *> (&key);
-                return guid == guidKey->guid;
+                return this->key == guidKey->key;
             }
             else {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
@@ -217,6 +220,11 @@ namespace thekogans {
 
         THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE (
             thekogans::util::BTree::StringValue,
+            1,
+            BTree::Value::TYPE)
+
+        THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE (
+            thekogans::util::BTree::PtrValue,
             1,
             BTree::Value::TYPE)
 
