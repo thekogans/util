@@ -177,7 +177,7 @@ namespace thekogans {
                     // Calling __cpuid with 0x0 as the function argument
                     // gets the number of the highest valid function ID in
                     // registers[0] and the vendor string in registers[1-3].
-                    FixedArray<ui32, 4> registers;
+                    FixedArray<ui32, 4> registers (4);
                     __cpuid ((int *)registers.array, 0);
                     ui32 functionCount = registers.array[0];
                     // Capture vendor string.
@@ -215,7 +215,7 @@ namespace thekogans {
                     // Calling __cpuid with 0x80000000 as the function argument
                     // gets the number of the highest valid extended ID in
                     // registers.array[0].
-                    FixedArray<ui32, 4> registers;
+                    FixedArray<ui32, 4> registers (4);
                     __cpuid ((int *)registers.array, 0x80000000);
                     ui32 functionCount = registers.array[0];
                     // Load flags for function 0x80000001.
@@ -227,10 +227,10 @@ namespace thekogans {
                     // Interpret CPU brand string if reported.
                     if (functionCount >= 0x80000004) {
                         FixedArray<ui32, 4> brand_[] = {
-                            FixedArray<ui32, 4> (0u),
-                            FixedArray<ui32, 4> (0u),
-                            FixedArray<ui32, 4> (0u),
-                            FixedArray<ui32, 4> (0u)
+                            FixedArray<ui32, 4> (0u, 4),
+                            FixedArray<ui32, 4> (0u, 4),
+                            FixedArray<ui32, 4> (0u, 4),
+                            FixedArray<ui32, 4> (0u, 4)
                         };
                         __cpuidex ((int *)brand_[0].array, 0x80000002, 0);
                         __cpuidex ((int *)brand_[1].array, 0x80000003, 0);

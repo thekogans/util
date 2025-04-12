@@ -80,6 +80,87 @@ namespace thekogans {
         }
     #endif // defined (THEKOGANS_UTIL_TYPE_Static)
 
+        bool BTree2::Iterator::Next () {
+            if (!finished) {
+                finished = true;
+                ++node.second;
+                if (node.second < node.first->count) {
+                    Node *child = node.first->GetChild (node.second);
+                    if (child != nullptr) {
+                        // We back up an entry because when we're done iterating
+                        // over (left) children, we need to check the entry at
+                        // current index which has been incremented above.
+                        parents.push_back (NodeIndex (node.first, node.second - 1));
+                        ui32 index = 0;
+                        while (child != nullptr &&
+                                (prefix == nullptr || child->FindFirstPrefix (*prefix, index))) {
+                            finished = false;
+                            parents.push_back (NodeIndex (child, index));
+                            child = child->GetChild (index);
+                        }
+                        node = parents.back ();
+                        parents.pop_back ();
+                        // If we didn't encounter any eligible children above,
+                        // increment the index so that we can check the next
+                        // entry below.
+                        if (finished) {
+                            ++node.second;
+                        }
+                    }
+                    finished &= prefix != nullptr &&
+                        !node.first->entries[node.second].key->PrefixCompare (*prefix);
+                }
+                else if (!parents.empty ()) {
+                    node = parents.back ();
+                    parents.pop_back ();
+                    finished = prefix != nullptr &&
+                        !node.first->entries[node.second].key->PrefixCompare (*prefix);
+                }
+            }
+            if (finished) {
+                Clear ();
+            }
+            return !finished;
+        }
+
+        BTree2::Key::SharedPtr BTree2::Iterator::GetKey () const {
+            if (!finished && node.first != nullptr && node.second < node.first->count) {
+                return node.first->entries[node.second].key;
+            }
+            else {
+                THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
+                    "%s", "Iterator is not pointing to a valid entry.");
+            }
+        }
+
+        BTree2::Value::SharedPtr BTree2::Iterator::GetValue () const {
+            if (!finished && node.first != nullptr && node.second < node.first->count) {
+                return node.first->entries[node.second].value;
+            }
+            else {
+                THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
+                    "%s", "Iterator is not pointing to a valid entry.");
+            }
+        }
+
+        void BTree2::Iterator::SetValue (Value::SharedPtr value) {
+            if (value != nullptr) {
+                if (!finished && node.first != nullptr && node.second < node.first->count) {
+                    node.first->entries[node.second].value->Release ();
+                    node.first->entries[node.second].value = value.Release ();
+                    node.first->Save ();
+                }
+                else {
+                    THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
+                        "%s", "Iterator is not pointing to a valid entry.");
+                }
+            }
+            else {
+                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
+            }
+        }
+
         THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE (
             thekogans::util::BTree2::StringKey,
             1,
@@ -392,7 +473,7 @@ namespace thekogans {
             }
         }
 
-        bool BTree2::Node::PrefixSearch (
+        bool BTree2::Node::PrefixFind (
                 const Key &prefix,
                 ui32 &index) const {
             ui32 last = index;
@@ -419,7 +500,7 @@ namespace thekogans {
                 ui32 &index) const {
             index = count;
             ui32 lastIndex = index;
-            while (PrefixSearch (prefix, lastIndex)) {
+            while (PrefixFind (prefix, lastIndex)) {
                 index = lastIndex;
                 if (lastIndex-- == 0) {
                     break;
@@ -428,7 +509,7 @@ namespace thekogans {
             return index < count;
         }
 
-        bool BTree2::Node::Search (
+        bool BTree2::Node::Find (
                 const Key &key,
                 ui32 &index) const {
             ui32 last = count;
@@ -450,24 +531,33 @@ namespace thekogans {
             return false;
         }
 
-        BTree2::Node::InsertResult BTree2::Node::Insert (Entry &entry) {
+        BTree2::Node::InsertResult BTree2::Node::Insert (
+                Entry &entry,
+                Iterator &it) {
             ui32 index = 0;
-            if (Search (*entry.key, index)) {
+            if (Find (*entry.key, index)) {
                 assert (index < count);
-                if (entry.value != nullptr) {
-                    entry.value = entries[index].value;
+                if (it.IsFinished ()) {
+                    it.prefix.Reset (entries[index].key);
+                    it.node = Iterator::NodeIndex (this, index);
+                    it.finished = false;
                 }
                 return Duplicate;
             }
             Node *child = GetChild (index);
             if (child != nullptr) {
-                InsertResult result = child->Insert (entry);
+                InsertResult result = child->Insert (entry, it);
                 if (result == Inserted || result == Duplicate) {
                     return result;
                 }
             }
             if (!IsFull ()) {
                 InsertEntry (entry, index);
+                if (it.IsFinished ()) {
+                    it.prefix.Reset (entries[index].key);
+                    it.node = Iterator::NodeIndex (this, index);
+                    it.finished = false;
+                }
                 Save ();
                 return Inserted;
             }
@@ -482,12 +572,25 @@ namespace thekogans {
                 if (index != splitIndex) {
                     if (index < splitIndex) {
                         InsertEntry (entry, index);
+                        if (it.IsFinished ()) {
+                            it.prefix.Reset (entries[index].key);
+                            it.node = Iterator::NodeIndex (this, index);
+                            it.finished = false;
+                        }
                     }
-                    else {
+                    else if (index > splitIndex) {
                         right->InsertEntry (entry, index - splitIndex);
+                        if (it.IsFinished ()) {
+                            it.prefix.Reset (entries[index - splitIndex].key);
+                            // -1 because we will be removing the 0'th entry below.
+                            it.node = Iterator::NodeIndex (right, index - splitIndex - 1);
+                            it.finished = false;
+                        }
                     }
-                    entry = right->entries[0];
-                    right->RemoveEntry (0);
+                    if (index != splitIndex) {
+                        entry = right->entries[0];
+                        right->RemoveEntry (0);
+                    }
                 }
                 Save ();
                 right->leftOffset = entry.rightOffset;
@@ -501,7 +604,7 @@ namespace thekogans {
 
         bool BTree2::Node::Remove (const Key &key) {
             ui32 index = 0;
-            bool found = Search (key, index);
+            bool found = Find (key, index);
             Node *child = GetChild (found ? index + 1 : index);
             if (found) {
                 if (child != nullptr) {
@@ -670,63 +773,6 @@ namespace thekogans {
             }
         }
 
-        bool BTree2::Iterator::Next () {
-            if (!finished) {
-                finished = true;
-                ++node.second;
-                if (node.second < node.first->count) {
-                    Node *child = node.first->GetChild (node.second);
-                    if (child != nullptr) {
-                        // We back up an entry because when we're done iterating
-                        // over (left) children, we need to check the entry at
-                        // current index which has been incremented above.
-                        parents.push_back (NodeIndex (node.first, node.second - 1));
-                        ui32 index = 0;
-                        while (child != nullptr &&
-                                (prefix == nullptr || child->FindFirstPrefix (*prefix, index))) {
-                            finished = false;
-                            parents.push_back (NodeIndex (child, index));
-                            child = child->GetChild (index);
-                        }
-                        node = parents.back ();
-                        parents.pop_back ();
-                        // If we didn't encounter any eligible children above,
-                        // increment the index so that we can check the next
-                        // entry below.
-                        if (finished) {
-                            ++node.second;
-                        }
-                    }
-                    finished &= prefix != nullptr &&
-                        !node.first->entries[node.second].key->PrefixCompare (*prefix);
-                }
-                else if (!parents.empty ()) {
-                    node = parents.back ();
-                    parents.pop_back ();
-                    finished = prefix != nullptr &&
-                        !node.first->entries[node.second].key->PrefixCompare (*prefix);
-                }
-            }
-            if (finished) {
-                Clear ();
-            }
-            return !finished;
-        }
-
-        void BTree2::Iterator::SetValue (Value::SharedPtr value) {
-            if (value != nullptr) {
-                if (!finished && node.first != nullptr && node.second < node.first->count) {
-                    node.first->entries[node.second].value->Release ();
-                    node.first->entries[node.second].value = value.Release ();
-                    node.first->Save ();
-                }
-            }
-            else {
-                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
-            }
-        }
-
         BTree2::BTree2 (
                 FileAllocator::SharedPtr fileAllocator_,
                 FileAllocator::PtrType offset_,
@@ -812,26 +858,31 @@ namespace thekogans {
             }
         }
 
-        bool BTree2::Search (
+        bool BTree2::Find (
                 const Key &key,
-                Value::SharedPtr &value) {
+                Iterator &it) {
+            it.Clear ();
             LockGuard<SpinLock> guard (spinLock);
             ui32 index = 0;
             for (Node *node = root; node != nullptr; node = node->GetChild (index)) {
-                if (node->Search (key, index)) {
-                    value.Reset (node->entries[index].value);
-                    return true;
+                if (node->Find (key, index)) {
+                    it.prefix.Reset (node->entries[index].key);
+                    it.node = Iterator::NodeIndex (node, index);
+                    it.finished = false;
+                    break;
                 }
             }
-            return false;
+            return !it.finished;
         }
 
-        bool BTree2::Add (
+        bool BTree2::Insert (
                 Key::SharedPtr key,
-                Value::SharedPtr &value) {
+                Value::SharedPtr value,
+                Iterator &it) {
+            it.Clear ();
             LockGuard<SpinLock> guard (spinLock);
             Node::Entry entry (key.Get (), value.Get ());
-            Node::InsertResult result = root->Insert (entry);
+            Node::InsertResult result = root->Insert (entry, it);
             if (result == Node::Overflow) {
                 // The path to the leaf node is full.
                 // Create a new root node and make the entry
@@ -840,6 +891,11 @@ namespace thekogans {
                 node->leftOffset = root->offset;
                 node->leftNode = root;
                 node->InsertEntry (entry, 0);
+                if (it.IsFinished ()) {
+                    it.prefix.Reset (node->entries[0].key);
+                    it.node = Iterator::NodeIndex (node, 0);
+                    it.finished = false;
+                }
                 node->Save ();
                 SetRoot (node);
                 result = Node::Inserted;
@@ -848,11 +904,6 @@ namespace thekogans {
             if (result == Node::Inserted) {
                 key.Release ();
                 value.Release ();
-            }
-            else {
-                // Otherwise it's a duplicate.
-                assert (result == Node::Duplicate);
-                value.Reset (entry.value);
             }
             return result == Node::Inserted;
         }

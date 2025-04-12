@@ -338,7 +338,7 @@ namespace thekogans {
 
         /// \brief
         /// Serialize a FixedBuffer<length>.
-        /// \param[in] serializer Where to write the given guid.
+        /// \param[in] serializer Where to write the given FixedBuffer.
         /// \param[in] fixedbuffer FixedBuffer<length> to serialize.
         /// \return serializer.
         template<std::size_t length>
@@ -361,7 +361,7 @@ namespace thekogans {
 
         /// \brief
         /// Extract a FixedBuffer<length>.
-        /// \param[in] serializer Where to read the guid from.
+        /// \param[in] serializer Where to read the FixedBuffer from.
         /// \param[out] fixedBuffer Where to place the extracted FixedBuffer<length>.
         /// \return serializer.
         template<std::size_t length>

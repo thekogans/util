@@ -87,6 +87,155 @@ namespace thekogans {
                 virtual std::string ToString () const = 0;
             };
 
+            /// \struct BTree2::Value BTree2.h thekogans/util/BTree2.h
+            ///
+            /// \brief
+            struct _LIB_THEKOGANS_UTIL_DECL Value : public Serializable {
+                /// \brief
+                /// Value is a \see{util::DynamicCreatable} abstract base.
+                THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE_ABSTRACT_BASE (Value)
+
+            #if defined (THEKOGANS_UTIL_TYPE_Static)
+                /// \brief
+                /// Because Value uses dynamic initialization, when using
+                /// it in static builds call this method to have the Value
+                /// explicitly include all internal value types. Without
+                /// calling this api, the only values that will be available
+                /// to your application are the ones you explicitly link to.
+                static void StaticInit ();
+            #endif // defined (THEKOGANS_UTIL_TYPE_Static)
+
+                /// \brief
+                /// This method is only used in Dump for debugging purposes.
+                /// \return String representation of the value.
+                virtual std::string ToString () const = 0;
+            };
+
+        private:
+            /// \brief
+            /// Forward declaration of node needed by \see{Iterator}.
+            struct Node;
+
+        public:
+            /// \struct BTree2::Iterator BTree2.h thekogans/util/BTree2.h
+            ///
+            /// \brief
+            /// Iterator implements a forward cursor over a range of btree entries.
+            /// Call \see{FindFirst} bellow with a reference to an iterator and then
+            /// use it to move forward through the range of entries. The range can either
+            /// be based on a prefix or the entire tree. Since Iterator is unidirectional
+            /// (forward only), there's no backing up (the code complexity is just not
+            /// worth the added benefit). You get one shot through the range. This
+            /// design also means that you cannot know, a priori, how many entries
+            /// are in the range. You need to step through it to count them up.
+            /// WARNING: \see{FindFirst} will return a live iterator pointing in to the
+            /// actual data in the btree (not a copy). The nature of BTrees is such that
+            /// almost any modification to its structure invalidates iterators currently
+            /// in existance. This means that you CAN'T (or at least shouldn't) write
+            /// code like this:
+            ///
+            /// Deleting a range of nodes:
+            ///
+            /// Ex:
+            ///
+            /// \code{.cpp}
+            /// // WARNING: This is wrong! DON'T do this. It can lead
+            /// // to very hard to track down crashes as the posibility
+            /// // of a crash is completely dependent on the state of
+            /// // the BTree.
+            /// Iterator it (some prefix);
+            /// for (btree.FindFirst (it); !it.IsFinished (); it.Next ()) {
+            ///     btree.Delete (*it.GetKey ());
+            /// }
+            /// \endcode
+            ///
+            /// Instead you must write it like this:
+            ///
+            /// Ex:
+            ///
+            /// \code{.cpp}
+            /// // This is the right way.
+            /// std::vector<Key::SharedPtr> keys;
+            /// Iterator it (some prefix);
+            /// for (btree.FindFirst (it); !it.IsFinished (); it.Next ()) {
+            ///     keys.push_back (it.GetKey ());
+            /// }
+            /// for (std::size_t i = 0, count = keys.size (); i < count; ++i) {
+            ///     btree.Delete (*keys[i]);
+            /// }
+            /// \endcode
+            struct Iterator {
+            protected:
+                /// \brief
+                /// Prefix to iterate over (nullptr == entire tree).
+                Key::SharedPtr prefix;
+                /// \brief
+                /// Alias for std::pair<Node *, ui32>.
+                using NodeIndex = std::pair<Node *, ui32>;
+                /// \brief
+                /// Stack of parents allowing us to navigate the tree.
+                /// The nodes store no parent pointers. They would be
+                /// a nightmare to maintain.
+                std::vector<NodeIndex> parents;
+                /// \brief
+                /// Current node we're iterating over.
+                NodeIndex node;
+                /// \brief
+                /// Flag indicating the iterator is done and will not
+                /// return true from Next again. It is only set in \see{BTree2::FindFirst}
+                /// and \see{Next} below and only after it made sure that it properly
+                /// initialized the iterator.
+                bool finished;
+
+            public:
+                /// \brief
+                /// ctor.
+                /// \param[in] prefix_ Prefix to iterate over (nullptr == entire tree).
+                Iterator (Key::SharedPtr prefix_ = nullptr) :
+                    prefix (prefix_),
+                    node (NodeIndex (nullptr, 0)),
+                    finished (true) {}
+
+                /// \brief
+                /// Return true if the iterator is finished.
+                /// \return true == the iterator is finished.
+                inline bool IsFinished () const {
+                    return finished;
+                }
+
+                /// \brief
+                /// Clear the internal state and reset the iterator.
+                inline void Clear () {
+                    parents.clear ();
+                    node = NodeIndex (nullptr, 0);
+                    finished = true;
+                }
+
+                /// \brief
+                /// Step to the next entry in the range.
+                /// \return true == Iterator is now pointing at the next entry.
+                /// Use GetKey and GetValue to examine it's contents. false ==
+                /// the iterator is finished through the range.
+                bool Next ();
+
+                /// \brief
+                /// If we're not finished, return the key associated with the current entry.
+                /// \return Key associated with the current entry.
+                Key::SharedPtr GetKey () const;
+                /// \brief
+                /// If we're not finished, return the value associated with the current entry.
+                /// \return Value associated with the current entry.
+                Value::SharedPtr GetValue () const;
+                /// \brief
+                /// If we're not finished, set the value associated with the current entry.
+                /// \param[in] value New \see{Value} to associated with the current entry.
+                void SetValue (Value::SharedPtr value);
+
+                /// \brief
+                /// BTree2 is the only one trusted to access sensitive protected data.
+                friend struct BTree2;
+            };
+
             /// \struct BTree2::StringKey BTree2.h thekogans/util/BTree2.h
             ///
             /// \brief
@@ -279,30 +428,6 @@ namespace thekogans {
                     // FIXME: implement?
                     assert (0);
                 }
-            };
-
-            /// \struct BTree2::Value BTree2.h thekogans/util/BTree2.h
-            ///
-            /// \brief
-            struct _LIB_THEKOGANS_UTIL_DECL Value : public Serializable {
-                /// \brief
-                /// Value is a \see{util::DynamicCreatable} abstract base.
-                THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE_ABSTRACT_BASE (Value)
-
-            #if defined (THEKOGANS_UTIL_TYPE_Static)
-                /// \brief
-                /// Because Value uses dynamic initialization, when using
-                /// it in static builds call this method to have the Value
-                /// explicitly include all internal value types. Without
-                /// calling this api, the only values that will be available
-                /// to your application are the ones you explicitly link to.
-                static void StaticInit ();
-            #endif // defined (THEKOGANS_UTIL_TYPE_Static)
-
-                /// \brief
-                /// This method is only used in Dump for debugging purposes.
-                /// \return String representation of the value.
-                virtual std::string ToString () const = 0;
             };
 
             /// \struct BTree2::StringValue BTree2.h thekogans/util/BTree2.h
@@ -658,24 +783,24 @@ namespace thekogans {
                 /// at that index exists.
                 Node *GetChild (ui32 index);
                 /// \brief
-                /// Just like Search but begins at whatever the index was set to at call
+                /// Just like Find but begins at whatever the index was set to at call
                 /// time. You should never need to call this method directly. The driver
                 /// which starts the whole process is FindFirstPrefix and it will do the
                 /// right thing. But if you ever find yourself callling this method directly
                 /// don't forget to initialize index prior to call.
                 /// \param[in] prefix Prefix to find.
-                /// \param[in,out] index index On entry contains the last index of entry
+                /// \param[in,out] index On entry contains the last index of entry
                 /// to search. On successful return will contain the index of the matching
                 /// entry.
                 /// \return true == found the prefix.
-                bool PrefixSearch (
+                bool PrefixFind (
                     const Key &prefix,
                     ui32 &index) const;
                 /// \brief
                 /// Used by \see{BTree2::FindFirst} to locate the start of the prefix.
-                /// Due to the nature of binary search, \see{PrefixSearch} can return
+                /// Due to the nature of binary search, \see{PrefixFind} can return
                 /// true with a prefix found in the middle of the range. This method
-                /// keeps reducing the search space (using \see{PrefixSearch}) to locate
+                /// keeps reducing the search space (using \see{PrefixFind}) to locate
                 /// the start of the range.
                 /// \param[in] prefix Prefix to find.
                 /// \param[out] index On true return, contains the index of the first
@@ -690,7 +815,7 @@ namespace thekogans {
                 /// \param[out] index If found will contain the index of the key.
                 /// If not found will contain the index of the closest larger key.
                 /// \return true == found the key.
-                bool Search (
+                bool Find (
                     const Key &key,
                     ui32 &index) const;
                 /// \enum
@@ -709,9 +834,12 @@ namespace thekogans {
                 /// \brief
                 /// Try to recursively insert the given entry.
                 /// \param[in] entry \see{Entry} to insert.
+                /// \param[out] it Iterator to update with the inserted entry.
                 /// \return true == entry inserted. false == the entire sub-tree
                 /// rooted at this node is full. Time to split the node.
-                InsertResult Insert (Entry &entry);
+                InsertResult Insert (
+                    Entry &entry,
+                    Iterator &it);
                 /// \brief
                 /// Try to recursively delete the given key.
                 /// \param[in] key \see{Key} whose entry we want to delete.
@@ -883,155 +1011,29 @@ namespace thekogans {
             }
 
             /// \brief
-            /// Find the given key in the btree.
-            /// \param[in] key \see{Key} to find.
-            /// \param[out] value If found the given key's value will be
-            /// returned in value.
+            /// Search for the given key in the btree.
+            /// \param[in] key \see{Key} to search for.
+            /// \param[out] it If found the iterator will point to the entry.
             /// \return true == found.
-            bool Search (
+            bool Find (
                 const Key &key,
-                Value::SharedPtr &value);
+                Iterator &it);
             /// \brief
-            /// Add the given key to the btree.
-            /// \param[in] key KeyType to add.
-            /// \param[in,out] value Value associated with the given key.
-            /// If the given key is a duplicat, will contain the existing
-            /// value found at the entry.
+            /// Insert the given key in to the btree.
+            /// \param[in] key KeyType to insert.
+            /// \param[in] value Value associated with the given key.
+            /// \param[out] it If inserted, will point at the node entry.
             /// \return true == added. false == duplicate. If false, return
-            /// the current value stored at the given key in value.
-            bool Add (
+            /// the current entry in it.
+            bool Insert (
                 Key::SharedPtr key,
-                Value::SharedPtr &value);
+                Value::SharedPtr value,
+                Iterator &it);
             /// \brief
             /// Delete the given key from the btree.
             /// \param[in] key KeyType whose entry to delete.
             /// \return true == entry deleted. false == entry not found.
             bool Delete (const Key &key);
-
-            /// \struct BTree2::Iterator BTree2.h thekogans/util/BTree2.h
-            ///
-            /// \brief
-            /// Iterator implements a forward cursor over a range of btree entries.
-            /// Call \see{FindFirst} bellow with a reference to an iterator and then
-            /// use it to move forward through the range of entries. The range can either
-            /// be based on a prefix or the entire tree. Since Iterator is unidirectional
-            /// (forward only), there's no backing up (the code complexity is just not
-            /// worth the added benefit). You get one shot through the range. This
-            /// design also means that you cannot know, a priori, how many entries
-            /// are in the range. You need to step through it to count them up.
-            /// WARNING: \see{FindFirst} will return a live iterator pointing in to the
-            /// actual data in the btree (not a copy). The nature of BTrees is such that
-            /// almost any modification to its structure invalidates iterators currently
-            /// in existance. This means that you CAN'T (or at least shouldn't) write
-            /// code like this:
-            ///
-            /// Deleting a range of nodes:
-            ///
-            /// Ex:
-            ///
-            /// \code{.cpp}
-            /// // WARNING: This is wrong! DON'T do this. It can lead
-            /// // to very hard to track down crashes as the posibility
-            /// // of a crash is completely dependent on the state of
-            /// // the BTree.
-            /// Iterator it (some prefix);
-            /// for (btree.FindFirst (it); !it.IsFinished (); it.Next ()) {
-            ///     btree.Delete (*it.GetKey ());
-            /// }
-            /// \endcode
-            ///
-            /// Instead you must write it like this:
-            ///
-            /// Ex:
-            ///
-            /// \code{.cpp}
-            /// // This is the right way.
-            /// std::vector<Key::SharedPtr> keys;
-            /// Iterator it (some prefix);
-            /// for (btree.FindFirst (it); !it.IsFinished (); it.Next ()) {
-            ///     keys.push_back (it.GetKey ());
-            /// }
-            /// for (std::size_t i = 0, count = keys.size (); i < count; ++i) {
-            ///     btree.Delete (*keys[i]);
-            /// }
-            /// \endcode
-            struct Iterator {
-            protected:
-                /// \brief
-                /// Prefix to iterate over (nullptr == entire tree).
-                Key::SharedPtr prefix;
-                /// \brief
-                /// Alias for std::pair<Node *, ui32>.
-                using NodeIndex = std::pair<Node *, ui32>;
-                /// \brief
-                /// Stack of parents allowing us to navigate the tree.
-                /// The nodes store no parent pointers. They would be
-                /// a nightmare to maintain.
-                std::vector<NodeIndex> parents;
-                /// \brief
-                /// Current node we're iterating over.
-                NodeIndex node;
-                /// \brief
-                /// Flag indicating the iterator is done and will not
-                /// return true from Next again. It is only set in \see{BTree2::FindFirst}
-                /// and \see{Next} below and only after it made sure that it properly
-                /// initialized the iterator.
-                bool finished;
-
-            public:
-                /// \brief
-                /// ctor.
-                /// \param[in] prefix_ Prefix to iterate over (nullptr == entire tree).
-                Iterator (Key::SharedPtr prefix_ = nullptr) :
-                    prefix (prefix_),
-                    node (NodeIndex (nullptr, 0)),
-                    finished (true) {}
-
-                /// \brief
-                /// Return true if the iterator is finished.
-                /// \return true == the iterator is finished.
-                inline bool IsFinished () const {
-                    return finished;
-                }
-
-                /// \brief
-                /// Clear the internal state and reset the iterator.
-                inline void Clear () {
-                    parents.clear ();
-                    node = Iterator::NodeIndex (nullptr, 0);
-                    finished = true;
-                }
-
-                /// \brief
-                /// Step to the next entry in the range.
-                /// \return true == Iterator is now pointing at the next entry.
-                /// Use GetKey and GetValue to examine it's contents. false ==
-                /// the iterator is finished through the range.
-                bool Next ();
-
-                /// \brief
-                /// If we're not finished, return the key associated with the current entry.
-                /// \return Key associated with the current entry.
-                inline Key::SharedPtr GetKey () const {
-                    return !finished && node.first != nullptr && node.second < node.first->count ?
-                        node.first->entries[node.second].key : nullptr;
-                }
-                /// \brief
-                /// If we're not finished, return the value associated with the current entry.
-                /// \return Value associated with the current entry.
-                inline Value::SharedPtr GetValue () const {
-                    return !finished && node.first != nullptr && node.second < node.first->count ?
-                        node.first->entries[node.second].value : nullptr;
-                }
-                /// \brief
-                /// If we're not finished, set the value associated with the current entry.
-                /// \param[in] value New \see{Value} to associated with the current entry.
-                void SetValue (Value::SharedPtr value);
-
-                /// \brief
-                /// BTree2 is the only one trusted to access sensitive protected data.
-                friend struct BTree2;
-            };
 
             /// \brief
             /// Reset the iterator to point to the first occurence of it.prefix.

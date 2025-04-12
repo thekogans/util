@@ -19,7 +19,9 @@
 #define __thekogans_util_FixedArray_h
 
 #include "thekogans/util/Constants.h"
+#include "thekogans/util/SizeT.h"
 #include "thekogans/util/Exception.h"
+#include "thekogans/util/Serializer.h"
 #include "thekogans/util/SecureAllocator.h"
 
 namespace thekogans {
@@ -28,15 +30,11 @@ namespace thekogans {
         /// \struct FixedArray FixedArray.h thekogans/util/FixedArray.h
         ///
         /// \brief
-        /// This little template acts as an interface between C++ and
-        /// various OS C APIs.
-        ///
-        /// Helps with life cycle management, and keeps the code
-        /// clutter down.
-        ///
-        /// IMPORTANT: FixedArrays are not resizable, and do not grow. This
-        /// is the reason for a single explicit ctor. Want resizable,
-        /// growable containers? That's what the stl is for!
+        /// Unlike \see{FixedBuffer}, which models a fixed array of ui8, FixedArray
+        /// represents a fixed array of first class objects. Also, unlike \see{FixedBuffer},
+        /// which is meant to be a \see{Serializer}, FixedArray has a completelly
+        /// different mission. Fixed arrays are meant to be lightweight, fixed size
+        /// container with some first class properties (\see{SecureFixedArray} and serialization).
 
         template<
             typename T,
@@ -51,20 +49,29 @@ namespace thekogans {
 
             /// \brief
             /// ctor.
+            /// \param[in] length_ Number of elements in array.
+            FixedArray (std::size_t length_ = 0) :
+                    length (0) {
+                if (length_ <= capacity) {
+                    length = length_;
+                }
+                else {
+                    THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                        THEKOGANS_UTIL_OS_ERROR_CODE_EOVERFLOW);
+                }
+            }
+            /// \brief
+            /// ctor.
             /// \param[in] array_ Elements to initialize the array with.
             /// \param[in] length_ Number of elements in array_.
-            /// \param[in] clearUnused Clear unused array elements to 0.
             FixedArray (
-                    const T *array_ = nullptr,
-                    std::size_t length_ = 0,
-                    bool clearUnused = false) :
-                    length (array_ != nullptr ? length_ : 0) {
-                if (length <= capacity) {
+                    const T *array_,
+                    std::size_t length_) :
+                    length (0) {
+                if (array_ != nullptr && length_ <= capacity) {
+                    length = length_;
                     for (std::size_t i = 0; i < length; ++i) {
                         array[i] = array_[i];
-                    }
-                    if (clearUnused) {
-                        SecureZeroMemory (array + length, (capacity - length) * sizeof (T));
                     }
                 }
                 else {
@@ -75,12 +82,20 @@ namespace thekogans {
             /// \brief
             /// ctor.
             /// \param[in] value Value to initialize every element of the array to.
-            explicit FixedArray (
+            /// \param[in] length_ Number of elements to set to value.
+            FixedArray (
                     const T &value,
-                    std::size_t length_ = capacity) :
-                    length (MIN (length_, capacity)) {
-                for (std::size_t i = 0; i < length; ++i) {
-                    array[i] = value;
+                    std::size_t length_) :
+                    length (0) {
+                if (length_ <= capacity) {
+                    length = length_;
+                    for (std::size_t i = 0; i < length; ++i) {
+                        array[i] = value;
+                    }
+                }
+                else {
+                    THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                        THEKOGANS_UTIL_OS_ERROR_CODE_EOVERFLOW);
                 }
             }
 
@@ -116,7 +131,7 @@ namespace thekogans {
             /// to return the binary serialized size on disk.
             /// \return Serialized binary size, in bytes, of the array.
             inline std::size_t Size () const {
-                return length * sizeof (T);
+                return SizeT (length).Size () + length * Serializer::Size (array[0]);
             }
 
             /// \brief
@@ -160,7 +175,6 @@ namespace thekogans {
             }
         };
 
-
         /// \struct SecureFixedArray FixedArray.h thekogans/util/FixedArray.h
         ///
         /// \brief
@@ -174,12 +188,31 @@ namespace thekogans {
         struct SecureFixedArray : public FixedArray<T, capacity> {
             /// \brief
             /// ctor.
+            /// \param[in] length Number of elements in array.
+            SecureFixedArray (std::size_t length = 0) :
+                    FixedArray<T, capacity> (length) {
+                SecureZeroMemory (this->array + length, (capacity - length) * sizeof (T));
+            }
+            /// \brief
+            /// ctor.
             /// \param[in] array Elements to initialize the array with.
             /// \param[in] length Number of elements in array.
             SecureFixedArray (
-                const T *array = nullptr,
-                std::size_t length = 0) :
-                FixedArray<T, capacity> (array, length, true) {}
+                    const T *array,
+                    std::size_t length) :
+                    FixedArray<T, capacity> (array, length) {
+                SecureZeroMemory (this->array + length, (capacity - length) * sizeof (T));
+            }
+            /// \brief
+            /// ctor.
+            /// \param[in] value Value to initialize every element of the array to.
+            /// \param[in] length Number of elements to set to value.
+            SecureFixedArray (
+                    const T &value,
+                    std::size_t length) :
+                    FixedArray<T, capacity> (value, length) {
+                SecureZeroMemory (this->array + length, (capacity - length) * sizeof (T));
+            }
             /// \brief
             /// dtor.
             /// Zero out the sensitive memory block.
@@ -187,6 +220,66 @@ namespace thekogans {
                 SecureZeroMemory (this->array, capacity * sizeof (T));
             }
         };
+
+        /// \brief
+        /// Serialize a FixedArray<T, capacity>.
+        /// \param[in] serializer Where to write the given FixedArray.
+        /// \param[in] fixedarray FixedArray<capacity> to serialize.
+        /// \return serializer.
+        template<
+            typename T,
+            std::size_t capacity>
+        Serializer & _LIB_THEKOGANS_UTIL_API operator << (
+                Serializer &serializer,
+                const FixedArray<T, capacity> &fixedArray) {
+            std::size_t length = fixedArray.GetLength ();
+            serializer << SizeT (length);
+            for (std::size_t i = 0; i < length; ++i) {
+                serializer << fixedArray[i];
+            }
+            return serializer;
+        }
+
+        /// \brief
+        /// Extract a FixedArray<T, capacity>.
+        /// \param[in] serializer Where to read the FixedArray from.
+        /// \param[out] fixedArray Where to place the extracted FixedArray<T, capacity>.
+        /// \return serializer.
+        template<
+            typename T,
+            std::size_t capacity>
+        Serializer & _LIB_THEKOGANS_UTIL_API operator >> (
+                Serializer &serializer,
+                FixedArray<T, capacity> &fixedArray) {
+            SizeT length;
+            serializer >> length;
+            fixedArray.SetLength (length);
+            for (std::size_t i = 0; i < length; ++i) {
+                serializer >> fixedArray[i];
+            }
+            return serializer;
+        }
+
+        /// \brief
+        /// Extract a SecureFixedArray<T, capacity>.
+        /// \param[in] serializer Where to read the SecureFixedArray from.
+        /// \param[out] secureFixedArray Where to place the extracted SecureFixedArray<T, capacity>.
+        /// \return serializer.
+        template<
+            typename T,
+            std::size_t capacity>
+        Serializer & _LIB_THEKOGANS_UTIL_API operator >> (
+                Serializer &serializer,
+                SecureFixedArray<T, capacity> &secureFixedArray) {
+            SizeT length;
+            serializer >> length;
+            secureFixedArray.SetLength (length);
+            for (std::size_t i = 0; i < length; ++i) {
+                serializer >> secureFixedArray[i];
+            }
+            SecureZeroMemory (secureFixedArray + length, (capacity - length) * sizeof (T));
+            return serializer;
+        }
 
     } // namespace util
 } // namespace thekogans

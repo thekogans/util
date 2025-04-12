@@ -44,7 +44,7 @@ namespace thekogans {
             if (!path.empty ()) {
                 Map::iterator it = map.find (path);
                 if (it != map.end ()) {
-                    map.erase (it);
+                    it->second->FlushBTree ();
                 }
             }
             else {
