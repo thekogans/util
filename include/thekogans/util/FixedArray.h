@@ -191,7 +191,7 @@ namespace thekogans {
             /// \param[in] length Number of elements in array.
             SecureFixedArray (std::size_t length = 0) :
                     FixedArray<T, capacity> (length) {
-                SecureZeroMemory (this->array + length, (capacity - length) * sizeof (T));
+                SecureZeroMemory (this->array, capacity * sizeof (T));
             }
             /// \brief
             /// ctor.
