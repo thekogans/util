@@ -173,26 +173,26 @@ namespace thekogans {
             const char * const ATTR_NANOSECONDS = "Nanoseconds";
         }
 
-        void TimeSpec::Read (
+        void TimeSpec::ReadXML (
                 const Header & /*header*/,
                 const pugi::xml_node &node) {
             seconds = stringToui64 (node.attribute (ATTR_SECONDS).value ());
             nanoseconds = stringToi32 (node.attribute (ATTR_NANOSECONDS).value ());
         }
 
-        void TimeSpec::Write (pugi::xml_node &node) const {
+        void TimeSpec::WriteXML (pugi::xml_node &node) const {
             node.append_attribute (ATTR_SECONDS).set_value (i64Tostring (seconds).c_str ());
             node.append_attribute (ATTR_NANOSECONDS).set_value (i32Tostring (nanoseconds).c_str ());
         }
 
-        void TimeSpec::Read (
+        void TimeSpec::ReadJSON (
                 const Header & /*header*/,
                 const JSON::Object &object) {
             seconds = object.Get<JSON::Number> (ATTR_SECONDS)->To<i64> ();
             nanoseconds = object.Get<JSON::Number> (ATTR_NANOSECONDS)->To<i32> ();
         }
 
-        void TimeSpec::Write (JSON::Object &object) const {
+        void TimeSpec::WriteJSON (JSON::Object &object) const {
             object.Add (ATTR_SECONDS, seconds);
             object.Add (ATTR_NANOSECONDS, nanoseconds);
         }

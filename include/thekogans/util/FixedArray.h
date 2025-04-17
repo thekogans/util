@@ -34,7 +34,8 @@ namespace thekogans {
         /// represents a fixed array of first class objects. Also, unlike \see{FixedBuffer},
         /// which is meant to be a \see{Serializer}, FixedArray has a completelly
         /// different mission. Fixed arrays are meant to be lightweight, fixed size
-        /// container with some first class properties (\see{SecureFixedArray} and serialization).
+        /// container with some first class properties (\see{SecureFixedArray} and
+        /// serialization).
 
         template<
             typename T,
@@ -49,7 +50,7 @@ namespace thekogans {
 
             /// \brief
             /// ctor.
-            /// \param[in] length_ Number of elements in array.
+            /// \param[in] length_ Initial length of array.
             FixedArray (std::size_t length_ = 0) :
                     length (0) {
                 if (length_ <= capacity) {
@@ -62,7 +63,7 @@ namespace thekogans {
             }
             /// \brief
             /// ctor.
-            /// \param[in] array_ Elements to initialize the array with.
+            /// \param[in] array_ Elements to initialize array with.
             /// \param[in] length_ Number of elements in array_.
             FixedArray (
                     const T *array_,
@@ -81,7 +82,7 @@ namespace thekogans {
             }
             /// \brief
             /// ctor.
-            /// \param[in] value Value to initialize every element of the array to.
+            /// \param[in] value Value to initialize length_ elements of array.
             /// \param[in] length_ Number of elements to set to value.
             FixedArray (
                     const T &value,
@@ -115,9 +116,11 @@ namespace thekogans {
             /// \brief
             /// Set the length of the array.
             /// \param[in] length_ New array length.
-            inline void SetLength (std::size_t length_) {
+            /// \return The new length.
+            inline std::size_t SetLength (std::size_t length_) {
                 if (length_ <= capacity) {
                     length = length_;
+                    return length;
                 }
                 else {
                     THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
@@ -131,7 +134,11 @@ namespace thekogans {
             /// to return the binary serialized size on disk.
             /// \return Serialized binary size, in bytes, of the array.
             inline std::size_t Size () const {
-                return SizeT (length).Size () + length * Serializer::Size (array[0]);
+                std::size_t size = SizeT (length).Size ();
+                for (std::size_t i = 0; i < length; ++i) {
+                    size += Serializer::Size (array[i]);
+                }
+                return size;
             }
 
             /// \brief
@@ -223,8 +230,8 @@ namespace thekogans {
 
         /// \brief
         /// Serialize a FixedArray<T, capacity>.
-        /// \param[in] serializer Where to write the given FixedArray.
-        /// \param[in] fixedarray FixedArray<capacity> to serialize.
+        /// \param[in] serializer Where to write the given FixedArray<T, capacity>.
+        /// \param[in] fixedarray FixedArray<T, capacity> to serialize.
         /// \return serializer.
         template<
             typename T,
@@ -241,8 +248,8 @@ namespace thekogans {
         }
 
         /// \brief
-        /// Extract a FixedArray<T, capacity>.
-        /// \param[in] serializer Where to read the FixedArray from.
+        /// Extract a FixedArray<T, capacity> from the given \see{Serializer}.
+        /// \param[in] serializer Where to read the FixedArray<T, capacity> from.
         /// \param[out] fixedArray Where to place the extracted FixedArray<T, capacity>.
         /// \return serializer.
         template<
@@ -261,8 +268,8 @@ namespace thekogans {
         }
 
         /// \brief
-        /// Extract a SecureFixedArray<T, capacity>.
-        /// \param[in] serializer Where to read the SecureFixedArray from.
+        /// Extract a SecureFixedArray<T, capacity> from the given \see{Serializer}.
+        /// \param[in] serializer Where to read the SecureFixedArray<T, capacity> from.
         /// \param[out] secureFixedArray Where to place the extracted SecureFixedArray<T, capacity>.
         /// \return serializer.
         template<

@@ -19,6 +19,8 @@
 #include "thekogans/util/Array.h"
 #include "thekogans/util/Exception.h"
 #include "thekogans/util/LockGuard.h"
+#include "thekogans/util/BTreeKeys.h"
+#include "thekogans/util/BTreeValues.h"
 #include "thekogans/util/BTree.h"
 
 namespace thekogans {
@@ -79,7 +81,6 @@ namespace thekogans {
         void BTree::Value::StaticInit () {
             StringValue::StaticInit ();
             PtrValue::StaticInit ();
-            GUIDListValue::StaticInit ();
         }
     #endif // defined (THEKOGANS_UTIL_TYPE_Static)
 
@@ -163,75 +164,6 @@ namespace thekogans {
                     THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
             }
         }
-
-        THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE (
-            thekogans::util::BTree::StringKey,
-            1,
-            BTree::Key::TYPE)
-
-        i32 BTree::StringKey::PrefixCompare (const Key &prefix) const {
-            if (prefix.Type () == StringKey::TYPE || prefix.IsDerivedFrom (StringKey::TYPE)) {
-                const StringKey *stringKey = static_cast<const StringKey *> (&prefix);
-                return str.compare (0, stringKey->str.size (), stringKey->str);
-            }
-            else {
-                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
-            }
-        }
-
-        i32 BTree::StringKey::Compare (const Key &key) const {
-            if (key.Type () == StringKey::TYPE || key.IsDerivedFrom (StringKey::TYPE)) {
-                const StringKey *stringKey = static_cast<const StringKey *> (&key);
-                return str.compare (stringKey->str);
-            }
-            else {
-                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
-            }
-        }
-
-        THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE (
-            thekogans::util::BTree::GUIDKey,
-            1,
-            BTree::Key::TYPE)
-
-        i32 BTree::GUIDKey::PrefixCompare (const Key &prefix) const {
-            if (prefix.Type () == GUIDKey::TYPE || prefix.IsDerivedFrom (GUIDKey::TYPE)) {
-                const GUIDKey *guidKey = static_cast<const GUIDKey *> (&prefix);
-                return key == guidKey->key;
-            }
-            else {
-                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
-            }
-        }
-
-        i32 BTree::GUIDKey::Compare (const Key &key) const {
-            if (key.Type () == GUIDKey::TYPE || key.IsDerivedFrom (GUIDKey::TYPE)) {
-                const GUIDKey *guidKey = static_cast<const GUIDKey *> (&key);
-                return this->key == guidKey->key;
-            }
-            else {
-                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
-            }
-        }
-
-        THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE (
-            thekogans::util::BTree::StringValue,
-            1,
-            BTree::Value::TYPE)
-
-        THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE (
-            thekogans::util::BTree::PtrValue,
-            1,
-            BTree::Value::TYPE)
-
-        THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE (
-            thekogans::util::BTree::GUIDListValue,
-            1,
-            BTree::Value::TYPE)
 
         BTree::Node::Node (
                 BTree &btree_,
@@ -821,7 +753,7 @@ namespace thekogans {
                 }
             }
             else if (Key::IsType (header.keyType.c_str ()) &&
-                    Value::IsType (header.valueType.c_str ())) {
+                    Serializable::IsType (header.valueType.c_str ())) {
                 offset = fileAllocator->Alloc (header.Size ());
                 Save ();
             }

@@ -37,15 +37,15 @@ namespace thekogans {
         ///
         /// \brief
         /// A BTree is a \see{FileAllocator} container. It's attributes are that
-        /// all searches, additions and deletions take O(N) where N is the
+        /// all searches, insertions and deletions take O(N) where N is the
         /// height of the tree. These are BTree's bigest strengths. One of it's
         /// biggest weaknesses is the fact that iterators don't survive modifications
-        /// (Add/Delete). This is why I provide a forward iterator only.
+        /// (Insert/Delete). This is why I provide a forward iterator only.
         /// Use it to step through a range of nodes collecting their data. See an example
         /// provided with \see{BTree::Iterator}. BTree uses the full power of
         /// \see{DynamicCreatable} and \see{Serializable} for it's key and value.
         /// That means that key and values can be practically any random size object
-        /// (as long as it derives from BTree::Key/Value and implements the interface).
+        /// (as long as it derives from BTree::Key and implements the interface).
 
         struct _LIB_THEKOGANS_UTIL_DECL BTree : public RefCounted {
             /// \brief
@@ -85,9 +85,45 @@ namespace thekogans {
                 /// This method is only used in Dump for debugging purposes.
                 /// \return String representation of the key.
                 virtual std::string ToString () const = 0;
+
+                // Serializable
+                /// \brief
+                /// Read the Serializable from an XML DOM.
+                /// \param[in] header \see{Serializable::Header}.
+                /// \param[in] node XML DOM representation of a Serializable.
+                virtual void ReadXML (
+                        const Header & /*header*/,
+                        const pugi::xml_node &node) override {
+                    // FIXME: implement?
+                    assert (0);
+                }
+                /// \brief
+                /// Write the Serializable to the XML DOM.
+                /// \param[out] node Parent node.
+                virtual void WriteXML (pugi::xml_node &node) const override {
+                    // FIXME: implement?
+                    assert (0);
+                }
+
+                /// \brief
+                /// Read the Serializable from an JSON DOM.
+                /// \param[in] node JSON DOM representation of a Serializable.
+                virtual void ReadJSON (
+                        const Header & /*header*/,
+                        const JSON::Object &object) override {
+                    // FIXME: implement?
+                    assert (0);
+                }
+                /// \brief
+                /// Write the Serializable to the JSON DOM.
+                /// \param[out] node Parent node.
+                virtual void WriteJSON (JSON::Object &object) const override {
+                    // FIXME: implement?
+                    assert (0);
+                }
             };
 
-            /// \struct BTree::Value BTree.h thekogans/util/BTree.h
+            /// \struct Value BTree.h thekogans/util/BTree.h
             ///
             /// \brief
             struct _LIB_THEKOGANS_UTIL_DECL Value : public Serializable {
@@ -109,6 +145,42 @@ namespace thekogans {
                 /// This method is only used in Dump for debugging purposes.
                 /// \return String representation of the value.
                 virtual std::string ToString () const = 0;
+
+                // Serializable
+                /// \brief
+                /// Read the Serializable from an XML DOM.
+                /// \param[in] header \see{Serializable::Header}.
+                /// \param[in] node XML DOM representation of a Serializable.
+                virtual void ReadXML (
+                        const Header & /*header*/,
+                        const pugi::xml_node &node) override {
+                    // FIXME: implement?
+                    assert (0);
+                }
+                /// \brief
+                /// Write the Serializable to the XML DOM.
+                /// \param[out] node Parent node.
+                virtual void WriteXML (pugi::xml_node &node) const override {
+                    // FIXME: implement?
+                    assert (0);
+                }
+
+                /// \brief
+                /// Read the Serializable from an JSON DOM.
+                /// \param[in] node JSON DOM representation of a Serializable.
+                virtual void ReadJSON (
+                        const Header & /*header*/,
+                        const JSON::Object &object) override {
+                    // FIXME: implement?
+                    assert (0);
+                }
+                /// \brief
+                /// Write the Serializable to the JSON DOM.
+                /// \param[out] node Parent node.
+                virtual void WriteJSON (JSON::Object &object) const override {
+                    // FIXME: implement?
+                    assert (0);
+                }
             };
 
         private:
@@ -228,463 +300,12 @@ namespace thekogans {
                 Value::SharedPtr GetValue () const;
                 /// \brief
                 /// If we're not finished, set the value associated with the current entry.
-                /// \param[in] value New \see{Value} to associated with the current entry.
+                /// \param[in] value New \see{Value} to associate with the current entry.
                 void SetValue (Value::SharedPtr value);
 
                 /// \brief
                 /// BTree is the only one trusted to access sensitive protected data.
                 friend struct BTree;
-            };
-
-            /// \struct BTree::StringKey BTree.h thekogans/util/BTree.h
-            ///
-            /// \brief
-            /// Variable size string key.
-            struct _LIB_THEKOGANS_UTIL_DECL StringKey : public Key {
-                /// \brief
-                /// StringKey is a \see{Serializable}.
-                THEKOGANS_UTIL_DECLARE_SERIALIZABLE (StringKey)
-
-                /// \brief
-                /// The actual string.
-                std::string str;
-
-                /// \brief
-                /// ctor.
-                /// \param[in] str_ std::string to initialize this key with.
-                StringKey (const std::string &str_ = std::string ()) :
-                    str (str_) {}
-
-                // Key
-                /// \brief
-                /// Used to find keys with matching prefixs.
-                /// \param[in] prefix Key representing the prefix to compare against.
-                /// \return -1 == this is < key, 0 == this == key, 1 == this is greater than key.
-                virtual i32 PrefixCompare (const Key &prefix) const override;
-                /// \brief
-                /// Used to order keys.
-                /// \param[in] key Key to compare against.
-                /// \return -1 == this is < key, 0 == this == key, 1 == this is greater than key.
-                virtual i32 Compare (const Key &key) const override;
-                /// \brief
-                /// This method is only used in Dump for debugging purposes.
-                /// \return String representation of the key.
-                virtual std::string ToString () const override {
-                    return str;
-                }
-
-                // Serializable
-                /// \brief
-                /// Return the serialized key size.
-                /// \return Serialized key size.
-                virtual std::size_t Size () const noexcept override {
-                    return Serializer::Size (str);
-                }
-
-                /// \brief
-                /// Read the key from the given serializer.
-                /// \param[in] header \see{Serializable::Header}.
-                /// \param[in] serializer \see{Serializer} to read the key from.
-                virtual void Read (
-                        const Header & /*header*/,
-                        Serializer &serializer) override {
-                    serializer >> str;
-                }
-                /// \brief
-                /// Write the key to the given serializer.
-                /// \param[out] serializer \see{Serializer} to write the key to.
-                virtual void Write (Serializer &serializer) const override {
-                    serializer << str;
-                }
-
-                /// \brief
-                /// Read the Serializable from an XML DOM.
-                /// \param[in] header \see{Serializable::Header}.
-                /// \param[in] node XML DOM representation of a Serializable.
-                virtual void Read (
-                        const Header & /*header*/,
-                        const pugi::xml_node &node) override {
-                    // FIXME: implement?
-                    assert (0);
-                }
-                /// \brief
-                /// Write the Serializable to the XML DOM.
-                /// \param[out] node Parent node.
-                virtual void Write (pugi::xml_node &node) const override {
-                    // FIXME: implement?
-                    assert (0);
-                }
-
-                /// \brief
-                /// Read the Serializable from an JSON DOM.
-                /// \param[in] node JSON DOM representation of a Serializable.
-                virtual void Read (
-                        const Header & /*header*/,
-                        const JSON::Object &object) override {
-                    // FIXME: implement?
-                    assert (0);
-                }
-                /// \brief
-                /// Write the Serializable to the JSON DOM.
-                /// \param[out] node Parent node.
-                virtual void Write (JSON::Object &object) const override {
-                    // FIXME: implement?
-                    assert (0);
-                }
-            };
-
-            /// \struct BTree::GUIDKey BTree.h thekogans/util/BTree.h
-            ///
-            /// \brief
-            /// GUID key.
-            struct _LIB_THEKOGANS_UTIL_DECL GUIDKey : public Key {
-                /// \brief
-                /// GUIDKey is a \see{Serializable}.
-                THEKOGANS_UTIL_DECLARE_SERIALIZABLE (GUIDKey)
-
-                /// \brief
-                /// The actual string.
-                GUID key;
-
-                /// \brief
-                /// ctor.
-                /// \param[in] str_ std::string to initialize this key with.
-                GUIDKey (const GUID &key_ = GUID::Empty) :
-                    key (key_) {}
-
-                // Key
-                /// \brief
-                /// Used to find keys with matching prefixs.
-                /// \param[in] prefix Key representing the prefix to compare against.
-                /// \return -1 == this is < key, 0 == this == key, 1 == this is greater than key.
-                virtual i32 PrefixCompare (const Key &prefix) const override;
-                /// \brief
-                /// Used to order keys.
-                /// \param[in] key Key to compare against.
-                /// \return -1 == this is < key, 0 == this == key, 1 == this is greater than key.
-                virtual i32 Compare (const Key &key) const override;
-                /// \brief
-                /// This method is only used in Dump for debugging purposes.
-                /// \return String representation of the key.
-                virtual std::string ToString () const override {
-                    return key.ToString ();
-                }
-
-                // Serializable
-                /// \brief
-                /// Return the serialized key size.
-                /// \return Serialized key size.
-                virtual std::size_t Size () const noexcept override {
-                    return Serializer::Size (key);
-                }
-
-                /// \brief
-                /// Read the key from the given serializer.
-                /// \param[in] header \see{Serializable::Header}.
-                /// \param[in] serializer \see{Serializer} to read the key from.
-                virtual void Read (
-                        const Header & /*header*/,
-                        Serializer &serializer) override {
-                    serializer >> key;
-                }
-                /// \brief
-                /// Write the key to the given serializer.
-                /// \param[out] serializer \see{Serializer} to write the key to.
-                virtual void Write (Serializer &serializer) const override {
-                    serializer << key;
-                }
-
-                /// \brief
-                /// Read the Serializable from an XML DOM.
-                /// \param[in] header \see{Serializable::Header}.
-                /// \param[in] node XML DOM representation of a Serializable.
-                virtual void Read (
-                        const Header & /*header*/,
-                        const pugi::xml_node &node) override {
-                    // FIXME: implement?
-                    assert (0);
-                }
-                /// \brief
-                /// Write the Serializable to the XML DOM.
-                /// \param[out] node Parent node.
-                virtual void Write (pugi::xml_node &node) const override {
-                    // FIXME: implement?
-                    assert (0);
-                }
-
-                /// \brief
-                /// Read the Serializable from an JSON DOM.
-                /// \param[in] node JSON DOM representation of a Serializable.
-                virtual void Read (
-                        const Header & /*header*/,
-                        const JSON::Object &object) override {
-                    // FIXME: implement?
-                    assert (0);
-                }
-                /// \brief
-                /// Write the Serializable to the JSON DOM.
-                /// \param[out] node Parent node.
-                virtual void Write (JSON::Object &object) const override {
-                    // FIXME: implement?
-                    assert (0);
-                }
-            };
-
-            /// \struct BTree::StringValue BTree.h thekogans/util/BTree.h
-            ///
-            /// \brief
-            /// Variable size string value.
-            struct _LIB_THEKOGANS_UTIL_DECL StringValue : public Value {
-                /// \brief
-                /// StringValue is a \see{Serializable}.
-                THEKOGANS_UTIL_DECLARE_SERIALIZABLE (StringValue)
-
-                /// \brief
-                /// The actual string.
-                std::string value;
-
-                /// \brief
-                /// ctor.
-                /// \param[in] value_ std::string to initialize this value with.
-                StringValue (const std::string &value_ = std::string ()) :
-                    value (value_) {}
-
-                // Value
-                /// \brief
-                /// This method is only used in Dump for debugging purposes.
-                /// \return String representation of the value.
-                virtual std::string ToString () const override {
-                    return value;
-                }
-
-                // Serializable
-                /// \brief
-                /// Return the serialized value size.
-                /// \return Serialized value size.
-                virtual std::size_t Size () const noexcept override {
-                    return Serializer::Size (value);
-                }
-
-                /// \brief
-                /// Read the value from the given serializer.
-                /// \param[in] header \see{Serializable::Header}.
-                /// \param[in] serializer \see{Serializer} to read the value from.
-                virtual void Read (
-                        const Header & /*header*/,
-                        Serializer &serializer) override {
-                    serializer >> value;
-                }
-                /// \brief
-                /// Write the value to the given serializer.
-                /// \param[out] serializer \see{Serializer} to write the value to.
-                virtual void Write (Serializer &serializer) const override {
-                    serializer << value;
-                }
-
-                /// \brief
-                /// Read the Serializable from an XML DOM.
-                /// \param[in] header \see{Serializable::Header}.
-                /// \param[in] node XML DOM representation of a Serializable.
-                virtual void Read (
-                        const Header & /*header*/,
-                        const pugi::xml_node &node) override {
-                    // FIXME: implement?
-                    assert (0);
-                }
-                /// \brief
-                /// Write the Serializable to the XML DOM.
-                /// \param[out] node Parent node.
-                virtual void Write (pugi::xml_node &node) const override {
-                    // FIXME: implement?
-                    assert (0);
-                }
-
-                /// \brief
-                /// Read the Serializable from an JSON DOM.
-                /// \param[in] node JSON DOM representation of a Serializable.
-                virtual void Read (
-                        const Header & /*header*/,
-                        const JSON::Object &object) override {
-                    // FIXME: implement?
-                    assert (0);
-                }
-                /// \brief
-                /// Write the Serializable to the JSON DOM.
-                /// \param[out] node Parent node.
-                virtual void Write (JSON::Object &object) const override {
-                    // FIXME: implement?
-                    assert (0);
-                }
-            };
-
-            /// \struct BTree::PtrValue BTree.h thekogans/util/BTree.h
-            ///
-            /// \brief
-            /// \see{FileAllocator::PtrType} value.
-            struct _LIB_THEKOGANS_UTIL_DECL PtrValue : public Value {
-                /// \brief
-                /// PtrValue is a \see{Serializable}.
-                THEKOGANS_UTIL_DECLARE_SERIALIZABLE (PtrValue)
-
-                /// \brief
-                /// The actual ptr.
-                FileAllocator::PtrType value;
-
-                /// \brief
-                /// ctor.
-                /// \param[in] str_ std::ptr to initialize this value with.
-                PtrValue (FileAllocator::PtrType value_ = 0) :
-                    value (value_) {}
-
-                // Value
-                /// \brief
-                /// This method is only used in Dump for debugging purposes.
-                /// \return String representation of the value.
-                virtual std::string ToString () const override {
-                    return ui64Tostring (value);
-                }
-
-                // Serializable
-                /// \brief
-                /// Return the serialized value size.
-                /// \return Serialized value size.
-                virtual std::size_t Size () const noexcept override {
-                    return Serializer::Size (value);
-                }
-
-                /// \brief
-                /// Read the value from the given serializer.
-                /// \param[in] header \see{Serializable::Header}.
-                /// \param[in] serializer \see{Serializer} to read the value from.
-                virtual void Read (
-                        const Header & /*header*/,
-                        Serializer &serializer) override {
-                    serializer >> value;
-                }
-                /// \brief
-                /// Write the value to the given serializer.
-                /// \param[out] serializer \see{Serializer} to write the value to.
-                virtual void Write (Serializer &serializer) const override {
-                    serializer << value;
-                }
-
-                /// \brief
-                /// Read the Serializable from an XML DOM.
-                /// \param[in] header \see{Serializable::Header}.
-                /// \param[in] node XML DOM representation of a Serializable.
-                virtual void Read (
-                        const Header & /*header*/,
-                        const pugi::xml_node &node) override {
-                    // FIXME: implement?
-                    assert (0);
-                }
-                /// \brief
-                /// Write the Serializable to the XML DOM.
-                /// \param[out] node Parent node.
-                virtual void Write (pugi::xml_node &node) const override {
-                    // FIXME: implement?
-                    assert (0);
-                }
-
-                /// \brief
-                /// Read the Serializable from an JSON DOM.
-                /// \param[in] node JSON DOM representation of a Serializable.
-                virtual void Read (
-                        const Header & /*header*/,
-                        const JSON::Object &object) override {
-                    // FIXME: implement?
-                    assert (0);
-                }
-                /// \brief
-                /// Write the Serializable to the JSON DOM.
-                /// \param[out] node Parent node.
-                virtual void Write (JSON::Object &object) const override {
-                    // FIXME: implement?
-                    assert (0);
-                }
-            };
-
-            /// \struct BTree::GUIDListValue BTree.h thekogans/util/BTree.h
-            ///
-            /// \brief
-            /// std::vector of GUID value.
-            struct _LIB_THEKOGANS_UTIL_DECL GUIDListValue : public Value {
-                /// \brief
-                /// GUIDListValue is a \see{Serializable}.
-                THEKOGANS_UTIL_DECLARE_SERIALIZABLE (GUIDListValue)
-
-                /// \brief
-                /// The actual list.
-                std::vector<GUID> values;
-
-                // Value
-                /// \brief
-                /// This method is only used in Dump for debugging purposes.
-                /// \return String representation of the value.
-                virtual std::string ToString () const override {
-                    // FIXME: implement
-                    assert (0);
-                    return std::string ();
-                }
-
-                // Serializable
-                /// \brief
-                /// Return the serialized value size.
-                /// \return Serialized value size.
-                virtual std::size_t Size () const noexcept override {
-                    return Serializer::Size (values);
-                }
-
-                /// \brief
-                /// Read the value from the given serializer.
-                /// \param[in] header \see{Serializable::Header}.
-                /// \param[in] serializer \see{Serializer} to read the value from.
-                virtual void Read (
-                        const Header & /*header*/,
-                        Serializer &serializer) override {
-                    serializer >> values;
-                }
-                /// \brief
-                /// Write the value to the given serializer.
-                /// \param[out] serializer \see{Serializer} to write the value to.
-                virtual void Write (Serializer &serializer) const override {
-                    serializer << values;
-                }
-
-                /// \brief
-                /// Read the Serializable from an XML DOM.
-                /// \param[in] header \see{Serializable::Header}.
-                /// \param[in] node XML DOM representation of a Serializable.
-                virtual void Read (
-                        const Header & /*header*/,
-                        const pugi::xml_node &node) override {
-                    // FIXME: implement?
-                    assert (0);
-                }
-                /// \brief
-                /// Write the Serializable to the XML DOM.
-                /// \param[out] node Parent node.
-                virtual void Write (pugi::xml_node &node) const override {
-                    // FIXME: implement?
-                    assert (0);
-                }
-
-                /// \brief
-                /// Read the Serializable from an JSON DOM.
-                /// \param[in] node JSON DOM representation of a Serializable.
-                virtual void Read (
-                        const Header & /*header*/,
-                        const JSON::Object &object) override {
-                    // FIXME: implement?
-                    assert (0);
-                }
-                /// \brief
-                /// Write the Serializable to the JSON DOM.
-                /// \param[out] node Parent node.
-                virtual void Write (JSON::Object &object) const override {
-                    // FIXME: implement?
-                    assert (0);
-                }
             };
 
         private:

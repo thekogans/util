@@ -75,10 +75,6 @@ namespace thekogans {
         #endif // defined (TOOLCHAIN_OS_Windows)
 
             /// \brief
-            /// Point (0, 0);
-            static const Point Empty;
-
-            /// \brief
             /// Serialized point size.
             static const std::size_t SIZE = I32_SIZE + I32_SIZE;
 

@@ -134,7 +134,7 @@ namespace thekogans {
                 /// \brief
                 /// ctor.
                 /// \param[in] value_ Number value.
-                Number (const Variant value_ = Variant::Empty) :
+                Number (const Variant value_ = Variant {}) :
                     value (value_) {}
             };
 

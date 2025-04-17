@@ -651,8 +651,6 @@ namespace thekogans {
             return *this;
         }
 
-        const Directory::Entry Directory::Entry::Empty;
-
         namespace {
             const char * const ATTR_FILE_SYSTEM = "FileSystem";
             const char * const VALUE_WINDOWS = "Windows";
@@ -731,7 +729,7 @@ namespace thekogans {
             serializer << lastAccessedDate << lastModifiedDate << size;
         }
 
-        void Directory::Entry::Read (
+        void Directory::Entry::ReadXML (
                 const Header & /*header*/,
                 const pugi::xml_node &node) {
             fileSystem = stringTofileSystem (node.attribute (ATTR_FILE_SYSTEM).value ());
@@ -750,7 +748,7 @@ namespace thekogans {
             size = stringToui64 (node.attribute (ATTR_SIZE).value ());
         }
 
-        void Directory::Entry::Write (pugi::xml_node &node) const {
+        void Directory::Entry::WriteXML (pugi::xml_node &node) const {
             node.append_attribute (
                 ATTR_FILE_SYSTEM).set_value (fileSystemTostring (fileSystem).c_str ());
             node.append_attribute (ATTR_TYPE).set_value (typeTostring (type).c_str ());
@@ -773,7 +771,7 @@ namespace thekogans {
             node.append_attribute (ATTR_SIZE).set_value (ui64Tostring (size).c_str ());
         }
 
-        void Directory::Entry::Read (
+        void Directory::Entry::ReadJSON (
                 const Header & /*header*/,
                 const JSON::Object &object) {
             fileSystem = stringTofileSystem (object.Get<JSON::String> (ATTR_FILE_SYSTEM)->value);
@@ -792,7 +790,7 @@ namespace thekogans {
             size = object.Get<JSON::Number> (ATTR_SIZE)->To<ui64> ();
         }
 
-        void Directory::Entry::Write (JSON::Object &object) const {
+        void Directory::Entry::WriteJSON (JSON::Object &object) const {
             object.Add<const std::string &> (ATTR_FILE_SYSTEM, fileSystemTostring (fileSystem));
             object.Add<const std::string &> (ATTR_TYPE, typeTostring (type));
             object.Add<const std::string &> (ATTR_NAME, name);

@@ -173,7 +173,7 @@ namespace thekogans {
             const char * const ATTR_SIGN = "Sign";
         }
 
-        void Fraction::Read (
+        void Fraction::ReadXML (
                 const Header & /*header*/,
                 const pugi::xml_node &node) {
             numerator = stringToui32 (node.attribute (ATTR_NUMERATOR).value ());
@@ -181,13 +181,13 @@ namespace thekogans {
             sign = stringTosign (node.attribute (ATTR_SIGN).value ());
         }
 
-        void Fraction::Write (pugi::xml_node &node) const {
+        void Fraction::WriteXML (pugi::xml_node &node) const {
             node.append_attribute (ATTR_NUMERATOR).set_value (ui32Tostring (numerator).c_str ());
             node.append_attribute (ATTR_DENOMINATOR).set_value (ui32Tostring (denominator).c_str ());
             node.append_attribute (ATTR_SIGN).set_value (signTostring (sign).c_str ());
         }
 
-        void Fraction::Read (
+        void Fraction::ReadJSON (
                 const Header & /*header*/,
                 const JSON::Object &object) {
             numerator = object.Get<JSON::Number> (ATTR_NUMERATOR)->To<ui32> ();
@@ -195,7 +195,7 @@ namespace thekogans {
             sign = stringTosign (object.Get<JSON::String> (ATTR_SIGN)->value);
         }
 
-        void Fraction::Write (JSON::Object &object) const {
+        void Fraction::WriteJSON (JSON::Object &object) const {
             object.Add (ATTR_NUMERATOR, numerator);
             object.Add (ATTR_DENOMINATOR, denominator);
             object.Add<const std::string &> (ATTR_SIGN, signTostring (sign));

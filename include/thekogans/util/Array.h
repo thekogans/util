@@ -23,7 +23,9 @@
 #include <functional>
 #include <algorithm>
 #include "thekogans/util/Config.h"
+#include "thekogans/util/SizeT.h"
 #include "thekogans/util/Exception.h"
+#include "thekogans/util/Serializer.h"
 
 namespace thekogans {
     namespace util {
@@ -31,16 +33,12 @@ namespace thekogans {
         /// \struct Array Array.h thekogans/util/Array.h
         ///
         /// \brief
-        /// This little template acts as an interface between C++ and
-        /// various OS C APIs.
-        ///
-        /// Helps with life cycle management, and keeps the code
-        /// clutter down.
-        ///
-        /// IMPORTANT: Arrays are not resizable, and do not grow. In its
-        /// one and only ctor it either allocates a fixed block or wraps
-        /// the one provided. Want resizable, growable containers? That's
-        /// what the stl is for!
+        /// Unlike \see{Buffer}, which models an array of ui8, Array
+        /// represents an array of first class objects. Also, unlike \see{Buffer},
+        /// which is meant to be a \see{Serializer}, Array has a completelly
+        /// different mission. Arrays are meant to be lightweight, single use
+        /// containers with some first class properties (\see{SortedArray} and
+        /// serialization).
 
         template<typename T>
         struct Array {
@@ -97,11 +95,31 @@ namespace thekogans {
             }
 
             /// \brief
+            /// Return array length.
+            /// \return Array length.
+            inline std::size_t GetLength () const {
+                return length;
+            }
+
+            /// \brief
             /// std::swap for Array.
-            void swap (Array<T> &other) {
+            inline void swap (Array<T> &other) {
                 std::swap (length, other.length);
                 std::swap (array, other.array);
                 std::swap (deleter, other.deleter);
+            }
+
+            /// \brief
+            /// Return the size of the array in bytes.
+            /// NOTE: This is the same Size used by all objects
+            /// to return the binary serialized size on disk.
+            /// \return Serialized binary size, in bytes, of the array.
+            inline std::size_t Size () const {
+                std::size_t size = SizeT (length).Size ();
+                for (std::size_t i = 0; i < length; ++i) {
+                    size += Serializer::Size (array[i]);
+                }
+                return size;
             }
 
             /// \brief
@@ -210,6 +228,42 @@ namespace thekogans {
                 return false;
             }
         };
+
+        /// \brief
+        /// Serialize a Array<T>.
+        /// \param[in] serializer Where to write the given Array<T>.
+        /// \param[in] array Array<T> to serialize.
+        /// \return serializer.
+        template<typename T>
+        Serializer & _LIB_THEKOGANS_UTIL_API operator << (
+                Serializer &serializer,
+                const Array<T> &array) {
+            std::size_t length = array.GetLength ();
+            serializer << SizeT (length);
+            for (std::size_t i = 0; i < length; ++i) {
+                serializer << array[i];
+            }
+            return serializer;
+        }
+
+        /// \brief
+        /// Extract a Array<T> from the given \see{Serializer}.
+        /// \param[in] serializer Where to read the Array<T> from.
+        /// \param[out] Array Where to place the extracted Array<T>.
+        /// \return serializer.
+        template<typename T>
+        Serializer & _LIB_THEKOGANS_UTIL_API operator >> (
+                Serializer &serializer,
+                Array<T> &array) {
+            SizeT length;
+            serializer >> length;
+            Array<T> temp (length);
+            for (std::size_t i = 0; i < length; ++i) {
+                serializer >> temp[i];
+            }
+            array.swap (temp);
+            return serializer;
+        }
 
     } // namespace util
 } // namespace thekogans

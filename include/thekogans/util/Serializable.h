@@ -142,24 +142,24 @@ namespace thekogans {
             /// \brief
             /// Read the Serializable from an XML DOM.
             /// \param[in] node XML DOM representation of a Serializable.
-            virtual void Read (
+            virtual void ReadXML (
                 const Header & /*header*/,
                 const pugi::xml_node & /*node*/) = 0;
             /// \brief
             /// Write the Serializable to the XML DOM.
             /// \param[out] node Parent node.
-            virtual void Write (pugi::xml_node & /*node*/) const = 0;
+            virtual void WriteXML (pugi::xml_node & /*node*/) const = 0;
 
             /// \brief
             /// Read the Serializable from an JSON DOM.
             /// \param[in] node JSON DOM representation of a Serializable.
-            virtual void Read (
+            virtual void ReadJSON (
                 const Header & /*header*/,
                 const JSON::Object & /*object*/) = 0;
             /// \brief
             /// Write a Serializable to the JSON DOM.
             /// \param[out] node Parent node.
-            virtual void Write (JSON::Object & /*object*/) const = 0;
+            virtual void WriteJSON (JSON::Object & /*object*/) const = 0;
         };
 
         /// \def THEKOGANS_UTIL_DECLARE_SERIALIZABLE_VERSION(_T)
@@ -320,25 +320,25 @@ namespace thekogans {
             /// Read the Serializable from an XML DOM.
             /// \param[in] header_ Serializable::Header to deserialize.
             /// \param[in] node XML DOM representation of a Serializable.
-            virtual void Read (
+            virtual void ReadXML (
                 const Header &header_,
                 const pugi::xml_node &node_) override;
             /// \brief
             /// Write a Serializable to the XML DOM.
             /// \param[out] node_ Parent node.
-            virtual void Write (pugi::xml_node &node_) const override;
+            virtual void WriteXML (pugi::xml_node &node_) const override;
 
             /// \brief
             /// Read the Serializable from an JSON DOM.
             /// \param[in] header_ Serializable::Header to deserialize.
             /// \param[in] object_ JSON DOM representation of a Serializable.
-            virtual void Read (
+            virtual void ReadJSON (
                 const Header &header_,
                 const JSON::Object &object_) override;
             /// \brief
             /// Write a Serializable to the JSON DOM.
             /// \param[out] object_ Parent node.
-            virtual void Write (JSON::Object &object_) const override;
+            virtual void WriteJSON (JSON::Object &object_) const override;
         };
 
         /// \brief
@@ -466,7 +466,7 @@ namespace thekogans {
                     serializable.Type (),
                     serializable.Version (),
                     0);
-            serializable.Write (node);
+            serializable.WriteXML (node);
             return node;
         }
 
@@ -483,7 +483,7 @@ namespace thekogans {
                     serializable.Type (),
                     serializable.Version (),
                     0);
-            serializable.Write (object);
+            serializable.WriteJSON (object);
             return object;
         }
 

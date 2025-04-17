@@ -41,7 +41,7 @@ namespace thekogans {
         #endif // defined (TOOLCHAIN_OS_Windows) && !defined (NAME_MAX)
 
             struct SharedObjectHeader {
-                FixedArray<char, NAME_MAX> name;
+                SecureFixedArray<char, NAME_MAX> name;
                 ui64 size;
                 bool secure;
                 ui32 refCount;
@@ -50,7 +50,7 @@ namespace thekogans {
                     const char *name_,
                     ui64 size_,
                     bool secure_) :
-                    name (name_, strlen (name_) + 1),
+                    name (name_, strlen (name_)),
                     size (size_),
                     secure (secure_),
                     refCount (1) {}

@@ -52,8 +52,6 @@ namespace thekogans {
         const char * const Variant::TAG_VALUE = "Value";
         const char * const Variant::ATTR_VALUE = "Value";
 
-        const Variant Variant::Empty;
-
         Variant::Variant (const Variant &variant) :
                 type (variant.type) {
             switch (variant.type) {

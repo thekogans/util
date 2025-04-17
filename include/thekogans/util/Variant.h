@@ -207,10 +207,6 @@ namespace thekogans {
             } value;
 
             /// \brief
-            /// Empty.
-            static const Variant Empty;
-
-            /// \brief
             /// Default ctor. Initialize to invalid.
             Variant () :
                 type (TYPE_Invalid) {}

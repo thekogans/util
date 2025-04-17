@@ -80,18 +80,14 @@ namespace thekogans {
             ui32 patchVersion;
 
             /// \brief
-            /// Initialzed to 0.0.0.
-            static const Version Empty;
-
-            /// \brief
             /// ctor.
             /// \param[in] majorVersion_ Project major version.
             /// \param[in] minorVersion_ Project minor version.
             /// \param[in] patchVersion_ Project patch version.
             Version (
-                ui32 majorVersion_,
-                ui32 minorVersion_,
-                ui32 patchVersion_) :
+                ui32 majorVersion_ = 0,
+                ui32 minorVersion_ = 0,
+                ui32 patchVersion_ = 0) :
                 majorVersion (majorVersion_),
                 minorVersion (minorVersion_),
                 patchVersion (patchVersion_) {}

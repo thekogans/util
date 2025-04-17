@@ -104,10 +104,10 @@ namespace thekogans {
             ReadOnlyFile file (HostEndian, path);
             if (file.GetSize () > 0) {
                 Init (digestSize);
-                static const std::size_t BUFFER_LENGTH = 4096;
-                Array<ui8> buffer (BUFFER_LENGTH);
-                for (std::size_t size = file.Read (buffer, BUFFER_LENGTH);
-                        size != 0; size = file.Read (buffer, BUFFER_LENGTH)) {
+                static const std::size_t BUFFER_CAPACITY = 4096;
+                Array<ui8> buffer (BUFFER_CAPACITY);
+                std::size_t size;
+                while ((size = file.Read (buffer, BUFFER_CAPACITY)) != 0) {
                     Update (buffer, size);
                 }
                 Final (digest);

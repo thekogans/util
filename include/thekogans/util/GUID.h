@@ -55,14 +55,9 @@ namespace thekogans {
             ui8 data[SIZE];
 
             /// \brief
-            /// Default ctor.
-            GUID () {}
-            /// \brief
             /// ctor. Initialize to a given value.
             /// \param[in] data_ Value to initialize to.
-            explicit GUID (const ui8 data_[SIZE]) {
-                memcpy (data, data_, SIZE);
-            }
+            GUID (const ui8 data_[SIZE] = nullptr);
             /// \brief
             /// ctor. Parse the GUID out of a string representation.
             /// NOTE: The guid must only contain hexadecimal (0 - 9, a - f) digits.
@@ -90,10 +85,6 @@ namespace thekogans {
             /// useful when you need a Windows formated GUID.
             /// \return Windows formated GUID string.
             std::string ToWindowsGUIDString (bool upperCase = false) const;
-
-            /// \brief
-            /// Empty guid.
-            static const GUID Empty;
 
             /// \brief
             /// Create a guid for a given file. Uses \see{MD5::FromFile}.

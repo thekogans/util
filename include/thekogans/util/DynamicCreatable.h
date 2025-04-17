@@ -448,7 +448,7 @@ namespace thekogans {
             virtual const char * const *Bases () const noexcept = 0;
             /// \brief
             /// Return the number of entries in BASES.
-            /// \return The number of entries in BASES.
+            /// \return BASES_SIZE.
             virtual std::size_t BasesSize () const noexcept = 0;
         };
 

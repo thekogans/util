@@ -211,7 +211,7 @@ namespace thekogans {
             const char * const ATTR_TOTAL_TIME = "TotalTime";
         }
 
-        void RunLoop::Stats::Job::Read (
+        void RunLoop::Stats::Job::ReadXML (
                 const Header & /*header*/,
                 const pugi::xml_node &node) {
             id = node.attribute (ATTR_ID).value ();
@@ -220,14 +220,14 @@ namespace thekogans {
             totalTime = stringToui64 (node.attribute (ATTR_TOTAL_TIME).value ());
         }
 
-        void RunLoop::Stats::Job::Write (pugi::xml_node &node) const {
+        void RunLoop::Stats::Job::WriteXML (pugi::xml_node &node) const {
             node.append_attribute (ATTR_ID).set_value (id.c_str ());
             node.append_attribute (ATTR_START_TIME).set_value (ui64Tostring (startTime).c_str ());
             node.append_attribute (ATTR_END_TIME).set_value (ui64Tostring (endTime).c_str ());
             node.append_attribute (ATTR_TOTAL_TIME).set_value (ui64Tostring (totalTime).c_str ());
         }
 
-        void RunLoop::Stats::Job::Read (
+        void RunLoop::Stats::Job::ReadJSON (
                 const Header & /*header*/,
                 const JSON::Object &object) {
             id = object.Get<JSON::String> (ATTR_ID)->value;
@@ -236,7 +236,7 @@ namespace thekogans {
             totalTime = object.Get<JSON::Number> (ATTR_TOTAL_TIME)->To<ui64> ();
         }
 
-        void RunLoop::Stats::Job::Write (JSON::Object &object) const {
+        void RunLoop::Stats::Job::WriteJSON (JSON::Object &object) const {
             object.Add<const std::string &> (ATTR_ID, id);
             object.Add (ATTR_START_TIME, startTime);
             object.Add (ATTR_END_TIME, endTime);
@@ -295,7 +295,7 @@ namespace thekogans {
             const char * const TAG_MAX_JOB = "MaxJob";
         }
 
-        void RunLoop::Stats::Read (
+        void RunLoop::Stats::ReadXML (
                 const Header & /*header*/,
                 const pugi::xml_node &node) {
             id = node.attribute (ATTR_ID).value ();
@@ -319,7 +319,7 @@ namespace thekogans {
             }
         }
 
-        void RunLoop::Stats::Write (pugi::xml_node &node) const {
+        void RunLoop::Stats::WriteXML (pugi::xml_node &node) const {
             node.append_attribute (ATTR_ID).set_value (id.c_str ());
             node.append_attribute (ATTR_NAME).set_value (Encodestring (name).c_str ());
             node.append_attribute (ATTR_TOTAL_JOBS).set_value (size_tTostring (totalJobs).c_str ());
@@ -338,7 +338,7 @@ namespace thekogans {
             }
         }
 
-        void RunLoop::Stats::Read (
+        void RunLoop::Stats::ReadJSON (
                 const Header & /*header*/,
                 const JSON::Object &object) {
             id = object.Get<JSON::String> (ATTR_ID)->value;
@@ -347,7 +347,7 @@ namespace thekogans {
             totalJobTime = object.Get<JSON::Number> (ATTR_TOTAL_JOB_TIME)->To<ui64> ();
         }
 
-        void RunLoop::Stats::Write (JSON::Object &object) const {
+        void RunLoop::Stats::WriteJSON (JSON::Object &object) const {
             object.Add<const std::string &> (ATTR_ID, id);
             object.Add<const std::string &> (ATTR_NAME, name);
             object.Add<const SizeT &> (ATTR_TOTAL_JOBS, totalJobs);

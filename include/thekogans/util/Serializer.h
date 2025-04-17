@@ -65,8 +65,8 @@ namespace thekogans {
         /// }
         /// else {
         ///     THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-        ///         "Corrupt log %s",
-        ///         logPath.c_str ());
+        ///         "Corrupt file %s",
+        ///         path.c_str ());
         /// }
         /// \endcode
 
@@ -115,7 +115,7 @@ namespace thekogans {
             /// \brief
             /// Return serializer size.
             /// \return Serializer size.
-            inline std::size_t Size () const {
+            inline constexpr std::size_t Size () const {
                 return ENDIANNESS_SIZE;
             }
 
@@ -144,7 +144,7 @@ namespace thekogans {
             /// Return serialized size of an \see{Endianness}.
             /// \param[in] value \see{Endianness} whose size to return.
             /// \return Serialized size of \see{Endianness}.
-            static std::size_t Size (Endianness /*value*/) {
+            static constexpr std::size_t Size (Endianness /*value*/) {
                 return ENDIANNESS_SIZE;
             }
 
@@ -163,7 +163,7 @@ namespace thekogans {
             /// Return serialized size of bool.
             /// \param[in] value bool whose size to return.
             /// \return Serialized size of bool.
-            static std::size_t Size (bool /*value*/) {
+            static constexpr std::size_t Size (bool /*value*/) {
                 return BOOL_SIZE;
             }
 
@@ -181,10 +181,17 @@ namespace thekogans {
             Serializer &operator >> (bool &value);
 
             /// \brief
+            /// Return serialized size of char.
+            /// \param[in] value char whose size to return.
+            /// \return Serialized size of char.
+            static constexpr std::size_t Size (char /*value*/) {
+                return CHAR_SIZE;
+            }
+            /// \brief
             /// Return serialized size of wchar_t.
             /// \param[in] value wchar_t whose size to return.
             /// \return Serialized size of wchar_t.
-            static std::size_t Size (wchar_t /*value*/) {
+            static constexpr std::size_t Size (wchar_t /*value*/) {
                 return WCHAR_T_SIZE;
             }
 
@@ -294,7 +301,7 @@ namespace thekogans {
             /// Return serialized size of \see{i8}.
             /// \param[in] value \see{i8} whose size to return.
             /// \return Serialized size of \see{i8}.
-            static std::size_t Size (i8 /*value*/) {
+            static constexpr std::size_t Size (i8 /*value*/) {
                 return I8_SIZE;
             }
 
@@ -313,7 +320,7 @@ namespace thekogans {
             /// Return serialized size of \see{ui8}.
             /// \param[in] value \see{ui8} whose size to return.
             /// \return Serialized size of \see{ui8}.
-            static std::size_t Size (ui8 /*value*/) {
+            static constexpr std::size_t Size (ui8 /*value*/) {
                 return UI8_SIZE;
             }
 
@@ -332,7 +339,7 @@ namespace thekogans {
             /// Return serialized size of \see{i16}.
             /// \param[in] value \see{i16} whose size to return.
             /// \return Serialized size of \see{i16}.
-            static std::size_t Size (i16 /*value*/) {
+            static constexpr std::size_t Size (i16 /*value*/) {
                 return I16_SIZE;
             }
 
@@ -353,7 +360,7 @@ namespace thekogans {
             /// Return serialized size of \see{ui16}.
             /// \param[in] value \see{ui16} whose size to return.
             /// \return Serialized size of \see{ui16}.
-            static std::size_t Size (ui16 /*value*/) {
+            static constexpr std::size_t Size (ui16 /*value*/) {
                 return UI16_SIZE;
             }
 
@@ -374,7 +381,7 @@ namespace thekogans {
             /// Return serialized size of \see{i32}.
             /// \param[in] value \see{i32} whose size to return.
             /// \return Serialized size of \see{i32}.
-            static std::size_t Size (i32 /*value*/) {
+            static constexpr std::size_t Size (i32 /*value*/) {
                 return I32_SIZE;
             }
 
@@ -395,7 +402,7 @@ namespace thekogans {
             /// Return serialized size of \see{ui32}.
             /// \param[in] value \see{ui32} whose size to return.
             /// \return Serialized size of \see{ui32}.
-            static std::size_t Size (ui32 /*value*/) {
+            static constexpr std::size_t Size (ui32 /*value*/) {
                 return UI32_SIZE;
             }
 
@@ -416,7 +423,7 @@ namespace thekogans {
             /// Return serialized size of \see{i64}.
             /// \param[in] value \see{i64} whose size to return.
             /// \return Serialized size of \see{i64}.
-            static std::size_t Size (i64 /*value*/) {
+            static constexpr std::size_t Size (i64 /*value*/) {
                 return I64_SIZE;
             }
 
@@ -437,7 +444,7 @@ namespace thekogans {
             /// Return serialized size of \see{ui64}.
             /// \param[in] value \see{ui64} whose size to return.
             /// \return Serialized size of \see{ui64}.
-            static std::size_t Size (ui64 /*value*/) {
+            static constexpr std::size_t Size (ui64 /*value*/) {
                 return UI64_SIZE;
             }
 
@@ -458,7 +465,7 @@ namespace thekogans {
             /// Return serialized size of \see{f32}.
             /// \param[in] value \see{f32} whose size to return.
             /// \return Serialized size of \see{f32}.
-            static std::size_t Size (f32 /*value*/) {
+            static constexpr std::size_t Size (f32 /*value*/) {
                 return F32_SIZE;
             }
 
@@ -479,7 +486,7 @@ namespace thekogans {
             /// Return serialized size of \see{f64}.
             /// \param[in] value \see{f64} whose size to return.
             /// \return Serialized size of see{f64}.
-            static std::size_t Size (f64 /*value*/) {
+            static constexpr std::size_t Size (f64 /*value*/) {
                 return F64_SIZE;
             }
 
@@ -581,7 +588,8 @@ namespace thekogans {
                     std::size_t size = value.size () * I8_SIZE;
                     if (Write (value.data (), size) != size) {
                         THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                            "Write (value.data (), " THEKOGANS_UTIL_SIZE_T_FORMAT ") != " THEKOGANS_UTIL_SIZE_T_FORMAT,
+                            "Write (value.data (), "
+                            THEKOGANS_UTIL_SIZE_T_FORMAT ") != " THEKOGANS_UTIL_SIZE_T_FORMAT,
                             size,
                             size);
                     }
@@ -601,7 +609,8 @@ namespace thekogans {
                     std::size_t size = length * I8_SIZE;
                     if (Read (temp.data (), size) != size) {
                         THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                            "Read (value.data (), " THEKOGANS_UTIL_SIZE_T_FORMAT ") != " THEKOGANS_UTIL_SIZE_T_FORMAT,
+                            "Read (value.data (), "
+                            THEKOGANS_UTIL_SIZE_T_FORMAT ") != " THEKOGANS_UTIL_SIZE_T_FORMAT,
                             size,
                             size);
                     }
@@ -631,7 +640,8 @@ namespace thekogans {
                     std::size_t size = value.size () * UI8_SIZE;
                     if (Write (value.data (), size) != size) {
                         THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                            "Write (value.data (), " THEKOGANS_UTIL_SIZE_T_FORMAT ") != " THEKOGANS_UTIL_SIZE_T_FORMAT,
+                            "Write (value.data (), "
+                            THEKOGANS_UTIL_SIZE_T_FORMAT ") != " THEKOGANS_UTIL_SIZE_T_FORMAT,
                             size,
                             size);
                     }
@@ -651,7 +661,8 @@ namespace thekogans {
                     std::size_t size = length * UI8_SIZE;
                     if (Read (temp.data (), size) != size) {
                         THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                            "Read (value.data (), " THEKOGANS_UTIL_SIZE_T_FORMAT ") != " THEKOGANS_UTIL_SIZE_T_FORMAT,
+                            "Read (value.data (), "
+                            THEKOGANS_UTIL_SIZE_T_FORMAT ") != " THEKOGANS_UTIL_SIZE_T_FORMAT,
                             size,
                             size);
                     }
@@ -729,7 +740,8 @@ namespace thekogans {
                     std::size_t size = value.size () * I8_SIZE;
                     if (Write (value.data (), size) != size) {
                         THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                            "Write (value.data (), " THEKOGANS_UTIL_SIZE_T_FORMAT ") != " THEKOGANS_UTIL_SIZE_T_FORMAT,
+                            "Write (value.data (), "
+                            THEKOGANS_UTIL_SIZE_T_FORMAT ") != " THEKOGANS_UTIL_SIZE_T_FORMAT,
                             size,
                             size);
                     }
@@ -749,7 +761,8 @@ namespace thekogans {
                     std::size_t size = length * I8_SIZE;
                     if (Read (temp.data (), size) != size) {
                         THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                            "Read (value.data (), " THEKOGANS_UTIL_SIZE_T_FORMAT ") != " THEKOGANS_UTIL_SIZE_T_FORMAT,
+                            "Read (value.data (), "
+                            THEKOGANS_UTIL_SIZE_T_FORMAT ") != " THEKOGANS_UTIL_SIZE_T_FORMAT,
                             size,
                             size);
                     }
@@ -779,7 +792,8 @@ namespace thekogans {
                     std::size_t size = value.size () * UI8_SIZE;
                     if (Write (value.data (), size) != size) {
                         THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                            "Write (value.data (), " THEKOGANS_UTIL_SIZE_T_FORMAT ") != " THEKOGANS_UTIL_SIZE_T_FORMAT,
+                            "Write (value.data (), "
+                            THEKOGANS_UTIL_SIZE_T_FORMAT ") != " THEKOGANS_UTIL_SIZE_T_FORMAT,
                             size,
                             size);
                     }
@@ -799,7 +813,8 @@ namespace thekogans {
                     std::size_t size = length * UI8_SIZE;
                     if (Read (temp.data (), size) != size) {
                         THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                            "Read (value.data (), " THEKOGANS_UTIL_SIZE_T_FORMAT ") != " THEKOGANS_UTIL_SIZE_T_FORMAT,
+                            "Read (value.data (), "
+                            THEKOGANS_UTIL_SIZE_T_FORMAT ") != " THEKOGANS_UTIL_SIZE_T_FORMAT,
                             size,
                             size);
                     }

@@ -67,10 +67,6 @@ namespace thekogans {
                     height (height_) {}
 
                 /// \brief
-                /// Extents (0, 0);
-                static const Extents Empty;
-
-                /// \brief
                 /// Serialized extent size.
                 static const std::size_t SIZE = UI32_SIZE + UI32_SIZE;
 
@@ -140,10 +136,6 @@ namespace thekogans {
                 origin (rect.origin.x, rect.origin.y),
                 extents (rect.size.width, rect.size.height) {}
         #endif // defined (TOOLCHAIN_OS_Windows)
-
-            /// \brief
-            /// Rectangle (0, 0, 0, 0);
-            static const Rectangle Empty;
 
             /// \brief
             /// Serialized rectangle size.

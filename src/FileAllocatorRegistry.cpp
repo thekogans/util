@@ -15,6 +15,8 @@
 // You should have received a copy of the GNU General Public License
 // along with libthekogans_util. If not, see <http://www.gnu.org/licenses/>.
 
+#include "thekogans/util/BTreeKeys.h"
+#include "thekogans/util/BTreeValues.h"
 #include "thekogans/util/FileAllocatorRegistry.h"
 
 namespace thekogans {
@@ -28,8 +30,8 @@ namespace thekogans {
                 BTree (
                     fileAllocator,
                     fileAllocator->GetRootOffset (),
-                    BTree::GUIDKey::TYPE,
-                    BTree::PtrValue::TYPE,
+                    GUIDKey::TYPE,
+                    PtrValue::TYPE,
                     entriesPerNode,
                     nodesPerPage,
                     allocator) {

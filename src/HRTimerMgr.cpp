@@ -52,7 +52,7 @@ namespace thekogans {
             const char * const ATTR_VALUE = "Value";
         }
 
-        void HRTimerMgr::TimerInfoBase::Read (
+        void HRTimerMgr::TimerInfoBase::ReadXML (
                 const Header & /*header*/,
                 const pugi::xml_node &node) {
             name = node.attribute (ATTR_NAME).value ();
@@ -68,7 +68,7 @@ namespace thekogans {
             }
         }
 
-        void HRTimerMgr::TimerInfoBase::Write (pugi::xml_node &node) const {
+        void HRTimerMgr::TimerInfoBase::WriteXML (pugi::xml_node &node) const {
             node.append_attribute (ATTR_NAME).set_value (Encodestring (name).c_str ());
             if (!attributes.empty ()) {
                 pugi::xml_node attributesNode = node.append_child (TAG_ATTRIBUTES);
@@ -82,7 +82,7 @@ namespace thekogans {
             }
         }
 
-        void HRTimerMgr::TimerInfoBase::Read (
+        void HRTimerMgr::TimerInfoBase::ReadJSON (
                 const Header & /*header*/,
                 const JSON::Object &object) {
             name = object.Get<JSON::String> (ATTR_NAME)->value;
@@ -100,7 +100,7 @@ namespace thekogans {
             }
         }
 
-        void HRTimerMgr::TimerInfoBase::Write (JSON::Object &object) const {
+        void HRTimerMgr::TimerInfoBase::WriteJSON (JSON::Object &object) const {
             object.Add<const std::string &> (ATTR_NAME, name);
             if (!attributes.empty ()) {
                 util::JSON::Array::SharedPtr attributesArray (new util::JSON::Array);
@@ -198,30 +198,30 @@ namespace thekogans {
             serializer << start << stop;
         }
 
-        void HRTimerMgr::TimerInfo::Read (
+        void HRTimerMgr::TimerInfo::ReadXML (
                 const Header &header,
                 const pugi::xml_node &node) {
-            TimerInfoBase::Read (header, node);
+            TimerInfoBase::ReadXML (header, node);
             start = stringToui64 (node.attribute (ATTR_START).value ());
             stop = stringToui64 (node.attribute (ATTR_STOP).value ());
         }
 
-        void HRTimerMgr::TimerInfo::Write (pugi::xml_node &node) const {
-            TimerInfoBase::Write (node);
+        void HRTimerMgr::TimerInfo::WriteXML (pugi::xml_node &node) const {
+            TimerInfoBase::WriteXML (node);
             node.append_attribute (ATTR_START).set_value (ui64Tostring (start).c_str ());
             node.append_attribute (ATTR_STOP).set_value (ui64Tostring (stop).c_str ());
         }
 
-        void HRTimerMgr::TimerInfo::Read (
+        void HRTimerMgr::TimerInfo::ReadJSON (
                 const Header &header,
                 const JSON::Object &object) {
-            TimerInfoBase::Read (header, object);
+            TimerInfoBase::ReadJSON (header, object);
             start = object.Get<JSON::Number> (ATTR_START)->To<ui64> ();
             stop = object.Get<JSON::Number> (ATTR_STOP)->To<ui64> ();
         }
 
-        void HRTimerMgr::TimerInfo::Write (JSON::Object &object) const {
-            TimerInfoBase::Write (object);
+        void HRTimerMgr::TimerInfo::WriteJSON (JSON::Object &object) const {
+            TimerInfoBase::WriteJSON (object);
             object.Add (ATTR_START, start);
             object.Add (ATTR_STOP, stop);
         }
@@ -428,10 +428,10 @@ namespace thekogans {
             }
         }
 
-        void HRTimerMgr::ScopeInfo::Read (
+        void HRTimerMgr::ScopeInfo::ReadXML (
                 const Header &header,
                 const pugi::xml_node &node) {
-            TimerInfoBase::Read (header, node);
+            TimerInfoBase::ReadXML (header, node);
             {
                 open.clear ();
                 pugi::xml_node openScopes = node.child (TAG_OPEN_SCOPES);
@@ -464,8 +464,8 @@ namespace thekogans {
             }
         }
 
-        void HRTimerMgr::ScopeInfo::Write (pugi::xml_node &node) const {
-            TimerInfoBase::Write (node);
+        void HRTimerMgr::ScopeInfo::WriteXML (pugi::xml_node &node) const {
+            TimerInfoBase::WriteXML (node);
             {
                 pugi::xml_node openScopes = node.append_child (TAG_OPEN_SCOPES);
                 for (std::list<TimerInfoBase::SharedPtr>::const_iterator it = open.begin (),
@@ -484,10 +484,10 @@ namespace thekogans {
             }
         }
 
-        void HRTimerMgr::ScopeInfo::Read (
+        void HRTimerMgr::ScopeInfo::ReadJSON (
                 const Header &header,
                 const JSON::Object &object) {
-            TimerInfoBase::Read (header, object);
+            TimerInfoBase::ReadJSON (header, object);
             {
                 open.clear ();
                 util::JSON::Array::SharedPtr openScopes =
@@ -518,8 +518,8 @@ namespace thekogans {
             }
         }
 
-        void HRTimerMgr::ScopeInfo::Write (JSON::Object &object) const {
-            TimerInfoBase::Write (object);
+        void HRTimerMgr::ScopeInfo::WriteJSON (JSON::Object &object) const {
+            TimerInfoBase::WriteJSON (object);
             {
                 util::JSON::Array::SharedPtr openScopes (new util::JSON::Array);
                 for (std::list<TimerInfoBase::SharedPtr>::const_iterator it = open.begin (),
@@ -578,23 +578,23 @@ namespace thekogans {
             serializer << root;
         }
 
-        void HRTimerMgr::Read (
+        void HRTimerMgr::ReadXML (
                 const Header & /*header*/,
                 const pugi::xml_node &node) {
             node >> root;
         }
 
-        void HRTimerMgr::Write (pugi::xml_node &node) const {
+        void HRTimerMgr::WriteXML (pugi::xml_node &node) const {
             node << root;
         }
 
-        void HRTimerMgr::Read (
+        void HRTimerMgr::ReadJSON (
                 const Header & /*header*/,
                 const JSON::Object &object) {
             object >> root;
         }
 
-        void HRTimerMgr::Write (JSON::Object &object) const {
+        void HRTimerMgr::WriteJSON (JSON::Object &object) const {
             object << root;
         }
 

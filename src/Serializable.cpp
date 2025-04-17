@@ -84,7 +84,7 @@ namespace thekogans {
                 buffer.GetDataAvailableForReading ());
         }
 
-        void Blob::Read (
+        void Blob::ReadXML (
                 const Header &header_,
                 const pugi::xml_node &node_) {
             header = header_;
@@ -98,7 +98,7 @@ namespace thekogans {
             }
         }
 
-        void Blob::Write (pugi::xml_node &node_) const {
+        void Blob::WriteXML (pugi::xml_node &node_) const {
             for (pugi::xml_attribute attribute = node.first_attribute ();
                     attribute; attribute = attribute.next_attribute ()) {
                 node_.append_copy (attribute);
@@ -109,14 +109,14 @@ namespace thekogans {
             }
         }
 
-        void Blob::Read (
+        void Blob::ReadJSON (
                 const Header &header_,
                 const JSON::Object &object_) {
             header = header_;
             object = object_;
         }
 
-        void Blob::Write (JSON::Object &object_) const {
+        void Blob::WriteJSON (JSON::Object &object_) const {
             object_ = object;
         }
 
@@ -143,7 +143,7 @@ namespace thekogans {
             Serializable::Header header;
             node >> header;
             if (header.type == serializable.Type ()) {
-                serializable.Read (header, node);
+                serializable.ReadXML (header, node);
                 return node;
             }
             else {
@@ -160,7 +160,7 @@ namespace thekogans {
             Serializable::Header header;
             object >> header;
             if (header.type == serializable.Type ()) {
-                serializable.Read (header, object);
+                serializable.ReadJSON (header, object);
                 return object;
             }
             else {
@@ -193,7 +193,7 @@ namespace thekogans {
             if (serializable == nullptr) {
                 serializable.Reset (new Blob);
             }
-            serializable->Read (header, node);
+            serializable->ReadXML (header, node);
             return node;
         }
 
@@ -206,7 +206,7 @@ namespace thekogans {
             if (serializable == nullptr) {
                 serializable.Reset (new Blob);
             }
-            serializable->Read (header, object);
+            serializable->ReadJSON (header, object);
             return object;
         }
 

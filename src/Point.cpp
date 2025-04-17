@@ -21,8 +21,6 @@
 namespace thekogans {
     namespace util {
 
-        const Point Point::Empty (0, 0);
-
         bool Point::InRectangle (const Rectangle &rectangle) const {
             return
                 x >= rectangle.origin.x &&

@@ -28,10 +28,7 @@ namespace thekogans {
     namespace util {
 
         namespace {
-            const ui8 _data_[GUID::SIZE] = {
-                UI8_MAX, UI8_MAX, UI8_MAX, UI8_MAX, UI8_MAX, UI8_MAX, UI8_MAX, UI8_MAX,
-                UI8_MAX, UI8_MAX, UI8_MAX, UI8_MAX, UI8_MAX, UI8_MAX, UI8_MAX, UI8_MAX
-            };
+            const ui8 _data_[GUID::SIZE] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 
             inline ui8 GetNumber (char ch) {
                 return isdigit (ch) ? (ch - '0') : (10 + tolower (ch) - 'a');
@@ -112,7 +109,9 @@ namespace thekogans {
             }
         }
 
-        const GUID GUID::Empty (_data_);
+        GUID::GUID (const ui8 data_[SIZE]) {
+            memcpy (data, data_ != nullptr ? data_ : _data_, SIZE);
+        }
 
         GUID::GUID (
                 const std::string &guid,

@@ -243,24 +243,24 @@ namespace thekogans {
                 /// Read the Serializable from an XML DOM.
                 /// \param[in] header \see{Serializable::Header}.
                 /// \param[in] node XML DOM representation of a Serializable.
-                virtual void Read (
+                virtual void ReadXML (
                     const Header & /*header*/,
                     const pugi::xml_node &node) override;
                 /// \brief
                 /// Write the Serializable to the XML DOM.
                 /// \param[out] node Parent node.
-                virtual void Write (pugi::xml_node &node) const override;
+                virtual void WriteXML (pugi::xml_node &node) const override;
 
                 /// \brief
                 /// Read the Serializable from an JSON DOM.
                 /// \param[in] node JSON DOM representation of a Serializable.
-                virtual void Read (
+                virtual void ReadJSON (
                     const Header & /*header*/,
                     const JSON::Object &object) override;
                 /// \brief
                 /// Write the Serializable to the JSON DOM.
                 /// \param[out] node Parent node.
-                virtual void Write (JSON::Object &object) const override;
+                virtual void WriteJSON (JSON::Object &object) const override;
             };
 
             /// \def THEKOGANS_UTIL_HRTIMERMGR_TIMERINFOBASE(_T)
@@ -360,24 +360,24 @@ namespace thekogans {
                 /// Read the Serializable from an XML DOM.
                 /// \param[in] header \see{Serializable::Header}.
                 /// \param[in] node XML DOM representation of a Serializable.
-                virtual void Read (
+                virtual void ReadXML (
                     const Header &header,
                     const pugi::xml_node &node) override;
                 /// \brief
                 /// Write the Serializable to the XML DOM.
                 /// \param[out] node Parent node.
-                virtual void Write (pugi::xml_node &node) const override;
+                virtual void WriteXML (pugi::xml_node &node) const override;
 
                 /// \brief
                 /// Read the Serializable from an JSON DOM.
                 /// \param[in] node JSON DOM representation of a Serializable.
-                virtual void Read (
+                virtual void ReadJSON (
                     const Header &header,
                     const JSON::Object &object) override;
                 /// \brief
                 /// Write the Serializable to the JSON DOM.
                 /// \param[out] node Parent node.
-                virtual void Write (JSON::Object &object) const override;
+                virtual void WriteJSON (JSON::Object &object) const override;
             };
 
             /// \struct HRTimerMgr::ScopeInfo HRTimerMgr.h thekogans/util/HRTimerMgr.h
@@ -467,24 +467,24 @@ namespace thekogans {
                 /// Read the Serializable from an XML DOM.
                 /// \param[in] header \see{Serializable::Header}.
                 /// \param[in] node XML DOM representation of a Serializable.
-                virtual void Read (
+                virtual void ReadXML (
                     const Header &header,
                     const pugi::xml_node &node) override;
                 /// \brief
                 /// Write the Serializable to the XML DOM.
                 /// \param[out] node Parent node.
-                virtual void Write (pugi::xml_node &node) const override;
+                virtual void WriteXML (pugi::xml_node &node) const override;
 
                 /// \brief
                 /// Read the Serializable from an JSON DOM.
                 /// \param[in] node JSON DOM representation of a Serializable.
-                virtual void Read (
+                virtual void ReadJSON (
                     const Header &header,
                     const JSON::Object &object) override;
                 /// \brief
                 /// Write the Serializable to the JSON DOM.
                 /// \param[out] node Parent node.
-                virtual void Write (JSON::Object &object) const override;
+                virtual void WriteJSON (JSON::Object &object) const override;
             };
 
         private:
@@ -680,24 +680,24 @@ namespace thekogans {
             /// Read the Serializable from an XML DOM.
             /// \param[in] header \see{Serializable::Header}.
             /// \param[in] node XML DOM representation of a Serializable.
-            virtual void Read (
+            virtual void ReadXML (
                 const Header & /*header*/,
                 const pugi::xml_node &node) override;
             /// \brief
             /// Write the Serializable to the XML DOM.
             /// \param[out] node Parent node.
-            virtual void Write (pugi::xml_node &node) const override;
+            virtual void WriteXML (pugi::xml_node &node) const override;
 
             /// \brief
             /// Read the Serializable from an JSON DOM.
             /// \param[in] node JSON DOM representation of a Serializable.
-            virtual void Read (
+            virtual void ReadJSON (
                 const Header & /*header*/,
                 const JSON::Object &object) override;
             /// \brief
             /// Write the Serializable to the JSON DOM.
             /// \param[out] node Parent node.
-            virtual void Write (JSON::Object &object) const override;
+            virtual void WriteJSON (JSON::Object &object) const override;
 
             /// \brief
             /// HRTimerMgr is neither copy constructable, nor assignable.

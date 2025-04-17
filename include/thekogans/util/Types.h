@@ -162,6 +162,9 @@ namespace thekogans {
         const std::size_t SIZE_T_SIZE = sizeof (std::size_t);
         /// \brief
         /// wchar_t type size.
+        const std::size_t CHAR_SIZE = sizeof (char);
+        /// \brief
+        /// wchar_t type size.
         const std::size_t WCHAR_T_SIZE = sizeof (wchar_t);
 
         /// \brief

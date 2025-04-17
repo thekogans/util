@@ -145,13 +145,13 @@ namespace thekogans {
 
                 Token (Type type_ = TYPE_END) :
                     type (type_),
-                    number (Variant::Empty) {}
+                    number (Variant {}) {}
                 Token (
                     Type type_,
                     const std::string &value_) :
                     type (type_),
                     value (value_),
-                    number (Variant::Empty) {}
+                    number (Variant {}) {}
                 Token (
                     const std::string &value_,
                     const Variant &number_) :

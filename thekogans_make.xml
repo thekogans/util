@@ -84,6 +84,8 @@
     <cpp_header>$(organization)/$(project_directory)/Allocator.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/Array.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/BTree.h</cpp_header>
+    <cpp_header>$(organization)/$(project_directory)/BTreeKeys.h</cpp_header>
+    <cpp_header>$(organization)/$(project_directory)/BTreeValues.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/Barrier.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/Base64.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/BitSet.h</cpp_header>
@@ -626,6 +628,8 @@
     <cpp_source>AlignedAllocator.cpp</cpp_source>
     <cpp_source>Allocator.cpp</cpp_source>
     <cpp_source>BTree.cpp</cpp_source>
+    <cpp_source>BTreeKeys.cpp</cpp_source>
+    <cpp_source>BTreeValues.cpp</cpp_source>
     <cpp_source>Barrier.cpp</cpp_source>
     <cpp_source>Base64.cpp</cpp_source>
     <cpp_source>BitSet.cpp</cpp_source>

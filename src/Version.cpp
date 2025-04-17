@@ -21,8 +21,6 @@
 namespace thekogans {
     namespace util {
 
-        const Version Version::Empty (0, 0, 0);
-
     #if defined (TOOLCHAIN_COMPILER_cl)
         #pragma warning (push)
         #pragma warning (disable : 4996)
