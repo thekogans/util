@@ -81,7 +81,7 @@ namespace thekogans {
             /// \brief
             /// Return the size of Point.
             /// \return Size of Point.
-            inline std::size_t Size () const {
+            inline constexpr std::size_t Size () const {
                 return SIZE;
             }
 

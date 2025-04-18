@@ -144,7 +144,7 @@ namespace thekogans {
             /// \brief
             /// Return the size of Rectangle.
             /// \return Size of Rectangle.
-            inline std::size_t Size () const {
+            inline constexpr std::size_t Size () const {
                 return SIZE;
             }
 

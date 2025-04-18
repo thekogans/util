@@ -72,6 +72,8 @@ namespace thekogans {
 
             /// \brief
             /// Convert the guid to a string representation.
+            /// \param[in] windows true == Use Windows GUID format (4-2-2-2-6).
+            /// \param[in] upperCase true == Use upper case letters.
             /// \return String representation of the guid.
             std::string ToHexString (
                 bool windows = false,
@@ -79,7 +81,8 @@ namespace thekogans {
 
             /// \brief
             /// Parse the GUID out of a hex string representation.
-            /// NOTE: The guid must only contain hexadecimal (0 - 9, a - f) digits.
+            /// NOTE: The guid must only contain hexadecimal (0 - 9, a - f)
+            /// digits or '-' if Windows format.
             /// \param[in] guid String representation of a guid to parse.
             /// guid can be in Windows GUID format (4-2-2-2-6),
             /// or a string of SIZE * 2 hexadecimal digits.

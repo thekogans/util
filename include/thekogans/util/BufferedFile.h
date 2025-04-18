@@ -48,7 +48,7 @@ namespace thekogans {
         /// the changes to disk and release the buffers. While with proper tuning
         /// BufferedFile should work just fine for 'small' (under 1MB) files, it's
         /// strength lies with it's ability to handle multi GB or even TB files
-        /// with ease. It's hierarchical address space partitioning alows for
+        /// with ease. It's hierarchical address space partitioning allows for
         /// very efficient, sparse file handling.
 
         struct _LIB_THEKOGANS_UTIL_DECL BufferedFile : public File {
