@@ -172,7 +172,7 @@ namespace thekogans {
                 i32 workerPriority_,
                 ui32 workerAffinity_,
                 RunLoop::WorkerCallback *workerCallback_) :
-                id (GUID::FromRandom ().ToString ()),
+                id (GUID::FromRandom ().ToHexString ()),
                 name (name_),
                 jobExecutionPolicy (jobExecutionPolicy_),
                 done (false),

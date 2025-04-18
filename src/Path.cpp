@@ -65,7 +65,7 @@ namespace thekogans {
             const char PATH_SEPARATORS[3] = {
                 NATIVE_PATH_SEPARATOR,
                 OTHER_PATH_SEPARATOR,
-                0
+                '\0'
             };
 
             const char FILE_EXTENSION_DELIMITER = '.';

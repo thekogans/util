@@ -244,7 +244,7 @@ namespace thekogans {
                     break;
                 }
                 case Variant::TYPE_GUID: {
-                    size += GUID_SIZE;
+                    size += GUID::SIZE;
                     break;
                 }
             }
@@ -417,7 +417,8 @@ namespace thekogans {
                     value._string = new std::string (node.attribute (ATTR_VALUE).value ());
                     break;
                 case Variant::TYPE_GUID:
-                    value._guid = new GUID (node.attribute (ATTR_VALUE).value ());
+                    value._guid = new GUID (
+                        GUID::FromHexString (node.attribute (ATTR_VALUE).value ()));
                     break;
             }
         }
@@ -470,7 +471,7 @@ namespace thekogans {
                     str = Encodestring (*value._string);
                     break;
                 case Variant::TYPE_GUID:
-                    str = value._guid->ToString ();
+                    str = value._guid->ToHexString ();
                     break;
             }
             Attributes attributes;

@@ -381,7 +381,7 @@ namespace thekogans {
         RunLoop::State::State (
                 const std::string &name_,
                 JobExecutionPolicy::SharedPtr jobExecutionPolicy_) :
-                id (GUID::FromRandom ().ToString ()),
+                id (GUID::FromRandom ().ToHexString ()),
                 name (name_),
                 jobExecutionPolicy (jobExecutionPolicy_),
                 done (false),

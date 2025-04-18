@@ -28,16 +28,13 @@ namespace thekogans {
     namespace util {
 
         namespace {
-            const ui8 _data_[GUID::SIZE] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
-
             inline ui8 GetNumber (char ch) {
                 return isdigit (ch) ? (ch - '0') : (10 + tolower (ch) - 'a');
             }
 
-            void VerifyGUID (
-                    const std::string &guid,
-                    bool windowsGUID) {
-                if (windowsGUID) {
+            bool VerifyGUID (const std::string &guid) {
+                bool windows = guid.find_first_of ("-", 0) != std::string::npos;
+                if (windows) {
                     if (guid.size () == GUID::SIZE * 2 + 4) { // +4 to account for 4 '-'.
                         std::size_t i = 0;
                         for (; i < 8; ++i) {
@@ -106,19 +103,50 @@ namespace thekogans {
                             THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
                     }
                 }
+                return windows;
             }
         }
 
         GUID::GUID (const ui8 data_[SIZE]) {
-            memcpy (data, data_ != nullptr ? data_ : _data_, SIZE);
+            if (data_ != nullptr) {
+                memcpy (data, data_, SIZE);
+            }
+            else {
+                memset (data, 0, SIZE);
+            }
         }
 
-        GUID::GUID (
-                const std::string &guid,
-                bool windowsGUID) {
+        std::string GUID::ToHexString (
+                bool windows,
+                bool upperCase) const {
+            if (windows) {
+                const char * const upperFormat =
+                    "%02X%02X%02X%02X-%02X%02X-%02X%02X-%02X%02X-%02X%02X%02X%02X%02X%02X";
+                const char * const lowerFormat =
+                    "%02x%02x%02x%02x-%02x%02x-%02x%02x-%02x%02x-%02x%02x%02x%02x%02x%02x";
+                return FormatString (upperCase ? upperFormat : lowerFormat,
+                    data[0], data[1], data[2], data[3],
+                    data[4], data[5],
+                    data[6], data[7],
+                    data[8], data[9],
+                    data[10], data[11], data[12], data[13], data[14], data[15]);
+            }
+            else {
+                const char * const upperFormat =
+                    "%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X";
+                const char * const lowerFormat =
+                    "%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x";
+                return FormatString (upperCase ? upperFormat : lowerFormat,
+                    data[0], data[1], data[2], data[3], data[4], data[5], data[6], data[7],
+                    data[8], data[9], data[10], data[11], data[12], data[13], data[14], data[15]);
+            }
+        }
+
+        GUID GUID::FromHexString (const std::string &guid) {
+            ui8 data[SIZE];
             if (!guid.empty ()) {
-                VerifyGUID (guid, windowsGUID);
-                if (windowsGUID) {
+                bool windows = VerifyGUID (guid);
+                if (windows) {
                     const char *guidPtr = guid.c_str ();
                     ui8 *dataPtr = data;
                     for (std::size_t i = 0; i < 4; ++i) {
@@ -153,31 +181,9 @@ namespace thekogans {
                 }
             }
             else {
-                memcpy (data, _data_, SIZE);
+                memset (data, 0, SIZE);
             }
-        }
-
-        std::string GUID::ToString (bool upperCase) const {
-            const char * const upperFormat =
-                "%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X";
-            const char * const lowerFormat =
-                "%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x";
-            return FormatString (upperCase ? upperFormat : lowerFormat,
-                data[0], data[1], data[2], data[3], data[4], data[5], data[6], data[7],
-                data[8], data[9], data[10], data[11], data[12], data[13], data[14], data[15]);
-        }
-
-        std::string GUID::ToWindowsGUIDString (bool upperCase) const {
-            const char * const upperFormat =
-                "%02X%02X%02X%02X-%02X%02X-%02X%02X-%02X%02X-%02X%02X%02X%02X%02X%02X";
-            const char * const lowerFormat =
-                "%02x%02x%02x%02x-%02x%02x-%02x%02x-%02x%02x-%02x%02x%02x%02x%02x%02x";
-            return FormatString (upperCase ? upperFormat : lowerFormat,
-                data[0], data[1], data[2], data[3],
-                data[4], data[5],
-                data[6], data[7],
-                data[8], data[9],
-                data[10], data[11], data[12], data[13], data[14], data[15]);
+            return GUID (data);
         }
 
         GUID GUID::FromFile (const std::string &path) {

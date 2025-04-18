@@ -279,7 +279,10 @@ namespace thekogans {
         /// kind of conversion requires knowledge of the underlying type.
 
         struct _LIB_THEKOGANS_UTIL_DECL Blob : public Serializable {
-            THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE_OVERRIDE (Blob)
+            THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (Blob)
+            THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE_Type (Blob)
+            THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE_BASES (Blob)
+            THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE_Bases (Blob)
 
             /// \brief
             /// Blob type.

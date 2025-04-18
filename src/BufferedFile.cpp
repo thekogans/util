@@ -622,7 +622,8 @@ namespace thekogans {
 
         std::string BufferedFile::GetLogPath (const std::string &path) {
             std::string name = Path (path).GetFullFileName ();
-            return path + "-" + GUID::FromBuffer (name.data (), name.size ()).ToString () + ".log";
+            return path + "-" +
+                GUID::FromBuffer (name.data (), name.size ()).ToHexString () + ".log";
         }
 
         SimpleBufferedFile::SimpleBufferedFile (

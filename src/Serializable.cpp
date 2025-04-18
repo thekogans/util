@@ -50,13 +50,15 @@ namespace thekogans {
             return header.Size () + header.size;
         }
 
-        THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_OVERRIDE (thekogans::util::Blob)
-
-        /*
         const char *Blob::Type () const noexcept {
             return header.type.c_str ();
         }
-        */
+
+        THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_BASES_BEGIN (Blob)
+            DynamicCreatable::TYPE,
+        THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_BASES_END (Blob)
+
+        THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_Bases (Blob)
 
         ui16 Blob::Version () const noexcept {
             return header.version;

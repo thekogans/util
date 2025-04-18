@@ -146,7 +146,7 @@ namespace thekogans {
                 /// \brief
                 /// ctor.
                 /// \param[in] id_ Job id.
-                Job (const Id &id_ = GUID::FromRandom ().ToString ()) :
+                Job (const Id &id_ = GUID::FromRandom ().ToHexString ()) :
                     id (id_),
                     state (Completed),
                     disposition (Unknown),

@@ -183,19 +183,23 @@ namespace thekogans {
         /// \param[in] buffer Pointer to buffer to be hex encoded.
         /// \param[in] length Length of buffer.
         /// \param[out] hexBuffer Where to write enecoded data.
+        /// \param[in] upperCase true == use upper case letters.
         /// \return Number of bytes written to hexBuffer.
         _LIB_THEKOGANS_UTIL_DECL std::size_t _LIB_THEKOGANS_UTIL_API HexEncodeBuffer (
             const void *buffer,
             std::size_t length,
-            char *hexBuffer);
+            char *hexBuffer,
+            bool upperCase = false);
         /// \brief
         /// Hex encode a given buffer.
         /// \param[in] buffer Pointer to buffer to be hex encoded.
         /// \param[in] length Length of buffer.
+        /// \param[in] upperCase true == use upper case letters.
         /// \return Hex encoded buffer.
         _LIB_THEKOGANS_UTIL_DECL std::string _LIB_THEKOGANS_UTIL_API HexEncodeBuffer (
             const void *buffer,
-            std::size_t length);
+            std::size_t length,
+            bool upperCase = false);
         /// \brief
         /// Decode a previously hex encoded buffer.
         /// NOTE: The given hexBuffer must be even bytes long and contain only valid hex chars.
@@ -219,9 +223,11 @@ namespace thekogans {
         /// \brief
         /// Hex encode a given string.
         /// \param[in] str String to be hex encoded.
+        /// \param[in] upperCase true == use upper case letters.
         /// \return Hex encoded string.
         _LIB_THEKOGANS_UTIL_DECL std::string _LIB_THEKOGANS_UTIL_API HexEncodestring (
-            const std::string &str);
+            const std::string &str,
+            bool upperCase = false);
         /// \brief
         /// Decode a previously hex encoded string.
         /// NOTE: The given hexString must be even bytes long and contain only valid hex chars.
@@ -244,16 +250,21 @@ namespace thekogans {
         /// convenient for dumping raw binary data to a log.
         /// \param[in] buffer Pointer to start of buffer.
         /// \param[in] length Buffer length.
-        /// \return Hex formatted buffer suitable for
-        /// writing to a log.
+        /// \param[in] upperCase true == use upper case letters.
+        /// \return Hex formatted buffer suitable for writing to a log.
         _LIB_THEKOGANS_UTIL_DECL std::string _LIB_THEKOGANS_UTIL_API HexFormatBuffer (
             const void *buffer,
-            std::size_t length);
+            std::size_t length,
+            bool upperCase = false);
         /// \brief
         /// A wrapper around HexFormatBuffer.
-        /// Calls HexFormatBuffer (str[0], str.size ());
+        /// Calls HexFormatBuffer (str.data (), str.size (), upperCase);
+        /// \param[in] str String to hex format.
+        /// \param[in] upperCase true == use upper case letters.
+        /// \return Hex formatted string.
         _LIB_THEKOGANS_UTIL_DECL std::string _LIB_THEKOGANS_UTIL_API HexFormatstring (
-            const std::string &str);
+            const std::string &str,
+            bool upperCase = false);
         /// \brief
         /// Return a hash of the string.
         /// NOTE: If your looking to hash an arbitrary buffer of bytes look at

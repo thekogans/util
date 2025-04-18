@@ -19,8 +19,6 @@
 #define __thekogans_util_SHA2_h
 
 #include "thekogans/util/Config.h"
-#include "thekogans/util/Types.h"
-#include "thekogans/util/SpinLock.h"
 #include "thekogans/util/Hash.h"
 #include "thekogans/util/SHA2_224_256.h"
 #include "thekogans/util/SHA2_384_512.h"

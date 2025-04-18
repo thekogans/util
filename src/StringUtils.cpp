@@ -204,15 +204,18 @@ namespace thekogans {
         }
 
         namespace {
-            const char *hexTable = "0123456789abcdef";
+            const char *hexTableLower = "0123456789abcdef";
+            const char *hexTableUpper = "0123456789ABCDEF";
         }
 
         _LIB_THEKOGANS_UTIL_DECL std::size_t _LIB_THEKOGANS_UTIL_API HexEncodeBuffer (
                 const void *buffer,
                 std::size_t length,
-                char *hexBuffer) {
+                char *hexBuffer,
+                bool upperCase) {
             if (buffer != nullptr && length > 0 && hexBuffer != nullptr) {
                 const char *ptr = (const char *)buffer;
+                const char *hexTable = upperCase ? hexTableUpper : hexTableLower;
                 for (std::size_t i = 0; i < length; ++i) {
                     *hexBuffer++ = hexTable[(ptr[i] & 0xf0) >> 4];
                     *hexBuffer++ = hexTable[ptr[i] & 0x0f];
@@ -225,14 +228,14 @@ namespace thekogans {
             }
         }
 
-
         _LIB_THEKOGANS_UTIL_DECL std::string _LIB_THEKOGANS_UTIL_API HexEncodeBuffer (
                 const void *buffer,
-                std::size_t length) {
+                std::size_t length,
+                bool upperCase) {
             if (buffer != nullptr && length > 0) {
                 std::string hexString;
                 hexString.resize (length * 2);
-                HexEncodeBuffer (buffer, length, &hexString[0]);
+                HexEncodeBuffer (buffer, length, &hexString[0], upperCase);
                 return hexString;
             }
             else {
@@ -296,26 +299,28 @@ namespace thekogans {
         }
 
         _LIB_THEKOGANS_UTIL_DECL std::string _LIB_THEKOGANS_UTIL_API HexEncodestring (
-                const std::string &str) {
-            return HexEncodeBuffer (str.c_str (), str.size ());
+                const std::string &str,
+                bool upperCase) {
+            return HexEncodeBuffer (str.data (), str.size (), upperCase);
         }
 
         _LIB_THEKOGANS_UTIL_DECL std::vector<ui8> _LIB_THEKOGANS_UTIL_API HexDecodestring (
                 const std::string &hexString) {
-            return HexDecodeBuffer (hexString.c_str (), hexString.size ());
+            return HexDecodeBuffer (hexString.data (), hexString.size ());
         }
 
         _LIB_THEKOGANS_UTIL_DECL std::size_t _LIB_THEKOGANS_UTIL_API HexDecodestring (
                 const std::string &hexString,
                 void *buffer) {
-            return HexDecodeBuffer (hexString.c_str (), hexString.size (), buffer);
+            return HexDecodeBuffer (hexString.data (), hexString.size (), buffer);
         }
 
         namespace {
             void HexFormatRow (
                     std::ostringstream &stream,
                     const ui8 *ptr,
-                    std::size_t columns) {
+                    std::size_t columns,
+                    const char *hexTable) {
                 for (const ui8 *begin = ptr,
                         *end = ptr + columns; begin != end; ++begin) {
                     const char hex[4] = {
@@ -346,20 +351,22 @@ namespace thekogans {
 
         _LIB_THEKOGANS_UTIL_DECL std::string _LIB_THEKOGANS_UTIL_API HexFormatBuffer (
                 const void *buffer,
-                std::size_t length) {
+                std::size_t length,
+                bool upperCase) {
             if (buffer != nullptr && length > 0) {
                 std::ostringstream stream;
                 const ui8 *ptr = (const ui8 *)buffer;
                 const std::size_t charsPerRow = 16;
                 std::size_t rows = length / charsPerRow;
+                const char *hexTable = upperCase ? hexTableUpper : hexTableLower;
                 for (std::size_t i = 0; i < rows; ++i) {
-                    HexFormatRow (stream, ptr, charsPerRow);
+                    HexFormatRow (stream, ptr, charsPerRow, hexTable);
                     ASCIIFormatRow (stream, ptr, charsPerRow);
                     ptr += charsPerRow;
                 }
                 std::size_t remainder = length % charsPerRow;
                 if (remainder > 0) {
-                    HexFormatRow (stream, ptr, remainder);
+                    HexFormatRow (stream, ptr, remainder, hexTable);
                     stream << std::string ((charsPerRow - remainder) * 3, ' ');
                     ASCIIFormatRow (stream, ptr, remainder);
                 }
@@ -372,8 +379,9 @@ namespace thekogans {
         }
 
         _LIB_THEKOGANS_UTIL_DECL std::string _LIB_THEKOGANS_UTIL_API HexFormatstring (
-                const std::string &str) {
-            return HexFormatBuffer (str.c_str (), str.size ());
+                const std::string &str,
+                bool upperCase) {
+            return HexFormatBuffer (str.data (), str.size (), upperCase);
         }
 
         _LIB_THEKOGANS_UTIL_DECL std::size_t _LIB_THEKOGANS_UTIL_API HashString (
@@ -394,7 +402,7 @@ namespace thekogans {
 
         _LIB_THEKOGANS_UTIL_DECL std::size_t _LIB_THEKOGANS_UTIL_API HashString (
                 const std::string &str) {
-            return HashString (str.c_str (), str.size ());
+            return HashString (str.data (), str.size ());
         }
 
         _LIB_THEKOGANS_UTIL_DECL std::string _LIB_THEKOGANS_UTIL_API GetLongestCommonPrefix (

@@ -125,7 +125,7 @@ namespace thekogans {
             /// This method is only used in Dump for debugging purposes.
             /// \return String representation of the key.
             virtual std::string ToString () const {
-                return key.ToString ();
+                return key.ToHexString ();
             }
 
             // Serializable

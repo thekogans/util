@@ -44,6 +44,9 @@ namespace thekogans {
         /// While deprecated for cryptographic work, it's perfectly
         /// safe to use in low security situations. Keep that in mind
         /// when using GUID.
+        /// PRO TIP: For crypto work I highly recommend \see{crypto::ID}.
+        /// It has practically identical interface as GUID and uses SHA2_256
+        /// to generate the hash.
 
         struct _LIB_THEKOGANS_UTIL_DECL GUID {
             /// \brief
@@ -57,35 +60,30 @@ namespace thekogans {
             /// \brief
             /// ctor. Initialize to a given value.
             /// \param[in] data_ Value to initialize to.
+            /// If nullptr, initialize to all 0.
             GUID (const ui8 data_[SIZE] = nullptr);
-            /// \brief
-            /// ctor. Parse the GUID out of a string representation.
-            /// NOTE: The guid must only contain hexadecimal (0 - 9, a - f) digits.
-            /// \param[in] guid String representation of a guid to parse.
-            /// \param[in] windowsGUID true == guid is in Windows GUID format (4-2-2-2-6),
-            /// false = guid is a string of SIZE * 2 hexadecimal digits.
-            explicit GUID (
-                const std::string &guid,
-                bool windowsGUID = false);
 
             /// \brief
             /// Return the serialized size of this guid.
             /// \return Serialized size of this guid.
-            inline std::size_t Size () const {
+            inline constexpr std::size_t Size () const {
                 return SIZE;
             }
 
             /// \brief
             /// Convert the guid to a string representation.
             /// \return String representation of the guid.
-            std::string ToString (bool upperCase = false) const;
+            std::string ToHexString (
+                bool windows = false,
+                bool upperCase = false) const;
 
             /// \brief
-            /// Convert the guid to a string representation
-            /// useful when you need a Windows formated GUID.
-            /// \return Windows formated GUID string.
-            std::string ToWindowsGUIDString (bool upperCase = false) const;
-
+            /// Parse the GUID out of a hex string representation.
+            /// NOTE: The guid must only contain hexadecimal (0 - 9, a - f) digits.
+            /// \param[in] guid String representation of a guid to parse.
+            /// guid can be in Windows GUID format (4-2-2-2-6),
+            /// or a string of SIZE * 2 hexadecimal digits.
+            static GUID FromHexString (const std::string &guid);
             /// \brief
             /// Create a guid for a given file. Uses \see{MD5::FromFile}.
             /// \param[in] path file to create a guid from (MD5 hash).
@@ -105,10 +103,6 @@ namespace thekogans {
             /// \return MD5 hash of the random bytes.
             static GUID FromRandom (std::size_t length = SIZE);
         };
-
-        /// \brief
-        /// Serialized GUID size.
-        const std::size_t GUID_SIZE = GUID::SIZE;
 
         /// \brief
         /// Compare two guids for order.
@@ -162,7 +156,7 @@ namespace thekogans {
         inline std::ostream & _LIB_THEKOGANS_UTIL_API operator << (
                 std::ostream &stream,
                 const GUID &guid) {
-            return stream << guid.ToString ();
+            return stream << guid.ToHexString ();
         }
 
         /// \brief
@@ -173,12 +167,12 @@ namespace thekogans {
         inline Serializer & _LIB_THEKOGANS_UTIL_API operator << (
                 Serializer &serializer,
                 const GUID &guid) {
-            if (serializer.Write (guid.data, GUID_SIZE) != GUID_SIZE) {
+            if (serializer.Write (guid.data, GUID::SIZE) != GUID::SIZE) {
                 THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
                     "Write (guid.data, "
                     THEKOGANS_UTIL_SIZE_T_FORMAT ") != " THEKOGANS_UTIL_SIZE_T_FORMAT,
-                    GUID_SIZE,
-                    GUID_SIZE);
+                    GUID::SIZE,
+                    GUID::SIZE);
             }
             return serializer;
         }
@@ -191,12 +185,12 @@ namespace thekogans {
         inline Serializer & _LIB_THEKOGANS_UTIL_API operator >> (
                 Serializer &serializer,
                 GUID &guid) {
-            if (serializer.Read (guid.data, GUID_SIZE) != GUID_SIZE) {
+            if (serializer.Read (guid.data, GUID::SIZE) != GUID::SIZE) {
                 THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
                     "Read (guid.data, "
                     THEKOGANS_UTIL_SIZE_T_FORMAT ") != " THEKOGANS_UTIL_SIZE_T_FORMAT,
-                    GUID_SIZE,
-                    GUID_SIZE);
+                    GUID::SIZE,
+                    GUID::SIZE);
             }
             return serializer;
         }

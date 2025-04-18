@@ -357,7 +357,7 @@ namespace thekogans {
     #endif // defined (TOOLCHAIN_OS_Windows)
 
         GUID File::GetId () const {
-            HostBuffer buffer (GUID_SIZE);
+            HostBuffer buffer (GUID::SIZE);
         #if defined (TOOLCHAIN_OS_Windows)
             BY_HANDLE_FILE_INFORMATION fileInformation;
             if (!GetFileInformationByHandle (handle, &fileInformation)) {
@@ -405,8 +405,10 @@ namespace thekogans {
                 FILETIME fileLastAccessTime = lastAccessTime.ToFILETIME ();
                 FILETIME fileLastWriteTime = lastWriteTime.ToFILETIME ();
                 if (!SetFileTime (file.handle, 0,
-                        (touchType & TOUCH_ACCESS_TIME) == TOUCH_ACCESS_TIME ? &fileLastAccessTime : 0,
-                        (touchType & TOUCH_WRITE_TIME) == TOUCH_WRITE_TIME ? &fileLastWriteTime : 0)) {
+                        (touchType & TOUCH_ACCESS_TIME) == TOUCH_ACCESS_TIME ?
+                            &fileLastAccessTime : 0,
+                        (touchType & TOUCH_WRITE_TIME) == TOUCH_WRITE_TIME ?
+                            &fileLastWriteTime : 0)) {
                     THEKOGANS_UTIL_THROW_ERROR_CODE_AND_MESSAGE_EXCEPTION (
                         THEKOGANS_UTIL_OS_ERROR_CODE, " (%s)", path.c_str ());
                 }

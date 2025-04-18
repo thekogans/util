@@ -148,34 +148,32 @@ namespace thekogans {
                 LockGuard<SpinLock> guard (spinLock);
                 // If a hardware random source exists, use it first.
                 std::size_t hardwareCount = GetHardwareBytes (buffer, bufferLength);
-                if (hardwareCount == bufferLength) {
-                    return hardwareCount;
-                }
-                // If we got here either there's no hardware random source or,
-                // it couldn't generate enough bytes. Use other means.
-            #if defined (TOOLCHAIN_OS_Windows)
-                if (!CryptGenRandom (
-                        cryptProv,
-                        (DWORD)(bufferLength - hardwareCount),
-                        (BYTE *)buffer + hardwareCount)) {
-                    THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                        THEKOGANS_UTIL_OS_ERROR_CODE);
+                if (hardwareCount < bufferLength) {
+                    // If we got here either there's no hardware random source or,
+                    // it couldn't generate enough bytes. Use other means.
+                #if defined (TOOLCHAIN_OS_Windows)
+                    if (!CryptGenRandom (
+                            cryptProv,
+                            (DWORD)(bufferLength - hardwareCount),
+                            (BYTE *)buffer + hardwareCount)) {
+                        THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                            THEKOGANS_UTIL_OS_ERROR_CODE);
+                    }
+                #elif defined (TOOLCHAIN_OS_Linux)
+                    bufferLength = hardwareCount + urandom.Read (
+                        (ui8 *)buffer + hardwareCount,
+                        bufferLength - hardwareCount);
+                #elif defined (TOOLCHAIN_OS_OSX)
+                    OSStatus errorCode = SecRandomCopyBytes (
+                        kSecRandomDefault,
+                        bufferLength - hardwareCount,
+                        (ui8 *)buffer + hardwareCount);
+                    if (errorCode != noErr) {
+                        THEKOGANS_UTIL_THROW_SEC_OSSTATUS_ERROR_CODE_EXCEPTION (errorCode);
+                    }
+                    #endif // defined (TOOLCHAIN_OS_Windows)
                 }
                 return bufferLength;
-            #elif defined (TOOLCHAIN_OS_Linux)
-                return hardwareCount + urandom.Read (
-                    (ui8 *)buffer + hardwareCount,
-                    bufferLength - hardwareCount);
-            #elif defined (TOOLCHAIN_OS_OSX)
-                OSStatus errorCode = SecRandomCopyBytes (
-                    kSecRandomDefault,
-                    bufferLength - hardwareCount,
-                    (ui8 *)buffer + hardwareCount);
-                if (errorCode != noErr) {
-                    THEKOGANS_UTIL_THROW_SEC_OSSTATUS_ERROR_CODE_EXCEPTION (errorCode);
-                }
-                return bufferLength;
-            #endif // defined (TOOLCHAIN_OS_Windows)
             }
             return 0;
         }

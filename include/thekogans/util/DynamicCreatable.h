@@ -202,6 +202,7 @@ namespace thekogans {
         /// of bases would go between the above and this macro. This
         /// macro is private.
         #define THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_BASES_END(_T)\
+                nullptr\
             };
 
         /// \def THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE_Bases(_T)
@@ -217,30 +218,6 @@ namespace thekogans {
                 return BASES;\
             }
 
-        /// \def THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE_BASES_SIZE(_T)
-        /// Declare the DynamicCreatable::BASES_SIZE. This macro is private.
-        #define THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE_BASES_SIZE(_T)\
-        public:\
-            static const std::size_t BASES_SIZE;
-
-        /// \def THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_BASES_SIZE(_T)
-        /// Implement DynamicCreatable::BASES_SIZE. This macro is private.
-        #define THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_BASES_SIZE(_T)\
-            const std::size_t _T::BASES_SIZE = THEKOGANS_UTIL_ARRAY_SIZE (_T::BASES);
-
-        /// \def THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE_BasesSize(_T)
-        /// Declare DynamicCreatable::BasesSize. This macro is usually private.
-        #define THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE_BasesSize(_T)\
-        public:\
-            virtual std::size_t BasesSize () const noexcept override;
-
-        /// \def THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_BasesSize(_T)
-        /// Implement DynamicCreatable::BasesSize. This macro is usually private.
-        #define THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_BasesSize(_T)\
-            std::size_t _T::BasesSize () const noexcept {\
-                return BASES_SIZE;\
-            }
-
         /// \def THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE_OVERRIDE(_T)
         /// Declare DynamicCreatable overridables. Unless you have a special need
         /// (\see{FileLogger}), you should not need to directly use this macro.
@@ -248,9 +225,7 @@ namespace thekogans {
             THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE_TYPE (_T)\
             THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE_Type (_T)\
             THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE_BASES (_T)\
-            THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE_Bases (_T)\
-            THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE_BASES_SIZE (_T)\
-            THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE_BasesSize (_T)
+            THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE_Bases (_T)
 
         /// \def THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_OVERRIDE(_T, ...)
         /// Implement DynamicCreatable overridables. Unless you have a special need
@@ -260,11 +235,9 @@ namespace thekogans {
             THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_Type (_T)\
             THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_BASES_BEGIN (_T)\
                 thekogans::util::DynamicCreatable::TYPE,\
-                __VA_ARGS__\
+                __VA_ARGS__,\
             THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_BASES_END (_T)\
-            THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_Bases (_T)\
-            THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_BASES_SIZE (_T)\
-            THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_BasesSize (_T)
+            THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_Bases (_T)
 
         /// \def THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_OVERRIDE_T(_T, ...)
         /// Implement DynamicCreatable overridables for template types. Unless
@@ -278,14 +251,10 @@ namespace thekogans {
             template<>\
             THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_BASES_BEGIN (_T)\
                 thekogans::util::DynamicCreatable::TYPE,\
-                __VA_ARGS__\
+                __VA_ARGS__,\
             THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_BASES_END (_T)\
             template<>\
-            THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_Bases (_T)\
-            template<>\
-            THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_BASES_SIZE (_T)\
-            template<>\
-            THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_BasesSize (_T)
+            THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_Bases (_T)
 
         /// \def THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE_BASE_FUNCTIONS(_T)
         /// Define the base type functions. This macro is private.
@@ -446,10 +415,6 @@ namespace thekogans {
             /// base (DynamicCreatable itself).
             /// \return BASES.
             virtual const char * const *Bases () const noexcept = 0;
-            /// \brief
-            /// Return the number of entries in BASES.
-            /// \return BASES_SIZE.
-            virtual std::size_t BasesSize () const noexcept = 0;
         };
 
         /// \struct DynamicCreatable DynamicCreatable.h thekogans/util/DynamicCreatable.h
@@ -473,6 +438,15 @@ namespace thekogans {
             /// \brief
             /// Declare \see{RefCounted} pointers.
             THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (DynamicCreatable)
+            /// \brief
+            /// Declare DynamicCreatable TYPE.
+            THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE_TYPE (DynamicCreatable)
+            /// \brief
+            /// Declare DynamicCreatable Type.
+            THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE_Type (DynamicCreatable)
+            /// \brief
+            /// Declare DynamicCreatable Bases.
+            THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE_Bases (DynamicCreatable)
 
             /// \struct DynamicCreatable::Parameters DynamicCreatable.h
             /// thekogans/util/DynamicCreatable.h
@@ -501,7 +475,7 @@ namespace thekogans {
 
             /// \brief
             /// Type factory method.
-            using FactoryType = std::function<SharedPtr (Parameters::SharedPtr)>;
+            using FactoryType = std::function<SharedPtr (Parameters::SharedPtr /*parameters*/)>;
             /// \struct DynamicCreatable::CharPtrHash DynamicCreatable.h
             /// thekogans/util/DynamicCreatable.h
             ///
@@ -549,18 +523,6 @@ namespace thekogans {
             using BaseMap = Singleton<BaseMapType>;
 
             /// \brief
-            /// Declare DynamicCreatable TYPE.
-            THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE_TYPE (DynamicCreatable)
-            /// \brief
-            /// Declare DynamicCreatable Type.
-            THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE_Type (DynamicCreatable)
-            /// \brief
-            /// Declare DynamicCreatable Bases.
-            THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE_Bases (DynamicCreatable)
-            /// \brief
-            /// Declare DynamicCreatable BasesSize.
-            THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE_BasesSize (DynamicCreatable)
-            /// \brief
             /// Declare DynamicCreatable base functions.
             THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE_BASE_FUNCTIONS (DynamicCreatable)
 
@@ -589,12 +551,10 @@ namespace thekogans {
                 /// \brief
                 /// ctor.
                 /// \param[in] bases DynamicCreatable bases type names (it's parents class names).
-                /// \param[in] basesSize Size of bases.
                 /// \param[in] type DynamicCreatable type (it's class name).
                 /// \param[in] factory DynamicCreatable creation factory.
                 BaseMapInitializer (
                     const char * const bases[],
-                    std::size_t basesSize,
                     const char *type,
                     FactoryType factory);
             };
@@ -628,9 +588,10 @@ namespace thekogans {
         /// Define the static base map initializer. This macro is private.
         #define THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_BASE_MAP_INIT(_T)\
             void _T::StaticInit () {\
-                for (std::size_t i = 0; i < _T::BASES_SIZE; ++i) {\
+                const char * const *bases = _T::BASES;\
+                while (*bases != nullptr) {\
                     (*thekogans::util::DynamicCreatable::BaseMap::Instance ())[\
-                        _T::BASES[i]][_T::TYPE] = _T::Create;\
+                        *bases++][_T::TYPE] = _T::Create;\
                 }\
             }
     #else // defined (THEKOGANS_UTIL_TYPE_Static)
@@ -644,7 +605,7 @@ namespace thekogans {
         /// Define the shared base map initializer. This macro is private.
         #define THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_BASE_MAP_INIT(_T)\
             const thekogans::util::DynamicCreatable::BaseMapInitializer _T::mapInitializer (\
-                _T::BASES, _T::BASES_SIZE, _T::TYPE, _T::Create);
+                _T::BASES, _T::TYPE, _T::Create);
     #endif // defined (THEKOGANS_UTIL_TYPE_Static)
 
         /// \def THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE(_T)

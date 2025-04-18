@@ -33,10 +33,6 @@ namespace thekogans {
             return nullptr;
         }
 
-        std::size_t DynamicCreatable::BasesSize () const noexcept {
-            return 0;
-        }
-
         THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_ABSTRACT_BASE (thekogans::util::DynamicCreatable)
 
     #if defined (THEKOGANS_UTIL_TYPE_Static)
@@ -53,11 +49,10 @@ namespace thekogans {
     #else // defined (THEKOGANS_UTIL_TYPE_Static)
         DynamicCreatable::BaseMapInitializer::BaseMapInitializer (
                 const char * const bases[],
-                std::size_t basesSize,
                 const char *type,
                 FactoryType factory) {
-            for (std::size_t i = 0; i < basesSize; ++i) {
-                (*BaseMap::Instance ())[bases[i]][type] = factory;
+            while (*bases != nullptr) {
+                (*BaseMap::Instance ())[*bases++][type] = factory;
             }
         }
     #endif // defined (THEKOGANS_UTIL_TYPE_Static)
@@ -66,8 +61,8 @@ namespace thekogans {
             if (base != nullptr) {
                 CharPtrEqual compare;
                 const char * const *bases = Bases ();
-                for (std::size_t i = 0, basesSize = BasesSize (); i < basesSize; ++i) {
-                    if (compare (base, bases[i])) {
+                while (*bases != nullptr) {
+                    if (compare (base, *bases++)) {
                         return true;
                     }
                 }
