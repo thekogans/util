@@ -21,7 +21,9 @@
 namespace thekogans {
     namespace util {
 
-        THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_OVERRIDE (thekogans::util::BlockAllocator)
+        THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_OVERRIDE (
+            thekogans::util::BlockAllocator,
+            Allocator::TYPE)
 
         void *BlockAllocator::Page::Alloc () {
             if (freeBlock != nullptr) {

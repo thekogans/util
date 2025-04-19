@@ -115,7 +115,7 @@ namespace thekogans {
             /// \brief
             /// Return serializer size.
             /// \return Serializer size.
-            inline constexpr std::size_t Size () const {
+            inline std::size_t Size () const {
                 return ENDIANNESS_SIZE;
             }
 

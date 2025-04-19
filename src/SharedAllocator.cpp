@@ -32,7 +32,9 @@
 namespace thekogans {
     namespace util {
 
-        THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_OVERRIDE (thekogans::util::SharedAllocator)
+        THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_OVERRIDE (
+            thekogans::util::SharedAllocator,
+            Allocator::TYPE)
 
         void *SharedAllocator::Alloc (std::size_t size) {
             if (size > 0) {

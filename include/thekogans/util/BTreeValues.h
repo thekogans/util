@@ -53,7 +53,7 @@ namespace thekogans {
             /// \brief
             /// This method is only used in Dump for debugging purposes.
             /// \return String representation of the value.
-            virtual std::string ToString () const {
+            virtual std::string ToString () const override {
                 return value;
             }
 
@@ -105,7 +105,7 @@ namespace thekogans {
             /// \brief
             /// This method is only used in Dump for debugging purposes.
             /// \return String representation of the value.
-            virtual std::string ToString () const {
+            virtual std::string ToString () const override {
                 return ui64Tostring (value);
             }
 

@@ -689,7 +689,7 @@ namespace thekogans {
                     AddRef ();
                     // Pre-allocate the string to avoid memory
                     // management in Reset.
-                    runLoopId = GUID::FromRandom ().ToString ();
+                    runLoopId = GUID::FromRandom ().ToHexString ();
                 }
             protected:
                 virtual void Execute (const std::atomic<bool> & /*done*/) noexcept {

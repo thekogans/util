@@ -28,7 +28,9 @@
 namespace thekogans {
     namespace util {
 
-        THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_OVERRIDE (thekogans::util::FileLogger)
+        THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_OVERRIDE (
+            thekogans::util::FileLogger,
+            Logger::TYPE)
 
         void FileLogger::Log (
                 const std::string & /*subsystem*/,
