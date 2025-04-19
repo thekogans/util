@@ -24,7 +24,7 @@
 namespace thekogans {
     namespace util {
 
-        THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE (thekogans::util::Fraction, 1)
+        THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE (thekogans::util::Fraction, 1, "")
 
         const Fraction Fraction::Zero (0, 1);
         const Fraction Fraction::One (1, 1);
