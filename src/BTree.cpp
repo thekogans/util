@@ -206,7 +206,7 @@ namespace thekogans {
                 }
                 else {
                     THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                        "Corrupt BTree::Node: " THEKOGANS_UTIL_UI64_FORMAT,
+                        "Corrupt BTree::Node: @" THEKOGANS_UTIL_UI64_FORMAT,
                         offset);
                 }
             }
@@ -509,28 +509,26 @@ namespace thekogans {
                 Node *right = Alloc (btree);
                 Split (right);
                 ui32 splitIndex = btree.header.entriesPerNode / 2;
+                if (index < splitIndex) {
+                    InsertEntry (entry, index);
+                    if (it.IsFinished ()) {
+                        it.prefix.Reset (entries[index].key);
+                        it.node = Iterator::NodeIndex (this, index);
+                        it.finished = false;
+                    }
+                }
+                else if (index > splitIndex) {
+                    right->InsertEntry (entry, index - splitIndex);
+                    if (it.IsFinished ()) {
+                        it.prefix.Reset (entries[index - splitIndex].key);
+                        // -1 because we will be removing the 0'th entry below.
+                        it.node = Iterator::NodeIndex (right, index - splitIndex - 1);
+                        it.finished = false;
+                    }
+                }
                 if (index != splitIndex) {
-                    if (index < splitIndex) {
-                        InsertEntry (entry, index);
-                        if (it.IsFinished ()) {
-                            it.prefix.Reset (entries[index].key);
-                            it.node = Iterator::NodeIndex (this, index);
-                            it.finished = false;
-                        }
-                    }
-                    else if (index > splitIndex) {
-                        right->InsertEntry (entry, index - splitIndex);
-                        if (it.IsFinished ()) {
-                            it.prefix.Reset (entries[index - splitIndex].key);
-                            // -1 because we will be removing the 0'th entry below.
-                            it.node = Iterator::NodeIndex (right, index - splitIndex - 1);
-                            it.finished = false;
-                        }
-                    }
-                    if (index != splitIndex) {
-                        entry = right->entries[0];
-                        right->RemoveEntry (0);
-                    }
+                    entry = right->entries[0];
+                    right->RemoveEntry (0);
                 }
                 Save ();
                 right->leftOffset = entry.rightOffset;
@@ -753,7 +751,7 @@ namespace thekogans {
                 }
             }
             else if (Key::IsType (header.keyType.c_str ()) &&
-                    Serializable::IsType (header.valueType.c_str ())) {
+                    Value::IsType (header.valueType.c_str ())) {
                 offset = fileAllocator->Alloc (header.Size ());
                 Save ();
             }

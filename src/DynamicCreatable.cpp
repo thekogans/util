@@ -29,11 +29,10 @@
 namespace thekogans {
     namespace util {
 
-        const char * const *DynamicCreatable::Bases () const noexcept {
-            return nullptr;
-        }
-
         THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_ABSTRACT_BASE (thekogans::util::DynamicCreatable)
+        THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_BASES_BEGIN (DynamicCreatable)
+        THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_BASES_END (DynamicCreatable)
+        THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_Bases (DynamicCreatable)
 
     #if defined (THEKOGANS_UTIL_TYPE_Static)
         void DynamicCreatable::StaticInit () {
@@ -60,6 +59,9 @@ namespace thekogans {
         bool DynamicCreatable::IsDerivedFrom (const char *base) const noexcept {
             if (base != nullptr) {
                 CharPtrEqual compare;
+                if (compare (base, Type ())) {
+                    return true;
+                }
                 const char * const *bases = Bases ();
                 while (*bases != nullptr) {
                     if (compare (base, *bases++)) {

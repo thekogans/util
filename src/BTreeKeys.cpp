@@ -27,7 +27,7 @@ namespace thekogans {
             BTree::Key::TYPE)
 
         i32 StringKey::PrefixCompare (const Key &prefix) const {
-            if (prefix.Type () == StringKey::TYPE || prefix.IsDerivedFrom (StringKey::TYPE)) {
+            if (prefix.IsDerivedFrom (StringKey::TYPE)) {
                 const StringKey *stringKey = static_cast<const StringKey *> (&prefix);
                 return key.compare (0, stringKey->key.size (), stringKey->key);
             }
@@ -38,7 +38,7 @@ namespace thekogans {
         }
 
         i32 StringKey::Compare (const Key &key_) const {
-            if (key_.Type () == StringKey::TYPE || key_.IsDerivedFrom (StringKey::TYPE)) {
+            if (key_.IsDerivedFrom (StringKey::TYPE)) {
                 const StringKey *stringKey = static_cast<const StringKey *> (&key_);
                 return key.compare (stringKey->key);
             }
@@ -54,7 +54,7 @@ namespace thekogans {
             BTree::Key::TYPE)
 
         i32 GUIDKey::PrefixCompare (const Key &prefix) const {
-            if (prefix.Type () == GUIDKey::TYPE || prefix.IsDerivedFrom (GUIDKey::TYPE)) {
+            if (prefix.IsDerivedFrom (GUIDKey::TYPE)) {
                 const GUIDKey *guidKey = static_cast<const GUIDKey *> (&prefix);
                 return key == guidKey->key;
             }
@@ -65,7 +65,7 @@ namespace thekogans {
         }
 
         i32 GUIDKey::Compare (const Key &key) const {
-            if (key.Type () == GUIDKey::TYPE || key.IsDerivedFrom (GUIDKey::TYPE)) {
+            if (key.IsDerivedFrom (GUIDKey::TYPE)) {
                 const GUIDKey *guidKey = static_cast<const GUIDKey *> (&key);
                 return this->key == guidKey->key;
             }

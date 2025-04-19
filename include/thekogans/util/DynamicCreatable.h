@@ -38,7 +38,7 @@ namespace thekogans {
         /// One of the shortcomings of c++ is it's inability to dynamically
         /// create a type at runtime given a string representation of it's type.
         /// DynamicCreatable and it's supporting macros below are my attempt at
-        /// pluggin that hole. For any scheme to ultimately be useful it needs
+        /// plugging that hole. For any scheme to ultimately be useful it needs
         /// to scale well with addition of more types. One can easily envision
         /// a huge system built out of many libraries, using many types. If each
         /// time you needed to create a type instance you had to search through
@@ -351,7 +351,7 @@ namespace thekogans {
         ///     namespace util {
         ///
         ///         struct _LIB_THEKOGANS_UTIL_DECL Serializable : public DynamicCreatable {
-        ///             THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE_BASE (Serializable)
+        ///             THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE_ABSTRACT_BASE (Serializable)
         ///             ...
         ///         };
         ///
@@ -375,7 +375,8 @@ namespace thekogans {
         /// namespace thekogans {
         ///     namespace util {
         ///
-        ///         THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_BASE (thekogans::util::Serializable)
+        ///         THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_ABSTRACT_BASE (
+        ///             thekogans::util::Serializable)
         ///
         ///     } // namespace thekogans
         /// } // namespace util
@@ -410,9 +411,9 @@ namespace thekogans {
             virtual const char *Type () const noexcept = 0;
 
             /// \brief
-            /// Return the list of base types that can create this type.
+            /// Return the list of base types (ancestors).
             /// DynamicCreatable derived types will have at least one
-            /// base (DynamicCreatable itself).
+            /// base (DynamicCreatable).
             /// \return BASES.
             virtual const char * const *Bases () const noexcept = 0;
         };
@@ -439,14 +440,8 @@ namespace thekogans {
             /// Declare \see{RefCounted} pointers.
             THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (DynamicCreatable)
             /// \brief
-            /// Declare DynamicCreatable TYPE.
-            THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE_TYPE (DynamicCreatable)
-            /// \brief
-            /// Declare DynamicCreatable Type.
-            THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE_Type (DynamicCreatable)
-            /// \brief
-            /// Declare DynamicCreatable Bases.
-            THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE_Bases (DynamicCreatable)
+            /// Declare DynamicCreatable overrides.
+            THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE_OVERRIDE (DynamicCreatable)
 
             /// \struct DynamicCreatable::Parameters DynamicCreatable.h
             /// thekogans/util/DynamicCreatable.h
@@ -660,8 +655,7 @@ namespace thekogans {
             THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (_T)\
             THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE_OVERRIDE (_T)\
             THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE_CREATE (_T)\
-            THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE_BASE_MAP_INIT (_T)\
-            THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE_BASE_FUNCTIONS (_T)
+            THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE_BASE_MAP_INIT (_T)
 
         /// \def THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE(_T, ...)
         /// Dynamic discovery macro. Instantiate one of these in the class cpp file.
@@ -682,8 +676,7 @@ namespace thekogans {
         #define THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE(_T, ...)\
             THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_OVERRIDE (_T, __VA_ARGS__)\
             THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_CREATE (_T)\
-            THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_BASE_MAP_INIT (_T)\
-            THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_BASE_FUNCTIONS (_T)
+            THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_BASE_MAP_INIT (_T)
 
         /// \def THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_S(_T, ...)
         /// Dynamic discovery macro for \see{Singleton} types. Instantiate one of these
@@ -710,8 +703,7 @@ namespace thekogans {
         #define THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_S(_T, ...)\
             THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_OVERRIDE (_T, __VA_ARGS__)\
             THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_CREATE_S (_T)\
-            THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_BASE_MAP_INIT (_T)\
-            THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_BASE_FUNCTIONS (_T)
+            THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_BASE_MAP_INIT (_T)
 
         /// \def THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_T(_T, ...)
         /// Dynamic discovery macro for template types. Instantiate one of these
@@ -735,8 +727,7 @@ namespace thekogans {
             template<>\
             THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_CREATE (_T)\
             template<>\
-            THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_BASE_MAP_INIT (_T)\
-            THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_BASE_FUNCTIONS_T (_T)
+            THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_BASE_MAP_INIT (_T)
 
         /// \def THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_ST(_T, ...)
         /// Dynamic discovery macro for template types that are \see{Singleton}.
@@ -747,8 +738,7 @@ namespace thekogans {
             template<>\
             THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_CREATE_S (_T)\
             template<>\
-            THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_BASE_MAP_INIT (_T)\
-            THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_BASE_FUNCTIONS_T (_T)
+            THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_BASE_MAP_INIT (_T)
 
         // NOTE: THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE[_ST] are just
         // the examples I thought were interesting. There's nothing magical
