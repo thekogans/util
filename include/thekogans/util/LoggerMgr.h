@@ -656,28 +656,28 @@ namespace thekogans {
         #define THEKOGANS_UTIL_LOG_EX(level, file, function, line, buildTime, format, ...)\
             thekogans::util::GlobalLoggerMgr::Instance ()->Log (\
                 thekogans::util::LoggerMgr::SUBSYSTEM_GLOBAL, level,\
-                file, function, line, buildTime, format, __VA_ARGS__);
+                file, function, line, buildTime, format, ##__VA_ARGS__);
         /// \def THEKOGANS_UTIL_LOG(level, format, ...)
         /// Use this macro to bypass the level checking machinery.
         #define THEKOGANS_UTIL_LOG(level, format, ...)\
             thekogans::util::GlobalLoggerMgr::Instance ()->Log (\
                 thekogans::util::LoggerMgr::SUBSYSTEM_GLOBAL, level,\
                 __FILE__, __FUNCTION__, __LINE__,\
-                __DATE__ " " __TIME__, format, __VA_ARGS__);
+                __DATE__ " " __TIME__, format, ##__VA_ARGS__);
         /// \def THEKOGANS_UTIL_LOG_SUBSYSTEM_EX(
         ///          subsystem, level, file, function, line, buildTime, format, ...)
         /// Use this macro to bypass the level checking machinery.
         #define THEKOGANS_UTIL_LOG_SUBSYSTEM_EX(\
                 subsystem, level, file, function, line, buildTime, format, ...)\
             thekogans::util::GlobalLoggerMgr::Instance ()->Log (\
-                subsystem, level, file, function, line, buildTime, format, __VA_ARGS__);
+                subsystem, level, file, function, line, buildTime, format, ##__VA_ARGS__);
         /// \def THEKOGANS_UTIL_LOG_SUBSYSTEM(subsystem, level, format, ...)
         /// Use this macro to bypass the level checking machinery.
         #define THEKOGANS_UTIL_LOG_SUBSYSTEM(subsystem, level, format, ...)\
             thekogans::util::GlobalLoggerMgr::Instance ()->Log (\
                 subsystem, level,\
                 __FILE__, __FUNCTION__, __LINE__,\
-                __DATE__ " " __TIME__, format, __VA_ARGS__);
+                __DATE__ " " __TIME__, format, ##__VA_ARGS__);
 
         /// \def THEKOGANS_UTIL_LOG_ERROR_EX(file, function, line, buildTime, format, ...)
         /// Use this macro to log at level Error.
@@ -687,7 +687,7 @@ namespace thekogans {
                 thekogans::util::GlobalLoggerMgr::Instance ()->Log (\
                     thekogans::util::LoggerMgr::SUBSYSTEM_GLOBAL,\
                     thekogans::util::LoggerMgr::Error,\
-                    file, function, line, buildTime, format, __VA_ARGS__);\
+                    file, function, line, buildTime, format, ##__VA_ARGS__);\
             }
         /// \def THEKOGANS_UTIL_LOG_ERROR(format, ...)
         /// Use this macro to log at level Error.
@@ -698,7 +698,7 @@ namespace thekogans {
                     thekogans::util::LoggerMgr::SUBSYSTEM_GLOBAL,\
                     thekogans::util::LoggerMgr::Error,\
                     __FILE__, __FUNCTION__, __LINE__,\
-                    __DATE__ " " __TIME__, format, __VA_ARGS__);\
+                    __DATE__ " " __TIME__, format, ##__VA_ARGS__);\
             }
         /// \def THEKOGANS_UTIL_LOG_SUBSYSTEM_ERROR_EX(
         ///          subsystem, file, function, line, buildTime, format, ...)
@@ -709,7 +709,7 @@ namespace thekogans {
                     thekogans::util::LoggerMgr::Error) {\
                 thekogans::util::GlobalLoggerMgr::Instance ()->Log (\
                     subsystem, thekogans::util::LoggerMgr::Error,\
-                    file, function, line, buildTime, format, __VA_ARGS__);\
+                    file, function, line, buildTime, format, ##__VA_ARGS__);\
             }
         /// \def THEKOGANS_UTIL_LOG_SUBSYSTEM_ERROR(subsystem, format, ...)
         /// Use this macro to log at level Error.
@@ -719,7 +719,7 @@ namespace thekogans {
                 thekogans::util::GlobalLoggerMgr::Instance ()->Log (\
                     subsystem, thekogans::util::LoggerMgr::Error,\
                     __FILE__, __FUNCTION__, __LINE__,\
-                    __DATE__ " " __TIME__, format, __VA_ARGS__);\
+                    __DATE__ " " __TIME__, format, ##__VA_ARGS__);\
             }
 
         /// \def THEKOGANS_UTIL_LOG_WARNING_EX(file, function, line, buildTime, format, ...)
@@ -730,7 +730,7 @@ namespace thekogans {
                 thekogans::util::GlobalLoggerMgr::Instance ()->Log (\
                     thekogans::util::LoggerMgr::SUBSYSTEM_GLOBAL,\
                     thekogans::util::LoggerMgr::Warning,\
-                    file, function, line, buildTime, format, __VA_ARGS__);\
+                    file, function, line, buildTime, format, ##__VA_ARGS__);\
             }
         /// \def THEKOGANS_UTIL_LOG_WARNING(format, ...)
         /// Use this macro to log at level Warning.
@@ -741,7 +741,7 @@ namespace thekogans {
                     thekogans::util::LoggerMgr::SUBSYSTEM_GLOBAL,\
                     thekogans::util::LoggerMgr::Warning,\
                     __FILE__, __FUNCTION__, __LINE__,\
-                    __DATE__ " " __TIME__, format, __VA_ARGS__);\
+                    __DATE__ " " __TIME__, format, ##__VA_ARGS__);\
             }
         /// \def THEKOGANS_UTIL_LOG_SUBSYSTEM_WARNING_EX(
         ///          subsystem, file, function, line, buildTime, format, ...)
@@ -752,7 +752,7 @@ namespace thekogans {
                     thekogans::util::LoggerMgr::Warning) {\
                 thekogans::util::GlobalLoggerMgr::Instance ()->Log (\
                     subsystem, thekogans::util::LoggerMgr::Warning,\
-                    file, function, line, buildTime, format, __VA_ARGS__);\
+                    file, function, line, buildTime, format, ##__VA_ARGS__);\
             }
         /// \def THEKOGANS_UTIL_LOG_SUBSYSTEM_WARNING(subsystem, format, ...)
         /// Use this macro to log at level Warning.
@@ -762,7 +762,7 @@ namespace thekogans {
                 thekogans::util::GlobalLoggerMgr::Instance ()->Log (\
                     subsystem, thekogans::util::LoggerMgr::Warning,\
                     __FILE__, __FUNCTION__, __LINE__,\
-                    __DATE__ " " __TIME__, format, __VA_ARGS__);\
+                    __DATE__ " " __TIME__, format, ##__VA_ARGS__);\
             }
 
         /// \def THEKOGANS_UTIL_LOG_INFO_EX(file, function, line, buildTime, format, ...)
@@ -773,7 +773,7 @@ namespace thekogans {
                 thekogans::util::GlobalLoggerMgr::Instance ()->Log (\
                     thekogans::util::LoggerMgr::SUBSYSTEM_GLOBAL,\
                     thekogans::util::LoggerMgr::Info,\
-                    file, function, line, buildTime, format, __VA_ARGS__);\
+                    file, function, line, buildTime, format, ##__VA_ARGS__);\
             }
         /// \def THEKOGANS_UTIL_LOG_INFO(format, ...)
         /// Use this macro to log at level Info.
@@ -784,7 +784,7 @@ namespace thekogans {
                     thekogans::util::LoggerMgr::SUBSYSTEM_GLOBAL,\
                     thekogans::util::LoggerMgr::Info,\
                     __FILE__, __FUNCTION__, __LINE__,\
-                    __DATE__ " " __TIME__, format, __VA_ARGS__);\
+                    __DATE__ " " __TIME__, format, ##__VA_ARGS__);\
             }
         /// \def THEKOGANS_UTIL_LOG_SUBSYSTEM_INFO_EX(
         ///          subsystem, file, function, line, buildTime, format, ...)
@@ -795,7 +795,7 @@ namespace thekogans {
                     thekogans::util::LoggerMgr::Info) {\
                 thekogans::util::GlobalLoggerMgr::Instance ()->Log (\
                     subsystem, thekogans::util::LoggerMgr::Info,\
-                    file, function, line, buildTime, format, __VA_ARGS__);\
+                    file, function, line, buildTime, format, ##__VA_ARGS__);\
             }
         /// \def THEKOGANS_UTIL_LOG_SUBSYSTEM_INFO(subsystem, format, ...)
         /// Use this macro to log at level Info.
@@ -805,7 +805,7 @@ namespace thekogans {
                 thekogans::util::GlobalLoggerMgr::Instance ()->Log (\
                     subsystem, thekogans::util::LoggerMgr::Info,\
                     __FILE__, __FUNCTION__, __LINE__,\
-                    __DATE__ " " __TIME__, format, __VA_ARGS__);\
+                    __DATE__ " " __TIME__, format, ##__VA_ARGS__);\
             }
 
         /// \def THEKOGANS_UTIL_LOG_DEBUG_EX(file, function, line, buildTime, format, ...)
@@ -816,7 +816,7 @@ namespace thekogans {
                 thekogans::util::GlobalLoggerMgr::Instance ()->Log (\
                     thekogans::util::LoggerMgr::SUBSYSTEM_GLOBAL,\
                     thekogans::util::LoggerMgr::Debug,\
-                    file, function, line, buildTime, format, __VA_ARGS__);\
+                    file, function, line, buildTime, format, ##__VA_ARGS__);\
             }
         /// \def THEKOGANS_UTIL_LOG_DEBUG(format, ...)
         /// Use this macro to log at level Debug.
@@ -827,7 +827,7 @@ namespace thekogans {
                     thekogans::util::LoggerMgr::SUBSYSTEM_GLOBAL,\
                     thekogans::util::LoggerMgr::Debug,\
                     __FILE__, __FUNCTION__, __LINE__,\
-                    __DATE__ " " __TIME__, format, __VA_ARGS__);\
+                    __DATE__ " " __TIME__, format, ##__VA_ARGS__);\
             }
         /// \def THEKOGANS_UTIL_LOG_SUBSYSTEM_DEBUG_EX(
         ///          subsystem, file, function, line, buildTime, format, ...)
@@ -838,7 +838,7 @@ namespace thekogans {
                     thekogans::util::LoggerMgr::Debug) {\
                 thekogans::util::GlobalLoggerMgr::Instance ()->Log (\
                     subsystem, thekogans::util::LoggerMgr::Debug,\
-                    file, function, line, buildTime, format, __VA_ARGS__);\
+                    file, function, line, buildTime, format, ##__VA_ARGS__);\
             }
         /// \def THEKOGANS_UTIL_LOG_SUBSYSTEM_DEBUG(subsystem, format, ...)
         /// Use this macro to log at level Debug.
@@ -848,7 +848,7 @@ namespace thekogans {
                 thekogans::util::GlobalLoggerMgr::Instance ()->Log (\
                     subsystem, thekogans::util::LoggerMgr::Debug,\
                     __FILE__, __FUNCTION__, __LINE__,\
-                    __DATE__ " " __TIME__, format, __VA_ARGS__);\
+                    __DATE__ " " __TIME__, format, ##__VA_ARGS__);\
             }
 
         /// \def THEKOGANS_UTIL_LOG_DEVELOPMENT_EX(file, function, line, buildTime, format, ...)
@@ -859,7 +859,7 @@ namespace thekogans {
                 thekogans::util::GlobalLoggerMgr::Instance ()->Log (\
                     thekogans::util::LoggerMgr::SUBSYSTEM_GLOBAL,\
                     thekogans::util::LoggerMgr::Development,\
-                    file, function, line, buildTime, format, __VA_ARGS__);\
+                    file, function, line, buildTime, format, ##__VA_ARGS__);\
             }
         /// \def THEKOGANS_UTIL_LOG_DEVELOPMENT(format, ...)
         /// Use this macro to log at level Development.
@@ -870,7 +870,7 @@ namespace thekogans {
                     thekogans::util::LoggerMgr::SUBSYSTEM_GLOBAL,\
                     thekogans::util::LoggerMgr::Development,\
                     __FILE__, __FUNCTION__, __LINE__,\
-                    __DATE__ " " __TIME__, format, __VA_ARGS__);\
+                    __DATE__ " " __TIME__, format, ##__VA_ARGS__);\
             }
         /// \def THEKOGANS_UTIL_LOG_SUBSYSTEM_DEVELOPMENT_EX(
         ///          subsystem, file, function, line, buildTime, format, ...)
@@ -881,7 +881,7 @@ namespace thekogans {
                     thekogans::util::LoggerMgr::Development) {\
                 thekogans::util::GlobalLoggerMgr::Instance ()->Log (\
                     subsystem, thekogans::util::LoggerMgr::Development,\
-                    file, function, line, buildTime, format, __VA_ARGS__);\
+                    file, function, line, buildTime, format, ##__VA_ARGS__);\
             }
         /// \def THEKOGANS_UTIL_LOG_SUBSYSTEM_DEVELOPMENT(subsystem, format, ...)
         /// Use this macro to log at level Development.
@@ -891,7 +891,7 @@ namespace thekogans {
                 thekogans::util::GlobalLoggerMgr::Instance ()->Log (\
                     subsystem, thekogans::util::LoggerMgr::Development,\
                     __FILE__, __FUNCTION__, __LINE__,\
-                    __DATE__ " " __TIME__, format, __VA_ARGS__);\
+                    __DATE__ " " __TIME__, format, ##__VA_ARGS__);\
             }
 
         /// \def THEKOGANS_UTIL_LOG_FLUSH_EX

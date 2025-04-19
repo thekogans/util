@@ -544,7 +544,7 @@ namespace thekogans {
 
         ////////////////////////////////////////////////////////////////////////////////////////
 
-        THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE (thekogans::util::HRTimerMgr, 1, "")
+        THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE (thekogans::util::HRTimerMgr, 1)
 
 
         std::string HRTimerMgr::ToXMLString (

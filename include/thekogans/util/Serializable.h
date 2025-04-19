@@ -239,7 +239,7 @@ namespace thekogans {
         /// } // namespace thekogans
         #define THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE(_T, version, ...)\
             THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE (_T,\
-                thekogans::util::Serializable::TYPE, __VA_ARGS__)\
+                thekogans::util::Serializable::TYPE, ##__VA_ARGS__)\
             THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_OVERRIDE (_T, version)
 
         /// \def THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_S(_T, version, ...)
@@ -247,7 +247,7 @@ namespace thekogans {
         /// in your \see{Singleton} derived class cpp.
         #define THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_S(_T, version, ...)\
             THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_S (_T,\
-                thekogans::util::Serializable::TYPE, __VA_ARGS__)\
+                thekogans::util::Serializable::TYPE, ##__VA_ARGS__)\
             THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_OVERRIDE (_T, version)
 
         /// \def THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_T(_T, version, ...)
@@ -255,7 +255,7 @@ namespace thekogans {
         /// in your template instantiation class cpp.
         #define THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_T(_T, version, ...)\
             THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_T (_T,\
-                thekogans::util::Serializable::TYPE, __VA_ARGS__)\
+                thekogans::util::Serializable::TYPE, ##__VA_ARGS__)\
             THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_OVERRIDE_T (_T, version)
 
         /// \def THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_ST(_T, version, ...)
@@ -263,7 +263,7 @@ namespace thekogans {
         /// in your \see{Singleton},  template instantiation class cpp.
         #define THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_ST(_T, version, ...)\
             THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_S (_T,\
-                thekogans::util::Serializable::TYPE, __VA_ARGS__)\
+                thekogans::util::Serializable::TYPE, ##__VA_ARGS__)\
             THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_OVERRIDE_T (_T, version)
 
         /// \struct Blob Serializable.h thekogans/util/Serializable.h

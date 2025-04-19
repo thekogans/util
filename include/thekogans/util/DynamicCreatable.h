@@ -235,7 +235,7 @@ namespace thekogans {
             THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_Type (_T)\
             THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_BASES_BEGIN (_T)\
                 thekogans::util::DynamicCreatable::TYPE,\
-                __VA_ARGS__,\
+                ##__VA_ARGS__,\
             THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_BASES_END (_T)\
             THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_Bases (_T)
 
@@ -251,7 +251,7 @@ namespace thekogans {
             template<>\
             THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_BASES_BEGIN (_T)\
                 thekogans::util::DynamicCreatable::TYPE,\
-                __VA_ARGS__,\
+                ##__VA_ARGS__,\
             THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_BASES_END (_T)\
             template<>\
             THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_Bases (_T)
@@ -677,7 +677,7 @@ namespace thekogans {
         /// } // namespace util
         /// \endcode
         #define THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE(_T, ...)\
-            THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_OVERRIDE (_T, __VA_ARGS__)\
+            THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_OVERRIDE (_T, ##__VA_ARGS__)\
             THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_CREATE (_T)\
             THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_BASE_MAP_INIT (_T)
 
@@ -704,7 +704,7 @@ namespace thekogans {
         /// ctor parameterization (\see{Singleton::CreateInstance}) more appropriate
         /// for template programming.
         #define THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_S(_T, ...)\
-            THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_OVERRIDE (_T, __VA_ARGS__)\
+            THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_OVERRIDE (_T, ##__VA_ARGS__)\
             THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_CREATE_S (_T)\
             THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_BASE_MAP_INIT (_T)
 
@@ -726,7 +726,7 @@ namespace thekogans {
         /// } // namespace util
         /// \endcode
         #define THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_T(_T, ...)\
-            THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_OVERRIDE_T (_T, __VA_ARGS__)\
+            THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_OVERRIDE_T (_T, ##__VA_ARGS__)\
             template<>\
             THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_CREATE (_T)\
             template<>\
@@ -737,7 +737,7 @@ namespace thekogans {
         /// Instantiate one of these in the class cpp file of the template types
         /// you're specializing.
         #define THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_ST(_T, ...)\
-            THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_OVERRIDE_T (_T, __VA_ARGS__)\
+            THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_OVERRIDE_T (_T, ##__VA_ARGS__)\
             template<>\
             THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_CREATE_S (_T)\
             template<>\

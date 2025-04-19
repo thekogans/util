@@ -744,7 +744,7 @@ namespace thekogans {
             /// the report produced by this HRTimerMgr.
             #define THEKOGANS_UTIL_HRTIMER_MGR(name, ...)\
                 thekogans::util::HRTimerMgr timerMgr (\
-                    thekogans::util::FormatString (name, __VA_ARGS__))
+                    thekogans::util::FormatString (name, ##__VA_ARGS__))
             /// \def THEKOGANS_UTIL_HRTIMER_MGR_ADD_ATTRIBUTE(attribute)
             /// Add an attribute (name, value) to
             /// the HRTimerMgr currently in scope.
@@ -762,7 +762,7 @@ namespace thekogans {
             #define THEKOGANS_UTIL_HRTIMER_MGR_SCOPE(name, ...)\
                 thekogans::util::HRTimerMgr::Scope scope (\
                     timerMgr, timerMgr.GetRootScope (),\
-                    thekogans::util::FormatString (name, __VA_ARGS__))
+                    thekogans::util::FormatString (name, ##__VA_ARGS__))
             /// \def THEKOGANS_UTIL_HRTIMER_MGR_SCOPE_ADD_ATTRIBUTE(attribute)
             /// Add an attribute to the current scope.
             /// \param[in] attribute Attribute to
@@ -775,7 +775,7 @@ namespace thekogans {
             #define THEKOGANS_UTIL_HRTIMER_MGR_TIMER(name, ...)\
                 thekogans::util::HRTimerMgr::Timer timer (\
                     timerMgr, timerMgr.GetRootScope (),\
-                    thekogans::util::FormatString (name, __VA_ARGS__))
+                    thekogans::util::FormatString (name, ##__VA_ARGS__))
             /// \def THEKOGANS_UTIL_HRTIMER_MGR_TIMER_ADD_ATTRIBUTE(attribute)
             /// Add an attribute to the current timer.
             /// \param[in] attribute Attribute to
@@ -790,14 +790,14 @@ namespace thekogans {
             #define THEKOGANS_UTIL_HRTIMER_MGR_SCOPE_SCOPE(name, ...)\
                 thekogans::util::HRTimerMgr::Scope scope (\
                     timerMgr, timerMgr.GetCurrentScope (),\
-                    thekogans::util::FormatString (name, __VA_ARGS__))
+                    thekogans::util::FormatString (name, ##__VA_ARGS__))
             /// \def THEKOGANS_UTIL_HRTIMER_MGR_SCOPE_TIMER(name, ...)
             /// Create a new scope timer.
             /// \param[in] name Name of the new timer.
             #define THEKOGANS_UTIL_HRTIMER_MGR_SCOPE_TIMER(name, ...)\
                 thekogans::util::HRTimerMgr::Timer timer (\
                     timerMgr, timerMgr.GetCurrentScope (),\
-                    thekogans::util::FormatString (name, __VA_ARGS__))
+                    thekogans::util::FormatString (name, ##__VA_ARGS__))
             /// \def THEKOGANS_UTIL_HRTIMER_MGR_PROTO
             /// Use this macro in function prototypes that
             /// take one parameter, namely the HRTimerMgr

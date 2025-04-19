@@ -394,12 +394,12 @@ namespace thekogans {
         #define THEKOGANS_UTIL_EXCEPTION_EX(\
                 file, function, line, buildTime, errorCode, format, ...)\
             thekogans::util::Exception (file, function, line, buildTime,\
-                errorCode, thekogans::util::FormatString (format, __VA_ARGS__))
+                errorCode, thekogans::util::FormatString (format, ##__VA_ARGS__))
         /// \def THEKOGANS_UTIL_EXCEPTION(errorCode, format, ...)
         /// Build an Exception from errorCode and message.
         #define THEKOGANS_UTIL_EXCEPTION(errorCode, format, ...)\
             THEKOGANS_UTIL_EXCEPTION_EX (__FILE__, __FUNCTION__, __LINE__,\
-                __DATE__ " " __TIME__, errorCode, format, __VA_ARGS__)
+                __DATE__ " " __TIME__, errorCode, format, ##__VA_ARGS__)
 
         /// \def THEKOGANS_UTIL_THROW_EXCEPTION_EX(
         ///          file, function, line, buildTime, errorCode, format, ...)
@@ -408,12 +408,12 @@ namespace thekogans {
                 file, function, line, buildTime, errorCode, format, ...)\
             THEKOGANS_UTIL_DEBUG_BREAK\
             throw THEKOGANS_UTIL_EXCEPTION_EX (file, function,\
-                line, buildTime, errorCode, format, __VA_ARGS__)
+                line, buildTime, errorCode, format, ##__VA_ARGS__)
         /// \def THEKOGANS_UTIL_THROW_EXCEPTION(errorCode, format, ...)
         /// Throw an Exception from errorCode and message.
         #define THEKOGANS_UTIL_THROW_EXCEPTION(errorCode, format, ...)\
             THEKOGANS_UTIL_THROW_EXCEPTION_EX (__FILE__, __FUNCTION__,\
-                __LINE__, __DATE__ " " __TIME__, errorCode, format, __VA_ARGS__)
+                __LINE__, __DATE__ " " __TIME__, errorCode, format, ##__VA_ARGS__)
 
         /// \def THEKOGANS_UTIL_STRING_EXCEPTION_EX(
         ///          file, function, line, buildTime, format, ...)
@@ -421,13 +421,13 @@ namespace thekogans {
         #define THEKOGANS_UTIL_STRING_EXCEPTION_EX(\
                 file, function, line, buildTime, format, ...)\
             THEKOGANS_UTIL_EXCEPTION_EX (file, function,\
-                line, buildTime, (THEKOGANS_UTIL_ERROR_CODE)-1, format, __VA_ARGS__)
+                line, buildTime, (THEKOGANS_UTIL_ERROR_CODE)-1, format, ##__VA_ARGS__)
         /// \def THEKOGANS_UTIL_STRING_EXCEPTION(format, ...)
         /// Build an Exception from message.
         #define THEKOGANS_UTIL_STRING_EXCEPTION(format, ...)\
             THEKOGANS_UTIL_STRING_EXCEPTION_EX (\
                 __FILE__, __FUNCTION__, __LINE__,\
-                __DATE__ " " __TIME__, format, __VA_ARGS__)
+                __DATE__ " " __TIME__, format, ##__VA_ARGS__)
 
         /// \def THEKOGANS_UTIL_THROW_STRING_EXCEPTION_EX(
         ///          file, function, line, buildTime, format, ...)
@@ -436,12 +436,12 @@ namespace thekogans {
                 file, function, line, buildTime, format, ...)\
             THEKOGANS_UTIL_DEBUG_BREAK\
             throw THEKOGANS_UTIL_STRING_EXCEPTION_EX (file,\
-                function, line, buildTime, format, __VA_ARGS__)
+                function, line, buildTime, format, ##__VA_ARGS__)
         /// \def THEKOGANS_UTIL_THROW_STRING_EXCEPTION(format, ...)
         /// Throw an Exception from message.
         #define THEKOGANS_UTIL_THROW_STRING_EXCEPTION(format, ...)\
             THEKOGANS_UTIL_THROW_STRING_EXCEPTION_EX (__FILE__, __FUNCTION__,\
-                __LINE__, __DATE__ " " __TIME__, format, __VA_ARGS__)
+                __LINE__, __DATE__ " " __TIME__, format, ##__VA_ARGS__)
 
         /// \def THEKOGANS_UTIL_ERROR_CODE_EXCEPTION_EX(
         ///          file, function, line, buildTime, errorCode)
@@ -585,7 +585,7 @@ namespace thekogans {
             THEKOGANS_UTIL_DEBUG_BREAK\
             throw thekogans::util::Exception (file, function, line, buildTime,\
                 errorCode, thekogans::util::Exception::FromErrorCodeAndMessage (\
-                    errorCode, format, __VA_ARGS__))
+                    errorCode, format, ##__VA_ARGS__))
         /// \def THEKOGANS_UTIL_THROW_ERROR_CODE_AND_MESSAGE_EXCEPTION(
         ///          errorCode, format, ...)
         /// Throw an Exception from system errorCode and a user message.
@@ -593,7 +593,7 @@ namespace thekogans {
                 errorCode, format, ...)\
             THEKOGANS_UTIL_THROW_ERROR_CODE_AND_MESSAGE_EXCEPTION_EX (\
                 __FILE__, __FUNCTION__, __LINE__, __DATE__ " " __TIME__,\
-                errorCode, format, __VA_ARGS__)
+                errorCode, format, ##__VA_ARGS__)
 
     #if defined (TOOLCHAIN_OS_Windows)
         /// \def THEKOGANS_UTIL_THROW_HRESULT_ERROR_CODE_EXCEPTION_EX(
@@ -618,14 +618,14 @@ namespace thekogans {
             THEKOGANS_UTIL_DEBUG_BREAK\
             throw thekogans::util::Exception (file, function, line, buildTime,\
                 errorCode, thekogans::util::Exception::FromHRESULTErrorCodeAndMessage (\
-                    errorCode, format, __VA_ARGS__))
+                    errorCode, format, ##__VA_ARGS__))
         /// \def THEKOGANS_UTIL_THROW_HRESULT_ERROR_CODE_EXCEPTION(errorCode)
         /// Throw an Exception from HRESULT errorCode.
         #define THEKOGANS_UTIL_THROW_HRESULT_ERROR_CODE_AND_MESSAGE_EXCEPTION(\
                 errorCode, format, ...)\
             THEKOGANS_UTIL_THROW_HRESULT_ERROR_CODE_AND_MESSAGE_EXCEPTION_EX (\
                 __FILE__, __FUNCTION__, __LINE__, __DATE__ " " __TIME__,\
-                errorCode, format, __VA_ARGS__)
+                errorCode, format, ##__VA_ARGS__)
     #elif defined (TOOLCHAIN_OS_OSX)
         /// \def THEKOGANS_UTIL_THROW_MACH_ERROR_CODE_EXCEPTION_EX(
         ///          file, function, line, buildTime, errorCode)
@@ -650,7 +650,7 @@ namespace thekogans {
             throw thekogans::util::Exception (file, function, line, buildTime, errorCode,\
                 thekogans::util::FormatString ("%s%s",\
                     mach_error_string (errorCode),\
-                    thekogans::util::FormatString (format, __VA_ARGS__).c_str ()))
+                    thekogans::util::FormatString (format, ##__VA_ARGS__).c_str ()))
         /// \def THEKOGANS_UTIL_THROW_MACH_ERROR_CODE_AND_MESSAGE_EXCEPTION(
         ///          errorCode, format, ...)
         /// Throw an Exception from mach_return_t errorCode.
@@ -658,7 +658,7 @@ namespace thekogans {
                 errorCode, format, ...)\
             THEKOGANS_UTIL_THROW_MACH_ERROR_CODE_AND_MESSAGE_EXCEPTION_EX (\
                 __FILE__, __FUNCTION__, __LINE__, __DATE__ " " __TIME__,\
-                errorCode, format, __VA_ARGS__)
+                errorCode, format, ##__VA_ARGS__)
 
         /// \def THEKOGANS_UTIL_THROW_SEC_OSSTATUS_ERROR_CODE_EXCEPTION_EX(
         ///          file, function, line, buildTime, errorCode)
@@ -683,7 +683,7 @@ namespace thekogans {
             throw thekogans::util::Exception (file, function, line, buildTime, errorCode,\
                 thekogans::util::FormatString ("%s%s",\
                     thekogans::util::os::osx::DescriptionFromSecOSStatus (errorCode).c_str (), \
-                    thekogans::util::FormatString (format, __VA_ARGS__).c_str ()))
+                    thekogans::util::FormatString (format, ##__VA_ARGS__).c_str ()))
         /// \def THEKOGANS_UTIL_THROW_SEC_OSSTATUS_ERROR_CODE_AND_MESSAGE_EXCEPTION(
         ///          errorCode, format, ...)
         /// Throw an Exception from Security framework OSStatus errorCode.
@@ -691,7 +691,7 @@ namespace thekogans {
                 errorCode, format, ...)\
             THEKOGANS_UTIL_THROW_SEC_OSSTATUS_ERROR_CODE_AND_MESSAGE_EXCEPTION_EX (\
                 __FILE__, __FUNCTION__, __LINE__, __DATE__ " " __TIME__,\
-                errorCode, format, __VA_ARGS__)
+                errorCode, format, ##__VA_ARGS__)
 
         /// \def THEKOGANS_UTIL_THROW_OSSTATUS_ERROR_CODE_EXCEPTION_EX(
         ///          file, function, line, buildTime, errorCode)
@@ -716,7 +716,7 @@ namespace thekogans {
             throw thekogans::util::Exception (file, function, line, buildTime, errorCode,\
                 thekogans::util::FormatString ("%s%s",\
                     thekogans::util::os::osx::DescriptionFromOSStatus (errorCode).c_str (), \
-                    thekogans::util::FormatString (format, __VA_ARGS__).c_str ()))
+                    thekogans::util::FormatString (format, ##__VA_ARGS__).c_str ()))
         /// \def THEKOGANS_UTIL_THROW_OSSTATUS_ERROR_CODE_AND_MESSAGE_EXCEPTION(
         ///          errorCode, format, ...)
         /// Throw an Exception from OSStatus errorCode.
@@ -724,7 +724,7 @@ namespace thekogans {
                 errorCode, format, ...)\
             THEKOGANS_UTIL_THROW_OSSTATUS_ERROR_CODE_AND_MESSAGE_EXCEPTION_EX (\
                 __FILE__, __FUNCTION__, __LINE__, __DATE__ " " __TIME__,\
-                errorCode, format, __VA_ARGS__)
+                errorCode, format, ##__VA_ARGS__)
 
         /// \def THEKOGANS_UTIL_THROW_CFERRORREF_EXCEPTION_EX(
         ///          file, function, line, buildTime, error)
@@ -750,7 +750,7 @@ namespace thekogans {
             throw thekogans::util::Exception (file, function, line, buildTime, CFErrorGetCode (error),\
                 thekogans::util::FormatString ("%s%s",\
                     thekogans::util::os::osx::DescriptionFromCFErrorRef (error).c_str (), \
-                    thekogans::util::FormatString (format, __VA_ARGS__).c_str ()))
+                    thekogans::util::FormatString (format, ##__VA_ARGS__).c_str ()))
         /// \def THEKOGANS_UTIL_THROW_CFERRORREF_AND_MESSAGE_EXCEPTION(
         ///          errorCode, format, ...)
         /// Throw an Exception from CFErrorRef error.
@@ -758,7 +758,7 @@ namespace thekogans {
                 error, format, ...)\
             THEKOGANS_UTIL_THROW_CFERRORREF_AND_MESSAGE_EXCEPTION_EX (\
                 __FILE__, __FUNCTION__, __LINE__, __DATE__ " " __TIME__,\
-                error, format, __VA_ARGS__)
+                error, format, ##__VA_ARGS__)
 
         /// \def THEKOGANS_UTIL_THROW_IORETURN_EXCEPTION_EX(
         ///          file, function, line, buildTime, error)
@@ -783,7 +783,7 @@ namespace thekogans {
             throw thekogans::util::Exception (file, function, line, buildTime, error,\
                 thekogans::util::FormatString ("%s%s",\
                     thekogans::util::os::osx::DescriptionFromIOReturn (error).c_str (), \
-                    thekogans::util::FormatString (format, __VA_ARGS__).c_str ()))
+                    thekogans::util::FormatString (format, ##__VA_ARGS__).c_str ()))
         /// \def THEKOGANS_UTIL_THROW_IORETURN_AND_MESSAGE_EXCEPTION(
         ///          errorCode, format, ...)
         /// Throw an Exception from Ioreturn error.
@@ -791,7 +791,7 @@ namespace thekogans {
                 error, format, ...)\
             THEKOGANS_UTIL_THROW_IORETURN_AND_MESSAGE_EXCEPTION_EX (\
                 __FILE__, __FUNCTION__, __LINE__, __DATE__ " " __TIME__,\
-                error, format, __VA_ARGS__)
+                error, format, ##__VA_ARGS__)
 
         /// \def THEKOGANS_UTIL_THROW_SC_ERROR_CODE_EXCEPTION_EX(
         ///          file, function, line, buildTime, errorCode)
@@ -816,7 +816,7 @@ namespace thekogans {
             throw thekogans::util::Exception (file, function, line, buildTime, errorCode,\
                 thekogans::util::FormatString ("%s%s",\
                     SCErrorString (errorCode),\
-                    thekogans::util::FormatString (format, __VA_ARGS__).c_str ()))
+                    thekogans::util::FormatString (format, ##__VA_ARGS__).c_str ()))
         /// \def THEKOGANS_UTIL_THROW_SC_ERROR_CODE_AND_MESSAGE_EXCEPTION(
         ///          errorCode, format, ...)
         /// Throw an Exception from SCError errorCode.
@@ -824,7 +824,7 @@ namespace thekogans {
                 errorCode, format, ...)\
             THEKOGANS_UTIL_THROW_SC_ERROR_CODE_AND_MESSAGE_EXCEPTION_EX (\
                 __FILE__, __FUNCTION__, __LINE__, __DATE__ " " __TIME__,\
-                errorCode, format, __VA_ARGS__)
+                errorCode, format, ##__VA_ARGS__)
     #endif // defined (TOOLCHAIN_OS_Windows)
 
         /// \def THEKOGANS_UTIL_THROW_POSIX_ERROR_CODE_EXCEPTION_EX(
@@ -849,14 +849,14 @@ namespace thekogans {
             THEKOGANS_UTIL_DEBUG_BREAK\
             throw thekogans::util::Exception (file, function, line, buildTime,\
                 errorCode, thekogans::util::Exception::FromPOSIXErrorCodeAndMessage (\
-                    errorCode, format, __VA_ARGS__))
+                    errorCode, format, ##__VA_ARGS__))
         /// \def THEKOGANS_UTIL_THROW_POSIX_ERROR_CODE_AND_MESSAGE_EXCEPTION(errorCode)
         /// Throw an Exception from POSIX errorCode.
         #define THEKOGANS_UTIL_THROW_POSIX_ERROR_CODE_AND_MESSAGE_EXCEPTION(\
                 errorCode, format, ...)\
             THEKOGANS_UTIL_THROW_POSIX_ERROR_CODE_AND_MESSAGE_EXCEPTION_EX (\
                 __FILE__, __FUNCTION__, __LINE__, __DATE__ " " __TIME__,\
-                errorCode, format, __VA_ARGS__)
+                errorCode, format, ##__VA_ARGS__)
 
         /// \def THEKOGANS_UTIL_EXCEPTION_NOTE_LOCATION_EX(exception)
         /// Use this macro to note a location in the exception traceback.
@@ -927,20 +927,20 @@ namespace thekogans {
                     THEKOGANS_UTIL_DEBUG_BREAK\
                     THEKOGANS_UTIL_EXCEPTION_NOTE_LOCATION (exception);\
                     THEKOGANS_UTIL_LOG_ERROR ("%s\n%s\n",\
-                        thekogans::util::FormatString (format, __VA_ARGS__).c_str (),\
+                        thekogans::util::FormatString (format, ##__VA_ARGS__).c_str (),\
                         exception.Report ().c_str ());\
                 }\
             }\
             THEKOGANS_UTIL_CATCH (std::exception) {\
                 THEKOGANS_UTIL_DEBUG_BREAK\
                 THEKOGANS_UTIL_LOG_ERROR ("%s\n%s\n",\
-                    thekogans::util::FormatString (format, __VA_ARGS__).c_str (),\
+                    thekogans::util::FormatString (format, ##__VA_ARGS__).c_str (),\
                     exception.what ());\
             }\
             THEKOGANS_UTIL_CATCH_ANY {\
                 THEKOGANS_UTIL_DEBUG_BREAK\
                 THEKOGANS_UTIL_LOG_ERROR ("%s\n%s\n",\
-                    thekogans::util::FormatString (format, __VA_ARGS__).c_str (),\
+                    thekogans::util::FormatString (format, ##__VA_ARGS__).c_str (),\
                     "Caught unknown exception!");\
             }
         /// \def THEKOGANS_UTIL_CATCH_AND_LOG_SUBSYSTEM(subsystem)
@@ -972,20 +972,20 @@ namespace thekogans {
                     THEKOGANS_UTIL_DEBUG_BREAK\
                     THEKOGANS_UTIL_EXCEPTION_NOTE_LOCATION (exception);\
                     THEKOGANS_UTIL_LOG_SUBSYSTEM_ERROR (subsystem, "%s\n%s\n",\
-                        thekogans::util::FormatString (format, __VA_ARGS__).c_str (),\
+                        thekogans::util::FormatString (format, ##__VA_ARGS__).c_str (),\
                         exception.Report ().c_str ());\
                 }\
             }\
             THEKOGANS_UTIL_CATCH (std::exception) {\
                 THEKOGANS_UTIL_DEBUG_BREAK\
                 THEKOGANS_UTIL_LOG_SUBSYSTEM_ERROR (subsystem, "%s\n%s\n",\
-                    thekogans::util::FormatString (format, __VA_ARGS__).c_str (),\
+                    thekogans::util::FormatString (format, ##__VA_ARGS__).c_str (),\
                     exception.what ());\
             }\
             THEKOGANS_UTIL_CATCH_ANY {\
                 THEKOGANS_UTIL_DEBUG_BREAK\
                 THEKOGANS_UTIL_LOG_SUBSYSTEM_ERROR (subsystem, "%s\n%s\n",\
-                    thekogans::util::FormatString (format, __VA_ARGS__).c_str (),\
+                    thekogans::util::FormatString (format, ##__VA_ARGS__).c_str (),\
                     "Caught unknown exception!");\
             }
 
@@ -1016,7 +1016,7 @@ namespace thekogans {
                 if (thekogans::util::Exception::FilterException (exception)) {\
                     THEKOGANS_UTIL_DEBUG_BREAK\
                     THEKOGANS_UTIL_LOG_ERROR ("%s\n%s\n",\
-                        thekogans::util::FormatString (format, __VA_ARGS__).c_str (),\
+                        thekogans::util::FormatString (format, ##__VA_ARGS__).c_str (),\
                         exception.Report ().c_str ());\
                     THEKOGANS_UTIL_RETHROW_EXCEPTION (exception);\
                 }\
@@ -1024,14 +1024,14 @@ namespace thekogans {
             THEKOGANS_UTIL_CATCH (std::exception) {\
                 THEKOGANS_UTIL_DEBUG_BREAK\
                 THEKOGANS_UTIL_LOG_ERROR ("%s\n%s\n",\
-                    thekogans::util::FormatString (format, __VA_ARGS__).c_str (),\
+                    thekogans::util::FormatString (format, ##__VA_ARGS__).c_str (),\
                     exception.what ());\
                 throw;\
             }\
             THEKOGANS_UTIL_CATCH_ANY {\
                 THEKOGANS_UTIL_DEBUG_BREAK\
                 THEKOGANS_UTIL_LOG_ERROR ("%s\n%s\n",\
-                    thekogans::util::FormatString (format, __VA_ARGS__).c_str (),\
+                    thekogans::util::FormatString (format, ##__VA_ARGS__).c_str (),\
                     "Caught unknown exception!");\
                 throw;\
             }
@@ -1065,7 +1065,7 @@ namespace thekogans {
                 if (thekogans::util::Exception::FilterException (exception)) {\
                     THEKOGANS_UTIL_DEBUG_BREAK\
                     THEKOGANS_UTIL_LOG_SUBSYSTEM_ERROR (subsystem, "%s\n%s\n",\
-                        thekogans::util::FormatString (format, __VA_ARGS__).c_str (),\
+                        thekogans::util::FormatString (format, ##__VA_ARGS__).c_str (),\
                         exception.Report ().c_str ());\
                     THEKOGANS_UTIL_RETHROW_EXCEPTION (exception);\
                 }\
@@ -1073,14 +1073,14 @@ namespace thekogans {
             THEKOGANS_UTIL_CATCH (std::exception) {\
                 THEKOGANS_UTIL_DEBUG_BREAK\
                 THEKOGANS_UTIL_LOG_SUBSYSTEM_ERROR (subsystem, "%s\n%s\n",\
-                    thekogans::util::FormatString (format, __VA_ARGS__).c_str (),\
+                    thekogans::util::FormatString (format, ##__VA_ARGS__).c_str (),\
                     exception.what ());\
                 throw;\
             }\
             THEKOGANS_UTIL_CATCH_ANY {\
                 THEKOGANS_UTIL_DEBUG_BREAK\
                 THEKOGANS_UTIL_LOG_SUBSYSTEM_ERROR (subsystem, "%s\n%s\n",\
-                    thekogans::util::FormatString (format, __VA_ARGS__).c_str (),\
+                    thekogans::util::FormatString (format, ##__VA_ARGS__).c_str (),\
                     "Caught unknown exception!");\
                 throw;\
             }
@@ -1100,7 +1100,7 @@ namespace thekogans {
                 THEKOGANS_UTIL_DEBUG_BREAK\
                 THEKOGANS_UTIL_EXCEPTION_NOTE_LOCATION (exception);\
                 THEKOGANS_UTIL_LOG_ERROR ("%s\n%s\n",\
-                    thekogans::util::FormatString (format, __VA_ARGS__).c_str (),\
+                    thekogans::util::FormatString (format, ##__VA_ARGS__).c_str (),\
                     exception.Report ().c_str ());\
             }
         /// \def THEKOGANS_UTIL_LOG_SUBSYSTEM_EXCEPTION(subsystem, exception)
@@ -1119,7 +1119,7 @@ namespace thekogans {
                 THEKOGANS_UTIL_DEBUG_BREAK\
                 THEKOGANS_UTIL_EXCEPTION_NOTE_LOCATION (exception);\
                 THEKOGANS_UTIL_LOG_SUBSYSTEM_ERROR (subsystem, "%s\n%s\n",\
-                    thekogans::util::FormatString (format, __VA_ARGS__).c_str (),\
+                    thekogans::util::FormatString (format, ##__VA_ARGS__).c_str (),\
                     exception.Report ().c_str ());\
             }
 

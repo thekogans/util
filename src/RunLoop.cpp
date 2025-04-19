@@ -243,7 +243,7 @@ namespace thekogans {
             object.Add (ATTR_TOTAL_TIME, totalTime);
         }
 
-        THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE (thekogans::util::RunLoop::Stats, 1, "")
+        THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE (thekogans::util::RunLoop::Stats, 1)
 
         RunLoop::Stats &RunLoop::Stats::operator = (const Stats &stats) {
             if (&stats != this) {

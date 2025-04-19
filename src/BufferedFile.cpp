@@ -461,7 +461,7 @@ namespace thekogans {
                 }
                 else {
                     THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                        "%s", "Nested transactions are not supported.");
+                        "Nested transactions are not supported.");
                 }
             }
             else {
