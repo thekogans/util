@@ -310,7 +310,7 @@ namespace thekogans {
                     if (result != Z_OK) {
                         if (zStream.msg != 0) {
                             THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                                "%s", zStream.msg);
+                                zStream.msg);
                         }
                         else {
                             THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
@@ -352,7 +352,7 @@ namespace thekogans {
                 if (result != Z_OK) {
                     if (zStream.msg != 0) {
                         THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                            "%s", zStream.msg);
+                            zStream.msg);
                     }
                     else {
                         THEKOGANS_UTIL_THROW_STRING_EXCEPTION (

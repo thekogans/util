@@ -284,7 +284,7 @@ namespace thekogans {
             }
             else {
                 THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                    "%s", "Empty path attribute in plugin.");
+                    "Empty path attribute in plugin.");
             }
         }
 

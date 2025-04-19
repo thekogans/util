@@ -51,10 +51,7 @@ namespace thekogans {
                 const char *type,
                 FactoryType factory) {
             while (*bases != nullptr) {
-                if (**bases != '\0') {
-                    (*BaseMap::Instance ())[*bases][type] = factory;
-                }
-                ++bases;
+                (*BaseMap::Instance ())[*bases++][type] = factory;
             }
         }
     #endif // defined (THEKOGANS_UTIL_TYPE_Static)
@@ -67,10 +64,9 @@ namespace thekogans {
                 }
                 const char * const *bases = Bases ();
                 while (*bases != nullptr) {
-                    if (**bases != '\0' && compare (base, *bases)) {
+                    if (compare (base, *bases++)) {
                         return true;
                     }
-                    ++bases;
                 }
             }
             return false;

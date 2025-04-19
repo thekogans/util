@@ -133,7 +133,7 @@ namespace thekogans {
             }
             else {
                 THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                    "%s", "Iterator is not pointing to a valid entry.");
+                    "Iterator is not pointing to a valid entry.");
             }
         }
 
@@ -143,7 +143,7 @@ namespace thekogans {
             }
             else {
                 THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                    "%s", "Iterator is not pointing to a valid entry.");
+                    "Iterator is not pointing to a valid entry.");
             }
         }
 
@@ -156,7 +156,7 @@ namespace thekogans {
                 }
                 else {
                     THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                        "%s", "Iterator is not pointing to a valid entry.");
+                        "Iterator is not pointing to a valid entry.");
                 }
             }
             else {

@@ -82,7 +82,7 @@ namespace thekogans {
             }
             else {
                 THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                    "%s", "BitSet is empty.");
+                    "BitSet is empty.");
             }
         }
 
@@ -92,7 +92,7 @@ namespace thekogans {
             }
             else {
                 THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                    "%s", "BitSet is empty.");
+                    "BitSet is empty.");
             }
         }
 
@@ -218,7 +218,7 @@ namespace thekogans {
             }
             else {
                 THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                    "%s", "BitSet is empty.");
+                    "BitSet is empty.");
             }
         }
 
@@ -240,7 +240,7 @@ namespace thekogans {
             }
             else {
                 THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                    "%s", "BitSet is empty.");
+                    "BitSet is empty.");
             }
         }
 

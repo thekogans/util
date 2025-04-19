@@ -161,7 +161,7 @@ namespace thekogans {
                     }
                     else {
                         THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                            "%s", "No connections to Xlib server found.");
+                            "No connections to Xlib server found.");
                     }
                 }
 

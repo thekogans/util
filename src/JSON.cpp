@@ -85,7 +85,7 @@ namespace thekogans {
                     }
                     else {
                         THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                            "%s", "Array contains non string values.");
+                            "Array contains non string values.");
                     }
                 }
                 return str;
@@ -350,7 +350,7 @@ namespace thekogans {
                                 }
                                 else {
                                     THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                                        "%s", "Missing '\"'.");
+                                        "Missing '\"'.");
                                 }
                                 return Token (Token::TYPE_STRING, value);
                             }
@@ -486,7 +486,7 @@ namespace thekogans {
                         }
                         else {
                             THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                                "%s", "Expecting value.");
+                                "Expecting value.");
                         }
                     }
                     Token token = tokenizer.GetToken ();
@@ -538,7 +538,7 @@ namespace thekogans {
                                 }
                                 else {
                                     THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                                        "%s", "Expecting value.");
+                                        "Expecting value.");
                                 }
                             }
                             else {

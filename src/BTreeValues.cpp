@@ -28,7 +28,10 @@ namespace thekogans {
             thekogans::util::PtrValue,
             1,
             BTree::Value::TYPE)
-        //THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE (thekogans::util::GUIDListValue, 1)
+        //THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE (
+        //    thekogans::util::GUIDListValue,
+        //    1,
+        //    BTree::Value::TYPE)
 
     } // namespace util
 } // namespace thekogans

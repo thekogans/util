@@ -401,7 +401,7 @@ namespace thekogans {
             /// Close file.
             virtual void Close () override {
                 THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                    "%s", "TenantFile is not allowed to close the file.");
+                    "TenantFile is not allowed to close the file.");
             }
 
             /// \brief

@@ -101,7 +101,7 @@ namespace thekogans {
                 "Message: " + XMLChTostring (exception.getMessage ()) + "\n";
             THEKOGANS_UTIL_LOG_SUBSYSTEM_WARNING (
                 THEKOGANS_UTIL,
-                "%s", message.c_str ());
+                message.c_str ());
         }
 
         void XercesErrorHandler::error (
@@ -111,7 +111,7 @@ namespace thekogans {
                 "Line: " + XMLFileLocTostring (exception.getLineNumber ()) + "\n" +
                 "Char: " + XMLFileLocTostring (exception.getColumnNumber ()) + "\n" +
                 "Message: " + XMLChTostring (exception.getMessage ()) + "\n";
-            THEKOGANS_UTIL_THROW_STRING_EXCEPTION ("%s", message.c_str ());
+            THEKOGANS_UTIL_THROW_STRING_EXCEPTION (message.c_str ());
         }
 
         void XercesErrorHandler::fatalError (
@@ -121,7 +121,7 @@ namespace thekogans {
                 "Line: " + XMLFileLocTostring (exception.getLineNumber ()) + "\n" +
                 "Char: " + XMLFileLocTostring (exception.getColumnNumber ()) + "\n" +
                 "Message: " + XMLChTostring (exception.getMessage ()) + "\n";
-            THEKOGANS_UTIL_THROW_STRING_EXCEPTION ("%s", message.c_str ());
+            THEKOGANS_UTIL_THROW_STRING_EXCEPTION (message.c_str ());
         }
 
     } // namespace util

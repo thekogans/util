@@ -521,7 +521,7 @@ namespace thekogans {
                 }
                 else {
                     THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                        "%s", "No open transaction to commit.");
+                        "No open transaction to commit.");
                 }
             }
             else {
@@ -546,7 +546,7 @@ namespace thekogans {
                 }
                 else {
                     THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                        "%s", "No open transaction to abort.");
+                        "No open transaction to abort.");
                 }
             }
             else {

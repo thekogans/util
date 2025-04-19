@@ -585,11 +585,9 @@ namespace thekogans {
             void _T::StaticInit () {\
                 const char * const *bases = _T::BASES;\
                 while (*bases != nullptr) {\
-                    if (**bases != '\0') {\
-                        (*thekogans::util::DynamicCreatable::BaseMap::Instance ())[\
-                            *bases][_T::TYPE] = _T::Create;\
+                    (*thekogans::util::DynamicCreatable::BaseMap::Instance ())[\
+                        *bases++][_T::TYPE] = _T::Create;\
                     }\
-                    ++bases;\
                 }\
             }
     #else // defined (THEKOGANS_UTIL_TYPE_Static)

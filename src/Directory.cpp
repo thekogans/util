@@ -1132,7 +1132,7 @@ namespace thekogans {
                     }
                     else {
                         THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                            "%s", "Empty directory entry");
+                            "Empty directory entry.");
                     }
                 }
             }

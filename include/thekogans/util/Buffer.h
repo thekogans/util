@@ -663,7 +663,7 @@ namespace thekogans {
                     std::size_t /*count*/) override {
                 assert (0);
                 THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                    "%s", "TenantReadBuffer can't Write.");
+                    "TenantReadBuffer can't Write.");
                 return -1;
             }
         };

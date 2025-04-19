@@ -273,7 +273,7 @@ namespace thekogans {
                     }
                     else {
                         THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                            "%s", "hexBuffer is not a hex encoded buffer.");
+                            "hexBuffer is not a hex encoded buffer.");
                     }
                 }
                 return length / 2;
