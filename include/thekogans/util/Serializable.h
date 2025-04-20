@@ -201,9 +201,9 @@ namespace thekogans {
         /// \def THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_OVERRIDE(_T, version)
         /// Serializable overrides.
         #define THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_OVERRIDE_T(_T, version)\
-            templeate<>\
+            template<>\
             THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_VERSION(_T, version)\
-            templeate<>\
+            template<>\
             THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_Version(_T)
 
         /// \def THEKOGANS_UTIL_DECLARE_SERIALIZABLE(_T)

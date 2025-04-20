@@ -595,7 +595,6 @@ namespace thekogans {
                 while (*bases != nullptr) {\
                     (*thekogans::util::DynamicCreatable::BaseMap::Instance ())[\
                         *bases++][_T::TYPE] = _T::Create;\
-                    }\
                 }\
             }
     #else // defined (THEKOGANS_UTIL_TYPE_Static)

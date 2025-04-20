@@ -22,7 +22,7 @@ namespace thekogans {
 
         THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE (thekogans::util::StringValue, 1, BTree::Value::TYPE)
         THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE (thekogans::util::PtrValue, 1, BTree::Value::TYPE)
-        THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE (thekogans::util::GUIDArrayValue, 1, BTree::Value::TYPE)
+        THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_T (thekogans::util::GUIDArrayValue, 1, BTree::Value::TYPE)
 
     } // namespace util
 } // namespace thekogans
