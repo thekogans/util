@@ -562,8 +562,14 @@ namespace thekogans {
             /// the given base and this type using *_DECLARE_* and
             /// *_IMPLEMENT_* macros defined below. Actual inheritance
             /// has nothing to do with it.
+            /// \param[in] base Type to check for base.
             /// \return true == this type is derived from the given base.
             bool IsDerivedFrom (const char *base) const noexcept;
+            /// \brief
+            /// Return true if this is type of type or is derived from type.
+            /// See the comment for IsDerivedFrom.
+            /// \param[in] type Type to check for kind.
+            /// \return TYPE == type or IsDerivedFrom (type).
             bool IsKindOf (const char *type) const noexcept;
 
             /// \brief

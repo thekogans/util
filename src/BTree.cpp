@@ -81,6 +81,7 @@ namespace thekogans {
         void BTree::Value::StaticInit () {
             StringValue::StaticInit ();
             PtrValue::StaticInit ();
+            GUIDArrayValue::StaticInit ();
         }
     #endif // defined (THEKOGANS_UTIL_TYPE_Static)
 

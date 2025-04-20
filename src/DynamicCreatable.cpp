@@ -58,23 +58,16 @@ namespace thekogans {
 
         bool DynamicCreatable::IsDerivedFrom (const char *base) const noexcept {
             if (base != nullptr) {
-                CharPtrEqual compare;
-                const char * const *bases = Bases ();
-                while (*bases != nullptr) {
-                    if (compare (base, *bases++)) {
-                        return true;
-                    }
-                }
+                BaseMapType::const_iterator it = BaseMap::Instance ()->find (base);
+                return it != BaseMap::Instance ()->end () &&
+                    it->second.find (Type ()) != it->second.end ();
             }
             return false;
         }
 
         bool DynamicCreatable::IsKindOf (const char *type) const noexcept {
-            if (type != nullptr) {
-                CharPtrEqual compare;
-                return compare (type, Type ()) || IsDerivedFrom (type);
-            }
-            return false;
+            CharPtrEqual compare;
+            return type != nullptr && (compare (type, Type ()) || IsDerivedFrom (type));
         }
 
         void DynamicCreatable::DumpBaseMap (const char *base) {
