@@ -95,7 +95,7 @@ namespace thekogans {
 
             /// \brief
             /// ctor.
-            /// \param[in] str_ std::ptr to initialize this value with.
+            /// \param[in] value_ FileAllocator::PtrType to initialize this value with.
             PtrValue (FileAllocator::PtrType value_ = 0) :
                 value (value_) {}
 
@@ -138,18 +138,23 @@ namespace thekogans {
         template<typename T>
         struct _LIB_THEKOGANS_UTIL_DECL ArrayValue : public BTree::Value {
             /// \brief
-            /// GUIDListValue is a \see{Serializable}.
+            /// ArrayValue is a \see{Serializable}.
             THEKOGANS_UTIL_DECLARE_SERIALIZABLE (ArrayValue)
 
             /// \brief
-            /// The actual list.
+            /// The actual array.
             std::vector<T> value;
 
             /// \brief
             /// ctor.
-            /// \param[in] str_ std::ptr to initialize this value with.
+            /// \param[in] value_ Value to initialize with.
             ArrayValue (const std::vector<T> &value_ = std::vector<T> {}) :
                 value (value_) {}
+            /// \brief
+            /// ctor.
+            /// \param[in] value_ Value to initialize with.
+            ArrayValue (const T &value_) :
+                value {value_} {}
 
             // BTree::Value
             /// \brief
@@ -184,9 +189,10 @@ namespace thekogans {
             }
         };
 
+        using StringArrayValue = ArrayValue<std::string>;
         using GUIDArrayValue = ArrayValue<GUID>;
 
     } // namespace util
 } // namespace thekogans
 
-#endif // !defined (__thekogans_util_BTree_h)
+#endif // !defined (__thekogans_util_BTreeValues_h)

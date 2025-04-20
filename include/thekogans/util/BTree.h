@@ -236,7 +236,7 @@ namespace thekogans {
             ///     btree.Delete (*keys[i]);
             /// }
             /// \endcode
-            struct Iterator {
+            struct _LIB_THEKOGANS_UTIL_DECL Iterator {
             protected:
                 /// \brief
                 /// Prefix to iterate over (nullptr == entire tree).
