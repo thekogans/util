@@ -21,10 +21,8 @@
 #include <string>
 #include <vector>
 #include "thekogans/util/Config.h"
-#include "thekogans/util/Types.h"
 #include "thekogans/util/GUID.h"
-#include "thekogans/util/StringUtils.h"
-#include "thekogans/util/Serializable.h"
+#include "thekogans/util/FileAllocator.h"
 #include "thekogans/util/BTree.h"
 
 namespace thekogans {
@@ -150,7 +148,7 @@ namespace thekogans {
             /// \brief
             /// ctor.
             /// \param[in] str_ std::ptr to initialize this value with.
-            ArrayValue (const std::vector<T> &value_ = std::vector<T> ()) :
+            ArrayValue (const std::vector<T> &value_ = std::vector<T> {}) :
                 value (value_) {}
 
             // BTree::Value
@@ -158,7 +156,7 @@ namespace thekogans {
             /// This method is only used in Dump for debugging purposes.
             /// \return String representation of the value.
             virtual std::string ToString () const {
-                return FormatString ("ArrayValue<%s>", TYPE);
+                return TYPE;
             }
 
             // Serializable
@@ -185,6 +183,8 @@ namespace thekogans {
                 serializer << value;
             }
         };
+
+        using GUIDArrayValue = ArrayValue<GUID>;
 
     } // namespace util
 } // namespace thekogans

@@ -509,24 +509,24 @@ namespace thekogans {
                 Node *right = Alloc (btree);
                 Split (right);
                 ui32 splitIndex = btree.header.entriesPerNode / 2;
-                if (index < splitIndex) {
-                    InsertEntry (entry, index);
-                    if (it.IsFinished ()) {
-                        it.prefix.Reset (entries[index].key);
-                        it.node = Iterator::NodeIndex (this, index);
-                        it.finished = false;
-                    }
-                }
-                else if (index > splitIndex) {
-                    right->InsertEntry (entry, index - splitIndex);
-                    if (it.IsFinished ()) {
-                        it.prefix.Reset (entries[index - splitIndex].key);
-                        // -1 because we will be removing the 0'th entry below.
-                        it.node = Iterator::NodeIndex (right, index - splitIndex - 1);
-                        it.finished = false;
-                    }
-                }
                 if (index != splitIndex) {
+                    if (index < splitIndex) {
+                        InsertEntry (entry, index);
+                        if (it.IsFinished ()) {
+                            it.prefix.Reset (entries[index].key);
+                            it.node = Iterator::NodeIndex (this, index);
+                            it.finished = false;
+                        }
+                    }
+                    else {
+                        right->InsertEntry (entry, index - splitIndex);
+                        if (it.IsFinished ()) {
+                            it.prefix.Reset (entries[index - splitIndex].key);
+                            // -1 because we will be removing the 0'th entry below.
+                            it.node = Iterator::NodeIndex (right, index - splitIndex - 1);
+                            it.finished = false;
+                        }
+                    }
                     entry = right->entries[0];
                     right->RemoveEntry (0);
                 }
@@ -799,95 +799,120 @@ namespace thekogans {
         bool BTree::Find (
                 const Key &key,
                 Iterator &it) {
-            it.Clear ();
-            LockGuard<SpinLock> guard (spinLock);
-            ui32 index = 0;
-            for (Node *node = root; node != nullptr; node = node->GetChild (index)) {
-                if (node->Find (key, index)) {
-                    it.prefix.Reset (node->entries[index].key);
-                    it.node = Iterator::NodeIndex (node, index);
-                    it.finished = false;
-                    break;
+            if (key.IsKindOf (header.keyType.c_str ())) {
+                it.Clear ();
+                LockGuard<SpinLock> guard (spinLock);
+                ui32 index = 0;
+                for (Node *node = root; node != nullptr; node = node->GetChild (index)) {
+                    if (node->Find (key, index)) {
+                        it.prefix.Reset (node->entries[index].key);
+                        it.node = Iterator::NodeIndex (node, index);
+                        it.finished = false;
+                        break;
+                    }
                 }
+                return !it.finished;
             }
-            return !it.finished;
+            else {
+                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
+            }
         }
 
         bool BTree::Insert (
                 Key::SharedPtr key,
                 Value::SharedPtr value,
                 Iterator &it) {
-            it.Clear ();
-            LockGuard<SpinLock> guard (spinLock);
-            Node::Entry entry (key.Get (), value.Get ());
-            Node::InsertResult result = root->Insert (entry, it);
-            if (result == Node::Overflow) {
-                // The path to the leaf node is full.
-                // Create a new root node and make the entry
-                // its first.
-                Node *node = Node::Alloc (*this);
-                node->leftOffset = root->offset;
-                node->leftNode = root;
-                node->InsertEntry (entry, 0);
-                if (it.IsFinished ()) {
-                    it.prefix.Reset (node->entries[0].key);
-                    it.node = Iterator::NodeIndex (node, 0);
-                    it.finished = false;
+            if (key->IsKindOf (header.keyType.c_str ()) &&
+                    value->IsKindOf (header.valueType.c_str ())) {
+                it.Clear ();
+                LockGuard<SpinLock> guard (spinLock);
+                Node::Entry entry (key.Get (), value.Get ());
+                Node::InsertResult result = root->Insert (entry, it);
+                if (result == Node::Overflow) {
+                    // The path to the leaf node is full.
+                    // Create a new root node and make the entry
+                    // its first.
+                    Node *node = Node::Alloc (*this);
+                    node->leftOffset = root->offset;
+                    node->leftNode = root;
+                    node->InsertEntry (entry, 0);
+                    if (it.IsFinished ()) {
+                        it.prefix.Reset (node->entries[0].key);
+                        it.node = Iterator::NodeIndex (node, 0);
+                        it.finished = false;
+                    }
+                    node->Save ();
+                    SetRoot (node);
+                    result = Node::Inserted;
                 }
-                node->Save ();
-                SetRoot (node);
-                result = Node::Inserted;
+                // If we inserted the key/value pair, take ownership.
+                if (result == Node::Inserted) {
+                    key.Release ();
+                    value.Release ();
+                }
+                return result == Node::Inserted;
             }
-            // If we inserted the key/value pair, take ownership.
-            if (result == Node::Inserted) {
-                key.Release ();
-                value.Release ();
+            else {
+                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
             }
-            return result == Node::Inserted;
         }
 
         bool BTree::Delete (const Key &key) {
-            LockGuard<SpinLock> guard (spinLock);
-            bool removed = root->Remove (key);
-            if (removed && root->IsEmpty () && root->GetChild (0) != nullptr) {
-                Node *node = root;
-                SetRoot (root->GetChild (0));
-                Node::Delete (node);
+            if (key.IsKindOf (header.keyType.c_str ())) {
+                LockGuard<SpinLock> guard (spinLock);
+                bool removed = root->Remove (key);
+                if (removed && root->IsEmpty () && root->GetChild (0) != nullptr) {
+                    Node *node = root;
+                    SetRoot (root->GetChild (0));
+                    Node::Delete (node);
+                }
+                return removed;
             }
-            return removed;
+            else {
+                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
+            }
         }
 
         bool BTree::FindFirst (Iterator &it) {
-            it.Clear ();
-            LockGuard<SpinLock> guard (spinLock);
-            Node *node = root;
-            if (node != nullptr && node->count > 0) {
-                if (it.prefix == nullptr) {
-                    do {
-                        it.parents.push_back (Iterator::NodeIndex (node, 0));
-                        node = node->GetChild (0);
-                    } while (node != nullptr);
-                    it.finished = false;
-                }
-                else {
-                    while (node != nullptr) {
-                        ui32 index = 0;
-                        if (node->FindFirstPrefix (*it.prefix, index)) {
-                            it.parents.push_back (Iterator::NodeIndex (node, index));
-                            it.finished = false;
+            if (it.prefix == nullptr || it.prefix->IsKindOf (header.keyType.c_str ())) {
+                it.Clear ();
+                LockGuard<SpinLock> guard (spinLock);
+                Node *node = root;
+                if (node != nullptr && node->count > 0) {
+                    if (it.prefix == nullptr) {
+                        do {
+                            it.parents.push_back (Iterator::NodeIndex (node, 0));
+                            node = node->GetChild (0);
+                        } while (node != nullptr);
+                        it.finished = false;
+                    }
+                    else {
+                        while (node != nullptr) {
+                            ui32 index = 0;
+                            if (node->FindFirstPrefix (*it.prefix, index)) {
+                                it.parents.push_back (Iterator::NodeIndex (node, index));
+                                it.finished = false;
+                            }
+                            else if (!it.finished) {
+                                break;
+                            }
+                            node = node->GetChild (index);
                         }
-                        else if (!it.finished) {
-                            break;
-                        }
-                        node = node->GetChild (index);
                     }
                 }
+                if (!it.finished) {
+                    it.node = it.parents.back ();
+                    it.parents.pop_back ();
+                }
+                return !it.finished;
             }
-            if (!it.finished) {
-                it.node = it.parents.back ();
-                it.parents.pop_back ();
+            else {
+                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
             }
-            return !it.finished;
         }
 
         void BTree::Flush () {

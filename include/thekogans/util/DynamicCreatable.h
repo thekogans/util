@@ -559,10 +559,12 @@ namespace thekogans {
             /// Return true if base is found in the BASES list.
             /// NOTE: Unlike 'true' polymorphism this method will
             /// return true only if you setup a relationship between
-            /// the given base and this type. Actual inheritance has
-            /// nothing to do with it.
+            /// the given base and this type using *_DECLARE_* and
+            /// *_IMPLEMENT_* macros defined below. Actual inheritance
+            /// has nothing to do with it.
             /// \return true == this type is derived from the given base.
             bool IsDerivedFrom (const char *base) const noexcept;
+            bool IsKindOf (const char *type) const noexcept;
 
             /// \brief
             /// Pretty print the BaseMap to the std::cout.

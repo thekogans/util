@@ -21,58 +21,31 @@
 namespace thekogans {
     namespace util {
 
-        THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE (
-            thekogans::util::StringKey,
-            1,
-            BTree::Key::TYPE)
+        THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE (thekogans::util::StringKey, 1, BTree::Key::TYPE)
 
         i32 StringKey::PrefixCompare (const Key &prefix) const {
-            if (prefix.IsDerivedFrom (StringKey::TYPE)) {
-                const StringKey *stringKey = static_cast<const StringKey *> (&prefix);
-                return key.compare (0, stringKey->key.size (), stringKey->key);
-            }
-            else {
-                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
-            }
+            const StringKey *stringKey = static_cast<const StringKey *> (&prefix);
+            return key.compare (0, stringKey->key.size (), stringKey->key);
         }
 
         i32 StringKey::Compare (const Key &key_) const {
-            if (key_.IsDerivedFrom (StringKey::TYPE)) {
-                const StringKey *stringKey = static_cast<const StringKey *> (&key_);
-                return key.compare (stringKey->key);
-            }
-            else {
-                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
-            }
+            return key.compare (static_cast<const StringKey *> (&key_)->key);
         }
 
-        THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE (
-            thekogans::util::GUIDKey,
-            1,
-            BTree::Key::TYPE)
+        THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE (thekogans::util::GUIDKey, 1, BTree::Key::TYPE)
 
         i32 GUIDKey::PrefixCompare (const Key &prefix) const {
-            if (prefix.IsDerivedFrom (GUIDKey::TYPE)) {
-                const GUIDKey *guidKey = static_cast<const GUIDKey *> (&prefix);
-                return key == guidKey->key;
-            }
-            else {
-                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
-            }
+            return memcmp (
+                key.data,
+                static_cast<const GUIDKey *> (&prefix)->key.data,
+                GUID::SIZE);
         }
 
-        i32 GUIDKey::Compare (const Key &key) const {
-            if (key.IsDerivedFrom (GUIDKey::TYPE)) {
-                const GUIDKey *guidKey = static_cast<const GUIDKey *> (&key);
-                return this->key == guidKey->key;
-            }
-            else {
-                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
-            }
+        i32 GUIDKey::Compare (const Key &key_) const {
+            return memcmp (
+                key.data,
+                static_cast<const GUIDKey *> (&key_)->key.data,
+                GUID::SIZE);
         }
 
     } // namespace util
