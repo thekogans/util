@@ -117,7 +117,7 @@ namespace thekogans {
             /// Log entries.
             EntryList entryList;
             /// \brief
-            /// Synchronization spin lock.
+            /// Synchronization lock.
             SpinLock spinLock;
 
             /// \brief

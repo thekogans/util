@@ -394,7 +394,7 @@ namespace thekogans {
             /// Heap map.
             Map map;
             /// \brief
-            /// Synchronization spin lock.
+            /// Synchronization lock.
             SpinLock spinLock;
 
             /// \brief

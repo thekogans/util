@@ -61,11 +61,12 @@ namespace thekogans {
                 while (*str != '\0' && isspace (*str)) {
                     ++str;
                 }
-                if (*str != '\0') {
-                    return str;
-                }
+                return str;
             }
-            return std::string ();
+            else {
+                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
+            }
         }
 
         _LIB_THEKOGANS_UTIL_DECL std::string _LIB_THEKOGANS_UTIL_API TrimRightSpaces (
@@ -76,8 +77,12 @@ namespace thekogans {
                         return std::string (str, end);
                     }
                 }
+                return std::string ();
             }
-            return std::string ();
+            else {
+                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
+            }
         }
 
         _LIB_THEKOGANS_UTIL_DECL std::string _LIB_THEKOGANS_UTIL_API TrimSpaces (
@@ -91,51 +96,104 @@ namespace thekogans {
                         return std::string (str, end);
                     }
                 }
+                return std::string ();
             }
-            return std::string ();
+            else {
+                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
+            }
         }
 
         _LIB_THEKOGANS_UTIL_DECL std::string _LIB_THEKOGANS_UTIL_API StringToUpper (
                 const char *str) {
-            std::string upper;
             if (str != nullptr) {
-                while (*str != '\0') {
-                    upper += toupper (*str++);
+                std::string upper;
+                if (str != nullptr) {
+                    while (*str != '\0') {
+                        upper += toupper (*str++);
+                    }
                 }
+                return upper;
             }
-            return upper;
+            else {
+                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
+            }
         }
 
         _LIB_THEKOGANS_UTIL_DECL std::string _LIB_THEKOGANS_UTIL_API StringToLower (
                 const char *str) {
-            std::string lower;
             if (str != nullptr) {
-                while (*str != '\0') {
-                    lower += tolower (*str++);
+                std::string lower;
+                if (str != nullptr) {
+                    while (*str != '\0') {
+                        lower += tolower (*str++);
+                    }
                 }
+                return lower;
             }
-            return lower;
+            else {
+                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
+            }
+        }
+
+        _LIB_THEKOGANS_UTIL_DECL int _LIB_THEKOGANS_UTIL_API StringCompare (
+                const char *str1,
+                const char *str2) {
+            if (str1 != nullptr && str2 != nullptr) {
+                return strcmp (str1, str2);
+            }
+            else {
+                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
+            }
+        }
+
+        _LIB_THEKOGANS_UTIL_DECL int _LIB_THEKOGANS_UTIL_API StringCompare (
+                const char *str1,
+                const char *str2,
+                std::size_t count) {
+            if (str1 != nullptr && str2 != nullptr && count > 0) {
+                return strncmp (str1, str2, count);
+            }
+            else {
+                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
+            }
         }
 
         _LIB_THEKOGANS_UTIL_DECL int _LIB_THEKOGANS_UTIL_API StringCompareIgnoreCase (
                 const char *str1,
                 const char *str2) {
-        #if defined (TOOLCHAIN_OS_Windows)
-            return _stricmp (str1, str2);
-        #else // defined (TOOLCHAIN_OS_Windows)
-            return strcasecmp (str1, str2);
-        #endif // defined (TOOLCHAIN_OS_Windows)
+            if (str1 != nullptr && str2 != nullptr) {
+            #if defined (TOOLCHAIN_OS_Windows)
+                return _stricmp (str1, str2);
+            #else // defined (TOOLCHAIN_OS_Windows)
+                return strcasecmp (str1, str2);
+            #endif // defined (TOOLCHAIN_OS_Windows)
+            }
+            else {
+                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
+            }
         }
 
         _LIB_THEKOGANS_UTIL_DECL int _LIB_THEKOGANS_UTIL_API StringCompareIgnoreCase (
                 const char *str1,
                 const char *str2,
                 std::size_t count) {
-        #if defined (TOOLCHAIN_OS_Windows)
-            return _strnicmp (str1, str2, count);
-        #else // defined (TOOLCHAIN_OS_Windows)
-            return strncasecmp (str1, str2, count);
-        #endif // defined (TOOLCHAIN_OS_Windows)
+            if (str1 != nullptr && str2 != nullptr && count > 0) {
+            #if defined (TOOLCHAIN_OS_Windows)
+                return _strnicmp (str1, str2, count);
+            #else // defined (TOOLCHAIN_OS_Windows)
+                return strncasecmp (str1, str2, count);
+            #endif // defined (TOOLCHAIN_OS_Windows)
+            }
+            else {
+                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
+            }
         }
 
         _LIB_THEKOGANS_UTIL_DECL const char * _LIB_THEKOGANS_UTIL_API IsUTF8String (

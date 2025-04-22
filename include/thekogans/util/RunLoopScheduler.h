@@ -211,7 +211,7 @@ namespace thekogans {
                 void CancelJobs (const RunLoop::Id &runLoopId);
             } queue;
             /// \brief
-            /// Synchronization spin lock.
+            /// Synchronization lock.
             SpinLock spinLock;
 
         public:

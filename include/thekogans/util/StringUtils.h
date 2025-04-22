@@ -111,6 +111,24 @@ namespace thekogans {
         _LIB_THEKOGANS_UTIL_DECL std::string _LIB_THEKOGANS_UTIL_API StringToLower (
             const char *str);
         /// \brief
+        /// Compare two strings.
+        /// \param[in] str1 First string to compare.
+        /// \param[in] str2 Second string to compare.
+        /// \return < 0 == str1 < str2, = 0 == str1 == str2, > 0 == str1 > str2.
+        _LIB_THEKOGANS_UTIL_DECL int _LIB_THEKOGANS_UTIL_API StringCompare (
+            const char *str1,
+            const char *str2);
+        /// \brief
+        /// Compare two strings.
+        /// \param[in] str1 First string to compare.
+        /// \param[in] str2 Second string to compare.
+        /// \param[in] count Count of characters to compare.
+        /// \return < 0 == str1 < str2, = 0 == str1 == str2, > 0 == str1 > str2.
+        _LIB_THEKOGANS_UTIL_DECL int _LIB_THEKOGANS_UTIL_API StringCompare (
+            const char *str1,
+            const char *str2,
+            std::size_t count);
+        /// \brief
         /// Compare two strings ignoring case.
         /// \param[in] str1 First string to compare.
         /// \param[in] str2 Second string to compare.

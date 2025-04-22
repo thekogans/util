@@ -22,13 +22,18 @@ namespace thekogans {
     namespace util {
 
         THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE (thekogans::util::StringKey, 1, BTree::Key::TYPE)
+        THEKOGANS_UTIL_IMPLEMENT_HEAP_FUNCTIONS (StringKey)
 
         i32 StringKey::PrefixCompare (const Key &key_) const {
             const StringKey *stringKey = static_cast<const StringKey *> (&key_);
             std::size_t prefixSize = key.size ();
             return prefixSize <= stringKey->key.size () ?
-                memcmp (key.data (), stringKey->key.data (), prefixSize) :
-                key.compare (stringKey->key);
+                ignoreCase ?
+                    StringCompareIgnoreCase (key.c_str (), stringKey->key.c_str (), prefixSize) :
+                    StringCompare (key.c_str (), stringKey->key.c_str (), prefixSize) :
+                ignoreCase ?
+                    StringCompareIgnoreCase (key.c_str (), stringKey->key.c_str ()) :
+                    StringCompare (key.c_str (), stringKey->key.c_str ());
         }
 
         i32 StringKey::Compare (const Key &key_) const {
@@ -36,6 +41,7 @@ namespace thekogans {
         }
 
         THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE (thekogans::util::GUIDKey, 1, BTree::Key::TYPE)
+        THEKOGANS_UTIL_IMPLEMENT_HEAP_FUNCTIONS (GUIDKey)
 
         i32 GUIDKey::PrefixCompare (const Key &key_) const {
             return memcmp (

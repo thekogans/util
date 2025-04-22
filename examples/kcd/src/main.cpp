@@ -52,7 +52,7 @@ namespace {
             for (; it != components.end (); ++it) {
                 util::StringKey::SharedPtr componentKey (new util::StringKey (*it));
                 util::GUIDArrayValue::SharedPtr componentValue (
-                    new util::GUIDArrayValue (pathKey->key));
+                    new util::GUIDArrayValue (std::vector<util::GUID> {pathKey->key}));
                 util::BTree::Iterator jt;
                 if (!componentBtree.Insert (componentKey, componentValue, jt)) {
                     componentValue = jt.GetValue ();
@@ -161,7 +161,7 @@ int main (
         // util::Console::Instance ()->PrintString (path.c_str ());
         // util::Console::Instance ()->PrintString ("\n");
         // ScanTree (path, 1, pathBtree, componentBtree);
-        util::BTree::Iterator it (new util::StringKey ("util"));
+        util::BTree::Iterator it (new util::StringKey ("shape"));
         for (componentBtree.FindFirst (it); !it.IsFinished (); it.Next ()) {
             util::GUIDArrayValue::SharedPtr componentValue = it.GetValue ();
             for (std::size_t i = 0, count = componentValue->value.size (); i < count; ++i) {

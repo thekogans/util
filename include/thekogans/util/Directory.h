@@ -229,7 +229,7 @@ namespace thekogans {
                 /// Current watches.
                 Watches watches;
                 /// \brief
-                /// Synchronization spin lock.
+                /// Synchronization lock.
                 SpinLock spinLock;
 
             public:

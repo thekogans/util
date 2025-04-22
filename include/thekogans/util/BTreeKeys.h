@@ -37,6 +37,9 @@ namespace thekogans {
             /// \brief
             /// StringKey is a \see{Serializable}.
             THEKOGANS_UTIL_DECLARE_SERIALIZABLE (StringKey)
+            /// \brief
+            /// StringKey has a private heap to help with memory fragmentation.
+            THEKOGANS_UTIL_DECLARE_STD_ALLOCATOR_FUNCTIONS
 
             /// \brief
             /// The actual key.
@@ -104,6 +107,9 @@ namespace thekogans {
             /// \brief
             /// GUIDKey is a \see{Serializable}.
             THEKOGANS_UTIL_DECLARE_SERIALIZABLE (GUIDKey)
+            /// \brief
+            /// GUIDKey has a private heap to help with memory fragmentation.
+            THEKOGANS_UTIL_DECLARE_STD_ALLOCATOR_FUNCTIONS
 
             /// \brief
             /// The actual key.
