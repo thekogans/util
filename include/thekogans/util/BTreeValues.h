@@ -148,12 +148,12 @@ namespace thekogans {
             /// \brief
             /// ctor.
             /// \param[in] value_ Value to initialize with.
-            ArrayValue (const std::vector<T> &value_ = std::vector<T> {}) :
-                value (value_) {}
+            //ArrayValue (const std::vector<T> &value_ = std::vector<T> {}) :
+            //    value (value_) {}
             /// \brief
             /// ctor.
             /// \param[in] value_ Value to initialize with.
-            ArrayValue (const T &value_) :
+            ArrayValue (const T &value_ = T {}) :
                 value {value_} {}
 
             // BTree::Value

@@ -89,37 +89,28 @@ namespace thekogans {
             if (!finished) {
                 finished = true;
                 ++node.second;
-                if (node.second < node.first->count) {
-                    Node *child = node.first->GetChild (node.second);
-                    if (child != nullptr) {
-                        // We back up an entry because when we're done iterating
-                        // over (left) children, we need to check the entry at
-                        // current index which has been incremented above.
-                        parents.push_back (NodeIndex (node.first, node.second - 1));
-                        ui32 index = 0;
-                        while (child != nullptr &&
-                                (prefix == nullptr || child->FindFirstPrefix (*prefix, index))) {
-                            finished = false;
-                            parents.push_back (NodeIndex (child, index));
-                            child = child->GetChild (index);
-                        }
-                        node = parents.back ();
-                        parents.pop_back ();
-                        // If we didn't encounter any eligible children above,
-                        // increment the index so that we can check the next
-                        // entry below.
-                        if (finished) {
-                            ++node.second;
-                        }
+                Node *child = node.first->GetChild (node.second);
+                if (child != nullptr) {
+                    parents.push_back (NodeIndex (node.first, node.second));
+                    ui32 index = 0;
+                    while (child != nullptr &&
+                            (prefix == nullptr || child->FindFirstPrefix (*prefix, index))) {
+                        finished = false;
+                        parents.push_back (NodeIndex (child, index));
+                        child = child->GetChild (index);
                     }
-                    finished &= prefix != nullptr &&
-                        !node.first->entries[node.second].key->PrefixCompare (*prefix);
-                }
-                else if (!parents.empty ()) {
                     node = parents.back ();
                     parents.pop_back ();
-                    finished = prefix != nullptr &&
-                        !node.first->entries[node.second].key->PrefixCompare (*prefix);
+                }
+                if (finished) {
+                    if (node.second == node.first->count && !parents.empty ()) {
+                        node = parents.back ();
+                        parents.pop_back ();
+                    }
+                    if (node.second < node.first->count) {
+                        finished = prefix != nullptr &&
+                            prefix->PrefixCompare (*node.first->entries[node.second].key) != 0;
+                    }
                 }
             }
             if (finished) {
@@ -440,14 +431,14 @@ namespace thekogans {
                 const Key &prefix,
                 ui32 &index) const {
             index = count;
-            ui32 lastIndex = index;
-            while (PrefixFind (prefix, lastIndex)) {
-                index = lastIndex;
-                if (lastIndex-- == 0) {
-                    break;
+            if (PrefixFind (prefix, index)) {
+                ui32 lastIndex = index;
+                while (PrefixFind (prefix, lastIndex)) {
+                    index = lastIndex;
                 }
+                return true;
             }
-            return index < count;
+            return false;
         }
 
         bool BTree::Node::Find (

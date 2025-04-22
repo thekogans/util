@@ -17,6 +17,7 @@
 
 #include <string>
 #include <iostream>
+#include "thekogans/util/Environment.h"
 #include "thekogans/util/Path.h"
 #include "thekogans/util/Directory.h"
 #include "thekogans/util/LoggerMgr.h"
@@ -56,6 +57,7 @@ namespace {
                 if (!componentBtree.Insert (componentKey, componentValue, jt)) {
                     componentValue = jt.GetValue ();
                     componentValue->value.push_back (pathKey->key);
+                    jt.SetValue (componentValue);
                 }
             }
         }
@@ -156,9 +158,25 @@ int main (
             *buffer << util::MAGIC32 << btrees;
             fileAllocator->WriteBlockBuffer (*buffer);
         }
-        util::Console::Instance ()->PrintString (path.c_str ());
-        util::Console::Instance ()->PrintString ("\n");
-        ScanTree (path, 1, pathBtree, componentBtree);
+        // util::Console::Instance ()->PrintString (path.c_str ());
+        // util::Console::Instance ()->PrintString ("\n");
+        // ScanTree (path, 1, pathBtree, componentBtree);
+        util::BTree::Iterator it (new util::StringKey ("util"));
+        for (componentBtree.FindFirst (it); !it.IsFinished (); it.Next ()) {
+            util::GUIDArrayValue::SharedPtr componentValue = it.GetValue ();
+            for (std::size_t i = 0, count = componentValue->value.size (); i < count; ++i) {
+                util::BTree::Iterator jt;
+                if (pathBtree.Find (util::GUIDKey (componentValue->value[i]), jt)) {
+                    std::cout << jt.GetValue ()->ToString () << "\n";
+                }
+            }
+        }
+        /*
+        util::BTree::Iterator it;
+        for (componentBtree.FindFirst (it); !it.Finished (); it.Next ()) {
+            std::cout << it.GetKey ()->ToString () << "\n";
+        }
+        */
     }
     THEKOGANS_UTIL_CATCH_AND_LOG
     return 0;

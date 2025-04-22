@@ -41,24 +41,29 @@ namespace thekogans {
             /// \brief
             /// The actual key.
             std::string key;
+            bool ignoreCase;
 
             /// \brief
             /// ctor.
             /// \param[in] key_ std::string to initialize this key with.
-            StringKey (const std::string &key_ = std::string ()) :
-                key (key_) {}
+            StringKey (
+                const std::string &key_ = std::string (),
+                bool ignoreCase_ = false) :
+                key (key_),
+                ignoreCase (ignoreCase_) {}
 
             // BTree::Key
             /// \brief
             /// Used to find keys with matching prefixs.
-            /// \param[in] prefix Key representing the prefix to compare against.
-            /// \return -1 == this is < key, 0 == this == key, 1 == this is greater than key.
-            virtual i32 PrefixCompare (const BTree::Key &prefix) const override;
+            /// \param[in] key_ Key to compare against.
+            /// \return -1 == this is < key_, 0 == this == prefix of key_,
+            /// 1 == this is greater than key_.
+            virtual i32 PrefixCompare (const BTree::Key &key_) const override;
             /// \brief
             /// Used to order keys.
-            /// \param[in] key Key to compare against.
-            /// \return -1 == this is < key, 0 == this == key, 1 == this is greater than key.
-            virtual i32 Compare (const BTree::Key &key) const override;
+            /// \param[in] key_ Key to compare against.
+            /// \return -1 == this is < key_, 0 == this == key_, 1 == this is greater than key_.
+            virtual i32 Compare (const BTree::Key &key_) const override;
             /// \brief
             /// This method is only used in Dump for debugging purposes.
             /// \return String representation of the key.
@@ -113,14 +118,15 @@ namespace thekogans {
             // BTree::Key
             /// \brief
             /// Used to find keys with matching prefixs.
-            /// \param[in] prefix Key representing the prefix to compare against.
-            /// \return -1 == this is < key, 0 == this == key, 1 == this is greater than key.
-            virtual i32 PrefixCompare (const BTree::Key &prefix) const override;
+            /// \param[in] key_ Key to compare against.
+            /// \return -1 == this is < key_, 0 == this == prefix of key_,
+            /// 1 == this is greater than key_.
+            virtual i32 PrefixCompare (const BTree::Key &key_) const override;
             /// \brief
             /// Used to order keys.
-            /// \param[in] key Key to compare against.
-            /// \return -1 == this is < key, 0 == this == key, 1 == this is greater than key.
-            virtual i32 Compare (const BTree::Key &key) const override;
+            /// \param[in] key_ Key to compare against.
+            /// \return -1 == this is < key_, 0 == this == key_, 1 == this is greater than key_.
+            virtual i32 Compare (const BTree::Key &key_) const override;
             /// \brief
             /// This method is only used in Dump for debugging purposes.
             /// \return String representation of the key.
