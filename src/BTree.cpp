@@ -120,7 +120,8 @@ namespace thekogans {
         }
 
         BTree::Key::SharedPtr BTree::Iterator::GetKey () const {
-            if (!finished && node.first != nullptr && node.second < node.first->count) {
+            if (!finished) {
+                assert (node.first != nullptr && node.second < node.first->count);
                 return node.first->entries[node.second].key;
             }
             else {
@@ -130,7 +131,8 @@ namespace thekogans {
         }
 
         BTree::Value::SharedPtr BTree::Iterator::GetValue () const {
-            if (!finished && node.first != nullptr && node.second < node.first->count) {
+            if (!finished) {
+                assert (node.first != nullptr && node.second < node.first->count);
                 return node.first->entries[node.second].value;
             }
             else {
@@ -141,7 +143,8 @@ namespace thekogans {
 
         void BTree::Iterator::SetValue (Value::SharedPtr value) {
             if (value != nullptr) {
-                if (!finished && node.first != nullptr && node.second < node.first->count) {
+                if (!finished) {
+                    assert (node.first != nullptr && node.second < node.first->count);
                     node.first->entries[node.second].value->Release ();
                     node.first->entries[node.second].value = value.Release ();
                     node.first->Save ();
@@ -182,15 +185,15 @@ namespace thekogans {
                         for (ui32 i = 0; i < count; ++i) {
                             *buffer >> entries[i];
                             {
+                                *keyValueBuffer >> keyHeader.version >> keyHeader.size;
                                 entries[i].key =
                                     Key::CreateType (keyHeader.type.c_str ()).Release ();
-                                *keyValueBuffer >> keyHeader.version >> keyHeader.size;
                                 entries[i].key->Read (keyHeader, *keyValueBuffer);
                             }
                             {
+                                *keyValueBuffer >> valueHeader.version >> valueHeader.size;
                                 entries[i].value =
                                     Value::CreateType (valueHeader.type.c_str ()).Release ();
-                                *keyValueBuffer >> valueHeader.version >> valueHeader.size;
                                 entries[i].value->Read (valueHeader, *keyValueBuffer);
                             }
                         }
@@ -198,7 +201,7 @@ namespace thekogans {
                 }
                 else {
                     THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                        "Corrupt BTree::Node: @" THEKOGANS_UTIL_UI64_FORMAT,
+                        "Corrupt BTree::Node @" THEKOGANS_UTIL_UI64_FORMAT,
                         offset);
                 }
             }
@@ -348,7 +351,7 @@ namespace thekogans {
             }
             else {
                 THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                    "Logic error: trying to delete a node with count > 0 "
+                    "Logic error: trying to delete a node with count > 0 @"
                     THEKOGANS_UTIL_UI64_FORMAT,
                     node->offset);
             }
@@ -381,7 +384,7 @@ namespace thekogans {
                 }
                 else {
                     THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                        "Corrupt BTree::Node: " THEKOGANS_UTIL_UI64_FORMAT,
+                        "Corrupt BTree::Node @" THEKOGANS_UTIL_UI64_FORMAT,
                         offset);
                 }
             }
@@ -783,7 +786,7 @@ namespace thekogans {
             }
             else {
                 THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                    "Corrupt BTree: " THEKOGANS_UTIL_UI64_FORMAT,
+                    "Corrupt BTree @" THEKOGANS_UTIL_UI64_FORMAT,
                     offset);
             }
         }
