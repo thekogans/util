@@ -16,7 +16,6 @@
 // along with libthekogans_util. If not, see <http://www.gnu.org/licenses/>.
 
 #include "thekogans/util/Heap.h"
-#include "thekogans/util/LockGuard.h"
 #include "thekogans/util/MemoryLogger.h"
 
 namespace thekogans {
@@ -37,7 +36,6 @@ namespace thekogans {
                 const std::string &header,
                 const std::string &message) noexcept {
             if (level <= this->level && (!header.empty () || !message.empty ())) {
-                LockGuard<SpinLock> guard (spinLock);
                 entryList.push_back (new Entry (subsystem, level, header, message));
                 if (entryList.size () > maxEntries) {
                     Entry::UniquePtr entry (entryList.pop_front ());
@@ -50,7 +48,6 @@ namespace thekogans {
                 const std::string &path,
                 i32 flags,
                 bool clear) {
-            LockGuard<SpinLock> guard (spinLock);
             if (!entryList.empty ()) {
                 SimpleFile file (HostEndian, path, flags);
                 entryList.for_each (
@@ -71,7 +68,6 @@ namespace thekogans {
         }
 
         void MemoryLogger::ClearEntries () {
-            LockGuard<SpinLock> guard (spinLock);
             entryList.clear (
                 [] (EntryList::Callback::argument_type entry) -> EntryList::Callback::result_type {
                     delete entry;

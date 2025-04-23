@@ -18,7 +18,6 @@
 #include <cstring>
 #include "thekogans/util/Array.h"
 #include "thekogans/util/Exception.h"
-#include "thekogans/util/LockGuard.h"
 #include "thekogans/util/BTreeKeys.h"
 #include "thekogans/util/BTreeValues.h"
 #include "thekogans/util/BTree.h"
@@ -794,7 +793,6 @@ namespace thekogans {
                 Iterator &it) {
             if (key.IsKindOf (header.keyType.c_str ())) {
                 it.Clear ();
-                LockGuard<SpinLock> guard (spinLock);
                 ui32 index = 0;
                 for (Node *node = root; node != nullptr; node = node->GetChild (index)) {
                     if (node->Find (key, index)) {
@@ -819,7 +817,6 @@ namespace thekogans {
             if (key->IsKindOf (header.keyType.c_str ()) &&
                     value->IsKindOf (header.valueType.c_str ())) {
                 it.Clear ();
-                LockGuard<SpinLock> guard (spinLock);
                 Node::Entry entry (key.Get (), value.Get ());
                 Node::InsertResult result = root->Insert (entry, it);
                 if (result == Node::Overflow) {
@@ -854,7 +851,6 @@ namespace thekogans {
 
         bool BTree::Delete (const Key &key) {
             if (key.IsKindOf (header.keyType.c_str ())) {
-                LockGuard<SpinLock> guard (spinLock);
                 bool removed = root->Remove (key);
                 if (removed && root->IsEmpty () && root->GetChild (0) != nullptr) {
                     Node *node = root;
@@ -872,7 +868,6 @@ namespace thekogans {
         bool BTree::FindFirst (Iterator &it) {
             if (it.prefix == nullptr || it.prefix->IsKindOf (header.keyType.c_str ())) {
                 it.Clear ();
-                LockGuard<SpinLock> guard (spinLock);
                 Node *node = root;
                 if (node != nullptr && node->count > 0) {
                     if (it.prefix == nullptr) {
@@ -909,13 +904,11 @@ namespace thekogans {
         }
 
         void BTree::Flush () {
-            LockGuard<SpinLock> guard (spinLock);
             Node::Free (root);
             root = Node::Alloc (*this, header.rootOffset);
         }
 
         void BTree::Dump () {
-            LockGuard<SpinLock> guard (spinLock);
             if (root != nullptr) {
                 root->Dump ();
             }

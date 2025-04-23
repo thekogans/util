@@ -501,6 +501,7 @@ namespace thekogans {
 
                 /// \brief
                 /// If !IsFirst, return the block info right before this one.
+                /// \param[in] file FileAllocator \see{File} to read prev from.
                 /// \param[out] prev Where to put the previous block info.
                 /// \return true == prev is valid, false == IsFirst is true.
                 bool Prev (
@@ -508,6 +509,7 @@ namespace thekogans {
                     BlockInfo &prev);
                 /// \brief
                 /// If !IsLast, return the block info right after this one.
+                /// \param[in] file FileAllocator \see{File} to read next from.
                 /// \param[out] next Where to put the next block info.
                 /// \return true == next is valid, false == IsLast is true.
                 bool Next (
@@ -516,11 +518,11 @@ namespace thekogans {
 
                 /// \brief
                 /// Read block info.
-                /// \param[in] file FileAllocator file to read.
+                /// \param[in] file FileAllocator \see{File} to read.
                 void Read (File &file);
                 /// \brief
                 /// Write block info.
-                /// \param[in] file FileAllocator file to write.
+                /// \param[in] file FileAllocator \see{File} to write.
                 void Write (File &file);
 
                 /// \brief
@@ -537,12 +539,11 @@ namespace thekogans {
             /// \struct FileAllocator::BlockBuffer FileAllocator.h thekogans/util/FileAllocator.h
             ///
             /// \brief
-            /// BlockBuffer provides access to the user data stored in the
-            /// heap blocks. Because it derives from \see{Buffer} it inherits
-            /// all the underlying serialization machinery defined in \see{Serializer}.
-            /// BlockBuffer is also flexible enough to provide access to sub
-            /// ranges. Making it efficient to update only the parts of the data
-            /// that have changed.
+            /// BlockBuffer provides access to the user data stored in heap blocks.
+            /// Because it derives from \see{Buffer} it inherits all the underlying
+            /// serialization machinery defined in \see{Serializer}. BlockBuffer is
+            /// also flexible enough to provide access to sub ranges. Making it
+            /// efficient to update only the parts of the data that have changed.
             struct _LIB_THEKOGANS_UTIL_DECL BlockBuffer : public Buffer {
                 /// \brief
                 /// Declare \see{RefCounted} pointers.
@@ -633,7 +634,7 @@ namespace thekogans {
                 PtrType btreeOffset;
                 /// \brief
                 /// Contains the offset of the user set root block.
-                /// See GetRootOffset ()/SetRootOffset () below.
+                /// See GetRootOffset/SetRootOffset below.
                 PtrType rootOffset;
 
                 /// \brief
@@ -723,9 +724,11 @@ namespace thekogans {
             std::size_t GetBlockSize (PtrType offset);
             /// \brief
             /// Return the root offset.
+            /// \return header.rootOffset.
             PtrType GetRootOffset ();
             /// \brief
             /// Set the root offset.
+            /// \param[in] rootOffset New root block offset.
             void SetRootOffset (PtrType rootOffset);
 
             /// \brief

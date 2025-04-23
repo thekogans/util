@@ -28,7 +28,6 @@
 #include "thekogans/util/Serializer.h"
 #include "thekogans/util/BlockAllocator.h"
 #include "thekogans/util/FileAllocator.h"
-#include "thekogans/util/SpinLock.h"
 
 namespace thekogans {
     namespace util {
@@ -653,9 +652,6 @@ namespace thekogans {
             /// \brief
             /// An instance of \see{BlockAllocator} to allocate \see{Node}s.
             Allocator::SharedPtr nodeAllocator;
-            /// \break
-            /// Synchronization lock.
-            SpinLock spinLock;
 
         public:
             /// \brief

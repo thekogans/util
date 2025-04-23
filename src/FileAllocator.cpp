@@ -71,7 +71,7 @@ namespace thekogans {
             }
             else {
                 THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                    "Corrupt FileAllocator FileAllocator::BlockInfo::Header: "
+                    "Corrupt FileAllocator FileAllocator::BlockInfo::Header @"
                     THEKOGANS_UTIL_UI64_FORMAT,
                     offset);
             }
@@ -105,7 +105,7 @@ namespace thekogans {
             }
             else {
                 THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                    "Corrupt FileAllocator::BlockInfo::Footer: "
+                    "Corrupt FileAllocator::BlockInfo::Footer @"
                     THEKOGANS_UTIL_UI64_FORMAT,
                     offset);
             }
@@ -137,8 +137,8 @@ namespace thekogans {
                 prev.header.Read (file, prev.offset - HEADER_SIZE);
                 if (prev.header != prev.footer) {
                     THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                        "Corrupt FileAllocator::BlockInfo: " THEKOGANS_UTIL_UI64_FORMAT
-                        " prev.header.flags: %u prev.header.size: " THEKOGANS_UTIL_UI64_FORMAT
+                        "Corrupt FileAllocator::BlockInfo @" THEKOGANS_UTIL_UI64_FORMAT "\n"
+                        " prev.header.flags: %u prev.header.size: " THEKOGANS_UTIL_UI64_FORMAT "\n"
                         " prev.footer.flags: %u prev.footer.size: " THEKOGANS_UTIL_UI64_FORMAT,
                         prev.offset,
                         prev.header.flags, prev.header.size,
@@ -165,8 +165,8 @@ namespace thekogans {
             footer.Read (file, offset + header.size);
             if (header != footer) {
                 THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                    "Corrupt FileAllocator::BlockInfo: " THEKOGANS_UTIL_UI64_FORMAT
-                    " header.flags: %u header.size: " THEKOGANS_UTIL_UI64_FORMAT
+                    "Corrupt FileAllocator::BlockInfo @" THEKOGANS_UTIL_UI64_FORMAT "\n"
+                    " header.flags: %u header.size: " THEKOGANS_UTIL_UI64_FORMAT "\n"
                     " footer.flags: %u footer.size: " THEKOGANS_UTIL_UI64_FORMAT,
                     offset,
                     header.flags, header.size,
@@ -200,7 +200,7 @@ namespace thekogans {
             }
             else {
                 THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                    "Trying to acquire a FileAllocator::BlockBuffer "
+                    "Trying to acquire a FileAllocator::BlockBuffer @"
                     "on an unallocated block: " THEKOGANS_UTIL_UI64_FORMAT,
                     offset);
             }
@@ -280,28 +280,26 @@ namespace thekogans {
                         size = MIN_USER_DATA_SIZE;
                     }
                     LockGuard<SpinLock> guard (spinLock);
+                    // Look for a free block large enough to satisfy the request.
                     BTree::KeyType result = btree->Search (BTree::KeyType (size, 0));
                     if (result.second != 0) {
+                        // Got it!
                         assert (result.first >= size);
                         btree->Delete (result);
                         offset = result.second;
-                        if (result.first > size) {
+                        // If the block we got is bigger than we need, split it.
+                        if (result.first - size >= MIN_BLOCK_SIZE) {
                             result.first -= size;
-                            // If the block we got is bigger than we need, split it.
-                            if (result.first >= MIN_BLOCK_SIZE) {
-                                PtrType nextBlockOffset = offset + size + BlockInfo::SIZE;
-                                ui64 nextBlockSize = result.first - BlockInfo::SIZE;
-                                btree->Add (BTree::KeyType (nextBlockSize, nextBlockOffset));
-                                BlockInfo block (
-                                    nextBlockOffset, BlockInfo::FLAGS_FREE, nextBlockSize);
-                                block.Write (file);
-                            }
-                            else {
-                                size += result.first;
-                            }
+                            PtrType nextBlockOffset = offset + size + BlockInfo::SIZE;
+                            ui64 nextBlockSize = result.first - BlockInfo::SIZE;
+                            btree->Add (BTree::KeyType (nextBlockSize, nextBlockOffset));
+                            BlockInfo block (
+                                nextBlockOffset, BlockInfo::FLAGS_FREE, nextBlockSize);
+                            block.Write (file);
                         }
                     }
                     else {
+                        // None found? Grow the file.
                         offset = file.GetSize () + BlockInfo::HEADER_SIZE;
                         file.SetSize (offset + size + BlockInfo::FOOTER_SIZE);
                     }

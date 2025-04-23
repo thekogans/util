@@ -26,7 +26,6 @@
 #include "thekogans/util/LoggerMgr.h"
 #include "thekogans/util/IntrusiveList.h"
 #include "thekogans/util/Serializer.h"
-#include "thekogans/util/SpinLock.h"
 #include "thekogans/util/File.h"
 
 namespace thekogans {
@@ -116,9 +115,6 @@ namespace thekogans {
             /// \brief
             /// Log entries.
             EntryList entryList;
-            /// \brief
-            /// Synchronization lock.
-            SpinLock spinLock;
 
             /// \brief
             /// Default maximum number of entries.
