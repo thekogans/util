@@ -261,6 +261,7 @@ namespace thekogans {
         #define THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE_BASE_FUNCTIONS(_T)\
         public:\
             static bool IsType (const char *type);\
+            static thekogans::util::DynamicCreatable::FactoryType GetTypeFactory (const char *type);\
             static const thekogans::util::DynamicCreatable::TypeMapType &GetTypes ();\
             static _T::SharedPtr CreateType (\
                 const char *type,\
@@ -271,6 +272,22 @@ namespace thekogans {
         #define THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_BASE_IS_TYPE(_T)\
             bool _T::IsType (const char *type) {\
                 return type != nullptr && GetTypes ().find (type) != GetTypes ().end ();\
+            }
+
+        /// \def THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_BASE_GET_TYPE_FACTORY(_T)
+        /// Implement base type GetTypeFactory. Comes in handy in situations where
+        /// you know you're going to be creating the same type over and over. Saves
+        /// an unordered_map lookup. This macro is private.
+        #define THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_BASE_GET_TYPE_FACTORY(_T)\
+            thekogans::util::DynamicCreatable::FactoryType _T::GetTypeFactory (const char *type) {\
+                if (type != nullptr) {\
+                    thekogans::util::DynamicCreatable::TypeMapType::const_iterator it =\
+                        GetTypes ().find (type);\
+                    if (it != GetTypes ().end ()) {\
+                        return it->second;\
+                    }\
+                }\
+                return thekogans::util::DynamicCreatable::FactoryType ();\
             }
 
         /// \def THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_BASE_GET_TYPES(_T)
@@ -306,6 +323,7 @@ namespace thekogans {
         /// Implement base type functions. This macro is private.
         #define THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_BASE_FUNCTIONS(_T)\
             THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_BASE_IS_TYPE (_T)\
+            THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_BASE_GET_TYPE_FACTORY (_T)\
             THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_BASE_GET_TYPES (_T)\
             THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_BASE_CREATE_TYPE (_T)
 
@@ -314,6 +332,8 @@ namespace thekogans {
         #define THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_BASE_FUNCTIONS_T(_T)\
             template<>\
             THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_BASE_IS_TYPE (_T)\
+            template<>\
+            THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_BASE_GET_TYPE_FACTORY (_T)\
             template<>\
             THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_BASE_GET_TYPES (_T)\
             template<>\
@@ -327,9 +347,9 @@ namespace thekogans {
         /// A DynamicCreatable base class is not itself creatable but is a base
         /// for more concrete derived types. An example is \see{Serializable}.
         /// It extends the capabilities of DynamicCreatable in a generic way
-        /// yet serves as a virtual base for more concrete DynamicCreatables.
-        /// DynamicCreatable bases should be used to statically create known
-        /// derived types based on them. This way you can use parametarized
+        /// yet serves as a virtual base for more concrete \see{Serializable}s.
+        /// DynamicCreatable abstract bases should be used to statically create
+        /// known derived types based on them. This way you can use parametarized
         /// type appropriate ctors. They should consider containing the following;
         ///
         /// - This macro.

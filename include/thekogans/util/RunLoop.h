@@ -215,6 +215,17 @@ namespace thekogans {
                 }
 
                 /// \brief
+                /// Return true if the job should stop what it's doing and exit.
+                /// Use this method in your implementation of Execute to keep the
+                /// RunLoop responsive.
+                /// \param[in] done If true, this flag indicates that
+                /// the job should stop what it's doing, and exit.
+                /// \return true == Job should stop what it's doing and exit.
+                inline bool ShouldStop (const std::atomic<bool> &done) const {
+                    return done || IsCancelled () || IsFailed ();
+                }
+
+                /// \brief
                 /// Call this method on a running job to cancel execution.
                 /// Monitor disposition (ShouldStop () below) in Execute ()
                 /// to respond to cancellation requests.
@@ -251,17 +262,6 @@ namespace thekogans {
                 /// \param[in] done false == job completed successfully, otherwise
                 /// job was forced to exit Execute because the run loop was stopped.
                 void Succeed (const std::atomic<bool> &done);
-
-                /// \brief
-                /// Return true if the job should stop what it's doing and exit.
-                /// Use this method in your implementation of Execute to keep the
-                /// RunLoop responsive.
-                /// \param[in] done If true, this flag indicates that
-                /// the job should stop what it's doing, and exit.
-                /// \return true == Job should stop what it's doing and exit.
-                inline bool ShouldStop (const std::atomic<bool> &done) const {
-                    return done || IsCancelled () || IsFailed ();
-                }
 
                 /// \brief
                 /// Use this method when your job needs to sleep a while during execution.

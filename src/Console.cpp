@@ -183,28 +183,14 @@ namespace thekogans {
                 StdStream where,
                 const ColorType color) {
             if (jobQueue != nullptr) {
-                struct PrintJob : public RunLoop::Job {
-                    std::string str;
-                    StdStream where;
-                    const ColorType color;
-
-                    PrintJob (
-                        const std::string &str_,
-                        StdStream where_,
-                        const ColorType color_) :
-                        str (str_),
-                        where (where_),
-                        color (color_) {}
-
-                    virtual void Execute (const std::atomic<bool> &done) noexcept {
-                        if (!ShouldStop (done)) {
+                jobQueue->EnqJob (
+                    [str, where, color] (
+                            const RunLoop::Job &job,
+                            const std::atomic<bool> &done) {
+                        if (!job.ShouldStop (done)) {
                             PrintStringWithColor (str, where, color);
                         }
-                    }
-                };
-                jobQueue->EnqJob (
-                    RunLoop::Job::SharedPtr (
-                        new PrintJob (str, where, color)));
+                    });
             }
             else {
                 PrintStringWithColor (str, where, color);

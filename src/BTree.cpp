@@ -186,14 +186,12 @@ namespace thekogans {
                             *buffer >> entries[i];
                             {
                                 *keyValueBuffer >> keyHeader.version >> keyHeader.size;
-                                entries[i].key =
-                                    Key::CreateType (keyHeader.type.c_str ()).Release ();
+                                entries[i].key = (Key *)btree.keyFactory (nullptr).Release ();
                                 entries[i].key->Read (keyHeader, *keyValueBuffer);
                             }
                             {
                                 *keyValueBuffer >> valueHeader.version >> valueHeader.size;
-                                entries[i].value =
-                                    Value::CreateType (valueHeader.type.c_str ()).Release ();
+                                entries[i].value = (Value *)btree.valueFactory (nullptr).Release ();
                                 entries[i].value->Read (valueHeader, *keyValueBuffer);
                             }
                         }
@@ -717,6 +715,8 @@ namespace thekogans {
                 fileAllocator (fileAllocator_),
                 offset (offset_),
                 header (keyType, valueType, (ui32)entriesPerNode),
+                keyFactory (Key::GetTypeFactory (keyType.c_str ())),
+                valueFactory (Value::GetTypeFactory (valueType.c_str ())),
                 root (nullptr) {
             if (offset != 0) {
                 FileAllocator::BlockBuffer::SharedPtr buffer =
