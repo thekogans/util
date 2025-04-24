@@ -219,16 +219,9 @@ namespace thekogans {
                     // Calculate key/value sizes.
                     std::size_t totalKeyValueSize = 0;
                     Array<std::pair<SizeT, SizeT>> keyValueSizes (count);
-                    std::pair<SizeT, SizeT> largestKeyValueSize (0, 0);
                     for (ui32 i = 0; i < count; ++i) {
                         std::pair<SizeT, SizeT> keyValueSize (
                             entries[i].key->Size (), entries[i].value->Size ());
-                        if (largestKeyValueSize.first < keyValueSize.first) {
-                            largestKeyValueSize.first = keyValueSize.first;
-                        }
-                        if (largestKeyValueSize.second < keyValueSize.second) {
-                            largestKeyValueSize.second = keyValueSize.second;
-                        }
                         keyValueSizes[i] = keyValueSize;
                         totalKeyValueSize +=
                             UI16_SIZE + keyValueSize.first.Size () + keyValueSize.first +
@@ -246,20 +239,6 @@ namespace thekogans {
                         if (keyValueOffset != 0) {
                             btree.fileAllocator->Free (keyValueOffset);
                         }
-                        // We mitigate the number of times we need to reallocate
-                        // the key/value block by trying to allocate enough space
-                        // for all entries containing the largest key and value.
-                        // Depending on the pathology of the combination and the
-                        // size of the node this can be very wasteful.
-                        totalKeyValueSize =
-                            (UI16_SIZE +
-                                largestKeyValueSize.first.Size () +
-                                largestKeyValueSize.first +
-                            UI16_SIZE +
-                                largestKeyValueSize.second.Size () +
-                                largestKeyValueSize.second) *
-                            btree.header.entriesPerNode;
-                        // Allocate a new key/value block.
                         keyValueOffset = btree.fileAllocator->Alloc (totalKeyValueSize);
                     }
                     *buffer << leftOffset << keyValueOffset;

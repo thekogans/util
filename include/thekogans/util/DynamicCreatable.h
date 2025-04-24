@@ -490,7 +490,8 @@ namespace thekogans {
 
             /// \brief
             /// Type factory method.
-            using FactoryType = std::function<SharedPtr (Parameters::SharedPtr /*parameters*/)>;
+            using FactoryType =
+                std::function<SharedPtr (Parameters::SharedPtr /*parameters*/)>;
             /// \struct DynamicCreatable::CharPtrHash DynamicCreatable.h
             /// thekogans/util/DynamicCreatable.h
             ///

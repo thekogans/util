@@ -50,8 +50,10 @@ namespace thekogans {
                 const char * const bases[],
                 const char *type,
                 FactoryType factory) {
-            while (*bases != nullptr) {
-                (*BaseMap::Instance ())[*bases++][type] = factory;
+            if (bases != nullptr && type != nullptr) {
+                while (*bases != nullptr) {
+                    (*BaseMap::Instance ())[*bases++][type] = factory;
+                }
             }
         }
     #endif // defined (THEKOGANS_UTIL_TYPE_Static)
@@ -86,8 +88,8 @@ namespace thekogans {
             for (; it != end; ++it) {
                 std::cout << it->first << ":" << std::endl;
                 for (TypeMapType::const_iterator
-                         jt = it->second.begin (),
-                         end = it->second.end (); jt != end; ++jt) {
+                        jt = it->second.begin (),
+                        end = it->second.end (); jt != end; ++jt) {
                     std::cout << "  " << jt->first << std::endl;
                 }
             }
