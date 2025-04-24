@@ -44,6 +44,8 @@ namespace thekogans {
             /// \brief
             /// The actual key.
             std::string key;
+            /// \brief
+            /// Used to specify prefixes in searches.
             bool ignoreCase;
 
             /// \brief
@@ -114,12 +116,18 @@ namespace thekogans {
             /// \brief
             /// The actual key.
             GUID key;
+            /// \brief
+            /// Used to specify prefixes in searches.
+            std::size_t length;
 
             /// \brief
             /// ctor.
             /// \param[in] key_ \see{GUID} to initialize this key with.
-            GUIDKey (const GUID &key_ = GUID {}) :
-                key (key_) {}
+            GUIDKey (
+                const GUID &key_ = GUID {},
+                std::size_t length_ = GUID::SIZE) :
+                key (key_),
+                length (length_) {}
 
             // BTree::Key
             /// \brief

@@ -72,9 +72,9 @@ namespace thekogans {
 
                 /// \brief
                 /// Used to find keys with matching prefixs.
-                /// \param[in] prefix Key representing the prefix to compare against.
+                /// \param[in] key Key representing the prefix to compare against.
                 /// \return -1 == this is < key, 0 == this == key, 1 == this is greater than key.
-                virtual i32 PrefixCompare (const Key &prefix) const = 0;
+                virtual i32 PrefixCompare (const Key &key) const = 0;
                 /// \brief
                 /// Used to order keys.
                 /// \param[in] key Key to compare against.

@@ -47,7 +47,7 @@ namespace thekogans {
             return memcmp (
                 key.data,
                 static_cast<const GUIDKey *> (&key_)->key.data,
-                GUID::SIZE);
+                length);
         }
 
         i32 GUIDKey::Compare (const Key &key_) const {

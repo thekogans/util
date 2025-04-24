@@ -217,14 +217,16 @@ namespace thekogans {
                 *buffer << MAGIC32 << count;
                 if (count > 0) {
                     // Calculate key/value sizes.
-                    std::size_t totalKeyValueSize = 0;
                     Array<std::pair<SizeT, SizeT>> keyValueSizes (count);
+                    std::size_t totalKeyValueSize = 0;
                     for (ui32 i = 0; i < count; ++i) {
                         std::pair<SizeT, SizeT> keyValueSize (
                             entries[i].key->Size (), entries[i].value->Size ());
                         keyValueSizes[i] = keyValueSize;
                         totalKeyValueSize +=
+                            // key version + key size + key bytes
                             UI16_SIZE + keyValueSize.first.Size () + keyValueSize.first +
+                            // value version + value size + value bytes
                             UI16_SIZE + keyValueSize.second.Size () + keyValueSize.second;
                     }
                     // Get existing block size.
