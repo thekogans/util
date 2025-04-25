@@ -189,10 +189,15 @@ namespace thekogans {
                                 entries[i].key = (Key *)btree.keyFactory (nullptr).Release ();
                                 entries[i].key->Read (keyHeader, *keyValueBuffer);
                             }
-                            {
+                            if (!btree.header.valueType.empty ()) {
                                 *keyValueBuffer >> valueHeader.version >> valueHeader.size;
                                 entries[i].value = (Value *)btree.valueFactory (nullptr).Release ();
                                 entries[i].value->Read (valueHeader, *keyValueBuffer);
+                            }
+                            else {
+                                Serializable::SharedPtr value;
+                                *keyValueBuffer >> value;
+                                entries[i].value = (Value *)value.Release ();
                             }
                         }
                     }
@@ -225,9 +230,19 @@ namespace thekogans {
                         keyValueSizes[i] = keyValueSize;
                         totalKeyValueSize +=
                             // key version + key size + key bytes
-                            UI16_SIZE + keyValueSize.first.Size () + keyValueSize.first +
-                            // value version + value size + value bytes
-                            UI16_SIZE + keyValueSize.second.Size () + keyValueSize.second;
+                            UI16_SIZE + keyValueSize.first.Size () + keyValueSize.first;
+                        if (!btree.header.valueType.empty ()) {
+                            totalKeyValueSize +=
+                                // value version + value size + value bytes
+                                UI16_SIZE + keyValueSize.second.Size () + keyValueSize.second;
+                        }
+                        else {
+                            totalKeyValueSize +=
+                                Serializable::Header (
+                                    entries[i].value->Type (),
+                                    entries[i].value->Version (),
+                                    keyValueSize.second).Size () + keyValueSize.second;
+                        }
                     }
                     // Get existing block size.
                     ui64 blockSize = 0;
@@ -252,10 +267,15 @@ namespace thekogans {
                             entries[i].key->Version () <<
                             SizeT (keyValueSizes[i].first);
                         entries[i].key->Write (*keyValueBuffer);
-                        *keyValueBuffer <<
-                            entries[i].value->Version () <<
-                            SizeT (keyValueSizes[i].second);
-                        entries[i].value->Write (*keyValueBuffer);
+                        if (!btree.header.valueType.empty ()) {
+                            *keyValueBuffer <<
+                                entries[i].value->Version () <<
+                                SizeT (keyValueSizes[i].second);
+                            entries[i].value->Write (*keyValueBuffer);
+                        }
+                        else {
+                            *keyValueBuffer << *entries[i].value;
+                        }
                     }
                     // Zero out the unused portion of the keyValueBuffer to
                     // prevent leaking sensitive data.
@@ -727,7 +747,7 @@ namespace thekogans {
                 }
             }
             else if (Key::IsType (header.keyType.c_str ()) &&
-                    Value::IsType (header.valueType.c_str ())) {
+                    (header.valueType.empty () || Value::IsType (header.valueType.c_str ()))) {
                 offset = fileAllocator->Alloc (header.Size ());
                 Save ();
             }

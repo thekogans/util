@@ -16,6 +16,7 @@
 // along with libthekogans_util. If not, see <http://www.gnu.org/licenses/>.
 
 #include <cstring>
+#include "thekogans/util/StringUtils.h"
 #include "thekogans/util/BTreeKeys.h"
 
 namespace thekogans {
@@ -26,18 +27,16 @@ namespace thekogans {
 
         i32 StringKey::PrefixCompare (const Key &key_) const {
             const StringKey *stringKey = static_cast<const StringKey *> (&key_);
-            std::size_t prefixSize = key.size ();
-            return prefixSize <= stringKey->key.size () ?
-                ignoreCase ?
-                    StringCompareIgnoreCase (key.c_str (), stringKey->key.c_str (), prefixSize) :
-                    StringCompare (key.c_str (), stringKey->key.c_str (), prefixSize) :
-                ignoreCase ?
-                    StringCompareIgnoreCase (key.c_str (), stringKey->key.c_str ()) :
-                    StringCompare (key.c_str (), stringKey->key.c_str ());
+            return ignoreCase ?
+                StringCompareIgnoreCase (key.c_str (), stringKey->key.c_str (), key.size ()) :
+                StringCompare (key.c_str (), stringKey->key.c_str (), key.size ());
         }
 
         i32 StringKey::Compare (const Key &key_) const {
-            return key.compare (static_cast<const StringKey *> (&key_)->key);
+            const StringKey *stringKey = static_cast<const StringKey *> (&key_);
+            return ignoreCase ?
+                StringCompareIgnoreCase (key.c_str (), stringKey->key.c_str ()) :
+                StringCompare (key.c_str (), stringKey->key.c_str ());
         }
 
         THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE (thekogans::util::GUIDKey, 1, BTree::Key::TYPE)

@@ -678,7 +678,8 @@ namespace thekogans {
             /// \param[in] fileAllocator_ BTree heap (see \see{FileAllocator}).
             /// \param[in] offset_ Heap offset of the \see{Header} block.
             /// \param[in] keyType \see{DynamicCreatable} key type.
-            /// \param[in] valueType \see{DynamicCreatable} value type.
+            /// \param[in] valueType \see{DynamicCreatable} value type. If empty,
+            /// will store any type derived from \see{Value}.
             /// \param[in] entriesPerNode If we're creating the btree, contains entries per
             /// \see{Node}. If we're reading an existing btree, this value will come from the
             /// \see{Header}.
