@@ -15,34 +15,56 @@
 // You should have received a copy of the GNU General Public License
 // along with libthekogans_util. If not, see <http://www.gnu.org/licenses/>.
 
+#include <string>
+#include "thekogans/util/LockGuard.h"
 #include "thekogans/util/BTreeKeys.h"
-#include "thekogans/util/BTreeValues.h"
 #include "thekogans/util/FileAllocatorRegistry.h"
 
 namespace thekogans {
     namespace util {
 
-        FileAllocatorRegistry::FileAllocatorRegistry (
+        FileAllocator::Registry::Registry (
                 FileAllocator::SharedPtr fileAllocator,
                 std::size_t entriesPerNode,
                 std::size_t nodesPerPage,
                 Allocator::SharedPtr allocator) :
-                BTree (
+                btree (
                     fileAllocator,
-                    fileAllocator->GetRootOffset (),
-                    GUIDKey::TYPE,
-                    PtrValue::TYPE,
+                    fileAllocator->header.registryOffset,
+                    StringKey::TYPE,
+                    std::string (),
                     entriesPerNode,
                     nodesPerPage,
                     allocator) {
-            if (fileAllocator->GetRootOffset () != GetOffset ()) {
-                fileAllocator->SetRootOffset (GetOffset ());
+            if (fileAllocator->header.registryOffset == 0) {
+                fileAllocator->header.registryOffset = btree.GetOffset ();
+                fileAllocator->Save ();
             }
         }
 
-        void FileAllocatorRegistry::Delete (FileAllocator &fileAllocator) {
-            BTree::Delete (fileAllocator, fileAllocator.GetRootOffset ());
-            fileAllocator.SetRootOffset (0);
+        void FileAllocator::Registry::Delete (FileAllocator &fileAllocator) {
+            util::BTree::Delete (fileAllocator, fileAllocator.header.registryOffset);
+        }
+
+        util::BTree::Value::SharedPtr FileAllocator::Registry::GetValue (const std::string &key) {
+            LockGuard<SpinLock> guard (spinLock);
+            util::BTree::Iterator it;
+            return btree.Find (StringKey (key), it) ? it.GetValue () : nullptr;
+        }
+
+        void FileAllocator::Registry::SetValue (
+                const std::string &key,
+                util::BTree::Value::SharedPtr value) {
+            LockGuard<SpinLock> guard (spinLock);
+            if (value == nullptr) {
+                btree.Delete (StringKey (key));
+            }
+            else {
+                util::BTree::Iterator it;
+                if (!btree.Insert (new StringKey (key), value, it)) {
+                    it.SetValue (value);
+                }
+            }
         }
 
     } // namespace util

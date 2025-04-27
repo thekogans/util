@@ -19,6 +19,7 @@
 #include "thekogans/util/Heap.h"
 #include "thekogans/util/File.h"
 #include "thekogans/util/LockGuard.h"
+#include "thekogans/util/FileAllocatorRegistry.h"
 #include "thekogans/util/FileAllocator.h"
 
 namespace thekogans {
@@ -71,7 +72,7 @@ namespace thekogans {
             }
             else {
                 THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                    "Corrupt FileAllocator FileAllocator::BlockInfo::Header @"
+                    "Corrupt FileAllocator::BlockInfo::Header @"
                     THEKOGANS_UTIL_UI64_FORMAT,
                     offset);
             }
@@ -179,6 +180,15 @@ namespace thekogans {
             footer.Write (file, offset + header.size);
         }
 
+    #if defined (THEKOGANS_UTIL_FILE_ALLOCATOR_BLOCK_INFO_USE_MAGIC)
+        void FileAllocator::BlockInfo::Invalidate (File &file) {
+            file.Seek (offset - HEADER_SIZE, SEEK_SET);
+            // Simply stepping on magic will invalidate
+            // this block for all future reads.
+            file << (ui32)0;
+        }
+    #endif // defined (THEKOGANS_UTIL_FILE_ALLOCATOR_BLOCK_INFO_USE_MAGIC)
+
         THEKOGANS_UTIL_IMPLEMENT_HEAP_FUNCTIONS (FileAllocator::BlockBuffer)
 
         FileAllocator::BlockBuffer::BlockBuffer (
@@ -257,6 +267,29 @@ namespace thekogans {
             return !block.IsFree () ? block.GetSize () : 0;
         }
 
+        FileAllocator::Registry &FileAllocator::GetRegistry (
+                std::size_t entriesPerNode,
+                std::size_t nodesPerPage,
+                Allocator::SharedPtr allocator) {
+            LockGuard<SpinLock> guard (spinLock);
+            if (!IsFixed ()) {
+                if (registry == nullptr) {
+                    // Not a huge fan of this. The implicit call to
+                    // FileAllocator::SharedPtr ctor will increment the
+                    // reference count on this. Fortunately FileAllocator's
+                    // one and only ctor is private and the only way to
+                    // create one is to ask the Pool, which will create
+                    // it on the heap.
+                    registry = new Registry (this, entriesPerNode, nodesPerPage, allocator);
+                }
+                return *registry;
+            }
+            else {
+                THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
+                    "FileAllocator is fixed.");
+            }
+        }
+
         FileAllocator::PtrType FileAllocator::GetRootOffset () {
             LockGuard<SpinLock> guard (spinLock);
             return header.rootOffset;
@@ -330,11 +363,21 @@ namespace thekogans {
                         BlockInfo prev;
                         if (block.Prev (file, prev) && prev.IsFree () && !prev.IsFixed ()) {
                             btree->Delete (BTree::KeyType (prev.GetSize (), prev.GetOffset ()));
+                        #if defined (THEKOGANS_UTIL_FILE_ALLOCATOR_BLOCK_INFO_USE_MAGIC)
+                            // Since block will grow to occupy prev,
+                            // it's offset is no longer valid.
+                            block.Invalidate (file);
+                        #endif // defined (THEKOGANS_UTIL_FILE_ALLOCATOR_BLOCK_INFO_USE_MAGIC)
                             block.SetOffset (block.GetOffset () - BlockInfo::SIZE - prev.GetSize ());
                             block.SetSize (block.GetSize () + BlockInfo::SIZE + prev.GetSize ());
                         }
                         BlockInfo next;
                         if (block.Next (file, next) && next.IsFree () && !next.IsFixed ()) {
+                        #if defined (THEKOGANS_UTIL_FILE_ALLOCATOR_BLOCK_INFO_USE_MAGIC)
+                            // Since block will grow to occupy next,
+                            // next offset is no longer valid.
+                            next.Invalidate (file);
+                        #endif // defined (THEKOGANS_UTIL_FILE_ALLOCATOR_BLOCK_INFO_USE_MAGIC)
                             btree->Delete (BTree::KeyType (next.GetSize (), next.GetOffset ()));
                             block.SetSize (block.GetSize () + BlockInfo::SIZE + next.GetSize ());
                         }
@@ -417,7 +460,8 @@ namespace thekogans {
                     blockSize > 0 ?
                         MAX (blockSize, MIN_USER_DATA_SIZE) :
                         BTree::Node::FileSize (blocksPerPage)),
-                btree (nullptr) {
+                btree (nullptr),
+                registry (nullptr) {
             if (file.GetSize () > 0) {
                 ui32 magic;
                 file >> magic;
@@ -461,6 +505,9 @@ namespace thekogans {
         FileAllocator::~FileAllocator () {
             if (btree != nullptr) {
                 delete btree;
+            }
+            if (registry != nullptr) {
+                delete registry;
             }
         }
 
@@ -534,6 +581,7 @@ namespace thekogans {
                 header.blockSize <<
                 header.freeBlockOffset <<
                 header.btreeOffset <<
+                header.registryOffset <<
                 header.rootOffset;
             return serializer;
         }
@@ -546,6 +594,7 @@ namespace thekogans {
                 header.blockSize >>
                 header.freeBlockOffset >>
                 header.btreeOffset >>
+                header.registryOffset >>
                 header.rootOffset;
             return serializer;
         }

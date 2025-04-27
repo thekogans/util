@@ -197,7 +197,16 @@ namespace thekogans {
                             else {
                                 Serializable::SharedPtr value;
                                 *keyValueBuffer >> value;
-                                entries[i].value = (Value *)value.Release ();
+                                if (value != nullptr) {
+                                    entries[i].value = (Value *)value.Release ();
+                                }
+                                else {
+                                    THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
+                                        "Unable to read value from BTree::Node @"
+                                        THEKOGANS_UTIL_UI64_FORMAT " @ entry %u",
+                                        offset,
+                                        i);
+                                }
                             }
                         }
                     }

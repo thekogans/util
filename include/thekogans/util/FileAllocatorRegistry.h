@@ -20,46 +20,45 @@
 
 #include "thekogans/util/Config.h"
 #include "thekogans/util/BTree.h"
+#include "thekogans/util/BTreeKeys.h"
 #include "thekogans/util/FileAllocator.h"
-#include "thekogans/util/BlockAllocator.h"
+#include "thekogans/util/SpinLock.h"
 
 namespace thekogans {
     namespace util {
 
-        /// \struct FileAllocatorRegistry FileAllocatorRegistry.h
-        /// thekogans/util/FileAllocatorRegistry.h
+        /// \struct FileAllocatorRegistry FileAllocator::Registry.h
+        /// thekogans/util/FileAllocator::Registry.h
         ///
         /// \brief
-        /// \see{FileAllocator} exposes a global heap value (rootOffset) that
-        /// can be used to access a known object location. It provides an api
-        /// for getting and setting it (GetRootOffset/SetRootOffset). If a single
-        /// heap will be used by more than one client use the FileAllocatorRegistry
-        /// to register an offset for each client.
+        /// \see{FileAllocator}::Registry provides global associative storage for
+        /// \see{FileAllocator} clients. It's available only when \see{FileAllocator::IsFixed}
+        /// returns false. Use it store and retrieve practically any value derived
+        /// from \see{BTree::Value}. The key type is any std::string.
 
-        struct FileAllocatorRegistry : public BTree {
+        struct _LIB_THEKOGANS_UTIL_DECL FileAllocator::Registry {
+        private:
             /// \brief
-            /// Declare \see{RefCounted} pointers.
-            THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (FileAllocatorRegistry)
+            /// The registry.
+            util::BTree btree;
+            /// \brief
+            /// Registry is a shared resource.
+            /// Access to it must be protected.
+            SpinLock spinLock;
 
         public:
             /// \brief
             /// ctor.
+            /// See \see{FileAllocator::GetRegistry} for a better description of
+            /// these parameters and when you should and should not change them.
             /// \param[in] fileAllocator Registry heap (see \see{FileAllocator}).
-            /// \param[in] entriesPerNode If we're creating the registry, contains entries per
-            /// \see{Node}. If we're reading an existing registry, this value will come from the
-            /// \see{BTree::Header}.
-            /// \param[in] nodesPerPage \see{BTree::Node}s are allocated using a \see{BlockAllocator}.
-            /// This value sets the number of nodes that will fit on it's page. It's a subtle
-            /// tunning parameter that might result in slight performance gains (depending on
-            /// your situation). For the most part leaving it alone is the most sensible thing
-            /// to do.
-            /// \param[in] allocator This is the \see{Allocator} used to allocate pages
-            /// for the \see{BlockAllocator}. As with the previous parameter, the same
-            /// advice aplies.
-            FileAllocatorRegistry (
+            /// \param[in] entriesPerNode Number of entries per btree node.
+            /// \param[in] nodesPerPage Number of btree nodes per allocator page.
+            /// \param[in] allocator Where allocator node pages come from.
+            Registry (
                 FileAllocator::SharedPtr fileAllocator,
-                std::size_t entriesPerNode = DEFAULT_ENTRIES_PER_NODE,
-                std::size_t nodesPerPage = BlockAllocator::DEFAULT_BLOCKS_PER_PAGE,
+                std::size_t entriesPerNode = 32,
+                std::size_t nodesPerPage = 5,
                 Allocator::SharedPtr allocator = DefaultAllocator::Instance ());
 
             /// \brief
@@ -68,8 +67,25 @@ namespace thekogans {
             static void Delete (FileAllocator &fileAllocator);
 
             /// \brief
-            /// FileAllocatorRegistry is neither copy constructable, nor assignable.
-            THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (FileAllocatorRegistry)
+            /// Given a key, retrieve the associated value. If key is not found,
+            /// return nullptr.
+            /// \param[in] key Key whose value to retrieve.
+            /// \return Value @ key, nullptr if key is not found.
+            util::BTree::Value::SharedPtr GetValue (const std::string &key);
+            /// \brief
+            /// Given a key, do one of the following three;
+            /// 1. If value != nullptr and key is not found, insert new key/value.
+            /// 2. If value != nullptr and key is found, replace the old value with new.
+            /// 3. if value == nullptr, delete the key from the registry (if found).
+            /// \param[in] key Key to search/delete.
+            /// \param[in] value Value to set/replace/delete.
+            void SetValue (
+                const std::string &key,
+                util::BTree::Value::SharedPtr value);
+
+            /// \brief
+            /// Registry is neither copy constructable, nor assignable.
+            THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (Registry)
         };
 
     } // namespace util

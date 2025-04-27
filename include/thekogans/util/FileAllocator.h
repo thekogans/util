@@ -42,12 +42,12 @@ namespace thekogans {
         /// +--------+---------+-----+---------+
         ///
         /// Header
-        /// +-------+-------+-----------+-----------------+-------------+------------+
-        /// | magic | flags | blockSize | freeBlockOffset | btreeOffset | rootOffset |
-        /// +-------+-------+-----------+-----------------+-------------+------------+
-        ///    4        4         8              8               8             8
+        /// +-------+-------+-----------+-----------------+-------------+----------------+------------+
+        /// | magic | flags | blockSize | freeBlockOffset | btreeOffset | registryOffset | rootOffset |
+        /// +-------+-------+-----------+-----------------+-------------+----------------+------------+
+        ///     4       4         8              8               8               8               8
         ///
-        /// Header::SIZE = 40
+        /// Header::SIZE = 48
         ///
         /// Block
         /// +--------+------+--------+
@@ -61,7 +61,7 @@ namespace thekogans {
         /// +-------+-------+------+
         ///     4       4       8
         ///
-        /// Heade/Footer::SIZE = 16
+        /// Header/Footer::SIZE = 16
         ///
         /// Data
         /// +-----------------+-----------------------+
@@ -131,8 +131,8 @@ namespace thekogans {
                     Allocator::SharedPtr allocator = DefaultAllocator::Instance ());
 
                 /// \brief
-                /// Given a FileAllocator path, flush it's changes to disk. If the path is
-                /// empty, flush them all.
+                /// Given a FileAllocator path, flush it's changes to disk. If the
+                /// given path is empty, flush them all.
                 /// \paam[in] path FileAllocator path to flush or empty for all.
                 void FlushFileAllocator (const std::string &path = std::string ());
 
@@ -524,6 +524,16 @@ namespace thekogans {
                 /// Write block info.
                 /// \param[in] file FileAllocator \see{File} to write.
                 void Write (File &file);
+            #if defined (THEKOGANS_UTIL_FILE_ALLOCATOR_BLOCK_INFO_USE_MAGIC)
+                /// \brief
+                /// If you chose to use magic (a very smart move) to protect
+                /// the block data, you get an extra layer of dangling pointer
+                /// detection for free. By zeroing out the magic during \see{Free}
+                /// the next time you access that block you get an exception
+                /// instead of corrupted data.
+                /// \param[in] file FileAllocator \see{File} to write.
+                void Invalidate (File &file);
+            #endif // defined (THEKOGANS_UTIL_FILE_ALLOCATOR_BLOCK_INFO_USE_MAGIC)
 
                 /// \brief
                 /// Needs access to \see{Header} and \see{Footer}.
@@ -606,6 +616,10 @@ namespace thekogans {
                 THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (BlockBuffer)
             };
 
+            /// \brief
+            /// \see{FileAllocator::Registry} holds a circular reference to FileAllocator.
+            struct Registry;
+
         private:
             /// \brief
             /// The file where the heap resides.
@@ -633,6 +647,9 @@ namespace thekogans {
                 /// If !fixed, contains the offset of the BTree::Header.
                 PtrType btreeOffset;
                 /// \brief
+                /// If !fixed, contains the offset of the FileAllocatorRegistry::BTree::Header.
+                PtrType registryOffset;
+                /// \brief
                 /// Contains the offset of the user set root block.
                 /// See GetRootOffset/SetRootOffset below.
                 PtrType rootOffset;
@@ -645,6 +662,7 @@ namespace thekogans {
                     UI64_SIZE +     // blockSize
                     PTR_TYPE_SIZE + // freeBlockOffset
                     PTR_TYPE_SIZE + // btreeOffset
+                    PTR_TYPE_SIZE + // registryOffset
                     PTR_TYPE_SIZE;  // rootOffset
 
                 /// \brief
@@ -660,6 +678,7 @@ namespace thekogans {
                     blockSize (blockSize_),
                     freeBlockOffset (0),
                     btreeOffset (0),
+                    registryOffset (0),
                     rootOffset (0) {}
 
                 /// \brief
@@ -683,6 +702,9 @@ namespace thekogans {
             /// \brief
             /// \see{BTree} to manage heap free space (for random size heaps only).
             BTree *btree;
+            /// \brief
+            /// \see{FileAllocator::Registry}.
+            Registry *registry;
             /// \brief
             /// FileAllocator is meant to be shared between threads allocating
             /// from the same file.
@@ -722,6 +744,39 @@ namespace thekogans {
             /// \return If fixed, fixed block size. if random size, allocated block size.
             /// NOTE: If block is free, returns 0.
             std::size_t GetBlockSize (PtrType offset);
+
+            /// \brief
+            /// If !IsFixed, a \see{FileAllocator::Registry} in the form of a \see{BTree}
+            /// is available for storing and retrieving associated values. The key type
+            /// \see{StringKey} and the value type is any type derived from \see{BTree::Value}.
+            /// If IsFixed, will throw an \see{Exception}.
+            /// NOTE: The following parameters are standard \see{BTree} tunning parameters
+            /// and have been picked to be suitable for most situations. The entriesPerNode
+            /// parameter is only valid during registry creation. Once created, the only
+            /// way to change it is to delete the registry (\see{FileAllocator::Registry::Delete}
+            /// and to start over. The nodesPerPage and the allocator parameters are a
+            /// quirck of the \see{BTree::Node} design. And, unless you're intimately
+            /// steeped in \see{BTree} internals, should just be left alone. nodesPerPage
+            /// controls how memory is allocated for \see{BTree::Node}s and should be tuned
+            /// up or down depending on the number of nodes you think your tree will have.
+            /// Since the registry is a global resource, and uses synchronization to protectect
+            /// access at every call to Get/SetValue, I don't expect it's traffic to be too
+            /// high. Instead, it is designed to let clients store named global data that
+            /// they will then use to initialize the rest of the system. If you're going
+            /// to be using the registry as your systems primary data storage, perhaps you
+            /// might want to bump up nodesPerPage (and entriesPerNode for that mater).
+            /// allocator controls where the said node pages come from and unless you have
+            /// a very specific need, the default system allocator should work just fine.
+            /// \param[in] entriesPerNode Number of entries per btree node.
+            /// \param[in] nodesPerPage Number of btree nodes per allocator page.
+            /// \param[in] allocator Where allocator node pages come from.
+            /// \return Reference to \see{FileAllocator::Registry}. Will create it on first
+            /// access.
+            Registry &GetRegistry (
+                std::size_t entriesPerNode = 32,
+                std::size_t nodesPerPage = 5,
+                Allocator::SharedPtr allocator = DefaultAllocator::Instance ());
+
             /// \brief
             /// Return the root offset.
             /// \return header.rootOffset.
