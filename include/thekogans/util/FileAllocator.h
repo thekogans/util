@@ -41,27 +41,29 @@ namespace thekogans {
         /// | Header | Block 1 | ... | Block N |
         /// +--------+---------+-----+---------+
         ///
-        /// Header
-        /// +-------+-------+-----------+-----------------+-------------+----------------+------------+
-        /// | magic | flags | blockSize | freeBlockOffset | btreeOffset | registryOffset | rootOffset |
-        /// +-------+-------+-----------+-----------------+-------------+----------------+------------+
-        ///     4       4         8              8               8               8               8
+        /// Header            |<---------------------------------------- version 1 ---------------------------------------->|
+        /// +-------+---------+-------+-----------+-----------+-----------------+-------------+----------------+------------+
+        /// | magic | version | flags | blockSize | heapStart | freeBlockOffset | btreeOffset | registryOffset | rootOffset |
+        /// +-------+---------+-------+-----------+-----------+-----------------+-------------+----------------+------------+
+        ///     4       2         2         8           8              8               8               8              8
         ///
-        /// Header::SIZE = 48
+        /// Header::SIZE = 56 (version 1)
         ///
         /// Block
         /// +--------+------+--------+
         /// | Header | Data | Footer |
         /// +--------+------+--------+
-        ///     16     var      16
+        ///    16/12    var    16/12
         ///
         /// Header/Footer
         /// +-------+-------+------+
         /// | magic | flags | size |
         /// +-------+-------+------+
-        ///     4       4       8
+        ///    *4       4       8
         ///
-        /// Header/Footer::SIZE = 16
+        /// * - Can be ommitted by undefining THEKOGANS_UTIL_FILE_ALLOCATOR_BLOCK_INFO_USE_MAGIC
+        ///
+        /// Header/Footer::SIZE = 16/12
         ///
         /// Data
         /// +-----------------+-----------------------+
@@ -303,7 +305,7 @@ namespace thekogans {
                     /// \param[in] offset Offset where the header begins.
                     void Write (
                         File &file,
-                        PtrType offset);
+                        PtrType offset) const;
                 } header;
                 /// \struct FileAllocator::BlockInfo::Footer FileAllocator.h
                 /// thekogans/util/FileAllocator.h
@@ -376,7 +378,7 @@ namespace thekogans {
                     /// \param[in] offset Offset where the footer begins.
                     void Write (
                         File &file,
-                        PtrType offset);
+                        PtrType offset) const;
                 } footer;
 
                 /// \brief
@@ -449,15 +451,17 @@ namespace thekogans {
                 }
                 /// \brief
                 /// Return true if this is the first block in the heap.
+                /// \param[in] heapStart The offset of the first byte in the heap.
                 /// \return true == first block in the heap.
-                inline bool IsFirst () const {
-                    return GetOffset () == FileAllocator::MIN_BLOCK_OFFSET;
+                inline bool IsFirst (ui64 heapStart) const {
+                    return heapStart + HEADER_SIZE == GetOffset ();
                 }
                 /// \brief
                 /// Return true if this is the last block in the heap.
+                /// \param[in] heapEnd The offset of the last byte in the heap.
                 /// \return true == last block in the heap.
-                inline bool IsLast (ui64 heapSize) const {
-                    return GetOffset () + GetSize () + FOOTER_SIZE == heapSize;
+                inline bool IsLast (ui64 heapEnd) const {
+                    return GetOffset () + GetSize () + FOOTER_SIZE == heapEnd;
                 }
 
                 /// \brief
@@ -503,18 +507,16 @@ namespace thekogans {
                 /// If !IsFirst, return the block info right before this one.
                 /// \param[in] file FileAllocator \see{File} to read prev from.
                 /// \param[out] prev Where to put the previous block info.
-                /// \return true == prev is valid, false == IsFirst is true.
-                bool Prev (
+                void Prev (
                     File &file,
-                    BlockInfo &prev);
+                    BlockInfo &prev) const;
                 /// \brief
                 /// If !IsLast, return the block info right after this one.
                 /// \param[in] file FileAllocator \see{File} to read next from.
                 /// \param[out] next Where to put the next block info.
-                /// \return true == next is valid, false == IsLast is true.
-                bool Next (
+                void Next (
                     File &file,
-                    BlockInfo &next);
+                    BlockInfo &next) const;
 
                 /// \brief
                 /// Read block info.
@@ -523,7 +525,7 @@ namespace thekogans {
                 /// \brief
                 /// Write block info.
                 /// \param[in] file FileAllocator \see{File} to write.
-                void Write (File &file);
+                void Write (File &file) const;
             #if defined (THEKOGANS_UTIL_FILE_ALLOCATOR_BLOCK_INFO_USE_MAGIC)
                 /// \brief
                 /// If you chose to use magic (a very smart move) to protect
@@ -532,7 +534,7 @@ namespace thekogans {
                 /// the next time you access that block you get an exception
                 /// instead of corrupted data.
                 /// \param[in] file FileAllocator \see{File} to write.
-                void Invalidate (File &file);
+                void Invalidate (File &file) const;
             #endif // defined (THEKOGANS_UTIL_FILE_ALLOCATOR_BLOCK_INFO_USE_MAGIC)
 
                 /// \brief
@@ -633,12 +635,18 @@ namespace thekogans {
                 /// Flag to indicate that this heap is allocating fixed size blocks.
                 static const std::size_t FLAGS_FIXED = 1;
                 /// \brief
+                /// Heap version.
+                ui16 version;
+                /// \brief
                 /// Heap flags.
-                Flags32 flags;
+                Flags16 flags;
                 /// \brief
                 /// If fixed, contains the block size to allocate. Otherwise
                 /// contains the BTree::Node size on disk.
                 ui64 blockSize;
+                /// \brief
+                /// Begining of heap (start of first BlockInfo::Header).
+                PtrType heapStart;
                 /// \brief
                 /// If fixed, contains the head of the first free fixed block list.
                 /// Otherwise contains the head of the first free BTree::Node block list.
@@ -653,17 +661,26 @@ namespace thekogans {
                 /// Contains the offset of the user set root block.
                 /// See GetRootOffset/SetRootOffset below.
                 PtrType rootOffset;
+                // If you add new fields, adjust the SIZE and increment the
+                // CURRENT_VERSION below and add if statements to operator
+                // << and >> to read and write them.
 
                 /// \brief
                 /// The size of the header on disk.
                 static const std::size_t SIZE =
                     UI32_SIZE +     // magic
-                    UI32_SIZE +     // flags
+                    UI16_SIZE +     // version
+                    UI16_SIZE +     // flags
                     UI64_SIZE +     // blockSize
+                    PTR_TYPE_SIZE + // heapStart
                     PTR_TYPE_SIZE + // freeBlockOffset
                     PTR_TYPE_SIZE + // btreeOffset
                     PTR_TYPE_SIZE + // registryOffset
                     PTR_TYPE_SIZE;  // rootOffset
+
+                /// \brief
+                /// Current version.
+                static const ui16 CURRENT_VERSION = 1;
 
                 /// \brief
                 /// ctor.
@@ -674,8 +691,10 @@ namespace thekogans {
                 Header (
                     Flags32 flags_ = 0,
                     ui64 blockSize_ = 0) :
+                    version (CURRENT_VERSION),
                     flags (flags_),
                     blockSize (blockSize_),
+                    heapStart (SIZE),
                     freeBlockOffset (0),
                     btreeOffset (0),
                     registryOffset (0),
@@ -715,9 +734,6 @@ namespace thekogans {
             /// Minimum user data size.
             static const std::size_t MIN_USER_DATA_SIZE = 32;
             /// \brief
-            /// Based on the layout of the file, the smallest valid user offset is;
-            static const std::size_t MIN_BLOCK_OFFSET = Header::SIZE + BlockInfo::HEADER_SIZE;
-            /// \brief
             /// Minimum block size.
             /// BlockInfo::SIZE happens to be 32 bytes, together with 32 for
             /// MIN_USER_DATA_SIZE above means that the smallest block we can
@@ -747,7 +763,7 @@ namespace thekogans {
 
             /// \brief
             /// If !IsFixed, a \see{FileAllocator::Registry} in the form of a \see{BTree}
-            /// is available for storing and retrieving associated values. The key type
+            /// is available for storing and retrieving associated values. The key type is
             /// \see{StringKey} and the value type is any type derived from \see{BTree::Value}.
             /// If IsFixed, will throw an \see{Exception}.
             /// NOTE: The following parameters are standard \see{BTree} tunning parameters
@@ -802,6 +818,24 @@ namespace thekogans {
             /// \param[in, out] block \see{BlockInfo} with properly initialized offset.
             /// On return will contain the block info.
             void GetBlockInfo (BlockInfo &block);
+            /// \brief
+            /// Given a properly initialized block (offset), get the previous one.
+            /// \param[in] block BlockInfo whose previous BlockInfo to return.
+            /// \param[out] prev Where to return the previous BlockInfo.
+            /// \return true == prev contains the previous block info.
+            /// false == block is first in the heap.
+            bool GetPrevBlockInfo (
+                const BlockInfo &block,
+                BlockInfo &prev);
+            /// \brief
+            /// Given a properly initialized block (offset), get the next one.
+            /// \param[in] block BlockInfo whose next BlockInfo to return.
+            /// \param[out] next Where to return the next BlockInfo.
+            /// \return true == next contains the next block info.
+            /// false == block is last in the heap.
+            bool GetNextBlockInfo (
+                const BlockInfo &block,
+                BlockInfo &next);
 
             /// \brief
             /// Create a \see{BlockBuffer} for reading or writing. If for reading
