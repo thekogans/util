@@ -727,7 +727,8 @@ namespace thekogans {
                 header (keyType, valueType, (ui32)entriesPerNode),
                 keyFactory (Key::GetTypeFactory (keyType.c_str ())),
                 valueFactory (Value::GetTypeFactory (valueType.c_str ())),
-                root (nullptr) {
+                root (nullptr),
+                dirty (false) {
             if (offset != 0) {
                 FileAllocator::BlockBuffer::SharedPtr buffer =
                     fileAllocator->CreateBlockBuffer (offset);
@@ -778,6 +779,7 @@ namespace thekogans {
         }
 
         BTree::~BTree () {
+            WriteHeader ();
             Node::Free (root);
         }
 
@@ -917,6 +919,7 @@ namespace thekogans {
         }
 
         void BTree::Flush () {
+            WriteHeader ();
             Node::Free (root);
             root = Node::Alloc (*this, header.rootOffset);
         }
@@ -928,10 +931,17 @@ namespace thekogans {
         }
 
         void BTree::Save () {
-            FileAllocator::BlockBuffer::SharedPtr buffer =
-                fileAllocator->CreateBlockBuffer (offset, 0, false);
-            *buffer << MAGIC32 << header;
-            fileAllocator->WriteBlockBuffer (*buffer);
+            dirty = true;
+        }
+
+        void BTree::WriteHeader () {
+            if (dirty) {
+                FileAllocator::BlockBuffer::SharedPtr buffer =
+                    fileAllocator->CreateBlockBuffer (offset, 0, false);
+                *buffer << MAGIC32 << header;
+                fileAllocator->WriteBlockBuffer (*buffer);
+                dirty = false;
+            }
         }
 
         void BTree::SetRoot (Node *node) {

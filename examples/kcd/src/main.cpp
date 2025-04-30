@@ -25,14 +25,64 @@
 #include "thekogans/util/Console.h"
 #include "thekogans/util/ConsoleLogger.h"
 #include "thekogans/util/FileAllocator.h"
+#include "thekogans/util/FileAllocatorRegistry.h"
+#include "thekogans/util/BTree.h"
 #include "thekogans/util/BTreeKeys.h"
 #include "thekogans/util/BTreeValues.h"
-#include "thekogans/util/BTree.h"
+#include "thekogans/kcd/Options.h"
+#include "thekogans/kcd/Version.h"
 
 using namespace thekogans;
+using namespace kcd;
 
 namespace {
-    void ScanTree (
+    struct Root {
+        std::string path;
+        util::FileAllocator::PtrType pathBTreeOffset;
+        util::FileAllocator::PtrType componentBTreeOffset;
+        bool active;
+
+        Root (
+            std::string path_,
+            util::FileAllocator::PtrType pathBTreeOffset_,
+            util::FileAllocator::PtrType componentBTreeOffset_,
+            bool active_) :
+
+
+        std::size_t Size () const {
+            return
+                util::Serializer::Size (path) +
+                util::FileAllocator::PTR_TYPE_SIZE +
+                util::FileAllocator::PTR_TYPE_SIZE +
+                util::Serializer::Size (active);
+        }
+    };
+
+    util::Serializer &operator << (
+            util::Serializer &serializer,
+            const Root &root) {
+        serializer <<
+            root.path <<
+            root.pathBTreeOffset <<
+            root.componentBTreeOffset <<
+            root.active;
+        return serializer;
+    }
+
+    util::Serializer &operator >> (
+            util::Serializer &serializer,
+            Root &root) {
+        serializer >>
+            root.path >>
+            root.pathBTreeOffset >>
+            root.componentBTreeOffset >>
+            root.active;
+        return serializer;
+    }
+
+    using RootsValue = util::ArrayValue<Root>;
+
+    void ScanRoot (
             const std::string &path,
             util::ui32 level,
             util::BTree &pathBtree,
@@ -73,47 +123,80 @@ namespace {
                 }
                 util::Console::Instance ()->PrintString (entry.name.c_str ());
                 util::Console::Instance ()->PrintString ("\n");
-                ScanTree (util::MakePath (path, entry.name), level + 1, pathBtree, componentBtree);
+                ScanRoot (util::MakePath (path, entry.name), level + 1, pathBtree, componentBtree);
             }
         }
-    }
-
-    struct BTrees {
-        util::FileAllocator::PtrType path;
-        util::FileAllocator::PtrType component;
-
-        static const std::size_t SIZE =
-            util::FileAllocator::PTR_TYPE_SIZE +
-            util::FileAllocator::PTR_TYPE_SIZE;
-
-        BTrees () :
-            path (0),
-            component (0) {}
-    };
-
-    util::Serializer &operator << (
-        util::Serializer &serializer,
-            const BTrees &btrees) {
-        serializer << btrees.path << btrees.component;
-        return serializer;
-    }
-
-    util::Serializer &operator >> (
-            util::Serializer &serializer,
-            BTrees &btrees) {
-        serializer >> btrees.path >> btrees.component;
-        return serializer;
     }
 }
 
 int main (
         int argc,
         char *argv[]) {
-    THEKOGANS_UTIL_LOG_INIT (
-        util::LoggerMgr::Debug,
+    Options::Instance ()->Parse (argc, argv, "hvlarp");
+    THEKOGANS_UTIL_LOG_RESET (
+        Options::Instance ()->logLevel,
         util::LoggerMgr::All);
-    THEKOGANS_UTIL_LOG_ADD_LOGGER (
-        util::Logger::SharedPtr (new util::ConsoleLogger));
+    THEKOGANS_UTIL_LOG_ADD_LOGGER (new util::ConsoleLogger);
+    THEKOGANS_UTIL_IMPLEMENT_LOG_FLUSHER;
+    if (Options::Instance ()->help) {
+        THEKOGANS_UTIL_LOG_INFO (
+            "%s [-h] [-v] [-l:'%s'] -a:[scan|show_roots|delete_root|cd] "
+            "[-r:rooot] [-p:pattern]\n\n"
+            "h - Display this help message.\n"
+            "v - Display version information.\n"
+            "l - Set logging level (default is Info).\n"
+            "a - Action to perform (default is cd).\n"
+            "r - Root (can be repeated).\n"
+            "p - Pattern.\n",
+            argv[0],
+            GetLevelsList (" | ").c_str ());
+    }
+    else if (Options::Instance ()->version) {
+        THEKOGANS_UTIL_LOG_INFO (
+            "libthekogans_util - %s\n"
+            "%s - %s\n",
+            util::GetVersion ().ToString ().c_str (),
+            argv[0], GetVersion ().ToString ().c_str ());
+    }
+    else {
+        THEKOGANS_UTIL_TRY {
+            THEKOGANS_UTIL_IMPLEMENT_FILE_ALLOCATOR_POOL_FLUSHER;
+            util::FileAllocator::SharedPtr fileAllocator =
+                util::FileAllocator::Pool::Instance ()->GetFileAllocator (
+                    util::MakePath (util::Path::GetHomeDirectory (), "kcd.db"));
+            FileAllocator::Registry &registry = fileAllocator->GetRegistry ();
+            if (options.action == "scan") {
+                if (!options.roots.empty ()) {
+                    for (std::size_t i = 0, count = options.roots.size (); i < count; ++i) {
+                    }
+                }
+                else {
+                }
+            }
+            else if (options.action == "show_roots") {
+            }
+            else if (options.action == "delete_root") {
+                if (!options.roots.empty ()) {
+                    for (std::size_t i = 0, count = options.roots.size (); i < count; ++i) {
+                    }
+                }
+                else {
+                    THEKOGANS_UTIL_LOG_ERROR ("Must specify at least one root to delete.\n");
+                }
+            }
+            else if (options.action == "cd") {
+                if (!options.pattern.empty ()) {
+                }
+                else {
+                }
+            }
+            else {
+                THEKOGANS_UTIL_LOG_ERROR ("Must specify a valid action.\n");
+            }
+        }
+        THEKOGANS_UTIL_CATCH_AND_LOG
+    }
+
     std::string path = argc == 2 ?
         util::Path (argv[1]).MakeAbsolute () :
         util::Path::GetCurrDirectory ();
@@ -123,10 +206,7 @@ int main (
     }
     THEKOGANS_UTIL_TRY {
         THEKOGANS_UTIL_IMPLEMENT_LOG_FLUSHER;
-        util::FileAllocator::SharedPtr fileAllocator =
-            util::FileAllocator::Pool::Instance ()->GetFileAllocator (
-                util::MakePath (util::Path::GetHomeDirectory (), "kcd.db"));
-        util::FileAllocator::Flusher flusher (fileAllocator);
+
         BTrees btrees;
         util::FileAllocator::PtrType rootOffset = fileAllocator->GetRootOffset ();
         if (rootOffset != 0) {
@@ -158,9 +238,10 @@ int main (
             *buffer << util::MAGIC32 << btrees;
             fileAllocator->WriteBlockBuffer (*buffer);
         }
-        // util::Console::Instance ()->PrintString (path.c_str ());
-        // util::Console::Instance ()->PrintString ("\n");
-        // ScanTree (path, 1, pathBtree, componentBtree);
+        util::Console::Instance ()->PrintString (path.c_str ());
+        util::Console::Instance ()->PrintString ("\n");
+        ScanRoot (path, 1, pathBtree, componentBtree);
+        /*
         util::BTree::Iterator it (new util::StringKey ("shape"));
         for (componentBtree.FindFirst (it); !it.IsFinished (); it.Next ()) {
             util::GUIDArrayValue::SharedPtr componentValue = it.GetValue ();
@@ -171,6 +252,7 @@ int main (
                 }
             }
         }
+        */
         /*
         util::BTree::Iterator it;
         for (componentBtree.FindFirst (it); !it.Finished (); it.Next ()) {

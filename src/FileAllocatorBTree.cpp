@@ -407,6 +407,7 @@ namespace thekogans {
         }
 
         FileAllocator::BTree::~BTree () {
+            WriteHeader ();
             Node::Free (root);
         }
 
@@ -453,6 +454,7 @@ namespace thekogans {
         }
 
         void FileAllocator::BTree::Flush () {
+            WriteHeader ();
             Node::Free (root);
             root = Node::Alloc (*this, header.rootOffset);
         }
@@ -464,9 +466,16 @@ namespace thekogans {
         }
 
         void FileAllocator::BTree::Save () {
-            BlockBuffer buffer (fileAllocator, offset, Header::SIZE);
-            buffer << MAGIC32 << header;
-            buffer.BlockWrite (fileAllocator.file);
+            dirty = true;
+        }
+
+        void FileAllocator::BTree::WriteHeader () {
+            if (dirty) {
+                BlockBuffer buffer (fileAllocator, offset, Header::SIZE);
+                buffer << MAGIC32 << header;
+                buffer.BlockWrite (fileAllocator.file);
+                dirty = false;
+            }
         }
 
         void FileAllocator::BTree::SetRoot (Node *node) {

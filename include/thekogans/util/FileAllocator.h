@@ -34,18 +34,25 @@ namespace thekogans {
         /// \struct FileAllocator FileAllocator.h thekogans/util/FileAllocator.h
         ///
         /// \brief
-        /// FileAllocator manages a heap on permanent storage. The heap physical
-        /// layout looks like this:
+        /// FileAllocator manages a heap on permanent storage. It's public API is
+        /// thread safe and is meant to be used by different clients from different
+        /// threads. The heap physical layout looks like this:
         ///
         /// +--------+---------+-----+---------+
         /// | Header | Block 1 | ... | Block N |
         /// +--------+---------+-----+---------+
         ///
-        /// Header            |<---------------------------------------- version 1 ---------------------------------------->|
-        /// +-------+---------+-------+-----------+-----------+-----------------+-------------+----------------+------------+
-        /// | magic | version | flags | blockSize | heapStart | freeBlockOffset | btreeOffset | registryOffset | rootOffset |
-        /// +-------+---------+-------+-----------+-----------+-----------------+-------------+----------------+------------+
-        ///     4       2         2         8           8              8               8               8              8
+        /// Header            |<------------------ version 1 ------------------>|
+        /// +-------+---------+-------+-----------+-----------+-----------------+
+        /// | magic | version | flags | blockSize | heapStart | freeBlockOffset |...
+        /// +-------+---------+-------+-----------+-----------+-----------------+
+        ///     4       2         2         8           8              8
+        ///
+        ///    |<--------------- version 1 --------------->|
+        ///    +-------------+----------------+------------+
+        /// ,,,| btreeOffset | registryOffset | rootOffset |
+        ///    +-------------+----------------+------------+
+        ///        8               8              8
         ///
         /// Header::SIZE = 56 (version 1)
         ///
@@ -185,7 +192,7 @@ namespace thekogans {
                 /// \brief
                 /// Call
                 inline void Flush () {
-                    fileAllocator->FlushBTree ();
+                    fileAllocator->Flush ();
                 }
 
                 /// \brief
@@ -222,7 +229,7 @@ namespace thekogans {
                 /// \brief
                 /// Block header preceeds the user data and forms one half of
                 /// it's structure. BlockInfo uses the information found in
-                /// header to compare against what's fond in footer. If the
+                /// header to compare against what's found in footer. If the
                 /// two match, the block is considered intact. If they don't
                 /// an exception is thrown indicating heap corruption.
                 struct _LIB_THEKOGANS_UTIL_DECL Header {
@@ -635,6 +642,12 @@ namespace thekogans {
                 /// Flag to indicate that this heap is allocating fixed size blocks.
                 static const std::size_t FLAGS_FIXED = 1;
                 /// \brief
+                /// When creating a new heap, this flag will stamp the structure
+                /// of \see{BlockInfo} so that if you ever try to open it with a
+                /// wrongly compiled version of thekogans_util it will complain
+                /// instead of corrupting your data.
+                static const std::size_t FLAGS_BLOCK_INFO_USES_MAGIC = 2;
+                /// \brief
                 /// Heap version.
                 ui16 version;
                 /// \brief
@@ -661,8 +674,8 @@ namespace thekogans {
                 /// Contains the offset of the user set root block.
                 /// See GetRootOffset/SetRootOffset below.
                 PtrType rootOffset;
-                // If you add new fields, adjust the SIZE and increment the
-                // CURRENT_VERSION below and add if statements to operator
+                // NOTE: If you add new fields, adjust the SIZE and increment
+                // the CURRENT_VERSION below and add if statements to operator
                 // << and >> to read and write them.
 
                 /// \brief
@@ -689,22 +702,33 @@ namespace thekogans {
                 /// size of the block to allocate. Otherwise contains the
                 /// size of BTree::Node on disk.
                 Header (
-                    Flags32 flags_ = 0,
-                    ui64 blockSize_ = 0) :
-                    version (CURRENT_VERSION),
-                    flags (flags_),
-                    blockSize (blockSize_),
-                    heapStart (SIZE),
-                    freeBlockOffset (0),
-                    btreeOffset (0),
-                    registryOffset (0),
-                    rootOffset (0) {}
+                        Flags32 flags_ = 0,
+                        ui64 blockSize_ = 0) :
+                        version (CURRENT_VERSION),
+                        flags (flags_),
+                        blockSize (blockSize_),
+                        heapStart (SIZE),
+                        freeBlockOffset (0),
+                        btreeOffset (0),
+                        registryOffset (0),
+                        rootOffset (0) {
+                #if defined (THEKOGANS_UTIL_FILE_ALLOCATOR_BLOCK_INFO_USE_MAGIC)
+                    flags.Set (FLAGS_BLOCK_INFO_USES_MAGIC, true);
+                #endif // defined (THEKOGANS_UTIL_FILE_ALLOCATOR_BLOCK_INFO_USE_MAGIC)
+                }
 
                 /// \brief
-                /// Return true if this FileAllocator is allocating fixed size blocks.
+                /// Return true if this heap is allocating fixed size blocks.
                 /// \return true == FLAGS_FIXED is set.
                 inline bool IsFixed () const {
                     return flags.Test (FLAGS_FIXED);
+                }
+                /// \brief
+                /// Return true if this heap was created with a version of thekogans_util
+                /// that was built with THEKOGANS_UTIL_FILE_ALLOCATOR_BLOCK_INFO_USE_MAGIC.
+                /// \return true == FLAGS_FIXED is set.
+                inline bool IsBlockInfoUsesMagic () const {
+                    return flags.Test (FLAGS_BLOCK_INFO_USES_MAGIC);
                 }
             } header;
             /// \brief
@@ -722,8 +746,12 @@ namespace thekogans {
             /// \see{BTree} to manage heap free space (for random size heaps only).
             BTree *btree;
             /// \brief
-            /// \see{FileAllocator::Registry}.
+            /// \see{FileAllocator::Registry} (for random size heaps only).
             Registry *registry;
+            /// \brief
+            /// Set in Save and indicates that the \see{Header} is dirty and needs
+            /// to be written to disk.
+            bool dirty;
             /// \brief
             /// FileAllocator is meant to be shared between threads allocating
             /// from the same file.
@@ -739,6 +767,13 @@ namespace thekogans {
             /// MIN_USER_DATA_SIZE above means that the smallest block we can
             /// allocate is 64 bytes.
             static const std::size_t MIN_BLOCK_SIZE = BlockInfo::SIZE + MIN_USER_DATA_SIZE;
+
+            /// \brief
+            /// Return the heap file path.
+            /// \return Heap file path.
+            inline std::string GetPath () const {
+                return file.GetPath ();
+            }
 
             /// \brief
             /// Return true if fixed block allocator.
@@ -875,8 +910,15 @@ namespace thekogans {
                 std::size_t blockLength = 0);
 
             /// \brief
-            /// Flush the btree cache to disk.
-            void FlushBTree ();
+            /// Flush the header, btree (if !IsFixed) and file cache
+            /// to disk.
+            /// IMORTANT: Flush cannot flush unwritten client data as
+            /// it has no clue how you're using the heap. To make sure
+            /// all data is flushed to disk, make sure you call flush
+            /// on all your heap objects first (if they have any) so
+            /// that they write to FileAllocator::BlockBuffer and then
+            /// call this Flush.
+            void Flush ();
 
             /// \brief
             /// Debugging helper. Dumps \see{Btree::Node}s to stdout.
@@ -885,7 +927,7 @@ namespace thekogans {
         private:
             /// \brief
             /// ctor.
-            /// \param[in] path FileAllocator path.
+            /// \param[in] path Heap file path.
             /// \param[in] blockSize If > 0, this is a fixed size block allocator.
             /// If == 0, this is a random size block allocator.
             /// \param[in] blocksPerPage If fixed contains the number of fixed
@@ -909,7 +951,7 @@ namespace thekogans {
             virtual ~FileAllocator ();
 
             /// \brief
-            /// Used to allocate blocks when FLAGS_FIXED is true.
+            /// Used to allocate blocks when IsFixed is true.
             /// Uses \see{Header::blockSize}. This method is also
             /// used directly by the internal \see{BTree::Node}.
             /// \return Offset of allocated block.
@@ -920,8 +962,11 @@ namespace thekogans {
             void FreeFixedBlock (PtrType offset);
 
             /// \brief
-            /// Write the \see{Header}.
+            /// Set dirty to true.
             void Save ();
+            /// \brief
+            /// Write the \see{Header}.
+            void FileAllocator::WriteHeader ();
 
             /// \brief
             /// Needs access to private members.
@@ -986,6 +1031,15 @@ namespace thekogans {
             /// FileAllocator is neither copy constructable, nor assignable.
             THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (FileAllocator)
         };
+
+        /// \def THEKOGANS_UTIL_IMPLEMENT_FILE_ALLOCATOR_POOL_FLUSHER
+        /// Use this macro at the top of your main to flush the \see{FileAllocator::Pool} on exit.
+        #define THEKOGANS_UTIL_IMPLEMENT_FILE_ALLOCATOR_POOL_FLUSHER\
+            struct FileAllocatorPoolFlusher {\
+                ~FileAllocatorPoolFlusher () {\
+                    thekogans::util::FileAllocator::Pool::Instance ()->FlushFileAllocator ();\
+                }\
+            } fileAllocatorPoolFlusher
 
     } // namespace util
 } // namespace thekogans

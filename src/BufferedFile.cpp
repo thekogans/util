@@ -310,7 +310,10 @@ namespace thekogans {
 
         void BufferedFile::Close () {
             if (IsOpen ()) {
-                DeleteCache (false);
+                // All transactions must be commited before file close.
+                // On the other hand dirty pages get flushed out to disk
+                // to mimic what File would do.
+                DeleteCache (!IsTransactionPending ());
                 position = 0;
                 sizeOnDisk = 0;
                 size = 0;

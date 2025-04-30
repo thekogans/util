@@ -18,9 +18,11 @@
 #if !defined (__thekogans_util_FileAllocatorRegistry_h)
 #define __thekogans_util_FileAllocatorRegistry_h
 
+#include <string>
 #include "thekogans/util/Config.h"
 #include "thekogans/util/BTree.h"
 #include "thekogans/util/BTreeKeys.h"
+#include "thekogans/util/Allocator.h"
 #include "thekogans/util/FileAllocator.h"
 #include "thekogans/util/SpinLock.h"
 
@@ -33,7 +35,7 @@ namespace thekogans {
         /// \brief
         /// \see{FileAllocator}::Registry provides global associative storage for
         /// \see{FileAllocator} clients. It's available only when \see{FileAllocator::IsFixed}
-        /// returns false. Use it store and retrieve practically any value derived
+        /// returns false. Use it to store and retrieve practically any value derived
         /// from \see{BTree::Value}. The key type is any std::string.
 
         struct _LIB_THEKOGANS_UTIL_DECL FileAllocator::Registry {

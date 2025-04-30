@@ -277,6 +277,9 @@ private:
     /// \brief
     /// An instance of \see{BlockAllocator} to allocate \see{Node}s.
     Allocator::SharedPtr nodeAllocator;
+    /// \brief
+    /// We accumulate all changes and update the header in the dtor.
+    bool dirty;
 
 public:
     /// \brief
@@ -347,8 +350,11 @@ public:
 
 private:
     /// \brief
-    /// Write the \see{Header} to disk.
+    /// Set dirty = true.
     void Save ();
+    /// \brief
+    /// Write the \see{Header} to disk.
+    void WriteHeader ();
     /// \brief
     /// Set root node.
     /// \param[in] node \see{Node} to set as new root.

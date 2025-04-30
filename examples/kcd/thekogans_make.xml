@@ -10,7 +10,13 @@
     <dependency organization = "thekogans"
                 name = "util"/>
   </dependencies>
+  <cpp_headers prefix = "include">
+    <cpp_header>$(organization)/$(project_directory)/Options.h</cpp_header>
+    <cpp_header>$(organization)/$(project_directory)/Version.h</cpp_header>
+  </cpp_headers>
   <cpp_sources prefix = "src">
+    <cpp_source>Options.cpp</cpp_source>
+    <cpp_source>Version.cpp</cpp_source>
     <cpp_source>main.cpp</cpp_source>
   </cpp_sources>
   <if condition = "$(TOOLCHAIN_OS) == 'Windows'">
