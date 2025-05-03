@@ -131,7 +131,8 @@ namespace thekogans {
                     virtual ~XlibWindow ();
 
                     /// \brief
-                    /// Override this method in your derivatives to react to events sent to your window.
+                    /// Override this method in your derivatives to react to
+                    /// events sent to your window.
                     /// \param[in] event XEvent sent.
                     virtual void OnEvent (const XEvent & /*event*/) noexcept {}
 
@@ -187,7 +188,8 @@ namespace thekogans {
                     virtual void ScheduleJob () override;
 
                     /// \brief
-                    /// Override this method in your derivatives to react to events sent to your windows.
+                    /// Override this method in your derivatives to react to
+                    /// events sent to your windows.
                     /// \param[in] event XEvent sent.
                     virtual void OnEvent (const XEvent & /*event*/) noexcept {}
 

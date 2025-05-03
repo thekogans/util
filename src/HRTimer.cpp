@@ -19,7 +19,7 @@
 #if defined (TOOLCHAIN_OS_Windows)
     #include "thekogans/util/os/windows/WindowsHeader.h"
 #elif defined (TOOLCHAIN_OS_Linux)
-    #include <sys/time.h>
+    #include <time.h>
 #elif defined (TOOLCHAIN_OS_OSX)
     #include <mach/mach_time.h>
 #endif // defined (TOOLCHAIN_OS_Windows)
@@ -34,11 +34,13 @@ namespace thekogans {
             QueryPerformanceFrequency (&frequency);
             return frequency.QuadPart;
         #elif defined (TOOLCHAIN_OS_Linux)
-            return 1000000;
+            timespec res;
+            return clock_getres (CLOCK_MONOTONIC, &res) == 0 ?
+                res.tv_sec + res.tv_nsec * 1e9 : 1e9;
         #elif defined (TOOLCHAIN_OS_OSX)
             mach_timebase_info_data_t timeBaseInfoData;
             mach_timebase_info (&timeBaseInfoData);
-            return 1000000000 * (ui64)timeBaseInfoData.denom / (ui64)timeBaseInfoData.numer;
+            return 1e9 * (ui64)timeBaseInfoData.denom / (ui64)timeBaseInfoData.numer;
         #endif // defined (TOOLCHAIN_OS_Windows)
         }
 
@@ -48,9 +50,9 @@ namespace thekogans {
             QueryPerformanceCounter (&instant);
             return instant.QuadPart;
         #elif defined (TOOLCHAIN_OS_Linux)
-            timeval tv;
-            gettimeofday (&tv, 0);
-            return tv.tv_sec * 1000000 + tv.tv_usec;
+            timespec time;
+            return clock_gettime (CLOCK_MONOTONIC, &time) == 0 ?
+                time.tv_sec * 1e9 + time.tv_nsec : 0;
         #elif defined (TOOLCHAIN_OS_OSX)
             return mach_absolute_time ();
         #endif // defined (TOOLCHAIN_OS_Windows)

@@ -136,11 +136,7 @@ namespace thekogans {
         ///
         /// \brief
         template<typename T>
-        struct _LIB_THEKOGANS_UTIL_DECL ArrayValue : public BTree::Value {
-            /// \brief
-            /// ArrayValue is a \see{Serializable}.
-            THEKOGANS_UTIL_DECLARE_SERIALIZABLE (ArrayValue)
-
+        struct ArrayValue : public BTree::Value {
             /// \brief
             /// The actual array.
             std::vector<T> value;
@@ -150,6 +146,40 @@ namespace thekogans {
             /// \param[in] value_ Value to initialize with.
             ArrayValue (const std::vector<T> &value_ = std::vector<T> {}) :
                 value (value_) {}
+
+            /// \brief
+            /// Return array length.
+            /// \return Array length.
+            inline std::size_t GetLength () const {
+                return value.size ();
+            }
+
+            /// \brief
+            /// const (rvalue) element accessor.
+            /// \param[in] index Element index to return.
+            /// \return reference to element at index.
+            inline const T &operator [] (std::size_t index) const {
+                if (index < value.size ()) {
+                    return value[index];
+                }
+                else {
+                    THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                        THEKOGANS_UTIL_OS_ERROR_CODE_EOVERFLOW);
+                }
+            }
+            /// \brief
+            /// lvalue element accessor.
+            /// \param[in] index Element index to return.
+            /// \return Reference to element at index.
+            inline T &operator [] (std::size_t index) {
+                if (index < value.size ()) {
+                    return value[index];
+                }
+                else {
+                    THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                        THEKOGANS_UTIL_OS_ERROR_CODE_EOVERFLOW);
+                }
+            }
 
             // BTree::Value
             /// \brief
@@ -184,8 +214,27 @@ namespace thekogans {
             }
         };
 
-        using StringArrayValue = ArrayValue<std::string>;
-        using GUIDArrayValue = ArrayValue<GUID>;
+        /// \struct StringArrayValue BTreeValues.h thekogans/util/BTreeValues.h
+        ///
+        /// \brief
+
+        struct _LIB_THEKOGANS_UTIL_DECL StringArrayValue : public ArrayValue<std::string> {
+            THEKOGANS_UTIL_DECLARE_SERIALIZABLE (StringArrayValue)
+
+            StringArrayValue (const std::vector<std::string> &value = std::vector<std::string> ()) :
+                ArrayValue<std::string> (value) {}
+        };
+
+        /// \struct GUIDArrayValue BTreeValues.h thekogans/util/BTreeValues.h
+        ///
+        /// \brief
+
+        struct _LIB_THEKOGANS_UTIL_DECL GUIDArrayValue : public ArrayValue<GUID> {
+            THEKOGANS_UTIL_DECLARE_SERIALIZABLE (GUIDArrayValue)
+
+            GUIDArrayValue (const std::vector<GUID> &value = std::vector<GUID> ()) :
+                ArrayValue<GUID> (value) {}
+        };
 
     } // namespace util
 } // namespace thekogans
