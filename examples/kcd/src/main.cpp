@@ -54,139 +54,140 @@ namespace {
         }
         return logLevelList;
     }
-}
 
-util::FileAllocator::SharedPtr fileAllocator;
+    util::FileAllocator::SharedPtr fileAllocator;
 
-struct Root : public util::RefCounted {
-    THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (Root)
+    struct Root : public util::RefCounted {
+        THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (Root)
 
-    std::string path;
-    util::FileAllocator::PtrType pathBTreeOffset;
-    util::FileAllocator::PtrType componentBTreeOffset;
-    bool active;
-    util::BTree::SharedPtr pathBTree;
-    util::BTree::SharedPtr componentBTree;
+        std::string path;
+        util::FileAllocator::PtrType pathBTreeOffset;
+        util::FileAllocator::PtrType componentBTreeOffset;
+        bool active;
+        util::BTree::SharedPtr pathBTree;
+        util::BTree::SharedPtr componentBTree;
 
-    Root (
-        std::string path_ = std::string (),
-        util::FileAllocator::PtrType pathBTreeOffset_ = 0,
-        util::FileAllocator::PtrType componentBTreeOffset_ = 0,
-        bool active_ = false) :
-        path (path_),
-        pathBTreeOffset (pathBTreeOffset_),
-        componentBTreeOffset (componentBTreeOffset_),
-        active (active_) {}
+        Root (
+            std::string path_ = std::string (),
+            util::FileAllocator::PtrType pathBTreeOffset_ = 0,
+            util::FileAllocator::PtrType componentBTreeOffset_ = 0,
+            bool active_ = false) :
+            path (path_),
+            pathBTreeOffset (pathBTreeOffset_),
+            componentBTreeOffset (componentBTreeOffset_),
+            active (active_) {}
 
-    std::size_t Size () const {
-        return
-            util::Serializer::Size (path) +
-            util::FileAllocator::PTR_TYPE_SIZE +
-            util::FileAllocator::PTR_TYPE_SIZE +
-            util::Serializer::Size (active);
-    }
-
-    void Scan () {
-        if (!path.empty ()) {
-            if (pathBTree == nullptr) {
-                pathBTree.Reset (
-                    new util::BTree (
-                        fileAllocator,
-                        pathBTreeOffset,
-                        util::GUIDKey::TYPE,
-                        util::StringValue::TYPE));
-            }
-            if (componentBTree == nullptr) {
-                componentBTree.Reset (
-                    new util::BTree (
-                        fileAllocator,
-                        componentBTreeOffset,
-                        util::StringKey::TYPE,
-                        util::GUIDArrayValue::TYPE));
-            }
-            Scan (path);
+        std::size_t Size () const {
+            return
+                util::Serializer::Size (path) +
+                util::FileAllocator::PTR_TYPE_SIZE +
+                util::FileAllocator::PTR_TYPE_SIZE +
+                util::Serializer::Size (active);
         }
-    }
 
-private:
-    void Scan (std::string path) {
-        util::GUIDKey::SharedPtr pathKey (
-            new util::GUIDKey (util::GUID::FromBuffer (path.data (), path.size ())));
-        util::StringValue::SharedPtr pathValue (new util::StringValue (path));
-        util::BTree::Iterator it;
-        if (pathBTree->Insert (pathKey, pathValue, it)) {
-            std::list<std::string> components;
-            util::Path (path).GetComponents (components);
-            std::list<std::string>::const_iterator it = components.begin ();
-        #if defined (TOOLCHAIN_OS_Windows)
-            // If on Windows, skip over the drive leter.
-            ++it;
-        #endif // defined (TOOLCHAIN_OS_Windows)
-            for (; it != components.end (); ++it) {
-                util::StringKey::SharedPtr componentKey (new util::StringKey (*it));
-                util::GUIDArrayValue::SharedPtr componentValue (
-                    new util::GUIDArrayValue (std::vector<util::GUID> {pathKey->key}));
-                util::BTree::Iterator jt;
-                if (!componentBTree->Insert (componentKey, componentValue, jt)) {
-                    componentValue = jt.GetValue ();
-                    componentValue->value.push_back (pathKey->key);
-                    jt.SetValue (componentValue);
+        void Scan () {
+            if (!path.empty ()) {
+                if (pathBTree == nullptr) {
+                    pathBTree.Reset (
+                        new util::BTree (
+                            fileAllocator,
+                            pathBTreeOffset,
+                            util::GUIDKey::TYPE,
+                            util::StringValue::TYPE));
+                }
+                if (componentBTree == nullptr) {
+                    componentBTree.Reset (
+                        new util::BTree (
+                            fileAllocator,
+                            componentBTreeOffset,
+                            util::StringKey::TYPE,
+                            util::GUIDArrayValue::TYPE));
+                }
+                Scan (path);
+            }
+        }
+
+    private:
+        void Scan (std::string path) {
+            util::GUIDKey::SharedPtr pathKey (
+                new util::GUIDKey (util::GUID::FromBuffer (path.data (), path.size ())));
+            util::StringValue::SharedPtr pathValue (new util::StringValue (path));
+            util::BTree::Iterator it;
+            if (pathBTree->Insert (pathKey, pathValue, it)) {
+                std::list<std::string> components;
+                util::Path (path).GetComponents (components);
+                std::list<std::string>::const_iterator it = components.begin ();
+            #if defined (TOOLCHAIN_OS_Windows)
+                // If on Windows, skip over the drive leter.
+                ++it;
+            #endif // defined (TOOLCHAIN_OS_Windows)
+                for (; it != components.end (); ++it) {
+                    util::StringKey::SharedPtr componentKey (new util::StringKey (*it));
+                    util::GUIDArrayValue::SharedPtr componentValue (
+                        new util::GUIDArrayValue (std::vector<util::GUID> {pathKey->key}));
+                    util::BTree::Iterator jt;
+                    if (!componentBTree->Insert (componentKey, componentValue, jt)) {
+                        componentValue = jt.GetValue ();
+                        componentValue->value.push_back (pathKey->key);
+                        jt.SetValue (componentValue);
+                    }
+                }
+            }
+            util::Directory directory (path);
+            util::Directory::Entry entry;
+            for (bool gotEntry = directory.GetFirstEntry (entry);
+                 gotEntry; gotEntry = directory.GetNextEntry (entry)) {
+                if (!entry.name.empty () &&
+                        entry.type == util::Directory::Entry::Folder &&
+                        !util::IsDotOrDotDot (entry.name.c_str ())) {
+                    Scan (util::MakePath (path, entry.name));
                 }
             }
         }
-        util::Directory directory (path);
-        util::Directory::Entry entry;
-        for (bool gotEntry = directory.GetFirstEntry (entry);
-             gotEntry; gotEntry = directory.GetNextEntry (entry)) {
-            if (!entry.name.empty () &&
-                    entry.type == util::Directory::Entry::Folder &&
-                    !util::IsDotOrDotDot (entry.name.c_str ())) {
-                Scan (util::MakePath (path, entry.name));
-            }
-        }
+    };
+
+    util::Serializer &operator << (
+            util::Serializer &serializer,
+            const Root::SharedPtr &root) {
+        serializer <<
+            root->path <<
+            root->pathBTreeOffset <<
+            root->componentBTreeOffset <<
+            root->active;
+        return serializer;
     }
-};
+
+    util::Serializer &operator >> (
+            util::Serializer &serializer,
+            Root::SharedPtr &root) {
+        root.Reset (new Root);
+        serializer >>
+            root->path >>
+            root->pathBTreeOffset >>
+            root->componentBTreeOffset >>
+            root->active;
+        return serializer;
+    }
+
+    struct Roots : public util::ArrayValue<Root::SharedPtr> {
+        THEKOGANS_UTIL_DECLARE_SERIALIZABLE (Roots)
+
+        Root::SharedPtr Find (const std::string &path) {
+            return nullptr;
+        }
+
+        void Add (Root::SharedPtr root) {
+        }
+    };
+
+    THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE (Roots, 1, util::BTree::Value::TYPE)
+}
 
 template<>
-static std::size_t util::Serializer::Size<Root::SharedPtr> (const Root::SharedPtr &root) {
+static std::size_t util::Serializer::Size<Root::SharedPtr> (
+        const Root::SharedPtr &root) {
     return root->Size ();
 }
-
-util::Serializer &operator << (
-        util::Serializer &serializer,
-        const Root::SharedPtr &root) {
-    serializer <<
-        root->path <<
-        root->pathBTreeOffset <<
-        root->componentBTreeOffset <<
-        root->active;
-    return serializer;
-}
-
-util::Serializer &operator >> (
-        util::Serializer &serializer,
-        Root::SharedPtr &root) {
-    root.Reset (new Root);
-    serializer >>
-        root->path >>
-        root->pathBTreeOffset >>
-        root->componentBTreeOffset >>
-        root->active;
-    return serializer;
-}
-
-struct Roots : public util::ArrayValue<Root::SharedPtr> {
-    THEKOGANS_UTIL_DECLARE_SERIALIZABLE (Roots)
-
-    Root::SharedPtr Find (const std::string &path) {
-        return nullptr;
-    }
-
-    void Add (Root::SharedPtr root) {
-    }
-};
-
-THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE (Roots, 1, util::BTree::Value::TYPE)
 
 int main (
         int argc,
