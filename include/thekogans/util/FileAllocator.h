@@ -966,7 +966,7 @@ namespace thekogans {
             void Save ();
             /// \brief
             /// Write the \see{Header}.
-            void FileAllocator::WriteHeader ();
+            void WriteHeader ();
 
             /// \brief
             /// Needs access to private members.

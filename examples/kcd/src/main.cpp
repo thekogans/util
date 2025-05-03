@@ -184,7 +184,7 @@ namespace {
 }
 
 template<>
-static std::size_t util::Serializer::Size<Root::SharedPtr> (
+std::size_t util::Serializer::Size<Root::SharedPtr> (
         const Root::SharedPtr &root) {
     return root->Size ();
 }
