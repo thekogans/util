@@ -43,6 +43,9 @@ namespace thekogans {
                 case 'p':
                     pattern = value;
                     break;
+                case 'o':
+                    ordered = true;
+                    break;
             }
         }
 

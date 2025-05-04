@@ -802,6 +802,14 @@ namespace thekogans {
             std::size_t GetBlockSize (PtrType offset);
 
             /// \brief
+            /// Return the offset of the first block in the heap.
+            /// \return Offset of the first block in the heap.
+            inline PtrType GetFirstBlockOffset () const {
+                // header.heapStart is read only after ctor so no need to lock.
+                return header.heapStart + BlockInfo::HEADER_SIZE;
+            }
+
+            /// \brief
             /// If !IsFixed, a \see{FileAllocator::Registry} in the form of a \see{BTree}
             /// is available for storing and retrieving associated values. The key type is
             /// \see{StringKey} and the value type is any type derived from \see{BTree::Value}.
@@ -915,8 +923,8 @@ namespace thekogans {
                 std::size_t blockLength = 0);
 
             /// \brief
-            /// Flush the header, btree (if !IsFixed) and file cache
-            /// to disk.
+            /// Flush the header, btree, registry (if !IsFixed) and
+            /// file cache to disk.
             /// IMORTANT: Flush cannot flush unwritten client data as
             /// it has no clue how you're using the heap. To make sure
             /// all data is flushed to disk, make sure you call flush

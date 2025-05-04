@@ -118,6 +118,18 @@ namespace thekogans {
             std::size_t GetSize () const noexcept;
 
             /// \brief
+            /// Dynamically creatable objects come in to existance in one of two
+            /// ways. Either their shell is created and the contents are read
+            /// from \see{Serializer}, or you create one explicitly and pass
+            /// the parameters to the ctor. The first case must defer initialization
+            /// until after the object is created. To accomodate both cases
+            /// use this methdod to do all object initialization. Serializable
+            /// machinery calls it after object extraction automatically. You can
+            /// call it in your ctor after initializing the members with the passed
+            /// in values.
+            virtual void Init () {}
+
+            /// \brief
             /// Return the serializable version.
             /// \return Serializable version.
             virtual ui16 Version () const noexcept = 0;

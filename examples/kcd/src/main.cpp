@@ -16,9 +16,11 @@
 // along with libthekogans_util. If not, see <http://www.gnu.org/licenses/>.
 
 #include <string>
+#include <algorithm>
 #include <iostream>
 #include "thekogans/util/Environment.h"
 #include "thekogans/util/Path.h"
+#include "thekogans/util/StringUtils.h"
 #include "thekogans/util/Directory.h"
 #include "thekogans/util/LoggerMgr.h"
 #include "thekogans/util/Exception.h"
@@ -85,22 +87,23 @@ namespace {
 
         void Scan (util::FileAllocator::SharedPtr fileAllocator) {
             if (!path.empty ()) {
-                CreateBTrees (fileAllocator);
+                Init (fileAllocator);
                 Scan (path);
             }
         }
 
         void Find (
                 util::FileAllocator::SharedPtr fileAllocator,
-                const std::string &prefix) {
-            CreateBTrees (fileAllocator);
+                const std::string &prefix,
+                std::vector<std::string> &paths) {
+            Init (fileAllocator);
             util::BTree::Iterator it (new util::StringKey (prefix));
             for (componentBTree->FindFirst (it); !it.IsFinished (); it.Next ()) {
                 util::GUIDArrayValue::SharedPtr componentValue = it.GetValue ();
                 for (std::size_t i = 0, count = componentValue->value.size (); i < count; ++i) {
                     util::BTree::Iterator jt;
                     if (pathBTree->Find (util::GUIDKey (componentValue->value[i]), jt)) {
-                        std::cout << jt.GetValue ()->ToString () << "\n";
+                        paths.push_back (jt.GetValue ()->ToString ());
                     }
                 }
             }
@@ -148,7 +151,7 @@ namespace {
             }
         }
 
-        void CreateBTrees (util::FileAllocator::SharedPtr fileAllocator) {
+        void Init (util::FileAllocator::SharedPtr fileAllocator) {
             if (pathBTree == nullptr) {
                 pathBTree.Reset (
                     new util::BTree (
@@ -200,6 +203,15 @@ namespace {
     struct Roots : public util::ArrayValue<Root::SharedPtr> {
         THEKOGANS_UTIL_DECLARE_SERIALIZABLE (Roots)
 
+        void Find (
+                util::FileAllocator::SharedPtr fileAllocator,
+                const std::string &prefix,
+                std::vector<std::string> &paths) {
+            for (std::size_t i = 0, count = value.size (); i < count; ++i) {
+                value[i]->Find (fileAllocator, prefix, paths);
+            }
+        }
+
         Root::SharedPtr Find (const std::string &path) {
             for (std::size_t i = 0, count = value.size (); i < count; ++i) {
                 if (value[i]->path == path) {
@@ -226,7 +238,7 @@ std::size_t util::Serializer::Size<Root::SharedPtr> (
 int main (
         int argc,
         const char *argv[]) {
-    Options::Instance ()->Parse (argc, argv, "hvlarp");
+    Options::Instance ()->Parse (argc, argv, "hvlarpo");
     THEKOGANS_UTIL_LOG_RESET (
         Options::Instance ()->logLevel,
         util::LoggerMgr::All);
@@ -241,7 +253,8 @@ int main (
             "l - Set logging level (default is Info).\n"
             "a - Action to perform (default is cd).\n"
             "r - Root (can be repeated).\n"
-            "p - Pattern.\n",
+            "p - Pattern.\n"
+            "o - Pattern should appear ordered in the results.\n",
             argv[0],
             GetLevelsList (" | ").c_str ());
     }
@@ -269,7 +282,6 @@ int main (
                 if (!Options::Instance ()->roots.empty ()) {
                     for (std::size_t i = 0,
                             count = Options::Instance ()->roots.size (); i < count; ++i) {
-                        std::cout << Options::Instance ()->roots[i] << "\n";
                         std::string absolutePath =
                             util::Path (Options::Instance ()->roots[i]).MakeAbsolute ();
                         Root::SharedPtr root = roots->Find (absolutePath);
@@ -302,8 +314,71 @@ int main (
             }
             else if (Options::Instance ()->action == "cd") {
                 if (!Options::Instance ()->pattern.empty ()) {
-                    for (std::size_t i = 0, count = roots->value.size (); i < count; ++i) {
-                        roots->value[i]->Find (fileAllocator, Options::Instance ()->pattern);
+                    std::vector<std::string> result;
+                    std::list<std::string> components;
+                    util::Path (Options::Instance ()->pattern).GetComponents (components);
+                    std::list<std::string>::const_iterator it = components.begin ();
+                    if (it != components.end ()) {
+                        roots->Find (fileAllocator, *it++, result);
+                        std::sort (result.begin (), result.end ());
+                        while (it != components.end () && !result.empty ()) {
+                            std::vector<std::string> paths;
+                            roots->Find (fileAllocator, *it++, paths);
+                            std::sort (paths.begin (), paths.end ());
+                            std::vector<std::string> temp;
+                            for (std::size_t i = 0, count = paths.size (); i < count; ++i) {
+                                if (std::binary_search (result.begin (), result.end (), paths[i])) {
+                                    temp.push_back (paths[i]);
+                                }
+                            }
+                            result.swap (temp);
+                            std::sort (result.begin (), result.end ());
+                        }
+                    }
+                    if (!Options::Instance ()->ordered) {
+                        for (std::size_t i = 0, count = result.size (); i < count; ++i) {
+                            std::cout << result[i] << "\n";
+                        }
+                    }
+                    else {
+                        auto FindPrefix = [] (
+                                std::list<std::string>::const_iterator begin,
+                                std::list<std::string>::const_iterator end,
+                                const std::string &prefix) -> std::list<std::string>::const_iterator {
+                            while (begin != end) {
+                                if (util::StringCompare (
+                                        prefix.c_str (), begin->c_str (), prefix.size ()) == 0) {
+                                    break;
+                                }
+                                ++begin;
+                            }
+                            return begin;
+                        };
+                        auto ScanComponents = [&] (
+                                std::list<std::string>::const_iterator begin,
+                                std::list<std::string>::const_iterator end,
+                                std::list<std::string>::const_iterator componentsBegin,
+                                std::list<std::string>::const_iterator componentsEnd) -> bool {
+                            while (componentsBegin != componentsEnd) {
+                                begin = FindPrefix (begin, end, *componentsBegin);
+                                if (begin++ == end) {
+                                    return false;
+                                }
+                                ++componentsBegin;
+                            }
+                            return true;
+                        };
+                        for (std::size_t i = 0, count = result.size (); i < count; ++i) {
+                            std::list<std::string> resultComponents;
+                            util::Path (result[i]).GetComponents (resultComponents);
+                            if (ScanComponents (
+                                    resultComponents.begin (),
+                                    resultComponents.end (),
+                                    components.begin (),
+                                    components.end ())) {
+                                std::cout << result[i] << "\n";
+                            }
+                        }
                     }
                 }
                 else {

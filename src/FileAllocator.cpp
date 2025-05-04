@@ -31,7 +31,6 @@ namespace thekogans {
                 std::size_t blockSize,
                 std::size_t blocksPerPage,
                 Allocator::SharedPtr allocator) {
-            LockGuard<SpinLock> guard (spinLock);
             // We want all paths to resolve to their canonical form (absolute path).
             // Unfortunately Path::MakeAbsolute will throw an exception if path is
             // not found. Since we need to be able to resolve the FileAllocator path
@@ -40,6 +39,7 @@ namespace thekogans {
                 File::Touch (path);
             }
             std::string absolutePath = Path (path).MakeAbsolute ();
+            LockGuard<SpinLock> guard (spinLock);
             std::pair<Map::iterator, bool> result =
                 map.insert (Map::value_type (absolutePath, nullptr));
             if (result.second) {
@@ -282,7 +282,8 @@ namespace thekogans {
                     // one and only ctor is private and the only way to
                     // create one is to ask the Pool, which will create
                     // it on the heap.
-                    registry = new Registry (this, entriesPerNode, nodesPerPage, allocator);
+                    registry = new Registry (
+                        this, entriesPerNode, nodesPerPage, allocator);
                 }
                 return *registry;
             }

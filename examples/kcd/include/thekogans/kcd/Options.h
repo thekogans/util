@@ -37,12 +37,14 @@ namespace thekogans {
             std::string action;
             std::vector<std::string> roots;
             std::string pattern;
+            bool ordered;
 
             Options () :
                 help (false),
                 version (false),
                 logLevel (util::LoggerMgr::Info),
-                action ("cd") {}
+                action ("cd"),
+                ordered (false) {}
 
             virtual void DoOption (
                 char option,

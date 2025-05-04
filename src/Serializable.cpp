@@ -129,6 +129,7 @@ namespace thekogans {
             serializer >> header;
             if (header.type == serializable.Type ()) {
                 serializable.Read (header, serializer);
+                serializable.Init ();
                 return serializer;
             }
             else {
@@ -146,6 +147,7 @@ namespace thekogans {
             node >> header;
             if (header.type == serializable.Type ()) {
                 serializable.ReadXML (header, node);
+                serializable.Init ();
                 return node;
             }
             else {
@@ -163,6 +165,7 @@ namespace thekogans {
             object >> header;
             if (header.type == serializable.Type ()) {
                 serializable.ReadJSON (header, object);
+                serializable.Init ();
                 return object;
             }
             else {
@@ -183,6 +186,7 @@ namespace thekogans {
                 serializable.Reset (new Blob);
             }
             serializable->Read (header, serializer);
+            serializable->Init ();
             return serializer;
         }
 
@@ -196,6 +200,7 @@ namespace thekogans {
                 serializable.Reset (new Blob);
             }
             serializable->ReadXML (header, node);
+            serializable->Init ();
             return node;
         }
 
@@ -209,6 +214,7 @@ namespace thekogans {
                 serializable.Reset (new Blob);
             }
             serializable->ReadJSON (header, object);
+            serializable->Init ();
             return object;
         }
 
@@ -294,6 +300,7 @@ namespace thekogans {
                         payload.GetDataAvailableForWriting ()));
                 if (payload.IsFull ()) {
                     value.Read (header, payload);
+                    value.Init ();
                     Reset ();
                     return true;
                 }
@@ -339,6 +346,7 @@ namespace thekogans {
                         value.Reset (new Blob);
                     }
                     value->Read (header, payload);
+                    value->Init ();
                     Reset ();
                     return true;
                 }
