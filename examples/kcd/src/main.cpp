@@ -55,8 +55,6 @@ namespace {
         return logLevelList;
     }
 
-    util::FileAllocator::SharedPtr fileAllocator;
-
     struct Root : public util::RefCounted {
         THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (Root)
 
@@ -85,30 +83,31 @@ namespace {
                 util::Serializer::Size (active);
         }
 
-        void Scan () {
+        void Scan (util::FileAllocator::SharedPtr fileAllocator) {
             if (!path.empty ()) {
-                if (pathBTree == nullptr) {
-                    pathBTree.Reset (
-                        new util::BTree (
-                            fileAllocator,
-                            pathBTreeOffset,
-                            util::GUIDKey::TYPE,
-                            util::StringValue::TYPE));
-                }
-                if (componentBTree == nullptr) {
-                    componentBTree.Reset (
-                        new util::BTree (
-                            fileAllocator,
-                            componentBTreeOffset,
-                            util::StringKey::TYPE,
-                            util::GUIDArrayValue::TYPE));
-                }
+                CreateBTrees (fileAllocator);
                 Scan (path);
             }
         }
 
+        void Find (
+                util::FileAllocator::SharedPtr fileAllocator,
+                const std::string &prefix) {
+            CreateBTrees (fileAllocator);
+            util::BTree::Iterator it (new util::StringKey (prefix));
+            for (componentBTree->FindFirst (it); !it.IsFinished (); it.Next ()) {
+                util::GUIDArrayValue::SharedPtr componentValue = it.GetValue ();
+                for (std::size_t i = 0, count = componentValue->value.size (); i < count; ++i) {
+                    util::BTree::Iterator jt;
+                    if (pathBTree->Find (util::GUIDKey (componentValue->value[i]), jt)) {
+                        std::cout << jt.GetValue ()->ToString () << "\n";
+                    }
+                }
+            }
+        }
+
     private:
-        void Scan (std::string path) {
+        void Scan (const std::string &path) {
             util::GUIDKey::SharedPtr pathKey (
                 new util::GUIDKey (util::GUID::FromBuffer (path.data (), path.size ())));
             util::StringValue::SharedPtr pathValue (new util::StringValue (path));
@@ -144,6 +143,31 @@ namespace {
                 }
             }
         }
+
+        void CreateBTrees (util::FileAllocator::SharedPtr fileAllocator) {
+            if (pathBTree == nullptr) {
+                pathBTree.Reset (
+                    new util::BTree (
+                        fileAllocator,
+                        pathBTreeOffset,
+                        util::GUIDKey::TYPE,
+                        util::StringValue::TYPE));
+                if (pathBTreeOffset == 0) {
+                    pathBTreeOffset = pathBTree->GetOffset ();
+                }
+            }
+            if (componentBTree == nullptr) {
+                componentBTree.Reset (
+                    new util::BTree (
+                        fileAllocator,
+                        componentBTreeOffset,
+                        util::StringKey::TYPE,
+                        util::GUIDArrayValue::TYPE));
+                if (componentBTreeOffset == 0) {
+                    componentBTreeOffset = componentBTree->GetOffset ();
+                }
+            }
+        }
     };
 
     util::Serializer &operator << (
@@ -173,10 +197,16 @@ namespace {
         THEKOGANS_UTIL_DECLARE_SERIALIZABLE (Roots)
 
         Root::SharedPtr Find (const std::string &path) {
+            for (std::size_t i = 0, count = value.size (); i < count; ++i) {
+                if (value[i]->path == path) {
+                    return value[i];
+                }
+            }
             return nullptr;
         }
 
         void Add (Root::SharedPtr root) {
+            value.push_back (root);
         }
     };
 
@@ -220,13 +250,21 @@ int main (
     }
     else {
         THEKOGANS_UTIL_TRY {
-            THEKOGANS_UTIL_IMPLEMENT_FILE_ALLOCATOR_POOL_FLUSHER;
-            fileAllocator = util::FileAllocator::Pool::Instance ()->GetFileAllocator (
-                util::MakePath (util::Path::GetHomeDirectory (), "kcd.db"));
+            //THEKOGANS_UTIL_IMPLEMENT_FILE_ALLOCATOR_POOL_FLUSHER;
+            struct FileAllocatorPoolFlusher {
+                ~FileAllocatorPoolFlusher () {
+                    thekogans::util::FileAllocator::Pool::Instance ()->FlushFileAllocator ();
+                }
+            } fileAllocatorPoolFlusher;
+            util::FileAllocator::SharedPtr fileAllocator =
+                util::FileAllocator::Pool::Instance ()->GetFileAllocator (
+                    util::MakePath (util::Path::GetHomeDirectory (), "kcd.db"));
             util::FileAllocator::Registry &registry = fileAllocator->GetRegistry ();
+            bool rootsDirty = false;
             Roots::SharedPtr roots = registry.GetValue ("roots");
             if (roots == nullptr) {
                 roots.Reset (new Roots);
+                rootsDirty = true;
             }
             if (Options::Instance ()->action == "scan") {
                 if (!Options::Instance ()->roots.empty ()) {
@@ -238,9 +276,10 @@ int main (
                         if (root == nullptr) {
                             root.Reset (new Root (absolutePath));
                             roots->Add (root);
+                            rootsDirty = true;
                         }
                         std::cout << "Scanning " << absolutePath << "...";
-                        root->Scan ();
+                        root->Scan (fileAllocator);
                         std::cout << "done\n";
                     }
                 }
@@ -263,6 +302,9 @@ int main (
             }
             else if (Options::Instance ()->action == "cd") {
                 if (!Options::Instance ()->pattern.empty ()) {
+                    for (std::size_t i = 0, count = roots->value.size (); i < count; ++i) {
+                        roots->value[i]->Find (fileAllocator, Options::Instance ()->pattern);
+                    }
                 }
                 else {
                 }
@@ -270,76 +312,11 @@ int main (
             else {
                 THEKOGANS_UTIL_LOG_ERROR ("Must specify a valid action.\n");
             }
-            registry.SetValue ("roots", roots);
+            if (rootsDirty) {
+                registry.SetValue ("roots", roots);
+            }
         }
         THEKOGANS_UTIL_CATCH_AND_LOG
     }
-
-#if 0
-    std::string path = argc == 2 ?
-        util::Path (argv[1]).MakeAbsolute () :
-        util::Path::GetCurrDirectory ();
-    if (!util::Path (path).Exists ()) {
-        THEKOGANS_UTIL_LOG_ERROR ("Path not found: '%s'\n", path.c_str ());
-        return 1;
-    }
-    THEKOGANS_UTIL_TRY {
-        THEKOGANS_UTIL_IMPLEMENT_LOG_FLUSHER;
-
-        BTrees btrees;
-        util::FileAllocator::PtrType rootOffset = fileAllocator->GetRootOffset ();
-        if (rootOffset != 0) {
-            util::FileAllocator::BlockBuffer::SharedPtr buffer =
-                fileAllocator->CreateBlockBuffer (rootOffset);
-            util::ui32 magic;
-            *buffer >> magic;
-            if (magic == util::MAGIC32) {
-                *buffer >> btrees;
-            }
-        }
-        util::BTree pathBTree (
-            fileAllocator,
-            btrees.path,
-            util::GUIDKey::TYPE,
-            util::StringValue::TYPE);
-        util::BTree componentBTree (
-            fileAllocator,
-            btrees.component,
-            util::StringKey::TYPE,
-            util::GUIDArrayValue::TYPE);
-        if (rootOffset == 0) {
-            rootOffset = fileAllocator->Alloc (BTrees::SIZE);
-            fileAllocator->SetRootOffset (rootOffset);
-            util::FileAllocator::BlockBuffer::SharedPtr buffer =
-                fileAllocator->CreateBlockBuffer (rootOffset, 0, false);
-            btrees.path = pathBTree.GetOffset ();
-            btrees.component = componentBTree.GetOffset ();
-            *buffer << util::MAGIC32 << btrees;
-            fileAllocator->WriteBlockBuffer (*buffer);
-        }
-        util::Console::Instance ()->PrintString (path.c_str ());
-        util::Console::Instance ()->PrintString ("\n");
-        ScanRoot (path, 1, pathBTree, componentBTree);
-        /*
-        util::BTree::Iterator it (new util::StringKey ("shape"));
-        for (componentBTree.FindFirst (it); !it.IsFinished (); it.Next ()) {
-            util::GUIDArrayValue::SharedPtr componentValue = it.GetValue ();
-            for (std::size_t i = 0, count = componentValue->value.size (); i < count; ++i) {
-                util::BTree::Iterator jt;
-                if (pathBTree.Find (util::GUIDKey (componentValue->value[i]), jt)) {
-                    std::cout << jt.GetValue ()->ToString () << "\n";
-                }
-            }
-        }
-        */
-        /*
-        util::BTree::Iterator it;
-        for (componentBTree.FindFirst (it); !it.Finished (); it.Next ()) {
-            std::cout << it.GetKey ()->ToString () << "\n";
-        }
-        */
-    }
-    THEKOGANS_UTIL_CATCH_AND_LOG
-#endif
     return 0;
 }

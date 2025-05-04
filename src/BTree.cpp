@@ -168,6 +168,7 @@ namespace thekogans {
                 count (0),
                 leftOffset (0),
                 leftNode (nullptr),
+                keyValueOffset (0),
                 dirty (false) {
             if (offset != 0) {
                 FileAllocator::BlockBuffer::SharedPtr buffer =
@@ -830,7 +831,7 @@ namespace thekogans {
                 Value::SharedPtr value,
                 Iterator &it) {
             if (key->IsKindOf (header.keyType.c_str ()) &&
-                    value->IsKindOf (header.valueType.c_str ())) {
+                    (header.valueType.empty () || value->IsKindOf (header.valueType.c_str ()))) {
                 it.Clear ();
                 Node::Entry entry (key.Get (), value.Get ());
                 Node::InsertResult result = root->Insert (entry, it);

@@ -44,10 +44,9 @@ namespace thekogans {
         }
 
         void FileAllocator::Pool::FlushFileAllocator (const std::string &path) {
-            std::string absolutePath = Path (path).MakeAbsolute ();
             LockGuard<SpinLock> guard (spinLock);
-            if (!absolutePath.empty ()) {
-                Map::iterator it = map.find (absolutePath);
+            if (!path.empty ()) {
+                Map::iterator it = map.find (Path (path).MakeAbsolute ());
                 if (it != map.end ()) {
                     it->second->Flush ();
                 }
@@ -267,8 +266,8 @@ namespace thekogans {
                 std::size_t entriesPerNode,
                 std::size_t nodesPerPage,
                 Allocator::SharedPtr allocator) {
-            LockGuard<SpinLock> guard (spinLock);
             if (!IsFixed ()) {
+                LockGuard<SpinLock> guard (registryLock);
                 if (registry == nullptr) {
                     // Not a huge fan of this. The implicit call to
                     // FileAllocator::SharedPtr ctor will increment the
@@ -463,10 +462,17 @@ namespace thekogans {
         }
 
         void FileAllocator::Flush () {
-            LockGuard<SpinLock> guard (spinLock);
-            WriteHeader ();
-            if (btree != nullptr) {
-                btree->Flush ();
+            {
+                LockGuard<SpinLock> guard (spinLock);
+                WriteHeader ();
+                if (btree != nullptr) {
+                    btree->Flush ();
+                }
+            }
+            {
+                if (registry != nullptr) {
+                    registry->Flush ();
+                }
             }
             file.Flush ();
         }

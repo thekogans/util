@@ -756,6 +756,11 @@ namespace thekogans {
             /// FileAllocator is meant to be shared between threads allocating
             /// from the same file.
             SpinLock spinLock;
+            /// \brief
+            /// \see{FileAllocator::Registry} is basically a \see{BTree} with a lock.
+            /// Since it uses FileAllocator facilities to construct the \see{BTree},
+            /// it's important that we don't have deadlocks.
+            SpinLock registryLock;
 
         public:
             /// \brief

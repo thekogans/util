@@ -85,6 +85,11 @@ namespace thekogans {
                 const std::string &key,
                 util::BTree::Value::SharedPtr value);
 
+            inline void Flush () {
+                LockGuard<SpinLock> guard (spinLock);
+                btree.Flush ();
+            }
+
             /// \brief
             /// Registry is neither copy constructable, nor assignable.
             THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (Registry)
