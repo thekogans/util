@@ -317,67 +317,49 @@ int main (
                     std::vector<std::string> result;
                     std::list<std::string> components;
                     util::Path (Options::Instance ()->pattern).GetComponents (components);
-                    std::list<std::string>::const_iterator it = components.begin ();
-                    if (it != components.end ()) {
-                        roots->Find (fileAllocator, *it++, result);
-                        std::sort (result.begin (), result.end ());
-                        while (it != components.end () && !result.empty ()) {
-                            std::vector<std::string> paths;
-                            roots->Find (fileAllocator, *it++, paths);
-                            std::sort (paths.begin (), paths.end ());
-                            std::vector<std::string> temp;
-                            for (std::size_t i = 0, count = paths.size (); i < count; ++i) {
-                                if (std::binary_search (result.begin (), result.end (), paths[i])) {
-                                    temp.push_back (paths[i]);
-                                }
+                    roots->Find (fileAllocator, *components.begin (), result);
+                    auto FindPrefix = [] (
+                            std::list<std::string>::const_iterator begin,
+                            std::list<std::string>::const_iterator end,
+                            const std::string &prefix) -> std::list<std::string>::const_iterator {
+                        while (begin != end) {
+                            if (util::StringCompare (
+                                    prefix.c_str (), begin->c_str (), prefix.size ()) == 0) {
+                                break;
                             }
-                            result.swap (temp);
-                            std::sort (result.begin (), result.end ());
+                            ++begin;
                         }
-                    }
-                    if (!Options::Instance ()->ordered) {
-                        for (std::size_t i = 0, count = result.size (); i < count; ++i) {
+                        return begin;
+                    };
+                    auto ScanComponents = [&] (
+                            std::list<std::string>::const_iterator begin,
+                            std::list<std::string>::const_iterator end,
+                            std::list<std::string>::const_iterator componentsBegin,
+                            std::list<std::string>::const_iterator componentsEnd,
+                            bool ordered) -> bool {
+                        while (componentsBegin != componentsEnd) {
+                            std::list<std::string>::const_iterator it =
+                                FindPrefix (begin, end, *componentsBegin);
+                            if (it == end) {
+                                return false;
+                            }
+                            if (ordered) {
+                                begin = ++it;
+                            }
+                            ++componentsBegin;
+                        }
+                        return true;
+                    };
+                    for (std::size_t i = 0, count = result.size (); i < count; ++i) {
+                        std::list<std::string> resultComponents;
+                        util::Path (result[i]).GetComponents (resultComponents);
+                        if (ScanComponents (
+                                resultComponents.begin (),
+                                resultComponents.end (),
+                                components.begin (),
+                                components.end (),
+                                Options::Instance ()->ordered)) {
                             std::cout << result[i] << "\n";
-                        }
-                    }
-                    else {
-                        auto FindPrefix = [] (
-                                std::list<std::string>::const_iterator begin,
-                                std::list<std::string>::const_iterator end,
-                                const std::string &prefix) -> std::list<std::string>::const_iterator {
-                            while (begin != end) {
-                                if (util::StringCompare (
-                                        prefix.c_str (), begin->c_str (), prefix.size ()) == 0) {
-                                    break;
-                                }
-                                ++begin;
-                            }
-                            return begin;
-                        };
-                        auto ScanComponents = [&] (
-                                std::list<std::string>::const_iterator begin,
-                                std::list<std::string>::const_iterator end,
-                                std::list<std::string>::const_iterator componentsBegin,
-                                std::list<std::string>::const_iterator componentsEnd) -> bool {
-                            while (componentsBegin != componentsEnd) {
-                                begin = FindPrefix (begin, end, *componentsBegin);
-                                if (begin++ == end) {
-                                    return false;
-                                }
-                                ++componentsBegin;
-                            }
-                            return true;
-                        };
-                        for (std::size_t i = 0, count = result.size (); i < count; ++i) {
-                            std::list<std::string> resultComponents;
-                            util::Path (result[i]).GetComponents (resultComponents);
-                            if (ScanComponents (
-                                    resultComponents.begin (),
-                                    resultComponents.end (),
-                                    components.begin (),
-                                    components.end ())) {
-                                std::cout << result[i] << "\n";
-                            }
                         }
                     }
                 }
