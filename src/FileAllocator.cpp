@@ -31,14 +31,13 @@ namespace thekogans {
                 std::size_t blockSize,
                 std::size_t blocksPerPage,
                 Allocator::SharedPtr allocator) {
-            std::string absolutePath = Path (path).MakeAbsolute ();
             LockGuard<SpinLock> guard (spinLock);
             std::pair<Map::iterator, bool> result =
-                map.insert (Map::value_type (absolutePath, nullptr));
+                map.insert (Map::value_type (path, nullptr));
             if (result.second) {
                 result.first->second.Reset (
                     new FileAllocator (
-                        absolutePath, blockSize, blocksPerPage, allocator));
+                        path, blockSize, blocksPerPage, allocator));
             }
             return result.first->second;
         }
@@ -46,7 +45,7 @@ namespace thekogans {
         void FileAllocator::Pool::FlushFileAllocator (const std::string &path) {
             LockGuard<SpinLock> guard (spinLock);
             if (!path.empty ()) {
-                Map::iterator it = map.find (Path (path).MakeAbsolute ());
+                Map::iterator it = map.find (path);
                 if (it != map.end ()) {
                     it->second->Flush ();
                 }

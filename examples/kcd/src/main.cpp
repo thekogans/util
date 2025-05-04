@@ -132,15 +132,19 @@ namespace {
                     }
                 }
             }
-            util::Directory directory (path);
-            util::Directory::Entry entry;
-            for (bool gotEntry = directory.GetFirstEntry (entry);
-                 gotEntry; gotEntry = directory.GetNextEntry (entry)) {
-                if (!entry.name.empty () &&
-                        entry.type == util::Directory::Entry::Folder &&
-                        !util::IsDotOrDotDot (entry.name.c_str ())) {
-                    Scan (util::MakePath (path, entry.name));
+            THEKOGANS_UTIL_TRY {
+                util::Directory directory (path);
+                util::Directory::Entry entry;
+                for (bool gotEntry = directory.GetFirstEntry (entry);
+                        gotEntry; gotEntry = directory.GetNextEntry (entry)) {
+                    if (!entry.name.empty () &&
+                            entry.type == util::Directory::Entry::Folder &&
+                            !util::IsDotOrDotDot (entry.name.c_str ())) {
+                        Scan (util::MakePath (path, entry.name));
+                    }
                 }
+            }
+            THEKOGANS_UTIL_CATCH_ANY {
             }
         }
 
@@ -250,12 +254,7 @@ int main (
     }
     else {
         THEKOGANS_UTIL_TRY {
-            //THEKOGANS_UTIL_IMPLEMENT_FILE_ALLOCATOR_POOL_FLUSHER;
-            struct FileAllocatorPoolFlusher {
-                ~FileAllocatorPoolFlusher () {
-                    thekogans::util::FileAllocator::Pool::Instance ()->FlushFileAllocator ();
-                }
-            } fileAllocatorPoolFlusher;
+            THEKOGANS_UTIL_IMPLEMENT_FILE_ALLOCATOR_POOL_FLUSHER;
             util::FileAllocator::SharedPtr fileAllocator =
                 util::FileAllocator::Pool::Instance ()->GetFileAllocator (
                     util::MakePath (util::Path::GetHomeDirectory (), "kcd.db"));
@@ -270,6 +269,7 @@ int main (
                 if (!Options::Instance ()->roots.empty ()) {
                     for (std::size_t i = 0,
                             count = Options::Instance ()->roots.size (); i < count; ++i) {
+                        std::cout << Options::Instance ()->roots[i] << "\n";
                         std::string absolutePath =
                             util::Path (Options::Instance ()->roots[i]).MakeAbsolute ();
                         Root::SharedPtr root = roots->Find (absolutePath);
