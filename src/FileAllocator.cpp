@@ -32,12 +32,20 @@ namespace thekogans {
                 std::size_t blocksPerPage,
                 Allocator::SharedPtr allocator) {
             LockGuard<SpinLock> guard (spinLock);
+            // We want all paths to resolve to their canonical form (absolute path).
+            // Unfortunately Path::MakeAbsolute will throw an exception if path is
+            // not found. Since we need to be able to resolve the FileAllocator path
+            // before potentially creating it, we touch it here and resolve right after.
+            if (!Path (path).Exists ()) {
+                File::Touch (path);
+            }
+            std::string absolutePath = Path (path).MakeAbsolute ();
             std::pair<Map::iterator, bool> result =
-                map.insert (Map::value_type (path, nullptr));
+                map.insert (Map::value_type (absolutePath, nullptr));
             if (result.second) {
                 result.first->second.Reset (
                     new FileAllocator (
-                        path, blockSize, blocksPerPage, allocator));
+                        absolutePath, blockSize, blocksPerPage, allocator));
             }
             return result.first->second;
         }
@@ -45,7 +53,7 @@ namespace thekogans {
         void FileAllocator::Pool::FlushFileAllocator (const std::string &path) {
             LockGuard<SpinLock> guard (spinLock);
             if (!path.empty ()) {
-                Map::iterator it = map.find (path);
+                Map::iterator it = map.find (Path (path).MakeAbsolute ());
                 if (it != map.end ()) {
                     it->second->Flush ();
                 }
