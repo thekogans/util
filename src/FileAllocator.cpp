@@ -263,7 +263,6 @@ namespace thekogans {
         }
 
         std::size_t FileAllocator::GetBlockSize (PtrType offset) {
-            LockGuard<SpinLock> guard (spinLock);
             BlockInfo block (offset);
             block.Read (file);
             return !block.IsFree () ? block.GetSize () : 0;
@@ -274,7 +273,6 @@ namespace thekogans {
                 std::size_t nodesPerPage,
                 Allocator::SharedPtr allocator) {
             if (!IsFixed ()) {
-                LockGuard<SpinLock> guard (registryLock);
                 if (registry == nullptr) {
                     // Not a huge fan of this. The implicit call to
                     // FileAllocator::SharedPtr ctor will increment the
@@ -294,19 +292,16 @@ namespace thekogans {
         }
 
         FileAllocator::PtrType FileAllocator::GetRootOffset () {
-            LockGuard<SpinLock> guard (spinLock);
             return header.rootOffset;
         }
 
         void FileAllocator::SetRootOffset (PtrType rootOffset) {
-            LockGuard<SpinLock> guard (spinLock);
             header.rootOffset = rootOffset;
             Save ();
         }
 
         FileAllocator::PtrType FileAllocator::Alloc (std::size_t size) {
             if (IsFixed ()) {
-                LockGuard<SpinLock> guard (spinLock);
                 return AllocFixedBlock ();
             }
             else {
@@ -315,7 +310,6 @@ namespace thekogans {
                     if (size < MIN_USER_DATA_SIZE) {
                         size = MIN_USER_DATA_SIZE;
                     }
-                    LockGuard<SpinLock> guard (spinLock);
                     // Look for a free block large enough to satisfy the request.
                     BTree::KeyType result = btree->Search (BTree::KeyType (size, 0));
                     if (result.second != 0) {
@@ -350,11 +344,9 @@ namespace thekogans {
             // To honor the Allocator policy, we ignore NULL pointers.
             if (offset != 0) {
                 if (IsFixed ()) {
-                    LockGuard<SpinLock> guard (spinLock);
                     FreeFixedBlock (offset);
                 }
                 else if (offset >= header.heapStart + BlockInfo::HEADER_SIZE) {
-                    LockGuard<SpinLock> guard (spinLock);
                     BlockInfo block (offset);
                     block.Read (file);
                     if (!block.IsFree () && !block.IsFixed ()) {
@@ -412,14 +404,12 @@ namespace thekogans {
         }
 
         void FileAllocator::GetBlockInfo (BlockInfo &block) {
-            LockGuard<SpinLock> guard (spinLock);
             block.Read (file);
         }
 
         bool FileAllocator::GetPrevBlockInfo (
                 const BlockInfo &block,
                 BlockInfo &prev) {
-            LockGuard<SpinLock> guard (spinLock);
             if (!block.IsFirst (header.heapStart)) {
                 block.Prev (file, prev);
                 return true;
@@ -430,7 +420,6 @@ namespace thekogans {
         bool FileAllocator::GetNextBlockInfo (
                 const BlockInfo &block,
                 BlockInfo &next) {
-            LockGuard<SpinLock> guard (spinLock);
             if (!block.IsLast (file.GetSize ())) {
                 block.Next (file, next);
                 return true;
@@ -444,7 +433,6 @@ namespace thekogans {
                 bool read,
                 std::size_t blockOffset,
                 std::size_t blockLength) {
-            LockGuard<SpinLock> guard (spinLock);
             BlockBuffer::SharedPtr buffer (
                 new BlockBuffer (*this, offset, bufferLength));
             if (read) {
@@ -457,7 +445,6 @@ namespace thekogans {
                 BlockBuffer &buffer,
                 std::size_t blockOffset,
                 std::size_t blockLength) {
-            LockGuard<SpinLock> guard (spinLock);
             buffer.BlockRead (file, blockOffset, blockLength);
         }
 
@@ -465,31 +452,25 @@ namespace thekogans {
                 BlockBuffer &buffer,
                 std::size_t blockOffset,
                 std::size_t blockLength) {
-            LockGuard<SpinLock> guard (spinLock);
             buffer.BlockWrite (file, blockOffset, blockLength);
         }
 
-        void FileAllocator::Flush () {
-            {
-                LockGuard<SpinLock> guard (registryLock);
-                if (registry != nullptr) {
-                    registry->Flush ();
-                }
+        void FileAllocator::Flush (bool flushFile) {
+            WriteHeader ();
+            if (btree != nullptr) {
+                btree->Flush ();
             }
-            {
-                LockGuard<SpinLock> guard (spinLock);
-                WriteHeader ();
-                if (btree != nullptr) {
-                    btree->Flush ();
-                }
+            if (registry != nullptr) {
+                registry->Flush ();
+            }
+            if (flushFile) {
                 file.Flush ();
             }
         }
 
         void FileAllocator::BeginTransaction () {
-            LockGuard<SpinLock> guard (spinLock);
             if (!file.IsTransactionPending ()) {
-                FlushInternal ();
+                Flush (false);
                 file.BeginTransaction ();
             }
             else {
@@ -499,9 +480,8 @@ namespace thekogans {
         }
 
         void FileAllocator::CommitTransaction () {
-            LockGuard<SpinLock> guard (spinLock);
             if (file.IsTransactionPending ()) {
-                FlushInternal ();
+                Flush (false);
                 file.CommitTransaction ();
             }
             else {
@@ -511,16 +491,15 @@ namespace thekogans {
         }
 
         void FileAllocator::AbortTransaction () {
-            LockGuard<SpinLock> guard (spinLock);
             if (file.IsTransactionPending ()) {
-                // Flush all dirty pages to file.
-                FlushInternal ();
+                // Flush everything to file cache.
+                Flush (false);
                 file.AbortTransaction ();
                 // Once the file aborted the transaction,
                 // this Flush will reset internal objects
                 // (btree, registry) to their pre-transaction
                 // state.
-                FlushInternal ();
+                Flush (false);
             }
             else {
                 THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
@@ -529,7 +508,6 @@ namespace thekogans {
         }
 
         void FileAllocator::DumpBTree () {
-            LockGuard<SpinLock> guard (spinLock);
             if (btree != nullptr) {
                 btree->Dump ();
             }
@@ -680,21 +658,6 @@ namespace thekogans {
                 file.Seek (0, SEEK_SET);
                 file << MAGIC32 << header;
                 dirty = false;
-            }
-        }
-
-        void FileAllocator::FlushInternal () {
-            {
-                LockGuard<SpinLock> guard (registryLock);
-                if (registry != nullptr) {
-                    registry->Flush ();
-                }
-            }
-            {
-                WriteHeader ();
-                if (btree != nullptr) {
-                    btree->Flush ();
-                }
             }
         }
 

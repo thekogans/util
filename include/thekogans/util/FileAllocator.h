@@ -208,7 +208,9 @@ namespace thekogans {
                     fileAllocator->BeginTransaction ();
                 }
                 ~Transaction () {
-                    fileAllocator->AbortTransaction ();
+                    if (fileAllocator->IsTransactionPending ()) {
+                        fileAllocator->AbortTransaction ();
+                    }
                 }
 
                 void Commit () {
@@ -768,15 +770,6 @@ namespace thekogans {
             /// Set in Save and indicates that the \see{Header} is dirty and needs
             /// to be written to disk.
             bool dirty;
-            /// \brief
-            /// FileAllocator is meant to be shared between threads allocating
-            /// from the same file.
-            SpinLock spinLock;
-            /// \brief
-            /// \see{FileAllocator::Registry} is basically a \see{BTree} with a lock.
-            /// Since it uses FileAllocator facilities to construct the \see{BTree},
-            /// it's important that we don't have deadlocks.
-            SpinLock registryLock;
 
         public:
             /// \brief
@@ -947,8 +940,12 @@ namespace thekogans {
             /// on all your heap objects first (if they have any) so
             /// that they write to FileAllocator::BlockBuffer and then
             /// call this Flush.
-            void Flush ();
+            /// \param[in] flushFile true == flush the file cache to disk.
+            void Flush (bool flushFile = true);
 
+            inline bool IsTransactionPending () const {
+                return file.IsTransactionPending ();
+            }
             /// \brief
             /// To help maintain heap integrity, simple (not nested) transaction
             /// processing is designed to wrap a sequence of heap operations and
@@ -1005,8 +1002,6 @@ namespace thekogans {
             /// \brief
             /// Write the \see{Header}.
             void WriteHeader ();
-
-            void FlushInternal ();
 
             /// \brief
             /// Needs access to private members.
