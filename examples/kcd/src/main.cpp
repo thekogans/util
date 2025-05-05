@@ -305,7 +305,7 @@ std::size_t util::Serializer::Size<Root::SharedPtr> (
 int main (
         int argc,
         const char *argv[]) {
-    Options::Instance ()->Parse (argc, argv, "hvlarpo");
+    Options::Instance ()->Parse (argc, argv, "hvlarpio");
     THEKOGANS_UTIL_LOG_RESET (
         Options::Instance ()->logLevel,
         util::LoggerMgr::All);
