@@ -25,6 +25,7 @@
 #include "thekogans/util/Flags.h"
 #include "thekogans/util/BufferedFile.h"
 #include "thekogans/util/SpinLock.h"
+#include "thekogans/util/Mutex.h"
 #include "thekogans/util/BlockAllocator.h"
 #include "thekogans/util/Singleton.h"
 
@@ -202,9 +203,11 @@ namespace thekogans {
 
             struct Transaction {
                 FileAllocator::SharedPtr fileAllocator;
+                LockGuard<Mutex> guard;
 
                 explicit Transaction (FileAllocator::SharedPtr fileAllocator_) :
-                        fileAllocator (fileAllocator_) {
+                        fileAllocator (fileAllocator_),
+                        guard (fileAllocator->mutex) {
                     fileAllocator->BeginTransaction ();
                 }
                 ~Transaction () {
@@ -770,6 +773,28 @@ namespace thekogans {
             /// Set in Save and indicates that the \see{Header} is dirty and needs
             /// to be written to disk.
             bool dirty;
+            /// \brief
+            /// FileAllocator is too complex a beast for granular locking schemes.
+            /// The constant fear of deadlock because you forgot that a function
+            /// call under lock resulted in recursive call to Lock::Aquire. At fear
+            /// of race conditions because you forgot to lock a resource before
+            /// checking it's nullness. The tricky performance degredation issues
+            /// that come with granular locking. A completely different sharing
+            /// strategy needed to be devised.
+            /// This is what I came up with. For single threaded clients, there's
+            /// nothing to do. This mutex is used by \see{Transaction} above. If
+            /// you use transactions, it will be used under the hood. If you're
+            /// in a multithreaded environment where multiple threads use the same
+            /// FileAllocator you will all need to synchronize access to it. Call
+            /// GetMutex () below and pass it to a \see{LockGuard}<\see{Mutex}> to
+            /// aquire exclusive access. Ex:
+            ///
+            /// \code{.cpp}
+            /// using namespace thekogans;
+            ///
+            /// util::LockGuard<util::Mutex> guard (fileAllocator->GetMutex ());
+            /// \endcode
+            Mutex mutex;
 
         public:
             /// \brief
@@ -787,6 +812,10 @@ namespace thekogans {
             /// \return Heap file path.
             inline std::string GetPath () const {
                 return file.GetPath ();
+            }
+
+            inline Mutex &GetMutex () {
+                return mutex;
             }
 
             /// \brief
