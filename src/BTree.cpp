@@ -88,28 +88,29 @@ namespace thekogans {
         bool BTree::Iterator::Next () {
             if (!finished) {
                 finished = true;
-                ++node.second;
-                Node *child = node.first->GetChild (node.second);
-                if (child != nullptr) {
-                    parents.push_back (NodeIndex (node.first, node.second));
-                    ui32 index = 0;
-                    while (child != nullptr &&
-                            (prefix == nullptr || child->FindFirstPrefix (*prefix, index))) {
-                        finished = false;
-                        parents.push_back (NodeIndex (child, index));
-                        child = child->GetChild (index);
-                    }
-                    node = parents.back ();
-                    parents.pop_back ();
-                }
-                if (finished) {
-                    if (node.second == node.first->count && !parents.empty ()) {
+                while (node.second < node.first->count || !parents.empty ()) {
+                    ++node.second;
+                    Node *child = node.first->GetChild (node.second);
+                    if (child != nullptr) {
+                        parents.push_back (NodeIndex (node.first, node.second));
+                        ui32 index = 0;
+                        while (child != nullptr &&
+                                (prefix == nullptr || child->FindFirstPrefix (*prefix, index))) {
+                            finished = false;
+                            parents.push_back (NodeIndex (child, index));
+                            child = child->GetChild (index);
+                        }
                         node = parents.back ();
                         parents.pop_back ();
                     }
                     if (node.second < node.first->count) {
                         finished = prefix != nullptr &&
                             prefix->PrefixCompare (*node.first->entries[node.second].key) != 0;
+                        break;
+                    }
+                    else if (!parents.empty ()) {
+                        node = parents.back ();
+                        parents.pop_back ();
                     }
                 }
             }

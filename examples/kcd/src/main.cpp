@@ -115,7 +115,7 @@ namespace {
                     util::BTree::Iterator jt;
                     if (pathBTree->Find (util::GUIDKey (componentValue->value[i]), jt)) {
                         paths.push_back (jt.GetValue ()->ToString ());
-                    }
+				 	}
                 }
             }
         }
@@ -136,7 +136,7 @@ namespace {
                 ++it;
             #endif // defined (TOOLCHAIN_OS_Windows)
                 for (; it != components.end (); ++it) {
-                    util::StringKey::SharedPtr componentKey (new util::StringKey (*it));
+                    util::StringKey::SharedPtr componentKey (new util::StringKey (*it, true));
                     util::GUIDArrayValue::SharedPtr componentValue (
                         new util::GUIDArrayValue (std::vector<util::GUID> {pathKey->key}));
                     util::BTree::Iterator jt;
