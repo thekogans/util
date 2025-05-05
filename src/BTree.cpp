@@ -96,7 +96,6 @@ namespace thekogans {
                         ui32 index = 0;
                         while (child != nullptr &&
                                 (prefix == nullptr || child->FindFirstPrefix (*prefix, index))) {
-                            finished = false;
                             parents.push_back (NodeIndex (child, index));
                             child = child->GetChild (index);
                         }
