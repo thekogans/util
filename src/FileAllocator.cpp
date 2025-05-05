@@ -471,18 +471,61 @@ namespace thekogans {
 
         void FileAllocator::Flush () {
             {
+                LockGuard<SpinLock> guard (registryLock);
+                if (registry != nullptr) {
+                    registry->Flush ();
+                }
+            }
+            {
                 LockGuard<SpinLock> guard (spinLock);
                 WriteHeader ();
                 if (btree != nullptr) {
                     btree->Flush ();
                 }
+                file.Flush ();
             }
-            {
-                if (registry != nullptr) {
-                    registry->Flush ();
-                }
+        }
+
+        void FileAllocator::BeginTransaction () {
+            LockGuard<SpinLock> guard (spinLock);
+            if (!file.IsTransactionPending ()) {
+                FlushInternal ();
+                file.BeginTransaction ();
             }
-            file.Flush ();
+            else {
+                THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
+                    "Transaction pending.");
+            }
+        }
+
+        void FileAllocator::CommitTransaction () {
+            LockGuard<SpinLock> guard (spinLock);
+            if (file.IsTransactionPending ()) {
+                FlushInternal ();
+                file.CommitTransaction ();
+            }
+            else {
+                THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
+                    "No transaction pending.");
+            }
+        }
+
+        void FileAllocator::AbortTransaction () {
+            LockGuard<SpinLock> guard (spinLock);
+            if (file.IsTransactionPending ()) {
+                // Flush all dirty pages to file.
+                FlushInternal ();
+                file.AbortTransaction ();
+                // Once the file aborted the transaction,
+                // this Flush will reset internal objects
+                // (btree, registry) to their pre-transaction
+                // state.
+                FlushInternal ();
+            }
+            else {
+                THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
+                    "No transaction pending.");
+            }
         }
 
         void FileAllocator::DumpBTree () {
@@ -637,6 +680,21 @@ namespace thekogans {
                 file.Seek (0, SEEK_SET);
                 file << MAGIC32 << header;
                 dirty = false;
+            }
+        }
+
+        void FileAllocator::FlushInternal () {
+            {
+                LockGuard<SpinLock> guard (registryLock);
+                if (registry != nullptr) {
+                    registry->Flush ();
+                }
+            }
+            {
+                WriteHeader ();
+                if (btree != nullptr) {
+                    btree->Flush ();
+                }
             }
         }
 

@@ -200,6 +200,22 @@ namespace thekogans {
                 THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (Flusher)
             };
 
+            struct Transaction {
+                FileAllocator::SharedPtr fileAllocator;
+
+                explicit Transaction (FileAllocator::SharedPtr fileAllocator_) :
+                        fileAllocator (fileAllocator_) {
+                    fileAllocator->BeginTransaction ();
+                }
+                ~Transaction () {
+                    fileAllocator->AbortTransaction ();
+                }
+
+                void Commit () {
+                    fileAllocator->CommitTransaction ();
+                }
+            };
+
             /// \struct FileAllocator::BlockInfo FileAllocator.h thekogans/util/FileAllocator.h
             ///
             /// \brief
@@ -924,7 +940,7 @@ namespace thekogans {
 
             /// \brief
             /// Flush the header, btree, registry (if !IsFixed) and
-            /// file cache to disk.
+            /// file cache (if flushFile) to disk.
             /// IMORTANT: Flush cannot flush unwritten client data as
             /// it has no clue how you're using the heap. To make sure
             /// all data is flushed to disk, make sure you call flush
@@ -932,6 +948,15 @@ namespace thekogans {
             /// that they write to FileAllocator::BlockBuffer and then
             /// call this Flush.
             void Flush ();
+
+            /// \brief
+            /// To help maintain heap integrity, simple (not nested) transaction
+            /// processing is designed to wrap a sequence of heap operations and
+            /// commit them all at once (CommitTransaction) or none at all
+            /// (AbortTransaction).
+            void BeginTransaction ();
+            void CommitTransaction ();
+            void AbortTransaction ();
 
             /// \brief
             /// Debugging helper. Dumps \see{Btree::Node}s to stdout.
@@ -980,6 +1005,8 @@ namespace thekogans {
             /// \brief
             /// Write the \see{Header}.
             void WriteHeader ();
+
+            void FlushInternal ();
 
             /// \brief
             /// Needs access to private members.

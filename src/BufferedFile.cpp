@@ -538,7 +538,7 @@ namespace thekogans {
                 if (flags.Test (FLAGS_TRANSACTION)) {
                     if (flags.Test (FLAGS_DIRTY)) {
                         root.Clear ();
-                        size = sizeOnDisk;
+                        SetSize (sizeOnDisk);
                         flags.Set (FLAGS_DIRTY, false);
                     }
                     std::string logPath = GetLogPath (path);

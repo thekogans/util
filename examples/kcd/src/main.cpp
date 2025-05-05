@@ -71,7 +71,7 @@ namespace {
             std::string path_ = std::string (),
             util::FileAllocator::PtrType pathBTreeOffset_ = 0,
             util::FileAllocator::PtrType componentBTreeOffset_ = 0,
-            bool active_ = false) :
+            bool active_ = true) :
             path (path_),
             pathBTreeOffset (pathBTreeOffset_),
             componentBTreeOffset (componentBTreeOffset_),
@@ -87,6 +87,16 @@ namespace {
 
         void Scan (util::FileAllocator::SharedPtr fileAllocator) {
             if (!path.empty ()) {
+                pathBTree.Reset ();
+                if (pathBTreeOffset != 0) {
+                    util::BTree::Delete (*fileAllocator, pathBTreeOffset);
+                    pathBTreeOffset = 0;
+                }
+                componentBTree.Reset ();
+                if (componentBTreeOffset != 0) {
+                    util::BTree::Delete (*fileAllocator, componentBTreeOffset);
+                    componentBTreeOffset = 0;
+                }
                 Init (fileAllocator);
                 Scan (path);
             }
@@ -111,6 +121,7 @@ namespace {
 
     private:
         void Scan (const std::string &path) {
+            std::cout << path << "\n";
             util::GUIDKey::SharedPtr pathKey (
                 new util::GUIDKey (util::GUID::FromBuffer (path.data (), path.size ())));
             util::StringValue::SharedPtr pathValue (new util::StringValue (path));
@@ -148,6 +159,7 @@ namespace {
                 }
             }
             THEKOGANS_UTIL_CATCH_ANY {
+                std::cout << "Skipping: " << path << "\n";
             }
         }
 
@@ -203,26 +215,62 @@ namespace {
     struct Roots : public util::ArrayValue<Root::SharedPtr> {
         THEKOGANS_UTIL_DECLARE_SERIALIZABLE (Roots)
 
+        bool dirty;
+
+        Roots () :
+            dirty (false) {}
+
+        inline bool IsDirty () const {
+            return dirty;
+        }
+
         void Find (
                 util::FileAllocator::SharedPtr fileAllocator,
                 const std::string &prefix,
                 std::vector<std::string> &paths) {
             for (std::size_t i = 0, count = value.size (); i < count; ++i) {
-                value[i]->Find (fileAllocator, prefix, paths);
+                if (value[i]->active) {
+                    value[i]->Find (fileAllocator, prefix, paths);
+                }
             }
         }
 
-        Root::SharedPtr Find (const std::string &path) {
+        Root::SharedPtr GetRoot (const std::string &path) {
             for (std::size_t i = 0, count = value.size (); i < count; ++i) {
                 if (value[i]->path == path) {
                     return value[i];
                 }
             }
-            return nullptr;
+            Root::SharedPtr root (new Root (path));
+            value.push_back (root);
+            dirty = true;
+            return root;
         }
 
-        void Add (Root::SharedPtr root) {
-            value.push_back (root);
+        bool EnableRoot (const std::string &path) {
+            for (std::size_t i = 0, count = value.size (); i < count; ++i) {
+                if (value[i]->path == path) {
+                    value[i]->active = true;
+                    dirty = true;
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        bool DisableRoot (const std::string &path) {
+            for (std::size_t i = 0, count = value.size (); i < count; ++i) {
+                if (value[i]->path == path) {
+                    value[i]->active = false;
+                    dirty = true;
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        bool DeleteRoot (const std::string &path) {
+            return false;
         }
     };
 
@@ -246,14 +294,14 @@ int main (
     THEKOGANS_UTIL_IMPLEMENT_LOG_FLUSHER;
     if (Options::Instance ()->help) {
         THEKOGANS_UTIL_LOG_INFO (
-            "%s [-h] [-v] [-l:'%s'] -a:[scan|show_roots|delete_root|cd] "
+            "%s [-h] [-v] [-l:'%s'] -a:[scan|show_roots|enable_root|disable_rootdelete_root|cd] "
             "[-r:rooot] [-p:pattern]\n\n"
             "h - Display this help message.\n"
             "v - Display version information.\n"
             "l - Set logging level (default is Info).\n"
             "a - Action to perform (default is cd).\n"
             "r - Root (can be repeated).\n"
-            "p - Pattern.\n"
+            "p - Pattern (when action is cd).\n"
             "o - Pattern should appear ordered in the results.\n",
             argv[0],
             GetLevelsList (" | ").c_str ());
@@ -271,41 +319,61 @@ int main (
             util::FileAllocator::SharedPtr fileAllocator =
                 util::FileAllocator::Pool::Instance ()->GetFileAllocator (
                     util::MakePath (util::Path::GetHomeDirectory (), "kcd.db"));
+            util::FileAllocator::Transaction transaction (fileAllocator);
             util::FileAllocator::Registry &registry = fileAllocator->GetRegistry ();
-            bool rootsDirty = false;
             Roots::SharedPtr roots = registry.GetValue ("roots");
             if (roots == nullptr) {
                 roots.Reset (new Roots);
-                rootsDirty = true;
             }
             if (Options::Instance ()->action == "scan") {
-                if (!Options::Instance ()->roots.empty ()) {
-                    for (std::size_t i = 0,
-                            count = Options::Instance ()->roots.size (); i < count; ++i) {
-                        std::string absolutePath =
-                            util::Path (Options::Instance ()->roots[i]).MakeAbsolute ();
-                        Root::SharedPtr root = roots->Find (absolutePath);
-                        if (root == nullptr) {
-                            root.Reset (new Root (absolutePath));
-                            roots->Add (root);
-                            rootsDirty = true;
-                        }
-                        std::cout << "Scanning " << absolutePath << "...";
+                const std::vector<std::string> &roots_ = Options::Instance ()->roots;
+                if (!roots_.empty ()) {
+                    for (std::size_t i = 0, count = roots_.size (); i < count; ++i) {
+                        std::string absolutePath = util::Path (roots_[i]).MakeAbsolute ();
+                        Root::SharedPtr root = roots->GetRoot (absolutePath);
+                        std::cout << "Scanning " << absolutePath << "...\n";
                         root->Scan (fileAllocator);
                         std::cout << "done\n";
                     }
                 }
                 else {
+                    THEKOGANS_UTIL_LOG_ERROR ("Must specify at least one root to scan.\n");
                 }
             }
             else if (Options::Instance ()->action == "show_roots") {
-                for (std::size_t i = 0, count = roots->GetLength (); i < count; ++i) {
+                for (std::size_t i = 0, count = roots->value.size (); i < count; ++i) {
+                    std::cout <<
+                        roots->value[i]->path << " - " <<
+                        (roots->value[i]->active ? "enabled" : "disabled") << "\n";
+                }
+            }
+            else if (Options::Instance ()->action == "enable_root") {
+                const std::vector<std::string> &roots_ = Options::Instance ()->roots;
+                if (!roots_.empty ()) {
+                    for (std::size_t i = 0, count = roots_.size (); i < count; ++i) {
+                        roots->EnableRoot (roots_[i]);
+                    }
+                }
+                else {
+                    THEKOGANS_UTIL_LOG_ERROR ("Must specify at least one root to enable.\n");
+                }
+            }
+            else if (Options::Instance ()->action == "disable_root") {
+                const std::vector<std::string> &roots_ = Options::Instance ()->roots;
+                if (!roots_.empty ()) {
+                    for (std::size_t i = 0, count = roots_.size (); i < count; ++i) {
+                        roots->DisableRoot (roots_[i]);
+                    }
+                }
+                else {
+                    THEKOGANS_UTIL_LOG_ERROR ("Must specify at least one root to disable.\n");
                 }
             }
             else if (Options::Instance ()->action == "delete_root") {
-                if (!Options::Instance ()->roots.empty ()) {
-                    for (std::size_t i = 0,
-                            count = Options::Instance ()->roots.size (); i < count; ++i) {
+                const std::vector<std::string> &roots_ = Options::Instance ()->roots;
+                if (!roots_.empty ()) {
+                    for (std::size_t i = 0, count = roots_.size (); i < count; ++i) {
+                        roots->DeleteRoot (roots_[i]);
                     }
                 }
                 else {
@@ -364,14 +432,16 @@ int main (
                     }
                 }
                 else {
+                    THEKOGANS_UTIL_LOG_ERROR ("Must specify a patern to search for.\n");
                 }
             }
             else {
                 THEKOGANS_UTIL_LOG_ERROR ("Must specify a valid action.\n");
             }
-            if (rootsDirty) {
+            if (roots->IsDirty ()) {
                 registry.SetValue ("roots", roots);
             }
+            transaction.Commit ();
         }
         THEKOGANS_UTIL_CATCH_AND_LOG
     }
