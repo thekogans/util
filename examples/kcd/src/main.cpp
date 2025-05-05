@@ -105,9 +105,10 @@ namespace {
         void Find (
                 util::FileAllocator::SharedPtr fileAllocator,
                 const std::string &prefix,
+                bool ignoreCase,
                 std::vector<std::string> &paths) {
             Init (fileAllocator);
-            util::BTree::Iterator it (new util::StringKey (prefix));
+            util::BTree::Iterator it (new util::StringKey (prefix, ignoreCase));
             for (componentBTree->FindFirst (it); !it.IsFinished (); it.Next ()) {
                 util::GUIDArrayValue::SharedPtr componentValue = it.GetValue ();
                 for (std::size_t i = 0, count = componentValue->value.size (); i < count; ++i) {
@@ -217,8 +218,8 @@ namespace {
 
         bool dirty;
 
-        Roots () :
-            dirty (false) {}
+        Roots (bool dirty_ = false) :
+            dirty (dirty_) {}
 
         inline bool IsDirty () const {
             return dirty;
@@ -227,10 +228,11 @@ namespace {
         void Find (
                 util::FileAllocator::SharedPtr fileAllocator,
                 const std::string &prefix,
+                bool ignoreCase,
                 std::vector<std::string> &paths) {
             for (std::size_t i = 0, count = value.size (); i < count; ++i) {
                 if (value[i]->active) {
-                    value[i]->Find (fileAllocator, prefix, paths);
+                    value[i]->Find (fileAllocator, prefix, ignoreCase, paths);
                 }
             }
         }
@@ -269,7 +271,24 @@ namespace {
             return false;
         }
 
-        bool DeleteRoot (const std::string &path) {
+        bool DeleteRoot (
+                util::FileAllocator::SharedPtr fileAllocator,
+                const std::string &path) {
+            for (std::size_t i = 0, count = value.size (); i < count; ++i) {
+                if (value[i]->path == path) {
+                    util::FileAllocator::PtrType pathBTreeOffset = value[i]->pathBTreeOffset;
+                    util::FileAllocator::PtrType componentBTreeOffset = value[i]->componentBTreeOffset;
+                    value.erase (value.begin () + i);
+                    if (pathBTreeOffset != 0) {
+                        util::BTree::Delete (*fileAllocator, pathBTreeOffset);
+                    }
+                    if (componentBTreeOffset != 0) {
+                        util::BTree::Delete (*fileAllocator, componentBTreeOffset);
+                    }
+                    dirty = true;
+                    return true;
+                }
+            }
             return false;
         }
     };
@@ -295,14 +314,15 @@ int main (
     if (Options::Instance ()->help) {
         THEKOGANS_UTIL_LOG_INFO (
             "%s [-h] [-v] [-l:'%s'] -a:[scan|show_roots|enable_root|disable_rootdelete_root|cd] "
-            "[-r:rooot] [-p:pattern]\n\n"
+            "[-r:rooot] [-p:pattern] [-i] [-o]\n\n"
             "h - Display this help message.\n"
             "v - Display version information.\n"
             "l - Set logging level (default is Info).\n"
             "a - Action to perform (default is cd).\n"
             "r - Root (can be repeated).\n"
             "p - Pattern (when action is cd).\n"
-            "o - Pattern should appear ordered in the results.\n",
+            "i - Ignore case (when action is cd).\n",
+            "o - Pattern should appear ordered in the results (when action is cd).\n",
             argv[0],
             GetLevelsList (" | ").c_str ());
     }
@@ -323,7 +343,7 @@ int main (
             util::FileAllocator::Registry &registry = fileAllocator->GetRegistry ();
             Roots::SharedPtr roots = registry.GetValue ("roots");
             if (roots == nullptr) {
-                roots.Reset (new Roots);
+                roots.Reset (new Roots (true));
             }
             if (Options::Instance ()->action == "scan") {
                 const std::vector<std::string> &roots_ = Options::Instance ()->roots;
@@ -373,7 +393,7 @@ int main (
                 const std::vector<std::string> &roots_ = Options::Instance ()->roots;
                 if (!roots_.empty ()) {
                     for (std::size_t i = 0, count = roots_.size (); i < count; ++i) {
-                        roots->DeleteRoot (roots_[i]);
+                        roots->DeleteRoot (fileAllocator, roots_[i]);
                     }
                 }
                 else {
@@ -385,14 +405,19 @@ int main (
                     std::vector<std::string> result;
                     std::list<std::string> components;
                     util::Path (Options::Instance ()->pattern).GetComponents (components);
-                    roots->Find (fileAllocator, *components.begin (), result);
+                    bool ignoreCase = Options::Instance ()->ignoreCase;
+                    roots->Find (fileAllocator, *components.begin (), ignoreCase, result);
                     auto FindPrefix = [] (
                             std::list<std::string>::const_iterator begin,
                             std::list<std::string>::const_iterator end,
-                            const std::string &prefix) -> std::list<std::string>::const_iterator {
+                            const std::string &prefix,
+                            bool ignoreCase) -> std::list<std::string>::const_iterator {
                         while (begin != end) {
-                            if (util::StringCompare (
-                                    prefix.c_str (), begin->c_str (), prefix.size ()) == 0) {
+                            if ((ignoreCase ?
+                                util::StringCompareIgnoreCase (
+                                    prefix.c_str (), begin->c_str (), prefix.size ()) :
+                                util::StringCompare (
+                                    prefix.c_str (), begin->c_str (), prefix.size ())) == 0) {
                                 break;
                             }
                             ++begin;
@@ -404,10 +429,11 @@ int main (
                             std::list<std::string>::const_iterator end,
                             std::list<std::string>::const_iterator componentsBegin,
                             std::list<std::string>::const_iterator componentsEnd,
+                            bool ignoreCase,
                             bool ordered) -> bool {
                         while (componentsBegin != componentsEnd) {
                             std::list<std::string>::const_iterator it =
-                                FindPrefix (begin, end, *componentsBegin);
+                                FindPrefix (begin, end, *componentsBegin, ignoreCase);
                             if (it == end) {
                                 return false;
                             }
@@ -418,6 +444,7 @@ int main (
                         }
                         return true;
                     };
+                    bool ordered = Options::Instance ()->ordered;
                     for (std::size_t i = 0, count = result.size (); i < count; ++i) {
                         std::list<std::string> resultComponents;
                         util::Path (result[i]).GetComponents (resultComponents);
@@ -426,7 +453,8 @@ int main (
                                 resultComponents.end (),
                                 components.begin (),
                                 components.end (),
-                                Options::Instance ()->ordered)) {
+                                ignoreCase,
+                                ordered)) {
                             std::cout << result[i] << "\n";
                         }
                     }

@@ -37,6 +37,7 @@ namespace thekogans {
             std::string action;
             std::vector<std::string> roots;
             std::string pattern;
+            bool ignoreCase;
             bool ordered;
 
             Options () :
@@ -44,6 +45,7 @@ namespace thekogans {
                 version (false),
                 logLevel (util::LoggerMgr::Info),
                 action ("cd"),
+                ignoreCase (false),
                 ordered (false) {}
 
             virtual void DoOption (

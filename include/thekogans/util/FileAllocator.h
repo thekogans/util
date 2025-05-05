@@ -776,7 +776,7 @@ namespace thekogans {
             /// \brief
             /// FileAllocator is too complex a beast for granular locking schemes.
             /// The constant fear of deadlock because you forgot that a function
-            /// call under lock resulted in recursive call to Lock::Aquire. At fear
+            /// call under lock resulted in recursive call to Lock::Acquire. At fear
             /// of race conditions because you forgot to lock a resource before
             /// checking it's nullness. The tricky performance degredation issues
             /// that come with granular locking. A completely different sharing
@@ -785,14 +785,30 @@ namespace thekogans {
             /// nothing to do. This mutex is used by \see{Transaction} above. If
             /// you use transactions, it will be used under the hood. If you're
             /// in a multithreaded environment where multiple threads use the same
-            /// FileAllocator you will all need to synchronize access to it. Call
-            /// GetMutex () below and pass it to a \see{LockGuard}<\see{Mutex}> to
-            /// aquire exclusive access. Ex:
+            /// FileAllocator you will all need to synchronize access to it. You
+            /// can either use transactions in your threads or call GetMutex ()
+            /// below and pass it to a \see{LockGuard}<\see{Mutex}> to/ acquire
+            /// exclusive access. The reason it's a \see{Mutex} instead of my
+            /// beloved \see{SpinLock} is because I expect the threads to hold
+            /// on to a lock for a while and I didn't want others to needlessly
+            /// sit and spin the cpu for no reason. Contention for the Mutex will
+            /// result in waiting threads being put to sleep.  Ex:
             ///
             /// \code{.cpp}
             /// using namespace thekogans;
             ///
-            /// util::LockGuard<util::Mutex> guard (fileAllocator->GetMutex ());
+            /// {
+            ///     // Acquire the lock before using the FileAllocator.
+            ///     util::LockGuard<util::Mutex> guard (fileAllocator->GetMutex ());
+            ///     // From here until the end of the scope you have exclusive
+            ///     // access to the heap. Be quick about it, others might be
+            ///     // waiting too.
+            ///     // IMPORTANT: You can still use FileAllocator transactions,
+            ///     // you just can't use the \see{Transactions} wrapper above.
+            ///     // Either write your own (withour the lock Acquisition) or
+            ///     // use FileAllocator methods (BeginTransaction/CommitTransaction/
+            ///     // AbortTransaction) directly.
+            /// }
             /// \endcode
             Mutex mutex;
 
@@ -814,6 +830,9 @@ namespace thekogans {
                 return file.GetPath ();
             }
 
+            /// \brief
+            /// Return the reference to the mutex.
+            /// \return Reference to the mutex.
             inline Mutex &GetMutex () {
                 return mutex;
             }
@@ -972,6 +991,9 @@ namespace thekogans {
             /// \param[in] flushFile true == flush the file cache to disk.
             void Flush (bool flushFile = true);
 
+            /// \brief
+            /// Return true if a transaction is pending (open).
+            /// \return true == A pending transaction exists.
             inline bool IsTransactionPending () const {
                 return file.IsTransactionPending ();
             }
@@ -981,7 +1003,11 @@ namespace thekogans {
             /// commit them all at once (CommitTransaction) or none at all
             /// (AbortTransaction).
             void BeginTransaction ();
+            /// \brief
+            /// Commit a pending transaction.
             void CommitTransaction ();
+            /// \brief
+            /// Abort a pending transaction.
             void AbortTransaction ();
 
             /// \brief
