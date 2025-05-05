@@ -313,7 +313,7 @@ int main (
     THEKOGANS_UTIL_IMPLEMENT_LOG_FLUSHER;
     if (Options::Instance ()->help) {
         THEKOGANS_UTIL_LOG_INFO (
-            "%s [-h] [-v] [-l:'%s'] -a:[scan|show_roots|enable_root|disable_rootdelete_root|cd] "
+            "%s [-h] [-v] [-l:'%s'] -a:[scan_root|enable_root|disable_root|delete_root|show_roots|cd] "
             "[-r:rooot] [-p:pattern] [-i] [-o]\n\n"
             "h - Display this help message.\n"
             "v - Display version information.\n"
@@ -345,7 +345,7 @@ int main (
             if (roots == nullptr) {
                 roots.Reset (new Roots (true));
             }
-            if (Options::Instance ()->action == "scan") {
+            if (Options::Instance ()->action == "scan_root") {
                 const std::vector<std::string> &roots_ = Options::Instance ()->roots;
                 if (!roots_.empty ()) {
                     for (std::size_t i = 0, count = roots_.size (); i < count; ++i) {
@@ -358,13 +358,6 @@ int main (
                 }
                 else {
                     THEKOGANS_UTIL_LOG_ERROR ("Must specify at least one root to scan.\n");
-                }
-            }
-            else if (Options::Instance ()->action == "show_roots") {
-                for (std::size_t i = 0, count = roots->value.size (); i < count; ++i) {
-                    std::cout <<
-                        roots->value[i]->path << " - " <<
-                        (roots->value[i]->active ? "enabled" : "disabled") << "\n";
                 }
             }
             else if (Options::Instance ()->action == "enable_root") {
@@ -398,6 +391,13 @@ int main (
                 }
                 else {
                     THEKOGANS_UTIL_LOG_ERROR ("Must specify at least one root to delete.\n");
+                }
+            }
+            else if (Options::Instance ()->action == "show_roots") {
+                for (std::size_t i = 0, count = roots->value.size (); i < count; ++i) {
+                    std::cout <<
+                        roots->value[i]->path << " - " <<
+                        (roots->value[i]->active ? "enabled" : "disabled") << "\n";
                 }
             }
             else if (Options::Instance ()->action == "cd") {
