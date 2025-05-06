@@ -323,7 +323,7 @@ std::size_t util::Serializer::Size<Root::SharedPtr> (
 int main (
         int argc,
         const char *argv[]) {
-    Options::Instance ()->Parse (argc, argv, "hvlarpio");
+    Options::Instance ()->Parse (argc, argv, "hvldarpio");
     THEKOGANS_UTIL_LOG_RESET (
         Options::Instance ()->logLevel,
         util::LoggerMgr::All);
@@ -331,11 +331,13 @@ int main (
     THEKOGANS_UTIL_IMPLEMENT_LOG_FLUSHER;
     if (Options::Instance ()->help) {
         THEKOGANS_UTIL_LOG_INFO (
-            "%s [-h] [-v] [-l:'%s'] -a:[scan_root|enable_root|disable_root|delete_root|show_roots|cd] "
+            "%s [-h] [-v] [-l:'%s'] [-d:'database path'] "
+            "-a:[scan_root|enable_root|disable_root|delete_root|show_roots|cd] "
             "[-r:root] [-p:pattern] [-i] [-o]\n\n"
             "h - Display this help message.\n"
             "v - Display version information.\n"
             "l - Set logging level (default is Info).\n"
+            "d - Database path (default is $HOME/kcd.db)).\n"
             "a - Action to perform (default is cd).\n"
             "r - Root (can be repeated).\n"
             "p - Pattern (when action is cd).\n"
@@ -356,7 +358,7 @@ int main (
             THEKOGANS_UTIL_IMPLEMENT_FILE_ALLOCATOR_POOL_FLUSHER;
             util::FileAllocator::SharedPtr fileAllocator =
                 util::FileAllocator::Pool::Instance ()->GetFileAllocator (
-                    util::MakePath (util::Path::GetHomeDirectory (), "kcd.db"));
+                    Options::Instance ()->dbPath);
             util::FileAllocator::Transaction transaction (fileAllocator);
             util::FileAllocator::Registry &registry = fileAllocator->GetRegistry ();
             Roots::SharedPtr roots = registry.GetValue ("roots");

@@ -21,6 +21,7 @@
 #include <string>
 #include <vector>
 #include "thekogans/util/Types.h"
+#include "thekogans/util/Path.h"
 #include "thekogans/util/Singleton.h"
 #include "thekogans/util/CommandLineOptions.h"
 #include "thekogans/util/LoggerMgr.h"
@@ -34,6 +35,7 @@ namespace thekogans {
             bool help;
             bool version;
             util::ui32 logLevel;
+            std::string dbPath;
             std::string action;
             std::vector<std::string> roots;
             std::string pattern;
@@ -44,6 +46,7 @@ namespace thekogans {
                 help (false),
                 version (false),
                 logLevel (util::LoggerMgr::Info),
+                dbPath (util::MakePath (util::Path::GetHomeDirectory (), "kcd.db")),
                 action ("cd"),
                 ignoreCase (false),
                 ordered (false) {}

@@ -34,6 +34,9 @@ namespace thekogans {
                 case 'l':
                     logLevel = util::LoggerMgr::stringTolevel (value.c_str ());
                     break;
+                case 'd':
+                    dbPath = value;
+                    break;
                 case 'a':
                     action = value;
                     break;
