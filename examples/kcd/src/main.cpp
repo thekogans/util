@@ -108,14 +108,21 @@ namespace {
                 bool ignoreCase,
                 std::vector<std::string> &paths) {
             Init (fileAllocator);
-            util::BTree::Iterator it (new util::StringKey (prefix, ignoreCase));
+            util::StringKey originalPrefix (prefix);
+            // To allow for the -i flag (ignore case) the database is maintained
+            // without regard to case. All searches must be performed caseless too.
+            util::BTree::Iterator it (new util::StringKey (prefix, true));
             for (componentBTree->FindFirst (it); !it.IsFinished (); it.Next ()) {
-                util::GUIDArrayValue::SharedPtr componentValue = it.GetValue ();
-                for (std::size_t i = 0, count = componentValue->value.size (); i < count; ++i) {
-                    util::BTree::Iterator jt;
-                    if (pathBTree->Find (util::GUIDKey (componentValue->value[i]), jt)) {
-                        paths.push_back (jt.GetValue ()->ToString ());
-				 	}
+                // To honor the case request we filter out everything that
+                // doesn't match.
+                if (ignoreCase || originalPrefix.PrefixCompare (*it.GetKey ()) == 0) {
+                    util::GUIDArrayValue::SharedPtr componentValue = it.GetValue ();
+                    for (std::size_t i = 0, count = componentValue->value.size (); i < count; ++i) {
+                        util::BTree::Iterator jt;
+                        if (pathBTree->Find (util::GUIDKey (componentValue->value[i]), jt)) {
+                            paths.push_back (jt.GetValue ()->ToString ());
+                        }
+                    }
                 }
             }
         }
@@ -186,6 +193,15 @@ namespace {
                 if (componentBTreeOffset == 0) {
                     componentBTreeOffset = componentBTree->GetOffset ();
                 }
+            }
+        }
+
+        void Flush () {
+            if (pathBTree == nullptr) {
+                pathBTree->Flush ();
+            }
+            if (componentBTree == nullptr) {
+                componentBTree->Flush ();
             }
         }
     };
@@ -272,12 +288,14 @@ namespace {
         }
 
         bool DeleteRoot (
-                util::FileAllocator::SharedPtr fileAllocator,
-                const std::string &path) {
+                const std::string &path,
+                util::FileAllocator::SharedPtr fileAllocator) {
             for (std::size_t i = 0, count = value.size (); i < count; ++i) {
                 if (value[i]->path == path) {
-                    util::FileAllocator::PtrType pathBTreeOffset = value[i]->pathBTreeOffset;
-                    util::FileAllocator::PtrType componentBTreeOffset = value[i]->componentBTreeOffset;
+                    util::FileAllocator::PtrType pathBTreeOffset =
+                        value[i]->pathBTreeOffset;
+                    util::FileAllocator::PtrType componentBTreeOffset =
+                        value[i]->componentBTreeOffset;
                     value.erase (value.begin () + i);
                     if (pathBTreeOffset != 0) {
                         util::BTree::Delete (*fileAllocator, pathBTreeOffset);
@@ -314,7 +332,7 @@ int main (
     if (Options::Instance ()->help) {
         THEKOGANS_UTIL_LOG_INFO (
             "%s [-h] [-v] [-l:'%s'] -a:[scan_root|enable_root|disable_root|delete_root|show_roots|cd] "
-            "[-r:rooot] [-p:pattern] [-i] [-o]\n\n"
+            "[-r:root] [-p:pattern] [-i] [-o]\n\n"
             "h - Display this help message.\n"
             "v - Display version information.\n"
             "l - Set logging level (default is Info).\n"
@@ -351,10 +369,9 @@ int main (
                     for (std::size_t i = 0, count = roots_.size (); i < count; ++i) {
                         std::string absolutePath = util::Path (roots_[i]).MakeAbsolute ();
                         Root::SharedPtr root = roots->GetRoot (absolutePath);
-                        std::cout << "Scanning " << absolutePath << "...\n";
                         root->Scan (fileAllocator);
-                        std::cout << "done\n";
                     }
+                    roots->dirty = true;
                 }
                 else {
                     THEKOGANS_UTIL_LOG_ERROR ("Must specify at least one root to scan.\n");
@@ -386,7 +403,7 @@ int main (
                 const std::vector<std::string> &roots_ = Options::Instance ()->roots;
                 if (!roots_.empty ()) {
                     for (std::size_t i = 0, count = roots_.size (); i < count; ++i) {
-                        roots->DeleteRoot (fileAllocator, roots_[i]);
+                        roots->DeleteRoot (roots_[i], fileAllocator);
                     }
                 }
                 else {
@@ -437,6 +454,7 @@ int main (
                             if (it == end) {
                                 return false;
                             }
+                            // To honor -o (ordered flag) components must come in order.
                             if (ordered) {
                                 begin = ++it;
                             }

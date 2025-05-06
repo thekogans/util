@@ -190,7 +190,7 @@ namespace thekogans {
                                 entries[i].key = (Key *)btree.keyFactory (nullptr).Release ();
                                 entries[i].key->Read (keyHeader, *keyValueBuffer);
                             }
-                            if (!btree.header.valueType.empty ()) {
+                            if (!valueHeader.type.empty ()) {
                                 *keyValueBuffer >> valueHeader.version >> valueHeader.size;
                                 entries[i].value = (Value *)btree.valueFactory (nullptr).Release ();
                                 entries[i].value->Read (valueHeader, *keyValueBuffer);
@@ -247,6 +247,15 @@ namespace thekogans {
                                 UI16_SIZE + keyValueSize.second.Size () + keyValueSize.second;
                         }
                         else {
+                            // It would be nice to just write:
+                            // totalKeyValueSize += entries[i]->GetSize ();
+                            // and be done with it. But that would incure a penalty
+                            // of yet another call to Serializable::Size (). So we
+                            // simmulate what Serializable::GetSize would do and
+                            // construct a Serializable::Header from the pieces we
+                            // already have to take it's size. A bit of insider
+                            // trading and potentially dangerous if the Serializable::Header
+                            // would ever to change.
                             totalKeyValueSize +=
                                 Serializable::Header (
                                     entries[i].value->Type (),
@@ -663,7 +672,7 @@ namespace thekogans {
         void BTree::Node::Split (Node *node) {
             // This assert checks IsFull as well.
             assert (count == btree.header.entriesPerNode);
-            ui32 splitIndex = btree.header.entriesPerNode / 2;
+            ui32 splitIndex = count / 2;
             node->count = count - splitIndex;
             std::memcpy (
                 node->entries,
