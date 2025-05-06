@@ -234,8 +234,10 @@ namespace {
     struct Roots : public util::ArrayValue<Root::SharedPtr> {
         THEKOGANS_UTIL_DECLARE_SERIALIZABLE (Roots)
 
+    private:
         bool dirty;
 
+    public:
         Roots (bool dirty_ = false) :
             dirty (dirty_) {}
 
@@ -243,28 +245,23 @@ namespace {
             return dirty;
         }
 
-        void Find (
-                util::FileAllocator::SharedPtr fileAllocator,
-                const std::string &prefix,
-                bool ignoreCase,
-                std::vector<std::string> &paths) {
-            for (std::size_t i = 0, count = value.size (); i < count; ++i) {
-                if (value[i]->active) {
-                    value[i]->Find (fileAllocator, prefix, ignoreCase, paths);
-                }
-            }
-        }
-
-        Root::SharedPtr GetRoot (const std::string &path) {
+        bool ScanRoot (
+                const std::string &path,
+                util::FileAllocator::SharedPtr fileAllocator) {
+            Root::SharedPtr root;
             for (std::size_t i = 0, count = value.size (); i < count; ++i) {
                 if (value[i]->path == path) {
-                    return value[i];
+                    root = value[i];
+                    break;
                 }
             }
-            Root::SharedPtr root (new Root (path));
-            value.push_back (root);
+            if (root == nullptr) {
+                root.Reset (new Root (path));
+                value.push_back (root);
+            }
+            root->Scan (fileAllocator);
             dirty = true;
-            return root;
+            return true;
         }
 
         bool EnableRoot (const std::string &path) {
@@ -311,6 +308,19 @@ namespace {
             }
             return false;
         }
+
+        // for cd
+        void Find (
+                util::FileAllocator::SharedPtr fileAllocator,
+                const std::string &prefix,
+                bool ignoreCase,
+                std::vector<std::string> &paths) {
+            for (std::size_t i = 0, count = value.size (); i < count; ++i) {
+                if (value[i]->active) {
+                    value[i]->Find (fileAllocator, prefix, ignoreCase, paths);
+                }
+            }
+        }
     };
 
     THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE (Roots, 1, util::BTree::Value::TYPE)
@@ -325,6 +335,10 @@ std::size_t util::Serializer::Size<Root::SharedPtr> (
 int main (
         int argc,
         const char *argv[]) {
+#if defined (THEKOGANS_UTIL_TYPE_Static)
+    util::StaticInit ();
+    Roots::StaticInit ();
+#endif // defined (THEKOGANS_UTIL_TYPE_Static)
     Options::Instance ()->Parse (argc, argv, "hvldarpio");
     THEKOGANS_UTIL_LOG_RESET (
         Options::Instance ()->logLevel,
@@ -371,11 +385,8 @@ int main (
                 const std::vector<std::string> &roots_ = Options::Instance ()->roots;
                 if (!roots_.empty ()) {
                     for (std::size_t i = 0, count = roots_.size (); i < count; ++i) {
-                        std::string absolutePath = util::Path (roots_[i]).MakeAbsolute ();
-                        Root::SharedPtr root = roots->GetRoot (absolutePath);
-                        root->Scan (fileAllocator);
+                        roots->ScanRoot (util::Path (roots_[i]).MakeAbsolute (), fileAllocator);
                     }
-                    roots->dirty = true;
                 }
                 else {
                     THEKOGANS_UTIL_LOG_ERROR ("Must specify at least one root to scan.\n");
@@ -428,30 +439,30 @@ int main (
                     util::Path (Options::Instance ()->pattern).GetComponents (components);
                     bool ignoreCase = Options::Instance ()->ignoreCase;
                     roots->Find (fileAllocator, *components.begin (), ignoreCase, result);
-                    auto FindPrefix = [] (
-                            std::list<std::string>::const_iterator begin,
-                            std::list<std::string>::const_iterator end,
-                            const std::string &prefix,
-                            bool ignoreCase) -> std::list<std::string>::const_iterator {
-                        while (begin != end) {
-                            if ((ignoreCase ?
-                                util::StringCompareIgnoreCase (
-                                    prefix.c_str (), begin->c_str (), prefix.size ()) :
-                                util::StringCompare (
-                                    prefix.c_str (), begin->c_str (), prefix.size ())) == 0) {
-                                break;
-                            }
-                            ++begin;
-                        }
-                        return begin;
-                    };
-                    auto ScanComponents = [&] (
+                    auto ScanComponents = [] (
                             std::list<std::string>::const_iterator begin,
                             std::list<std::string>::const_iterator end,
                             std::list<std::string>::const_iterator componentsBegin,
                             std::list<std::string>::const_iterator componentsEnd,
                             bool ignoreCase,
                             bool ordered) -> bool {
+                        auto FindPrefix = [] (
+                                std::list<std::string>::const_iterator begin,
+                                std::list<std::string>::const_iterator end,
+                                const std::string &prefix,
+                                bool ignoreCase) -> std::list<std::string>::const_iterator {
+                            while (begin != end) {
+                                if ((ignoreCase ?
+                                        util::StringCompareIgnoreCase (
+                                            prefix.c_str (), begin->c_str (), prefix.size ()) :
+                                        util::StringCompare (
+                                            prefix.c_str (), begin->c_str (), prefix.size ())) == 0) {
+                                    break;
+                                }
+                                ++begin;
+                            }
+                            return begin;
+                        };
                         while (componentsBegin != componentsEnd) {
                             std::list<std::string>::const_iterator it =
                                 FindPrefix (begin, end, *componentsBegin, ignoreCase);

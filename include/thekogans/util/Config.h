@@ -144,6 +144,8 @@ namespace thekogans {
         /// (\see{DynamicCreatable}) types. If you don't call this method
         /// the only types that will be available to your application are
         /// the ones you explicitly link to.
+        /// NOTE: This is the root and the only StaticInit that needs to
+        /// be called. It takes care of the rest.
         void StaticInit ();
     #endif // defined (THEKOGANS_UTIL_TYPE_Static)
 

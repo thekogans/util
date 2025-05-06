@@ -23,6 +23,7 @@
     #include "thekogans/util/HRTimerMgr.h"
     #include "thekogans/util/RunLoop.h"
     #include "thekogans/util/TimeSpec.h"
+    #include "thekogans/util/BTree.h"
 #endif // defined (THEKOGANS_UTIL_TYPE_Static)
 
 namespace thekogans {
@@ -42,6 +43,8 @@ namespace thekogans {
             RunLoop::Stats::Job::StaticInit ();
             RunLoop::Stats::StaticInit ();
             TimeSpec::StaticInit ();
+            BTree::Key::StaticInit ();
+            BTree::Value::StaticInit ();
         }
     #endif // defined (THEKOGANS_UTIL_TYPE_Static)
 
