@@ -321,7 +321,7 @@ int main (
             "a - Action to perform (default is cd).\n"
             "r - Root (can be repeated).\n"
             "p - Pattern (when action is cd).\n"
-            "i - Ignore case (when action is cd).\n",
+            "i - Ignore case (when action is cd).\n"
             "o - Pattern should appear ordered in the results (when action is cd).\n",
             argv[0],
             GetLevelsList (" | ").c_str ());
