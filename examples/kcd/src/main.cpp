@@ -99,6 +99,8 @@ namespace {
                 }
                 Init (fileAllocator);
                 Scan (path);
+                Flush ();
+                fileAllocator->Flush ();
             }
         }
 
@@ -128,6 +130,31 @@ namespace {
         }
 
     private:
+        void Init (util::FileAllocator::SharedPtr fileAllocator) {
+            if (pathBTree == nullptr) {
+                pathBTree.Reset (
+                    new util::BTree (
+                        fileAllocator,
+                        pathBTreeOffset,
+                        util::GUIDKey::TYPE,
+                        util::StringValue::TYPE));
+                if (pathBTreeOffset == 0) {
+                    pathBTreeOffset = pathBTree->GetOffset ();
+                }
+            }
+            if (componentBTree == nullptr) {
+                componentBTree.Reset (
+                    new util::BTree (
+                        fileAllocator,
+                        componentBTreeOffset,
+                        util::StringKey::TYPE,
+                        util::GUIDArrayValue::TYPE));
+                if (componentBTreeOffset == 0) {
+                    componentBTreeOffset = componentBTree->GetOffset ();
+                }
+            }
+        }
+
         void Scan (const std::string &path) {
             std::cout << path << "\n";
             util::GUIDKey::SharedPtr pathKey (
@@ -168,31 +195,6 @@ namespace {
             }
             THEKOGANS_UTIL_CATCH_ANY {
                 std::cout << "Skipping: " << path << "\n";
-            }
-        }
-
-        void Init (util::FileAllocator::SharedPtr fileAllocator) {
-            if (pathBTree == nullptr) {
-                pathBTree.Reset (
-                    new util::BTree (
-                        fileAllocator,
-                        pathBTreeOffset,
-                        util::GUIDKey::TYPE,
-                        util::StringValue::TYPE));
-                if (pathBTreeOffset == 0) {
-                    pathBTreeOffset = pathBTree->GetOffset ();
-                }
-            }
-            if (componentBTree == nullptr) {
-                componentBTree.Reset (
-                    new util::BTree (
-                        fileAllocator,
-                        componentBTreeOffset,
-                        util::StringKey::TYPE,
-                        util::GUIDArrayValue::TYPE));
-                if (componentBTreeOffset == 0) {
-                    componentBTreeOffset = componentBTree->GetOffset ();
-                }
             }
         }
 
