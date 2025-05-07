@@ -435,7 +435,7 @@ int main (
                 }
             }
             else if (Options::Instance ()->action == "show_roots") {
-                for (std::size_t i = 0, count = roots->GetSize (); i < count; ++i) {
+                for (std::size_t i = 0, count = roots->GetLength (); i < count; ++i) {
                     std::cout <<
                         (*roots)[i]->GetPath () << " - " <<
                         ((*roots)[i]->IsActive () ? "enabled" : "disabled") << "\n";
