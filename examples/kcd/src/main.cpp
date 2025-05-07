@@ -16,6 +16,7 @@
 // along with libthekogans_util. If not, see <http://www.gnu.org/licenses/>.
 
 #include <string>
+#include <unordered_set>
 #include <algorithm>
 #include <iostream>
 #include "thekogans/util/Environment.h"
@@ -487,10 +488,13 @@ int main (
                     };
                     std::list<std::string> patternComponents;
                     util::Path (Options::Instance ()->pattern).GetComponents (patternComponents);
+                    std::list<std::string>::const_iterator patternBegin = patternComponents.begin ();
+                    std::list<std::string>::const_iterator patternEnd = patternComponents.end ();
                     bool ignoreCase = Options::Instance ()->ignoreCase;
                     std::vector<std::string> paths;
-                    roots->Find (fileAllocator, *patternComponents.begin (), ignoreCase, paths);
+                    roots->Find (fileAllocator, *patternBegin, ignoreCase, paths);
                     bool ordered = Options::Instance ()->ordered;
+                    std::unordered_set<std::string> duplicates;
                     for (std::size_t i = 0, count = paths.size (); i < count; ++i) {
                         std::list<std::string> pathComponents;
                         util::Path (paths[i]).GetComponents (pathComponents);
@@ -502,11 +506,13 @@ int main (
                                 pathComponents.begin (),
                             #endif // defined (TOOLCHAIN_OS_Windows)
                                 pathComponents.end (),
-                                patternComponents.begin (),
-                                patternComponents.end (),
+                                patternBegin,
+                                patternEnd,
                                 ignoreCase,
                                 ordered)) {
-                            std::cout << paths[i] << "\n";
+                            if (duplicates.insert (paths[i]).second) {
+                                std::cout << paths[i] << "\n";
+                            }
                         }
                     }
                 }
