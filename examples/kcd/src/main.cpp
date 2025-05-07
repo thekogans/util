@@ -378,7 +378,6 @@ int main (
     }
     else {
         THEKOGANS_UTIL_TRY {
-            THEKOGANS_UTIL_IMPLEMENT_FILE_ALLOCATOR_POOL_FLUSHER;
             util::FileAllocator::SharedPtr fileAllocator =
                 util::FileAllocator::Pool::Instance ()->GetFileAllocator (
                     Options::Instance ()->dbPath);
