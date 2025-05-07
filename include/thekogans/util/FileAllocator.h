@@ -143,7 +143,7 @@ namespace thekogans {
                 /// \brief
                 /// Given a FileAllocator path, flush it's changes to disk. If the
                 /// given path is empty, flush them all.
-                /// \paam[in] path FileAllocator path to flush or empty for all.
+                /// \param[in] path FileAllocator path to flush or empty for all.
                 void FlushFileAllocator (const std::string &path = std::string ());
 
                 /// \brief
@@ -201,21 +201,42 @@ namespace thekogans {
                 THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (Flusher)
             };
 
+            /// \struct FileAllocator::Transaction FileAllocator.h thekogans/util/FileAllocator.h
+            ///
+            /// \brief
+            /// A transaction is the easiest way to perform exclusive atomic heap alterations.
+            /// It locks the FileAllocator in it's ctor and will abort the transaction in it's
+            /// dtor. This is useful in case of \see{Exception}s. Call Transaction::Comit before
+            /// the end of  scope to commit it. Make sure to flush all your data before calling
+            /// Commit or risk data loss.
             struct Transaction {
+                /// \brief
+                /// \see{FileAllocator} to transact.
                 FileAllocator::SharedPtr fileAllocator;
+                /// \brief
+                /// Lock the \see{FileAllocator} for exclusive
+                /// access during the lifetime of the transaction.
                 LockGuard<Mutex> guard;
 
+                /// \brief
+                /// ctor
+                /// \param[in] fileAllocator_ \see{FileAllocator} to transact.
                 explicit Transaction (FileAllocator::SharedPtr fileAllocator_) :
                         fileAllocator (fileAllocator_),
                         guard (fileAllocator->mutex) {
                     fileAllocator->BeginTransaction ();
                 }
+                /// \brief
+                /// dtor
                 ~Transaction () {
                     if (fileAllocator->IsTransactionPending ()) {
                         fileAllocator->AbortTransaction ();
                     }
                 }
 
+                /// \brief
+                /// Call commit before the end of the scope to commit the
+                /// transaction otherwise it will be aborted in the dtor.
                 void Commit () {
                     fileAllocator->CommitTransaction ();
                 }
@@ -1123,7 +1144,9 @@ namespace thekogans {
         };
 
         /// \def THEKOGANS_UTIL_IMPLEMENT_FILE_ALLOCATOR_POOL_FLUSHER
-        /// Use this macro at the top of your main to flush the \see{FileAllocator::Pool} on exit.
+        /// If you don't use transactions, use this macro at the top of your main
+        /// to flush the \see{FileAllocator::Pool} on exit. Make sure to flush all
+        /// your application data before flushing the heap or risk data loss.
         #define THEKOGANS_UTIL_IMPLEMENT_FILE_ALLOCATOR_POOL_FLUSHER\
             struct FileAllocatorPoolFlusher {\
                 ~FileAllocatorPoolFlusher () {\
