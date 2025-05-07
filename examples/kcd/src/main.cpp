@@ -253,7 +253,6 @@ util::Serializer &operator >> (
 struct Roots : public util::ArrayValue<Root::SharedPtr> {
     THEKOGANS_UTIL_DECLARE_SERIALIZABLE (Roots)
 
-public:
     void ScanRoot (
             const std::string &path,
             util::FileAllocator::SharedPtr fileAllocator) {
@@ -436,74 +435,78 @@ int main (
                 }
             }
             else if (Options::Instance ()->action == "show_roots") {
-                for (std::size_t i = 0, count = roots->value.size (); i < count; ++i) {
+                for (std::size_t i = 0, count = roots->GetSize (); i < count; ++i) {
                     std::cout <<
-                        roots->value[i]->GetPath () << " - " <<
-                        (roots->value[i]->IsActive () ? "enabled" : "disabled") << "\n";
+                        (*roots)[i]->GetPath () << " - " <<
+                        ((*roots)[i]->IsActive () ? "enabled" : "disabled") << "\n";
                 }
             }
             else if (Options::Instance ()->action == "cd") {
                 if (!Options::Instance ()->pattern.empty ()) {
-                    auto ScanComponents = [] (
-                            std::list<std::string>::const_iterator begin,
-                            std::list<std::string>::const_iterator end,
-                            std::list<std::string>::const_iterator componentsBegin,
-                            std::list<std::string>::const_iterator componentsEnd,
+                    auto ScanPattern = [] (
+                            std::list<std::string>::const_iterator pathBegin,
+                            std::list<std::string>::const_iterator pathEnd,
+                            std::list<std::string>::const_iterator patternBegin,
+                            std::list<std::string>::const_iterator patternEnd,
                             bool ignoreCase,
                             bool ordered) -> bool {
                         auto FindPrefix = [] (
-                                std::list<std::string>::const_iterator begin,
-                                std::list<std::string>::const_iterator end,
+                                std::list<std::string>::const_iterator pathBegin,
+                                std::list<std::string>::const_iterator pathEnd,
                                 const std::string &prefix,
                                 bool ignoreCase) -> std::list<std::string>::const_iterator {
-                            while (begin != end) {
+                            while (pathBegin != pathEnd) {
                                 if ((ignoreCase ?
                                         util::StringCompareIgnoreCase (
-                                            prefix.c_str (), begin->c_str (), prefix.size ()) :
+                                            prefix.c_str (),
+                                            pathBegin->c_str (),
+                                            prefix.size ()) :
                                         util::StringCompare (
-                                            prefix.c_str (), begin->c_str (), prefix.size ())) == 0) {
+                                            prefix.c_str (),
+                                            pathBegin->c_str (),
+                                            prefix.size ())) == 0) {
                                     break;
                                 }
-                                ++begin;
+                                ++pathBegin;
                             }
-                            return begin;
+                            return pathBegin;
                         };
-                        while (componentsBegin != componentsEnd) {
+                        while (patternBegin != patternEnd) {
                             std::list<std::string>::const_iterator it =
-                                FindPrefix (begin, end, *componentsBegin, ignoreCase);
-                            if (it == end) {
+                                FindPrefix (pathBegin, pathEnd, *patternBegin, ignoreCase);
+                            if (it == pathEnd) {
                                 return false;
                             }
-                            // To honor -o (ordered flag) components must come in order.
+                            // To honor -o (ordered flag) pattern must come in order.
                             if (ordered) {
-                                begin = ++it;
+                                pathBegin = ++it;
                             }
-                            ++componentsBegin;
+                            ++patternBegin;
                         }
                         return true;
                     };
-                    std::list<std::string> components;
-                    util::Path (Options::Instance ()->pattern).GetComponents (components);
+                    std::list<std::string> patternComponents;
+                    util::Path (Options::Instance ()->pattern).GetComponents (patternComponents);
                     bool ignoreCase = Options::Instance ()->ignoreCase;
-                    std::vector<std::string> result;
-                    roots->Find (fileAllocator, *components.begin (), ignoreCase, result);
+                    std::vector<std::string> paths;
+                    roots->Find (fileAllocator, *patternComponents.begin (), ignoreCase, paths);
                     bool ordered = Options::Instance ()->ordered;
-                    for (std::size_t i = 0, count = result.size (); i < count; ++i) {
-                        std::list<std::string> resultComponents;
-                        util::Path (result[i]).GetComponents (resultComponents);
-                        if (ScanComponents (
+                    for (std::size_t i = 0, count = paths.size (); i < count; ++i) {
+                        std::list<std::string> pathComponents;
+                        util::Path (paths[i]).GetComponents (pathComponents);
+                        if (ScanPattern (
                             #if defined (TOOLCHAIN_OS_Windows)
                                 // If on Windows, skip over the drive leter.
-                                ++resultComponents.begin (),
+                                ++pathComponents.begin (),
                             #else // defined (TOOLCHAIN_OS_Windows)
-                                resultComponents.begin (),
+                                pathComponents.begin (),
                             #endif // defined (TOOLCHAIN_OS_Windows)
-                                resultComponents.end (),
-                                components.begin (),
-                                components.end (),
+                                pathComponents.end (),
+                                patternComponents.begin (),
+                                patternComponents.end (),
                                 ignoreCase,
                                 ordered)) {
-                            std::cout << result[i] << "\n";
+                            std::cout << paths[i] << "\n";
                         }
                     }
                 }
