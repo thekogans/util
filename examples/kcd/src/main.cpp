@@ -16,10 +16,10 @@
 // along with libthekogans_util. If not, see <http://www.gnu.org/licenses/>.
 
 #include <string>
+#include <vector>
 #include <iostream>
 #include "thekogans/util/Environment.h"
 #include "thekogans/util/Path.h"
-#include "thekogans/util/StringUtils.h"
 #include "thekogans/util/LoggerMgr.h"
 #include "thekogans/util/Exception.h"
 #include "thekogans/util/Console.h"
