@@ -16,6 +16,7 @@
 // along with libthekogans_util. If not, see <http://www.gnu.org/licenses/>.
 
 #include <string>
+#include <list>
 #include <unordered_set>
 #include <algorithm>
 #include <iostream>
@@ -55,6 +56,28 @@ std::string GetLevelsList (const std::string &separator) {
         }
     }
     return logLevelList;
+}
+
+std::list<std::string>::const_iterator FindPrefix (
+        std::list<std::string>::const_iterator pathBegin,
+        std::list<std::string>::const_iterator pathEnd,
+        const std::string &prefix,
+        bool ignoreCase) {
+    while (pathBegin != pathEnd) {
+        if ((ignoreCase ?
+                util::StringCompareIgnoreCase (
+                    prefix.c_str (),
+                    pathBegin->c_str (),
+                    prefix.size ()) :
+                util::StringCompare (
+                    prefix.c_str (),
+                    pathBegin->c_str (),
+                    prefix.size ())) == 0) {
+            break;
+        }
+        ++pathBegin;
+    }
+    return pathBegin;
 }
 
 struct Root : public util::RefCounted {
@@ -158,7 +181,29 @@ public:
                     for (std::size_t i = 0, count = componentValue->value.size (); i < count; ++i) {
                         util::BTree::Iterator jt;
                         if (pathBTree->Find (util::GUIDKey (componentValue->value[i]), jt)) {
-                            paths.push_back (jt.GetValue ()->ToString ());
+                            // Components are stored caseless but paths are stored
+                            // with case in tact. That means that a component might
+                            // be pointing to a path with mismatched case.
+                            if (!ignoreCase) {
+                                std::list<std::string> pathComponents;
+                                util::Path (jt.GetValue ()->ToString ()).GetComponents (
+                                    pathComponents);
+                                if (FindPrefix (
+                                    #if defined (TOOLCHAIN_OS_Windows)
+                                        // If on Windows, skip over the drive leter.
+                                        ++pathComponents.begin (),
+                                    #else // defined (TOOLCHAIN_OS_Windows)
+                                        pathComponents.begin (),
+                                    #endif // defined (TOOLCHAIN_OS_Windows)
+                                        pathComponents.end (),
+                                        prefix,
+                                        ignoreCase) != pathComponents.end ()) {
+                                    paths.push_back (jt.GetValue ()->ToString ());
+                                }
+                            }
+                            else {
+                                paths.push_back (jt.GetValue ()->ToString ());
+                            }
                         }
                     }
                 }
@@ -451,27 +496,6 @@ int main (
                             std::list<std::string>::const_iterator patternEnd,
                             bool ignoreCase,
                             bool ordered) -> bool {
-                        auto FindPrefix = [] (
-                                std::list<std::string>::const_iterator pathBegin,
-                                std::list<std::string>::const_iterator pathEnd,
-                                const std::string &prefix,
-                                bool ignoreCase) -> std::list<std::string>::const_iterator {
-                            while (pathBegin != pathEnd) {
-                                if ((ignoreCase ?
-                                        util::StringCompareIgnoreCase (
-                                            prefix.c_str (),
-                                            pathBegin->c_str (),
-                                            prefix.size ()) :
-                                        util::StringCompare (
-                                            prefix.c_str (),
-                                            pathBegin->c_str (),
-                                            prefix.size ())) == 0) {
-                                    break;
-                                }
-                                ++pathBegin;
-                            }
-                            return pathBegin;
-                        };
                         while (patternBegin != patternEnd) {
                             std::list<std::string>::const_iterator it =
                                 FindPrefix (pathBegin, pathEnd, *patternBegin, ignoreCase);
@@ -492,9 +516,11 @@ int main (
                     std::list<std::string>::const_iterator patternEnd = patternComponents.end ();
                     bool ignoreCase = Options::Instance ()->ignoreCase;
                     std::vector<std::string> paths;
-                    roots->Find (fileAllocator, *patternBegin, ignoreCase, paths);
+                    roots->Find (fileAllocator, *patternBegin++, ignoreCase, paths);
                     bool ordered = Options::Instance ()->ordered;
-                    std::unordered_set<std::string> duplicates;
+                    // Multiple different components with the same prefix (Python/Python38-32)
+                    // can be found in the same path. Make sure we only count it once.
+                    std::unordered_set<std::string> results;
                     for (std::size_t i = 0, count = paths.size (); i < count; ++i) {
                         std::list<std::string> pathComponents;
                         util::Path (paths[i]).GetComponents (pathComponents);
@@ -510,7 +536,7 @@ int main (
                                 patternEnd,
                                 ignoreCase,
                                 ordered)) {
-                            if (duplicates.insert (paths[i]).second) {
+                            if (results.insert (paths[i]).second) {
                                 std::cout << paths[i] << "\n";
                             }
                         }
