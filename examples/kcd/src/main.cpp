@@ -197,13 +197,11 @@ public:
                                     #endif // defined (TOOLCHAIN_OS_Windows)
                                         pathComponents.end (),
                                         prefix,
-                                        ignoreCase) != pathComponents.end ()) {
-                                    paths.push_back (jt.GetValue ()->ToString ());
+                                        ignoreCase) == pathComponents.end ()) {
+                                    continue;
                                 }
                             }
-                            else {
-                                paths.push_back (jt.GetValue ()->ToString ());
-                            }
+                            paths.push_back (jt.GetValue ()->ToString ());
                         }
                     }
                 }
@@ -370,7 +368,6 @@ struct Roots : public util::ArrayValue<Root::SharedPtr> {
         }
     }
 
-    // for cd
     void Find (
             util::FileAllocator::SharedPtr fileAllocator,
             const std::string &prefix,
@@ -502,7 +499,8 @@ int main (
                             if (it == pathEnd) {
                                 return false;
                             }
-                            // To honor -o (ordered flag) pattern must come in order.
+                            // To honor -o (ordered flag) pattern components
+                            // must come in order in the path.
                             if (ordered) {
                                 pathBegin = ++it;
                             }
@@ -516,8 +514,13 @@ int main (
                     std::list<std::string>::const_iterator patternEnd = patternComponents.end ();
                     bool ignoreCase = Options::Instance ()->ignoreCase;
                     std::vector<std::string> paths;
-                    roots->Find (fileAllocator, *patternBegin++, ignoreCase, paths);
+                    roots->Find (fileAllocator, *patternBegin, ignoreCase, paths);
                     bool ordered = Options::Instance ()->ordered;
+                    // If we don't care about order, skip over the first
+                    // pattern component because Find just found it.
+                    if (!ordered) {
+                        ++patternBegin;
+                    }
                     // Multiple different components with the same prefix (Python/Python38-32)
                     // can be found in the same path. Make sure we only count it once.
                     std::unordered_set<std::string> results;
