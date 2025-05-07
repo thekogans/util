@@ -87,25 +87,35 @@ namespace {
 
         void Scan (util::FileAllocator::SharedPtr fileAllocator) {
             if (!path.empty ()) {
-                pathBTree.Reset ();
-                if (pathBTreeOffset != 0) {
-                    util::BTree::Delete (*fileAllocator, pathBTreeOffset);
-                    pathBTreeOffset = 0;
+                {
+                    if (pathBTreeOffset != 0) {
+                        pathBTree.Reset ();
+                        util::BTree::Delete (*fileAllocator, pathBTreeOffset);
+                    }
+                    pathBTree.Reset (
+                        new util::BTree (
+                            fileAllocator,
+                            pathBTreeOffset,
+                            util::GUIDKey::TYPE,
+                            util::StringValue::TYPE));
+                    pathBTreeOffset = pathBTree->GetOffset ();
                 }
-                componentBTree.Reset ();
-                if (componentBTreeOffset != 0) {
-                    util::BTree::Delete (*fileAllocator, componentBTreeOffset);
-                    componentBTreeOffset = 0;
+                {
+                    if (componentBTreeOffset != 0) {
+                        componentBTree.Reset ();
+                        util::BTree::Delete (*fileAllocator, componentBTreeOffset);
+                    }
+                    componentBTree.Reset (
+                        new util::BTree (
+                            fileAllocator,
+                            componentBTreeOffset,
+                            util::StringKey::TYPE,
+                            util::GUIDArrayValue::TYPE));
+                    componentBTreeOffset = componentBTree->GetOffset ();
                 }
-                Init (fileAllocator);
                 Scan (path);
-                if (pathBTree == nullptr) {
-                    pathBTree->Flush ();
-                }
-                if (componentBTree == nullptr) {
-                    componentBTree->Flush ();
-                }
-                fileAllocator->Flush ();
+                pathBTree->Flush ();
+                componentBTree->Flush ();
             }
         }
 
@@ -114,20 +124,37 @@ namespace {
                 const std::string &prefix,
                 bool ignoreCase,
                 std::vector<std::string> &paths) {
-            Init (fileAllocator);
-            util::StringKey originalPrefix (prefix);
-            // To allow for the -i flag (ignore case) the database is maintained
-            // without regard to case. All searches must be performed caseless too.
-            util::BTree::Iterator it (new util::StringKey (prefix, true));
-            for (componentBTree->FindFirst (it); !it.IsFinished (); it.Next ()) {
-                // To honor the case request we filter out everything that
-                // doesn't match.
-                if (ignoreCase || originalPrefix.PrefixCompare (*it.GetKey ()) == 0) {
-                    util::GUIDArrayValue::SharedPtr componentValue = it.GetValue ();
-                    for (std::size_t i = 0, count = componentValue->value.size (); i < count; ++i) {
-                        util::BTree::Iterator jt;
-                        if (pathBTree->Find (util::GUIDKey (componentValue->value[i]), jt)) {
-                            paths.push_back (jt.GetValue ()->ToString ());
+            if (pathBTreeOffset != 0 && componentBTreeOffset != 0) {
+                if (pathBTree == nullptr) {
+                    pathBTree.Reset (
+                        new util::BTree (
+                            fileAllocator,
+                            pathBTreeOffset,
+                            util::GUIDKey::TYPE,
+                            util::StringValue::TYPE));
+                }
+                if (componentBTree == nullptr) {
+                    componentBTree.Reset (
+                        new util::BTree (
+                            fileAllocator,
+                            componentBTreeOffset,
+                            util::StringKey::TYPE,
+                            util::GUIDArrayValue::TYPE));
+                }
+                util::StringKey originalPrefix (prefix);
+                // To allow for the -i flag (ignore case) the database is maintained
+                // without regard to case. All searches must be performed caseless too.
+                util::BTree::Iterator it (new util::StringKey (prefix, true));
+                for (componentBTree->FindFirst (it); !it.IsFinished (); it.Next ()) {
+                    // To honor the case request we filter out everything that
+                    // doesn't match.
+                    if (ignoreCase || originalPrefix.PrefixCompare (*it.GetKey ()) == 0) {
+                        util::GUIDArrayValue::SharedPtr componentValue = it.GetValue ();
+                        for (std::size_t i = 0, count = componentValue->value.size (); i < count; ++i) {
+                            util::BTree::Iterator jt;
+                            if (pathBTree->Find (util::GUIDKey (componentValue->value[i]), jt)) {
+                                paths.push_back (jt.GetValue ()->ToString ());
+                            }
                         }
                     }
                 }
@@ -135,31 +162,6 @@ namespace {
         }
 
     private:
-        void Init (util::FileAllocator::SharedPtr fileAllocator) {
-            if (pathBTree == nullptr) {
-                pathBTree.Reset (
-                    new util::BTree (
-                        fileAllocator,
-                        pathBTreeOffset,
-                        util::GUIDKey::TYPE,
-                        util::StringValue::TYPE));
-                if (pathBTreeOffset == 0) {
-                    pathBTreeOffset = pathBTree->GetOffset ();
-                }
-            }
-            if (componentBTree == nullptr) {
-                componentBTree.Reset (
-                    new util::BTree (
-                        fileAllocator,
-                        componentBTreeOffset,
-                        util::StringKey::TYPE,
-                        util::GUIDArrayValue::TYPE));
-                if (componentBTreeOffset == 0) {
-                    componentBTreeOffset = componentBTree->GetOffset ();
-                }
-            }
-        }
-
         void Scan (const std::string &path) {
             std::cout << path << "\n";
             util::GUIDKey::SharedPtr pathKey (
@@ -230,18 +232,8 @@ namespace {
     struct Roots : public util::ArrayValue<Root::SharedPtr> {
         THEKOGANS_UTIL_DECLARE_SERIALIZABLE (Roots)
 
-    private:
-        bool dirty;
-
     public:
-        Roots (bool dirty_ = false) :
-            dirty (dirty_) {}
-
-        inline bool IsDirty () const {
-            return dirty;
-        }
-
-        bool ScanRoot (
+        void ScanRoot (
                 const std::string &path,
                 util::FileAllocator::SharedPtr fileAllocator) {
             Root::SharedPtr root;
@@ -255,34 +247,51 @@ namespace {
                 root.Reset (new Root (path));
                 value.push_back (root);
             }
-            root->Scan (fileAllocator);
-            dirty = true;
-            return true;
+            {
+                util::FileAllocator::Transaction transaction (fileAllocator);
+                root->Scan (fileAllocator);
+                fileAllocator->GetRegistry ().SetValue ("roots", this);
+                transaction.Commit ();
+            }
         }
 
-        bool EnableRoot (const std::string &path) {
+        void EnableRoot (
+                const std::string &path,
+                util::FileAllocator::SharedPtr fileAllocator) {
             for (std::size_t i = 0, count = value.size (); i < count; ++i) {
                 if (value[i]->path == path) {
-                    value[i]->active = true;
-                    dirty = true;
-                    return true;
+                    if (!value[i]->active) {
+                        value[i]->active = true;
+                        {
+                            util::FileAllocator::Transaction transaction (fileAllocator);
+                            fileAllocator->GetRegistry ().SetValue ("roots", this);
+                            transaction.Commit ();
+                        }
+                        break;
+                    }
                 }
             }
-            return false;
         }
 
-        bool DisableRoot (const std::string &path) {
+        void DisableRoot (
+                const std::string &path,
+                util::FileAllocator::SharedPtr fileAllocator) {
             for (std::size_t i = 0, count = value.size (); i < count; ++i) {
                 if (value[i]->path == path) {
-                    value[i]->active = false;
-                    dirty = true;
-                    return true;
+                    if (value[i]->active) {
+                        value[i]->active = false;
+                        {
+                            util::FileAllocator::Transaction transaction (fileAllocator);
+                            fileAllocator->GetRegistry ().SetValue ("roots", this);
+                            transaction.Commit ();
+                        }
+                        break;
+                    }
                 }
             }
-            return false;
         }
 
-        bool DeleteRoot (
+        void DeleteRoot (
                 const std::string &path,
                 util::FileAllocator::SharedPtr fileAllocator) {
             for (std::size_t i = 0, count = value.size (); i < count; ++i) {
@@ -292,17 +301,20 @@ namespace {
                     util::FileAllocator::PtrType componentBTreeOffset =
                         value[i]->componentBTreeOffset;
                     value.erase (value.begin () + i);
-                    if (pathBTreeOffset != 0) {
-                        util::BTree::Delete (*fileAllocator, pathBTreeOffset);
+                    {
+                        util::FileAllocator::Transaction transaction (fileAllocator);
+                        if (pathBTreeOffset != 0) {
+                            util::BTree::Delete (*fileAllocator, pathBTreeOffset);
+                        }
+                        if (componentBTreeOffset != 0) {
+                            util::BTree::Delete (*fileAllocator, componentBTreeOffset);
+                        }
+                        fileAllocator->GetRegistry ().SetValue ("roots", this);
+                        transaction.Commit ();
                     }
-                    if (componentBTreeOffset != 0) {
-                        util::BTree::Delete (*fileAllocator, componentBTreeOffset);
-                    }
-                    dirty = true;
-                    return true;
+                    break;
                 }
             }
-            return false;
         }
 
         // for cd
@@ -371,17 +383,16 @@ int main (
             util::FileAllocator::SharedPtr fileAllocator =
                 util::FileAllocator::Pool::Instance ()->GetFileAllocator (
                     Options::Instance ()->dbPath);
-            util::FileAllocator::Transaction transaction (fileAllocator);
-            util::FileAllocator::Registry &registry = fileAllocator->GetRegistry ();
-            Roots::SharedPtr roots = registry.GetValue ("roots");
+            Roots::SharedPtr roots = fileAllocator->GetRegistry ().GetValue ("roots");
             if (roots == nullptr) {
-                roots.Reset (new Roots (true));
+                roots.Reset (new Roots);
             }
             if (Options::Instance ()->action == "scan_root") {
                 const std::vector<std::string> &roots_ = Options::Instance ()->roots;
                 if (!roots_.empty ()) {
                     for (std::size_t i = 0, count = roots_.size (); i < count; ++i) {
-                        roots->ScanRoot (util::Path (roots_[i]).MakeAbsolute (), fileAllocator);
+                        roots->ScanRoot (
+                            util::Path (roots_[i]).MakeAbsolute (), fileAllocator);
                     }
                 }
                 else {
@@ -392,7 +403,8 @@ int main (
                 const std::vector<std::string> &roots_ = Options::Instance ()->roots;
                 if (!roots_.empty ()) {
                     for (std::size_t i = 0, count = roots_.size (); i < count; ++i) {
-                        roots->EnableRoot (util::Path (roots_[i]).MakeAbsolute ());
+                        roots->EnableRoot (
+                            util::Path (roots_[i]).MakeAbsolute (), fileAllocator);
                     }
                 }
                 else {
@@ -403,7 +415,8 @@ int main (
                 const std::vector<std::string> &roots_ = Options::Instance ()->roots;
                 if (!roots_.empty ()) {
                     for (std::size_t i = 0, count = roots_.size (); i < count; ++i) {
-                        roots->DisableRoot (util::Path (roots_[i]).MakeAbsolute ());
+                        roots->DisableRoot (
+                            util::Path (roots_[i]).MakeAbsolute (), fileAllocator);
                     }
                 }
                 else {
@@ -501,10 +514,6 @@ int main (
             else {
                 THEKOGANS_UTIL_LOG_ERROR ("Must specify a valid action.\n");
             }
-            if (roots->IsDirty ()) {
-                registry.SetValue ("roots", roots);
-            }
-            transaction.Commit ();
         }
         THEKOGANS_UTIL_CATCH_AND_LOG
     }
