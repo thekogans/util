@@ -337,7 +337,17 @@ namespace thekogans {
             std::size_t length = GetFullPathNameW (
                 os::windows::UTF8ToUTF16 (path).c_str (), 32767, fullPath, 0);
             if (length > 0) {
-                return os::windows::UTF16ToUTF8 (fullPath, length);
+                std::string utf8Path = os::windows::UTF16ToUTF8 (fullPath, length);
+                // On POSIX realpath will return an ENOENT if the resulting
+                // path does not exist. Simulate the same under Windows to
+                // keep the semantics the same.
+                if (Path (utf8Path).Exists ()) {
+                    return utf8Path;
+                }
+                else {
+                    THEKOGANS_UTIL_THROW_ERROR_CODE_AND_MESSAGE_EXCEPTION (
+                        THEKOGANS_UTIL_OS_ERROR_CODE_ENOENT, path.c_str ());
+                }
             }
             else {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (

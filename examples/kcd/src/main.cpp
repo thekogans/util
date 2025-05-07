@@ -37,278 +37,239 @@
 using namespace thekogans;
 using namespace kcd;
 
-namespace {
-    std::string GetLevelsList (const std::string &separator) {
-        std::string logLevelList;
-        {
-            std::list<util::ui32> levels;
-            util::LoggerMgr::GetLevels (levels);
-            if (!levels.empty ()) {
-                std::list<util::ui32>::const_iterator it = levels.begin ();
-                logLevelList = util::LoggerMgr::levelTostring (*it++);
-                for (std::list<util::ui32>::const_iterator end = levels.end (); it != end; ++it) {
-                    logLevelList += separator + util::LoggerMgr::levelTostring (*it);
-                }
-            }
-            else {
-                logLevelList = "No LoggerMgr levels defined.";
+std::string GetLevelsList (const std::string &separator) {
+    std::string logLevelList;
+    {
+        std::list<util::ui32> levels;
+        util::LoggerMgr::GetLevels (levels);
+        if (!levels.empty ()) {
+            std::list<util::ui32>::const_iterator it = levels.begin ();
+            logLevelList = util::LoggerMgr::levelTostring (*it++);
+            for (std::list<util::ui32>::const_iterator end = levels.end (); it != end; ++it) {
+                logLevelList += separator + util::LoggerMgr::levelTostring (*it);
             }
         }
-        return logLevelList;
+        else {
+            logLevelList = "No LoggerMgr levels defined.";
+        }
+    }
+    return logLevelList;
+}
+
+struct Root : public util::RefCounted {
+    THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (Root)
+
+    std::string path;
+    util::FileAllocator::PtrType pathBTreeOffset;
+    util::FileAllocator::PtrType componentBTreeOffset;
+    bool active;
+    util::BTree::SharedPtr pathBTree;
+    util::BTree::SharedPtr componentBTree;
+
+    Root (
+        std::string path_ = std::string (),
+        util::FileAllocator::PtrType pathBTreeOffset_ = 0,
+        util::FileAllocator::PtrType componentBTreeOffset_ = 0,
+        bool active_ = true) :
+        path (path_),
+        pathBTreeOffset (pathBTreeOffset_),
+        componentBTreeOffset (componentBTreeOffset_),
+        active (active_) {}
+
+    std::size_t Size () const {
+        return
+            util::Serializer::Size (path) +
+            util::FileAllocator::PTR_TYPE_SIZE +
+            util::FileAllocator::PTR_TYPE_SIZE +
+            util::Serializer::Size (active);
     }
 
-    struct Root : public util::RefCounted {
-        THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (Root)
-
-        std::string path;
-        util::FileAllocator::PtrType pathBTreeOffset;
-        util::FileAllocator::PtrType componentBTreeOffset;
-        bool active;
-        util::BTree::SharedPtr pathBTree;
-        util::BTree::SharedPtr componentBTree;
-
-        Root (
-            std::string path_ = std::string (),
-            util::FileAllocator::PtrType pathBTreeOffset_ = 0,
-            util::FileAllocator::PtrType componentBTreeOffset_ = 0,
-            bool active_ = true) :
-            path (path_),
-            pathBTreeOffset (pathBTreeOffset_),
-            componentBTreeOffset (componentBTreeOffset_),
-            active (active_) {}
-
-        std::size_t Size () const {
-            return
-                util::Serializer::Size (path) +
-                util::FileAllocator::PTR_TYPE_SIZE +
-                util::FileAllocator::PTR_TYPE_SIZE +
-                util::Serializer::Size (active);
-        }
-
-        void Scan (util::FileAllocator::SharedPtr fileAllocator) {
-            if (!path.empty ()) {
-                {
-                    if (pathBTreeOffset != 0) {
-                        pathBTree.Reset ();
-                        util::BTree::Delete (*fileAllocator, pathBTreeOffset);
-                    }
-                    pathBTree.Reset (
-                        new util::BTree (
-                            fileAllocator,
-                            pathBTreeOffset,
-                            util::GUIDKey::TYPE,
-                            util::StringValue::TYPE));
-                    pathBTreeOffset = pathBTree->GetOffset ();
+    void Scan (util::FileAllocator::SharedPtr fileAllocator) {
+        if (!path.empty ()) {
+            {
+                if (pathBTreeOffset != 0) {
+                    pathBTree.Reset ();
+                    util::BTree::Delete (*fileAllocator, pathBTreeOffset);
                 }
-                {
-                    if (componentBTreeOffset != 0) {
-                        componentBTree.Reset ();
-                        util::BTree::Delete (*fileAllocator, componentBTreeOffset);
-                    }
-                    componentBTree.Reset (
-                        new util::BTree (
-                            fileAllocator,
-                            componentBTreeOffset,
-                            util::StringKey::TYPE,
-                            util::GUIDArrayValue::TYPE));
-                    componentBTreeOffset = componentBTree->GetOffset ();
-                }
-                Scan (path);
-                pathBTree->Flush ();
-                componentBTree->Flush ();
-            }
-        }
-
-        void Find (
-                util::FileAllocator::SharedPtr fileAllocator,
-                const std::string &prefix,
-                bool ignoreCase,
-                std::vector<std::string> &paths) {
-            if (pathBTreeOffset != 0 && componentBTreeOffset != 0) {
-                if (pathBTree == nullptr) {
-                    pathBTree.Reset (
-                        new util::BTree (
-                            fileAllocator,
-                            pathBTreeOffset,
-                            util::GUIDKey::TYPE,
-                            util::StringValue::TYPE));
-                }
-                if (componentBTree == nullptr) {
-                    componentBTree.Reset (
-                        new util::BTree (
-                            fileAllocator,
-                            componentBTreeOffset,
-                            util::StringKey::TYPE,
-                            util::GUIDArrayValue::TYPE));
-                }
-                util::StringKey originalPrefix (prefix);
-                // To allow for the -i flag (ignore case) the database is maintained
-                // without regard to case. All searches must be performed caseless too.
-                util::BTree::Iterator it (new util::StringKey (prefix, true));
-                for (componentBTree->FindFirst (it); !it.IsFinished (); it.Next ()) {
-                    // To honor the case request we filter out everything that
-                    // doesn't match.
-                    if (ignoreCase || originalPrefix.PrefixCompare (*it.GetKey ()) == 0) {
-                        util::GUIDArrayValue::SharedPtr componentValue = it.GetValue ();
-                        for (std::size_t i = 0, count = componentValue->value.size (); i < count; ++i) {
-                            util::BTree::Iterator jt;
-                            if (pathBTree->Find (util::GUIDKey (componentValue->value[i]), jt)) {
-                                paths.push_back (jt.GetValue ()->ToString ());
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
-    private:
-        void Scan (const std::string &path) {
-            std::cout << path << "\n";
-            util::GUIDKey::SharedPtr pathKey (
-                new util::GUIDKey (util::GUID::FromBuffer (path.data (), path.size ())));
-            util::StringValue::SharedPtr pathValue (new util::StringValue (path));
-            util::BTree::Iterator it;
-            if (pathBTree->Insert (pathKey, pathValue, it)) {
-                std::list<std::string> components;
-                util::Path (path).GetComponents (components);
-                std::list<std::string>::const_iterator it = components.begin ();
-            #if defined (TOOLCHAIN_OS_Windows)
-                // If on Windows, skip over the drive leter.
-                ++it;
-            #endif // defined (TOOLCHAIN_OS_Windows)
-                for (; it != components.end (); ++it) {
-                    util::StringKey::SharedPtr componentKey (new util::StringKey (*it, true));
-                    util::GUIDArrayValue::SharedPtr componentValue (
-                        new util::GUIDArrayValue (std::vector<util::GUID> {pathKey->key}));
-                    util::BTree::Iterator jt;
-                    if (!componentBTree->Insert (componentKey, componentValue, jt)) {
-                        componentValue = jt.GetValue ();
-                        componentValue->value.push_back (pathKey->key);
-                        jt.SetValue (componentValue);
-                    }
-                }
-            }
-            THEKOGANS_UTIL_TRY {
-                util::Directory directory (path);
-                util::Directory::Entry entry;
-                for (bool gotEntry = directory.GetFirstEntry (entry);
-                        gotEntry; gotEntry = directory.GetNextEntry (entry)) {
-                    if (!entry.name.empty () &&
-                            entry.type == util::Directory::Entry::Folder &&
-                            !util::IsDotOrDotDot (entry.name.c_str ())) {
-                        Scan (util::MakePath (path, entry.name));
-                    }
-                }
-            }
-            THEKOGANS_UTIL_CATCH_ANY {
-                std::cout << "Skipping: " << path << "\n";
-            }
-        }
-    };
-
-    util::Serializer &operator << (
-            util::Serializer &serializer,
-            const Root::SharedPtr &root) {
-        serializer <<
-            root->path <<
-            root->pathBTreeOffset <<
-            root->componentBTreeOffset <<
-            root->active;
-        return serializer;
-    }
-
-    util::Serializer &operator >> (
-            util::Serializer &serializer,
-            Root::SharedPtr &root) {
-        root.Reset (new Root);
-        serializer >>
-            root->path >>
-            root->pathBTreeOffset >>
-            root->componentBTreeOffset >>
-            root->active;
-        return serializer;
-    }
-
-    struct Roots : public util::ArrayValue<Root::SharedPtr> {
-        THEKOGANS_UTIL_DECLARE_SERIALIZABLE (Roots)
-
-    public:
-        void ScanRoot (
-                const std::string &path,
-                util::FileAllocator::SharedPtr fileAllocator) {
-            Root::SharedPtr root;
-            for (std::size_t i = 0, count = value.size (); i < count; ++i) {
-                if (value[i]->path == path) {
-                    root = value[i];
-                    break;
-                }
-            }
-            if (root == nullptr) {
-                root.Reset (new Root (path));
-                value.push_back (root);
+                pathBTree.Reset (
+                    new util::BTree (
+                        fileAllocator,
+                        pathBTreeOffset,
+                        util::GUIDKey::TYPE,
+                        util::StringValue::TYPE));
+                pathBTreeOffset = pathBTree->GetOffset ();
             }
             {
-                util::FileAllocator::Transaction transaction (fileAllocator);
-                root->Scan (fileAllocator);
-                fileAllocator->GetRegistry ().SetValue ("roots", this);
-                transaction.Commit ();
+                if (componentBTreeOffset != 0) {
+                    componentBTree.Reset ();
+                    util::BTree::Delete (*fileAllocator, componentBTreeOffset);
+                }
+                componentBTree.Reset (
+                    new util::BTree (
+                        fileAllocator,
+                        componentBTreeOffset,
+                        util::StringKey::TYPE,
+                        util::GUIDArrayValue::TYPE));
+                componentBTreeOffset = componentBTree->GetOffset ();
             }
+            Scan (path);
+            pathBTree->Flush ();
+            componentBTree->Flush ();
         }
+    }
 
-        void EnableRoot (
-                const std::string &path,
-                util::FileAllocator::SharedPtr fileAllocator) {
-            for (std::size_t i = 0, count = value.size (); i < count; ++i) {
-                if (value[i]->path == path) {
-                    if (!value[i]->active) {
-                        value[i]->active = true;
-                        {
-                            util::FileAllocator::Transaction transaction (fileAllocator);
-                            fileAllocator->GetRegistry ().SetValue ("roots", this);
-                            transaction.Commit ();
+    void Find (
+            util::FileAllocator::SharedPtr fileAllocator,
+            const std::string &prefix,
+            bool ignoreCase,
+            std::vector<std::string> &paths) {
+        if (pathBTreeOffset != 0 && componentBTreeOffset != 0) {
+            if (pathBTree == nullptr) {
+                pathBTree.Reset (
+                    new util::BTree (
+                        fileAllocator,
+                        pathBTreeOffset,
+                        util::GUIDKey::TYPE,
+                        util::StringValue::TYPE));
+            }
+            if (componentBTree == nullptr) {
+                componentBTree.Reset (
+                    new util::BTree (
+                        fileAllocator,
+                        componentBTreeOffset,
+                        util::StringKey::TYPE,
+                        util::GUIDArrayValue::TYPE));
+            }
+            util::StringKey originalPrefix (prefix);
+            // To allow for the -i flag (ignore case) the database is maintained
+            // without regard to case. All searches must be performed caseless too.
+            util::BTree::Iterator it (new util::StringKey (prefix, true));
+            for (componentBTree->FindFirst (it); !it.IsFinished (); it.Next ()) {
+                // To honor the case request we filter out everything that
+                // doesn't match.
+                if (ignoreCase || originalPrefix.PrefixCompare (*it.GetKey ()) == 0) {
+                    util::GUIDArrayValue::SharedPtr componentValue = it.GetValue ();
+                    for (std::size_t i = 0, count = componentValue->value.size (); i < count; ++i) {
+                        util::BTree::Iterator jt;
+                        if (pathBTree->Find (util::GUIDKey (componentValue->value[i]), jt)) {
+                            paths.push_back (jt.GetValue ()->ToString ());
                         }
-                        break;
                     }
                 }
             }
         }
+    }
 
-        void DisableRoot (
-                const std::string &path,
-                util::FileAllocator::SharedPtr fileAllocator) {
-            for (std::size_t i = 0, count = value.size (); i < count; ++i) {
-                if (value[i]->path == path) {
-                    if (value[i]->active) {
-                        value[i]->active = false;
-                        {
-                            util::FileAllocator::Transaction transaction (fileAllocator);
-                            fileAllocator->GetRegistry ().SetValue ("roots", this);
-                            transaction.Commit ();
-                        }
-                        break;
-                    }
+private:
+    void Scan (const std::string &path) {
+        std::cout << path << "\n";
+        util::GUIDKey::SharedPtr pathKey (
+            new util::GUIDKey (util::GUID::FromBuffer (path.data (), path.size ())));
+        util::StringValue::SharedPtr pathValue (new util::StringValue (path));
+        util::BTree::Iterator it;
+        if (pathBTree->Insert (pathKey, pathValue, it)) {
+            std::list<std::string> components;
+            util::Path (path).GetComponents (components);
+            std::list<std::string>::const_iterator it = components.begin ();
+        #if defined (TOOLCHAIN_OS_Windows)
+            // If on Windows, skip over the drive leter.
+            ++it;
+        #endif // defined (TOOLCHAIN_OS_Windows)
+            for (; it != components.end (); ++it) {
+                util::StringKey::SharedPtr componentKey (new util::StringKey (*it, true));
+                util::GUIDArrayValue::SharedPtr componentValue (
+                    new util::GUIDArrayValue (std::vector<util::GUID> {pathKey->key}));
+                util::BTree::Iterator jt;
+                if (!componentBTree->Insert (componentKey, componentValue, jt)) {
+                    componentValue = jt.GetValue ();
+                    componentValue->value.push_back (pathKey->key);
+                    jt.SetValue (componentValue);
                 }
             }
         }
+        THEKOGANS_UTIL_TRY {
+            util::Directory directory (path);
+            util::Directory::Entry entry;
+            for (bool gotEntry = directory.GetFirstEntry (entry);
+                    gotEntry; gotEntry = directory.GetNextEntry (entry)) {
+                if (!entry.name.empty () &&
+                       entry.type == util::Directory::Entry::Folder &&
+                       !util::IsDotOrDotDot (entry.name.c_str ())) {
+                    Scan (util::MakePath (path, entry.name));
+                }
+            }
+        }
+        THEKOGANS_UTIL_CATCH_ANY {
+            std::cout << "Skipping: " << path << "\n";
+        }
+    }
+};
 
-        void DeleteRoot (
-                const std::string &path,
-                util::FileAllocator::SharedPtr fileAllocator) {
-            for (std::size_t i = 0, count = value.size (); i < count; ++i) {
-                if (value[i]->path == path) {
-                    util::FileAllocator::PtrType pathBTreeOffset =
-                        value[i]->pathBTreeOffset;
-                    util::FileAllocator::PtrType componentBTreeOffset =
-                        value[i]->componentBTreeOffset;
-                    value.erase (value.begin () + i);
+// The following three functions are necessary to make
+// Roots::value insertion/extraction work.
+template<>
+std::size_t util::Serializer::Size<Root::SharedPtr> (const Root::SharedPtr &root) {
+    return root->Size ();
+}
+
+util::Serializer &operator << (
+        util::Serializer &serializer,
+        const Root::SharedPtr &root) {
+    serializer <<
+        root->path <<
+        root->pathBTreeOffset <<
+        root->componentBTreeOffset <<
+        root->active;
+    return serializer;
+}
+
+util::Serializer &operator >> (
+        util::Serializer &serializer,
+        Root::SharedPtr &root) {
+    root.Reset (new Root);
+    serializer >>
+        root->path >>
+        root->pathBTreeOffset >>
+        root->componentBTreeOffset >>
+        root->active;
+    return serializer;
+}
+
+struct Roots : public util::ArrayValue<Root::SharedPtr> {
+    THEKOGANS_UTIL_DECLARE_SERIALIZABLE (Roots)
+
+public:
+    void ScanRoot (
+            const std::string &path,
+            util::FileAllocator::SharedPtr fileAllocator) {
+        Root::SharedPtr root;
+        for (std::size_t i = 0, count = value.size (); i < count; ++i) {
+            if (value[i]->path == path) {
+                root = value[i];
+                break;
+            }
+        }
+        if (root == nullptr) {
+            root.Reset (new Root (path));
+            value.push_back (root);
+        }
+        {
+            util::FileAllocator::Transaction transaction (fileAllocator);
+            root->Scan (fileAllocator);
+            fileAllocator->GetRegistry ().SetValue ("roots", this);
+            transaction.Commit ();
+        }
+    }
+
+    void EnableRoot (
+        const std::string &path,
+        util::FileAllocator::SharedPtr fileAllocator) {
+        for (std::size_t i = 0, count = value.size (); i < count; ++i) {
+            if (value[i]->path == path) {
+                if (!value[i]->active) {
+                    value[i]->active = true;
                     {
                         util::FileAllocator::Transaction transaction (fileAllocator);
-                        if (pathBTreeOffset != 0) {
-                            util::BTree::Delete (*fileAllocator, pathBTreeOffset);
-                        }
-                        if (componentBTreeOffset != 0) {
-                            util::BTree::Delete (*fileAllocator, componentBTreeOffset);
-                        }
                         fileAllocator->GetRegistry ().SetValue ("roots", this);
                         transaction.Commit ();
                     }
@@ -316,29 +277,67 @@ namespace {
                 }
             }
         }
+    }
 
-        // for cd
-        void Find (
-                util::FileAllocator::SharedPtr fileAllocator,
-                const std::string &prefix,
-                bool ignoreCase,
-                std::vector<std::string> &paths) {
-            for (std::size_t i = 0, count = value.size (); i < count; ++i) {
+    void DisableRoot (
+            const std::string &path,
+            util::FileAllocator::SharedPtr fileAllocator) {
+        for (std::size_t i = 0, count = value.size (); i < count; ++i) {
+            if (value[i]->path == path) {
                 if (value[i]->active) {
-                    value[i]->Find (fileAllocator, prefix, ignoreCase, paths);
+                    value[i]->active = false;
+                    {
+                        util::FileAllocator::Transaction transaction (fileAllocator);
+                        fileAllocator->GetRegistry ().SetValue ("roots", this);
+                        transaction.Commit ();
+                    }
+                    break;
                 }
             }
         }
-    };
+    }
 
-    THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE (Roots, 1, util::BTree::Value::TYPE)
-}
+    void DeleteRoot (
+            const std::string &path,
+            util::FileAllocator::SharedPtr fileAllocator) {
+        for (std::size_t i = 0, count = value.size (); i < count; ++i) {
+            if (value[i]->path == path) {
+                util::FileAllocator::PtrType pathBTreeOffset =
+                    value[i]->pathBTreeOffset;
+                util::FileAllocator::PtrType componentBTreeOffset =
+                    value[i]->componentBTreeOffset;
+                value.erase (value.begin () + i);
+                {
+                    util::FileAllocator::Transaction transaction (fileAllocator);
+                    if (pathBTreeOffset != 0) {
+                        util::BTree::Delete (*fileAllocator, pathBTreeOffset);
+                    }
+                    if (componentBTreeOffset != 0) {
+                        util::BTree::Delete (*fileAllocator, componentBTreeOffset);
+                    }
+                    fileAllocator->GetRegistry ().SetValue ("roots", this);
+                    transaction.Commit ();
+                }
+                break;
+            }
+        }
+    }
 
-template<>
-std::size_t util::Serializer::Size<Root::SharedPtr> (
-        const Root::SharedPtr &root) {
-    return root->Size ();
-}
+    // for cd
+    void Find (
+        util::FileAllocator::SharedPtr fileAllocator,
+        const std::string &prefix,
+        bool ignoreCase,
+        std::vector<std::string> &paths) {
+        for (std::size_t i = 0, count = value.size (); i < count; ++i) {
+            if (value[i]->active) {
+                value[i]->Find (fileAllocator, prefix, ignoreCase, paths);
+            }
+        }
+    }
+};
+
+THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE (Roots, 1, util::BTree::Value::TYPE)
 
 int main (
         int argc,
@@ -485,9 +484,9 @@ int main (
                     std::list<std::string> components;
                     util::Path (Options::Instance ()->pattern).GetComponents (components);
                     bool ignoreCase = Options::Instance ()->ignoreCase;
-                    bool ordered = Options::Instance ()->ordered;
                     std::vector<std::string> result;
                     roots->Find (fileAllocator, *components.begin (), ignoreCase, result);
+                    bool ordered = Options::Instance ()->ordered;
                     for (std::size_t i = 0, count = result.size (); i < count; ++i) {
                         std::list<std::string> resultComponents;
                         util::Path (result[i]).GetComponents (resultComponents);

@@ -358,6 +358,9 @@ namespace thekogans {
         /// \def THEKOGANS_UTIL_OS_ERROR_CODE_EOVERFLOW
         /// OS specific overflow error code.
         #define THEKOGANS_UTIL_OS_ERROR_CODE_EOVERFLOW ERROR_BUFFER_OVERFLOW
+        /// \def THEKOGANS_UTIL_OS_ERROR_CODE_EOVERFLOW
+        /// OS specific no file name error code.
+        #define THEKOGANS_UTIL_OS_ERROR_CODE_ENOENT ERROR_BAD_PATHNAME
     #else // defined (TOOLCHAIN_OS_Windows)
         /// \def THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL
         /// OS specific invalid parameter error code.
@@ -374,6 +377,9 @@ namespace thekogans {
         /// \def THEKOGANS_UTIL_OS_ERROR_CODE_EOVERFLOW
         /// OS specific overflow error code.
         #define THEKOGANS_UTIL_OS_ERROR_CODE_EOVERFLOW EOVERFLOW
+        /// \def THEKOGANS_UTIL_OS_ERROR_CODE_EOVERFLOW
+        /// OS specific no file name error code.
+        #define THEKOGANS_UTIL_OS_ERROR_CODE_ENOENT ENOENT
     #endif // defined (TOOLCHAIN_OS_Windows)
 
         /// \brief
