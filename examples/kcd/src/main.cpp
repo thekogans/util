@@ -99,7 +99,12 @@ namespace {
                 }
                 Init (fileAllocator);
                 Scan (path);
-                Flush ();
+                if (pathBTree == nullptr) {
+                    pathBTree->Flush ();
+                }
+                if (componentBTree == nullptr) {
+                    componentBTree->Flush ();
+                }
                 fileAllocator->Flush ();
             }
         }
@@ -195,15 +200,6 @@ namespace {
             }
             THEKOGANS_UTIL_CATCH_ANY {
                 std::cout << "Skipping: " << path << "\n";
-            }
-        }
-
-        void Flush () {
-            if (pathBTree == nullptr) {
-                pathBTree->Flush ();
-            }
-            if (componentBTree == nullptr) {
-                componentBTree->Flush ();
             }
         }
     };
@@ -396,7 +392,7 @@ int main (
                 const std::vector<std::string> &roots_ = Options::Instance ()->roots;
                 if (!roots_.empty ()) {
                     for (std::size_t i = 0, count = roots_.size (); i < count; ++i) {
-                        roots->EnableRoot (roots_[i]);
+                        roots->EnableRoot (util::Path (roots_[i]).MakeAbsolute ());
                     }
                 }
                 else {
@@ -407,7 +403,7 @@ int main (
                 const std::vector<std::string> &roots_ = Options::Instance ()->roots;
                 if (!roots_.empty ()) {
                     for (std::size_t i = 0, count = roots_.size (); i < count; ++i) {
-                        roots->DisableRoot (roots_[i]);
+                        roots->DisableRoot (util::Path (roots_[i]).MakeAbsolute ());
                     }
                 }
                 else {
@@ -418,7 +414,8 @@ int main (
                 const std::vector<std::string> &roots_ = Options::Instance ()->roots;
                 if (!roots_.empty ()) {
                     for (std::size_t i = 0, count = roots_.size (); i < count; ++i) {
-                        roots->DeleteRoot (roots_[i], fileAllocator);
+                        roots->DeleteRoot (
+                            util::Path (roots_[i]).MakeAbsolute (), fileAllocator);
                     }
                 }
                 else {
@@ -434,11 +431,6 @@ int main (
             }
             else if (Options::Instance ()->action == "cd") {
                 if (!Options::Instance ()->pattern.empty ()) {
-                    std::vector<std::string> result;
-                    std::list<std::string> components;
-                    util::Path (Options::Instance ()->pattern).GetComponents (components);
-                    bool ignoreCase = Options::Instance ()->ignoreCase;
-                    roots->Find (fileAllocator, *components.begin (), ignoreCase, result);
                     auto ScanComponents = [] (
                             std::list<std::string>::const_iterator begin,
                             std::list<std::string>::const_iterator end,
@@ -477,12 +469,22 @@ int main (
                         }
                         return true;
                     };
+                    std::list<std::string> components;
+                    util::Path (Options::Instance ()->pattern).GetComponents (components);
+                    bool ignoreCase = Options::Instance ()->ignoreCase;
                     bool ordered = Options::Instance ()->ordered;
+                    std::vector<std::string> result;
+                    roots->Find (fileAllocator, *components.begin (), ignoreCase, result);
                     for (std::size_t i = 0, count = result.size (); i < count; ++i) {
                         std::list<std::string> resultComponents;
                         util::Path (result[i]).GetComponents (resultComponents);
                         if (ScanComponents (
+                            #if defined (TOOLCHAIN_OS_Windows)
+                                // If on Windows, skip over the drive leter.
+                                ++resultComponents.begin (),
+                            #else // defined (TOOLCHAIN_OS_Windows)
                                 resultComponents.begin (),
+                            #endif // defined (TOOLCHAIN_OS_Windows)
                                 resultComponents.end (),
                                 components.begin (),
                                 components.end (),
