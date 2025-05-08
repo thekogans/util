@@ -42,19 +42,27 @@ namespace thekogans {
                     break;
                 }
             }
-            util::FileAllocator::Transaction transaction (fileAllocator);
             bool created = false;
             if (root == nullptr) {
                 root.Reset (new Root (path));
                 util::Subscriber<RootEvents>::Subscribe (*root);
+                Produce (
+                    std::bind (
+                        &RootsEvents::OnRootsRootAdded,
+                        std::placeholders::_1,
+                        this,
+                        root));
                 created = true;
             }
-            root->Scan (fileAllocator);
-            if (created) {
-                value.push_back (root);
+            {
+                util::FileAllocator::Transaction transaction (fileAllocator);
+                root->Scan (fileAllocator);
+                if (created) {
+                    value.push_back (root);
+                }
+                fileAllocator->GetRegistry ().SetValue ("roots", this);
+                transaction.Commit ();
             }
-            fileAllocator->GetRegistry ().SetValue ("roots", this);
-            transaction.Commit ();
         }
 
         void Roots::EnableRoot (
@@ -63,10 +71,18 @@ namespace thekogans {
             for (std::size_t i = 0, count = value.size (); i < count; ++i) {
                 if (value[i]->GetPath () == path) {
                     if (!value[i]->IsActive ()) {
-                        util::FileAllocator::Transaction transaction (fileAllocator);
-                        value[i]->SetActive (true);
-                        fileAllocator->GetRegistry ().SetValue ("roots", this);
-                        transaction.Commit ();
+                        {
+                            util::FileAllocator::Transaction transaction (fileAllocator);
+                            value[i]->SetActive (true);
+                            fileAllocator->GetRegistry ().SetValue ("roots", this);
+                            transaction.Commit ();
+                        }
+                        Produce (
+                            std::bind (
+                                &RootsEvents::OnRootsRootEnabled,
+                                std::placeholders::_1,
+                                this,
+                                value[i]));
                     }
                     break;
                 }
@@ -79,10 +95,18 @@ namespace thekogans {
             for (std::size_t i = 0, count = value.size (); i < count; ++i) {
                 if (value[i]->GetPath () == path) {
                     if (value[i]->IsActive ()) {
-                        util::FileAllocator::Transaction transaction (fileAllocator);
-                        value[i]->SetActive (false);
-                        fileAllocator->GetRegistry ().SetValue ("roots", this);
-                        transaction.Commit ();
+                        {
+                            util::FileAllocator::Transaction transaction (fileAllocator);
+                            value[i]->SetActive (false);
+                            fileAllocator->GetRegistry ().SetValue ("roots", this);
+                            transaction.Commit ();
+                        }
+                        Produce (
+                            std::bind (
+                                &RootsEvents::OnRootsRootDisabled,
+                                std::placeholders::_1,
+                                this,
+                                value[i]));
                     }
                     break;
                 }
@@ -94,11 +118,20 @@ namespace thekogans {
                 util::FileAllocator::SharedPtr fileAllocator) {
             for (std::size_t i = 0, count = value.size (); i < count; ++i) {
                 if (value[i]->GetPath () == path) {
-                    util::FileAllocator::Transaction transaction (fileAllocator);
-                    value[i]->Delete (fileAllocator);
-                    value.erase (value.begin () + i);
-                    fileAllocator->GetRegistry ().SetValue ("roots", this);
-                    transaction.Commit ();
+                    Root::SharedPtr root = value[i];
+                    {
+                        util::FileAllocator::Transaction transaction (fileAllocator);
+                        value[i]->Delete (fileAllocator);
+                        value.erase (value.begin () + i);
+                        fileAllocator->GetRegistry ().SetValue ("roots", this);
+                        transaction.Commit ();
+                    }
+                    Produce (
+                        std::bind (
+                            &RootsEvents::OnRootsRootDeleted,
+                            std::placeholders::_1,
+                            this,
+                            root));
                     break;
                 }
             }
