@@ -48,7 +48,17 @@ namespace thekogans {
                         util::StringKey::TYPE,
                         util::GUIDArrayValue::TYPE));
                 componentBTreeOffset = componentBTree->GetOffset ();
+                Produce (
+                    std::bind (
+                        &RootEvents::OnRootScanBegin,
+                        std::placeholders::_1,
+                        this));
                 Scan (path, pathBTree, componentBTree);
+                Produce (
+                    std::bind (
+                        &RootEvents::OnRootScanEnd,
+                        std::placeholders::_1,
+                        this));
             }
         }
 
@@ -127,7 +137,12 @@ namespace thekogans {
                 const std::string &path,
                 util::BTree::SharedPtr pathBTree,
                 util::BTree::SharedPtr componentBTree) {
-            std::cout << path << "\n";
+            Produce (
+                std::bind (
+                    &RootEvents::OnRootScanPath,
+                    std::placeholders::_1,
+                    this,
+                    path));
             util::GUIDKey::SharedPtr pathKey (
                 new util::GUIDKey (util::GUID::FromBuffer (path.data (), path.size ())));
             util::StringValue::SharedPtr pathValue (new util::StringValue (path));
@@ -165,7 +180,6 @@ namespace thekogans {
                 }
             }
             THEKOGANS_UTIL_CATCH_ANY {
-                std::cout << "Skipping: " << path << "\n";
             }
         }
 

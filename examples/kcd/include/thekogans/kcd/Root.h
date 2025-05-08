@@ -22,6 +22,8 @@
 #include <vector>
 #include <list>
 #include "thekogans/util/RefCounted.h"
+#include "thekogans/util/Subscriber.h"
+#include "thekogans/util/Producer.h"
 #include "thekogans/util/Serializer.h"
 #include "thekogans/util/FileAllocator.h"
 #include "thekogans/util/BTree.h"
@@ -29,7 +31,21 @@
 namespace thekogans {
     namespace kcd {
 
-        struct Root : public util::RefCounted {
+        struct Root;
+
+        struct RootEvents {
+            virtual ~RootEvents () {}
+
+            virtual void OnRootScanBegin (
+                util::RefCounted::SharedPtr<Root> /*root*/) throw () {}
+            virtual void OnRootScanPath (
+                util::RefCounted::SharedPtr<Root> /*root*/,
+                const std::string & /*path*/) throw () {}
+            virtual void OnRootScanEnd (
+                util::RefCounted::SharedPtr<Root> /*root*/) throw () {}
+        };
+
+        struct Root : public util::Producer<RootEvents> {
             THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (Root)
 
         private:

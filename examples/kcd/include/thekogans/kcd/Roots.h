@@ -23,12 +23,36 @@
 #include "thekogans/util/FileAllocator.h"
 #include "thekogans/util/Serializable.h"
 #include "thekogans/util/BTreeValues.h"
+#include "thekogans/util/Subscriber.h"
+#include "thekogans/util/Producer.h"
 #include "thekogans/kcd/Root.h"
 
 namespace thekogans {
     namespace kcd {
 
-        struct Roots : public util::ArrayValue<Root::SharedPtr> {
+        struct Roots;
+
+        struct RootsEvents {
+            virtual ~RootsEvents () {}
+
+            virtual void OnRootsRootAdded (
+                util::RefCounted::SharedPtr<Roots> /*roots*/,
+                Root::SharedPtr /*root*/) throw () {}
+            virtual void OnRootsRootEnabled (
+                util::RefCounted::SharedPtr<Roots> /*roots*/,
+                Root::SharedPtr /*root*/) throw () {}
+            virtual void OnRootsRootDisabled (
+                util::RefCounted::SharedPtr<Roots> /*roots*/,
+                Root::SharedPtr /*root*/) throw () {}
+            virtual void OnRootsRootDeleted (
+                util::RefCounted::SharedPtr<Roots> /*roots*/,
+                Root::SharedPtr /*root*/) throw () {}
+        };
+
+        struct Roots :
+                public util::ArrayValue<Root::SharedPtr>,
+                public util::Producer<RootsEvents>,
+                public util::Subscriber<RootEvents> {
             THEKOGANS_UTIL_DECLARE_SERIALIZABLE (Roots)
 
             void ScanRoot (
@@ -50,6 +74,12 @@ namespace thekogans {
                 bool ignoreCase,
                 bool ordered,
                 std::vector<std::string> &results);
+
+            virtual void Init () override;
+
+            virtual void OnRootScanPath (
+                Root::SharedPtr /*root*/,
+                const std::string &path) throw () override;
         };
 
     } // namespace kcd

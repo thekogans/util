@@ -46,6 +46,7 @@ namespace thekogans {
             bool created = false;
             if (root == nullptr) {
                 root.Reset (new Root (path));
+                util::Subscriber<RootEvents>::Subscribe (*root);
                 created = true;
             }
             root->Scan (fileAllocator);
@@ -181,6 +182,18 @@ namespace thekogans {
                     }
                 }
             }
+        }
+
+        void Roots::Init () {
+            for (std::size_t i = 0, count = value.size (); i < count; ++i) {
+                util::Subscriber<RootEvents>::Subscribe (*value[i]);
+            }
+        }
+
+        void Roots::OnRootScanPath (
+                Root::SharedPtr /*root*/,
+                const std::string &path) throw () {
+            std::cout << path << "\n";
         }
 
 
