@@ -30,6 +30,7 @@
 #include "thekogans/kcd/Version.h"
 #include "thekogans/kcd/Root.h"
 #include "thekogans/kcd/Roots.h"
+#include "thekogans/kcd/IgnoreList.h"
 
 using namespace thekogans;
 using namespace kcd;
@@ -59,6 +60,7 @@ int main (
 #if defined (THEKOGANS_UTIL_TYPE_Static)
     util::StaticInit ();
     Roots::StaticInit ();
+    IgnoreList::StaticInit ();
 #endif // defined (THEKOGANS_UTIL_TYPE_Static)
     Options::Instance ()->Parse (argc, argv, "hvldarpio");
     THEKOGANS_UTIL_LOG_RESET (
@@ -69,7 +71,8 @@ int main (
     if (Options::Instance ()->help) {
         THEKOGANS_UTIL_LOG_INFO (
             "%s [-h] [-v] [-l:'%s'] [-d:'database path'] "
-            "-a:[scan_root|enable_root|disable_root|delete_root|show_roots|cd] "
+            "-a:[scan_root|enable_root|disable_root|delete_root|show_roots|cd|"
+            "show_ignore_list|add_ignore|delete_ignore] "
             "[-r:root] [-p:pattern] [-i] [-o]\n\n"
             "h - Display this help message.\n"
             "v - Display version information.\n"
@@ -78,7 +81,8 @@ int main (
             "a - Action to perform (default is cd).\n"
             "r - Root (can be repeated).\n"
             "p - Pattern (when action is cd).\n"
-            "i - Ignore case (when action is cd).\n"
+            "i - Ignore case (when action is cd). Ignore string "
+            "(when action is [add|delete]_ignore.\n"
             "o - Pattern should appear ordered in the results (when action is cd).\n",
             argv[0],
             GetLevelsList (" | ").c_str ());
@@ -99,12 +103,17 @@ int main (
             if (roots == nullptr) {
                 roots.Reset (new Roots);
             }
+            IgnoreList::SharedPtr ignoreList =
+                fileAllocator->GetRegistry ().GetValue ("ignore_list");
+            if (ignoreList == nullptr) {
+                ignoreList.Reset (new IgnoreList);
+            }
             if (Options::Instance ()->action == "scan_root") {
                 const std::vector<std::string> &roots_ = Options::Instance ()->roots;
                 if (!roots_.empty ()) {
                     for (std::size_t i = 0, count = roots_.size (); i < count; ++i) {
                         roots->ScanRoot (
-                            util::Path (roots_[i]).MakeAbsolute (), fileAllocator);
+                            util::Path (roots_[i]).MakeAbsolute (), fileAllocator, ignoreList);
                     }
                 }
                 else {
@@ -169,6 +178,33 @@ int main (
                 }
                 else {
                     THEKOGANS_UTIL_LOG_ERROR ("Must specify a patern to search for.\n");
+                }
+            }
+            else if (Options::Instance ()->action == "show_ignore_list") {
+                for (std::size_t i = 0, count = ignoreList->GetLength (); i < count; ++i) {
+                    std::cout << (*ignoreList)[i] << "\n";
+                }
+            }
+            else if (Options::Instance ()->action == "add_ignore") {
+                const std::vector<std::string> &ignoreList_ = Options::Instance ()->ignoreList;
+                if (!ignoreList_.empty ()) {
+                    for (std::size_t i = 0, count = ignoreList_.size (); i < count; ++i) {
+                        ignoreList->AddIgnore (ignoreList_[i], fileAllocator);
+                    }
+                }
+                else {
+                    THEKOGANS_UTIL_LOG_ERROR ("Must specify at least one ignore to add.\n");
+                }
+            }
+            else if (Options::Instance ()->action == "delete_ignore") {
+                const std::vector<std::string> &ignoreList_ = Options::Instance ()->ignoreList;
+                if (!ignoreList_.empty ()) {
+                    for (std::size_t i = 0, count = ignoreList_.size (); i < count; ++i) {
+                        ignoreList->DeleteIgnore (ignoreList_[i], fileAllocator);
+                    }
+                }
+                else {
+                    THEKOGANS_UTIL_LOG_ERROR ("Must specify at least one ignore to add.\n");
                 }
             }
             else {

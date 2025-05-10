@@ -26,6 +26,7 @@
 #include "thekogans/util/Subscriber.h"
 #include "thekogans/util/Producer.h"
 #include "thekogans/kcd/Root.h"
+#include "thekogans/kcd/IgnoreList.h"
 
 namespace thekogans {
     namespace kcd {
@@ -57,7 +58,8 @@ namespace thekogans {
 
             void ScanRoot (
                 const std::string &path,
-                util::FileAllocator::SharedPtr fileAllocator);
+                util::FileAllocator::SharedPtr fileAllocator,
+                IgnoreList::SharedPtr ignoreList);
             void EnableRoot (
                 const std::string &path,
                 util::FileAllocator::SharedPtr fileAllocator);

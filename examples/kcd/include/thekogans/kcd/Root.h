@@ -27,6 +27,7 @@
 #include "thekogans/util/Serializer.h"
 #include "thekogans/util/FileAllocator.h"
 #include "thekogans/util/BTree.h"
+#include "thekogans/kcd/IgnoreList.h"
 
 namespace thekogans {
     namespace kcd {
@@ -84,7 +85,9 @@ namespace thekogans {
                     util::Serializer::Size (active);
             }
 
-            void Scan (util::FileAllocator::SharedPtr fileAllocator);
+            void Scan (
+                util::FileAllocator::SharedPtr fileAllocator,
+                IgnoreList::SharedPtr ignoreList);
             void Delete (util::FileAllocator::SharedPtr fileAllocator);
 
             void Find (
@@ -97,7 +100,8 @@ namespace thekogans {
             void Scan (
                 const std::string &path,
                 util::BTree::SharedPtr pathBTree,
-                util::BTree::SharedPtr componentBTree);
+                util::BTree::SharedPtr componentBTree,
+                IgnoreList::SharedPtr ignoreList);
 
             friend util::Serializer &operator << (
                 util::Serializer &serializer,

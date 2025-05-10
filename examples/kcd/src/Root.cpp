@@ -17,12 +17,13 @@
 
 #include <string>
 #include <list>
-#include <iostream>
+#include <regex>
 #include "thekogans/util/Environment.h"
 #include "thekogans/util/Path.h"
 #include "thekogans/util/StringUtils.h"
 #include "thekogans/util/Directory.h"
 #include "thekogans/util/FileAllocator.h"
+#include "thekogans/util/FileAllocatorRegistry.h"
 #include "thekogans/util/BTree.h"
 #include "thekogans/util/BTreeKeys.h"
 #include "thekogans/util/BTreeValues.h"
@@ -31,7 +32,9 @@
 namespace thekogans {
     namespace kcd {
 
-        void Root::Scan (util::FileAllocator::SharedPtr fileAllocator) {
+        void Root::Scan (
+                util::FileAllocator::SharedPtr fileAllocator,
+                IgnoreList::SharedPtr ignoreList) {
             if (!path.empty ()) {
                 Delete (fileAllocator);
                 util::BTree::SharedPtr pathBTree (
@@ -53,7 +56,7 @@ namespace thekogans {
                         &RootEvents::OnRootScanBegin,
                         std::placeholders::_1,
                         this));
-                Scan (path, pathBTree, componentBTree);
+                Scan (path, pathBTree, componentBTree, ignoreList);
                 Produce (
                     std::bind (
                         &RootEvents::OnRootScanEnd,
@@ -136,7 +139,8 @@ namespace thekogans {
         void Root::Scan (
                 const std::string &path,
                 util::BTree::SharedPtr pathBTree,
-                util::BTree::SharedPtr componentBTree) {
+                util::BTree::SharedPtr componentBTree,
+                IgnoreList::SharedPtr ignoreList) {
             Produce (
                 std::bind (
                     &RootEvents::OnRootScanPath,
@@ -175,7 +179,13 @@ namespace thekogans {
                     if (!entry.name.empty () &&
                             entry.type == util::Directory::Entry::Folder &&
                             !util::IsDotOrDotDot (entry.name.c_str ())) {
-                        Scan (util::MakePath (path, entry.name), pathBTree, componentBTree);
+                        if (ignoreList == nullptr || !ignoreList->ShouldIgnore (entry.name)) {
+                            Scan (
+                                util::MakePath (path, entry.name),
+                                pathBTree,
+                                componentBTree,
+                                ignoreList);
+                        }
                     }
                 }
             }

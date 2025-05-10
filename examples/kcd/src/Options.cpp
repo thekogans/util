@@ -47,7 +47,12 @@ namespace thekogans {
                     pattern = value;
                     break;
                 case 'i':
-                    ignoreCase = true;
+                    if (value.empty ()) {
+                        ignoreCase = true;
+                    }
+                    else {
+                        ignoreList.push_back (value);
+                    }
                     break;
                 case 'o':
                     ordered = true;

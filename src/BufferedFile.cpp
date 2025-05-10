@@ -324,8 +324,8 @@ namespace thekogans {
 
         void BufferedFile::Flush () {
             if (IsOpen ()) {
-                if (flags.Test (FLAGS_DIRTY)) {
-                    if (flags.Test (FLAGS_TRANSACTION)) {
+                if (IsDirty ()) {
+                    if (IsTransactionPending ()) {
                         std::string logPath = GetLogPath (path);
                         SimpleFile log (
                             endianness,
@@ -458,7 +458,7 @@ namespace thekogans {
 
         void BufferedFile::BeginTransaction () {
             if (IsOpen ()) {
-                if (!flags.Test (FLAGS_TRANSACTION)) {
+                if (!IsTransactionPending ()) {
                     Flush ();
                     flags.Set (FLAGS_TRANSACTION, true);
                 }
@@ -475,7 +475,7 @@ namespace thekogans {
 
         void BufferedFile::CommitTransaction () {
             if (IsOpen ()) {
-                if (flags.Test (FLAGS_TRANSACTION)) {
+                if (IsTransactionPending ()) {
                     Flush ();
                     std::string logPath = GetLogPath (path);
                     if (Path (logPath).Exists ()) {
@@ -535,8 +535,8 @@ namespace thekogans {
 
         void BufferedFile::AbortTransaction () {
             if (IsOpen ()) {
-                if (flags.Test (FLAGS_TRANSACTION)) {
-                    if (flags.Test (FLAGS_DIRTY)) {
+                if (IsTransactionPending ()) {
+                    if (IsDirty ()) {
                         root.Clear ();
                         SetSize (sizeOnDisk);
                         flags.Set (FLAGS_DIRTY, false);
@@ -560,8 +560,8 @@ namespace thekogans {
 
         void BufferedFile::DeleteCache (bool commitChanges) {
             if (IsOpen ()) {
-                if (flags.Test (FLAGS_DIRTY)) {
-                    if (flags.Test (FLAGS_TRANSACTION)) {
+                if (IsDirty ()) {
+                    if (IsTransactionPending ()) {
                         if (commitChanges) {
                             CommitTransaction ();
                         }

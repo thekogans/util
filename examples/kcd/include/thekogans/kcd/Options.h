@@ -41,6 +41,7 @@ namespace thekogans {
             std::string pattern;
             bool ignoreCase;
             bool ordered;
+            std::vector<std::string> ignoreList;
 
             Options () :
                 help (false),

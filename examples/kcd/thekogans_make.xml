@@ -11,12 +11,14 @@
                 name = "util"/>
   </dependencies>
   <cpp_headers prefix = "include">
+    <cpp_header>$(organization)/$(project_directory)/IgnoreList.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/Options.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/Root.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/Roots.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/Version.h</cpp_header>
   </cpp_headers>
   <cpp_sources prefix = "src">
+    <cpp_source>IgnoreList.cpp</cpp_source>
     <cpp_source>Options.cpp</cpp_source>
     <cpp_source>Root.cpp</cpp_source>
     <cpp_source>Roots.cpp</cpp_source>

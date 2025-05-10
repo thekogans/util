@@ -19,6 +19,7 @@
 #include <list>
 #include <vector>
 #include <unordered_set>
+#include <iostream>
 #include "thekogans/util/Environment.h"
 #include "thekogans/util/Path.h"
 #include "thekogans/util/StringUtils.h"
@@ -34,7 +35,8 @@ namespace thekogans {
 
         void Roots::ScanRoot (
                 const std::string &path,
-                util::FileAllocator::SharedPtr fileAllocator) {
+                util::FileAllocator::SharedPtr fileAllocator,
+                IgnoreList::SharedPtr ignoreList) {
             Root::SharedPtr root;
             for (std::size_t i = 0, count = value.size (); i < count; ++i) {
                 if (value[i]->GetPath () == path) {
@@ -56,7 +58,7 @@ namespace thekogans {
             }
             {
                 util::FileAllocator::Transaction transaction (fileAllocator);
-                root->Scan (fileAllocator);
+                root->Scan (fileAllocator, ignoreList);
                 if (created) {
                     value.push_back (root);
                 }
@@ -119,6 +121,7 @@ namespace thekogans {
             for (std::size_t i = 0, count = value.size (); i < count; ++i) {
                 if (value[i]->GetPath () == path) {
                     Root::SharedPtr root = value[i];
+                    util::Subscriber<RootEvents>::Unsubscribe (*root);
                     {
                         util::FileAllocator::Transaction transaction (fileAllocator);
                         value[i]->Delete (fileAllocator);
@@ -228,7 +231,6 @@ namespace thekogans {
                 const std::string &path) throw () {
             std::cout << path << "\n";
         }
-
 
     } // namespace kcd
 } // namespace thekogans

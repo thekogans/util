@@ -143,7 +143,7 @@ namespace thekogans {
                 File &file,
                 BlockInfo &prev) const {
             prev.footer.Read (file, offset - SIZE);
-            prev.offset = offset - prev.footer.size - SIZE;
+            prev.offset = offset - SIZE - prev.footer.size;
             prev.header.Read (file, prev.offset - HEADER_SIZE);
             if (prev.header != prev.footer) {
                 THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
@@ -212,8 +212,8 @@ namespace thekogans {
             }
             else {
                 THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                    "Trying to acquire a FileAllocator::BlockBuffer @"
-                    "on an unallocated block: " THEKOGANS_UTIL_UI64_FORMAT,
+                    "Trying to acquire a FileAllocator::BlockBuffer "
+                    "on an unallocated block @" THEKOGANS_UTIL_UI64_FORMAT,
                     offset);
             }
         }
@@ -604,7 +604,7 @@ namespace thekogans {
                 }
                 else {
                     THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                        "Heap corruption @ " THEKOGANS_UTIL_UI64_FORMAT
+                        "Heap corruption @" THEKOGANS_UTIL_UI64_FORMAT
                         ", expecting a free fixed block.",
                         offset);
                 }

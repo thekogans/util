@@ -488,11 +488,18 @@ namespace thekogans {
             static void CommitLog (const std::string &path);
 
             /// \brief
+            /// Return true if we have unwriten changes in our cache.
+            ///\return true == we have unwriten changes in our cache.
+            inline bool IsDirty () const {
+                return flags.Test (FLAGS_DIRTY);
+            }
+            /// \brief
             /// Return true if we're in the middle of a transaction.
             ///\return true == we're in the middle of a transaction.
             inline bool IsTransactionPending () const {
                 return flags.Test (FLAGS_TRANSACTION);
             }
+
             /// \brief
             /// Start a new transaction. If a transaction is
             /// already in progress do nothing. If the cache
