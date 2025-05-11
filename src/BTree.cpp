@@ -248,7 +248,7 @@ namespace thekogans {
                         }
                         else {
                             // It would be nice to just write:
-                            // totalKeyValueSize += entries[i]->GetSize ();
+                            // totalKeyValueSize += entries[i].value->GetSize ();
                             // and be done with it. But that would incure a penalty
                             // of yet another call to Serializable::Size (). So we
                             // simmulate what Serializable::GetSize would do and
