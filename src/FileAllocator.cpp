@@ -319,13 +319,17 @@ namespace thekogans {
                         offset = result.second;
                         // If the block we got is bigger than we need, split it.
                         if (result.first - size >= MIN_BLOCK_SIZE) {
-                            result.first -= size;
-                            PtrType nextBlockOffset = offset + size + BlockInfo::SIZE;
-                            ui64 nextBlockSize = result.first - BlockInfo::SIZE;
-                            btree->Add (BTree::KeyType (nextBlockSize, nextBlockOffset));
-                            BlockInfo block (
-                                nextBlockOffset, BlockInfo::FLAGS_FREE, nextBlockSize);
-                            block.Write (file);
+                            BlockInfo next (
+                                offset + size + BlockInfo::SIZE,
+                                BlockInfo::FLAGS_FREE,
+                                result.first - size - BlockInfo::SIZE);
+                            next.Write (file);
+                            btree->Add (BTree::KeyType (next.GetSize (), next.GetOffset ()));
+                        }
+                        else {
+                            // Update the requested size so that block.Write below
+                            // can write the proper header/footer.
+                            size = result.first;
                         }
                     }
                     else {
@@ -349,7 +353,7 @@ namespace thekogans {
                 else if (offset >= header.heapStart + BlockInfo::HEADER_SIZE) {
                     BlockInfo block (offset);
                     block.Read (file);
-                    if (!block.IsFree () && !block.IsFixed ()) {
+                    if (!block.IsFree ()) {
                         if (header.rootOffset == offset) {
                             header.rootOffset = 0;
                             Save ();
@@ -374,12 +378,12 @@ namespace thekogans {
                             BlockInfo next;
                             block.Next (file, next);
                             if (next.IsFree () && !next.IsFixed ()) {
+                                btree->Delete (BTree::KeyType (next.GetSize (), next.GetOffset ()));
                             #if defined (THEKOGANS_UTIL_FILE_ALLOCATOR_BLOCK_INFO_USE_MAGIC)
                                 // Since block will grow to occupy next,
                                 // next offset is no longer valid.
                                 next.Invalidate (file);
                             #endif // defined (THEKOGANS_UTIL_FILE_ALLOCATOR_BLOCK_INFO_USE_MAGIC)
-                                btree->Delete (BTree::KeyType (next.GetSize (), next.GetOffset ()));
                                 block.SetSize (block.GetSize () + BlockInfo::SIZE + next.GetSize ());
                             }
                         }
@@ -394,6 +398,11 @@ namespace thekogans {
                             // If we are, truncate the heap.
                             file.SetSize (block.GetOffset () - BlockInfo::HEADER_SIZE);
                         }
+                    }
+                    else {
+                        THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
+                            "Attempting to free an unallocated block @" THEKOGANS_UTIL_UI64_FORMAT,
+                            offset);
                     }
                 }
                 else {
