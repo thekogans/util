@@ -44,6 +44,15 @@ namespace thekogans {
                 const std::string & /*path*/) throw () {}
             virtual void OnRootScanEnd (
                 util::RefCounted::SharedPtr<Root> /*root*/) throw () {}
+
+            virtual void OnRootDeleteBegin (
+                util::RefCounted::SharedPtr<Root> /*root*/) throw () {}
+            virtual void OnRootDeletedPathBTree (
+                util::RefCounted::SharedPtr<Root> /*root*/) throw () {}
+            virtual void OnRootDeletedComponentBTree (
+                util::RefCounted::SharedPtr<Root> /*root*/) throw () {}
+            virtual void OnRootDeleteEnd (
+                util::RefCounted::SharedPtr<Root> /*root*/) throw () {}
         };
 
         struct Root : public util::Producer<RootEvents> {

@@ -67,6 +67,12 @@ namespace thekogans {
                         buffer << entries[i];
                     }
                 }
+                if (buffer.GetDataAvailableForWriting () > 0) {
+                    SecureZeroMemory (
+                        buffer.GetWritePtr (),
+                        buffer.GetDataAvailableForWriting ());
+                    buffer.AdvanceWriteOffset (buffer.GetDataAvailableForWriting ());
+                }
                 buffer.BlockWrite (btree.fileAllocator.file);
             }
             if (count > 0) {

@@ -35,23 +35,30 @@
 using namespace thekogans;
 using namespace kcd;
 
-std::string GetLevelsList (const std::string &separator) {
-    std::string logLevelList;
-    {
-        std::list<util::ui32> levels;
-        util::LoggerMgr::GetLevels (levels);
-        if (!levels.empty ()) {
-            std::list<util::ui32>::const_iterator it = levels.begin ();
-            logLevelList = util::LoggerMgr::levelTostring (*it++);
-            for (std::list<util::ui32>::const_iterator end = levels.end (); it != end; ++it) {
-                logLevelList += separator + util::LoggerMgr::levelTostring (*it);
+namespace {
+    std::string GetLevelsList (const std::string &separator) {
+        std::string logLevelList;
+        {
+            std::list<util::ui32> levels;
+            util::LoggerMgr::GetLevels (levels);
+            if (!levels.empty ()) {
+                std::list<util::ui32>::const_iterator it = levels.begin ();
+                logLevelList = util::LoggerMgr::levelTostring (*it++);
+                for (std::list<util::ui32>::const_iterator end = levels.end (); it != end; ++it) {
+                    logLevelList += separator + util::LoggerMgr::levelTostring (*it);
+                }
+            }
+            else {
+                logLevelList = "No LoggerMgr levels defined.";
             }
         }
-        else {
-            logLevelList = "No LoggerMgr levels defined.";
-        }
+        return logLevelList;
     }
-    return logLevelList;
+
+    std::string NormalizePath (const std::string &path) {
+        return !path.empty () && path.back () != util::Path::GetNativePathSeparator () ?
+            path + util::Path::GetNativePathSeparator () : path;
+    }
 }
 
 int main (
@@ -113,7 +120,9 @@ int main (
                 if (!roots_.empty ()) {
                     for (std::size_t i = 0, count = roots_.size (); i < count; ++i) {
                         roots->ScanRoot (
-                            util::Path (roots_[i]).MakeAbsolute (), fileAllocator, ignoreList);
+                            NormalizePath (util::Path (roots_[i]).MakeAbsolute ()),
+                            fileAllocator,
+                            ignoreList);
                     }
                 }
                 else {
@@ -125,7 +134,7 @@ int main (
                 if (!roots_.empty ()) {
                     for (std::size_t i = 0, count = roots_.size (); i < count; ++i) {
                         roots->EnableRoot (
-                            util::Path (roots_[i]).MakeAbsolute (), fileAllocator);
+                            NormalizePath (util::Path (roots_[i]).MakeAbsolute ()), fileAllocator);
                     }
                 }
                 else {
@@ -137,7 +146,7 @@ int main (
                 if (!roots_.empty ()) {
                     for (std::size_t i = 0, count = roots_.size (); i < count; ++i) {
                         roots->DisableRoot (
-                            util::Path (roots_[i]).MakeAbsolute (), fileAllocator);
+                            NormalizePath (util::Path (roots_[i]).MakeAbsolute ()), fileAllocator);
                     }
                 }
                 else {
@@ -149,7 +158,7 @@ int main (
                 if (!roots_.empty ()) {
                     for (std::size_t i = 0, count = roots_.size (); i < count; ++i) {
                         roots->DeleteRoot (
-                            util::Path (roots_[i]).MakeAbsolute (), fileAllocator);
+                            NormalizePath (util::Path (roots_[i]).MakeAbsolute ()), fileAllocator);
                     }
                 }
                 else {

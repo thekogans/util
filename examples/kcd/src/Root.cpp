@@ -37,6 +37,7 @@ namespace thekogans {
                 IgnoreList::SharedPtr ignoreList) {
             if (!path.empty ()) {
                 Delete (fileAllocator);
+                assert (pathBTreeOffset == 0 && componentBTreeOffset == 0);
                 util::BTree::SharedPtr pathBTree (
                     new util::BTree (
                         fileAllocator,
@@ -66,14 +67,34 @@ namespace thekogans {
         }
 
         void Root::Delete (util::FileAllocator::SharedPtr fileAllocator) {
+            Produce (
+                std::bind (
+                    &RootEvents::OnRootDeleteBegin,
+                    std::placeholders::_1,
+                    this));
             if (pathBTreeOffset != 0) {
                 util::BTree::Delete (*fileAllocator, pathBTreeOffset);
                 pathBTreeOffset = 0;
+                Produce (
+                    std::bind (
+                        &RootEvents::OnRootDeletedPathBTree,
+                        std::placeholders::_1,
+                        this));
             }
             if (componentBTreeOffset != 0) {
                 util::BTree::Delete (*fileAllocator, componentBTreeOffset);
                 componentBTreeOffset = 0;
+                Produce (
+                    std::bind (
+                        &RootEvents::OnRootDeletedComponentBTree,
+                        std::placeholders::_1,
+                        this));
             }
+            Produce (
+                std::bind (
+                    &RootEvents::OnRootDeleteEnd,
+                    std::placeholders::_1,
+                    this));
         }
 
         void Root::Find (
@@ -141,17 +162,17 @@ namespace thekogans {
                 util::BTree::SharedPtr pathBTree,
                 util::BTree::SharedPtr componentBTree,
                 IgnoreList::SharedPtr ignoreList) {
-            Produce (
-                std::bind (
-                    &RootEvents::OnRootScanPath,
-                    std::placeholders::_1,
-                    this,
-                    path));
             util::GUIDKey::SharedPtr pathKey (
                 new util::GUIDKey (util::GUID::FromBuffer (path.data (), path.size ())));
             util::StringValue::SharedPtr pathValue (new util::StringValue (path));
             util::BTree::Iterator it;
             if (pathBTree->Insert (pathKey, pathValue, it)) {
+                Produce (
+                    std::bind (
+                        &RootEvents::OnRootScanPath,
+                        std::placeholders::_1,
+                        this,
+                        path));
                 std::list<std::string> components;
                 util::Path (path).GetComponents (components);
                 std::list<std::string>::const_iterator it = components.begin ();
