@@ -432,10 +432,10 @@ namespace thekogans {
 
                 /// \brief
                 /// If this flag is set, the block is free. Otherwise it's allocated.
-                static const std::size_t FLAGS_FREE = 1;
+                static const ui32 FLAGS_FREE = 1;
                 /// \brief
                 /// If this flag is set the block is fixed. Otherwise it's random size.
-                static const std::size_t FLAGS_FIXED = 2;
+                static const ui32 FLAGS_FIXED = 2;
                 /// \brief
                 /// Exposed because header is private.
                 static const std::size_t HEADER_SIZE = Header::SIZE;
@@ -682,13 +682,13 @@ namespace thekogans {
             struct Header {
                 /// \brief
                 /// Flag to indicate that this heap is allocating fixed size blocks.
-                static const std::size_t FLAGS_FIXED = 1;
+                static const ui16 FLAGS_FIXED = 1;
                 /// \brief
                 /// When creating a new heap, this flag will stamp the structure
                 /// of \see{BlockInfo} so that if you ever try to open it with a
                 /// wrongly compiled version of thekogans_util it will complain
                 /// instead of corrupting your data.
-                static const std::size_t FLAGS_BLOCK_INFO_USES_MAGIC = 2;
+                static const ui16 FLAGS_BLOCK_INFO_USES_MAGIC = 2;
                 /// \brief
                 /// Heap version.
                 ui16 version;
@@ -744,7 +744,7 @@ namespace thekogans {
                 /// size of the block to allocate. Otherwise contains the
                 /// size of BTree::Node on disk.
                 Header (
-                        Flags32 flags_ = 0,
+                        ui16 flags_ = 0,
                         ui64 blockSize_ = 0) :
                         version (CURRENT_VERSION),
                         flags (flags_),
