@@ -268,21 +268,8 @@ namespace thekogans {
             return !block.IsFree () ? block.GetSize () : 0;
         }
 
-        FileAllocator::Registry &FileAllocator::GetRegistry (
-                std::size_t entriesPerNode,
-                std::size_t nodesPerPage,
-                Allocator::SharedPtr allocator) {
+        FileAllocator::Registry &FileAllocator::GetRegistry () const {
             if (!IsFixed ()) {
-                if (registry == nullptr) {
-                    // Not a huge fan of this. The implicit call to
-                    // FileAllocator::SharedPtr ctor will increment the
-                    // reference count on this. Fortunately FileAllocator's
-                    // one and only ctor is private and the only way to
-                    // create one is to ask the Pool, which will create
-                    // it on the heap.
-                    registry = new Registry (
-                        this, entriesPerNode, nodesPerPage, allocator);
-                }
                 return *registry;
             }
             else {
@@ -291,7 +278,7 @@ namespace thekogans {
             }
         }
 
-        FileAllocator::PtrType FileAllocator::GetRootOffset () {
+        FileAllocator::PtrType FileAllocator::GetRootOffset () const {
             return header.rootOffset;
         }
 
@@ -466,10 +453,8 @@ namespace thekogans {
 
         void FileAllocator::Flush (bool flushFile) {
             WriteHeader ();
-            if (btree != nullptr) {
+            if (!IsFixed ()) {
                 btree->Flush ();
-            }
-            if (registry != nullptr) {
                 registry->Flush ();
             }
             if (flushFile) {
@@ -504,11 +489,17 @@ namespace thekogans {
                 // Flush everything to file cache.
                 Flush (false);
                 file.AbortTransaction ();
-                // Once the file aborted the transaction,
-                // this Flush will reset internal objects
-                // (btree, registry) to their pre-transaction
+                // We need to reread the header because it could
+                // have been modified (freeBlockOffset and rootOffset)
+                // during the transaction.
+                ReadHeader ();
+                // Since btree and registry get created in the ctor
+                // a simple flush will reset them back to pre-transaction
                 // state.
-                Flush (false);
+                if (!IsFixed ()) {
+                    btree->Flush ();
+                    registry->Flush ();
+                }
             }
             else {
                 THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
@@ -517,7 +508,7 @@ namespace thekogans {
         }
 
         void FileAllocator::DumpBTree () {
-            if (btree != nullptr) {
+            if (!IsFixed ()) {
                 btree->Dump ();
             }
         }
@@ -537,34 +528,9 @@ namespace thekogans {
                 registry (nullptr),
                 dirty (false) {
             if (file.GetSize () > 0) {
-                ui32 magic;
-                file >> magic;
-                if (magic == MAGIC32) {
-                    // File is host endian.
-                }
-                else if (ByteSwap<GuestEndian, HostEndian> (magic) == MAGIC32) {
-                    // File is guest endian.
-                    file.endianness = GuestEndian;
-                }
-                else {
-                    THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                        "Corrupt FileAllocator file (%s)",
-                        path.c_str ());
-                }
-                file >> header;
-            #if defined (THEKOGANS_UTIL_FILE_ALLOCATOR_BLOCK_INFO_USE_MAGIC)
-                if (!header.IsBlockInfoUsesMagic ()) {
-            #else // defined (THEKOGANS_UTIL_FILE_ALLOCATOR_BLOCK_INFO_USE_MAGIC)
-                if (header.IsBlockInfoUsesMagic ()) {
-            #endif // defined (THEKOGANS_UTIL_FILE_ALLOCATOR_BLOCK_INFO_USE_MAGIC)
-                    THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                        "This FileAllocator file (%s) cannot be opened by this version of %s.",
-                        path.c_str (),
-                        THEKOGANS_UTIL);
-                }
+                ReadHeader ();
             }
             else {
-                file.SetSize (header.heapStart);
                 Save ();
             }
             fixedAllocator =
@@ -580,25 +546,39 @@ namespace thekogans {
                     blocksPerPage,
                     BlockAllocator::DEFAULT_BLOCKS_PER_PAGE,
                     allocator);
-                if (header.btreeOffset != btree->GetOffset ()) {
+                if (header.btreeOffset == 0) {
+                    assert (dirty);
                     header.btreeOffset = btree->GetOffset ();
-                    Save ();
                 }
+                // Not a huge fan of this. The implicit call to
+                // FileAllocator::SharedPtr ctor will increment the
+                // reference count on this. Fortunately FileAllocator's
+                // one and only ctor is private and the only way to
+                // create one is to ask the Pool, which will create
+                // it on the heap.
+                registry = new Registry (this, 32, 5, allocator);
+                if (header.registryOffset == 0) {
+                    assert (dirty);
+                    header.registryOffset = registry->GetOffset ();
+                }
+            }
+            if (dirty) {
+                Flush ();
             }
         }
 
         FileAllocator::~FileAllocator () {
+            // Simulate Flush without retaining the cache.
             WriteHeader ();
-            if (btree != nullptr) {
+            if (!IsFixed ()) {
                 // This will flush the btree cache to file.
                 delete btree;
-            }
-            if (registry != nullptr) {
                 // This will flush the registry cache to file.
                 delete registry;
             }
-            // The file dtor will call Close which will flush
-            // all dirty pages to file.
+            // The file dtor will call Close which will either
+            // abort a pending transaction or flush all dirty
+            // pages to disk.
         }
 
         FileAllocator::PtrType FileAllocator::AllocFixedBlock () {
@@ -660,6 +640,35 @@ namespace thekogans {
 
         void FileAllocator::Save () {
             dirty = true;
+        }
+
+        void FileAllocator::ReadHeader () {
+            file.Seek (0, SEEK_SET);
+            ui32 magic;
+            file >> magic;
+            if (magic == MAGIC32) {
+                // File is host endian.
+            }
+            else if (ByteSwap<GuestEndian, HostEndian> (magic) == MAGIC32) {
+                // File is guest endian.
+                file.endianness = GuestEndian;
+            }
+            else {
+                THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
+                    "Corrupt FileAllocator file (%s)",
+                    file.GetPath ().c_str ());
+            }
+            file >> header;
+        #if defined (THEKOGANS_UTIL_FILE_ALLOCATOR_BLOCK_INFO_USE_MAGIC)
+            if (!header.IsBlockInfoUsesMagic ()) {
+        #else // defined (THEKOGANS_UTIL_FILE_ALLOCATOR_BLOCK_INFO_USE_MAGIC)
+            if (header.IsBlockInfoUsesMagic ()) {
+        #endif // defined (THEKOGANS_UTIL_FILE_ALLOCATOR_BLOCK_INFO_USE_MAGIC)
+                THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
+                    "This FileAllocator file (%s) cannot be opened by this version of %s.",
+                    file.GetPath ().c_str (),
+                    THEKOGANS_UTIL);
+            }
         }
 
         void FileAllocator::WriteHeader () {

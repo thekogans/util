@@ -808,7 +808,7 @@ namespace thekogans {
             /// in a multithreaded environment where multiple threads use the same
             /// FileAllocator you will all need to synchronize access to it. You
             /// can either use transactions in your threads or call GetMutex ()
-            /// below and pass it to a \see{LockGuard}<\see{Mutex}> to/ acquire
+            /// below and pass it to a \see{LockGuard}<\see{Mutex}> to acquire
             /// exclusive access. The reason it's a \see{Mutex} instead of my
             /// beloved \see{SpinLock} is because I expect the threads to hold
             /// on to a lock for a while and I didn't want others to needlessly
@@ -843,6 +843,13 @@ namespace thekogans {
             /// MIN_USER_DATA_SIZE above means that the smallest block we can
             /// allocate is 64 bytes.
             static const std::size_t MIN_BLOCK_SIZE = BlockInfo::SIZE + MIN_USER_DATA_SIZE;
+
+            /// \brief
+            /// Return the heap file.
+            /// \return Heap file.
+            inline File &GetFile () {
+                return file;
+            }
 
             /// \brief
             /// Return the heap file path.
@@ -892,37 +899,13 @@ namespace thekogans {
             /// is available for storing and retrieving associated values. The key type is
             /// \see{StringKey} and the value type is any type derived from \see{BTree::Value}.
             /// If IsFixed, will throw an \see{Exception}.
-            /// NOTE: The following parameters are standard \see{BTree} tunning parameters
-            /// and have been picked to be suitable for most situations. The entriesPerNode
-            /// parameter is only valid during registry creation. Once created, the only
-            /// way to change it is to delete the registry (\see{FileAllocator::Registry::Delete}
-            /// and to start over. The nodesPerPage and the allocator parameters are a
-            /// quirck of the \see{BTree::Node} design. And, unless you're intimately
-            /// steeped in \see{BTree} internals, should just be left alone. nodesPerPage
-            /// controls how memory is allocated for \see{BTree::Node}s and should be tuned
-            /// up or down depending on the number of nodes you think your tree will have.
-            /// Since the registry is a global resource, and uses synchronization to protectect
-            /// access at every call to Get/SetValue, I don't expect it's traffic to be too
-            /// high. Instead, it is designed to let clients store named global data that
-            /// they will then use to initialize the rest of the system. If you're going
-            /// to be using the registry as your systems primary data storage, perhaps you
-            /// might want to bump up nodesPerPage (and entriesPerNode for that mater).
-            /// allocator controls where the said node pages come from and unless you have
-            /// a very specific need, the default system allocator should work just fine.
-            /// \param[in] entriesPerNode Number of entries per btree node.
-            /// \param[in] nodesPerPage Number of btree nodes per allocator page.
-            /// \param[in] allocator Where allocator node pages come from.
-            /// \return Reference to \see{FileAllocator::Registry}. Will create it on first
-            /// access.
-            Registry &GetRegistry (
-                std::size_t entriesPerNode = 32,
-                std::size_t nodesPerPage = 5,
-                Allocator::SharedPtr allocator = DefaultAllocator::Instance ());
+            /// \return Reference to \see{FileAllocator::Registry}.
+            Registry &GetRegistry () const;
 
             /// \brief
             /// Return the root offset.
             /// \return header.rootOffset.
-            PtrType GetRootOffset ();
+            PtrType GetRootOffset () const;
             /// \brief
             /// Set the root offset.
             /// \param[in] rootOffset New root block offset.
@@ -1075,6 +1058,9 @@ namespace thekogans {
             /// \brief
             /// Set dirty to true.
             void Save ();
+            /// \brief
+            /// Read the \see{Header}.
+            void ReadHeader ();
             /// \brief
             /// Write the \see{Header}.
             void WriteHeader ();

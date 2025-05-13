@@ -61,12 +61,22 @@ namespace thekogans {
                 FileAllocator::SharedPtr fileAllocator,
                 std::size_t entriesPerNode = 32,
                 std::size_t nodesPerPage = 5,
-                Allocator::SharedPtr allocator = DefaultAllocator::Instance ());
+                Allocator::SharedPtr allocator = DefaultAllocator::Instance ()) :
+                btree (
+                    fileAllocator,
+                    fileAllocator->header.registryOffset,
+                    StringKey::TYPE,
+                    std::string (),
+                    entriesPerNode,
+                    nodesPerPage,
+                    allocator) {}
 
             /// \brief
-            /// Delete the registry from the heap.
-            /// \param[in] fileAllocator Heap where the registry resides.
-            static void Delete (FileAllocator &fileAllocator);
+            /// Return the \see{BTree::Header} offset.
+            /// \return \see{BTree::Header} offset.
+            inline FileAllocator::PtrType GetOffset () const {
+                return btree.GetOffset ();
+            }
 
             /// \brief
             /// Given a key, retrieve the associated value. If key is not found,
@@ -85,6 +95,8 @@ namespace thekogans {
                 const std::string &key,
                 util::BTree::Value::SharedPtr value);
 
+            /// \brief
+            /// Flush the \see{BTree}.
             inline void Flush () {
                 LockGuard<SpinLock> guard (spinLock);
                 btree.Flush ();
