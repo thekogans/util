@@ -364,7 +364,7 @@ namespace thekogans {
             } header;
             /// \brief
             /// Key and Value types are cast in stone (in the ctor).
-            /// Sinve we're going to be creating a lot of keys and values
+            /// Since we're going to be creating a lot of keys and values
             /// (every \see{Node::Entry} of every \see{Node}), we can save
             /// a ton on \see{DynamicCreatable::CreateType} by caching their
             /// factories and calling them directly when needed.
