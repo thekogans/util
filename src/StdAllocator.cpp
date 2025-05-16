@@ -17,23 +17,35 @@
 
 #include <memory>
 #include "thekogans/util/Exception.h"
-#include "thekogans/util/DefaultAllocator.h"
+#include "thekogans/util/StdAllocator.h"
 
 namespace thekogans {
     namespace util {
 
         THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_S (
-            thekogans::util::DefaultAllocator,
+            thekogans::util::StdAllocator,
             Allocator::TYPE)
 
-        void *DefaultAllocator::Alloc (std::size_t size) {
-            return allocator->Alloc (size);
+        void *StdAllocator::Alloc (std::size_t size) {
+            void *ptr = nullptr;
+            if (size > 0) {
+                THEKOGANS_UTIL_TRY {
+                    ptr = ::operator new (size);
+                }
+                THEKOGANS_UTIL_CATCH_ANY {
+                    THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                        THEKOGANS_UTIL_OS_ERROR_CODE_ENOMEM);
+                }
+            }
+            return ptr;
         }
 
-        void DefaultAllocator::Free (
+        void StdAllocator::Free (
                 void *ptr,
-                std::size_t size) {
-            allocator->Free (ptr, size);
+                std::size_t /*size*/) {
+            if (ptr != nullptr) {
+                ::operator delete (ptr);
+            }
         }
 
     } // namespace util

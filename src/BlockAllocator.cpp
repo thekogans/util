@@ -16,6 +16,7 @@
 // along with libthekogans_util. If not, see <http://www.gnu.org/licenses/>.
 
 #include "thekogans/util/LockGuard.h"
+#include "thekogans/util/Exception.h"
 #include "thekogans/util/BlockAllocator.h"
 
 namespace thekogans {

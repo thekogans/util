@@ -314,8 +314,8 @@ namespace thekogans {
                             btree->Add (BTree::KeyType (next.GetSize (), next.GetOffset ()));
                         }
                         else {
-                            // Update the requested size so that block.Write below
-                            // can write the proper header/footer.
+                            // If not, update the requested size so that block.Write
+                            // below can write the proper header/footer.
                             size = result.first;
                         }
                     }
@@ -356,6 +356,7 @@ namespace thekogans {
                                 // it's offset is no longer valid.
                                 block.Invalidate (file);
                             #endif // defined (THEKOGANS_UTIL_FILE_ALLOCATOR_BLOCK_INFO_USE_MAGIC)
+                                // Back up to cover the prev.
                                 block.SetOffset (
                                     block.GetOffset () - BlockInfo::SIZE - prev.GetSize ());
                                 block.SetSize (block.GetSize () + BlockInfo::SIZE + prev.GetSize ());
@@ -371,6 +372,7 @@ namespace thekogans {
                                 // next offset is no longer valid.
                                 next.Invalidate (file);
                             #endif // defined (THEKOGANS_UTIL_FILE_ALLOCATOR_BLOCK_INFO_USE_MAGIC)
+                                // Expand to swallow the next.
                                 block.SetSize (block.GetSize () + BlockInfo::SIZE + next.GetSize ());
                             }
                         }
@@ -511,6 +513,10 @@ namespace thekogans {
             if (!IsFixed ()) {
                 btree->Dump ();
             }
+            else {
+                THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
+                    "FileAllocator is fixed.");
+            }
         }
 
         FileAllocator::FileAllocator (
@@ -556,7 +562,12 @@ namespace thekogans {
                 // one and only ctor is private and the only way to
                 // create one is to ask the Pool, which will create
                 // it on the heap.
-                registry = new Registry (this, 32, 5, allocator);
+                registry = new Registry (
+                    this,
+                    header.registryOffset,
+                    Registry::DEFAULT_ENTRIES_PER_NODE,
+                    Registry::DEFAULT_ENTRIES_NODES_PER_PAGE,
+                    allocator);
                 if (header.registryOffset == 0) {
                     assert (dirty);
                     header.registryOffset = registry->GetOffset ();

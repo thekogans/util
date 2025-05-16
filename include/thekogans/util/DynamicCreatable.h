@@ -260,12 +260,25 @@ namespace thekogans {
         /// Define the base type functions. This macro is private.
         #define THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE_BASE_FUNCTIONS(_T)\
         public:\
+            static const thekogans::util::DynamicCreatable::TypeMapType &GetTypes ();\
             static bool IsType (const char *type);\
             static thekogans::util::DynamicCreatable::FactoryType GetTypeFactory (const char *type);\
-            static const thekogans::util::DynamicCreatable::TypeMapType &GetTypes ();\
             static _T::SharedPtr CreateType (\
                 const char *type,\
                 thekogans::util::DynamicCreatable::Parameters::SharedPtr parameters = nullptr);
+
+        /// \def THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_BASE_GET_TYPES(_T)
+        /// Implement base type GetTypes.
+        /// This is the magic that makes the entire scheme so performant.
+        /// Because base types know their own names, they can cache their
+        /// own type map reference and use it to look up types descendant
+        /// from them. This macro is private.
+        #define THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_BASE_GET_TYPES(_T)\
+            const thekogans::util::DynamicCreatable::TypeMapType &_T::GetTypes () {\
+                static const thekogans::util::DynamicCreatable::TypeMapType &types =\
+                    (*thekogans::util::DynamicCreatable::BaseMap::Instance ())[_T::TYPE];\
+                return types;\
+            }
 
         /// \def THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_BASE_IS_TYPE(_T)
         /// Implement base type IsType. This macro is private.
@@ -290,19 +303,6 @@ namespace thekogans {
                 return thekogans::util::DynamicCreatable::FactoryType ();\
             }
 
-        /// \def THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_BASE_GET_TYPES(_T)
-        /// Implement base type GetTypes.
-        /// This is the magic that makes the entire scheme so performant.
-        /// Because base types know their own names, they can cache their
-        /// own type map reference and use it to look up types descendant
-        /// from them. This macro is private.
-        #define THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_BASE_GET_TYPES(_T)\
-            const thekogans::util::DynamicCreatable::TypeMapType &_T::GetTypes () {\
-                static const thekogans::util::DynamicCreatable::TypeMapType &types =\
-                    (*thekogans::util::DynamicCreatable::BaseMap::Instance ())[_T::TYPE];\
-                return types;\
-            }
-
         /// \def THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_BASE_CREATE_TYPE(_T)
         /// Implement base type CreateType. This macro is private.
         #define THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_BASE_CREATE_TYPE(_T)\
@@ -322,20 +322,20 @@ namespace thekogans {
         /// \def THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_BASE_FUNCTIONS(_T)
         /// Implement base type functions. This macro is private.
         #define THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_BASE_FUNCTIONS(_T)\
+            THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_BASE_GET_TYPES (_T)\
             THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_BASE_IS_TYPE (_T)\
             THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_BASE_GET_TYPE_FACTORY (_T)\
-            THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_BASE_GET_TYPES (_T)\
             THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_BASE_CREATE_TYPE (_T)
 
         /// \def THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_BASE_FUNCTIONS_T(_T)
         /// Implement base type functions. This macro is private.
         #define THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_BASE_FUNCTIONS_T(_T)\
             template<>\
+            THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_BASE_GET_TYPES (_T)\
+            template<>\
             THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_BASE_IS_TYPE (_T)\
             template<>\
             THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_BASE_GET_TYPE_FACTORY (_T)\
-            template<>\
-            THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_BASE_GET_TYPES (_T)\
             template<>\
             THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_BASE_CREATE_TYPE (_T)
 

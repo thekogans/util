@@ -173,6 +173,7 @@
     <cpp_header>$(organization)/$(project_directory)/SizeT.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/SpinLock.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/SpinRWLock.h</cpp_header>
+    <cpp_header>$(organization)/$(project_directory)/StdAllocator.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/StringUtils.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/Subscriber.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/SystemInfo.h</cpp_header>
@@ -700,6 +701,7 @@
     <cpp_source>SizeT.cpp</cpp_source>
     <cpp_source>SpinLock.cpp</cpp_source>
     <cpp_source>SpinRWLock.cpp</cpp_source>
+    <cpp_source>StdAllocator.cpp</cpp_source>
     <cpp_source>StringUtils.cpp</cpp_source>
     <cpp_source>SystemInfo.cpp</cpp_source>
     <cpp_source>Thread.cpp</cpp_source>

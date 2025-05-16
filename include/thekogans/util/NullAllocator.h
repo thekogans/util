@@ -22,7 +22,6 @@
 #include <memory>
 #include "thekogans/util/Config.h"
 #include "thekogans/util/Allocator.h"
-#include "thekogans/util/Exception.h"
 
 namespace thekogans {
     namespace util {

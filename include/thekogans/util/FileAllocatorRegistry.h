@@ -50,21 +50,30 @@ namespace thekogans {
 
         public:
             /// \brief
+            /// Default registry \see{BTree} entries per node.
+            static const std::size_t DEFAULT_ENTRIES_PER_NODE = 32;
+            /// \brief
+            /// Default registry \see{BTree} nodes per page.
+            static const std::size_t DEFAULT_ENTRIES_NODES_PER_PAGE = 5;
+
+            /// \brief
             /// ctor.
             /// See \see{FileAllocator::GetRegistry} for a better description of
             /// these parameters and when you should and should not change them.
             /// \param[in] fileAllocator Registry heap (see \see{FileAllocator}).
+            /// \param[in] offset Offset of the \see{BTree::Header} block on disk.
             /// \param[in] entriesPerNode Number of entries per btree node.
             /// \param[in] nodesPerPage Number of btree nodes per allocator page.
             /// \param[in] allocator Where allocator node pages come from.
             Registry (
                 FileAllocator::SharedPtr fileAllocator,
-                std::size_t entriesPerNode = 32,
-                std::size_t nodesPerPage = 5,
+                FileAllocator::PtrType offset,
+                std::size_t entriesPerNode = DEFAULT_ENTRIES_PER_NODE,
+                std::size_t nodesPerPage = DEFAULT_ENTRIES_NODES_PER_PAGE,
                 Allocator::SharedPtr allocator = DefaultAllocator::Instance ()) :
                 btree (
                     fileAllocator,
-                    fileAllocator->header.registryOffset,
+                    offset,
                     StringKey::TYPE,
                     std::string (),
                     entriesPerNode,

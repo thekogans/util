@@ -22,7 +22,7 @@
 
 #if defined (TOOLCHAIN_OS_Windows) || \
     defined (THEKOGANS_UTIL_HAVE_MMAP) || \
-    defined (THEKOGANS_UTIL_USE_DEFAULT_SECURE_ALLOCATOR)
+    defined (THEKOGANS_UTIL_SECURE_ALLOCATOR_USE_DEFAULT)
 
 #include <cstddef>
 #include <utility>
@@ -291,6 +291,6 @@ namespace thekogans {
 
 #endif // defined (TOOLCHAIN_OS_Windows) ||
        // defined (THEKOGANS_UTIL_HAVE_MMAP) ||
-       // defined (THEKOGANS_UTIL_USE_DEFAULT_SECURE_ALLOCATOR)
+       // defined (THEKOGANS_UTIL_SECURE_ALLOCATOR_USE_DEFAULT)
 
 #endif // !defined (__thekogans_util_SecureAllocator_h)

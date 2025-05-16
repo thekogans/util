@@ -15,43 +15,30 @@
 // You should have received a copy of the GNU General Public License
 // along with libthekogans_util. If not, see <http://www.gnu.org/licenses/>.
 
-#if !defined (__thekogans_util_DefaultAllocator_h)
-#define __thekogans_util_DefaultAllocator_h
+#if !defined (__thekogans_util_StdAllocator_h)
+#define __thekogans_util_StdAllocator_h
 
 #include <cstddef>
 #include "thekogans/util/Config.h"
 #include "thekogans/util/Allocator.h"
 #include "thekogans/util/Singleton.h"
-#include "thekogans/util/StdAllocator.h"
 
 namespace thekogans {
     namespace util {
 
-        /// \struct DefaultAllocator DefaultAllocator.h thekogans/util/DefaultAllocator.h
+        /// \struct StdAllocator StdAllocator.h thekogans/util/StdAllocator.h
         ///
         /// \brief
-        /// DefaultAllocator is a system wide default \see{Allocator}. Use
-        /// thekogans::util::DefaultAllocator::CreateInstance (pointer to your
-        /// default allocator) to change the default (\see{StdAllocator).
-        /// DefaultAllocator is part of the \see{Allocator} framework.
+        /// Uses system new/delete to allocate from the global heap.
+        /// StdAllocator is part of the \see{Allocator} framework.
 
-        struct _LIB_THEKOGANS_UTIL_DECL DefaultAllocator :
+        struct _LIB_THEKOGANS_UTIL_DECL StdAllocator :
                 public Allocator,
-                public RefCountedSingleton<DefaultAllocator> {
+                public RefCountedSingleton<StdAllocator> {
             /// \brief
-            /// DefaultAllocator participates in the \see{DynamicCreatable}
+            /// StdAllocator participates in the \see{DynamicCreatable}
             /// dynamic discovery and creation.
-            THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE (DefaultAllocator)
-
-            /// \brief
-            /// Actual default allocator.
-            Allocator::SharedPtr allocator;
-
-            /// \brief
-            /// ctor
-            /// \param[in] allocator_ Pointer to \see{Allocator} derived class.
-            DefaultAllocator (Allocator::SharedPtr allocator_ = StdAllocator::Instance ()) :
-                allocator (allocator_) {}
+            THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE (StdAllocator)
 
             /// \brief
             /// Allocate a block from system heap.
@@ -64,21 +51,21 @@ namespace thekogans {
             /// \param[in] size Same size parameter previously passed in to Alloc.
             virtual void Free (
                 void *ptr,
-                std::size_t size) override;
+                std::size_t /*size*/) override;
         };
 
-        /// \def THEKOGANS_UTIL_IMPLEMENT_DEFAULT_ALLOCATOR_FUNCTIONS(_T)
-        /// Macro to implement DefaultAllocator functions.
-        #define THEKOGANS_UTIL_IMPLEMENT_DEFAULT_ALLOCATOR_FUNCTIONS(_T)\
+        /// \def THEKOGANS_UTIL_IMPLEMENT_STD_ALLOCATOR_FUNCTIONS(_T)
+        /// Macro to implement StdAllocator functions.
+        #define THEKOGANS_UTIL_IMPLEMENT_STD_ALLOCATOR_FUNCTIONS(_T)\
         void *_T::operator new (std::size_t size) {\
             assert (size == sizeof (_T));\
-            return thekogans::util::DefaultAllocator::Instance ()->Alloc (size);\
+            return thekogans::util::StdAllocator::Instance ()->Alloc (size);\
         }\
         void *_T::operator new (\
                 std::size_t size,\
                 std::nothrow_t) noexcept {\
             assert (size == sizeof (_T));\
-            return thekogans::util::DefaultAllocator::Instance ()->Alloc (size);\
+            return thekogans::util::stdAllocator::Instance ()->Alloc (size);\
         }\
         void *_T::operator new (\
                 std::size_t size,\
@@ -87,12 +74,12 @@ namespace thekogans {
             return ptr;\
         }\
         void _T::operator delete (void *ptr) {\
-            thekogans::util::DefaultAllocator::Instance ()->Free (ptr, sizeof (_T));\
+            thekogans::util::stdAllocator::Instance ()->Free (ptr, sizeof (_T));\
         }\
         void _T::operator delete (\
                 void *ptr,\
                 std::nothrow_t) noexcept {\
-            thekogans::util::DefaultAllocator::Instance ()->Free (ptr, sizeof (_T));\
+            thekogans::util::StdAllocator::Instance ()->Free (ptr, sizeof (_T));\
         }\
         void _T::operator delete (\
             void *,\
@@ -101,4 +88,4 @@ namespace thekogans {
     } // namespace util
 } // namespace thekogans
 
-#endif // !defined (__thekogans_util_DefaultAllocator_h)
+#endif // !defined (__thekogans_util_StdAllocator_h)
