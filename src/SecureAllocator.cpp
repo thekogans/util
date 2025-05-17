@@ -19,7 +19,7 @@
 
 #if defined (TOOLCHAIN_OS_Windows) || \
     defined (THEKOGANS_UTIL_HAVE_MMAP) || \
-    defined (THEKOGANS_UTIL_USE_DEFAULT_SECURE_ALLOCATOR)
+    defined (THEKOGANS_UTIL_SECURE_ALLOCATOR_USE_DEFAULT)
 
 #if defined (TOOLCHAIN_OS_Windows)
     #include "thekogans/util/os/windows/WindowsHeader.h"
@@ -143,15 +143,17 @@ namespace thekogans {
             }
         }
 
-        _LIB_THEKOGANS_UTIL_DECL void _LIB_THEKOGANS_UTIL_API SecureZeroMemory (
+        _LIB_THEKOGANS_UTIL_DECL std::size_t _LIB_THEKOGANS_UTIL_API SecureZeroMemory (
                 void *data,
                 std::size_t size) {
             if (data != nullptr && size > 0) {
                 volatile ui8 *ptr = (volatile ui8 *)data;
-                while (size-- != 0) {
+                std::size_t size_ = size;
+                while (size_-- != 0) {
                     *ptr++ = 0;
                 }
             }
+            return size;
         }
 
     } // namespace util
@@ -159,4 +161,4 @@ namespace thekogans {
 
 #endif // defined (TOOLCHAIN_OS_Windows) ||
        // defined (THEKOGANS_UTIL_HAVE_MMAP) ||
-       // defined (THEKOGANS_UTIL_USE_DEFAULT_SECURE_ALLOCATOR)
+       // defined (THEKOGANS_UTIL_SECURE_ALLOCATOR_USE_DEFAULT)

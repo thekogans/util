@@ -282,7 +282,8 @@ namespace thekogans {
         /// Do it in such a way as to not get optimized away.
         /// \param[in] data Block t zero out.
         /// \param[in] size Block size (in bytes).
-        _LIB_THEKOGANS_UTIL_DECL void _LIB_THEKOGANS_UTIL_API SecureZeroMemory (
+        /// \return size.
+        _LIB_THEKOGANS_UTIL_DECL std::size_t _LIB_THEKOGANS_UTIL_API SecureZeroMemory (
             void *data,
             std::size_t size);
 

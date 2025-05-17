@@ -482,14 +482,7 @@ namespace thekogans {
                     FileAllocator &fileAllocator,
                     FileAllocator::PtrType offset);
 
-                /// \brief
-                /// Nodes delay writting themselves to disk until they are destroyed.
-                /// This way we amortize the cost of disk writes across multiple node
-                /// updates. Call BTree::Flush to flush the cache in tight memory
-                /// situations.
-                inline void Save () {
-                    dirty = true;
-                }
+                void Flush ();
                 /// \brief
                 /// Return the left child of an entry at the given index.
                 /// NOTE: If you need the very last (rightNode) child, call
@@ -777,13 +770,11 @@ namespace thekogans {
             /// Use for debugging. Dump the btree nodes to stdout.
             void Dump ();
 
+            /// \brief
+            /// Reinitialize the btree from disk.
+            void Reload ();
+
         private:
-            /// \brief
-            /// Set dirty = true.
-            void Save ();
-            /// \brief
-            /// Write header to disk.
-            void WriteHeader ();
             /// \brief
             /// Set root node.
             /// \param[in] node \see{Node} to set as new root.
@@ -814,6 +805,14 @@ namespace thekogans {
             /// BTree is neither copy constructable, nor assignable.
             THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (BTree)
         };
+
+        /// \brief
+        /// Implement BTree::Key extraction operators.
+        THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_EXTRACTION_OPERATORS (BTree::Key)
+
+        /// \brief
+        /// Implement BTree::Value extraction operators.
+        THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_EXTRACTION_OPERATORS (BTree::Value)
 
     } // namespace util
 } // namespace thekogans

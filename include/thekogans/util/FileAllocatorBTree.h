@@ -162,16 +162,8 @@ private:
         static void Delete (Node *node);
 
         /// \brief
-        /// Nodes delay writting themselves to disk until they are destroyed.
-        /// This way we amortize the cost of disk writes across multiple node
-        /// updates. As with any caching strategy, this one too trades in convenience
-        /// for performance. Performance gains are sizeable; 25% speedup on one
-        /// benchmark. The inconvenience is that you must make sure that the
-        /// \see{FileAllocator} is flushed before the application ends. To do
-        /// that, call \see{FileAllocator::FlushBTree}.
-        inline void Save () {
-            dirty = true;
-        }
+        /// If dirty, flush changes to \see{FileAllocator::BlockBuffer}.
+        void Flush ();
         /// \brief
         /// Return the child at the given index.
         /// \param[in] index Index of child to retrieve
@@ -350,11 +342,9 @@ public:
 
 private:
     /// \brief
-    /// Set dirty = true.
-    void Save ();
-    /// \brief
-    /// Write the \see{Header} to disk.
-    void WriteHeader ();
+    /// Reinitialize the btree from disk.
+    /// Used by \see{Fileallocator} after AbortTransaction.
+    void Reload ();
     /// \brief
     /// Set root node.
     /// \param[in] node \see{Node} to set as new root.

@@ -74,7 +74,6 @@ int main (
         Options::Instance ()->logLevel,
         util::LoggerMgr::All);
     THEKOGANS_UTIL_LOG_ADD_LOGGER (new util::ConsoleLogger);
-    THEKOGANS_UTIL_IMPLEMENT_LOG_FLUSHER;
     if (Options::Instance ()->help) {
         THEKOGANS_UTIL_LOG_INFO (
             "%s [-h] [-v] [-l:'%s'] [-d:'database path'] "

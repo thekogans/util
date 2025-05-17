@@ -83,8 +83,16 @@ namespace thekogans {
             /// \brief
             /// Return the \see{BTree::Header} offset.
             /// \return \see{BTree::Header} offset.
-            inline FileAllocator::PtrType GetOffset () const {
+            inline FileAllocator::PtrType GetOffset () {
+                LockGuard<SpinLock> guard (spinLock);
                 return btree.GetOffset ();
+            }
+
+            /// \brief
+            /// Flush the \see{BTree}.
+            inline void Flush () {
+                LockGuard<SpinLock> guard (spinLock);
+                btree.Flush ();
             }
 
             /// \brief
@@ -104,12 +112,18 @@ namespace thekogans {
                 const std::string &key,
                 util::BTree::Value::SharedPtr value);
 
+        private:
             /// \brief
-            /// Flush the \see{BTree}.
-            inline void Flush () {
+            /// Reinitialize the registry from disk.
+            /// Used by \see{Fileallocator} after AbortTransaction.
+            inline void Reload () {
                 LockGuard<SpinLock> guard (spinLock);
-                btree.Flush ();
+                btree.Reload ();
             }
+
+            /// \brief
+            /// \see{Fileallocator} needs access to Reload.
+            friend FileAllocator;
 
             /// \brief
             /// Registry is neither copy constructable, nor assignable.

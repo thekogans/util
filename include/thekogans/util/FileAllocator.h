@@ -141,64 +141,8 @@ namespace thekogans {
                     Allocator::SharedPtr allocator = DefaultAllocator::Instance ());
 
                 /// \brief
-                /// Given a FileAllocator path, flush it's changes to disk. If the
-                /// given path is empty, flush them all.
-                /// \param[in] path FileAllocator path to flush or empty for all.
-                void FlushFileAllocator (const std::string &path = std::string ());
-
-                /// \brief
                 /// Pool is neither copy constructable, nor assignable.
                 THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (Pool)
-            };
-
-            /// \struct FileAllocator::Flusher FileAllocator.h thekogans/util/FileAllocator.h
-            ///
-            /// \brief
-            /// FileAllocator uses a delayed approach to disc writes. To make sure
-            /// FileAllocator cache is written out you need to call Flush at the end
-            /// of the operation (Alloc/Free). This can get tricky as exceptions
-            /// alter return paths. Use this class at the begining of a sequence
-            /// of operations and let it call Flush automativally. Ex:
-            ///
-            /// \code{.cpp}
-            /// using namespace thekogans;
-            ///
-            /// {
-            ///     util::FileAllocator::SharedPtr allocator =
-            ///         util::FileAllocator::Pool::Instance ()->GetFileAllocator ("test.allocator");
-            ///     util::FileAllocator::Flusher flusher (allocator);
-            ///     // Now you can call Alloc and Free as many times
-            ///     // as you want and at the end of the scope, the
-            ///     // FileAllocator will be flushed.
-            /// }
-            /// \endcode
-            struct _LIB_THEKOGANS_UTIL_DECL Flusher {
-            private:
-                /// \brief
-                /// FileAllocator to flush in the dtor.
-                FileAllocator::SharedPtr fileAllocator;
-
-            public:
-                /// \brief
-                /// ctor.
-                /// \param[in] fileAllocator_ FileAllocator to flush in the dtor.
-                Flusher (FileAllocator::SharedPtr fileAllocator_) :
-                    fileAllocator (fileAllocator_) {}
-                /// \brief
-                /// dtor.
-                ~Flusher () {
-                    Flush ();
-                }
-
-                /// \brief
-                /// Call
-                inline void Flush () {
-                    fileAllocator->Flush ();
-                }
-
-                /// \brief
-                /// Flusher is neither copy constructable, nor assignable.
-                THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (Flusher)
             };
 
             /// \struct FileAllocator::Transaction FileAllocator.h thekogans/util/FileAllocator.h
@@ -207,7 +151,7 @@ namespace thekogans {
             /// A transaction is the easiest way to perform exclusive atomic heap alterations.
             /// It locks the FileAllocator in it's ctor and will abort the transaction in it's
             /// dtor. This is useful in case of \see{Exception}s. Call Transaction::Comit before
-            /// the end of  scope to commit it. Make sure to flush all your data before calling
+            /// the end of scope to commit it. Make sure to flush all your data before calling
             /// Commit or risk data loss.
             struct Transaction {
                 /// \brief
@@ -607,15 +551,8 @@ namespace thekogans {
             /// efficient to update only the parts of the data that have changed.
             struct _LIB_THEKOGANS_UTIL_DECL BlockBuffer : public Buffer {
                 /// \brief
-                /// Declare \see{RefCounted} pointers.
-                THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (BlockBuffer)
-
-                /// \brief
-                /// BlockBuffer has a private heap to help with memory
-                /// management, performance, and global heap fragmentation.
-                THEKOGANS_UTIL_DECLARE_STD_ALLOCATOR_FUNCTIONS
-
-            private:
+                /// \see{FileAllocator} reference.
+                FileAllocator &fileAllocator;
                 /// \brief
                 /// Block info.
                 BlockInfo block;
@@ -630,10 +567,17 @@ namespace thekogans {
                 /// \param[in] offset Block offset.
                 /// \param[in] bufferLength How much of the block we want to buffer
                 /// (0 == buffer the whole block).
+                /// \param[in] read true == Initialize buffer contents from file.
+                /// \param[in] blockOffset Logical offset within block.
+                /// \param[in] blockLength How much of the block we want to read.
+                /// (0 == read the whole block).
                 BlockBuffer (
-                    FileAllocator &fileAllocator,
+                    FileAllocator &fileAllocator_,
                     PtrType offset,
-                    std::size_t bufferLength = 0);
+                    std::size_t bufferLength = 0,
+                    bool read = true,
+                    std::size_t blockOffset = 0,
+                    std::size_t blockLength = 0);
 
                 /// \brief
                 /// Read a block range in to the buffer.
@@ -641,7 +585,6 @@ namespace thekogans {
                 /// \param[in] blockLength How much of the block we want to read.
                 /// (0 == read the whole block).
                 std::size_t BlockRead (
-                    File &file,
                     std::size_t blockOffset = 0,
                     std::size_t blockLength = 0);
                 /// \brief
@@ -650,17 +593,8 @@ namespace thekogans {
                 /// \param[in] blockLength How much of the block we want to write.
                 /// (0 == write the whole block).
                 std::size_t BlockWrite (
-                    File &file,
                     std::size_t blockOffset = 0,
                     std::size_t blockLength = 0);
-
-                /// \brief
-                /// FileAllocator holds the lock so all calls go through it.
-                friend struct FileAllocator;
-                /// \brief
-                /// FileAllocator::BTree is the only class allowed to call in to
-                /// BlockBuffer without holding the lock.
-                friend struct BTree;
 
                 /// \brief
                 /// BlockBuffer is neither copy constructable, nor assignable.
@@ -852,13 +786,6 @@ namespace thekogans {
             }
 
             /// \brief
-            /// Return the heap file path.
-            /// \return Heap file path.
-            inline std::string GetPath () const {
-                return file.GetPath ();
-            }
-
-            /// \brief
             /// Return the reference to the mutex.
             /// \return Reference to the mutex.
             inline Mutex &GetMutex () {
@@ -947,55 +874,6 @@ namespace thekogans {
                 BlockInfo &next);
 
             /// \brief
-            /// Create a \see{BlockBuffer} for reading or writing. If for reading
-            /// read it's contents.
-            /// \param[in] offset Block offset.
-            /// \param[in] length Block length (0 == cover the whole block).
-            /// \param[in] read true == read block contents (while still holding the lock).
-            /// \param[in] blockOffset If read == true, logical offset within block.
-            /// \param[in] blockLength If read == true, how much of the block we want
-            /// to read (0 == read the whole block).
-            /// \return \see{BlockBuffer::SharedPtr}.
-            BlockBuffer::SharedPtr CreateBlockBuffer (
-                PtrType offset,
-                std::size_t bufferLength = 0,
-                bool read = true,
-                std::size_t blockOffset = 0,
-                std::size_t blockLength = 0);
-            /// \brief
-            /// Read a range of the block in to the given \see{BlockBuffer}.
-            /// \param[in] buffer \see{BlockBuffer} to read in to.
-            /// \param[in] blockOffset Logical offset within block.
-            /// \param[in] blockLength How much of the block we want to read
-            /// (0 == read the whole block).
-            void ReadBlockBuffer (
-                BlockBuffer &buffer,
-                std::size_t blockOffset = 0,
-                std::size_t blockLength = 0);
-            /// \brief
-            /// Write the given \see{BlockBuffer} to disk.
-            /// \param[in] buffer \see{BlockBuffer} to write to disk.
-            /// \param[in] blockOffset Logical offset within block.
-            /// \param[in] blockLength How much of the block we want to write
-            /// (0 == write the whole block).
-            void WriteBlockBuffer (
-                BlockBuffer &buffer,
-                std::size_t blockOffset = 0,
-                std::size_t blockLength = 0);
-
-            /// \brief
-            /// Flush the header, btree, registry (if !IsFixed) and
-            /// file cache (if flushFile) to disk.
-            /// IMORTANT: Flush cannot flush unwritten client data as
-            /// it has no clue how you're using the heap. To make sure
-            /// all data is flushed to disk, make sure you call flush
-            /// on all your heap objects first (if they have any) so
-            /// that they write to FileAllocator::BlockBuffer and then
-            /// call this Flush.
-            /// \param[in] flushFile true == flush the file cache to disk.
-            void Flush (bool flushFile = true);
-
-            /// \brief
             /// Return true if a transaction is pending (open).
             /// \return true == A pending transaction exists.
             inline bool IsTransactionPending () const {
@@ -1017,6 +895,10 @@ namespace thekogans {
             /// \brief
             /// Debugging helper. Dumps \see{Btree::Node}s to stdout.
             void DumpBTree ();
+
+            /// \brief
+            /// Flush the header, btree, registry (if !IsFixed) to disk.
+            void Flush (bool flushFile = true);
 
         private:
             /// \brief
@@ -1056,14 +938,8 @@ namespace thekogans {
             void FreeFixedBlock (PtrType offset);
 
             /// \brief
-            /// Set dirty to true.
-            void Save ();
-            /// \brief
             /// Read the \see{Header}.
             void ReadHeader ();
-            /// \brief
-            /// Write the \see{Header}.
-            void WriteHeader ();
 
             /// \brief
             /// Needs access to private members.
@@ -1128,17 +1004,6 @@ namespace thekogans {
             /// FileAllocator is neither copy constructable, nor assignable.
             THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (FileAllocator)
         };
-
-        /// \def THEKOGANS_UTIL_IMPLEMENT_FILE_ALLOCATOR_POOL_FLUSHER
-        /// If you don't use transactions, use this macro at the top of your main
-        /// to flush the \see{FileAllocator::Pool} on exit. Make sure to flush all
-        /// your application data before flushing the heap or risk data loss.
-        #define THEKOGANS_UTIL_IMPLEMENT_FILE_ALLOCATOR_POOL_FLUSHER\
-            struct FileAllocatorPoolFlusher {\
-                ~FileAllocatorPoolFlusher () {\
-                    thekogans::util::FileAllocator::Pool::Instance ()->FlushFileAllocator ();\
-                }\
-            } fileAllocatorPoolFlusher
 
     } // namespace util
 } // namespace thekogans
