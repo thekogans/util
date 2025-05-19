@@ -194,9 +194,7 @@ namespace thekogans {
                 FileAllocator &fileAllocator_,
                 PtrType offset,
                 std::size_t bufferLength,
-                bool read,
-                std::size_t blockOffset,
-                std::size_t blockLength) :
+                Allocator::SharedPtr allocator) :
                 Buffer (fileAllocator_.file.endianness),
                 fileAllocator (fileAllocator_),
                 block (offset) {
@@ -205,10 +203,7 @@ namespace thekogans {
                 if (bufferLength == 0) {
                     bufferLength = block.GetSize ();
                 }
-                Resize (bufferLength, fileAllocator.allocator);
-                if (read) {
-                    BlockRead (blockOffset, blockLength);
-                }
+                Resize (bufferLength, allocator);
             }
             else {
                 THEKOGANS_UTIL_THROW_STRING_EXCEPTION (

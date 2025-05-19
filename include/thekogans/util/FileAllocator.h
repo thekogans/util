@@ -40,11 +40,11 @@ namespace thekogans {
         /// | Header | Block 1 | ... | Block N |
         /// +--------+---------+-----+---------+
         ///
-        /// Header            |<------------------ version 1 ------------------>|
-        /// +-------+---------+-------+-----------+---------------+-------------+
-        /// | magic | version | flags | heapStart | btreeNodeSize | btreeOffset |...
-        /// +-------+---------+-------+-----------+---------------+-------------+
-        ///     4       2         2         8             8              8
+        /// Header            |<---------- version 1 ---------->|
+        /// +-------+---------+-------+-----------+-------------+
+        /// | magic | version | flags | heapStart | btreeOffset |...
+        /// +-------+---------+-------+-----------+-------------+
+        ///     4       2         2         8            8
         ///
         ///    |<------------- version 1 ------------>|
         ///    +---------------------+----------------+
@@ -52,7 +52,7 @@ namespace thekogans {
         ///    +---------------------+----------------+
         ///                8                  8
         ///
-        /// Header::SIZE = 48 (version 1)
+        /// Header::SIZE = 40 (version 1)
         ///
         /// Block
         /// +--------+------+--------+
@@ -493,17 +493,11 @@ namespace thekogans {
                 /// \param[in] offset Block offset.
                 /// \param[in] bufferLength How much of the block we want to buffer
                 /// (0 == buffer the whole block).
-                /// \param[in] read true == Initialize buffer contents from file.
-                /// \param[in] blockOffset Logical offset within block.
-                /// \param[in] blockLength How much of the block we want to read.
-                /// (0 == read the whole block).
                 BlockBuffer (
                     FileAllocator &fileAllocator_,
                     PtrType offset,
                     std::size_t bufferLength = 0,
-                    bool read = true,
-                    std::size_t blockOffset = 0,
-                    std::size_t blockLength = 0);
+                    Allocator::SharedPtr allocator = DefaultAllocator::Instance ());
 
                 /// \brief
                 /// Read a block range in to the buffer.
@@ -608,8 +602,7 @@ namespace thekogans {
                     return flags.Test (FLAGS_BLOCK_INFO_USES_MAGIC);
                 }
             } header;
-            /// \see{Allocator} for allocating random sized
-            /// block backing store \see{BlockBuffer}s.
+            /// \see{Allocator} for \see{BlockBuffer}.
             Allocator::SharedPtr allocator;
             /// \brief
             /// Include the \see{BTree} header.
@@ -644,6 +637,7 @@ namespace thekogans {
             /// value is set in stone and the only way to change it is
             /// to delete the file and try again.
             static const std::size_t DEFAULT_BTREE_ENTRIES_PER_NODE = 256;
+            static const std::size_t DEFAULT_BTREE_NODES_PER_PAGR = 10;
             static const std::size_t DEFAULT_REGISTRY_ENTRIES_PER_NODE = 32;
             static const std::size_t DEFAULT_REGISTRY_NODES_PERP_PAGE = 5;
 
@@ -653,7 +647,7 @@ namespace thekogans {
             FileAllocator (
                 const std::string &path,
                 std::size_t btreeEntriesPerNode = DEFAULT_BTREE_ENTRIES_PER_NODE,
-                std::size_t btreeNodesPerPage = BlockAllocator::DEFAULT_BLOCKS_PER_PAGE,
+                std::size_t btreeNodesPerPage = DEFAULT_BTREE_NODES_PER_PAGR,
                 std::size_t registryEntriesPerNode = DEFAULT_REGISTRY_ENTRIES_PER_NODE,
                 std::size_t registryNodesPerPage = DEFAULT_REGISTRY_NODES_PERP_PAGE,
                 Allocator::SharedPtr allocator = DefaultAllocator::Instance ());
