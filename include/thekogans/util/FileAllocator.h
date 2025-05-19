@@ -24,8 +24,6 @@
 #include "thekogans/util/Types.h"
 #include "thekogans/util/Flags.h"
 #include "thekogans/util/BufferedFile.h"
-#include "thekogans/util/SpinLock.h"
-#include "thekogans/util/Mutex.h"
 #include "thekogans/util/BlockAllocator.h"
 #include "thekogans/util/Singleton.h"
 
@@ -35,27 +33,26 @@ namespace thekogans {
         /// \struct FileAllocator FileAllocator.h thekogans/util/FileAllocator.h
         ///
         /// \brief
-        /// FileAllocator manages a heap on permanent storage. It's public API is
-        /// thread safe and is meant to be used by different clients from different
-        /// threads. The heap physical layout looks like this:
+        /// FileAllocator manages a heap on permanent storage. The heap physical
+        /// layout looks like this:
         ///
         /// +--------+---------+-----+---------+
         /// | Header | Block 1 | ... | Block N |
         /// +--------+---------+-----+---------+
         ///
         /// Header            |<------------------ version 1 ------------------>|
-        /// +-------+---------+-------+-----------+-----------+-----------------+
-        /// | magic | version | flags | blockSize | heapStart | freeBlockOffset |...
-        /// +-------+---------+-------+-----------+-----------+-----------------+
-        ///     4       2         2         8           8              8
+        /// +-------+---------+-------+-----------+---------------+-------------+
+        /// | magic | version | flags | heapStart | btreeNodeSize | btreeOffset |...
+        /// +-------+---------+-------+-----------+---------------+-------------+
+        ///     4       2         2         8             8              8
         ///
-        ///    |<--------------- version 1 --------------->|
-        ///    +-------------+----------------+------------+
-        /// ,,,| btreeOffset | registryOffset | rootOffset |
-        ///    +-------------+----------------+------------+
-        ///        8               8              8
+        ///    |<------------- version 1 ------------>|
+        ///    +---------------------+----------------+
+        /// ...| freeBTreeNodeOffset | registryOffset |
+        ///    +---------------------+----------------+
+        ///                8                  8
         ///
-        /// Header::SIZE = 56 (version 1)
+        /// Header::SIZE = 48 (version 1)
         ///
         /// Block
         /// +--------+------+--------+
@@ -75,7 +72,7 @@ namespace thekogans {
         ///
         /// Data
         /// +-----------------+-----------------------+
-        /// | nextBlockOffset |          ...          |
+        /// | nextBTreeNodeOffset |          ...          |
         /// +-----------------+-----------------------+
         ///          8                   var
 
@@ -91,60 +88,6 @@ namespace thekogans {
             /// PtrType size on disk.
             static const std::size_t PTR_TYPE_SIZE = UI64_SIZE;
 
-            /// \struct FileAllocator::Pool FileAllocator.h thekogans/util/FileAllocator.h
-            ///
-            /// \brief
-            /// Each instance of a FileAllocator attached to a particular
-            /// file should be treated as a singleton. This is why the
-            /// \see{FileAllocator} ctor is private. Use Pool to recycle
-            /// and reuse file allocators based on a given path. Ex:
-            ///
-            /// \code{.cpp}
-            /// using namespace thekogans;
-            ///
-            /// util::FileAllocator::SharedPtr allocator =
-            ///     util::FileAllocator::Pool::Instance ()->GetFileAllocator ("test.allocator");
-            /// \endcode
-            struct _LIB_THEKOGANS_UTIL_DECL Pool : public Singleton<Pool> {
-            private:
-                /// \brief
-                /// FileAllocator map type (keyed on path).
-                using Map = std::unordered_map<std::string, FileAllocator::SharedPtr>;
-                /// \brief
-                /// FileAllocator map.
-                Map map;
-                /// \brief
-                /// Synchronization lock.
-                SpinLock spinLock;
-
-            public:
-                /// \brief
-                /// ctor.
-                Pool () {}
-
-                /// \brief
-                /// Given a path, return the matching file allocator.
-                /// If we don't have one, create it.
-                /// \param[in] path FileAllocator path.
-                /// \param[in] blockSize If > 0, create a fixed block file allocator.
-                /// \param[in] blocksPerPage If blockSize is > 0, this allows you to
-                /// parameterize the page size for the containing \see{BlockAllocator}.
-                /// \param[in] allocator If fixed points to an \see{Allocator} that
-                /// will allocate block pages for the internal \see{BlockAllocator}.
-                /// If random size points to an \see{Allocaor} that will back up file
-                /// allocator blocks with in memory buffers (\see{BlockBuffer} above).
-                /// \return FileAllocator matching the given path.
-                FileAllocator::SharedPtr GetFileAllocator (
-                    const std::string &path,
-                    std::size_t blockSize = 0,
-                    std::size_t blocksPerPage = BTree::DEFAULT_ENTRIES_PER_NODE,
-                    Allocator::SharedPtr allocator = DefaultAllocator::Instance ());
-
-                /// \brief
-                /// Pool is neither copy constructable, nor assignable.
-                THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (Pool)
-            };
-
             /// \struct FileAllocator::Transaction FileAllocator.h thekogans/util/FileAllocator.h
             ///
             /// \brief
@@ -153,37 +96,23 @@ namespace thekogans {
             /// dtor. This is useful in case of \see{Exception}s. Call Transaction::Comit before
             /// the end of scope to commit it. Make sure to flush all your data before calling
             /// Commit or risk data loss.
-            struct Transaction {
+            struct _LIB_THEKOGANS_UTIL_DECL Transaction {
                 /// \brief
                 /// \see{FileAllocator} to transact.
-                FileAllocator::SharedPtr fileAllocator;
-                /// \brief
-                /// Lock the \see{FileAllocator} for exclusive
-                /// access during the lifetime of the transaction.
-                LockGuard<Mutex> guard;
+                FileAllocator &fileAllocator;
 
                 /// \brief
                 /// ctor
                 /// \param[in] fileAllocator_ \see{FileAllocator} to transact.
-                explicit Transaction (FileAllocator::SharedPtr fileAllocator_) :
-                        fileAllocator (fileAllocator_),
-                        guard (fileAllocator->mutex) {
-                    fileAllocator->BeginTransaction ();
-                }
+                explicit Transaction (FileAllocator &fileAllocator_);
                 /// \brief
                 /// dtor
-                ~Transaction () {
-                    if (fileAllocator->IsTransactionPending ()) {
-                        fileAllocator->AbortTransaction ();
-                    }
-                }
+                ~Transaction ();
 
                 /// \brief
                 /// Call commit before the end of the scope to commit the
                 /// transaction otherwise it will be aborted in the dtor.
-                void Commit () {
-                    fileAllocator->CommitTransaction ();
-                }
+                void Commit ();
             };
 
             /// \struct FileAllocator::BlockInfo FileAllocator.h thekogans/util/FileAllocator.h
@@ -220,17 +149,17 @@ namespace thekogans {
                 /// an exception is thrown indicating heap corruption.
                 struct _LIB_THEKOGANS_UTIL_DECL Header {
                     /// \brief
-                    /// A combination of FLAGS_FREE and FLAGS_FIXED.
+                    /// A combination of FLAGS_FREE and FLAGS_BTREE_NODE.
                     Flags32 flags;
                     /// \brief
                     /// Block size (not including header and footer).
                     ui64 size;
                     /// \brief
-                    /// If FLAGS_FIXED and FLAGS_FREE are set this offset
-                    /// will point to the next fixed block in the free list.
+                    /// If FLAGS_BTREE_NODE and FLAGS_FREE are set this offset
+                    /// will point to the next \see{BTree::Node} offset in the free list.
                     /// Otherwise this field is ignored. This is the only
                     /// difference between header and footer.
-                    PtrType nextBlockOffset;
+                    PtrType nextBTreeNodeOffset;
 
                     /// \brief
                     /// Size of header on disk.
@@ -240,25 +169,25 @@ namespace thekogans {
                     #endif // defined (THEKOGANS_UTIL_FILE_ALLOCATOR_BLOCK_INFO_USE_MAGIC)
                         UI32_SIZE + // flags
                         UI64_SIZE; /* size +
-                        PTR_TYPE_SIZE nextBlockOffset is ommited because it shares space
+                        PTR_TYPE_SIZE nextBTreeNodeOffset is ommited because it shares space
                                   with user data. This makes Header and Footer
                                   identical as far as BlockInfo is concerned.
-                                  nextBlockOffset is maintaned only in
-                                  FileAllocator::AllocFixedBlock/FreeFixedBlock. */
+                                  nextBTreeNodeOffset is maintaned only in
+                                  FileAllocator::AllocBTreeNode/FreeBTreeNode. */
 
                     /// \brief
                     /// ctor.
-                    /// \param[in] flags_ Combination of FLAGS_FREE and FLAGS_FIXED.
+                    /// \param[in] flags_ Combination of FLAGS_FREE and FLAGS_BTREE_NODE.
                     /// \param[in] size_ Block user data size.
-                    /// \param[in] nextBlockOffset_ If FLAGS_FREE and FLAGS_FIXED are set,
-                    /// this field contains the next free fixed block offset.
+                    /// \param[in] nextBTreeNodeOffset_ If FLAGS_FREE and FLAGS_BTREE_NODE are set,
+                    /// this field contains the next free \see{BTree::Node} offset.
                     Header (
                         Flags32 flags_ = 0,
                         ui64 size_ = 0,
-                        PtrType nextBlockOffset_ = 0) :
+                        PtrType nextBTreeNodeOffset_ = 0) :
                         flags (flags_),
                         size (size_),
-                        nextBlockOffset (nextBlockOffset_) {}
+                        nextBTreeNodeOffset (nextBTreeNodeOffset_) {}
 
                     /// \brief
                     /// Return true if FLAGS_FREE set.
@@ -273,16 +202,16 @@ namespace thekogans {
                         flags.Set (FLAGS_FREE, free);
                     }
                     /// \brief
-                    /// Return true if FLAGS_FIXED set.
-                    /// \return true == FLAGS_FIXED set.
-                    inline bool IsFixed () const {
-                        return flags.Test (FLAGS_FIXED);
+                    /// Return true if FLAGS_BTREE_NODE set.
+                    /// \return true == FLAGS_BTREE_NODE set.
+                    inline bool IsBTreeNode () const {
+                        return flags.Test (FLAGS_BTREE_NODE);
                     }
                     /// \brief
-                    /// Set/unset the FLAGS_FIXED flag.
+                    /// Set/unset the FLAGS_BTREE_NODE flag.
                     /// \param[in] free true == set, false == unset
-                    inline void SetFixed (bool fixed) {
-                        flags.Set (FLAGS_FIXED, fixed);
+                    inline void SetBTreeNode (bool btreeNode) {
+                        flags.Set (FLAGS_BTREE_NODE, btreeNode);
                     }
 
                     /// \brief
@@ -308,7 +237,7 @@ namespace thekogans {
                 /// of the heap structure.
                 struct _LIB_THEKOGANS_UTIL_DECL Footer {
                     /// \brief
-                    /// Combination of FLAGS_FREE and FLAGS_FIXED.
+                    /// Combination of FLAGS_FREE and FLAGS_BTREE_NODE.
                     Flags32 flags;
                     /// \brief
                     /// Block size (not including header and footer).
@@ -325,7 +254,7 @@ namespace thekogans {
 
                     /// \brief
                     /// ctor.
-                    /// \param[in] flags_ Combination of FLAGS_FREE and FLAGS_FIXED.
+                    /// \param[in] flags_ Combination of FLAGS_FREE and FLAGS_BTREE_NODE.
                     /// \param[in] size_ Block user data size.
                     Footer (
                         Flags32 flags_ = 0,
@@ -346,16 +275,16 @@ namespace thekogans {
                         flags.Set (FLAGS_FREE, free);
                     }
                     /// \brief
-                    /// Return true if FLAGS_FIXED set.
-                    /// \return true == FLAGS_FIXED set.
-                    inline bool IsFixed () const {
-                        return flags.Test (FLAGS_FIXED);
+                    /// Return true if FLAGS_BTREE_NODE set.
+                    /// \return true == FLAGS_BTREE_NODE set.
+                    inline bool IsBTreeNode () const {
+                        return flags.Test (FLAGS_BTREE_NODE);
                     }
                     /// \brief
-                    /// Set/unset the FLAGS_FIXED flag.
-                    /// \param[in] free true == set, false == unset
-                    inline void SetFixed (bool fixed) {
-                        flags.Set (FLAGS_FIXED, fixed);
+                    /// Set/unset the FLAGS_BTREE_NODE flag.
+                    /// \param[in] btreeNode true == set, false == unset
+                    inline void SetBTreeNode (bool btreeNode) {
+                        flags.Set (FLAGS_BTREE_NODE, btreeNode);
                     }
 
                     /// \brief
@@ -378,8 +307,8 @@ namespace thekogans {
                 /// If this flag is set, the block is free. Otherwise it's allocated.
                 static const ui32 FLAGS_FREE = 1;
                 /// \brief
-                /// If this flag is set the block is fixed. Otherwise it's random size.
-                static const ui32 FLAGS_FIXED = 2;
+                /// If this flag is set the block is \see{BTree::Node}. Otherwise it's random size.
+                static const ui32 FLAGS_BTREE_NODE = 2;
                 /// \brief
                 /// Exposed because header is private.
                 static const std::size_t HEADER_SIZE = Header::SIZE;
@@ -394,18 +323,18 @@ namespace thekogans {
                 /// \brief
                 /// ctor.
                 /// \param[in] offset_ Offset in the file where the BlockInfo resides.
-                /// \param[in] flags Combination of FLAGS_FIXED and FLAGS_FREE.
+                /// \param[in] flags Combination of FLAGS_BTREE_NODE and FLAGS_FREE.
                 /// \param[in] size Size of the block (not including the size
                 /// of the BlockInfo itself).
-                /// \param[in] nextBlockOffset If FLAGS_FREE and FLAGS_FIXED are
-                /// set, this field contains the next free fixed block offset.
+                /// \param[in] nextBTreeNodeOffset If FLAGS_FREE and FLAGS_BTREE_NODE are
+                /// set, this field contains the next free \see{BTree::Node} offset.
                 BlockInfo (
                     PtrType offset_ = 0,
                     Flags32 flags = 0,
                     ui64 size = 0,
-                    PtrType nextBlockOffset = 0) :
+                    PtrType nextBTreeNodeOffset = 0) :
                     offset (offset_),
-                    header (flags, size, nextBlockOffset),
+                    header (flags, size, nextBTreeNodeOffset),
                     footer (flags, size) {}
 
                 /// \brief
@@ -422,10 +351,10 @@ namespace thekogans {
                     return header.IsFree ();
                 }
                 /// \brief
-                /// Return true if FLAGS_FIXED set.
-                /// \return true == FLAGS_FIXED set.
-                inline bool IsFixed () const {
-                    return header.IsFixed ();
+                /// Return true if FLAGS_BTREE_NODE set.
+                /// \return true == FLAGS_BTREE_NODE set.
+                inline bool IsBTreeNode () const {
+                    return header.IsBTreeNode ();
                 }
 
                 /// \brief
@@ -466,11 +395,11 @@ namespace thekogans {
                 }
 
                 /// \brief
-                /// Set/unset the FLAGS_FIXED flag.
+                /// Set/unset the FLAGS_BTREE_NODE flag.
                 /// \param[in] free true == set, false == unset
-                inline void SetFixed (bool fixed) {
-                    header.SetFixed (fixed);
-                    footer.SetFixed (fixed);
+                inline void SetBTreeNode (bool btreeNode) {
+                    header.SetBTreeNode (btreeNode);
+                    footer.SetBTreeNode (btreeNode);
                 }
 
                 /// \brief
@@ -482,18 +411,15 @@ namespace thekogans {
                 }
 
                 /// \brief
-                /// Return the next free fixed block offset.
-                /// NOTE: This value is only valid if IsFree and IsFixed.
-                /// \return Next free fixed block offset.
-                inline PtrType GetNextBlockOffset () const {
-                    return header.nextBlockOffset;
+                inline PtrType GetNextBTreeNodeOffset () const {
+                    return header.nextBTreeNodeOffset;
                 }
                 /// \brief
-                /// Set the next block offset. This will chain the
-                /// free fixed blocks in to a singly linked list.
-                /// \param[in] nextBlockOffset Next free fixed block offset.
-                inline void SetNextBlockOffset (PtrType nextBlockOffset) {
-                    header.nextBlockOffset = nextBlockOffset;
+                /// Set the next free \see{BTree::Node} offset. This will chain the
+                /// free \see{BTree::Node} blocks in to a singly linked list.
+                /// \param[in] nextBTreeNodeOffset Next free \see{BTree::Node} offset.
+                inline void SetNextBTreeNodeOffset (PtrType nextBTreeNodeOffset) {
+                    header.nextBTreeNodeOffset = nextBTreeNodeOffset;
                 }
 
                 /// \brief
@@ -615,14 +541,11 @@ namespace thekogans {
             /// Header contains the global heap vailues.
             struct Header {
                 /// \brief
-                /// Flag to indicate that this heap is allocating fixed size blocks.
-                static const ui16 FLAGS_FIXED = 1;
-                /// \brief
                 /// When creating a new heap, this flag will stamp the structure
                 /// of \see{BlockInfo} so that if you ever try to open it with a
                 /// wrongly compiled version of thekogans_util it will complain
                 /// instead of corrupting your data.
-                static const ui16 FLAGS_BLOCK_INFO_USES_MAGIC = 2;
+                static const ui16 FLAGS_BLOCK_INFO_USES_MAGIC = 1;
                 /// \brief
                 /// Heap version.
                 ui16 version;
@@ -630,26 +553,17 @@ namespace thekogans {
                 /// Heap flags.
                 Flags16 flags;
                 /// \brief
-                /// If fixed, contains the block size to allocate. Otherwise
-                /// contains the BTree::Node size on disk.
-                ui64 blockSize;
-                /// \brief
                 /// Begining of heap (start of first BlockInfo::Header).
                 PtrType heapStart;
                 /// \brief
-                /// If fixed, contains the head of the first free fixed block list.
-                /// Otherwise contains the head of the first free BTree::Node block list.
-                PtrType freeBlockOffset;
-                /// \brief
-                /// If !fixed, contains the offset of the BTree::Header.
+                /// Contains the offset of the \see{BTree::Header}.
                 PtrType btreeOffset;
                 /// \brief
-                /// If !fixed, contains the offset of the FileAllocatorRegistry::BTree::Header.
-                PtrType registryOffset;
+                /// Contains the head of the free \see{BTree::Node} list.
+                PtrType freeBTreeNodeOffset;
                 /// \brief
-                /// Contains the offset of the user set root block.
-                /// See GetRootOffset/SetRootOffset below.
-                PtrType rootOffset;
+                /// Contains the offset of the FileAllocator::Registry::Header.
+                PtrType registryOffset;
                 // NOTE: If you add new fields, adjust the SIZE and increment
                 // the CURRENT_VERSION below and add if statements to operator
                 // << and >> to read and write them.
@@ -660,12 +574,10 @@ namespace thekogans {
                     UI32_SIZE +     // magic
                     UI16_SIZE +     // version
                     UI16_SIZE +     // flags
-                    UI64_SIZE +     // blockSize
                     PTR_TYPE_SIZE + // heapStart
-                    PTR_TYPE_SIZE + // freeBlockOffset
                     PTR_TYPE_SIZE + // btreeOffset
-                    PTR_TYPE_SIZE + // registryOffset
-                    PTR_TYPE_SIZE;  // rootOffset
+                    PTR_TYPE_SIZE + // freeBTreeNodeOffset
+                    PTR_TYPE_SIZE;  // registryOffset
 
                 /// \brief
                 /// Current version.
@@ -673,47 +585,32 @@ namespace thekogans {
 
                 /// \brief
                 /// ctor.
-                /// \param[in] flags_ 0 of FLAGS_FIXED.
-                /// \param[in] blockSize_ If FLAGS_FIXED, constains the
+                /// \param[in] blockSize_ If FLAGS_BTREE_NODE, constains the
                 /// size of the block to allocate. Otherwise contains the
                 /// size of BTree::Node on disk.
-                Header (
-                        ui16 flags_ = 0,
-                        ui64 blockSize_ = 0) :
+                Header () :
                         version (CURRENT_VERSION),
-                        flags (flags_),
-                        blockSize (blockSize_),
+                        flags (0),
                         heapStart (SIZE),
-                        freeBlockOffset (0),
                         btreeOffset (0),
-                        registryOffset (0),
-                        rootOffset (0) {
+                        freeBTreeNodeOffset (0),
+                        registryOffset (0) {
                 #if defined (THEKOGANS_UTIL_FILE_ALLOCATOR_BLOCK_INFO_USE_MAGIC)
                     flags.Set (FLAGS_BLOCK_INFO_USES_MAGIC, true);
                 #endif // defined (THEKOGANS_UTIL_FILE_ALLOCATOR_BLOCK_INFO_USE_MAGIC)
                 }
 
                 /// \brief
-                /// Return true if this heap is allocating fixed size blocks.
-                /// \return true == FLAGS_FIXED is set.
-                inline bool IsFixed () const {
-                    return flags.Test (FLAGS_FIXED);
-                }
-                /// \brief
                 /// Return true if this heap was created with a version of thekogans_util
                 /// that was built with THEKOGANS_UTIL_FILE_ALLOCATOR_BLOCK_INFO_USE_MAGIC.
-                /// \return true == FLAGS_FIXED is set.
+                /// \return true == FLAGS_BLOCK_INFO_USES_MAGIC is set.
                 inline bool IsBlockInfoUsesMagic () const {
                     return flags.Test (FLAGS_BLOCK_INFO_USES_MAGIC);
                 }
             } header;
-            /// \brief
-            /// \see{BlockAllocator} for allocating fixed
-            /// block backing store \see{BlockBuffer}s.
-            Allocator::SharedPtr fixedAllocator;
             /// \see{Allocator} for allocating random sized
             /// block backing store \see{BlockBuffer}s.
-            Allocator::SharedPtr blockAllocator;
+            Allocator::SharedPtr allocator;
             /// \brief
             /// Include the \see{BTree} header.
             /// I split it out because this file was getting too big to maintain.
@@ -728,44 +625,6 @@ namespace thekogans {
             /// Set in Save and indicates that the \see{Header} is dirty and needs
             /// to be written to disk.
             bool dirty;
-            /// \brief
-            /// FileAllocator is too complex a beast for granular locking schemes.
-            /// The constant fear of deadlock because you forgot that a function
-            /// call under lock resulted in recursive call to Lock::Acquire. At fear
-            /// of race conditions because you forgot to lock a resource before
-            /// checking it's nullness. The tricky performance degredation issues
-            /// that come with granular locking. A completely different sharing
-            /// strategy needed to be devised.
-            /// This is what I came up with. For single threaded clients, there's
-            /// nothing to do. This mutex is used by \see{Transaction} above. If
-            /// you use transactions, it will be used under the hood. If you're
-            /// in a multithreaded environment where multiple threads use the same
-            /// FileAllocator you will all need to synchronize access to it. You
-            /// can either use transactions in your threads or call GetMutex ()
-            /// below and pass it to a \see{LockGuard}<\see{Mutex}> to acquire
-            /// exclusive access. The reason it's a \see{Mutex} instead of my
-            /// beloved \see{SpinLock} is because I expect the threads to hold
-            /// on to a lock for a while and I didn't want others to needlessly
-            /// sit and spin the cpu for no reason. Contention for the Mutex will
-            /// result in waiting threads being put to sleep.  Ex:
-            ///
-            /// \code{.cpp}
-            /// using namespace thekogans;
-            ///
-            /// {
-            ///     // Acquire the lock before using the FileAllocator.
-            ///     util::LockGuard<util::Mutex> guard (fileAllocator->GetMutex ());
-            ///     // From here until the end of the scope you have exclusive
-            ///     // access to the heap. Be quick about it, others might be
-            ///     // waiting too.
-            ///     // IMPORTANT: You can still use FileAllocator transactions,
-            ///     // you just can't use the \see{Transactions} wrapper above.
-            ///     // Either write your own (withour the lock Acquisition) or
-            ///     // use FileAllocator methods (BeginTransaction/CommitTransaction/
-            ///     // AbortTransaction) directly.
-            /// }
-            /// \endcode
-            Mutex mutex;
 
         public:
             /// \brief
@@ -777,6 +636,30 @@ namespace thekogans {
             /// MIN_USER_DATA_SIZE above means that the smallest block we can
             /// allocate is 64 bytes.
             static const std::size_t MIN_BLOCK_SIZE = BlockInfo::SIZE + MIN_USER_DATA_SIZE;
+            /// \brief
+            /// Default number of entries per node.
+            /// NOTE: This is a tunable parameter that should be used
+            /// during system integration to provide the best performance
+            /// for your needs. Once the heap is created though, this
+            /// value is set in stone and the only way to change it is
+            /// to delete the file and try again.
+            static const std::size_t DEFAULT_BTREE_ENTRIES_PER_NODE = 256;
+            static const std::size_t DEFAULT_REGISTRY_ENTRIES_PER_NODE = 32;
+            static const std::size_t DEFAULT_REGISTRY_NODES_PERP_PAGE = 5;
+
+            /// \brief
+            /// ctor.
+            /// \param[in] path Heap file path.
+            FileAllocator (
+                const std::string &path,
+                std::size_t btreeEntriesPerNode = DEFAULT_BTREE_ENTRIES_PER_NODE,
+                std::size_t btreeNodesPerPage = BlockAllocator::DEFAULT_BLOCKS_PER_PAGE,
+                std::size_t registryEntriesPerNode = DEFAULT_REGISTRY_ENTRIES_PER_NODE,
+                std::size_t registryNodesPerPage = DEFAULT_REGISTRY_NODES_PERP_PAGE,
+                Allocator::SharedPtr allocator = DefaultAllocator::Instance ());
+            /// \brief
+            /// dtor.
+            virtual ~FileAllocator ();
 
             /// \brief
             /// Return the heap file.
@@ -786,34 +669,6 @@ namespace thekogans {
             }
 
             /// \brief
-            /// Return the reference to the mutex.
-            /// \return Reference to the mutex.
-            inline Mutex &GetMutex () {
-                return mutex;
-            }
-
-            /// \brief
-            /// Return true if fixed block allocator.
-            /// \return true == Fixed block allocator. false == random size block allocator.
-            inline bool IsFixed () const {
-                // header.flags is read only after ctor so no need to lock.
-                return header.IsFixed ();
-            }
-            /// \brief
-            /// Return the fixed block size.
-            /// \return If fixed, fixed block size. if random size, btree node size.
-            inline std::size_t GetBlockSize () const {
-                // header.blockSize is read only after ctor so no need to lock.
-                return header.blockSize;
-            }
-            /// \brief
-            /// Return the size of an allocated block.
-            /// \param[in] offset Offset of an allocated block whose size to return.
-            /// \return If fixed, fixed block size. if random size, allocated block size.
-            /// NOTE: If block is free, returns 0.
-            std::size_t GetBlockSize (PtrType offset);
-
-            /// \brief
             /// Return the offset of the first block in the heap.
             /// \return Offset of the first block in the heap.
             inline PtrType GetFirstBlockOffset () const {
@@ -821,27 +676,25 @@ namespace thekogans {
                 return header.heapStart + BlockInfo::HEADER_SIZE;
             }
 
+            inline std::size_t GetBlockSize (PtrType offset) {
+                BlockInfo block (offset);
+                block.Read (file);
+                return block.GetSize ();
+            }
+
             /// \brief
-            /// If !IsFixed, a \see{FileAllocator::Registry} in the form of a \see{BTree}
+            /// If !IsBTreeNode, a \see{FileAllocator::Registry} in the form of a \see{BTree}
             /// is available for storing and retrieving associated values. The key type is
             /// \see{StringKey} and the value type is any type derived from \see{BTree::Value}.
-            /// If IsFixed, will throw an \see{Exception}.
+            /// If IsBTreeNode, will throw an \see{Exception}.
             /// \return Reference to \see{FileAllocator::Registry}.
-            Registry &GetRegistry () const;
+            inline Registry &GetRegistry () const {
+                return *registry;
+            }
 
             /// \brief
-            /// Return the root offset.
-            /// \return header.rootOffset.
-            PtrType GetRootOffset () const;
-            /// \brief
-            /// Set the root offset.
-            /// \param[in] rootOffset New root block offset.
-            void SetRootOffset (PtrType rootOffset);
-
-            /// \brief
-            /// Alloc a block. If IsFixed, size is ignored and instead header.blockSize
-            /// is used.
-            /// \param[in] size Size of block to allocate. Ignored if IsFixed.
+            /// Alloc a block.
+            /// \param[in] size Size of block to allocate.
             /// \return Offset to the allocated block.
             PtrType Alloc (std::size_t size);
             /// \brief
@@ -850,96 +703,24 @@ namespace thekogans {
             void Free (PtrType offset);
 
             /// \brief
-            /// Given a properly constructed \see{BlockInfo}, return its information.
-            /// \param[in, out] block \see{BlockInfo} with properly initialized offset.
-            /// On return will contain the block info.
-            void GetBlockInfo (BlockInfo &block);
-            /// \brief
-            /// Given a properly initialized block (offset), get the previous one.
-            /// \param[in] block BlockInfo whose previous BlockInfo to return.
-            /// \param[out] prev Where to return the previous BlockInfo.
-            /// \return true == prev contains the previous block info.
-            /// false == block is first in the heap.
-            bool GetPrevBlockInfo (
-                const BlockInfo &block,
-                BlockInfo &prev);
-            /// \brief
-            /// Given a properly initialized block (offset), get the next one.
-            /// \param[in] block BlockInfo whose next BlockInfo to return.
-            /// \param[out] next Where to return the next BlockInfo.
-            /// \return true == next contains the next block info.
-            /// false == block is last in the heap.
-            bool GetNextBlockInfo (
-                const BlockInfo &block,
-                BlockInfo &next);
-
-            /// \brief
-            /// Return true if a transaction is pending (open).
-            /// \return true == A pending transaction exists.
-            inline bool IsTransactionPending () const {
-                return file.IsTransactionPending ();
-            }
-            /// \brief
-            /// To help maintain heap integrity, simple (not nested) transaction
-            /// processing is designed to wrap a sequence of heap operations and
-            /// commit them all at once (CommitTransaction) or none at all
-            /// (AbortTransaction).
-            void BeginTransaction ();
-            /// \brief
-            /// Commit a pending transaction.
-            void CommitTransaction ();
-            /// \brief
-            /// Abort a pending transaction.
-            void AbortTransaction ();
-
-            /// \brief
-            /// Debugging helper. Dumps \see{Btree::Node}s to stdout.
+            /// Debugging helper. Dumps \see{BTree::Node}s to stdout.
             void DumpBTree ();
 
             /// \brief
-            /// Flush the header, btree, registry (if !IsFixed) to disk.
-            void Flush (bool flushFile = true);
+            /// Flush the header, btree and registry to file.
+            void Flush ();
 
         private:
             /// \brief
-            /// ctor.
-            /// \param[in] path Heap file path.
-            /// \param[in] blockSize If > 0, this is a fixed size block allocator.
-            /// If == 0, this is a random size block allocator.
-            /// \param[in] blocksPerPage If fixed contains the number of fixed
-            /// blocks per page to initialize \see{BlockAllocator}. If random
-            /// size contains the number of entries per node in the btree below.
-            /// \param[in] allocator If fixed points to an \see{Allocator} that
-            /// will allocate block pages for the internal \see{BlockAllocator}.
-            /// If random size points to an \see{Allocaor} that will back up file
-            /// allocator blocks with in memory buffers (\see{BlockBuffer} above).
-            /// NOTE: This ctor is private because you should not create FileAllocator
-            /// by yourself. Each path needs to be matched with only one FileAllocator.
-            /// Use \see{Pool} above to maintain a map of available allocators and
-            /// create new ones when necessary.
-            FileAllocator (
-                const std::string &path,
-                std::size_t blockSize = 0,
-                std::size_t blocksPerPage = BTree::DEFAULT_ENTRIES_PER_NODE,
-                Allocator::SharedPtr allocator = DefaultAllocator::Instance ());
-            /// \brief
-            /// dtor.
-            virtual ~FileAllocator ();
-
-            /// \brief
-            /// Used to allocate blocks when IsFixed is true.
-            /// Uses \see{Header::blockSize}. This method is also
+            /// Used to allocate BTree::Node blocks.
+            /// Uses \see{Header::btreeNodeSize}. This method is
             /// used directly by the internal \see{BTree::Node}.
             /// \return Offset of allocated block.
-            PtrType AllocFixedBlock ();
+            PtrType AllocBTreeNode (std::size_t size);
             /// \brief
-            /// Used to free blocks prviously allocated with AllocFixedBlock.
-            /// \param[in] offset Offset of fixed block to free.
-            void FreeFixedBlock (PtrType offset);
-
-            /// \brief
-            /// Read the \see{Header}.
-            void ReadHeader ();
+            /// Used to free blocks prviously allocated with AllocBTreeNode.
+            /// \param[in] offset Offset of \see{BTree::Node} to free.
+            void FreeBTreeNode (PtrType offset);
 
             /// \brief
             /// Needs access to private members.

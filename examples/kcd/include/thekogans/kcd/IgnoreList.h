@@ -31,10 +31,10 @@ namespace thekogans {
 
             bool AddIgnore (
                 const std::string &ignore,
-                util::FileAllocator::SharedPtr fileAllocator);
+                util::FileAllocator &fileAllocator);
             bool DeleteIgnore (
                 const std::string &ignore,
-                util::FileAllocator::SharedPtr fileAllocator);
+                util::FileAllocator &fileAllocator);
 
             bool ShouldIgnore (const std::string &ignore);
         };

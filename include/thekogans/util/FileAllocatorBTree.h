@@ -67,7 +67,7 @@ private:
         /// \brief
         /// ctor.
         /// \param[in] entriesPerNode_ Entries per node.
-        Header (ui32 entriesPerNode_ = DEFAULT_ENTRIES_PER_NODE) :
+        Header (ui32 entriesPerNode_ = DEFAULT_BTREE_ENTRIES_PER_NODE) :
             entriesPerNode (entriesPerNode_),
             rootOffset (0) {}
     } header;
@@ -268,21 +268,12 @@ private:
     } *root;
     /// \brief
     /// An instance of \see{BlockAllocator} to allocate \see{Node}s.
-    Allocator::SharedPtr nodeAllocator;
+    BlockAllocator::SharedPtr nodeAllocator;
     /// \brief
     /// We accumulate all changes and update the header in the dtor.
     bool dirty;
 
 public:
-    /// \brief
-    /// Default number of entries per node.
-    /// NOTE: This is a tunable parameter that should be used
-    /// during system integration to provide the best performance
-    /// for your needs. Once the heap is created though, this
-    /// value is set in stone and the only way to change it is
-    /// to delete the file and try again.
-    static const std::size_t DEFAULT_ENTRIES_PER_NODE = 256;
-
     /// \brief
     /// ctor.
     /// \param[in] fileAllocator_ \see{FileAllocator} to which this btree belongs.
@@ -301,9 +292,9 @@ public:
     BTree (
         FileAllocator &fileAllocator_,
         PtrType offset_,
-        std::size_t entriesPerNode = DEFAULT_ENTRIES_PER_NODE,
-        std::size_t nodesPerPage = BlockAllocator::DEFAULT_BLOCKS_PER_PAGE,
-        Allocator::SharedPtr allocator = DefaultAllocator::Instance ());
+        std::size_t entriesPerNode,
+        std::size_t nodesPerPage,
+        Allocator::SharedPtr allocator);
     /// \brief
     /// dtor.
     ~BTree ();
@@ -341,10 +332,6 @@ public:
     void Dump ();
 
 private:
-    /// \brief
-    /// Reinitialize the btree from disk.
-    /// Used by \see{Fileallocator} after AbortTransaction.
-    void Reload ();
     /// \brief
     /// Set root node.
     /// \param[in] node \see{Node} to set as new root.

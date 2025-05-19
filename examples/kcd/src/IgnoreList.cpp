@@ -35,7 +35,7 @@ namespace thekogans {
 
         bool IgnoreList::AddIgnore (
                 const std::string &ignore,
-                util::FileAllocator::SharedPtr fileAllocator) {
+                util::FileAllocator &fileAllocator) {
             for (std::size_t i = 0, count = value.size (); i < count; ++i) {
                 if (value[i] == ignore) {
                     return false;
@@ -44,7 +44,7 @@ namespace thekogans {
             {
                 util::FileAllocator::Transaction transaction (fileAllocator);
                 value.push_back (ignore);
-                fileAllocator->GetRegistry ().SetValue ("ignore_list", this);
+                fileAllocator.GetRegistry ().SetValue ("ignore_list", this);
                 transaction.Commit ();
                 return true;
             }
@@ -52,12 +52,12 @@ namespace thekogans {
 
         bool IgnoreList::DeleteIgnore (
                 const std::string &ignore,
-                util::FileAllocator::SharedPtr fileAllocator) {
+                util::FileAllocator &fileAllocator) {
             for (std::size_t i = 0, count = value.size (); i < count; ++i) {
                 if (value[i] == ignore) {
                     util::FileAllocator::Transaction transaction (fileAllocator);
                     value.erase (value.begin () + i);
-                    fileAllocator->GetRegistry ().SetValue ("ignore_list", this);
+                    fileAllocator.GetRegistry ().SetValue ("ignore_list", this);
                     transaction.Commit ();
                     return true;
                 }

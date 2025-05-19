@@ -171,7 +171,7 @@ namespace thekogans {
                 keyValueOffset (0),
                 dirty (false) {
             if (offset != 0) {
-                FileAllocator::BlockBuffer buffer (*btree.fileAllocator, offset);
+                FileAllocator::BlockBuffer buffer (btree.fileAllocator, offset);
                 ui32 magic;
                 buffer >> magic;
                 if (magic == MAGIC32) {
@@ -179,7 +179,7 @@ namespace thekogans {
                     if (count > 0) {
                         buffer >> leftOffset >> keyValueOffset;
                         FileAllocator::BlockBuffer keyValueBuffer (
-                            *btree.fileAllocator, keyValueOffset);
+                            btree.fileAllocator, keyValueOffset);
                         Serializable::Header keyHeader (btree.header.keyType, 0, 0);
                         Serializable::Header valueHeader (btree.header.valueType, 0, 0);
                         for (ui32 i = 0; i < count; ++i) {
@@ -218,7 +218,7 @@ namespace thekogans {
                 }
             }
             else {
-                offset = btree.fileAllocator->Alloc (
+                offset = btree.fileAllocator.Alloc (
                     FileSize (btree.header.entriesPerNode));
                 dirty = true;
             }
@@ -268,7 +268,7 @@ namespace thekogans {
 
         void BTree::Node::Delete (Node *node) {
             if (node->count == 0) {
-                node->btree.fileAllocator->Free (node->offset);
+                node->btree.fileAllocator.Free (node->offset);
                 Free (node);
             }
             else {
@@ -313,7 +313,7 @@ namespace thekogans {
 
         void BTree::Node::Flush () {
             if (dirty) {
-                FileAllocator::BlockBuffer buffer (*btree.fileAllocator, offset, 0, false);
+                FileAllocator::BlockBuffer buffer (btree.fileAllocator, offset, 0, false);
                 buffer << MAGIC32 << count;
                 if (count > 0) {
                     // Calculate key/value sizes.
@@ -351,20 +351,20 @@ namespace thekogans {
                     // Get existing block size.
                     ui64 blockSize = 0;
                     if (keyValueOffset != 0) {
-                        blockSize = btree.fileAllocator->GetBlockSize (keyValueOffset);
+                        blockSize = btree.fileAllocator.GetBlockSize (keyValueOffset);
                     }
                     // If existing block size is less than what we need,
                     // resize it.
                     if (blockSize < totalKeyValueSize) {
                         // First, free the old block.
                         if (keyValueOffset != 0) {
-                            btree.fileAllocator->Free (keyValueOffset);
+                            btree.fileAllocator.Free (keyValueOffset);
                         }
-                        keyValueOffset = btree.fileAllocator->Alloc (totalKeyValueSize);
+                        keyValueOffset = btree.fileAllocator.Alloc (totalKeyValueSize);
                     }
                     buffer << leftOffset << keyValueOffset;
                     FileAllocator::BlockBuffer keyValueBuffer (
-                        *btree.fileAllocator, keyValueOffset, 0, false);
+                        btree.fileAllocator, keyValueOffset, 0, false);
                     for (ui32 i = 0; i < count; ++i) {
                         buffer << entries[i];
                         keyValueBuffer <<
@@ -390,7 +390,7 @@ namespace thekogans {
                     keyValueBuffer.BlockWrite ();
                 }
                 else if (keyValueOffset != 0) {
-                    btree.fileAllocator->Free (keyValueOffset);
+                    btree.fileAllocator.Free (keyValueOffset);
                 }
                 // See comment above keyValueBuffer.
                 buffer.AdvanceWriteOffset (
@@ -729,7 +729,7 @@ namespace thekogans {
         }
 
         BTree::BTree (
-                FileAllocator::SharedPtr fileAllocator_,
+                FileAllocator &fileAllocator_,
                 FileAllocator::PtrType offset_,
                 const std::string &keyType,
                 const std::string &valueType,
@@ -744,7 +744,7 @@ namespace thekogans {
                 root (nullptr),
                 dirty (false) {
             if (offset != 0) {
-                FileAllocator::BlockBuffer buffer (*fileAllocator, offset);
+                FileAllocator::BlockBuffer buffer (fileAllocator, offset);
                 ui32 magic;
                 buffer >> magic;
                 if (magic == MAGIC32) {
@@ -771,7 +771,7 @@ namespace thekogans {
             }
             else if (Key::IsType (header.keyType.c_str ()) &&
                     (header.valueType.empty () || Value::IsType (header.valueType.c_str ()))) {
-                offset = fileAllocator->Alloc (header.Size ());
+                offset = fileAllocator.Alloc (header.Size ());
                 dirty = true;
             }
             else {
@@ -779,11 +779,10 @@ namespace thekogans {
                     "key (%s) / value (%s) types are not valid.",
                     keyType.c_str (), valueType.c_str ());
             }
-            nodeAllocator =
-                BlockAllocator::Pool::Instance ()->GetBlockAllocator (
-                    Node::Size (header.entriesPerNode),
-                    nodesPerPage,
-                    allocator);
+            nodeAllocator = new BlockAllocator (
+                Node::Size (header.entriesPerNode),
+                nodesPerPage,
+                allocator);
             root = Node::Alloc (*this, header.rootOffset);
             if (header.rootOffset != root->offset) {
                 assert (dirty);
@@ -792,7 +791,6 @@ namespace thekogans {
         }
 
         BTree::~BTree () {
-            Flush ();
             Node::Free (root);
         }
 
@@ -932,7 +930,7 @@ namespace thekogans {
 
         void BTree::Flush () {
             if (dirty) {
-                FileAllocator::BlockBuffer buffer (*fileAllocator, offset, 0, false);
+                FileAllocator::BlockBuffer buffer (fileAllocator, offset, 0, false);
                 buffer << MAGIC32 << header;
                 buffer.BlockWrite ();
                 dirty = false;
@@ -944,14 +942,6 @@ namespace thekogans {
             if (root != nullptr) {
                 root->Dump ();
             }
-        }
-
-        void BTree::Reload () {
-            FileAllocator::BlockBuffer buffer (*fileAllocator, offset);
-            ui32 magic;
-            buffer >> magic >> header;
-            Node::Free (root);
-            root = Node::Alloc (*this, header.rootOffset);
         }
 
         void BTree::SetRoot (Node *node) {

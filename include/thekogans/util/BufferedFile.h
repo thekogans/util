@@ -76,6 +76,7 @@ namespace thekogans {
             /// \brief
             /// Combination of the above flags.
             Flags32 flags;
+
             /// \struct BufferedFile::Buffer BufferedFile.h thekogans/util/BufferedFile.h
             ///
             /// \brief

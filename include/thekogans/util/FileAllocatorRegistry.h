@@ -22,9 +22,7 @@
 #include "thekogans/util/Config.h"
 #include "thekogans/util/BTree.h"
 #include "thekogans/util/BTreeKeys.h"
-#include "thekogans/util/Allocator.h"
 #include "thekogans/util/FileAllocator.h"
-#include "thekogans/util/SpinLock.h"
 
 namespace thekogans {
     namespace util {
@@ -38,63 +36,8 @@ namespace thekogans {
         /// returns false. Use it to store and retrieve practically any value derived
         /// from \see{BTree::Value}. The key type is any std::string.
 
-        struct _LIB_THEKOGANS_UTIL_DECL FileAllocator::Registry {
-        private:
-            /// \brief
-            /// The registry.
-            util::BTree btree;
-            /// \brief
-            /// Registry is a shared resource.
-            /// Access to it must be protected.
-            SpinLock spinLock;
-
+        struct _LIB_THEKOGANS_UTIL_DECL FileAllocator::Registry : private util::BTree {
         public:
-            /// \brief
-            /// Default registry \see{BTree} entries per node.
-            static const std::size_t DEFAULT_ENTRIES_PER_NODE = 32;
-            /// \brief
-            /// Default registry \see{BTree} nodes per page.
-            static const std::size_t DEFAULT_ENTRIES_NODES_PER_PAGE = 5;
-
-            /// \brief
-            /// ctor.
-            /// See \see{FileAllocator::GetRegistry} for a better description of
-            /// these parameters and when you should and should not change them.
-            /// \param[in] fileAllocator Registry heap (see \see{FileAllocator}).
-            /// \param[in] offset Offset of the \see{BTree::Header} block on disk.
-            /// \param[in] entriesPerNode Number of entries per btree node.
-            /// \param[in] nodesPerPage Number of btree nodes per allocator page.
-            /// \param[in] allocator Where allocator node pages come from.
-            Registry (
-                FileAllocator::SharedPtr fileAllocator,
-                FileAllocator::PtrType offset,
-                std::size_t entriesPerNode = DEFAULT_ENTRIES_PER_NODE,
-                std::size_t nodesPerPage = DEFAULT_ENTRIES_NODES_PER_PAGE,
-                Allocator::SharedPtr allocator = DefaultAllocator::Instance ()) :
-                btree (
-                    fileAllocator,
-                    offset,
-                    StringKey::TYPE,
-                    std::string (),
-                    entriesPerNode,
-                    nodesPerPage,
-                    allocator) {}
-
-            /// \brief
-            /// Return the \see{BTree::Header} offset.
-            /// \return \see{BTree::Header} offset.
-            inline FileAllocator::PtrType GetOffset () {
-                LockGuard<SpinLock> guard (spinLock);
-                return btree.GetOffset ();
-            }
-
-            /// \brief
-            /// Flush the \see{BTree}.
-            inline void Flush () {
-                LockGuard<SpinLock> guard (spinLock);
-                btree.Flush ();
-            }
-
             /// \brief
             /// Given a key, retrieve the associated value. If key is not found,
             /// return nullptr.
@@ -114,15 +57,31 @@ namespace thekogans {
 
         private:
             /// \brief
-            /// Reinitialize the registry from disk.
-            /// Used by \see{Fileallocator} after AbortTransaction.
-            inline void Reload () {
-                LockGuard<SpinLock> guard (spinLock);
-                btree.Reload ();
-            }
+            /// ctor.
+            /// See \see{FileAllocator::GetRegistry} for a better description of
+            /// these parameters and when you should and should not change them.
+            /// \param[in] fileAllocator Registry heap (see \see{FileAllocator}).
+            /// \param[in] offset Offset of the \see{BTree::Header} block on disk.
+            /// \param[in] entriesPerNode Number of entries per btree node.
+            /// \param[in] nodesPerPage Number of btree nodes per allocator page.
+            /// \param[in] allocator Where allocator node pages come from.
+            Registry (
+                FileAllocator &fileAllocator,
+                FileAllocator::PtrType offset,
+                std::size_t entriesPerNode = FileAllocator::DEFAULT_REGISTRY_ENTRIES_PER_NODE,
+                std::size_t nodesPerPage = FileAllocator::DEFAULT_REGISTRY_NODES_PERP_PAGE,
+                Allocator::SharedPtr allocator = DefaultAllocator::Instance ()) :
+                util::BTree (
+                    fileAllocator,
+                    offset,
+                    StringKey::TYPE,
+                    std::string (),
+                    entriesPerNode,
+                    nodesPerPage,
+                    allocator) {}
 
             /// \brief
-            /// \see{Fileallocator} needs access to Reload.
+            /// \see{Fileallocator} needs access to the ctor.
             friend FileAllocator;
 
             /// \brief

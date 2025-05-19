@@ -51,7 +51,8 @@ namespace thekogans {
                 }
             }
             else {
-                offset = btree.fileAllocator.AllocFixedBlock ();
+                offset = btree.fileAllocator.AllocBTreeNode (
+                    FileSize (btree.header.entriesPerNode));
                 dirty = true;
             }
         }
@@ -82,6 +83,7 @@ namespace thekogans {
                     Size (btree.header.entriesPerNode))) Node (btree, offset);
         }
 
+
         void FileAllocator::BTree::Node::Free (Node *node) {
             if (node != nullptr) {
                 node->~Node ();
@@ -92,7 +94,7 @@ namespace thekogans {
 
         void FileAllocator::BTree::Node::Delete (Node *node) {
             if (node->count == 0) {
-                node->btree.fileAllocator.FreeFixedBlock (node->offset);
+                node->btree.fileAllocator.FreeBTreeNode (node->offset);
                 Free (node);
             }
             else {
@@ -402,23 +404,21 @@ namespace thekogans {
                 }
             }
             else {
-                offset = fileAllocator.AllocFixedBlock ();
+                offset = fileAllocator.AllocBTreeNode (Header::SIZE);
                 dirty = true;
             }
-            nodeAllocator =
-                BlockAllocator::Pool::Instance ()->GetBlockAllocator (
-                    Node::Size (header.entriesPerNode),
-                    nodesPerPage,
-                    allocator);
+            nodeAllocator = new BlockAllocator (
+                Node::Size (header.entriesPerNode),
+                nodesPerPage,
+                allocator);
             root = Node::Alloc (*this, header.rootOffset);
-            if (header.rootOffset != root->offset) {
+            if (header.rootOffset == 0) {
                 assert (dirty);
                 header.rootOffset = root->offset;
             }
         }
 
         FileAllocator::BTree::~BTree () {
-            Flush ();
             Node::Free (root);
         }
 
@@ -478,14 +478,6 @@ namespace thekogans {
             if (root != nullptr) {
                 root->Dump ();
             }
-        }
-
-        void FileAllocator::BTree::Reload () {
-            FileAllocator::BlockBuffer buffer (fileAllocator, offset);
-            ui32 magic;
-            buffer >> magic >> header;
-            Node::Free (root);
-            root = Node::Alloc (*this, header.rootOffset);
         }
 
         void FileAllocator::BTree::SetRoot (Node *node) {

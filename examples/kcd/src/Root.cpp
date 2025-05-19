@@ -33,7 +33,7 @@ namespace thekogans {
     namespace kcd {
 
         void Root::Scan (
-                util::FileAllocator::SharedPtr fileAllocator,
+                util::FileAllocator &fileAllocator,
                 IgnoreList::SharedPtr ignoreList) {
             if (!path.empty ()) {
                 Delete (fileAllocator);
@@ -66,14 +66,14 @@ namespace thekogans {
             }
         }
 
-        void Root::Delete (util::FileAllocator::SharedPtr fileAllocator) {
+        void Root::Delete (util::FileAllocator &fileAllocator) {
             Produce (
                 std::bind (
                     &RootEvents::OnRootDeleteBegin,
                     std::placeholders::_1,
                     this));
             if (pathBTreeOffset != 0) {
-                util::BTree::Delete (*fileAllocator, pathBTreeOffset);
+                util::BTree::Delete (fileAllocator, pathBTreeOffset);
                 pathBTreeOffset = 0;
                 Produce (
                     std::bind (
@@ -82,7 +82,7 @@ namespace thekogans {
                         this));
             }
             if (componentBTreeOffset != 0) {
-                util::BTree::Delete (*fileAllocator, componentBTreeOffset);
+                util::BTree::Delete (fileAllocator, componentBTreeOffset);
                 componentBTreeOffset = 0;
                 Produce (
                     std::bind (
@@ -98,7 +98,7 @@ namespace thekogans {
         }
 
         void Root::Find (
-                util::FileAllocator::SharedPtr fileAllocator,
+                util::FileAllocator &fileAllocator,
                 const std::string &prefix,
                 bool ignoreCase,
                 std::vector<std::string> &paths) {

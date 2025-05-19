@@ -183,7 +183,7 @@ namespace thekogans {
                 }
             };
 
-        private:
+        protected:
             /// \brief
             /// Forward declaration of node needed by \see{Iterator}.
             struct Node;
@@ -308,11 +308,11 @@ namespace thekogans {
                 friend struct BTree;
             };
 
-        private:
+        protected:
             /// \brief
             /// \see{FileAllocator} where we allocate
             /// \see{Header} and \see{Node} blocks from.
-            FileAllocator::SharedPtr fileAllocator;
+            FileAllocator &fileAllocator;
             /// \brief
             /// Offset of the \see{Header} block.
             FileAllocator::PtrType offset;
@@ -655,7 +655,7 @@ namespace thekogans {
             } *root;
             /// \brief
             /// An instance of \see{BlockAllocator} to allocate \see{Node}s.
-            Allocator::SharedPtr nodeAllocator;
+            BlockAllocator::SharedPtr nodeAllocator;
             /// \brief
             /// We accumulate all changes and update the header in the dtor.
             bool dirty;
@@ -696,7 +696,7 @@ namespace thekogans {
             /// might be just the ticket. You will probably need to call;
             /// \see{thekogans::util::SecureAllocator::ReservePages}.
             BTree (
-                FileAllocator::SharedPtr fileAllocator_,
+                FileAllocator &fileAllocator_,
                 FileAllocator::PtrType offset_,
                 const std::string &keyType = std::string (),
                 const std::string &valueType = std::string (),
@@ -705,7 +705,7 @@ namespace thekogans {
                 Allocator::SharedPtr allocator = DefaultAllocator::Instance ());
             /// \brief
             /// dtor.
-            ~BTree ();
+            virtual ~BTree ();
 
             /// \brief
             /// Delete the btree from the heap.
@@ -769,10 +769,6 @@ namespace thekogans {
             /// \brief
             /// Use for debugging. Dump the btree nodes to stdout.
             void Dump ();
-
-            /// \brief
-            /// Reinitialize the btree from disk.
-            void Reload ();
 
         private:
             /// \brief

@@ -15,7 +15,6 @@
 // You should have received a copy of the GNU General Public License
 // along with libthekogans_util. If not, see <http://www.gnu.org/licenses/>.
 
-#include "thekogans/util/LockGuard.h"
 #include "thekogans/util/Exception.h"
 #include "thekogans/util/BlockAllocator.h"
 
@@ -81,7 +80,6 @@ namespace thekogans {
 
         bool BlockAllocator::IsValidPtr (void *ptr) noexcept {
             if (ptr != nullptr) {
-                LockGuard<SpinLock> guard (spinLock);
                 // To honor the no throw promise, we can't assume the
                 // pointer came from this heap. We can't even assume
                 // that it is valid (we cannot de-reference it). We
@@ -98,7 +96,6 @@ namespace thekogans {
         void *BlockAllocator::Alloc (std::size_t size) {
             void *ptr = 0;
             if (size <= blockSize) {
-                LockGuard<SpinLock> guard (spinLock);
                 Page *page = GetPage ();
                 ptr = page->Alloc ();
                 if (page->IsFull ()) {
@@ -113,7 +110,6 @@ namespace thekogans {
                 void *ptr,
                 std::size_t size) {
             if (size <= blockSize) {
-                LockGuard<SpinLock> guard (spinLock);
                 Page *page = GetPage (ptr);
                 // This logic is necessary to accommodate pages
                 // with one block. They become full after one
@@ -134,20 +130,6 @@ namespace thekogans {
                     blocksPerPage >>= 1;
                 }
             }
-        }
-
-        BlockAllocator::SharedPtr BlockAllocator::Pool::GetBlockAllocator (
-                std::size_t blockSize,
-                std::size_t blocksPerPage,
-                Allocator::SharedPtr allocator) {
-            LockGuard<SpinLock> guard (spinLock);
-            std::pair<Map::iterator, bool> result =
-                map.insert (Map::value_type (blockSize, nullptr));
-            if (result.second) {
-                result.first->second.Reset (
-                    new BlockAllocator (blockSize, blocksPerPage, allocator));
-            }
-            return result.first->second;
         }
 
         BlockAllocator::Page *BlockAllocator::GetPage () {

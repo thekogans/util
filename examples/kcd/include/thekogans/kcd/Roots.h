@@ -58,20 +58,20 @@ namespace thekogans {
 
             void ScanRoot (
                 const std::string &path,
-                util::FileAllocator::SharedPtr fileAllocator,
+                util::FileAllocator &fileAllocator,
                 IgnoreList::SharedPtr ignoreList);
             void EnableRoot (
                 const std::string &path,
-                util::FileAllocator::SharedPtr fileAllocator);
+                util::FileAllocator &fileAllocator);
             void DisableRoot (
                 const std::string &path,
-                util::FileAllocator::SharedPtr fileAllocator);
+                util::FileAllocator &fileAllocator);
             void DeleteRoot (
                 const std::string &path,
-                util::FileAllocator::SharedPtr fileAllocator);
+                util::FileAllocator &fileAllocator);
 
             void Find (
-                util::FileAllocator::SharedPtr fileAllocator,
+                util::FileAllocator &fileAllocator,
                 const std::string &pattern,
                 bool ignoreCase,
                 bool ordered,

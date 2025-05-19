@@ -18,14 +18,11 @@
 #if !defined (__thekogans_util_BlockAllocator_h)
 #define __thekogans_util_BlockAllocator_h
 
-#include <unordered_map>
 #include "thekogans/util/Config.h"
 #include "thekogans/util/Types.h"
-#include "thekogans/util/SpinLock.h"
-#include "thekogans/util/Singleton.h"
+#include "thekogans/util/IntrusiveList.h"
 #include "thekogans/util/Allocator.h"
 #include "thekogans/util/DefaultAllocator.h"
-#include "thekogans/util/IntrusiveList.h"
 
 namespace thekogans {
     namespace util {
@@ -42,6 +39,8 @@ namespace thekogans {
         /// use BlockAllocator::Pool to create/get a BlockAllocator for that object.
 
         struct _LIB_THEKOGANS_UTIL_DECL BlockAllocator : public Allocator {
+            /// \brief
+            THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (BlockAllocator)
             /// \brief
             /// Declare \see{DynamicCreatable} boilerplate.
             THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE_OVERRIDE (BlockAllocator)
@@ -157,9 +156,6 @@ namespace thekogans {
             /// \brief
             /// Partial pages.
             PageList partialPages;
-            /// \brief
-            /// Synchronization lock.
-            SpinLock spinLock;
 
         public:
             /// \brief
@@ -183,6 +179,19 @@ namespace thekogans {
             virtual ~BlockAllocator ();
 
             /// \brief
+            inline std::size_t GetBlockSize () const {
+                return blockSize;
+            }
+            /// \brief
+            inline std::size_t GetBlocksPerPage () const {
+                return blocksPerPage;
+            }
+            /// \brief
+            inline Allocator::SharedPtr GetAllocator () const {
+                return allocator;
+            }
+
+            /// \brief
             /// Return true if the given pointer is one of ours.
             /// \param[in] ptr Pointer to check.
             /// \return true == we own the pointer, false == the pointer is not one of ours.
@@ -201,36 +210,6 @@ namespace thekogans {
             virtual void Free (
                 void *ptr,
                 std::size_t size) override;
-
-            /// \struct BlockAllocator::Pool BlockAllocator.h thekogans/util/BlockAllocator.h
-            ///
-            /// \brief
-            /// Use Pool to recycle and reuse block allocators.
-            struct _LIB_THEKOGANS_UTIL_DECL Pool : public Singleton<Pool> {
-            private:
-                /// \brief
-                /// BlockAllocator map type (keyed on block size).
-                using Map = std::unordered_map<std::size_t, BlockAllocator::SharedPtr>;
-                /// \brief
-                /// BlockAllocator map.
-                Map map;
-                /// \brief
-                /// Synchronization lock.
-                SpinLock spinLock;
-
-            public:
-                /// \brief
-                /// Given a block size, return a matching block allocator.
-                /// If we don't have one, create it.
-                /// \param[in] blockSize Block size.
-                /// \param[in] blocksPerPage Minimum blocks per page.
-                /// \param[in] allocator \see{Allocator} used to allocate pages.
-                /// \return BlockAllocator matching the given block size.
-                BlockAllocator::SharedPtr GetBlockAllocator (
-                    std::size_t blockSize,
-                    std::size_t blocksPerPage = DEFAULT_BLOCKS_PER_PAGE,
-                    Allocator::SharedPtr allocator = DefaultAllocator::Instance ());
-            };
 
         private:
             /// \brief

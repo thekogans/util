@@ -102,15 +102,13 @@ int main (
     }
     else {
         THEKOGANS_UTIL_TRY {
-            util::FileAllocator::SharedPtr fileAllocator =
-                util::FileAllocator::Pool::Instance ()->GetFileAllocator (
-                    Options::Instance ()->dbPath);
-            Roots::SharedPtr roots = fileAllocator->GetRegistry ().GetValue ("roots");
+            util::FileAllocator fileAllocator (Options::Instance ()->dbPath);
+            Roots::SharedPtr roots = fileAllocator.GetRegistry ().GetValue ("roots");
             if (roots == nullptr) {
                 roots.Reset (new Roots);
             }
             IgnoreList::SharedPtr ignoreList =
-                fileAllocator->GetRegistry ().GetValue ("ignore_list");
+                fileAllocator.GetRegistry ().GetValue ("ignore_list");
             if (ignoreList == nullptr) {
                 ignoreList.Reset (new IgnoreList);
             }

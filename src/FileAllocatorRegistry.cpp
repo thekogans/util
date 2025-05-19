@@ -16,7 +16,6 @@
 // along with libthekogans_util. If not, see <http://www.gnu.org/licenses/>.
 
 #include <string>
-#include "thekogans/util/LockGuard.h"
 #include "thekogans/util/BTreeKeys.h"
 #include "thekogans/util/FileAllocatorRegistry.h"
 
@@ -24,21 +23,19 @@ namespace thekogans {
     namespace util {
 
         util::BTree::Value::SharedPtr FileAllocator::Registry::GetValue (const std::string &key) {
-            LockGuard<SpinLock> guard (spinLock);
             util::BTree::Iterator it;
-            return btree.Find (StringKey (key), it) ? it.GetValue () : nullptr;
+            return Find (StringKey (key), it) ? it.GetValue () : nullptr;
         }
 
         void FileAllocator::Registry::SetValue (
                 const std::string &key,
                 util::BTree::Value::SharedPtr value) {
-            LockGuard<SpinLock> guard (spinLock);
             if (value == nullptr) {
-                btree.Delete (StringKey (key));
+                Delete (StringKey (key));
             }
             else {
                 util::BTree::Iterator it;
-                if (!btree.Insert (new StringKey (key), value, it)) {
+                if (!Insert (new StringKey (key), value, it)) {
                     it.SetValue (value);
                 }
             }
