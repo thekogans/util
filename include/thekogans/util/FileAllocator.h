@@ -91,11 +91,11 @@ namespace thekogans {
             /// \struct FileAllocator::Transaction FileAllocator.h thekogans/util/FileAllocator.h
             ///
             /// \brief
-            /// A transaction is the easiest way to perform exclusive atomic heap alterations.
-            /// It begins a transaction in it's ctor and will abort the transaction in it's
-            /// dtor. This is useful in case of \see{Exception}s. Call Transaction::Comit before
-            /// the end of scope to commit it. Make sure to flush all your data before calling
-            /// Commit.
+            /// A transaction is the easiest way to perform atomic heap alterations.
+            /// It begins a transaction in it's ctor and will abort the transaction
+            /// in it's dtor. This is useful in case of \see{Exception}s. Call
+            /// Transaction::Commit before the end of the scope to commit it. Make
+            /// sure to flush all your data prior to calling Commit.
             struct _LIB_THEKOGANS_UTIL_DECL Transaction {
                 /// \brief
                 /// \see{FileAllocator} to transact.
@@ -117,7 +117,7 @@ namespace thekogans {
                 }
 
                 /// \brief
-                /// Call commit before the end of the scope to commit the
+                /// Call Commit before the end of the scope to commit the
                 /// transaction otherwise it will be aborted in the dtor.
                 inline void Commit () {
                     fileAllocator.CommitTransaction ();
@@ -141,7 +141,6 @@ namespace thekogans {
             /// land that BlockInfo uses to make sure the block has not
             /// been corrupted by [over/under]flow writes.
             /// 2. Ability to navigate the heap in linear order.
-            /// (call BlockInfo::Prev/Next.)
             struct _LIB_THEKOGANS_UTIL_DECL BlockInfo {
             private:
                 /// \brief
