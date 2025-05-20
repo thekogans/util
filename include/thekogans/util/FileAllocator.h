@@ -71,10 +71,10 @@ namespace thekogans {
         /// Header/Footer::SIZE = 16/12
         ///
         /// Data
-        /// +-----------------+-----------------------+
+        /// +---------------------+-----------------------+
         /// | nextBTreeNodeOffset |          ...          |
-        /// +-----------------+-----------------------+
-        ///          8                   var
+        /// +---------------------+-----------------------+
+        ///            8                     var
 
         struct _LIB_THEKOGANS_UTIL_DECL FileAllocator : public RefCounted {
             /// \brief
