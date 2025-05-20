@@ -91,7 +91,7 @@ namespace thekogans {
                 }
             }
             if (!serializableString.empty ()) {
-                serializer.Read (serializableString.data (), serializableString.size ());
+                serializer.Read (&serializableString[0], serializableString.size ());
             }
             return serializer;
         }

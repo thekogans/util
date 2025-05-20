@@ -26,44 +26,6 @@
 namespace thekogans {
     namespace util {
 
-        FileAllocator::Transaction::Transaction (FileAllocator &fileAllocator_) :
-                fileAllocator (fileAllocator_) {
-            fileAllocator.file.BeginTransaction ();
-        }
-
-        FileAllocator::Transaction::~Transaction () {
-            if (fileAllocator.file.IsTransactionPending ()) {
-                fileAllocator.file.AbortTransaction ();
-                fileAllocator.file.Seek (0, SEEK_SET);
-                ui32 magic;
-                fileAllocator.file >> magic >> fileAllocator.header;
-                std::size_t btreeNodesPerPage =
-                    fileAllocator.btree->nodeAllocator->GetBlocksPerPage ();
-                delete fileAllocator.btree;
-                fileAllocator.btree = new BTree (
-                    fileAllocator,
-                    fileAllocator.header.btreeOffset,
-                    DEFAULT_BTREE_ENTRIES_PER_NODE,
-                    btreeNodesPerPage,
-                    fileAllocator.allocator);
-                std::size_t registryNodesPerPage =
-                    fileAllocator.registry->nodeAllocator->GetBlocksPerPage ();
-                delete fileAllocator.registry;
-                fileAllocator.registry = new Registry (
-                    fileAllocator,
-                    fileAllocator.header.registryOffset,
-                    DEFAULT_REGISTRY_ENTRIES_PER_NODE,
-                    registryNodesPerPage,
-                    fileAllocator.allocator);
-                fileAllocator.dirty = false;
-            }
-        }
-
-        void FileAllocator::Transaction::Commit () {
-            fileAllocator.Flush ();
-            fileAllocator.file.CommitTransaction ();
-        }
-
         void FileAllocator::BlockInfo::Header::Read (
                 File &file,
                 PtrType offset) {
@@ -297,6 +259,7 @@ namespace thekogans {
                 }
             }
             else {
+                file.SetSize (header.heapStart);
                 dirty = true;
             }
             btree = new BTree (
@@ -320,13 +283,46 @@ namespace thekogans {
                 header.registryOffset = registry->GetOffset ();
             }
             if (dirty) {
+                // We've just created the heap. Do a  manual flush
+                // to stamp the heap structure in to the file. From
+                // here on out it is assumed that transactions will
+                // be used to maintain heap integrity.
                 Flush ();
+                file.Flush ();
             }
         }
 
         FileAllocator::~FileAllocator () {
+            // If transactions are used to modify the heap, this Flush
+            // should be a noop. Flush any modifications done outside
+            // of transaction.
+            Flush ();
             delete btree;
             delete registry;
+        }
+
+        void FileAllocator::GetBlockInfo (BlockInfo &block) {
+            block.Read (file);
+        }
+
+        bool FileAllocator::GetPrevBlockInfo (
+                const BlockInfo &block,
+                BlockInfo &prev) {
+            if (!block.IsFirst (header.heapStart)) {
+                block.Prev (file, prev);
+                return true;
+            }
+            return false;
+        }
+
+        bool FileAllocator::GetNextBlockInfo (
+                const BlockInfo &block,
+                BlockInfo &next) {
+            if (!block.IsLast (file.GetSize ())) {
+                block.Next (file, next);
+                return true;
+            }
+            return false;
         }
 
         FileAllocator::PtrType FileAllocator::Alloc (std::size_t size) {
@@ -343,9 +339,30 @@ namespace thekogans {
                     btree->Delete (result);
                     offset = result.second;
                     // If the block we got is bigger than we need, split it.
+                    //
+                    // we need to go from:
+                    //
+                    //               |----------- result.first -----------|
+                    // -----+--------+------------------------------------+--------+-----
+                    //      | header |                                    | footer |
+                    // -----+--------+------------------------------------+--------+-----
+                    //               |
+                    //         result.second
+                    //
+                    // to:
+                    //
+                    //               |----------- result.first -----------|
+                    // -----+--------+------+--------+--------+-----------+--------+-----
+                    //      | header | size | footer | header | next.size | footer |
+                    // -----+--------+------+--------+--------+-----------+--------+-----
+                    //               |                        |
+                    //         result.second             next.offset
+                    //
+                    // next.offset = result.second + size + BufferInfo::SIZE;
+                    // next.size = result.first - size - BufferInfo::SIZE;
                     if (result.first - size >= MIN_BLOCK_SIZE) {
                         BlockInfo next (
-                            offset + size + BlockInfo::SIZE,
+                            result.second + size + BlockInfo::SIZE,
                             BlockInfo::FLAGS_FREE,
                             result.first - size - BlockInfo::SIZE);
                         next.Write (file);
@@ -442,6 +459,51 @@ namespace thekogans {
             }
             btree->Flush ();
             registry->Flush ();
+        }
+
+        void FileAllocator::BeginTransaction () {
+            if (!IsTransactionPending ()) {
+                // Flush all changes prior to starting a new transaction.
+                Flush ();
+                file.BeginTransaction ();
+            }
+        }
+
+        void FileAllocator::CommitTransaction () {
+            if (IsTransactionPending ()) {
+                Flush ();
+                file.CommitTransaction ();
+            }
+        }
+
+        void FileAllocator::AbortTransaction () {
+            if (IsTransactionPending ()) {
+                file.AbortTransaction ();
+                if (dirty) {
+                    file.Seek (0, SEEK_SET);
+                    ui32 magic;
+                    file >> magic >> header;
+                    dirty = false;
+                }
+                std::size_t btreeEntriesPerNode = btree->header.entriesPerNode;
+                std::size_t btreeNodesPerPage = btree->nodeAllocator->GetBlocksPerPage ();
+                delete btree;
+                btree = new BTree (
+                    *this,
+                    header.btreeOffset,
+                    btreeEntriesPerNode,
+                    btreeNodesPerPage,
+                    allocator);
+                std::size_t registryEntriesPerNode = registry->header.entriesPerNode;
+                std::size_t registryNodesPerPage = registry->nodeAllocator->GetBlocksPerPage ();
+                delete registry;
+                registry = new Registry (
+                    *this,
+                    header.registryOffset,
+                    registryEntriesPerNode,
+                    registryNodesPerPage,
+                    allocator);
+            }
         }
 
         FileAllocator::PtrType FileAllocator::AllocBTreeNode (std::size_t size) {

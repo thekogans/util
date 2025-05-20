@@ -31,10 +31,10 @@ namespace thekogans {
         /// thekogans/util/FileAllocator::Registry.h
         ///
         /// \brief
-        /// \see{FileAllocator}::Registry provides global associative storage for
-        /// \see{FileAllocator} clients. It's available only when \see{FileAllocator::IsFixed}
-        /// returns false. Use it to store and retrieve practically any value derived
-        /// from \see{BTree::Value}. The key type is any std::string.
+        /// \see{FileAllocator}::Registry provides global ordered, associative
+        /// storage for \see{FileAllocator} clients. Use it to store and retrieve
+        /// practically any value derived from \see{BTree::Value}. The key type
+        /// is any std::string.
 
         struct _LIB_THEKOGANS_UTIL_DECL FileAllocator::Registry : private util::BTree {
         public:

@@ -108,8 +108,8 @@ namespace thekogans {
         private:
             void Scan (
                 const std::string &path,
-                util::BTree::SharedPtr pathBTree,
-                util::BTree::SharedPtr componentBTree,
+                util::BTree &pathBTree,
+                util::BTree &componentBTree,
                 IgnoreList::SharedPtr ignoreList);
 
             friend util::Serializer &operator << (
