@@ -69,17 +69,18 @@ int main (
     Roots::StaticInit ();
     IgnoreList::StaticInit ();
 #endif // defined (THEKOGANS_UTIL_TYPE_Static)
-    Options::Instance ()->Parse (argc, argv, "hvldarpio");
+    Options::Instance ()->Parse (argc, argv, "hvldarpfio");
     THEKOGANS_UTIL_LOG_RESET (
         Options::Instance ()->logLevel,
         util::LoggerMgr::All);
     THEKOGANS_UTIL_LOG_ADD_LOGGER (new util::ConsoleLogger);
+    THEKOGANS_UTIL_IMPLEMENT_LOG_FLUSHER;
     if (Options::Instance ()->help) {
         THEKOGANS_UTIL_LOG_INFO (
             "%s [-h] [-v] [-l:'%s'] [-d:'database path'] "
             "-a:[scan_root|enable_root|disable_root|delete_root|show_roots|cd|"
             "show_ignore_list|add_ignore|delete_ignore] "
-            "[-r:root] [-p:pattern] [-i] [-o]\n\n"
+            "[-r:root] [-p:pattern] [-f:'ignore file path'] [-i] [-o]\n\n"
             "h - Display this help message.\n"
             "v - Display version information.\n"
             "l - Set logging level (default is Info).\n"
@@ -87,8 +88,9 @@ int main (
             "a - Action to perform (default is cd).\n"
             "r - Root (can be repeated).\n"
             "p - Pattern (when action is cd).\n"
+            "f - Path to ignore file (when action is [add|delete]_ignore).\n"
             "i - Ignore case (when action is cd). Ignore string "
-            "(when action is [add|delete]_ignore.\n"
+            "(when action is [add|delete]_ignore).\n"
             "o - Pattern should appear ordered in the results (when action is cd).\n",
             argv[0],
             GetLevelsList (" | ").c_str ());
@@ -102,13 +104,14 @@ int main (
     }
     else {
         THEKOGANS_UTIL_TRY {
-            util::FileAllocator fileAllocator (Options::Instance ()->dbPath);
-            Roots::SharedPtr roots = fileAllocator.GetRegistry ().GetValue ("roots");
+            util::FileAllocator::SharedPtr fileAllocator (
+                new util::FileAllocator (Options::Instance ()->dbPath));
+            Roots::SharedPtr roots = fileAllocator->GetRegistry ().GetValue ("roots");
             if (roots == nullptr) {
                 roots.Reset (new Roots);
             }
             IgnoreList::SharedPtr ignoreList =
-                fileAllocator.GetRegistry ().GetValue ("ignore_list");
+                fileAllocator->GetRegistry ().GetValue ("ignore_list");
             if (ignoreList == nullptr) {
                 ignoreList.Reset (new IgnoreList);
             }
@@ -116,10 +119,16 @@ int main (
                 const std::vector<std::string> &roots_ = Options::Instance ()->roots;
                 if (!roots_.empty ()) {
                     for (std::size_t i = 0, count = roots_.size (); i < count; ++i) {
+                        util::BufferedFile::Transaction::SharedPtr transaction (
+                            new util::BufferedFile::Transaction (fileAllocator->GetFile ()));
+                        fileAllocator->Subscribe (*transaction);
+                        transaction->Begin ();
                         roots->ScanRoot (
                             NormalizePath (util::Path (roots_[i]).MakeAbsolute ()),
                             fileAllocator,
                             ignoreList);
+                        fileAllocator->GetRegistry ().SetValue ("roots", roots);
+                        transaction->Commit ();
                     }
                 }
                 else {
@@ -129,9 +138,18 @@ int main (
             else if (Options::Instance ()->action == "enable_root") {
                 const std::vector<std::string> &roots_ = Options::Instance ()->roots;
                 if (!roots_.empty ()) {
+                    bool commit = false;
                     for (std::size_t i = 0, count = roots_.size (); i < count; ++i) {
-                        roots->EnableRoot (
-                            NormalizePath (util::Path (roots_[i]).MakeAbsolute ()), fileAllocator);
+                        commit |= roots->EnableRoot (
+                            NormalizePath (util::Path (roots_[i]).MakeAbsolute ()));
+                    }
+                    if (commit) {
+                        util::BufferedFile::Transaction::SharedPtr transaction (
+                            new util::BufferedFile::Transaction (fileAllocator->GetFile ()));
+                        fileAllocator->Subscribe (*transaction);
+                        transaction->Begin ();
+                        fileAllocator->GetRegistry ().SetValue ("roots", roots);
+                        transaction->Commit ();
                     }
                 }
                 else {
@@ -141,9 +159,18 @@ int main (
             else if (Options::Instance ()->action == "disable_root") {
                 const std::vector<std::string> &roots_ = Options::Instance ()->roots;
                 if (!roots_.empty ()) {
+                    bool commit = false;
                     for (std::size_t i = 0, count = roots_.size (); i < count; ++i) {
-                        roots->DisableRoot (
-                            NormalizePath (util::Path (roots_[i]).MakeAbsolute ()), fileAllocator);
+                        commit |= roots->DisableRoot (
+                            NormalizePath (util::Path (roots_[i]).MakeAbsolute ()));
+                    }
+                    if (commit) {
+                        util::BufferedFile::Transaction::SharedPtr transaction (
+                            new util::BufferedFile::Transaction (fileAllocator->GetFile ()));
+                        fileAllocator->Subscribe (*transaction);
+                        transaction->Begin ();
+                        fileAllocator->GetRegistry ().SetValue ("roots", roots);
+                        transaction->Commit ();
                     }
                 }
                 else {
@@ -154,8 +181,16 @@ int main (
                 const std::vector<std::string> &roots_ = Options::Instance ()->roots;
                 if (!roots_.empty ()) {
                     for (std::size_t i = 0, count = roots_.size (); i < count; ++i) {
-                        roots->DeleteRoot (
-                            NormalizePath (util::Path (roots_[i]).MakeAbsolute ()), fileAllocator);
+                        util::BufferedFile::Transaction::SharedPtr transaction (
+                            new util::BufferedFile::Transaction (fileAllocator->GetFile ()));
+                        fileAllocator->Subscribe (*transaction);
+                        transaction->Begin ();
+                        if (roots->DeleteRoot (
+                                NormalizePath (util::Path (roots_[i]).MakeAbsolute ()),
+                                fileAllocator)) {
+                            fileAllocator->GetRegistry ().SetValue ("roots", roots);
+                            transaction->Commit ();
+                        }
                     }
                 }
                 else {
@@ -194,8 +229,17 @@ int main (
             else if (Options::Instance ()->action == "add_ignore") {
                 const std::vector<std::string> &ignoreList_ = Options::Instance ()->ignoreList;
                 if (!ignoreList_.empty ()) {
+                    bool commit = false;
                     for (std::size_t i = 0, count = ignoreList_.size (); i < count; ++i) {
-                        ignoreList->AddIgnore (ignoreList_[i], fileAllocator);
+                        commit |= ignoreList->AddIgnore (ignoreList_[i]);
+                    }
+                    if (commit) {
+                        util::BufferedFile::Transaction::SharedPtr transaction (
+                            new util::BufferedFile::Transaction (fileAllocator->GetFile ()));
+                        fileAllocator->Subscribe (*transaction);
+                        transaction->Begin ();
+                        fileAllocator->GetRegistry ().SetValue ("ignore_list", ignoreList);
+                        transaction->Commit ();
                     }
                 }
                 else {
@@ -205,8 +249,17 @@ int main (
             else if (Options::Instance ()->action == "delete_ignore") {
                 const std::vector<std::string> &ignoreList_ = Options::Instance ()->ignoreList;
                 if (!ignoreList_.empty ()) {
+                    bool commit = false;
                     for (std::size_t i = 0, count = ignoreList_.size (); i < count; ++i) {
-                        ignoreList->DeleteIgnore (ignoreList_[i], fileAllocator);
+                        commit |= ignoreList->DeleteIgnore (ignoreList_[i]);
+                    }
+                    if (commit) {
+                        util::BufferedFile::Transaction::SharedPtr transaction (
+                            new util::BufferedFile::Transaction (fileAllocator->GetFile ()));
+                        fileAllocator->Subscribe (*transaction);
+                        transaction->Begin ();
+                        fileAllocator->GetRegistry ().SetValue ("ignore_list", ignoreList);
+                        transaction->Commit ();
                     }
                 }
                 else {

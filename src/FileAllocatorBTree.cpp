@@ -476,6 +476,18 @@ namespace thekogans {
             root->Flush ();
         }
 
+        void FileAllocator::BTree::Reload () {
+            if (dirty) {
+                FileAllocator::BlockBuffer buffer (fileAllocator, offset);
+                buffer.BlockRead ();
+                ui32 magic;
+                buffer >> magic >> header;
+                dirty = false;
+            }
+            Node::Free (root);
+            root = Node::Alloc (*this, header.rootOffset);
+        }
+
         void FileAllocator::BTree::Dump () {
             if (root != nullptr) {
                 root->Dump ();

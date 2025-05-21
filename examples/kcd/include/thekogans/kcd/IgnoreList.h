@@ -19,7 +19,6 @@
 #define __thekogans_kcd_IgnoreList_h
 
 #include <string>
-#include "thekogans/util/FileAllocator.h"
 #include "thekogans/util/Serializable.h"
 #include "thekogans/util/BTreeValues.h"
 
@@ -29,13 +28,8 @@ namespace thekogans {
         struct IgnoreList : public util::StringArrayValue {
             THEKOGANS_UTIL_DECLARE_SERIALIZABLE (IgnoreList)
 
-            bool AddIgnore (
-                const std::string &ignore,
-                util::FileAllocator &fileAllocator);
-            bool DeleteIgnore (
-                const std::string &ignore,
-                util::FileAllocator &fileAllocator);
-
+            bool AddIgnore (const std::string &ignore);
+            bool DeleteIgnore (const std::string &ignore);
             bool ShouldIgnore (const std::string &ignore);
         };
 

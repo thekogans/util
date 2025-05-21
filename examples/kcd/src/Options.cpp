@@ -15,6 +15,8 @@
 // You should have received a copy of the GNU General Public License
 // along with libthekogans_stream. If not, see <http://www.gnu.org/licenses/>.
 
+#include <iostream>
+#include <fstream>
 #include "thekogans/util/StringUtils.h"
 #include "thekogans/kcd/Options.h"
 
@@ -46,6 +48,9 @@ namespace thekogans {
                 case 'p':
                     pattern = value;
                     break;
+                case 'f':
+                    ignorePath = value;
+                    break;
                 case 'i':
                     if (value.empty ()) {
                         ignoreCase = true;
@@ -57,6 +62,23 @@ namespace thekogans {
                 case 'o':
                     ordered = true;
                     break;
+            }
+        }
+
+        void Options::Epilog () {
+            if (!ignorePath.empty ()) {
+                std::ifstream ignoreFile (ignorePath.c_str ());
+                if (ignoreFile.is_open ()) {
+                    while (ignoreFile.good ()) {
+                        std::string ignore;
+                        std::getline (ignoreFile, ignore);
+                        ignore = util::TrimSpaces (ignore.c_str ());
+                        if (!ignore.empty ()) {
+                            ignoreList.push_back (ignore);
+                        }
+                    }
+                    ignoreFile.close ();
+                }
             }
         }
 

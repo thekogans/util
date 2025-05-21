@@ -18,14 +18,12 @@
 #if !defined (__thekogans_util_FileAllocator_h)
 #define __thekogans_util_FileAllocator_h
 
-#include <unordered_map>
 #include "thekogans/util/Config.h"
-#include "thekogans/util/RefCounted.h"
 #include "thekogans/util/Types.h"
 #include "thekogans/util/Flags.h"
 #include "thekogans/util/BufferedFile.h"
+#include "thekogans/util/Subscriber.h"
 #include "thekogans/util/BlockAllocator.h"
-#include "thekogans/util/Singleton.h"
 
 namespace thekogans {
     namespace util {
@@ -76,7 +74,8 @@ namespace thekogans {
         /// +---------------------+-----------------------+
         ///            8                     var
 
-        struct _LIB_THEKOGANS_UTIL_DECL FileAllocator : public RefCounted {
+        struct _LIB_THEKOGANS_UTIL_DECL FileAllocator :
+                public Subscriber<BufferedFile::TransactionEvents> {
             /// \brief
             /// Declare \see{RefCounted} pointers.
             THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (FileAllocator)
@@ -87,42 +86,6 @@ namespace thekogans {
             /// \brief
             /// PtrType size on disk.
             static const std::size_t PTR_TYPE_SIZE = UI64_SIZE;
-
-            /// \struct FileAllocator::Transaction FileAllocator.h thekogans/util/FileAllocator.h
-            ///
-            /// \brief
-            /// A transaction is the easiest way to perform atomic heap alterations.
-            /// It begins a transaction in it's ctor and will abort the transaction
-            /// in it's dtor. This is useful in case of \see{Exception}s. Call
-            /// Transaction::Commit before the end of the scope to commit it. Make
-            /// sure to flush all your data prior to calling Commit.
-            struct _LIB_THEKOGANS_UTIL_DECL Transaction {
-                /// \brief
-                /// \see{FileAllocator} to transact.
-                FileAllocator &fileAllocator;
-
-                /// \brief
-                /// ctor
-                /// \param[in] fileAllocator_ \see{FileAllocator} to transact.
-                explicit Transaction (FileAllocator &fileAllocator_) :
-                        fileAllocator (fileAllocator_) {
-                    fileAllocator.BeginTransaction ();
-                }
-                /// \brief
-                /// dtor
-                ~Transaction () {
-                    if (fileAllocator.IsTransactionPending ()) {
-                        fileAllocator.AbortTransaction ();
-                    }
-                }
-
-                /// \brief
-                /// Call Commit before the end of the scope to commit the
-                /// transaction otherwise it will be aborted in the dtor.
-                inline void Commit () {
-                    fileAllocator.CommitTransaction ();
-                }
-            };
 
             /// \struct FileAllocator::BlockInfo FileAllocator.h thekogans/util/FileAllocator.h
             ///
@@ -674,7 +637,7 @@ namespace thekogans {
             /// \brief
             /// Return the heap file.
             /// \return Heap file.
-            inline File &GetFile () {
+            inline BufferedFile &GetFile () {
                 return file;
             }
 
@@ -752,27 +715,23 @@ namespace thekogans {
             void Flush ();
 
             /// \brief
-            /// Return true if a transaction is pending (open).
-            /// \return true == A pending transaction exists.
-            inline bool IsTransactionPending () const {
-                return file.IsTransactionPending ();
-            }
-            /// \brief
-            /// To help maintain heap integrity, simple (not nested) transaction
-            /// processing is designed to wrap a sequence of heap operations and
-            /// commit them all at once (CommitTransaction) or none at all
-            /// (AbortTransaction).
-            /// NOTE: Prior to begining, all pre-transaction changes are flushed
-            /// to file.
-            void BeginTransaction ();
-            /// \brief
-            /// Commit a pending transaction.
-            void CommitTransaction ();
-            /// \brief
-            /// Abort a pending transaction.
-            void AbortTransaction ();
+            /// Reload from file.
+            void Reload ();
 
         private:
+            virtual void OnTransactionBegin (
+                    BufferedFile::Transaction::SharedPtr /*transaction*/) override {
+                Flush ();
+            }
+            virtual void OnTransactionCommit (
+                    BufferedFile::Transaction::SharedPtr /*transaction*/) override {
+                Flush ();
+            }
+            virtual void OnTransactionAbort (
+                    BufferedFile::Transaction::SharedPtr /*transaction*/) override {
+                Reload ();
+            }
+
             /// \brief
             /// Used to allocate BTree::Node blocks.
             /// Uses \see{Header::btreeNodeSize}. This method is

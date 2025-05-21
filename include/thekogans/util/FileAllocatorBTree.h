@@ -162,12 +162,12 @@ private:
         static void Delete (Node *node);
 
         /// \brief
-        /// If dirty, flush changes to \see{FileAllocator::BlockBuffer}.
+        /// If dirty, flush changes to file.
         void Flush ();
         /// \brief
         /// Return the child at the given index.
         /// \param[in] index Index of child to retrieve
-        /// (0 == left, !0 == entries[index-1].right).
+        /// (0 == left, !0 == entries[index - 1].right).
         /// \return Child node at the given index. nullptr if no child at that index exists.
         Node *GetChild (ui32 index);
         /// \brief
@@ -324,8 +324,12 @@ public:
     bool Delete (const KeyType &key);
 
     /// \brief
-    /// Flush the node cache (used in tight memory situations).
+    /// Flush changes to file.
     void Flush ();
+
+    /// \brief
+    /// Reload from file.
+    void Reload ();
 
     /// \brief
     /// Use for debugging. Dump the btree nodes to stdout.

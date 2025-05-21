@@ -22,11 +22,11 @@
 #include <vector>
 #include "thekogans/util/Config.h"
 #include "thekogans/util/Types.h"
-#include "thekogans/util/RefCounted.h"
-#include "thekogans/util/GUID.h"
+#include "thekogans/util/BufferedFile.h"
 #include "thekogans/util/Serializable.h"
 #include "thekogans/util/Serializer.h"
 #include "thekogans/util/BlockAllocator.h"
+#include "thekogans/util/Subscriber.h"
 #include "thekogans/util/FileAllocator.h"
 
 namespace thekogans {
@@ -46,7 +46,7 @@ namespace thekogans {
         /// That means that key and values can be practically any random size object
         /// (as long as it derives from BTree::Key and implements the interface).
 
-        struct _LIB_THEKOGANS_UTIL_DECL BTree : public RefCounted {
+        struct _LIB_THEKOGANS_UTIL_DECL BTree : public Subscriber<BufferedFile::TransactionEvents> {
             /// \brief
             /// Declare \see{RefCounted} pointers.
             THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (BTree)
@@ -482,6 +482,8 @@ namespace thekogans {
                     FileAllocator &fileAllocator,
                     FileAllocator::PtrType offset);
 
+                /// \brief
+                /// Flush changes to file.
                 void Flush ();
                 /// \brief
                 /// Return the left child of an entry at the given index.
@@ -767,10 +769,27 @@ namespace thekogans {
             void Flush ();
 
             /// \brief
+            /// Reload from file.
+            void Reload ();
+
+            /// \brief
             /// Use for debugging. Dump the btree nodes to stdout.
             void Dump ();
 
         private:
+            virtual void OnTransactionBegin (
+                    BufferedFile::Transaction::SharedPtr /*transaction*/) override {
+                Flush ();
+            }
+            virtual void OnTransactionCommit (
+                    BufferedFile::Transaction::SharedPtr /*transaction*/) override {
+                Flush ();
+            }
+            virtual void OnTransactionAbort (
+                    BufferedFile::Transaction::SharedPtr /*transaction*/) override {
+                Reload ();
+            }
+
             /// \brief
             /// Set root node.
             /// \param[in] node \see{Node} to set as new root.

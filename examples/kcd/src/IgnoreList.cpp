@@ -15,17 +15,6 @@
 // You should have received a copy of the GNU General Public License
 // along with libthekogans_util. If not, see <http://www.gnu.org/licenses/>.
 
-#include <string>
-#include <list>
-#include <vector>
-#include <unordered_set>
-#include <iostream>
-#include "thekogans/util/Environment.h"
-#include "thekogans/util/Path.h"
-#include "thekogans/util/StringUtils.h"
-#include "thekogans/util/FileAllocator.h"
-#include "thekogans/util/FileAllocatorRegistry.h"
-#include "thekogans/util/BTreeValues.h"
 #include "thekogans/kcd/IgnoreList.h"
 
 namespace thekogans {
@@ -33,32 +22,20 @@ namespace thekogans {
 
         THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE (IgnoreList, 1, util::BTree::Value::TYPE)
 
-        bool IgnoreList::AddIgnore (
-                const std::string &ignore,
-                util::FileAllocator &fileAllocator) {
+        bool IgnoreList::AddIgnore (const std::string &ignore) {
             for (std::size_t i = 0, count = value.size (); i < count; ++i) {
                 if (value[i] == ignore) {
                     return false;
                 }
             }
-            {
-                util::FileAllocator::Transaction transaction (fileAllocator);
-                value.push_back (ignore);
-                fileAllocator.GetRegistry ().SetValue ("ignore_list", this);
-                transaction.Commit ();
-                return true;
-            }
+            value.push_back (ignore);
+            return true;
         }
 
-        bool IgnoreList::DeleteIgnore (
-                const std::string &ignore,
-                util::FileAllocator &fileAllocator) {
+        bool IgnoreList::DeleteIgnore (const std::string &ignore) {
             for (std::size_t i = 0, count = value.size (); i < count; ++i) {
                 if (value[i] == ignore) {
-                    util::FileAllocator::Transaction transaction (fileAllocator);
                     value.erase (value.begin () + i);
-                    fileAllocator.GetRegistry ().SetValue ("ignore_list", this);
-                    transaction.Commit ();
                     return true;
                 }
             }

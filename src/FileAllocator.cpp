@@ -259,8 +259,7 @@ namespace thekogans {
                 }
             }
             else {
-                file.SetSize (header.heapStart);
-                dirty = true;
+                file << MAGIC32 << header;
             }
             btree = new BTree (
                 *this,
@@ -268,35 +267,20 @@ namespace thekogans {
                 btreeEntriesPerNode,
                 btreeNodesPerPage,
                 allocator);
-            if (header.btreeOffset == 0) {
-                assert (dirty);
-                header.btreeOffset = btree->GetOffset ();
-            }
             registry = new Registry (
                 *this,
                 header.registryOffset,
                 registryEntriesPerNode,
                 registryNodesPerPage,
                 allocator);
-            if (header.registryOffset == 0) {
-                assert (dirty);
+            if (header.btreeOffset == 0 && header.registryOffset == 0) {
+                header.btreeOffset = btree->GetOffset ();
                 header.registryOffset = registry->GetOffset ();
-            }
-            if (dirty) {
-                // We've just created the heap. Do a  manual flush
-                // to stamp the heap structure in to the file. From
-                // here on out it is assumed that transactions will
-                // be used to maintain heap integrity.
-                Flush ();
-                file.Flush ();
+                dirty = true;
             }
         }
 
         FileAllocator::~FileAllocator () {
-            // If transactions are used to modify the heap, this Flush
-            // should be a noop. Flush any modifications done outside
-            // of transaction.
-            Flush ();
             delete btree;
             delete registry;
         }
@@ -461,49 +445,15 @@ namespace thekogans {
             registry->Flush ();
         }
 
-        void FileAllocator::BeginTransaction () {
-            if (!IsTransactionPending ()) {
-                // Flush all changes prior to starting a new transaction.
-                Flush ();
-                file.BeginTransaction ();
+        void FileAllocator::Reload () {
+            if (dirty) {
+                file.Seek (0, SEEK_SET);
+                ui32 magic;
+                file >> magic >> header;
+                dirty = false;
             }
-        }
-
-        void FileAllocator::CommitTransaction () {
-            if (IsTransactionPending ()) {
-                Flush ();
-                file.CommitTransaction ();
-            }
-        }
-
-        void FileAllocator::AbortTransaction () {
-            if (IsTransactionPending ()) {
-                file.AbortTransaction ();
-                if (dirty) {
-                    file.Seek (0, SEEK_SET);
-                    ui32 magic;
-                    file >> magic >> header;
-                    dirty = false;
-                }
-                std::size_t btreeEntriesPerNode = btree->header.entriesPerNode;
-                std::size_t btreeNodesPerPage = btree->nodeAllocator->GetBlocksPerPage ();
-                delete btree;
-                btree = new BTree (
-                    *this,
-                    header.btreeOffset,
-                    btreeEntriesPerNode,
-                    btreeNodesPerPage,
-                    allocator);
-                std::size_t registryEntriesPerNode = registry->header.entriesPerNode;
-                std::size_t registryNodesPerPage = registry->nodeAllocator->GetBlocksPerPage ();
-                delete registry;
-                registry = new Registry (
-                    *this,
-                    header.registryOffset,
-                    registryEntriesPerNode,
-                    registryNodesPerPage,
-                    allocator);
-            }
+            btree->Reload ();
+            registry->Reload ();
         }
 
         FileAllocator::PtrType FileAllocator::AllocBTreeNode (std::size_t size) {

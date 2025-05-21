@@ -790,7 +790,7 @@ namespace thekogans {
                 nodesPerPage,
                 allocator);
             root = Node::Alloc (*this, header.rootOffset);
-            if (header.rootOffset != root->offset) {
+            if (header.rootOffset == 0) {
                 assert (dirty);
                 header.rootOffset = root->offset;
             }
@@ -943,6 +943,18 @@ namespace thekogans {
                 dirty = false;
             }
             root->Flush ();
+        }
+
+        void BTree::Reload () {
+            if (dirty) {
+                FileAllocator::BlockBuffer buffer (fileAllocator, offset);
+                buffer.BlockRead ();
+                ui32 magic;
+                buffer >> magic >> header;
+                dirty = false;
+            }
+            Node::Free (root);
+            root = Node::Alloc (*this, header.rootOffset);
         }
 
         void BTree::Dump () {

@@ -39,6 +39,7 @@ namespace thekogans {
             std::string action;
             std::vector<std::string> roots;
             std::string pattern;
+            std::string ignorePath;
             bool ignoreCase;
             bool ordered;
             std::vector<std::string> ignoreList;
@@ -55,6 +56,7 @@ namespace thekogans {
             virtual void DoOption (
                 char option,
                 const std::string &value) override;
+            virtual void Epilog () override;
         };
 
     } // namespace kcd

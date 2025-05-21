@@ -24,6 +24,8 @@
 #include "thekogans/util/Flags.h"
 #include "thekogans/util/Heap.h"
 #include "thekogans/util/File.h"
+#include "thekogans/util/Subscriber.h"
+#include "thekogans/util/Producer.h"
 #include "thekogans/util/SecureAllocator.h"
 
 namespace thekogans {
@@ -56,6 +58,61 @@ namespace thekogans {
             /// BufferedFile participates in the \see{DynamicCreatable}
             /// dynamic discovery and creation.
             THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE (BufferedFile)
+
+            /// \brief
+            /// Forward declaration of \see{Transaction}.
+            struct Transaction;
+
+            struct _LIB_THEKOGANS_UTIL_DECL TransactionEvents {
+                /// \brief
+                /// dtor.
+                virtual ~TransactionEvents () {}
+
+                virtual void OnTransactionBegin (
+                    RefCounted::SharedPtr<Transaction> transaction) {}
+                virtual void OnTransactionCommit (
+                    RefCounted::SharedPtr<Transaction> transaction) {}
+                virtual void OnTransactionAbort (
+                    RefCounted::SharedPtr<Transaction> transaction) {}
+            };
+
+            /// \struct BufferedFile::Transaction BufferedFile.h thekogans/util/BufferedFile.h
+            ///
+            /// \brief
+            /// A transaction is the easiest way to perform atomic file alterations.
+            struct _LIB_THEKOGANS_UTIL_DECL Transaction : public Producer<TransactionEvents> {
+                /// \brief
+                /// Declare \see{RefCounted} pointers.
+                THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (Transaction)
+
+                /// \brief
+                /// \see{BufferedFile} to transact.
+                BufferedFile &file;
+
+                /// \brief
+                /// ctor
+                /// \param[in] file_ \see{BufferedFile} to transact.
+                explicit Transaction (BufferedFile &file_) :
+                    file (file_) {}
+                /// \brief
+                /// dtor
+                ~Transaction () {
+                    Abort ();
+                }
+
+                /// \brief
+                /// Call Commit before the end of the scope to commit the
+                /// transaction otherwise it will be aborted in the dtor.
+                void Begin ();
+                /// \brief
+                /// Call Commit before the end of the scope to commit the
+                /// transaction otherwise it will be aborted in the dtor.
+                void Commit ();
+                /// \brief
+                /// Call Commit before the end of the scope to commit the
+                /// transaction otherwise it will be aborted in the dtor.
+                void Abort ();
+            };
 
         private:
             /// \brief

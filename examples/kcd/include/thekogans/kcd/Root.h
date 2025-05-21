@@ -95,12 +95,12 @@ namespace thekogans {
             }
 
             void Scan (
-                util::FileAllocator &fileAllocator,
+                util::FileAllocator::SharedPtr fileAllocator,
                 IgnoreList::SharedPtr ignoreList);
-            void Delete (util::FileAllocator &fileAllocator);
+            void Delete (util::FileAllocator::SharedPtr fileAllocator);
 
             void Find (
-                util::FileAllocator &fileAllocator,
+                util::FileAllocator::SharedPtr fileAllocator,
                 const std::string &prefix,
                 bool ignoreCase,
                 std::vector<std::string> &paths);

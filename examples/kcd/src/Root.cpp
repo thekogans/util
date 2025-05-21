@@ -33,19 +33,19 @@ namespace thekogans {
     namespace kcd {
 
         void Root::Scan (
-                util::FileAllocator &fileAllocator,
+                util::FileAllocator::SharedPtr fileAllocator,
                 IgnoreList::SharedPtr ignoreList) {
             if (!path.empty ()) {
                 Delete (fileAllocator);
                 assert (pathBTreeOffset == 0 && componentBTreeOffset == 0);
                 util::BTree pathBTree (
-                    fileAllocator,
+                    *fileAllocator,
                     pathBTreeOffset,
                     util::GUIDKey::TYPE,
                     util::StringValue::TYPE);
                 pathBTreeOffset = pathBTree.GetOffset ();
                 util::BTree componentBTree (
-                    fileAllocator,
+                    *fileAllocator,
                     componentBTreeOffset,
                     util::StringKey::TYPE,
                     util::GUIDArrayValue::TYPE);
@@ -66,14 +66,14 @@ namespace thekogans {
             }
         }
 
-        void Root::Delete (util::FileAllocator &fileAllocator) {
+        void Root::Delete (util::FileAllocator::SharedPtr fileAllocator) {
             Produce (
                 std::bind (
                     &RootEvents::OnRootDeleteBegin,
                     std::placeholders::_1,
                     this));
             if (pathBTreeOffset != 0) {
-                util::BTree::Delete (fileAllocator, pathBTreeOffset);
+                util::BTree::Delete (*fileAllocator, pathBTreeOffset);
                 pathBTreeOffset = 0;
                 Produce (
                     std::bind (
@@ -82,7 +82,7 @@ namespace thekogans {
                         this));
             }
             if (componentBTreeOffset != 0) {
-                util::BTree::Delete (fileAllocator, componentBTreeOffset);
+                util::BTree::Delete (*fileAllocator, componentBTreeOffset);
                 componentBTreeOffset = 0;
                 Produce (
                     std::bind (
@@ -98,18 +98,18 @@ namespace thekogans {
         }
 
         void Root::Find (
-                util::FileAllocator &fileAllocator,
+                util::FileAllocator::SharedPtr fileAllocator,
                 const std::string &prefix,
                 bool ignoreCase,
                 std::vector<std::string> &paths) {
             if (pathBTreeOffset != 0 && componentBTreeOffset != 0) {
                 util::BTree pathBTree (
-                    fileAllocator,
+                    *fileAllocator,
                     pathBTreeOffset,
                     util::GUIDKey::TYPE,
                     util::StringValue::TYPE);
                 util::BTree componentBTree (
-                    fileAllocator,
+                    *fileAllocator,
                     componentBTreeOffset,
                     util::StringKey::TYPE,
                     util::GUIDArrayValue::TYPE);

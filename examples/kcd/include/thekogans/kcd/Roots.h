@@ -36,7 +36,7 @@ namespace thekogans {
         struct RootsEvents {
             virtual ~RootsEvents () {}
 
-            virtual void OnRootsRootAdded (
+            virtual void OnRootsRootCreated (
                 util::RefCounted::SharedPtr<Roots> /*roots*/,
                 Root::SharedPtr /*root*/) throw () {}
             virtual void OnRootsRootEnabled (
@@ -58,20 +58,16 @@ namespace thekogans {
 
             void ScanRoot (
                 const std::string &path,
-                util::FileAllocator &fileAllocator,
+                util::FileAllocator::SharedPtr fileAllocator,
                 IgnoreList::SharedPtr ignoreList);
-            void EnableRoot (
+            bool EnableRoot (const std::string &path);
+            bool DisableRoot (const std::string &path);
+            bool DeleteRoot (
                 const std::string &path,
-                util::FileAllocator &fileAllocator);
-            void DisableRoot (
-                const std::string &path,
-                util::FileAllocator &fileAllocator);
-            void DeleteRoot (
-                const std::string &path,
-                util::FileAllocator &fileAllocator);
+                util::FileAllocator::SharedPtr fileAllocator);
 
             void Find (
-                util::FileAllocator &fileAllocator,
+                util::FileAllocator::SharedPtr fileAllocator,
                 const std::string &pattern,
                 bool ignoreCase,
                 bool ordered,

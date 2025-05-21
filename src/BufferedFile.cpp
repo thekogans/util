@@ -31,6 +31,39 @@ namespace thekogans {
             thekogans::util::BufferedFile,
             Serializer::TYPE, RandomSeekSerializer::TYPE)
 
+        void BufferedFile::Transaction::Begin () {
+            if (!file.IsTransactionPending ()) {
+                Produce (
+                    std::bind (
+                        &TransactionEvents::OnTransactionBegin,
+                        std::placeholders::_1,
+                        this));
+                file.BeginTransaction ();
+            }
+        }
+
+        void BufferedFile::Transaction::Commit () {
+            if (file.IsTransactionPending ()) {
+                Produce (
+                    std::bind (
+                        &TransactionEvents::OnTransactionCommit,
+                        std::placeholders::_1,
+                        this));
+                file.CommitTransaction ();
+            }
+        }
+
+        void BufferedFile::Transaction::Abort () {
+            if (file.IsTransactionPending ()) {
+                file.AbortTransaction ();
+                Produce (
+                    std::bind (
+                        &TransactionEvents::OnTransactionAbort,
+                        std::placeholders::_1,
+                        this));
+            }
+        }
+
         THEKOGANS_UTIL_IMPLEMENT_HEAP_FUNCTIONS (BufferedFile::Buffer)
         THEKOGANS_UTIL_IMPLEMENT_HEAP_FUNCTIONS (BufferedFile::Segment)
         THEKOGANS_UTIL_IMPLEMENT_HEAP_FUNCTIONS (BufferedFile::Internal)
