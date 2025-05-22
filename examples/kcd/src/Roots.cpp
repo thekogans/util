@@ -23,7 +23,6 @@
 #include "thekogans/util/Environment.h"
 #include "thekogans/util/Path.h"
 #include "thekogans/util/StringUtils.h"
-#include "thekogans/util/FileAllocator.h"
 #include "thekogans/util/BTreeValues.h"
 #include "thekogans/kcd/Roots.h"
 
@@ -33,8 +32,9 @@ namespace thekogans {
         THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE (Roots, 1, util::BTree::Value::TYPE)
 
         void Roots::ScanRoot (
-                const std::string &path,
                 util::FileAllocator::SharedPtr fileAllocator,
+                util::BufferedFile::Transaction::SharedPtr transaction,
+                const std::string &path,
                 IgnoreList::SharedPtr ignoreList) {
             Root::SharedPtr root;
             for (std::size_t i = 0, count = value.size (); i < count; ++i) {
@@ -54,7 +54,7 @@ namespace thekogans {
                         this,
                         root));
             }
-            root->Scan (fileAllocator, ignoreList);
+            root->Scan (fileAllocator, transaction, ignoreList);
         }
 
         bool Roots::EnableRoot (const std::string &path) {
@@ -94,8 +94,8 @@ namespace thekogans {
         }
 
         bool Roots::DeleteRoot (
-                const std::string &path,
-                util::FileAllocator::SharedPtr fileAllocator) {
+                util::FileAllocator::SharedPtr fileAllocator,
+                const std::string &path) {
             for (std::size_t i = 0, count = value.size (); i < count; ++i) {
                 if (value[i]->GetPath () == path) {
                     Root::SharedPtr root = value[i];

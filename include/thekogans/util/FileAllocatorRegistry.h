@@ -61,24 +61,14 @@ namespace thekogans {
             /// See \see{FileAllocator::GetRegistry} for a better description of
             /// these parameters and when you should and should not change them.
             /// \param[in] fileAllocator Registry heap (see \see{FileAllocator}).
-            /// \param[in] offset Offset of the \see{BTree::Header} block on disk.
             /// \param[in] entriesPerNode Number of entries per btree node.
             /// \param[in] nodesPerPage Number of btree nodes per allocator page.
             /// \param[in] allocator Where allocator node pages come from.
             Registry (
                 FileAllocator &fileAllocator,
-                FileAllocator::PtrType offset,
                 std::size_t entriesPerNode = FileAllocator::DEFAULT_REGISTRY_ENTRIES_PER_NODE,
                 std::size_t nodesPerPage = FileAllocator::DEFAULT_REGISTRY_NODES_PERP_PAGE,
-                Allocator::SharedPtr allocator = DefaultAllocator::Instance ()) :
-                util::BTree (
-                    fileAllocator,
-                    offset,
-                    StringKey::TYPE,
-                    std::string (),
-                    entriesPerNode,
-                    nodesPerPage,
-                    allocator) {}
+                Allocator::SharedPtr allocator = DefaultAllocator::Instance ());
 
             /// \brief
             /// \see{Fileallocator} needs access to the ctor.

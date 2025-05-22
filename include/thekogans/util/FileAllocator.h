@@ -22,11 +22,23 @@
 #include "thekogans/util/Types.h"
 #include "thekogans/util/Flags.h"
 #include "thekogans/util/BufferedFile.h"
+#include "thekogans/util/BufferedFileTransactionParticipant.h"
 #include "thekogans/util/Subscriber.h"
+#include "thekogans/util/Producer.h"
 #include "thekogans/util/BlockAllocator.h"
 
 namespace thekogans {
     namespace util {
+
+        struct FileAllocator;
+
+        struct _LIB_THEKOGANS_UTIL_DECL FileAllocatorEvents {
+            virtual ~FileAllocatorEvents () {}
+
+            virtual void OnFileAllocatorCreateTransaction (
+                RefCounted::SharedPtr<FileAllocator> /*fileAllocator*/,
+                BufferedFile::Transaction::SharedPtr /*transaction*/) noexcept {}
+        };
 
         /// \struct FileAllocator FileAllocator.h thekogans/util/FileAllocator.h
         ///
@@ -75,7 +87,8 @@ namespace thekogans {
         ///            8                     var
 
         struct _LIB_THEKOGANS_UTIL_DECL FileAllocator :
-                public Subscriber<BufferedFile::TransactionEvents> {
+                public BufferedFileTransactionParticipant,
+                public Producer<FileAllocatorEvents> {
             /// \brief
             /// Declare \see{RefCounted} pointers.
             THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (FileAllocator)
@@ -632,7 +645,7 @@ namespace thekogans {
                 Allocator::SharedPtr allocator = DefaultAllocator::Instance ());
             /// \brief
             /// dtor.
-            virtual ~FileAllocator ();
+            ~FileAllocator ();
 
             /// \brief
             /// Return the heap file.
@@ -710,28 +723,18 @@ namespace thekogans {
             /// Debugging helper. Dumps \see{BTree::Node}s to stdout.
             void DumpBTree ();
 
+            BufferedFile::Transaction::SharedPtr CreateTransaction ();
+
+        protected:
             /// \brief
-            /// Flush the header, btree and registry to file.
-            void Flush ();
+            /// Flush the header to file.
+            virtual void Flush () override;
 
             /// \brief
-            /// Reload from file.
-            void Reload ();
+            /// Reload the header from file.
+            virtual void Reload () override;
 
         private:
-            virtual void OnTransactionBegin (
-                    BufferedFile::Transaction::SharedPtr /*transaction*/) override {
-                Flush ();
-            }
-            virtual void OnTransactionCommit (
-                    BufferedFile::Transaction::SharedPtr /*transaction*/) override {
-                Flush ();
-            }
-            virtual void OnTransactionAbort (
-                    BufferedFile::Transaction::SharedPtr /*transaction*/) override {
-                Reload ();
-            }
-
             /// \brief
             /// Used to allocate BTree::Node blocks.
             /// Uses \see{Header::btreeNodeSize}. This method is

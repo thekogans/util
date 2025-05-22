@@ -22,6 +22,25 @@
 namespace thekogans {
     namespace util {
 
+        FileAllocator::Registry::Registry (
+                FileAllocator &fileAllocator,
+                std::size_t entriesPerNode,
+                std::size_t nodesPerPage,
+                Allocator::SharedPtr allocator) :
+                util::BTree (
+                    fileAllocator,
+                    fileAllocator.header.registryOffset,
+                    StringKey::TYPE,
+                    std::string (),
+                    entriesPerNode,
+                    nodesPerPage,
+                    allocator) {
+            if (fileAllocator.header.registryOffset == 0) {
+                fileAllocator.header.registryOffset = offset;
+                fileAllocator.dirty = true;
+            }
+        }
+
         util::BTree::Value::SharedPtr FileAllocator::Registry::GetValue (const std::string &key) {
             util::BTree::Iterator it;
             return Find (StringKey (key), it) ? it.GetValue () : nullptr;

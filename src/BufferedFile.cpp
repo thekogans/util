@@ -31,6 +31,12 @@ namespace thekogans {
             thekogans::util::BufferedFile,
             Serializer::TYPE, RandomSeekSerializer::TYPE)
 
+        void BufferedFile::Transaction::AddParticipant (
+                Subscriber<TransactionEvents>::SharedPtr participant) {
+            participant->Subscribe (*this);
+            participants.push_back (participant);
+        }
+
         void BufferedFile::Transaction::Begin () {
             if (!file.IsTransactionPending ()) {
                 Produce (
@@ -50,11 +56,13 @@ namespace thekogans {
                         std::placeholders::_1,
                         this));
                 file.CommitTransaction ();
+                participants.clear ();
             }
         }
 
         void BufferedFile::Transaction::Abort () {
             if (file.IsTransactionPending ()) {
+                participants.clear ();
                 file.AbortTransaction ();
                 Produce (
                     std::bind (

@@ -92,6 +92,7 @@
     <cpp_header>$(organization)/$(project_directory)/BlockAllocator.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/Buffer.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/BufferedFile.h</cpp_header>
+    <cpp_header>$(organization)/$(project_directory)/BufferedFileTransactionParticipant.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/ByteSwap.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/ChildProcess.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/CommandLineOptions.h</cpp_header>
@@ -111,6 +112,7 @@
     <cpp_header>$(organization)/$(project_directory)/File.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/FileAllocator.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/FileAllocatorBTree.h</cpp_header>
+    <cpp_header>$(organization)/$(project_directory)/FileAllocatorObject.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/FileAllocatorRegistry.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/FileLogger.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/FixedArray.h</cpp_header>
@@ -637,6 +639,7 @@
     <cpp_source>BlockAllocator.cpp</cpp_source>
     <cpp_source>Buffer.cpp</cpp_source>
     <cpp_source>BufferedFile.cpp</cpp_source>
+    <cpp_source>BufferedFileTransactionParticipant.cpp</cpp_source>
     <cpp_source>ChildProcess.cpp</cpp_source>
     <cpp_source>CommandLineOptions.cpp</cpp_source>
     <cpp_source>Condition.cpp</cpp_source>
@@ -653,6 +656,7 @@
     <cpp_source>File.cpp</cpp_source>
     <cpp_source>FileAllocator.cpp</cpp_source>
     <cpp_source>FileAllocatorBTree.cpp</cpp_source>
+    <cpp_source>FileAllocatorObject.cpp</cpp_source>
     <cpp_source>FileAllocatorRegistry.cpp</cpp_source>
     <cpp_source>FileLogger.cpp</cpp_source>
     <cpp_source>Fraction.cpp</cpp_source>

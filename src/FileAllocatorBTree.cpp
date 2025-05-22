@@ -382,17 +382,16 @@ namespace thekogans {
 
         FileAllocator::BTree::BTree (
                 FileAllocator &fileAllocator_,
-                PtrType offset_,
                 std::size_t entriesPerNode,
                 std::size_t nodesPerPage,
                 Allocator::SharedPtr allocator) :
                 fileAllocator (fileAllocator_),
-                offset (offset_),
                 header ((ui32)entriesPerNode),
                 root (nullptr),
                 dirty (false) {
-            if (offset != 0) {
-                BlockBuffer buffer (fileAllocator, offset);
+            Subscriber<FileAllocatorEvents>::Subscribe (fileAllocator);
+            if (fileAllocator.header.btreeOffset != 0) {
+                BlockBuffer buffer (fileAllocator, fileAllocator.header.btreeOffset);
                 buffer.BlockRead ();
                 ui32 magic;
                 buffer >> magic;
@@ -402,17 +401,19 @@ namespace thekogans {
                 else {
                     THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
                         "Corrupt FileAllocator::BTree: " THEKOGANS_UTIL_UI64_FORMAT,
-                        offset);
+                        fileAllocator.header.btreeOffset);
                 }
             }
             else {
-                offset = fileAllocator.AllocBTreeNode (Header::SIZE);
+                fileAllocator.header.btreeOffset = fileAllocator.AllocBTreeNode (Header::SIZE);
+                fileAllocator.dirty = true;
                 dirty = true;
             }
-            nodeAllocator = new BlockAllocator (
-                Node::Size (header.entriesPerNode),
-                nodesPerPage,
-                allocator);
+            nodeAllocator.Reset (
+                new BlockAllocator (
+                    Node::Size (header.entriesPerNode),
+                    nodesPerPage,
+                    allocator));
             root = Node::Alloc (*this, header.rootOffset);
             if (header.rootOffset == 0) {
                 assert (dirty);
@@ -466,9 +467,15 @@ namespace thekogans {
             return removed;
         }
 
+        void FileAllocator::BTree::Dump () {
+            if (root != nullptr) {
+                root->Dump ();
+            }
+        }
+
         void FileAllocator::BTree::Flush () {
             if (dirty) {
-                BlockBuffer buffer (fileAllocator, offset);
+                BlockBuffer buffer (fileAllocator, fileAllocator.header.btreeOffset);
                 buffer << MAGIC32 << header;
                 buffer.BlockWrite ();
                 dirty = false;
@@ -478,7 +485,7 @@ namespace thekogans {
 
         void FileAllocator::BTree::Reload () {
             if (dirty) {
-                FileAllocator::BlockBuffer buffer (fileAllocator, offset);
+                BlockBuffer buffer (fileAllocator, fileAllocator.header.btreeOffset);
                 buffer.BlockRead ();
                 ui32 magic;
                 buffer >> magic >> header;
@@ -486,12 +493,6 @@ namespace thekogans {
             }
             Node::Free (root);
             root = Node::Alloc (*this, header.rootOffset);
-        }
-
-        void FileAllocator::BTree::Dump () {
-            if (root != nullptr) {
-                root->Dump ();
-            }
         }
 
         void FileAllocator::BTree::SetRoot (Node *node) {

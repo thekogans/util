@@ -404,7 +404,7 @@ namespace thekogans {
         }\
         void *type::operator new (\
                 std::size_t size,\
-                std::nothrow_t) throw () {\
+                std::nothrow_t) noexcept {\
             assert (size == sizeof (type));\
             return thekogans::util::GlobalSharedAllocator::Instance ()->Alloc (size);\
         }\
@@ -419,7 +419,7 @@ namespace thekogans {
         }\
         void type::operator delete (\
                 void *ptr,\
-                std::nothrow_t) throw () {\
+                std::nothrow_t) noexcept {\
             thekogans::util::GlobalSharedAllocator::Instance ()->Free (ptr, sizeof (type));\
         }\
         void type::operator delete (\

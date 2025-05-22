@@ -22,6 +22,8 @@
 #include "thekogans/util/Config.h"
 #include "thekogans/util/Types.h"
 #include "thekogans/util/Flags.h"
+#include "thekogans/util/Mutex.h"
+#include "thekogans/util/LockGuard.h"
 #include "thekogans/util/Heap.h"
 #include "thekogans/util/File.h"
 #include "thekogans/util/Subscriber.h"
@@ -88,29 +90,36 @@ namespace thekogans {
                 /// \brief
                 /// \see{BufferedFile} to transact.
                 BufferedFile &file;
+                /// \brief
+                /// Transactions are atomic.
+                LockGuard<Mutex> guard;
+                /// \brief
+                /// List of objects created during the transaction. Their lifetime
+                /// is confined to the transaction
+                std::vector<Subscriber<TransactionEvents>::SharedPtr> participants;
 
                 /// \brief
                 /// ctor
                 /// \param[in] file_ \see{BufferedFile} to transact.
                 explicit Transaction (BufferedFile &file_) :
-                    file (file_) {}
+                    file (file_),
+                    guard (file.mutex) {}
                 /// \brief
                 /// dtor
                 ~Transaction () {
                     Abort ();
                 }
 
+                void AddParticipant (Subscriber<TransactionEvents>::SharedPtr participant);
+
                 /// \brief
-                /// Call Commit before the end of the scope to commit the
-                /// transaction otherwise it will be aborted in the dtor.
+                ///
                 void Begin ();
                 /// \brief
-                /// Call Commit before the end of the scope to commit the
-                /// transaction otherwise it will be aborted in the dtor.
+                ///
                 void Commit ();
                 /// \brief
-                /// Call Commit before the end of the scope to commit the
-                /// transaction otherwise it will be aborted in the dtor.
+                ///
                 void Abort ();
             };
 
@@ -133,6 +142,9 @@ namespace thekogans {
             /// \brief
             /// Combination of the above flags.
             Flags32 flags;
+            /// \brief
+            /// For use by \see{Transaction}
+            Mutex mutex;
 
             /// \struct BufferedFile::Buffer BufferedFile.h thekogans/util/BufferedFile.h
             ///

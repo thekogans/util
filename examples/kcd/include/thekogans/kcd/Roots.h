@@ -21,6 +21,7 @@
 #include <string>
 #include <vector>
 #include "thekogans/util/FileAllocator.h"
+#include "thekogans/util/BufferedFile.h"
 #include "thekogans/util/Serializable.h"
 #include "thekogans/util/BTreeValues.h"
 #include "thekogans/util/Subscriber.h"
@@ -57,14 +58,15 @@ namespace thekogans {
             THEKOGANS_UTIL_DECLARE_SERIALIZABLE (Roots)
 
             void ScanRoot (
-                const std::string &path,
                 util::FileAllocator::SharedPtr fileAllocator,
+                util::BufferedFile::Transaction::SharedPtr transaction,
+                const std::string &path,
                 IgnoreList::SharedPtr ignoreList);
             bool EnableRoot (const std::string &path);
             bool DisableRoot (const std::string &path);
             bool DeleteRoot (
-                const std::string &path,
-                util::FileAllocator::SharedPtr fileAllocator);
+                util::FileAllocator::SharedPtr fileAllocator,
+                const std::string &path);
 
             void Find (
                 util::FileAllocator::SharedPtr fileAllocator,

@@ -28,7 +28,9 @@
 /// It's broken out in to its own file because FileAllocator.h was getting
 /// too big to maintain.
 
-struct BTree {
+struct BTree :
+        public Subscriber<FileAllocatorEvents>,
+        public BufferedFileTransactionParticipant {
     /// \brief
     /// KeyType is structured on block {size, offset}.
     using KeyType = std::pair<ui64, PtrType>;
@@ -41,9 +43,6 @@ private:
     /// Reference back to the FileAllocator for
     /// \see{Header} and \see{Node} blocks.
     FileAllocator &fileAllocator;
-    /// \brief
-    /// Offset of the \see{Header} block.
-    PtrType offset;
     /// \struct Fileallocator::BTree::Header FileallocatorBTree.h
     /// thekogans/util/FileallocatorBTree.h
     ///
@@ -277,7 +276,6 @@ public:
     /// \brief
     /// ctor.
     /// \param[in] fileAllocator_ \see{FileAllocator} to which this btree belongs.
-    /// \param[in] offset_ Offset of the \see{Header} block on disk.
     /// \param[in] entriesPerNode If we're creating the heap, contains entries per
     /// \see{Node}. If we're reading an existing heap, this value will come from the
     /// \see{Header}.
@@ -291,20 +289,12 @@ public:
     /// advice aplies.
     BTree (
         FileAllocator &fileAllocator_,
-        PtrType offset_,
         std::size_t entriesPerNode,
         std::size_t nodesPerPage,
         Allocator::SharedPtr allocator);
     /// \brief
     /// dtor.
     ~BTree ();
-
-    /// \brief
-    /// Return the offset of the btree \see{Header} block.
-    /// \return Offset of the btree \see{Header} block.
-    inline PtrType GetOffset () const {
-        return offset;
-    }
 
     /// \brief
     /// Find the given key in the btree.
@@ -324,18 +314,26 @@ public:
     bool Delete (const KeyType &key);
 
     /// \brief
-    /// Flush changes to file.
-    void Flush ();
-
-    /// \brief
-    /// Reload from file.
-    void Reload ();
-
-    /// \brief
     /// Use for debugging. Dump the btree nodes to stdout.
     void Dump ();
 
+protected:
+    /// \brief
+    /// Flush changes to file.
+    virtual void Flush () override;
+
+    /// \brief
+    /// Reload from file.
+    virtual void Reload () override;
+
 private:
+    // FileAllocatorEvents
+    virtual void OnFileAllocatorCreateTransaction (
+            FileAllocator::SharedPtr /*fileAllocator*/,
+            BufferedFile::Transaction::SharedPtr transaction) noexcept override {
+        BufferedFileTransactionParticipant::Subscribe (*transaction);
+    }
+
     /// \brief
     /// Set root node.
     /// \param[in] node \see{Node} to set as new root.

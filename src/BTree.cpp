@@ -741,6 +741,7 @@ namespace thekogans {
                 std::size_t entriesPerNode,
                 std::size_t nodesPerPage,
                 Allocator::SharedPtr allocator) :
+                FileAllocatorObject (fileAllocator_),
                 fileAllocator (fileAllocator_),
                 offset (offset_),
                 header (keyType, valueType, (ui32)entriesPerNode),
@@ -794,6 +795,39 @@ namespace thekogans {
                 assert (dirty);
                 header.rootOffset = root->offset;
             }
+        }
+
+        BTree::BTree (
+                FileAllocator &fileAllocator_,
+                BufferedFile::Transaction::SharedPtr transaction,
+                const std::string &keyType,
+                const std::string &valueType,
+                std::size_t entriesPerNode,
+                std::size_t nodesPerPage,
+                Allocator::SharedPtr allocator) :
+                FileAllocatorObject (fileAllocator_, transaction),
+                fileAllocator (fileAllocator_),
+                offset (0),
+                header (keyType, valueType, (ui32)entriesPerNode),
+                keyFactory (Key::GetTypeFactory (keyType.c_str ())),
+                valueFactory (Value::GetTypeFactory (valueType.c_str ())),
+                root (nullptr),
+                dirty (true) {
+            if (Key::IsType (header.keyType.c_str ()) &&
+                    (header.valueType.empty () || Value::IsType (header.valueType.c_str ()))) {
+                offset = fileAllocator.Alloc (header.Size ());
+            }
+            else {
+                THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
+                    "key (%s) / value (%s) types are not valid.",
+                    keyType.c_str (), valueType.c_str ());
+            }
+            nodeAllocator = new BlockAllocator (
+                Node::Size (header.entriesPerNode),
+                nodesPerPage,
+                allocator);
+            root = Node::Alloc (*this, header.rootOffset);
+            header.rootOffset = root->offset;
         }
 
         BTree::~BTree () {
@@ -935,6 +969,12 @@ namespace thekogans {
             }
         }
 
+        void BTree::Dump () {
+            if (root != nullptr) {
+                root->Dump ();
+            }
+        }
+
         void BTree::Flush () {
             if (dirty) {
                 FileAllocator::BlockBuffer buffer (fileAllocator, offset);
@@ -955,12 +995,6 @@ namespace thekogans {
             }
             Node::Free (root);
             root = Node::Alloc (*this, header.rootOffset);
-        }
-
-        void BTree::Dump () {
-            if (root != nullptr) {
-                root->Dump ();
-            }
         }
 
         void BTree::SetRoot (Node *node) {

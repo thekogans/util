@@ -16,10 +16,8 @@
 // along with libthekogans_util. If not, see <http://www.gnu.org/licenses/>.
 
 #include "thekogans/util/Exception.h"
-#include "thekogans/util/Heap.h"
 #include "thekogans/util/Path.h"
 #include "thekogans/util/File.h"
-#include "thekogans/util/LockGuard.h"
 #include "thekogans/util/FileAllocatorRegistry.h"
 #include "thekogans/util/FileAllocator.h"
 
@@ -225,7 +223,6 @@ namespace thekogans {
                 std::size_t registryNodesPerPage,
                 Allocator::SharedPtr allocator_) :
                 file (HostEndian, path, SimpleFile::ReadWrite | SimpleFile::Create),
-                header (),
                 allocator (allocator_),
                 btree (nullptr),
                 registry (nullptr),
@@ -263,26 +260,21 @@ namespace thekogans {
             }
             btree = new BTree (
                 *this,
-                header.btreeOffset,
                 btreeEntriesPerNode,
                 btreeNodesPerPage,
                 allocator);
+            btree->AddRef ();
             registry = new Registry (
                 *this,
-                header.registryOffset,
                 registryEntriesPerNode,
                 registryNodesPerPage,
                 allocator);
-            if (header.btreeOffset == 0 && header.registryOffset == 0) {
-                header.btreeOffset = btree->GetOffset ();
-                header.registryOffset = registry->GetOffset ();
-                dirty = true;
-            }
+            registry->AddRef ();
         }
 
         FileAllocator::~FileAllocator () {
-            delete btree;
-            delete registry;
+            btree->Release ();
+            registry->Release ();
         }
 
         void FileAllocator::GetBlockInfo (BlockInfo &block) {
@@ -435,14 +427,25 @@ namespace thekogans {
             btree->Dump ();
         }
 
+        BufferedFile::Transaction::SharedPtr FileAllocator::CreateTransaction () {
+            BufferedFile::Transaction::SharedPtr transaction (
+                new BufferedFile::Transaction (file));
+            BufferedFileTransactionParticipant::Subscribe (*transaction);
+            Produce (
+                std::bind (
+                    &FileAllocatorEvents::OnFileAllocatorCreateTransaction,
+                    std::placeholders::_1,
+                    this,
+                    transaction));
+            return transaction;
+        }
+
         void FileAllocator::Flush () {
             if (dirty) {
                 file.Seek (0, SEEK_SET);
                 file << MAGIC32 << header;
                 dirty = false;
             }
-            btree->Flush ();
-            registry->Flush ();
         }
 
         void FileAllocator::Reload () {
@@ -452,8 +455,6 @@ namespace thekogans {
                 file >> magic >> header;
                 dirty = false;
             }
-            btree->Reload ();
-            registry->Reload ();
         }
 
         FileAllocator::PtrType FileAllocator::AllocBTreeNode (std::size_t size) {

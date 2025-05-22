@@ -25,7 +25,6 @@
 #include "thekogans/util/Subscriber.h"
 #include "thekogans/util/Producer.h"
 #include "thekogans/util/Serializer.h"
-#include "thekogans/util/FileAllocator.h"
 #include "thekogans/util/BTree.h"
 #include "thekogans/kcd/IgnoreList.h"
 
@@ -63,6 +62,8 @@ namespace thekogans {
             util::FileAllocator::PtrType pathBTreeOffset;
             util::FileAllocator::PtrType componentBTreeOffset;
             bool active;
+            util::BTree::SharedPtr pathBTree;
+            util::BTree::SharedPtr componentBTree;
 
         public:
             Root (
@@ -96,6 +97,7 @@ namespace thekogans {
 
             void Scan (
                 util::FileAllocator::SharedPtr fileAllocator,
+                util::BufferedFile::Transaction::SharedPtr transaction,
                 IgnoreList::SharedPtr ignoreList);
             void Delete (util::FileAllocator::SharedPtr fileAllocator);
 

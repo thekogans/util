@@ -22,11 +22,10 @@
 #include <vector>
 #include "thekogans/util/Config.h"
 #include "thekogans/util/Types.h"
-#include "thekogans/util/BufferedFile.h"
 #include "thekogans/util/Serializable.h"
 #include "thekogans/util/Serializer.h"
 #include "thekogans/util/BlockAllocator.h"
-#include "thekogans/util/Subscriber.h"
+#include "thekogans/util/FileAllocatorObject.h"
 #include "thekogans/util/FileAllocator.h"
 
 namespace thekogans {
@@ -46,7 +45,7 @@ namespace thekogans {
         /// That means that key and values can be practically any random size object
         /// (as long as it derives from BTree::Key and implements the interface).
 
-        struct _LIB_THEKOGANS_UTIL_DECL BTree : public Subscriber<BufferedFile::TransactionEvents> {
+        struct _LIB_THEKOGANS_UTIL_DECL BTree : public FileAllocatorObject {
             /// \brief
             /// Declare \see{RefCounted} pointers.
             THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (BTree)
@@ -705,6 +704,14 @@ namespace thekogans {
                 std::size_t entriesPerNode = DEFAULT_ENTRIES_PER_NODE,
                 std::size_t nodesPerPage = BlockAllocator::DEFAULT_BLOCKS_PER_PAGE,
                 Allocator::SharedPtr allocator = DefaultAllocator::Instance ());
+            BTree (
+                FileAllocator &fileAllocator_,
+                BufferedFile::Transaction::SharedPtr transaction,
+                const std::string &keyType = std::string (),
+                const std::string &valueType = std::string (),
+                std::size_t entriesPerNode = DEFAULT_ENTRIES_PER_NODE,
+                std::size_t nodesPerPage = BlockAllocator::DEFAULT_BLOCKS_PER_PAGE,
+                Allocator::SharedPtr allocator = DefaultAllocator::Instance ());
             /// \brief
             /// dtor.
             virtual ~BTree ();
@@ -765,31 +772,20 @@ namespace thekogans {
             bool FindFirst (Iterator &it);
 
             /// \brief
-            /// Flush the node cache (used in tight memory situations).
-            void Flush ();
-
-            /// \brief
-            /// Reload from file.
-            void Reload ();
-
-            /// \brief
             /// Use for debugging. Dump the btree nodes to stdout.
             void Dump ();
 
-        private:
-            virtual void OnTransactionBegin (
-                    BufferedFile::Transaction::SharedPtr /*transaction*/) override {
-                Flush ();
-            }
-            virtual void OnTransactionCommit (
-                    BufferedFile::Transaction::SharedPtr /*transaction*/) override {
-                Flush ();
-            }
-            virtual void OnTransactionAbort (
-                    BufferedFile::Transaction::SharedPtr /*transaction*/) override {
-                Reload ();
-            }
+        protected:
+            // FileAllocatorObject
+            /// \brief
+            /// Flush the node cache (used in tight memory situations).
+            virtual void Flush () override;
 
+            /// \brief
+            /// Reload from file.
+            virtual void Reload () override;
+
+        private:
             /// \brief
             /// Set root node.
             /// \param[in] node \see{Node} to set as new root.

@@ -23,7 +23,6 @@
 #include "thekogans/util/StringUtils.h"
 #include "thekogans/util/Directory.h"
 #include "thekogans/util/FileAllocator.h"
-#include "thekogans/util/FileAllocatorRegistry.h"
 #include "thekogans/util/BTree.h"
 #include "thekogans/util/BTreeKeys.h"
 #include "thekogans/util/BTreeValues.h"
@@ -34,30 +33,31 @@ namespace thekogans {
 
         void Root::Scan (
                 util::FileAllocator::SharedPtr fileAllocator,
+                util::BufferedFile::Transaction::SharedPtr transaction,
                 IgnoreList::SharedPtr ignoreList) {
             if (!path.empty ()) {
                 Delete (fileAllocator);
                 assert (pathBTreeOffset == 0 && componentBTreeOffset == 0);
-                util::BTree pathBTree (
-                    *fileAllocator,
-                    pathBTreeOffset,
-                    util::GUIDKey::TYPE,
-                    util::StringValue::TYPE);
-                pathBTreeOffset = pathBTree.GetOffset ();
-                util::BTree componentBTree (
-                    *fileAllocator,
-                    componentBTreeOffset,
-                    util::StringKey::TYPE,
-                    util::GUIDArrayValue::TYPE);
-                componentBTreeOffset = componentBTree.GetOffset ();
+                util::BTree::SharedPtr pathBTree (
+                    new util::BTree (
+                        *fileAllocator,
+                        transaction,
+                        util::GUIDKey::TYPE,
+                        util::StringValue::TYPE));
+                pathBTreeOffset = pathBTree->GetOffset ();
+                util::BTree::SharedPtr componentBTree (
+                    new util::BTree (
+                        *fileAllocator,
+                        transaction,
+                        util::StringKey::TYPE,
+                        util::GUIDArrayValue::TYPE));
+                componentBTreeOffset = componentBTree->GetOffset ();
                 Produce (
                     std::bind (
                         &RootEvents::OnRootScanBegin,
                         std::placeholders::_1,
                         this));
-                Scan (path, pathBTree, componentBTree, ignoreList);
-                pathBTree.Flush ();
-                componentBTree.Flush ();
+                Scan (path, *pathBTree, *componentBTree, ignoreList);
                 Produce (
                     std::bind (
                         &RootEvents::OnRootScanEnd,
@@ -67,12 +67,12 @@ namespace thekogans {
         }
 
         void Root::Delete (util::FileAllocator::SharedPtr fileAllocator) {
-            Produce (
-                std::bind (
-                    &RootEvents::OnRootDeleteBegin,
-                    std::placeholders::_1,
-                    this));
-            if (pathBTreeOffset != 0) {
+            if (pathBTreeOffset != 0 && componentBTreeOffset != 0) {
+                Produce (
+                    std::bind (
+                        &RootEvents::OnRootDeleteBegin,
+                        std::placeholders::_1,
+                        this));
                 util::BTree::Delete (*fileAllocator, pathBTreeOffset);
                 pathBTreeOffset = 0;
                 Produce (
@@ -80,8 +80,6 @@ namespace thekogans {
                         &RootEvents::OnRootDeletedPathBTree,
                         std::placeholders::_1,
                         this));
-            }
-            if (componentBTreeOffset != 0) {
                 util::BTree::Delete (*fileAllocator, componentBTreeOffset);
                 componentBTreeOffset = 0;
                 Produce (
@@ -89,12 +87,12 @@ namespace thekogans {
                         &RootEvents::OnRootDeletedComponentBTree,
                         std::placeholders::_1,
                         this));
+                Produce (
+                    std::bind (
+                        &RootEvents::OnRootDeleteEnd,
+                        std::placeholders::_1,
+                        this));
             }
-            Produce (
-                std::bind (
-                    &RootEvents::OnRootDeleteEnd,
-                    std::placeholders::_1,
-                    this));
         }
 
         void Root::Find (
