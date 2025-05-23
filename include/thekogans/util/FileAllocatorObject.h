@@ -42,6 +42,8 @@ namespace thekogans {
                 BufferedFile::Transaction::SharedPtr transaction = nullptr);
             virtual ~FileAllocatorObject () {}
 
+            virtual FileAllocator::PtrType GetOffset () const = 0;
+
         private:
             // FileAllocatorEvents
             virtual void OnFileAllocatorCreateTransaction (

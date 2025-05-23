@@ -380,28 +380,37 @@ namespace thekogans {
                             keyValueBuffer <<
                                 entries[i].value->Version () <<
                                 SizeT (keyValueSizes[i].second);
-                            entries[i].value->Write (keyValueBuffer);
                         }
                         else {
-                            keyValueBuffer << *entries[i].value;
+                            // See comment above totalKeyValueSize +=
+                            keyValueBuffer <<
+                                Serializable::Header (
+                                    entries[i].value->Type (),
+                                    entries[i].value->Version (),
+                                    keyValueSizes[i].second);
                         }
+                        entries[i].value->Write (keyValueBuffer);
                     }
-                    // Zero out the unused portion of the keyValueBuffer to
-                    // prevent leaking sensitive data.
-                    keyValueBuffer.AdvanceWriteOffset (
-                        SecureZeroMemory (
-                            keyValueBuffer.GetWritePtr (),
-                            keyValueBuffer.GetDataAvailableForWriting ()));
+                    if (btree.fileAllocator.IsSecure ()) {
+                        // Zero out the unused portion of the keyValueBuffer to
+                        // prevent leaking sensitive data.
+                        keyValueBuffer.AdvanceWriteOffset (
+                            SecureZeroMemory (
+                                keyValueBuffer.GetWritePtr (),
+                                keyValueBuffer.GetDataAvailableForWriting ()));
+                    }
                     keyValueBuffer.BlockWrite ();
                 }
                 else if (keyValueOffset != 0) {
                     btree.fileAllocator.Free (keyValueOffset);
                 }
-                // See comment above keyValueBuffer.
-                buffer.AdvanceWriteOffset (
-                    SecureZeroMemory (
-                        buffer.GetWritePtr (),
-                        buffer.GetDataAvailableForWriting ()));
+                if (btree.fileAllocator.IsSecure ()) {
+                    // See comment above keyValueBuffer.
+                    buffer.AdvanceWriteOffset (
+                        SecureZeroMemory (
+                            buffer.GetWritePtr (),
+                            buffer.GetDataAvailableForWriting ()));
+                }
                 buffer.BlockWrite ();
                 dirty = false;
             }

@@ -116,6 +116,12 @@ namespace thekogans {
                         buffer << entries[i];
                     }
                 }
+                if (btree.fileAllocator.IsSecure ()) {
+                    buffer.AdvanceWriteOffset (
+                        SecureZeroMemory (
+                            buffer.GetWritePtr (),
+                            buffer.GetDataAvailableForWriting ()));
+                }
                 buffer.BlockWrite ();
                 dirty = false;
             }

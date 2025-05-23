@@ -159,18 +159,10 @@ namespace thekogans {
                 fileAllocator (fileAllocator_),
                 block (offset) {
             block.Read (fileAllocator.file);
-            if (!block.IsFree ()) {
-                if (bufferLength == 0) {
-                    bufferLength = block.GetSize ();
-                }
-                Resize (bufferLength, allocator);
+            if (bufferLength == 0) {
+                bufferLength = block.GetSize ();
             }
-            else {
-                THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                    "Trying to acquire a FileAllocator::BlockBuffer "
-                    "on an unallocated block @" THEKOGANS_UTIL_UI64_FORMAT,
-                    offset);
-            }
+            Resize (bufferLength, allocator);
         }
 
         std::size_t FileAllocator::BlockBuffer::BlockRead (
@@ -217,12 +209,14 @@ namespace thekogans {
 
         FileAllocator::FileAllocator (
                 const std::string &path,
+                bool secure,
                 std::size_t btreeEntriesPerNode,
                 std::size_t btreeNodesPerPage,
                 std::size_t registryEntriesPerNode,
                 std::size_t registryNodesPerPage,
                 Allocator::SharedPtr allocator_) :
                 file (HostEndian, path, SimpleFile::ReadWrite | SimpleFile::Create),
+                header (secure ? Header::FLAGS_SECURE : 0),
                 allocator (allocator_),
                 btree (nullptr),
                 registry (nullptr),
@@ -408,6 +402,14 @@ namespace thekogans {
                         btree->Add (BTree::KeyType (block.GetSize (), block.GetOffset ()));
                         block.SetFree (true);
                         block.Write (file);
+                        if (IsSecure ()) {
+                            BlockBuffer buffer (*this, block.GetOffset ());
+                            buffer.AdvanceWriteOffset (
+                                SecureZeroMemory (
+                                    buffer.GetWritePtr (),
+                                    buffer.GetDataAvailableForWriting ()));
+                            buffer.BlockWrite ();
+                        }
                     }
                     else {
                         // If we are, truncate the heap.

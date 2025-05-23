@@ -277,6 +277,7 @@ namespace thekogans {
                 /// \brief
                 /// Clear the internal state and reset the iterator.
                 inline void Clear () {
+                    // Leave the prefix in case they want to reuse the iterator.
                     parents.clear ();
                     node = NodeIndex (nullptr, 0);
                     finished = true;
@@ -658,7 +659,7 @@ namespace thekogans {
             /// An instance of \see{BlockAllocator} to allocate \see{Node}s.
             BlockAllocator::SharedPtr nodeAllocator;
             /// \brief
-            /// We accumulate all changes and update the header in the dtor.
+            /// We accumulate all changes and update the header in \see{Flush}.
             bool dirty;
 
         public:
@@ -704,6 +705,10 @@ namespace thekogans {
                 std::size_t entriesPerNode = DEFAULT_ENTRIES_PER_NODE,
                 std::size_t nodesPerPage = BlockAllocator::DEFAULT_BLOCKS_PER_PAGE,
                 Allocator::SharedPtr allocator = DefaultAllocator::Instance ());
+            /// \brief
+            /// This is a FileAllocatorObject ctor. It serves to seamlessly
+            /// integrate creation of new FileAllocator objects in to already
+            /// running \see{BufferedFile::Transaction}.
             BTree (
                 FileAllocator &fileAllocator_,
                 BufferedFile::Transaction::SharedPtr transaction,
@@ -716,6 +721,7 @@ namespace thekogans {
             /// dtor.
             virtual ~BTree ();
 
+            // FileAllocatorObject
             /// \brief
             /// Delete the btree from the heap.
             /// \param[in] fileAllocator Heap where the btree resides.
@@ -727,7 +733,7 @@ namespace thekogans {
             /// \brief
             /// Return the offset of the btree \see{Header} block.
             /// \return Offset of the btree \see{Header} block.
-            inline FileAllocator::PtrType GetOffset () const {
+            virtual FileAllocator::PtrType GetOffset () const override {
                 return offset;
             }
 
@@ -776,7 +782,7 @@ namespace thekogans {
             void Dump ();
 
         protected:
-            // FileAllocatorObject
+            // BufferedFileTransactionParticipant
             /// \brief
             /// Flush the node cache (used in tight memory situations).
             virtual void Flush () override;

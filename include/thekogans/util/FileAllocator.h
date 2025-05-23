@@ -518,6 +518,7 @@ namespace thekogans {
                 /// wrongly compiled version of thekogans_util it will complain
                 /// instead of corrupting your data.
                 static const ui16 FLAGS_BLOCK_INFO_USES_MAGIC = 1;
+                static const ui16 FLAGS_SECURE = 2;
                 /// \brief
                 /// Heap version.
                 ui16 version;
@@ -557,9 +558,9 @@ namespace thekogans {
 
                 /// \brief
                 /// ctor.
-                Header () :
+                Header (ui16 flags_ = 0) :
                         version (CURRENT_VERSION),
-                        flags (0),
+                        flags (flags_),
                         heapStart (SIZE),
                         btreeOffset (0),
                         freeBTreeNodeOffset (0),
@@ -575,6 +576,9 @@ namespace thekogans {
                 /// \return true == FLAGS_BLOCK_INFO_USES_MAGIC is set.
                 inline bool IsBlockInfoUsesMagic () const {
                     return flags.Test (FLAGS_BLOCK_INFO_USES_MAGIC);
+                }
+                inline bool IsSecure () const {
+                    return flags.Test (FLAGS_SECURE);
                 }
             } header;
             /// \brief
@@ -638,6 +642,7 @@ namespace thekogans {
             /// \see{FileAllocator::Registry}.
             FileAllocator (
                 const std::string &path,
+                bool secure = false,
                 std::size_t btreeEntriesPerNode = DEFAULT_BTREE_ENTRIES_PER_NODE,
                 std::size_t btreeNodesPerPage = DEFAULT_BTREE_NODES_PER_PAGE,
                 std::size_t registryEntriesPerNode = DEFAULT_REGISTRY_ENTRIES_PER_NODE,
@@ -646,6 +651,10 @@ namespace thekogans {
             /// \brief
             /// dtor.
             ~FileAllocator ();
+
+            inline bool IsSecure () const {
+                return header.IsSecure ();
+            }
 
             /// \brief
             /// Return the heap file.
