@@ -995,15 +995,19 @@ namespace thekogans {
         }
 
         void BTree::Reload () {
-            if (dirty) {
-                FileAllocator::BlockBuffer buffer (fileAllocator, offset);
-                buffer.BlockRead ();
-                ui32 magic;
-                buffer >> magic >> header;
-                dirty = false;
+            // Ideally this check is unnecessary as BufferedFile::Transaction::Abort
+            // will properly cleanup temporary transaction objects.
+            if (offset != 0) {
+                if (dirty) {
+                    FileAllocator::BlockBuffer buffer (fileAllocator, offset);
+                    buffer.BlockRead ();
+                    ui32 magic;
+                    buffer >> magic >> header;
+                    dirty = false;
+                }
+                Node::Free (root);
+                root = Node::Alloc (*this, header.rootOffset);
             }
-            Node::Free (root);
-            root = Node::Alloc (*this, header.rootOffset);
         }
 
         void BTree::SetRoot (Node *node) {

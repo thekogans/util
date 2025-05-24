@@ -24,7 +24,6 @@
 #include "thekogans/util/Flags.h"
 #include "thekogans/util/Mutex.h"
 #include "thekogans/util/LockGuard.h"
-#include "thekogans/util/Heap.h"
 #include "thekogans/util/File.h"
 #include "thekogans/util/Subscriber.h"
 #include "thekogans/util/Producer.h"
@@ -65,28 +64,93 @@ namespace thekogans {
             /// Forward declaration of \see{Transaction}.
             struct Transaction;
 
+            /// \struct BufferedFile::Transaction BufferedFile.h thekogans/util/BufferedFile.h
+            ///
+            /// \brief
+            /// Events broadcast by transactions to its participants.
             struct _LIB_THEKOGANS_UTIL_DECL TransactionEvents {
                 /// \brief
                 /// dtor.
                 virtual ~TransactionEvents () {}
 
+                /// \brief
+                /// Transaction is beginning. Time to flush the internal cache.
+                /// If your object derives from \see{BufferedFileTransactionParticipant}
+                /// all this is done under the hood for you. All you will need
+                /// to do is implement Flush.
+                /// \param[in] transaction Transaction thats beginning.
                 virtual void OnTransactionBegin (
-                    RefCounted::SharedPtr<Transaction> transaction) {}
+                    RefCounted::SharedPtr<Transaction> transaction) noexcept {}
+                /// \brief
+                /// Transaction is committing. See OnTransactionBegin above.
+                /// \param[in] transaction Transaction thats beginning.
                 virtual void OnTransactionCommit (
-                    RefCounted::SharedPtr<Transaction> transaction) {}
+                    RefCounted::SharedPtr<Transaction> transaction) noexcept {}
+                /// \brief
+                /// Transaction is aborting. Time to reload the object (if its not a
+                /// participant).
+                /// \param[in] transaction Transaction thats aborting.
+                /// If your object derives from \see{BufferedFileTransactionParticipant}
+                /// all this is done under the hood for you. All you will need
+                /// to do is implement Reload.
                 virtual void OnTransactionAbort (
-                    RefCounted::SharedPtr<Transaction> transaction) {}
+                    RefCounted::SharedPtr<Transaction> transaction) noexcept {}
             };
 
             /// \struct BufferedFile::Transaction BufferedFile.h thekogans/util/BufferedFile.h
             ///
             /// \brief
-            /// A transaction is the easiest way to perform atomic file alterations.
+            /// A transaction is the easiest way to perform atomic file writes.
+            /// BufferedFile is not thread safe. To make it thread safe would require
+            /// a lock to protect internal state. Because BufferedFile is just the
+            /// foundation of a much more extensive data management system (see
+            /// \see{FileAllocator}), I felt introducing locking at such a low level
+            /// would potentially be costly in terms of performance. Insread I introduced
+            /// transactions. Transactions allow you to organize your writes in to logical
+            /// groups. Most high level application writes (database records) require a
+            /// series of related file writes. By wrapping them in transactions you guarantee
+            /// database integrity (either all writes succeed or none will). If you limit your
+            /// file access through transactions even if you don't plan to write you can make
+            /// BufferedFile thread safe. Use Guard within a scope to serialize access to the
+            /// underlying file and make transactions \see{Exception} safe.
             struct _LIB_THEKOGANS_UTIL_DECL Transaction : public Producer<TransactionEvents> {
                 /// \brief
                 /// Declare \see{RefCounted} pointers.
                 THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (Transaction)
 
+                /// \struct BufferedFile::Transaction::Guard BufferedFile.h
+                /// thekogans/util/BufferedFile.h
+                ///
+                /// \brief
+                /// A very simple transaction scope guard. Will call Begin in it's
+                /// ctor and Abort in it's dtor. Call commit before the end of the
+                /// scope to commit the transaction.
+                struct _LIB_THEKOGANS_UTIL_DECL Guard {
+                    /// \brief
+                    /// Transaction to guard.
+                    Transaction::SharedPtr transaction;
+
+                    /// \brief
+                    /// ctor.
+                    /// \param[in] transaction_ Transaction to guard.
+                    Guard (Transaction::SharedPtr transaction_) :
+                            transaction (transaction_) {
+                        transaction->Begin ();
+                    }
+                    /// \brief
+                    /// dtor.
+                    ~Guard () {
+                        transaction->Abort ();
+                    }
+
+                    /// \brief
+                    /// Commit the transaction before the dtor aborts it.
+                    inline void Commit () {
+                        transaction->Commit ();
+                    }
+                };
+
+            private:
                 /// \brief
                 /// \see{BufferedFile} to transact.
                 BufferedFile &file;
@@ -95,31 +159,47 @@ namespace thekogans {
                 LockGuard<Mutex> guard;
                 /// \brief
                 /// List of objects created during the transaction. Their lifetime
-                /// is confined to the transaction
+                /// is confined to the transaction.
                 std::vector<Subscriber<TransactionEvents>::SharedPtr> participants;
 
+            public:
                 /// \brief
                 /// ctor
                 /// \param[in] file_ \see{BufferedFile} to transact.
                 explicit Transaction (BufferedFile &file_) :
                     file (file_),
                     guard (file.mutex) {}
-                /// \brief
-                /// dtor
-                ~Transaction () {
-                    Abort ();
-                }
 
+                /// \brief
+                /// Add an object as a transaction participant. Participants liftimes
+                /// are usualy confined to the lifetime of the transaction. Meaning
+                /// regardless of the outcome of the transaction (Commit/Abort), the
+                /// participant will be destroyed. If the transaction is commited,
+                /// the participant will be given a chance to flush itself to file. If
+                /// the transaction is aborted it will be as though the participant never
+                /// existed.
+                /// \param[in] participant Participants are transaction events subscribers.
                 void AddParticipant (Subscriber<TransactionEvents>::SharedPtr participant);
 
                 /// \brief
-                ///
+                /// Begin the transaction. Notify all subscribers.
                 void Begin ();
                 /// \brief
-                ///
+                /// Commit the transaction. Notify all subscribers.
                 void Commit ();
                 /// \brief
-                ///
+                /// Abort the transaction. Notify all subscribers except participants.
+                /// VERY IMPORTANT: If you've created participants (AddParticipant)
+                /// and surrendered their lifetime management to transaction (i.e.
+                /// you're not holding a reference to them) there's nothing for you to
+                /// do. The objects will be delete before OnTransactionAbort is broadcast.
+                /// They are not told to flush or reload. Their cache (whatever it may be)
+                /// dies with them. If you've kept a reference to the temporary participants
+                /// it's very important that you listen to OnTransactionAbort yourself
+                /// and delete them. Under no circumstance should you attempt to flush the
+                /// cache they've created as its no longer valid and will lead to database
+                /// corruption. The only way participants can survive the liftime of their
+                /// transactions is if the transaction commits.
                 void Abort ();
             };
 

@@ -119,16 +119,15 @@ int main (
                 const std::vector<std::string> &roots_ = Options::Instance ()->roots;
                 if (!roots_.empty ()) {
                     for (std::size_t i = 0, count = roots_.size (); i < count; ++i) {
-                        util::BufferedFile::Transaction::SharedPtr transaction =
-                            fileAllocator->CreateTransaction ();
-                        transaction->Begin ();
+                        util::BufferedFile::Transaction::Guard guard (
+                            fileAllocator->CreateTransaction ());
                         roots->ScanRoot (
                             fileAllocator,
-                            transaction,
+                            guard.transaction,
                             NormalizePath (util::Path (roots_[i]).MakeAbsolute ()),
                             ignoreList);
                         fileAllocator->GetRegistry ().SetValue ("roots", roots);
-                        transaction->Commit ();
+                        guard.Commit ();
                     }
                 }
                 else {
@@ -144,11 +143,10 @@ int main (
                             NormalizePath (util::Path (roots_[i]).MakeAbsolute ()));
                     }
                     if (commit) {
-                        util::BufferedFile::Transaction::SharedPtr transaction =
-                            fileAllocator->CreateTransaction ();
-                        transaction->Begin ();
+                        util::BufferedFile::Transaction::Guard guard (
+                            fileAllocator->CreateTransaction ());
                         fileAllocator->GetRegistry ().SetValue ("roots", roots);
-                        transaction->Commit ();
+                        guard.Commit ();
                     }
                 }
                 else {
@@ -164,11 +162,10 @@ int main (
                             NormalizePath (util::Path (roots_[i]).MakeAbsolute ()));
                     }
                     if (commit) {
-                        util::BufferedFile::Transaction::SharedPtr transaction =
-                            fileAllocator->CreateTransaction ();
-                        transaction->Begin ();
+                        util::BufferedFile::Transaction::Guard guard (
+                            fileAllocator->CreateTransaction ());
                         fileAllocator->GetRegistry ().SetValue ("roots", roots);
-                        transaction->Commit ();
+                        guard.Commit ();
                     }
                 }
                 else {
@@ -179,14 +176,13 @@ int main (
                 const std::vector<std::string> &roots_ = Options::Instance ()->roots;
                 if (!roots_.empty ()) {
                     for (std::size_t i = 0, count = roots_.size (); i < count; ++i) {
-                        util::BufferedFile::Transaction::SharedPtr transaction =
-                            fileAllocator->CreateTransaction ();
-                        transaction->Begin ();
+                        util::BufferedFile::Transaction::Guard Guard (
+                            fileAllocator->CreateTransaction ());
                         if (roots->DeleteRoot (
                                 fileAllocator,
                                 NormalizePath (util::Path (roots_[i]).MakeAbsolute ()))) {
                             fileAllocator->GetRegistry ().SetValue ("roots", roots);
-                            transaction->Commit ();
+                            guard.Commit ();
                         }
                     }
                 }
@@ -231,11 +227,10 @@ int main (
                         commit |= ignoreList->AddIgnore (ignoreList_[i]);
                     }
                     if (commit) {
-                        util::BufferedFile::Transaction::SharedPtr transaction =
-                            fileAllocator->CreateTransaction ();
-                        transaction->Begin ();
+                        util::BufferedFile::Transaction::Guard guard (
+                            fileAllocator->CreateTransaction ());
                         fileAllocator->GetRegistry ().SetValue ("ignore_list", ignoreList);
-                        transaction->Commit ();
+                        guard.Commit ();
                     }
                 }
                 else {
@@ -250,11 +245,10 @@ int main (
                         commit |= ignoreList->DeleteIgnore (ignoreList_[i]);
                     }
                     if (commit) {
-                        util::BufferedFile::Transaction::SharedPtr transaction =
-                            fileAllocator->CreateTransaction ();
-                        transaction->Begin ();
+                        util::BufferedFile::Transaction::Guard guard (
+                            fileAllocator->CreateTransaction ());
                         fileAllocator->GetRegistry ().SetValue ("ignore_list", ignoreList);
-                        transaction->Commit ();
+                        guard.Commit ();
                     }
                 }
                 else {

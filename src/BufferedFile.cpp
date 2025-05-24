@@ -17,6 +17,7 @@
 
 #include <memory>
 #include <string>
+#include "thekogans/util/Heap.h"
 #include "thekogans/util/Path.h"
 #include "thekogans/util/GUID.h"
 #include "thekogans/util/Exception.h"
@@ -43,7 +44,7 @@ namespace thekogans {
                     std::bind (
                         &TransactionEvents::OnTransactionBegin,
                         std::placeholders::_1,
-                        this));
+                        SharedPtr (this)));
                 file.BeginTransaction ();
             }
         }
@@ -54,7 +55,7 @@ namespace thekogans {
                     std::bind (
                         &TransactionEvents::OnTransactionCommit,
                         std::placeholders::_1,
-                        this));
+                        SharedPtr (this)));
                 file.CommitTransaction ();
                 participants.clear ();
             }
@@ -62,13 +63,17 @@ namespace thekogans {
 
         void BufferedFile::Transaction::Abort () {
             if (file.IsTransactionPending ()) {
+                // Participants are created during transaction execution and
+                // are destroyed if aborted. If we're the only owner, their
+                // lives will end here. If not, listen to OnTransactionAbort
+                // and clean up your own objects.
                 participants.clear ();
                 file.AbortTransaction ();
                 Produce (
                     std::bind (
                         &TransactionEvents::OnTransactionAbort,
                         std::placeholders::_1,
-                        this));
+                        SharedPtr (this)));
             }
         }
 

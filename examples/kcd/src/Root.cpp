@@ -207,6 +207,7 @@ namespace thekogans {
                 }
             }
             THEKOGANS_UTIL_CATCH_ANY {
+                // Skip over any directories we can't visit. (permissions?)
             }
         }
 

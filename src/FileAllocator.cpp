@@ -361,6 +361,8 @@ namespace thekogans {
                 BlockInfo block (offset);
                 block.Read (file);
                 if (!block.IsFree ()) {
+                    PtrType clearOffset = block.GetOffset ();
+                    ui64 clearLength = block.GetSize ();
                     // Consolidate adjacent free non BTree::Node blocks.
                     if (!block.IsFirst (header.heapStart)) {
                         BlockInfo prev;
@@ -368,11 +370,18 @@ namespace thekogans {
                         if (prev.IsFree () && !prev.IsBTreeNode ()) {
                             btree->Delete (
                                 BTree::KeyType (prev.GetSize (), prev.GetOffset ()));
-                        #if defined (THEKOGANS_UTIL_FILE_ALLOCATOR_BLOCK_INFO_USE_MAGIC)
-                            // Since block will grow to occupy prev,
-                            // it's offset is no longer valid.
-                            block.Invalidate (file);
-                        #endif // defined (THEKOGANS_UTIL_FILE_ALLOCATOR_BLOCK_INFO_USE_MAGIC)
+                            if (IsSecure ()) {
+                                // Assume prev body is clear.
+                                clearOffset -= BlockInfo::HEADER_SIZE;
+                                clearLength += BlockInfo::HEADER_SIZE;
+                            }
+                            else {
+                            #if defined (THEKOGANS_UTIL_FILE_ALLOCATOR_BLOCK_INFO_USE_MAGIC)
+                                // Since block will grow to occupy prev,
+                                // it's offset is no longer valid.
+                                block.Invalidate (file);
+                            #endif // defined (THEKOGANS_UTIL_FILE_ALLOCATOR_BLOCK_INFO_USE_MAGIC)
+                            }
                             // Back up to cover the prev.
                             block.SetOffset (
                                 block.GetOffset () - BlockInfo::SIZE - prev.GetSize ());
@@ -386,11 +395,17 @@ namespace thekogans {
                         if (next.IsFree () && !next.IsBTreeNode ()) {
                             btree->Delete (
                                 BTree::KeyType (next.GetSize (), next.GetOffset ()));
-                        #if defined (THEKOGANS_UTIL_FILE_ALLOCATOR_BLOCK_INFO_USE_MAGIC)
-                            // Since block will grow to occupy next,
-                            // next offset is no longer valid.
-                            next.Invalidate (file);
-                        #endif // defined (THEKOGANS_UTIL_FILE_ALLOCATOR_BLOCK_INFO_USE_MAGIC)
+                            if (IsSecure ()) {
+                                // Assume next body is clear.
+                                clearLength += BlockInfo::FOOTER_SIZE;
+                            }
+                            else {
+                            #if defined (THEKOGANS_UTIL_FILE_ALLOCATOR_BLOCK_INFO_USE_MAGIC)
+                                // Since block will grow to occupy next,
+                                // next offset is no longer valid.
+                                next.Invalidate (file);
+                            #endif // defined (THEKOGANS_UTIL_FILE_ALLOCATOR_BLOCK_INFO_USE_MAGIC)
+                            }
                             // Expand to swallow the next.
                             block.SetSize (
                                 block.GetSize () + BlockInfo::SIZE + next.GetSize ());
@@ -403,12 +418,12 @@ namespace thekogans {
                         block.SetFree (true);
                         block.Write (file);
                         if (IsSecure ()) {
-                            BlockBuffer buffer (*this, block.GetOffset ());
+                            BlockBuffer buffer (*this, clearOffset, clearLength);
                             buffer.AdvanceWriteOffset (
                                 SecureZeroMemory (
                                     buffer.GetWritePtr (),
                                     buffer.GetDataAvailableForWriting ()));
-                            buffer.BlockWrite ();
+                            buffer.BlockWrite (clearOffset, clearLength);
                         }
                     }
                     else {
@@ -437,7 +452,7 @@ namespace thekogans {
                 std::bind (
                     &FileAllocatorEvents::OnFileAllocatorCreateTransaction,
                     std::placeholders::_1,
-                    this,
+                    SharedPtr (this),
                     transaction));
             return transaction;
         }
