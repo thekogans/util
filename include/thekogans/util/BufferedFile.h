@@ -45,14 +45,14 @@ namespace thekogans {
         /// reason. You paid good money for it. BufferedFile will use as much
         /// as you have (give it). By default, BufferedFile uses 1MB tiles (\see{Buffer}).
         /// It will load and hold available as much of the file as you have room.
-        /// That's where \see{Flush} and \see{CommitTransaction} come in. As you
-        /// eventually start to run out of room (even with 6TB it's a drop in
-        /// the bucket compared to 64 bit address space), call \see{Flush} to commit
-        /// the changes to disk and release the buffers. While with proper tuning
-        /// BufferedFile should work just fine for 'small' (under 1MB) files, it's
-        /// strength lies with it's ability to handle multi GB or even TB files
-        /// with ease. It's hierarchical address space partitioning allows for
-        /// very efficient, sparse file handling.
+        /// That's where \see{Flush}, \see{CommitTransaction} and \see{DeleteCache}
+        /// come in. As you eventually start to run out of room (even with 6TB it's
+        /// a drop in the bucket compared to 64 bit address space), call \see{Flush}
+        /// to commit the changes to disk followed by a call to \see{DeleteCache} to
+        /// release the cache. While with proper tuning BufferedFile should work just
+        /// fine for 'small' (under 1MB) files, it's strength lies with it's ability
+        /// to handle multi GB or even TB files with ease. It's hierarchical address
+        /// space partitioning allows for very efficient, sparse file handling.
 
         struct _LIB_THEKOGANS_UTIL_DECL BufferedFile : public File {
             /// \brief

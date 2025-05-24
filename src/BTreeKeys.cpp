@@ -16,6 +16,7 @@
 // along with libthekogans_util. If not, see <http://www.gnu.org/licenses/>.
 
 #include <cstring>
+#include "thekogans/util/Heap.h"
 #include "thekogans/util/StringUtils.h"
 #include "thekogans/util/BTreeKeys.h"
 

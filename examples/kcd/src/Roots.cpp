@@ -32,7 +32,7 @@ namespace thekogans {
         THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE (Roots, 1, util::BTree::Value::TYPE)
 
         void Roots::ScanRoot (
-                util::FileAllocator::SharedPtr fileAllocator,
+                util::FileAllocator &fileAllocator,
                 util::BufferedFile::Transaction::SharedPtr transaction,
                 const std::string &path,
                 IgnoreList::SharedPtr ignoreList) {
@@ -94,7 +94,7 @@ namespace thekogans {
         }
 
         bool Roots::DeleteRoot (
-                util::FileAllocator::SharedPtr fileAllocator,
+                util::FileAllocator &fileAllocator,
                 const std::string &path) {
             for (std::size_t i = 0, count = value.size (); i < count; ++i) {
                 if (value[i]->GetPath () == path) {
@@ -115,7 +115,7 @@ namespace thekogans {
         }
 
         void Roots::Find (
-                util::FileAllocator::SharedPtr fileAllocator,
+                util::FileAllocator &fileAllocator,
                 const std::string &pattern,
                 bool ignoreCase,
                 bool ordered,

@@ -32,7 +32,7 @@ namespace thekogans {
     namespace kcd {
 
         void Root::Scan (
-                util::FileAllocator::SharedPtr fileAllocator,
+                util::FileAllocator &fileAllocator,
                 util::BufferedFile::Transaction::SharedPtr transaction,
                 IgnoreList::SharedPtr ignoreList) {
             if (!path.empty ()) {
@@ -40,14 +40,14 @@ namespace thekogans {
                 assert (pathBTreeOffset == 0 && componentBTreeOffset == 0);
                 util::BTree::SharedPtr pathBTree (
                     new util::BTree (
-                        *fileAllocator,
+                        fileAllocator,
                         transaction,
                         util::GUIDKey::TYPE,
                         util::StringValue::TYPE));
                 pathBTreeOffset = pathBTree->GetOffset ();
                 util::BTree::SharedPtr componentBTree (
                     new util::BTree (
-                        *fileAllocator,
+                        fileAllocator,
                         transaction,
                         util::StringKey::TYPE,
                         util::GUIDArrayValue::TYPE));
@@ -66,21 +66,21 @@ namespace thekogans {
             }
         }
 
-        void Root::Delete (util::FileAllocator::SharedPtr fileAllocator) {
+        void Root::Delete (util::FileAllocator &fileAllocator) {
             if (pathBTreeOffset != 0 && componentBTreeOffset != 0) {
                 Produce (
                     std::bind (
                         &RootEvents::OnRootDeleteBegin,
                         std::placeholders::_1,
                         this));
-                util::BTree::Delete (*fileAllocator, pathBTreeOffset);
+                util::BTree::Delete (fileAllocator, pathBTreeOffset);
                 pathBTreeOffset = 0;
                 Produce (
                     std::bind (
                         &RootEvents::OnRootDeletedPathBTree,
                         std::placeholders::_1,
                         this));
-                util::BTree::Delete (*fileAllocator, componentBTreeOffset);
+                util::BTree::Delete (fileAllocator, componentBTreeOffset);
                 componentBTreeOffset = 0;
                 Produce (
                     std::bind (
@@ -96,27 +96,29 @@ namespace thekogans {
         }
 
         void Root::Find (
-                util::FileAllocator::SharedPtr fileAllocator,
+                util::FileAllocator &fileAllocator,
                 const std::string &prefix,
                 bool ignoreCase,
                 std::vector<std::string> &paths) {
             if (pathBTreeOffset != 0 && componentBTreeOffset != 0) {
-                util::BTree pathBTree (
-                    *fileAllocator,
-                    pathBTreeOffset,
-                    util::GUIDKey::TYPE,
-                    util::StringValue::TYPE);
-                util::BTree componentBTree (
-                    *fileAllocator,
-                    componentBTreeOffset,
-                    util::StringKey::TYPE,
-                    util::GUIDArrayValue::TYPE);
+                util::BTree::SharedPtr pathBTree (
+                    new util::BTree (
+                        fileAllocator,
+                        pathBTreeOffset,
+                        util::GUIDKey::TYPE,
+                        util::StringValue::TYPE));
+                util::BTree::SharedPtr componentBTree (
+                    new util::BTree (
+                        fileAllocator,
+                        componentBTreeOffset,
+                        util::StringKey::TYPE,
+                        util::GUIDArrayValue::TYPE));
                 util::StringKey originalPrefix (prefix);
                 // To allow for the ignoreCase flag the database is
                 // maintained without regard to case. All searches
                 // must be performed caseless too.
                 util::BTree::Iterator it (new util::StringKey (prefix, true));
-                for (componentBTree.FindFirst (it); !it.IsFinished (); it.Next ()) {
+                for (componentBTree->FindFirst (it); !it.IsFinished (); it.Next ()) {
                     // To honor the case request we filter out everything that
                     // doesn't match.
                     if (ignoreCase || originalPrefix.PrefixCompare (*it.GetKey ()) == 0) {
@@ -124,7 +126,7 @@ namespace thekogans {
                         for (std::size_t i = 0,
                                 count = componentValue->value.size (); i < count; ++i) {
                             util::BTree::Iterator jt;
-                            if (pathBTree.Find (util::GUIDKey (componentValue->value[i]), jt)) {
+                            if (pathBTree->Find (util::GUIDKey (componentValue->value[i]), jt)) {
                                 // Components are stored caseless but paths are stored
                                 // with case in tact. That means that a component might
                                 // be pointing to a path with mismatched case.

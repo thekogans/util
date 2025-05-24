@@ -58,18 +58,18 @@ namespace thekogans {
             THEKOGANS_UTIL_DECLARE_SERIALIZABLE (Roots)
 
             void ScanRoot (
-                util::FileAllocator::SharedPtr fileAllocator,
+                util::FileAllocator &fileAllocator,
                 util::BufferedFile::Transaction::SharedPtr transaction,
                 const std::string &path,
                 IgnoreList::SharedPtr ignoreList);
             bool EnableRoot (const std::string &path);
             bool DisableRoot (const std::string &path);
             bool DeleteRoot (
-                util::FileAllocator::SharedPtr fileAllocator,
+                util::FileAllocator &fileAllocator,
                 const std::string &path);
 
             void Find (
-                util::FileAllocator::SharedPtr fileAllocator,
+                util::FileAllocator &fileAllocator,
                 const std::string &pattern,
                 bool ignoreCase,
                 bool ordered,

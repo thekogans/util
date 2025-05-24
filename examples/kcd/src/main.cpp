@@ -122,7 +122,7 @@ int main (
                         util::BufferedFile::Transaction::Guard guard (
                             fileAllocator->CreateTransaction ());
                         roots->ScanRoot (
-                            fileAllocator,
+                            *fileAllocator,
                             guard.transaction,
                             NormalizePath (util::Path (roots_[i]).MakeAbsolute ()),
                             ignoreList);
@@ -176,10 +176,10 @@ int main (
                 const std::vector<std::string> &roots_ = Options::Instance ()->roots;
                 if (!roots_.empty ()) {
                     for (std::size_t i = 0, count = roots_.size (); i < count; ++i) {
-                        util::BufferedFile::Transaction::Guard Guard (
+                        util::BufferedFile::Transaction::Guard guard (
                             fileAllocator->CreateTransaction ());
                         if (roots->DeleteRoot (
-                                fileAllocator,
+                                *fileAllocator,
                                 NormalizePath (util::Path (roots_[i]).MakeAbsolute ()))) {
                             fileAllocator->GetRegistry ().SetValue ("roots", roots);
                             guard.Commit ();
@@ -201,7 +201,7 @@ int main (
                 if (!Options::Instance ()->pattern.empty ()) {
                     std::vector<std::string> results;
                     roots->Find (
-                        fileAllocator,
+                        *fileAllocator,
                         Options::Instance ()->pattern,
                         Options::Instance ()->ignoreCase,
                         Options::Instance ()->ordered,
