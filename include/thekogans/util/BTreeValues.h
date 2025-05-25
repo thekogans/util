@@ -217,10 +217,16 @@ namespace thekogans {
         /// \struct StringArrayValue BTreeValues.h thekogans/util/BTreeValues.h
         ///
         /// \brief
+        /// Specialization of ArrayValue for std::string.
 
         struct _LIB_THEKOGANS_UTIL_DECL StringArrayValue : public ArrayValue<std::string> {
+            /// \brief
+            /// StringArrayValue is a \see{Serializable}.
             THEKOGANS_UTIL_DECLARE_SERIALIZABLE (StringArrayValue)
 
+            /// \brief
+            /// ctor.
+            /// \param[in] value Optional std::string array to initialize with.
             StringArrayValue (const std::vector<std::string> &value = std::vector<std::string> ()) :
                 ArrayValue<std::string> (value) {}
         };
@@ -228,10 +234,16 @@ namespace thekogans {
         /// \struct GUIDArrayValue BTreeValues.h thekogans/util/BTreeValues.h
         ///
         /// \brief
+        /// Specialization of ArrayValue for \see{GUID}.
 
         struct _LIB_THEKOGANS_UTIL_DECL GUIDArrayValue : public ArrayValue<GUID> {
+            /// \brief
+            /// GUIDArrayValue is a \see{Serializable}.
             THEKOGANS_UTIL_DECLARE_SERIALIZABLE (GUIDArrayValue)
 
+            /// \brief
+            /// ctor.
+            /// \param[in] value Optional \see{GUID} array to initialize with.
             GUIDArrayValue (const std::vector<GUID> &value = std::vector<GUID> ()) :
                 ArrayValue<GUID> (value) {}
         };
