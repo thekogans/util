@@ -49,34 +49,41 @@ namespace thekogans {
         }
 
         void BufferedFile::Transaction::Begin () {
-            if (!file.IsTransactionPending ()) {
+            if (!current) {
+                file.mutex.Acquire ();
                 Produce (
                     std::bind (
                         &TransactionEvents::OnTransactionBegin,
                         std::placeholders::_1,
                         this));
                 file.BeginTransaction ();
+                current = true;
             }
         }
 
         void BufferedFile::Transaction::Commit () {
-            if (file.IsTransactionPending ()) {
+            if (current) {
+                current = false;
                 // Manually tell the participants to commit.
                 for (std::size_t i = 0, count = participants.size (); i < count; ++i) {
                     participants[i]->OnTransactionCommit (this);
                 }
+                participants.clear ();
+                // Now tell the subscribers to commit.
                 Produce (
                     std::bind (
                         &TransactionEvents::OnTransactionCommit,
                         std::placeholders::_1,
                         this));
+                // Commit the dirty pages.
                 file.CommitTransaction ();
-                participants.clear ();
+                file.mutex.Release ();
             }
         }
 
         void BufferedFile::Transaction::Abort () {
-            if (file.IsTransactionPending ()) {
+            if (current) {
+                current = false;
                 // Participants don't get the abort event. They are created
                 // during transaction execution and are destroyed if aborted.
                 // If we're the only owner, their lives will end here. If not,
@@ -88,6 +95,7 @@ namespace thekogans {
                         &TransactionEvents::OnTransactionAbort,
                         std::placeholders::_1,
                         this));
+                file.mutex.Release ();
             }
         }
 

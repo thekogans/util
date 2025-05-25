@@ -152,12 +152,12 @@ namespace thekogans {
                 /// \see{BufferedFile} to transact.
                 BufferedFile &file;
                 /// \brief
-                /// Transactions are atomic.
-                LockGuard<Mutex> guard;
-                /// \brief
                 /// List of objects created during the transaction. Their lifetime
                 /// is confined to the transaction.
                 std::vector<Subscriber<TransactionEvents>::SharedPtr> participants;
+                /// \brief
+                /// true if we're the current executing transaction.
+                bool current;
 
             public:
                 /// \brief
@@ -165,7 +165,7 @@ namespace thekogans {
                 /// \param[in] file_ \see{BufferedFile} to transact.
                 explicit Transaction (BufferedFile &file_) :
                     file (file_),
-                    guard (file.mutex) {}
+                    current (false) {}
 
                 /// \brief
                 /// Add an object as a transaction participant. Participants liftimes
