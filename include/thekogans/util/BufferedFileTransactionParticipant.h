@@ -29,6 +29,9 @@ namespace thekogans {
         /// thekogans/util/BufferedFileTransactionParticipant.h
         ///
         /// \brief
+        /// BufferedFileTransactionParticipants are objects that listen to
+        /// \see{BufferedFile::TransactionEvents} and are able to flush and reload
+        /// themselves to and from a \see{BufferedFile}.
 
         struct _LIB_THEKOGANS_UTIL_DECL BufferedFileTransactionParticipant :
                 public Subscriber<BufferedFile::TransactionEvents> {
@@ -36,13 +39,19 @@ namespace thekogans {
             /// Declare \see{RefCounted} pointers.
             THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (BufferedFileTransactionParticipant)
 
+            /// \brief
+            /// ctor.
+            /// \param[in] transaction If this parameter is not null
+            /// that means we're a temporary transaction participant.
             BufferedFileTransactionParticipant (
                 BufferedFile::Transaction::SharedPtr transaction = nullptr);
+            /// \brief
+            /// dtor.
             virtual ~BufferedFileTransactionParticipant () {}
 
         protected:
             /// \brief
-            /// Flush the internal cache (if any) to file.
+            /// Flush the internal cache to file.
             virtual void Flush () = 0;
 
             /// \brief
@@ -50,21 +59,30 @@ namespace thekogans {
             virtual void Reload () = 0;
 
             // BufferedFile::TransactionEvents
+            /// \brief
+            /// Transaction is beginning. Flush internal cache to file.
+            /// \param[in] transaction \see{BufferedFile::Transaction} that's beginning.
             virtual void OnTransactionBegin (
                     BufferedFile::Transaction::SharedPtr /*transaction*/) noexcept override {
                 Flush ();
             }
+            /// \brief
+            /// Transaction is commiting. Flush internal cache to file.
+            /// \param[in] transaction \see{BufferedFile::Transaction} that's commiting.
             virtual void OnTransactionCommit (
                     BufferedFile::Transaction::SharedPtr /*transaction*/) noexcept override {
                 Flush ();
             }
+            /// \brief
+            /// Transaction is aborting. Reload from file.
+            /// \param[in] transaction \see{BufferedFile::Transaction} that's aborting.
             virtual void OnTransactionAbort (
                     BufferedFile::Transaction::SharedPtr /*transaction*/) noexcept override {
                 Reload ();
             }
 
             /// \brief
-            /// FileAllocatorObject is neither copy constructable, nor assignable.
+            /// BufferedFileTransactionParticipant is neither copy constructable, nor assignable.
             THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (BufferedFileTransactionParticipant)
         };
 

@@ -30,11 +30,24 @@
 namespace thekogans {
     namespace util {
 
+        /// \brief
+        /// Forward declaration of \see{FileAllocator} needed by \see{FileAllocatorEvents}.
         struct FileAllocator;
 
+        /// \struct FileAllocatorEvents FileAllocator.h thekogans/util/FileAllocator.h
+        ///
+        /// \brief
+        /// Subscribe to FileAllocatorEvents to receive notifications.
+
         struct _LIB_THEKOGANS_UTIL_DECL FileAllocatorEvents {
+            /// \brief
+            /// dtor.
             virtual ~FileAllocatorEvents () {}
 
+            /// \brief
+            /// \see{FileAllocator} just created a new \see{BufferedFile::Transaction}.
+            /// \param[in] fileAllocator \see{FileAllocator} that created the transaction.
+            /// \param[in] transaction \see{BufferedFile::Transaction} that was created.
             virtual void OnFileAllocatorCreateTransaction (
                 RefCounted::SharedPtr<FileAllocator> /*fileAllocator*/,
                 BufferedFile::Transaction::SharedPtr /*transaction*/) noexcept {}
@@ -392,13 +405,16 @@ namespace thekogans {
                 }
 
                 /// \brief
+                /// Return the next free \see{FileAllocator::BTree::Node} offset.
+                /// \return Next free \see{FileAllocator::BTree::Node} offset.
                 inline PtrType GetNextBTreeNodeOffset () const {
                     return header.nextBTreeNodeOffset;
                 }
                 /// \brief
-                /// Set the next free \see{BTree::Node} offset. This will chain the
-                /// free \see{BTree::Node} blocks in to a singly linked list.
-                /// \param[in] nextBTreeNodeOffset Next free \see{BTree::Node} offset.
+                /// Set the next free \see{FileAllocator::BTree::Node} offset.
+                /// This will chain the free \see{FileAllocator::BTree::Node}
+                /// blocks in to a singly linked list.
+                /// \param[in] nextBTreeNodeOffset Next free \see{FileAllocator::BTree::Node} offset.
                 inline void SetNextBTreeNodeOffset (PtrType nextBTreeNodeOffset) {
                     header.nextBTreeNodeOffset = nextBTreeNodeOffset;
                 }
@@ -518,6 +534,8 @@ namespace thekogans {
                 /// wrongly compiled version of thekogans_util it will complain
                 /// instead of corrupting your data.
                 static const ui16 FLAGS_BLOCK_INFO_USES_MAGIC = 1;
+                /// \brief
+                /// If set, zero out freed blocks.
                 static const ui16 FLAGS_SECURE = 2;
                 /// \brief
                 /// Heap version.
@@ -577,6 +595,9 @@ namespace thekogans {
                 inline bool IsBlockInfoUsesMagic () const {
                     return flags.Test (FLAGS_BLOCK_INFO_USES_MAGIC);
                 }
+                /// \brief
+                /// Return true if secure.
+                /// \return true == secure.
                 inline bool IsSecure () const {
                     return flags.Test (FLAGS_SECURE);
                 }
@@ -630,6 +651,7 @@ namespace thekogans {
             /// \brief
             /// ctor.
             /// \param[in] path Heap file path.
+            /// \param[in] secure true == zero out freed blocks.
             /// \param[in] btreeEntriesPerNode Default number of entries
             /// per \see{BTree::Node}.
             /// \param[in] btreeNodesPerPage Number of \see{BTree::Node}s
@@ -652,6 +674,9 @@ namespace thekogans {
             /// dtor.
             ~FileAllocator ();
 
+            /// \brief
+            /// Return true if secure.
+            /// \return true == secure.
             inline bool IsSecure () const {
                 return header.IsSecure ();
             }
@@ -732,9 +757,13 @@ namespace thekogans {
             /// Debugging helper. Dumps \see{BTree::Node}s to stdout.
             void DumpBTree ();
 
+            /// \brief
+            /// Create a \see{BufferedFile::Transaction}.
+            /// \return A new \see{BufferedFile::Transaction}.
             BufferedFile::Transaction::SharedPtr CreateTransaction ();
 
         protected:
+            // BufferedFileTransactionParticipant
             /// \brief
             /// Flush the header to file.
             virtual void Flush () override;

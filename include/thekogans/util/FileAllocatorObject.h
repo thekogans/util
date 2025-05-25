@@ -29,6 +29,8 @@ namespace thekogans {
         /// \struct FileAllocatorObject FileAllocatorObject.h thekogans/util/FileAllocatorObject.h
         ///
         /// \brief
+        /// A FileAllocatorObject is an object that lives in a \see{FileAllocator} and
+        /// participates in \see{BufferedFile::Transaction}.
 
         struct _LIB_THEKOGANS_UTIL_DECL FileAllocatorObject :
                 public Subscriber<FileAllocatorEvents>,
@@ -39,11 +41,10 @@ namespace thekogans {
 
         protected:
             /// \brief
-            /// \see{FileAllocator} where we allocate
-            /// \see{Header} and \see{Node} blocks from.
+            /// \see{FileAllocator} where this object resides.
             FileAllocator &fileAllocator;
             /// \brief
-            /// Offset of the \see{Header} block.
+            /// Our address within the \see{FileAllocator}.
             FileAllocator::PtrType offset;
 
         public:
@@ -61,12 +62,20 @@ namespace thekogans {
             /// dtor.
             virtual ~FileAllocatorObject () {}
 
+            /// \brief
+            /// Return the offset.
+            /// \return Offset.
             inline FileAllocator::PtrType GetOffset () const {
                 return offset;
             }
 
         private:
             // FileAllocatorEvents
+            /// \brief
+            /// \see{FileAllocator} just created a new \see{BufferedFile::Transaction}.
+            /// Subscribe to it's events.
+            /// \param[in] fileAllocator \see{FileAllocator} that created the transaction.
+            /// \param[in] transaction \see{BufferedFile::Transaction} that was created.
             virtual void OnFileAllocatorCreateTransaction (
                     FileAllocator::SharedPtr /*fileAllocator*/,
                     BufferedFile::Transaction::SharedPtr transaction) noexcept override {

@@ -264,7 +264,7 @@ namespace thekogans {
                 /// \param[in] prefix_ Prefix to iterate over (nullptr == entire tree).
                 Iterator (Key::SharedPtr prefix_ = nullptr) :
                     prefix (prefix_),
-                    node (NodeIndex (nullptr, 0)),
+                    node (nullptr, 0),
                     finished (true) {}
 
                 /// \brief

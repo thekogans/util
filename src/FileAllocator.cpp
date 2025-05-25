@@ -375,13 +375,13 @@ namespace thekogans {
                                 clearOffset -= BlockInfo::HEADER_SIZE;
                                 clearLength += BlockInfo::HEADER_SIZE;
                             }
+                        #if defined (THEKOGANS_UTIL_FILE_ALLOCATOR_BLOCK_INFO_USE_MAGIC)
                             else {
-                            #if defined (THEKOGANS_UTIL_FILE_ALLOCATOR_BLOCK_INFO_USE_MAGIC)
                                 // Since block will grow to occupy prev,
                                 // it's offset is no longer valid.
                                 block.Invalidate (file);
-                            #endif // defined (THEKOGANS_UTIL_FILE_ALLOCATOR_BLOCK_INFO_USE_MAGIC)
                             }
+                        #endif // defined (THEKOGANS_UTIL_FILE_ALLOCATOR_BLOCK_INFO_USE_MAGIC)
                             // Back up to cover the prev.
                             block.SetOffset (
                                 block.GetOffset () - BlockInfo::SIZE - prev.GetSize ());
@@ -399,13 +399,13 @@ namespace thekogans {
                                 // Assume next body is clear.
                                 clearLength += BlockInfo::FOOTER_SIZE;
                             }
+                        #if defined (THEKOGANS_UTIL_FILE_ALLOCATOR_BLOCK_INFO_USE_MAGIC)
                             else {
-                            #if defined (THEKOGANS_UTIL_FILE_ALLOCATOR_BLOCK_INFO_USE_MAGIC)
                                 // Since block will grow to occupy next,
                                 // next offset is no longer valid.
                                 next.Invalidate (file);
-                            #endif // defined (THEKOGANS_UTIL_FILE_ALLOCATOR_BLOCK_INFO_USE_MAGIC)
                             }
+                        #endif // defined (THEKOGANS_UTIL_FILE_ALLOCATOR_BLOCK_INFO_USE_MAGIC)
                             // Expand to swallow the next.
                             block.SetSize (
                                 block.GetSize () + BlockInfo::SIZE + next.GetSize ());
@@ -452,7 +452,7 @@ namespace thekogans {
                 std::bind (
                     &FileAllocatorEvents::OnFileAllocatorCreateTransaction,
                     std::placeholders::_1,
-                    SharedPtr (this),
+                    this,
                     transaction));
             return transaction;
         }
