@@ -31,8 +31,7 @@ namespace thekogans {
                 public util::RefCountedSingleton<Database>,
                 public util::FileAllocator {
             struct Guard : public util::BufferedFile::Transaction::Guard {
-                Guard () :
-                        util::BufferedFile::Transaction::Guard (*Database::Instance ()) {
+                Guard () : util::BufferedFile::Transaction::Guard (*Database::Instance ()) {
                     Database::Instance ()->transaction = transaction;
                 }
                 ~Guard () {
