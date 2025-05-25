@@ -54,7 +54,7 @@ namespace thekogans {
                     std::bind (
                         &TransactionEvents::OnTransactionBegin,
                         std::placeholders::_1,
-                        this));
+                        SharedPtr (this)));
                 file.BeginTransaction ();
             }
         }
@@ -71,7 +71,7 @@ namespace thekogans {
                     std::bind (
                         &TransactionEvents::OnTransactionCommit,
                         std::placeholders::_1,
-                        this));
+                        SharedPtr (this)));
                 // Commit the dirty pages.
                 file.CommitTransaction ();
             }
@@ -89,7 +89,7 @@ namespace thekogans {
                     std::bind (
                         &TransactionEvents::OnTransactionAbort,
                         std::placeholders::_1,
-                        this));
+                        SharedPtr (this)));
             }
         }
 

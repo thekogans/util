@@ -452,7 +452,7 @@ namespace thekogans {
                 std::bind (
                     &FileAllocatorEvents::OnFileAllocatorCreateTransaction,
                     std::placeholders::_1,
-                    this,
+                    SharedPtr (this),
                     transaction));
             return transaction;
         }

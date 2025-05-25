@@ -29,7 +29,7 @@ namespace thekogans {
     namespace kcd {
 
         struct Database :
-                public util::Singleton<Database>,
+                public util::RefCountedSingleton<Database>,
                 public util::FileAllocator {
             Database () :
                 util::FileAllocator (Options::Instance ()->dbPath) {}

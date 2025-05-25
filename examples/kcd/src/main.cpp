@@ -105,12 +105,16 @@ int main (
     }
     else {
         THEKOGANS_UTIL_TRY {
-            Roots::SharedPtr roots = Database::Instance ()->GetRegistry ().GetValue ("roots");
+            Roots::SharedPtr roots;
+            IgnoreList::SharedPtr ignoreList;
+            {
+                util::BufferedFile::Transaction::Guard guard (*Database::Instance ());
+                roots = Database::Instance ()->GetRegistry ().GetValue ("roots");
+                ignoreList = Database::Instance ()->GetRegistry ().GetValue ("ignore_list");
+            }
             if (roots == nullptr) {
                 roots.Reset (new Roots);
             }
-            IgnoreList::SharedPtr ignoreList =
-                Database::Instance ()->GetRegistry ().GetValue ("ignore_list");
             if (ignoreList == nullptr) {
                 ignoreList.Reset (new IgnoreList);
             }
@@ -193,11 +197,14 @@ int main (
             else if (Options::Instance ()->action == "cd") {
                 if (!Options::Instance ()->pattern.empty ()) {
                     std::vector<std::string> results;
-                    roots->Find (
-                        Options::Instance ()->pattern,
-                        Options::Instance ()->ignoreCase,
-                        Options::Instance ()->ordered,
-                        results);
+                    {
+                        util::BufferedFile::Transaction::Guard guard (*Database::Instance ());
+                        roots->Find (
+                            Options::Instance ()->pattern,
+                            Options::Instance ()->ignoreCase,
+                            Options::Instance ()->ordered,
+                            results);
+                    }
                     for (std::size_t i = 0, count = results.size (); i < count; ++i) {
                         std::cout << results[i] << "\n";
                     }
