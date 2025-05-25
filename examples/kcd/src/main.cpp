@@ -28,6 +28,7 @@
 #include "thekogans/util/FileAllocatorRegistry.h"
 #include "thekogans/kcd/Options.h"
 #include "thekogans/kcd/Version.h"
+#include "thekogans/kcd/Database.h"
 #include "thekogans/kcd/Root.h"
 #include "thekogans/kcd/Roots.h"
 #include "thekogans/kcd/IgnoreList.h"
@@ -104,14 +105,12 @@ int main (
     }
     else {
         THEKOGANS_UTIL_TRY {
-            util::FileAllocator::SharedPtr fileAllocator (
-                new util::FileAllocator (Options::Instance ()->dbPath));
-            Roots::SharedPtr roots = fileAllocator->GetRegistry ().GetValue ("roots");
+            Roots::SharedPtr roots = Database::Instance ()->GetRegistry ().GetValue ("roots");
             if (roots == nullptr) {
                 roots.Reset (new Roots);
             }
             IgnoreList::SharedPtr ignoreList =
-                fileAllocator->GetRegistry ().GetValue ("ignore_list");
+                Database::Instance ()->GetRegistry ().GetValue ("ignore_list");
             if (ignoreList == nullptr) {
                 ignoreList.Reset (new IgnoreList);
             }
@@ -119,13 +118,12 @@ int main (
                 const std::vector<std::string> &roots_ = Options::Instance ()->roots;
                 if (!roots_.empty ()) {
                     for (std::size_t i = 0, count = roots_.size (); i < count; ++i) {
-                        util::BufferedFile::Transaction::Guard guard (*fileAllocator);
+                        util::BufferedFile::Transaction::Guard guard (*Database::Instance ());
                         roots->ScanRoot (
-                            *fileAllocator,
                             guard.transaction,
                             NormalizePath (util::Path (roots_[i]).MakeAbsolute ()),
                             ignoreList);
-                        fileAllocator->GetRegistry ().SetValue ("roots", roots);
+                        Database::Instance ()->GetRegistry ().SetValue ("roots", roots);
                         guard.Commit ();
                     }
                 }
@@ -142,8 +140,8 @@ int main (
                             NormalizePath (util::Path (roots_[i]).MakeAbsolute ()));
                     }
                     if (commit) {
-                        util::BufferedFile::Transaction::Guard guard (*fileAllocator);
-                        fileAllocator->GetRegistry ().SetValue ("roots", roots);
+                        util::BufferedFile::Transaction::Guard guard (*Database::Instance ());
+                        Database::Instance ()->GetRegistry ().SetValue ("roots", roots);
                         guard.Commit ();
                     }
                 }
@@ -160,8 +158,8 @@ int main (
                             NormalizePath (util::Path (roots_[i]).MakeAbsolute ()));
                     }
                     if (commit) {
-                        util::BufferedFile::Transaction::Guard guard (*fileAllocator);
-                        fileAllocator->GetRegistry ().SetValue ("roots", roots);
+                        util::BufferedFile::Transaction::Guard guard (*Database::Instance ());
+                        Database::Instance ()->GetRegistry ().SetValue ("roots", roots);
                         guard.Commit ();
                     }
                 }
@@ -173,11 +171,10 @@ int main (
                 const std::vector<std::string> &roots_ = Options::Instance ()->roots;
                 if (!roots_.empty ()) {
                     for (std::size_t i = 0, count = roots_.size (); i < count; ++i) {
-                        util::BufferedFile::Transaction::Guard guard (*fileAllocator);
+                        util::BufferedFile::Transaction::Guard guard (*Database::Instance ());
                         if (roots->DeleteRoot (
-                                *fileAllocator,
                                 NormalizePath (util::Path (roots_[i]).MakeAbsolute ()))) {
-                            fileAllocator->GetRegistry ().SetValue ("roots", roots);
+                            Database::Instance ()->GetRegistry ().SetValue ("roots", roots);
                             guard.Commit ();
                         }
                     }
@@ -197,7 +194,6 @@ int main (
                 if (!Options::Instance ()->pattern.empty ()) {
                     std::vector<std::string> results;
                     roots->Find (
-                        *fileAllocator,
                         Options::Instance ()->pattern,
                         Options::Instance ()->ignoreCase,
                         Options::Instance ()->ordered,
@@ -223,8 +219,8 @@ int main (
                         commit |= ignoreList->AddIgnore (ignoreList_[i]);
                     }
                     if (commit) {
-                        util::BufferedFile::Transaction::Guard guard (*fileAllocator);
-                        fileAllocator->GetRegistry ().SetValue ("ignore_list", ignoreList);
+                        util::BufferedFile::Transaction::Guard guard (*Database::Instance ());
+                        Database::Instance ()->GetRegistry ().SetValue ("ignore_list", ignoreList);
                         guard.Commit ();
                     }
                 }
@@ -240,8 +236,8 @@ int main (
                         commit |= ignoreList->DeleteIgnore (ignoreList_[i]);
                     }
                     if (commit) {
-                        util::BufferedFile::Transaction::Guard guard (*fileAllocator);
-                        fileAllocator->GetRegistry ().SetValue ("ignore_list", ignoreList);
+                        util::BufferedFile::Transaction::Guard guard (*Database::Instance ());
+                        Database::Instance ()->GetRegistry ().SetValue ("ignore_list", ignoreList);
                         guard.Commit ();
                     }
                 }

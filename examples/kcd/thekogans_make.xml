@@ -11,6 +11,7 @@
                 name = "util"/>
   </dependencies>
   <cpp_headers prefix = "include">
+    <cpp_header>$(organization)/$(project_directory)/Database.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/IgnoreList.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/Options.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/Root.h</cpp_header>

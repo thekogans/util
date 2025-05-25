@@ -32,7 +32,6 @@ namespace thekogans {
         THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE (Roots, 1, util::BTree::Value::TYPE)
 
         void Roots::ScanRoot (
-                util::FileAllocator &fileAllocator,
                 util::BufferedFile::Transaction::SharedPtr transaction,
                 const std::string &path,
                 IgnoreList::SharedPtr ignoreList) {
@@ -54,7 +53,7 @@ namespace thekogans {
                         this,
                         root));
             }
-            root->Scan (fileAllocator, transaction, ignoreList);
+            root->Scan (transaction, ignoreList);
         }
 
         bool Roots::EnableRoot (const std::string &path) {
@@ -93,15 +92,13 @@ namespace thekogans {
             return false;
         }
 
-        bool Roots::DeleteRoot (
-                util::FileAllocator &fileAllocator,
-                const std::string &path) {
+        bool Roots::DeleteRoot (const std::string &path) {
             for (std::size_t i = 0, count = value.size (); i < count; ++i) {
                 if (value[i]->GetPath () == path) {
                     Root::SharedPtr root = value[i];
                     value.erase (value.begin () + i);
                     util::Subscriber<RootEvents>::Unsubscribe (*root);
-                    root->Delete (fileAllocator);
+                    root->Delete ();
                     Produce (
                         std::bind (
                             &RootsEvents::OnRootsRootDeleted,
@@ -115,7 +112,6 @@ namespace thekogans {
         }
 
         void Roots::Find (
-                util::FileAllocator &fileAllocator,
                 const std::string &pattern,
                 bool ignoreCase,
                 bool ordered,
@@ -150,7 +146,7 @@ namespace thekogans {
                 std::vector<std::string> paths;
                 for (std::size_t i = 0, count = value.size (); i < count; ++i) {
                     if (value[i]->IsActive ()) {
-                        value[i]->Find (fileAllocator, *patternBegin, ignoreCase, paths);
+                        value[i]->Find (*patternBegin, ignoreCase, paths);
                     }
                 }
                 // If we don't care about order, or there's only one pattern

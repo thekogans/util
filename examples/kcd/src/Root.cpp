@@ -22,32 +22,31 @@
 #include "thekogans/util/Path.h"
 #include "thekogans/util/StringUtils.h"
 #include "thekogans/util/Directory.h"
-#include "thekogans/util/FileAllocator.h"
 #include "thekogans/util/BTree.h"
 #include "thekogans/util/BTreeKeys.h"
 #include "thekogans/util/BTreeValues.h"
+#include "thekogans/kcd/Database.h"
 #include "thekogans/kcd/Root.h"
 
 namespace thekogans {
     namespace kcd {
 
         void Root::Scan (
-                util::FileAllocator &fileAllocator,
                 util::BufferedFile::Transaction::SharedPtr transaction,
                 IgnoreList::SharedPtr ignoreList) {
             if (!path.empty ()) {
-                Delete (fileAllocator);
+                Delete ();
                 assert (pathBTreeOffset == 0 && componentBTreeOffset == 0);
                 util::BTree::SharedPtr pathBTree (
                     new util::BTree (
-                        fileAllocator,
+                        *Database::Instance (),
                         pathBTreeOffset,
                         transaction,
                         util::GUIDKey::TYPE,
                         util::StringValue::TYPE));
                 util::BTree::SharedPtr componentBTree (
                     new util::BTree (
-                        fileAllocator,
+                        *Database::Instance (),
                         componentBTreeOffset,
                         transaction,
                         util::StringKey::TYPE,
@@ -68,21 +67,21 @@ namespace thekogans {
             }
         }
 
-        void Root::Delete (util::FileAllocator &fileAllocator) {
+        void Root::Delete () {
             if (pathBTreeOffset != 0 && componentBTreeOffset != 0) {
                 Produce (
                     std::bind (
                         &RootEvents::OnRootDeleteBegin,
                         std::placeholders::_1,
                         this));
-                util::BTree::Delete (fileAllocator, pathBTreeOffset);
+                util::BTree::Delete (*Database::Instance (), pathBTreeOffset);
                 pathBTreeOffset = 0;
                 Produce (
                     std::bind (
                         &RootEvents::OnRootDeletedPathBTree,
                         std::placeholders::_1,
                         this));
-                util::BTree::Delete (fileAllocator, componentBTreeOffset);
+                util::BTree::Delete (*Database::Instance (), componentBTreeOffset);
                 componentBTreeOffset = 0;
                 Produce (
                     std::bind (
@@ -98,21 +97,20 @@ namespace thekogans {
         }
 
         void Root::Find (
-                util::FileAllocator &fileAllocator,
                 const std::string &prefix,
                 bool ignoreCase,
                 std::vector<std::string> &paths) {
             if (pathBTreeOffset != 0 && componentBTreeOffset != 0) {
                 util::BTree::SharedPtr pathBTree (
                     new util::BTree (
-                        fileAllocator,
+                        *Database::Instance (),
                         pathBTreeOffset,
                         nullptr,
                         util::GUIDKey::TYPE,
                         util::StringValue::TYPE));
                 util::BTree::SharedPtr componentBTree (
                     new util::BTree (
-                        fileAllocator,
+                        *Database::Instance (),
                         componentBTreeOffset,
                         nullptr,
                         util::StringKey::TYPE,

@@ -93,13 +93,11 @@ namespace thekogans {
             }
 
             void Scan (
-                util::FileAllocator &fileAllocator,
                 util::BufferedFile::Transaction::SharedPtr transaction,
                 IgnoreList::SharedPtr ignoreList);
-            void Delete (util::FileAllocator &fileAllocator);
+            void Delete ();
 
             void Find (
-                util::FileAllocator &fileAllocator,
                 const std::string &prefix,
                 bool ignoreCase,
                 std::vector<std::string> &paths);
