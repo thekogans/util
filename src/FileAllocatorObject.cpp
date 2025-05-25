@@ -28,11 +28,9 @@ namespace thekogans {
                 BufferedFileTransactionParticipant (offset_ == 0 ? transaction : nullptr),
                 fileAllocator (fileAllocator_),
                 offset (offset_) {
-            if (offset != 0 || transaction == nullptr) {
-                Subscriber<FileAllocatorEvents>::Subscribe (fileAllocator);
-                if (transaction != nullptr) {
-                    Subscriber<BufferedFile::TransactionEvents>::Subscribe (*transaction);
-                }
+            Subscriber<FileAllocatorEvents>::Subscribe (fileAllocator);
+            if (offset != 0 && transaction != nullptr) {
+                Subscriber<BufferedFile::TransactionEvents>::Subscribe (*transaction);
             }
         }
 
