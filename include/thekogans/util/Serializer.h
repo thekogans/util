@@ -48,7 +48,7 @@ namespace thekogans {
         /// bytes to deduce Serializer endianess. Ex:
         ///
         /// \code{.cpp}
-        /// using namespace thekogans;x
+        /// using namespace thekogans;
         /// util::SimpleFile file (util::HostEndian, path, util::SimpleFile::ReadWrite);
         /// // Magic serves two purposes. Firstly it gives us a quick
         /// // check to make sure we're dealing with our file and second,
