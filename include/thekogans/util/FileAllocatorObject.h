@@ -90,4 +90,4 @@ namespace thekogans {
     } // namespace util
 } // namespace thekogans
 
-#endif // !defined (__thekogans_util_BTree_h)
+#endif // !defined (__thekogans_util_FileAllocatorObject_h)
