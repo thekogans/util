@@ -20,7 +20,6 @@
 
 #include <string>
 #include <vector>
-#include "thekogans/util/BufferedFile.h"
 #include "thekogans/util/Serializable.h"
 #include "thekogans/util/BTreeValues.h"
 #include "thekogans/util/Subscriber.h"
@@ -57,7 +56,6 @@ namespace thekogans {
             THEKOGANS_UTIL_DECLARE_SERIALIZABLE (Roots)
 
             void ScanRoot (
-                util::BufferedFile::Transaction::SharedPtr transaction,
                 const std::string &path,
                 IgnoreList::SharedPtr ignoreList);
             bool EnableRoot (const std::string &path);

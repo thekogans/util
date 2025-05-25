@@ -24,8 +24,6 @@
 #include "thekogans/util/Exception.h"
 #include "thekogans/util/Console.h"
 #include "thekogans/util/ConsoleLogger.h"
-#include "thekogans/util/FileAllocator.h"
-#include "thekogans/util/FileAllocatorRegistry.h"
 #include "thekogans/kcd/Options.h"
 #include "thekogans/kcd/Version.h"
 #include "thekogans/kcd/Database.h"
@@ -108,7 +106,7 @@ int main (
             Roots::SharedPtr roots;
             IgnoreList::SharedPtr ignoreList;
             {
-                util::BufferedFile::Transaction::Guard guard (*Database::Instance ());
+                Database::Guard guard;
                 roots = Database::Instance ()->GetRegistry ().GetValue ("roots");
                 ignoreList = Database::Instance ()->GetRegistry ().GetValue ("ignore_list");
             }
@@ -122,9 +120,8 @@ int main (
                 const std::vector<std::string> &roots_ = Options::Instance ()->roots;
                 if (!roots_.empty ()) {
                     for (std::size_t i = 0, count = roots_.size (); i < count; ++i) {
-                        util::BufferedFile::Transaction::Guard guard (*Database::Instance ());
+                        Database::Guard guard;
                         roots->ScanRoot (
-                            guard.transaction,
                             NormalizePath (util::Path (roots_[i]).MakeAbsolute ()),
                             ignoreList);
                         Database::Instance ()->GetRegistry ().SetValue ("roots", roots);
@@ -144,7 +141,7 @@ int main (
                             NormalizePath (util::Path (roots_[i]).MakeAbsolute ()));
                     }
                     if (commit) {
-                        util::BufferedFile::Transaction::Guard guard (*Database::Instance ());
+                        Database::Guard guard;
                         Database::Instance ()->GetRegistry ().SetValue ("roots", roots);
                         guard.Commit ();
                     }
@@ -162,7 +159,7 @@ int main (
                             NormalizePath (util::Path (roots_[i]).MakeAbsolute ()));
                     }
                     if (commit) {
-                        util::BufferedFile::Transaction::Guard guard (*Database::Instance ());
+                        Database::Guard guard;
                         Database::Instance ()->GetRegistry ().SetValue ("roots", roots);
                         guard.Commit ();
                     }
@@ -175,7 +172,7 @@ int main (
                 const std::vector<std::string> &roots_ = Options::Instance ()->roots;
                 if (!roots_.empty ()) {
                     for (std::size_t i = 0, count = roots_.size (); i < count; ++i) {
-                        util::BufferedFile::Transaction::Guard guard (*Database::Instance ());
+                        Database::Guard guard;
                         if (roots->DeleteRoot (
                                 NormalizePath (util::Path (roots_[i]).MakeAbsolute ()))) {
                             Database::Instance ()->GetRegistry ().SetValue ("roots", roots);
@@ -198,7 +195,7 @@ int main (
                 if (!Options::Instance ()->pattern.empty ()) {
                     std::vector<std::string> results;
                     {
-                        util::BufferedFile::Transaction::Guard guard (*Database::Instance ());
+                        Database::Guard guard;
                         roots->Find (
                             Options::Instance ()->pattern,
                             Options::Instance ()->ignoreCase,
@@ -226,7 +223,7 @@ int main (
                         commit |= ignoreList->AddIgnore (ignoreList_[i]);
                     }
                     if (commit) {
-                        util::BufferedFile::Transaction::Guard guard (*Database::Instance ());
+                        Database::Guard guard;
                         Database::Instance ()->GetRegistry ().SetValue ("ignore_list", ignoreList);
                         guard.Commit ();
                     }
@@ -243,7 +240,7 @@ int main (
                         commit |= ignoreList->DeleteIgnore (ignoreList_[i]);
                     }
                     if (commit) {
-                        util::BufferedFile::Transaction::Guard guard (*Database::Instance ());
+                        Database::Guard guard;
                         Database::Instance ()->GetRegistry ().SetValue ("ignore_list", ignoreList);
                         guard.Commit ();
                     }

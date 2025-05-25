@@ -32,7 +32,6 @@ namespace thekogans {
         THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE (Roots, 1, util::BTree::Value::TYPE)
 
         void Roots::ScanRoot (
-                util::BufferedFile::Transaction::SharedPtr transaction,
                 const std::string &path,
                 IgnoreList::SharedPtr ignoreList) {
             Root::SharedPtr root;
@@ -53,7 +52,7 @@ namespace thekogans {
                         this,
                         root));
             }
-            root->Scan (transaction, ignoreList);
+            root->Scan (ignoreList);
         }
 
         bool Roots::EnableRoot (const std::string &path) {

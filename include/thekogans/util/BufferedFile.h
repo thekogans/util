@@ -166,7 +166,7 @@ namespace thekogans {
                     explicit Guard (Source &source);
                     /// \brief
                     /// dtor.
-                    ~Guard () {
+                    virtual ~Guard () {
                         transaction->Abort ();
                     }
 

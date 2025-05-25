@@ -31,9 +31,7 @@
 namespace thekogans {
     namespace kcd {
 
-        void Root::Scan (
-                util::BufferedFile::Transaction::SharedPtr transaction,
-                IgnoreList::SharedPtr ignoreList) {
+        void Root::Scan (IgnoreList::SharedPtr ignoreList) {
             if (!path.empty ()) {
                 Delete ();
                 assert (pathBTreeOffset == 0 && componentBTreeOffset == 0);
@@ -41,14 +39,14 @@ namespace thekogans {
                     new util::BTree (
                         *Database::Instance (),
                         pathBTreeOffset,
-                        transaction,
+                        Database::Instance ()->GetTransaction (),
                         util::GUIDKey::TYPE,
                         util::StringValue::TYPE));
                 util::BTree::SharedPtr componentBTree (
                     new util::BTree (
                         *Database::Instance (),
                         componentBTreeOffset,
-                        transaction,
+                        Database::Instance ()->GetTransaction (),
                         util::StringKey::TYPE,
                         util::GUIDArrayValue::TYPE));
                 Produce (
@@ -105,14 +103,14 @@ namespace thekogans {
                     new util::BTree (
                         *Database::Instance (),
                         pathBTreeOffset,
-                        nullptr,
+                        Database::Instance ()->GetTransaction (),
                         util::GUIDKey::TYPE,
                         util::StringValue::TYPE));
                 util::BTree::SharedPtr componentBTree (
                     new util::BTree (
                         *Database::Instance (),
                         componentBTreeOffset,
-                        nullptr,
+                        Database::Instance ()->GetTransaction (),
                         util::StringKey::TYPE,
                         util::GUIDArrayValue::TYPE));
                 util::StringKey originalPrefix (prefix);

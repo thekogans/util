@@ -25,6 +25,7 @@
 #include "thekogans/util/Subscriber.h"
 #include "thekogans/util/Producer.h"
 #include "thekogans/util/Serializer.h"
+#include "thekogans/util/FileAllocator.h"
 #include "thekogans/kcd/IgnoreList.h"
 
 namespace thekogans {
@@ -92,9 +93,7 @@ namespace thekogans {
                     util::Serializer::Size (active);
             }
 
-            void Scan (
-                util::BufferedFile::Transaction::SharedPtr transaction,
-                IgnoreList::SharedPtr ignoreList);
+            void Scan (IgnoreList::SharedPtr ignoreList);
             void Delete ();
 
             void Find (

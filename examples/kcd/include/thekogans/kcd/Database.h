@@ -18,11 +18,10 @@
 #if !defined (__thekogans_kcd_Database_h)
 #define __thekogans_kcd_Database_h
 
-#include <string>
-#include <vector>
-#include <list>
 #include "thekogans/util/Singleton.h"
+#include "thekogans/util/BufferedFile.h"
 #include "thekogans/util/FileAllocator.h"
+#include "thekogans/util/FileAllocatorRegistry.h"
 #include "thekogans/kcd/Options.h"
 
 namespace thekogans {
@@ -31,8 +30,24 @@ namespace thekogans {
         struct Database :
                 public util::RefCountedSingleton<Database>,
                 public util::FileAllocator {
+            struct Guard : public util::BufferedFile::Transaction::Guard {
+                Guard () :
+                        util::BufferedFile::Transaction::Guard (*Database::Instance ()) {
+                    Database::Instance ()->transaction = transaction;
+                }
+                ~Guard () {
+                    Database::Instance ()->transaction.Reset ();
+                }
+
+            };
+            util::BufferedFile::Transaction::SharedPtr transaction;
+
             Database () :
                 util::FileAllocator (Options::Instance ()->dbPath) {}
+
+            inline util::BufferedFile::Transaction::SharedPtr GetTransaction () const {
+                return transaction;
+            }
         };
 
     } // namespace kcd
