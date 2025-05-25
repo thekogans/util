@@ -26,7 +26,6 @@
 namespace thekogans {
     namespace util {
 
-
         /// \struct Subscriber Subscriber.h thekogans/util/Subscriber.h
         ///
         /// \brief
