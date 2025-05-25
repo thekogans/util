@@ -137,9 +137,10 @@ namespace thekogans {
                     /// \brief
                     /// Create a new transaction.
                     /// \return A new transaction.
-                    /// VERY IMPORTANT: When this method returns, the file mutex
-                    /// has been acquired and the returned transaction has exclusive
-                    /// access to the file. Be quick about it. Other clients are waiting.
+                    /// IMPORTANT: When this method returns, the file mutex
+                    /// has been acquired and the returned transaction has
+                    /// exclusive access to the file. Be quick about it. Other
+                    /// clients are waiting.
                     virtual Transaction::SharedPtr CreateTransaction () = 0;
 
                     /// \brief
