@@ -100,6 +100,7 @@ namespace thekogans {
         ///            8                     var
 
         struct _LIB_THEKOGANS_UTIL_DECL FileAllocator :
+                public BufferedFile::Transaction::Source,
                 public BufferedFileTransactionParticipant,
                 public Producer<FileAllocatorEvents> {
             /// \brief
@@ -757,12 +758,13 @@ namespace thekogans {
             /// Debugging helper. Dumps \see{BTree::Node}s to stdout.
             void DumpBTree ();
 
+        protected:
+            // BufferedFile::Transaction::Source
             /// \brief
             /// Create a \see{BufferedFile::Transaction}.
             /// \return A new \see{BufferedFile::Transaction}.
-            BufferedFile::Transaction::SharedPtr CreateTransaction ();
+            virtual BufferedFile::Transaction::SharedPtr CreateTransaction () override;
 
-        protected:
             // BufferedFileTransactionParticipant
             /// \brief
             /// Flush the header to file.

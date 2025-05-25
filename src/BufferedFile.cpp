@@ -32,8 +32,8 @@ namespace thekogans {
             thekogans::util::BufferedFile,
             Serializer::TYPE, RandomSeekSerializer::TYPE)
 
-        BufferedFile::Transaction::Guard::Guard (Transaction::SharedPtr transaction_) :
-                transaction (transaction_) {
+        BufferedFile::Transaction::Guard::Guard (Source &source) :
+                transaction (source.CreateTransaction ()) {
             if (transaction != nullptr) {
                 transaction->Begin ();
             }
@@ -49,21 +49,18 @@ namespace thekogans {
         }
 
         void BufferedFile::Transaction::Begin () {
-            if (!current) {
-                file.mutex.Acquire ();
+            if (!file.IsTransactionPending ()) {
                 Produce (
                     std::bind (
                         &TransactionEvents::OnTransactionBegin,
                         std::placeholders::_1,
                         this));
                 file.BeginTransaction ();
-                current = true;
             }
         }
 
         void BufferedFile::Transaction::Commit () {
-            if (current) {
-                current = false;
+            if (file.IsTransactionPending ()) {
                 // Manually tell the participants to commit.
                 for (std::size_t i = 0, count = participants.size (); i < count; ++i) {
                     participants[i]->OnTransactionCommit (this);
@@ -77,13 +74,11 @@ namespace thekogans {
                         this));
                 // Commit the dirty pages.
                 file.CommitTransaction ();
-                file.mutex.Release ();
             }
         }
 
         void BufferedFile::Transaction::Abort () {
-            if (current) {
-                current = false;
+            if (file.IsTransactionPending ()) {
                 // Participants don't get the abort event. They are created
                 // during transaction execution and are destroyed if aborted.
                 // If we're the only owner, their lives will end here. If not,
@@ -95,7 +90,6 @@ namespace thekogans {
                         &TransactionEvents::OnTransactionAbort,
                         std::placeholders::_1,
                         this));
-                file.mutex.Release ();
             }
         }
 

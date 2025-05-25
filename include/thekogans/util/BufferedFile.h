@@ -102,21 +102,50 @@ namespace thekogans {
             /// \brief
             /// A transaction is the easiest way to perform atomic file writes.
             /// BufferedFile is not thread safe. To make it thread safe would require
-            /// a lock to protect internal state. Because BufferedFile is just the
-            /// foundation of a much more extensive data management system (see
+            /// a lock to protect internal state. Because BufferedFile is meant to be
+            /// the foundation of a more extensive data management system (see
             /// \see{FileAllocator}), I felt introducing locking at such a low level
-            /// would potentially be costly in terms of performance. Insread I introduced
-            /// transactions. Transactions allow you to organize your writes in to logical
-            /// groups. Most high level application writes (database records) require a
-            /// series of related file writes. By wrapping them in transactions you guarantee
-            /// database integrity (either all writes succeed or none will). If you limit your
-            /// file access through transactions even if you don't plan to write you can make
-            /// BufferedFile thread safe. Use Guard within a scope to serialize access to the
-            /// underlying file and make transactions \see{Exception} safe.
+            /// would be costly performance wise. Instead I introduced transactions.
+            /// Transactions allow you to organize your writes in to logical groups.
+            /// Most high level application writes (database records) require a series
+            /// of related file writes. By wrapping them in transactions you guarantee
+            /// database integrity (either all writes succeed or none will). If you
+            /// limit your file access through transactions even if you don't plan to
+            /// write you can make BufferedFile thread safe. Use Guard within a scope
+            /// to serialize access to the underlying file and make transactions
+            /// \see{Exception} safe.
             struct _LIB_THEKOGANS_UTIL_DECL Transaction : public Producer<TransactionEvents> {
                 /// \brief
                 /// Declare \see{RefCounted} pointers.
                 THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (Transaction)
+
+                /// \brief
+                /// Forward declaration of Guard needed by Source.
+                struct Guard;
+
+                /// \struct BufferedFile::Transaction::Source BufferedFile.h
+                /// thekogans/util/BufferedFile.h
+                ///
+                /// \brief
+                /// Derive from this class to become a source of transactions.
+                struct _LIB_THEKOGANS_UTIL_DECL Source {
+                    /// \brief
+                    /// dtor.
+                    virtual ~Source () {}
+
+                protected:
+                    /// \brief
+                    /// Create a new transaction.
+                    /// \return A new transaction.
+                    /// VERY IMPORTANT: When this method returns, the file mutex
+                    /// has been acquired and the returned transaction has exclusive
+                    /// access to the file. Be quick about it. Other clients are waiting.
+                    virtual Transaction::SharedPtr CreateTransaction () = 0;
+
+                    /// \brief
+                    /// Guard is the only one allowed to call CreateTransaction.
+                    friend Guard;
+                };
 
                 /// \struct BufferedFile::Transaction::Guard BufferedFile.h
                 /// thekogans/util/BufferedFile.h
@@ -132,8 +161,8 @@ namespace thekogans {
 
                     /// \brief
                     /// ctor.
-                    /// \param[in] transaction_ Transaction to guard.
-                    Guard (Transaction::SharedPtr transaction_);
+                    /// \param[in] source Source of transactions.
+                    explicit Guard (Source &source);
                     /// \brief
                     /// dtor.
                     ~Guard () {
@@ -156,8 +185,8 @@ namespace thekogans {
                 /// is confined to the transaction.
                 std::vector<Subscriber<TransactionEvents>::SharedPtr> participants;
                 /// \brief
-                /// true if we're the current executing transaction.
-                bool current;
+                /// This guard will serialize all transactions.
+                LockGuard<Mutex> guard;
 
             public:
                 /// \brief
@@ -165,7 +194,7 @@ namespace thekogans {
                 /// \param[in] file_ \see{BufferedFile} to transact.
                 explicit Transaction (BufferedFile &file_) :
                     file (file_),
-                    current (false) {}
+                    guard (file.mutex) {}
 
                 /// \brief
                 /// Add an object as a transaction participant. Participants liftimes
@@ -189,7 +218,7 @@ namespace thekogans {
                 /// VERY IMPORTANT: If you've created participants (AddParticipant)
                 /// and surrendered their lifetime management to transaction (i.e.
                 /// you're not holding a reference to them) there's nothing for you to
-                /// do. The objects will be delete before OnTransactionAbort is broadcast.
+                /// do. The objects will be deleted before OnTransactionAbort is broadcast.
                 /// They are not told to flush or reload. Their cache (whatever it may be)
                 /// dies with them. If you've kept a reference to the temporary participants
                 /// it's very important that you listen to OnTransactionAbort yourself
