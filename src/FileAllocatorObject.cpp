@@ -21,10 +21,19 @@ namespace thekogans {
     namespace util {
 
         FileAllocatorObject::FileAllocatorObject (
-                FileAllocator &fileAllocator,
+                FileAllocator &fileAllocator_,
+                FileAllocator::PtrType offset_,
                 BufferedFile::Transaction::SharedPtr transaction) :
-                BufferedFileTransactionParticipant (transaction) {
-            Subscriber<FileAllocatorEvents>::Subscribe (fileAllocator);
+                // If we're a transaction participant, it will tell us when to commit.
+                BufferedFileTransactionParticipant (offset_ == 0 ? transaction : nullptr),
+                fileAllocator (fileAllocator_),
+                offset (offset_) {
+            if (offset != 0 || transaction == nullptr) {
+                Subscriber<FileAllocatorEvents>::Subscribe (fileAllocator);
+                if (transaction != nullptr) {
+                    Subscriber<BufferedFile::TransactionEvents>::Subscribe (*transaction);
+                }
+            }
         }
 
     } // namespace util

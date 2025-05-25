@@ -41,23 +41,25 @@ namespace thekogans {
                 util::BTree::SharedPtr pathBTree (
                     new util::BTree (
                         fileAllocator,
+                        pathBTreeOffset,
                         transaction,
                         util::GUIDKey::TYPE,
                         util::StringValue::TYPE));
-                pathBTreeOffset = pathBTree->GetOffset ();
                 util::BTree::SharedPtr componentBTree (
                     new util::BTree (
                         fileAllocator,
+                        componentBTreeOffset,
                         transaction,
                         util::StringKey::TYPE,
                         util::GUIDArrayValue::TYPE));
-                componentBTreeOffset = componentBTree->GetOffset ();
                 Produce (
                     std::bind (
                         &RootEvents::OnRootScanBegin,
                         std::placeholders::_1,
                         this));
                 Scan (path, *pathBTree, *componentBTree, ignoreList);
+                pathBTreeOffset = pathBTree->GetOffset ();
+                componentBTreeOffset = componentBTree->GetOffset ();
                 Produce (
                     std::bind (
                         &RootEvents::OnRootScanEnd,
@@ -105,12 +107,14 @@ namespace thekogans {
                     new util::BTree (
                         fileAllocator,
                         pathBTreeOffset,
+                        nullptr,
                         util::GUIDKey::TYPE,
                         util::StringValue::TYPE));
                 util::BTree::SharedPtr componentBTree (
                     new util::BTree (
                         fileAllocator,
                         componentBTreeOffset,
+                        nullptr,
                         util::StringKey::TYPE,
                         util::GUIDArrayValue::TYPE));
                 util::StringKey originalPrefix (prefix);

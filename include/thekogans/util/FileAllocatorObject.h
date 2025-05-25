@@ -37,6 +37,16 @@ namespace thekogans {
             /// Declare \see{RefCounted} pointers.
             THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (FileAllocatorObject)
 
+        protected:
+            /// \brief
+            /// \see{FileAllocator} where we allocate
+            /// \see{Header} and \see{Node} blocks from.
+            FileAllocator &fileAllocator;
+            /// \brief
+            /// Offset of the \see{Header} block.
+            FileAllocator::PtrType offset;
+
+        public:
             /// \brief
             /// ctor.
             /// \param[in] fileAllocator \see{FileAllocator} where this object resides.
@@ -44,13 +54,16 @@ namespace thekogans {
             /// NOTE: This parameter is used by temporary \see{BufferedFileTransactionParticipant}
             /// to add themselves to the participants list.
             FileAllocatorObject (
-                FileAllocator &fileAllocator,
+                FileAllocator &fileAllocator_,
+                FileAllocator::PtrType offset_,
                 BufferedFile::Transaction::SharedPtr transaction = nullptr);
             /// \brief
             /// dtor.
             virtual ~FileAllocatorObject () {}
 
-            virtual FileAllocator::PtrType GetOffset () const = 0;
+            inline FileAllocator::PtrType GetOffset () const {
+                return offset;
+            }
 
         private:
             // FileAllocatorEvents

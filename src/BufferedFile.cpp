@@ -32,9 +32,19 @@ namespace thekogans {
             thekogans::util::BufferedFile,
             Serializer::TYPE, RandomSeekSerializer::TYPE)
 
+        BufferedFile::Transaction::Guard::Guard (Transaction::SharedPtr transaction_) :
+                transaction (transaction_) {
+            if (transaction != nullptr) {
+                transaction->Begin ();
+            }
+            else {
+                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
+            }
+        }
+
         void BufferedFile::Transaction::AddParticipant (
                 Subscriber<TransactionEvents>::SharedPtr participant) {
-            participant->Subscribe (*this);
             participants.push_back (participant);
         }
 
@@ -44,18 +54,22 @@ namespace thekogans {
                     std::bind (
                         &TransactionEvents::OnTransactionBegin,
                         std::placeholders::_1,
-                        SharedPtr (this)));
+                        this));
                 file.BeginTransaction ();
             }
         }
 
         void BufferedFile::Transaction::Commit () {
             if (file.IsTransactionPending ()) {
+                // Manually tell the participants to commit.
+                for (std::size_t i = 0, count = participants.size (); i < count; ++i) {
+                    participants[i]->OnTransactionCommit (this);
+                }
                 Produce (
                     std::bind (
                         &TransactionEvents::OnTransactionCommit,
                         std::placeholders::_1,
-                        SharedPtr (this)));
+                        this));
                 file.CommitTransaction ();
                 participants.clear ();
             }
@@ -63,17 +77,17 @@ namespace thekogans {
 
         void BufferedFile::Transaction::Abort () {
             if (file.IsTransactionPending ()) {
-                // Participants are created during transaction execution and
-                // are destroyed if aborted. If we're the only owner, their
-                // lives will end here. If not, listen to OnTransactionAbort
-                // and clean up your own objects.
+                // Participants don't get the abort event. They are created
+                // during transaction execution and are destroyed if aborted.
+                // If we're the only owner, their lives will end here. If not,
+                // listen to OnTransactionAbort and clean up your own objects.
                 participants.clear ();
                 file.AbortTransaction ();
                 Produce (
                     std::bind (
                         &TransactionEvents::OnTransactionAbort,
                         std::placeholders::_1,
-                        SharedPtr (this)));
+                        this));
             }
         }
 

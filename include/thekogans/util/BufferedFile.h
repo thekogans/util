@@ -133,10 +133,7 @@ namespace thekogans {
                     /// \brief
                     /// ctor.
                     /// \param[in] transaction_ Transaction to guard.
-                    Guard (Transaction::SharedPtr transaction_) :
-                            transaction (transaction_) {
-                        transaction->Begin ();
-                    }
+                    Guard (Transaction::SharedPtr transaction_);
                     /// \brief
                     /// dtor.
                     ~Guard () {

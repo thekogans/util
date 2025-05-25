@@ -30,6 +30,7 @@ namespace thekogans {
                 util::BTree (
                     fileAllocator,
                     fileAllocator.header.registryOffset,
+                    nullptr,
                     StringKey::TYPE,
                     std::string (),
                     entriesPerNode,

@@ -309,13 +309,6 @@ namespace thekogans {
             };
 
         protected:
-            /// \brief
-            /// \see{FileAllocator} where we allocate
-            /// \see{Header} and \see{Node} blocks from.
-            FileAllocator &fileAllocator;
-            /// \brief
-            /// Offset of the \see{Header} block.
-            FileAllocator::PtrType offset;
             /// \struct BTree::Header BTree.h thekogans/util/BTree.h
             ///
             /// \brief
@@ -674,8 +667,8 @@ namespace thekogans {
 
             /// \brief
             /// ctor.
-            /// \param[in] fileAllocator_ BTree heap (see \see{FileAllocator}).
-            /// \param[in] offset_ Heap offset of the \see{Header} block.
+            /// \param[in] fileAllocator BTree heap (see \see{FileAllocator}).
+            /// \param[in] offset Heap offset of the \see{Header} block.
             /// \param[in] keyType \see{DynamicCreatable} key type.
             /// \param[in] valueType \see{DynamicCreatable} value type. If empty,
             /// will store any type derived from \see{Value}.
@@ -698,20 +691,9 @@ namespace thekogans {
             /// might be just the ticket. You will probably need to call;
             /// \see{thekogans::util::SecureAllocator::ReservePages}.
             BTree (
-                FileAllocator &fileAllocator_,
-                FileAllocator::PtrType offset_,
-                const std::string &keyType = std::string (),
-                const std::string &valueType = std::string (),
-                std::size_t entriesPerNode = DEFAULT_ENTRIES_PER_NODE,
-                std::size_t nodesPerPage = BlockAllocator::DEFAULT_BLOCKS_PER_PAGE,
-                Allocator::SharedPtr allocator = DefaultAllocator::Instance ());
-            /// \brief
-            /// This is a FileAllocatorObject ctor. It serves to seamlessly
-            /// integrate creation of new FileAllocator objects in to already
-            /// running \see{BufferedFile::Transaction}.
-            BTree (
-                FileAllocator &fileAllocator_,
-                BufferedFile::Transaction::SharedPtr transaction,
+                FileAllocator &fileAllocator,
+                FileAllocator::PtrType offset,
+                BufferedFile::Transaction::SharedPtr transaction = nullptr,
                 const std::string &keyType = std::string (),
                 const std::string &valueType = std::string (),
                 std::size_t entriesPerNode = DEFAULT_ENTRIES_PER_NODE,
@@ -729,13 +711,6 @@ namespace thekogans {
             static void Delete (
                 FileAllocator &fileAllocator,
                 FileAllocator::PtrType offset);
-
-            /// \brief
-            /// Return the offset of the btree \see{Header} block.
-            /// \return Offset of the btree \see{Header} block.
-            virtual FileAllocator::PtrType GetOffset () const override {
-                return offset;
-            }
 
             /// \brief
             /// Search for the given key in the btree.
