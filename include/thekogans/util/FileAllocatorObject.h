@@ -21,6 +21,7 @@
 #include "thekogans/util/Config.h"
 #include "thekogans/util/Subscriber.h"
 #include "thekogans/util/FileAllocator.h"
+#include "thekogans/util/BufferedFile.h"
 #include "thekogans/util/BufferedFileTransactionParticipant.h"
 
 namespace thekogans {
@@ -33,7 +34,7 @@ namespace thekogans {
         /// participates in \see{BufferedFile::Transaction}.
 
         struct _LIB_THEKOGANS_UTIL_DECL FileAllocatorObject :
-                public Subscriber<FileAllocatorEvents>,
+                public Subscriber<BufferedFileEvents>,
                 public BufferedFileTransactionParticipant {
             /// \brief
             /// Declare \see{RefCounted} pointers.
@@ -51,6 +52,7 @@ namespace thekogans {
             /// \brief
             /// ctor.
             /// \param[in] fileAllocator \see{FileAllocator} where this object resides.
+            /// \param[in] offset Offset of the \see{FileAllocator::BlockInfo}.
             /// \param[in] transaction Optional transaction to join.
             /// NOTE: This parameter is used by temporary \see{BufferedFileTransactionParticipant}
             /// to add themselves to the participants list.
@@ -70,16 +72,14 @@ namespace thekogans {
             }
 
         private:
-            // FileAllocatorEvents
+            // BufferedFileEvents
             /// \brief
-            /// \see{FileAllocator} just created a new \see{BufferedFile::Transaction}.
+            /// \see{BufferedFile} just created a new \see{BufferedFile::Transaction}.
             /// Subscribe to it's events.
-            /// \param[in] fileAllocator \see{FileAllocator} that created the transaction.
-            /// \param[in] transaction \see{BufferedFile::Transaction} that was created.
-            virtual void OnFileAllocatorCreateTransaction (
-                    FileAllocator::SharedPtr /*fileAllocator*/,
-                    BufferedFile::Transaction::SharedPtr transaction) noexcept override {
-                BufferedFileTransactionParticipant::Subscribe (*transaction);
+            /// \param[in] file \see{BufferedFile} that created the transaction.
+            virtual void OnBufferedFileCreateTransaction (
+                    BufferedFile::SharedPtr file) noexcept override {
+                BufferedFileTransactionParticipant::Subscribe (*file->GetTransaction ());
             }
 
             /// \brief

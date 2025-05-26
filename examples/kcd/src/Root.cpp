@@ -37,14 +37,14 @@ namespace thekogans {
                 assert (pathBTreeOffset == 0 && componentBTreeOffset == 0);
                 util::BTree::SharedPtr pathBTree (
                     new util::BTree (
-                        *Database::Instance (),
+                        *Database::Instance ()->GetFileAllocator (),
                         pathBTreeOffset,
                         Database::Instance ()->GetTransaction (),
                         util::GUIDKey::TYPE,
                         util::StringValue::TYPE));
                 util::BTree::SharedPtr componentBTree (
                     new util::BTree (
-                        *Database::Instance (),
+                        *Database::Instance ()->GetFileAllocator (),
                         componentBTreeOffset,
                         Database::Instance ()->GetTransaction (),
                         util::StringKey::TYPE,
@@ -72,14 +72,16 @@ namespace thekogans {
                         &RootEvents::OnRootDeleteBegin,
                         std::placeholders::_1,
                         this));
-                util::BTree::Delete (*Database::Instance (), pathBTreeOffset);
+                util::BTree::Delete (
+                    *Database::Instance ()->GetFileAllocator (), pathBTreeOffset);
                 pathBTreeOffset = 0;
                 Produce (
                     std::bind (
                         &RootEvents::OnRootDeletedPathBTree,
                         std::placeholders::_1,
                         this));
-                util::BTree::Delete (*Database::Instance (), componentBTreeOffset);
+                util::BTree::Delete (
+                    *Database::Instance ()->GetFileAllocator (), componentBTreeOffset);
                 componentBTreeOffset = 0;
                 Produce (
                     std::bind (
@@ -101,14 +103,14 @@ namespace thekogans {
             if (pathBTreeOffset != 0 && componentBTreeOffset != 0) {
                 util::BTree::SharedPtr pathBTree (
                     new util::BTree (
-                        *Database::Instance (),
+                        *Database::Instance ()->GetFileAllocator (),
                         pathBTreeOffset,
                         Database::Instance ()->GetTransaction (),
                         util::GUIDKey::TYPE,
                         util::StringValue::TYPE));
                 util::BTree::SharedPtr componentBTree (
                     new util::BTree (
-                        *Database::Instance (),
+                        *Database::Instance ()->GetFileAllocator (),
                         componentBTreeOffset,
                         Database::Instance ()->GetTransaction (),
                         util::StringKey::TYPE,

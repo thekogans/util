@@ -28,7 +28,7 @@ namespace thekogans {
                 BufferedFileTransactionParticipant (offset_ == 0 ? transaction : nullptr),
                 fileAllocator (fileAllocator_),
                 offset (offset_) {
-            Subscriber<FileAllocatorEvents>::Subscribe (fileAllocator);
+            Subscriber<BufferedFileEvents>::Subscribe (fileAllocator.GetFile ());
             if (offset != 0 && transaction != nullptr) {
                 Subscriber<BufferedFile::TransactionEvents>::Subscribe (*transaction);
             }

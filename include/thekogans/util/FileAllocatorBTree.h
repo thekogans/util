@@ -29,7 +29,7 @@
 /// too big to maintain.
 
 struct BTree :
-        public Subscriber<FileAllocatorEvents>,
+        public Subscriber<BufferedFileEvents>,
         public BufferedFileTransactionParticipant {
     /// \brief
     /// KeyType is structured on block {size, offset}.
@@ -328,10 +328,9 @@ protected:
 
 private:
     // FileAllocatorEvents
-    virtual void OnFileAllocatorCreateTransaction (
-            FileAllocator::SharedPtr /*fileAllocator*/,
-            BufferedFile::Transaction::SharedPtr transaction) noexcept override {
-        BufferedFileTransactionParticipant::Subscribe (*transaction);
+    virtual void OnBufferedFileCreateTransaction (
+            BufferedFile::SharedPtr file) noexcept override {
+        BufferedFileTransactionParticipant::Subscribe (*file->GetTransaction ());
     }
 
     /// \brief

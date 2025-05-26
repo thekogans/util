@@ -106,7 +106,7 @@ int main (
             Roots::SharedPtr roots;
             IgnoreList::SharedPtr ignoreList;
             {
-                Database::Guard guard;
+                util::BufferedFile::Guard guard (Database::Instance ()->GetFile ());
                 roots = Database::Instance ()->GetRegistry ().GetValue ("roots");
                 ignoreList = Database::Instance ()->GetRegistry ().GetValue ("ignore_list");
             }
@@ -120,7 +120,7 @@ int main (
                 const std::vector<std::string> &roots_ = Options::Instance ()->roots;
                 if (!roots_.empty ()) {
                     for (std::size_t i = 0, count = roots_.size (); i < count; ++i) {
-                        Database::Guard guard;
+                        util::BufferedFile::Guard guard (Database::Instance ()->GetFile ());
                         roots->ScanRoot (
                             NormalizePath (util::Path (roots_[i]).MakeAbsolute ()),
                             ignoreList);
@@ -141,7 +141,7 @@ int main (
                             NormalizePath (util::Path (roots_[i]).MakeAbsolute ()));
                     }
                     if (commit) {
-                        Database::Guard guard;
+                        util::BufferedFile::Guard guard (Database::Instance ()->GetFile ());
                         Database::Instance ()->GetRegistry ().SetValue ("roots", roots);
                         guard.Commit ();
                     }
@@ -159,7 +159,7 @@ int main (
                             NormalizePath (util::Path (roots_[i]).MakeAbsolute ()));
                     }
                     if (commit) {
-                        Database::Guard guard;
+                        util::BufferedFile::Guard guard (Database::Instance ()->GetFile ());
                         Database::Instance ()->GetRegistry ().SetValue ("roots", roots);
                         guard.Commit ();
                     }
@@ -172,7 +172,7 @@ int main (
                 const std::vector<std::string> &roots_ = Options::Instance ()->roots;
                 if (!roots_.empty ()) {
                     for (std::size_t i = 0, count = roots_.size (); i < count; ++i) {
-                        Database::Guard guard;
+                        util::BufferedFile::Guard guard (Database::Instance ()->GetFile ());
                         if (roots->DeleteRoot (
                                 NormalizePath (util::Path (roots_[i]).MakeAbsolute ()))) {
                             Database::Instance ()->GetRegistry ().SetValue ("roots", roots);
@@ -195,7 +195,7 @@ int main (
                 if (!Options::Instance ()->pattern.empty ()) {
                     std::vector<std::string> results;
                     {
-                        Database::Guard guard;
+                        util::BufferedFile::Guard guard (Database::Instance ()->GetFile ());
                         roots->Find (
                             Options::Instance ()->pattern,
                             Options::Instance ()->ignoreCase,
@@ -223,7 +223,7 @@ int main (
                         commit |= ignoreList->AddIgnore (ignoreList_[i]);
                     }
                     if (commit) {
-                        Database::Guard guard;
+                        util::BufferedFile::Guard guard (Database::Instance ()->GetFile ());
                         Database::Instance ()->GetRegistry ().SetValue ("ignore_list", ignoreList);
                         guard.Commit ();
                     }
@@ -240,7 +240,7 @@ int main (
                         commit |= ignoreList->DeleteIgnore (ignoreList_[i]);
                     }
                     if (commit) {
-                        Database::Guard guard;
+                        util::BufferedFile::Guard guard (Database::Instance ()->GetFile ());
                         Database::Instance ()->GetRegistry ().SetValue ("ignore_list", ignoreList);
                         guard.Commit ();
                     }

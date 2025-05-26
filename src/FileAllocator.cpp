@@ -208,19 +208,20 @@ namespace thekogans {
         }
 
         FileAllocator::FileAllocator (
-                const std::string &path,
+                BufferedFile &file_,
                 bool secure,
                 std::size_t btreeEntriesPerNode,
                 std::size_t btreeNodesPerPage,
                 std::size_t registryEntriesPerNode,
                 std::size_t registryNodesPerPage,
                 Allocator::SharedPtr allocator_) :
-                file (HostEndian, path, SimpleFile::ReadWrite | SimpleFile::Create),
+                file (file_),
                 header (secure ? Header::FLAGS_SECURE : 0),
                 allocator (allocator_),
                 btree (nullptr),
                 registry (nullptr),
                 dirty (false) {
+            Subscriber<BufferedFileEvents>::Subscribe (file);
             if (file.GetSize () > 0) {
                 file.Seek (0, SEEK_SET);
                 ui32 magic;
@@ -442,19 +443,6 @@ namespace thekogans {
 
         void FileAllocator::DumpBTree () {
             btree->Dump ();
-        }
-
-        BufferedFile::Transaction::SharedPtr FileAllocator::CreateTransaction () {
-            BufferedFile::Transaction::SharedPtr transaction (
-                new BufferedFile::Transaction (file));
-            BufferedFileTransactionParticipant::Subscribe (*transaction);
-            Produce (
-                std::bind (
-                    &FileAllocatorEvents::OnFileAllocatorCreateTransaction,
-                    std::placeholders::_1,
-                    SharedPtr (this),
-                    transaction));
-            return transaction;
         }
 
         void FileAllocator::Flush () {

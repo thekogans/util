@@ -24,34 +24,10 @@
 #include "thekogans/util/BufferedFile.h"
 #include "thekogans/util/BufferedFileTransactionParticipant.h"
 #include "thekogans/util/Subscriber.h"
-#include "thekogans/util/Producer.h"
 #include "thekogans/util/BlockAllocator.h"
 
 namespace thekogans {
     namespace util {
-
-        /// \brief
-        /// Forward declaration of \see{FileAllocator} needed by \see{FileAllocatorEvents}.
-        struct FileAllocator;
-
-        /// \struct FileAllocatorEvents FileAllocator.h thekogans/util/FileAllocator.h
-        ///
-        /// \brief
-        /// Subscribe to FileAllocatorEvents to receive notifications.
-
-        struct _LIB_THEKOGANS_UTIL_DECL FileAllocatorEvents {
-            /// \brief
-            /// dtor.
-            virtual ~FileAllocatorEvents () {}
-
-            /// \brief
-            /// \see{FileAllocator} just created a new \see{BufferedFile::Transaction}.
-            /// \param[in] fileAllocator \see{FileAllocator} that created the transaction.
-            /// \param[in] transaction \see{BufferedFile::Transaction} that was created.
-            virtual void OnFileAllocatorCreateTransaction (
-                RefCounted::SharedPtr<FileAllocator> /*fileAllocator*/,
-                BufferedFile::Transaction::SharedPtr /*transaction*/) noexcept {}
-        };
 
         /// \struct FileAllocator FileAllocator.h thekogans/util/FileAllocator.h
         ///
@@ -100,9 +76,8 @@ namespace thekogans {
         ///            8                     var
 
         struct _LIB_THEKOGANS_UTIL_DECL FileAllocator :
-                public BufferedFile::Transaction::Source,
-                public BufferedFileTransactionParticipant,
-                public Producer<FileAllocatorEvents> {
+                public Subscriber<BufferedFileEvents>,
+                public BufferedFileTransactionParticipant {
             /// \brief
             /// Declare \see{RefCounted} pointers.
             THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (FileAllocator)
@@ -523,7 +498,7 @@ namespace thekogans {
         private:
             /// \brief
             /// The file where the heap resides.
-            SimpleBufferedFile file;
+            BufferedFile &file;
             /// \struct FileAllocator::Header FileAllocator.h thekogans/util/FileAllocator.h
             ///
             /// \brief
@@ -664,13 +639,13 @@ namespace thekogans {
             /// \param[in] allocator \see{Allocator} for \see{BTree} and
             /// \see{FileAllocator::Registry}.
             FileAllocator (
-                const std::string &path,
+                BufferedFile &file_,
                 bool secure = false,
                 std::size_t btreeEntriesPerNode = DEFAULT_BTREE_ENTRIES_PER_NODE,
                 std::size_t btreeNodesPerPage = DEFAULT_BTREE_NODES_PER_PAGE,
                 std::size_t registryEntriesPerNode = DEFAULT_REGISTRY_ENTRIES_PER_NODE,
                 std::size_t registryNodesPerPage = DEFAULT_REGISTRY_NODES_PERP_PAGE,
-                Allocator::SharedPtr allocator = DefaultAllocator::Instance ());
+                Allocator::SharedPtr allocator_ = DefaultAllocator::Instance ());
             /// \brief
             /// dtor.
             ~FileAllocator ();
@@ -759,11 +734,15 @@ namespace thekogans {
             void DumpBTree ();
 
         protected:
-            // BufferedFile::Transaction::Source
+            // BufferedFileEvents
             /// \brief
-            /// Create a \see{BufferedFile::Transaction}.
-            /// \return A new \see{BufferedFile::Transaction}.
-            virtual BufferedFile::Transaction::SharedPtr CreateTransaction () override;
+            /// \see{BufferedFile} just created a new \see{BufferedFile::Transaction}.
+            /// Subscribe to it's events.
+            /// \param[in] file \see{BufferedFile} that created the transaction.
+            virtual void OnBufferedFileCreateTransaction (
+                    BufferedFile::SharedPtr file) noexcept override {
+                BufferedFileTransactionParticipant::Subscribe (*file->GetTransaction ());
+            }
 
             // BufferedFileTransactionParticipant
             /// \brief

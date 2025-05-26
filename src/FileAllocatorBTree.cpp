@@ -395,7 +395,7 @@ namespace thekogans {
                 header ((ui32)entriesPerNode),
                 root (nullptr),
                 dirty (false) {
-            Subscriber<FileAllocatorEvents>::Subscribe (fileAllocator);
+            Subscriber<BufferedFileEvents>::Subscribe (fileAllocator.GetFile ());
             if (fileAllocator.header.btreeOffset != 0) {
                 BlockBuffer buffer (fileAllocator, fileAllocator.header.btreeOffset);
                 buffer.BlockRead ();

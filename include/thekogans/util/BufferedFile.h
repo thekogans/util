@@ -32,6 +32,27 @@
 namespace thekogans {
     namespace util {
 
+        /// \brief
+        /// Forward declaration of \see{BufferedFile} needed by \see{BufferedFileEvents}.
+        struct BufferedFile;
+
+        /// \struct BufferedFileEvents BufferedFile.h thekogans/util/BufferedFile.h
+        ///
+        /// \brief
+        /// Subscribe to BufferedFileEvents to receive transaction notifications.
+
+        struct _LIB_THEKOGANS_UTIL_DECL BufferedFileEvents {
+            /// \brief
+            /// dtor.
+            virtual ~BufferedFileEvents () {}
+
+            /// \brief
+            /// \see{BufferedFile} just created a new \see{BufferedFile::Transaction}.
+            /// \param[in] file \see{BufferedFile} that created the transaction.
+            virtual void OnBufferedFileCreateTransaction (
+                RefCounted::SharedPtr<BufferedFile> /*file*/) noexcept {}
+        };
+
         /// \struct BufferedFile BufferedFile.h thekogans/util/BufferedFile.h
         ///
         /// \brief
@@ -54,11 +75,38 @@ namespace thekogans {
         /// to handle multi GB or even TB files with ease. It's hierarchical address
         /// space partitioning allows for very efficient, sparse file handling.
 
-        struct _LIB_THEKOGANS_UTIL_DECL BufferedFile : public File {
+        struct _LIB_THEKOGANS_UTIL_DECL BufferedFile :
+                public File,
+                public Producer<BufferedFileEvents> {
             /// \brief
             /// BufferedFile participates in the \see{DynamicCreatable}
             /// dynamic discovery and creation.
             THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE (BufferedFile)
+
+            /// \struct BufferedFile::Guard BufferedFile.h thekogans/util/BufferedFile.h
+            ///
+            /// \brief
+            /// A very simple transaction scope guard. Will call Begin in it's
+            /// ctor and Abort in it's dtor. Call commit before the end of the
+            /// scope to commit the transaction.
+            struct _LIB_THEKOGANS_UTIL_DECL Guard {
+                /// \see{BufferedFile} we're guarding.
+                BufferedFile::SharedPtr file;
+
+                /// \brief
+                /// ctor.
+                /// \param[in] file_ \see{BufferedFile} to transact.
+                explicit Guard (BufferedFile::SharedPtr file_);
+                /// \brief
+                /// dtor.
+                ~Guard ();
+
+                /// \brief
+                /// Commit the transaction before the dtor aborts it.
+                inline void Commit () {
+                    file->transaction->Commit ();
+                }
+            };
 
             /// \brief
             /// Forward declaration of \see{Transaction}.
@@ -119,68 +167,10 @@ namespace thekogans {
                 /// Declare \see{RefCounted} pointers.
                 THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (Transaction)
 
-                /// \brief
-                /// Forward declaration of Guard needed by Source.
-                struct Guard;
-
-                /// \struct BufferedFile::Transaction::Source BufferedFile.h
-                /// thekogans/util/BufferedFile.h
-                ///
-                /// \brief
-                /// Derive from this class to become a source of transactions.
-                struct _LIB_THEKOGANS_UTIL_DECL Source {
-                    /// \brief
-                    /// dtor.
-                    virtual ~Source () {}
-
-                protected:
-                    /// \brief
-                    /// Create a new transaction.
-                    /// \return A new transaction.
-                    /// IMPORTANT: When this method returns, the file mutex
-                    /// has been acquired and the returned transaction has
-                    /// exclusive access to the file. Be quick about it. Other
-                    /// clients are waiting.
-                    virtual Transaction::SharedPtr CreateTransaction () = 0;
-
-                    /// \brief
-                    /// Guard is the only one allowed to call CreateTransaction.
-                    friend Guard;
-                };
-
-                /// \struct BufferedFile::Transaction::Guard BufferedFile.h
-                /// thekogans/util/BufferedFile.h
-                ///
-                /// \brief
-                /// A very simple transaction scope guard. Will call Begin in it's
-                /// ctor and Abort in it's dtor. Call commit before the end of the
-                /// scope to commit the transaction.
-                struct _LIB_THEKOGANS_UTIL_DECL Guard {
-                    /// \brief
-                    /// Transaction to guard.
-                    Transaction::SharedPtr transaction;
-
-                    /// \brief
-                    /// ctor.
-                    /// \param[in] source Source of transactions.
-                    explicit Guard (Source &source);
-                    /// \brief
-                    /// dtor.
-                    virtual ~Guard () {
-                        transaction->Abort ();
-                    }
-
-                    /// \brief
-                    /// Commit the transaction before the dtor aborts it.
-                    inline void Commit () {
-                        transaction->Commit ();
-                    }
-                };
-
             private:
                 /// \brief
                 /// \see{BufferedFile} to transact.
-                BufferedFile &file;
+                BufferedFile::SharedPtr file;
                 /// \brief
                 /// List of objects created during the transaction. Their lifetime
                 /// is confined to the transaction.
@@ -193,9 +183,11 @@ namespace thekogans {
                 /// \brief
                 /// ctor
                 /// \param[in] file_ \see{BufferedFile} to transact.
-                explicit Transaction (BufferedFile &file_) :
-                    file (file_),
-                    guard (file.mutex) {}
+                explicit Transaction (BufferedFile::SharedPtr file_) :
+                        file (file_),
+                        guard (file->mutex) {
+                    file->transaction = this;
+                }
 
                 /// \brief
                 /// Add an object as a transaction participant. Participants liftimes
@@ -252,6 +244,9 @@ namespace thekogans {
             /// \brief
             /// For use by \see{Transaction}
             Mutex mutex;
+            /// \brief
+            /// Current transaction.
+            Transaction::SharedPtr transaction;
 
             /// \struct BufferedFile::Buffer BufferedFile.h thekogans/util/BufferedFile.h
             ///
@@ -675,6 +670,10 @@ namespace thekogans {
             ///\return true == we're in the middle of a transaction.
             inline bool IsTransactionPending () const {
                 return flags.Test (FLAGS_TRANSACTION);
+            }
+
+            inline Transaction::SharedPtr GetTransaction () const {
+                return transaction;
             }
 
             /// \brief

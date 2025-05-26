@@ -294,6 +294,7 @@ namespace thekogans {
             typename T,
             typename Lock = SpinLock>
         struct RefCountedSingleton :
+            public virtual RefCounted,
             public Singleton<
                 T,
                 Lock,
