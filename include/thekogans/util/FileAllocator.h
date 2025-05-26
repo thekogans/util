@@ -636,10 +636,16 @@ namespace thekogans {
                 return header.IsSecure ();
             }
 
+            /// \brief
+            /// Return header.rootOffset.
+            /// \return header.rootOffset.
             inline PtrType GetRootOffset () const {
                 return header.rootOffset;
             }
 
+            /// \brief
+            /// Set header.rootOffset.
+            /// \param[in] rootOffset New root offset to set.
             inline void SetRootOffset (PtrType rootOffset) {
                 header.rootOffset = rootOffset;
                 dirty = true;
