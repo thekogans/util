@@ -786,7 +786,7 @@ namespace thekogans {
             }
             else if (Key::IsType (header.keyType.c_str ()) &&
                     (header.valueType.empty () || Value::IsType (header.valueType.c_str ()))) {
-                offset = fileAllocator.Alloc (header.Size ());
+                this->offset = fileAllocator.Alloc (header.Size ());
                 dirty = true;
             }
             else {

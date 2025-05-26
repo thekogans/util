@@ -39,6 +39,7 @@ namespace thekogans {
                     &BufferedFileEvents::OnBufferedFileCreateTransaction,
                     std::placeholders::_1,
                     file));
+            file->transaction->Begin ();
         }
 
         BufferedFile::Guard::~Guard () {
