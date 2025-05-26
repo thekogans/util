@@ -39,14 +39,12 @@ namespace thekogans {
                     new util::BTree (
                         Database::Instance ()->GetFileAllocator (),
                         pathBTreeOffset,
-                        Database::Instance ()->GetTransaction (),
                         util::GUIDKey::TYPE,
                         util::StringValue::TYPE));
                 util::BTree::SharedPtr componentBTree (
                     new util::BTree (
                         Database::Instance ()->GetFileAllocator (),
                         componentBTreeOffset,
-                        Database::Instance ()->GetTransaction (),
                         util::StringKey::TYPE,
                         util::GUIDArrayValue::TYPE));
                 Produce (
@@ -55,8 +53,6 @@ namespace thekogans {
                         std::placeholders::_1,
                         this));
                 Scan (path, *pathBTree, *componentBTree, ignoreList);
-                pathBTreeOffset = pathBTree->GetOffset ();
-                componentBTreeOffset = componentBTree->GetOffset ();
                 Produce (
                     std::bind (
                         &RootEvents::OnRootScanEnd,
@@ -105,14 +101,12 @@ namespace thekogans {
                     new util::BTree (
                         Database::Instance ()->GetFileAllocator (),
                         pathBTreeOffset,
-                        Database::Instance ()->GetTransaction (),
                         util::GUIDKey::TYPE,
                         util::StringValue::TYPE));
                 util::BTree::SharedPtr componentBTree (
                     new util::BTree (
                         Database::Instance ()->GetFileAllocator (),
                         componentBTreeOffset,
-                        Database::Instance ()->GetTransaction (),
                         util::StringKey::TYPE,
                         util::GUIDArrayValue::TYPE));
                 util::StringKey originalPrefix (prefix);

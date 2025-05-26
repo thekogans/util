@@ -20,12 +20,33 @@
 
 #include "thekogans/util/Config.h"
 #include "thekogans/util/Subscriber.h"
+#include "thekogans/util/Producer.h"
 #include "thekogans/util/FileAllocator.h"
 #include "thekogans/util/BufferedFile.h"
 #include "thekogans/util/BufferedFileTransactionParticipant.h"
 
 namespace thekogans {
     namespace util {
+
+        struct FileAllocatorObject;
+
+        /// \struct FileAllocatorObjectEvents FileAllocatorObject.h
+        /// thekogans/util/FileAllocatorObject.h
+        ///
+        /// \brief
+        /// Subscribe to FileAllocatorObjectEvents to receive offset change notifications.
+
+        struct _LIB_THEKOGANS_UTIL_DECL FileAllocatorObjectEvents {
+            /// \brief
+            /// dtor.
+            virtual ~FileAllocatorObjectEvents () {}
+
+            /// \brief
+            /// \see{FileAllocatorObject} offset changed. Update whatever state you need.
+            /// \param[in] file \see{FileAllocatorObject} whose offset changed.
+            virtual void OnFileAllocatorObjectOffsetChanged (
+                RefCounted::SharedPtr<FileAllocatorObject> /*fileAllocatorObject*/) noexcept {}
+        };
 
         /// \struct FileAllocatorObject FileAllocatorObject.h thekogans/util/FileAllocatorObject.h
         ///
@@ -35,7 +56,8 @@ namespace thekogans {
 
         struct _LIB_THEKOGANS_UTIL_DECL FileAllocatorObject :
                 public Subscriber<BufferedFileEvents>,
-                public BufferedFileTransactionParticipant {
+                public BufferedFileTransactionParticipant,
+                public Producer<FileAllocatorObjectEvents> {
             /// \brief
             /// Declare \see{RefCounted} pointers.
             THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (FileAllocatorObject)
@@ -43,10 +65,10 @@ namespace thekogans {
         protected:
             /// \brief
             /// \see{FileAllocator} where this object resides.
-                    FileAllocator::SharedPtr fileAllocator;
+            FileAllocator::SharedPtr fileAllocator;
             /// \brief
             /// Our address within the \see{FileAllocator}.
-            FileAllocator::PtrType offset;
+            FileAllocator::PtrType &offset;
 
         public:
             /// \brief
@@ -58,12 +80,14 @@ namespace thekogans {
             /// to add themselves to the participants list.
             FileAllocatorObject (
                 FileAllocator::SharedPtr fileAllocator_,
-                FileAllocator::PtrType offset_,
-                BufferedFile::Transaction::SharedPtr transaction = nullptr);
+                FileAllocator::PtrType &offset_);
             /// \brief
             /// dtor.
             virtual ~FileAllocatorObject () {}
 
+            inline FileAllocator::SharedPtr GetFileAllocator () const {
+                return fileAllocator;
+            }
             /// \brief
             /// Return the offset.
             /// \return Offset.

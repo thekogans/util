@@ -754,14 +754,13 @@ namespace thekogans {
 
         BTree::BTree (
             FileAllocator::SharedPtr fileAllocator,
-                FileAllocator::PtrType offset,
-                BufferedFile::Transaction::SharedPtr transaction,
+                FileAllocator::PtrType &offset,
                 const std::string &keyType,
                 const std::string &valueType,
                 std::size_t entriesPerNode,
                 std::size_t nodesPerPage,
                 Allocator::SharedPtr allocator) :
-                FileAllocatorObject (fileAllocator, offset, transaction),
+                FileAllocatorObject (fileAllocator, offset),
                 header (keyType, valueType, (ui32)entriesPerNode),
                 keyFactory (Key::GetTypeFactory (keyType.c_str ())),
                 valueFactory (Value::GetTypeFactory (valueType.c_str ())),
@@ -964,6 +963,11 @@ namespace thekogans {
             if (dirty) {
                 if (offset == 0) {
                     offset = fileAllocator->Alloc (header.Size ());
+                    Produce (
+                        std::bind (
+                            &FileAllocatorObjectEvents::OnFileAllocatorObjectOffsetChanged,
+                            std::placeholders::_1,
+                            this));
                 }
                 FileAllocator::BlockBuffer buffer (*fileAllocator->GetFile (), offset);
                 buffer << MAGIC32 << header;

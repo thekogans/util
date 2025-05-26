@@ -22,15 +22,16 @@ namespace thekogans {
 
         FileAllocatorObject::FileAllocatorObject (
                 FileAllocator::SharedPtr fileAllocator_,
-                FileAllocator::PtrType offset_,
-                BufferedFile::Transaction::SharedPtr transaction) :
+                FileAllocator::PtrType &offset_) :
                 // If we're a transaction participant, it will tell us when to commit.
-                BufferedFileTransactionParticipant (offset_ == 0 ? transaction : nullptr),
+                BufferedFileTransactionParticipant (
+                    offset_ == 0 ? fileAllocator_->GetFile ()->GetTransaction () : nullptr),
                 fileAllocator (fileAllocator_),
                 offset (offset_) {
             Subscriber<BufferedFileEvents>::Subscribe (*fileAllocator->GetFile ());
-            if (offset != 0 && transaction != nullptr) {
-                Subscriber<BufferedFile::TransactionEvents>::Subscribe (*transaction);
+            if (offset != 0 && fileAllocator_->GetFile ()->GetTransaction () != nullptr) {
+                Subscriber<BufferedFile::TransactionEvents>::Subscribe (
+                    *fileAllocator_->GetFile ()->GetTransaction ());
             }
         }
 

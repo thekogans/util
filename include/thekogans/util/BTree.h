@@ -692,8 +692,7 @@ namespace thekogans {
             /// \see{thekogans::util::SecureAllocator::ReservePages}.
             BTree (
                 FileAllocator::SharedPtr fileAllocator,
-                FileAllocator::PtrType offset,
-                BufferedFile::Transaction::SharedPtr transaction = nullptr,
+                FileAllocator::PtrType &offset,
                 const std::string &keyType = std::string (),
                 const std::string &valueType = std::string (),
                 std::size_t entriesPerNode = DEFAULT_ENTRIES_PER_NODE,

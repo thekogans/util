@@ -19,6 +19,7 @@
 #include "thekogans/util/Path.h"
 #include "thekogans/util/File.h"
 #include "thekogans/util/FileAllocator.h"
+#include "thekogans/util/FileAllocatorObject.h"
 
 namespace thekogans {
     namespace util {

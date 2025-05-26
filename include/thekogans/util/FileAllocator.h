@@ -29,6 +29,8 @@
 namespace thekogans {
     namespace util {
 
+        struct FileAllocatorRootObject;
+
         /// \struct FileAllocator FileAllocator.h thekogans/util/FileAllocator.h
         ///
         /// \brief
@@ -639,16 +641,8 @@ namespace thekogans {
             /// \brief
             /// Return header.rootOffset.
             /// \return header.rootOffset.
-            inline PtrType GetRootOffset () const {
+            inline PtrType GetRootOffset () {
                 return header.rootOffset;
-            }
-
-            /// \brief
-            /// Set header.rootOffset.
-            /// \param[in] rootOffset New root offset to set.
-            inline void SetRootOffset (PtrType rootOffset) {
-                header.rootOffset = rootOffset;
-                dirty = true;
             }
 
             /// \brief
@@ -748,6 +742,8 @@ namespace thekogans {
             /// Used to free blocks prviously allocated with AllocBTreeNode.
             /// \param[in] offset Offset of \see{BTree::Node} to free.
             void FreeBTreeNode (PtrType offset);
+
+            friend struct FileAllocatorRootObject;
 
             /// \brief
             /// Needs access to private members.
