@@ -766,12 +766,6 @@ namespace thekogans {
             /// Reload from file.
             virtual void Reload () override;
 
-        private:
-            /// \brief
-            /// Set root node.
-            /// \param[in] node \see{Node} to set as new root.
-            void SetRoot (Node *node);
-
             /// \brief
             /// Needs access to private members.
             friend Serializer &operator << (

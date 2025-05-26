@@ -217,8 +217,8 @@ namespace thekogans {
                 btree (nullptr),
                 dirty (false) {
             Subscriber<BufferedFileEvents>::Subscribe (*file);
+            file->Seek (0, SEEK_SET);
             if (file->GetSize () > 0) {
-                file->Seek (0, SEEK_SET);
                 ui32 magic;
                 *file >> magic;
                 if (magic == MAGIC32) {
@@ -248,16 +248,11 @@ namespace thekogans {
             else {
                 *file << MAGIC32 << header;
             }
-            btree = new BTree (
-                *this,
-                btreeEntriesPerNode,
-                btreeNodesPerPage,
-                allocator);
-            btree->AddRef ();
+            btree = new BTree (*this, btreeEntriesPerNode, btreeNodesPerPage, allocator);
         }
 
         FileAllocator::~FileAllocator () {
-            btree->Release ();
+            delete btree;
         }
 
         void FileAllocator::GetBlockInfo (BlockInfo &block) {
@@ -434,6 +429,7 @@ namespace thekogans {
         }
 
         void FileAllocator::Flush () {
+            btree->Flush ();
             if (dirty) {
                 file->Seek (0, SEEK_SET);
                 *file << MAGIC32 << header;
@@ -442,6 +438,7 @@ namespace thekogans {
         }
 
         void FileAllocator::Reload () {
+            btree->Reload ();
             if (dirty) {
                 file->Seek (0, SEEK_SET);
                 ui32 magic;

@@ -28,9 +28,7 @@
 /// It's broken out in to its own file because FileAllocator.h was getting
 /// too big to maintain.
 
-struct BTree :
-        public Subscriber<BufferedFileEvents>,
-        public BufferedFileTransactionParticipant {
+struct BTree {
     /// \brief
     /// KeyType is structured on block {size, offset}.
     using KeyType = std::pair<ui64, PtrType>;
@@ -320,23 +318,11 @@ public:
 protected:
     /// \brief
     /// Flush changes to file.
-    virtual void Flush () override;
+    void Flush ();
 
     /// \brief
     /// Reload from file.
-    virtual void Reload () override;
-
-private:
-    // FileAllocatorEvents
-    virtual void OnBufferedFileCreateTransaction (
-            BufferedFile::SharedPtr file) noexcept override {
-        BufferedFileTransactionParticipant::Subscribe (*file->GetTransaction ());
-    }
-
-    /// \brief
-    /// Set root node.
-    /// \param[in] node \see{Node} to set as new root.
-    void SetRoot (Node *node);
+    void Reload ();
 
     /// \brief
     /// Needs access to private members.
