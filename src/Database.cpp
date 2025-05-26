@@ -35,10 +35,14 @@ namespace thekogans {
                     SimpleFile::ReadWrite | SimpleFile::Create)),
             fileAllocator (
                 new FileAllocator (
-                    *file,
+                    file,
                     secure,
                     btreeEntriesPerNode,
                     btreeNodesPerPage,
+                    allocator)),
+            registry (
+                new FileAllocatorRegistry (
+                    fileAllocator,
                     registryEntriesPerNode,
                     registryNodesPerPage,
                     allocator)) {}

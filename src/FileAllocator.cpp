@@ -18,7 +18,6 @@
 #include "thekogans/util/Exception.h"
 #include "thekogans/util/Path.h"
 #include "thekogans/util/File.h"
-#include "thekogans/util/FileAllocatorRegistry.h"
 #include "thekogans/util/FileAllocator.h"
 
 namespace thekogans {
@@ -151,14 +150,14 @@ namespace thekogans {
     #endif // defined (THEKOGANS_UTIL_FILE_ALLOCATOR_BLOCK_INFO_USE_MAGIC)
 
         FileAllocator::BlockBuffer::BlockBuffer (
-                FileAllocator &fileAllocator_,
+                File &file_,
                 PtrType offset,
                 std::size_t bufferLength,
                 Allocator::SharedPtr allocator) :
-                Buffer (fileAllocator_.file.endianness),
-                fileAllocator (fileAllocator_),
+                Buffer (file_.endianness),
+                file (file_),
                 block (offset) {
-            block.Read (fileAllocator.file);
+            block.Read (file);
             if (bufferLength == 0) {
                 bufferLength = block.GetSize ();
             }
@@ -178,9 +177,9 @@ namespace thekogans {
                     if (availableToRead > blockLength) {
                         availableToRead = blockLength;
                     }
-                    fileAllocator.file.Seek (block.GetOffset () + blockOffset, SEEK_SET);
+                    file.Seek (block.GetOffset () + blockOffset, SEEK_SET);
                     countRead = AdvanceWriteOffset (
-                        fileAllocator.file.Read (GetWritePtr (), availableToRead));
+                        file.Read (GetWritePtr (), availableToRead));
                 }
             }
             return countRead;
@@ -199,46 +198,42 @@ namespace thekogans {
                     if (availableToWrite > blockLength) {
                         availableToWrite = blockLength;
                     }
-                    fileAllocator.file.Seek (block.GetOffset () + blockOffset, SEEK_SET);
+                    file.Seek (block.GetOffset () + blockOffset, SEEK_SET);
                     countWritten = AdvanceReadOffset (
-                        fileAllocator.file.Write (GetReadPtr (), availableToWrite));
+                        file.Write (GetReadPtr (), availableToWrite));
                 }
             }
             return countWritten;
         }
 
         FileAllocator::FileAllocator (
-                BufferedFile &file_,
+                BufferedFile::SharedPtr file_,
                 bool secure,
                 std::size_t btreeEntriesPerNode,
                 std::size_t btreeNodesPerPage,
-                std::size_t registryEntriesPerNode,
-                std::size_t registryNodesPerPage,
-                Allocator::SharedPtr allocator_) :
+                Allocator::SharedPtr allocator) :
                 file (file_),
                 header (secure ? Header::FLAGS_SECURE : 0),
-                allocator (allocator_),
                 btree (nullptr),
-                registry (nullptr),
                 dirty (false) {
-            Subscriber<BufferedFileEvents>::Subscribe (file);
-            if (file.GetSize () > 0) {
-                file.Seek (0, SEEK_SET);
+            Subscriber<BufferedFileEvents>::Subscribe (*file);
+            if (file->GetSize () > 0) {
+                file->Seek (0, SEEK_SET);
                 ui32 magic;
-                file >> magic;
+                *file >> magic;
                 if (magic == MAGIC32) {
                     // File is host endian.
                 }
                 else if (ByteSwap<GuestEndian, HostEndian> (magic) == MAGIC32) {
                     // File is guest endian.
-                    file.endianness = GuestEndian;
+                    file->endianness = GuestEndian;
                 }
                 else {
                     THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
                         "Corrupt FileAllocator file (%s)",
-                        file.GetPath ().c_str ());
+                        file->GetPath ().c_str ());
                 }
-                file >> header;
+                *file >> header;
             #if defined (THEKOGANS_UTIL_FILE_ALLOCATOR_BLOCK_INFO_USE_MAGIC)
                 if (!header.IsBlockInfoUsesMagic ()) {
             #else // defined (THEKOGANS_UTIL_FILE_ALLOCATOR_BLOCK_INFO_USE_MAGIC)
@@ -246,12 +241,12 @@ namespace thekogans {
             #endif // defined (THEKOGANS_UTIL_FILE_ALLOCATOR_BLOCK_INFO_USE_MAGIC)
                     THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
                         "This FileAllocator file (%s) cannot be opened by this version of %s.",
-                        file.GetPath ().c_str (),
+                        file->GetPath ().c_str (),
                         THEKOGANS_UTIL);
                 }
             }
             else {
-                file << MAGIC32 << header;
+                *file << MAGIC32 << header;
             }
             btree = new BTree (
                 *this,
@@ -259,28 +254,21 @@ namespace thekogans {
                 btreeNodesPerPage,
                 allocator);
             btree->AddRef ();
-            registry = new Registry (
-                *this,
-                registryEntriesPerNode,
-                registryNodesPerPage,
-                allocator);
-            registry->AddRef ();
         }
 
         FileAllocator::~FileAllocator () {
             btree->Release ();
-            registry->Release ();
         }
 
         void FileAllocator::GetBlockInfo (BlockInfo &block) {
-            block.Read (file);
+            block.Read (*file);
         }
 
         bool FileAllocator::GetPrevBlockInfo (
                 const BlockInfo &block,
                 BlockInfo &prev) {
             if (!block.IsFirst (header.heapStart)) {
-                block.Prev (file, prev);
+                block.Prev (*file, prev);
                 return true;
             }
             return false;
@@ -289,8 +277,8 @@ namespace thekogans {
         bool FileAllocator::GetNextBlockInfo (
                 const BlockInfo &block,
                 BlockInfo &next) {
-            if (!block.IsLast (file.GetSize ())) {
-                block.Next (file, next);
+            if (!block.IsLast (file->GetSize ())) {
+                block.Next (*file, next);
                 return true;
             }
             return false;
@@ -336,7 +324,7 @@ namespace thekogans {
                             result.second + size + BlockInfo::SIZE,
                             BlockInfo::FLAGS_FREE,
                             result.first - size - BlockInfo::SIZE);
-                        next.Write (file);
+                        next.Write (*file);
                         btree->Add (BTree::KeyType (next.GetSize (), next.GetOffset ()));
                     }
                     else {
@@ -347,11 +335,11 @@ namespace thekogans {
                 }
                 else {
                     // None found? Grow the file.
-                    offset = file.GetSize () + BlockInfo::HEADER_SIZE;
-                    file.SetSize (offset + size + BlockInfo::FOOTER_SIZE);
+                    offset = file->GetSize () + BlockInfo::HEADER_SIZE;
+                    file->SetSize (offset + size + BlockInfo::FOOTER_SIZE);
                 }
                 BlockInfo block (offset, 0, size);
-                block.Write (file);
+                block.Write (*file);
             }
             return offset;
         }
@@ -360,14 +348,14 @@ namespace thekogans {
             // To honor the Allocator policy, we ignore NULL pointers.
             if (offset != 0) {
                 BlockInfo block (offset);
-                block.Read (file);
+                block.Read (*file);
                 if (!block.IsFree ()) {
                     PtrType clearOffset = block.GetOffset ();
                     ui64 clearLength = block.GetSize ();
                     // Consolidate adjacent free non BTree::Node blocks.
                     if (!block.IsFirst (header.heapStart)) {
                         BlockInfo prev;
-                        block.Prev (file, prev);
+                        block.Prev (*file, prev);
                         if (prev.IsFree () && !prev.IsBTreeNode ()) {
                             btree->Delete (
                                 BTree::KeyType (prev.GetSize (), prev.GetOffset ()));
@@ -380,7 +368,7 @@ namespace thekogans {
                             else {
                                 // Since block will grow to occupy prev,
                                 // it's offset is no longer valid.
-                                block.Invalidate (file);
+                                block.Invalidate (*file);
                             }
                         #endif // defined (THEKOGANS_UTIL_FILE_ALLOCATOR_BLOCK_INFO_USE_MAGIC)
                             // Back up to cover the prev.
@@ -390,9 +378,9 @@ namespace thekogans {
                                 block.GetSize () + BlockInfo::SIZE + prev.GetSize ());
                         }
                     }
-                    if (!block.IsLast (file.GetSize ())) {
+                    if (!block.IsLast (file->GetSize ())) {
                         BlockInfo next;
-                        block.Next (file, next);
+                        block.Next (*file, next);
                         if (next.IsFree () && !next.IsBTreeNode ()) {
                             btree->Delete (
                                 BTree::KeyType (next.GetSize (), next.GetOffset ()));
@@ -404,7 +392,7 @@ namespace thekogans {
                             else {
                                 // Since block will grow to occupy next,
                                 // next offset is no longer valid.
-                                next.Invalidate (file);
+                                next.Invalidate (*file);
                             }
                         #endif // defined (THEKOGANS_UTIL_FILE_ALLOCATOR_BLOCK_INFO_USE_MAGIC)
                             // Expand to swallow the next.
@@ -413,13 +401,13 @@ namespace thekogans {
                         }
                     }
                     // If we're not the last block...
-                    if (!block.IsLast (file.GetSize ())) {
+                    if (!block.IsLast (file->GetSize ())) {
                         // ... add it to the free list.
                         btree->Add (BTree::KeyType (block.GetSize (), block.GetOffset ()));
                         block.SetFree (true);
-                        block.Write (file);
+                        block.Write (*file);
                         if (IsSecure ()) {
-                            BlockBuffer buffer (*this, clearOffset, clearLength);
+                            BlockBuffer buffer (*file, clearOffset, clearLength);
                             buffer.AdvanceWriteOffset (
                                 SecureZeroMemory (
                                     buffer.GetWritePtr (),
@@ -429,7 +417,7 @@ namespace thekogans {
                     }
                     else {
                         // If we are, truncate the heap.
-                        file.SetSize (block.GetOffset () - BlockInfo::HEADER_SIZE);
+                        file->SetSize (block.GetOffset () - BlockInfo::HEADER_SIZE);
                     }
                 }
                 else {
@@ -447,17 +435,17 @@ namespace thekogans {
 
         void FileAllocator::Flush () {
             if (dirty) {
-                file.Seek (0, SEEK_SET);
-                file << MAGIC32 << header;
+                file->Seek (0, SEEK_SET);
+                *file << MAGIC32 << header;
                 dirty = false;
             }
         }
 
         void FileAllocator::Reload () {
             if (dirty) {
-                file.Seek (0, SEEK_SET);
+                file->Seek (0, SEEK_SET);
                 ui32 magic;
-                file >> magic >> header;
+                *file >> magic >> header;
                 dirty = false;
             }
         }
@@ -467,7 +455,7 @@ namespace thekogans {
             if (header.freeBTreeNodeOffset != 0) {
                 offset = header.freeBTreeNodeOffset;
                 BlockInfo block (offset);
-                block.Read (file);
+                block.Read (*file);
                 if (block.IsFree () && block.IsBTreeNode ()) {
                     header.freeBTreeNodeOffset = block.GetNextBTreeNodeOffset ();
                     dirty = true;
@@ -480,28 +468,28 @@ namespace thekogans {
                 }
             }
             else {
-                offset = file.GetSize () + BlockInfo::HEADER_SIZE;
-                file.SetSize (offset + size + BlockInfo::FOOTER_SIZE);
+                offset = file->GetSize () + BlockInfo::HEADER_SIZE;
+                file->SetSize (offset + size + BlockInfo::FOOTER_SIZE);
             }
             BlockInfo block (offset, BlockInfo::FLAGS_BTREE_NODE, size);
-            block.Write (file);
+            block.Write (*file);
             return offset;
         }
 
         void FileAllocator::FreeBTreeNode (PtrType offset) {
             if (offset >= header.heapStart + BlockInfo::HEADER_SIZE) {
                 BlockInfo block (offset);
-                block.Read (file);
+                block.Read (*file);
                 if (!block.IsFree () && block.IsBTreeNode ()) {
-                    if (!block.IsLast (file.GetSize ())) {
+                    if (!block.IsLast (file->GetSize ())) {
                         block.SetFree (true);
                         block.SetNextBTreeNodeOffset (header.freeBTreeNodeOffset);
-                        block.Write (file);
+                        block.Write (*file);
                         header.freeBTreeNodeOffset = offset;
                         dirty = true;
                     }
                     else {
-                        file.SetSize (block.GetOffset () - BlockInfo::HEADER_SIZE);
+                        file->SetSize (block.GetOffset () - BlockInfo::HEADER_SIZE);
                     }
                 }
                 else {
@@ -524,7 +512,7 @@ namespace thekogans {
                 header.heapStart <<
                 header.btreeOffset <<
                 header.freeBTreeNodeOffset <<
-                header.registryOffset;
+                header.rootOffset;
             // The above are available with every version.
             // Add if statements to test for new versions,
             // and write their fields accordingly.
@@ -540,7 +528,7 @@ namespace thekogans {
                 header.heapStart >>
                 header.btreeOffset >>
                 header.freeBTreeNodeOffset >>
-                header.registryOffset;
+                header.rootOffset;
             // The above are available with every version.
             // Add if statements to test for new versions,
             // and read their fields accordingly.

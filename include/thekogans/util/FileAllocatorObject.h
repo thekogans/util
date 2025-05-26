@@ -43,7 +43,7 @@ namespace thekogans {
         protected:
             /// \brief
             /// \see{FileAllocator} where this object resides.
-            FileAllocator &fileAllocator;
+                    FileAllocator::SharedPtr fileAllocator;
             /// \brief
             /// Our address within the \see{FileAllocator}.
             FileAllocator::PtrType offset;
@@ -57,7 +57,7 @@ namespace thekogans {
             /// NOTE: This parameter is used by temporary \see{BufferedFileTransactionParticipant}
             /// to add themselves to the participants list.
             FileAllocatorObject (
-                FileAllocator &fileAllocator_,
+                FileAllocator::SharedPtr fileAllocator_,
                 FileAllocator::PtrType offset_,
                 BufferedFile::Transaction::SharedPtr transaction = nullptr);
             /// \brief

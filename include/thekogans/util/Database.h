@@ -31,6 +31,7 @@ namespace thekogans {
         protected:
             BufferedFile::SharedPtr file;
             FileAllocator::SharedPtr fileAllocator;
+            FileAllocatorRegistry::SharedPtr registry;
 
         public:
             Database (
@@ -38,8 +39,10 @@ namespace thekogans {
                 bool secure = false,
                 std::size_t btreeEntriesPerNode = FileAllocator::DEFAULT_BTREE_ENTRIES_PER_NODE,
                 std::size_t btreeNodesPerPage = FileAllocator::DEFAULT_BTREE_NODES_PER_PAGE,
-                std::size_t registryEntriesPerNode = FileAllocator::DEFAULT_REGISTRY_ENTRIES_PER_NODE,
-                std::size_t registryNodesPerPage = FileAllocator::DEFAULT_REGISTRY_NODES_PERP_PAGE,
+                std::size_t registryEntriesPerNode =
+                    FileAllocatorRegistry::DEFAULT_REGISTRY_ENTRIES_PER_NODE,
+                std::size_t registryNodesPerPage =
+                    FileAllocatorRegistry::DEFAULT_REGISTRY_NODES_PERP_PAGE,
                 Allocator::SharedPtr allocator = DefaultAllocator::Instance ());
             virtual ~Database () {}
 
@@ -55,8 +58,8 @@ namespace thekogans {
                 return fileAllocator;
             };
 
-            inline FileAllocator::Registry &GetRegistry () const {
-                return fileAllocator->GetRegistry ();
+            inline FileAllocatorRegistry::SharedPtr GetRegistry () const {
+                return registry;
             };
         };
 

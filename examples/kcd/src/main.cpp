@@ -107,8 +107,8 @@ int main (
             IgnoreList::SharedPtr ignoreList;
             {
                 util::BufferedFile::Guard guard (Database::Instance ()->GetFile ());
-                roots = Database::Instance ()->GetRegistry ().GetValue ("roots");
-                ignoreList = Database::Instance ()->GetRegistry ().GetValue ("ignore_list");
+                roots = Database::Instance ()->GetRegistry ()->GetValue ("roots");
+                ignoreList = Database::Instance ()->GetRegistry ()->GetValue ("ignore_list");
             }
             if (roots == nullptr) {
                 roots.Reset (new Roots);
@@ -124,7 +124,7 @@ int main (
                         roots->ScanRoot (
                             NormalizePath (util::Path (roots_[i]).MakeAbsolute ()),
                             ignoreList);
-                        Database::Instance ()->GetRegistry ().SetValue ("roots", roots);
+                        Database::Instance ()->GetRegistry ()->SetValue ("roots", roots);
                         guard.Commit ();
                     }
                 }
@@ -142,7 +142,7 @@ int main (
                     }
                     if (commit) {
                         util::BufferedFile::Guard guard (Database::Instance ()->GetFile ());
-                        Database::Instance ()->GetRegistry ().SetValue ("roots", roots);
+                        Database::Instance ()->GetRegistry ()->SetValue ("roots", roots);
                         guard.Commit ();
                     }
                 }
@@ -160,7 +160,7 @@ int main (
                     }
                     if (commit) {
                         util::BufferedFile::Guard guard (Database::Instance ()->GetFile ());
-                        Database::Instance ()->GetRegistry ().SetValue ("roots", roots);
+                        Database::Instance ()->GetRegistry ()->SetValue ("roots", roots);
                         guard.Commit ();
                     }
                 }
@@ -175,7 +175,7 @@ int main (
                         util::BufferedFile::Guard guard (Database::Instance ()->GetFile ());
                         if (roots->DeleteRoot (
                                 NormalizePath (util::Path (roots_[i]).MakeAbsolute ()))) {
-                            Database::Instance ()->GetRegistry ().SetValue ("roots", roots);
+                            Database::Instance ()->GetRegistry ()->SetValue ("roots", roots);
                             guard.Commit ();
                         }
                     }
@@ -224,7 +224,7 @@ int main (
                     }
                     if (commit) {
                         util::BufferedFile::Guard guard (Database::Instance ()->GetFile ());
-                        Database::Instance ()->GetRegistry ().SetValue ("ignore_list", ignoreList);
+                        Database::Instance ()->GetRegistry ()->SetValue ("ignore_list", ignoreList);
                         guard.Commit ();
                     }
                 }
@@ -241,7 +241,7 @@ int main (
                     }
                     if (commit) {
                         util::BufferedFile::Guard guard (Database::Instance ()->GetFile ());
-                        Database::Instance ()->GetRegistry ().SetValue ("ignore_list", ignoreList);
+                        Database::Instance ()->GetRegistry ()->SetValue ("ignore_list", ignoreList);
                         guard.Commit ();
                     }
                 }

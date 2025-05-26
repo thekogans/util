@@ -37,14 +37,14 @@ namespace thekogans {
                 assert (pathBTreeOffset == 0 && componentBTreeOffset == 0);
                 util::BTree::SharedPtr pathBTree (
                     new util::BTree (
-                        *Database::Instance ()->GetFileAllocator (),
+                        Database::Instance ()->GetFileAllocator (),
                         pathBTreeOffset,
                         Database::Instance ()->GetTransaction (),
                         util::GUIDKey::TYPE,
                         util::StringValue::TYPE));
                 util::BTree::SharedPtr componentBTree (
                     new util::BTree (
-                        *Database::Instance ()->GetFileAllocator (),
+                        Database::Instance ()->GetFileAllocator (),
                         componentBTreeOffset,
                         Database::Instance ()->GetTransaction (),
                         util::StringKey::TYPE,
@@ -103,14 +103,14 @@ namespace thekogans {
             if (pathBTreeOffset != 0 && componentBTreeOffset != 0) {
                 util::BTree::SharedPtr pathBTree (
                     new util::BTree (
-                        *Database::Instance ()->GetFileAllocator (),
+                        Database::Instance ()->GetFileAllocator (),
                         pathBTreeOffset,
                         Database::Instance ()->GetTransaction (),
                         util::GUIDKey::TYPE,
                         util::StringValue::TYPE));
                 util::BTree::SharedPtr componentBTree (
                     new util::BTree (
-                        *Database::Instance ()->GetFileAllocator (),
+                        Database::Instance ()->GetFileAllocator (),
                         componentBTreeOffset,
                         Database::Instance ()->GetTransaction (),
                         util::StringKey::TYPE,

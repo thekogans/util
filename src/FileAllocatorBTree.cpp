@@ -32,7 +32,7 @@ namespace thekogans {
                 leftNode (nullptr),
                 dirty (false) {
             if (offset != 0) {
-                BlockBuffer buffer (btree.fileAllocator, offset);
+                BlockBuffer buffer (*btree.fileAllocator.GetFile (), offset);
                 buffer.BlockRead ();
                 ui32 magic;
                 buffer >> magic;
@@ -108,7 +108,7 @@ namespace thekogans {
 
         void FileAllocator::BTree::Node::Flush () {
             if (dirty) {
-                BlockBuffer buffer (btree.fileAllocator, offset);
+                BlockBuffer buffer (*btree.fileAllocator.GetFile (), offset);
                 buffer << MAGIC32 << count;
                 if (count > 0) {
                     buffer << leftOffset;
@@ -395,9 +395,10 @@ namespace thekogans {
                 header ((ui32)entriesPerNode),
                 root (nullptr),
                 dirty (false) {
-            Subscriber<BufferedFileEvents>::Subscribe (fileAllocator.GetFile ());
+            Subscriber<BufferedFileEvents>::Subscribe (*fileAllocator.GetFile ());
             if (fileAllocator.header.btreeOffset != 0) {
-                BlockBuffer buffer (fileAllocator, fileAllocator.header.btreeOffset);
+                BlockBuffer buffer (
+                    *fileAllocator.GetFile (), fileAllocator.header.btreeOffset);
                 buffer.BlockRead ();
                 ui32 magic;
                 buffer >> magic;
@@ -481,7 +482,8 @@ namespace thekogans {
 
         void FileAllocator::BTree::Flush () {
             if (dirty) {
-                BlockBuffer buffer (fileAllocator, fileAllocator.header.btreeOffset);
+                BlockBuffer buffer (
+                    *fileAllocator.GetFile (), fileAllocator.header.btreeOffset);
                 buffer << MAGIC32 << header;
                 buffer.BlockWrite ();
                 dirty = false;
@@ -491,7 +493,8 @@ namespace thekogans {
 
         void FileAllocator::BTree::Reload () {
             if (dirty) {
-                BlockBuffer buffer (fileAllocator, fileAllocator.header.btreeOffset);
+                BlockBuffer buffer (
+                    *fileAllocator.GetFile (), fileAllocator.header.btreeOffset);
                 buffer.BlockRead ();
                 ui32 magic;
                 buffer >> magic >> header;

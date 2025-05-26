@@ -691,7 +691,7 @@ namespace thekogans {
             /// might be just the ticket. You will probably need to call;
             /// \see{thekogans::util::SecureAllocator::ReservePages}.
             BTree (
-                FileAllocator &fileAllocator,
+                FileAllocator::SharedPtr fileAllocator,
                 FileAllocator::PtrType offset,
                 BufferedFile::Transaction::SharedPtr transaction = nullptr,
                 const std::string &keyType = std::string (),

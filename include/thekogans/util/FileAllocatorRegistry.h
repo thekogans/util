@@ -21,7 +21,6 @@
 #include <string>
 #include "thekogans/util/Config.h"
 #include "thekogans/util/BTree.h"
-#include "thekogans/util/BTreeKeys.h"
 #include "thekogans/util/FileAllocator.h"
 
 namespace thekogans {
@@ -36,8 +35,35 @@ namespace thekogans {
         /// practically any value derived from \see{BTree::Value}. The key type
         /// is any std::string.
 
-        struct _LIB_THEKOGANS_UTIL_DECL FileAllocator::Registry : private util::BTree {
-        public:
+        struct _LIB_THEKOGANS_UTIL_DECL FileAllocatorRegistry :
+                private util::BTree,
+                public virtual RefCounted {
+            /// \brief
+            /// Declare \see{RefCounted} pointers.
+            THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (FileAllocatorRegistry)
+
+            /// \brief
+            /// Default number of entries per \see{BTree} node.
+            static const std::size_t DEFAULT_REGISTRY_ENTRIES_PER_NODE = 32;
+            /// \brief
+            /// Number of \see{BTree} nodes that will fit
+            /// in to a \see{BlockAllocator} page.
+            static const std::size_t DEFAULT_REGISTRY_NODES_PERP_PAGE = 5;
+
+            /// \brief
+            /// ctor.
+            /// See \see{FileAllocator::GetRegistry} for a better description of
+            /// these parameters and when you should and should not change them.
+            /// \param[in] fileAllocator Registry heap (see \see{FileAllocator}).
+            /// \param[in] entriesPerNode Number of entries per btree node.
+            /// \param[in] nodesPerPage Number of btree nodes per allocator page.
+            /// \param[in] allocator Where allocator node pages come from.
+            FileAllocatorRegistry (
+                FileAllocator::SharedPtr fileAllocator,
+                std::size_t entriesPerNode = DEFAULT_REGISTRY_ENTRIES_PER_NODE,
+                std::size_t nodesPerPage = DEFAULT_REGISTRY_NODES_PERP_PAGE,
+                Allocator::SharedPtr allocator = DefaultAllocator::Instance ());
+
             /// \brief
             /// Given a key, retrieve the associated value. If key is not found,
             /// return nullptr.
@@ -55,28 +81,9 @@ namespace thekogans {
                 const std::string &key,
                 util::BTree::Value::SharedPtr value);
 
-        private:
             /// \brief
-            /// ctor.
-            /// See \see{FileAllocator::GetRegistry} for a better description of
-            /// these parameters and when you should and should not change them.
-            /// \param[in] fileAllocator Registry heap (see \see{FileAllocator}).
-            /// \param[in] entriesPerNode Number of entries per btree node.
-            /// \param[in] nodesPerPage Number of btree nodes per allocator page.
-            /// \param[in] allocator Where allocator node pages come from.
-            Registry (
-                FileAllocator &fileAllocator,
-                std::size_t entriesPerNode = FileAllocator::DEFAULT_REGISTRY_ENTRIES_PER_NODE,
-                std::size_t nodesPerPage = FileAllocator::DEFAULT_REGISTRY_NODES_PERP_PAGE,
-                Allocator::SharedPtr allocator = DefaultAllocator::Instance ());
-
-            /// \brief
-            /// \see{Fileallocator} needs access to the ctor.
-            friend FileAllocator;
-
-            /// \brief
-            /// Registry is neither copy constructable, nor assignable.
-            THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (Registry)
+            /// FileAllocatorRegistry is neither copy constructable, nor assignable.
+            THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (FileAllocatorRegistry)
         };
 
     } // namespace util

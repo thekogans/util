@@ -46,10 +46,10 @@ namespace thekogans {
         ///     4       2         2         8            8
         ///
         ///    |<------------- version 1 ------------>|
-        ///    +---------------------+----------------+
-        /// ...| freeBTreeNodeOffset | registryOffset |
-        ///    +---------------------+----------------+
-        ///                8                  8
+        ///    +---------------------+------------+
+        /// ...| freeBTreeNodeOffset | rootOffset |
+        ///    +---------------------+------------+
+        ///                8                8
         ///
         /// Header::SIZE = 40 (version 1)
         ///
@@ -451,7 +451,7 @@ namespace thekogans {
             struct _LIB_THEKOGANS_UTIL_DECL BlockBuffer : public Buffer {
                 /// \brief
                 /// \see{FileAllocator} reference.
-                FileAllocator &fileAllocator;
+                File &file;
                 /// \brief
                 /// Block info.
                 BlockInfo block;
@@ -464,7 +464,7 @@ namespace thekogans {
                 /// (0 == buffer the whole block).
                 /// \param[in] allocator \see{Allocator} for \see{Buffer}.
                 BlockBuffer (
-                    FileAllocator &fileAllocator_,
+                    File &file_,
                     PtrType offset,
                     std::size_t bufferLength = 0,
                     Allocator::SharedPtr allocator = DefaultAllocator::Instance ());
@@ -491,14 +491,10 @@ namespace thekogans {
                 THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (BlockBuffer)
             };
 
-            /// \brief
-            /// \see{FileAllocator::Registry} holds a circular reference to FileAllocator.
-            struct Registry;
-
         private:
             /// \brief
             /// The file where the heap resides.
-            BufferedFile &file;
+            BufferedFile::SharedPtr file;
             /// \struct FileAllocator::Header FileAllocator.h thekogans/util/FileAllocator.h
             ///
             /// \brief
@@ -529,8 +525,8 @@ namespace thekogans {
                 /// Contains the head of the free \see{BTree::Node} list.
                 PtrType freeBTreeNodeOffset;
                 /// \brief
-                /// Contains the offset of the \see{FileAllocator::Registry}::Header.
-                PtrType registryOffset;
+                /// Contains the offset of the root object.
+                PtrType rootOffset;
                 // NOTE: If you add new fields, adjust the SIZE and increment
                 // the CURRENT_VERSION below and add if statements to operator
                 // << and >> to read and write them.
@@ -544,7 +540,7 @@ namespace thekogans {
                     PTR_TYPE_SIZE + // heapStart
                     PTR_TYPE_SIZE + // btreeOffset
                     PTR_TYPE_SIZE + // freeBTreeNodeOffset
-                    PTR_TYPE_SIZE;  // registryOffset
+                    PTR_TYPE_SIZE;  // rootOffset
 
                 /// \brief
                 /// Current version.
@@ -558,7 +554,7 @@ namespace thekogans {
                         heapStart (SIZE),
                         btreeOffset (0),
                         freeBTreeNodeOffset (0),
-                        registryOffset (0) {
+                        rootOffset (0) {
                 #if defined (THEKOGANS_UTIL_FILE_ALLOCATOR_BLOCK_INFO_USE_MAGIC)
                     flags.Set (FLAGS_BLOCK_INFO_USES_MAGIC, true);
                 #endif // defined (THEKOGANS_UTIL_FILE_ALLOCATOR_BLOCK_INFO_USE_MAGIC)
@@ -579,18 +575,12 @@ namespace thekogans {
                 }
             } header;
             /// \brief
-            /// \see{Allocator} for \see{BTree} and \see{FileAllocator::Registry}.
-            Allocator::SharedPtr allocator;
-            /// \brief
             /// Include the \see{BTree} header.
             /// I split it out because this file was getting too big to maintain.
             #include "thekogans/util/FileAllocatorBTree.h"
             /// \brief
             /// \see{BTree} to manage heap free space.
             BTree *btree;
-            /// \brief
-            /// \see{FileAllocator::Registry}.
-            Registry *registry;
             /// \brief
             /// Set to indicate that the \see{Header} is dirty and needs
             /// to be written to disk.
@@ -616,13 +606,6 @@ namespace thekogans {
             /// Number of \see{BTree::Node}s that will fit in to a
             /// \see{BlockAllocator} page.
             static const std::size_t DEFAULT_BTREE_NODES_PER_PAGE = 10;
-            /// \brief
-            /// Default number of entries per \see{FileAllocator::Registry} node.
-            static const std::size_t DEFAULT_REGISTRY_ENTRIES_PER_NODE = 32;
-            /// \brief
-            /// Number of \see{FileAllocator::Registry} nodes that will fit
-            /// in to a \see{BlockAllocator} page.
-            static const std::size_t DEFAULT_REGISTRY_NODES_PERP_PAGE = 5;
 
             /// \brief
             /// ctor.
@@ -632,20 +615,14 @@ namespace thekogans {
             /// per \see{BTree::Node}.
             /// \param[in] btreeNodesPerPage Number of \see{BTree::Node}s
             /// that will fit in to a \see{BlockAllocator} page.
-            /// \param[in] registryEntriesPerNode Default number of entries
-            /// per \see{FileAllocator::Registry} node.
-            /// \param[in] registryNodesPerPage Number of \see{FileAllocator::Registry}
-            /// nodes that will fit in to a \see{BlockAllocator} page.
             /// \param[in] allocator \see{Allocator} for \see{BTree} and
             /// \see{FileAllocator::Registry}.
             FileAllocator (
-                BufferedFile &file_,
+                BufferedFile::SharedPtr file_,
                 bool secure = false,
                 std::size_t btreeEntriesPerNode = DEFAULT_BTREE_ENTRIES_PER_NODE,
                 std::size_t btreeNodesPerPage = DEFAULT_BTREE_NODES_PER_PAGE,
-                std::size_t registryEntriesPerNode = DEFAULT_REGISTRY_ENTRIES_PER_NODE,
-                std::size_t registryNodesPerPage = DEFAULT_REGISTRY_NODES_PERP_PAGE,
-                Allocator::SharedPtr allocator_ = DefaultAllocator::Instance ());
+                Allocator::SharedPtr allocator = DefaultAllocator::Instance ());
             /// \brief
             /// dtor.
             ~FileAllocator ();
@@ -657,10 +634,19 @@ namespace thekogans {
                 return header.IsSecure ();
             }
 
+            inline PtrType GetRootOffset () const {
+                return header.rootOffset;
+            }
+
+            inline void SetRootOffset (PtrType rootOffset) {
+                header.rootOffset = rootOffset;
+                dirty = true;
+            }
+
             /// \brief
             /// Return the heap file.
             /// \return Heap file.
-            inline BufferedFile &GetFile () {
+            inline BufferedFile::SharedPtr GetFile () {
                 return file;
             }
 
@@ -674,7 +660,7 @@ namespace thekogans {
             /// Return the pointer to the end of the heap.
             /// \return Pointer to the end of the heap.
             inline PtrType GetHeapEnd () const {
-                return file.GetSize ();
+                return file->GetSize ();
             }
 
             /// \brief
@@ -683,16 +669,6 @@ namespace thekogans {
             inline PtrType GetFirstBlockOffset () const {
                 // header.heapStart is read only after ctor so no need to lock.
                 return header.heapStart + BlockInfo::HEADER_SIZE;
-            }
-
-            /// \brief
-            /// A \see{FileAllocator::Registry} in the form of a \see{BTree}
-            /// is available for storing and retrieving associated values.
-            /// The key type is \see{StringKey} and the value type is any
-            /// type derived from \see{BTree::Value}.
-            /// \return Reference to \see{FileAllocator::Registry}.
-            inline Registry &GetRegistry () const {
-                return *registry;
             }
 
             /// \brief
