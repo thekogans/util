@@ -28,6 +28,9 @@
 namespace thekogans {
     namespace util {
 
+        /// \brief
+        /// Forward declaration of \see{FileAllocatorObject}
+        /// needed by \see{FileAllocatorObjectEvents}.
         struct FileAllocatorObject;
 
         /// \struct FileAllocatorObjectEvents FileAllocatorObject.h
@@ -35,7 +38,6 @@ namespace thekogans {
         ///
         /// \brief
         /// Subscribe to FileAllocatorObjectEvents to receive offset change notifications.
-
         struct _LIB_THEKOGANS_UTIL_DECL FileAllocatorObjectEvents {
             /// \brief
             /// dtor.
@@ -53,7 +55,6 @@ namespace thekogans {
         /// \brief
         /// A FileAllocatorObject is an object that lives in a \see{FileAllocator} and
         /// participates in \see{BufferedFile::Transaction}.
-
         struct _LIB_THEKOGANS_UTIL_DECL FileAllocatorObject :
                 public Subscriber<BufferedFileEvents>,
                 public BufferedFileTransactionParticipant,
@@ -68,6 +69,9 @@ namespace thekogans {
             FileAllocator::SharedPtr fileAllocator;
             /// \brief
             /// Our address within the \see{FileAllocator}.
+            /// NOTE: Offset is an extrinsic property. That's
+            /// why we need a reference. It starts out == 0.
+            /// We update it during first \see{Flush}.
             FileAllocator::PtrType &offset;
 
         public:
@@ -75,9 +79,6 @@ namespace thekogans {
             /// ctor.
             /// \param[in] fileAllocator \see{FileAllocator} where this object resides.
             /// \param[in] offset Offset of the \see{FileAllocator::BlockInfo}.
-            /// \param[in] transaction Optional transaction to join.
-            /// NOTE: This parameter is used by temporary \see{BufferedFileTransactionParticipant}
-            /// to add themselves to the participants list.
             FileAllocatorObject (
                 FileAllocator::SharedPtr fileAllocator_,
                 FileAllocator::PtrType &offset_);
@@ -85,6 +86,9 @@ namespace thekogans {
             /// dtor.
             virtual ~FileAllocatorObject () {}
 
+            /// \brief
+            /// Return the fileAllocator.
+            /// \return fileAllocator.
             inline FileAllocator::SharedPtr GetFileAllocator () const {
                 return fileAllocator;
             }

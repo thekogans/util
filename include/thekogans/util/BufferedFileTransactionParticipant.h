@@ -32,7 +32,6 @@ namespace thekogans {
         /// BufferedFileTransactionParticipants are objects that listen to
         /// \see{BufferedFile::TransactionEvents} and are able to flush and reload
         /// themselves to and from a \see{BufferedFile}.
-
         struct _LIB_THEKOGANS_UTIL_DECL BufferedFileTransactionParticipant :
                 public Subscriber<BufferedFile::TransactionEvents> {
             /// \brief

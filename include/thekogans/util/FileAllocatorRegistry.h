@@ -32,26 +32,26 @@ namespace thekogans {
         /// thekogans/util/FileAllocatorRegistry.h
         ///
         /// \brief
-        /// \see{FileAllocatorRegistry} provides global ordered, associative
-        /// storage for \see{FileAllocator} clients. Use it to store and retrieve
-        /// practically any value derived from \see{BTree::Value}. The key type
-        /// is any std::string.
-
+        /// \see{FileAllocatorRegistry} is a \see{FileAllocatorRootObject}. It provides
+        /// global ordered, associative storage for \see{FileAllocator} clients. Use it
+        /// to store and retrieve practically any value derived from \see{BTree::Value}.
+        /// The key type is any std::string.
         struct _LIB_THEKOGANS_UTIL_DECL FileAllocatorRegistry : public FileAllocatorRootObject {
             /// \brief
             /// Declare \see{RefCounted} pointers.
             THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (FileAllocatorRegistry)
 
         private:
+            /// \brief
+            /// \see{BTree} is the registry.
             BTree::SharedPtr btree;
 
         public:
             /// \brief
-            /// Default number of entries per \see{BTree} node.
+            /// Default number of entries per \see{BTree::Node}.
             static const std::size_t DEFAULT_REGISTRY_ENTRIES_PER_NODE = 32;
             /// \brief
-            /// Number of \see{BTree} nodes that will fit
-            /// in to a \see{BlockAllocator} page.
+            /// Number of \see{BTree::Node}s that will fit in to a \see{BlockAllocator} page.
             static const std::size_t DEFAULT_REGISTRY_NODES_PERP_PAGE = 5;
 
             /// \brief

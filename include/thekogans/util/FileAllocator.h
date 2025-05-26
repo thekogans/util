@@ -29,6 +29,8 @@
 namespace thekogans {
     namespace util {
 
+        /// \brief
+        /// Forward declaration of \see{FileAllocatorRootObject}.
         struct FileAllocatorRootObject;
 
         /// \struct FileAllocator FileAllocator.h thekogans/util/FileAllocator.h
@@ -552,6 +554,7 @@ namespace thekogans {
 
                 /// \brief
                 /// ctor.
+                /// \param[in] flags_ 0 or FLAGS_SECURE.
                 Header (ui16 flags_ = 0) :
                         version (CURRENT_VERSION),
                         flags (flags_),
@@ -733,6 +736,9 @@ namespace thekogans {
 
         private:
             /// \brief
+            /// Write to header to file.
+            void WriteHeader ();
+            /// \brief
             /// Used to allocate BTree::Node blocks.
             /// Uses \see{Header::btreeNodeSize}. This method is
             /// used directly by the internal \see{BTree::Node}.
@@ -743,6 +749,8 @@ namespace thekogans {
             /// \param[in] offset Offset of \see{BTree::Node} to free.
             void FreeBTreeNode (PtrType offset);
 
+            /// \brief
+            /// \see{FileAllocatorRootObject} needs access to WriteHeader.
             friend struct FileAllocatorRootObject;
 
             /// \brief

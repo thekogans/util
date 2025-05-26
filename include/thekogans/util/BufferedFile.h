@@ -40,7 +40,6 @@ namespace thekogans {
         ///
         /// \brief
         /// Subscribe to BufferedFileEvents to receive transaction notifications.
-
         struct _LIB_THEKOGANS_UTIL_DECL BufferedFileEvents {
             /// \brief
             /// dtor.
@@ -74,7 +73,6 @@ namespace thekogans {
         /// fine for 'small' (under 1MB) files, it's strength lies with it's ability
         /// to handle multi GB or even TB files with ease. It's hierarchical address
         /// space partitioning allows for very efficient, sparse file handling.
-
         struct _LIB_THEKOGANS_UTIL_DECL BufferedFile :
                 public File,
                 public Producer<BufferedFileEvents> {
@@ -109,7 +107,7 @@ namespace thekogans {
             };
 
             /// \brief
-            /// Forward declaration of \see{Transaction}.
+            /// Forward declaration of \see{Transaction} needed by \see{TransactionEvents}.
             struct Transaction;
 
             /// \struct BufferedFile::Transaction BufferedFile.h thekogans/util/BufferedFile.h
@@ -672,22 +670,12 @@ namespace thekogans {
                 return flags.Test (FLAGS_TRANSACTION);
             }
 
+            /// \brief
+            /// Return the current active transaction.
+            /// \return transaction.
             inline Transaction::SharedPtr GetTransaction () const {
                 return transaction;
             }
-
-            /// \brief
-            /// Start a new transaction. If a transaction is
-            /// already in progress do nothing. If the cache
-            /// was dirty before the transaction began it will
-            /// be \see{Flush}ed first.
-            void BeginTransaction ();
-            /// \brief
-            /// Commit the current transaction.
-            void CommitTransaction ();
-            /// \brief
-            /// Abort the current transaction.
-            void AbortTransaction ();
 
             /// \brief
             /// BufferedFile is very delicate when it comes to it's internal
@@ -703,6 +691,19 @@ namespace thekogans {
             void DeleteCache (bool commitChanges = true);
 
         private:
+            /// \brief
+            /// Start a new transaction. If a transaction is
+            /// already in progress do nothing. If the cache
+            /// was dirty before the transaction began it will
+            /// be \see{Flush}ed first.
+            void BeginTransaction ();
+            /// \brief
+            /// Commit the current transaction.
+            void CommitTransaction ();
+            /// \brief
+            /// Abort the current transaction.
+            void AbortTransaction ();
+
             /// \brief
             /// Get the buffer that will cover the neighborhood around position.
             /// \return Buffer that covers the neighborhood around position.

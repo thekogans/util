@@ -522,6 +522,34 @@ namespace thekogans {
             }
         }
 
+        void BufferedFile::DeleteCache (bool commitChanges) {
+            if (IsOpen ()) {
+                if (IsDirty ()) {
+                    if (IsTransactionPending ()) {
+                        if (commitChanges) {
+                            CommitTransaction ();
+                        }
+                        else {
+                            AbortTransaction ();
+                        }
+                    }
+                    else if (commitChanges) {
+                        Flush ();
+                    }
+                    else {
+                        root.Clear ();
+                        size = sizeOnDisk;
+                        flags.Set (FLAGS_DIRTY, false);
+                    }
+                }
+                root.Delete ();
+            }
+            else {
+                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                    THEKOGANS_UTIL_OS_ERROR_CODE_EBADF);
+            }
+        }
+
         void BufferedFile::BeginTransaction () {
             if (IsOpen ()) {
                 if (!IsTransactionPending ()) {
@@ -617,34 +645,6 @@ namespace thekogans {
                     THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
                         "No open transaction to abort.");
                 }
-            }
-            else {
-                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                    THEKOGANS_UTIL_OS_ERROR_CODE_EBADF);
-            }
-        }
-
-        void BufferedFile::DeleteCache (bool commitChanges) {
-            if (IsOpen ()) {
-                if (IsDirty ()) {
-                    if (IsTransactionPending ()) {
-                        if (commitChanges) {
-                            CommitTransaction ();
-                        }
-                        else {
-                            AbortTransaction ();
-                        }
-                    }
-                    else if (commitChanges) {
-                        Flush ();
-                    }
-                    else {
-                        root.Clear ();
-                        size = sizeOnDisk;
-                        flags.Set (FLAGS_DIRTY, false);
-                    }
-                }
-                root.Delete ();
             }
             else {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (

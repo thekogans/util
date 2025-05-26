@@ -218,8 +218,8 @@ namespace thekogans {
                 btree (nullptr),
                 dirty (false) {
             Subscriber<BufferedFileEvents>::Subscribe (*file);
-            file->Seek (0, SEEK_SET);
             if (file->GetSize () > 0) {
+                file->Seek (0, SEEK_SET);
                 ui32 magic;
                 *file >> magic;
                 if (magic == MAGIC32) {
@@ -247,7 +247,7 @@ namespace thekogans {
                 }
             }
             else {
-                *file << MAGIC32 << header;
+                WriteHeader ();
             }
             btree = new BTree (*this, btreeEntriesPerNode, btreeNodesPerPage, allocator);
         }
@@ -432,9 +432,7 @@ namespace thekogans {
         void FileAllocator::Flush () {
             btree->Flush ();
             if (dirty) {
-                file->Seek (0, SEEK_SET);
-                *file << MAGIC32 << header;
-                dirty = false;
+                WriteHeader ();
             }
         }
 
@@ -446,6 +444,12 @@ namespace thekogans {
                 *file >> magic >> header;
                 dirty = false;
             }
+        }
+
+        void FileAllocator::WriteHeader () {
+            file->Seek (0, SEEK_SET);
+            *file << MAGIC32 << header;
+            dirty = false;
         }
 
         FileAllocator::PtrType FileAllocator::AllocBTreeNode (std::size_t size) {

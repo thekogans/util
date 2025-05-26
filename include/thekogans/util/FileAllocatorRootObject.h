@@ -55,12 +55,11 @@ namespace thekogans {
             // FileAllocatorObjectEvents
             /// \brief
             /// We've just updated the offset.
-            /// \param[in] self \see{FileAllocatorObject} that just updated the offset (this).
+            /// \param[in] fileAllocatorObject \see{FileAllocatorObject}
+            /// that just updated the offset.
             virtual void OnFileAllocatorObjectOffsetChanged (
-                    FileAllocatorObject::SharedPtr self) noexcept override {
-                BufferedFile::SharedPtr file = fileAllocator->GetFile ();
-                file->Seek (0, SEEK_SET);
-                *file << MAGIC32 << fileAllocator->header;
+                    FileAllocatorObject::SharedPtr /*fileAllocatorObject*/) noexcept override {
+                fileAllocator->WriteHeader ();
             }
 
             /// \brief
