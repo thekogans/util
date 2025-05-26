@@ -449,6 +449,7 @@ namespace thekogans {
             /// also flexible enough to provide access to sub ranges. Making it
             /// efficient to update only the parts of the data that have changed.
             struct _LIB_THEKOGANS_UTIL_DECL BlockBuffer : public Buffer {
+            private:
                 /// \brief
                 /// \see{FileAllocator} reference.
                 File &file;
@@ -456,9 +457,10 @@ namespace thekogans {
                 /// Block info.
                 BlockInfo block;
 
+            public:
                 /// \brief
                 /// ctor.
-                /// \param[in] fileAllocator \see{FileAllocator} containing the block.
+                /// \param[in] file \see{File} containing the block.
                 /// \param[in] offset Block offset.
                 /// \param[in] bufferLength How much of the block we want to buffer
                 /// (0 == buffer the whole block).

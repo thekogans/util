@@ -407,7 +407,7 @@ namespace thekogans {
                         block.SetFree (true);
                         block.Write (*file);
                         if (IsSecure ()) {
-                            BlockBuffer buffer (*file, clearOffset, clearLength);
+                            BlockBuffer buffer (*file, block.GetOffset (), clearLength);
                             buffer.AdvanceWriteOffset (
                                 SecureZeroMemory (
                                     buffer.GetWritePtr (),
