@@ -34,7 +34,7 @@ namespace thekogans {
         /// \struct BTree BTree.h thekogans/util/BTree.h
         ///
         /// \brief
-        /// A BTree is a \see{FileAllocator} container. It's attributes are that
+        /// A BTree is a \see{FileAllocatorObject}. It's attributes are that
         /// all searches, insertions and deletions take O(N) where N is the
         /// height of the tree. These are BTree's bigest strengths. One of it's
         /// biggest weaknesses is the fact that iterators don't survive modifications
@@ -44,7 +44,6 @@ namespace thekogans {
         /// \see{DynamicCreatable} and \see{Serializable} for it's key and value.
         /// That means that key and values can be practically any random size object
         /// (as long as it derives from BTree::Key and implements the interface).
-
         struct _LIB_THEKOGANS_UTIL_DECL BTree : public FileAllocatorObject {
             /// \brief
             /// Declare \see{RefCounted} pointers.
@@ -184,7 +183,7 @@ namespace thekogans {
 
         protected:
             /// \brief
-            /// Forward declaration of node needed by \see{Iterator}.
+            /// Forward declaration of \see{Node} needed by \see{Iterator}.
             struct Node;
 
         public:

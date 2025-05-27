@@ -47,13 +47,13 @@ namespace thekogans {
         /// +-------+---------+-------+-----------+-------------+
         /// | magic | version | flags | heapStart | btreeOffset |...
         /// +-------+---------+-------+-----------+-------------+
-        ///     4       2         2         8            8
+        ///     4        2        2         8            8
         ///
-        ///    |<------------- version 1 ------------>|
+        ///    |<----------- version 1 ---------->|
         ///    +---------------------+------------+
         /// ...| freeBTreeNodeOffset | rootOffset |
         ///    +---------------------+------------+
-        ///                8                8
+        ///               8                 8
         ///
         /// Header::SIZE = 40 (version 1)
         ///
@@ -78,7 +78,6 @@ namespace thekogans {
         /// | nextBTreeNodeOffset |          ...          |
         /// +---------------------+-----------------------+
         ///            8                     var
-
         struct _LIB_THEKOGANS_UTIL_DECL FileAllocator :
                 public Subscriber<BufferedFileEvents>,
                 public BufferedFileTransactionParticipant {
@@ -617,13 +616,11 @@ namespace thekogans {
             /// \brief
             /// ctor.
             /// \param[in] path Heap file path.
-            /// \param[in] secure true == zero out freed blocks.
-            /// \param[in] btreeEntriesPerNode Default number of entries
-            /// per \see{BTree::Node}.
-            /// \param[in] btreeNodesPerPage Number of \see{BTree::Node}s
-            /// that will fit in to a \see{BlockAllocator} page.
-            /// \param[in] allocator \see{Allocator} for \see{BTree} and
-            /// \see{FileAllocator::Registry}.
+            /// \param[in] secure true == zero out free blocks.
+            /// \param[in] btreeEntriesPerNode Default number of entries per \see{BTree::Node}.
+            /// \param[in] btreeNodesPerPage Number of \see{BTree::Node}s that will fit in to
+            /// a \see{BlockAllocator} page.
+            /// \param[in] allocator \see{Allocator} for \see{BTree}.
             FileAllocator (
                 BufferedFile::SharedPtr file_,
                 bool secure = false,
@@ -639,13 +636,6 @@ namespace thekogans {
             /// \return true == secure.
             inline bool IsSecure () const {
                 return header.IsSecure ();
-            }
-
-            /// \brief
-            /// Return header.rootOffset.
-            /// \return header.rootOffset.
-            inline PtrType GetRootOffset () {
-                return header.rootOffset;
             }
 
             /// \brief
@@ -736,12 +726,15 @@ namespace thekogans {
 
         private:
             /// \brief
-            /// Write to header to file.
-            void WriteHeader ();
+            /// Read the header from file.
+            void ReadHeader ();
             /// \brief
-            /// Used to allocate BTree::Node blocks.
-            /// Uses \see{Header::btreeNodeSize}. This method is
-            /// used directly by the internal \see{BTree::Node}.
+            /// Write the header to file.
+            void WriteHeader ();
+
+            /// \brief
+            /// Used to allocate \see{BTree::Node} blocks.
+            /// This method is used by the \see{BTree::Node}.
             /// \return Offset of allocated block.
             PtrType AllocBTreeNode (std::size_t size);
             /// \brief

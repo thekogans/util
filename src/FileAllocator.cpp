@@ -219,32 +219,7 @@ namespace thekogans {
                 dirty (false) {
             Subscriber<BufferedFileEvents>::Subscribe (*file);
             if (file->GetSize () > 0) {
-                file->Seek (0, SEEK_SET);
-                ui32 magic;
-                *file >> magic;
-                if (magic == MAGIC32) {
-                    // File is host endian.
-                }
-                else if (ByteSwap<GuestEndian, HostEndian> (magic) == MAGIC32) {
-                    // File is guest endian.
-                    file->endianness = GuestEndian;
-                }
-                else {
-                    THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                        "Corrupt FileAllocator file (%s)",
-                        file->GetPath ().c_str ());
-                }
-                *file >> header;
-            #if defined (THEKOGANS_UTIL_FILE_ALLOCATOR_BLOCK_INFO_USE_MAGIC)
-                if (!header.IsBlockInfoUsesMagic ()) {
-            #else // defined (THEKOGANS_UTIL_FILE_ALLOCATOR_BLOCK_INFO_USE_MAGIC)
-                if (header.IsBlockInfoUsesMagic ()) {
-            #endif // defined (THEKOGANS_UTIL_FILE_ALLOCATOR_BLOCK_INFO_USE_MAGIC)
-                    THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                        "This FileAllocator file (%s) cannot be opened by this version of %s.",
-                        file->GetPath ().c_str (),
-                        THEKOGANS_UTIL);
-                }
+                ReadHeader ();
             }
             else {
                 WriteHeader ();
@@ -408,7 +383,7 @@ namespace thekogans {
                                 SecureZeroMemory (
                                     buffer.GetWritePtr (),
                                     buffer.GetDataAvailableForWriting ()));
-                            buffer.BlockWrite (clearOffset, clearLength);
+                            buffer.BlockWrite (clearOffset - block.GetOffset (), clearLength);
                         }
                     }
                     else {
@@ -439,11 +414,38 @@ namespace thekogans {
         void FileAllocator::Reload () {
             btree->Reload ();
             if (dirty) {
-                file->Seek (0, SEEK_SET);
-                ui32 magic;
-                *file >> magic >> header;
-                dirty = false;
+                ReadHeader ();
             }
+        }
+
+        void FileAllocator::ReadHeader () {
+            file->Seek (0, SEEK_SET);
+            ui32 magic;
+            *file >> magic;
+            if (magic == MAGIC32) {
+                // File is host endian.
+            }
+            else if (ByteSwap<GuestEndian, HostEndian> (magic) == MAGIC32) {
+                // File is guest endian.
+                file->endianness = GuestEndian;
+            }
+            else {
+                THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
+                    "Corrupt FileAllocator file (%s)",
+                    file->GetPath ().c_str ());
+            }
+            *file >> header;
+        #if defined (THEKOGANS_UTIL_FILE_ALLOCATOR_BLOCK_INFO_USE_MAGIC)
+            if (!header.IsBlockInfoUsesMagic ()) {
+        #else // defined (THEKOGANS_UTIL_FILE_ALLOCATOR_BLOCK_INFO_USE_MAGIC)
+            if (header.IsBlockInfoUsesMagic ()) {
+        #endif // defined (THEKOGANS_UTIL_FILE_ALLOCATOR_BLOCK_INFO_USE_MAGIC)
+                THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
+                    "This FileAllocator file (%s) cannot be opened by this version of %s.",
+                    file->GetPath ().c_str (),
+                    THEKOGANS_UTIL);
+            }
+            dirty = false;
         }
 
         void FileAllocator::WriteHeader () {

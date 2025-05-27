@@ -68,7 +68,7 @@ namespace thekogans {
             /// \see{FileAllocator} where this object resides.
             FileAllocator::SharedPtr fileAllocator;
             /// \brief
-            /// Our address within the \see{FileAllocator}.
+            /// Our address inside the \see{FileAllocator}.
             /// NOTE: Offset is an extrinsic property. That's
             /// why we need a reference. It starts out == 0.
             /// We update it during first \see{Flush}.
