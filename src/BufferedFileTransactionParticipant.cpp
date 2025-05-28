@@ -23,7 +23,7 @@ namespace thekogans {
         BufferedFileTransactionParticipant::BufferedFileTransactionParticipant (
                 BufferedFile::Transaction::SharedPtr transaction) {
             if (transaction != nullptr) {
-                transaction->AddParticipant (this);
+                Subscriber<BufferedFile::TransactionEvents>::Subscribe (*transaction);
             }
         }
 

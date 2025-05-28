@@ -32,7 +32,9 @@ namespace thekogans {
             thekogans::util::BufferedFile,
             Serializer::TYPE, RandomSeekSerializer::TYPE)
 
-        BufferedFile::Guard::Guard (BufferedFile::SharedPtr file_) : file (file_) {
+        BufferedFile::Guard::Guard (BufferedFile::SharedPtr file_) :
+                file (file_),
+                commited (false) {
             file->transaction.Reset (new Transaction (file));
             file->Produce (
                 std::bind (
@@ -43,58 +45,52 @@ namespace thekogans {
         }
 
         BufferedFile::Guard::~Guard () {
-            file->transaction->Abort ();
-            file->transaction.Reset ();
+            if (!commited) {
+                file->transaction->Abort ();
+                file->transaction.Reset ();
+            }
         }
 
-        void BufferedFile::Transaction::AddParticipant (
-                Subscriber<TransactionEvents>::SharedPtr participant) {
-            participants.push_back (participant);
+        void BufferedFile::Guard::Commit () {
+            if (!commited) {
+                file->transaction->Commit ();
+                file->transaction.Reset ();
+                commited = true;
+            }
         }
 
         void BufferedFile::Transaction::Begin () {
-            if (!file->IsTransactionPending ()) {
-                Produce (
-                    std::bind (
-                        &TransactionEvents::OnTransactionBegin,
-                        std::placeholders::_1,
-                        this));
-                file->BeginTransaction ();
-            }
+            Produce (
+                std::bind (
+                    &TransactionEvents::OnTransactionBegin,
+                    std::placeholders::_1,
+                    this));
+            file->BeginTransaction ();
         }
 
         void BufferedFile::Transaction::Commit () {
-            if (file->IsTransactionPending ()) {
-                // Manually tell the participants to commit.
-                for (std::size_t i = 0, count = participants.size (); i < count; ++i) {
-                    participants[i]->OnTransactionCommit (this);
-                }
-                participants.clear ();
-                // Now tell the subscribers to commit.
-                Produce (
-                    std::bind (
-                        &TransactionEvents::OnTransactionCommit,
-                        std::placeholders::_1,
-                        this));
-                // Commit the dirty pages.
-                file->CommitTransaction ();
-            }
+            Produce (
+                std::bind (
+                    &TransactionEvents::OnTransactionCommit,
+                    std::placeholders::_1,
+                    this,
+                    COMMIT_PHASE_1));
+            Produce (
+                std::bind (
+                    &TransactionEvents::OnTransactionCommit,
+                    std::placeholders::_1,
+                    this,
+                    COMMIT_PHASE_2));
+            file->CommitTransaction ();
         }
 
         void BufferedFile::Transaction::Abort () {
-            if (file->IsTransactionPending ()) {
-                // Participants don't get the abort event. They are created
-                // during transaction execution and are destroyed if aborted.
-                // If we're the only owner, their lives will end here. If not,
-                // listen to OnTransactionAbort and clean up your own objects.
-                participants.clear ();
-                file->AbortTransaction ();
-                Produce (
-                    std::bind (
-                        &TransactionEvents::OnTransactionAbort,
-                        std::placeholders::_1,
-                        this));
-            }
+            file->AbortTransaction ();
+            Produce (
+                std::bind (
+                    &TransactionEvents::OnTransactionAbort,
+                    std::placeholders::_1,
+                    this));
         }
 
         THEKOGANS_UTIL_IMPLEMENT_HEAP_FUNCTIONS (BufferedFile::Buffer)
@@ -618,7 +614,7 @@ namespace thekogans {
                 }
                 else {
                     THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                        "No open transaction to commit.");
+                        "No pending transaction to commit.");
                 }
             }
             else {
@@ -643,7 +639,7 @@ namespace thekogans {
                 }
                 else {
                     THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                        "No open transaction to abort.");
+                        "No pending transaction to abort.");
                 }
             }
             else {

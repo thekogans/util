@@ -19,7 +19,6 @@
 #include "thekogans/util/Path.h"
 #include "thekogans/util/File.h"
 #include "thekogans/util/FileAllocator.h"
-#include "thekogans/util/FileAllocatorObject.h"
 
 namespace thekogans {
     namespace util {
@@ -213,16 +212,43 @@ namespace thekogans {
                 std::size_t btreeEntriesPerNode,
                 std::size_t btreeNodesPerPage,
                 Allocator::SharedPtr allocator) :
+                BufferedFileTransactionParticipant (file_->GetTransaction ()),
                 file (file_),
                 header (secure ? Header::FLAGS_SECURE : 0),
                 btree (nullptr),
                 dirty (false) {
             Subscriber<BufferedFileEvents>::Subscribe (*file);
+            file->Seek (0, SEEK_SET);
             if (file->GetSize () > 0) {
-                ReadHeader ();
+                ui32 magic;
+                *file >> magic;
+                if (magic == MAGIC32) {
+                    // File is host endian.
+                }
+                else if (ByteSwap<GuestEndian, HostEndian> (magic) == MAGIC32) {
+                    // File is guest endian.
+                    file->endianness = GuestEndian;
+                }
+                else {
+                    THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
+                        "Corrupt FileAllocator file (%s)",
+                        file->GetPath ().c_str ());
+                }
+                *file >> header;
+            #if defined (THEKOGANS_UTIL_FILE_ALLOCATOR_BLOCK_INFO_USE_MAGIC)
+                if (!header.IsBlockInfoUsesMagic ()) {
+            #else // defined (THEKOGANS_UTIL_FILE_ALLOCATOR_BLOCK_INFO_USE_MAGIC)
+                if (header.IsBlockInfoUsesMagic ()) {
+            #endif // defined (THEKOGANS_UTIL_FILE_ALLOCATOR_BLOCK_INFO_USE_MAGIC)
+                    THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
+                        "This FileAllocator file (%s) cannot be opened by this version of %s.",
+                        file->GetPath ().c_str (),
+                        THEKOGANS_UTIL);
+                }
             }
             else {
-                WriteHeader ();
+                *file << MAGIC32 << header;
+                dirty = true;
             }
             btree = new BTree (*this, btreeEntriesPerNode, btreeNodesPerPage, allocator);
         }
@@ -407,51 +433,20 @@ namespace thekogans {
         void FileAllocator::Flush () {
             btree->Flush ();
             if (dirty) {
-                WriteHeader ();
+                file->Seek (0, SEEK_SET);
+                *file << MAGIC32 << header;
+                dirty = false;
             }
         }
 
         void FileAllocator::Reload () {
-            btree->Reload ();
-            if (dirty) {
-                ReadHeader ();
+            if (file->GetSize () > 0) {
+                file->Seek (0, SEEK_SET);
+                ui32 magic;
+                *file >> magic >> header;
+                dirty = false;
+                btree->Reload ();
             }
-        }
-
-        void FileAllocator::ReadHeader () {
-            file->Seek (0, SEEK_SET);
-            ui32 magic;
-            *file >> magic;
-            if (magic == MAGIC32) {
-                // File is host endian.
-            }
-            else if (ByteSwap<GuestEndian, HostEndian> (magic) == MAGIC32) {
-                // File is guest endian.
-                file->endianness = GuestEndian;
-            }
-            else {
-                THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                    "Corrupt FileAllocator file (%s)",
-                    file->GetPath ().c_str ());
-            }
-            *file >> header;
-        #if defined (THEKOGANS_UTIL_FILE_ALLOCATOR_BLOCK_INFO_USE_MAGIC)
-            if (!header.IsBlockInfoUsesMagic ()) {
-        #else // defined (THEKOGANS_UTIL_FILE_ALLOCATOR_BLOCK_INFO_USE_MAGIC)
-            if (header.IsBlockInfoUsesMagic ()) {
-        #endif // defined (THEKOGANS_UTIL_FILE_ALLOCATOR_BLOCK_INFO_USE_MAGIC)
-                THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                    "This FileAllocator file (%s) cannot be opened by this version of %s.",
-                    file->GetPath ().c_str (),
-                    THEKOGANS_UTIL);
-            }
-            dirty = false;
-        }
-
-        void FileAllocator::WriteHeader () {
-            file->Seek (0, SEEK_SET);
-            *file << MAGIC32 << header;
-            dirty = false;
         }
 
         FileAllocator::PtrType FileAllocator::AllocBTreeNode (std::size_t size) {

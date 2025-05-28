@@ -21,31 +21,34 @@ namespace thekogans {
     namespace util {
 
         Database::Database (
-            const std::string &path,
-            bool secure,
-            std::size_t btreeEntriesPerNode,
-            std::size_t btreeNodesPerPage,
-            std::size_t registryEntriesPerNode,
-            std::size_t registryNodesPerPage,
-            Allocator::SharedPtr allocator) :
-            file (
-                new SimpleBufferedFile (
-                    HostEndian,
-                    path,
-                    SimpleFile::ReadWrite | SimpleFile::Create)),
-            fileAllocator (
+                const std::string &path,
+                bool secure,
+                std::size_t btreeEntriesPerNode,
+                std::size_t btreeNodesPerPage,
+                std::size_t registryEntriesPerNode,
+                std::size_t registryNodesPerPage,
+                Allocator::SharedPtr allocator) :
+                file (
+                    new SimpleBufferedFile (
+                        HostEndian,
+                        path,
+                        SimpleFile::ReadWrite | SimpleFile::Create)) {
+            BufferedFile::Guard guard (file);
+            fileAllocator.Reset (
                 new FileAllocator (
                     file,
                     secure,
                     btreeEntriesPerNode,
                     btreeNodesPerPage,
-                    allocator)),
-            registry (
+                    allocator));
+            registry.Reset (
                 new FileAllocatorRegistry (
                     fileAllocator,
                     registryEntriesPerNode,
                     registryNodesPerPage,
-                    allocator)) {}
+                    allocator));
+            guard.Commit ();
+        }
 
     } // namespace util
 } // namespace thekogans

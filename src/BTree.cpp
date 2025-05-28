@@ -753,8 +753,8 @@ namespace thekogans {
         }
 
         BTree::BTree (
-            FileAllocator::SharedPtr fileAllocator,
-                FileAllocator::PtrType &offset,
+                FileAllocator::SharedPtr fileAllocator,
+                FileAllocator::PtrType offset,
                 const std::string &keyType,
                 const std::string &valueType,
                 std::size_t entriesPerNode,
@@ -961,14 +961,6 @@ namespace thekogans {
                 dirty = true;
             }
             if (dirty) {
-                if (offset == 0) {
-                    offset = fileAllocator->Alloc (header.Size ());
-                    Produce (
-                        std::bind (
-                            &FileAllocatorObjectEvents::OnFileAllocatorObjectOffsetChanged,
-                            std::placeholders::_1,
-                            this));
-                }
                 FileAllocator::BlockBuffer buffer (*fileAllocator->GetFile (), offset);
                 buffer << MAGIC32 << header;
                 buffer.BlockWrite ();
@@ -978,13 +970,11 @@ namespace thekogans {
 
         void BTree::Reload () {
             if (offset != 0) {
-                if (dirty) {
-                    FileAllocator::BlockBuffer buffer (*fileAllocator->GetFile (), offset);
-                    buffer.BlockRead ();
-                    ui32 magic;
-                    buffer >> magic >> header;
-                    dirty = false;
-                }
+                FileAllocator::BlockBuffer buffer (*fileAllocator->GetFile (), offset);
+                buffer.BlockRead ();
+                ui32 magic;
+                buffer >> magic >> header;
+                dirty = false;
                 Node::Free (root);
                 root = Node::Alloc (*this, header.rootOffset);
             }

@@ -51,8 +51,8 @@ namespace thekogans {
 
         struct Roots :
                 public util::ArrayValue<Root::SharedPtr>,
-                public util::Producer<RootsEvents>,
-                public util::Subscriber<RootEvents> {
+                public util::Subscriber<RootEvents>,
+                public util::Producer<RootsEvents> {
             THEKOGANS_UTIL_DECLARE_SERIALIZABLE (Roots)
 
             void ScanRoot (

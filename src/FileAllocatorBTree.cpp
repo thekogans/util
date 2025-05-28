@@ -505,14 +505,12 @@ namespace thekogans {
 
         void FileAllocator::BTree::Reload () {
             if (fileAllocator.header.btreeOffset != 0) {
-                if (dirty) {
-                    BlockBuffer buffer (
-                        *fileAllocator.GetFile (), fileAllocator.header.btreeOffset);
-                    buffer.BlockRead ();
-                    ui32 magic;
-                    buffer >> magic >> header;
-                    dirty = false;
-                }
+                BlockBuffer buffer (
+                    *fileAllocator.GetFile (), fileAllocator.header.btreeOffset);
+                buffer.BlockRead ();
+                ui32 magic;
+                buffer >> magic >> header;
+                dirty = false;
                 Node::Free (root);
                 root = Node::Alloc (*this, header.rootOffset);
             }
