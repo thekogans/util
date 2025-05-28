@@ -23,7 +23,7 @@
 #include "thekogans/util/BTree.h"
 #include "thekogans/util/BTreeKeys.h"
 #include "thekogans/util/FileAllocator.h"
-#include "thekogans/util/FileAllocatorRootObject.h"
+#include "thekogans/util/FileAllocatorObject.h"
 
 namespace thekogans {
     namespace util {
@@ -36,15 +36,12 @@ namespace thekogans {
         /// global ordered, associative storage for \see{FileAllocator} clients. Use it
         /// to store and retrieve practically any value derived from \see{BTree::Value}.
         /// The key type is any std::string.
-        struct _LIB_THEKOGANS_UTIL_DECL FileAllocatorRegistry : public FileAllocatorRootObject {
+        struct _LIB_THEKOGANS_UTIL_DECL FileAllocatorRegistry :
+                private BTree,
+                public Subscriber<FileAllocatorObjectEvents> {
             /// \brief
             /// Declare \see{RefCounted} pointers.
             THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (FileAllocatorRegistry)
-
-        private:
-            /// \brief
-            /// \see{BTree} is the registry.
-            BTree::SharedPtr btree;
 
         public:
             /// \brief
@@ -65,17 +62,15 @@ namespace thekogans {
                     std::size_t entriesPerNode = DEFAULT_REGISTRY_ENTRIES_PER_NODE,
                     std::size_t nodesPerPage = DEFAULT_REGISTRY_NODES_PERP_PAGE,
                     Allocator::SharedPtr allocator = DefaultAllocator::Instance ()) :
-                    FileAllocatorRootObject (fileAllocator),
-                    btree (
-                        new BTree (
-                            fileAllocator,
-                            offset,
-                            StringKey::TYPE,
-                            std::string (),
-                            entriesPerNode,
-                            nodesPerPage,
-                            allocator)) {
-                Subscriber<FileAllocatorObjectEvents>::Subscribe (*btree);
+                    BTree (
+                        fileAllocator,
+                        fileAllocator->GetRootOffset (),
+                        StringKey::TYPE,
+                        std::string (),
+                        entriesPerNode,
+                        nodesPerPage,
+                        allocator) {
+                Subscriber<FileAllocatorObjectEvents>::Subscribe (*this);
             }
 
             /// \brief
@@ -83,7 +78,7 @@ namespace thekogans {
             /// return nullptr.
             /// \param[in] key Key whose value to retrieve.
             /// \return Value @ key, nullptr if key is not found.
-            util::BTree::Value::SharedPtr GetValue (const std::string &key);
+            BTree::Value::SharedPtr GetValue (const std::string &key);
             /// \brief
             /// Given a key, do one of the following three;
             /// 1. If value != nullptr and key is not found, insert new key/value.
@@ -93,7 +88,18 @@ namespace thekogans {
             /// \param[in] value Value to set/replace/delete.
             void SetValue (
                 const std::string &key,
-                util::BTree::Value::SharedPtr value);
+                BTree::Value::SharedPtr value);
+
+        protected:
+            // FileAllocatorObjectEvents
+            /// \brief
+            /// We've just updated the offset.
+            /// \param[in] fileAllocatorObject \see{FileAllocatorObject}
+            /// that just updated the offset.
+            virtual void OnFileAllocatorObjectOffsetChanged (
+                    FileAllocatorObject::SharedPtr fileAllocatorObject) noexcept override {
+                fileAllocator->SetRootOffset (fileAllocatorObject->GetOffset ());
+            }
 
             /// \brief
             /// FileAllocatorRegistry is neither copy constructable, nor assignable.

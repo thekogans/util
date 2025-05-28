@@ -22,16 +22,33 @@ namespace thekogans {
 
         FileAllocatorObject::FileAllocatorObject (
                 FileAllocator::SharedPtr fileAllocator_,
-                FileAllocator::PtrType &offset_) :
+                FileAllocator::PtrType offset_) :
                 // If we're a transaction participant, it will tell us when to commit.
                 BufferedFileTransactionParticipant (
-                    offset_ == 0 ? fileAllocator_->GetFile ()->GetTransaction () : nullptr),
+                    fileAllocator_->GetFile ()->GetTransaction ()),
                 fileAllocator (fileAllocator_),
                 offset (offset_) {
             Subscriber<BufferedFileEvents>::Subscribe (*fileAllocator->GetFile ());
-            if (offset != 0 && fileAllocator_->GetFile ()->GetTransaction () != nullptr) {
-                Subscriber<BufferedFile::TransactionEvents>::Subscribe (
-                    *fileAllocator_->GetFile ()->GetTransaction ());
+        }
+
+        void FileAllocatorObject::Alloc () {
+            ui64 blockSize = 0;
+            if (offset != 0) {
+                FileAllocator::BlockInfo block (offset);
+                fileAllocator->GetBlockInfo (block);
+                blockSize = block.GetSize ();
+            }
+            std::size_t size = Size ();
+            if (blockSize < size) {
+                if (offset != 0) {
+                    fileAllocator->Free (offset);
+                }
+                offset = fileAllocator->Alloc (size);
+                Produce (
+                    std::bind (
+                        &FileAllocatorObjectEvents::OnFileAllocatorObjectOffsetChanged,
+                        std::placeholders::_1,
+                        this));
             }
         }
 

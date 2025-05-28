@@ -22,7 +22,6 @@
 #include "thekogans/util/Path.h"
 #include "thekogans/util/StringUtils.h"
 #include "thekogans/util/Directory.h"
-#include "thekogans/util/BTree.h"
 #include "thekogans/util/BTreeKeys.h"
 #include "thekogans/util/BTreeValues.h"
 #include "thekogans/kcd/Database.h"
@@ -31,28 +30,47 @@
 namespace thekogans {
     namespace kcd {
 
+        void Root::Init () {
+            pathBTree.Reset (
+                new util::BTree (
+                    Database::Instance ()->GetFileAllocator (),
+                    pathBTreeOffset,
+                    util::GUIDKey::TYPE,
+                    util::StringValue::TYPE));
+            util::Subscriber<util::FileAllocatorObjectEvents>::Subscribe (*pathBTree);
+            componentBTree.Reset (
+                new util::BTree (
+                    Database::Instance ()->GetFileAllocator (),
+                    componentBTreeOffset,
+                    util::StringKey::TYPE,
+                    util::GUIDArrayValue::TYPE));
+            util::Subscriber<util::FileAllocatorObjectEvents>::Subscribe (*componentBTree);
+        }
+
         void Root::Scan (IgnoreList::SharedPtr ignoreList) {
             if (!path.empty ()) {
                 Delete ();
-                assert (pathBTreeOffset == 0 && componentBTreeOffset == 0);
-                util::BTree::SharedPtr pathBTree (
+                assert (pathBTree == nullptr && componentBTree == nullptr);
+                pathBTree.Reset (
                     new util::BTree (
                         Database::Instance ()->GetFileAllocator (),
                         pathBTreeOffset,
                         util::GUIDKey::TYPE,
                         util::StringValue::TYPE));
-                util::BTree::SharedPtr componentBTree (
+                util::Subscriber<util::FileAllocatorObjectEvents>::Subscribe (*pathBTree);
+                componentBTree.Reset (
                     new util::BTree (
                         Database::Instance ()->GetFileAllocator (),
                         componentBTreeOffset,
                         util::StringKey::TYPE,
                         util::GUIDArrayValue::TYPE));
+                util::Subscriber<util::FileAllocatorObjectEvents>::Subscribe (*componentBTree);
                 Produce (
                     std::bind (
                         &RootEvents::OnRootScanBegin,
                         std::placeholders::_1,
                         this));
-                Scan (path, *pathBTree, *componentBTree, ignoreList);
+                Scan (path, ignoreList);
                 Produce (
                     std::bind (
                         &RootEvents::OnRootScanEnd,
@@ -62,12 +80,13 @@ namespace thekogans {
         }
 
         void Root::Delete () {
-            if (pathBTreeOffset != 0 && componentBTreeOffset != 0) {
+            if (pathBTree != nullptr && componentBTree != nullptr) {
                 Produce (
                     std::bind (
                         &RootEvents::OnRootDeleteBegin,
                         std::placeholders::_1,
                         this));
+                pathBTree.Reset ();
                 util::BTree::Delete (
                     *Database::Instance ()->GetFileAllocator (), pathBTreeOffset);
                 pathBTreeOffset = 0;
@@ -76,6 +95,7 @@ namespace thekogans {
                         &RootEvents::OnRootDeletedPathBTree,
                         std::placeholders::_1,
                         this));
+                componentBTree.Reset ();
                 util::BTree::Delete (
                     *Database::Instance ()->GetFileAllocator (), componentBTreeOffset);
                 componentBTreeOffset = 0;
@@ -96,19 +116,7 @@ namespace thekogans {
                 const std::string &prefix,
                 bool ignoreCase,
                 std::vector<std::string> &paths) {
-            if (pathBTreeOffset != 0 && componentBTreeOffset != 0) {
-                util::BTree::SharedPtr pathBTree (
-                    new util::BTree (
-                        Database::Instance ()->GetFileAllocator (),
-                        pathBTreeOffset,
-                        util::GUIDKey::TYPE,
-                        util::StringValue::TYPE));
-                util::BTree::SharedPtr componentBTree (
-                    new util::BTree (
-                        Database::Instance ()->GetFileAllocator (),
-                        componentBTreeOffset,
-                        util::StringKey::TYPE,
-                        util::GUIDArrayValue::TYPE));
+            if (pathBTree != nullptr && componentBTree != nullptr) {
                 util::StringKey originalPrefix (prefix);
                 // To allow for the ignoreCase flag the database is
                 // maintained without regard to case. All searches
@@ -153,14 +161,12 @@ namespace thekogans {
 
         void Root::Scan (
                 const std::string &path,
-                util::BTree &pathBTree,
-                util::BTree &componentBTree,
                 IgnoreList::SharedPtr ignoreList) {
             util::GUIDKey::SharedPtr pathKey (
                 new util::GUIDKey (util::GUID::FromBuffer (path.data (), path.size ())));
             util::StringValue::SharedPtr pathValue (new util::StringValue (path));
             util::BTree::Iterator it;
-            if (pathBTree.Insert (pathKey, pathValue, it)) {
+            if (pathBTree->Insert (pathKey, pathValue, it)) {
                 Produce (
                     std::bind (
                         &RootEvents::OnRootScanPath,
@@ -179,7 +185,7 @@ namespace thekogans {
                     util::GUIDArrayValue::SharedPtr componentValue (
                         new util::GUIDArrayValue (std::vector<util::GUID> {pathKey->key}));
                     util::BTree::Iterator jt;
-                    if (!componentBTree.Insert (componentKey, componentValue, jt)) {
+                    if (!componentBTree->Insert (componentKey, componentValue, jt)) {
                         componentValue = jt.GetValue ();
                         componentValue->value.push_back (pathKey->key);
                         jt.SetValue (componentValue);
@@ -195,11 +201,7 @@ namespace thekogans {
                             entry.type == util::Directory::Entry::Folder &&
                             !util::IsDotOrDotDot (entry.name.c_str ())) {
                         if (ignoreList == nullptr || !ignoreList->ShouldIgnore (entry.name)) {
-                            Scan (
-                                util::MakePath (path, entry.name),
-                                pathBTree,
-                                componentBTree,
-                                ignoreList);
+                            Scan (util::MakePath (path, entry.name), ignoreList);
                         }
                     }
                 }
@@ -229,6 +231,7 @@ namespace thekogans {
                 root->pathBTreeOffset >>
                 root->componentBTreeOffset >>
                 root->active;
+            root->Init ();
             return serializer;
         }
 

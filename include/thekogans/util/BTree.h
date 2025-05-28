@@ -691,7 +691,7 @@ namespace thekogans {
             /// \see{thekogans::util::SecureAllocator::ReservePages}.
             BTree (
                 FileAllocator::SharedPtr fileAllocator,
-                FileAllocator::PtrType &offset,
+                FileAllocator::PtrType offset,
                 const std::string &keyType = std::string (),
                 const std::string &valueType = std::string (),
                 std::size_t entriesPerNode = DEFAULT_ENTRIES_PER_NODE,
@@ -763,6 +763,10 @@ namespace thekogans {
             /// \brief
             /// Reload from file.
             virtual void Reload () override;
+
+            virtual std::size_t Size () const override {
+                return header.Size ();
+            }
 
             /// \brief
             /// Needs access to private members.

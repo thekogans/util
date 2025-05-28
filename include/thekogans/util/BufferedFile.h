@@ -90,6 +90,9 @@ namespace thekogans {
             struct _LIB_THEKOGANS_UTIL_DECL Guard {
                 /// \see{BufferedFile} we're guarding.
                 BufferedFile::SharedPtr file;
+                /// \brief
+                /// true if transaction was commited.
+                bool commited;
 
                 /// \brief
                 /// ctor.
@@ -101,9 +104,11 @@ namespace thekogans {
 
                 /// \brief
                 /// Commit the transaction before the dtor aborts it.
-                inline void Commit () {
-                    file->transaction->Commit ();
-                }
+                void Commit ();
+
+                /// \brief
+                /// Guard is neither copy constructable, nor assignable.
+                THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (Guard)
             };
 
             /// \brief
@@ -131,7 +136,8 @@ namespace thekogans {
                 /// Transaction is committing. See OnTransactionBegin above.
                 /// \param[in] transaction Transaction thats beginning.
                 virtual void OnTransactionCommit (
-                    RefCounted::SharedPtr<Transaction> transaction) noexcept {}
+                    RefCounted::SharedPtr<Transaction> transaction,
+                    int phase) noexcept {}
                 /// \brief
                 /// Transaction is aborting. Time to reload the object (if its not a
                 /// participant).
@@ -165,38 +171,23 @@ namespace thekogans {
                 /// Declare \see{RefCounted} pointers.
                 THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (Transaction)
 
+                static const int COMMIT_PHASE_1 = 1;
+                static const int COMMIT_PHASE_2 = 2;
+
             private:
                 /// \brief
                 /// \see{BufferedFile} to transact.
                 BufferedFile::SharedPtr file;
                 /// \brief
-                /// List of objects created during the transaction. Their lifetime
-                /// is confined to the transaction.
-                std::vector<Subscriber<TransactionEvents>::SharedPtr> participants;
-                /// \brief
                 /// This guard will serialize all transactions.
                 LockGuard<Mutex> guard;
 
-            public:
                 /// \brief
                 /// ctor
                 /// \param[in] file_ \see{BufferedFile} to transact.
                 explicit Transaction (BufferedFile::SharedPtr file_) :
-                        file (file_),
-                        guard (file->mutex) {
-                    file->transaction = this;
-                }
-
-                /// \brief
-                /// Add an object as a transaction participant. Participants liftimes
-                /// are usualy confined to the lifetime of the transaction. Meaning
-                /// regardless of the outcome of the transaction (Commit/Abort), the
-                /// participant will be destroyed. If the transaction is commited,
-                /// the participant will be given a chance to flush itself to file. If
-                /// the transaction is aborted it will be as though the participant never
-                /// existed.
-                /// \param[in] participant Participants are transaction events subscribers.
-                void AddParticipant (Subscriber<TransactionEvents>::SharedPtr participant);
+                    file (file_),
+                    guard (file->mutex) {}
 
                 /// \brief
                 /// Begin the transaction. Notify all subscribers.
@@ -206,18 +197,15 @@ namespace thekogans {
                 void Commit ();
                 /// \brief
                 /// Abort the transaction. Notify all subscribers except participants.
-                /// VERY IMPORTANT: If you've created participants (AddParticipant)
-                /// and surrendered their lifetime management to transaction (i.e.
-                /// you're not holding a reference to them) there's nothing for you to
-                /// do. The objects will be deleted before OnTransactionAbort is broadcast.
-                /// They are not told to flush or reload. Their cache (whatever it may be)
-                /// dies with them. If you've kept a reference to the temporary participants
-                /// it's very important that you listen to OnTransactionAbort yourself
-                /// and delete them. Under no circumstance should you attempt to flush the
-                /// cache they've created as its no longer valid and will lead to database
-                /// corruption. The only way participants can survive the liftime of their
-                /// transactions is if the transaction commits.
                 void Abort ();
+
+                /// \brief
+                /// \see{Guard} runs the show.
+                friend struct Guard;
+
+                /// \brief
+                /// Transaction is neither copy constructable, nor assignable.
+                THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (Transaction)
             };
 
         private:

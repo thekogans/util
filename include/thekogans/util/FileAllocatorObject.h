@@ -72,7 +72,7 @@ namespace thekogans {
             /// NOTE: Offset is an extrinsic property. That's
             /// why we need a reference. It starts out == 0.
             /// We update it during first \see{Flush}.
-            FileAllocator::PtrType &offset;
+            FileAllocator::PtrType offset;
 
         public:
             /// \brief
@@ -81,7 +81,7 @@ namespace thekogans {
             /// \param[in] offset Offset of the \see{FileAllocator::BlockInfo}.
             FileAllocatorObject (
                 FileAllocator::SharedPtr fileAllocator_,
-                FileAllocator::PtrType &offset_);
+                FileAllocator::PtrType offset_);
             /// \brief
             /// dtor.
             virtual ~FileAllocatorObject () {}
@@ -99,6 +99,8 @@ namespace thekogans {
                 return offset;
             }
 
+            virtual std::size_t Size () const = 0;
+
         private:
             // BufferedFileEvents
             /// \brief
@@ -109,6 +111,11 @@ namespace thekogans {
                     BufferedFile::SharedPtr file) noexcept override {
                 BufferedFileTransactionParticipant::Subscribe (*file->GetTransaction ());
             }
+
+            // BufferedFileTransactionParticipant
+            /// \brief
+            /// If needed allocate space from \see{BufferedFile}.
+            virtual void Alloc () override;
 
             /// \brief
             /// FileAllocatorObject is neither copy constructable, nor assignable.

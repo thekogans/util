@@ -26,6 +26,8 @@
 #include "thekogans/util/Producer.h"
 #include "thekogans/util/Serializer.h"
 #include "thekogans/util/FileAllocator.h"
+#include "thekogans/util/FileAllocatorObject.h"
+#include "thekogans/util/BTree.h"
 #include "thekogans/kcd/IgnoreList.h"
 
 namespace thekogans {
@@ -54,7 +56,9 @@ namespace thekogans {
                 util::RefCounted::SharedPtr<Root> /*root*/) throw () {}
         };
 
-        struct Root : public util::Producer<RootEvents> {
+        struct Root :
+                public util::Subscriber<util::FileAllocatorObjectEvents>,
+                public util::Producer<RootEvents> {
             THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (Root)
 
         private:
@@ -62,6 +66,8 @@ namespace thekogans {
             util::FileAllocator::PtrType pathBTreeOffset;
             util::FileAllocator::PtrType componentBTreeOffset;
             bool active;
+            util::BTree::SharedPtr pathBTree;
+            util::BTree::SharedPtr componentBTree;
 
         public:
             Root (
@@ -73,6 +79,8 @@ namespace thekogans {
                 pathBTreeOffset (pathBTreeOffset_),
                 componentBTreeOffset (componentBTreeOffset_),
                 active (active_) {}
+
+            void Init ();
 
             inline const std::string &GetPath () const {
                 return path;
@@ -104,9 +112,22 @@ namespace thekogans {
         private:
             void Scan (
                 const std::string &path,
-                util::BTree &pathBTree,
-                util::BTree &componentBTree,
                 IgnoreList::SharedPtr ignoreList);
+
+            // FileAllocatorObjectEvents
+            /// \brief
+            /// We've just updated the offset.
+            /// \param[in] fileAllocatorObject \see{FileAllocatorObject}
+            /// that just updated the offset.
+            virtual void OnFileAllocatorObjectOffsetChanged (
+                    util::FileAllocatorObject::SharedPtr fileAllocatorObject) noexcept override {
+                if (fileAllocatorObject == pathBTree) {
+                    pathBTreeOffset = fileAllocatorObject->GetOffset ();
+                }
+                else if (fileAllocatorObject == componentBTree) {
+                    componentBTreeOffset = fileAllocatorObject->GetOffset ();
+                }
+            }
 
             friend util::Serializer &operator << (
                 util::Serializer &serializer,

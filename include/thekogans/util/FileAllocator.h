@@ -29,10 +29,6 @@
 namespace thekogans {
     namespace util {
 
-        /// \brief
-        /// Forward declaration of \see{FileAllocatorRootObject}.
-        struct FileAllocatorRootObject;
-
         /// \struct FileAllocator FileAllocator.h thekogans/util/FileAllocator.h
         ///
         /// \brief
@@ -639,6 +635,20 @@ namespace thekogans {
             }
 
             /// \brief
+            /// Return the header.rootOffset;
+            /// \return header.rootOffset;
+            inline PtrType GetRootOffset () const {
+                return header.rootOffset;
+            }
+            /// \brief
+            /// Set the header.rootOffset.
+            /// \param[in] rootOffset New rootOffset to set.
+            inline void SetRootOffset (PtrType rootOffset) {
+                header.rootOffset = rootOffset;
+                dirty = true;
+            }
+
+            /// \brief
             /// Return the heap file.
             /// \return Heap file.
             inline BufferedFile::SharedPtr GetFile () {
@@ -717,21 +727,14 @@ namespace thekogans {
 
             // BufferedFileTransactionParticipant
             /// \brief
-            /// Flush the header to file.
+            /// Flush the header and btree to file.
             virtual void Flush () override;
 
             /// \brief
-            /// Reload the header from file.
+            /// Reload the header and btree from file.
             virtual void Reload () override;
 
         private:
-            /// \brief
-            /// Read the header from file.
-            void ReadHeader ();
-            /// \brief
-            /// Write the header to file.
-            void WriteHeader ();
-
             /// \brief
             /// Used to allocate \see{BTree::Node} blocks.
             /// This method is used by the \see{BTree::Node}.
@@ -741,10 +744,6 @@ namespace thekogans {
             /// Used to free blocks prviously allocated with AllocBTreeNode.
             /// \param[in] offset Offset of \see{BTree::Node} to free.
             void FreeBTreeNode (PtrType offset);
-
-            /// \brief
-            /// \see{FileAllocatorRootObject} needs access to WriteHeader.
-            friend struct FileAllocatorRootObject;
 
             /// \brief
             /// Needs access to private members.
