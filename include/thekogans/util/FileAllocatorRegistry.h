@@ -37,7 +37,7 @@ namespace thekogans {
         /// retrieve practically any value derived from \see{BTree::Value}. The key
         /// type is any std::string.
         struct _LIB_THEKOGANS_UTIL_DECL FileAllocatorRegistry :
-                private BTree,
+                public BTree,
                 public Subscriber<FileAllocatorObjectEvents> {
             /// \brief
             /// Declare \see{RefCounted} pointers.

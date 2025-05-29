@@ -31,26 +31,7 @@ namespace thekogans {
     namespace kcd {
 
         void Root::Init () {
-            pathBTree.Reset (
-                new util::BTree (
-                    Database::Instance ()->GetFileAllocator (),
-                    pathBTreeOffset,
-                    util::GUIDKey::TYPE,
-                    util::StringValue::TYPE));
-            util::Subscriber<util::FileAllocatorObjectEvents>::Subscribe (*pathBTree);
-            componentBTree.Reset (
-                new util::BTree (
-                    Database::Instance ()->GetFileAllocator (),
-                    componentBTreeOffset,
-                    util::StringKey::TYPE,
-                    util::GUIDArrayValue::TYPE));
-            util::Subscriber<util::FileAllocatorObjectEvents>::Subscribe (*componentBTree);
-        }
-
-        void Root::Scan (IgnoreList::SharedPtr ignoreList) {
-            if (!path.empty ()) {
-                Delete ();
-                assert (pathBTree == nullptr && componentBTree == nullptr);
+            if (pathBTree == nullptr) {
                 pathBTree.Reset (
                     new util::BTree (
                         Database::Instance ()->GetFileAllocator (),
@@ -58,6 +39,8 @@ namespace thekogans {
                         util::GUIDKey::TYPE,
                         util::StringValue::TYPE));
                 util::Subscriber<util::FileAllocatorObjectEvents>::Subscribe (*pathBTree);
+            }
+            if (componentBTree == nullptr) {
                 componentBTree.Reset (
                     new util::BTree (
                         Database::Instance ()->GetFileAllocator (),
@@ -65,6 +48,13 @@ namespace thekogans {
                         util::StringKey::TYPE,
                         util::GUIDArrayValue::TYPE));
                 util::Subscriber<util::FileAllocatorObjectEvents>::Subscribe (*componentBTree);
+            }
+        }
+
+        void Root::Scan (IgnoreList::SharedPtr ignoreList) {
+            if (!path.empty ()) {
+                Delete ();
+                Init ();
                 Produce (
                     std::bind (
                         &RootEvents::OnRootScanBegin,
@@ -80,13 +70,12 @@ namespace thekogans {
         }
 
         void Root::Delete () {
-            if (pathBTree != nullptr && componentBTree != nullptr) {
-                Produce (
-                    std::bind (
-                        &RootEvents::OnRootDeleteBegin,
-                        std::placeholders::_1,
-                        this));
-                pathBTree.Reset ();
+            Produce (
+                std::bind (
+                    &RootEvents::OnRootDeleteBegin,
+                    std::placeholders::_1,
+                    this));
+            if (pathBTreeOffset != 0) {
                 util::BTree::Delete (
                     *Database::Instance ()->GetFileAllocator (), pathBTreeOffset);
                 pathBTreeOffset = 0;
@@ -95,7 +84,9 @@ namespace thekogans {
                         &RootEvents::OnRootDeletedPathBTree,
                         std::placeholders::_1,
                         this));
-                componentBTree.Reset ();
+            }
+            pathBTree.Reset ();
+            if (componentBTreeOffset != 0) {
                 util::BTree::Delete (
                     *Database::Instance ()->GetFileAllocator (), componentBTreeOffset);
                 componentBTreeOffset = 0;
@@ -104,55 +95,55 @@ namespace thekogans {
                         &RootEvents::OnRootDeletedComponentBTree,
                         std::placeholders::_1,
                         this));
-                Produce (
-                    std::bind (
-                        &RootEvents::OnRootDeleteEnd,
-                        std::placeholders::_1,
-                        this));
             }
+            componentBTree.Reset ();
+            Produce (
+                std::bind (
+                    &RootEvents::OnRootDeleteEnd,
+                    std::placeholders::_1,
+                    this));
         }
 
         void Root::Find (
                 const std::string &prefix,
                 bool ignoreCase,
                 std::vector<std::string> &paths) {
-            if (pathBTree != nullptr && componentBTree != nullptr) {
-                util::StringKey originalPrefix (prefix);
-                // To allow for the ignoreCase flag the database is
-                // maintained without regard to case. All searches
-                // must be performed caseless too.
-                util::BTree::Iterator it (new util::StringKey (prefix, true));
-                for (componentBTree->FindFirst (it); !it.IsFinished (); it.Next ()) {
-                    // To honor the case request we filter out everything that
-                    // doesn't match.
-                    if (ignoreCase || originalPrefix.PrefixCompare (*it.GetKey ()) == 0) {
-                        util::GUIDArrayValue::SharedPtr componentValue = it.GetValue ();
-                        for (std::size_t i = 0,
-                                count = componentValue->value.size (); i < count; ++i) {
-                            util::BTree::Iterator jt;
-                            if (pathBTree->Find (util::GUIDKey (componentValue->value[i]), jt)) {
-                                // Components are stored caseless but paths are stored
-                                // with case in tact. That means that a component might
-                                // be pointing to a path with mismatched case.
-                                if (!ignoreCase) {
-                                    std::list<std::string> pathComponents;
-                                    util::Path (jt.GetValue ()->ToString ()).GetComponents (
-                                        pathComponents);
-                                    if (FindPrefix (
-                                        #if defined (TOOLCHAIN_OS_Windows)
-                                            // If on Windows, skip over the drive leter.
-                                            ++pathComponents.begin (),
-                                        #else // defined (TOOLCHAIN_OS_Windows)
-                                            pathComponents.begin (),
-                                        #endif // defined (TOOLCHAIN_OS_Windows)
-                                            pathComponents.end (),
-                                            prefix,
-                                            ignoreCase) == pathComponents.end ()) {
-                                        continue;
-                                    }
+            Init ();
+            util::StringKey originalPrefix (prefix);
+            // To allow for the ignoreCase flag the database is
+            // maintained without regard to case. All searches
+            // must be performed caseless too.
+            util::BTree::Iterator it (new util::StringKey (prefix, true));
+            for (componentBTree->FindFirst (it); !it.IsFinished (); it.Next ()) {
+                // To honor the case request we filter out everything that
+                // doesn't match.
+                if (ignoreCase || originalPrefix.PrefixCompare (*it.GetKey ()) == 0) {
+                    util::GUIDArrayValue::SharedPtr componentValue = it.GetValue ();
+                    for (std::size_t i = 0,
+                             count = componentValue->value.size (); i < count; ++i) {
+                        util::BTree::Iterator jt;
+                        if (pathBTree->Find (util::GUIDKey (componentValue->value[i]), jt)) {
+                            // Components are stored caseless but paths are stored
+                            // with case in tact. That means that a component might
+                            // be pointing to a path with mismatched case.
+                            if (!ignoreCase) {
+                                std::list<std::string> pathComponents;
+                                util::Path (jt.GetValue ()->ToString ()).GetComponents (
+                                    pathComponents);
+                                if (FindPrefix (
+                                    #if defined (TOOLCHAIN_OS_Windows)
+                                        // If on Windows, skip over the drive leter.
+                                        ++pathComponents.begin (),
+                                    #else // defined (TOOLCHAIN_OS_Windows)
+                                        pathComponents.begin (),
+                                    #endif // defined (TOOLCHAIN_OS_Windows)
+                                        pathComponents.end (),
+                                        prefix,
+                                        ignoreCase) == pathComponents.end ()) {
+                                    continue;
                                 }
-                                paths.push_back (jt.GetValue ()->ToString ());
                             }
+                            paths.push_back (jt.GetValue ()->ToString ());
                         }
                     }
                 }
@@ -231,7 +222,6 @@ namespace thekogans {
                 root->pathBTreeOffset >>
                 root->componentBTreeOffset >>
                 root->active;
-            root->Init ();
             return serializer;
         }
 
