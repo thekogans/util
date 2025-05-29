@@ -149,20 +149,24 @@ namespace thekogans {
 
         void FileAllocator::BTree::Node::Reload () {
             if (count > 0) {
-                if (leftNode != nullptr && leftNode->dirty) {
-                    Free (leftNode);
-                    leftNode = nullptr;
-                }
-                else {
-                    leftNode->Reload ();
-                }
-                for (ui32 i = 0; i < count; ++i) {
-                    if (entries[i].rightNode != nullptr && leftNode->dirty) {
-                        Free (entries[i].rightNode);
-                        entries[i].rightNode = nullptr;
+                if (leftNode != nullptr) {
+                    if (leftNode->dirty) {
+                        Free (leftNode);
+                        leftNode = nullptr;
                     }
                     else {
-                        entries[i].rightNode->Reload ();
+                        leftNode->Reload ();
+                    }
+                }
+                for (ui32 i = 0; i < count; ++i) {
+                    if (entries[i].rightNode != nullptr) {
+                        if (entries[i].rightNode->dirty) {
+                            Free (entries[i].rightNode);
+                            entries[i].rightNode = nullptr;
+                        }
+                        else {
+                            entries[i].rightNode->Reload ();
+                        }
                     }
                 }
             }
