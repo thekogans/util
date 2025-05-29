@@ -75,7 +75,6 @@ namespace thekogans {
         /// +---------------------+-----------------------+
         ///            8                     var
         struct _LIB_THEKOGANS_UTIL_DECL FileAllocator :
-                public Subscriber<BufferedFileEvents>,
                 public BufferedFileTransactionParticipant {
             /// \brief
             /// Declare \see{RefCounted} pointers.
@@ -715,21 +714,13 @@ namespace thekogans {
             void DumpBTree ();
 
         protected:
-            // BufferedFileEvents
-            /// \brief
-            /// \see{BufferedFile} just created a new \see{BufferedFile::Transaction}.
-            /// Subscribe to it's events.
-            /// \param[in] file \see{BufferedFile} that created the transaction.
-            virtual void OnBufferedFileCreateTransaction (
-                    BufferedFile::SharedPtr file) noexcept override {
-                BufferedFileTransactionParticipant::Subscribe (*file->GetTransaction ());
-            }
-
             // BufferedFileTransactionParticipant
             /// \brief
             /// Flush the header and btree to file.
+            virtual void Allocate () override {}
+            /// \brief
+            /// Flush the header and btree to file.
             virtual void Flush () override;
-
             /// \brief
             /// Reload the header and btree from file.
             virtual void Reload () override;

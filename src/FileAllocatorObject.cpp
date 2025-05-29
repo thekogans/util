@@ -20,17 +20,6 @@
 namespace thekogans {
     namespace util {
 
-        FileAllocatorObject::FileAllocatorObject (
-                FileAllocator::SharedPtr fileAllocator_,
-                FileAllocator::PtrType offset_) :
-                // If we're a transaction participant, it will tell us when to commit.
-                BufferedFileTransactionParticipant (
-                    fileAllocator_->GetFile ()->GetTransaction ()),
-                fileAllocator (fileAllocator_),
-                offset (offset_) {
-            Subscriber<BufferedFileEvents>::Subscribe (*fileAllocator->GetFile ());
-        }
-
         void FileAllocatorObject::Allocate () {
             ui64 blockSize = 0;
             if (offset != 0) {

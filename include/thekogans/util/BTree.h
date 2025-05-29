@@ -35,7 +35,7 @@ namespace thekogans {
         ///
         /// \brief
         /// A BTree is a \see{FileAllocatorObject}. It's attributes are that
-        /// all searches, insertions and deletions take O(N) where N is the
+        /// all searches, insertions and deletions take O(H) where H is the
         /// height of the tree. These are BTree's bigest strengths. One of it's
         /// biggest weaknesses is the fact that iterators don't survive modifications
         /// (Insert/Delete). This is why I provide a forward iterator only.
@@ -478,6 +478,9 @@ namespace thekogans {
                 /// Flush changes to file.
                 void Flush ();
                 /// \brief
+                /// If not dirty, reload the children from file.
+                void Reload ();
+                /// \brief
                 /// Return the left child of an entry at the given index.
                 /// NOTE: If you need the very last (rightNode) child, call
                 /// GetChild (node->count). If you find yourself with an entry
@@ -754,6 +757,16 @@ namespace thekogans {
             /// Use for debugging. Dump the btree nodes to stdout.
             void Dump ();
 
+            /// \brief
+            /// Return the \see{Header} size.
+            /// \return \see{Header} size.
+            virtual std::size_t Size () const override {
+                return header.Size ();
+            }
+            /// \brief
+            /// Delete the disk image and reset the internal state.
+            virtual void Reset () override;
+
         protected:
             // BufferedFileTransactionParticipant
             /// \brief
@@ -763,10 +776,6 @@ namespace thekogans {
             /// \brief
             /// Reload from file.
             virtual void Reload () override;
-
-            virtual std::size_t Size () const override {
-                return header.Size ();
-            }
 
             /// \brief
             /// Needs access to private members.

@@ -162,6 +162,9 @@ private:
         /// If dirty, flush changes to file.
         void Flush ();
         /// \brief
+        /// If not dirty, reload the children from file.
+        void Reload ();
+        /// \brief
         /// Return the child at the given index.
         /// \param[in] index Index of child to retrieve
         /// (0 == left, !0 == entries[index - 1].right).

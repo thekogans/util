@@ -212,12 +212,11 @@ namespace thekogans {
                 std::size_t btreeEntriesPerNode,
                 std::size_t btreeNodesPerPage,
                 Allocator::SharedPtr allocator) :
-                BufferedFileTransactionParticipant (file_->GetTransaction ()),
+                BufferedFileTransactionParticipant (file_),
                 file (file_),
                 header (secure ? Header::FLAGS_SECURE : 0),
                 btree (nullptr),
                 dirty (false) {
-            Subscriber<BufferedFileEvents>::Subscribe (*file);
             file->Seek (0, SEEK_SET);
             if (file->GetSize () > 0) {
                 ui32 magic;
@@ -441,10 +440,12 @@ namespace thekogans {
 
         void FileAllocator::Reload () {
             if (file->GetSize () > 0) {
-                file->Seek (0, SEEK_SET);
-                ui32 magic;
-                *file >> magic >> header;
-                dirty = false;
+                if (dirty) {
+                    file->Seek (0, SEEK_SET);
+                    ui32 magic;
+                    *file >> magic >> header;
+                    dirty = false;
+                }
                 btree->Reload ();
             }
         }

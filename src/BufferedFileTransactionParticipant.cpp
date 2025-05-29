@@ -21,9 +21,12 @@ namespace thekogans {
     namespace util {
 
         BufferedFileTransactionParticipant::BufferedFileTransactionParticipant (
-                BufferedFile::Transaction::SharedPtr transaction) {
-            if (transaction != nullptr) {
-                Subscriber<BufferedFile::TransactionEvents>::Subscribe (*transaction);
+                BufferedFile::SharedPtr file_) :
+                file (file_) {
+            Subscriber<BufferedFileEvents>::Subscribe (*file);
+            if (file->GetTransaction ()) {
+                Subscriber<BufferedFile::TransactionEvents>::Subscribe (
+                    *file->GetTransaction ());
             }
         }
 

@@ -54,13 +54,10 @@ namespace thekogans {
         ///
         /// \brief
         /// A FileAllocatorObject is an object that lives in a \see{FileAllocator} and
-        /// participates in \see{BufferedFile::Transaction}.
+        /// participates in \see{BufferedFile::TransactionEvents}.
         struct _LIB_THEKOGANS_UTIL_DECL FileAllocatorObject :
-                public Subscriber<BufferedFileEvents>,
                 public BufferedFileTransactionParticipant,
-                public Producer<
-
-            FileAllocatorObjectEvents> {
+                public Producer<FileAllocatorObjectEvents> {
             /// \brief
             /// Declare \see{RefCounted} pointers.
             THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (FileAllocatorObject)
@@ -71,9 +68,6 @@ namespace thekogans {
             FileAllocator::SharedPtr fileAllocator;
             /// \brief
             /// Our address inside the \see{FileAllocator}.
-            /// NOTE: Offset is an extrinsic property. That's
-            /// why we need a reference. It starts out == 0.
-            /// We update it during first \see{Flush}.
             FileAllocator::PtrType offset;
 
         public:
@@ -83,7 +77,10 @@ namespace thekogans {
             /// \param[in] offset Offset of the \see{FileAllocator::BlockInfo}.
             FileAllocatorObject (
                 FileAllocator::SharedPtr fileAllocator_,
-                FileAllocator::PtrType offset_);
+                FileAllocator::PtrType offset_) :
+                BufferedFileTransactionParticipant (fileAllocator_->GetFile ()),
+                fileAllocator (fileAllocator_),
+                offset (offset_) {}
             /// \brief
             /// dtor.
             virtual ~FileAllocatorObject () {}
@@ -96,24 +93,21 @@ namespace thekogans {
             }
             /// \brief
             /// Return the offset.
-            /// \return Offset.
+            /// \return offset.
             inline FileAllocator::PtrType GetOffset () const {
                 return offset;
             }
 
+            /// \brief
+            /// Return the size of the object on disk.
+            /// \return Size of the object on disk.
             virtual std::size_t Size () const = 0;
 
-        private:
-            // BufferedFileEvents
             /// \brief
-            /// \see{BufferedFile} just created a new \see{BufferedFile::Transaction}.
-            /// Subscribe to it's events.
-            /// \param[in] file \see{BufferedFile} that created the transaction.
-            virtual void OnBufferedFileCreateTransaction (
-                    BufferedFile::SharedPtr file) noexcept override {
-                BufferedFileTransactionParticipant::Subscribe (*file->GetTransaction ());
-            }
+            /// Delete the disk image and reset the internal state.
+            virtual void Reset () = 0;
 
+        private:
             // BufferedFileTransactionParticipant
             /// \brief
             /// If needed allocate space from \see{BufferedFile}.

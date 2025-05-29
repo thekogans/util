@@ -33,25 +33,28 @@ namespace thekogans {
         /// \see{BufferedFile::TransactionEvents} and are able to flush and reload
         /// themselves to and from a \see{BufferedFile}.
         struct _LIB_THEKOGANS_UTIL_DECL BufferedFileTransactionParticipant :
+                public Subscriber<BufferedFileEvents>,
                 public Subscriber<BufferedFile::TransactionEvents> {
             /// \brief
             /// Declare \see{RefCounted} pointers.
             THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (BufferedFileTransactionParticipant)
 
+        protected:
+            BufferedFile::SharedPtr file;
+
             /// \brief
             /// ctor.
             /// \param[in] transaction If this parameter is not null
             /// that means we're a temporary transaction participant.
-            BufferedFileTransactionParticipant (
-                BufferedFile::Transaction::SharedPtr transaction = nullptr);
+            BufferedFileTransactionParticipant (BufferedFile::SharedPtr file_);
             /// \brief
             /// dtor.
             virtual ~BufferedFileTransactionParticipant () {}
 
         protected:
             /// \brief
-            /// If needed allocate space from \see{BufferedFile}.
-            virtual void Allocate () {}
+            /// Allocate space from \see{BufferedFile}.
+            virtual void Allocate () = 0;
 
             /// \brief
             /// Flush the internal cache to file.
@@ -60,6 +63,17 @@ namespace thekogans {
             /// \brief
             /// Reload from file.
             virtual void Reload () = 0;
+
+            // BufferedFileEvents
+            /// \brief
+            /// \see{BufferedFile} just created a new \see{BufferedFile::Transaction}.
+            /// Subscribe to it's events.
+            /// \param[in] file \see{BufferedFile} that created the transaction.
+            virtual void OnBufferedFileCreateTransaction (
+                    BufferedFile::SharedPtr file) noexcept override {
+                Subscriber<BufferedFile::TransactionEvents>::Subscribe (
+                    *file->GetTransaction ());
+            }
 
             // BufferedFile::TransactionEvents
             /// \brief

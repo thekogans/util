@@ -88,12 +88,14 @@ namespace thekogans {
             /// ctor and Abort in it's dtor. Call commit before the end of the
             /// scope to commit the transaction.
             struct _LIB_THEKOGANS_UTIL_DECL Guard {
+            private:
                 /// \see{BufferedFile} we're guarding.
                 BufferedFile::SharedPtr file;
                 /// \brief
                 /// true if transaction was commited.
                 bool commited;
 
+            public:
                 /// \brief
                 /// ctor.
                 /// \param[in] file_ \see{BufferedFile} to transact.
@@ -135,6 +137,7 @@ namespace thekogans {
                 /// \brief
                 /// Transaction is committing. See OnTransactionBegin above.
                 /// \param[in] transaction Transaction thats beginning.
+                /// \param[in] phase Either COMMIT_PHASE_1 or COMMIT_PHASE_2.
                 virtual void OnTransactionCommit (
                     RefCounted::SharedPtr<Transaction> transaction,
                     int phase) noexcept {}
@@ -196,7 +199,7 @@ namespace thekogans {
                 /// Commit the transaction. Notify all subscribers.
                 void Commit ();
                 /// \brief
-                /// Abort the transaction. Notify all subscribers except participants.
+                /// Abort the transaction. Notify all subscribers.
                 void Abort ();
 
                 /// \brief
