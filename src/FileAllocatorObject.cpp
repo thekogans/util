@@ -31,7 +31,7 @@ namespace thekogans {
             Subscriber<BufferedFileEvents>::Subscribe (*fileAllocator->GetFile ());
         }
 
-        void FileAllocatorObject::Alloc () {
+        void FileAllocatorObject::Allocate () {
             ui64 blockSize = 0;
             if (offset != 0) {
                 FileAllocator::BlockInfo block (offset);

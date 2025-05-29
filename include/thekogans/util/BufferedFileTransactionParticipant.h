@@ -51,7 +51,7 @@ namespace thekogans {
         protected:
             /// \brief
             /// If needed allocate space from \see{BufferedFile}.
-            virtual void Alloc () {}
+            virtual void Allocate () {}
 
             /// \brief
             /// Flush the internal cache to file.
@@ -76,7 +76,7 @@ namespace thekogans {
                     BufferedFile::Transaction::SharedPtr /*transaction*/,
                     int phase) noexcept override {
                 if (phase == BufferedFile::Transaction::COMMIT_PHASE_1) {
-                    Alloc ();
+                    Allocate ();
                 }
                 else if (phase == BufferedFile::Transaction::COMMIT_PHASE_2) {
                     Flush ();

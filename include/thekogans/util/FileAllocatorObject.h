@@ -117,7 +117,7 @@ namespace thekogans {
             // BufferedFileTransactionParticipant
             /// \brief
             /// If needed allocate space from \see{BufferedFile}.
-            virtual void Alloc () override;
+            virtual void Allocate () override;
 
             /// \brief
             /// FileAllocatorObject is neither copy constructable, nor assignable.
