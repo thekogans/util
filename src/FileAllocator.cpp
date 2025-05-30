@@ -247,13 +247,13 @@ namespace thekogans {
             }
             else {
                 *file << MAGIC32 << header;
-                dirty = true;
             }
-            btree = new BTree (*this, btreeEntriesPerNode, btreeNodesPerPage, allocator);
-        }
-
-        FileAllocator::~FileAllocator () {
-            delete btree;
+            btree.Reset (new BTree (
+                *this,
+                header.btreeOffset,
+                btreeEntriesPerNode,
+                btreeNodesPerPage,
+                allocator));
         }
 
         void FileAllocator::GetBlockInfo (BlockInfo &block) {
@@ -438,13 +438,11 @@ namespace thekogans {
         }
 
         void FileAllocator::Reload () {
-            if (file->GetSize () > 0) {
-                if (dirty) {
-                    file->Seek (0, SEEK_SET);
-                    ui32 magic;
-                    *file >> magic >> header;
-                    dirty = false;
-                }
+            if (dirty && file->GetSize () > 0) {
+                file->Seek (0, SEEK_SET);
+                ui32 magic;
+                *file >> magic >> header;
+                dirty = false;
             }
         }
 

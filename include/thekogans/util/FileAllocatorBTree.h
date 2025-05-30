@@ -30,6 +30,10 @@
 
 struct BTree : public BufferedFileTransactionParticipant {
     /// \brief
+    /// Declare \see{RefCounted} pointers.
+    THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (BTree)
+
+    /// \brief
     /// KeyType is structured on block {size, offset}.
     using KeyType = std::pair<ui64, PtrType>;
     /// \brief
@@ -41,6 +45,9 @@ private:
     /// Reference back to the FileAllocator for
     /// \see{Header} and \see{Node} blocks.
     FileAllocator &fileAllocator;
+    /// \brief
+    /// Our address inside the \see{FileAllocator}.
+    PtrType offset;
     /// \struct Fileallocator::BTree::Header FileallocatorBTree.h
     /// thekogans/util/FileallocatorBTree.h
     ///
@@ -277,6 +284,7 @@ public:
     /// \brief
     /// ctor.
     /// \param[in] fileAllocator_ \see{FileAllocator} to which this btree belongs.
+    /// \param[in] offset Our address inside the \see{FileAllocator}.
     /// \param[in] entriesPerNode If we're creating the heap, contains entries per
     /// \see{Node}. If we're reading an existing heap, this value will come from the
     /// \see{Header}.
@@ -290,6 +298,7 @@ public:
     /// advice aplies.
     BTree (
         FileAllocator &fileAllocator_,
+        PtrType offset_,
         std::size_t entriesPerNode,
         std::size_t nodesPerPage,
         Allocator::SharedPtr allocator);

@@ -581,7 +581,7 @@ namespace thekogans {
             #include "thekogans/util/FileAllocatorBTree.h"
             /// \brief
             /// \see{BTree} to manage heap free space.
-            BTree *btree;
+            BTree::SharedPtr btree;
             /// \brief
             /// Set to indicate that the \see{Header} is dirty and needs
             /// to be written to disk.
@@ -622,9 +622,6 @@ namespace thekogans {
                 std::size_t btreeEntriesPerNode = DEFAULT_BTREE_ENTRIES_PER_NODE,
                 std::size_t btreeNodesPerPage = DEFAULT_BTREE_NODES_PER_PAGE,
                 Allocator::SharedPtr allocator = DefaultAllocator::Instance ());
-            /// \brief
-            /// dtor.
-            ~FileAllocator ();
 
             /// \brief
             /// Return true if secure.
@@ -727,6 +724,13 @@ namespace thekogans {
             virtual void Reload () override;
 
         private:
+            /// \brief
+            /// Used bu \see{FileAllocatorBTree} to set the header.btreeOffset.
+            /// \param[in] btreeOffset New btreeOffset to set.
+            inline void SetBTreeOffset (PtrType btreeOffset) {
+                header.btreeOffset = btreeOffset;
+                dirty = true;
+            }
             /// \brief
             /// Used to allocate \see{BTree::Node} blocks.
             /// This method is used by the \see{BTree::Node}.
