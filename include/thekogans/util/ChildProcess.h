@@ -361,12 +361,12 @@ namespace thekogans {
 
             /// \brief
             /// Create a ChildProcess spawn job to be executed on the \see{MainRunLoop}.
-            /// VERY IMPORTANT: This (and CreateExecJob bellow) are meant to be used with
+            /// VERY IMPORTANT: This (and CreateExecJob below) are meant to be used with
             /// the \see{MainRunLoop}. Regardless you need to call Enq (..., true) on the
             /// queue that will execute the returned job. The reason is that the spawn job
             /// returned holds the reference to the child process and does not control
             /// it's lifetime in any way. Please see the code example provided with
-            /// CollectOutput bellow.
+            /// CollectOutput below.
             /// \param[in] detached true = detach the child process from the parent,
             /// \return RunLoop::Job representing the spawn job.
             RunLoop::Job::SharedPtr CreateSpawnJob (bool detached = false);

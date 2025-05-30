@@ -449,7 +449,7 @@ namespace thekogans {
             struct _LIB_THEKOGANS_UTIL_DECL BlockBuffer : public Buffer {
             private:
                 /// \brief
-                /// \see{FileAllocator} reference.
+                /// \see{BufferedFile} reference.
                 File &file;
                 /// \brief
                 /// Block info.
@@ -716,7 +716,8 @@ namespace thekogans {
         protected:
             // BufferedFileTransactionParticipant
             /// \brief
-            /// Flush the header and btree to file.
+            /// Nothing for us to allocate.
+            /// The header is the first thing in the file.
             virtual void Allocate () override {}
             /// \brief
             /// Flush the header and btree to file.

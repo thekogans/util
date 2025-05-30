@@ -430,7 +430,6 @@ namespace thekogans {
         }
 
         void FileAllocator::Flush () {
-            btree->Flush ();
             if (dirty) {
                 file->Seek (0, SEEK_SET);
                 *file << MAGIC32 << header;
@@ -446,7 +445,6 @@ namespace thekogans {
                     *file >> magic >> header;
                     dirty = false;
                 }
-                btree->Reload ();
             }
         }
 

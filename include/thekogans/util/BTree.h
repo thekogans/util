@@ -124,6 +124,9 @@ namespace thekogans {
             /// \struct Value BTree.h thekogans/util/BTree.h
             ///
             /// \brief
+            /// Value part of the [Key, Value] pair.Since values
+            /// derive from \see{Serializable}, they can be practicaly
+            /// anything as long imlement the interface.
             struct _LIB_THEKOGANS_UTIL_DECL Value : public Serializable {
                 /// \brief
                 /// Value is a \see{util::DynamicCreatable} abstract base.
@@ -191,7 +194,7 @@ namespace thekogans {
             ///
             /// \brief
             /// Iterator implements a forward cursor over a range of btree entries.
-            /// Call \see{FindFirst} bellow with a reference to an iterator and then
+            /// Call \see{FindFirst} below with a reference to an iterator and then
             /// use it to move forward through the range of entries. The range can either
             /// be based on a prefix or the entire tree. Since Iterator is unidirectional
             /// (forward only), there's no backing up (the code complexity is just not

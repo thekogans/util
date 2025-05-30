@@ -174,7 +174,11 @@ namespace thekogans {
                 /// Declare \see{RefCounted} pointers.
                 THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (Transaction)
 
+                /// \brief
+                /// Commit phase 1.
                 static const int COMMIT_PHASE_1 = 1;
+                /// \brief
+                /// Commit phase 2.
                 static const int COMMIT_PHASE_2 = 2;
 
             private:
@@ -193,13 +197,13 @@ namespace thekogans {
                     guard (file->mutex) {}
 
                 /// \brief
-                /// Begin the transaction. Notify all subscribers.
+                /// Begin the transaction.
                 void Begin ();
                 /// \brief
-                /// Commit the transaction. Notify all subscribers.
+                /// Commit the transaction.
                 void Commit ();
                 /// \brief
-                /// Abort the transaction. Notify all subscribers.
+                /// Abort the transaction.
                 void Abort ();
 
                 /// \brief

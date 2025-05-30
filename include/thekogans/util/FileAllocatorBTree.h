@@ -28,7 +28,7 @@
 /// It's broken out in to its own file because FileAllocator.h was getting
 /// too big to maintain.
 
-struct BTree {
+struct BTree : public BufferedFileTransactionParticipant {
     /// \brief
     /// KeyType is structured on block {size, offset}.
     using KeyType = std::pair<ui64, PtrType>;
@@ -319,13 +319,16 @@ public:
     void Dump ();
 
 protected:
+    // BufferedFileTransactionParticipant
+    /// \brief
+    /// Allocate space for the \see{Header}.
+    virtual void Allocate () override;
     /// \brief
     /// Flush changes to file.
-    void Flush ();
-
+    virtual void Flush () override;
     /// \brief
     /// Reload from file.
-    void Reload ();
+    virtual void Reload () override;
 
     /// \brief
     /// Needs access to private members.

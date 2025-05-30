@@ -37,7 +37,7 @@ namespace thekogans {
         /// retrieve practically any value derived from \see{BTree::Value}. The key
         /// type is any std::string.
         struct _LIB_THEKOGANS_UTIL_DECL FileAllocatorRegistry :
-                public BTree,
+                private BTree,
                 public Subscriber<FileAllocatorObjectEvents> {
             /// \brief
             /// Declare \see{RefCounted} pointers.
@@ -58,20 +58,10 @@ namespace thekogans {
             /// \param[in] nodesPerPage Number of \see{BTree::Node}s per allocator page.
             /// \param[in] allocator Where \see{BTree::Node} pages come from.
             FileAllocatorRegistry (
-                    FileAllocator::SharedPtr fileAllocator,
-                    std::size_t entriesPerNode = DEFAULT_REGISTRY_ENTRIES_PER_NODE,
-                    std::size_t nodesPerPage = DEFAULT_REGISTRY_NODES_PERP_PAGE,
-                    Allocator::SharedPtr allocator = DefaultAllocator::Instance ()) :
-                    BTree (
-                        fileAllocator,
-                        fileAllocator->GetRootOffset (),
-                        StringKey::TYPE,
-                        std::string (),
-                        entriesPerNode,
-                        nodesPerPage,
-                        allocator) {
-                Subscriber<FileAllocatorObjectEvents>::Subscribe (*this);
-            }
+                FileAllocator::SharedPtr fileAllocator,
+                std::size_t entriesPerNode = DEFAULT_REGISTRY_ENTRIES_PER_NODE,
+                std::size_t nodesPerPage = DEFAULT_REGISTRY_NODES_PERP_PAGE,
+                Allocator::SharedPtr allocator = DefaultAllocator::Instance ());
 
             /// \brief
             /// Given a key, retrieve the associated value. If key is not found,

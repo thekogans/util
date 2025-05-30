@@ -40,12 +40,14 @@ namespace thekogans {
             THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (BufferedFileTransactionParticipant)
 
         protected:
+            /// \brief
+            /// \see{BufferedFile} whose \see{BufferedFile::TransactionEvents}
+            /// we're participants of.
             BufferedFile::SharedPtr file;
 
             /// \brief
             /// ctor.
-            /// \param[in] transaction If this parameter is not null
-            /// that means we're a temporary transaction participant.
+            /// \param[in] file_ \see{BufferedFile} we're a transaction participant of.
             BufferedFileTransactionParticipant (BufferedFile::SharedPtr file_);
             /// \brief
             /// dtor.

@@ -426,6 +426,7 @@ namespace thekogans {
                 std::size_t entriesPerNode,
                 std::size_t nodesPerPage,
                 Allocator::SharedPtr allocator) :
+                BufferedFileTransactionParticipant (fileAllocator_.GetFile ()),
                 fileAllocator (fileAllocator_),
                 header ((ui32)entriesPerNode),
                 root (nullptr),
@@ -508,6 +509,14 @@ namespace thekogans {
             }
         }
 
+        void FileAllocator::BTree::Allocate () {
+            if (fileAllocator.header.btreeOffset == 0) {
+                fileAllocator.header.btreeOffset =
+                    fileAllocator.AllocBTreeNode (Header::SIZE);
+                fileAllocator.dirty = true;
+            }
+        }
+
         void FileAllocator::BTree::Flush () {
             if (fileAllocator.header.btreeOffset != 0) {
                 root->Flush ();
@@ -516,11 +525,6 @@ namespace thekogans {
                     dirty = true;
                 }
                 if (dirty) {
-                    if (fileAllocator.header.btreeOffset == 0) {
-                        fileAllocator.header.btreeOffset =
-                            fileAllocator.AllocBTreeNode (Header::SIZE);
-                        fileAllocator.dirty = true;
-                    }
                     BlockBuffer buffer (
                         *fileAllocator.GetFile (), fileAllocator.header.btreeOffset);
                     buffer << MAGIC32 << header;

@@ -627,8 +627,8 @@ namespace thekogans {
             if (IsOpen ()) {
                 if (IsTransactionPending ()) {
                     if (IsDirty ()) {
-                        root.Clear ();
                         SetSize (sizeOnDisk);
+                        root.Clear ();
                         flags.Set (FLAGS_DIRTY, false);
                     }
                     std::string logPath = GetLogPath (path);
