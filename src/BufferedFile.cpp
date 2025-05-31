@@ -63,8 +63,7 @@ namespace thekogans {
             Produce (
                 std::bind (
                     &TransactionEvents::OnTransactionBegin,
-                    std::placeholders::_1,
-                    this));
+                    std::placeholders::_1));
             file->BeginTransaction ();
         }
 
@@ -73,13 +72,11 @@ namespace thekogans {
                 std::bind (
                     &TransactionEvents::OnTransactionCommit,
                     std::placeholders::_1,
-                    this,
                     COMMIT_PHASE_1));
             Produce (
                 std::bind (
                     &TransactionEvents::OnTransactionCommit,
                     std::placeholders::_1,
-                    this,
                     COMMIT_PHASE_2));
             file->CommitTransaction ();
         }
@@ -89,8 +86,7 @@ namespace thekogans {
             Produce (
                 std::bind (
                     &TransactionEvents::OnTransactionAbort,
-                    std::placeholders::_1,
-                    this));
+                    std::placeholders::_1));
         }
 
         THEKOGANS_UTIL_IMPLEMENT_HEAP_FUNCTIONS (BufferedFile::Buffer)

@@ -126,30 +126,37 @@ namespace thekogans {
                 /// dtor.
                 virtual ~TransactionEvents () {}
 
+                /// NOTE: I usually like to include objects that cause the event in the event
+                /// interface. So normally a RefCounted::SharedPtr<Transaction> /*transaction*/
+                /// would acompany each of the following event callbacks. I chose not to do
+                /// that here for two reasons. 1. Transaction holds the file lock (mutex).
+                /// It needs to released it as soon as the scope in which it's valid is done.
+                /// That can't happen if one of the callbacks decides to keep a reference.
+                /// And 2. There's no identifyng public destinction between one transaction
+                /// and another. There's absolutely no reason for anyone to be able to distinguish
+                /// one transaction from another. Its purley an internal synchronization
+                /// mechanism. Anyone using BufferedFile will use \see{Guard} above. It
+                /// takes care of managing transactions. See \see{BufferedFileTransactionParticipant}
+                /// for an example of a \seer{Subscriber} that handles the transaction callbacks
+                /// and exposes a simple interface.
+
                 /// \brief
                 /// Transaction is beginning. Time to flush the internal cache.
                 /// If your object derives from \see{BufferedFileTransactionParticipant}
                 /// all this is done under the hood for you. All you will need
                 /// to do is implement Flush.
-                /// \param[in] transaction Transaction thats beginning.
-                virtual void OnTransactionBegin (
-                    RefCounted::SharedPtr<Transaction> transaction) noexcept {}
+                virtual void OnTransactionBegin () noexcept {}
                 /// \brief
                 /// Transaction is committing. See OnTransactionBegin above.
-                /// \param[in] transaction Transaction thats beginning.
                 /// \param[in] phase Either COMMIT_PHASE_1 or COMMIT_PHASE_2.
-                virtual void OnTransactionCommit (
-                    RefCounted::SharedPtr<Transaction> transaction,
-                    int phase) noexcept {}
+                virtual void OnTransactionCommit (int phase) noexcept {}
                 /// \brief
                 /// Transaction is aborting. Time to reload the object (if its not a
                 /// participant).
-                /// \param[in] transaction Transaction thats aborting.
                 /// If your object derives from \see{BufferedFileTransactionParticipant}
                 /// all this is done under the hood for you. All you will need
                 /// to do is implement Reload.
-                virtual void OnTransactionAbort (
-                    RefCounted::SharedPtr<Transaction> transaction) noexcept {}
+                virtual void OnTransactionAbort () noexcept {}
             };
 
             /// \struct BufferedFile::Transaction BufferedFile.h thekogans/util/BufferedFile.h

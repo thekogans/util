@@ -525,8 +525,7 @@ namespace thekogans {
                     dirty = true;
                 }
                 if (dirty) {
-                    BlockBuffer buffer (
-                        *fileAllocator.GetFile (), offset);
+                    BlockBuffer buffer (*fileAllocator.GetFile (), offset);
                     buffer << MAGIC32 << header;
                     buffer.BlockWrite ();
                     dirty = false;
@@ -537,8 +536,7 @@ namespace thekogans {
         void FileAllocator::BTree::Reload () {
             if (offset != 0) {
                 if (dirty) {
-                    BlockBuffer buffer (
-                        *fileAllocator.GetFile (), offset);
+                    BlockBuffer buffer (*fileAllocator.GetFile (), offset);
                     buffer.BlockRead ();
                     ui32 magic;
                     buffer >> magic >> header;

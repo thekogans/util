@@ -81,16 +81,13 @@ namespace thekogans {
             /// \brief
             /// Transaction is beginning. Flush internal cache to file.
             /// \param[in] transaction \see{BufferedFile::Transaction} that's beginning.
-            virtual void OnTransactionBegin (
-                    BufferedFile::Transaction::SharedPtr /*transaction*/) noexcept override {
+            virtual void OnTransactionBegin () noexcept override {
                 Flush ();
             }
             /// \brief
             /// Transaction is commiting. Flush internal cache to file.
             /// \param[in] transaction \see{BufferedFile::Transaction} that's commiting.
-            virtual void OnTransactionCommit (
-                    BufferedFile::Transaction::SharedPtr /*transaction*/,
-                    int phase) noexcept override {
+            virtual void OnTransactionCommit (int phase) noexcept override {
                 if (phase == BufferedFile::Transaction::COMMIT_PHASE_1) {
                     Allocate ();
                 }
@@ -101,8 +98,7 @@ namespace thekogans {
             /// \brief
             /// Transaction is aborting. Reload from file.
             /// \param[in] transaction \see{BufferedFile::Transaction} that's aborting.
-            virtual void OnTransactionAbort (
-                    BufferedFile::Transaction::SharedPtr /*transaction*/) noexcept override {
+            virtual void OnTransactionAbort () noexcept override {
                 Reload ();
             }
 
