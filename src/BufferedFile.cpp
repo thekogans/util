@@ -42,6 +42,11 @@ namespace thekogans {
             file->AbortTransaction ();
         }
 
+        void BufferedFile::Guard::Checkpoint () {
+            file->Flush ();
+            file->root.Delete ();
+        }
+
         void BufferedFile::Guard::Commit () {
             file->CommitTransaction ();
         }
@@ -328,7 +333,7 @@ namespace thekogans {
                 // All transactions must be commited before file close.
                 // On the other hand dirty pages get flushed out to disk
                 // to mimic what File would do.
-                DeleteCache (!IsTransactionPending ());
+                DeleteCache ();
                 position = 0;
                 sizeOnDisk = 0;
                 size = 0;
@@ -409,6 +414,20 @@ namespace thekogans {
             }
         }
 
+        void BufferedFile::DeleteCache () {
+            if (IsOpen ()) {
+                if (IsDirty ()) {
+                    size = sizeOnDisk;
+                    flags.Set (FLAGS_DIRTY, false);
+                }
+                root.Delete ();
+            }
+            else {
+                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                    THEKOGANS_UTIL_OS_ERROR_CODE_EBADF);
+            }
+        }
+
         void BufferedFile::CommitLog (const std::string &path) {
             std::string logPath = GetLogPath (path);
             if (Path (path).Exists () && Path (logPath).Exists ()) {
@@ -468,34 +487,6 @@ namespace thekogans {
                     }
                 }
                 File::Delete (logPath);
-            }
-        }
-
-        void BufferedFile::DeleteCache (bool commitChanges) {
-            if (IsOpen ()) {
-                if (IsDirty ()) {
-                    if (IsTransactionPending ()) {
-                        if (commitChanges) {
-                            CommitTransaction ();
-                        }
-                        else {
-                            AbortTransaction ();
-                        }
-                    }
-                    else if (commitChanges) {
-                        Flush ();
-                    }
-                    else {
-                        root.Clear ();
-                        size = sizeOnDisk;
-                        flags.Set (FLAGS_DIRTY, false);
-                    }
-                }
-                root.Delete ();
-            }
-            else {
-                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                    THEKOGANS_UTIL_OS_ERROR_CODE_EBADF);
             }
         }
 

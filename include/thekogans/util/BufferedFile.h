@@ -128,6 +128,10 @@ namespace thekogans {
                 ~Guard ();
 
                 /// \brief
+                /// Flush the dirty pages to log and clear the cache.
+                void Checkpoint ();
+
+                /// \brief
                 /// Commit the transaction before the dtor aborts it.
                 void Commit ();
 
@@ -156,7 +160,7 @@ namespace thekogans {
             /// Combination of the above flags.
             Flags32 flags;
             /// \brief
-            /// For use by \see{Transaction}
+            /// For use by \see{Guard}
             Mutex mutex;
 
             /// \struct BufferedFile::Buffer BufferedFile.h thekogans/util/BufferedFile.h
@@ -566,6 +570,11 @@ namespace thekogans {
             virtual void UnlockRegion (const Region & /*region*/) override {}
 
             /// \brief
+            /// Delete the cache.
+            void DeleteCache ();
+
+        private:
+            /// \brief
             /// Used by Open to apply the log before opening the file.
             /// \path path File path.
             static void CommitLog (const std::string &path);
@@ -582,21 +591,6 @@ namespace thekogans {
             inline bool IsTransactionPending () const {
                 return flags.Test (FLAGS_TRANSACTION);
             }
-
-            /// \brief
-            /// BufferedFile is very delicate when it comes to it's internal
-            /// cache (\see{Buffer}s). After all, its very expensive to create
-            /// and maintain. So it goes through great lengths to preserve it
-            /// as much as posible. There are times however when you need to
-            /// release the cache so that you can start anew (presumably in some
-            /// other remote part of the same file). Only you know when you
-            /// need to do that. That's where this function comes in.
-            /// \param[in] commitChanges true == Commits the open transaction
-            /// or flushes dirty buffers. false == Aborts the open transaction
-            /// or deletes the dirty buffers.
-            void DeleteCache (bool commitChanges = true);
-
-        private:
             /// \brief
             /// Start a new transaction. If a transaction is
             /// already in progress do nothing. If the cache

@@ -27,6 +27,12 @@
 namespace thekogans {
     namespace util {
 
+        /// \struct Database Database.h thekogans/util/Database.h
+        ///
+        /// \brief
+        /// Database puts all the relavant pieces together in to a convenient
+        /// base class.
+
         struct _LIB_THEKOGANS_UTIL_DECL Database {
         protected:
             BufferedFile::SharedPtr file;
