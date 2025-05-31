@@ -24,7 +24,7 @@ namespace thekogans {
                 BufferedFile::SharedPtr file_) :
                 file (file_) {
             Subscriber<BufferedFileEvents>::Subscribe (*file);
-            if (file->GetTransaction ()) {
+            if (file->GetTransaction () != nullptr) {
                 Subscriber<BufferedFile::TransactionEvents>::Subscribe (
                     *file->GetTransaction ());
             }

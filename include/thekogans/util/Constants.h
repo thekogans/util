@@ -427,9 +427,9 @@ namespace thekogans {
         T EXCHANGE (
                 T &object,
                 const T newValue) {
-            T oldValue = object;
-            object = newValue;
-            return oldValue;
+            T oldValue = std::move (object);
+            object = std::move (newValue);
+            return std::move (oldValue);
         }
 
         /// \brief

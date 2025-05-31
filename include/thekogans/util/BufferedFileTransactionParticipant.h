@@ -53,7 +53,6 @@ namespace thekogans {
             /// dtor.
             virtual ~BufferedFileTransactionParticipant () {}
 
-        protected:
             /// \brief
             /// Allocate space from \see{BufferedFile}.
             virtual void Allocate () = 0;
