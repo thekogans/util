@@ -46,9 +46,25 @@ namespace thekogans {
             virtual ~BufferedFileEvents () {}
 
             /// \brief
-            /// \see{BufferedFile} just created a new \see{BufferedFile::Transaction}.
-            /// \param[in] file \see{BufferedFile} that created the transaction.
-            virtual void OnBufferedFileCreateTransaction (
+            /// Transaction is beginning. Time to flush the internal cache.
+            /// If your object derives from \see{BufferedFileTransactionParticipant}
+            /// all this is done under the hood for you. All you will need
+            /// to do is implement Flush.
+            virtual void OnBufferedFileTransactionBegin (
+                RefCounted::SharedPtr<BufferedFile> /*file*/) noexcept {}
+            /// \brief
+            /// Transaction is committing. See OnTransactionBegin above.
+            /// \param[in] phase Either COMMIT_PHASE_1 or COMMIT_PHASE_2.
+            virtual void OnBufferedFileTransactionCommit (
+                RefCounted::SharedPtr<BufferedFile> /*file*/,
+                int phase) noexcept {}
+            /// \brief
+            /// Transaction is aborting. Time to reload the object (if its not a
+            /// participant).
+            /// If your object derives from \see{BufferedFileTransactionParticipant}
+            /// all this is done under the hood for you. All you will need
+            /// to do is implement Reload.
+            virtual void OnBufferedFileTransactionAbort (
                 RefCounted::SharedPtr<BufferedFile> /*file*/) noexcept {}
         };
 
@@ -81,19 +97,26 @@ namespace thekogans {
             /// dynamic discovery and creation.
             THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE (BufferedFile)
 
+            /// \brief
+            /// Commit phase 1.
+            static const int COMMIT_PHASE_1 = 1;
+            /// \brief
+            /// Commit phase 2.
+            static const int COMMIT_PHASE_2 = 2;
+
             /// \struct BufferedFile::Guard BufferedFile.h thekogans/util/BufferedFile.h
             ///
             /// \brief
-            /// A very simple transaction scope guard. Will call Begin in it's
-            /// ctor and Abort in it's dtor. Call commit before the end of the
+            /// A very simple transaction scope guard. Will call BeginTransaction in it's
+            /// ctor and AbortTransaction in it's dtor. Call Commit before the end of the
             /// scope to commit the transaction.
             struct _LIB_THEKOGANS_UTIL_DECL Guard {
             private:
                 /// \see{BufferedFile} we're guarding.
                 BufferedFile::SharedPtr file;
                 /// \brief
-                /// true if transaction was commited.
-                bool commited;
+                /// This guard will serialize all transactions.
+                LockGuard<Mutex> guard;
 
             public:
                 /// \brief
@@ -111,115 +134,6 @@ namespace thekogans {
                 /// \brief
                 /// Guard is neither copy constructable, nor assignable.
                 THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (Guard)
-            };
-
-            /// \brief
-            /// Forward declaration of \see{Transaction} needed by \see{TransactionEvents}.
-            struct Transaction;
-
-            /// \struct BufferedFile::Transaction BufferedFile.h thekogans/util/BufferedFile.h
-            ///
-            /// \brief
-            /// Events broadcast by transactions to its participants.
-            struct _LIB_THEKOGANS_UTIL_DECL TransactionEvents {
-                /// \brief
-                /// dtor.
-                virtual ~TransactionEvents () {}
-
-                /// NOTE: I usually like to include objects that cause the event in the event
-                /// interface. So normally a RefCounted::SharedPtr<Transaction> /*transaction*/
-                /// would acompany each of the following event callbacks. I chose not to do
-                /// that here for two reasons. 1. Transaction holds the file lock (mutex).
-                /// It needs to released it as soon as the scope in which it's valid is done.
-                /// That can't happen if one of the callbacks decides to keep a reference.
-                /// And 2. There's no identifyng public destinction between one transaction
-                /// and another. There's absolutely no reason for anyone to be able to distinguish
-                /// one transaction from another. Its purley an internal synchronization
-                /// mechanism. Anyone using BufferedFile will use \see{Guard} above. It
-                /// takes care of managing transactions. See \see{BufferedFileTransactionParticipant}
-                /// for an example of a \seer{Subscriber} that handles the transaction callbacks
-                /// and exposes a simple interface.
-
-                /// \brief
-                /// Transaction is beginning. Time to flush the internal cache.
-                /// If your object derives from \see{BufferedFileTransactionParticipant}
-                /// all this is done under the hood for you. All you will need
-                /// to do is implement Flush.
-                virtual void OnTransactionBegin () noexcept {}
-                /// \brief
-                /// Transaction is committing. See OnTransactionBegin above.
-                /// \param[in] phase Either COMMIT_PHASE_1 or COMMIT_PHASE_2.
-                virtual void OnTransactionCommit (int phase) noexcept {}
-                /// \brief
-                /// Transaction is aborting. Time to reload the object (if its not a
-                /// participant).
-                /// If your object derives from \see{BufferedFileTransactionParticipant}
-                /// all this is done under the hood for you. All you will need
-                /// to do is implement Reload.
-                virtual void OnTransactionAbort () noexcept {}
-            };
-
-            /// \struct BufferedFile::Transaction BufferedFile.h thekogans/util/BufferedFile.h
-            ///
-            /// \brief
-            /// A transaction is the easiest way to perform atomic file writes.
-            /// BufferedFile is not thread safe. To make it thread safe would require
-            /// a lock to protect internal state. Because BufferedFile is meant to be
-            /// the foundation of a more extensive data management system (see
-            /// \see{FileAllocator}), I felt introducing locking at such a low level
-            /// would be costly performance wise. Instead I introduced transactions.
-            /// Transactions allow you to organize your writes in to logical groups.
-            /// Most high level application writes (database records) require a series
-            /// of related file writes. By wrapping them in transactions you guarantee
-            /// database integrity (either all writes succeed or none will). If you
-            /// limit your file access through transactions even if you don't plan to
-            /// write you can make BufferedFile thread safe. Use Guard within a scope
-            /// to serialize access to the underlying file and make transactions
-            /// \see{Exception} safe.
-            struct _LIB_THEKOGANS_UTIL_DECL Transaction : public Producer<TransactionEvents> {
-                /// \brief
-                /// Declare \see{RefCounted} pointers.
-                THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (Transaction)
-
-                /// \brief
-                /// Commit phase 1.
-                static const int COMMIT_PHASE_1 = 1;
-                /// \brief
-                /// Commit phase 2.
-                static const int COMMIT_PHASE_2 = 2;
-
-            private:
-                /// \brief
-                /// \see{BufferedFile} to transact.
-                BufferedFile::SharedPtr file;
-                /// \brief
-                /// This guard will serialize all transactions.
-                LockGuard<Mutex> guard;
-
-                /// \brief
-                /// ctor
-                /// \param[in] file_ \see{BufferedFile} to transact.
-                explicit Transaction (BufferedFile::SharedPtr file_) :
-                    file (file_),
-                    guard (file->mutex) {}
-
-                /// \brief
-                /// Begin the transaction.
-                void Begin ();
-                /// \brief
-                /// Commit the transaction.
-                void Commit ();
-                /// \brief
-                /// Abort the transaction.
-                void Abort ();
-
-                /// \brief
-                /// \see{Guard} runs the show.
-                friend struct Guard;
-
-                /// \brief
-                /// Transaction is neither copy constructable, nor assignable.
-                THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (Transaction)
             };
 
         private:
@@ -244,9 +158,6 @@ namespace thekogans {
             /// \brief
             /// For use by \see{Transaction}
             Mutex mutex;
-            /// \brief
-            /// Current transaction.
-            Transaction::SharedPtr transaction;
 
             /// \struct BufferedFile::Buffer BufferedFile.h thekogans/util/BufferedFile.h
             ///
@@ -673,13 +584,6 @@ namespace thekogans {
             }
 
             /// \brief
-            /// Return the current active transaction.
-            /// \return transaction.
-            inline Transaction::SharedPtr GetTransaction () const {
-                return transaction;
-            }
-
-            /// \brief
             /// BufferedFile is very delicate when it comes to it's internal
             /// cache (\see{Buffer}s). After all, its very expensive to create
             /// and maintain. So it goes through great lengths to preserve it
@@ -698,13 +602,13 @@ namespace thekogans {
             /// already in progress do nothing. If the cache
             /// was dirty before the transaction began it will
             /// be \see{Flush}ed first.
-            void BeginTransaction ();
+            bool BeginTransaction ();
             /// \brief
             /// Commit the current transaction.
-            void CommitTransaction ();
+            bool CommitTransaction ();
             /// \brief
             /// Abort the current transaction.
-            void AbortTransaction ();
+            bool AbortTransaction ();
 
             /// \brief
             /// Get the buffer that will cover the neighborhood around position.

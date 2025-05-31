@@ -34,59 +34,16 @@ namespace thekogans {
 
         BufferedFile::Guard::Guard (BufferedFile::SharedPtr file_) :
                 file (file_),
-                commited (false) {
-            file->transaction.Reset (new Transaction (file));
-            file->Produce (
-                std::bind (
-                    &BufferedFileEvents::OnBufferedFileCreateTransaction,
-                    std::placeholders::_1,
-                    file));
-            file->transaction->Begin ();
-        }
-
-        BufferedFile::Guard::~Guard () {
-            if (!commited) {
-                file->transaction->Abort ();
-                file->transaction.Reset ();
-            }
-        }
-
-        void BufferedFile::Guard::Commit () {
-            if (!commited) {
-                file->transaction->Commit ();
-                file->transaction.Reset ();
-                commited = true;
-            }
-        }
-
-        void BufferedFile::Transaction::Begin () {
-            Produce (
-                std::bind (
-                    &TransactionEvents::OnTransactionBegin,
-                    std::placeholders::_1));
+                guard (file->mutex) {
             file->BeginTransaction ();
         }
 
-        void BufferedFile::Transaction::Commit () {
-            Produce (
-                std::bind (
-                    &TransactionEvents::OnTransactionCommit,
-                    std::placeholders::_1,
-                    COMMIT_PHASE_1));
-            Produce (
-                std::bind (
-                    &TransactionEvents::OnTransactionCommit,
-                    std::placeholders::_1,
-                    COMMIT_PHASE_2));
-            file->CommitTransaction ();
+        BufferedFile::Guard::~Guard () {
+            file->AbortTransaction ();
         }
 
-        void BufferedFile::Transaction::Abort () {
-            file->AbortTransaction ();
-            Produce (
-                std::bind (
-                    &TransactionEvents::OnTransactionAbort,
-                    std::placeholders::_1));
+        void BufferedFile::Guard::Commit () {
+            file->CommitTransaction ();
         }
 
         THEKOGANS_UTIL_IMPLEMENT_HEAP_FUNCTIONS (BufferedFile::Buffer)
@@ -542,16 +499,19 @@ namespace thekogans {
             }
         }
 
-        void BufferedFile::BeginTransaction () {
+        bool BufferedFile::BeginTransaction () {
             if (IsOpen ()) {
                 if (!IsTransactionPending ()) {
+                    Produce (
+                        std::bind (
+                            &BufferedFileEvents::OnBufferedFileTransactionBegin,
+                            std::placeholders::_1,
+                            this));
                     Flush ();
                     flags.Set (FLAGS_TRANSACTION, true);
+                    return true;
                 }
-                else {
-                    THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                        "Nested transactions are not supported.");
-                }
+                return false;
             }
             else {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
@@ -559,9 +519,21 @@ namespace thekogans {
             }
         }
 
-        void BufferedFile::CommitTransaction () {
+        bool BufferedFile::CommitTransaction () {
             if (IsOpen ()) {
                 if (IsTransactionPending ()) {
+                    Produce (
+                        std::bind (
+                            &BufferedFileEvents::OnBufferedFileTransactionCommit,
+                            std::placeholders::_1,
+                            this,
+                            COMMIT_PHASE_1));
+                    Produce (
+                        std::bind (
+                            &BufferedFileEvents::OnBufferedFileTransactionCommit,
+                            std::placeholders::_1,
+                            this,
+                            COMMIT_PHASE_2));
                     Flush ();
                     std::string logPath = GetLogPath (path);
                     if (Path (logPath).Exists ()) {
@@ -607,11 +579,9 @@ namespace thekogans {
                         File::Delete (logPath);
                     }
                     flags.Set (FLAGS_TRANSACTION, false);
+                    return true;
                 }
-                else {
-                    THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                        "No pending transaction to commit.");
-                }
+                return false;
             }
             else {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
@@ -619,7 +589,7 @@ namespace thekogans {
             }
         }
 
-        void BufferedFile::AbortTransaction () {
+        bool BufferedFile::AbortTransaction () {
             if (IsOpen ()) {
                 if (IsTransactionPending ()) {
                     if (IsDirty ()) {
@@ -632,11 +602,14 @@ namespace thekogans {
                         File::Delete (logPath);
                     }
                     flags.Set (FLAGS_TRANSACTION, false);
+                    Produce (
+                        std::bind (
+                            &BufferedFileEvents::OnBufferedFileTransactionAbort,
+                            std::placeholders::_1,
+                            this));
+                    return true;
                 }
-                else {
-                    THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                        "No pending transaction to abort.");
-                }
+                return false;
             }
             else {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (

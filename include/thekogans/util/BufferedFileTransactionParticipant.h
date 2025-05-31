@@ -33,8 +33,7 @@ namespace thekogans {
         /// \see{BufferedFile::TransactionEvents} and are able to flush and reload
         /// themselves to and from a \see{BufferedFile}.
         struct _LIB_THEKOGANS_UTIL_DECL BufferedFileTransactionParticipant :
-                public Subscriber<BufferedFileEvents>,
-                public Subscriber<BufferedFile::TransactionEvents> {
+                public Subscriber<BufferedFileEvents> {
             /// \brief
             /// Declare \see{RefCounted} pointers.
             THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (BufferedFileTransactionParticipant)
@@ -67,37 +66,30 @@ namespace thekogans {
 
             // BufferedFileEvents
             /// \brief
-            /// \see{BufferedFile} just created a new \see{BufferedFile::Transaction}.
-            /// Subscribe to it's events.
-            /// \param[in] file \see{BufferedFile} that created the transaction.
-            virtual void OnBufferedFileCreateTransaction (
-                    BufferedFile::SharedPtr file) noexcept override {
-                Subscriber<BufferedFile::TransactionEvents>::Subscribe (
-                    *file->GetTransaction ());
-            }
-
-            // BufferedFile::TransactionEvents
-            /// \brief
             /// Transaction is beginning. Flush internal cache to file.
             /// \param[in] transaction \see{BufferedFile::Transaction} that's beginning.
-            virtual void OnTransactionBegin () noexcept override {
+            virtual void OnBufferedFileTransactionBegin (
+                    BufferedFile::SharedPtr /*file*/) noexcept override {
                 Flush ();
             }
             /// \brief
             /// Transaction is commiting. Flush internal cache to file.
             /// \param[in] transaction \see{BufferedFile::Transaction} that's commiting.
-            virtual void OnTransactionCommit (int phase) noexcept override {
-                if (phase == BufferedFile::Transaction::COMMIT_PHASE_1) {
+            virtual void OnBufferedFileTransactionCommit (
+                    BufferedFile::SharedPtr /*file*/,
+                    int phase) noexcept override {
+                if (phase == BufferedFile::COMMIT_PHASE_1) {
                     Allocate ();
                 }
-                else if (phase == BufferedFile::Transaction::COMMIT_PHASE_2) {
+                else if (phase == BufferedFile::COMMIT_PHASE_2) {
                     Flush ();
                 }
             }
             /// \brief
             /// Transaction is aborting. Reload from file.
             /// \param[in] transaction \see{BufferedFile::Transaction} that's aborting.
-            virtual void OnTransactionAbort () noexcept override {
+            virtual void OnBufferedFileTransactionAbort (
+                    BufferedFile::SharedPtr /*file*/) noexcept override {
                 Reload ();
             }
 

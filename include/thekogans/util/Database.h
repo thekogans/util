@@ -50,10 +50,6 @@ namespace thekogans {
                 return file;
             };
 
-            inline BufferedFile::Transaction::SharedPtr GetTransaction () const {
-                return file->GetTransaction ();
-            };
-
             inline FileAllocator::SharedPtr GetFileAllocator () const {
                 return fileAllocator;
             };
