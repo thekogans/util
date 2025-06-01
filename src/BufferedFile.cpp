@@ -43,8 +43,7 @@ namespace thekogans {
         }
 
         void BufferedFile::Guard::Checkpoint () {
-            file->Flush ();
-            file->root.Delete ();
+            file->DeleteCache ();
         }
 
         void BufferedFile::Guard::Commit () {
@@ -416,10 +415,7 @@ namespace thekogans {
 
         void BufferedFile::DeleteCache () {
             if (IsOpen ()) {
-                if (IsDirty ()) {
-                    size = sizeOnDisk;
-                    flags.Set (FLAGS_DIRTY, false);
-                }
+                Flush ();
                 root.Delete ();
             }
             else {
