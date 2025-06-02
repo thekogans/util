@@ -420,7 +420,7 @@ namespace thekogans {
         /// \struct DynamicCreatableBase DynamicCreatable.h thekogans/util/DynamicCreatable.h
         ///
         /// \brief
-        /// DynamicCreatableBase exposes the Type (), Bases () and BasesSize () virtual methods.
+        /// DynamicCreatableBase exposes the Type () and Bases () virtual methods.
 
         struct _LIB_THEKOGANS_UTIL_DECL DynamicCreatableBase : public virtual RefCounted {
             /// \brief
