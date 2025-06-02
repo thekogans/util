@@ -85,6 +85,49 @@ namespace thekogans {
             /// dtor.
             virtual ~FileAllocatorObject () {}
 
+
+            /// \struct FileAllocatorObject::OffsetTracker FileAllocatorObject.h
+            /// thekogans/util/FileAllocatorObject.h
+            ///
+            /// \brief
+            /// Track offset changes and update an external offset reference.
+            struct OffsetTracker : public Subscriber<FileAllocatorObjectEvents> {
+                /// \brief
+                /// Declare \see{RefCounted} pointers.
+                THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (OffsetTracker)
+
+            private:
+                /// \brief
+                /// Reference to offset we're tracking.
+                FileAllocator::PtrType &offset;
+
+            public:
+                /// \brief
+                /// \param[out] offset_ Reference to offset we're tracking.
+                /// \param[in] object Object to listen to for offset updates.
+                OffsetTracker (
+                        FileAllocator::PtrType &offset_,
+                        FileAllocatorObject &object) :
+                        offset (offset_) {
+                    Subscriber<FileAllocatorObjectEvents>::Subscribe (object);
+                }
+
+            protected:
+                // FileAllocatorObjectEvents
+                /// \brief
+                /// We've just updated the offset.
+                /// \param[in] fileAllocatorObject \see{FileAllocatorObject}
+                /// that just updated the offset.
+                virtual void OnFileAllocatorObjectOffsetChanged (
+                        FileAllocatorObject::SharedPtr fileAllocatorObject) noexcept override {
+                    offset = fileAllocatorObject->GetOffset ();
+                }
+
+                /// \brief
+                /// FileAllocatorObject is neither copy constructable, nor assignable.
+                THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (OffsetTracker)
+            };
+
             /// \brief
             /// Return the fileAllocator.
             /// \return fileAllocator.

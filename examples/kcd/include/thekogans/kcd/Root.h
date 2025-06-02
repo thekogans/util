@@ -56,9 +56,7 @@ namespace thekogans {
                 util::RefCounted::SharedPtr<Root> /*root*/) throw () {}
         };
 
-        struct Root :
-                public util::Subscriber<util::FileAllocatorObjectEvents>,
-                public util::Producer<RootEvents> {
+        struct Root : public util::Producer<RootEvents> {
             THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (Root)
 
         private:
@@ -67,7 +65,9 @@ namespace thekogans {
             util::FileAllocator::PtrType componentBTreeOffset;
             bool active;
             util::BTree::SharedPtr pathBTree;
+            util::FileAllocatorObject::OffsetTracker::SharedPtr pathBTreeOffsetTracker;
             util::BTree::SharedPtr componentBTree;
+            util::FileAllocatorObject::OffsetTracker::SharedPtr componentBTreeOffsetTracker;
 
         public:
             Root (
@@ -113,21 +113,6 @@ namespace thekogans {
             void Scan (
                 const std::string &path,
                 IgnoreList::SharedPtr ignoreList);
-
-            // FileAllocatorObjectEvents
-            /// \brief
-            /// We've just updated the offset.
-            /// \param[in] fileAllocatorObject \see{FileAllocatorObject}
-            /// that just updated the offset.
-            virtual void OnFileAllocatorObjectOffsetChanged (
-                    util::FileAllocatorObject::SharedPtr fileAllocatorObject) noexcept override {
-                if (fileAllocatorObject == pathBTree) {
-                    pathBTreeOffset = fileAllocatorObject->GetOffset ();
-                }
-                else if (fileAllocatorObject == componentBTree) {
-                    componentBTreeOffset = fileAllocatorObject->GetOffset ();
-                }
-            }
 
             friend util::Serializer &operator << (
                 util::Serializer &serializer,

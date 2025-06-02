@@ -46,10 +46,10 @@ namespace thekogans {
         public:
             /// \brief
             /// Default number of entries per \see{BTree::Node}.
-            static const std::size_t DEFAULT_REGISTRY_ENTRIES_PER_NODE = 32;
+            static const std::size_t DEFAULT_BTREE_ENTRIES_PER_NODE = 32;
             /// \brief
             /// Number of \see{BTree::Node}s that will fit in to a \see{BlockAllocator} page.
-            static const std::size_t DEFAULT_REGISTRY_NODES_PERP_PAGE = 5;
+            static const std::size_t DEFAULT_BTREE_NODES_PERP_PAGE = 5;
 
             /// \brief
             /// ctor.
@@ -59,8 +59,8 @@ namespace thekogans {
             /// \param[in] allocator Where \see{BTree::Node} pages come from.
             FileAllocatorRegistry (
                 FileAllocator::SharedPtr fileAllocator,
-                std::size_t entriesPerNode = DEFAULT_REGISTRY_ENTRIES_PER_NODE,
-                std::size_t nodesPerPage = DEFAULT_REGISTRY_NODES_PERP_PAGE,
+                std::size_t entriesPerNode = DEFAULT_BTREE_ENTRIES_PER_NODE,
+                std::size_t nodesPerPage = DEFAULT_BTREE_NODES_PERP_PAGE,
                 Allocator::SharedPtr allocator = DefaultAllocator::Instance ());
 
             /// \brief

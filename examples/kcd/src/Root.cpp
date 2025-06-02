@@ -38,7 +38,10 @@ namespace thekogans {
                         pathBTreeOffset,
                         util::GUIDKey::TYPE,
                         util::StringValue::TYPE));
-                util::Subscriber<util::FileAllocatorObjectEvents>::Subscribe (*pathBTree);
+                pathBTreeOffsetTracker.Reset (
+                    new util::FileAllocatorObject::OffsetTracker (
+                        pathBTreeOffset,
+                        *pathBTree));
             }
             if (componentBTree == nullptr) {
                 componentBTree.Reset (
@@ -47,7 +50,10 @@ namespace thekogans {
                         componentBTreeOffset,
                         util::StringKey::TYPE,
                         util::GUIDArrayValue::TYPE));
-                util::Subscriber<util::FileAllocatorObjectEvents>::Subscribe (*componentBTree);
+                componentBTreeOffsetTracker.Reset (
+                    new util::FileAllocatorObject::OffsetTracker (
+                        componentBTreeOffset,
+                        *componentBTree));
             }
         }
 
@@ -86,6 +92,7 @@ namespace thekogans {
                         this));
             }
             pathBTree.Reset ();
+            pathBTreeOffsetTracker.Reset ();
             if (componentBTreeOffset != 0) {
                 util::BTree::Delete (
                     *Database::Instance ()->GetFileAllocator (), componentBTreeOffset);
@@ -97,6 +104,7 @@ namespace thekogans {
                         this));
             }
             componentBTree.Reset ();
+            componentBTreeOffsetTracker.Reset ();
             Produce (
                 std::bind (
                     &RootEvents::OnRootDeleteEnd,

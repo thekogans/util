@@ -31,35 +31,68 @@ namespace thekogans {
         ///
         /// \brief
         /// Database puts all the relavant pieces together in to a convenient
-        /// base class.
-
+        /// base class. Database would be more accuratelly called a database
+        /// kernel or engine in that it does not prescribe any particular data
+        /// structure (OO, relational...) but offers the bare minimum foundation
+        /// for building those things. Specifically Database is built on top
+        /// of \see{BufferedFile} and takes advantage of it's built in transaction
+        /// processing. \see{FileAllocator} is used to allocate random size
+        /// blocks from the file. \see{FileAllocatorRegistry} is available for
+        /// storing system wide named \see{BTree::Value}s. Database is meant to
+        /// be derived from.
         struct _LIB_THEKOGANS_UTIL_DECL Database {
         protected:
+            /// \brief
+            /// \see{BufferedFile} where the database lives.
             BufferedFile::SharedPtr file;
+            /// \brief
+            /// \see{FileAllocator} for managing random size blocks in the file.
             FileAllocator::SharedPtr fileAllocator;
+            /// \brief
+            /// \see{FileAllocatorRegistry} for system wide name/value pairs.
             FileAllocatorRegistry::SharedPtr registry;
 
         public:
+            /// \brief
+            /// ctor.
+            /// \param[in] path
+            /// \param[in] secure
+            /// \param[in] btreeEntriesPerNode
+            /// \param[in] btreeNodesPerPage
+            /// \param[in] registryEntriesPerNode
+            /// \param[in] registryNodesPerPage
+            /// \param[in] allocator
             Database (
                 const std::string &path,
                 bool secure = false,
                 std::size_t btreeEntriesPerNode = FileAllocator::DEFAULT_BTREE_ENTRIES_PER_NODE,
                 std::size_t btreeNodesPerPage = FileAllocator::DEFAULT_BTREE_NODES_PER_PAGE,
                 std::size_t registryEntriesPerNode =
-                    FileAllocatorRegistry::DEFAULT_REGISTRY_ENTRIES_PER_NODE,
+                    FileAllocatorRegistry::DEFAULT_BTREE_ENTRIES_PER_NODE,
                 std::size_t registryNodesPerPage =
-                    FileAllocatorRegistry::DEFAULT_REGISTRY_NODES_PERP_PAGE,
+                    FileAllocatorRegistry::DEFAULT_BTREE_NODES_PERP_PAGE,
                 Allocator::SharedPtr allocator = DefaultAllocator::Instance ());
+            /// \brief
+            /// dtor.
             virtual ~Database () {}
 
+            /// \brief
+            /// Return the file.
+            /// \return file.
             inline BufferedFile::SharedPtr GetFile () const {
                 return file;
             };
 
+            /// \brief
+            /// Return the fileAllocator.
+            /// \return fileAllocator.
             inline FileAllocator::SharedPtr GetFileAllocator () const {
                 return fileAllocator;
             };
 
+            /// \brief
+            /// Return the registry
+            /// \return registry.
             inline FileAllocatorRegistry::SharedPtr GetRegistry () const {
                 return registry;
             };
