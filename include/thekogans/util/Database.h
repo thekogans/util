@@ -55,13 +55,15 @@ namespace thekogans {
         public:
             /// \brief
             /// ctor.
-            /// \param[in] path
-            /// \param[in] secure
-            /// \param[in] btreeEntriesPerNode
-            /// \param[in] btreeNodesPerPage
-            /// \param[in] registryEntriesPerNode
-            /// \param[in] registryNodesPerPage
-            /// \param[in] allocator
+            /// \param[in] path Path to database file.
+            /// \param[in] secure true == \see{FileAllocator} will zero fill freed blocks.
+            /// \param[in] btreeEntriesPerNode Number of entries per \see{FileAllocator::BTree::Node}.
+            /// \param[in] btreeNodesPerPage Number of \see{FileAllocator::BTree::Node}s that will
+            /// fit in to a \see{BlockAllocator} page.
+            /// \param[in] registryEntriesPerNode Number of entries per \see{BTree::Node}.
+            /// \param[in] registryNodesPerPage Number of \see{BTree::Node}s that will
+            /// fit in to a \see{BlockAllocator} page.
+            /// \param[in] allocator \see{Allocator} for \see{FileAllocator::BTree} and \see{BTree}.
             Database (
                 const std::string &path,
                 bool secure = false,

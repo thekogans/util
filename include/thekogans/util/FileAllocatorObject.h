@@ -124,7 +124,7 @@ namespace thekogans {
                 }
 
                 /// \brief
-                /// FileAllocatorObject is neither copy constructable, nor assignable.
+                /// OffsetTracker is neither copy constructable, nor assignable.
                 THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (OffsetTracker)
             };
 

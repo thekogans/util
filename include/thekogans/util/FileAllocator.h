@@ -612,7 +612,7 @@ namespace thekogans {
             /// ctor.
             /// \param[in] path Heap file path.
             /// \param[in] secure true == zero out free blocks.
-            /// \param[in] btreeEntriesPerNode Default number of entries per \see{BTree::Node}.
+            /// \param[in] btreeEntriesPerNode Number of entries per \see{BTree::Node}.
             /// \param[in] btreeNodesPerPage Number of \see{BTree::Node}s that will fit in to
             /// a \see{BlockAllocator} page.
             /// \param[in] allocator \see{Allocator} for \see{BTree}.

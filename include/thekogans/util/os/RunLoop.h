@@ -28,7 +28,7 @@ namespace thekogans {
             ///
             /// \brief
             /// Base class for OS based run loop. This interface class is meant to be a mix in class
-            /// alowing OS based implementations to define Begin/End/ScheduleJob using whatever
+            /// allowing OS based implementations to define Begin/End/ScheduleJob using whatever
             /// facilities are available on that platform. ExecuteJob is left as an implementation
             /// detail for RunLoop derivatives (see \see{SystemRunLoop} for an example.)
 
