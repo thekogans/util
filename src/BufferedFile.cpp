@@ -50,6 +50,12 @@ namespace thekogans {
             file->CommitTransaction ();
         }
 
+        BufferedFile::TransactionParticipant::TransactionParticipant (
+                BufferedFile::SharedPtr file_) :
+                file (file_) {
+            Subscriber<BufferedFileEvents>::Subscribe (*file);
+        }
+
         THEKOGANS_UTIL_IMPLEMENT_HEAP_FUNCTIONS (BufferedFile::Buffer)
         THEKOGANS_UTIL_IMPLEMENT_HEAP_FUNCTIONS (BufferedFile::Segment)
         THEKOGANS_UTIL_IMPLEMENT_HEAP_FUNCTIONS (BufferedFile::Internal)

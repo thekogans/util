@@ -23,7 +23,6 @@
 #include "thekogans/util/BTree.h"
 #include "thekogans/util/BTreeKeys.h"
 #include "thekogans/util/FileAllocator.h"
-#include "thekogans/util/FileAllocatorObject.h"
 
 namespace thekogans {
     namespace util {
@@ -38,7 +37,7 @@ namespace thekogans {
         /// type is any std::string.
         struct _LIB_THEKOGANS_UTIL_DECL FileAllocatorRegistry :
                 private BTree,
-                public Subscriber<FileAllocatorObjectEvents> {
+                public Subscriber<FileAllocator::ObjectEvents> {
             /// \brief
             /// Declare \see{RefCounted} pointers.
             THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (FileAllocatorRegistry)
@@ -87,7 +86,7 @@ namespace thekogans {
             /// \param[in] fileAllocatorObject \see{FileAllocatorObject}
             /// that just updated the offset.
             virtual void OnFileAllocatorObjectOffsetChanged (
-                    FileAllocatorObject::SharedPtr fileAllocatorObject) noexcept override {
+                    FileAllocator::Object::SharedPtr fileAllocatorObject) noexcept override {
                 fileAllocator->SetRootOffset (fileAllocatorObject->GetOffset ());
             }
 

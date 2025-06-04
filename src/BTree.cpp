@@ -785,7 +785,7 @@ namespace thekogans {
                 std::size_t entriesPerNode,
                 std::size_t nodesPerPage,
                 Allocator::SharedPtr allocator) :
-                FileAllocatorObject (fileAllocator, offset),
+                FileAllocator::Object (fileAllocator, offset),
                 header (keyType, valueType, (ui32)entriesPerNode),
                 keyFactory (Key::GetTypeFactory (keyType.c_str ())),
                 valueFactory (Value::GetTypeFactory (valueType.c_str ())),

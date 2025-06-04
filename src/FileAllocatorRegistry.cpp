@@ -35,7 +35,7 @@ namespace thekogans {
                 entriesPerNode,
                 nodesPerPage,
                 allocator) {
-            Subscriber<FileAllocatorObjectEvents>::Subscribe (*this);
+            Subscriber<FileAllocator::ObjectEvents>::Subscribe (*this);
         }
 
         BTree::Value::SharedPtr FileAllocatorRegistry::GetValue (const std::string &key) {

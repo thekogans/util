@@ -39,7 +39,7 @@ namespace thekogans {
                         util::GUIDKey::TYPE,
                         util::StringValue::TYPE));
                 pathBTreeOffsetTracker.Reset (
-                    new util::FileAllocatorObject::OffsetTracker (
+                    new util::FileAllocator::Object::OffsetTracker (
                         pathBTreeOffset,
                         *pathBTree));
             }
@@ -51,7 +51,7 @@ namespace thekogans {
                         util::StringKey::TYPE,
                         util::GUIDArrayValue::TYPE));
                 componentBTreeOffsetTracker.Reset (
-                    new util::FileAllocatorObject::OffsetTracker (
+                    new util::FileAllocator::Object::OffsetTracker (
                         componentBTreeOffset,
                         *componentBTree));
             }

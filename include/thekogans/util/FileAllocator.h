@@ -22,7 +22,6 @@
 #include "thekogans/util/Types.h"
 #include "thekogans/util/Flags.h"
 #include "thekogans/util/BufferedFile.h"
-#include "thekogans/util/BufferedFileTransactionParticipant.h"
 #include "thekogans/util/Subscriber.h"
 #include "thekogans/util/BlockAllocator.h"
 
@@ -75,7 +74,7 @@ namespace thekogans {
         /// +---------------------+-----------------------+
         ///            8                     var
         struct _LIB_THEKOGANS_UTIL_DECL FileAllocator :
-                public BufferedFileTransactionParticipant {
+                public BufferedFile::TransactionParticipant {
             /// \brief
             /// Declare \see{RefCounted} pointers.
             THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (FileAllocator)
@@ -86,6 +85,138 @@ namespace thekogans {
             /// \brief
             /// PtrType size on disk.
             static const std::size_t PTR_TYPE_SIZE = UI64_SIZE;
+
+            /// \brief
+            /// Forward declaration of \see{Object} needed by \see{ObjectEvents}.
+            struct Object;
+
+            /// \struct FileAllocator::ObjectEvents FileAllocator.h
+            /// thekogans/util/FileAllocator.h
+            ///
+            /// \brief
+            /// Subscribe to ObjectEvents to receive offset change notifications.
+            struct _LIB_THEKOGANS_UTIL_DECL ObjectEvents {
+                /// \brief
+                /// dtor.
+                virtual ~ObjectEvents () {}
+
+                /// \brief
+                /// \see{Object} offset changed. Update whatever state you need.
+                /// \param[in] file \see{Object} whose offset changed.
+                virtual void OnFileAllocatorObjectOffsetChanged (
+                    RefCounted::SharedPtr<Object> /*object*/) noexcept {}
+            };
+
+            /// \struct FileAllocator::Object FileAllocator.h thekogans/util/FileAllocator.h
+            ///
+            /// \brief
+            /// A FileAllocator Object is an object that has allocated at least one block
+            /// from \see{FileAllocator} and participates in \see{BufferedFileEvents}.
+            struct _LIB_THEKOGANS_UTIL_DECL Object :
+                    public BufferedFile::TransactionParticipant,
+                    public Producer<ObjectEvents> {
+                /// \brief
+                /// Declare \see{RefCounted} pointers.
+                THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (Object)
+
+            protected:
+                /// \brief
+                /// \see{FileAllocator} where this object resides.
+                FileAllocator::SharedPtr fileAllocator;
+                /// \brief
+                /// Our address inside the \see{FileAllocator}.
+                FileAllocator::PtrType offset;
+
+            public:
+                /// \brief
+                /// ctor.
+                /// \param[in] fileAllocator \see{FileAllocator} where this object resides.
+                /// \param[in] offset Offset of the \see{FileAllocator::BlockInfo}.
+                Object (
+                    FileAllocator::SharedPtr fileAllocator_,
+                    FileAllocator::PtrType offset_) :
+                    BufferedFile::TransactionParticipant (fileAllocator_->GetFile ()),
+                    fileAllocator (fileAllocator_),
+                    offset (offset_) {}
+                /// \brief
+                /// dtor.
+                virtual ~Object () {}
+
+
+                /// \struct FileAllocator::Object::OffsetTracker FileAllocator.h
+                /// thekogans/util/FileAllocator.h
+                ///
+                /// \brief
+                /// Track offset changes and update an external offset reference.
+                struct OffsetTracker : public Subscriber<ObjectEvents> {
+                    /// \brief
+                    /// Declare \see{RefCounted} pointers.
+                    THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (OffsetTracker)
+
+                private:
+                    /// \brief
+                    /// Reference to offset we're tracking.
+                    FileAllocator::PtrType &offset;
+
+                public:
+                    /// \brief
+                    /// \param[out] offset_ Reference to offset we're tracking.
+                    /// \param[in] object Object to listen to for offset updates.
+                    OffsetTracker (
+                            FileAllocator::PtrType &offset_,
+                            Object &object) :
+                            offset (offset_) {
+                        Subscriber<ObjectEvents>::Subscribe (object);
+                    }
+
+                protected:
+                    // ObjectEvents
+                    /// \brief
+                    /// We've just updated the offset.
+                    /// \param[in] fileAllocatorObject \see{FileAllocatorObject}
+                    /// that just updated the offset.
+                    virtual void OnFileAllocatorObjectOffsetChanged (
+                            Object::SharedPtr object) noexcept override {
+                        offset = object->GetOffset ();
+                    }
+
+                    /// \brief
+                    /// OffsetTracker is neither copy constructable, nor assignable.
+                    THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (OffsetTracker)
+                };
+
+                /// \brief
+                /// Return the fileAllocator.
+                /// \return fileAllocator.
+                inline FileAllocator::SharedPtr GetFileAllocator () const {
+                    return fileAllocator;
+                }
+                /// \brief
+                /// Return the offset.
+                /// \return offset.
+                inline FileAllocator::PtrType GetOffset () const {
+                    return offset;
+                }
+
+                /// \brief
+                /// Return the size of the object on disk.
+                /// \return Size of the object on disk.
+                virtual std::size_t Size () const = 0;
+
+                /// \brief
+                /// Delete the disk image and reset the internal state.
+                virtual void Reset () = 0;
+
+            private:
+                // BufferedFile::TransactionParticipant
+                /// \brief
+                /// If needed allocate space from \see{BufferedFile}.
+                virtual void Allocate () override;
+
+                /// \brief
+                /// Object is neither copy constructable, nor assignable.
+                THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (Object)
+            };
 
             /// \struct FileAllocator::BlockInfo FileAllocator.h thekogans/util/FileAllocator.h
             ///
@@ -711,7 +842,7 @@ namespace thekogans {
             void DumpBTree ();
 
         protected:
-            // BufferedFileTransactionParticipant
+            // BufferedFile::TransactionParticipant
             /// \brief
             /// Nothing for us to allocate.
             /// The header is the first thing in the file.

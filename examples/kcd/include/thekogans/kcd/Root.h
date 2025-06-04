@@ -65,9 +65,9 @@ namespace thekogans {
             util::FileAllocator::PtrType componentBTreeOffset;
             bool active;
             util::BTree::SharedPtr pathBTree;
-            util::FileAllocatorObject::OffsetTracker::SharedPtr pathBTreeOffsetTracker;
+            util::FileAllocator::Object::OffsetTracker::SharedPtr pathBTreeOffsetTracker;
             util::BTree::SharedPtr componentBTree;
-            util::FileAllocatorObject::OffsetTracker::SharedPtr componentBTreeOffsetTracker;
+            util::FileAllocator::Object::OffsetTracker::SharedPtr componentBTreeOffsetTracker;
 
         public:
             Root (

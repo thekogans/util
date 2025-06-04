@@ -28,7 +28,7 @@
 /// It's broken out in to its own file because FileAllocator.h was getting
 /// too big to maintain.
 
-struct BTree : public BufferedFileTransactionParticipant {
+struct BTree : public BufferedFile::TransactionParticipant {
     /// \brief
     /// Declare \see{RefCounted} pointers.
     THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (BTree)
@@ -328,7 +328,7 @@ public:
     void Dump ();
 
 protected:
-    // BufferedFileTransactionParticipant
+    // BufferedFile::TransactionParticipant
     /// \brief
     /// Allocate space for the \see{Header}.
     virtual void Allocate () override;

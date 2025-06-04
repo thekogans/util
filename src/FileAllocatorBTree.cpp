@@ -427,7 +427,7 @@ namespace thekogans {
                 std::size_t entriesPerNode,
                 std::size_t nodesPerPage,
                 Allocator::SharedPtr allocator) :
-                BufferedFileTransactionParticipant (fileAllocator_.GetFile ()),
+                BufferedFile::TransactionParticipant (fileAllocator_.GetFile ()),
                 fileAllocator (fileAllocator_),
                 offset (offset_),
                 header ((ui32)entriesPerNode),

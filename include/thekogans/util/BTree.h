@@ -25,7 +25,6 @@
 #include "thekogans/util/Serializable.h"
 #include "thekogans/util/Serializer.h"
 #include "thekogans/util/BlockAllocator.h"
-#include "thekogans/util/FileAllocatorObject.h"
 #include "thekogans/util/FileAllocator.h"
 
 namespace thekogans {
@@ -44,7 +43,7 @@ namespace thekogans {
         /// \see{DynamicCreatable} and \see{Serializable} for it's key and value.
         /// That means that key and values can be practically any random size object
         /// (as long as it derives from BTree::Key and implements the interface).
-        struct _LIB_THEKOGANS_UTIL_DECL BTree : public FileAllocatorObject {
+        struct _LIB_THEKOGANS_UTIL_DECL BTree : public FileAllocator::Object {
             /// \brief
             /// Declare \see{RefCounted} pointers.
             THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (BTree)
@@ -707,7 +706,6 @@ namespace thekogans {
             /// dtor.
             virtual ~BTree ();
 
-            // FileAllocatorObject
             /// \brief
             /// Delete the btree from the heap.
             /// \param[in] fileAllocator Heap where the btree resides.
@@ -760,6 +758,7 @@ namespace thekogans {
             /// Use for debugging. Dump the btree nodes to stdout.
             void Dump ();
 
+            // FileAllocator::Object
             /// \brief
             /// Return the \see{Header} size.
             /// \return \see{Header} size.
@@ -771,7 +770,7 @@ namespace thekogans {
             virtual void Reset () override;
 
         protected:
-            // BufferedFileTransactionParticipant
+            // BufferedFile::TransactionParticipant
             /// \brief
             /// Flush the node cache (used in tight memory situations).
             virtual void Flush () override;
