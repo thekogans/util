@@ -368,7 +368,9 @@ namespace thekogans {
                         }
                     }
                     operator std::string () {
-                        return name != nullptr ? os::windows::UTF16ToUTF8 (std::wstring (name)) : std::string ();
+                        return name != nullptr ?
+                            os::windows::UTF16ToUTF8 (std::wstring (name)) :
+                            std::string ();
                     }
                 } userName;
                 result = userName;

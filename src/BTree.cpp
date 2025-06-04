@@ -827,10 +827,11 @@ namespace thekogans {
                     "key (%s) / value (%s) types are not valid.",
                     keyType.c_str (), valueType.c_str ());
             }
-            nodeAllocator = new BlockAllocator (
-                Node::Size (header.entriesPerNode),
-                nodesPerPage,
-                allocator);
+            nodeAllocator.Reset (
+                new BlockAllocator (
+                    Node::Size (header.entriesPerNode),
+                    nodesPerPage,
+                    allocator));
             root = Node::Alloc (*this, header.rootOffset);
         }
 
@@ -1017,6 +1018,7 @@ namespace thekogans {
                 }
                 if (root->dirty) {
                     Node::Free (root);
+                    root = Node::Alloc (*this, header.rootOffset);
                 }
                 else {
                     root->Reload ();

@@ -157,6 +157,9 @@ namespace thekogans {
                     /// \brief
                     /// Reference to offset we're tracking.
                     FileAllocator::PtrType &offset;
+                    /// \brief
+                    /// true == Offset has changed.
+                    bool dirty;
 
                 public:
                     /// \brief
@@ -165,19 +168,27 @@ namespace thekogans {
                     OffsetTracker (
                             FileAllocator::PtrType &offset_,
                             Object &object) :
-                            offset (offset_) {
+                            offset (offset_),
+                            dirty (false) {
                         Subscriber<ObjectEvents>::Subscribe (object);
+                    }
+
+                    /// \brief
+                    /// Return true if Offset has changed.
+                    /// \return dirty.
+                    inline bool IsDirty () const {
+                        return dirty;
                     }
 
                 protected:
                     // ObjectEvents
                     /// \brief
-                    /// We've just updated the offset.
-                    /// \param[in] fileAllocatorObject \see{FileAllocatorObject}
-                    /// that just updated the offset.
+                    /// Offset changed.
+                    /// \param[in] object \see{Object} whose offset changed.
                     virtual void OnFileAllocatorObjectOffsetChanged (
                             Object::SharedPtr object) noexcept override {
                         offset = object->GetOffset ();
+                        dirty = true;
                     }
 
                     /// \brief
@@ -234,7 +245,9 @@ namespace thekogans {
             /// 1. Heap integrity. Header and Footer provide a no man's
             /// land that BlockInfo uses to make sure the block has not
             /// been corrupted by [over/under]flow writes.
-            /// 2. Ability to navigate the heap in linear order.
+            /// 2. Ability to navigate the heap in linear order. This
+            /// property is used in Free to help coalesce adjecent free
+            /// blocks.
             struct _LIB_THEKOGANS_UTIL_DECL BlockInfo {
             private:
                 /// \brief

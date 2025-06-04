@@ -62,7 +62,6 @@ namespace thekogans {
         /// NOTE: Don't forget to call SecureAllocator::ReservePages to
         /// ensure your process has enough physical pages to satisfy
         /// SecureAllocator::Alloc requests.
-
         struct _LIB_THEKOGANS_UTIL_DECL SecureAllocator :
                 public Allocator,
                 public RefCountedSingleton<SecureAllocator> {
@@ -133,7 +132,6 @@ namespace thekogans {
         /// template containers have an allocator parameter. Use this allocator to have the items
         /// be allocated from a secure heap.
         /// This implementation was borrowed heavily from: https://botan.randombit.net/
-
         template<typename T>
         struct stdSecureAllocator {
         public:
