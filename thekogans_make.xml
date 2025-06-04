@@ -102,7 +102,6 @@
     <cpp_header>$(organization)/$(project_directory)/Constants.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/CPU.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/CRC32.h</cpp_header>
-    <cpp_header>$(organization)/$(project_directory)/Database.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/DefaultAllocator.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/Directory.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/DynamicCreatable.h</cpp_header>
@@ -645,7 +644,6 @@
     <cpp_source>ConsoleLogger.cpp</cpp_source>
     <cpp_source>CPU.cpp</cpp_source>
     <cpp_source>CRC32.cpp</cpp_source>
-    <cpp_source>Database.cpp</cpp_source>
     <cpp_source>DefaultAllocator.cpp</cpp_source>
     <cpp_source>Directory.cpp</cpp_source>
     <cpp_source>DynamicCreatable.cpp</cpp_source>

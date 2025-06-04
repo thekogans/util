@@ -26,7 +26,6 @@
 #include "thekogans/util/Producer.h"
 #include "thekogans/util/Serializer.h"
 #include "thekogans/util/FileAllocator.h"
-#include "thekogans/util/FileAllocatorObject.h"
 #include "thekogans/util/BTree.h"
 #include "thekogans/kcd/IgnoreList.h"
 

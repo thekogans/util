@@ -18,18 +18,80 @@
 #if !defined (__thekogans_kcd_Database_h)
 #define __thekogans_kcd_Database_h
 
+#include <string>
 #include "thekogans/util/Singleton.h"
-#include "thekogans/util/Database.h"
+#include "thekogans/util/BufferedFile.h"
+#include "thekogans/util/FileAllocator.h"
+#include "thekogans/util/FileAllocatorRegistry.h"
+#include "thekogans/util/DefaultAllocator.h"
 #include "thekogans/kcd/Options.h"
 
 namespace thekogans {
-    namespace kcd {
+    namespace kcd  {
 
-        struct Database :
-                public util::Singleton<Database>,
-                public util::Database {
-            Database () :
-                util::Database (Options::Instance ()->dbPath) {}
+        /// \struct Database Database.h thekogans/kcdtabase.h
+        ///
+        /// \brief
+        /// Database puts all the relavant pieces together in to a convenient
+        /// base class.
+        struct Database : public util::Singleton<Database> {
+        protected:
+            /// \brief
+            /// \see{BufferedFile} where the database lives.
+            util::BufferedFile::SharedPtr file;
+            /// \brief
+            /// \see{FileAllocator} for managing random size blocks in the file.
+            util::FileAllocator::SharedPtr fileAllocator;
+            /// \brief
+            /// \see{FileAllocatorRegistry} for system wide name/value pairs.
+            util::FileAllocatorRegistry::SharedPtr registry;
+
+        public:
+            /// \brief
+            /// ctor.
+            /// \param[in] path Path to database file.
+            /// \param[in] secure true == \see{FileAllocator} will zero fill freed blocks.
+            /// \param[in] btreeEntriesPerNode Number of entries per \see{FileAllocator::BTree::Node}.
+            /// \param[in] btreeNodesPerPage Number of \see{FileAllocator::BTree::Node}s that will
+            /// fit in to a \see{BlockAllocator} page.
+            /// \param[in] registryEntriesPerNode Number of entries per \see{BTree::Node}.
+            /// \param[in] registryNodesPerPage Number of \see{BTree::Node}s that will
+            /// fit in to a \see{BlockAllocator} page.
+            /// \param[in] allocator \see{Allocator} for \see{FileAllocator::BTree} and \see{BTree}.
+            Database (
+                const std::string &path = Options::Instance ()->dbPath,
+                bool secure = false,
+                std::size_t btreeEntriesPerNode = util::FileAllocator::DEFAULT_BTREE_ENTRIES_PER_NODE,
+                std::size_t btreeNodesPerPage = util::FileAllocator::DEFAULT_BTREE_NODES_PER_PAGE,
+                std::size_t registryEntriesPerNode =
+                    util::FileAllocatorRegistry::DEFAULT_BTREE_ENTRIES_PER_NODE,
+                std::size_t registryNodesPerPage =
+                    util::FileAllocatorRegistry::DEFAULT_BTREE_NODES_PERP_PAGE,
+                util::Allocator::SharedPtr allocator = util::DefaultAllocator::Instance ());
+            /// \brief
+            /// dtor.
+            virtual ~Database () {}
+
+            /// \brief
+            /// Return the file.
+            /// \return file.
+            inline util::BufferedFile::SharedPtr GetFile () const {
+                return file;
+            };
+
+            /// \brief
+            /// Return the fileAllocator.
+            /// \return fileAllocator.
+            inline util::FileAllocator::SharedPtr GetFileAllocator () const {
+                return fileAllocator;
+            };
+
+            /// \brief
+            /// Return the registry
+            /// \return registry.
+            inline util::FileAllocatorRegistry::SharedPtr GetRegistry () const {
+                return registry;
+            };
         };
 
     } // namespace kcd

@@ -19,6 +19,7 @@
     <cpp_header>$(organization)/$(project_directory)/Version.h</cpp_header>
   </cpp_headers>
   <cpp_sources prefix = "src">
+    <cpp_source>Database.cpp</cpp_source>
     <cpp_source>IgnoreList.cpp</cpp_source>
     <cpp_source>Options.cpp</cpp_source>
     <cpp_source>Root.cpp</cpp_source>

@@ -15,10 +15,10 @@
 // You should have received a copy of the GNU General Public License
 // along with libthekogans_util. If not, see <http://www.gnu.org/licenses/>.
 
-#include "thekogans/util/Database.h"
+#include "thekogans/kcd/Database.h"
 
 namespace thekogans {
-    namespace util {
+    namespace kcd {
 
         Database::Database (
                 const std::string &path,
@@ -27,22 +27,22 @@ namespace thekogans {
                 std::size_t btreeNodesPerPage,
                 std::size_t registryEntriesPerNode,
                 std::size_t registryNodesPerPage,
-                Allocator::SharedPtr allocator) :
+                util::Allocator::SharedPtr allocator) :
                 file (
-                    new SimpleBufferedFile (
-                        HostEndian,
+                    new util::SimpleBufferedFile (
+                        util::HostEndian,
                         path,
-                        SimpleFile::ReadWrite | SimpleFile::Create)) {
-            BufferedFile::Guard guard (file);
+                        util::SimpleFile::ReadWrite | util::SimpleFile::Create)) {
+            util::BufferedFile::Guard guard (file);
             fileAllocator.Reset (
-                new FileAllocator (
+                new util::FileAllocator (
                     file,
                     secure,
                     btreeEntriesPerNode,
                     btreeNodesPerPage,
                     allocator));
             registry.Reset (
-                new FileAllocatorRegistry (
+                new util::FileAllocatorRegistry (
                     fileAllocator,
                     registryEntriesPerNode,
                     registryNodesPerPage,
@@ -50,5 +50,5 @@ namespace thekogans {
             guard.Commit ();
         }
 
-    } // namespace util
+    } // namespace kcd
 } // namespace thekogans
