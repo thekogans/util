@@ -31,10 +31,11 @@ namespace thekogans {
         /// thekogans/util/FileAllocatorRegistry.h
         ///
         /// \brief
-        /// \see{FileAllocatorRegistry} is a \see{BTree}. It provides global ordered,
-        /// associative storage for \see{FileAllocator} clients. Use it to store and
-        /// retrieve practically any value derived from \see{BTree::Value}. The key
-        /// type is any std::string.
+        /// \see{FileAllocatorRegistry} is a \see{BTree}. It's also a
+        /// \see{FileAllocator} root object. It provides global ordered,
+        /// associative storage for \see{FileAllocator} clients. Use it
+        /// to store and retrieve practically any value derived from
+        /// \see{BTree::Value}. The key type is any std::string.
         struct _LIB_THEKOGANS_UTIL_DECL FileAllocatorRegistry :
                 private BTree,
                 public Subscriber<FileAllocator::ObjectEvents> {
@@ -80,14 +81,13 @@ namespace thekogans {
                 BTree::Value::SharedPtr value);
 
         protected:
-            // FileAllocatorObjectEvents
+            // FileAllocator::ObjectEvents
             /// \brief
-            /// We've just updated the offset.
-            /// \param[in] fileAllocatorObject \see{FileAllocatorObject}
-            /// that just updated the offset.
+            /// Offset changed.
+            /// \param[in] object \see{FileAllocator::Object} whose offset changed.
             virtual void OnFileAllocatorObjectOffsetChanged (
-                    FileAllocator::Object::SharedPtr fileAllocatorObject) noexcept override {
-                fileAllocator->SetRootOffset (fileAllocatorObject->GetOffset ());
+                    FileAllocator::Object::SharedPtr object) noexcept override {
+                fileAllocator->SetRootOffset (object->GetOffset ());
             }
 
             /// \brief
