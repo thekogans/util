@@ -32,21 +32,20 @@ namespace thekogans {
             thekogans::util::BufferedFile,
             Serializer::TYPE, RandomSeekSerializer::TYPE)
 
-        BufferedFile::Guard::Guard (BufferedFile::SharedPtr file_) :
+        BufferedFile::Guard::Guard (BufferedFile::SharedPtr file) :
+            guard (file->mutex) {}
+
+        BufferedFile::Transaction::Transaction (BufferedFile::SharedPtr file_) :
                 file (file_),
                 guard (file->mutex) {
             file->BeginTransaction ();
         }
 
-        BufferedFile::Guard::~Guard () {
+        BufferedFile::Transaction::~Transaction () {
             file->AbortTransaction ();
         }
 
-        void BufferedFile::Guard::Checkpoint () {
-            file->DeleteCache ();
-        }
-
-        void BufferedFile::Guard::Commit () {
+        void BufferedFile::Transaction::Commit () {
             file->CommitTransaction ();
         }
 

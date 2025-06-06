@@ -47,21 +47,24 @@ namespace thekogans {
 
             /// \brief
             /// Transaction is beginning. Time to flush the internal cache.
-            /// If your object derives from \see{BufferedFileTransactionParticipant}
+            /// If your object derives from \see{BufferedFile::TransactionParticipant}
             /// all this is done under the hood for you. All you will need
             /// to do is implement Flush.
             virtual void OnBufferedFileTransactionBegin (
                 RefCounted::SharedPtr<BufferedFile> /*file*/) noexcept {}
             /// \brief
-            /// Transaction is committing. See OnTransactionBegin above.
+            /// Transaction is committing. Depending on the phase do what ever
+            /// is appropriate.
+            /// If your object derives from \see{BufferedFile::TransactionParticipant}
+            /// all this is done under the hood for you. All you will need
+            /// to do is implement Allocate (phase 1) and Flush (phase 2).
             /// \param[in] phase Either COMMIT_PHASE_1 or COMMIT_PHASE_2.
             virtual void OnBufferedFileTransactionCommit (
                 RefCounted::SharedPtr<BufferedFile> /*file*/,
                 int phase) noexcept {}
             /// \brief
-            /// Transaction is aborting. Time to reload the object (if its not a
-            /// participant).
-            /// If your object derives from \see{BufferedFileTransactionParticipant}
+            /// Transaction is aborting. Time to reload the object.
+            /// If your object derives from \see{BufferedFile::TransactionParticipant}
             /// all this is done under the hood for you. All you will need
             /// to do is implement Reload.
             virtual void OnBufferedFileTransactionAbort (
@@ -107,10 +110,32 @@ namespace thekogans {
             /// \struct BufferedFile::Guard BufferedFile.h thekogans/util/BufferedFile.h
             ///
             /// \brief
+            /// A very simple scope guard. Will acquire the mutex in the ctor and release
+            /// it in the dtor. Useful in read only situations.
+            struct _LIB_THEKOGANS_UTIL_DECL Guard {
+            private:
+                /// \brief
+                /// This guard will serialize all access to the \see{BufferedFile}.
+                LockGuard<Mutex> guard;
+
+            public:
+                /// \brief
+                /// ctor.
+                /// \param[in] file \see{BufferedFile} to guard.
+                explicit Guard (BufferedFile::SharedPtr file);
+
+                /// \brief
+                /// Guard is neither copy constructable, nor assignable.
+                THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (Guard)
+            };
+
+            /// \struct BufferedFile::Transaction BufferedFile.h thekogans/util/BufferedFile.h
+            ///
+            /// \brief
             /// A very simple transaction scope guard. Will call BeginTransaction in it's
             /// ctor and AbortTransaction in it's dtor. Call Commit before the end of the
             /// scope to commit the transaction.
-            struct _LIB_THEKOGANS_UTIL_DECL Guard {
+            struct _LIB_THEKOGANS_UTIL_DECL Transaction {
             private:
                 /// \see{BufferedFile} we're guarding.
                 BufferedFile::SharedPtr file;
@@ -122,22 +147,18 @@ namespace thekogans {
                 /// \brief
                 /// ctor.
                 /// \param[in] file_ \see{BufferedFile} to transact.
-                explicit Guard (BufferedFile::SharedPtr file_);
+                explicit Transaction (BufferedFile::SharedPtr file_);
                 /// \brief
                 /// dtor.
-                ~Guard ();
-
-                /// \brief
-                /// Flush the dirty pages to log and clear the cache.
-                void Checkpoint ();
+                ~Transaction ();
 
                 /// \brief
                 /// Commit the transaction before the dtor aborts it.
                 void Commit ();
 
                 /// \brief
-                /// Guard is neither copy constructable, nor assignable.
-                THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (Guard)
+                /// Transaction is neither copy constructable, nor assignable.
+                THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (Transaction)
             };
 
             /// \struct BufferedFile::TransactionParticipant BufferedFile.h
@@ -234,7 +255,7 @@ namespace thekogans {
             /// Combination of the above flags.
             Flags32 flags;
             /// \brief
-            /// For use by \see{Guard}
+            /// For use by \see{Guard} and \see{Transaction}
             Mutex mutex;
 
             /// \struct BufferedFile::Buffer BufferedFile.h thekogans/util/BufferedFile.h
@@ -644,7 +665,7 @@ namespace thekogans {
             virtual void UnlockRegion (const Region & /*region*/) override {}
 
             /// \brief
-            /// Delete the cache.
+            /// Flush dirty pages and delete the cache.
             void DeleteCache ();
 
         private:

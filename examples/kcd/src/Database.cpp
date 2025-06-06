@@ -33,7 +33,7 @@ namespace thekogans {
                         util::HostEndian,
                         path,
                         util::SimpleFile::ReadWrite | util::SimpleFile::Create)) {
-            util::BufferedFile::Guard guard (file);
+            util::BufferedFile::Transaction transaction (file);
             fileAllocator.Reset (
                 new util::FileAllocator (
                     file,
@@ -47,7 +47,7 @@ namespace thekogans {
                     registryEntriesPerNode,
                     registryNodesPerPage,
                     allocator));
-            guard.Commit ();
+            transaction.Commit ();
         }
 
     } // namespace kcd
