@@ -18,10 +18,8 @@
 #include <cassert>
 #include <cstring>
 #include <algorithm>
-#if defined (THEKOGANS_UTIL_HAVE_ZLIB)
-    #include <vector>
-    #include <zlib.h>
-#endif // defined (THEKOGANS_UTIL_HAVE_ZLIB)
+#include <vector>
+#include <zlib.h>
 #include "thekogans/util/Environment.h"
 #if defined (TOOLCHAIN_OS_Windows)
     #include "thekogans/util/os/windows/WindowsUtils.h"
@@ -265,7 +263,6 @@ namespace thekogans {
             return advance;
         }
 
-    #if defined (THEKOGANS_UTIL_HAVE_ZLIB)
         namespace {
             struct OutBuffer {
                 Allocator::SharedPtr allocator;
@@ -416,7 +413,6 @@ namespace thekogans {
             }
             return nullptr;
         }
-    #endif // defined (THEKOGANS_UTIL_HAVE_ZLIB)
 
         Buffer::SharedPtr Buffer::FromHexBuffer (
                 Endianness endianness,
@@ -509,7 +505,6 @@ namespace thekogans {
             return Buffer::Subset (offset, count, SecureAllocator::Instance ());
         }
 
-    #if defined (THEKOGANS_UTIL_HAVE_ZLIB)
         Buffer::SharedPtr SecureBuffer::Deflate (Allocator::SharedPtr /*allocator*/) const {
             if (GetDataAvailableForReading () != 0) {
                 OutBuffer outBuffer (SecureAllocator::Instance ());
@@ -542,7 +537,6 @@ namespace thekogans {
             }
             return SharedPtr ();
         }
-    #endif // defined (THEKOGANS_UTIL_HAVE_ZLIB)
 
         _LIB_THEKOGANS_UTIL_DECL Serializer & _LIB_THEKOGANS_UTIL_API operator << (
                 Serializer &serializer,
