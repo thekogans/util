@@ -632,22 +632,22 @@
     <cpp_header>boost/utility/detail/in_place_factory_prefix.hpp</cpp_header>
     <cpp_header>boost/utility/detail/result_of_iterate.hpp</cpp_header>
   </cpp_headers>
-  <c_sources prefix = "src/3rdparty">
-    <c_source>zlib/adler32.c</c_source>
-    <c_source>zlib/compress.c</c_source>
-    <c_source>zlib/crc32.c</c_source>
-    <c_source>zlib/deflate.c</c_source>
-    <c_source>zlib/gzclose.c</c_source>
-    <c_source>zlib/gzlib.c</c_source>
-    <c_source>zlib/gzread.c</c_source>
-    <c_source>zlib/gzwrite.c</c_source>
-    <c_source>zlib/infback.c</c_source>
-    <c_source>zlib/inffast.c</c_source>
-    <c_source>zlib/inflate.c</c_source>
-    <c_source>zlib/inftrees.c</c_source>
-    <c_source>zlib/trees.c</c_source>
-    <c_source>zlib/uncompr.c</c_source>
-    <c_source>zlib/zutil.c</c_source>
+  <c_sources prefix = "src/3rdparty/zlib">
+    <c_source>adler32.c</c_source>
+    <c_source>compress.c</c_source>
+    <c_source>crc32.c</c_source>
+    <c_source>deflate.c</c_source>
+    <c_source>gzclose.c</c_source>
+    <c_source>gzlib.c</c_source>
+    <c_source>gzread.c</c_source>
+    <c_source>gzwrite.c</c_source>
+    <c_source>infback.c</c_source>
+    <c_source>inffast.c</c_source>
+    <c_source>inflate.c</c_source>
+    <c_source>inftrees.c</c_source>
+    <c_source>trees.c</c_source>
+    <c_source>uncompr.c</c_source>
+    <c_source>zutil.c</c_source>
   </c_sources>
   <cpp_sources prefix = "src">
     <cpp_source>AlignedAllocator.cpp</cpp_source>
