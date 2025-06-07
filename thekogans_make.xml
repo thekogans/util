@@ -7,9 +7,6 @@
                 guid = "e541acd69d9d020f7eac98d5bf9e0d7a"
                 schema_version = "2">
   <features>
-    <!-- Xerces is still fully supported but is very seldom used.
-         Uncomment the following feature if you need it. -->
-    <!-- <feature>THEKOGANS_UTIL_HAVE_XERCES</feature> -->
     <if condition = "$(TOOLCHAIN_OS) == 'Linux'">
       <feature>THEKOGANS_UTIL_HAVE_XLIB</feature>
     </if>
@@ -27,10 +24,6 @@
     <feature>THEKOGANS_UTIL_FILE_ALLOCATOR_BLOCK_INFO_USE_MAGIC</feature>
   </features>
   <dependencies>
-    <if condition = "$(have_feature -f:THEKOGANS_UTIL_HAVE_XERCES)">
-      <toolchain organization = "thekogans"
-                 name = "xerces"/>
-    </if>
     <if condition = "$(have_feature -f:THEKOGANS_UTIL_HAVE_TESTS)">
       <toolchain organization = "thekogans"
                  name = "CppUnitXLite"/>
@@ -204,9 +197,6 @@
     <cpp_header>$(organization)/$(project_directory)/Vectorizer.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/Version.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/XMLUtils.h</cpp_header>
-    <if condition = "$(have_feature -f:THEKOGANS_UTIL_HAVE_XERCES)">
-      <cpp_header>$(organization)/$(project_directory)/XercesUtils.h</cpp_header>
-    </if>
     <cpp_header>$(organization)/$(project_directory)/os/RunLoop.h</cpp_header>
     <choose>
       <when condition = "$(TOOLCHAIN_OS) == 'Windows'">
@@ -746,9 +736,6 @@
     <cpp_source>Vectorizer.cpp</cpp_source>
     <cpp_source>Version.cpp</cpp_source>
     <cpp_source>XMLUtils.cpp</cpp_source>
-    <if condition = "$(have_feature -f:THEKOGANS_UTIL_HAVE_XERCES)">
-      <cpp_source>XercesUtils.cpp</cpp_source>
-    </if>
     <choose>
       <when condition = "$(TOOLCHAIN_OS) == 'Windows'">
         <cpp_source>os/windows/HGLOBALAllocator.cpp</cpp_source>>
