@@ -82,7 +82,8 @@ namespace thekogans {
 
         struct _LIB_THEKOGANS_UTIL_DECL Buffer : public Serializer {
             /// \brief
-            /// Declare \see{RefCounted} pointers.
+            /// Buffer participates in the \see{DynamicCreatable}
+            /// dynamic discovery and creation.
             THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE (Buffer)
 
             /// \brief

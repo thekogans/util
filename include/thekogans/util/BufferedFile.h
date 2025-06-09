@@ -100,13 +100,6 @@ namespace thekogans {
             /// dynamic discovery and creation.
             THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE (BufferedFile)
 
-            /// \brief
-            /// Commit phase 1.
-            static const int COMMIT_PHASE_1 = 1;
-            /// \brief
-            /// Commit phase 2.
-            static const int COMMIT_PHASE_2 = 2;
-
             /// \struct BufferedFile::Guard BufferedFile.h thekogans/util/BufferedFile.h
             ///
             /// \brief
@@ -128,6 +121,13 @@ namespace thekogans {
                 /// Guard is neither copy constructable, nor assignable.
                 THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (Guard)
             };
+
+            /// \brief
+            /// Commit phase 1.
+            static const int COMMIT_PHASE_1 = 1;
+            /// \brief
+            /// Commit phase 2.
+            static const int COMMIT_PHASE_2 = 2;
 
             /// \struct BufferedFile::Transaction BufferedFile.h thekogans/util/BufferedFile.h
             ///

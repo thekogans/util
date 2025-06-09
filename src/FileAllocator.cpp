@@ -27,7 +27,7 @@ namespace thekogans {
             ui64 blockSize = 0;
             if (offset != 0) {
                 BlockInfo block (offset);
-                fileAllocator->GetBlockInfo (block);
+                block.Read (*file);
                 blockSize = block.GetSize ();
             }
             std::size_t size = Size ();
@@ -275,30 +275,6 @@ namespace thekogans {
                 btreeEntriesPerNode,
                 btreeNodesPerPage,
                 allocator));
-        }
-
-        void FileAllocator::GetBlockInfo (BlockInfo &block) {
-            block.Read (*file);
-        }
-
-        bool FileAllocator::GetPrevBlockInfo (
-                const BlockInfo &block,
-                BlockInfo &prev) {
-            if (!block.IsFirst (header.heapStart)) {
-                block.Prev (*file, prev);
-                return true;
-            }
-            return false;
-        }
-
-        bool FileAllocator::GetNextBlockInfo (
-                const BlockInfo &block,
-                BlockInfo &next) {
-            if (!block.IsLast (file->GetSize ())) {
-                block.Next (*file, next);
-                return true;
-            }
-            return false;
         }
 
         FileAllocator::PtrType FileAllocator::Alloc (std::size_t size) {

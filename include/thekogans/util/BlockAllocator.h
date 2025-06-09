@@ -39,6 +39,7 @@ namespace thekogans {
 
         struct _LIB_THEKOGANS_UTIL_DECL BlockAllocator : public Allocator {
             /// \brief
+            /// Declare \see{RefCounted} pointers.
             THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (BlockAllocator)
             /// \brief
             /// Declare \see{DynamicCreatable} boilerplate.

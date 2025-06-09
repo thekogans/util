@@ -812,33 +812,8 @@ namespace thekogans {
             /// Return the offset of the first block in the heap.
             /// \return Offset of the first block in the heap.
             inline PtrType GetFirstBlockOffset () const {
-                // header.heapStart is read only after ctor so no need to lock.
                 return header.heapStart + BlockInfo::HEADER_SIZE;
             }
-
-            /// \brief
-            /// Given a properly constructed \see{BlockInfo}, return its information.
-            /// \param[in, out] block \see{BlockInfo} with properly initialized offset.
-            /// On return will contain the block info.
-            void GetBlockInfo (BlockInfo &block);
-            /// \brief
-            /// Given a properly initialized block (offset), get the previous one.
-            /// \param[in] block BlockInfo whose previous BlockInfo to return.
-            /// \param[out] prev Where to return the previous BlockInfo.
-            /// \return true == prev contains the previous block info.
-            /// false == block is first in the heap.
-            bool GetPrevBlockInfo (
-                const BlockInfo &block,
-                BlockInfo &prev);
-            /// \brief
-            /// Given a properly initialized block (offset), get the next one.
-            /// \param[in] block BlockInfo whose next BlockInfo to return.
-            /// \param[out] next Where to return the next BlockInfo.
-            /// \return true == next contains the next block info.
-            /// false == block is last in the heap.
-            bool GetNextBlockInfo (
-                const BlockInfo &block,
-                BlockInfo &next);
 
             /// \brief
             /// Alloc a block.
@@ -861,10 +836,10 @@ namespace thekogans {
             /// The header is the first thing in the file.
             virtual void Allocate () override {}
             /// \brief
-            /// Flush the header and btree to file.
+            /// Flush the header to file.
             virtual void Flush () override;
             /// \brief
-            /// Reload the header and btree from file.
+            /// Reload the header from file.
             virtual void Reload () override;
 
         private:

@@ -375,7 +375,7 @@ namespace thekogans {
                     ui64 blockSize = 0;
                     if (keyValueOffset != 0) {
                         FileAllocator::BlockInfo block (keyValueOffset);
-                        btree.fileAllocator->GetBlockInfo (block);
+                        block.Read (*btree.file);
                         blockSize = block.GetSize ();
                     }
                     // If existing block size is less than what we need,
