@@ -124,6 +124,15 @@ namespace thekogans {
                     : "a" (function), "c" (subfunction));
             }
         #endif // defined (TOOLCHAIN_OS_Windows)
+        #elif defined (TOOLCHAIN_ARCH_arm32) || defined (TOOLCHAIN_ARCH_arm64)
+            bool HaveNeon () {
+            #if defined (__ARM_NEON__) || defined (__aarch64__) ||\
+                defined (_M_ARM) || defined (_M_ARM64)
+                return true;
+            #else
+                return false;
+            #endif
+            }
         #elif defined (TOOLCHAIN_ARCH_ppc32) || defined (TOOLCHAIN_ARCH_ppc64)
         #if defined (TOOLCHAIN_OS_Linux)
             jmp_buf jmpbuf;
@@ -245,6 +254,9 @@ namespace thekogans {
                 }
             }
         }
+    #elif defined (TOOLCHAIN_ARCH_arm32) || defined (TOOLCHAIN_ARCH_arm64)
+        CPU::CPU () :
+            isNeon (HaveNeon ()) {}
     #elif defined (TOOLCHAIN_ARCH_ppc32) || defined (TOOLCHAIN_ARCH_ppc64)
         CPU::CPU () :
             isAltiVec (HaveAltiVec ()) {}
@@ -409,8 +421,10 @@ namespace thekogans {
             Supported ("XOP", XOP ());
             Supported ("XSAVE", XSAVE ());
             stream << "L1 cache line size: " << L1CacheLineSize () << std::endl;
+        #elif defined (TOOLCHAIN_ARCH_arm32) || defined (TOOLCHAIN_ARCH_arm64)
+            Supported ("Neon", IsNeon ());
         #elif defined (TOOLCHAIN_ARCH_ppc32) || defined (TOOLCHAIN_ARCH_ppc64)
-            Supported ("AltiVec", AltiVec ());
+            Supported ("AltiVec", IsAltiVec ());
         #endif // defined (TOOLCHAIN_ARCH_i386) || defined (TOOLCHAIN_ARCH_x86_64)
         }
 

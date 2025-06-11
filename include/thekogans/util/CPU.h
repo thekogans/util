@@ -72,6 +72,10 @@ namespace thekogans {
             /// \brief
             /// cpuid function 81 edx register value.
             Flags32 f_81_EDX;
+        #elif defined (TOOLCHAIN_ARCH_arm32) || defined (TOOLCHAIN_ARCH_arm64)
+            /// \brief
+            /// true == Neon is supported.
+            bool isNeon;
         #elif defined (TOOLCHAIN_ARCH_ppc32) || defined (TOOLCHAIN_ARCH_ppc64)
             /// \brief
             /// true == AltiVec is supported.
@@ -440,11 +444,18 @@ namespace thekogans {
             inline bool _3DNOW () const {
                 return isAMD && f_81_EDX.Test (1 << 31);
             }
+        #elif defined (TOOLCHAIN_ARCH_arm32) || defined (TOOLCHAIN_ARCH_arm64)
+            /// \brief
+            /// Return true if Neon is supported.
+            /// \return true == Neon is supported.
+            inline bool IsNeon () const {
+                return isNeon;
+            }
         #elif defined (TOOLCHAIN_ARCH_ppc32) || defined (TOOLCHAIN_ARCH_ppc64)
             /// \brief
             /// Return true if AltiVec is supported.
             /// \return true == AltiVec is supported.
-            inline bool AltiVec () const {
+            inline bool IsAltiVec () const {
                 return isAltiVec;
             }
         #endif // defined (TOOLCHAIN_ARCH_i386) || defined (TOOLCHAIN_ARCH_x86_64)

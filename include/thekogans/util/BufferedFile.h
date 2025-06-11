@@ -84,7 +84,7 @@ namespace thekogans {
         /// reason. You paid good money for it. BufferedFile will use as much
         /// as you have (give it). By default, BufferedFile uses 1MB tiles (\see{Buffer}).
         /// It will load and hold available as much of the file as you have room.
-        /// That's where \see{Flush}, \see{CommitTransaction} and \see{DeleteCache}
+        /// That's where \see{Flush}, \see{Transaction::Commit} and \see{DeleteCache}
         /// come in. As you eventually start to run out of room (even with 6TB it's
         /// a drop in the bucket compared to 64 bit address space), call \see{Flush}
         /// to commit the changes to disk followed by a call to \see{DeleteCache} to
@@ -92,6 +92,21 @@ namespace thekogans {
         /// fine for 'small' (under 1MB) files, it's strength lies with it's ability
         /// to handle multi GB or even TB files with ease. It's hierarchical address
         /// space partitioning allows for very efficient, sparse file handling.
+        /// VERY IMPORTANT: BufferedFile is NOT thread safe. I felt introducing
+        /// a lock with every file access would be very costly performance wise.
+        /// Instead, BufferedFile exposes two types of guards; a read only guard
+        /// (\see{BufferedFile::Guard}) and a read/write guard (\see{BufferedFile::Transaction}).
+        /// Use the first to gain exclusive read access to the file's data. Use
+        /// the later for exclusive modify access. This design choice has the
+        /// following advantages; 1. Use the lock to protect a set of related
+        /// read/write operations instead of the file locking with every call
+        /// and 2. Having a thread complete all it's reads and writes without
+        /// interuption is faster than having different threads contend for the
+        /// lock as there is no context switching and less disk head movement.
+        /// This also means that the various threads sharing the same BufferedFile
+        /// have to consciously cooperate with eachother (by using the provided
+        /// guards). On the other hand, if you only have one thread accessing the
+        /// file, there's nothing to do and no need to pay the cost of a lock.
         struct _LIB_THEKOGANS_UTIL_DECL BufferedFile :
                 public File,
                 public Producer<BufferedFileEvents> {
@@ -694,6 +709,9 @@ namespace thekogans {
             bool BeginTransaction ();
             /// \brief
             /// Commit the current transaction.
+            /// BufferedFile uses two phase commit. While the two phases can mean
+            /// anything you want, \see{TransactionParticipant} formalizes them in
+            /// to an allocation phase (phase 1) and a flush phase (phase 2).
             bool CommitTransaction ();
             /// \brief
             /// Abort the current transaction.

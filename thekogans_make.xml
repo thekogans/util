@@ -10,7 +10,6 @@
     <if condition = "$(TOOLCHAIN_OS) == 'Linux'">
       <feature>THEKOGANS_UTIL_HAVE_XLIB</feature>
     </if>
-    <feature>THEKOGANS_UTIL_HAVE_TESTS</feature>
     <if condition = "$(TOOLCHAIN_OS) != 'Windows'">
       <feature>THEKOGANS_UTIL_HAVE_MMAP</feature>
     </if>
@@ -24,10 +23,6 @@
     <feature>THEKOGANS_UTIL_FILE_ALLOCATOR_BLOCK_INFO_USE_MAGIC</feature>
   </features>
   <dependencies>
-    <if condition = "$(have_feature -f:THEKOGANS_UTIL_HAVE_TESTS)">
-      <toolchain organization = "thekogans"
-                 name = "CppUnitXLite"/>
-    </if>
     <choose>
       <when condition = "$(TOOLCHAIN_OS) == 'Windows'">
         <library>Ws2_32.lib</library>
@@ -631,6 +626,11 @@
     <cpp_header>boost/utility/detail/in_place_factory_prefix.hpp</cpp_header>
     <cpp_header>boost/utility/detail/result_of_iterate.hpp</cpp_header>
   </cpp_headers>
+  <cpp_headers prefix = "include/3rdparty/private"
+               install = "no">
+    <cpp_header>CppUnitXLite/CppUnitXLite.hpp</cpp_header>
+    <cpp_header>CppUnitXLite/CppUnitXLite.cpp</cpp_header>
+  </cpp_headers>
   <c_sources prefix = "src/3rdparty/zlib">
     <c_source>adler32.c</c_source>
     <c_source>compress.c</c_source>
@@ -769,17 +769,15 @@
       <objective_cpp_source>os/osx/OSXUtils.mm</objective_cpp_source>
     </objective_cpp_sources>
   </if>
-  <if condition = "$(have_feature -f:THEKOGANS_UTIL_HAVE_TESTS)">
-    <cpp_tests prefix = "tests">
-      <!--
-      <cpp_test>test_RefCounted.cpp</cpp_test>
-      <cpp_test>test_SharedAllocator.cpp</cpp_test>
-      <cpp_test>test_SpinLock.cpp</cpp_test>
-      <cpp_test>test_SpinRWLock.cpp</cpp_test>
-      <cpp_test>test_Version.cpp</cpp_test>
-      -->
-    </cpp_tests>
-  </if>
+  <cpp_tests prefix = "tests">
+    <!--
+        <cpp_test>test_RefCounted.cpp</cpp_test>
+        <cpp_test>test_SharedAllocator.cpp</cpp_test>
+        <cpp_test>test_SpinLock.cpp</cpp_test>
+        <cpp_test>test_SpinRWLock.cpp</cpp_test>
+    -->
+    <cpp_test>test_Version.cpp</cpp_test>
+  </cpp_tests>
   <resources prefix = "resources"
              install = "yes">
     <resource>mime_types.txt</resource>

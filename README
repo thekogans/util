@@ -15,6 +15,11 @@ the results are converted to UTF8 before being returned to the caller.
 libthekogans_util is completely _UNICODE ambivalent (it will behave
 the same whether the macro is defined or not).
 
+libthekogans_util is designed to have as few 3rd party dependencies
+as possible. It internalizes a few components from boost, pugixml and
+zlib and does not depend on anything other than a few platform specific
+libraries (see bottom of this README).
+
 VERY IMPORTANT: libthekogans_util DOES NOT return error codes. In
 the interest of promoting safe and secure coding habits libthekogans_util
 throws exceptions (Exception.h). If you choose to use libthekogans_util
@@ -45,7 +50,7 @@ Here is a complete feature list:
       being unwound.
 
     - A high resolution timer (HRTimer.h, HRTimerMgr.h) which can be
-      used to help with code profiling.
+      used to help with code timing and profiling.
 
     - A millisecond resolution periodic timer (Timer.h) designed to be
       used where accuracy is not paramount (idle processing…).
@@ -117,8 +122,7 @@ Here is a complete feature list:
       Buffer.h, FixedBuffer.h, File.h). It’s main purpose is to provide
       serialization/deserialization services for binary protocols.
 
-    - A set of utilities to help with processing xml (XercesUtils.h,
-      XMLUtils.h)
+    - A set of utilities to help with processing xml (XMLUtils.h).
 
     - A collection of string utilities (StringUtils.h) used to hide
       platform inconsistencies and provide useful cross-platform
@@ -155,7 +159,5 @@ IOKit.
 
 libthekogans_util has the following optional dependencies:
 
-if -DTHEKOGANS_UTIL_HAVE_XERCES is specified, xerces.
-if -DTHEKOGANS_UTIL_HAVE_ZLIB is specified, zlib.
 if -DTHEKOGANS_UTIL_HAVE_TESTS is specified, CppUnitXLite.
 Linux: if -DTHEKOGANS_UTIL_HAVE_XLIB is specified, X11.

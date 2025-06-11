@@ -31,7 +31,7 @@ namespace thekogans {
                 Allocator::SharedPtr allocator_) :
                 alignment (alignment_),
                 allocator (allocator_) {
-            if (OneBitCount (alignment) != 1 || allocator == nullptr) {
+            if (!IsPowerOf2 (alignment) || allocator == nullptr) {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
                     THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
             }
@@ -76,6 +76,11 @@ namespace thekogans {
                 }
             }
             return ptr;
+        }
+
+        _LIB_THEKOGANS_UTIL_DECL bool _LIB_THEKOGANS_UTIL_API IsPowerOf2 (
+                std::size_t value) {
+            return value > 0 && (value & (value - 1)) == 0;
         }
 
         _LIB_THEKOGANS_UTIL_DECL std::size_t _LIB_THEKOGANS_UTIL_API ZeroBitCount (

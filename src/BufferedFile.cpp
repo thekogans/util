@@ -354,8 +354,7 @@ namespace thekogans {
                         SimpleFile log (
                             endianness,
                             logPath,
-                            SimpleFile::ReadWrite |
-                            SimpleFile::Create);
+                            SimpleFile::ReadWrite | SimpleFile::Create);
                         ui32 isClean = 0;
                         ui64 count = 0;
                         if (log.GetSize () > 0) {

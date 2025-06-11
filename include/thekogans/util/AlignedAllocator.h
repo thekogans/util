@@ -140,6 +140,12 @@ namespace thekogans {
         };
 
         /// \brief
+        /// Return true if the value is a power of 2.
+        /// \param[in] value Value to examine.
+        /// \return true == the value is a power of 2.
+        _LIB_THEKOGANS_UTIL_DECL bool _LIB_THEKOGANS_UTIL_API IsPowerOf2 (
+            std::size_t value);
+        /// \brief
         /// Return the count of '0' bits in value.
         /// \param[in] value Value to examine.
         /// \return Number of 0 bits in value.
