@@ -159,5 +159,4 @@ IOKit.
 
 libthekogans_util has the following optional dependencies:
 
-if -DTHEKOGANS_UTIL_HAVE_TESTS is specified, CppUnitXLite.
 Linux: if -DTHEKOGANS_UTIL_HAVE_XLIB is specified, X11.
