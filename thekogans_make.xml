@@ -10,14 +10,12 @@
     <if condition = "$(TOOLCHAIN_OS) == 'Linux'">
       <feature>THEKOGANS_UTIL_HAVE_XLIB</feature>
     </if>
+    <if condition = "$(TOOLCHAIN_OS) == 'Windows'">
+      <feature>THEKOGANS_UTIL_HAVE_WTS</feature>
+    </if>
     <if condition = "$(TOOLCHAIN_OS) != 'Windows'">
       <feature>THEKOGANS_UTIL_HAVE_MMAP</feature>
     </if>
-    <!-- Uncomment this feature to use Windows WTS functionality.
-        <if condition = "$(TOOLCHAIN_OS) == 'Windows'">
-          <feature>THEKOGANS_UTIL_HAVE_WTS</feature>
-        </if>
-    -->
     <!-- If you don't know what this is, it's safer to leave it on.
          See FileAllocator for explanation. -->
     <feature>THEKOGANS_UTIL_FILE_ALLOCATOR_BLOCK_INFO_USE_MAGIC</feature>
@@ -26,14 +24,12 @@
     <choose>
       <when condition = "$(TOOLCHAIN_OS) == 'Windows'">
         <library>Ws2_32.lib</library>
-        <library>Iphlpapi.lib</library>
-        <library>mpr.lib</library>
-        <library>Wtsapi32.lib</library>
-        <if condition = "!$(have_feature -f:THEKOGANS_UTIL_HAVE_WTS)">
-          <library>Advapi32.lib</library>
-        </if>
         <library>ole32.lib</library>
         <library>oleaut32.lib</library>
+        <if condition = "$(have_feature -f:THEKOGANS_UTIL_HAVE_WTS)">
+          <library>Wtsapi32.lib</library>
+          <library>Advapi32.lib</library>
+        </if>
       </when>
       <when condition = "$(TOOLCHAIN_OS) == 'Linux'">
         <library>pthread</library>
