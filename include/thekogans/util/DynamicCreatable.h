@@ -262,7 +262,8 @@ namespace thekogans {
         public:\
             static const thekogans::util::DynamicCreatable::TypeMapType &GetTypes ();\
             static bool IsType (const char *type);\
-            static thekogans::util::DynamicCreatable::FactoryType GetTypeFactory (const char *type);\
+            static thekogans::util::DynamicCreatable::FactoryType GetTypeFactory (\
+                const char *type);\
             static _T::SharedPtr CreateType (\
                 const char *type,\
                 thekogans::util::DynamicCreatable::Parameters::SharedPtr parameters = nullptr);
@@ -276,7 +277,7 @@ namespace thekogans {
         #define THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_BASE_GET_TYPES(_T)\
             const thekogans::util::DynamicCreatable::TypeMapType &_T::GetTypes () {\
                 static const thekogans::util::DynamicCreatable::TypeMapType &types =\
-                    (*thekogans::util::DynamicCreatable::BaseMap::Instance ())[_T::TYPE];\
+                    thekogans::util::DynamicCreatable::GetBaseMap ()[_T::TYPE];\
                 return types;\
             }
 
@@ -292,7 +293,8 @@ namespace thekogans {
         /// you know you're going to be creating the same type over and over. Saves
         /// an unordered_map lookup. This macro is private.
         #define THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_BASE_GET_TYPE_FACTORY(_T)\
-            thekogans::util::DynamicCreatable::FactoryType _T::GetTypeFactory (const char *type) {\
+            thekogans::util::DynamicCreatable::FactoryType _T::GetTypeFactory (\
+                    const char *type) {\
                 if (type != nullptr) {\
                     thekogans::util::DynamicCreatable::TypeMapType::const_iterator it =\
                         GetTypes ().find (type);\
@@ -533,10 +535,6 @@ namespace thekogans {
             /// Maps base type name to it's derived types.
             using BaseMapType = std::unordered_map<
                 const char *, TypeMapType, CharPtrHash, CharPtrEqual>;
-            /// \brief
-            /// The one and only base to derived type map. You can access it like this;
-            /// thekogans::util::DynamicCreatable::BaseMap::Instance ()->.
-            using BaseMap = Singleton<BaseMapType>;
 
             /// \brief
             /// Declare DynamicCreatable base functions.
@@ -577,6 +575,11 @@ namespace thekogans {
         #endif // defined (THEKOGANS_UTIL_TYPE_Shared)
 
             /// \brief
+            /// Return the reference to the base map.
+            /// \return Reference to  the base map.
+            static BaseMapType &GetBaseMap ();
+
+            /// \brief
             /// Return true if base is found in the BASES list.
             /// NOTE: Unlike 'true' polymorphism this method will
             /// return true only if you setup a relationship between
@@ -614,7 +617,7 @@ namespace thekogans {
             void _T::StaticInit () {\
                 const char * const *bases = _T::BASES;\
                 while (*bases != nullptr) {\
-                    (*thekogans::util::DynamicCreatable::BaseMap::Instance ())[\
+                    thekogans::util::DynamicCreatable::GetBaseMap ()[\
                         *bases++][_T::TYPE] = _T::Create;\
                 }\
             }

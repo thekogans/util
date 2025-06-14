@@ -85,6 +85,13 @@ namespace thekogans {
         }
     #endif // defined (THEKOGANS_UTIL_TYPE_Static)
 
+        void BTree::Iterator::Clear () {
+            // Leave the prefix in case they want to reuse the iterator.
+            parents.clear ();
+            node = NodeIndex (nullptr, 0);
+            finished = true;
+        }
+
         bool BTree::Iterator::Next () {
             if (!finished) {
                 finished = true;

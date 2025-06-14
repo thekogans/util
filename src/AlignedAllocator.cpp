@@ -89,7 +89,7 @@ namespace thekogans {
                 4, 3, 3, 2, 3, 2, 2, 1, 3, 2, 2, 1, 2, 1, 1, 0
             };
             std::size_t count = 0;
-            for (std::size_t shift = sizeof (std::size_t) * 8 - 4,
+            for (std::size_t shift = SIZE_T_SIZE * 8 - 4,
                      mask = (std::size_t)0xf << shift; mask != 0; mask >>= 4, shift -= 4) {
                 count += nibleZeroBitCount[(value & mask) >> shift];
             }
@@ -102,7 +102,7 @@ namespace thekogans {
                 0, 1, 1, 2, 1, 2, 2, 3, 1, 2, 2, 3, 2, 3, 3, 4
             };
             std::size_t count = 0;
-            for (std::size_t shift = sizeof (std::size_t) * 8 - 4,
+            for (std::size_t shift = SIZE_T_SIZE * 8 - 4,
                      mask = (std::size_t)0xf << shift; mask != 0; mask >>= 4, shift -= 4) {
                 count += nibleOneBitCount[(value & mask) >> shift];
             }
@@ -114,7 +114,7 @@ namespace thekogans {
             static const std::size_t nibleHighBit[] = {
                 0, 1, 2, 2, 4, 4, 4, 4, 8, 8, 8, 8, 8, 8, 8, 8
             };
-            for (std::size_t shift = sizeof (std::size_t) * 8 - 4,
+            for (std::size_t shift = SIZE_T_SIZE * 8 - 4,
                      mask = (std::size_t)0xf << shift; mask != 0; mask >>= 4, shift -= 4) {
                 std::size_t highBit = nibleHighBit[(value & mask) >> shift];
                 if (highBit != 0) {

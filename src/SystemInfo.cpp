@@ -263,7 +263,7 @@ namespace thekogans {
                         {
                             SHA2 sha2;
                             sha2.Init (SHA2::DIGEST_SIZE_256);
-                            sha2.Update (&computerName[0], size * sizeof (wchar_t));
+                            sha2.Update (&computerName[0], size * WCHAR_T_SIZE);
                             sha2.Update (&serialNum, sizeof (serialNum));
                             sha2.Final (digest);
                         }

@@ -277,12 +277,7 @@ namespace thekogans {
 
                 /// \brief
                 /// Clear the internal state and reset the iterator.
-                inline void Clear () {
-                    // Leave the prefix in case they want to reuse the iterator.
-                    parents.clear ();
-                    node = NodeIndex (nullptr, 0);
-                    finished = true;
-                }
+                void Clear ();
 
                 /// \brief
                 /// Step to the next entry in the range.

@@ -51,7 +51,9 @@ namespace thekogans {
         /// object itself take out a reference in it's ctor. This way the reference
         /// count will never reach 0 and the object will not try to delete itself.
         /// For \see{Singleton}s, I provide \see{RefCountedInstanceCreator} and
-        /// \see{RefCountedInstanceDestroyer} that will do just that.
+        /// \see{RefCountedInstanceDestroyer} that will do just that. There's
+        /// even a convenient \see{RefCountedSingleton} that puts all the pieces
+        /// together.
         ///
         /// VERY IMPORTANT: Please read the question and understand the accepted
         /// answer in the following;
@@ -605,15 +607,17 @@ namespace thekogans {
             /// Default method of suicide. Derived classes can
             /// override this method to provide whatever means
             /// are appropriate for them.
-            /// IMPORTANT: If you're using SharedPtr (above) with stack
-            /// or static RefCounted, overriding this method is
-            /// compulsory, as they were never 'allocated' to
-            /// begin with. In that case consider using \see{Singleton}
-            /// with \see{RefCountedInstanceCreator} and \see{RefCountedInstanceDestroyer}.
+            /// IMPORTANT: If you're using SharedPtr (above) with
+            /// stack or static RefCounted, overriding this method
+            /// is compulsory, as they were never 'allocated' to
+            /// begin with. In that case consider using a
+            /// \see{RefCountedSingleton}.
             virtual void Harakiri () {
                 delete this;
             }
 
+            /// \brief
+            /// RefCounted is neither copy constructable, nor assignable.
             THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (RefCounted)
         };
 

@@ -24,6 +24,8 @@
 #include "thekogans/util/Flags.h"
 #include "thekogans/util/Mutex.h"
 #include "thekogans/util/LockGuard.h"
+#include "thekogans/util/Exception.h"
+#include "thekogans/util/LoggerMgr.h"
 #include "thekogans/util/File.h"
 #include "thekogans/util/Subscriber.h"
 #include "thekogans/util/Producer.h"
@@ -221,7 +223,10 @@ namespace thekogans {
                 /// \param[in] file \see{BufferedFile} beginning the transaction.
                 virtual void OnBufferedFileTransactionBegin (
                         BufferedFile::SharedPtr /*file*/) noexcept override {
-                    Flush ();
+                    THEKOGANS_UTIL_TRY {
+                        Flush ();
+                    }
+                    THEKOGANS_UTIL_CATCH_AND_LOG_SUBSYSTEM (THEKOGANS_UTIL)
                 }
                 /// \brief
                 /// Transaction is commiting. Flush internal cache to file.
@@ -230,19 +235,25 @@ namespace thekogans {
                 virtual void OnBufferedFileTransactionCommit (
                         BufferedFile::SharedPtr /*file*/,
                         int phase) noexcept override {
-                    if (phase == COMMIT_PHASE_1) {
-                        Allocate ();
+                    THEKOGANS_UTIL_TRY {
+                        if (phase == COMMIT_PHASE_1) {
+                            Allocate ();
+                        }
+                        else if (phase == COMMIT_PHASE_2) {
+                            Flush ();
+                        }
                     }
-                    else if (phase == COMMIT_PHASE_2) {
-                        Flush ();
-                    }
+                    THEKOGANS_UTIL_CATCH_AND_LOG_SUBSYSTEM (THEKOGANS_UTIL)
                 }
                 /// \brief
                 /// Transaction is aborting. Reload from file.
                 /// \param[in] file \see{BufferedFile} aborting the transaction.
                 virtual void OnBufferedFileTransactionAbort (
                         BufferedFile::SharedPtr /*file*/) noexcept override {
-                    Reload ();
+                    THEKOGANS_UTIL_TRY {
+                        Reload ();
+                    }
+                    THEKOGANS_UTIL_CATCH_AND_LOG_SUBSYSTEM (THEKOGANS_UTIL)
                 }
 
                 /// \brief

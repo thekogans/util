@@ -28,7 +28,8 @@
 namespace thekogans {
     namespace util {
 
-        THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_ABSTRACT_BASE (thekogans::util::DynamicCreatable)
+        THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_ABSTRACT_BASE (
+            thekogans::util::DynamicCreatable)
         THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_BASES_BEGIN (DynamicCreatable)
         THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_BASES_END (DynamicCreatable)
         THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_Bases (DynamicCreatable)
@@ -49,16 +50,21 @@ namespace thekogans {
                 FactoryType factory) {
             if (bases != nullptr && type != nullptr) {
                 while (*bases != nullptr) {
-                    (*BaseMap::Instance ())[*bases++][type] = factory;
+                    GetBaseMap ()[*bases++][type] = factory;
                 }
             }
         }
     #endif // defined (THEKOGANS_UTIL_TYPE_Static)
 
+        DynamicCreatable::BaseMapType &DynamicCreatable::GetBaseMap () {
+            static BaseMapType baseMap;
+            return baseMap;
+        }
+
         bool DynamicCreatable::IsDerivedFrom (const char *base) const noexcept {
             if (base != nullptr) {
-                BaseMapType::const_iterator it = BaseMap::Instance ()->find (base);
-                return it != BaseMap::Instance ()->end () &&
+                BaseMapType::const_iterator it = GetBaseMap ().find (base);
+                return it != GetBaseMap ().end () &&
                     it->second.find (Type ()) != it->second.end ();
             }
             return false;
@@ -73,14 +79,14 @@ namespace thekogans {
             BaseMapType::const_iterator it;
             BaseMapType::const_iterator end;
             if (base != nullptr) {
-                it = end = BaseMap::Instance ()->find (base);
-                if (end != BaseMap::Instance ()->end ()) {
+                it = end = GetBaseMap ().find (base);
+                if (end != GetBaseMap ().end ()) {
                     ++end;
                 }
             }
             else {
-                it = BaseMap::Instance ()->begin ();
-                end = BaseMap::Instance ()->end ();
+                it = GetBaseMap ().begin ();
+                end = GetBaseMap ().end ();
             }
             for (; it != end; ++it) {
                 std::cout << it->first << ":" << std::endl;
