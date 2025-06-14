@@ -277,7 +277,7 @@ namespace thekogans {
         #define THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_BASE_GET_TYPES(_T)\
             const thekogans::util::DynamicCreatable::TypeMapType &_T::GetTypes () {\
                 static const thekogans::util::DynamicCreatable::TypeMapType &types =\
-                    thekogans::util::DynamicCreatable::GetBaseMap ()[_T::TYPE];\
+                    thekogans::util::DynamicCreatable::GetBases ()[_T::TYPE];\
                 return types;\
             }
 
@@ -577,7 +577,7 @@ namespace thekogans {
             /// \brief
             /// Return the reference to the base map.
             /// \return Reference to  the base map.
-            static BaseMapType &GetBaseMap ();
+            static BaseMapType &GetBases ();
 
             /// \brief
             /// Return true if base is found in the BASES list.
@@ -617,7 +617,7 @@ namespace thekogans {
             void _T::StaticInit () {\
                 const char * const *bases = _T::BASES;\
                 while (*bases != nullptr) {\
-                    thekogans::util::DynamicCreatable::GetBaseMap ()[\
+                    thekogans::util::DynamicCreatable::GetBases ()[\
                         *bases++][_T::TYPE] = _T::Create;\
                 }\
             }

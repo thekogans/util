@@ -50,21 +50,21 @@ namespace thekogans {
                 FactoryType factory) {
             if (bases != nullptr && type != nullptr) {
                 while (*bases != nullptr) {
-                    GetBaseMap ()[*bases++][type] = factory;
+                    GetBases ()[*bases++][type] = factory;
                 }
             }
         }
     #endif // defined (THEKOGANS_UTIL_TYPE_Static)
 
-        DynamicCreatable::BaseMapType &DynamicCreatable::GetBaseMap () {
-            static BaseMapType baseMap;
-            return baseMap;
+        DynamicCreatable::BaseMapType &DynamicCreatable::GetBases () {
+            static BaseMapType bases;
+            return bases;
         }
 
         bool DynamicCreatable::IsDerivedFrom (const char *base) const noexcept {
             if (base != nullptr) {
-                BaseMapType::const_iterator it = GetBaseMap ().find (base);
-                return it != GetBaseMap ().end () &&
+                BaseMapType::const_iterator it = GetBases ().find (base);
+                return it != GetBases ().end () &&
                     it->second.find (Type ()) != it->second.end ();
             }
             return false;
@@ -79,14 +79,14 @@ namespace thekogans {
             BaseMapType::const_iterator it;
             BaseMapType::const_iterator end;
             if (base != nullptr) {
-                it = end = GetBaseMap ().find (base);
-                if (end != GetBaseMap ().end ()) {
+                it = end = GetBases ().find (base);
+                if (end != GetBases ().end ()) {
                     ++end;
                 }
             }
             else {
-                it = GetBaseMap ().begin ();
-                end = GetBaseMap ().end ();
+                it = GetBases ().begin ();
+                end = GetBases ().end ();
             }
             for (; it != end; ++it) {
                 std::cout << it->first << ":" << std::endl;
