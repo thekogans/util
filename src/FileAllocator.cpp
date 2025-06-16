@@ -16,6 +16,7 @@
 // along with libthekogans_util. If not, see <http://www.gnu.org/licenses/>.
 
 #include "thekogans/util/Exception.h"
+#include "thekogans/util/Heap.h"
 #include "thekogans/util/Path.h"
 #include "thekogans/util/File.h"
 #include "thekogans/util/FileAllocator.h"
@@ -269,12 +270,13 @@ namespace thekogans {
             else {
                 *file << MAGIC32 << header;
             }
-            btree.Reset (new BTree (
-                *this,
-                header.btreeOffset,
-                btreeEntriesPerNode,
-                btreeNodesPerPage,
-                allocator));
+            btree.Reset (
+                new BTree (
+                    *this,
+                    header.btreeOffset,
+                    btreeEntriesPerNode,
+                    btreeNodesPerPage,
+                    allocator));
         }
 
         FileAllocator::PtrType FileAllocator::Alloc (std::size_t size) {

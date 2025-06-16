@@ -51,9 +51,6 @@ namespace thekogans {
                         offset);
                 }
             }
-            else {
-                dirty = true;
-            }
         }
 
         FileAllocator::BTree::Node::~Node () {
@@ -446,9 +443,6 @@ namespace thekogans {
                         "Corrupt FileAllocator::BTree: " THEKOGANS_UTIL_UI64_FORMAT,
                         offset);
                 }
-            }
-            else {
-                dirty = true;
             }
             nodeAllocator.Reset (
                 new BlockAllocator (

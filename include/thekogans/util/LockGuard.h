@@ -64,9 +64,10 @@ namespace thekogans {
             /// write code like this:
             ///
             /// \code{.cpp}
-            /// thekogans::util::Mutex mutex;
+            /// using namespace thekogans;
+            /// util::Mutex mutex;
             /// if (mutex.TryAcquire ()) {
-            ///     thekogans::util::LockGuard<thekogans::util::Mutex> guard (mutex, false);
+            ///     util::LockGuard<util::Mutex> guard (mutex, false);
             ///     ...
             /// }
             /// else {

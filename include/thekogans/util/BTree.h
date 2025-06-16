@@ -762,7 +762,7 @@ namespace thekogans {
             }
             /// \brief
             /// Delete the disk image and reset the internal state.
-            virtual void Reset () override;
+            virtual void Delete () override;
 
         protected:
             // BufferedFile::TransactionParticipant

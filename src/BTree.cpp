@@ -226,9 +226,6 @@ namespace thekogans {
                         offset);
                 }
             }
-            else {
-                dirty = true;
-            }
         }
 
         BTree::Node::~Node () {
@@ -825,11 +822,8 @@ namespace thekogans {
                         offset);
                 }
             }
-            else if (Key::IsType (header.keyType.c_str ()) &&
-                    (header.valueType.empty () || Value::IsType (header.valueType.c_str ()))) {
-                dirty = true;
-            }
-            else {
+            else if (!Key::IsType (header.keyType.c_str ()) ||
+                    (!header.valueType.empty () && !Value::IsType (header.valueType.c_str ()))) {
                 THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
                     "key (%s) / value (%s) types are not valid.",
                     keyType.c_str (), valueType.c_str ());
@@ -987,7 +981,7 @@ namespace thekogans {
             }
         }
 
-        void BTree::Reset () {
+        void BTree::Delete () {
             if (offset != 0) {
                 Delete (*fileAllocator, offset);
                 offset = 0;

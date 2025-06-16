@@ -24,43 +24,14 @@
 #include "thekogans/util/Directory.h"
 #include "thekogans/util/BTreeKeys.h"
 #include "thekogans/util/BTreeValues.h"
-#include "thekogans/kcd/Database.h"
 #include "thekogans/kcd/Root.h"
 
 namespace thekogans {
     namespace kcd {
 
-        void Root::Init () {
-            if (pathBTree == nullptr) {
-                pathBTree.Reset (
-                    new util::BTree (
-                        Database::Instance ()->GetFileAllocator (),
-                        pathBTreeOffset,
-                        util::GUIDKey::TYPE,
-                        util::StringValue::TYPE));
-                pathBTreeOffsetTracker.Reset (
-                    new util::FileAllocator::Object::OffsetTracker (
-                        pathBTreeOffset,
-                        *pathBTree));
-            }
-            if (componentBTree == nullptr) {
-                componentBTree.Reset (
-                    new util::BTree (
-                        Database::Instance ()->GetFileAllocator (),
-                        componentBTreeOffset,
-                        util::StringKey::TYPE,
-                        util::GUIDArrayValue::TYPE));
-                componentBTreeOffsetTracker.Reset (
-                    new util::FileAllocator::Object::OffsetTracker (
-                        componentBTreeOffset,
-                        *componentBTree));
-            }
-        }
-
         void Root::Scan (IgnoreList::SharedPtr ignoreList) {
             if (!path.empty ()) {
                 Delete ();
-                Init ();
                 Produce (
                     std::bind (
                         &RootEvents::OnRootScanBegin,
@@ -81,30 +52,18 @@ namespace thekogans {
                     &RootEvents::OnRootDeleteBegin,
                     std::placeholders::_1,
                     this));
-            if (pathBTreeOffset != 0) {
-                util::BTree::Delete (
-                    *Database::Instance ()->GetFileAllocator (), pathBTreeOffset);
-                pathBTreeOffset = 0;
-                Produce (
-                    std::bind (
-                        &RootEvents::OnRootDeletedPathBTree,
-                        std::placeholders::_1,
-                        this));
-            }
-            pathBTree.Reset ();
-            pathBTreeOffsetTracker.Reset ();
-            if (componentBTreeOffset != 0) {
-                util::BTree::Delete (
-                    *Database::Instance ()->GetFileAllocator (), componentBTreeOffset);
-                componentBTreeOffset = 0;
-                Produce (
-                    std::bind (
-                        &RootEvents::OnRootDeletedComponentBTree,
-                        std::placeholders::_1,
-                        this));
-            }
-            componentBTree.Reset ();
-            componentBTreeOffsetTracker.Reset ();
+            pathBTree->Delete ();
+            Produce (
+                std::bind (
+                    &RootEvents::OnRootDeletedPathBTree,
+                    std::placeholders::_1,
+                    this));
+            componentBTree->Delete ();
+            Produce (
+                std::bind (
+                    &RootEvents::OnRootDeletedComponentBTree,
+                    std::placeholders::_1,
+                    this));
             Produce (
                 std::bind (
                     &RootEvents::OnRootDeleteEnd,
@@ -116,7 +75,6 @@ namespace thekogans {
                 const std::string &prefix,
                 bool ignoreCase,
                 std::vector<std::string> &paths) {
-            Init ();
             util::StringKey originalPrefix (prefix);
             // To allow for the ignoreCase flag the database is
             // maintained without regard to case. All searches
@@ -215,8 +173,8 @@ namespace thekogans {
                 const Root::SharedPtr &root) {
             serializer <<
                 root->path <<
-                root->pathBTreeOffset <<
-                root->componentBTreeOffset <<
+                root->pathBTree->GetOffset () <<
+                root->componentBTree->GetOffset () <<
                 root->active;
             return serializer;
         }
@@ -224,12 +182,12 @@ namespace thekogans {
         util::Serializer &operator >> (
                 util::Serializer &serializer,
                 Root::SharedPtr &root) {
-            root.Reset (new Root);
-            serializer >>
-                root->path >>
-                root->pathBTreeOffset >>
-                root->componentBTreeOffset >>
-                root->active;
+            std::string path;
+            util::FileAllocator::PtrType pathBTreeOffset;
+            util::FileAllocator::PtrType componentBTreeOffset;
+            bool active;
+            serializer >> path >> pathBTreeOffset >> componentBTreeOffset >> active;
+            root.Reset (new Root (path, pathBTreeOffset, componentBTreeOffset, active));
             return serializer;
         }
 

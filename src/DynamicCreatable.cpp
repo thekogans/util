@@ -56,11 +56,6 @@ namespace thekogans {
         }
     #endif // defined (THEKOGANS_UTIL_TYPE_Static)
 
-        DynamicCreatable::BaseMapType &DynamicCreatable::GetBases () {
-            static BaseMapType bases;
-            return bases;
-        }
-
         bool DynamicCreatable::IsDerivedFrom (const char *base) const noexcept {
             if (base != nullptr) {
                 BaseMapType::const_iterator it = GetBases ().find (base);
@@ -75,7 +70,12 @@ namespace thekogans {
             return type != nullptr && (compare (type, Type ()) || IsDerivedFrom (type));
         }
 
-        void DynamicCreatable::DumpBaseMap (const char *base) {
+        DynamicCreatable::BaseMapType &DynamicCreatable::GetBases () {
+            static BaseMapType bases;
+            return bases;
+        }
+
+        void DynamicCreatable::DumpBase (const char *base) {
             BaseMapType::const_iterator it;
             BaseMapType::const_iterator end;
             if (base != nullptr) {

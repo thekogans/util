@@ -423,7 +423,6 @@ namespace thekogans {
         ///
         /// \brief
         /// DynamicCreatableBase exposes the Type () and Bases () virtual methods.
-
         struct _LIB_THEKOGANS_UTIL_DECL DynamicCreatableBase : public virtual RefCounted {
             /// \brief
             /// All DynamicCreatable derived types need to be able to
@@ -456,7 +455,6 @@ namespace thekogans {
         /// object lifetime management needed in dynamical systems. \see{RefCountedRegistry}
         /// allows \see{RefCounted} objects to interoperate with async os callback apis
         /// without fear of leakage or corruption.
-
         struct _LIB_THEKOGANS_UTIL_DECL DynamicCreatable : public DynamicCreatableBase {
             /// \brief
             /// Declare \see{RefCounted} pointers.
@@ -575,11 +573,6 @@ namespace thekogans {
         #endif // defined (THEKOGANS_UTIL_TYPE_Shared)
 
             /// \brief
-            /// Return the reference to the base map.
-            /// \return Reference to  the base map.
-            static BaseMapType &GetBases ();
-
-            /// \brief
             /// Return true if base is found in the BASES list.
             /// NOTE: Unlike 'true' polymorphism this method will
             /// return true only if you setup a relationship between
@@ -597,11 +590,16 @@ namespace thekogans {
             bool IsKindOf (const char *type) const noexcept;
 
             /// \brief
-            /// Pretty print the BaseMap to the std::cout.
+            /// Return the reference to the base map.
+            /// \return Reference to  the base map.
+            static BaseMapType &GetBases ();
+
+            /// \brief
+            /// Pretty print the given base type map to the std::cout.
             /// Use this to take a look inside your map when debugging.
-            /// \param[in] base Optional base whos map to prity print.
+            /// \param[in] base Optional base whos type map to prity print.
             /// If nullptr, print all bases.
-            static void DumpBaseMap (const char *base = nullptr);
+            static void DumpBase (const char *base = nullptr);
         };
 
     #if defined (THEKOGANS_UTIL_TYPE_Static)

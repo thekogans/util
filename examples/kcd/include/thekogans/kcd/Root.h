@@ -27,6 +27,7 @@
 #include "thekogans/util/Serializer.h"
 #include "thekogans/util/FileAllocator.h"
 #include "thekogans/util/BTree.h"
+#include "thekogans/kcd/Database.h"
 #include "thekogans/kcd/IgnoreList.h"
 
 namespace thekogans {
@@ -60,26 +61,30 @@ namespace thekogans {
 
         private:
             std::string path;
-            util::FileAllocator::PtrType pathBTreeOffset;
-            util::FileAllocator::PtrType componentBTreeOffset;
-            bool active;
             util::BTree::SharedPtr pathBTree;
-            util::FileAllocator::Object::OffsetTracker::SharedPtr pathBTreeOffsetTracker;
             util::BTree::SharedPtr componentBTree;
-            util::FileAllocator::Object::OffsetTracker::SharedPtr componentBTreeOffsetTracker;
+            bool active;
 
         public:
             Root (
                 std::string path_ = std::string (),
-                util::FileAllocator::PtrType pathBTreeOffset_ = 0,
-                util::FileAllocator::PtrType componentBTreeOffset_ = 0,
+                util::FileAllocator::PtrType pathBTreeOffset = 0,
+                util::FileAllocator::PtrType componentBTreeOffset = 0,
                 bool active_ = true) :
                 path (path_),
-                pathBTreeOffset (pathBTreeOffset_),
-                componentBTreeOffset (componentBTreeOffset_),
+                pathBTree (
+                    new util::BTree (
+                        Database::Instance ()->GetFileAllocator (),
+                        pathBTreeOffset,
+                        util::GUIDKey::TYPE,
+                        util::StringValue::TYPE)),
+                componentBTree (
+                    new util::BTree (
+                        Database::Instance ()->GetFileAllocator (),
+                        componentBTreeOffset,
+                        util::StringKey::TYPE,
+                        util::GUIDArrayValue::TYPE)),
                 active (active_) {}
-
-            void Init ();
 
             inline const std::string &GetPath () const {
                 return path;

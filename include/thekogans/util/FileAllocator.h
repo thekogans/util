@@ -142,60 +142,6 @@ namespace thekogans {
                 /// dtor.
                 virtual ~Object () {}
 
-
-                /// \struct FileAllocator::Object::OffsetTracker FileAllocator.h
-                /// thekogans/util/FileAllocator.h
-                ///
-                /// \brief
-                /// Track offset changes and update an external offset reference.
-                struct OffsetTracker : public Subscriber<ObjectEvents> {
-                    /// \brief
-                    /// Declare \see{RefCounted} pointers.
-                    THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (OffsetTracker)
-
-                private:
-                    /// \brief
-                    /// Reference to offset we're tracking.
-                    FileAllocator::PtrType &offset;
-                    /// \brief
-                    /// true == Offset has changed.
-                    bool dirty;
-
-                public:
-                    /// \brief
-                    /// \param[out] offset_ Reference to offset we're tracking.
-                    /// \param[in] object Object to listen to for offset updates.
-                    OffsetTracker (
-                            FileAllocator::PtrType &offset_,
-                            Object &object) :
-                            offset (offset_),
-                            dirty (false) {
-                        Subscriber<ObjectEvents>::Subscribe (object);
-                    }
-
-                    /// \brief
-                    /// Return true if Offset has changed.
-                    /// \return dirty.
-                    inline bool IsDirty () const {
-                        return dirty;
-                    }
-
-                protected:
-                    // ObjectEvents
-                    /// \brief
-                    /// Offset changed.
-                    /// \param[in] object \see{Object} whose offset changed.
-                    virtual void OnFileAllocatorObjectOffsetChanged (
-                            Object::SharedPtr object) noexcept override {
-                        offset = object->GetOffset ();
-                        dirty = true;
-                    }
-
-                    /// \brief
-                    /// OffsetTracker is neither copy constructable, nor assignable.
-                    THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (OffsetTracker)
-                };
-
                 /// \brief
                 /// Return the fileAllocator.
                 /// \return fileAllocator.
@@ -216,7 +162,7 @@ namespace thekogans {
 
                 /// \brief
                 /// Delete the disk image and reset the internal state.
-                virtual void Reset () = 0;
+                virtual void Delete () = 0;
 
             private:
                 // BufferedFile::TransactionParticipant

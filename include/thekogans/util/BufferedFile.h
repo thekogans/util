@@ -206,7 +206,7 @@ namespace thekogans {
                 virtual ~TransactionParticipant () {}
 
                 /// \brief
-                /// Allocate space from \see{BufferedFile}.
+                /// Allocate space from file.
                 virtual void Allocate () = 0;
 
                 /// \brief
@@ -214,12 +214,12 @@ namespace thekogans {
                 virtual void Flush () = 0;
 
                 /// \brief
-                /// Reload from file.
+                /// Reload the internal cache from file.
                 virtual void Reload () = 0;
 
                 // BufferedFileEvents
                 /// \brief
-                /// Transaction is beginning. Flush internal cache to file.
+                /// Transaction is beginning. Flush the internal cache to file.
                 /// \param[in] file \see{BufferedFile} beginning the transaction.
                 virtual void OnBufferedFileTransactionBegin (
                         BufferedFile::SharedPtr /*file*/) noexcept override {
@@ -229,7 +229,7 @@ namespace thekogans {
                     THEKOGANS_UTIL_CATCH_AND_LOG_SUBSYSTEM (THEKOGANS_UTIL)
                 }
                 /// \brief
-                /// Transaction is commiting. Flush internal cache to file.
+                /// Transaction is commiting. Flush the internal cache to file.
                 /// \param[in] file \see{BufferedFile} commiting the transaction.
                 /// \param[in] phase \see{BufferedFile} implements two phase commit.
                 virtual void OnBufferedFileTransactionCommit (
@@ -246,7 +246,7 @@ namespace thekogans {
                     THEKOGANS_UTIL_CATCH_AND_LOG_SUBSYSTEM (THEKOGANS_UTIL)
                 }
                 /// \brief
-                /// Transaction is aborting. Reload from file.
+                /// Transaction is aborting. Reload the internal cache from file.
                 /// \param[in] file \see{BufferedFile} aborting the transaction.
                 virtual void OnBufferedFileTransactionAbort (
                         BufferedFile::SharedPtr /*file*/) noexcept override {
