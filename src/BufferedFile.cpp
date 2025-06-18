@@ -49,9 +49,9 @@ namespace thekogans {
             file->CommitTransaction ();
         }
 
-        BufferedFile::TransactionParticipant::TransactionParticipant (
-                BufferedFile::SharedPtr file_) :
-                file (file_) {
+        BufferedFile::TransactionParticipant::TransactionParticipant (BufferedFile::SharedPtr file_) :
+                file (file_),
+                dirty (false) {
             Subscriber<BufferedFileEvents>::Subscribe (*file);
         }
 

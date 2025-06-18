@@ -650,9 +650,6 @@ namespace thekogans {
             /// \brief
             /// An instance of \see{BlockAllocator} to allocate \see{Node}s.
             BlockAllocator::SharedPtr nodeAllocator;
-            /// \brief
-            /// We accumulate all changes and update the header in \see{Flush}.
-            bool dirty;
 
         public:
             /// \brief

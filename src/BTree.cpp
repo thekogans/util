@@ -335,11 +335,12 @@ namespace thekogans {
                     }
                 }
             }
+            if (offset == 0) {
+                offset = btree.fileAllocator->Alloc (
+                    FileSize (btree.header.entriesPerNode));
+                dirty = true;
+            }
             if (dirty) {
-                if (offset == 0) {
-                    offset = btree.fileAllocator->Alloc (
-                        FileSize (btree.header.entriesPerNode));
-                }
                 FileAllocator::BlockBuffer buffer (*btree.fileAllocator->GetFile (), offset);
                 buffer << MAGIC32 << count;
                 if (count > 0) {
@@ -793,8 +794,7 @@ namespace thekogans {
                 header (keyType, valueType, (ui32)entriesPerNode),
                 keyFactory (Key::GetTypeFactory (keyType.c_str ())),
                 valueFactory (Value::GetTypeFactory (valueType.c_str ())),
-                root (nullptr),
-                dirty (false) {
+                root (nullptr) {
             if (offset != 0) {
                 FileAllocator::BlockBuffer buffer (*fileAllocator->GetFile (), offset);
                 buffer.BlockRead ();
@@ -989,7 +989,7 @@ namespace thekogans {
             header.rootOffset = 0;
             Node::Free (root);
             root = Node::Alloc (*this, header.rootOffset);
-            dirty = false;
+            SetDirty (false);
         }
 
         void BTree::Flush () {
@@ -997,25 +997,25 @@ namespace thekogans {
                 root->Flush ();
                 if (header.rootOffset != root->offset) {
                     header.rootOffset = root->offset;
-                    dirty = true;
+                    SetDirty (true);
                 }
-                if (dirty) {
+                if (IsDirty ()) {
                     FileAllocator::BlockBuffer buffer (*GetFile (), offset);
                     buffer << MAGIC32 << header;
                     buffer.BlockWrite ();
-                    dirty = false;
+                    SetDirty (false);
                 }
             }
         }
 
         void BTree::Reload () {
             if (offset != 0) {
-                if (dirty) {
+                if (IsDirty ()) {
                     FileAllocator::BlockBuffer buffer (*GetFile (), offset);
                     buffer.BlockRead ();
                     ui32 magic;
                     buffer >> magic >> header;
-                    dirty = false;
+                    SetDirty (false);
                 }
                 if (root->dirty) {
                     Node::Free (root);

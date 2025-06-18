@@ -196,6 +196,9 @@ namespace thekogans {
                 /// \see{BufferedFile} whose \see{BufferedFileEvents}
                 /// we're participants of.
                 BufferedFile::SharedPtr file;
+                /// \brief
+                /// true == the object cache is diffrent than what's on disk.
+                bool dirty;
 
             public:
                 /// \brief
@@ -211,6 +214,19 @@ namespace thekogans {
                 /// \return file.
                 inline BufferedFile::SharedPtr GetFile () const {
                     return file;
+                }
+
+                /// \brief
+                /// Return dirty.
+                /// \return dirty.
+                inline bool IsDirty () const {
+                    return dirty;
+                }
+                /// \brief
+                /// Set dirty.
+                /// \param[in] dirty_ New value for dirty.
+                inline void SetDirty (bool dirty_) {
+                    dirty = dirty_;
                 }
 
             protected:

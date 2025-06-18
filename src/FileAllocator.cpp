@@ -37,6 +37,7 @@ namespace thekogans {
                     fileAllocator->Free (offset);
                 }
                 offset = fileAllocator->Alloc (size);
+                SetDirty (true);
                 Produce (
                     std::bind (
                         &ObjectEvents::OnFileAllocatorObjectOffsetChanged,
@@ -217,8 +218,7 @@ namespace thekogans {
                 BufferedFile::TransactionParticipant (file_),
                 file (file_),
                 header (secure ? Header::FLAGS_SECURE : 0),
-                btree (nullptr),
-                dirty (false) {
+                btree (nullptr) {
             file->Seek (0, SEEK_SET);
             if (file->GetSize () > 0) {
                 ui32 magic;
@@ -410,19 +410,19 @@ namespace thekogans {
         }
 
         void FileAllocator::Flush () {
-            if (dirty) {
+            if (IsDirty ()) {
                 file->Seek (0, SEEK_SET);
                 *file << MAGIC32 << header;
-                dirty = false;
+                SetDirty (false);
             }
         }
 
         void FileAllocator::Reload () {
-            if (dirty && file->GetSize () > 0) {
+            if (IsDirty () && file->GetSize () > 0) {
                 file->Seek (0, SEEK_SET);
                 ui32 magic;
                 *file >> magic >> header;
-                dirty = false;
+                SetDirty (false);
             }
         }
 
@@ -434,7 +434,7 @@ namespace thekogans {
                 block.Read ();
                 if (block.IsFree () && block.IsBTreeNode ()) {
                     header.freeBTreeNodeOffset = block.GetNextBTreeNodeOffset ();
-                    dirty = true;
+                    SetDirty (true);
                 }
                 else {
                     THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
@@ -462,7 +462,7 @@ namespace thekogans {
                         block.SetNextBTreeNodeOffset (header.freeBTreeNodeOffset);
                         block.Write ();
                         header.freeBTreeNodeOffset = offset;
-                        dirty = true;
+                        SetDirty (true);
                     }
                     else {
                         file->SetSize (block.GetOffset () - BlockInfo::HEADER_SIZE);

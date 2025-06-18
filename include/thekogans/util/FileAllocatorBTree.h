@@ -276,9 +276,6 @@ private:
     /// \brief
     /// An instance of \see{BlockAllocator} to allocate \see{Node}s.
     BlockAllocator::SharedPtr nodeAllocator;
-    /// \brief
-    /// We accumulate all changes and update the header in the dtor.
-    bool dirty;
 
 public:
     /// \brief

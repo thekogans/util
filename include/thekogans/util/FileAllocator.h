@@ -693,10 +693,6 @@ namespace thekogans {
             /// \brief
             /// \see{BTree} to manage heap free space.
             BTree::SharedPtr btree;
-            /// \brief
-            /// Set to indicate that the \see{Header} is dirty and needs
-            /// to be written to disk.
-            bool dirty;
 
         public:
             /// \brief
@@ -752,7 +748,7 @@ namespace thekogans {
             /// \param[in] rootOffset New rootOffset to set.
             inline void SetRootOffset (PtrType rootOffset) {
                 header.rootOffset = rootOffset;
-                dirty = true;
+                SetDirty (true);
             }
 
             /// \brief
@@ -815,7 +811,7 @@ namespace thekogans {
             /// \param[in] btreeOffset New btreeOffset to set.
             inline void SetBTreeOffset (PtrType btreeOffset) {
                 header.btreeOffset = btreeOffset;
-                dirty = true;
+                SetDirty (true);
             }
             /// \brief
             /// Used to allocate \see{BTree::Node} blocks.
