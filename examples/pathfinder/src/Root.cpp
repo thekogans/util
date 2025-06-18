@@ -24,10 +24,10 @@
 #include "thekogans/util/Directory.h"
 #include "thekogans/util/BTreeKeys.h"
 #include "thekogans/util/BTreeValues.h"
-#include "thekogans/kcd/Root.h"
+#include "thekogans/pathfinder/Root.h"
 
 namespace thekogans {
-    namespace kcd {
+    namespace pathfinder {
 
         void Root::Scan (IgnoreList::SharedPtr ignoreList) {
             if (!path.empty ()) {
@@ -213,5 +213,5 @@ namespace thekogans {
             return pathBegin;
         }
 
-    } // namespace kcd
+    } // namespace pathfinder
 } // namespace thekogans

@@ -18,10 +18,10 @@
 #include <iostream>
 #include <fstream>
 #include "thekogans/util/StringUtils.h"
-#include "thekogans/kcd/Options.h"
+#include "thekogans/pathfinder/Options.h"
 
 namespace thekogans {
-    namespace kcd {
+    namespace pathfinder {
 
         void Options::DoOption (
                 char option,
@@ -82,5 +82,5 @@ namespace thekogans {
             }
         }
 
-    } // namespace kcd
+    } // namespace pathfinder
 } // namespace thekogans

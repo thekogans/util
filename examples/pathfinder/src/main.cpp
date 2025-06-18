@@ -24,15 +24,15 @@
 #include "thekogans/util/Exception.h"
 #include "thekogans/util/Console.h"
 #include "thekogans/util/ConsoleLogger.h"
-#include "thekogans/kcd/Options.h"
-#include "thekogans/kcd/Version.h"
-#include "thekogans/kcd/Database.h"
-#include "thekogans/kcd/Root.h"
-#include "thekogans/kcd/Roots.h"
-#include "thekogans/kcd/IgnoreList.h"
+#include "thekogans/pathfinder/Options.h"
+#include "thekogans/pathfinder/Version.h"
+#include "thekogans/pathfinder/Database.h"
+#include "thekogans/pathfinder/Root.h"
+#include "thekogans/pathfinder/Roots.h"
+#include "thekogans/pathfinder/IgnoreList.h"
 
 using namespace thekogans;
-using namespace kcd;
+using namespace pathfinder;
 
 namespace {
     std::string GetLevelsList (const std::string &separator) {
@@ -83,7 +83,7 @@ int main (
             "h - Display this help message.\n"
             "v - Display version information.\n"
             "l - Set logging level (default is Info).\n"
-            "d - Database path (default is $HOME/kcd.db)).\n"
+            "d - Database path (default is $HOME/pathfinder.db)).\n"
             "a - Action to perform (default is cd).\n"
             "r - Root (can be repeated).\n"
             "p - Pattern (when action is cd).\n"
@@ -99,7 +99,7 @@ int main (
             "libthekogans_util - %s\n"
             "%s - %s\n",
             util::GetVersion ().ToString ().c_str (),
-            argv[0], kcd::GetVersion ().ToString ().c_str ());
+            argv[0], pathfinder::GetVersion ().ToString ().c_str ());
     }
     else {
         THEKOGANS_UTIL_TRY {

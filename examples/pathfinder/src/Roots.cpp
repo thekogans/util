@@ -24,10 +24,10 @@
 #include "thekogans/util/Path.h"
 #include "thekogans/util/StringUtils.h"
 #include "thekogans/util/BTreeValues.h"
-#include "thekogans/kcd/Roots.h"
+#include "thekogans/pathfinder/Roots.h"
 
 namespace thekogans {
-    namespace kcd {
+    namespace pathfinder {
 
         THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE (Roots, 1, util::BTree::Value::TYPE)
 
@@ -201,5 +201,5 @@ namespace thekogans {
             std::cout << path << "\n";
         }
 
-    } // namespace kcd
+    } // namespace pathfinder
 } // namespace thekogans

@@ -15,8 +15,8 @@
 // You should have received a copy of the GNU General Public License
 // along with libthekogans_util. If not, see <http://www.gnu.org/licenses/>.
 
-#if !defined (__thekogans_kcd_Roots_h)
-#define __thekogans_kcd_Roots_h
+#if !defined (__thekogans_pathfinder_Roots_h)
+#define __thekogans_pathfinder_Roots_h
 
 #include <string>
 #include <vector>
@@ -24,11 +24,11 @@
 #include "thekogans/util/BTreeValues.h"
 #include "thekogans/util/Subscriber.h"
 #include "thekogans/util/Producer.h"
-#include "thekogans/kcd/Root.h"
-#include "thekogans/kcd/IgnoreList.h"
+#include "thekogans/pathfinder/Root.h"
+#include "thekogans/pathfinder/IgnoreList.h"
 
 namespace thekogans {
-    namespace kcd {
+    namespace pathfinder {
 
         struct Roots;
 
@@ -75,7 +75,7 @@ namespace thekogans {
                 const std::string &path) throw () override;
         };
 
-    } // namespace kcd
+    } // namespace pathfinder
 } // namespace thekogans
 
-#endif // !defined (__thekogans_kcd_Roots_h)
+#endif // !defined (__thekogans_pathfinder_Roots_h)

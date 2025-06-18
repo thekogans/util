@@ -15,18 +15,18 @@
 // You should have received a copy of the GNU General Public License
 // along with libthekogans_stream. If not, see <http://www.gnu.org/licenses/>.
 
-#include "thekogans/kcd/Version.h"
+#include "thekogans/pathfinder/Version.h"
 
 namespace thekogans {
-    namespace kcd {
+    namespace pathfinder {
 
         const util::Version &GetVersion () {
             static const util::Version version (
-                THEKOGANS_KCD_MAJOR_VERSION,
-                THEKOGANS_KCD_MINOR_VERSION,
-                THEKOGANS_KCD_PATCH_VERSION);
+                THEKOGANS_PATHFINDER_MAJOR_VERSION,
+                THEKOGANS_PATHFINDER_MINOR_VERSION,
+                THEKOGANS_PATHFINDER_PATCH_VERSION);
             return version;
         }
 
-    } // namespace kcd
+    } // namespace pathfinder
 } // namespace thekogans

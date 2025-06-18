@@ -15,15 +15,15 @@
 // You should have received a copy of the GNU General Public License
 // along with libthekogans_util. If not, see <http://www.gnu.org/licenses/>.
 
-#if !defined (__thekogans_kcd_IgnoreList_h)
-#define __thekogans_kcd_IgnoreList_h
+#if !defined (__thekogans_pathfinder_IgnoreList_h)
+#define __thekogans_pathfinder_IgnoreList_h
 
 #include <string>
 #include "thekogans/util/Serializable.h"
 #include "thekogans/util/BTreeValues.h"
 
 namespace thekogans {
-    namespace kcd {
+    namespace pathfinder {
 
         struct IgnoreList : public util::StringArrayValue {
             THEKOGANS_UTIL_DECLARE_SERIALIZABLE (IgnoreList)
@@ -33,7 +33,7 @@ namespace thekogans {
             bool ShouldIgnore (const std::string &ignore);
         };
 
-    } // namespace kcd
+    } // namespace pathfinder
 } // namespace thekogans
 
-#endif // !defined (__thekogans_kcd_IgnoreList_h)
+#endif // !defined (__thekogans_pathfinder_IgnoreList_h)

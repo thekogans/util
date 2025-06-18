@@ -15,8 +15,8 @@
 // You should have received a copy of the GNU General Public License
 // along with libthekogans_util. If not, see <http://www.gnu.org/licenses/>.
 
-#if !defined (__thekogans_kcd_Database_h)
-#define __thekogans_kcd_Database_h
+#if !defined (__thekogans_pathfinder_Database_h)
+#define __thekogans_pathfinder_Database_h
 
 #include <string>
 #include "thekogans/util/Singleton.h"
@@ -25,12 +25,12 @@
 #include "thekogans/util/FileAllocatorRegistry.h"
 #include "thekogans/util/DefaultAllocator.h"
 #include "thekogans/util/SpinLock.h"
-#include "thekogans/kcd/Options.h"
+#include "thekogans/pathfinder/Options.h"
 
 namespace thekogans {
-    namespace kcd  {
+    namespace pathfinder  {
 
-        /// \struct Database Database.h thekogans/kcdtabase.h
+        /// \struct Database Database.h thekogans/pathfinder/Database.h
         ///
         /// \brief
         /// Database puts all the relavant pieces together in to a convenient
@@ -108,7 +108,7 @@ namespace thekogans {
             util::FileAllocatorRegistry::SharedPtr GetRegistry ();
         };
 
-    } // namespace kcd
+    } // namespace pathfinder
 } // namespace thekogans
 
-#endif // !defined (__thekogans_kcd_Database_h)
+#endif // !defined (__thekogans_pathfinder_Database_h)

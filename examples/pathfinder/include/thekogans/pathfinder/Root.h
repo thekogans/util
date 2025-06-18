@@ -15,8 +15,8 @@
 // You should have received a copy of the GNU General Public License
 // along with libthekogans_util. If not, see <http://www.gnu.org/licenses/>.
 
-#if !defined (__thekogans_kcd_Root_h)
-#define __thekogans_kcd_Root_h
+#if !defined (__thekogans_pathfinder_Root_h)
+#define __thekogans_pathfinder_Root_h
 
 #include <string>
 #include <vector>
@@ -27,11 +27,11 @@
 #include "thekogans/util/Serializer.h"
 #include "thekogans/util/FileAllocator.h"
 #include "thekogans/util/BTree.h"
-#include "thekogans/kcd/Database.h"
-#include "thekogans/kcd/IgnoreList.h"
+#include "thekogans/pathfinder/Database.h"
+#include "thekogans/pathfinder/IgnoreList.h"
 
 namespace thekogans {
-    namespace kcd {
+    namespace pathfinder {
 
         struct Root;
 
@@ -132,13 +132,13 @@ namespace thekogans {
             const std::string &prefix,
             bool ignoreCase);
 
-    } // namespace kcd
+    } // namespace pathfinder
 } // namespace thekogans
 
 template<>
-inline std::size_t thekogans::util::Serializer::Size<thekogans::kcd::Root::SharedPtr> (
-        const thekogans::kcd::Root::SharedPtr &root) {
+inline std::size_t thekogans::util::Serializer::Size<thekogans::pathfinder::Root::SharedPtr> (
+        const thekogans::pathfinder::Root::SharedPtr &root) {
     return root->Size ();
 }
 
-#endif // !defined (__thekogans_kcd_Root_h)
+#endif // !defined (__thekogans_pathfinder_Root_h)

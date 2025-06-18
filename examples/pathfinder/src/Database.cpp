@@ -16,10 +16,10 @@
 // along with libthekogans_util. If not, see <http://www.gnu.org/licenses/>.
 
 #include "thekogans/util/LockGuard.h"
-#include "thekogans/kcd/Database.h"
+#include "thekogans/pathfinder/Database.h"
 
 namespace thekogans {
-    namespace kcd {
+    namespace pathfinder {
 
         Database::Database (
                 const std::string &path,
@@ -63,5 +63,5 @@ namespace thekogans {
             return registry;
         }
 
-    } // namespace kcd
+    } // namespace pathfinder
 } // namespace thekogans

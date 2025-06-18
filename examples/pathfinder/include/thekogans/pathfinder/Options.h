@@ -15,8 +15,8 @@
 // You should have received a copy of the GNU General Public License
 // along with libthekogans_stream. If not, see <http://www.gnu.org/licenses/>.
 
-#if !defined (__thekogans_kcd_Options_h)
-#define __thekogans_kcd_Options_h
+#if !defined (__thekogans_pathfinder_Options_h)
+#define __thekogans_pathfinder_Options_h
 
 #include <string>
 #include <vector>
@@ -27,7 +27,7 @@
 #include "thekogans/util/LoggerMgr.h"
 
 namespace thekogans {
-    namespace kcd {
+    namespace pathfinder {
 
         struct Options :
                 public util::Singleton<Options>,
@@ -48,7 +48,7 @@ namespace thekogans {
                 help (false),
                 version (false),
                 logLevel (util::LoggerMgr::Info),
-                dbPath (util::MakePath (util::Path::GetHomeDirectory (), "kcd.db")),
+                dbPath (util::MakePath (util::Path::GetHomeDirectory (), "pathfinder.db")),
                 action ("cd"),
                 ignoreCase (false),
                 ordered (false) {}
@@ -59,7 +59,7 @@ namespace thekogans {
             virtual void Epilog () override;
         };
 
-    } // namespace kcd
+    } // namespace pathfinder
 } // namespace thekogans
 
-#endif // !defined (__thekogans_kcd_Options_h)
+#endif // !defined (__thekogans_pathfinder_Options_h)

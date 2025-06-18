@@ -15,10 +15,10 @@
 // You should have received a copy of the GNU General Public License
 // along with libthekogans_util. If not, see <http://www.gnu.org/licenses/>.
 
-#include "thekogans/kcd/IgnoreList.h"
+#include "thekogans/pathfinder/IgnoreList.h"
 
 namespace thekogans {
-    namespace kcd {
+    namespace pathfinder {
 
         THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE (IgnoreList, 1, util::BTree::Value::TYPE)
 
@@ -51,5 +51,5 @@ namespace thekogans {
             return false;
         }
 
-    } // namespace kcd
+    } // namespace pathfinder
 } // namespace thekogans
