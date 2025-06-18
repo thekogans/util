@@ -42,6 +42,9 @@ namespace thekogans {
             /// \brief
             /// \see{FileAllocator} for managing random size blocks in the file.
             util::FileAllocator::SharedPtr fileAllocator;
+            std::size_t registryEntriesPerNode;
+            std::size_t registryNodesPerPage;
+            util::Allocator::SharedPtr allocator;
             /// \brief
             /// \see{FileAllocatorRegistry} for system wide name/value pairs.
             util::FileAllocatorRegistry::SharedPtr registry;
@@ -61,16 +64,15 @@ namespace thekogans {
             Database (
                 const std::string &path = Options::Instance ()->dbPath,
                 bool secure = false,
-                std::size_t btreeEntriesPerNode = util::FileAllocator::DEFAULT_BTREE_ENTRIES_PER_NODE,
-                std::size_t btreeNodesPerPage = util::FileAllocator::DEFAULT_BTREE_NODES_PER_PAGE,
-                std::size_t registryEntriesPerNode =
+                std::size_t btreeEntriesPerNode =
+                    util::FileAllocator::DEFAULT_BTREE_ENTRIES_PER_NODE,
+                std::size_t btreeNodesPerPage =
+                    util::FileAllocator::DEFAULT_BTREE_NODES_PER_PAGE,
+                std::size_t registryEntriesPerNode_ =
                     util::FileAllocatorRegistry::DEFAULT_BTREE_ENTRIES_PER_NODE,
-                std::size_t registryNodesPerPage =
+                std::size_t registryNodesPerPage_ =
                     util::FileAllocatorRegistry::DEFAULT_BTREE_NODES_PERP_PAGE,
-                util::Allocator::SharedPtr allocator = util::DefaultAllocator::Instance ());
-            /// \brief
-            /// dtor.
-            virtual ~Database () {}
+                util::Allocator::SharedPtr allocator_ = util::DefaultAllocator::Instance ());
 
             /// \brief
             /// Return the file.
@@ -89,7 +91,15 @@ namespace thekogans {
             /// \brief
             /// Return the registry
             /// \return registry.
-            inline util::FileAllocatorRegistry::SharedPtr GetRegistry () const {
+            inline util::FileAllocatorRegistry::SharedPtr GetRegistry () {
+                if (registry == nullptr) {
+                    registry.Reset (
+                        new util::FileAllocatorRegistry (
+                            fileAllocator,
+                            registryEntriesPerNode,
+                            registryNodesPerPage,
+                            allocator));
+                }
                 return registry;
             };
         };

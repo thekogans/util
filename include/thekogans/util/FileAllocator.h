@@ -194,8 +194,14 @@ namespace thekogans {
             /// 2. Ability to navigate the heap in linear order. This
             /// property is used in Free to help coalesce adjecent free
             /// blocks.
+            /// The drawback of this design is that every allocation has
+            /// 32 bytes of overhead. Keep that in mind when designing
+            /// your objects.
             struct _LIB_THEKOGANS_UTIL_DECL BlockInfo {
             private:
+                /// \brief
+                /// \see{File} to read and write.
+                File &file;
                 /// \brief
                 /// Block offset.
                 PtrType offset;
@@ -383,6 +389,7 @@ namespace thekogans {
             public:
                 /// \brief
                 /// ctor.
+                /// \param[in] file_ \see{File} to read and write from.
                 /// \param[in] offset_ Offset in the file where the BlockInfo resides.
                 /// \param[in] flags Combination of FLAGS_BTREE_NODE and FLAGS_FREE.
                 /// \param[in] size Size of the block (not including the size
@@ -390,10 +397,12 @@ namespace thekogans {
                 /// \param[in] nextBTreeNodeOffset If FLAGS_FREE and FLAGS_BTREE_NODE are
                 /// set, this field contains the next free \see{BTree::Node} offset.
                 BlockInfo (
+                    File &file_,
                     PtrType offset_ = 0,
                     Flags32 flags = 0,
                     ui64 size = 0,
                     PtrType nextBTreeNodeOffset = 0) :
+                    file (file_),
                     offset (offset_),
                     header (flags, size, nextBTreeNodeOffset),
                     footer (flags, size) {}
@@ -485,27 +494,19 @@ namespace thekogans {
 
                 /// \brief
                 /// If !IsFirst, return the block info right before this one.
-                /// \param[in] file FileAllocator \see{File} to read prev from.
                 /// \param[out] prev Where to put the previous block info.
-                void Prev (
-                    File &file,
-                    BlockInfo &prev) const;
+                void Prev (BlockInfo &prev) const;
                 /// \brief
                 /// If !IsLast, return the block info right after this one.
-                /// \param[in] file FileAllocator \see{File} to read next from.
                 /// \param[out] next Where to put the next block info.
-                void Next (
-                    File &file,
-                    BlockInfo &next) const;
+                void Next (BlockInfo &next) const;
 
                 /// \brief
                 /// Read block info.
-                /// \param[in] file FileAllocator \see{File} to read.
-                void Read (File &file);
+                void Read ();
                 /// \brief
                 /// Write block info.
-                /// \param[in] file FileAllocator \see{File} to write.
-                void Write (File &file) const;
+                void Write () const;
             #if defined (THEKOGANS_UTIL_FILE_ALLOCATOR_BLOCK_INFO_USE_MAGIC)
                 /// \brief
                 /// If you chose to use magic (a very smart move) to protect
@@ -513,8 +514,7 @@ namespace thekogans {
                 /// detection for free. By zeroing out the magic during \see{Free}
                 /// the next time you access that block you get an exception
                 /// instead of corrupted data.
-                /// \param[in] file FileAllocator \see{File} to write.
-                void Invalidate (File &file) const;
+                void Invalidate () const;
             #endif // defined (THEKOGANS_UTIL_FILE_ALLOCATOR_BLOCK_INFO_USE_MAGIC)
 
                 /// \brief
@@ -524,8 +524,12 @@ namespace thekogans {
                     const Footer &footer);
 
                 /// \brief
-                /// FileAllocator needs access to private members.
+                /// Needs access to private members.
                 friend struct FileAllocator;
+
+                /// \brief
+                /// BlockInfo is neither copy constructable, nor assignable.
+                THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (BlockInfo)
             };
 
             /// \struct FileAllocator::BlockBuffer FileAllocator.h thekogans/util/FileAllocator.h
@@ -564,17 +568,27 @@ namespace thekogans {
                 /// \param[in] blockOffset Logical offset within block.
                 /// \param[in] blockLength How much of the block we want to read.
                 /// (0 == read the whole block).
-                std::size_t BlockRead (
-                    std::size_t blockOffset = 0,
-                    std::size_t blockLength = 0);
+                inline std::size_t BlockRead (
+                        std::size_t blockOffset = 0,
+                        std::size_t blockLength = 0) {
+                    return BlockIO (blockOffset, blockLength, true);
+                }
                 /// \brief
                 /// Write a block range from the buffer.
                 /// \param[in] blockOffset Logical offset within block.
                 /// \param[in] blockLength How much of the block we want to write.
                 /// (0 == write the whole block).
-                std::size_t BlockWrite (
-                    std::size_t blockOffset = 0,
-                    std::size_t blockLength = 0);
+                inline std::size_t BlockWrite (
+                        std::size_t blockOffset = 0,
+                        std::size_t blockLength = 0) {
+                    return BlockIO (blockOffset, blockLength, false);
+                }
+
+            private:
+                std::size_t BlockIO (
+                    std::size_t blockOffset,
+                    std::size_t blockLength,
+                    bool read);
 
                 /// \brief
                 /// BlockBuffer is neither copy constructable, nor assignable.

@@ -378,8 +378,8 @@ namespace thekogans {
                     // Get existing block size.
                     ui64 blockSize = 0;
                     if (keyValueOffset != 0) {
-                        FileAllocator::BlockInfo block (keyValueOffset);
-                        block.Read (*btree.file);
+                        FileAllocator::BlockInfo block (*btree.file, keyValueOffset);
+                        block.Read ();
                         blockSize = block.GetSize ();
                     }
                     // If existing block size is less than what we need,
@@ -899,13 +899,13 @@ namespace thekogans {
                     node->leftOffset = root->offset;
                     node->leftNode = root;
                     node->InsertEntry (entry, 0);
+                    node->dirty = true;
+                    root = node;
                     if (it.IsFinished ()) {
                         it.prefix.Reset (node->entries[0].key);
                         it.node = Iterator::NodeIndex (node, 0);
                         it.finished = false;
                     }
-                    node->dirty = true;
-                    root = node;
                     result = Node::Inserted;
                 }
                 // If we inserted the key/value pair, take ownership.
@@ -989,7 +989,7 @@ namespace thekogans {
             header.rootOffset = 0;
             Node::Free (root);
             root = Node::Alloc (*this, header.rootOffset);
-            dirty = true;
+            dirty = false;
         }
 
         void BTree::Flush () {
@@ -1000,7 +1000,7 @@ namespace thekogans {
                     dirty = true;
                 }
                 if (dirty) {
-                    FileAllocator::BlockBuffer buffer (*fileAllocator->GetFile (), offset);
+                    FileAllocator::BlockBuffer buffer (*GetFile (), offset);
                     buffer << MAGIC32 << header;
                     buffer.BlockWrite ();
                     dirty = false;
@@ -1011,7 +1011,7 @@ namespace thekogans {
         void BTree::Reload () {
             if (offset != 0) {
                 if (dirty) {
-                    FileAllocator::BlockBuffer buffer (*fileAllocator->GetFile (), offset);
+                    FileAllocator::BlockBuffer buffer (*GetFile (), offset);
                     buffer.BlockRead ();
                     ui32 magic;
                     buffer >> magic >> header;

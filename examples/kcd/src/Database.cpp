@@ -25,14 +25,17 @@ namespace thekogans {
                 bool secure,
                 std::size_t btreeEntriesPerNode,
                 std::size_t btreeNodesPerPage,
-                std::size_t registryEntriesPerNode,
-                std::size_t registryNodesPerPage,
-                util::Allocator::SharedPtr allocator) :
+                std::size_t registryEntriesPerNode_,
+                std::size_t registryNodesPerPage_,
+                util::Allocator::SharedPtr allocator_) :
                 file (
                     new util::SimpleBufferedFile (
                         util::HostEndian,
                         path,
-                        util::SimpleFile::ReadWrite | util::SimpleFile::Create)) {
+                        util::SimpleFile::ReadWrite | util::SimpleFile::Create)),
+                registryEntriesPerNode (registryEntriesPerNode_),
+                registryNodesPerPage (registryNodesPerPage_),
+                allocator (allocator_) {
             util::BufferedFile::Transaction transaction (file);
             fileAllocator.Reset (
                 new util::FileAllocator (
@@ -40,12 +43,6 @@ namespace thekogans {
                     secure,
                     btreeEntriesPerNode,
                     btreeNodesPerPage,
-                    allocator));
-            registry.Reset (
-                new util::FileAllocatorRegistry (
-                    fileAllocator,
-                    registryEntriesPerNode,
-                    registryNodesPerPage,
                     allocator));
             transaction.Commit ();
         }

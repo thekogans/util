@@ -197,6 +197,7 @@ namespace thekogans {
                 /// we're participants of.
                 BufferedFile::SharedPtr file;
 
+            public:
                 /// \brief
                 /// ctor.
                 /// \param[in] file_ \see{BufferedFile} we're a transaction participant of.
@@ -205,6 +206,14 @@ namespace thekogans {
                 /// dtor.
                 virtual ~TransactionParticipant () {}
 
+                /// \brief
+                /// Return the file.
+                /// \return file.
+                inline BufferedFile::SharedPtr GetFile () const {
+                    return file;
+                }
+
+            protected:
                 /// \brief
                 /// Allocate space from file.
                 virtual void Allocate () = 0;
