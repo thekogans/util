@@ -585,6 +585,13 @@ namespace thekogans {
                 }
 
             private:
+                /// \brief
+                /// Read or write a block. Since most of the body of
+                /// BlockRead and BlockWrite is the same, I saved a
+                /// bit by combining the two.
+                /// \param[in] blockOffset Logical offset within block.
+                /// \param[in] blockLength How much of the block we want to read or write.
+                /// (0 == read or write the whole block).
                 std::size_t BlockIO (
                     std::size_t blockOffset,
                     std::size_t blockLength,

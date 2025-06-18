@@ -132,16 +132,13 @@ namespace thekogans {
         }
 
         _LIB_THEKOGANS_UTIL_DECL std::size_t _LIB_THEKOGANS_UTIL_API SecureZeroMemory (
-                void *data,
+                volatile void *data,
                 std::size_t size) {
             if (data != nullptr && size > 0) {
-                volatile ui8 *ptr = (volatile ui8 *)data;
-                std::size_t size_ = size;
-                while (size_-- != 0) {
-                    *ptr++ = 0;
-                }
+                std::memset ((void *)data, 0, size);
+                return size;
             }
-            return size;
+            return 0;
         }
 
     } // namespace util

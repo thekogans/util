@@ -15,6 +15,7 @@
 // You should have received a copy of the GNU General Public License
 // along with libthekogans_util. If not, see <http://www.gnu.org/licenses/>.
 
+#include "thekogans/util/LockGuard.h"
 #include "thekogans/kcd/Database.h"
 
 namespace thekogans {
@@ -45,6 +46,21 @@ namespace thekogans {
                     btreeNodesPerPage,
                     allocator));
             transaction.Commit ();
+        }
+
+        util::FileAllocatorRegistry::SharedPtr Database::GetRegistry () {
+            if (registry == nullptr) {
+                util::LockGuard<util::SpinLock> guard (spinLock);
+                if (registry == nullptr) {
+                    registry.Reset (
+                        new util::FileAllocatorRegistry (
+                            fileAllocator,
+                            registryEntriesPerNode,
+                            registryNodesPerPage,
+                            allocator));
+                }
+            }
+            return registry;
         }
 
     } // namespace kcd

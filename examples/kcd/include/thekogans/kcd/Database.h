@@ -24,6 +24,7 @@
 #include "thekogans/util/FileAllocator.h"
 #include "thekogans/util/FileAllocatorRegistry.h"
 #include "thekogans/util/DefaultAllocator.h"
+#include "thekogans/util/SpinLock.h"
 #include "thekogans/kcd/Options.h"
 
 namespace thekogans {
@@ -42,12 +43,21 @@ namespace thekogans {
             /// \brief
             /// \see{FileAllocator} for managing random size blocks in the file.
             util::FileAllocator::SharedPtr fileAllocator;
+            /// \brief
+            /// Number of entries per \see{BTree::Node}.
             std::size_t registryEntriesPerNode;
+            /// \brief
+            /// Number of \see{BTree::Node}s that will fit in to a \see{BlockAllocator} page.
             std::size_t registryNodesPerPage;
+            /// \brief
+            /// \see{Allocator} for \see{FileAllocator::BTree} and \see{BTree}.
             util::Allocator::SharedPtr allocator;
             /// \brief
             /// \see{FileAllocatorRegistry} for system wide name/value pairs.
             util::FileAllocatorRegistry::SharedPtr registry;
+            /// \brief
+            /// Protect registry creation.
+            util::SpinLock spinLock;
 
         public:
             /// \brief
@@ -79,29 +89,23 @@ namespace thekogans {
             /// \return file.
             inline util::BufferedFile::SharedPtr GetFile () const {
                 return file;
-            };
+            }
 
             /// \brief
             /// Return the fileAllocator.
             /// \return fileAllocator.
             inline util::FileAllocator::SharedPtr GetFileAllocator () const {
                 return fileAllocator;
-            };
+            }
 
             /// \brief
-            /// Return the registry
+            /// Return the registry.
+            /// NOTE: Registry contains used defined types. These types
+            /// will need to read themselves from the file. We have to
+            /// create it outside the ctor to prevent potential deadlock
+            /// with database creation.
             /// \return registry.
-            inline util::FileAllocatorRegistry::SharedPtr GetRegistry () {
-                if (registry == nullptr) {
-                    registry.Reset (
-                        new util::FileAllocatorRegistry (
-                            fileAllocator,
-                            registryEntriesPerNode,
-                            registryNodesPerPage,
-                            allocator));
-                }
-                return registry;
-            };
+            util::FileAllocatorRegistry::SharedPtr GetRegistry ();
         };
 
     } // namespace kcd
