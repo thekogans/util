@@ -22,6 +22,7 @@
 #include "thekogans/util/StringUtils.h"
 #include "thekogans/util/Constants.h"
 #include "thekogans/util/Exception.h"
+#include "thekogans/util/SecureAllocator.h"
 #include "thekogans/util/GUID.h"
 
 namespace thekogans {
@@ -112,7 +113,7 @@ namespace thekogans {
                 memcpy (data, data_, SIZE);
             }
             else {
-                memset (data, 0, SIZE);
+                SecureZeroMemory (data, SIZE);
             }
         }
 
