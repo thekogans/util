@@ -97,7 +97,7 @@ namespace thekogans {
         /// VERY IMPORTANT: BufferedFile is NOT thread safe. I felt introducing
         /// a lock with every file access would be very costly performance wise.
         /// Instead, BufferedFile exposes two types of guards; a read only guard
-        /// (\see{BufferedFile::Guard}) and a read/write guard (\see{BufferedFile::Transaction}).
+        /// (\see{LockGuard}<Mutex>) and a read/write guard (\see{BufferedFile::Transaction}).
         /// Use the first to gain exclusive read access to the file's data. Use
         /// the later for exclusive modify access. This design choice has the
         /// following advantages; 1. Use the lock to protect a set of related
@@ -116,28 +116,6 @@ namespace thekogans {
             /// BufferedFile participates in the \see{DynamicCreatable}
             /// dynamic discovery and creation.
             THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE (BufferedFile)
-
-            /// \struct BufferedFile::Guard BufferedFile.h thekogans/util/BufferedFile.h
-            ///
-            /// \brief
-            /// A very simple scope guard. Will acquire the mutex in the ctor and release
-            /// it in the dtor. Useful in read only situations.
-            struct _LIB_THEKOGANS_UTIL_DECL Guard {
-            private:
-                /// \brief
-                /// This guard will serialize all access to the \see{BufferedFile}.
-                LockGuard<Mutex> guard;
-
-            public:
-                /// \brief
-                /// ctor.
-                /// \param[in] file \see{BufferedFile} to guard.
-                explicit Guard (BufferedFile::SharedPtr file);
-
-                /// \brief
-                /// Guard is neither copy constructable, nor assignable.
-                THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (Guard)
-            };
 
             /// \brief
             /// Commit phase 1.
@@ -550,6 +528,18 @@ namespace thekogans {
                     nodes[index] = nullptr;
                 }
             } root;
+            /// \brief
+            /// Current buffer cache.
+            /// NOTE: The design of GetBuffer is such that it takes ~5 shfts and ~5
+            /// ands to do it's job. Unfortunatelly this function is called every time
+            /// you call Read or Write. If you're doing a lot of inserting/extracting
+            /// of small types, that can add up. That's why this cache exists. If you're
+            /// going to do a lot of 'local' io, GetBuffer will be reduced to a single
+            /// and and compare. Keep that in mind when designing your data structures
+            /// and access patterns. The less you Seek, the better your performance
+            /// will be. To that end, you're highly encouraged to use \see{FileAllocator}
+            /// and \see{FileAllocator::BlockBuffer}.
+            Buffer *currBuffer;
 
         public:
             /// \brief
@@ -565,7 +555,8 @@ namespace thekogans {
                 position (IsOpen () ? File::Tell () : 0),
                 sizeOnDisk (IsOpen () ? File::GetSize () : 0),
                 size (sizeOnDisk),
-                flags (0) {}
+                flags (0),
+                currBuffer (nullptr) {}
         #if defined (TOOLCHAIN_OS_Windows)
             /// \brief
             /// ctor. Open the file.
@@ -592,7 +583,8 @@ namespace thekogans {
                 position (IsOpen () ? File::Tell () : 0),
                 sizeOnDisk (IsOpen () ? File::GetSize () : 0),
                 size (sizeOnDisk),
-                flags (0) {}
+                flags (0),
+                currBuffer (nullptr) {}
         #else // defined (TOOLCHAIN_OS_Windows)
             /// \brief
             /// ctor. Open the file.
@@ -609,11 +601,19 @@ namespace thekogans {
                 position (IsOpen () ? File::Tell () : 0),
                 sizeOnDisk (IsOpen () ? File::GetSize () : 0),
                 size (sizeOnDisk),
-                flags (0) {}
+                flags (0),
+                currBuffer (nullptr) {}
         #endif // defined (TOOLCHAIN_OS_Windows)
             /// \brief
             /// dtor.
             virtual ~BufferedFile ();
+
+            /// \brief
+            /// Use the lock to gain exclusive access to the file.
+            /// \return mutex.
+            inline Mutex &GetLock () {
+                return mutex;
+            }
 
             // Serializer
             /// \brief

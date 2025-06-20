@@ -32,12 +32,9 @@ namespace thekogans {
             thekogans::util::BufferedFile,
             Serializer::TYPE, RandomSeekSerializer::TYPE)
 
-        BufferedFile::Guard::Guard (BufferedFile::SharedPtr file) :
-            guard (file->mutex) {}
-
         BufferedFile::Transaction::Transaction (BufferedFile::SharedPtr file_) :
                 file (file_),
-                guard (file->mutex) {
+                guard (file->GetLock ()) {
             file->BeginTransaction ();
         }
 
@@ -342,6 +339,7 @@ namespace thekogans {
                 sizeOnDisk = 0;
                 size = 0;
                 flags = 0;
+                currBuffer = nullptr;
                 File::Close ();
             }
         }
@@ -406,6 +404,7 @@ namespace thekogans {
                     if (size > newSize) {
                         // shrinking
                         root.SetSize (newSize);
+                        currBuffer = nullptr;
                     }
                     size = newSize;
                     flags.Set (FLAGS_DIRTY, true);
@@ -421,6 +420,7 @@ namespace thekogans {
             if (IsOpen ()) {
                 Flush ();
                 root.Delete ();
+                currBuffer = nullptr;
             }
             else {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
@@ -586,6 +586,7 @@ namespace thekogans {
                     if (IsDirty ()) {
                         SetSize (sizeOnDisk);
                         root.Clear ();
+                        currBuffer = nullptr;
                         flags.Set (FLAGS_DIRTY, false);
                     }
                     std::string logPath = GetLogPath (path);
@@ -609,40 +610,43 @@ namespace thekogans {
         }
 
         BufferedFile::Buffer *BufferedFile::GetBuffer () {
-            // --
-            ui32 segmentIndex = THEKOGANS_UTIL_UI64_GET_UI32_AT_INDEX (position, 0);
-            Node *internal = root.GetNode (
-                THEKOGANS_UTIL_UI32_GET_UI8_AT_INDEX (segmentIndex, 0));
-            internal = internal->GetNode (
-                THEKOGANS_UTIL_UI32_GET_UI8_AT_INDEX (segmentIndex, 1));
-            internal = internal->GetNode (
-                THEKOGANS_UTIL_UI32_GET_UI8_AT_INDEX (segmentIndex, 2));
-            // Leafs are segments.
-            Segment *segment = (Segment *)internal->GetNode (
-                THEKOGANS_UTIL_UI32_GET_UI8_AT_INDEX (segmentIndex, 3), true);
-            // -- We've just sparsely traversed the first 4
-            // layers of the 5 layer 64 bit index.
-            // --
-            ui32 bufferIndex =
-                THEKOGANS_UTIL_UI64_GET_UI32_AT_INDEX (position, 1) >> Buffer::SHIFT_COUNT;
-            if (segment->buffers[bufferIndex] == nullptr) {
-                ui64 bufferOffset = position & ~(Buffer::SIZE - 1);
-                ui64 bufferLength = MIN (
-                    bufferOffset < size ? size - bufferOffset : 0,
-                    Buffer::SIZE);
-                segment->buffers[bufferIndex] = new Buffer (bufferOffset, bufferLength);
-                if (bufferOffset < sizeOnDisk) {
-                    File::Seek (bufferOffset, SEEK_SET);
-                    File::Read (
-                        segment->buffers[bufferIndex]->data,
-                        MIN (sizeOnDisk - bufferOffset, bufferLength));
+            ui64 bufferOffset = position & ~(Buffer::SIZE - 1);
+            if (currBuffer == nullptr || currBuffer->offset != bufferOffset) {
+                // --
+                ui32 segmentIndex = THEKOGANS_UTIL_UI64_GET_UI32_AT_INDEX (position, 0);
+                Node *internal = root.GetNode (
+                    THEKOGANS_UTIL_UI32_GET_UI8_AT_INDEX (segmentIndex, 0));
+                internal = internal->GetNode (
+                    THEKOGANS_UTIL_UI32_GET_UI8_AT_INDEX (segmentIndex, 1));
+                internal = internal->GetNode (
+                    THEKOGANS_UTIL_UI32_GET_UI8_AT_INDEX (segmentIndex, 2));
+                // Leafs are segments.
+                Segment *segment = (Segment *)internal->GetNode (
+                    THEKOGANS_UTIL_UI32_GET_UI8_AT_INDEX (segmentIndex, 3), true);
+                // -- We've just sparsely traversed the first 4
+                // layers of the 5 layer 64 bit index.
+                // --
+                ui32 bufferIndex =
+                    THEKOGANS_UTIL_UI64_GET_UI32_AT_INDEX (position, 1) >> Buffer::SHIFT_COUNT;
+                if (segment->buffers[bufferIndex] == nullptr) {
+                    ui64 bufferLength = MIN (
+                        bufferOffset < size ? size - bufferOffset : 0,
+                        Buffer::SIZE);
+                    segment->buffers[bufferIndex] = new Buffer (bufferOffset, bufferLength);
+                    if (bufferOffset < sizeOnDisk) {
+                        File::Seek (bufferOffset, SEEK_SET);
+                        File::Read (
+                            segment->buffers[bufferIndex]->data,
+                            MIN (sizeOnDisk - bufferOffset, bufferLength));
+                    }
                 }
+                // -- After potentially creating the buffer above,
+                // we've arrived at the end of the 5 layer deep sparse index.
+                // This mapping is constant (with the create code being amortized
+                // accross multiple buffer accesses). It's O(c) where c = 5 shifts.
+                currBuffer = segment->buffers[bufferIndex];
             }
-            // -- After potentially creating the buffer above,
-            // we've arrived at the end of the 5 layer deep sparse index.
-            // This mapping is constant (with the create code being amortized
-            // accross multiple buffer accesses). It's O(c) where c = 5 shifts.
-            return segment->buffers[bufferIndex];
+            return currBuffer;
         }
 
         std::string BufferedFile::GetLogPath (const std::string &path) {

@@ -20,6 +20,7 @@
 #include <iostream>
 #include "thekogans/util/Environment.h"
 #include "thekogans/util/Path.h"
+#include "thekogans/util/LockGuard.h"
 #include "thekogans/util/LoggerMgr.h"
 #include "thekogans/util/Exception.h"
 #include "thekogans/util/Console.h"
@@ -106,7 +107,8 @@ int main (
             Roots::SharedPtr roots;
             IgnoreList::SharedPtr ignoreList;
             {
-                util::BufferedFile::Guard guard (Database::Instance ()->GetFile ());
+                util::LockGuard<util::Mutex> guard (
+                    Database::Instance ()->GetFile ()->GetLock ());
                 roots = Database::Instance ()->GetRegistry ()->GetValue ("roots");
                 ignoreList = Database::Instance ()->GetRegistry ()->GetValue ("ignore_list");
             }
@@ -199,7 +201,8 @@ int main (
                 if (!Options::Instance ()->pattern.empty ()) {
                     std::vector<std::string> results;
                     {
-                        util::BufferedFile::Guard guard (Database::Instance ()->GetFile ());
+                        util::LockGuard<util::Mutex> guard (
+                            Database::Instance ()->GetFile ()->GetLock ());
                         roots->Find (
                             Options::Instance ()->pattern,
                             Options::Instance ()->ignoreCase,
