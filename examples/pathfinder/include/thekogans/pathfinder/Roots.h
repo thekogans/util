@@ -65,12 +65,14 @@ namespace thekogans {
             void Find (
                 const std::string &pattern,
                 bool ignoreCase,
-                bool ordered,
-                std::vector<std::string> &results);
+                bool ordered);
 
             virtual void Init () override;
 
             virtual void OnRootScanPath (
+                Root::SharedPtr /*root*/,
+                const std::string &path) throw () override;
+            virtual void OnRootFindPath (
                 Root::SharedPtr /*root*/,
                 const std::string &path) throw () override;
         };

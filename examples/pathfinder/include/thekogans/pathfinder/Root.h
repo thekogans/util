@@ -54,6 +54,14 @@ namespace thekogans {
                 util::RefCounted::SharedPtr<Root> /*root*/) throw () {}
             virtual void OnRootDeleteEnd (
                 util::RefCounted::SharedPtr<Root> /*root*/) throw () {}
+
+            virtual void OnRootFindBegin (
+                util::RefCounted::SharedPtr<Root> /*root*/) throw () {}
+            virtual void OnRootFindPath (
+                util::RefCounted::SharedPtr<Root> /*root*/,
+                const std::string & /*path*/) throw () {}
+            virtual void OnRootFindEnd (
+                util::RefCounted::SharedPtr<Root> /*root*/) throw () {}
         };
 
         struct Root : public util::Producer<RootEvents> {
@@ -109,9 +117,10 @@ namespace thekogans {
             void Delete ();
 
             void Find (
-                const std::string &prefix,
+                std::list<std::string>::const_iterator patternBegin,
+                std::list<std::string>::const_iterator patternEnd,
                 bool ignoreCase,
-                std::vector<std::string> &paths);
+                bool ordered);
 
         private:
             void Scan (
@@ -125,12 +134,6 @@ namespace thekogans {
                 util::Serializer &serializer,
                 Root::SharedPtr &root);
         };
-
-        std::list<std::string>::const_iterator FindPrefix (
-            std::list<std::string>::const_iterator pathBegin,
-            std::list<std::string>::const_iterator pathEnd,
-            const std::string &prefix,
-            bool ignoreCase);
 
     } // namespace pathfinder
 } // namespace thekogans

@@ -139,11 +139,20 @@ namespace thekogans {
         /// 16 bit invalid index.
         const ui16 NIDX16 = UI16_MAX;
         /// \brief
+        /// 16 bit invalid offset.
+        const ui16 NOFFS16 = NIDX16;
+        /// \brief
         /// 32 bit invalid index.
         const ui32 NIDX32 = UI32_MAX;
         /// \brief
+        /// 32 bit invalid offset.
+        const ui32 NOFFS32 = NIDX32;
+        /// \brief
         /// 64 bit invalid index.
         const ui64 NIDX64 = UI64_MAX;
+        /// \brief
+        /// 64 bit invalid offset.
+        const ui64 NOFFS64 = NIDX64;
 
         /// \brief
         /// 16 bit magic number.
@@ -176,6 +185,9 @@ namespace thekogans {
         #error Unknown TOOLCHAIN_ARCH.
     #endif // defined (TOOLCHAIN_ARCH_i386) || defined (TOOLCHAIN_ARCH_ppc32) ||
            // defined (TOOLCHAIN_ARCH_arm32) || defined (TOOLCHAIN_ARCH_mips32)
+        /// \brief
+        /// Architecture word size invalid offset.
+        const std::size_t NOFFS = NIDX;
 
         /// \brief
         /// Ethernet MAC length.

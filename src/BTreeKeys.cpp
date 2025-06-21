@@ -27,17 +27,15 @@ namespace thekogans {
         THEKOGANS_UTIL_IMPLEMENT_HEAP_FUNCTIONS (StringKey)
 
         i32 StringKey::PrefixCompare (const Key &key_) const {
-            const StringKey *stringKey = static_cast<const StringKey *> (&key_);
             return ignoreCase ?
-                StringCompareIgnoreCase (key.c_str (), stringKey->key.c_str (), key.size ()) :
-                StringCompare (key.c_str (), stringKey->key.c_str (), key.size ());
+                StringCompareIgnoreCase (key.c_str (), key_.ToString ().c_str (), key.size ()) :
+                StringCompare (key.c_str (), key_.ToString ().c_str (), key.size ());
         }
 
         i32 StringKey::Compare (const Key &key_) const {
-            const StringKey *stringKey = static_cast<const StringKey *> (&key_);
             return ignoreCase ?
-                StringCompareIgnoreCase (key.c_str (), stringKey->key.c_str ()) :
-                StringCompare (key.c_str (), stringKey->key.c_str ());
+                StringCompareIgnoreCase (key.c_str (), key_.ToString ().c_str ()) :
+                StringCompare (key.c_str (), key_.ToString ().c_str ());
         }
 
         THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE (thekogans::util::GUIDKey, 1, BTree::Key::TYPE)

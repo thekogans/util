@@ -78,20 +78,20 @@ int main (
     if (Options::Instance ()->help) {
         THEKOGANS_UTIL_LOG_INFO (
             "%s [-h] [-v] [-l:'%s'] [-d:'database path'] "
-            "-a:[scan_root|enable_root|disable_root|delete_root|show_roots|cd|"
+            "-a:[scan_root|enable_root|disable_root|delete_root|show_roots|find|"
             "show_ignore_list|add_ignore|delete_ignore] "
             "[-r:root] [-p:pattern] [-f:'ignore file path'] [-i] [-o]\n\n"
             "h - Display this help message.\n"
             "v - Display version information.\n"
             "l - Set logging level (default is Info).\n"
             "d - Database path (default is $HOME/pathfinder.db)).\n"
-            "a - Action to perform (default is cd).\n"
+            "a - Action to perform (default is find).\n"
             "r - Root (can be repeated).\n"
-            "p - Pattern (when action is cd).\n"
+            "p - Pattern (when action is find).\n"
             "f - Path to ignore file (when action is [add|delete]_ignore).\n"
-            "i - Ignore case (when action is cd). Ignore string "
+            "i - Ignore case (when action is find). Ignore string "
             "(when action is [add|delete]_ignore).\n"
-            "o - Pattern should appear ordered in the results (when action is cd).\n",
+            "o - Pattern should appear ordered in the results (when action is find).\n",
             argv[0],
             GetLevelsList (" | ").c_str ());
     }
@@ -197,21 +197,14 @@ int main (
                         ((*roots)[i]->IsActive () ? "enabled" : "disabled") << "\n";
                 }
             }
-            else if (Options::Instance ()->action == "cd") {
+            else if (Options::Instance ()->action == "find") {
                 if (!Options::Instance ()->pattern.empty ()) {
-                    std::vector<std::string> results;
-                    {
-                        util::LockGuard<util::Mutex> guard (
-                            Database::Instance ()->GetFile ()->GetLock ());
-                        roots->Find (
-                            Options::Instance ()->pattern,
-                            Options::Instance ()->ignoreCase,
-                            Options::Instance ()->ordered,
-                            results);
-                    }
-                    for (std::size_t i = 0, count = results.size (); i < count; ++i) {
-                        std::cout << results[i] << "\n";
-                    }
+                    util::LockGuard<util::Mutex> guard (
+                        Database::Instance ()->GetFile ()->GetLock ());
+                    roots->Find (
+                        Options::Instance ()->pattern,
+                        Options::Instance ()->ignoreCase,
+                        Options::Instance ()->ordered);
                 }
                 else {
                     THEKOGANS_UTIL_LOG_ERROR ("Must specify a patern to search for.\n");

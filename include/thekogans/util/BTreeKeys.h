@@ -45,12 +45,13 @@ namespace thekogans {
             /// The actual key.
             std::string key;
             /// \brief
-            /// Used to specify prefixes in searches.
+            /// Used in searches. Not stored in \see{BTree}.
             bool ignoreCase;
 
             /// \brief
             /// ctor.
             /// \param[in] key_ std::string to initialize this key with.
+            /// \param[in] ignoreCase_ Used in searches.
             StringKey (
                 const std::string &key_ = std::string (),
                 bool ignoreCase_ = false) :
@@ -63,12 +64,12 @@ namespace thekogans {
             /// \param[in] key_ Key to compare against.
             /// \return -1 == this is < key_, 0 == this == prefix of key_,
             /// 1 == this is greater than key_.
-            virtual i32 PrefixCompare (const BTree::Key &key_) const override;
+            virtual i32 PrefixCompare (const Key &key_) const override;
             /// \brief
             /// Used to order keys.
             /// \param[in] key_ Key to compare against.
             /// \return -1 == this is < key_, 0 == this == key_, 1 == this is greater than key_.
-            virtual i32 Compare (const BTree::Key &key_) const override;
+            virtual i32 Compare (const Key &key_) const override;
             /// \brief
             /// This method is only used in Dump for debugging purposes.
             /// \return String representation of the key.
@@ -135,12 +136,12 @@ namespace thekogans {
             /// \param[in] key_ Key to compare against.
             /// \return -1 == this is < key_, 0 == this == prefix of key_,
             /// 1 == this is greater than key_.
-            virtual i32 PrefixCompare (const BTree::Key &key_) const override;
+            virtual i32 PrefixCompare (const Key &key_) const override;
             /// \brief
             /// Used to order keys.
             /// \param[in] key_ Key to compare against.
             /// \return -1 == this is < key_, 0 == this == key_, 1 == this is greater than key_.
-            virtual i32 Compare (const BTree::Key &key_) const override;
+            virtual i32 Compare (const Key &key_) const override;
             /// \brief
             /// This method is only used in Dump for debugging purposes.
             /// \return String representation of the key.

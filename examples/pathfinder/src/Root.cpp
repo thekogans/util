@@ -17,7 +17,7 @@
 
 #include <string>
 #include <list>
-#include <regex>
+#include <unordered_set>
 #include "thekogans/util/Environment.h"
 #include "thekogans/util/Path.h"
 #include "thekogans/util/StringUtils.h"
@@ -71,15 +71,61 @@ namespace thekogans {
                     this));
         }
 
+        namespace {
+            std::list<std::string>::const_iterator FindPrefix (
+                    std::list<std::string>::const_iterator pathBegin,
+                    std::list<std::string>::const_iterator pathEnd,
+                    const std::string &prefix,
+                    bool ignoreCase) {
+                util::StringKey prefixKey (prefix, ignoreCase);
+                while (pathBegin != pathEnd) {
+                    if (prefixKey.PrefixCompare (util::StringKey (*pathBegin)) == 0) {
+                        break;
+                    }
+                    ++pathBegin;
+                }
+                return pathBegin;
+            }
+
+            bool ScanPattern (
+                    std::list<std::string>::const_iterator pathBegin,
+                    std::list<std::string>::const_iterator pathEnd,
+                    std::list<std::string>::const_iterator patternBegin,
+                    std::list<std::string>::const_iterator patternEnd,
+                    bool ignoreCase,
+                    bool ordered) {
+                while (patternBegin != patternEnd) {
+                    std::list<std::string>::const_iterator it =
+                        FindPrefix (pathBegin, pathEnd, *patternBegin, ignoreCase);
+                    if (it == pathEnd) {
+                        return false;
+                    }
+                    // To honor ordered flag pattern components
+                    // must come in order in the resulting paths.
+                    if (ordered) {
+                        pathBegin = ++it;
+                    }
+                    ++patternBegin;
+                }
+                return true;
+            }
+        }
+
         void Root::Find (
-                const std::string &prefix,
+                std::list<std::string>::const_iterator patternBegin,
+                std::list<std::string>::const_iterator patternEnd,
                 bool ignoreCase,
-                std::vector<std::string> &paths) {
-            util::StringKey originalPrefix (prefix);
+                bool ordered) {
+            Produce (
+                std::bind (
+                    &RootEvents::OnRootFindBegin,
+                    std::placeholders::_1,
+                    this));
+            util::StringKey originalPrefix (*patternBegin);
             // To allow for the ignoreCase flag the database is
             // maintained without regard to case. All searches
             // must be performed caseless too.
-            util::BTree::Iterator it (new util::StringKey (prefix, true));
+            util::BTree::Iterator it (new util::StringKey (*patternBegin, true));
             for (componentBTree->FindFirst (it); !it.IsFinished (); it.Next ()) {
                 // To honor the case request we filter out everything that
                 // doesn't match.
@@ -89,13 +135,13 @@ namespace thekogans {
                              count = componentValue->value.size (); i < count; ++i) {
                         util::BTree::Iterator jt;
                         if (pathBTree->Find (util::GUIDKey (componentValue->value[i]), jt)) {
+                            std::string path = jt.GetValue ()->ToString ();
+                            std::list<std::string> pathComponents;
+                            util::Path (path).GetComponents (pathComponents);
                             // Components are stored caseless but paths are stored
                             // with case in tact. That means that a component might
                             // be pointing to a path with mismatched case.
                             if (!ignoreCase) {
-                                std::list<std::string> pathComponents;
-                                util::Path (jt.GetValue ()->ToString ()).GetComponents (
-                                    pathComponents);
                                 if (FindPrefix (
                                     #if defined (TOOLCHAIN_OS_Windows)
                                         // If on Windows, skip over the drive leter.
@@ -104,16 +150,50 @@ namespace thekogans {
                                         pathComponents.begin (),
                                     #endif // defined (TOOLCHAIN_OS_Windows)
                                         pathComponents.end (),
-                                        prefix,
+                                        *patternBegin,
                                         ignoreCase) == pathComponents.end ()) {
                                     continue;
                                 }
                             }
-                            paths.push_back (jt.GetValue ()->ToString ());
+                            // If we don't care about order, or there's only one pattern
+                            // component, skip over the first pattern component because
+                            // we just found it.
+                            if (!ordered || std::next (patternBegin) == patternEnd) {
+                                ++patternBegin;
+                            }
+                            // Multiple different components with the same prefix (Python/Python38-32)
+                            // can be found in the same path. Make sure we only count it once.
+                            std::unordered_set<std::string> duplicates;
+                            if ((patternBegin == patternEnd ||
+                                    ScanPattern (
+                                    #if defined (TOOLCHAIN_OS_Windows)
+                                        // If on Windows, skip over the drive leter.
+                                        ++pathComponents.begin (),
+                                    #else // defined (TOOLCHAIN_OS_Windows)
+                                        pathComponents.begin (),
+                                    #endif // defined (TOOLCHAIN_OS_Windows)
+                                        pathComponents.end (),
+                                        patternBegin,
+                                        patternEnd,
+                                        ignoreCase,
+                                        ordered)) &&
+                                    duplicates.insert (path).second) {
+                                Produce (
+                                    std::bind (
+                                        &RootEvents::OnRootFindPath,
+                                        std::placeholders::_1,
+                                        this,
+                                        path));
+                            }
                         }
                     }
                 }
             }
+            Produce (
+                std::bind (
+                    &RootEvents::OnRootFindEnd,
+                    std::placeholders::_1,
+                    this));
         }
 
         void Root::Scan (
@@ -189,28 +269,6 @@ namespace thekogans {
             serializer >> path >> pathBTreeOffset >> componentBTreeOffset >> active;
             root.Reset (new Root (path, pathBTreeOffset, componentBTreeOffset, active));
             return serializer;
-        }
-
-        std::list<std::string>::const_iterator FindPrefix (
-                std::list<std::string>::const_iterator pathBegin,
-                std::list<std::string>::const_iterator pathEnd,
-                const std::string &prefix,
-                bool ignoreCase) {
-            while (pathBegin != pathEnd) {
-                if ((ignoreCase ?
-                        util::StringCompareIgnoreCase (
-                            prefix.c_str (),
-                            pathBegin->c_str (),
-                            prefix.size ()) :
-                        util::StringCompare (
-                            prefix.c_str (),
-                            pathBegin->c_str (),
-                            prefix.size ())) == 0) {
-                    break;
-                }
-                ++pathBegin;
-            }
-            return pathBegin;
         }
 
     } // namespace pathfinder

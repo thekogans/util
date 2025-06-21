@@ -528,6 +528,7 @@ namespace thekogans {
                     nodes[index] = nullptr;
                 }
             } root;
+            ui64 currBufferOffset;
             /// \brief
             /// Current buffer cache.
             /// NOTE: The design of GetBuffer is such that it takes ~5 shfts and ~5
@@ -556,6 +557,7 @@ namespace thekogans {
                 sizeOnDisk (IsOpen () ? File::GetSize () : 0),
                 size (sizeOnDisk),
                 flags (0),
+                currBufferOffset (NOFFS),
                 currBuffer (nullptr) {}
         #if defined (TOOLCHAIN_OS_Windows)
             /// \brief
@@ -584,6 +586,7 @@ namespace thekogans {
                 sizeOnDisk (IsOpen () ? File::GetSize () : 0),
                 size (sizeOnDisk),
                 flags (0),
+                currBufferOffset (NOFFS),
                 currBuffer (nullptr) {}
         #else // defined (TOOLCHAIN_OS_Windows)
             /// \brief
@@ -602,6 +605,7 @@ namespace thekogans {
                 sizeOnDisk (IsOpen () ? File::GetSize () : 0),
                 size (sizeOnDisk),
                 flags (0),
+                currBufferOffset (NOFFS),
                 currBuffer (nullptr) {}
         #endif // defined (TOOLCHAIN_OS_Windows)
             /// \brief

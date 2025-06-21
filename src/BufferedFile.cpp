@@ -339,6 +339,7 @@ namespace thekogans {
                 sizeOnDisk = 0;
                 size = 0;
                 flags = 0;
+                currBufferOffset = NOFFS;
                 currBuffer = nullptr;
                 File::Close ();
             }
@@ -404,6 +405,7 @@ namespace thekogans {
                     if (size > newSize) {
                         // shrinking
                         root.SetSize (newSize);
+                        currBufferOffset = NOFFS;
                         currBuffer = nullptr;
                     }
                     size = newSize;
@@ -420,6 +422,7 @@ namespace thekogans {
             if (IsOpen ()) {
                 Flush ();
                 root.Delete ();
+                currBufferOffset = NOFFS;
                 currBuffer = nullptr;
             }
             else {
@@ -586,6 +589,7 @@ namespace thekogans {
                     if (IsDirty ()) {
                         SetSize (sizeOnDisk);
                         root.Clear ();
+                        currBufferOffset = NOFFS;
                         currBuffer = nullptr;
                         flags.Set (FLAGS_DIRTY, false);
                     }
@@ -611,7 +615,7 @@ namespace thekogans {
 
         BufferedFile::Buffer *BufferedFile::GetBuffer () {
             ui64 bufferOffset = position & ~(Buffer::SIZE - 1);
-            if (currBuffer == nullptr || currBuffer->offset != bufferOffset) {
+            if (currBufferOffset != bufferOffset) {
                 // --
                 ui32 segmentIndex = THEKOGANS_UTIL_UI64_GET_UI32_AT_INDEX (position, 0);
                 Node *internal = root.GetNode (
@@ -644,6 +648,7 @@ namespace thekogans {
                 // we've arrived at the end of the 5 layer deep sparse index.
                 // This mapping is constant (with the create code being amortized
                 // accross multiple buffer accesses). It's O(c) where c = 5 shifts.
+                currBufferOffset = bufferOffset;
                 currBuffer = segment->buffers[bufferIndex];
             }
             return currBuffer;

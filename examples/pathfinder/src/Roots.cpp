@@ -17,8 +17,6 @@
 
 #include <string>
 #include <list>
-#include <vector>
-#include <unordered_set>
 #include <iostream>
 #include "thekogans/util/Environment.h"
 #include "thekogans/util/Path.h"
@@ -113,77 +111,15 @@ namespace thekogans {
         void Roots::Find (
                 const std::string &pattern,
                 bool ignoreCase,
-                bool ordered,
-                std::vector<std::string> &results) {
-            auto ScanPattern = [] (
-                    std::list<std::string>::const_iterator pathBegin,
-                    std::list<std::string>::const_iterator pathEnd,
-                    std::list<std::string>::const_iterator patternBegin,
-                    std::list<std::string>::const_iterator patternEnd,
-                    bool ignoreCase,
-                    bool ordered) -> bool {
-                while (patternBegin != patternEnd) {
-                    std::list<std::string>::const_iterator it =
-                        FindPrefix (pathBegin, pathEnd, *patternBegin, ignoreCase);
-                    if (it == pathEnd) {
-                        return false;
-                    }
-                    // To honor ordered flag pattern components
-                    // must come in order in the resulting paths.
-                    if (ordered) {
-                        pathBegin = ++it;
-                    }
-                    ++patternBegin;
-                }
-                return true;
-            };
+                bool ordered) {
             std::list<std::string> patternComponents;
             util::Path (pattern).GetComponents (patternComponents);
             std::list<std::string>::const_iterator patternBegin = patternComponents.begin ();
             std::list<std::string>::const_iterator patternEnd = patternComponents.end ();
             if (patternBegin != patternEnd) {
-                std::vector<std::string> paths;
                 for (std::size_t i = 0, count = value.size (); i < count; ++i) {
                     if (value[i]->IsActive ()) {
-                        value[i]->Find (*patternBegin, ignoreCase, paths);
-                    }
-                }
-                // If we don't care about order, or there's only one pattern
-                // component, skip over the first pattern component because
-                // value[i]->Find just found it.
-                if (!ordered || std::next (patternBegin) == patternEnd) {
-                    ++patternBegin;
-                }
-                // Multiple different components with the same prefix (Python/Python38-32)
-                // can be found in the same path. Make sure we only count it once.
-                std::unordered_set<std::string> duplicates;
-                if (patternBegin == patternEnd) {
-                    for (std::size_t i = 0, count = paths.size (); i < count; ++i) {
-                        if (duplicates.insert (paths[i]).second) {
-                            results.push_back (paths[i]);
-                        }
-                    }
-                }
-                else {
-                    for (std::size_t i = 0, count = paths.size (); i < count; ++i) {
-                        std::list<std::string> pathComponents;
-                        util::Path (paths[i]).GetComponents (pathComponents);
-                        if (ScanPattern (
-                            #if defined (TOOLCHAIN_OS_Windows)
-                                // If on Windows, skip over the drive leter.
-                                ++pathComponents.begin (),
-                            #else // defined (TOOLCHAIN_OS_Windows)
-                                pathComponents.begin (),
-                            #endif // defined (TOOLCHAIN_OS_Windows)
-                                pathComponents.end (),
-                                patternBegin,
-                                patternEnd,
-                                ignoreCase,
-                                ordered)) {
-                            if (duplicates.insert (paths[i]).second) {
-                                results.push_back (paths[i]);
-                            }
-                        }
+                        value[i]->Find (patternBegin, patternEnd, ignoreCase, ordered);
                     }
                 }
             }
@@ -196,6 +132,12 @@ namespace thekogans {
         }
 
         void Roots::OnRootScanPath (
+                Root::SharedPtr /*root*/,
+                const std::string &path) throw () {
+            std::cout << path << "\n";
+        }
+
+        void Roots::OnRootFindPath (
                 Root::SharedPtr /*root*/,
                 const std::string &path) throw () {
             std::cout << path << "\n";

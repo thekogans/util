@@ -49,7 +49,7 @@ namespace thekogans {
                 version (false),
                 logLevel (util::LoggerMgr::Info),
                 dbPath (util::MakePath (util::Path::GetHomeDirectory (), "pathfinder.db")),
-                action ("cd"),
+                action ("find"),
                 ignoreCase (false),
                 ordered (false) {}
 
