@@ -138,46 +138,35 @@ namespace thekogans {
                             std::string path = jt.GetValue ()->ToString ();
                             std::list<std::string> pathComponents;
                             util::Path (path).GetComponents (pathComponents);
+                            std::list<std::string>::const_iterator pathComponentsBegin =
+                                pathComponents.begin ();
+                        #if defined (TOOLCHAIN_OS_Windows)
+                            // If on Windows, skip over the drive leter.
+                            ++pathComponentsBegin;
+                        #endif // defined (TOOLCHAIN_OS_Windows)
+                            std::list<std::string>::const_iterator pathComponentsEnd =
+                                pathComponents.end ();
+                            // Multiple different components with the same prefix
+                            // (Python/Python38-32) can be found in the same path.
+                            // Make sure we only count it once.
+                            std::unordered_set<std::string> duplicates;
                             // Components are stored caseless but paths are stored
                             // with case in tact. That means that a component might
                             // be pointing to a path with mismatched case.
-                            if (!ignoreCase) {
-                                if (FindPrefix (
-                                    #if defined (TOOLCHAIN_OS_Windows)
-                                        // If on Windows, skip over the drive leter.
-                                        ++pathComponents.begin (),
-                                    #else // defined (TOOLCHAIN_OS_Windows)
-                                        pathComponents.begin (),
-                                    #endif // defined (TOOLCHAIN_OS_Windows)
-                                        pathComponents.end (),
+                            if ((ignoreCase ||
+                                    FindPrefix (
+                                        pathComponentsBegin,
+                                        pathComponentsEnd,
                                         *patternBegin,
-                                        ignoreCase) == pathComponents.end ()) {
-                                    continue;
-                                }
-                            }
-                            // If we don't care about order, or there's only one pattern
-                            // component, skip over the first pattern component because
-                            // we just found it.
-                            if (!ordered || std::next (patternBegin) == patternEnd) {
-                                ++patternBegin;
-                            }
-                            // Multiple different components with the same prefix (Python/Python38-32)
-                            // can be found in the same path. Make sure we only count it once.
-                            std::unordered_set<std::string> duplicates;
-                            if ((patternBegin == patternEnd ||
+                                        ignoreCase) != pathComponentsEnd) &&
                                     ScanPattern (
-                                    #if defined (TOOLCHAIN_OS_Windows)
-                                        // If on Windows, skip over the drive leter.
-                                        ++pathComponents.begin (),
-                                    #else // defined (TOOLCHAIN_OS_Windows)
-                                        pathComponents.begin (),
-                                    #endif // defined (TOOLCHAIN_OS_Windows)
-                                        pathComponents.end (),
+                                        pathComponentsBegin,
+                                        pathComponentsEnd,
                                         patternBegin,
                                         patternEnd,
                                         ignoreCase,
-                                        ordered)) &&
-                                    duplicates.insert (path).second) {
+                                        ordered) &&
+                                        duplicates.insert (path).second) {
                                 Produce (
                                     std::bind (
                                         &RootEvents::OnRootFindPath,
