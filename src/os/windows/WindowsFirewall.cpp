@@ -17,7 +17,7 @@
 
 #include "thekogans/util/Environment.h"
 
-#if defined (TOOLCHAIN_OS_Windows)
+#if defined (TOOLCHAIN_OS_Windows) && defined (THEKOGANS_UTIL_HAVE_OLE)
 
 #include "thekogans/util/Types.h"
 #include "thekogans/util/Exception.h"
@@ -321,4 +321,4 @@ namespace thekogans {
     } // namespace util
 } // namespace thekogans
 
-#endif // defined (TOOLCHAIN_OS_Windows)
+#endif // defined (TOOLCHAIN_OS_Windows) && defined (THEKOGANS_UTIL_HAVE_OLE)

@@ -20,7 +20,7 @@
 
 #include "thekogans/util/Environment.h"
 
-#if defined (TOOLCHAIN_OS_Windows)
+#if defined (TOOLCHAIN_OS_Windows) && defined (THEKOGANS_UTIL_HAVE_OLE)
 
 #include "thekogans/util/os/windows/WindowsHeader.h"
 #include <netfw.h>
@@ -179,6 +179,6 @@ namespace thekogans {
     } // namespace util
 } // namespace thekogans
 
-#endif // defined (TOOLCHAIN_OS_Windows)
+#endif // defined (TOOLCHAIN_OS_Windows) && defined (THEKOGANS_UTIL_HAVE_OLE)
 
 #endif // !defined (__thekogans_util_os_windows_WindowsFirewall_h)

@@ -74,7 +74,7 @@ namespace thekogans {
             }
         }
 
-    #if defined (TOOLCHAIN_OS_Windows)
+    #if defined (TOOLCHAIN_OS_Windows) && defined (THEKOGANS_UTIL_HAVE_OLE)
         void RunLoop::COMInitializer::InitializeWorker () noexcept {
             THEKOGANS_UTIL_TRY {
                 HRESULT result = CoInitializeEx (0, dwCoInit);
@@ -102,7 +102,7 @@ namespace thekogans {
         void RunLoop::OLEInitializer::UninitializeWorker () noexcept {
             OleUninitialize ();
         }
-    #endif // defined (TOOLCHAIN_OS_Windows)
+    #endif // defined (TOOLCHAIN_OS_Windows) && defined (THEKOGANS_UTIL_HAVE_OLE)
 
         RunLoop::JobExecutionPolicy::JobExecutionPolicy (std::size_t maxJobs_) :
                 maxJobs (maxJobs_) {

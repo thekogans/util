@@ -21,7 +21,9 @@
 #include "thekogans/util/Environment.h"
 #if defined (TOOLCHAIN_OS_Windows)
     #include "thekogans/util/os/windows/WindowsHeader.h"
+#if defined (THEKOGANS_UTIL_HAVE_OLE)
     #include <objbase.h>
+#endif // defined (THEKOGANS_UTIL_HAVE_OLE)
 #endif // defined (TOOLCHAIN_OS_Windows)
 #include <memory>
 #include <string>
@@ -745,6 +747,7 @@ namespace thekogans {
             };
 
         #if defined (TOOLCHAIN_OS_Windows)
+        #if defined (THEKOGANS_UTIL_HAVE_OLE)
             /// \struct RunLoop::COMInitializer RunLoop.h thekogans/util/RunLoop.h
             ///
             /// \brief
@@ -782,6 +785,7 @@ namespace thekogans {
                 /// Called by the worker before exiting the thread.
                 virtual void UninitializeWorker () noexcept override;
             };
+        #endif // defined (THEKOGANS_UTIL_HAVE_OLE)
         #elif defined (TOOLCHAIN_OS_Linux)
             /// \struct RunLoop::XlibInitializer RunLoop.h thekogans/util/RunLoop.h
             ///

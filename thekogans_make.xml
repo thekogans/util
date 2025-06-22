@@ -7,14 +7,15 @@
                 guid = "e541acd69d9d020f7eac98d5bf9e0d7a"
                 schema_version = "2">
   <features>
-    <if condition = "$(TOOLCHAIN_OS) == 'Linux'">
-      <feature>THEKOGANS_UTIL_HAVE_XLIB</feature>
-    </if>
     <if condition = "$(TOOLCHAIN_OS) == 'Windows'">
+      <feature>THEKOGANS_UTIL_HAVE_OLE</feature>
       <feature>THEKOGANS_UTIL_HAVE_WTS</feature>
     </if>
     <if condition = "$(TOOLCHAIN_OS) != 'Windows'">
       <feature>THEKOGANS_UTIL_HAVE_MMAP</feature>
+      <if condition = "$(TOOLCHAIN_OS) == 'Linux'">
+        <feature>THEKOGANS_UTIL_HAVE_XLIB</feature>
+      </if>
     </if>
     <!-- If you don't know what this is, it's safer to leave it on.
          See FileAllocator for explanation. -->
@@ -24,8 +25,10 @@
     <choose>
       <when condition = "$(TOOLCHAIN_OS) == 'Windows'">
         <library>Ws2_32.lib</library>
-        <library>ole32.lib</library>
-        <library>oleaut32.lib</library>
+        <if condition = "$(have_feature -f:THEKOGANS_UTIL_HAVE_OLE)">
+          <library>ole32.lib</library>
+          <library>oleaut32.lib</library>
+        </if>
         <if condition = "$(have_feature -f:THEKOGANS_UTIL_HAVE_WTS)">
           <library>Wtsapi32.lib</library>
           <library>Advapi32.lib</library>

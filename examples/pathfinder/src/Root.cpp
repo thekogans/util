@@ -121,7 +121,6 @@ namespace thekogans {
                     &RootEvents::OnRootFindBegin,
                     std::placeholders::_1,
                     this));
-            util::StringKey originalPrefix (*patternBegin);
             // Multiple different components with the same prefix
             // (Python/Python38-32) can be found in the same path.
             // Make sure we only count it once.
@@ -129,6 +128,7 @@ namespace thekogans {
             // To allow for the ignoreCase flag the database is
             // maintained without regard to case. All searches
             // must be performed caseless too.
+            util::StringKey originalPrefix (*patternBegin);
             util::BTree::Iterator it (new util::StringKey (*patternBegin, true));
             for (componentBTree->FindFirst (it); !it.IsFinished (); it.Next ()) {
                 // To honor the case request we filter out everything that
@@ -153,7 +153,11 @@ namespace thekogans {
                                     pathComponents.begin (),
                                 #endif // defined (TOOLCHAIN_OS_Windows)
                                     pathComponents.end (),
-                                    patternBegin,
+                                    // If we don't care about order we skip the first
+                                    // pattern component because FindFirst above just
+                                    // found it. Otherwise we need to make sure components
+                                    // come in order.
+                                    !ordered ? std::next (patternBegin) : patternBegin,
                                     patternEnd,
                                     ignoreCase,
                                     ordered) &&

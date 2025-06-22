@@ -149,7 +149,7 @@ Here is a complete feature list:
 
 libthekogans_util has the following required dependencies:
 
-Windows: kernel32.lib user32.lib, gdi32.lib, Ws2_32.lib, ole32.lib, oleaut32.lib.
+Windows: kernel32.lib user32.lib, gdi32.lib, Ws2_32.lib.
 
 Linux: pthread, rt, dl.
 
@@ -159,5 +159,7 @@ IOKit.
 
 libthekogans_util has the following optional dependencies:
 
-Windows: if -DTHEKOGANS_UTIL_HAVE_WTS is specified; Wtsapi32.lib, Advapi32.lib.
+Windows:
+if -DTHEKOGANS_UTIL_HAVE_OLE is specified; ole32.lib, oleaut32.lib
+if -DTHEKOGANS_UTIL_HAVE_WTS is specified; Wtsapi32.lib, Advapi32.lib.
 Linux: if -DTHEKOGANS_UTIL_HAVE_XLIB is specified; X11.
