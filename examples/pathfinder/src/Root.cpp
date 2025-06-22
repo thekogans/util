@@ -122,6 +122,10 @@ namespace thekogans {
                     std::placeholders::_1,
                     this));
             util::StringKey originalPrefix (*patternBegin);
+            // Multiple different components with the same prefix
+            // (Python/Python38-32) can be found in the same path.
+            // Make sure we only count it once.
+            std::unordered_set<std::string> duplicates;
             // To allow for the ignoreCase flag the database is
             // maintained without regard to case. All searches
             // must be performed caseless too.
@@ -138,35 +142,22 @@ namespace thekogans {
                             std::string path = jt.GetValue ()->ToString ();
                             std::list<std::string> pathComponents;
                             util::Path (path).GetComponents (pathComponents);
-                            std::list<std::string>::const_iterator pathComponentsBegin =
-                                pathComponents.begin ();
-                        #if defined (TOOLCHAIN_OS_Windows)
-                            // If on Windows, skip over the drive leter.
-                            ++pathComponentsBegin;
-                        #endif // defined (TOOLCHAIN_OS_Windows)
-                            std::list<std::string>::const_iterator pathComponentsEnd =
-                                pathComponents.end ();
-                            // Multiple different components with the same prefix
-                            // (Python/Python38-32) can be found in the same path.
-                            // Make sure we only count it once.
-                            std::unordered_set<std::string> duplicates;
                             // Components are stored caseless but paths are stored
                             // with case in tact. That means that a component might
                             // be pointing to a path with mismatched case.
-                            if ((ignoreCase ||
-                                    FindPrefix (
-                                        pathComponentsBegin,
-                                        pathComponentsEnd,
-                                        *patternBegin,
-                                        ignoreCase) != pathComponentsEnd) &&
-                                    ScanPattern (
-                                        pathComponentsBegin,
-                                        pathComponentsEnd,
-                                        patternBegin,
-                                        patternEnd,
-                                        ignoreCase,
-                                        ordered) &&
-                                        duplicates.insert (path).second) {
+                            if (ScanPattern (
+                                #if defined (TOOLCHAIN_OS_Windows)
+                                    // If on Windows, skip over the drive leter.
+                                    ++pathComponents.begin (),
+                                #else // defined (TOOLCHAIN_OS_Windows)
+                                    pathComponents.begin (),
+                                #endif // defined (TOOLCHAIN_OS_Windows)
+                                    pathComponents.end (),
+                                    patternBegin,
+                                    patternEnd,
+                                    ignoreCase,
+                                    ordered) &&
+                                    duplicates.insert (path).second) {
                                 Produce (
                                     std::bind (
                                         &RootEvents::OnRootFindPath,
