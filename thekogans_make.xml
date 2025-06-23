@@ -18,7 +18,7 @@
       </if>
     </if>
     <!-- If you don't know what this is, it's safer to leave it on.
-         See FileAllocator for explanation. -->
+         See FileAllocator::BlockInfo for explanation. -->
     <feature>THEKOGANS_UTIL_FILE_ALLOCATOR_BLOCK_INFO_USE_MAGIC</feature>
   </features>
   <dependencies>
@@ -216,6 +216,7 @@
     <cpp_header>pugixml/pugiconfig.hpp</cpp_header>
     <cpp_header>pugixml/pugixml.hpp</cpp_header>
   </cpp_headers>
+  <!-- For tests -->
   <cpp_headers prefix = "include/3rdparty"
                install = "yes">
     <cpp_header>CppUnitXLite/CppUnitXLite.hpp</cpp_header>
@@ -630,6 +631,7 @@
     <cpp_header>boost/utility/detail/in_place_factory_prefix.hpp</cpp_header>
     <cpp_header>boost/utility/detail/result_of_iterate.hpp</cpp_header>
   </cpp_headers>
+  <!-- For Buffer::Compress/Decompress -->
   <c_sources prefix = "src/3rdparty/zlib">
     <c_source>adler32.c</c_source>
     <c_source>compress.c</c_source>

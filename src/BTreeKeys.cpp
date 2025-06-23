@@ -16,6 +16,7 @@
 // along with libthekogans_util. If not, see <http://www.gnu.org/licenses/>.
 
 #include <cstring>
+#include <regex>
 #include "thekogans/util/Heap.h"
 #include "thekogans/util/StringUtils.h"
 #include "thekogans/util/BTreeKeys.h"
@@ -38,21 +39,37 @@ namespace thekogans {
                 StringCompare (key.c_str (), key_.ToString ().c_str ());
         }
 
+#if 0
+        THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE (thekogans::util::RegexKey, 1, BTree::Key::TYPE)
+        THEKOGANS_UTIL_IMPLEMENT_HEAP_FUNCTIONS (RegexKey)
+
+        i32 RegexKey::PrefixCompare (const Key &key_) const {
+            const std::regex regex ("^" + key, flags);
+            std::cmatch match;
+            bool result = std::regex_match (key_.ToString ().c_str (), match, regex);
+            if (!result) {
+            }
+            return 0;
+        }
+
+        i32 RegexKey::Compare (const Key &key_) const {
+            const std::regex regex (key, flags);
+            bool result = std::regex_match (key_.ToString (), regex);
+            if (!result) {
+            }
+            return 0;
+        }
+#endif
+
         THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE (thekogans::util::GUIDKey, 1, BTree::Key::TYPE)
         THEKOGANS_UTIL_IMPLEMENT_HEAP_FUNCTIONS (GUIDKey)
 
         i32 GUIDKey::PrefixCompare (const Key &key_) const {
-            return memcmp (
-                key.data,
-                static_cast<const GUIDKey *> (&key_)->key.data,
-                length);
+            return StringCompare (hexString.c_str (), key_.ToString ().c_str (), hexString.size ());
         }
 
         i32 GUIDKey::Compare (const Key &key_) const {
-            return memcmp (
-                key.data,
-                static_cast<const GUIDKey *> (&key_)->key.data,
-                GUID::SIZE);
+            return StringCompare (hexString.c_str (), key_.ToString ().c_str ());
         }
 
     } // namespace util

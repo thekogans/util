@@ -19,12 +19,14 @@
 #define __thekogans_util_BTreeKeys_h
 
 #include <string>
+#include <regex>
 #include "thekogans/util/Config.h"
 #include "thekogans/util/Types.h"
 #include "thekogans/util/BTree.h"
 #include "thekogans/util/GUID.h"
 #include "thekogans/util/Serializable.h"
 #include "thekogans/util/Serializer.h"
+#include "thekogans/util/StringUtils.h"
 
 namespace thekogans {
     namespace util {
@@ -73,7 +75,7 @@ namespace thekogans {
             /// \brief
             /// This method is only used in Dump for debugging purposes.
             /// \return String representation of the key.
-            virtual std::string ToString () const override {
+            virtual const std::string &ToString () const override {
                 return key;
             }
 
@@ -102,6 +104,83 @@ namespace thekogans {
             }
         };
 
+#if 0
+        /// \struct RegexKey BTreeKeys.h thekogans/util/BTreeKeys.h
+        ///
+        /// \brief
+        /// RegexKey is a specialty key. You won't find it in a \see{BTree}.
+        /// Instead use it as a predicate for \see{BTree::Find} and
+        /// \see{BTree::FindFirst}.
+        struct _LIB_THEKOGANS_UTIL_DECL RegexKey : public BTree::Key {
+            /// \brief
+            /// RegexKey is a \see{Serializable}.
+            THEKOGANS_UTIL_DECLARE_SERIALIZABLE (RegexKey)
+            /// \brief
+            /// RegexKey has a private heap to help with memory fragmentation.
+            THEKOGANS_UTIL_DECLARE_STD_ALLOCATOR_FUNCTIONS
+
+            /// \brief
+            /// Regular expression.
+            std::string key;
+            /// \brief
+            /// Regex flags.
+            std::regex::flag_type flags;
+
+            /// \brief
+            /// ctor.
+            /// \param[in] key_ Regular expression.
+            /// \param[in] flags_ Various flags to control the regex.
+            RegexKey (
+                const std::string &key_ = std::string (),
+                std::regex::flag_type flags_ = std::regex_constants::ECMAScript) :
+                key (key_),
+                flags (flags_) {}
+
+            // BTree::Key
+            /// \brief
+            /// Used to find keys with matching prefixs.
+            /// \param[in] key_ Key to compare against.
+            /// \return -1 == this is < key_, 0 == this == prefix of key_,
+            /// 1 == this is greater than key_.
+            virtual i32 PrefixCompare (const Key &key_) const override;
+            /// \brief
+            /// Used to order keys.
+            /// \param[in] key_ Key to compare against.
+            /// \return -1 == this is < key_, 0 == this == key_, 1 == this is greater than key_.
+            virtual i32 Compare (const Key &key_) const override;
+            /// \brief
+            /// This method is only used in Dump for debugging purposes.
+            /// \return String representation of the key.
+            virtual const std::string &ToString () const override {
+                return key;
+            }
+
+            // Serializable
+            /// \brief
+            /// Return the serialized key size.
+            /// \return Serialized key size.
+            virtual std::size_t Size () const noexcept override {
+                return Serializer::Size (key) + UI32_SIZE;
+            }
+
+            /// \brief
+            /// Read the key from the given serializer.
+            /// \param[in] header \see{Serializable::Header}.
+            /// \param[in] serializer \see{Serializer} to read the key from.
+            virtual void Read (
+                    const Header & /*header*/,
+                    Serializer &serializer) override {
+                serializer >> key >> (ui32 &)flags;
+            }
+            /// \brief
+            /// Write the key to the given serializer.
+            /// \param[out] serializer \see{Serializer} to write the key to.
+            virtual void Write (Serializer &serializer) const override {
+                serializer << key << (ui32)flags;
+            }
+        };
+#endif
+
         /// \struct GUIDKey BTree.h thekogans/util/BTreeKeys.h
         ///
         /// \brief
@@ -120,15 +199,20 @@ namespace thekogans {
             /// \brief
             /// Used to specify prefixes in searches.
             std::size_t length;
+            /// \brief
+            /// Used for comparisons.
+            std::string hexString;
 
             /// \brief
             /// ctor.
             /// \param[in] key_ \see{GUID} to initialize this key with.
+            /// \param[in] length_ Used to specify prefixes in searches.
             GUIDKey (
                 const GUID &key_ = GUID {},
                 std::size_t length_ = GUID::SIZE) :
                 key (key_),
-                length (length_) {}
+                length (length_),
+                hexString (HexEncodeBuffer (key.data, length, false)) {}
 
             // BTree::Key
             /// \brief
@@ -145,8 +229,8 @@ namespace thekogans {
             /// \brief
             /// This method is only used in Dump for debugging purposes.
             /// \return String representation of the key.
-            virtual std::string ToString () const override {
-                return key.ToHexString ();
+            virtual const std::string &ToString () const override {
+                return hexString;
             }
 
             // Serializable
@@ -165,6 +249,8 @@ namespace thekogans {
                     const Header & /*header*/,
                     Serializer &serializer) override {
                 serializer >> key;
+                length = GUID::SIZE;
+                hexString = HexEncodeBuffer (key.data, length, false);
             }
             /// \brief
             /// Write the key to the given serializer.
