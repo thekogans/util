@@ -81,7 +81,7 @@ namespace thekogans {
                 std::size_t registryEntriesPerNode_ =
                     util::FileAllocatorRegistry::DEFAULT_BTREE_ENTRIES_PER_NODE,
                 std::size_t registryNodesPerPage_ =
-                    util::FileAllocatorRegistry::DEFAULT_BTREE_NODES_PERP_PAGE,
+                    util::FileAllocatorRegistry::DEFAULT_BTREE_NODES_PER_PAGE,
                 util::Allocator::SharedPtr allocator_ = util::DefaultAllocator::Instance ());
 
             /// \brief
