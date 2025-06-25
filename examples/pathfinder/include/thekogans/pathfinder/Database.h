@@ -34,7 +34,7 @@ namespace thekogans {
         ///
         /// \brief
         /// Database puts all the relavant pieces together in to a convenient
-        /// base class.
+        /// system wide \see{util::Singleton}.
         struct Database : public util::Singleton<Database> {
         protected:
             /// \brief
@@ -100,7 +100,7 @@ namespace thekogans {
 
             /// \brief
             /// Return the registry.
-            /// NOTE: Registry contains used defined types. These types
+            /// NOTE: Registry contains user defined types. These types
             /// will need to read themselves from the file. We have to
             /// create it outside the ctor to prevent potential deadlock
             /// with database creation.

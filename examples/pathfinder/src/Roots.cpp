@@ -27,7 +27,10 @@
 namespace thekogans {
     namespace pathfinder {
 
-        THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE (Roots, 1, util::BTree::Value::TYPE)
+        THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE (
+            thekogans::pathfinder::Roots,
+            1,
+            util::BTree::Value::TYPE)
 
         void Roots::ScanRoot (
                 const std::string &path,

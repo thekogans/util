@@ -29,21 +29,49 @@
 namespace thekogans {
     namespace pathfinder {
 
+        /// \struct Options Options.h thekogans/pathfinder/Options.h
+        ///
+        /// \brief
+        /// System wide \see{util::Singleton} containing command line options.
         struct Options :
                 public util::Singleton<Options>,
                 public util::CommandLineOptions {
+            /// \brief
+            /// -h was specified on the command line.
             bool help;
+            /// \brief
+            /// -v was specified on the command line.
             bool version;
+            /// \brief
+            /// -l:'level' was specified on the command line.
             util::ui32 logLevel;
+            /// \brief
+            /// -d:'database path' was specified on the command line.
             std::string dbPath;
+            /// \brief
+            /// -a:'action' was specified on the command line.
             std::string action;
+            /// \brief
+            /// A list of -r:'root' was specified on the command line.
             std::vector<std::string> roots;
+            /// \brief
+            /// -p:'pattern' was specified on the command line.
             std::string pattern;
+            /// \brief
+            /// -f:'ignore file path' was specified on the command line.
             std::string ignorePath;
+            /// \brief
+            /// -i was specified on the command line.
             bool ignoreCase;
+            /// \brief
+            /// -o was specified on the command line.
             bool ordered;
+            /// \brief
+            /// -i:'regex pattern' was specified on the command line.
             std::vector<std::string> ignoreList;
 
+            /// \brief
+            /// ctor.
             Options () :
                 help (false),
                 version (false),

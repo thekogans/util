@@ -217,8 +217,8 @@
     <cpp_header>pugixml/pugixml.hpp</cpp_header>
   </cpp_headers>
   <!-- For tests -->
-  <cpp_headers prefix = "include/3rdparty"
-               install = "yes">
+  <cpp_headers prefix = "include/3rdparty/private"
+               install = "no">
     <cpp_header>CppUnitXLite/CppUnitXLite.hpp</cpp_header>
     <cpp_header>CppUnitXLite/CppUnitXLite.cpp</cpp_header>
   </cpp_headers>
