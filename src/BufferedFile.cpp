@@ -405,8 +405,12 @@ namespace thekogans {
                     if (size > newSize) {
                         // shrinking
                         root.SetSize (newSize);
-                        currBufferOffset = NOFFS;
-                        currBuffer = nullptr;
+                        // If new size is <= current position,
+                        // currBuffer will be deleted by root.SetSize.
+                        if ((ui64)position >= newSize) {
+                            currBufferOffset = NOFFS;
+                            currBuffer = nullptr;
+                        }
                     }
                     size = newSize;
                     flags.Set (FLAGS_DIRTY, true);
@@ -532,10 +536,7 @@ namespace thekogans {
                     std::string logPath = GetLogPath (path);
                     if (Path (logPath).Exists ()) {
                         {
-                            SimpleFile log (
-                                endianness,
-                                logPath,
-                                SimpleFile::ReadWrite);
+                            SimpleFile log (endianness, logPath, SimpleFile::ReadWrite);
                             ui32 magic;
                             log >> magic;
                             if (magic == MAGIC32) {

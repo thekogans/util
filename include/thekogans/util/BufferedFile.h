@@ -528,6 +528,9 @@ namespace thekogans {
                     nodes[index] = nullptr;
                 }
             } root;
+            /// \brief
+            /// Current buffer offset.
+            /// This is the buffer offset of current position. (position & ~(Buffer::SIZE - 1))
             ui64 currBufferOffset;
             /// \brief
             /// Current buffer cache.
@@ -614,6 +617,18 @@ namespace thekogans {
 
             /// \brief
             /// Use the lock to gain exclusive access to the file.
+            /// NOTE: BufferedFile does not use mutex (at all). As
+            /// noted elsewhere, locking with every seek/read/write
+            /// would be prohibitively expensive. Instead each
+            /// BufferedFile exposes a mutex that your threads can
+            /// use to synchronize access to the file based on
+            /// access patterns that are more appropriate to your
+            /// particular situation. Again, the use of the lock
+            /// is completely optional and in order for the entire
+            /// scheme to work your threads must manually cooperate
+            /// by acquiring the lock before use. To help this pattern,
+            /// BufferedFile::Transaction should be used for all
+            /// writes. LockGuard<Mutex> should be used for all reads.
             /// \return mutex.
             inline Mutex &GetLock () {
                 return mutex;
