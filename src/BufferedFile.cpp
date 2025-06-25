@@ -589,9 +589,13 @@ namespace thekogans {
                 if (IsTransactionPending ()) {
                     if (IsDirty ()) {
                         SetSize (sizeOnDisk);
+                        // If SetSize did not delete the current buffer and
+                        // if it is dirty, it will be deleted bu root.Clear.
+                        if (currBuffer != nullptr && currBuffer->dirty) {
+                            currBufferOffset = NOFFS;
+                            currBuffer = nullptr;
+                        }
                         root.Clear ();
-                        currBufferOffset = NOFFS;
-                        currBuffer = nullptr;
                         flags.Set (FLAGS_DIRTY, false);
                     }
                     std::string logPath = GetLogPath (path);
