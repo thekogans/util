@@ -25,24 +25,26 @@ namespace thekogans {
     namespace util {
 
         void FileAllocator::Object::Allocate () {
-            ui64 blockSize = 0;
-            if (offset != 0) {
-                BlockInfo block (*file, offset);
-                block.Read ();
-                blockSize = block.GetSize ();
-            }
-            std::size_t size = Size ();
-            if (blockSize < size) {
+            if (!IsFixedSize () || offset == 0) {
+                ui64 blockSize = 0;
                 if (offset != 0) {
-                    fileAllocator->Free (offset);
+                    BlockInfo block (*file, offset);
+                    block.Read ();
+                    blockSize = block.GetSize ();
                 }
-                offset = fileAllocator->Alloc (size);
-                SetDirty (true);
-                Produce (
-                    std::bind (
-                        &ObjectEvents::OnFileAllocatorObjectOffsetChanged,
-                        std::placeholders::_1,
-                        this));
+                std::size_t size = Size ();
+                if (blockSize < size) {
+                    if (offset != 0) {
+                        fileAllocator->Free (offset);
+                    }
+                    offset = fileAllocator->Alloc (size);
+                    SetDirty (true);
+                    Produce (
+                        std::bind (
+                            &ObjectEvents::OnFileAllocatorObjectOffsetChanged,
+                            std::placeholders::_1,
+                            this));
+                }
             }
         }
 

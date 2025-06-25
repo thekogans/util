@@ -156,6 +156,14 @@ namespace thekogans {
                 }
 
                 /// \brief
+                /// Optimization for Allocate below. If an object declares
+                /// itself as fixed size, Allocate will not check the object
+                /// block size only offset. And if offset == 0, it will allocate
+                /// a block once and that's it.
+                /// \return true == object is fixed size.
+                virtual bool IsFixedSize () const = 0;
+
+                /// \brief
                 /// Return the size of the object on disk.
                 /// \return Size of the object on disk.
                 virtual std::size_t Size () const = 0;

@@ -47,7 +47,7 @@ namespace thekogans {
                 }
                 else {
                     THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                        "Corrupt FileAllocator::BTree::Node: " THEKOGANS_UTIL_UI64_FORMAT,
+                        "Corrupt FileAllocator::BTree::Node: @" THEKOGANS_UTIL_UI64_FORMAT,
                         offset);
                 }
             }
@@ -95,7 +95,7 @@ namespace thekogans {
             }
             else {
                 THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                    "Logic error: trying to delete a node with count > 0 "
+                    "Logic error: trying to delete a node with count > 0 @"
                     THEKOGANS_UTIL_UI64_FORMAT,
                     node->offset);
             }
@@ -440,7 +440,7 @@ namespace thekogans {
                 }
                 else {
                     THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                        "Corrupt FileAllocator::BTree: " THEKOGANS_UTIL_UI64_FORMAT,
+                        "Corrupt FileAllocator::BTree: @" THEKOGANS_UTIL_UI64_FORMAT,
                         offset);
                 }
             }

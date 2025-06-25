@@ -169,7 +169,8 @@ private:
         /// If dirty, flush changes to file.
         void Flush ();
         /// \brief
-        /// If not dirty, reload the children from file.
+        /// If not dirty, delete dirty children so that they can be reloaded from file.
+        /// If dirty, would have been deleted by it's parent.
         void Reload ();
         /// \brief
         /// Return the child at the given index.

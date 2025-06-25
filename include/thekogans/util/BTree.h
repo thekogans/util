@@ -752,6 +752,12 @@ namespace thekogans {
 
             // FileAllocator::Object
             /// \brief
+            /// \see{Header} is fixed size.
+            /// \return true.
+            virtual bool IsFixedSize () const override {
+                return true;
+            }
+            /// \brief
             /// Return the \see{Header} size.
             /// \return \see{Header} size.
             virtual std::size_t Size () const override {
