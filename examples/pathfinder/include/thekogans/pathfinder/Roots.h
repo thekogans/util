@@ -30,45 +30,97 @@
 namespace thekogans {
     namespace pathfinder {
 
+        /// \brief
+        /// Forward declaration of \see{Roots} needed by \see{RootsEvents}.
         struct Roots;
 
+        /// \struct RootsEvents Roots.h thekogans/pathfinder/Roots.h
+        ///
+        /// \brief
+        /// Events fired by \see{Roots}.
         struct RootsEvents {
+            /// \brief
+            /// dtor.
             virtual ~RootsEvents () {}
 
+            /// \brief
+            /// A new \see{Root} was created.
+            /// \param[in] roots Pointer to \see{Roots}.
+            /// \param[in] root New \see{Root}.
             virtual void OnRootsRootCreated (
                 util::RefCounted::SharedPtr<Roots> /*roots*/,
                 Root::SharedPtr /*root*/) throw () {}
+            /// \brief
+            /// A \see{Root} was enabled.
+            /// \param[in] roots Pointer to \see{Roots}.
+            /// \param[in] root \see{Root} that was enabled.
             virtual void OnRootsRootEnabled (
                 util::RefCounted::SharedPtr<Roots> /*roots*/,
                 Root::SharedPtr /*root*/) throw () {}
+            /// \brief
+            /// A \see{Root} was disabled.
+            /// \param[in] roots Pointer to \see{Roots}.
+            /// \param[in] root \see{Root}. that was disabled.
             virtual void OnRootsRootDisabled (
                 util::RefCounted::SharedPtr<Roots> /*roots*/,
                 Root::SharedPtr /*root*/) throw () {}
+            /// \brief
+            /// A \see{Root} was deleted.
+            /// \param[in] roots Pointer to \see{Roots}
+            /// \param[in] root \see{Root} that was deleted.
             virtual void OnRootsRootDeleted (
                 util::RefCounted::SharedPtr<Roots> /*roots*/,
                 Root::SharedPtr /*root*/) throw () {}
         };
 
+        /// \struct Roots Roots.h thekogans/pathfinder/Roots.h
+        ///
+        /// \brief
+        /// Roots is an \see{ArrayValue<Root::SharedPtr>}. It
+        /// keeps track of all the \see{Root}s.
         struct Roots :
                 public util::ArrayValue<Root::SharedPtr>,
                 public util::Subscriber<RootEvents>,
                 public util::Producer<RootsEvents> {
+            /// \brief
+            /// Roots is a \see{util::Serializable}.
             THEKOGANS_UTIL_DECLARE_SERIALIZABLE (Roots)
 
+            /// \brief
+            /// Given a path, scan the directory tree rooted at it.
+            /// \param[in] path The root of the directory tree to scan.
+            /// \param[in] ignoreList A list of regular expressions to ignore during the scan.
             void ScanRoot (
                 const std::string &path,
                 IgnoreList::SharedPtr ignoreList);
+            /// \brief
+            /// Enable the given root. Enabled roots participate in \see{Find}.
+            /// \param[in] path Root to enable.
+            /// \return true == enabled. false = not found or already enabled.
             bool EnableRoot (const std::string &path);
+            /// \brief
+            /// Disable the given root. Disabled roots do not participate in \see{Find}.
+            /// \param[in] path Root to disable.
+            /// \return true == disabled. false = not found or already disabled.
             bool DisableRoot (const std::string &path);
+            /// \brief
+            /// Delete the given root.
+            /// \param[in] path Root to delete.
+            /// \return true == enabled. false = not found.
             bool DeleteRoot (const std::string &path);
 
+            /// \brief
+            /// Given a regex pattern of path components, find all matching paths
+            /// in all enabled \see{Root}s.
             void Find (
                 const std::string &pattern,
                 bool ignoreCase,
                 bool ordered);
 
+            // util::Serializable
             virtual void Init () override;
 
+            // util::Subscriber<RootEvents>.
             virtual void OnRootScanPath (
                 Root::SharedPtr /*root*/,
                 const std::string &path) throw () override;

@@ -158,7 +158,7 @@ namespace thekogans {
                 /// \brief
                 /// Optimization for Allocate below. If an object declares
                 /// itself as fixed size, Allocate will not check the object
-                /// block size only offset. And if offset == 0, it will allocate
+                /// block size, only offset. And if offset == 0, it will allocate
                 /// a block once and that's it.
                 /// \return true == object is fixed size.
                 virtual bool IsFixedSize () const = 0;
@@ -551,9 +551,6 @@ namespace thekogans {
             struct _LIB_THEKOGANS_UTIL_DECL BlockBuffer : public Buffer {
             private:
                 /// \brief
-                /// \see{BufferedFile} reference.
-                File &file;
-                /// \brief
                 /// Block info.
                 BlockInfo block;
 
@@ -566,7 +563,7 @@ namespace thekogans {
                 /// (0 == buffer the whole block).
                 /// \param[in] allocator \see{Allocator} for \see{Buffer}.
                 BlockBuffer (
-                    File &file_,
+                    File &file,
                     PtrType offset,
                     std::size_t bufferLength = 0,
                     Allocator::SharedPtr allocator = DefaultAllocator::Instance ());

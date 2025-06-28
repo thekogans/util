@@ -203,9 +203,9 @@ namespace thekogans {
                     ui8 *ptr = (ui8 *)buffer;
                     while (count > 0 && (ui64)position < size) {
                         Buffer *buffer_ = GetBuffer ();
-                        std::size_t index = position - buffer_->offset;
-                        std::size_t countToRead = MIN (buffer_->length - index, count);
-                        std::memcpy (ptr, &buffer_->data[index], countToRead);
+                        std::size_t bufferOffset = position - buffer_->offset;
+                        std::size_t countToRead = MIN (buffer_->length - bufferOffset, count);
+                        std::memcpy (ptr, &buffer_->data[bufferOffset], countToRead);
                         ptr += countToRead;
                         countRead += countToRead;
                         position += countToRead;
@@ -233,12 +233,12 @@ namespace thekogans {
                     ui8 *ptr = (ui8 *)buffer;
                     while (count > 0) {
                         Buffer *buffer_ = GetBuffer ();
-                        std::size_t index = position - buffer_->offset;
-                        if (index + count > buffer_->length) {
-                            buffer_->length = MIN (index + count, Buffer::SIZE);
+                        std::size_t bufferOffset = position - buffer_->offset;
+                        if (buffer_->length < bufferOffset + count) {
+                            buffer_->length = MIN (bufferOffset + count, Buffer::SIZE);
                         }
-                        std::size_t countToWrite = MIN (buffer_->length - index, count);
-                        std::memcpy (&buffer_->data[index], ptr, countToWrite);
+                        std::size_t countToWrite = MIN (buffer_->length - bufferOffset, count);
+                        std::memcpy (&buffer_->data[bufferOffset], ptr, countToWrite);
                         buffer_->dirty = true;
                         ptr += countToWrite;
                         countWritten += countToWrite;

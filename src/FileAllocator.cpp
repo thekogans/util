@@ -171,12 +171,11 @@ namespace thekogans {
     #endif // defined (THEKOGANS_UTIL_FILE_ALLOCATOR_BLOCK_INFO_USE_MAGIC)
 
         FileAllocator::BlockBuffer::BlockBuffer (
-                File &file_,
+                File &file,
                 PtrType offset,
                 std::size_t bufferLength,
                 Allocator::SharedPtr allocator) :
-                Buffer (file_.endianness),
-                file (file_),
+                Buffer (file.endianness),
                 block (file, offset) {
             block.Read ();
             if (bufferLength == 0) {
@@ -202,10 +201,10 @@ namespace thekogans {
                     if (available > blockLength) {
                         available = blockLength;
                     }
-                    file.Seek (block.GetOffset () + blockOffset, SEEK_SET);
+                    block.file.Seek (block.GetOffset () + blockOffset, SEEK_SET);
                     count = read ?
-                        AdvanceWriteOffset (file.Read (GetWritePtr (), available)) :
-                        AdvanceReadOffset (file.Write (GetReadPtr (), available));
+                        AdvanceWriteOffset (block.file.Read (GetWritePtr (), available)) :
+                        AdvanceReadOffset (block.file.Write (GetReadPtr (), available));
                 }
             }
             return count;

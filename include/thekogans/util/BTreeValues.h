@@ -135,6 +135,7 @@ namespace thekogans {
         /// \struct ArrayValue BTreeValues.h thekogans/util/BTreeValues.h
         ///
         /// \brief
+        /// ArrayValue is a template for storing arrays of types.
         template<typename T>
         struct ArrayValue : public BTree::Value {
             /// \brief
@@ -217,8 +218,7 @@ namespace thekogans {
         /// \struct StringArrayValue BTreeValues.h thekogans/util/BTreeValues.h
         ///
         /// \brief
-        /// Specialization of ArrayValue for std::string.
-
+        /// Specialization of \see{ArrayValue} for std::string.
         struct _LIB_THEKOGANS_UTIL_DECL StringArrayValue : public ArrayValue<std::string> {
             /// \brief
             /// StringArrayValue is a \see{Serializable}.
@@ -234,8 +234,7 @@ namespace thekogans {
         /// \struct GUIDArrayValue BTreeValues.h thekogans/util/BTreeValues.h
         ///
         /// \brief
-        /// Specialization of ArrayValue for \see{GUID}.
-
+        /// Specialization of \see{ArrayValue} for \see{GUID}.
         struct _LIB_THEKOGANS_UTIL_DECL GUIDArrayValue : public ArrayValue<GUID> {
             /// \brief
             /// GUIDArrayValue is a \see{Serializable}.

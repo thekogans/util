@@ -79,8 +79,16 @@ namespace thekogans {
                 /// \return -1 == this is < key, 0 == this == key, 1 == this is greater than key.
                 virtual i32 Compare (const Key &key) const = 0;
                 /// \brief
-                /// This method is only used in Dump for debugging purposes.
+                /// This method is used by Compare and PrefixCompare to
+                /// treat all key types as strings.
                 /// \return String representation of the key.
+                /// NOTE: The return type is a string reference. That means
+                /// you cannot create a string on the stack and return it as
+                /// that would result in a dangling pointer. If your key
+                /// type is other than string you should convert it to
+                /// string in the ctor and use it as a return value. This
+                /// design has two advantages; 1. Conversion is done once and
+                /// 2. Returning a reference negates the need for object copying.
                 virtual const std::string &ToString () const = 0;
 
                 // Serializable
