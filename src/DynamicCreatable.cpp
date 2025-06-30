@@ -49,8 +49,9 @@ namespace thekogans {
                 const char *type,
                 FactoryType factory) {
             if (bases != nullptr && type != nullptr) {
+                BaseMapType &baseMap = GetBases ();
                 while (*bases != nullptr) {
-                    GetBases ()[*bases++][type] = factory;
+                    baseMap[*bases++][type] = factory;
                 }
             }
         }

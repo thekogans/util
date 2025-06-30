@@ -38,22 +38,22 @@ namespace thekogans {
         struct Database : public util::Singleton<Database> {
         protected:
             /// \brief
-            /// \see{BufferedFile} where the database lives.
+            /// \see{util::BufferedFile} where the database lives.
             util::BufferedFile::SharedPtr file;
             /// \brief
-            /// \see{FileAllocator} for managing random size blocks in the file.
+            /// \see{util::FileAllocator} for managing random size blocks in the file.
             util::FileAllocator::SharedPtr fileAllocator;
             /// \brief
-            /// Number of entries per \see{BTree::Node}.
+            /// Number of entries per \see{util::BTree::Node}.
             std::size_t registryEntriesPerNode;
             /// \brief
-            /// Number of \see{BTree::Node}s that will fit in to a \see{BlockAllocator} page.
+            /// Number of \see{util::BTree::Node}s that will fit in to a \see{util::BlockAllocator} page.
             std::size_t registryNodesPerPage;
             /// \brief
-            /// \see{Allocator} for \see{FileAllocator::BTree} and \see{BTree}.
+            /// \see{Allocator} for \see{util::FileAllocator::BTree} and \see{util::BTree}.
             util::Allocator::SharedPtr allocator;
             /// \brief
-            /// \see{FileAllocatorRegistry} for system wide name/value pairs.
+            /// \see{util::FileAllocatorRegistry} for system wide name/value pairs.
             util::FileAllocatorRegistry::SharedPtr registry;
             /// \brief
             /// Protect registry creation.
@@ -63,14 +63,15 @@ namespace thekogans {
             /// \brief
             /// ctor.
             /// \param[in] path Path to database file.
-            /// \param[in] secure true == \see{FileAllocator} will zero fill freed blocks.
-            /// \param[in] btreeEntriesPerNode Number of entries per \see{FileAllocator::BTree::Node}.
-            /// \param[in] btreeNodesPerPage Number of \see{FileAllocator::BTree::Node}s that will
-            /// fit in to a \see{BlockAllocator} page.
-            /// \param[in] registryEntriesPerNode Number of entries per \see{BTree::Node}.
-            /// \param[in] registryNodesPerPage Number of \see{BTree::Node}s that will
-            /// fit in to a \see{BlockAllocator} page.
-            /// \param[in] allocator \see{Allocator} for \see{FileAllocator::BTree} and \see{BTree}.
+            /// \param[in] secure true == \see{util::FileAllocator} will zero fill freed blocks.
+            /// \param[in] btreeEntriesPerNode Number of entries per \see{util::FileAllocator::BTree::Node}.
+            /// \param[in] btreeNodesPerPage Number of \see{util::FileAllocator::BTree::Node}s that will
+            /// fit in to a \see{util::BlockAllocator} page.
+            /// \param[in] registryEntriesPerNode Number of entries per \see{util::BTree::Node}.
+            /// \param[in] registryNodesPerPage Number of \see{util::BTree::Node}s that will
+            /// fit in to a \see{util::BlockAllocator} page.
+            /// \param[in] allocator \see{util::Allocator} for
+            /// \see{util::FileAllocator::BTree} and \see{util::BTree}.
             Database (
                 const std::string &path = Options::Instance ()->dbPath,
                 bool secure = false,

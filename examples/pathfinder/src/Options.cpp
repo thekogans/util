@@ -48,9 +48,21 @@ namespace thekogans {
                 case 'p':
                     pattern = value;
                     break;
-                case 'f':
-                    ignorePath = value;
+                case 'f': {
+                    std::ifstream ignoreFile (value.c_str ());
+                    if (ignoreFile.is_open ()) {
+                        while (ignoreFile.good ()) {
+                            std::string ignore;
+                            std::getline (ignoreFile, ignore);
+                            ignore = util::TrimSpaces (ignore.c_str ());
+                            if (!ignore.empty ()) {
+                                ignoreList.push_back (ignore);
+                            }
+                        }
+                        ignoreFile.close ();
+                    }
                     break;
+                }
                 case 'i':
                     if (value.empty ()) {
                         ignoreCase = true;
@@ -62,23 +74,6 @@ namespace thekogans {
                 case 'o':
                     ordered = true;
                     break;
-            }
-        }
-
-        void Options::Epilog () {
-            if (!ignorePath.empty ()) {
-                std::ifstream ignoreFile (ignorePath.c_str ());
-                if (ignoreFile.is_open ()) {
-                    while (ignoreFile.good ()) {
-                        std::string ignore;
-                        std::getline (ignoreFile, ignore);
-                        ignore = util::TrimSpaces (ignore.c_str ());
-                        if (!ignore.empty ()) {
-                            ignoreList.push_back (ignore);
-                        }
-                    }
-                    ignoreFile.close ();
-                }
             }
         }
 

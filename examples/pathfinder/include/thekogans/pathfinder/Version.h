@@ -23,6 +23,9 @@
 namespace thekogans {
     namespace pathfinder {
 
+        /// \brief
+        /// Return the compiled util version.
+        /// \return The compiled util version.
         const util::Version &GetVersion ();
 
     } // namespace pathfinder

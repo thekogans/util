@@ -58,9 +58,6 @@ namespace thekogans {
             /// -p:'pattern' was specified on the command line.
             std::string pattern;
             /// \brief
-            /// -f:'ignore file path' was specified on the command line.
-            std::string ignorePath;
-            /// \brief
             /// -i was specified on the command line.
             bool ignoreCase;
             /// \brief
@@ -81,10 +78,14 @@ namespace thekogans {
                 ignoreCase (false),
                 ordered (false) {}
 
+            // util::CommandLineOptions
+            /// \brief
+            /// Called when a know option (one in options) is encoutered.
+            /// \param[in] option A valid option.
+            /// \param[in] value Optional option value.
             virtual void DoOption (
                 char option,
                 const std::string &value) override;
-            virtual void Epilog () override;
         };
 
     } // namespace pathfinder

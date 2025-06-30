@@ -37,12 +37,15 @@ namespace thekogans {
         ///
         /// One of the shortcomings of c++ is it's inability to dynamically
         /// create a type at runtime given a string representation of it's type.
+        /// Since c++ is a strongly typed language, that behavior is understandable.
         /// DynamicCreatable and it's supporting macros below are my attempt at
-        /// plugging that hole. For any scheme to ultimately be useful it needs
-        /// to scale well with addition of more types. One can easily envision
-        /// a huge system built out of many libraries, using many types. If each
-        /// time you needed to create a type instance you had to search through
-        /// thousands of types (even O(log(n)), the system would not scale well.
+        /// plugging that hole. In essence what DynamicCreatable does is turn c++
+        /// in to JavaScript or any other myriad of weakly typed languages. For any
+        /// scheme to ultimately be useful it needs to scale well with addition of
+        /// more types. One can easily envision a huge system built out of many
+        /// libraries, using many types. If each time you needed to create a type
+        /// instance you had to search through thousands of types (even O(log(n)),
+        /// the system would not scale well.
         ///
         /// After a few itterations, the design I finally chose had the following
         /// possitive attributes;
@@ -613,10 +616,11 @@ namespace thekogans {
         /// Define the static base map initializer. This macro is private.
         #define THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_BASE_MAP_INIT(_T)\
             void _T::StaticInit () {\
+                thekogans::util::DynamicCreatable::BaseMapType &baseMap =\
+                    thekogans::util::DynamicCreatable::GetBases ();\
                 const char * const *bases = _T::BASES;\
                 while (*bases != nullptr) {\
-                    thekogans::util::DynamicCreatable::GetBases ()[\
-                        *bases++][_T::TYPE] = _T::Create;\
+                    baseMap[*bases++][_T::TYPE] = _T::Create;\
                 }\
             }
     #else // defined (THEKOGANS_UTIL_TYPE_Static)

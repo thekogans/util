@@ -118,6 +118,9 @@ namespace thekogans {
                 bool ordered);
 
             // util::Serializable
+            /// \brief
+            /// Called by \see{util::Serializable} after extraction.
+            /// Subscribes to events
             virtual void Init () override;
 
             // util::Subscriber<RootEvents>.
