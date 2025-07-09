@@ -208,8 +208,8 @@ namespace thekogans {
             struct _LIB_THEKOGANS_UTIL_DECL BlockInfo {
             private:
                 /// \brief
-                /// \see{File} to read and write.
-                File &file;
+                /// \see{FileAllocator} to read and write.
+                FileAllocator &fileAllocator;
                 /// \brief
                 /// Block offset.
                 PtrType offset;
@@ -397,7 +397,7 @@ namespace thekogans {
             public:
                 /// \brief
                 /// ctor.
-                /// \param[in] file_ \see{File} to read and write from.
+                /// \param[in] fileAllocator_ \see{FileAllocator} to read and write from.
                 /// \param[in] offset_ Offset in the file where the BlockInfo resides.
                 /// \param[in] flags Combination of FLAGS_BTREE_NODE and FLAGS_FREE.
                 /// \param[in] size Size of the block (not including the size
@@ -405,29 +405,27 @@ namespace thekogans {
                 /// \param[in] nextBTreeNodeOffset If FLAGS_FREE and FLAGS_BTREE_NODE are
                 /// set, this field contains the next free \see{BTree::Node} offset.
                 BlockInfo (
-                    File &file_,
+                    FileAllocator &fileAllocator_,
                     PtrType offset_ = 0,
                     Flags32 flags = 0,
                     ui64 size = 0,
                     PtrType nextBTreeNodeOffset = 0) :
-                    file (file_),
+                    fileAllocator (fileAllocator_),
                     offset (offset_),
                     header (flags, size, nextBTreeNodeOffset),
                     footer (flags, size) {}
 
                 /// \brief
                 /// Return true if this is the first block in the heap.
-                /// \param[in] heapStart The offset of the first byte in the heap.
                 /// \return true == first block in the heap.
-                inline bool IsFirst (ui64 heapStart) const {
-                    return heapStart + HEADER_SIZE == GetOffset ();
+                inline bool IsFirst () const {
+                    return GetOffset () == fileAllocator.GetFirstBlockOffset ();
                 }
                 /// \brief
                 /// Return true if this is the last block in the heap.
-                /// \param[in] heapEnd The offset of the last byte in the heap.
                 /// \return true == last block in the heap.
-                inline bool IsLast (ui64 heapEnd) const {
-                    return GetOffset () + GetSize () + FOOTER_SIZE == heapEnd;
+                inline bool IsLast () const {
+                    return GetOffset () + GetSize () + FOOTER_SIZE == fileAllocator.GetHeapEnd ();
                 }
 
                 /// \brief
@@ -436,12 +434,6 @@ namespace thekogans {
                 inline PtrType GetOffset () const {
                     return offset;
                 }
-                /// \brief
-                /// Set offset to the given value.
-                /// \param[in] offset_ New offset value.
-                inline void SetOffset (PtrType offset_) {
-                    offset = offset_;
-                }
 
                 /// \brief
                 /// Return true if FLAGS_FREE is set.
@@ -449,6 +441,53 @@ namespace thekogans {
                 inline bool IsFree () const {
                     return header.IsFree ();
                 }
+
+                /// \brief
+                /// Return true if FLAGS_BTREE_NODE set.
+                /// \return true == FLAGS_BTREE_NODE set.
+                inline bool IsBTreeNode () const {
+                    return header.IsBTreeNode ();
+                }
+
+                /// \brief
+                /// Return the block size (not including BlockInfo::SIZE).
+                /// \return Block size.
+                inline ui64 GetSize () const {
+                    return header.size;
+                }
+
+                /// \brief
+                /// Return the next free \see{FileAllocator::BTree::Node} offset.
+                /// \return Next free \see{FileAllocator::BTree::Node} offset.
+                inline PtrType GetNextBTreeNodeOffset () const {
+                    return header.nextBTreeNodeOffset;
+                }
+
+                /// \brief
+                /// If not first, return the block info right before this one.
+                /// \param[out] prev Where to put the previous block info.
+                /// \return true == prev contains previous block info.
+                /// false == we're the first block.
+                bool Prev (BlockInfo &prev) const;
+                /// \brief
+                /// If not last, return the block info right after this one.
+                /// \param[out] next Where to put the next block info.
+                /// \return true == next contains the next block info.
+                /// false == we're the last block.
+                bool Next (BlockInfo &next) const;
+
+                /// \brief
+                /// Read block info.
+                void Read ();
+
+            private:
+                /// \brief
+                /// Set offset to the given value.
+                /// \param[in] offset_ New offset value.
+                inline void SetOffset (PtrType offset_) {
+                    offset = offset_;
+                }
+
                 /// \brief
                 /// Set/clear the FLAGS_FREE flag.
                 /// \param[in] free true == set, false == clear
@@ -458,12 +497,6 @@ namespace thekogans {
                 }
 
                 /// \brief
-                /// Return true if FLAGS_BTREE_NODE set.
-                /// \return true == FLAGS_BTREE_NODE set.
-                inline bool IsBTreeNode () const {
-                    return header.IsBTreeNode ();
-                }
-                /// \brief
                 /// Set/clear the FLAGS_BTREE_NODE flag.
                 /// \param[in] free true == set, false == clear
                 inline void SetBTreeNode (bool btreeNode) {
@@ -471,12 +504,6 @@ namespace thekogans {
                     footer.SetBTreeNode (btreeNode);
                 }
 
-                /// \brief
-                /// Return the block size (not including BlockInfo::SIZE).
-                /// \return Block size.
-                inline ui64 GetSize () const {
-                    return header.size;
-                }
                 /// \brief
                 /// Set block size to the given value.
                 /// \param[in] size New block size.
@@ -486,12 +513,6 @@ namespace thekogans {
                 }
 
                 /// \brief
-                /// Return the next free \see{FileAllocator::BTree::Node} offset.
-                /// \return Next free \see{FileAllocator::BTree::Node} offset.
-                inline PtrType GetNextBTreeNodeOffset () const {
-                    return header.nextBTreeNodeOffset;
-                }
-                /// \brief
                 /// Set the next free \see{FileAllocator::BTree::Node} offset.
                 /// This will chain the free \see{FileAllocator::BTree::Node}
                 /// blocks in to a singly linked list.
@@ -500,18 +521,6 @@ namespace thekogans {
                     header.nextBTreeNodeOffset = nextBTreeNodeOffset;
                 }
 
-                /// \brief
-                /// If !IsFirst, return the block info right before this one.
-                /// \param[out] prev Where to put the previous block info.
-                void Prev (BlockInfo &prev) const;
-                /// \brief
-                /// If !IsLast, return the block info right after this one.
-                /// \param[out] next Where to put the next block info.
-                void Next (BlockInfo &next) const;
-
-                /// \brief
-                /// Read block info.
-                void Read ();
                 /// \brief
                 /// Write block info.
                 void Write () const;
@@ -557,13 +566,13 @@ namespace thekogans {
             public:
                 /// \brief
                 /// ctor.
-                /// \param[in] file \see{File} containing the block.
+                /// \param[in] fileAllocator \see{FileAllocator} containing the block.
                 /// \param[in] offset Block offset.
                 /// \param[in] bufferLength How much of the block we want to buffer
                 /// (0 == buffer the whole block).
                 /// \param[in] allocator \see{Allocator} for \see{Buffer}.
                 BlockBuffer (
-                    File &file,
+                    FileAllocator &fileAllocator,
                     PtrType offset,
                     std::size_t bufferLength = 0,
                     Allocator::SharedPtr allocator = DefaultAllocator::Instance ());
