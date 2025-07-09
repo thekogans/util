@@ -707,6 +707,11 @@ namespace thekogans {
             /// \brief
             /// \see{BTree} to manage heap free space.
             BTree::SharedPtr btree;
+            /// \brief
+            /// Cache the size of the BTree::Node on disk so that we
+            /// don't pay the price of calculating it everytime \see{Alloc}
+            /// is called.
+            std::size_t btreeNodeFileSize;
 
         public:
             /// \brief

@@ -267,6 +267,7 @@ namespace thekogans {
                     btreeEntriesPerNode,
                     btreeNodesPerPage,
                     allocator));
+            btreeNodeFileSize = BTree::Node::FileSize (btree->header.entriesPerNode);
         }
 
         FileAllocator::PtrType FileAllocator::Alloc (std::size_t size) {
@@ -275,12 +276,36 @@ namespace thekogans {
                 if (size < MIN_USER_DATA_SIZE) {
                     size = MIN_USER_DATA_SIZE;
                 }
-                // Look for a free block large enough to satisfy the request.
-                BTree::KeyType result = btree->Search (BTree::KeyType (size, 0));
+                BTree::KeyType result;
+                // If allocation request is <= BTree::Node::FileSize and the BTree::Node
+                // cache is not empty, reuse the first free block.
+                if (size <= btreeNodeFileSize && header.freeBTreeNodeOffset != 0) {
+                    // First, see if there's a fixed BTree::Node::FileSize size block.
+                    result.first = btreeNodeFileSize;
+                    result.second = header.freeBTreeNodeOffset;
+                    BlockInfo block (*this, header.freeBTreeNodeOffset);
+                    block.Read ();
+                    if (block.IsFree () && block.IsBTreeNode ()) {
+                        header.freeBTreeNodeOffset = block.GetNextBTreeNodeOffset ();
+                        SetDirty (true);
+                    }
+                    else {
+                        THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
+                            "Heap corruption @" THEKOGANS_UTIL_UI64_FORMAT
+                            ", expecting a free BTree::Node block.",
+                            header.freeBTreeNodeOffset);
+                    }
+                }
+                else {
+                    // Else look for a free block large enough to satisfy the request.
+                    result = btree->Search (BTree::KeyType (size, 0));
+                    if (result.second != 0) {
+                        // Got it!
+                        assert (result.first >= size);
+                        btree->Delete (result);
+                    }
+                }
                 if (result.second != 0) {
-                    // Got it!
-                    assert (result.first >= size);
-                    btree->Delete (result);
                     offset = result.second;
                     // If the block we got is bigger than we need, split it.
                     //
@@ -322,7 +347,6 @@ namespace thekogans {
                 else {
                     // None found? Grow the file.
                     offset = file->GetSize () + BlockInfo::HEADER_SIZE;
-                    file->SetSize (offset + size + BlockInfo::FOOTER_SIZE);
                 }
                 BlockInfo block (*this, offset, 0, size);
                 block.Write ();
@@ -448,7 +472,6 @@ namespace thekogans {
             }
             else {
                 offset = file->GetSize () + BlockInfo::HEADER_SIZE;
-                file->SetSize (offset + size + BlockInfo::FOOTER_SIZE);
             }
             BlockInfo block (*this, offset, BlockInfo::FLAGS_BTREE_NODE, size);
             block.Write ();
