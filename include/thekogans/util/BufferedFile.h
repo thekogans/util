@@ -97,7 +97,7 @@ namespace thekogans {
         /// VERY IMPORTANT: BufferedFile is NOT thread safe. I felt introducing
         /// a lock with every file access would be very costly performance wise.
         /// Instead, BufferedFile exposes two types of guards; a read only guard
-        /// (\see{LockGuard}<Mutex>) and a read/write guard (\see{BufferedFile::Transaction}).
+        /// (\see{LockGuard}<\see{Mutex}>) and a read/write guard (\see{BufferedFile::Transaction}).
         /// Use the first to gain exclusive read access to the file's data. Use
         /// the later for exclusive modify access. This design choice has the
         /// following advantages; 1. Use the lock to protect a set of related
@@ -175,7 +175,7 @@ namespace thekogans {
                 /// we're participants of.
                 BufferedFile::SharedPtr file;
                 /// \brief
-                /// true == the object cache is diffrent than what's on disk.
+                /// true == the in memory cache is different than what's on disk.
                 bool dirty;
 
             public:

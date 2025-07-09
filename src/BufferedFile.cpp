@@ -205,7 +205,7 @@ namespace thekogans {
                         Buffer *buffer_ = GetBuffer ();
                         std::size_t bufferOffset = position - buffer_->offset;
                         std::size_t countToRead = MIN (buffer_->length - bufferOffset, count);
-                        std::memcpy (ptr, &buffer_->data[bufferOffset], countToRead);
+                        std::memcpy (ptr, buffer_->data + bufferOffset, countToRead);
                         ptr += countToRead;
                         countRead += countToRead;
                         position += countToRead;
@@ -238,7 +238,7 @@ namespace thekogans {
                             buffer_->length = MIN (bufferOffset + count, Buffer::SIZE);
                         }
                         std::size_t countToWrite = MIN (buffer_->length - bufferOffset, count);
-                        std::memcpy (&buffer_->data[bufferOffset], ptr, countToWrite);
+                        std::memcpy (buffer_->data + bufferOffset, ptr, countToWrite);
                         buffer_->dirty = true;
                         ptr += countToWrite;
                         countWritten += countToWrite;
@@ -334,13 +334,12 @@ namespace thekogans {
                 // All transactions must be commited before file close.
                 // On the other hand dirty pages get flushed out to disk
                 // to mimic what File would do.
+                AbortTransaction ();
                 DeleteCache ();
                 position = 0;
                 sizeOnDisk = 0;
                 size = 0;
                 flags = 0;
-                currBufferOffset = NOFFS;
-                currBuffer = nullptr;
                 File::Close ();
             }
         }
@@ -653,6 +652,9 @@ namespace thekogans {
                 // we've arrived at the end of the 5 layer deep sparse index.
                 // This mapping is constant (with the create code being amortized
                 // accross multiple buffer accesses). It's O(c) where c = 5 shifts.
+                // We take advantage of locality of reference and cache the last
+                // buffer accessed in the hopes that it will be accessed next and
+                // we can skip the tree walk.
                 currBufferOffset = bufferOffset;
                 currBuffer = segment->buffers[bufferIndex];
             }

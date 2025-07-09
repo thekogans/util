@@ -36,7 +36,7 @@ namespace thekogans {
         #elif defined (TOOLCHAIN_OS_Linux)
             timespec res;
             return clock_getres (CLOCK_MONOTONIC, &res) == 0 ?
-                res.tv_sec + res.tv_nsec * 1e9 : 1e9;
+                1e9 / (res.tv_sec * 1e9 + res.tv_nsec) : 1e9;
         #elif defined (TOOLCHAIN_OS_OSX)
             mach_timebase_info_data_t timeBaseInfoData;
             mach_timebase_info (&timeBaseInfoData);

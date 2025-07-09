@@ -33,7 +33,7 @@ namespace thekogans {
         /// \struct BTree BTree.h thekogans/util/BTree.h
         ///
         /// \brief
-        /// A BTree is a \see{FileAllocatorObject}. It's attributes are that
+        /// A BTree is a \see{FileAllocator::Object}. It's attributes are that
         /// all searches, insertions and deletions take O(H) where H is the
         /// height of the tree. These are BTree's bigest strengths. One of it's
         /// biggest weaknesses is the fact that iterators don't survive modifications
@@ -393,7 +393,7 @@ namespace thekogans {
                 /// Key/value array offset.
                 FileAllocator::PtrType keyValueOffset;
                 /// \brief
-                /// We accumulate all changes and update the file block in the dtor.
+                /// We accumulate all changes and update the file block in \see{Flush}.
                 bool dirty;
                 /// \struct BTree::Node::Entry BTree.h thekogans/util/BTree.h
                 ///
@@ -750,8 +750,9 @@ namespace thekogans {
             /// It is therefore important that any iterator be created, used quickly,
             /// and discarded.
             /// \param[in,out] it Iterator to reset.
-            /// \return true == The iterator pointing to the first occurance of it.prefix
-            /// (or smallest element if nullptr). false == the iterator is empty.
+            /// \return true == The iterator is pointing to the first occurance of
+            /// it.prefix (or smallest element if it.prefix == nullptr). false == the
+            /// iterator is empty.
             bool FindFirst (Iterator &it);
 
             /// \brief
