@@ -212,8 +212,10 @@ namespace thekogans {
                     }
                     block.fileAllocator.file->Seek (block.GetOffset () + blockOffset, SEEK_SET);
                     count = read ?
-                        AdvanceWriteOffset (block.fileAllocator.file->Read (GetWritePtr (), available)) :
-                        AdvanceReadOffset (block.fileAllocator.file->Write (GetReadPtr (), available));
+                        AdvanceWriteOffset (
+                            block.fileAllocator.file->Read (GetWritePtr (), available)) :
+                        AdvanceReadOffset (
+                            block.fileAllocator.file->Write (GetReadPtr (), available));
                 }
             }
             return count;
@@ -278,7 +280,8 @@ namespace thekogans {
                 }
                 BTree::KeyType result;
                 // If allocation request is <= BTree::Node::FileSize and the BTree::Node
-                // cache is not empty, reuse the first free block.
+                // cache is not empty, reuse the first free block. This optimization allows
+                // us to reclaim the node blocks to be used for general purpose allocations.
                 if (size <= btreeNodeFileSize && header.freeBTreeNodeOffset != 0) {
                     // First, see if there's a fixed BTree::Node::FileSize size block.
                     result.first = btreeNodeFileSize;
@@ -305,6 +308,7 @@ namespace thekogans {
                         btree->Delete (result);
                     }
                 }
+                // If we got a block by the above two methods, see if it's too big.
                 if (result.second != 0) {
                     offset = result.second;
                     // If the block we got is bigger than we need, split it.
@@ -345,7 +349,7 @@ namespace thekogans {
                     }
                 }
                 else {
-                    // None found? Grow the file.
+                    // No free block large enough is found? Grow the file.
                     offset = file->GetSize () + BlockInfo::HEADER_SIZE;
                 }
                 BlockInfo block (*this, offset, 0, size);

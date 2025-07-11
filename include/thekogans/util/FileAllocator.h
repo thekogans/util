@@ -69,10 +69,10 @@ namespace thekogans {
         /// Header/Footer::SIZE = 16/12
         ///
         /// Data
-        /// +---------------------+-----------------------+
-        /// | nextBTreeNodeOffset |          ...          |
-        /// +---------------------+-----------------------+
-        ///            8                     var
+        /// +---------------------+-----+
+        /// | nextBTreeNodeOffset | ... |
+        /// +---------------------+-----+
+        ///            8            var
         struct _LIB_THEKOGANS_UTIL_DECL FileAllocator :
                 public BufferedFile::TransactionParticipant {
             /// \brief
@@ -416,6 +416,13 @@ namespace thekogans {
                     footer (flags, size) {}
 
                 /// \brief
+                /// Return the offset.
+                /// \return Offset to the begining of the block.
+                inline PtrType GetOffset () const {
+                    return offset;
+                }
+
+                /// \brief
                 /// Return true if this is the first block in the heap.
                 /// \return true == first block in the heap.
                 inline bool IsFirst () const {
@@ -426,13 +433,6 @@ namespace thekogans {
                 /// \return true == last block in the heap.
                 inline bool IsLast () const {
                     return GetOffset () + GetSize () + FOOTER_SIZE == fileAllocator.GetHeapEnd ();
-                }
-
-                /// \brief
-                /// Return the offset.
-                /// \return Offset to the begining of the block.
-                inline PtrType GetOffset () const {
-                    return offset;
                 }
 
                 /// \brief
@@ -736,7 +736,7 @@ namespace thekogans {
 
             /// \brief
             /// ctor.
-            /// \param[in] path Heap file path.
+            /// \param[in] file_ The file where the heap resides.
             /// \param[in] secure true == zero out free blocks.
             /// \param[in] btreeEntriesPerNode Number of entries per \see{BTree::Node}.
             /// \param[in] btreeNodesPerPage Number of \see{BTree::Node}s that will fit in to

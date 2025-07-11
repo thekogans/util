@@ -843,20 +843,22 @@ namespace thekogans {
         void BTree::Delete (
                 FileAllocator &fileAllocator,
                 FileAllocator::PtrType offset) {
-            FileAllocator::BlockBuffer buffer (fileAllocator, offset);
-            buffer.BlockRead ();
-            ui32 magic;
-            buffer >> magic;
-            if (magic == MAGIC32) {
-                Header header;
-                buffer >> header;
-                Node::Delete (fileAllocator, header.rootOffset);
-                fileAllocator.Free (offset);
-            }
-            else {
-                THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                    "Corrupt BTree @" THEKOGANS_UTIL_UI64_FORMAT,
-                    offset);
+            if (offset != 0) {
+                FileAllocator::BlockBuffer buffer (fileAllocator, offset);
+                buffer.BlockRead ();
+                ui32 magic;
+                buffer >> magic;
+                if (magic == MAGIC32) {
+                    Header header;
+                    buffer >> header;
+                    Node::Delete (fileAllocator, header.rootOffset);
+                    fileAllocator.Free (offset);
+                }
+                else {
+                    THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
+                        "Corrupt BTree @" THEKOGANS_UTIL_UI64_FORMAT,
+                        offset);
+                }
             }
         }
 
@@ -886,7 +888,8 @@ namespace thekogans {
                 Key::SharedPtr key,
                 Value::SharedPtr value,
                 Iterator &it) {
-            if (key->IsKindOf (header.keyType.c_str ()) &&
+            if (key != nullptr && value != nullptr &&
+                    key->IsKindOf (header.keyType.c_str ()) &&
                     (header.valueType.empty () || value->IsKindOf (header.valueType.c_str ()))) {
                 it.Clear ();
                 Node::Entry entry (key.Get (), value.Get ());
@@ -982,10 +985,8 @@ namespace thekogans {
         }
 
         void BTree::Delete () {
-            if (offset != 0) {
-                Delete (*fileAllocator, offset);
-                offset = 0;
-            }
+            Delete (*fileAllocator, offset);
+            offset = 0;
             header.rootOffset = 0;
             Node::Free (root);
             root = Node::Alloc (*this, header.rootOffset);

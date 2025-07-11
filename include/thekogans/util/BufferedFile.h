@@ -94,21 +94,27 @@ namespace thekogans {
         /// fine for 'small' (under 1MB) files, it's strength lies with it's ability
         /// to handle multi GB or even TB files with ease. It's hierarchical address
         /// space partitioning allows for very efficient, sparse file handling.
+        /// ************************** PLEASE READ ****************************
         /// VERY IMPORTANT: BufferedFile is NOT thread safe. I felt introducing
         /// a lock with every file access would be very costly performance wise.
         /// Instead, BufferedFile exposes two types of guards; a read only guard
         /// (\see{LockGuard}<\see{Mutex}>) and a read/write guard (\see{BufferedFile::Transaction}).
         /// Use the first to gain exclusive read access to the file's data. Use
         /// the later for exclusive modify access. This design choice has the
-        /// following advantages; 1. Use the lock to protect a set of related
-        /// read/write operations instead of the file locking with every call
-        /// and 2. Having a thread complete all it's reads and writes without
-        /// interuption is faster than having different threads contend for the
+        /// following advantages;
+        /// 1. Use the lock to protect a set of related read/write operations
+        /// instead of the file locking with every call.
+        /// 2. Having a thread complete all it's reads and writes without
+        /// interruptions is faster than having different threads contend for the
         /// lock as there is no context switching and less disk head movement.
-        /// This also means that the various threads sharing the same BufferedFile
-        /// have to consciously cooperate with eachother (by using the provided
-        /// guards). On the other hand, if you only have one thread accessing the
-        /// file, there's nothing to do and no need to pay the cost of a lock.
+        /// This also plays nice with the currBuffer cache as it promotes locality
+        /// of reference.
+        /// The one drawback of this design choice is;
+        /// The various threads sharing the same BufferedFile have to consciously
+        /// cooperate with eachother (by using the provided guards). On the other
+        /// hand, if you only have one thread accessing the file, there's nothing
+        /// to do and no need to pay the cost of a lock.
+        /// *******************************************************************
         struct _LIB_THEKOGANS_UTIL_DECL BufferedFile :
                 public File,
                 public Producer<BufferedFileEvents> {
@@ -118,18 +124,36 @@ namespace thekogans {
             THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE (BufferedFile)
 
             /// \brief
-            /// Commit phase 1.
+            /// BufferedFile implements a two phase commit. The
+            /// first phase (usually called the allocation phase)
+            /// will have all objects allocate the space they need
+            /// to commit themselves to disk. How the space is
+            /// allocated is outside the scope of the BufferedFile
+            /// (See \see{FileAllocator} for one such example).
+            /// This is also the time when all offset pointers
+            /// are updated (Again see \see{FileAllocator::Object}
+            /// and \see{FileAllocator::ObjectEvents}). The second
+            /// phase (usually called the commit phase) will have
+            /// all objects flush themselves to disk. This logic is
+            /// enshrined in \see{TransactionParticipant} below.
+
+            /// \brief
+            /// Commit phase 1 (allocation).
             static const int COMMIT_PHASE_1 = 1;
             /// \brief
-            /// Commit phase 2.
+            /// Commit phase 2 (flush).
             static const int COMMIT_PHASE_2 = 2;
 
             /// \struct BufferedFile::Transaction BufferedFile.h thekogans/util/BufferedFile.h
             ///
             /// \brief
-            /// A very simple transaction scope guard. Will call BeginTransaction in it's
-            /// ctor and AbortTransaction in it's dtor. Call Commit before the end of the
+            /// A very simple transaction scope guard. Will call
+            /// \see{BeginTransaction} in it's ctor and \see{AbortTransaction}
+            /// in it's dtor. Call Commit before the end of the
             /// scope to commit the transaction.
+            /// NOTE: If you're only reading the file, this is
+            /// overkill. Use \see{LockGuard}<{\see{Mutex}> (file->\see{GetLock} ())
+            /// instead.
             struct _LIB_THEKOGANS_UTIL_DECL Transaction {
             private:
                 /// \see{BufferedFile} we're guarding.
@@ -291,7 +315,7 @@ namespace thekogans {
             ///
             /// \brief
             /// Buffer tiles the file address space providing incremental,
-            /// sparse access to the data. Use \see{Flush} to manage memory
+            /// sparse access to the data. Use \see{DeleteCache} to manage memory
             /// usage.
             /// WARNING: Spent an hour chasing my tail looking for a stack
             /// overflow bug. Long story short, don't allocate buffers on
@@ -530,7 +554,7 @@ namespace thekogans {
             } root;
             /// \brief
             /// Current buffer offset.
-            /// This is the buffer offset of current position. (position & ~(Buffer::SIZE - 1))
+            /// This is the buffer offset of the current position. (position & ~(Buffer::SIZE - 1))
             ui64 currBufferOffset;
             /// \brief
             /// Current buffer cache.
@@ -619,7 +643,9 @@ namespace thekogans {
             /// Use the lock to gain exclusive access to the file.
             /// NOTE: BufferedFile does not use mutex (at all). As
             /// noted elsewhere, locking with every seek/read/write
-            /// would be prohibitively expensive. Instead each
+            /// would be prohibitively expensive (not to mention it
+            /// would do nothing to preserve the atomicity of seek/read
+            // and seek/write operations). Instead each
             /// BufferedFile exposes a mutex that your threads can
             /// use to synchronize access to the file based on
             /// access patterns that are more appropriate to your
