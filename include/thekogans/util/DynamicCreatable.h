@@ -60,8 +60,8 @@ namespace thekogans {
         /// 2. The two layer map hierarchy design (see below) provides a huge performance
         /// boost as every time you need to create a type derived from a base, you can
         /// call base::CreateType (type) instead of DynamicCreatable::CreateType (type).
-        /// That one change alows for much faster searches. While the map higherarchy
-        /// is only two layes deep (base, type), its very flexible and if used properly
+        /// That one change allows for much faster searches. While the map higherarchy
+        /// is only two layers deep (base, type), its very flexible and if used properly
         /// (i.e. with type namespaces) can service any application type higherarchy.
         ///
         /// 3. After initialization (which is usually done before main is called),
