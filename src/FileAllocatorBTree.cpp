@@ -458,11 +458,16 @@ namespace thekogans {
                 header.rootNode = node;
                 SetDirty (true);
             }
+            else if (!IsDirty () &&
+                    header.rootOffset == 0 && header.rootNode->IsDirty ()) {
+                SetDirty (true);
+            }
         }
 
         bool FileAllocator::BTree::Delete (const KeyType &key) {
             bool removed = header.rootNode->Remove (key);
-            if (removed && header.rootNode->IsEmpty () && header.rootNode->GetChild (0) != nullptr) {
+            if (removed && header.rootNode->IsEmpty () &&
+                    header.rootNode->GetChild (0) != nullptr) {
                 Node *node = header.rootNode;
                 header.rootNode = header.rootNode->GetChild (0);
                 Node::Delete (node);
