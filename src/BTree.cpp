@@ -28,8 +28,7 @@ namespace thekogans {
         inline Serializer &operator << (
                 Serializer &serializer,
                 const BTree::Node::Entry &entry) {
-            serializer <<
-                (entry.rightNode != nullptr ? entry.rightNode->GetOffset () : entry.rightOffset);
+            serializer << entry.rightOffset;
             return serializer;
         }
 
@@ -54,7 +53,7 @@ namespace thekogans {
                 header.keyType <<
                 header.valueType <<
                 header.entriesPerNode <<
-                (header.rootNode != nullptr ? header.rootNode->GetOffset () : header.rootOffset);
+                header.rootOffset;
             return serializer;
         }
 
@@ -642,6 +641,12 @@ namespace thekogans {
                 FileAllocator::BlockBuffer keyValueBuffer (
                     *fileAllocator, keyValueOffset);
                 for (ui32 i = 0; i < count; ++i) {
+                    // This is a very important if statement for it
+                    // stamps the in memory cache on to onfile
+                    // store. In effect marking the new checkpoint.
+                    if (entries[i].rightNode != nullptr) {
+                        entries[i].rightOffset = entries[i].rightNode->GetOffset ();;
+                    }
                     buffer << entries[i];
                     keyValueBuffer <<
                         entries[i].key->Version () <<
@@ -687,7 +692,7 @@ namespace thekogans {
 
         void BTree::Node::Reload () {
             FreeChildren ();
-            if (offset != 0) {
+            if (GetOffset () != 0) {
                 Load ();
             }
         }
@@ -744,10 +749,19 @@ namespace thekogans {
         void BTree::Node::FreeChildren () {
             if (count > 0) {
                 Free (leftNode);
+                leftNode = nullptr;
                 for (ui32 i = 0; i < count; ++i) {
                     entries[i].key->Release ();
                     entries[i].value->Release ();
                     Free (entries[i].rightNode);
+                    // This is not strictly necessary as rightNode
+                    // gets reset in operator >> (... Entry). But
+                    // for the sake of a single assign, I don't want
+                    // to take the chance that operator >> will change
+                    // in the future making for one hell of a bug to
+                    // find. So for completeness (and locality of reference)
+                    // I leave it here.
+                    entries[i].rightNode = nullptr;
                 }
                 count = 0;
             }
@@ -765,8 +779,8 @@ namespace thekogans {
                 header (keyType, valueType, (ui32)entriesPerNode),
                 keyFactory (Key::GetTypeFactory (keyType.c_str ())),
                 valueFactory (Value::GetTypeFactory (valueType.c_str ())) {
-            if (offset != 0) {
-                FileAllocator::BlockBuffer buffer (*fileAllocator, offset);
+            if (GetOffset () != 0) {
+                FileAllocator::BlockBuffer buffer (*fileAllocator, GetOffset ());
                 buffer.BlockRead ();
                 ui32 magic;
                 buffer >> magic;
@@ -783,17 +797,18 @@ namespace thekogans {
                             "match existing key (%s)/value (%s) types @" THEKOGANS_UTIL_UI64_FORMAT,
                             header.keyType.c_str (), header.valueType.c_str (),
                             header_.keyType.c_str (), header_.valueType.c_str (),
-                            offset);
+                            GetOffset ());
                     }
                 }
                 else {
                     THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
                         "Corrupt BTree @" THEKOGANS_UTIL_UI64_FORMAT,
-                        offset);
+                        GetOffset ());
                 }
             }
             else if (!Key::IsType (header.keyType.c_str ()) ||
-                    (!header.valueType.empty () && !Value::IsType (header.valueType.c_str ()))) {
+                    (!header.valueType.empty () &&
+                        !Value::IsType (header.valueType.c_str ()))) {
                 THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
                     "key (%s) / value (%s) types are not valid.",
                     keyType.c_str (), valueType.c_str ());
@@ -838,7 +853,8 @@ namespace thekogans {
             if (key.IsKindOf (header.keyType.c_str ())) {
                 it.Clear ();
                 ui32 index = 0;
-                for (Node *node = header.rootNode; node != nullptr; node = node->GetChild (index)) {
+                for (Node *node = header.rootNode; node != nullptr;
+                        node = node->GetChild (index)) {
                     if (node->Find (key, index)) {
                         it.prefix.Reset (node->entries[index].key);
                         it.node = Iterator::NodeIndex (node, index);
@@ -902,7 +918,8 @@ namespace thekogans {
         bool BTree::Delete (const Key &key) {
             if (key.IsKindOf (header.keyType.c_str ())) {
                 bool removed = header.rootNode->Remove (key);
-                if (removed && header.rootNode->IsEmpty () && header.rootNode->GetChild (0) != nullptr) {
+                if (removed && header.rootNode->IsEmpty () &&
+                        header.rootNode->GetChild (0) != nullptr) {
                     Node *node = header.rootNode;
                     header.rootNode = header.rootNode->GetChild (0);
                     Node::Delete (node);
@@ -970,15 +987,19 @@ namespace thekogans {
         }
 
         void BTree::Flush () {
-            assert (offset != 0);
-            FileAllocator::BlockBuffer buffer (*fileAllocator, offset);
+            assert (GetOffset () != 0);
+            FileAllocator::BlockBuffer buffer (*fileAllocator, GetOffset ());
+            // See the comment abbove BTree::Node::Flush () if statement.
+            if (header.rootNode != nullptr) {
+                header.rootOffset = header.rootNode->GetOffset ();
+            }
             buffer << MAGIC32 << header;
             buffer.BlockWrite ();
         }
 
         void BTree::Reload () {
-            if (offset != 0) {
-                FileAllocator::BlockBuffer buffer (*fileAllocator, offset);
+            if (GetOffset () != 0) {
+                FileAllocator::BlockBuffer buffer (*fileAllocator, GetOffset ());
                 buffer.BlockRead ();
                 ui32 magic;
                 buffer >> magic >> header;

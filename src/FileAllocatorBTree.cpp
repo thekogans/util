@@ -57,7 +57,6 @@ namespace thekogans {
                     Size (btree.header.entriesPerNode))) Node (btree, offset);
         }
 
-
         void FileAllocator::BTree::Node::Free (Node *node) {
             if (node != nullptr) {
                 node->~Node ();
@@ -341,6 +340,9 @@ namespace thekogans {
             if (count > 0) {
                 buffer << leftOffset;
                 for (ui32 i = 0; i < count; ++i) {
+                    if (entries[i].rightNode != nullptr) {
+                        entries[i].rightOffset = entries[i].rightNode->offset;
+                    }
                     buffer << entries[i];
                 }
             }
@@ -384,8 +386,10 @@ namespace thekogans {
         void FileAllocator::BTree::Node::FreeChildren () {
             if (count > 0) {
                 Free (leftNode);
+                leftNode = nullptr;
                 for (ui32 i = 0; i < count; ++i) {
                     Free (entries[i].rightNode);
+                    entries[i].rightNode = nullptr;
                 }
                 count = 0;
             }
@@ -491,6 +495,9 @@ namespace thekogans {
 
         void FileAllocator::BTree::Flush () {
             BlockBuffer buffer (fileAllocator, offset);
+            if (header.rootNode != nullptr) {
+                header.rootOffset = header.rootNode->offset;
+            }
             buffer << MAGIC32 << header;
             buffer.BlockWrite ();
         }
@@ -544,8 +551,7 @@ namespace thekogans {
         inline Serializer &operator << (
                 Serializer &serializer,
                 const FileAllocator::BTree::Node::Entry &entry) {
-            serializer << entry.key <<
-                (entry.rightNode != nullptr ? entry.rightNode->offset : entry.rightOffset);
+            serializer << entry.key << entry.rightOffset;
             return serializer;
         }
 
@@ -564,8 +570,7 @@ namespace thekogans {
         inline Serializer &operator << (
                 Serializer &serializer,
                 const FileAllocator::BTree::Header &header) {
-            serializer << header.entriesPerNode <<
-                (header.rootNode != nullptr ? header.rootNode->offset : header.rootOffset);
+            serializer << header.entriesPerNode << header.rootOffset;
             return serializer;
         }
 

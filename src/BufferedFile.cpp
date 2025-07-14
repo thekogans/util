@@ -49,6 +49,9 @@ namespace thekogans {
         void BufferedFile::TransactionParticipant::SetDirty (bool dirty_) {
             if (dirty != dirty_) {
                 dirty = dirty_;
+                // dirty is the trigger to have the object commit
+                // itself to file. Signalling dirty makes the object
+                // eligible to be committed by the next transaction.
                 if (dirty) {
                     Subscriber<BufferedFileEvents>::Subscribe (*file);
                 }
@@ -63,6 +66,13 @@ namespace thekogans {
             THEKOGANS_UTIL_TRY {
                 assert (IsDirty ());
                 Flush ();
+                // dirty objects straddling transaction bounaries are
+                // automatically commited (as if they wrote to a
+                // regular file). This way all trnsactions start out
+                // clean and only those objects that have become dirty
+                // during the transaction scope will be committed when
+                // it commits.
+                SetDirty (false);
             }
             THEKOGANS_UTIL_CATCH_AND_LOG_SUBSYSTEM (THEKOGANS_UTIL)
         }
@@ -374,9 +384,9 @@ namespace thekogans {
         void BufferedFile::Close () {
             if (IsOpen ()) {
                 // All transactions must be commited before file close.
+                AbortTransaction ();
                 // On the other hand dirty pages get flushed out to disk
                 // to mimic what File would do.
-                AbortTransaction ();
                 DeleteCache ();
                 position = 0;
                 sizeOnDisk = 0;
