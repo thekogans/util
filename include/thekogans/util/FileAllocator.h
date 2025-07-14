@@ -156,6 +156,11 @@ namespace thekogans {
                 }
 
                 /// \brief
+                /// Delete the disk image and reset the internal state.
+                virtual void Delete () = 0;
+
+            protected:
+                /// \brief
                 /// Optimization for Allocate below. If an object declares
                 /// itself as fixed size, Allocate will not check the object
                 /// block size, only offset. And if offset == 0, it will allocate
@@ -167,10 +172,6 @@ namespace thekogans {
                 /// Return the size of the object on disk.
                 /// \return Size of the object on disk.
                 virtual std::size_t Size () const = 0;
-
-                /// \brief
-                /// Delete the disk image and reset the internal state.
-                virtual void Delete () = 0;
 
             private:
                 // BufferedFile::TransactionParticipant

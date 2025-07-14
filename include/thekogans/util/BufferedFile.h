@@ -206,7 +206,9 @@ namespace thekogans {
                 /// \brief
                 /// ctor.
                 /// \param[in] file_ \see{BufferedFile} we're a transaction participant of.
-                TransactionParticipant (BufferedFile::SharedPtr file_);
+                TransactionParticipant (BufferedFile::SharedPtr file_) :
+                    file (file_),
+                    dirty (false) {}
                 /// \brief
                 /// dtor.
                 virtual ~TransactionParticipant () {}
@@ -227,9 +229,7 @@ namespace thekogans {
                 /// \brief
                 /// Set dirty.
                 /// \param[in] dirty_ New value for dirty.
-                inline void SetDirty (bool dirty_) {
-                    dirty = dirty_;
-                }
+                void SetDirty (bool dirty_);
 
             protected:
                 /// \brief
@@ -249,39 +249,19 @@ namespace thekogans {
                 /// Transaction is beginning. Flush the internal cache to file.
                 /// \param[in] file \see{BufferedFile} beginning the transaction.
                 virtual void OnBufferedFileTransactionBegin (
-                        BufferedFile::SharedPtr /*file*/) noexcept override {
-                    THEKOGANS_UTIL_TRY {
-                        Flush ();
-                    }
-                    THEKOGANS_UTIL_CATCH_AND_LOG_SUBSYSTEM (THEKOGANS_UTIL)
-                }
+                    BufferedFile::SharedPtr /*file*/) noexcept override;
                 /// \brief
                 /// Transaction is commiting. Flush the internal cache to file.
                 /// \param[in] file \see{BufferedFile} commiting the transaction.
                 /// \param[in] phase \see{BufferedFile} implements two phase commit.
                 virtual void OnBufferedFileTransactionCommit (
-                        BufferedFile::SharedPtr /*file*/,
-                        int phase) noexcept override {
-                    THEKOGANS_UTIL_TRY {
-                        if (phase == COMMIT_PHASE_1) {
-                            Allocate ();
-                        }
-                        else if (phase == COMMIT_PHASE_2) {
-                            Flush ();
-                        }
-                    }
-                    THEKOGANS_UTIL_CATCH_AND_LOG_SUBSYSTEM (THEKOGANS_UTIL)
-                }
+                    BufferedFile::SharedPtr /*file*/,
+                    int phase) noexcept override;
                 /// \brief
                 /// Transaction is aborting. Reload the internal cache from file.
                 /// \param[in] file \see{BufferedFile} aborting the transaction.
                 virtual void OnBufferedFileTransactionAbort (
-                        BufferedFile::SharedPtr /*file*/) noexcept override {
-                    THEKOGANS_UTIL_TRY {
-                        Reload ();
-                    }
-                    THEKOGANS_UTIL_CATCH_AND_LOG_SUBSYSTEM (THEKOGANS_UTIL)
-                }
+                    BufferedFile::SharedPtr /*file*/) noexcept override;
 
                 /// \brief
                 /// TransactionParticipant is neither copy constructable, nor assignable.

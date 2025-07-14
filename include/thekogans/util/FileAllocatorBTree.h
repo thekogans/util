@@ -41,6 +41,8 @@ struct BTree : public BufferedFile::TransactionParticipant {
     static const std::size_t KEY_TYPE_SIZE = UI64_SIZE + PTR_TYPE_SIZE;
 
 private:
+    struct Node;
+
     /// \brief
     /// Reference back to the FileAllocator for
     /// \see{Header} and \see{Node} blocks.
@@ -60,6 +62,9 @@ private:
         /// \brief
         /// Root node offset.
         PtrType rootOffset;
+        /// \brief
+        /// Root node.
+        Node *rootNode;
 
         /// \brief
         /// Size of header on disk.
@@ -73,14 +78,15 @@ private:
         /// \param[in] entriesPerNode_ Entries per node.
         Header (ui32 entriesPerNode_ = DEFAULT_BTREE_ENTRIES_PER_NODE) :
             entriesPerNode (entriesPerNode_),
-            rootOffset (0) {}
+            rootOffset (0),
+            rootNode (nullptr) {}
     } header;
     /// \struct Fileallocator::BTree::Node FileallocatorBTree.h
     /// thekogans/util/FileallocatorBTree.h
     ///
     /// \brief
     /// BTree nodes store sorted keys and pointers to children nodes.
-    struct Node {
+    struct Node : public BufferedFile::TransactionParticipant {
         /// \brief
         /// BTree to which this node belongs.
         BTree &btree;
@@ -165,13 +171,6 @@ private:
         /// \param[in] node Empty node to delete.
         static void Delete (Node *node);
 
-        /// \brief
-        /// If dirty, flush changes to file.
-        void Flush ();
-        /// \brief
-        /// If not dirty, delete dirty children so that they can be reloaded from file.
-        /// If dirty, would have been deleted by it's parent.
-        void Reload ();
         /// \brief
         /// Return the child at the given index.
         /// \param[in] index Index of child to retrieve
@@ -273,7 +272,27 @@ private:
         /// \brief
         /// Dump the nodes entries to stdout. Used to debug the implementation.
         void Dump ();
-    } *root;
+
+    protected:
+        // BufferedFile::TransactionParticipant
+        /// \brief
+        /// Allocate space for the node.
+        virtual void Allocate () override;
+        /// \brief
+        /// Flush changes to file.
+        virtual void Flush () override;
+        /// \brief
+        /// Reload from file.
+        virtual void Reload () override;
+
+    private:
+        /// \brief
+        /// Common logic used by ctor and Reload.
+        void Load ();
+        /// \brief
+        /// Common logic used by dtor and Reload.
+        void FreeChildren ();
+    };
     /// \brief
     /// An instance of \see{BlockAllocator} to allocate \see{Node}s.
     BlockAllocator::SharedPtr nodeAllocator;

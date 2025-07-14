@@ -46,10 +46,52 @@ namespace thekogans {
             file->CommitTransaction ();
         }
 
-        BufferedFile::TransactionParticipant::TransactionParticipant (BufferedFile::SharedPtr file_) :
-                file (file_),
-                dirty (false) {
-            Subscriber<BufferedFileEvents>::Subscribe (*file);
+        void BufferedFile::TransactionParticipant::SetDirty (bool dirty_) {
+            if (dirty != dirty_) {
+                dirty = dirty_;
+                if (dirty) {
+                    Subscriber<BufferedFileEvents>::Subscribe (*file);
+                }
+                else {
+                    Subscriber<BufferedFileEvents>::Unsubscribe (*file);
+                }
+            }
+        }
+
+        void BufferedFile::TransactionParticipant::OnBufferedFileTransactionBegin (
+                BufferedFile::SharedPtr /*file*/) noexcept {
+            THEKOGANS_UTIL_TRY {
+                assert (IsDirty ());
+                Flush ();
+            }
+            THEKOGANS_UTIL_CATCH_AND_LOG_SUBSYSTEM (THEKOGANS_UTIL)
+        }
+
+        void BufferedFile::TransactionParticipant::OnBufferedFileTransactionCommit (
+                BufferedFile::SharedPtr /*file*/,
+                int phase) noexcept {
+            THEKOGANS_UTIL_TRY {
+                if (phase == COMMIT_PHASE_1) {
+                    assert (IsDirty ());
+                    Allocate ();
+                }
+                else if (phase == COMMIT_PHASE_2) {
+                    assert (IsDirty ());
+                    Flush ();
+                    SetDirty (false);
+                }
+            }
+            THEKOGANS_UTIL_CATCH_AND_LOG_SUBSYSTEM (THEKOGANS_UTIL)
+        }
+
+        void BufferedFile::TransactionParticipant::OnBufferedFileTransactionAbort (
+                BufferedFile::SharedPtr /*file*/) noexcept {
+            THEKOGANS_UTIL_TRY {
+                assert (IsDirty ());
+                Reload ();
+                SetDirty (false);
+            }
+            THEKOGANS_UTIL_CATCH_AND_LOG_SUBSYSTEM (THEKOGANS_UTIL)
         }
 
         THEKOGANS_UTIL_IMPLEMENT_HEAP_FUNCTIONS (BufferedFile::Buffer)

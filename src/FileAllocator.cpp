@@ -25,7 +25,7 @@ namespace thekogans {
     namespace util {
 
         void FileAllocator::Object::Allocate () {
-            if (!IsFixedSize () || offset == 0) {
+            if (IsDirty () && (!IsFixedSize () || offset == 0)) {
                 ui64 blockSize = 0;
                 if (offset != 0) {
                     BlockInfo block (*fileAllocator, offset);
@@ -38,7 +38,6 @@ namespace thekogans {
                         fileAllocator->Free (offset);
                     }
                     offset = fileAllocator->Alloc (size);
-                    SetDirty (true);
                     Produce (
                         std::bind (
                             &ObjectEvents::OnFileAllocatorObjectOffsetChanged,
@@ -441,19 +440,15 @@ namespace thekogans {
         }
 
         void FileAllocator::Flush () {
-            if (IsDirty ()) {
-                file->Seek (0, SEEK_SET);
-                *file << MAGIC32 << header;
-                SetDirty (false);
-            }
+            file->Seek (0, SEEK_SET);
+            *file << MAGIC32 << header;
         }
 
         void FileAllocator::Reload () {
-            if (IsDirty () && file->GetSize () > 0) {
+            if (file->GetSize () > 0) {
                 file->Seek (0, SEEK_SET);
                 ui32 magic;
                 *file >> magic >> header;
-                SetDirty (false);
             }
         }
 

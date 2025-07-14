@@ -333,6 +333,9 @@ namespace thekogans {
                 /// \brief
                 /// Root node offset.
                 FileAllocator::PtrType rootOffset;
+                /// \brief
+                /// Root node.
+                Node *rootNode;
 
                 /// \brief
                 /// ctor.
@@ -346,7 +349,8 @@ namespace thekogans {
                     keyType (keyType_),
                     valueType (valueType_),
                     entriesPerNode (entriesPerNode_),
-                    rootOffset (0) {}
+                    rootOffset (0),
+                    rootNode (nullptr) {}
 
                 /// \brief
                 /// Return the serialized size of the header.
@@ -373,13 +377,10 @@ namespace thekogans {
             ///
             /// \brief
             /// BTree nodes store sorted key/value pairs and pointers to children nodes.
-            struct Node {
+            struct Node : public FileAllocator::Object {
                 /// \brief
                 /// BTree to which this node belongs.
                 BTree &btree;
-                /// \brief
-                /// Node block offset.
-                FileAllocator::PtrType offset;
                 /// \brief
                 /// Count of entries.
                 ui32 count;
@@ -392,9 +393,6 @@ namespace thekogans {
                 /// \brief
                 /// Key/value array offset.
                 FileAllocator::PtrType keyValueOffset;
-                /// \brief
-                /// We accumulate all changes and update the file block in \see{Flush}.
-                bool dirty;
                 /// \struct BTree::Node::Entry BTree.h thekogans/util/BTree.h
                 ///
                 /// \brief
@@ -437,13 +435,13 @@ namespace thekogans {
                 /// \brief
                 /// ctor.
                 /// \param[in] btree_ BTree to which this node belongs.
-                /// \param[in] offset_ Node offset.
+                /// \param[in] offset Node offset.
                 Node (
                     BTree &btree_,
-                    FileAllocator::PtrType offset_ = 0);
+                    FileAllocator::PtrType offset = 0);
                 /// \brief
                 /// dtor.
-                ~Node ();
+                virtual ~Node ();
 
                 /// \brief
                 /// Given the number of entries, return the node file size in bytes.
@@ -479,12 +477,6 @@ namespace thekogans {
                     FileAllocator &fileAllocator,
                     FileAllocator::PtrType offset);
 
-                /// \brief
-                /// Flush changes to file.
-                void Flush ();
-                /// \brief
-                /// If not dirty, reload the children from file.
-                void Reload ();
                 /// \brief
                 /// Return the left child of an entry at the given index.
                 /// NOTE: If you need the very last (rightNode) child, call
@@ -654,7 +646,42 @@ namespace thekogans {
                 /// \brief
                 /// Dump the nodes entries to stdout. Used to debug the implementation.
                 void Dump ();
-            } *root;
+
+                // FileAllocator::Object
+                /// \brief
+                /// Delete the disk image and reset the internal state.
+                virtual void Delete () override;
+
+            protected:
+                /// \brief
+                /// \see{Header} is fixed size.
+                /// \return true.
+                virtual bool IsFixedSize () const override {
+                    return true;
+                }
+                /// \brief
+                /// Return the \see{Header} size.
+                /// \return \see{Header} size.
+                virtual std::size_t Size () const override {
+                    return FileSize (btree.header.entriesPerNode);
+                }
+
+                // BufferedFile::TransactionParticipant
+                /// \brief
+                /// If dirty, flush changes to file.
+                virtual void Flush () override;
+                /// \brief
+                /// If dirty, reload from file.
+                virtual void Reload () override;
+
+            private:
+                /// \brief
+                /// Common logic used by ctor and Reload.
+                void Load ();
+                /// \brief
+                /// Common logic used by dtor and Reload.
+                void FreeChildren ();
+            };
             /// \brief
             /// An instance of \see{BlockAllocator} to allocate \see{Node}s.
             BlockAllocator::SharedPtr nodeAllocator;
@@ -761,6 +788,11 @@ namespace thekogans {
 
             // FileAllocator::Object
             /// \brief
+            /// Delete the disk image and reset the internal state.
+            virtual void Delete () override;
+
+        protected:
+            /// \brief
             /// \see{Header} is fixed size.
             /// \return true.
             virtual bool IsFixedSize () const override {
@@ -772,18 +804,14 @@ namespace thekogans {
             virtual std::size_t Size () const override {
                 return header.Size ();
             }
-            /// \brief
-            /// Delete the disk image and reset the internal state.
-            virtual void Delete () override;
 
-        protected:
             // BufferedFile::TransactionParticipant
             /// \brief
-            /// Flush the node cache (used in tight memory situations).
+            /// If dirty, flush changes to file.
             virtual void Flush () override;
 
             /// \brief
-            /// Reload from file.
+            /// If dirty, reload from file.
             virtual void Reload () override;
 
             /// \brief
