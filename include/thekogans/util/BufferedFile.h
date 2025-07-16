@@ -206,9 +206,14 @@ namespace thekogans {
                 /// \brief
                 /// ctor.
                 /// \param[in] file_ \see{BufferedFile} we're a transaction participant of.
-                TransactionParticipant (BufferedFile::SharedPtr file_) :
-                    file (file_),
-                    dirty (false) {}
+                /// \param[in] dirty_
+                TransactionParticipant (
+                        BufferedFile::SharedPtr file_,
+                        bool dirty_ = false) :
+                        file (file_),
+                        dirty (false) {
+                    SetDirty (dirty_);
+                }
                 /// \brief
                 /// dtor.
                 virtual ~TransactionParticipant () {}
@@ -374,10 +379,6 @@ namespace thekogans {
                     File &log,
                     ui64 &count) = 0;
                 /// \brief
-                /// Write dirty buffers to file.
-                /// \param[in] file \see{File} to save to.
-                virtual void Flush (File &file) = 0;
-                /// \brief
                 /// Delete all buffers whose offset > newSize.
                 /// \param[in] newSize New size to clip the node to.
                 /// \return true == the entire node was clipped, continue iterating.
@@ -433,10 +434,6 @@ namespace thekogans {
                 virtual void Save (
                     File &log,
                     ui64 &count) override;
-                /// \brief
-                /// Write dirty buffers to file.
-                /// \param[in] file \see{File} to save to.
-                virtual void Flush (File &file) override;
                 /// \brief
                 /// Delete all buffers whose offset > newSize.
                 /// \param[in] newSize New size to clip the node to.
@@ -502,10 +499,6 @@ namespace thekogans {
                 virtual void Save (
                     File &log,
                     ui64 &count) override;
-                /// \brief
-                /// Write dirty buffers to file.
-                /// \param[in] file \see{File} to save to.
-                virtual void Flush (File &file) override;
                 /// \brief
                 /// Delete all buffers whose offset > newSize.
                 /// \param[in] newSize New size to clip the node to.
@@ -756,27 +749,31 @@ namespace thekogans {
             inline bool IsDirty () const {
                 return flags.Test (FLAGS_DIRTY);
             }
+            inline void SetDirty (bool dirty) {
+                flags.Set (FLAGS_DIRTY, dirty);
+            }
             /// \brief
             /// Return true if we're in the middle of a transaction.
             ///\return true == we're in the middle of a transaction.
             inline bool IsTransactionPending () const {
                 return flags.Test (FLAGS_TRANSACTION);
             }
+            inline void SetTransactionPending (bool transaction) {
+                flags.Set (FLAGS_TRANSACTION, transaction);
+            }
             /// \brief
-            /// Start a new transaction. If a transaction is
-            /// already in progress do nothing. If the cache
-            /// was dirty before the transaction began it will
-            /// be \see{Flush}ed first.
-            bool BeginTransaction ();
+            /// Start a new transaction.
+            /// Used by \see{Transaction} ctor to mark a modify scope.
+            /// NOTE: Must only be called after acquiring the lock.
+            void BeginTransaction ();
             /// \brief
             /// Commit the current transaction.
-            /// BufferedFile uses two phase commit. While the two phases can mean
-            /// anything you want, \see{TransactionParticipant} formalizes them in
-            /// to an allocation phase (phase 1) and a flush phase (phase 2).
-            bool CommitTransaction ();
+            /// Used by \see{Transaction} to commit the current changes.
+            void CommitTransaction ();
             /// \brief
             /// Abort the current transaction.
-            bool AbortTransaction ();
+            /// Used by \see{Transaction} dtor to abort uncommitted changes.
+            void AbortTransaction ();
 
             /// \brief
             /// Get the buffer that will cover the neighborhood around position.

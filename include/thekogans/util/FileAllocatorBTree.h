@@ -41,15 +41,10 @@ struct BTree : public BufferedFile::TransactionParticipant {
     static const std::size_t KEY_TYPE_SIZE = UI64_SIZE + PTR_TYPE_SIZE;
 
 private:
-    struct Node;
-
     /// \brief
     /// Reference back to the FileAllocator for
     /// \see{Header} and \see{Node} blocks.
     FileAllocator &fileAllocator;
-    /// \brief
-    /// Our address inside the \see{FileAllocator}.
-    PtrType offset;
     /// \struct Fileallocator::BTree::Header FileallocatorBTree.h
     /// thekogans/util/FileallocatorBTree.h
     ///
@@ -62,9 +57,6 @@ private:
         /// \brief
         /// Root node offset.
         PtrType rootOffset;
-        /// \brief
-        /// Root node.
-        Node *rootNode;
 
         /// \brief
         /// Size of header on disk.
@@ -78,8 +70,7 @@ private:
         /// \param[in] entriesPerNode_ Entries per node.
         Header (ui32 entriesPerNode_ = DEFAULT_BTREE_ENTRIES_PER_NODE) :
             entriesPerNode (entriesPerNode_),
-            rootOffset (0),
-            rootNode (nullptr) {}
+            rootOffset (0) {}
     } header;
     /// \struct Fileallocator::BTree::Node FileallocatorBTree.h
     /// thekogans/util/FileallocatorBTree.h
@@ -292,7 +283,7 @@ private:
         /// \brief
         /// Common logic used by dtor and Reload.
         void FreeChildren ();
-    };
+    } *root;
     /// \brief
     /// An instance of \see{BlockAllocator} to allocate \see{Node}s.
     BlockAllocator::SharedPtr nodeAllocator;
@@ -301,7 +292,6 @@ public:
     /// \brief
     /// ctor.
     /// \param[in] fileAllocator_ \see{FileAllocator} to which this btree belongs.
-    /// \param[in] offset Our address inside the \see{FileAllocator}.
     /// \param[in] entriesPerNode If we're creating the heap, contains entries per
     /// \see{Node}. If we're reading an existing heap, this value will come from the
     /// \see{Header}.
@@ -315,7 +305,6 @@ public:
     /// advice aplies.
     BTree (
         FileAllocator &fileAllocator_,
-        PtrType offset_,
         std::size_t entriesPerNode,
         std::size_t nodesPerPage,
         Allocator::SharedPtr allocator);

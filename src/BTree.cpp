@@ -635,11 +635,11 @@ namespace thekogans {
                     }
                     keyValueOffset = fileAllocator->Alloc (totalKeyValueSize);
                 }
-                buffer <<
-                    (leftNode != nullptr ? leftNode->GetOffset () : leftOffset) <<
-                    keyValueOffset;
-                FileAllocator::BlockBuffer keyValueBuffer (
-                    *fileAllocator, keyValueOffset);
+                if (leftNode != nullptr) {
+                    leftOffset = leftNode->GetOffset ();
+                }
+                buffer << leftOffset << keyValueOffset;
+                FileAllocator::BlockBuffer keyValueBuffer (*fileAllocator, keyValueOffset);
                 for (ui32 i = 0; i < count; ++i) {
                     // This is a very important if statement for it
                     // stamps the in memory cache on to onfile
@@ -778,7 +778,8 @@ namespace thekogans {
                 FileAllocator::Object (fileAllocator, offset),
                 header (keyType, valueType, (ui32)entriesPerNode),
                 keyFactory (Key::GetTypeFactory (keyType.c_str ())),
-                valueFactory (Value::GetTypeFactory (valueType.c_str ())) {
+                valueFactory (Value::GetTypeFactory (valueType.c_str ())),
+                root (nullptr) {
             if (GetOffset () != 0) {
                 FileAllocator::BlockBuffer buffer (*fileAllocator, GetOffset ());
                 buffer.BlockRead ();
@@ -818,11 +819,11 @@ namespace thekogans {
                     Node::Size (header.entriesPerNode),
                     nodesPerPage,
                     allocator));
-            header.rootNode = Node::Alloc (*this, header.rootOffset);
+            root = Node::Alloc (*this, header.rootOffset);
         }
 
         BTree::~BTree () {
-            Node::Free (header.rootNode);
+            Node::Free (root);
         }
 
         void BTree::Delete (
@@ -853,7 +854,7 @@ namespace thekogans {
             if (key.IsKindOf (header.keyType.c_str ())) {
                 it.Clear ();
                 ui32 index = 0;
-                for (Node *node = header.rootNode; node != nullptr;
+                for (Node *node = root; node != nullptr;
                         node = node->GetChild (index)) {
                     if (node->Find (key, index)) {
                         it.prefix.Reset (node->entries[index].key);
@@ -879,18 +880,17 @@ namespace thekogans {
                     (header.valueType.empty () || value->IsKindOf (header.valueType.c_str ()))) {
                 it.Clear ();
                 Node::Entry entry (key.Get (), value.Get ());
-                Node::InsertResult result = header.rootNode->Insert (entry, it);
+                Node::InsertResult result = root->Insert (entry, it);
                 if (result == Node::Overflow) {
                     // The path to the leaf node is full.
                     // Create a new root node and make the entry
                     // its first.
                     Node *node = Node::Alloc (*this);
-                    node->leftOffset = header.rootNode->GetOffset ();
-                    node->leftNode = header.rootNode;
+                    node->leftOffset = root->GetOffset ();
+                    node->leftNode = root;
                     node->InsertEntry (entry, 0);
                     node->SetDirty (true);
-                    header.rootNode = node;
-                    SetDirty (true);
+                    root = node;
                     if (it.IsFinished ()) {
                         it.prefix.Reset (node->entries[0].key);
                         it.node = Iterator::NodeIndex (node, 0);
@@ -898,8 +898,7 @@ namespace thekogans {
                     }
                     result = Node::Inserted;
                 }
-                else if (result == Node::Inserted && !IsDirty () &&
-                        header.rootOffset == 0 && header.rootNode->IsDirty ()) {
+                if (root->IsDirty ()) {
                     SetDirty (true);
                 }
                 // If we inserted the key/value pair, take ownership.
@@ -917,13 +916,17 @@ namespace thekogans {
 
         bool BTree::Delete (const Key &key) {
             if (key.IsKindOf (header.keyType.c_str ())) {
-                bool removed = header.rootNode->Remove (key);
-                if (removed && header.rootNode->IsEmpty () &&
-                        header.rootNode->GetChild (0) != nullptr) {
-                    Node *node = header.rootNode;
-                    header.rootNode = header.rootNode->GetChild (0);
-                    Node::Delete (node);
-                    SetDirty (true);
+                bool removed = root->Remove (key);
+                if (removed) {
+                    if (root->IsEmpty () && root->GetChild (0) != nullptr) {
+                        Node *node = root;
+                        root = root->GetChild (0);
+                        SetDirty (true);
+                        Node::Delete (node);
+                    }
+                    if (root->IsDirty ()) {
+                        SetDirty (true);
+                    }
                 }
                 return removed;
             }
@@ -936,7 +939,7 @@ namespace thekogans {
         bool BTree::FindFirst (Iterator &it) {
             if (it.prefix == nullptr || it.prefix->IsKindOf (header.keyType.c_str ())) {
                 it.Clear ();
-                Node *node = header.rootNode;
+                Node *node = root;
                 if (node != nullptr && node->count > 0) {
                     if (it.prefix == nullptr) {
                         do {
@@ -972,27 +975,29 @@ namespace thekogans {
         }
 
         void BTree::Dump () {
-            if (header.rootNode != nullptr) {
-                header.rootNode->Dump ();
-            }
+            root->Dump ();
         }
 
         void BTree::Delete () {
-            Delete (*fileAllocator, offset);
-            offset = 0;
+            if (offset != 0) {
+                Delete (*fileAllocator, offset);
+                Produce (
+                    std::bind (
+                        &ObjectEvents::OnFileAllocatorObjectFree,
+                        std::placeholders::_1,
+                        this));
+                offset = 0;
+            }
             header.rootOffset = 0;
-            Node::Free (header.rootNode);
-            header.rootNode = Node::Alloc (*this, header.rootOffset);
-            SetDirty (false);
+            Node::Free (root);
+            root = Node::Alloc (*this, header.rootOffset);
         }
 
         void BTree::Flush () {
             assert (GetOffset () != 0);
             FileAllocator::BlockBuffer buffer (*fileAllocator, GetOffset ());
-            // See the comment abbove BTree::Node::Flush () if statement.
-            if (header.rootNode != nullptr) {
-                header.rootOffset = header.rootNode->GetOffset ();
-            }
+            // See the comment above BTree::Node::Flush () if statement.
+            header.rootOffset = root->GetOffset ();
             buffer << MAGIC32 << header;
             buffer.BlockWrite ();
         }
@@ -1004,10 +1009,9 @@ namespace thekogans {
                 ui32 magic;
                 buffer >> magic >> header;
             }
-            if (header.rootNode->IsDirty ()) {
-                assert (header.rootNode->GetOffset () == 0);
-                Node::Free (header.rootNode);
-                header.rootNode = Node::Alloc (*this, header.rootOffset);
+            if (root->IsDirty ()) {
+                Node::Free (root);
+                root = Node::Alloc (*this, header.rootOffset);
             }
         }
 

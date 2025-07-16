@@ -48,16 +48,22 @@ namespace thekogans {
 
         void BufferedFile::TransactionParticipant::SetDirty (bool dirty_) {
             if (dirty != dirty_) {
-                dirty = dirty_;
                 // dirty is the trigger to have the object commit
                 // itself to file. Signalling dirty makes the object
                 // eligible to be committed by the next transaction.
-                if (dirty) {
-                    Subscriber<BufferedFileEvents>::Subscribe (*file);
+                if (dirty_) {
+                    if (file->IsTransactionPending ()) {
+                        Subscriber<BufferedFileEvents>::Subscribe (*file);
+                    }
+                    else {
+                        THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
+                            "No pending transaction.");
+                    }
                 }
                 else {
                     Subscriber<BufferedFileEvents>::Unsubscribe (*file);
                 }
+                dirty = dirty_;
             }
         }
 
@@ -65,14 +71,6 @@ namespace thekogans {
                 BufferedFile::SharedPtr /*file*/) noexcept {
             THEKOGANS_UTIL_TRY {
                 assert (IsDirty ());
-                Flush ();
-                // dirty objects straddling transaction bounaries are
-                // automatically commited (as if they wrote to a
-                // regular file). This way all trnsactions start out
-                // clean and only those objects that have become dirty
-                // during the transaction scope will be committed when
-                // it commits.
-                SetDirty (false);
             }
             THEKOGANS_UTIL_CATCH_AND_LOG_SUBSYSTEM (THEKOGANS_UTIL)
         }
@@ -145,18 +143,6 @@ namespace thekogans {
             }
         }
 
-        void BufferedFile::Segment::Flush (File &file) {
-            for (std::size_t i = 0; i < BRANCHING_LEVEL; ++i) {
-                if (buffers[i] != nullptr) {
-                    if (buffers[i]->dirty) {
-                        file.Seek (buffers[i]->offset, SEEK_SET);
-                        file.Write (buffers[i]->data, buffers[i]->length);
-                        buffers[i]->dirty = false;
-                    }
-                }
-            }
-        }
-
         bool BufferedFile::Segment::SetSize (ui64 newSize) {
             for (std::size_t i = BRANCHING_LEVEL; i-- != 0;) {
                 if (buffers[i] != nullptr) {
@@ -203,14 +189,6 @@ namespace thekogans {
             for (std::size_t i = 0; i < BRANCHING_LEVEL; ++i) {
                 if (nodes[i] != nullptr) {
                     nodes[i]->Save (log, count);
-                }
-            }
-        }
-
-        void BufferedFile::Internal::Flush (File &file) {
-            for (std::size_t i = 0; i < BRANCHING_LEVEL; ++i) {
-                if (nodes[i] != nullptr) {
-                    nodes[i]->Flush (file);
                 }
             }
         }
@@ -281,27 +259,33 @@ namespace thekogans {
                 std::size_t count) {
             if (buffer != nullptr && count > 0) {
                 if (IsOpen ()) {
-                    std::size_t countWritten = 0;
-                    ui8 *ptr = (ui8 *)buffer;
-                    while (count > 0) {
-                        Buffer *buffer_ = GetBuffer ();
-                        std::size_t bufferOffset = position - buffer_->offset;
-                        if (buffer_->length < bufferOffset + count) {
-                            buffer_->length = MIN (bufferOffset + count, Buffer::SIZE);
+                    if (IsTransactionPending ()) {
+                        std::size_t countWritten = 0;
+                        ui8 *ptr = (ui8 *)buffer;
+                        while (count > 0) {
+                            Buffer *buffer_ = GetBuffer ();
+                            std::size_t bufferOffset = position - buffer_->offset;
+                            if (buffer_->length < bufferOffset + count) {
+                                buffer_->length = MIN (bufferOffset + count, Buffer::SIZE);
+                            }
+                            std::size_t countToWrite = MIN (buffer_->length - bufferOffset, count);
+                            std::memcpy (buffer_->data + bufferOffset, ptr, countToWrite);
+                            buffer_->dirty = true;
+                            ptr += countToWrite;
+                            countWritten += countToWrite;
+                            position += countToWrite;
+                            count -= countToWrite;
                         }
-                        std::size_t countToWrite = MIN (buffer_->length - bufferOffset, count);
-                        std::memcpy (buffer_->data + bufferOffset, ptr, countToWrite);
-                        buffer_->dirty = true;
-                        ptr += countToWrite;
-                        countWritten += countToWrite;
-                        position += countToWrite;
-                        count -= countToWrite;
+                        if (size < (ui64)position) {
+                            size = position;
+                        }
+                        SetDirty (true);
+                        return countWritten;
                     }
-                    if (size < (ui64)position) {
-                        size = position;
+                    else {
+                        THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
+                            "No pending transaction.");
                     }
-                    flags.Set (FLAGS_DIRTY, true);
-                    return countWritten;
                 }
                 else {
                     THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
@@ -379,27 +363,30 @@ namespace thekogans {
             position = File::Tell ();
             sizeOnDisk = File::GetSize ();
             size = sizeOnDisk;
+            flags = 0;
+            currBufferOffset = NOFFS;
+            currBuffer = nullptr;
         }
 
         void BufferedFile::Close () {
             if (IsOpen ()) {
                 // All transactions must be commited before file close.
                 AbortTransaction ();
-                // On the other hand dirty pages get flushed out to disk
-                // to mimic what File would do.
                 DeleteCache ();
                 position = 0;
                 sizeOnDisk = 0;
                 size = 0;
                 flags = 0;
+                currBufferOffset = NOFFS;
+                currBuffer = nullptr;
                 File::Close ();
             }
         }
 
         void BufferedFile::Flush () {
             if (IsOpen ()) {
-                if (IsDirty ()) {
-                    if (IsTransactionPending ()) {
+                if (IsTransactionPending ()) {
+                    if (IsDirty ()) {
                         std::string logPath = GetLogPath (path);
                         SimpleFile log (
                             endianness,
@@ -426,22 +413,12 @@ namespace thekogans {
                         root.Save (log, count);
                         log.Seek (0, SEEK_SET);
                         log << MAGIC32 << isClean << count << sizeOnDisk << size;
+                        SetDirty (false);
                     }
-                    else {
-                        {
-                            // Give Flush a \see{TenantFile} as it's interface is that of \see{File}.
-                            // If we were to pass *this, Flush would call in to our Seek and Write.
-                            // And thats not what we want!
-                            TenantFile file (endianness, handle, path);
-                            root.Flush (file);
-                        }
-                        if (sizeOnDisk != size) {
-                            File::SetSize (size);
-                            sizeOnDisk = size;
-                        }
-                        File::Flush ();
-                    }
-                    flags.Set (FLAGS_DIRTY, false);
+                }
+                else {
+                    THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
+                        "No pending transaction.");
                 }
             }
             else {
@@ -452,19 +429,25 @@ namespace thekogans {
 
         void BufferedFile::SetSize (ui64 newSize) {
             if (IsOpen ()) {
-                if (size != newSize) {
-                    if (size > newSize) {
-                        // shrinking
-                        root.SetSize (newSize);
-                        // If new size is <= current position,
-                        // currBuffer will be deleted by root.SetSize.
-                        if ((ui64)position >= newSize) {
-                            currBufferOffset = NOFFS;
-                            currBuffer = nullptr;
+                if (IsTransactionPending ()) {
+                    if (size != newSize) {
+                        if (size > newSize) {
+                            // shrinking
+                            root.SetSize (newSize);
+                            // If new size is <= current position,
+                            // currBuffer will be deleted by root.SetSize.
+                            if ((ui64)position >= newSize) {
+                                currBufferOffset = NOFFS;
+                                currBuffer = nullptr;
+                            }
                         }
+                        size = newSize;
+                        SetDirty (true);
                     }
-                    size = newSize;
-                    flags.Set (FLAGS_DIRTY, true);
+                }
+                else {
+                    THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
+                        "No pending transaction.");
                 }
             }
             else {
@@ -475,7 +458,9 @@ namespace thekogans {
 
         void BufferedFile::DeleteCache () {
             if (IsOpen ()) {
-                Flush ();
+                if (IsDirty ()) {
+                    Flush ();
+                }
                 root.Delete ();
                 currBufferOffset = NOFFS;
                 currBuffer = nullptr;
@@ -548,7 +533,7 @@ namespace thekogans {
             }
         }
 
-        bool BufferedFile::BeginTransaction () {
+        void BufferedFile::BeginTransaction () {
             if (IsOpen ()) {
                 if (!IsTransactionPending ()) {
                     Produce (
@@ -556,11 +541,8 @@ namespace thekogans {
                             &BufferedFileEvents::OnBufferedFileTransactionBegin,
                             std::placeholders::_1,
                             this));
-                    Flush ();
-                    flags.Set (FLAGS_TRANSACTION, true);
-                    return true;
+                    SetTransactionPending (true);
                 }
-                return false;
             }
             else {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
@@ -568,7 +550,7 @@ namespace thekogans {
             }
         }
 
-        bool BufferedFile::CommitTransaction () {
+        void BufferedFile::CommitTransaction () {
             if (IsOpen ()) {
                 if (IsTransactionPending ()) {
                     Produce (
@@ -624,10 +606,8 @@ namespace thekogans {
                         }
                         File::Delete (logPath);
                     }
-                    flags.Set (FLAGS_TRANSACTION, false);
-                    return true;
+                    SetTransactionPending (false);
                 }
-                return false;
             }
             else {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
@@ -635,7 +615,7 @@ namespace thekogans {
             }
         }
 
-        bool BufferedFile::AbortTransaction () {
+        void BufferedFile::AbortTransaction () {
             if (IsOpen ()) {
                 if (IsTransactionPending ()) {
                     if (IsDirty ()) {
@@ -647,21 +627,19 @@ namespace thekogans {
                             currBuffer = nullptr;
                         }
                         root.Clear ();
-                        flags.Set (FLAGS_DIRTY, false);
+                        SetDirty (false);
                     }
                     std::string logPath = GetLogPath (path);
                     if (Path (logPath).Exists ()) {
                         File::Delete (logPath);
                     }
-                    flags.Set (FLAGS_TRANSACTION, false);
+                    SetTransactionPending (false);
                     Produce (
                         std::bind (
                             &BufferedFileEvents::OnBufferedFileTransactionAbort,
                             std::placeholders::_1,
                             this));
-                    return true;
                 }
-                return false;
             }
             else {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (

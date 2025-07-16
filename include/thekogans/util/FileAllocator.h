@@ -94,16 +94,24 @@ namespace thekogans {
             /// thekogans/util/FileAllocator.h
             ///
             /// \brief
-            /// Subscribe to ObjectEvents to receive offset change notifications.
+            /// Subscribe to ObjectEvents to receive notifications about file
+            /// store lifetime. This is useful when you have containing objects
+            /// (objects that contain other objects). They can register for their
+            /// 'children' events and be notified when containing child offset changed.
             struct _LIB_THEKOGANS_UTIL_DECL ObjectEvents {
                 /// \brief
                 /// dtor.
                 virtual ~ObjectEvents () {}
 
                 /// \brief
-                /// \see{Object} offset changed. Update whatever state you need.
-                /// \param[in] file \see{Object} whose offset changed.
-                virtual void OnFileAllocatorObjectOffsetChanged (
+                /// \see{Object} allocated a block in the file.
+                /// \param[in] object \see{Object} whose offset has become valid.
+                virtual void OnFileAllocatorObjectAlloc (
+                    RefCounted::SharedPtr<Object> /*object*/) noexcept {}
+                /// \brief
+                /// \see{Object} freed its file block.
+                /// \param[in] object \see{Object} whose offset has become invalid.
+                virtual void OnFileAllocatorObjectFree (
                     RefCounted::SharedPtr<Object> /*object*/) noexcept {}
             };
 
@@ -135,7 +143,9 @@ namespace thekogans {
                 Object (
                     FileAllocator::SharedPtr fileAllocator_,
                     FileAllocator::PtrType offset_) :
-                    BufferedFile::TransactionParticipant (fileAllocator_->GetFile ()),
+                    BufferedFile::TransactionParticipant (
+                        fileAllocator_->GetFile (),
+                        offset_ == 0),
                     fileAllocator (fileAllocator_),
                     offset (offset_) {}
                 /// \brief
@@ -166,7 +176,9 @@ namespace thekogans {
                 /// block size, only offset. And if offset == 0, it will allocate
                 /// a block once and that's it.
                 /// \return true == object is fixed size.
-                virtual bool IsFixedSize () const = 0;
+                virtual bool IsFixedSize () const {
+                    return false;
+                }
 
                 /// \brief
                 /// Return the size of the object on disk.
@@ -827,13 +839,6 @@ namespace thekogans {
 
         private:
             /// \brief
-            /// Used bu \see{FileAllocatorBTree} to set the header.btreeOffset.
-            /// \param[in] btreeOffset New btreeOffset to set.
-            inline void SetBTreeOffset (PtrType btreeOffset) {
-                header.btreeOffset = btreeOffset;
-                SetDirty (true);
-            }
-            /// \brief
             /// Used to allocate \see{BTree::Node} blocks.
             /// This method is used by the \see{BTree::Node}.
             /// \return Offset of allocated block.
@@ -842,6 +847,10 @@ namespace thekogans {
             /// Used to free blocks prviously allocated with AllocBTreeNode.
             /// \param[in] offset Offset of \see{BTree::Node} to free.
             void FreeBTreeNode (PtrType offset);
+
+            /// \brief
+            /// Common method used by the ctor and Reload.
+            void Load ();
 
             /// \brief
             /// Needs access to private members.

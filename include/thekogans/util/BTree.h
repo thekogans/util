@@ -333,9 +333,6 @@ namespace thekogans {
                 /// \brief
                 /// Root node offset.
                 FileAllocator::PtrType rootOffset;
-                /// \brief
-                /// Root node.
-                Node *rootNode;
 
                 /// \brief
                 /// ctor.
@@ -349,8 +346,7 @@ namespace thekogans {
                     keyType (keyType_),
                     valueType (valueType_),
                     entriesPerNode (entriesPerNode_),
-                    rootOffset (0),
-                    rootNode (nullptr) {}
+                    rootOffset (0) {}
 
                 /// \brief
                 /// Return the serialized size of the header.
@@ -654,14 +650,14 @@ namespace thekogans {
 
             protected:
                 /// \brief
-                /// \see{Header} is fixed size.
+                /// Node is fixed size.
                 /// \return true.
                 virtual bool IsFixedSize () const override {
                     return true;
                 }
                 /// \brief
-                /// Return the \see{Header} size.
-                /// \return \see{Header} size.
+                /// Return the node size.
+                /// \return Node size.
                 virtual std::size_t Size () const override {
                     return FileSize (btree.header.entriesPerNode);
                 }
@@ -681,7 +677,7 @@ namespace thekogans {
                 /// \brief
                 /// Common logic used by dtor and Reload.
                 void FreeChildren ();
-            };
+            } *root;
             /// \brief
             /// An instance of \see{BlockAllocator} to allocate \see{Node}s.
             BlockAllocator::SharedPtr nodeAllocator;
