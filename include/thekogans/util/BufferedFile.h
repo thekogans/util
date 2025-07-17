@@ -59,7 +59,7 @@ namespace thekogans {
             /// is appropriate.
             /// If your object derives from \see{BufferedFile::TransactionParticipant}
             /// all this is done under the hood for you. All you will need
-            /// to do is implement Allocate (phase 1) and Flush (phase 2).
+            /// to do is implement Alloc (phase 1) and Flush (phase 2).
             /// \param[in] phase Either COMMIT_PHASE_1 or COMMIT_PHASE_2.
             virtual void OnBufferedFileTransactionCommit (
                 RefCounted::SharedPtr<BufferedFile> /*file*/,
@@ -207,13 +207,9 @@ namespace thekogans {
                 /// ctor.
                 /// \param[in] file_ \see{BufferedFile} we're a transaction participant of.
                 /// \param[in] dirty_
-                TransactionParticipant (
-                        BufferedFile::SharedPtr file_,
-                        bool dirty_ = false) :
-                        file (file_),
-                        dirty (false) {
-                    SetDirty (dirty_);
-                }
+                TransactionParticipant (BufferedFile::SharedPtr file_) :
+                    file (file_),
+                    dirty (false) {}
                 /// \brief
                 /// dtor.
                 virtual ~TransactionParticipant () {}
@@ -239,7 +235,7 @@ namespace thekogans {
             protected:
                 /// \brief
                 /// Allocate space from file.
-                virtual void Allocate () = 0;
+                virtual void Alloc () = 0;
 
                 /// \brief
                 /// Flush the internal cache to file.
@@ -250,11 +246,6 @@ namespace thekogans {
                 virtual void Reload () = 0;
 
                 // BufferedFileEvents
-                /// \brief
-                /// Transaction is beginning. Flush the internal cache to file.
-                /// \param[in] file \see{BufferedFile} beginning the transaction.
-                virtual void OnBufferedFileTransactionBegin (
-                    BufferedFile::SharedPtr /*file*/) noexcept override;
                 /// \brief
                 /// Transaction is commiting. Flush the internal cache to file.
                 /// \param[in] file \see{BufferedFile} commiting the transaction.
@@ -379,6 +370,10 @@ namespace thekogans {
                     File &log,
                     ui64 &count) = 0;
                 /// \brief
+                /// Write dirty buffers to file.
+                /// \param[in] file \see{File} to save to.
+                virtual void Flush (File &file) = 0;
+                /// \brief
                 /// Delete all buffers whose offset > newSize.
                 /// \param[in] newSize New size to clip the node to.
                 /// \return true == the entire node was clipped, continue iterating.
@@ -434,6 +429,10 @@ namespace thekogans {
                 virtual void Save (
                     File &log,
                     ui64 &count) override;
+                /// \brief
+                /// Write dirty buffers to file.
+                /// \param[in] file \see{File} to save to.
+                virtual void Flush (File &file) override;
                 /// \brief
                 /// Delete all buffers whose offset > newSize.
                 /// \param[in] newSize New size to clip the node to.
@@ -499,6 +498,10 @@ namespace thekogans {
                 virtual void Save (
                     File &log,
                     ui64 &count) override;
+                /// \brief
+                /// Write dirty buffers to file.
+                /// \param[in] file \see{File} to save to.
+                virtual void Flush (File &file) override;
                 /// \brief
                 /// Delete all buffers whose offset > newSize.
                 /// \param[in] newSize New size to clip the node to.

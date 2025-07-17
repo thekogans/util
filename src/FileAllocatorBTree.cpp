@@ -66,7 +66,7 @@ namespace thekogans {
         }
 
         void FileAllocator::BTree::Node::Delete (Node *node) {
-            if (node->count == 0) {
+            if (node->IsEmpty ()) {
                 node->btree.fileAllocator.FreeBTreeNode (node->offset);
                 Free (node);
             }
@@ -327,7 +327,7 @@ namespace thekogans {
             }
         }
 
-        void FileAllocator::BTree::Node::Allocate () {
+        void FileAllocator::BTree::Node::Alloc () {
             if (offset == 0) {
                 offset = btree.fileAllocator.AllocBTreeNode (
                     FileSize (btree.header.entriesPerNode));
@@ -488,7 +488,7 @@ namespace thekogans {
             root->Dump ();
         }
 
-        void FileAllocator::BTree::Allocate () {
+        void FileAllocator::BTree::Alloc () {
             if (fileAllocator.header.btreeOffset == 0) {
                 fileAllocator.header.btreeOffset = fileAllocator.AllocBTreeNode (Header::SIZE);
                 fileAllocator.SetDirty (true);

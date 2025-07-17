@@ -24,7 +24,7 @@
 namespace thekogans {
     namespace util {
 
-        void FileAllocator::Object::Allocate () {
+        void FileAllocator::Object::Alloc () {
             if (!IsFixedSize () || offset == 0) {
                 ui64 blockSize = 0;
                 if (offset != 0) {
@@ -226,13 +226,12 @@ namespace thekogans {
         }
 
         FileAllocator::FileAllocator (
-                BufferedFile::SharedPtr file_,
+                BufferedFile::SharedPtr file,
                 bool secure,
                 std::size_t btreeEntriesPerNode,
                 std::size_t btreeNodesPerPage,
                 Allocator::SharedPtr allocator) :
-                BufferedFile::TransactionParticipant (file_),
-                file (file_),
+                BufferedFile::TransactionParticipant (file),
                 header (secure ? Header::FLAGS_SECURE : 0),
                 btree (nullptr) {
             if (file->GetSize () > 0) {
@@ -408,10 +407,6 @@ namespace thekogans {
                         offset);
                 }
             }
-        }
-
-        void FileAllocator::DumpBTree () {
-            btree->Dump ();
         }
 
         void FileAllocator::Flush () {

@@ -217,7 +217,7 @@ namespace thekogans {
         }
 
         void BTree::Node::Delete (Node *node) {
-            if (node->count == 0) {
+            if (node->IsEmpty ()) {
                 node->fileAllocator->Free (node->offset);
                 Free (node);
             }
@@ -983,7 +983,7 @@ namespace thekogans {
                 Delete (*fileAllocator, offset);
                 Produce (
                     std::bind (
-                        &ObjectEvents::OnFileAllocatorObjectFree,
+                        &FileAllocator::ObjectEvents::OnFileAllocatorObjectFree,
                         std::placeholders::_1,
                         this));
                 offset = 0;

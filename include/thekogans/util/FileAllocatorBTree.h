@@ -268,7 +268,7 @@ private:
         // BufferedFile::TransactionParticipant
         /// \brief
         /// Allocate space for the node.
-        virtual void Allocate () override;
+        virtual void Alloc () override;
         /// \brief
         /// Flush changes to file.
         virtual void Flush () override;
@@ -337,7 +337,7 @@ protected:
     // BufferedFile::TransactionParticipant
     /// \brief
     /// Allocate space for the \see{Header}.
-    virtual void Allocate () override;
+    virtual void Alloc () override;
     /// \brief
     /// Flush changes to file.
     virtual void Flush () override;
