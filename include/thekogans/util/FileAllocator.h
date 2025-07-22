@@ -73,6 +73,9 @@ namespace thekogans {
         /// | nextBTreeNodeOffset | ... |
         /// +---------------------+-----+
         ///            8            var
+        ///
+        /// NOTE: Because of it's design, FileAllocator (including it's creation)
+        /// can only be used inside \see{BufferedFile::Transaction}.
         struct _LIB_THEKOGANS_UTIL_DECL FileAllocator :
                 public BufferedFile::TransactionParticipant {
             /// \brief
@@ -94,16 +97,28 @@ namespace thekogans {
             /// thekogans/util/FileAllocator.h
             ///
             /// \brief
-            /// Subscribe to ObjectEvents to receive offset change notifications.
+            /// Subscribe to ObjectEvents to receive notifications about file
+            /// store lifetime. This is useful when you have containing objects
+            /// (objects that contain other objects). They can register for their
+            /// 'children' events and be notified when containing child offset changed.
             struct _LIB_THEKOGANS_UTIL_DECL ObjectEvents {
                 /// \brief
                 /// dtor.
                 virtual ~ObjectEvents () {}
 
                 /// \brief
-                /// \see{Object} offset changed. Update whatever state you need.
-                /// \param[in] file \see{Object} whose offset changed.
-                virtual void OnFileAllocatorObjectOffsetChanged (
+                /// \see{Object} allocated a block in the file.
+                /// \param[in] object \see{Object} whose offset has become valid.
+                /// VERY IMPORTANT SEMANTICS: When you get this notification,
+                /// object->GetOffset () will tell you which block has been freed.
+                virtual void OnFileAllocatorObjectAlloc (
+                    RefCounted::SharedPtr<Object> /*object*/) noexcept {}
+                /// \brief
+                /// \see{Object} freed its file block.
+                /// \param[in] object \see{Object} whose offset has become invalid.
+                /// VERY IMPORTANT SEMANTICS: When you get this notification,
+                /// object->GetOffset () will tell you which block has been allocated.
+                virtual void OnFileAllocatorObjectFree (
                     RefCounted::SharedPtr<Object> /*object*/) noexcept {}
             };
 
@@ -156,27 +171,29 @@ namespace thekogans {
                 }
 
                 /// \brief
-                /// Optimization for Allocate below. If an object declares
-                /// itself as fixed size, Allocate will not check the object
+                /// Delete the disk image and reset the internal state.
+                virtual void Delete () = 0;
+
+            protected:
+                /// \brief
+                /// Optimization for Alloc below. If an object declares
+                /// itself as fixed size, Alloc will not check the object
                 /// block size, only offset. And if offset == 0, it will allocate
                 /// a block once and that's it.
                 /// \return true == object is fixed size.
-                virtual bool IsFixedSize () const = 0;
+                virtual bool IsFixedSize () const {
+                    return false;
+                }
 
                 /// \brief
                 /// Return the size of the object on disk.
                 /// \return Size of the object on disk.
                 virtual std::size_t Size () const = 0;
 
-                /// \brief
-                /// Delete the disk image and reset the internal state.
-                virtual void Delete () = 0;
-
-            private:
                 // BufferedFile::TransactionParticipant
                 /// \brief
                 /// If needed allocate space from \see{BufferedFile}.
-                virtual void Allocate () override;
+                virtual void Alloc () override;
 
                 /// \brief
                 /// Object is neither copy constructable, nor assignable.
@@ -617,9 +634,6 @@ namespace thekogans {
             };
 
         private:
-            /// \brief
-            /// The file where the heap resides.
-            BufferedFile::SharedPtr file;
             /// \struct FileAllocator::Header FileAllocator.h thekogans/util/FileAllocator.h
             ///
             /// \brief
@@ -736,14 +750,14 @@ namespace thekogans {
 
             /// \brief
             /// ctor.
-            /// \param[in] file_ The file where the heap resides.
+            /// \param[in] file The file where the heap resides.
             /// \param[in] secure true == zero out free blocks.
             /// \param[in] btreeEntriesPerNode Number of entries per \see{BTree::Node}.
             /// \param[in] btreeNodesPerPage Number of \see{BTree::Node}s that will fit in to
             /// a \see{BlockAllocator} page.
             /// \param[in] allocator \see{Allocator} for \see{BTree}.
             FileAllocator (
-                BufferedFile::SharedPtr file_,
+                BufferedFile::SharedPtr file,
                 bool secure = false,
                 std::size_t btreeEntriesPerNode = DEFAULT_BTREE_ENTRIES_PER_NODE,
                 std::size_t btreeNodesPerPage = DEFAULT_BTREE_NODES_PER_PAGE,
@@ -771,13 +785,6 @@ namespace thekogans {
             }
 
             /// \brief
-            /// Return the heap file.
-            /// \return Heap file.
-            inline BufferedFile::SharedPtr GetFile () {
-                return file;
-            }
-
-            /// \brief
             /// Return the pointer to the start of the heap.
             /// \return Pointer to the start of the heap.
             inline PtrType GetHeapStart () const {
@@ -798,6 +805,12 @@ namespace thekogans {
             }
 
             /// \brief
+            /// Debugging helper. Dumps \see{BTree::Node}s to stdout.
+            inline void DumpBTree () {
+                btree->Dump ();
+            }
+
+            /// \brief
             /// Alloc a block.
             /// \param[in] size Size of block to allocate.
             /// \return Offset to the allocated block.
@@ -807,16 +820,12 @@ namespace thekogans {
             /// \param[in] offset Offset of block to free.
             void Free (PtrType offset);
 
-            /// \brief
-            /// Debugging helper. Dumps \see{BTree::Node}s to stdout.
-            void DumpBTree ();
-
         protected:
             // BufferedFile::TransactionParticipant
             /// \brief
             /// Nothing for us to allocate.
             /// The header is the first thing in the file.
-            virtual void Allocate () override {}
+            virtual void Alloc () override {}
             /// \brief
             /// Flush the header to file.
             virtual void Flush () override;
@@ -826,13 +835,6 @@ namespace thekogans {
 
         private:
             /// \brief
-            /// Used bu \see{FileAllocatorBTree} to set the header.btreeOffset.
-            /// \param[in] btreeOffset New btreeOffset to set.
-            inline void SetBTreeOffset (PtrType btreeOffset) {
-                header.btreeOffset = btreeOffset;
-                SetDirty (true);
-            }
-            /// \brief
             /// Used to allocate \see{BTree::Node} blocks.
             /// This method is used by the \see{BTree::Node}.
             /// \return Offset of allocated block.
@@ -841,6 +843,10 @@ namespace thekogans {
             /// Used to free blocks prviously allocated with AllocBTreeNode.
             /// \param[in] offset Offset of \see{BTree::Node} to free.
             void FreeBTreeNode (PtrType offset);
+
+            /// \brief
+            /// Common method used by the ctor and Reload.
+            void Load ();
 
             /// \brief
             /// Needs access to private members.

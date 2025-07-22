@@ -24,7 +24,7 @@
 namespace thekogans {
     namespace util {
 
-        void FileAllocator::Object::Allocate () {
+        void FileAllocator::Object::Alloc () {
             if (!IsFixedSize () || offset == 0) {
                 ui64 blockSize = 0;
                 if (offset != 0) {
@@ -36,12 +36,16 @@ namespace thekogans {
                 if (blockSize < size) {
                     if (offset != 0) {
                         fileAllocator->Free (offset);
+                        Produce (
+                            std::bind (
+                                &ObjectEvents::OnFileAllocatorObjectFree,
+                                std::placeholders::_1,
+                                this));
                     }
                     offset = fileAllocator->Alloc (size);
-                    SetDirty (true);
                     Produce (
                         std::bind (
-                            &ObjectEvents::OnFileAllocatorObjectOffsetChanged,
+                            &ObjectEvents::OnFileAllocatorObjectAlloc,
                             std::placeholders::_1,
                             this));
                 }
@@ -222,53 +226,23 @@ namespace thekogans {
         }
 
         FileAllocator::FileAllocator (
-                BufferedFile::SharedPtr file_,
+                BufferedFile::SharedPtr file,
                 bool secure,
                 std::size_t btreeEntriesPerNode,
                 std::size_t btreeNodesPerPage,
                 Allocator::SharedPtr allocator) :
-                BufferedFile::TransactionParticipant (file_),
-                file (file_),
+                BufferedFile::TransactionParticipant (file),
                 header (secure ? Header::FLAGS_SECURE : 0),
                 btree (nullptr) {
-            file->Seek (0, SEEK_SET);
             if (file->GetSize () > 0) {
-                ui32 magic;
-                *file >> magic;
-                if (magic == MAGIC32) {
-                    // File is host endian.
-                }
-                else if (ByteSwap<GuestEndian, HostEndian> (magic) == MAGIC32) {
-                    // File is guest endian.
-                    file->endianness = GuestEndian;
-                }
-                else {
-                    THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                        "Corrupt FileAllocator file (%s)",
-                        file->GetPath ().c_str ());
-                }
-                *file >> header;
-            #if defined (THEKOGANS_UTIL_FILE_ALLOCATOR_BLOCK_INFO_USE_MAGIC)
-                if (!header.IsBlockInfoUsesMagic ()) {
-            #else // defined (THEKOGANS_UTIL_FILE_ALLOCATOR_BLOCK_INFO_USE_MAGIC)
-                if (header.IsBlockInfoUsesMagic ()) {
-            #endif // defined (THEKOGANS_UTIL_FILE_ALLOCATOR_BLOCK_INFO_USE_MAGIC)
-                    THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                        "This FileAllocator file (%s) cannot be opened by this version of %s.",
-                        file->GetPath ().c_str (),
-                        THEKOGANS_UTIL);
-                }
+                Load ();
             }
             else {
+                // Write an empty header to make sure that when Alloc
+                // calls file->GetSize it will get a correct value.
                 *file << MAGIC32 << header;
             }
-            btree.Reset (
-                new BTree (
-                    *this,
-                    header.btreeOffset,
-                    btreeEntriesPerNode,
-                    btreeNodesPerPage,
-                    allocator));
+            btree.Reset (new BTree (*this, btreeEntriesPerNode, btreeNodesPerPage, allocator));
             btreeNodeFileSize = BTree::Node::FileSize (btree->header.entriesPerNode);
         }
 
@@ -283,7 +257,6 @@ namespace thekogans {
                 // cache is not empty, reuse the first free block. This optimization allows
                 // us to reclaim the node blocks to be used for general purpose allocations.
                 if (size <= btreeNodeFileSize && header.freeBTreeNodeOffset != 0) {
-                    // First, see if there's a fixed BTree::Node::FileSize size block.
                     result.first = btreeNodeFileSize;
                     result.second = header.freeBTreeNodeOffset;
                     BlockInfo block (*this, header.freeBTreeNodeOffset);
@@ -436,25 +409,22 @@ namespace thekogans {
             }
         }
 
-        void FileAllocator::DumpBTree () {
-            btree->Dump ();
-        }
-
         void FileAllocator::Flush () {
-            if (IsDirty ()) {
-                file->Seek (0, SEEK_SET);
-                *file << MAGIC32 << header;
-                SetDirty (false);
-            }
+            file->Seek (0, SEEK_SET);
+            *file << MAGIC32 << header;
         }
 
         void FileAllocator::Reload () {
-            if (IsDirty () && file->GetSize () > 0) {
-                file->Seek (0, SEEK_SET);
-                ui32 magic;
-                *file >> magic >> header;
-                SetDirty (false);
+            if (file->GetSize () > 0) {
+                Load ();
             }
+            btree.Reset (
+                new BTree (
+                    *this,
+                    btree->header.entriesPerNode,
+                    btree->nodeAllocator->GetBlocksPerPage (),
+                    btree->nodeAllocator->GetAllocator ()));
+            btreeNodeFileSize = BTree::Node::FileSize (btree->header.entriesPerNode);
         }
 
         FileAllocator::PtrType FileAllocator::AllocBTreeNode (std::size_t size) {
@@ -506,6 +476,35 @@ namespace thekogans {
             else {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
                     THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
+            }
+        }
+
+        void FileAllocator::Load () {
+            file->Seek (0, SEEK_SET);
+            ui32 magic;
+            *file >> magic;
+            if (magic == MAGIC32) {
+                // File is host endian.
+            }
+            else if (ByteSwap<GuestEndian, HostEndian> (magic) == MAGIC32) {
+                // File is guest endian.
+                file->endianness = GuestEndian;
+            }
+            else {
+                THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
+                    "Corrupt FileAllocator file (%s)",
+                    file->GetPath ().c_str ());
+            }
+            *file >> header;
+        #if defined (THEKOGANS_UTIL_FILE_ALLOCATOR_BLOCK_INFO_USE_MAGIC)
+            if (!header.IsBlockInfoUsesMagic ()) {
+        #else // defined (THEKOGANS_UTIL_FILE_ALLOCATOR_BLOCK_INFO_USE_MAGIC)
+            if (header.IsBlockInfoUsesMagic ()) {
+        #endif // defined (THEKOGANS_UTIL_FILE_ALLOCATOR_BLOCK_INFO_USE_MAGIC)
+                THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
+                    "This FileAllocator file (%s) cannot be opened by this version of %s.",
+                    file->GetPath ().c_str (),
+                    THEKOGANS_UTIL);
             }
         }
 

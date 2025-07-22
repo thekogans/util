@@ -45,9 +45,6 @@ private:
     /// Reference back to the FileAllocator for
     /// \see{Header} and \see{Node} blocks.
     FileAllocator &fileAllocator;
-    /// \brief
-    /// Our address inside the \see{FileAllocator}.
-    PtrType offset;
     /// \struct Fileallocator::BTree::Header FileallocatorBTree.h
     /// thekogans/util/FileallocatorBTree.h
     ///
@@ -80,7 +77,7 @@ private:
     ///
     /// \brief
     /// BTree nodes store sorted keys and pointers to children nodes.
-    struct Node {
+    struct Node : public BufferedFile::TransactionParticipant {
         /// \brief
         /// BTree to which this node belongs.
         BTree &btree;
@@ -123,9 +120,8 @@ private:
                 rightNode (nullptr) {}
         };
         /// \brief
-        /// Entry array. The rest of the entries are
-        /// allocated when the node is allocated.
-        Entry entries[1];
+        /// Entry array. Allocated when the node is allocated.
+        Entry *entries;
 
         /// \brief
         /// ctor.
@@ -155,23 +151,7 @@ private:
         static Node *Alloc (
             BTree &btree,
             PtrType offset = 0);
-        /// \brief
-        /// Free the given node.
-        /// \param[in] node Node to free.
-        static void Free (Node *node);
-        /// \brief
-        /// Delete the file associated with and free the given empty node.
-        /// If the node is not empty, throw exception.
-        /// \param[in] node Empty node to delete.
-        static void Delete (Node *node);
 
-        /// \brief
-        /// If dirty, flush changes to file.
-        void Flush ();
-        /// \brief
-        /// If not dirty, delete dirty children so that they can be reloaded from file.
-        /// If dirty, would have been deleted by it's parent.
-        void Reload ();
         /// \brief
         /// Return the child at the given index.
         /// \param[in] index Index of child to retrieve
@@ -273,6 +253,33 @@ private:
         /// \brief
         /// Dump the nodes entries to stdout. Used to debug the implementation.
         void Dump ();
+
+        void Delete ();
+
+    protected:
+        // BufferedFile::TransactionParticipant
+        /// \brief
+        /// Allocate space for the node.
+        virtual void Alloc () override;
+        /// \brief
+        /// Flush changes to file.
+        virtual void Flush () override;
+        /// \brief
+        /// Reload from file.
+        virtual void Reload () override;
+
+    private:
+        /// \brief
+        /// Common logic used by ctor and Reload.
+        void Load ();
+        /// \brief
+        /// Common logic used by dtor and Reload.
+        void FreeChildren ();
+
+        virtual void Harakiri () override {
+            this->~Node ();
+            btree.nodeAllocator->Free (this, Size (btree.header.entriesPerNode));
+        }
     } *root;
     /// \brief
     /// An instance of \see{BlockAllocator} to allocate \see{Node}s.
@@ -282,7 +289,6 @@ public:
     /// \brief
     /// ctor.
     /// \param[in] fileAllocator_ \see{FileAllocator} to which this btree belongs.
-    /// \param[in] offset Our address inside the \see{FileAllocator}.
     /// \param[in] entriesPerNode If we're creating the heap, contains entries per
     /// \see{Node}. If we're reading an existing heap, this value will come from the
     /// \see{Header}.
@@ -296,7 +302,6 @@ public:
     /// advice aplies.
     BTree (
         FileAllocator &fileAllocator_,
-        PtrType offset_,
         std::size_t entriesPerNode,
         std::size_t nodesPerPage,
         Allocator::SharedPtr allocator);
@@ -329,7 +334,7 @@ protected:
     // BufferedFile::TransactionParticipant
     /// \brief
     /// Allocate space for the \see{Header}.
-    virtual void Allocate () override;
+    virtual void Alloc () override;
     /// \brief
     /// Flush changes to file.
     virtual void Flush () override;

@@ -35,7 +35,7 @@ namespace thekogans {
         /// \see{FileAllocator} root object. It provides global ordered,
         /// associative storage for \see{FileAllocator} clients. Use it
         /// to store and retrieve practically any value derived from
-        /// \see{BTree::Value}. The key type is any std::string.
+        /// \see{BTree::Value}. The key type is std::string.
         struct _LIB_THEKOGANS_UTIL_DECL FileAllocatorRegistry :
                 private BTree,
                 public Subscriber<FileAllocator::ObjectEvents> {
@@ -83,11 +83,18 @@ namespace thekogans {
         protected:
             // FileAllocator::ObjectEvents
             /// \brief
-            /// Offset changed.
-            /// \param[in] object \see{FileAllocator::Object} whose offset changed.
-            virtual void OnFileAllocatorObjectOffsetChanged (
+            /// \see{BTree} allocated a block in the file.
+            /// \param[in] object \see{FileAllocator::Object} whose offset has become valid.
+            virtual void OnFileAllocatorObjectAlloc (
                     FileAllocator::Object::SharedPtr object) noexcept override {
                 fileAllocator->SetRootOffset (object->GetOffset ());
+            }
+            /// \brief
+            /// \see{BTree} freed its \see{BTree::Header} block.
+            /// \param[in] object \see{FileAllocator::Object} whose offset has become valid.
+            virtual void OnFileAllocatorObjectFree (
+                    FileAllocator::Object::SharedPtr object) noexcept override {
+                fileAllocator->SetRootOffset (0);
             }
 
             /// \brief

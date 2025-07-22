@@ -59,7 +59,7 @@ namespace thekogans {
             /// is appropriate.
             /// If your object derives from \see{BufferedFile::TransactionParticipant}
             /// all this is done under the hood for you. All you will need
-            /// to do is implement Allocate (phase 1) and Flush (phase 2).
+            /// to do is implement Alloc (phase 1) and Flush (phase 2).
             /// \param[in] phase Either COMMIT_PHASE_1 or COMMIT_PHASE_2.
             virtual void OnBufferedFileTransactionCommit (
                 RefCounted::SharedPtr<BufferedFile> /*file*/,
@@ -206,7 +206,10 @@ namespace thekogans {
                 /// \brief
                 /// ctor.
                 /// \param[in] file_ \see{BufferedFile} we're a transaction participant of.
-                TransactionParticipant (BufferedFile::SharedPtr file_);
+                /// \param[in] dirty_
+                TransactionParticipant (BufferedFile::SharedPtr file_) :
+                    file (file_),
+                    dirty (false) {}
                 /// \brief
                 /// dtor.
                 virtual ~TransactionParticipant () {}
@@ -227,14 +230,12 @@ namespace thekogans {
                 /// \brief
                 /// Set dirty.
                 /// \param[in] dirty_ New value for dirty.
-                inline void SetDirty (bool dirty_) {
-                    dirty = dirty_;
-                }
+                void SetDirty (bool dirty_);
 
             protected:
                 /// \brief
                 /// Allocate space from file.
-                virtual void Allocate () = 0;
+                virtual void Alloc () = 0;
 
                 /// \brief
                 /// Flush the internal cache to file.
@@ -246,42 +247,17 @@ namespace thekogans {
 
                 // BufferedFileEvents
                 /// \brief
-                /// Transaction is beginning. Flush the internal cache to file.
-                /// \param[in] file \see{BufferedFile} beginning the transaction.
-                virtual void OnBufferedFileTransactionBegin (
-                        BufferedFile::SharedPtr /*file*/) noexcept override {
-                    THEKOGANS_UTIL_TRY {
-                        Flush ();
-                    }
-                    THEKOGANS_UTIL_CATCH_AND_LOG_SUBSYSTEM (THEKOGANS_UTIL)
-                }
-                /// \brief
                 /// Transaction is commiting. Flush the internal cache to file.
                 /// \param[in] file \see{BufferedFile} commiting the transaction.
                 /// \param[in] phase \see{BufferedFile} implements two phase commit.
                 virtual void OnBufferedFileTransactionCommit (
-                        BufferedFile::SharedPtr /*file*/,
-                        int phase) noexcept override {
-                    THEKOGANS_UTIL_TRY {
-                        if (phase == COMMIT_PHASE_1) {
-                            Allocate ();
-                        }
-                        else if (phase == COMMIT_PHASE_2) {
-                            Flush ();
-                        }
-                    }
-                    THEKOGANS_UTIL_CATCH_AND_LOG_SUBSYSTEM (THEKOGANS_UTIL)
-                }
+                    BufferedFile::SharedPtr /*file*/,
+                    int phase) noexcept override;
                 /// \brief
                 /// Transaction is aborting. Reload the internal cache from file.
                 /// \param[in] file \see{BufferedFile} aborting the transaction.
                 virtual void OnBufferedFileTransactionAbort (
-                        BufferedFile::SharedPtr /*file*/) noexcept override {
-                    THEKOGANS_UTIL_TRY {
-                        Reload ();
-                    }
-                    THEKOGANS_UTIL_CATCH_AND_LOG_SUBSYSTEM (THEKOGANS_UTIL)
-                }
+                    BufferedFile::SharedPtr /*file*/) noexcept override;
 
                 /// \brief
                 /// TransactionParticipant is neither copy constructable, nor assignable.
@@ -776,27 +752,31 @@ namespace thekogans {
             inline bool IsDirty () const {
                 return flags.Test (FLAGS_DIRTY);
             }
+            inline void SetDirty (bool dirty) {
+                flags.Set (FLAGS_DIRTY, dirty);
+            }
             /// \brief
             /// Return true if we're in the middle of a transaction.
             ///\return true == we're in the middle of a transaction.
             inline bool IsTransactionPending () const {
                 return flags.Test (FLAGS_TRANSACTION);
             }
+            inline void SetTransactionPending (bool transaction) {
+                flags.Set (FLAGS_TRANSACTION, transaction);
+            }
             /// \brief
-            /// Start a new transaction. If a transaction is
-            /// already in progress do nothing. If the cache
-            /// was dirty before the transaction began it will
-            /// be \see{Flush}ed first.
-            bool BeginTransaction ();
+            /// Start a new transaction.
+            /// Used by \see{Transaction} ctor to mark a modify scope.
+            /// NOTE: Must only be called after acquiring the lock.
+            void BeginTransaction ();
             /// \brief
             /// Commit the current transaction.
-            /// BufferedFile uses two phase commit. While the two phases can mean
-            /// anything you want, \see{TransactionParticipant} formalizes them in
-            /// to an allocation phase (phase 1) and a flush phase (phase 2).
-            bool CommitTransaction ();
+            /// Used by \see{Transaction} to commit the current changes.
+            void CommitTransaction ();
             /// \brief
             /// Abort the current transaction.
-            bool AbortTransaction ();
+            /// Used by \see{Transaction} dtor to abort uncommitted changes.
+            void AbortTransaction ();
 
             /// \brief
             /// Get the buffer that will cover the neighborhood around position.
