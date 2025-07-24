@@ -78,7 +78,7 @@ namespace thekogans {
             }
         }
 
-        bool FileAllocator::BTree::Node::Search (
+        bool FileAllocator::BTree::Node::Find (
                 const KeyType &key,
                 ui32 &index) const {
             index = 0;
@@ -105,7 +105,7 @@ namespace thekogans {
             // That means that you can insert the same node all you
             // want, but it will only be inserted the first time with
             // all subsequent ones being a noop.
-            if (!Search (entry.key, index)) {
+            if (!Find (entry.key, index)) {
                 Node *child = GetChild (index);
                 if (child == nullptr || !child->Insert (entry)) {
                     if (!IsFull ()) {
@@ -142,7 +142,7 @@ namespace thekogans {
 
         bool FileAllocator::BTree::Node::Remove (const KeyType &key) {
             ui32 index;
-            bool found = Search (key, index);
+            bool found = Find (key, index);
             Node *child = GetChild (found ? index + 1 : index);
             if (found) {
                 if (child != nullptr) {
@@ -402,7 +402,7 @@ namespace thekogans {
                 BufferedFile::TransactionParticipant (fileAllocator_.GetFile ()),
                 fileAllocator (fileAllocator_),
                 header ((ui32)entriesPerNode),
-                root (nullptr) {
+                rootNode (nullptr) {
             if (fileAllocator.header.btreeOffset != 0) {
                 Load ();
             }
@@ -411,19 +411,19 @@ namespace thekogans {
                     Node::Size (header.entriesPerNode),
                     nodesPerPage,
                     allocator));
-            root = Node::Alloc (*this, header.rootOffset);
+            rootNode = Node::Alloc (*this, header.rootOffset);
         }
 
         FileAllocator::BTree::~BTree () {
-            root->Release ();
+            rootNode->Release ();
         }
 
-        FileAllocator::BTree::KeyType FileAllocator::BTree::Search (const KeyType &key) {
+        FileAllocator::BTree::KeyType FileAllocator::BTree::Find (const KeyType &key) {
             KeyType result (UI64_MAX, 0);
-            Node *node = root;
+            Node *node = rootNode;
             while (node != nullptr) {
                 ui32 index;
-                if (node->Search (key, index)) {
+                if (node->Find (key, index)) {
                     return key;
                 }
                 if (index < node->count &&
@@ -435,36 +435,40 @@ namespace thekogans {
             return result;
         }
 
-        void FileAllocator::BTree::Add (const KeyType &key) {
+        void FileAllocator::BTree::Insert (const KeyType &key) {
             Node::Entry entry (key);
-            if (!root->Insert (entry)) {
+            if (!rootNode->Insert (entry)) {
                 // The path to the leaf node is full.
                 // Create a new root node and make the entry
                 // its first.
                 Node *node = Node::Alloc (*this);
-                node->leftOffset = root->offset;
-                node->leftNode = root;
+                node->leftOffset = rootNode->offset;
+                node->leftNode = rootNode;
                 node->InsertEntry (entry, 0);
-                root = node;
+                rootNode = node;
             }
-            if (header.rootOffset == 0) {
+            if (!IsDirty () &&
+                    (header.rootOffset == 0 ||
+                        rootNode->GetOffset () != header.rootOffset)) {
                 SetDirty (true);
             }
         }
 
-        bool FileAllocator::BTree::Delete (const KeyType &key) {
-            bool removed = root->Remove (key);
-            if (removed && root->IsEmpty () && root->GetChild (0) != nullptr) {
-                Node *node = root;
-                root = root->GetChild (0);
-                SetDirty (true);
-                node->Delete ();
+        bool FileAllocator::BTree::Remove (const KeyType &key) {
+            bool removed = rootNode->Remove (key);
+            if (removed) {
+                if (rootNode->IsEmpty () && rootNode->GetChild (0) != nullptr) {
+                    Node *node = rootNode;
+                    rootNode = rootNode->GetChild (0);
+                    node->Delete ();
+                }
+                if (!IsDirty () &&
+                        (header.rootOffset == 0 ||
+                            rootNode->offset != header.rootOffset)) {
+                    SetDirty (true);
+                }
             }
             return removed;
-        }
-
-        void FileAllocator::BTree::Dump () {
-            root->Dump ();
         }
 
         void FileAllocator::BTree::Alloc () {
@@ -478,7 +482,7 @@ namespace thekogans {
         }
 
         void FileAllocator::BTree::Flush () {
-            header.rootOffset = root->offset;
+            header.rootOffset = rootNode->offset;
             BlockBuffer buffer (fileAllocator, fileAllocator.header.btreeOffset);
             buffer << MAGIC32 << header;
             buffer.BlockWrite ();
@@ -487,8 +491,8 @@ namespace thekogans {
         void FileAllocator::BTree::Reload () {
             if (fileAllocator.header.btreeOffset != 0) {
                 Load ();
-                root->Release ();
-                root = Node::Alloc (*this, fileAllocator.header.btreeOffset);
+                rootNode->Release ();
+                rootNode = Node::Alloc (*this, fileAllocator.header.btreeOffset);
             }
             else {
                 Reset ();
@@ -497,8 +501,8 @@ namespace thekogans {
 
         void FileAllocator::BTree::Reset () {
             fileAllocator.header.btreeOffset = 0;
-            root->Release ();
-            root = Node::Alloc (*this, fileAllocator.header.btreeOffset);
+            rootNode->Release ();
+            rootNode = Node::Alloc (*this, fileAllocator.header.btreeOffset);
         }
 
         void FileAllocator::BTree::Load () {

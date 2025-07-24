@@ -177,7 +177,7 @@ namespace thekogans {
                 leftNode (nullptr),
                 keyValueOffset (0),
                 entries ((Entry *)(this + 1)) {
-            if (offset != 0) {
+            if (GetOffset () != 0) {
                 Load ();
             }
         }
@@ -840,7 +840,9 @@ namespace thekogans {
                 }
                 // If we inserted the key/value pair, take ownership.
                 if (result == Node::Inserted) {
-                    if (header.rootOffset == 0) {
+                    if (!IsDirty () &&
+                            (header.rootOffset == 0 ||
+                                rootNode->GetOffset () != header.rootOffset)) {
                         SetDirty (true);
                     }
                     key.Release ();
@@ -857,11 +859,17 @@ namespace thekogans {
         bool BTree::Remove (const Key &key) {
             if (key.IsKindOf (header.keyType.c_str ())) {
                 bool removed = rootNode->Remove (key);
-                if (removed && rootNode->IsEmpty () && rootNode->GetChild (0) != nullptr) {
-                    Node *node = rootNode;
-                    rootNode = rootNode->GetChild (0);
-                    SetDirty (true);
-                    node->Delete ();
+                if (removed) {
+                    if (rootNode->IsEmpty () && rootNode->GetChild (0) != nullptr) {
+                        Node *node = rootNode;
+                        rootNode = rootNode->GetChild (0);
+                        node->Delete ();
+                    }
+                    if (!IsDirty () &&
+                            (header.rootOffset == 0 ||
+                                rootNode->GetOffset () != header.rootOffset)) {
+                        SetDirty (true);
+                    }
                 }
                 return removed;
             }

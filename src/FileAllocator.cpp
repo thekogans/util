@@ -274,11 +274,11 @@ namespace thekogans {
                 }
                 else {
                     // Else look for a free block large enough to satisfy the request.
-                    result = btree->Search (BTree::KeyType (size, 0));
+                    result = btree->Find (BTree::KeyType (size, 0));
                     if (result.second != 0) {
                         // Got it!
                         assert (result.first >= size);
-                        btree->Delete (result);
+                        btree->Remove (result);
                     }
                 }
                 // If we got a block by the above two methods, see if it's too big.
@@ -313,7 +313,7 @@ namespace thekogans {
                             BlockInfo::FLAGS_FREE,
                             result.first - size - BlockInfo::SIZE);
                         next.Write ();
-                        btree->Add (BTree::KeyType (next.GetSize (), next.GetOffset ()));
+                        btree->Insert (BTree::KeyType (next.GetSize (), next.GetOffset ()));
                     }
                     else {
                         // If not, update the requested size so that block.Write
@@ -342,7 +342,7 @@ namespace thekogans {
                     // Consolidate adjacent free non BTree::Node blocks.
                     BlockInfo prev (*this);
                     if (block.Prev (prev) && prev.IsFree () && !prev.IsBTreeNode ()) {
-                        btree->Delete (
+                        btree->Remove (
                             BTree::KeyType (prev.GetSize (), prev.GetOffset ()));
                         if (IsSecure ()) {
                             // Assume prev body is clear.
@@ -364,7 +364,7 @@ namespace thekogans {
                     }
                     BlockInfo next (*this);
                     if (block.Next (next) && next.IsFree () && !next.IsBTreeNode ()) {
-                        btree->Delete (BTree::KeyType (next.GetSize (), next.GetOffset ()));
+                        btree->Remove (BTree::KeyType (next.GetSize (), next.GetOffset ()));
                         if (IsSecure ()) {
                             // Assume next body is clear.
                             clearLength += BlockInfo::FOOTER_SIZE;
@@ -383,7 +383,7 @@ namespace thekogans {
                     // If we're not the last block...
                     if (!block.IsLast ()) {
                         // ... add it to the free list.
-                        btree->Add (BTree::KeyType (block.GetSize (), block.GetOffset ()));
+                        btree->Insert (BTree::KeyType (block.GetSize (), block.GetOffset ()));
                         block.SetFree (true);
                         block.Write ();
                         if (IsSecure ()) {

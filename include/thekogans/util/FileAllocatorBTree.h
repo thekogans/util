@@ -27,7 +27,6 @@
 /// in near by entries being returned if they suit the need of an allocation.
 /// It's broken out in to its own file because FileAllocator.h was getting
 /// too big to maintain.
-
 struct BTree : public BufferedFile::TransactionParticipant {
     /// \brief
     /// Declare \see{RefCounted} pointers.
@@ -164,7 +163,7 @@ private:
         /// \param[out] index If found will contain the index of the key.
         /// If not found will contain the index of the closest larger key.
         /// \return true == found the key.
-        bool Search (
+        bool Find (
             const KeyType &key,
             ui32 &index) const;
         /// \brief
@@ -279,7 +278,7 @@ private:
             this->~Node ();
             btree.nodeAllocator->Free (this, Size (btree.header.entriesPerNode));
         }
-    } *root;
+    } *rootNode;
     /// \brief
     /// An instance of \see{BlockAllocator} to allocate \see{Node}s.
     BlockAllocator::SharedPtr nodeAllocator;
@@ -313,21 +312,23 @@ public:
     /// \param[in] key KeyType to find.
     /// \return If found the given key will be returned.
     /// If not found, return the nearest larger key.
-    KeyType Search (const KeyType &key);
+    KeyType Find (const KeyType &key);
     /// \brief
     /// Add the given key to the btree.
     /// \param[in] key KeyType to add.
     /// NOTE: Duplicate keys are ignored.
-    void Add (const KeyType &key);
+    void Insert (const KeyType &key);
     /// \brief
     /// Delete the given key from the btree.
     /// \param[in] key KeyType whose entry to delete.
     /// \return true == entry deleted. false == entry not found.
-    bool Delete (const KeyType &key);
+    bool Remove (const KeyType &key);
 
     /// \brief
     /// Use for debugging. Dump the btree nodes to stdout.
-    void Dump ();
+    inline void Dump () {
+        rootNode->Dump ();
+    }
 
 protected:
     // BufferedFile::TransactionParticipant
