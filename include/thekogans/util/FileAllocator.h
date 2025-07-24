@@ -170,10 +170,6 @@ namespace thekogans {
                     return offset;
                 }
 
-                /// \brief
-                /// Delete the disk image and reset the internal state.
-                virtual void Delete () = 0;
-
             protected:
                 /// \brief
                 /// Optimization for Alloc below. If an object declares
@@ -826,12 +822,14 @@ namespace thekogans {
             /// Nothing for us to allocate.
             /// The header is the first thing in the file.
             virtual void Alloc () override {}
+            virtual void Free () override {}
             /// \brief
             /// Flush the header to file.
             virtual void Flush () override;
             /// \brief
             /// Reload the header from file.
             virtual void Reload () override;
+            virtual void Reset () override;
 
         private:
             /// \brief

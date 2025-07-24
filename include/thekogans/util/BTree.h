@@ -463,7 +463,7 @@ namespace thekogans {
                 /// Delete the node and it's sub-tree.
                 /// \param[in] fileAllocator Btree heap.
                 /// \param[in] offset Node offset.
-                static void Delete (
+                static void FreeSubtree (
                     FileAllocator &fileAllocator,
                     FileAllocator::PtrType offset);
 
@@ -637,11 +637,6 @@ namespace thekogans {
                 /// Dump the nodes entries to stdout. Used to debug the implementation.
                 void Dump ();
 
-                // FileAllocator::Object
-                /// \brief
-                /// Delete the disk image and reset the internal state.
-                virtual void Delete () override;
-
             protected:
                 /// \brief
                 /// Node is fixed size.
@@ -658,25 +653,29 @@ namespace thekogans {
 
                 // BufferedFile::TransactionParticipant
                 /// \brief
+                /// .
+                virtual void Free () override;
+                /// \brief
                 /// Flush changes to file.
                 virtual void Flush () override;
                 /// \brief
                 /// Reload from file.
                 virtual void Reload () override;
-
-            private:
                 /// \brief
-                /// Common logic used by ctor and Reload.
-                void Load ();
-                /// \brief
-                /// Common logic used by dtor and Reload.
-                void FreeChildren ();
+                /// .
+                virtual void Reset () override;
 
+                // RefCounted
                 virtual void Harakiri () override {
                     this->~Node ();
                     btree.nodeAllocator->Free (
                         this, Size (btree.header.entriesPerNode));
                 }
+
+            private:
+                /// \brief
+                /// Common logic used by ctor and Reload.
+                void Load ();
 
             } *rootNode;
             /// \brief
@@ -731,14 +730,6 @@ namespace thekogans {
             virtual ~BTree ();
 
             /// \brief
-            /// Delete the btree from the heap.
-            /// \param[in] fileAllocator Heap where the btree resides.
-            /// \param[in] offset \see{Header} offset.
-            static void Delete (
-                FileAllocator &fileAllocator,
-                FileAllocator::PtrType offset);
-
-            /// \brief
             /// Search for the given key in the btree.
             /// \param[in] key \see{Key} to search for.
             /// \param[out] it If found the iterator will point to the entry.
@@ -761,7 +752,7 @@ namespace thekogans {
             /// Delete the given key from the btree.
             /// \param[in] key KeyType whose entry to delete.
             /// \return true == entry deleted. false == entry not found.
-            bool Delete (const Key &key);
+            bool Remove (const Key &key);
 
             /// \brief
             /// Reset the iterator to point to the first occurence of it.prefix.
@@ -783,12 +774,8 @@ namespace thekogans {
             /// Use for debugging. Dump the btree nodes to stdout.
             void Dump ();
 
-            // FileAllocator::Object
-            /// \brief
-            /// Delete the disk image and reset the internal state.
-            virtual void Delete () override;
-
         protected:
+            // FileAllocator::Object
             /// \brief
             /// \see{Header} is fixed size.
             /// \return true.
@@ -804,12 +791,17 @@ namespace thekogans {
 
             // BufferedFile::TransactionParticipant
             /// \brief
+            /// .
+            virtual void Free () override;
+            /// \brief
             /// Flush changes to file.
             virtual void Flush () override;
-
             /// \brief
             /// Reload from file.
             virtual void Reload () override;
+            /// \brief
+            /// .
+            virtual void Reset () override;
 
             /// \brief
             /// Common code used in ctor and Reload.

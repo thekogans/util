@@ -240,7 +240,7 @@ namespace thekogans {
             else {
                 // Write an empty header to make sure that when Alloc
                 // calls file->GetSize it will get a correct value.
-                *file << MAGIC32 << header;
+                Reset ();
             }
             btree.Reset (new BTree (*this, btreeEntriesPerNode, btreeNodesPerPage, allocator));
             btreeNodeFileSize = BTree::Node::FileSize (btree->header.entriesPerNode);
@@ -418,6 +418,9 @@ namespace thekogans {
             if (file->GetSize () > 0) {
                 Load ();
             }
+            else {
+                Reset ();
+            }
             btree.Reset (
                 new BTree (
                     *this,
@@ -425,6 +428,14 @@ namespace thekogans {
                     btree->nodeAllocator->GetBlocksPerPage (),
                     btree->nodeAllocator->GetAllocator ()));
             btreeNodeFileSize = BTree::Node::FileSize (btree->header.entriesPerNode);
+        }
+
+        void FileAllocator::Reset () {
+            header.btreeOffset = 0;
+            header.freeBTreeNodeOffset = 0;
+            header.rootOffset = 0;
+            file->Seek (0, SEEK_SET);
+            *file << MAGIC32 << header;
         }
 
         FileAllocator::PtrType FileAllocator::AllocBTreeNode (std::size_t size) {

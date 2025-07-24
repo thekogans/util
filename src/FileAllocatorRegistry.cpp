@@ -47,7 +47,7 @@ namespace thekogans {
                 const std::string &key,
                 BTree::Value::SharedPtr value) {
             if (value == nullptr) {
-                Delete (StringKey (key));
+                Remove (StringKey (key));
             }
             else {
                 BTree::Iterator it;

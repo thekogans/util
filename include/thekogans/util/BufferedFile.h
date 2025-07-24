@@ -199,6 +199,9 @@ namespace thekogans {
                 /// we're participants of.
                 BufferedFile::SharedPtr file;
                 /// \brief
+                /// true == the on disk image has been deleted.
+                bool deleted;
+                /// \brief
                 /// true == the in memory cache is different than what's on disk.
                 bool dirty;
 
@@ -209,6 +212,7 @@ namespace thekogans {
                 /// \param[in] dirty_
                 TransactionParticipant (BufferedFile::SharedPtr file_) :
                     file (file_),
+                    deleted (false),
                     dirty (false) {}
                 /// \brief
                 /// dtor.
@@ -219,6 +223,25 @@ namespace thekogans {
                 /// \return file.
                 inline BufferedFile::SharedPtr GetFile () const {
                     return file;
+                }
+
+                /// \brief
+                /// Return deleted.
+                /// \return deleted.
+                inline bool IsDeleted () const {
+                    return deleted;
+                }
+                /// \brief
+                /// Set dirty.
+                /// \param[in] dirty_ New value for dirty.
+                void SetDeleted (bool deleted_);
+
+                /// \brief
+                /// Delete the disk image and reset the internal state.
+                void Delete () {
+                    Reset ();
+                    SetDirty (false);
+                    SetDeleted (true);
                 }
 
                 /// \brief
@@ -236,6 +259,9 @@ namespace thekogans {
                 /// \brief
                 /// Allocate space from file.
                 virtual void Alloc () = 0;
+                /// \brief
+                /// Free the on disk image.
+                virtual void Free () = 0;
 
                 /// \brief
                 /// Flush the internal cache to file.
@@ -244,6 +270,10 @@ namespace thekogans {
                 /// \brief
                 /// Reload the internal cache from file.
                 virtual void Reload () = 0;
+
+                /// \brief
+                /// Reset internal cache.
+                virtual void Reset () = 0;
 
                 // BufferedFileEvents
                 /// \brief

@@ -183,7 +183,7 @@ namespace thekogans {
         }
 
         BTree::Node::~Node () {
-            FreeChildren ();
+            Reset ();
         }
 
         std::size_t BTree::Node::FileSize (std::size_t entriesPerNode) {
@@ -211,27 +211,27 @@ namespace thekogans {
             return node;
         }
 
-        void BTree::Node::Delete (
+        void BTree::Node::FreeSubtree (
                 FileAllocator &fileAllocator,
                 FileAllocator::PtrType offset) {
             if (offset != 0) {
-                ui32 count;
-                FileAllocator::PtrType leftOffset = 0;
-                FileAllocator::PtrType keyValueOffset = 0;
-                Entry entry;
                 FileAllocator::BlockBuffer buffer (fileAllocator, offset);
                 buffer.BlockRead ();
                 ui32 magic;
                 buffer >> magic;
                 if (magic == MAGIC32) {
+                    ui32 count;
                     buffer >> count;
                     if (count > 0) {
+                        FileAllocator::PtrType leftOffset;
+                        FileAllocator::PtrType keyValueOffset;
                         buffer >> leftOffset >> keyValueOffset;
                         fileAllocator.Free (keyValueOffset);
-                        Delete (fileAllocator, leftOffset);
+                        FreeSubtree (fileAllocator, leftOffset);
                         for (ui32 i = 0; i < count; ++i) {
+                            Entry entry;
                             buffer >> entry;
-                            Delete (fileAllocator, entry.rightOffset);
+                            FreeSubtree (fileAllocator, entry.rightOffset);
                         }
                     }
                     fileAllocator.Free (offset);
@@ -497,8 +497,7 @@ namespace thekogans {
         }
 
         void BTree::Node::Split (Node *node) {
-            // This assert checks IsFull as well.
-            assert (count == btree.header.entriesPerNode);
+            assert (IsFull ());
             ui32 splitIndex = count / 2;
             node->count = count - splitIndex;
             std::memcpy (
@@ -557,14 +556,14 @@ namespace thekogans {
             }
         }
 
-        void BTree::Node::Delete () {
+        void BTree::Node::Free () {
             if (IsEmpty ()) {
                 GetFileAllocator ()->Free (GetOffset ());
                 Release ();
             }
             else {
                 THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                    "Logic error: trying to delete a node with count > 0 @"
+                    "Logic error: trying to free a node with count > 0 @"
                     THEKOGANS_UTIL_UI64_FORMAT,
                     GetOffset ());
             }
@@ -680,9 +679,29 @@ namespace thekogans {
         }
 
         void BTree::Node::Reload () {
-            FreeChildren ();
+            Reset ();
             if (GetOffset () != 0) {
                 Load ();
+            }
+        }
+
+        void BTree::Node::Reset () {
+            if (count > 0) {
+                if (leftNode != nullptr) {
+                    leftNode->Release ();
+                    leftNode = nullptr;
+                }
+                for (ui32 i = 0; i < count; ++i) {
+                    entries[i].key->Release ();
+                    entries[i].key = nullptr;
+                    entries[i].value->Release ();
+                    entries[i].value = nullptr;
+                    if (entries[i].rightNode != nullptr) {
+                        entries[i].rightNode->Release ();
+                        entries[i].rightNode = nullptr;
+                    }
+                }
+                count = 0;
             }
         }
 
@@ -735,26 +754,6 @@ namespace thekogans {
             }
         }
 
-        void BTree::Node::FreeChildren () {
-            if (count > 0) {
-                if (leftNode != nullptr) {
-                    leftNode->Release ();
-                    leftNode = nullptr;
-                }
-                for (ui32 i = 0; i < count; ++i) {
-                    entries[i].key->Release ();
-                    entries[i].key = nullptr;
-                    entries[i].value->Release ();
-                    entries[i].value = nullptr;
-                    if (entries[i].rightNode != nullptr) {
-                        entries[i].rightNode->Release ();
-                        entries[i].rightNode = nullptr;
-                    }
-                }
-                count = 0;
-            }
-        }
-
         BTree::BTree (
                 FileAllocator::SharedPtr fileAllocator,
                 FileAllocator::PtrType offset,
@@ -788,28 +787,6 @@ namespace thekogans {
 
         BTree::~BTree () {
             rootNode->Release ();
-        }
-
-        void BTree::Delete (
-                FileAllocator &fileAllocator,
-                FileAllocator::PtrType offset) {
-            if (offset != 0) {
-                FileAllocator::BlockBuffer buffer (fileAllocator, offset);
-                buffer.BlockRead ();
-                ui32 magic;
-                buffer >> magic;
-                if (magic == MAGIC32) {
-                    Header header;
-                    buffer >> header;
-                    Node::Delete (fileAllocator, header.rootOffset);
-                    fileAllocator.Free (offset);
-                }
-                else {
-                    THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                        "Corrupt BTree @" THEKOGANS_UTIL_UI64_FORMAT,
-                        offset);
-                }
-            }
         }
 
         bool BTree::Find (
@@ -877,7 +854,7 @@ namespace thekogans {
             }
         }
 
-        bool BTree::Delete (const Key &key) {
+        bool BTree::Remove (const Key &key) {
             if (key.IsKindOf (header.keyType.c_str ())) {
                 bool removed = rootNode->Remove (key);
                 if (removed && rootNode->IsEmpty () && rootNode->GetChild (0) != nullptr) {
@@ -936,19 +913,30 @@ namespace thekogans {
             rootNode->Dump ();
         }
 
-        void BTree::Delete () {
-            if (offset != 0) {
-                Delete (*fileAllocator, offset);
-                Produce (
-                    std::bind (
-                        &FileAllocator::ObjectEvents::OnFileAllocatorObjectFree,
-                        std::placeholders::_1,
-                        this));
-                offset = 0;
+        void BTree::Free () {
+            if (GetOffset () != 0) {
+                FileAllocator::BlockBuffer buffer (*fileAllocator, GetOffset ());
+                buffer.BlockRead ();
+                ui32 magic;
+                buffer >> magic;
+                if (magic == MAGIC32) {
+                    Header header;
+                    buffer >> header;
+                    Node::FreeSubtree (*fileAllocator, header.rootOffset);
+                    fileAllocator->Free (offset);
+                    Produce (
+                        std::bind (
+                            &FileAllocator::ObjectEvents::OnFileAllocatorObjectFree,
+                            std::placeholders::_1,
+                            this));
+                    offset = 0;
+                }
+                else {
+                    THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
+                        "Corrupt BTree @" THEKOGANS_UTIL_UI64_FORMAT,
+                        GetOffset ());
+                }
             }
-            header.rootOffset = 0;
-            rootNode->Release ();
-            rootNode = Node::Alloc (*this, header.rootOffset);
         }
 
         void BTree::Flush () {
@@ -961,7 +949,16 @@ namespace thekogans {
         void BTree::Reload () {
             if (GetOffset () != 0) {
                 Load ();
+                rootNode->Release ();
+                rootNode = Node::Alloc (*this, header.rootOffset);
             }
+            else {
+                Reset ();
+            }
+        }
+
+        void BTree::Reset () {
+            header.rootOffset = 0;
             rootNode->Release ();
             rootNode = Node::Alloc (*this, header.rootOffset);
         }

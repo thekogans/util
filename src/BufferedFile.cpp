@@ -46,6 +46,21 @@ namespace thekogans {
             file->CommitTransaction ();
         }
 
+        void BufferedFile::TransactionParticipant::SetDeleted (bool deleted_) {
+            if (deleted != deleted_) {
+                deleted = deleted_;
+                // deleted is the trigger to have the object delete
+                // itself from the file. Signalling deleted makes the
+                // object eligible to be freed by the next transaction.
+                if (deleted) {
+                    Subscriber<BufferedFileEvents>::Subscribe (*file);
+                }
+                else {
+                    Subscriber<BufferedFileEvents>::Unsubscribe (*file);
+                }
+            }
+        }
+
         void BufferedFile::TransactionParticipant::SetDirty (bool dirty_) {
             if (dirty != dirty_) {
                 dirty = dirty_;
@@ -66,13 +81,21 @@ namespace thekogans {
                 int phase) noexcept {
             THEKOGANS_UTIL_TRY {
                 if (phase == COMMIT_PHASE_1) {
-                    assert (IsDirty ());
-                    Alloc ();
+                    if (IsDeleted ()) {
+                        Free ();
+                    }
+                    if (IsDirty ()) {
+                        Alloc ();
+                    }
                 }
                 else if (phase == COMMIT_PHASE_2) {
-                    assert (IsDirty ());
-                    Flush ();
-                    SetDirty (false);
+                    if (IsDeleted ()) {
+                        SetDeleted (false);
+                    }
+                    if (IsDirty ()) {
+                        Flush ();
+                        SetDirty (false);
+                    }
                 }
             }
             THEKOGANS_UTIL_CATCH_AND_LOG_SUBSYSTEM (THEKOGANS_UTIL)
@@ -81,8 +104,9 @@ namespace thekogans {
         void BufferedFile::TransactionParticipant::OnBufferedFileTransactionAbort (
                 BufferedFile::SharedPtr /*file*/) noexcept {
             THEKOGANS_UTIL_TRY {
-                assert (IsDirty ());
+                assert (IsDeleted () || IsDirty ());
                 Reload ();
+                SetDeleted (false);
                 SetDirty (false);
             }
             THEKOGANS_UTIL_CATCH_AND_LOG_SUBSYSTEM (THEKOGANS_UTIL)

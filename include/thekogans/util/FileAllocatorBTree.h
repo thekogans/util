@@ -254,27 +254,26 @@ private:
         /// Dump the nodes entries to stdout. Used to debug the implementation.
         void Dump ();
 
-        void Delete ();
-
     protected:
         // BufferedFile::TransactionParticipant
         /// \brief
         /// Allocate space for the node.
         virtual void Alloc () override;
         /// \brief
+        virtual void Free () override;
+        /// \brief
         /// Flush changes to file.
         virtual void Flush () override;
         /// \brief
         /// Reload from file.
         virtual void Reload () override;
+        /// \brief
+        virtual void Reset () override;
 
     private:
         /// \brief
         /// Common logic used by ctor and Reload.
         void Load ();
-        /// \brief
-        /// Common logic used by dtor and Reload.
-        void FreeChildren ();
 
         virtual void Harakiri () override {
             this->~Node ();
@@ -336,11 +335,19 @@ protected:
     /// Allocate space for the \see{Header}.
     virtual void Alloc () override;
     /// \brief
+    /// .
+    virtual void Free () override;
+    /// \brief
     /// Flush changes to file.
     virtual void Flush () override;
     /// \brief
     /// Reload from file.
     virtual void Reload () override;
+    /// \brief
+    /// .
+    virtual void Reset () override;
+
+    void Load ();
 
     /// \brief
     /// Needs access to private members.
