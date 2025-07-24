@@ -46,36 +46,6 @@ namespace thekogans {
             file->CommitTransaction ();
         }
 
-        void BufferedFile::TransactionParticipant::SetDeleted (bool deleted_) {
-            if (deleted != deleted_) {
-                deleted = deleted_;
-                // deleted is the trigger to have the object delete
-                // itself from the file. Signalling deleted makes the
-                // object eligible to be freed by the next transaction.
-                if (deleted) {
-                    Subscriber<BufferedFileEvents>::Subscribe (*file);
-                }
-                else {
-                    Subscriber<BufferedFileEvents>::Unsubscribe (*file);
-                }
-            }
-        }
-
-        void BufferedFile::TransactionParticipant::SetDirty (bool dirty_) {
-            if (dirty != dirty_) {
-                dirty = dirty_;
-                // dirty is the trigger to have the object commit
-                // itself to file. Signalling dirty makes the object
-                // eligible to be committed by the next transaction.
-                if (dirty) {
-                    Subscriber<BufferedFileEvents>::Subscribe (*file);
-                }
-                else {
-                    Subscriber<BufferedFileEvents>::Unsubscribe (*file);
-                }
-            }
-        }
-
         void BufferedFile::TransactionParticipant::OnBufferedFileTransactionCommit (
                 BufferedFile::SharedPtr /*file*/,
                 int phase) noexcept {
@@ -104,12 +74,24 @@ namespace thekogans {
         void BufferedFile::TransactionParticipant::OnBufferedFileTransactionAbort (
                 BufferedFile::SharedPtr /*file*/) noexcept {
             THEKOGANS_UTIL_TRY {
-                assert (IsDeleted () || IsDirty ());
+                assert (flags);
                 Reload ();
-                SetDeleted (false);
-                SetDirty (false);
+                SetFlags (0);
             }
             THEKOGANS_UTIL_CATCH_AND_LOG_SUBSYSTEM (THEKOGANS_UTIL)
+        }
+
+        void BufferedFile::TransactionParticipant::SetFlags (ui32 flags_) {
+            if (flags != flags_) {
+                ui32 oldFlags = flags;
+                flags = flags_;
+                if (!oldFlags && flags) {
+                    Subscriber<BufferedFileEvents>::Subscribe (*file);
+                }
+                else if (oldFlags && !flags) {
+                    Subscriber<BufferedFileEvents>::Unsubscribe (*file);
+                }
+            }
         }
 
         THEKOGANS_UTIL_IMPLEMENT_HEAP_FUNCTIONS (BufferedFile::Buffer)

@@ -199,11 +199,14 @@ namespace thekogans {
                 /// we're participants of.
                 BufferedFile::SharedPtr file;
                 /// \brief
-                /// true == the on disk image has been deleted.
-                bool deleted;
+                /// Set if the internal cache is dirty.
+                static const ui32 FLAGS_DIRTY = 1;
                 /// \brief
-                /// true == the in memory cache is different than what's on disk.
-                bool dirty;
+                /// Set if we've been deleted.
+                static const ui32 FLAGS_DELETED = 2;
+                /// \brief
+                /// Combination of the above flags.
+                Flags32 flags;
 
             public:
                 /// \brief
@@ -212,8 +215,7 @@ namespace thekogans {
                 /// \param[in] dirty_
                 TransactionParticipant (BufferedFile::SharedPtr file_) :
                     file (file_),
-                    deleted (false),
-                    dirty (false) {}
+                    flags (0) {}
                 /// \brief
                 /// dtor.
                 virtual ~TransactionParticipant () {}
@@ -226,34 +228,31 @@ namespace thekogans {
                 }
 
                 /// \brief
+                /// Return dirty.
+                /// \return dirty.
+                inline bool IsDirty () const {
+                    return flags.Test (FLAGS_DIRTY);
+                }
+                inline void SetDirty (bool dirty) {
+                    SetFlags ((dirty ? FLAGS_DIRTY : 0) | (IsDeleted () ? FLAGS_DELETED : 0));
+                }
+
+                /// \brief
                 /// Return deleted.
                 /// \return deleted.
                 inline bool IsDeleted () const {
-                    return deleted;
+                    return flags.Test (FLAGS_DELETED);
                 }
-                /// \brief
-                /// Set dirty.
-                /// \param[in] dirty_ New value for dirty.
-                void SetDeleted (bool deleted_);
+                inline void SetDeleted (bool deleted) {
+                    SetFlags ((IsDirty () ? FLAGS_DIRTY : 0) | (deleted ? FLAGS_DELETED : 0));
+                }
 
                 /// \brief
                 /// Delete the disk image and reset the internal state.
                 void Delete () {
                     Reset ();
-                    SetDirty (false);
-                    SetDeleted (true);
+                    SetFlags (FLAGS_DELETED);
                 }
-
-                /// \brief
-                /// Return dirty.
-                /// \return dirty.
-                inline bool IsDirty () const {
-                    return dirty;
-                }
-                /// \brief
-                /// Set dirty.
-                /// \param[in] dirty_ New value for dirty.
-                void SetDirty (bool dirty_);
 
             protected:
                 /// \brief
@@ -272,7 +271,7 @@ namespace thekogans {
                 virtual void Reload () = 0;
 
                 /// \brief
-                /// Reset internal cache.
+                /// Reset internal state.
                 virtual void Reset () = 0;
 
                 // BufferedFileEvents
@@ -288,6 +287,12 @@ namespace thekogans {
                 /// \param[in] file \see{BufferedFile} aborting the transaction.
                 virtual void OnBufferedFileTransactionAbort (
                     BufferedFile::SharedPtr /*file*/) noexcept override;
+
+            private:
+                /// \brief
+                /// Set flags.
+                /// \param[in] flags_ New flags value.
+                void SetFlags (ui32 flags_);
 
                 /// \brief
                 /// TransactionParticipant is neither copy constructable, nor assignable.
@@ -375,7 +380,7 @@ namespace thekogans {
             /// represented using a fixed depth multiway tree. The high order 32 bits
             /// are used to represent 4G of 4GB segments. The low order 32 bits are
             /// used to represent 4GB segments partitioned in to 4K of 1MB tiles.
-            /// The entire address space is sparce and fits in to a tree of depth 5
+            /// The entire address space is sparse and fits in to a tree of depth 5
             /// like this;
             /// - The high order 32 bits are split in to 4 8 bit hierarchical indexes.
             ///   Each index is used to access an internal tree node. (depth = 4).
@@ -651,7 +656,7 @@ namespace thekogans {
             /// noted elsewhere, locking with every seek/read/write
             /// would be prohibitively expensive (not to mention it
             /// would do nothing to preserve the atomicity of seek/read
-            // and seek/write operations). Instead each
+            /// and seek/write operations). Instead each
             /// BufferedFile exposes a mutex that your threads can
             /// use to synchronize access to the file based on
             /// access patterns that are more appropriate to your
@@ -782,6 +787,9 @@ namespace thekogans {
             inline bool IsDirty () const {
                 return flags.Test (FLAGS_DIRTY);
             }
+            /// \brief
+            /// Set/reset the dirty flag.
+            /// \param[in] dirty true == set, false == reset.
             inline void SetDirty (bool dirty) {
                 flags.Set (FLAGS_DIRTY, dirty);
             }
@@ -791,6 +799,9 @@ namespace thekogans {
             inline bool IsTransactionPending () const {
                 return flags.Test (FLAGS_TRANSACTION);
             }
+            /// \brief
+            /// Set/reset the transaction flag.
+            /// \param[in] transaction true == set, false == reset.
             inline void SetTransactionPending (bool transaction) {
                 flags.Set (FLAGS_TRANSACTION, transaction);
             }
