@@ -772,7 +772,9 @@ namespace thekogans {
 
             /// \brief
             /// Use for debugging. Dump the btree nodes to stdout.
-            void Dump ();
+            inline void Dump () {
+                rootNode->Dump ();
+            }
 
         protected:
             // FileAllocator::Object

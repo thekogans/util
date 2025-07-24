@@ -52,6 +52,18 @@ namespace thekogans {
             }
         }
 
+        void FileAllocator::Object::Free () {
+            if (offset != 0) {
+                fileAllocator->Free (offset);
+                Produce (
+                    std::bind (
+                        &ObjectEvents::OnFileAllocatorObjectFree,
+                        std::placeholders::_1,
+                        this));
+                offset = 0;
+            }
+        }
+
         void FileAllocator::BlockInfo::Header::Read (
                 File &file,
                 PtrType offset) {

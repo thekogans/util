@@ -917,10 +917,6 @@ namespace thekogans {
             }
         }
 
-        void BTree::Dump () {
-            rootNode->Dump ();
-        }
-
         void BTree::Free () {
             if (GetOffset () != 0) {
                 FileAllocator::BlockBuffer buffer (*fileAllocator, GetOffset ());

@@ -449,7 +449,7 @@ namespace thekogans {
             }
             if (!IsDirty () &&
                     (header.rootOffset == 0 ||
-                        rootNode->GetOffset () != header.rootOffset)) {
+                        rootNode->offset != header.rootOffset)) {
                 SetDirty (true);
             }
         }
@@ -473,7 +473,8 @@ namespace thekogans {
 
         void FileAllocator::BTree::Alloc () {
             if (fileAllocator.header.btreeOffset == 0) {
-                fileAllocator.header.btreeOffset = fileAllocator.AllocBTreeNode (Header::SIZE);
+                fileAllocator.header.btreeOffset =
+                    fileAllocator.AllocBTreeNode (Header::SIZE);
                 fileAllocator.SetDirty (true);
             }
         }
@@ -492,7 +493,7 @@ namespace thekogans {
             if (fileAllocator.header.btreeOffset != 0) {
                 Load ();
                 rootNode->Release ();
-                rootNode = Node::Alloc (*this, fileAllocator.header.btreeOffset);
+                rootNode = Node::Alloc (*this, header.rootOffset);
             }
             else {
                 Reset ();
@@ -500,9 +501,9 @@ namespace thekogans {
         }
 
         void FileAllocator::BTree::Reset () {
-            fileAllocator.header.btreeOffset = 0;
+            header.rootOffset = 0;
             rootNode->Release ();
-            rootNode = Node::Alloc (*this, fileAllocator.header.btreeOffset);
+            rootNode = Node::Alloc (*this, header.rootOffset);
         }
 
         void FileAllocator::BTree::Load () {

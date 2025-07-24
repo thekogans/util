@@ -190,6 +190,12 @@ namespace thekogans {
                 /// \brief
                 /// If needed allocate space from \see{BufferedFile}.
                 virtual void Alloc () override;
+                /// \brief
+                /// Default free implementation for single block objects.
+                /// If your objects contain internal pointers to other
+                /// blocks you will need to implement this method and
+                /// properly free the containing blocks.
+                virtual void Free () override;
 
                 /// \brief
                 /// Object is neither copy constructable, nor assignable.
