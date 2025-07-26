@@ -59,13 +59,10 @@ namespace thekogans {
                     }
                 }
                 else if (phase == COMMIT_PHASE_2) {
-                    if (IsDeleted ()) {
-                        SetDeleted (false);
-                    }
                     if (IsDirty ()) {
                         Flush ();
-                        SetDirty (false);
                     }
+                    SetFlags (0);
                 }
             }
             THEKOGANS_UTIL_CATCH_AND_LOG_SUBSYSTEM (THEKOGANS_UTIL)

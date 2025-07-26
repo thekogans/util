@@ -402,16 +402,15 @@ namespace thekogans {
                 BufferedFile::TransactionParticipant (fileAllocator_.GetFile ()),
                 fileAllocator (fileAllocator_),
                 header ((ui32)entriesPerNode),
-                rootNode (nullptr) {
+                nodeAllocator (
+                    new BlockAllocator (
+                        Node::Size (entriesPerNode),
+                        nodesPerPage,
+                        allocator)),
+                rootNode (Node::Alloc (*this, header.rootOffset)) {
             if (fileAllocator.header.btreeOffset != 0) {
                 Load ();
             }
-            nodeAllocator.Reset (
-                new BlockAllocator (
-                    Node::Size (header.entriesPerNode),
-                    nodesPerPage,
-                    allocator));
-            rootNode = Node::Alloc (*this, header.rootOffset);
         }
 
         FileAllocator::BTree::~BTree () {
@@ -492,8 +491,6 @@ namespace thekogans {
         void FileAllocator::BTree::Reload () {
             if (fileAllocator.header.btreeOffset != 0) {
                 Load ();
-                rootNode->Release ();
-                rootNode = Node::Alloc (*this, header.rootOffset);
             }
             else {
                 Reset ();
@@ -519,6 +516,13 @@ namespace thekogans {
                     "Corrupt FileAllocator::BTree: @" THEKOGANS_UTIL_UI64_FORMAT,
                     fileAllocator.header.btreeOffset);
             }
+            rootNode->Release ();
+            nodeAllocator.Reset (
+                new BlockAllocator (
+                    Node::Size (header.entriesPerNode),
+                    nodeAllocator->GetBlocksPerPage (),
+                    nodeAllocator->GetAllocator ()));
+            rootNode = Node::Alloc (*this, header.rootOffset);
         }
 
         inline bool operator == (

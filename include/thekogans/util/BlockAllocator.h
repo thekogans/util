@@ -179,14 +179,20 @@ namespace thekogans {
             virtual ~BlockAllocator ();
 
             /// \brief
+            /// Return the allocator block size.
+            /// \return Allocator block size.
             inline std::size_t GetBlockSize () const {
                 return blockSize;
             }
             /// \brief
+            /// Return the number of blocks per page.
+            /// \return Number of blocks per page.
             inline std::size_t GetBlocksPerPage () const {
                 return blocksPerPage;
             }
             /// \brief
+            /// Return the allocator.
+            /// \return allocator.
             inline Allocator::SharedPtr GetAllocator () const {
                 return allocator;
             }

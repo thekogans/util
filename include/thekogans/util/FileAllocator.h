@@ -64,7 +64,7 @@ namespace thekogans {
         /// +-------+-------+------+
         ///    *4       4       8
         ///
-        /// * - Can be ommitted by undefining THEKOGANS_UTIL_FILE_ALLOCATOR_BLOCK_INFO_USE_MAGIC
+        /// * - Can be ommitted by undefining THEKOGANS_UTIL_FILE_ALLOCATOR_BLOCK_USE_MAGIC
         ///
         /// Header/Footer::SIZE = 16/12
         ///
@@ -139,14 +139,14 @@ namespace thekogans {
                 /// \see{FileAllocator} where this object resides.
                 FileAllocator::SharedPtr fileAllocator;
                 /// \brief
-                /// Our address inside the \see{FileAllocator}.
+                /// Our address inside the \see{BufferedFile}.
                 FileAllocator::PtrType offset;
 
             public:
                 /// \brief
                 /// ctor.
                 /// \param[in] fileAllocator \see{FileAllocator} where this object resides.
-                /// \param[in] offset Offset of the \see{FileAllocator::BlockInfo}.
+                /// \param[in] offset Offset of the \see{FileAllocator::Block}.
                 Object (
                     FileAllocator::SharedPtr fileAllocator_,
                     FileAllocator::PtrType offset_) :
@@ -188,7 +188,7 @@ namespace thekogans {
 
                 // BufferedFile::TransactionParticipant
                 /// \brief
-                /// If needed allocate space from \see{BufferedFile}.
+                /// If needed allocate space from \see{FileAllocator}.
                 virtual void Alloc () override;
                 /// \brief
                 /// Default free implementation for single block objects.
@@ -202,10 +202,10 @@ namespace thekogans {
                 THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (Object)
             };
 
-            /// \struct FileAllocator::BlockInfo FileAllocator.h thekogans/util/FileAllocator.h
+            /// \struct FileAllocator::Block FileAllocator.h thekogans/util/FileAllocator.h
             ///
             /// \brief
-            /// BlockInfo encapsulates the structure of the heap. It provides
+            /// Block encapsulates the structure of the heap. It provides
             /// an api to read and write as well as to navigate (Prev/Next)
             /// heap blocks in linear order. Every block has the following
             /// structure;
@@ -216,7 +216,7 @@ namespace thekogans {
             ///
             /// This design provides two benefits;
             /// 1. Heap integrity. Header and Footer provide a no man's
-            /// land that BlockInfo uses to make sure the block has not
+            /// land that Block uses to make sure the block has not
             /// been corrupted by [over/under]flow writes.
             /// 2. Ability to navigate the heap in linear order. This
             /// property is used in Free to help coalesce adjecent free
@@ -224,7 +224,7 @@ namespace thekogans {
             /// The drawback of this design is that every allocation has
             /// 32 bytes of overhead. Keep that in mind when designing
             /// your objects.
-            struct _LIB_THEKOGANS_UTIL_DECL BlockInfo {
+            struct _LIB_THEKOGANS_UTIL_DECL Block {
             private:
                 /// \brief
                 /// \see{FileAllocator} to read and write.
@@ -232,12 +232,12 @@ namespace thekogans {
                 /// \brief
                 /// Block offset.
                 PtrType offset;
-                /// \struct FileAllocator::BlockInfo::Header FileAllocator.h
+                /// \struct FileAllocator::Block::Header FileAllocator.h
                 /// thekogans/util/FileAllocator.h
                 ///
                 /// \brief
                 /// Block header preceeds the user data and forms one half of
-                /// it's structure. BlockInfo uses the information found in
+                /// it's structure. Block uses the information found in
                 /// header to compare against what's found in footer. If the
                 /// two match, the block is considered intact. If they don't
                 /// an exception is thrown indicating heap corruption.
@@ -258,16 +258,14 @@ namespace thekogans {
                     /// \brief
                     /// Size of header on disk.
                     static const std::size_t SIZE =
-                    #if defined (THEKOGANS_UTIL_FILE_ALLOCATOR_BLOCK_INFO_USE_MAGIC)
+                    #if defined (THEKOGANS_UTIL_FILE_ALLOCATOR_BLOCK_USE_MAGIC)
                         UI32_SIZE + // magic
-                    #endif // defined (THEKOGANS_UTIL_FILE_ALLOCATOR_BLOCK_INFO_USE_MAGIC)
+                    #endif // defined (THEKOGANS_UTIL_FILE_ALLOCATOR_BLOCK_USE_MAGIC)
                         UI32_SIZE + // flags
-                        UI64_SIZE; /* size +
-                        PTR_TYPE_SIZE nextBTreeNodeOffset is ommited because it shares space
-                                  with user data. This makes Header and Footer
-                                  identical as far as BlockInfo is concerned.
-                                  nextBTreeNodeOffset is maintaned only in
-                                  FileAllocator::AllocBTreeNode/FreeBTreeNode. */
+                        UI64_SIZE;  /* size +
+                        PTR_TYPE_SIZE nextBTreeNodeOffset is ommited because it
+                                  shares space with user data. This makes Header
+                                  and Footer identical as far as Block is concerned. */
 
                     /// \brief
                     /// ctor.
@@ -323,7 +321,7 @@ namespace thekogans {
                         File &file,
                         PtrType offset) const;
                 } header;
-                /// \struct FileAllocator::BlockInfo::Footer FileAllocator.h
+                /// \struct FileAllocator::Block::Footer FileAllocator.h
                 /// thekogans/util/FileAllocator.h
                 ///
                 /// \brief
@@ -340,9 +338,9 @@ namespace thekogans {
                     /// \brief
                     /// Size of footer on disk.
                     static const std::size_t SIZE =
-                    #if defined (THEKOGANS_UTIL_FILE_ALLOCATOR_BLOCK_INFO_USE_MAGIC)
+                    #if defined (THEKOGANS_UTIL_FILE_ALLOCATOR_BLOCK_USE_MAGIC)
                         UI32_SIZE + // magic
-                    #endif // defined (THEKOGANS_UTIL_FILE_ALLOCATOR_BLOCK_INFO_USE_MAGIC)
+                    #endif // defined (THEKOGANS_UTIL_FILE_ALLOCATOR_BLOCK_USE_MAGIC)
                         UI32_SIZE + // flags
                         UI64_SIZE;  // size
 
@@ -410,20 +408,20 @@ namespace thekogans {
                 /// Exposed because footer is private.
                 static const std::size_t FOOTER_SIZE = Footer::SIZE;
                 /// \brief
-                /// BlockInfo size on disk.
+                /// Block size on disk.
                 static const std::size_t SIZE = HEADER_SIZE + FOOTER_SIZE;
 
             public:
                 /// \brief
                 /// ctor.
                 /// \param[in] fileAllocator_ \see{FileAllocator} to read and write from.
-                /// \param[in] offset_ Offset in the file where the BlockInfo resides.
+                /// \param[in] offset_ Offset in the file where the Block resides.
                 /// \param[in] flags Combination of FLAGS_BTREE_NODE and FLAGS_FREE.
                 /// \param[in] size Size of the block (not including the size
-                /// of the BlockInfo itself).
+                /// of the Block itself).
                 /// \param[in] nextBTreeNodeOffset If FLAGS_FREE and FLAGS_BTREE_NODE are
                 /// set, this field contains the next free \see{BTree::Node} offset.
-                BlockInfo (
+                Block (
                     FileAllocator &fileAllocator_,
                     PtrType offset_ = 0,
                     Flags32 flags = 0,
@@ -469,7 +467,7 @@ namespace thekogans {
                 }
 
                 /// \brief
-                /// Return the block size (not including BlockInfo::SIZE).
+                /// Return the block size (not including Block::SIZE).
                 /// \return Block size.
                 inline ui64 GetSize () const {
                     return header.size;
@@ -483,20 +481,20 @@ namespace thekogans {
                 }
 
                 /// \brief
-                /// If not first, return the block info right before this one.
-                /// \param[out] prev Where to put the previous block info.
-                /// \return true == prev contains previous block info.
+                /// If not first, return the block right before this one.
+                /// \param[out] prev Where to put the previous block.
+                /// \return true == prev contains previous block.
                 /// false == we're the first block.
-                bool Prev (BlockInfo &prev) const;
+                bool Prev (Block &prev) const;
                 /// \brief
-                /// If not last, return the block info right after this one.
-                /// \param[out] next Where to put the next block info.
-                /// \return true == next contains the next block info.
+                /// If not last, return the block right after this one.
+                /// \param[out] next Where to put the next block.
+                /// \return true == next contains the next block.
                 /// false == we're the last block.
-                bool Next (BlockInfo &next) const;
+                bool Next (Block &next) const;
 
                 /// \brief
-                /// Read block info.
+                /// Read the block.
                 void Read ();
 
             private:
@@ -541,9 +539,9 @@ namespace thekogans {
                 }
 
                 /// \brief
-                /// Write block info.
+                /// Write the block.
                 void Write () const;
-            #if defined (THEKOGANS_UTIL_FILE_ALLOCATOR_BLOCK_INFO_USE_MAGIC)
+            #if defined (THEKOGANS_UTIL_FILE_ALLOCATOR_BLOCK_USE_MAGIC)
                 /// \brief
                 /// If you chose to use magic (a very smart move) to protect
                 /// the block data, you get an extra layer of dangling pointer
@@ -551,7 +549,7 @@ namespace thekogans {
                 /// the next time you access that block you get an exception
                 /// instead of corrupted data.
                 void Invalidate () const;
-            #endif // defined (THEKOGANS_UTIL_FILE_ALLOCATOR_BLOCK_INFO_USE_MAGIC)
+            #endif // defined (THEKOGANS_UTIL_FILE_ALLOCATOR_BLOCK_USE_MAGIC)
 
                 /// \brief
                 /// Needs access to \see{Header} and \see{Footer}.
@@ -564,8 +562,8 @@ namespace thekogans {
                 friend struct FileAllocator;
 
                 /// \brief
-                /// BlockInfo is neither copy constructable, nor assignable.
-                THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (BlockInfo)
+                /// Block is neither copy constructable, nor assignable.
+                THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (Block)
             };
 
             /// \struct FileAllocator::BlockBuffer FileAllocator.h thekogans/util/FileAllocator.h
@@ -579,8 +577,8 @@ namespace thekogans {
             struct _LIB_THEKOGANS_UTIL_DECL BlockBuffer : public Buffer {
             private:
                 /// \brief
-                /// Block info.
-                BlockInfo block;
+                /// Block.
+                Block block;
 
             public:
                 /// \brief
@@ -643,10 +641,10 @@ namespace thekogans {
             struct Header {
                 /// \brief
                 /// When creating a new heap, this flag will stamp the structure
-                /// of \see{BlockInfo} so that if you ever try to open it with a
+                /// of \see{Block} so that if you ever try to open it with a
                 /// wrongly compiled version of thekogans_util it will complain
                 /// instead of corrupting your data.
-                static const ui16 FLAGS_BLOCK_INFO_USES_MAGIC = 1;
+                static const ui16 FLAGS_BLOCK_USES_MAGIC = 1;
                 /// \brief
                 /// If set, zero out freed blocks.
                 static const ui16 FLAGS_SECURE = 2;
@@ -657,7 +655,7 @@ namespace thekogans {
                 /// Heap flags.
                 Flags16 flags;
                 /// \brief
-                /// Begining of heap (start of first BlockInfo::Header).
+                /// Begining of heap (start of first Block::Header).
                 PtrType heapStart;
                 /// \brief
                 /// Contains the offset of the \see{BTree::Header}.
@@ -697,17 +695,17 @@ namespace thekogans {
                         btreeOffset (0),
                         freeBTreeNodeOffset (0),
                         rootOffset (0) {
-                #if defined (THEKOGANS_UTIL_FILE_ALLOCATOR_BLOCK_INFO_USE_MAGIC)
-                    flags.Set (FLAGS_BLOCK_INFO_USES_MAGIC, true);
-                #endif // defined (THEKOGANS_UTIL_FILE_ALLOCATOR_BLOCK_INFO_USE_MAGIC)
+                #if defined (THEKOGANS_UTIL_FILE_ALLOCATOR_BLOCK_USE_MAGIC)
+                    flags.Set (FLAGS_BLOCK_USES_MAGIC, true);
+                #endif // defined (THEKOGANS_UTIL_FILE_ALLOCATOR_BLOCK_USE_MAGIC)
                 }
 
                 /// \brief
                 /// Return true if this heap was created with a version of thekogans_util
-                /// that was built with THEKOGANS_UTIL_FILE_ALLOCATOR_BLOCK_INFO_USE_MAGIC.
-                /// \return true == FLAGS_BLOCK_INFO_USES_MAGIC is set.
-                inline bool IsBlockInfoUsesMagic () const {
-                    return flags.Test (FLAGS_BLOCK_INFO_USES_MAGIC);
+                /// that was built with THEKOGANS_UTIL_FILE_ALLOCATOR_BLOCK_USE_MAGIC.
+                /// \return true == FLAGS_BLOCK_USES_MAGIC is set.
+                inline bool IsBlockUsesMagic () const {
+                    return flags.Test (FLAGS_BLOCK_USES_MAGIC);
                 }
                 /// \brief
                 /// Return true if secure.
@@ -735,10 +733,10 @@ namespace thekogans {
             static const std::size_t MIN_USER_DATA_SIZE = 32;
             /// \brief
             /// Minimum block size.
-            /// BlockInfo::SIZE happens to be 32 bytes, together with 32 for
+            /// Block::SIZE happens to be 32 bytes, together with 32 for
             /// MIN_USER_DATA_SIZE above means that the smallest block we can
             /// allocate is 64 bytes.
-            static const std::size_t MIN_BLOCK_SIZE = BlockInfo::SIZE + MIN_USER_DATA_SIZE;
+            static const std::size_t MIN_BLOCK_SIZE = Block::SIZE + MIN_USER_DATA_SIZE;
             // NOTE: The following constants are meant to be tuned during
             // system integration to provide the best performance for your
             // needs.
@@ -803,7 +801,7 @@ namespace thekogans {
             /// Return the offset of the first block in the heap.
             /// \return Offset of the first block in the heap.
             inline PtrType GetFirstBlockOffset () const {
-                return header.heapStart + BlockInfo::HEADER_SIZE;
+                return header.heapStart + Block::HEADER_SIZE;
             }
 
             /// \brief
@@ -839,6 +837,10 @@ namespace thekogans {
 
         private:
             /// \brief
+            /// Common method used by the ctor and Reload.
+            void Load ();
+
+            /// \brief
             /// Used to allocate \see{BTree::Node} blocks.
             /// This method is used by the \see{BTree::Node}.
             /// \return Offset of allocated block.
@@ -847,10 +849,6 @@ namespace thekogans {
             /// Used to free blocks prviously allocated with AllocBTreeNode.
             /// \param[in] offset Offset of \see{BTree::Node} to free.
             void FreeBTreeNode (PtrType offset);
-
-            /// \brief
-            /// Common method used by the ctor and Reload.
-            void Load ();
 
             /// \brief
             /// Needs access to private members.

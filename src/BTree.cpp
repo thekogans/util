@@ -610,7 +610,7 @@ namespace thekogans {
                 // Get existing block size.
                 ui64 blockSize = 0;
                 if (keyValueOffset != 0) {
-                    FileAllocator::BlockInfo block (*fileAllocator, keyValueOffset);
+                    FileAllocator::Block block (*fileAllocator, keyValueOffset);
                     block.Read ();
                     blockSize = block.GetSize ();
                 }
@@ -766,7 +766,12 @@ namespace thekogans {
                 header (keyType, valueType, (ui32)entriesPerNode),
                 keyFactory (Key::GetTypeFactory (keyType.c_str ())),
                 valueFactory (Value::GetTypeFactory (valueType.c_str ())),
-                rootNode (nullptr) {
+                nodeAllocator (
+                    new BlockAllocator (
+                        Node::Size (entriesPerNode),
+                        nodesPerPage,
+                        allocator)),
+                rootNode (Node::Alloc (*this, header.rootOffset)) {
             if (GetOffset () != 0) {
                 Load ();
             }
@@ -777,12 +782,6 @@ namespace thekogans {
                     "key (%s) / value (%s) types are not valid.",
                     keyType.c_str (), valueType.c_str ());
             }
-            nodeAllocator.Reset (
-                new BlockAllocator (
-                    Node::Size (header.entriesPerNode),
-                    nodesPerPage,
-                    allocator));
-            rootNode = Node::Alloc (*this, header.rootOffset);
         }
 
         BTree::~BTree () {
@@ -953,8 +952,6 @@ namespace thekogans {
         void BTree::Reload () {
             if (GetOffset () != 0) {
                 Load ();
-                rootNode->Release ();
-                rootNode = Node::Alloc (*this, header.rootOffset);
             }
             else {
                 Reset ();
@@ -993,6 +990,13 @@ namespace thekogans {
                     "Corrupt BTree @" THEKOGANS_UTIL_UI64_FORMAT,
                     GetOffset ());
             }
+            rootNode->Release ();
+            nodeAllocator.Reset (
+                new BlockAllocator (
+                    Node::Size (header.entriesPerNode),
+                    nodeAllocator->GetBlocksPerPage (),
+                    nodeAllocator->GetAllocator ()));
+            rootNode = Node::Alloc (*this, header.rootOffset);
         }
 
     } // namespace util

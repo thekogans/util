@@ -84,14 +84,14 @@ namespace thekogans {
             // FileAllocator::ObjectEvents
             /// \brief
             /// \see{BTree} allocated a block in the file.
-            /// \param[in] object \see{FileAllocator::Object} whose offset has become valid.
+            /// \param[in] object \see{BTree} whose offset has become valid.
             virtual void OnFileAllocatorObjectAlloc (
                     FileAllocator::Object::SharedPtr object) noexcept override {
                 fileAllocator->SetRootOffset (object->GetOffset ());
             }
             /// \brief
             /// \see{BTree} freed its \see{BTree::Header} block.
-            /// \param[in] object \see{FileAllocator::Object} whose offset has become valid.
+            /// \param[in] object \see{BTree} whose offset has become valid.
             virtual void OnFileAllocatorObjectFree (
                     FileAllocator::Object::SharedPtr object) noexcept override {
                 fileAllocator->SetRootOffset (0);

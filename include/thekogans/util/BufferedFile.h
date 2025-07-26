@@ -233,6 +233,9 @@ namespace thekogans {
                 inline bool IsDirty () const {
                     return flags.Test (FLAGS_DIRTY);
                 }
+                /// \brief
+                /// Set the dirty flag, preserving the state of the deleted flag.
+                /// \param[in] dirty true == dirty, false == clean.
                 inline void SetDirty (bool dirty) {
                     SetFlags ((dirty ? FLAGS_DIRTY : 0) | (IsDeleted () ? FLAGS_DELETED : 0));
                 }
@@ -243,33 +246,31 @@ namespace thekogans {
                 inline bool IsDeleted () const {
                     return flags.Test (FLAGS_DELETED);
                 }
-                inline void SetDeleted (bool deleted) {
-                    SetFlags ((IsDirty () ? FLAGS_DIRTY : 0) | (deleted ? FLAGS_DELETED : 0));
-                }
 
                 /// \brief
                 /// Delete the disk image and reset the internal state.
-                void Delete () {
-                    Reset ();
+                inline void Delete () {
                     SetFlags (FLAGS_DELETED);
+                    Reset ();
                 }
 
             protected:
+                // NOTE: The following API abstracts out the protocol called for in
+                // OnBufferedFileTransactionCommit, OnBufferedFileTransactionAbort
+                // and Delete.
+
                 /// \brief
                 /// Allocate space from file.
                 virtual void Alloc () = 0;
                 /// \brief
                 /// Free the on disk image.
                 virtual void Free () = 0;
-
                 /// \brief
                 /// Flush the internal cache to file.
                 virtual void Flush () = 0;
-
                 /// \brief
                 /// Reload the internal cache from file.
                 virtual void Reload () = 0;
-
                 /// \brief
                 /// Reset internal state.
                 virtual void Reset () = 0;
@@ -290,7 +291,7 @@ namespace thekogans {
 
             private:
                 /// \brief
-                /// Set flags.
+                /// Set the flags.
                 /// \param[in] flags_ New flags value.
                 void SetFlags (ui32 flags_);
 
