@@ -58,6 +58,33 @@ namespace thekogans {
             }
         }
 
+        void FileAllocator::Object::Flush () {
+            assert (IsDirty ());
+            assert (GetOffset () != 0);
+            FileAllocator::BlockBuffer buffer (*fileAllocator, GetOffset ());
+            Serializable::Header header;
+            WriteHeader (buffer);
+            Write (header, buffer);
+            if (fileAllocator->IsSecure ()) {
+                buffer.AdvanceWriteOffset (
+                    SecureZeroMemory (
+                        buffer.GetWritePtr (),
+                        buffer.GetDataAvailableForWriting ()));
+            }
+            buffer.BlockWrite ();
+        }
+
+        void FileAllocator::Object::Reload () {
+            Reset ();
+            if (GetOffset () != 0) {
+                FileAllocator::BlockBuffer buffer (*fileAllocator, GetOffset ());
+                buffer.Read ();
+                Serializable::Header header;
+                ReadHeader (buffer);
+                Read (header, buffer);
+            }
+        }
+
         void FileAllocator::Block::Header::Read (
                 File &file,
                 PtrType offset) {

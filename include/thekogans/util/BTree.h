@@ -52,7 +52,7 @@ namespace thekogans {
             ///
             /// \brief
             /// Key adds order to the \see{Serializable}.
-            struct _LIB_THEKOGANS_UTIL_DECL Key : public Serializable {
+            struct _LIB_THEKOGANS_UTIL_DECL Key : public FileAllocator::Object {
                 /// \brief
                 /// Key is a \see{util::DynamicCreatable} abstract base.
                 THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE_ABSTRACT_BASE (Key)
@@ -90,42 +90,6 @@ namespace thekogans {
                 /// design has two advantages; 1. Conversion is done once and
                 /// 2. Returning a reference negates the need for object copying.
                 virtual const std::string &ToString () const = 0;
-
-                // Serializable
-                /// \brief
-                /// Read the Serializable from an XML DOM.
-                /// \param[in] header \see{Serializable::Header}.
-                /// \param[in] node XML DOM representation of a Serializable.
-                virtual void ReadXML (
-                        const Header & /*header*/,
-                        const pugi::xml_node &node) override {
-                    // FIXME: implement?
-                    assert (0);
-                }
-                /// \brief
-                /// Write the Serializable to the XML DOM.
-                /// \param[out] node Parent node.
-                virtual void WriteXML (pugi::xml_node &node) const override {
-                    // FIXME: implement?
-                    assert (0);
-                }
-
-                /// \brief
-                /// Read the Serializable from an JSON DOM.
-                /// \param[in] node JSON DOM representation of a Serializable.
-                virtual void ReadJSON (
-                        const Header & /*header*/,
-                        const JSON::Object &object) override {
-                    // FIXME: implement?
-                    assert (0);
-                }
-                /// \brief
-                /// Write the Serializable to the JSON DOM.
-                /// \param[out] node Parent node.
-                virtual void WriteJSON (JSON::Object &object) const override {
-                    // FIXME: implement?
-                    assert (0);
-                }
             };
 
             /// \struct Value BTree.h thekogans/util/BTree.h
@@ -134,7 +98,7 @@ namespace thekogans {
             /// Value part of the [Key, Value] pair.Since values
             /// derive from \see{Serializable}, they can be practicaly
             /// anything as long imlement the interface.
-            struct _LIB_THEKOGANS_UTIL_DECL Value : public Serializable {
+            struct _LIB_THEKOGANS_UTIL_DECL Value : public FileAllocator::Object {
                 /// \brief
                 /// Value is a \see{util::DynamicCreatable} abstract base.
                 THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE_ABSTRACT_BASE (Value)
@@ -153,42 +117,6 @@ namespace thekogans {
                 /// This method is only used in Dump for debugging purposes.
                 /// \return String representation of the value.
                 virtual std::string ToString () const = 0;
-
-                // Serializable
-                /// \brief
-                /// Read the Serializable from an XML DOM.
-                /// \param[in] header \see{Serializable::Header}.
-                /// \param[in] node XML DOM representation of a Serializable.
-                virtual void ReadXML (
-                        const Header & /*header*/,
-                        const pugi::xml_node &node) override {
-                    // FIXME: implement?
-                    assert (0);
-                }
-                /// \brief
-                /// Write the Serializable to the XML DOM.
-                /// \param[out] node Parent node.
-                virtual void WriteXML (pugi::xml_node &node) const override {
-                    // FIXME: implement?
-                    assert (0);
-                }
-
-                /// \brief
-                /// Read the Serializable from an JSON DOM.
-                /// \param[in] node JSON DOM representation of a Serializable.
-                virtual void ReadJSON (
-                        const Header & /*header*/,
-                        const JSON::Object &object) override {
-                    // FIXME: implement?
-                    assert (0);
-                }
-                /// \brief
-                /// Write the Serializable to the JSON DOM.
-                /// \param[out] node Parent node.
-                virtual void WriteJSON (JSON::Object &object) const override {
-                    // FIXME: implement?
-                    assert (0);
-                }
             };
 
         protected:
@@ -390,17 +318,20 @@ namespace thekogans {
                 /// \brief
                 /// Left most child node.
                 Node *leftNode;
-                /// \brief
-                /// Key/value array offset.
-                FileAllocator::PtrType keyValueOffset;
                 /// \struct BTree::Node::Entry BTree.h thekogans/util/BTree.h
                 ///
                 /// \brief
                 /// Node entries contain keys, values and right (grater then) children.
                 struct Entry {
                     /// \brief
+                    /// Key offset.
+                    FileAllocator::PtrType keyOffset;
+                    /// \brief
                     /// Entry key.
                     Key *key;
+                    /// \brief
+                    /// Value offset.
+                    FileAllocator::PtrType valueOffset;
                     /// \brief
                     /// Entry value.
                     Value *value;
@@ -422,7 +353,9 @@ namespace thekogans {
                     Entry (
                         Key *key_ = nullptr,
                         Value *value_ = nullptr) :
+                        keyOffset (key_ != nullptr ? key_->GetOffset () : 0),
                         key (key_),
+                        valueOffset (value_ != nullptr ? value_->GetOffset () : 0),
                         value (value_),
                         rightOffset (0),
                         rightNode (nullptr) {}
@@ -638,17 +571,12 @@ namespace thekogans {
                 void Dump ();
 
             protected:
+                // FileAllocator::Object
                 /// \brief
                 /// Node is fixed size.
                 /// \return true.
                 virtual bool IsFixedSize () const override {
                     return true;
-                }
-                /// \brief
-                /// Return the node size.
-                /// \return Node size.
-                virtual std::size_t Size () const override {
-                    return FileSize (btree.header.entriesPerNode);
                 }
 
                 // BufferedFile::TransactionParticipant
@@ -664,6 +592,25 @@ namespace thekogans {
                 /// \brief
                 /// .
                 virtual void Reset () override;
+
+                // Serializable
+                /// \brief
+                /// Return the node size.
+                /// \return Node size.
+                virtual std::size_t Size () const override {
+                    return FileSize (btree.header.entriesPerNode);
+                }
+                /// \brief
+                /// Read the key from the given serializer.
+                /// \param[in] header \see{Serializable::Header}.
+                /// \param[in] serializer \see{Serializer} to read the key from.
+                virtual void Read (
+                    const Header & /*header*/,
+                    Serializer &serializer) override;
+                /// \brief
+                /// Write the key to the given serializer.
+                /// \param[out] serializer \see{Serializer} to write the key to.
+                virtual void Write (Serializer &serializer) const override;
 
                 // RefCounted
                 virtual void Harakiri () override {
