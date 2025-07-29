@@ -30,7 +30,7 @@ namespace thekogans {
                     block.Read ();
                     blockSize = block.GetSize ();
                 }
-                std::size_t size = Size ();
+                std::size_t size = GetSize ();
                 if (blockSize < size) {
                     FileAllocator::PtrType oldOffset = offset;
                     offset = fileAllocator->Alloc (size);
@@ -62,9 +62,7 @@ namespace thekogans {
             assert (IsDirty ());
             assert (GetOffset () != 0);
             FileAllocator::BlockBuffer buffer (*fileAllocator, GetOffset ());
-            Serializable::Header header;
-            WriteHeader (buffer);
-            Write (header, buffer);
+            buffer << *this;
             if (fileAllocator->IsSecure ()) {
                 buffer.AdvanceWriteOffset (
                     SecureZeroMemory (
@@ -78,10 +76,8 @@ namespace thekogans {
             Reset ();
             if (GetOffset () != 0) {
                 FileAllocator::BlockBuffer buffer (*fileAllocator, GetOffset ());
-                buffer.Read ();
-                Serializable::Header header;
-                ReadHeader (buffer);
-                Read (header, buffer);
+                buffer.BlockRead ();
+                buffer >> *this;
             }
         }
 
