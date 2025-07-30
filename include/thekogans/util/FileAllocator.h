@@ -128,12 +128,12 @@ namespace thekogans {
             /// A FileAllocator Object is an object that has allocated at least one block
             /// from \see{FileAllocator} and participates in \see{BufferedFileEvents}.
             struct _LIB_THEKOGANS_UTIL_DECL Object :
-                    public BufferedFile::TransactionParticipant,
                     public Serializable,
+                    public BufferedFile::TransactionParticipant,
                     public Producer<ObjectEvents> {
                 /// \brief
-                /// Declare \see{RefCounted} pointers.
-                THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (Object)
+                /// Object is a \see{DynamicCreatable} abstract base.
+                THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE_ABSTRACT_BASE (Object)
 
             protected:
                 /// \brief

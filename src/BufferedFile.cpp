@@ -46,6 +46,18 @@ namespace thekogans {
             file->CommitTransaction ();
         }
 
+        void BufferedFile::TransactionParticipant::Delete () {
+            Reset ();
+            if (!IsDeleted ()) {
+                SetFlags (FLAGS_DELETED);
+                // Presume they will be reseting their own smart
+                // pointer and take ownership of yourself. If they
+                // are reusing the smart pointer (and the object)
+                // they will maintain an extra reference.
+                AddRef ();
+            }
+        }
+
         void BufferedFile::TransactionParticipant::OnBufferedFileTransactionCommit (
                 BufferedFile::SharedPtr /*file*/,
                 int phase) noexcept {
@@ -53,16 +65,21 @@ namespace thekogans {
                 if (phase == COMMIT_PHASE_1) {
                     if (IsDeleted ()) {
                         Free ();
+                        SetDeleted (false);
                     }
                     if (IsDirty ()) {
                         Alloc ();
                     }
+                    if (IsDeleted ()) {
+                        // Balance the AddRef in Delete. This will
+                        // trigger a Harakiri if they did not reuse
+                        // the smart pointer.
+                        Release ();
+                    }
                 }
                 else if (phase == COMMIT_PHASE_2) {
-                    if (IsDirty ()) {
-                        Flush ();
-                    }
-                    SetFlags (0);
+                    Flush ();
+                    SetDirty (false);
                 }
             }
             THEKOGANS_UTIL_CATCH_AND_LOG_SUBSYSTEM (THEKOGANS_UTIL)

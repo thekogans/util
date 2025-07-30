@@ -52,7 +52,7 @@ namespace thekogans {
             ///
             /// \brief
             /// Key adds order to the \see{Serializable}.
-            struct _LIB_THEKOGANS_UTIL_DECL Key : public FileAllocator::Object {
+            struct _LIB_THEKOGANS_UTIL_DECL Key : public Serializable {
                 /// \brief
                 /// Key is a \see{util::DynamicCreatable} abstract base.
                 THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE_ABSTRACT_BASE (Key)
@@ -318,6 +318,9 @@ namespace thekogans {
                 /// \brief
                 /// Left most child node.
                 Node *leftNode;
+                /// \brief
+                /// Key/value array offset.
+                FileAllocator::PtrType keyValueOffset;
                 /// \struct BTree::Node::Entry BTree.h thekogans/util/BTree.h
                 ///
                 /// \brief
@@ -329,9 +332,6 @@ namespace thekogans {
                     /// \brief
                     /// Entry key.
                     Key *key;
-                    /// \brief
-                    /// Value offset.
-                    FileAllocator::PtrType valueOffset;
                     /// \brief
                     /// Entry value.
                     Value *value;
@@ -355,7 +355,6 @@ namespace thekogans {
                         Value *value_ = nullptr) :
                         keyOffset (key_ != nullptr ? key_->GetOffset () : 0),
                         key (key_),
-                        valueOffset (value_ != nullptr ? value_->GetOffset () : 0),
                         value (value_),
                         rightOffset (0),
                         rightNode (nullptr) {}
@@ -592,25 +591,6 @@ namespace thekogans {
                 /// \brief
                 /// .
                 virtual void Reset () override;
-
-                // Serializable
-                /// \brief
-                /// Return the node size.
-                /// \return Node size.
-                virtual std::size_t Size () const override {
-                    return FileSize (btree.header.entriesPerNode);
-                }
-                /// \brief
-                /// Read the key from the given serializer.
-                /// \param[in] header \see{Serializable::Header}.
-                /// \param[in] serializer \see{Serializer} to read the key from.
-                virtual void Read (
-                    const Header & /*header*/,
-                    Serializer &serializer) override;
-                /// \brief
-                /// Write the key to the given serializer.
-                /// \param[out] serializer \see{Serializer} to write the key to.
-                virtual void Write (Serializer &serializer) const override;
 
                 // RefCounted
                 virtual void Harakiri () override {

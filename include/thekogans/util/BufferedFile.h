@@ -124,21 +124,20 @@ namespace thekogans {
             THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE (BufferedFile)
 
             /// \brief
-            /// BufferedFile implements a two phase commit. The
-            /// first phase (usually called the allocation phase)
-            /// will have all objects allocate the space they need
-            /// to commit themselves to disk. How the space is
-            /// allocated is outside the scope of the BufferedFile
-            /// (See \see{FileAllocator} for one such example).
-            /// This is also the time when all offset pointers
-            /// are updated (Again see \see{FileAllocator::Object}
-            /// and \see{FileAllocator::ObjectEvents}). The second
-            /// phase (usually called the commit phase) will have
-            /// all objects flush themselves to disk. This logic is
-            /// enshrined in \see{TransactionParticipant} below.
+            /// BufferedFile implements a two phase commit. The first phase
+            /// (usually called the alloc/free phase) will have all deleted
+            /// objects free their disk image and all dirty objects allocate
+            /// the space they need to commit themselves to disk. How that
+            /// space is allocated is outside the scope of the BufferedFile
+            /// (See \see{FileAllocator} for one such example). This is also
+            /// the time when all offset pointers are updated (Again see
+            /// \see{FileAllocator::Object} and \see{FileAllocator::ObjectEvents}).
+            /// The second phase (usually called the flush phase) will have
+            /// all dirty objects flush internal state to disk. This logic
+            /// is enshrined in \see{TransactionParticipant} below.
 
             /// \brief
-            /// Commit phase 1 (allocation).
+            /// Commit phase 1 (alloc/free).
             static const int COMMIT_PHASE_1 = 1;
             /// \brief
             /// Commit phase 2 (flush).
@@ -249,10 +248,7 @@ namespace thekogans {
 
                 /// \brief
                 /// Delete the disk image and reset the internal state.
-                inline void Delete () {
-                    SetFlags (FLAGS_DELETED);
-                    Reset ();
-                }
+                void Delete ();
 
             protected:
                 // NOTE: The following API abstracts out the protocol called for in
@@ -260,16 +256,16 @@ namespace thekogans {
                 // and Delete.
 
                 /// \brief
-                /// Allocate space from file.
+                /// Allocate the file block(s).
                 virtual void Alloc () = 0;
                 /// \brief
-                /// Free the on disk image.
+                /// Free the file block(s).
                 virtual void Free () = 0;
                 /// \brief
-                /// Flush the internal cache to file.
+                /// Flush the internal state to file.
                 virtual void Flush () = 0;
                 /// \brief
-                /// Reload the internal cache from file.
+                /// Reload the internal state from file.
                 virtual void Reload () = 0;
                 /// \brief
                 /// Reset internal state.

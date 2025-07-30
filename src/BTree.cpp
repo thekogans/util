@@ -28,14 +28,14 @@ namespace thekogans {
         inline Serializer &operator << (
                 Serializer &serializer,
                 const BTree::Node::Entry &entry) {
-            serializer << entry.keyOffset << entry.valueOffset << entry.rightOffset;
+            serializer << entry.rightOffset;
             return serializer;
         }
 
         inline Serializer &operator >> (
                 Serializer &serializer,
                 BTree::Node::Entry &entry) {
-            serializer >> entry.keyOffset >> entry.valueOffset >> entry.rightOffset;
+            serializer >> entry.rightOffset;
             // Because of the way we allocate the BTree::Node the
             // Entry cror is never called. In a way this extraction
             // operator is our ctor. Make sure all members are
@@ -111,7 +111,7 @@ namespace thekogans {
                     }
                     if (node.second < node.first->count) {
                         finished = prefix != nullptr &&
-                            prefix->PrefixCompare (*node.first->GetKey (node.second)) != 0;
+                            prefix->PrefixCompare (*node.first->entries[node.second].key) != 0;
                         break;
                     }
                     else if (!parents.empty ()) {
@@ -129,7 +129,7 @@ namespace thekogans {
         BTree::Key::SharedPtr BTree::Iterator::GetKey () const {
             if (!finished) {
                 assert (node.first != nullptr && node.second < node.first->count);
-                return node.first->GetKey (node.second);
+                return node.first->entries[node.second].key;
             }
             else {
                 THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
@@ -140,7 +140,7 @@ namespace thekogans {
         BTree::Value::SharedPtr BTree::Iterator::GetValue () const {
             if (!finished) {
                 assert (node.first != nullptr && node.second < node.first->count);
-                return node.first->GetValue (node.second);
+                return node.first->entries[node.second].value;
             }
             else {
                 THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
@@ -173,6 +173,7 @@ namespace thekogans {
                 count (0),
                 leftOffset (0),
                 leftNode (nullptr),
+                keyValueOffset (0),
                 entries ((Entry *)(this + 1)) {
             if (GetOffset () != 0) {
                 Load ();
@@ -185,13 +186,12 @@ namespace thekogans {
 
         std::size_t BTree::Node::FileSize (std::size_t entriesPerNode) {
             const std::size_t ENTRY_SIZE =
-                FileAllocator::PTR_TYPE_SIZE + // keyOffset
-                FileAllocator::PTR_TYPE_SIZE + // valueOffset
-                FileAllocator::PTR_TYPE_SIZE;  // rightOffset
+                FileAllocator::PTR_TYPE_SIZE; // rightOffset
             return
                 UI32_SIZE + // magic
                 UI32_SIZE + // count
                 FileAllocator::PTR_TYPE_SIZE + // leftOffset
+                FileAllocator::PTR_TYPE_SIZE + // keyValueOffset
                 entriesPerNode * ENTRY_SIZE;   // entries
         }
 
@@ -222,13 +222,13 @@ namespace thekogans {
                     buffer >> count;
                     if (count > 0) {
                         FileAllocator::PtrType leftOffset;
-                        buffer >> leftOffset;
+                        FileAllocator::PtrType keyValueOffset;
+                        buffer >> leftOffset >> keyValueOffset;
+                        fileAllocator.Free (keyValueOffset);
                         FreeSubtree (fileAllocator, leftOffset);
                         for (ui32 i = 0; i < count; ++i) {
                             Entry entry;
                             buffer >> entry;
-                            fileAllocator.Free (entry.keyOffset);
-                            fileAllocator.Free (entry.valueOffset);
                             FreeSubtree (fileAllocator, entry.rightOffset);
                         }
                     }
@@ -323,7 +323,7 @@ namespace thekogans {
             index = 0;
             while (index < last) {
                 ui32 middle = (index + last) / 2;
-                i32 result = prefix.PrefixCompare (*GetKey (middle));
+                i32 result = prefix.PrefixCompare (*entries[middle].key);
                 if (result == 0) {
                     index = middle;
                     return true;
@@ -359,7 +359,7 @@ namespace thekogans {
             index = 0;
             while (index < last) {
                 ui32 middle = (index + last) / 2;
-                i32 result = key.Compare (*GetKey (middle));
+                i32 result = key.Compare (*entries[middle].key);
                 if (result == 0) {
                     index = middle;
                     return true;
@@ -381,7 +381,7 @@ namespace thekogans {
             if (Find (*entry.key, index)) {
                 assert (index < count);
                 if (it.IsFinished ()) {
-                    it.prefix.Reset (GetKey (index));
+                    it.prefix.Reset (entries[index].key);
                     it.node = Iterator::NodeIndex (this, index);
                     it.finished = false;
                 }
@@ -397,7 +397,7 @@ namespace thekogans {
             if (!IsFull ()) {
                 InsertEntry (entry, index);
                 if (it.IsFinished ()) {
-                    it.prefix.Reset (GetKey (index));
+                    it.prefix.Reset (entries[index].key);
                     it.node = Iterator::NodeIndex (this, index);
                     it.finished = false;
                 }
@@ -415,7 +415,7 @@ namespace thekogans {
                     if (index < splitIndex) {
                         InsertEntry (entry, index);
                         if (it.IsFinished ()) {
-                            it.prefix.Reset (GetKey (index));
+                            it.prefix.Reset (entries[index].key);
                             it.node = Iterator::NodeIndex (this, index);
                             it.finished = false;
                         }
@@ -423,7 +423,7 @@ namespace thekogans {
                     else {
                         right->InsertEntry (entry, index - splitIndex);
                         if (it.IsFinished ()) {
-                            it.prefix.Reset (GetKey (index - splitIndex));
+                            it.prefix.Reset (entries[index - splitIndex].key);
                             // -1 because we will be removing the 0'th entry below.
                             it.node = Iterator::NodeIndex (right, index - splitIndex - 1);
                             it.finished = false;
@@ -445,28 +445,22 @@ namespace thekogans {
             bool found = Find (key, index);
             Node *child = GetChild (found ? index + 1 : index);
             if (found) {
+                entries[index].key->Release ();
+                entries[index].value->Release ();
                 if (child != nullptr) {
                     Node *leaf = child;
                     while (leaf->leftOffset != 0) {
                         leaf = leaf->GetChild (0);
                     }
-                    entries[index].keyOffset = leaf->entries[0].keyOffset;
                     entries[index].key = leaf->entries[0].key;
-                    entries[index].valueOffset = leaf->entries[0].valueOffset;
                     entries[index].value = leaf->entries[0].value;
                     SetDirty (true);
-                    child->Remove (*leaf->GetKey (0));
+                    child->Remove (*leaf->entries[0].key);
                     if (child->IsPoor ()) {
                         RestoreBalance (index);
                     }
                 }
                 else {
-                    if (entries[index].key != nullptr) {
-                        entries[index].key->Release ();
-                    }
-                    if (entries[index].value != nullptr) {
-                        entries[index].value->Release ();
-                    }
                     RemoveEntry (index);
                 }
                 return true;
@@ -603,8 +597,8 @@ namespace thekogans {
             if (count > 0) {
                 std::cout << offset << ": " << leftOffset;
                 for (ui32 i = 0; i < count; ++i) {
-                    std::cout << " ; [" << GetKey (i)->ToString () << ", " <<
-                        GetValue (i)->ToString () << "] ; " << entries[i].rightOffset;
+                    std::cout << " ; [" << entries[i].key->ToString () << ", " <<
+                        entries[i].value->ToString () << "] ; " << entries[i].rightOffset;
                 }
                 std::cout << "\n";
                 for (ui32 i = 0; i < count; ++i) {
@@ -631,28 +625,105 @@ namespace thekogans {
 
         void BTree::Node::Flush () {
             assert (IsDirty ());
-            assert (GetOffset () != 0);
-            FileAllocator::BlockBuffer buffer (*fileAllocator, GetOffset ());
+            assert (offset != 0);
+            FileAllocator::BlockBuffer buffer (*fileAllocator, offset);
             buffer << MAGIC32 << count;
             if (count > 0) {
+                // Calculate key/value sizes.
+                Array<std::pair<SizeT, SizeT>> keyValueSizes (count);
+                std::size_t totalKeyValueSize = 0;
+                for (ui32 i = 0; i < count; ++i) {
+                    std::pair<SizeT, SizeT> keyValueSize (
+                        entries[i].key->Size (), entries[i].value->Size ());
+                    keyValueSizes[i] = keyValueSize;
+                    totalKeyValueSize +=
+                        // key version + key size + key bytes
+                        UI16_SIZE + keyValueSize.first.Size () + keyValueSize.first;
+                    if (!btree.header.valueType.empty ()) {
+                        totalKeyValueSize +=
+                            // value version + value size + value bytes
+                            UI16_SIZE + keyValueSize.second.Size () + keyValueSize.second;
+                    }
+                    else {
+                        // It would be nice to just write:
+                        // totalKeyValueSize += entries[i].value->GetSize ();
+                        // and be done with it. But that would incure a penalty
+                        // of yet another call to Serializable::Size (). So we
+                        // simmulate what Serializable::GetSize would do and
+                        // construct a Serializable::Header from the pieces we
+                        // already have to take it's size. A bit of insider
+                        // trading and potentially dangerous if the Serializable::Header
+                        // would ever to change.
+                        totalKeyValueSize +=
+                            Serializable::Header (
+                                entries[i].value->Type (),
+                                entries[i].value->Version (),
+                                keyValueSize.second).Size () + keyValueSize.second;
+                    }
+                }
+                // Get existing block size.
+                ui64 blockSize = 0;
+                if (keyValueOffset != 0) {
+                    FileAllocator::Block block (*fileAllocator, keyValueOffset);
+                    block.Read ();
+                    blockSize = block.GetSize ();
+                }
+                // If existing block size is less than what we need,
+                // resize it.
+                if (blockSize < totalKeyValueSize) {
+                    // First, free the old block.
+                    if (keyValueOffset != 0) {
+                        fileAllocator->Free (keyValueOffset);
+                    }
+                    keyValueOffset = fileAllocator->Alloc (totalKeyValueSize);
+                }
+                // This is a very important if statement for it
+                // stamps the in memory cache on to onfile
+                // store. In effect marking the new checkpoint.
                 if (leftNode != nullptr) {
                     leftOffset = leftNode->GetOffset ();
                 }
-                buffer << leftOffset;
+                buffer << leftOffset << keyValueOffset;
+                FileAllocator::BlockBuffer keyValueBuffer (*fileAllocator, keyValueOffset);
                 for (ui32 i = 0; i < count; ++i) {
-                    if (entries[i].key != nullptr) {
-                        entries[i].keyOffset = entries[i].key->GetOffset ();
-                    }
-                    if (entries[i].value) {
-                        entries[i].valueOffset = entries[i].value->GetOffset ();
-                    }
                     if (entries[i].rightNode != nullptr) {
-                        entries[i].rightOffset = entries[i].rightNode->GetOffset ();
+                        entries[i].rightOffset = entries[i].rightNode->GetOffset ();;
                     }
                     buffer << entries[i];
+                    keyValueBuffer <<
+                        entries[i].key->Version () <<
+                        SizeT (keyValueSizes[i].first);
+                    entries[i].key->Write (keyValueBuffer);
+                    if (!btree.header.valueType.empty ()) {
+                        keyValueBuffer <<
+                            entries[i].value->Version () <<
+                            SizeT (keyValueSizes[i].second);
+                    }
+                    else {
+                        // See comment above totalKeyValueSize +=
+                        keyValueBuffer <<
+                            Serializable::Header (
+                                entries[i].value->Type (),
+                                entries[i].value->Version (),
+                                keyValueSizes[i].second);
+                    }
+                    entries[i].value->Write (keyValueBuffer);
                 }
+                if (fileAllocator->IsSecure ()) {
+                    // Zero out the unused portion of the keyValueBuffer to
+                    // prevent leaking sensitive data.
+                    keyValueBuffer.AdvanceWriteOffset (
+                        SecureZeroMemory (
+                            keyValueBuffer.GetWritePtr (),
+                            keyValueBuffer.GetDataAvailableForWriting ()));
+                }
+                keyValueBuffer.BlockWrite ();
+            }
+            else if (keyValueOffset != 0) {
+                fileAllocator->Free (keyValueOffset);
             }
             if (fileAllocator->IsSecure ()) {
+                // See comment above keyValueBuffer.
                 buffer.AdvanceWriteOffset (
                     SecureZeroMemory (
                         buffer.GetWritePtr (),
@@ -675,14 +746,10 @@ namespace thekogans {
                     leftNode = nullptr;
                 }
                 for (ui32 i = 0; i < count; ++i) {
-                    if (entries[i].key != nullptr) {
-                        entries[i].key->Release ();
-                        entries[i].key = nullptr;
-                    }
-                    if (entries[i].value != nullptr) {
-                        entries[i].value->Release ();
-                        entries[i].value = nullptr;
-                    }
+                    entries[i].key->Release ();
+                    entries[i].key = nullptr;
+                    entries[i].value->Release ();
+                    entries[i].value = nullptr;
                     if (entries[i].rightNode != nullptr) {
                         entries[i].rightNode->Release ();
                         entries[i].rightNode = nullptr;
@@ -700,9 +767,39 @@ namespace thekogans {
             if (magic == MAGIC32) {
                 buffer >> count;
                 if (count > 0) {
-                    buffer >> leftOffset;
+                    buffer >> leftOffset >> keyValueOffset;
+                    FileAllocator::BlockBuffer keyValueBuffer (*fileAllocator, keyValueOffset);
+                    keyValueBuffer.BlockRead ();
+                    Serializable::Header keyHeader (btree.header.keyType, 0, 0);
+                    Serializable::Header valueHeader (btree.header.valueType, 0, 0);
                     for (ui32 i = 0; i < count; ++i) {
                         buffer >> entries[i];
+                        {
+                            keyValueBuffer >> keyHeader.version >> keyHeader.size;
+                            entries[i].key = (Key *)btree.keyFactory (nullptr).Release ();
+                            entries[i].key->Read (keyHeader, keyValueBuffer);
+                            entries[i].key->Init ();
+                        }
+                        if (!valueHeader.type.empty ()) {
+                            keyValueBuffer >> valueHeader.version >> valueHeader.size;
+                            entries[i].value = (Value *)btree.valueFactory (nullptr).Release ();
+                            entries[i].value->Read (valueHeader, keyValueBuffer);
+                            entries[i].value->Init ();
+                        }
+                        else {
+                            Value::SharedPtr value;
+                            keyValueBuffer >> value;
+                            if (value != nullptr) {
+                                entries[i].value = value.Release ();
+                            }
+                            else {
+                                THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
+                                    "Unable to read value from BTree::Node @"
+                                    THEKOGANS_UTIL_UI64_FORMAT " @ entry %u",
+                                    offset,
+                                    i);
+                            }
+                        }
                     }
                 }
             }
@@ -756,7 +853,7 @@ namespace thekogans {
                 for (Node *node = rootNode; node != nullptr;
                         node = node->GetChild (index)) {
                     if (node->Find (key, index)) {
-                        it.prefix.Reset (node->GetKey (index));
+                        it.prefix.Reset (node->entries[index].key);
                         it.node = Iterator::NodeIndex (node, index);
                         it.finished = false;
                         break;
@@ -790,7 +887,7 @@ namespace thekogans {
                     node->InsertEntry (entry, 0);
                     rootNode = node;
                     if (it.IsFinished ()) {
-                        it.prefix.Reset (node->GetKey (0));
+                        it.prefix.Reset (node->entries[0].key);
                         it.node = Iterator::NodeIndex (node, 0);
                         it.finished = false;
                     }
