@@ -46,7 +46,7 @@ namespace thekogans {
         struct _LIB_THEKOGANS_UTIL_DECL BTree : public FileAllocator::Object {
             /// \brief
             /// Declare \see{RefCounted} pointers.
-            THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (BTree)
+            THEKOGANS_UTIL_DECLARE_SERIALIZABLE (BTree)
 
             /// \struct BTree::Key BTree.h thekogans/util/BTree.h
             ///
@@ -91,6 +91,7 @@ namespace thekogans {
                 /// 2. Returning a reference negates the need for object copying.
                 virtual const std::string &ToString () const = 0;
 
+            private:
                 // Serializable
                 /// \brief
                 /// Read the Serializable from an XML DOM.
@@ -284,10 +285,6 @@ namespace thekogans {
                 }
 
                 /// \brief
-                /// Clear the internal state and reset the iterator.
-                void Clear ();
-
-                /// \brief
                 /// Step to the next entry in the range.
                 /// \return true == Iterator is now pointing at the next entry.
                 /// Use GetKey and GetValue to examine it's contents. false ==
@@ -306,6 +303,18 @@ namespace thekogans {
                 /// If we're not finished, set the value associated with the current entry.
                 /// \param[in] value New \see{Value} to associate with the current entry.
                 void SetValue (Value::SharedPtr value);
+
+            private:
+                /// \brief
+                /// Clear the internal state and reset the iterator.
+                void Clear ();
+                /// \brief
+                /// Reset the iterator to the given \see{Node::Entry}.
+                /// \param[in] node_ \see{Node}.
+                /// \param[in] index Node entry index.
+                void Reset (
+                    Node *node_,
+                    ui32 index);
 
                 /// \brief
                 /// BTree is the only one trusted to access sensitive protected data.
@@ -376,7 +385,7 @@ namespace thekogans {
             struct Node : public FileAllocator::Object {
                 /// \brief
                 /// Declare \see{RefCounted} pointers.
-                THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (Node)
+                THEKOGANS_UTIL_DECLARE_SERIALIZABLE (Node)
 
                 /// \brief
                 /// BTree to which this node belongs.
@@ -467,6 +476,9 @@ namespace thekogans {
                     FileAllocator &fileAllocator,
                     FileAllocator::PtrType offset);
 
+                void SetValue (
+                    ui32 index,
+                    Value::SharedPtr value);
                 /// \brief
                 /// Return the left child of an entry at the given index.
                 /// NOTE: If you need the very last (rightNode) child, call
@@ -638,45 +650,40 @@ namespace thekogans {
                 void Dump ();
 
             protected:
+                // FileAllocator::Object
                 /// \brief
                 /// Node is fixed size.
                 /// \return true.
                 virtual bool IsFixedSize () const override {
                     return true;
                 }
+
+                // BufferedFile::TransactionParticipant
+                /// \brief
+                /// .
+                virtual void Reset () override;
+
+                // Serializable
                 /// \brief
                 /// Return the node size.
                 /// \return Node size.
                 virtual std::size_t Size () const override {
                     return FileSize (btree.header.entriesPerNode);
                 }
-
-                // BufferedFile::TransactionParticipant
                 /// \brief
-                /// .
-                virtual void Free () override;
+                /// Read the key from the given serializer.
+                /// \param[in] header \see{Serializable::Header}.
+                /// \param[in] serializer \see{Serializer} to read the key from.
+                virtual void Read (
+                    const Header & /*header*/,
+                    Serializer &serializer) override;
                 /// \brief
-                /// Flush changes to file.
-                virtual void Flush () override;
-                /// \brief
-                /// Reload from file.
-                virtual void Reload () override;
-                /// \brief
-                /// .
-                virtual void Reset () override;
+                /// Write the key to the given serializer.
+                /// \param[out] serializer \see{Serializer} to write the key to.
+                virtual void Write (Serializer &serializer) const override;
 
                 // RefCounted
-                virtual void Harakiri () override {
-                    this->~Node ();
-                    btree.nodeAllocator->Free (
-                        this, Size (btree.header.entriesPerNode));
-                }
-
-            private:
-                /// \brief
-                /// Common logic used by ctor and Reload.
-                void Load ();
-
+                virtual void Harakiri () override;
             } *rootNode;
             /// \brief
             /// An instance of \see{BlockAllocator} to allocate \see{Node}s.
@@ -784,30 +791,32 @@ namespace thekogans {
             virtual bool IsFixedSize () const override {
                 return true;
             }
-            /// \brief
-            /// Return the \see{Header} size.
-            /// \return \see{Header} size.
-            virtual std::size_t Size () const override {
-                return header.Size ();
-            }
 
             // BufferedFile::TransactionParticipant
             /// \brief
             /// .
             virtual void Free () override;
             /// \brief
-            /// Flush changes to file.
-            virtual void Flush () override;
-            /// \brief
-            /// Reload from file.
-            virtual void Reload () override;
-            /// \brief
             /// .
             virtual void Reset () override;
 
             /// \brief
-            /// Common code used in ctor and Reload.
-            void Load ();
+            /// Return the \see{Header} size.
+            /// \return \see{Header} size.
+            virtual std::size_t Size () const override {
+                return header.Size ();
+            }
+            /// \brief
+            /// Read the key from the given serializer.
+            /// \param[in] header \see{Serializable::Header}.
+            /// \param[in] serializer \see{Serializer} to read the key from.
+            virtual void Read (
+                const Header & /*header*/,
+                Serializer &serializer) override;
+            /// \brief
+            /// Write the key to the given serializer.
+            /// \param[out] serializer \see{Serializer} to write the key to.
+            virtual void Write (Serializer &serializer) const override;
 
             /// \brief
             /// Needs access to private members.

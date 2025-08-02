@@ -152,9 +152,7 @@ namespace thekogans {
             if (value != nullptr) {
                 if (!finished) {
                     assert (node.first != nullptr && node.second < node.first->count);
-                    node.first->entries[node.second].value->Release ();
-                    node.first->entries[node.second].value = value.Release ();
-                    node.first->SetDirty (true);
+                    node.first->SetValue (node.second, value);
                 }
                 else {
                     THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
@@ -167,6 +165,17 @@ namespace thekogans {
             }
         }
 
+        void BTree::Iterator::Reset (
+                Key::SharedPtr prefix_,
+                Node *node_,
+                ui32 index) {
+            prefix = node_->entries[index].key;
+            node = NodeIndex (node_, index);
+            finished = false;
+        }
+
+        THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE (thekogans::util::BTree::Node, 1, BTree::Node::TYPE)
+
         BTree::Node::Node (
                 BTree &btree_,
                 FileAllocator::PtrType offset) :
@@ -177,9 +186,7 @@ namespace thekogans {
                 leftNode (nullptr),
                 keyValueOffset (0),
                 entries ((Entry *)(this + 1)) {
-            if (GetOffset () != 0) {
-                Load ();
-            }
+            Reload ();
         }
 
         BTree::Node::~Node () {
@@ -242,6 +249,16 @@ namespace thekogans {
                         offset);
                 }
             }
+        }
+
+        void BTree::Node::SetValue (
+                ui32 index,
+                Value::SharedPtr value) {
+            if (entries[index].value != nullptr) {
+                entries[index].value->Release ();
+            }
+            entries[index].value = value.Release ();
+            SetDirty (true);
         }
 
         BTree::Node *BTree::Node::GetChild (ui32 index) {
@@ -327,9 +344,7 @@ namespace thekogans {
             if (Find (*entry.key, index)) {
                 assert (index < count);
                 if (it.IsFinished ()) {
-                    it.prefix.Reset (entries[index].key);
-                    it.node = Iterator::NodeIndex (this, index);
-                    it.finished = false;
+                    it.Reset (this, index);
                 }
                 return Duplicate;
             }
@@ -343,9 +358,7 @@ namespace thekogans {
             if (!IsFull ()) {
                 InsertEntry (entry, index);
                 if (it.IsFinished ()) {
-                    it.prefix.Reset (entries[index].key);
-                    it.node = Iterator::NodeIndex (this, index);
-                    it.finished = false;
+                    it.Reset (this, index);
                 }
                 return Inserted;
             }
@@ -361,18 +374,15 @@ namespace thekogans {
                     if (index < splitIndex) {
                         InsertEntry (entry, index);
                         if (it.IsFinished ()) {
-                            it.prefix.Reset (entries[index].key);
-                            it.node = Iterator::NodeIndex (this, index);
-                            it.finished = false;
+                            it.Reset (this, index);
                         }
                     }
                     else {
                         right->InsertEntry (entry, index - splitIndex);
                         if (it.IsFinished ()) {
-                            it.prefix.Reset (entries[index - splitIndex].key);
+                            it.Reset (right, index - splitIndex);
                             // -1 because we will be removing the 0'th entry below.
-                            it.node = Iterator::NodeIndex (right, index - splitIndex - 1);
-                            it.finished = false;
+                            --it.node.second;
                         }
                     }
                     entry = right->entries[0];
@@ -391,6 +401,10 @@ namespace thekogans {
             bool found = Find (key, index);
             Node *child = GetChild (found ? index + 1 : index);
             if (found) {
+                // Release the key and the value. They will
+                // either be overwritten or removed below.
+                entries[index].key->Release ();
+                entries[index].value->Release ();
                 if (child != nullptr) {
                     Node *leaf = child;
                     while (leaf->leftOffset != 0) {
@@ -405,8 +419,6 @@ namespace thekogans {
                     }
                 }
                 else {
-                    entries[index].key->Release ();
-                    entries[index].value->Release ();
                     RemoveEntry (index);
                 }
                 return true;
@@ -494,6 +506,7 @@ namespace thekogans {
             left->Concatenate (right);
             RemoveEntry (index);
             right->Delete ();
+            right->Release ();
         }
 
         void BTree::Node::Split (Node *node) {
@@ -556,24 +569,77 @@ namespace thekogans {
             }
         }
 
-        void BTree::Node::Free () {
-            if (IsEmpty ()) {
-                GetFileAllocator ()->Free (GetOffset ());
-                Release ();
-            }
-            else {
-                THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                    "Logic error: trying to free a node with count > 0 @"
-                    THEKOGANS_UTIL_UI64_FORMAT,
-                    GetOffset ());
+        void BTree::Node::Reset () {
+            if (count > 0) {
+                if (leftNode != nullptr) {
+                    leftNode->Release ();
+                    leftNode = nullptr;
+                }
+                for (ui32 i = 0; i < count; ++i) {
+                    entries[i].key->Release ();
+                    entries[i].key = nullptr;
+                    entries[i].value->Release ();
+                    entries[i].value = nullptr;
+                    if (entries[i].rightNode != nullptr) {
+                        entries[i].rightNode->Release ();
+                        entries[i].rightNode = nullptr;
+                    }
+                }
+                count = 0;
             }
         }
 
-        void BTree::Node::Flush () {
-            assert (IsDirty ());
-            assert (offset != 0);
-            FileAllocator::BlockBuffer buffer (*fileAllocator, offset);
-            buffer << MAGIC32 << count;
+        void BTree::Node::Read (
+                const Header & /*header*/,
+                Serializer &serializer) {
+            ui32 magic;
+            serializer >> magic;
+            if (magic == MAGIC32) {
+                serializer >> count;
+                if (count > 0) {
+                    serializer >> leftOffset >> keyValueOffset;
+                    FileAllocator::BlockBuffer keyValueBuffer (*fileAllocator, keyValueOffset);
+                    keyValueBuffer.BlockRead ();
+                    Serializable::Header keyHeader (btree.header.keyType, 0, 0);
+                    Serializable::Header valueHeader (btree.header.valueType, 0, 0);
+                    for (ui32 i = 0; i < count; ++i) {
+                        serializer >> entries[i];
+                        {
+                            keyValueBuffer >> keyHeader.version >> keyHeader.size;
+                            entries[i].key = (Key *)btree.keyFactory (nullptr).Release ();
+                            entries[i].key->Read (keyHeader, keyValueBuffer);
+                        }
+                        if (!valueHeader.type.empty ()) {
+                            keyValueBuffer >> valueHeader.version >> valueHeader.size;
+                            entries[i].value = (Value *)btree.valueFactory (nullptr).Release ();
+                            entries[i].value->Read (valueHeader, keyValueBuffer);
+                        }
+                        else {
+                            Value::SharedPtr value;
+                            keyValueBuffer >> value;
+                            if (value != nullptr) {
+                                entries[i].value = value.Release ();
+                            }
+                            else {
+                                THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
+                                    "Unable to read value from BTree::Node @"
+                                    THEKOGANS_UTIL_UI64_FORMAT " @ entry %u",
+                                    offset,
+                                    i);
+                            }
+                        }
+                    }
+                }
+            }
+            else {
+                THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
+                    "Corrupt BTree::Node @" THEKOGANS_UTIL_UI64_FORMAT,
+                    offset);
+            }
+        }
+
+        void BTree::Node::Write (Serializer &serializer) const {
+            serializer << MAGIC32 << count;
             if (count > 0) {
                 // Calculate key/value sizes.
                 Array<std::pair<SizeT, SizeT>> keyValueSizes (count);
@@ -629,13 +695,13 @@ namespace thekogans {
                 if (leftNode != nullptr) {
                     leftOffset = leftNode->GetOffset ();
                 }
-                buffer << leftOffset << keyValueOffset;
+                serializer << leftOffset << keyValueOffset;
                 FileAllocator::BlockBuffer keyValueBuffer (*fileAllocator, keyValueOffset);
                 for (ui32 i = 0; i < count; ++i) {
                     if (entries[i].rightNode != nullptr) {
                         entries[i].rightOffset = entries[i].rightNode->GetOffset ();;
                     }
-                    buffer << entries[i];
+                    serializer << entries[i];
                     keyValueBuffer <<
                         entries[i].key->Version () <<
                         SizeT (keyValueSizes[i].first);
@@ -668,91 +734,14 @@ namespace thekogans {
             else if (keyValueOffset != 0) {
                 fileAllocator->Free (keyValueOffset);
             }
-            if (fileAllocator->IsSecure ()) {
-                // See comment above keyValueBuffer.
-                buffer.AdvanceWriteOffset (
-                    SecureZeroMemory (
-                        buffer.GetWritePtr (),
-                        buffer.GetDataAvailableForWriting ()));
-            }
-            buffer.BlockWrite ();
         }
 
-        void BTree::Node::Reload () {
-            Reset ();
-            if (GetOffset () != 0) {
-                Load ();
-            }
+        void BTree::Node::Harakiri () {
+            this->~Node ();
+            btree.nodeAllocator->Free (this, Size (btree.header.entriesPerNode));
         }
 
-        void BTree::Node::Reset () {
-            if (count > 0) {
-                if (leftNode != nullptr) {
-                    leftNode->Release ();
-                    leftNode = nullptr;
-                }
-                for (ui32 i = 0; i < count; ++i) {
-                    entries[i].key->Release ();
-                    entries[i].key = nullptr;
-                    entries[i].value->Release ();
-                    entries[i].value = nullptr;
-                    if (entries[i].rightNode != nullptr) {
-                        entries[i].rightNode->Release ();
-                        entries[i].rightNode = nullptr;
-                    }
-                }
-                count = 0;
-            }
-        }
-
-        void BTree::Node::Load () {
-            FileAllocator::BlockBuffer buffer (*fileAllocator, offset);
-            buffer.BlockRead ();
-            ui32 magic;
-            buffer >> magic;
-            if (magic == MAGIC32) {
-                buffer >> count;
-                if (count > 0) {
-                    buffer >> leftOffset >> keyValueOffset;
-                    FileAllocator::BlockBuffer keyValueBuffer (*fileAllocator, keyValueOffset);
-                    keyValueBuffer.BlockRead ();
-                    Serializable::Header keyHeader (btree.header.keyType, 0, 0);
-                    Serializable::Header valueHeader (btree.header.valueType, 0, 0);
-                    for (ui32 i = 0; i < count; ++i) {
-                        buffer >> entries[i];
-                        {
-                            keyValueBuffer >> keyHeader.version >> keyHeader.size;
-                            entries[i].key = (Key *)btree.keyFactory (nullptr).Release ();
-                            entries[i].key->Read (keyHeader, keyValueBuffer);
-                        }
-                        if (!valueHeader.type.empty ()) {
-                            keyValueBuffer >> valueHeader.version >> valueHeader.size;
-                            entries[i].value = (Value *)btree.valueFactory (nullptr).Release ();
-                            entries[i].value->Read (valueHeader, keyValueBuffer);
-                        }
-                        else {
-                            Value::SharedPtr value;
-                            keyValueBuffer >> value;
-                            if (value != nullptr) {
-                                entries[i].value = value.Release ();
-                            }
-                            else {
-                                THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                                    "Unable to read value from BTree::Node @"
-                                    THEKOGANS_UTIL_UI64_FORMAT " @ entry %u",
-                                    offset,
-                                    i);
-                            }
-                        }
-                    }
-                }
-            }
-            else {
-                THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                    "Corrupt BTree::Node @" THEKOGANS_UTIL_UI64_FORMAT,
-                    offset);
-            }
-        }
+        THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE (thekogans::util::BTree, 1, BTree::TYPE)
 
         BTree::BTree (
                 FileAllocator::SharedPtr fileAllocator,
@@ -772,16 +761,14 @@ namespace thekogans {
                         nodesPerPage,
                         allocator)),
                 rootNode (Node::Alloc (*this, header.rootOffset)) {
-            if (GetOffset () != 0) {
-                Load ();
-            }
-            else if (!Key::IsType (header.keyType.c_str ()) ||
+            if (!Key::IsType (header.keyType.c_str ()) ||
                     (!header.valueType.empty () &&
                         !Value::IsType (header.valueType.c_str ()))) {
                 THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
                     "key (%s) / value (%s) types are not valid.",
                     keyType.c_str (), valueType.c_str ());
             }
+            Reload ();
         }
 
         BTree::~BTree () {
@@ -797,9 +784,7 @@ namespace thekogans {
                 for (Node *node = rootNode; node != nullptr;
                         node = node->GetChild (index)) {
                     if (node->Find (key, index)) {
-                        it.prefix.Reset (node->entries[index].key);
-                        it.node = Iterator::NodeIndex (node, index);
-                        it.finished = false;
+                        it.Reset (node, index);
                         break;
                     }
                 }
@@ -831,9 +816,7 @@ namespace thekogans {
                     node->InsertEntry (entry, 0);
                     rootNode = node;
                     if (it.IsFinished ()) {
-                        it.prefix.Reset (node->entries[0].key);
-                        it.node = Iterator::NodeIndex (node, 0);
-                        it.finished = false;
+                        it.Reset (node, 0);
                     }
                     result = Node::Inserted;
                 }
@@ -863,6 +846,7 @@ namespace thekogans {
                         Node *node = rootNode;
                         rootNode = rootNode->GetChild (0);
                         node->Delete ();
+                        node->Release ();
                     }
                     if (!IsDirty () &&
                             (header.rootOffset == 0 ||
@@ -942,36 +926,20 @@ namespace thekogans {
             }
         }
 
-        void BTree::Flush () {
-            header.rootOffset = rootNode->GetOffset ();
-            FileAllocator::BlockBuffer buffer (*fileAllocator, GetOffset ());
-            buffer << MAGIC32 << header;
-            buffer.BlockWrite ();
-        }
-
-        void BTree::Reload () {
-            if (GetOffset () != 0) {
-                Load ();
-            }
-            else {
-                Reset ();
-            }
-        }
-
         void BTree::Reset () {
             header.rootOffset = 0;
             rootNode->Release ();
             rootNode = Node::Alloc (*this, header.rootOffset);
         }
 
-        void BTree::Load () {
-            FileAllocator::BlockBuffer buffer (*fileAllocator, GetOffset ());
-            buffer.BlockRead ();
+        void BTree::Read (
+                const Header & /*header*/,
+                Serializer &serializer) {
             ui32 magic;
-            buffer >> magic;
+            serializer >> magic;
             if (magic == MAGIC32) {
                 Header header_;
-                buffer >> header_;
+                serializer >> header_;
                 if ((header.keyType.empty () || header.keyType == header_.keyType) &&
                         (header.valueType.empty () || header.valueType == header_.valueType)) {
                     header = header_;
@@ -997,6 +965,11 @@ namespace thekogans {
                     nodeAllocator->GetBlocksPerPage (),
                     nodeAllocator->GetAllocator ()));
             rootNode = Node::Alloc (*this, header.rootOffset);
+        }
+
+        void BTree::Write (Serializer &serializer) const {
+            header.rootOffset = rootNode->GetOffset ();
+            serializer << MAGIC32 << header;
         }
 
     } // namespace util

@@ -57,7 +57,8 @@ namespace thekogans {
             /// Bit pattern for an invalid token.
             static const ui64 INVALID_TOKEN = NIDX64;
 
-            /// \struct RefCountedRegistry::Token RefCountedRegistry.h thekogans/util/RefCountedRegistry.h
+            /// \struct RefCountedRegistry::Token RefCountedRegistry.h
+            /// thekogans/util/RefCountedRegistry.h
             ///
             /// \brief
             /// Encapsulates the ui64 token consisting of {index, counter} pair. The

@@ -22,21 +22,29 @@
 namespace thekogans {
     namespace util {
 
+        FileAllocator::Object::SharedPtr FileAllocator::Object::Load (
+                FileAllocator &fileAllocator,
+                FileAllocator::PtrType offset) {
+            FileAllocator::BlockBuffer objectBuffer (fileAllocator, offset);
+            objectBuffer.BlockRead ();
+            SharedPtr object;
+            objectBuffer >> object;
+            return object;
+        }
+
         void FileAllocator::Object::Alloc () {
             if (!IsFixedSize () || offset == 0) {
-                ui64 blockSize = 0;
-                if (offset != 0) {
-                    Block block (*fileAllocator, offset);
-                    block.Read ();
-                    blockSize = block.GetSize ();
-                }
-                std::size_t size = Size ();
-                if (blockSize < size) {
-                    FileAllocator::PtrType oldOffset = offset;
-                    offset = fileAllocator->Alloc (size);
-                    if (oldOffset != 0) {
-                        fileAllocator->Free (oldOffset);
+                FileAllocator::PtrType newOffset =
+                    fileAllocator->Realloc (offset, GetSize (), false);
+                if (offset != newOffset) {
+                    if (offset != 0) {
+                        Produce (
+                            std::bind (
+                                &ObjectEvents::OnFileAllocatorObjectFree,
+                                std::placeholders::_1,
+                                this));
                     }
+                    offset = newOffset;
                     Produce (
                         std::bind (
                             &ObjectEvents::OnFileAllocatorObjectAlloc,
@@ -55,6 +63,29 @@ namespace thekogans {
                         std::placeholders::_1,
                         this));
                 offset = 0;
+            }
+        }
+
+        void FileAllocator::Object::Flush () {
+            assert (IsDirty ());
+            assert (GetOffset () != 0);
+            FileAllocator::BlockBuffer buffer (*fileAllocator, GetOffset ());
+            buffer << *this;
+            if (fileAllocator->IsSecure ()) {
+                buffer.AdvanceWriteOffset (
+                    SecureZeroMemory (
+                        buffer.GetWritePtr (),
+                        buffer.GetDataAvailableForWriting ()));
+            }
+            buffer.BlockWrite ();
+        }
+
+        void FileAllocator::Object::Reload () {
+            Reset ();
+            if (GetOffset () != 0) {
+                FileAllocator::BlockBuffer buffer (*fileAllocator, GetOffset ());
+                buffer.BlockRead ();
+                buffer >> *this;
             }
         }
 
@@ -412,6 +443,52 @@ namespace thekogans {
                         offset);
                 }
             }
+        }
+
+        FileAllocator::PtrType FileAllocator::Realloc (
+                PtrType offset,
+                std::size_t newSize,
+                bool moveData) {
+            if (offset == 0) {
+                offset = Alloc (newSize);
+            }
+            else {
+                Block block (*this, offset);
+                block.Read ();
+                if (block.GetSize () < newSize) {
+                    FileAllocator::PtrType oldOffset = offset;
+                    offset = Alloc (newSize);
+                    if (moveData) {
+                        BlockBuffer oldBuffer (*this, offset);
+                        oldBuffer.BlockRead ();
+                        BlockBuffer newBuffer (*this, newOffset);
+                        newBuffer.AdvanceWriteOffset (
+                            oldBuffer.Write (
+                                newBuffer.GetWritePtr (),
+                                newBuffer.GetDataAvailableForWriting ()));
+                        if (IsSecure ()) {
+                            newBuffer.AdvanceWriteOffset (
+                                SecureZeroMemory (
+                                    newBuffer.GetWritePtr (),
+                                    newBuffer.GetDataAvailableForWriting ()));
+                        }
+                        newBuffer.BlockWrite ();
+                    }
+                    Free (oldOffset);
+                }
+                else if (block.GetSize () - newSize >= MIN_BLOCK_SIZE) {
+                    Block next (
+                        *this,
+                        offset + newSize + Block::SIZE,
+                        Block::FLAGS_FREE,
+                        block.GetSize () - newSize - Block::SIZE);
+                    next.Write ();
+                    btree->Insert (BTree::KeyType (next.GetSize (), next.GetOffset ()));
+                    block.SetSize (newSize);
+                    block.Write ();
+                }
+            }
+            return offset;
         }
 
         void FileAllocator::Flush () {

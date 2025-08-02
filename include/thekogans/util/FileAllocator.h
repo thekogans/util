@@ -129,10 +129,21 @@ namespace thekogans {
             /// from \see{FileAllocator} and participates in \see{BufferedFileEvents}.
             struct _LIB_THEKOGANS_UTIL_DECL Object :
                     public BufferedFile::TransactionParticipant,
+                    public Serializable,
                     public Producer<ObjectEvents> {
                 /// \brief
-                /// Declare \see{RefCounted} pointers.
-                THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (Object)
+                /// Object is a \see{util::DynamicCreatable} abstract base.
+                THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE_ABSTRACT_BASE (Object)
+
+            #if defined (THEKOGANS_UTIL_TYPE_Static)
+                /// \brief
+                /// Because Object uses dynamic initialization, when using
+                /// it in static builds call this method to have the Object
+                /// explicitly include all internal object types. Without
+                /// calling this api, the only objects that will be available
+                /// to your application are the ones you explicitly link to.
+                static void StaticInit ();
+            #endif // defined (THEKOGANS_UTIL_TYPE_Static)
 
             protected:
                 /// \brief
@@ -181,11 +192,6 @@ namespace thekogans {
                     return false;
                 }
 
-                /// \brief
-                /// Return the size of the object on disk.
-                /// \return Size of the object on disk.
-                virtual std::size_t Size () const = 0;
-
                 // BufferedFile::TransactionParticipant
                 /// \brief
                 /// If needed allocate space from \see{FileAllocator}.
@@ -196,6 +202,45 @@ namespace thekogans {
                 /// blocks you will need to implement this method and
                 /// properly free the containing blocks.
                 virtual void Free () override;
+                virtual void Flush () override;
+                virtual void Reload () override;
+
+            private:
+                // Serializable
+                /// \brief
+                /// Read the Serializable from an XML DOM.
+                /// \param[in] header \see{Serializable::Header}.
+                /// \param[in] node XML DOM representation of a Serializable.
+                virtual void ReadXML (
+                        const Header & /*header*/,
+                        const pugi::xml_node &node) override {
+                    // FIXME: implement?
+                    assert (0);
+                }
+                /// \brief
+                /// Write the Serializable to the XML DOM.
+                /// \param[out] node Parent node.
+                virtual void WriteXML (pugi::xml_node &node) const override {
+                    // FIXME: implement?
+                    assert (0);
+                }
+
+                /// \brief
+                /// Read the Serializable from an JSON DOM.
+                /// \param[in] node JSON DOM representation of a Serializable.
+                virtual void ReadJSON (
+                        const Header & /*header*/,
+                        const JSON::Object &object) override {
+                    // FIXME: implement?
+                    assert (0);
+                }
+                /// \brief
+                /// Write the Serializable to the JSON DOM.
+                /// \param[out] node Parent node.
+                virtual void WriteJSON (JSON::Object &object) const override {
+                    // FIXME: implement?
+                    assert (0);
+                }
 
                 /// \brief
                 /// Object is neither copy constructable, nor assignable.
@@ -819,6 +864,10 @@ namespace thekogans {
             /// Free a previously Alloc(ated) block.
             /// \param[in] offset Offset of block to free.
             void Free (PtrType offset);
+            PtrType Realloc (
+                PtrType offset,
+                std::size_t newSize,
+                bool moveData = true);
 
         protected:
             // BufferedFile::TransactionParticipant

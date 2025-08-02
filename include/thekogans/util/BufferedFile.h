@@ -249,10 +249,7 @@ namespace thekogans {
 
                 /// \brief
                 /// Delete the disk image and reset the internal state.
-                inline void Delete () {
-                    SetFlags (FLAGS_DELETED);
-                    Reset ();
-                }
+                void Delete ();
 
             protected:
                 // NOTE: The following API abstracts out the protocol called for in
@@ -290,6 +287,12 @@ namespace thekogans {
                     BufferedFile::SharedPtr /*file*/) noexcept override;
 
             private:
+                /// \brief
+                /// Set the deleted flag, preserving the state of the dirty flag.
+                /// \param[in] deleted true == deleted, false == alive.
+                inline void SetDeleted (bool deleted) {
+                    SetFlags ((IsDirty () ? FLAGS_DIRTY : 0) | (deleted ? FLAGS_DELETED : 0));
+                }
                 /// \brief
                 /// Set the flags.
                 /// \param[in] flags_ New flags value.

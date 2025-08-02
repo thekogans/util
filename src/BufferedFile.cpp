@@ -46,23 +46,35 @@ namespace thekogans {
             file->CommitTransaction ();
         }
 
+        void BufferedFile::TransactionParticipant::Delete () {
+            Reset ();
+            if (!IsDeleted ()) {
+                SetDeleted (true);
+                AddRef ();
+            }
+        }
+
         void BufferedFile::TransactionParticipant::OnBufferedFileTransactionCommit (
                 BufferedFile::SharedPtr /*file*/,
                 int phase) noexcept {
             THEKOGANS_UTIL_TRY {
                 if (phase == COMMIT_PHASE_1) {
+                    assert (IsDeleted () || IsDirty ());
                     if (IsDeleted ()) {
                         Free ();
                     }
                     if (IsDirty ()) {
                         Alloc ();
                     }
+                    if (IsDeleted ()) {
+                        SetDeleted (false);
+                        Release ();
+                    }
                 }
                 else if (phase == COMMIT_PHASE_2) {
-                    if (IsDirty ()) {
-                        Flush ();
-                    }
-                    SetFlags (0);
+                    assert (!IsDeleted () && IsDirty ());
+                    Flush ();
+                    SetDirty (false);
                 }
             }
             THEKOGANS_UTIL_CATCH_AND_LOG_SUBSYSTEM (THEKOGANS_UTIL)

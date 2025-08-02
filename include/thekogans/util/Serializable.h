@@ -47,7 +47,6 @@ namespace thekogans {
         /// extraction. Serializable has built in support for binary, XML and JSON
         /// serialization and de-serialization. (For a good real world example have a
         /// look at \see{crypto::Serializable} and it's derivatives.)
-
         struct _LIB_THEKOGANS_UTIL_DECL Serializable : public DynamicCreatable {
             /// \brief
             /// Serializable is a \see{util::DynamicCreatable} abstract base.
