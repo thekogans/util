@@ -437,44 +437,45 @@ namespace thekogans {
 
         FileAllocator::PtrType FileAllocator::Realloc (
                 PtrType offset,
-                std::size_t newSize,
+                std::size_t size,
                 bool moveData) {
             if (offset == 0) {
-                offset = Alloc (newSize);
+                offset = Alloc (size);
             }
             else {
                 Block block (*this, offset);
                 block.Read ();
-                if (block.GetSize () < newSize) {
+                if (block.GetSize () < size) {
                     FileAllocator::PtrType oldOffset = offset;
-                    offset = Alloc (newSize);
+                    offset = Alloc (size);
                     if (moveData) {
                         BlockBuffer oldBuffer (*this, oldOffset);
                         oldBuffer.BlockRead ();
-                        BlockBuffer newBuffer (*this, offset);
-                        newBuffer.AdvanceWriteOffset (
-                            oldBuffer.Write (
-                                newBuffer.GetWritePtr (),
-                                newBuffer.GetDataAvailableForWriting ()));
+                        BlockBuffer buffer (*this, offset);
+                        buffer.AdvanceWriteOffset (
+                            oldBuffer.Read (
+                                buffer.GetWritePtr (),
+                                buffer.GetDataAvailableForWriting ()));
                         if (IsSecure ()) {
-                            newBuffer.AdvanceWriteOffset (
+                            buffer.AdvanceWriteOffset (
                                 SecureZeroMemory (
-                                    newBuffer.GetWritePtr (),
-                                    newBuffer.GetDataAvailableForWriting ()));
+                                    buffer.GetWritePtr (),
+                                    buffer.GetDataAvailableForWriting ()));
                         }
-                        newBuffer.BlockWrite ();
+                        buffer.BlockWrite ();
                     }
                     Free (oldOffset);
                 }
-                else if (block.GetSize () - newSize >= MIN_BLOCK_SIZE) {
+                // If the new size leaves room for another block, split existing block.
+                else if (block.GetSize () - size >= MIN_BLOCK_SIZE) {
                     Block next (
                         *this,
-                        offset + newSize + Block::SIZE,
+                        offset + size + Block::SIZE,
                         Block::FLAGS_FREE,
-                        block.GetSize () - newSize - Block::SIZE);
+                        block.GetSize () - size - Block::SIZE);
                     next.Write ();
                     btree->Insert (BTree::KeyType (next.GetSize (), next.GetOffset ()));
-                    block.SetSize (newSize);
+                    block.SetSize (size);
                     block.Write ();
                 }
             }

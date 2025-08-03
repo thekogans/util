@@ -694,7 +694,7 @@ namespace thekogans {
                 FileAllocator::BlockBuffer keyValueBuffer (*fileAllocator, keyValueOffset);
                 for (ui32 i = 0; i < count; ++i) {
                     if (entries[i].rightNode != nullptr) {
-                        entries[i].rightOffset = entries[i].rightNode->GetOffset ();;
+                        entries[i].rightOffset = entries[i].rightNode->GetOffset ();
                     }
                     serializer << entries[i];
                     keyValueBuffer <<

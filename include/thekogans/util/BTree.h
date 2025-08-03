@@ -663,7 +663,7 @@ namespace thekogans {
                 /// .
                 virtual void Reset () override;
 
-                // Serializable
+                // FileAllocator::Object
                 /// \brief
                 /// Return the node size.
                 /// \return Node size.
