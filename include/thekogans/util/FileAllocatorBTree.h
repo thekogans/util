@@ -92,9 +92,6 @@ private:
         /// \brief
         /// Left most child node.
         Node *leftNode;
-        /// \brief
-        /// We accumulate all changes and update the file block in the dtor.
-        bool dirty;
         /// \struct BTree::Node::Entry BTree.h thekogans/util/BTree.h
         ///
         /// \brief

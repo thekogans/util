@@ -212,7 +212,6 @@ namespace thekogans {
                 /// \brief
                 /// ctor.
                 /// \param[in] file_ \see{BufferedFile} we're a transaction participant of.
-                /// \param[in] dirty_
                 TransactionParticipant (BufferedFile::SharedPtr file_) :
                     file (file_),
                     flags (0) {}
