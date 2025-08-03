@@ -166,15 +166,12 @@ namespace thekogans {
         }
 
         void BTree::Iterator::Reset (
-                Key::SharedPtr prefix_,
                 Node *node_,
                 ui32 index) {
             prefix = node_->entries[index].key;
             node = NodeIndex (node_, index);
             finished = false;
         }
-
-        THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE (thekogans::util::BTree::Node, 1, BTree::Node::TYPE)
 
         BTree::Node::Node (
                 BTree &btree_,
@@ -589,9 +586,7 @@ namespace thekogans {
             }
         }
 
-        void BTree::Node::Read (
-                const Header & /*header*/,
-                Serializer &serializer) {
+        void BTree::Node::Read (Serializer &serializer) {
             ui32 magic;
             serializer >> magic;
             if (magic == MAGIC32) {
@@ -638,7 +633,7 @@ namespace thekogans {
             }
         }
 
-        void BTree::Node::Write (Serializer &serializer) const {
+        void BTree::Node::Write (Serializer &serializer) {
             serializer << MAGIC32 << count;
             if (count > 0) {
                 // Calculate key/value sizes.
@@ -740,8 +735,6 @@ namespace thekogans {
             this->~Node ();
             btree.nodeAllocator->Free (this, Size (btree.header.entriesPerNode));
         }
-
-        THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE (thekogans::util::BTree, 1, BTree::TYPE)
 
         BTree::BTree (
                 FileAllocator::SharedPtr fileAllocator,
@@ -932,9 +925,7 @@ namespace thekogans {
             rootNode = Node::Alloc (*this, header.rootOffset);
         }
 
-        void BTree::Read (
-                const Header & /*header*/,
-                Serializer &serializer) {
+        void BTree::Read (Serializer &serializer) {
             ui32 magic;
             serializer >> magic;
             if (magic == MAGIC32) {
@@ -967,7 +958,7 @@ namespace thekogans {
             rootNode = Node::Alloc (*this, header.rootOffset);
         }
 
-        void BTree::Write (Serializer &serializer) const {
+        void BTree::Write (Serializer &serializer) {
             header.rootOffset = rootNode->GetOffset ();
             serializer << MAGIC32 << header;
         }

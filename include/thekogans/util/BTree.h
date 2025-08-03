@@ -46,7 +46,7 @@ namespace thekogans {
         struct _LIB_THEKOGANS_UTIL_DECL BTree : public FileAllocator::Object {
             /// \brief
             /// Declare \see{RefCounted} pointers.
-            THEKOGANS_UTIL_DECLARE_SERIALIZABLE (BTree)
+            THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (BTree)
 
             /// \struct BTree::Key BTree.h thekogans/util/BTree.h
             ///
@@ -385,7 +385,7 @@ namespace thekogans {
             struct Node : public FileAllocator::Object {
                 /// \brief
                 /// Declare \see{RefCounted} pointers.
-                THEKOGANS_UTIL_DECLARE_SERIALIZABLE (Node)
+                THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (Node)
 
                 /// \brief
                 /// BTree to which this node belongs.
@@ -667,20 +667,17 @@ namespace thekogans {
                 /// \brief
                 /// Return the node size.
                 /// \return Node size.
-                virtual std::size_t Size () const override {
+                virtual std::size_t Size () const noexcept override {
                     return FileSize (btree.header.entriesPerNode);
                 }
                 /// \brief
                 /// Read the key from the given serializer.
-                /// \param[in] header \see{Serializable::Header}.
                 /// \param[in] serializer \see{Serializer} to read the key from.
-                virtual void Read (
-                    const Header & /*header*/,
-                    Serializer &serializer) override;
+                virtual void Read (Serializer &serializer) override;
                 /// \brief
                 /// Write the key to the given serializer.
                 /// \param[out] serializer \see{Serializer} to write the key to.
-                virtual void Write (Serializer &serializer) const override;
+                virtual void Write (Serializer &serializer) override;
 
                 // RefCounted
                 virtual void Harakiri () override;
@@ -803,20 +800,17 @@ namespace thekogans {
             /// \brief
             /// Return the \see{Header} size.
             /// \return \see{Header} size.
-            virtual std::size_t Size () const override {
+            virtual std::size_t Size () const noexcept override {
                 return header.Size ();
             }
             /// \brief
             /// Read the key from the given serializer.
-            /// \param[in] header \see{Serializable::Header}.
             /// \param[in] serializer \see{Serializer} to read the key from.
-            virtual void Read (
-                const Header & /*header*/,
-                Serializer &serializer) override;
+            virtual void Read (Serializer &serializer) override;
             /// \brief
             /// Write the key to the given serializer.
             /// \param[out] serializer \see{Serializer} to write the key to.
-            virtual void Write (Serializer &serializer) const override;
+            virtual void Write (Serializer &serializer) override;
 
             /// \brief
             /// Needs access to private members.

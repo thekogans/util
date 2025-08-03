@@ -129,11 +129,10 @@ namespace thekogans {
             /// from \see{FileAllocator} and participates in \see{BufferedFileEvents}.
             struct _LIB_THEKOGANS_UTIL_DECL Object :
                     public BufferedFile::TransactionParticipant,
-                    public Serializable,
                     public Producer<ObjectEvents> {
                 /// \brief
                 /// Object is a \see{util::DynamicCreatable} abstract base.
-                THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE_ABSTRACT_BASE (Object)
+                THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (Object)
 
             #if defined (THEKOGANS_UTIL_TYPE_Static)
                 /// \brief
@@ -191,6 +190,19 @@ namespace thekogans {
                 virtual bool IsFixedSize () const {
                     return false;
                 }
+                /// \brief
+                /// Return the serializable binary size (not including the header).
+                /// \return Serializable binary size.
+                virtual std::size_t Size () const noexcept = 0;
+
+                /// \brief
+                /// Write the serializable from the given serializer.
+                /// \param[in] serializer Serializer to read the serializable from.
+                virtual void Read (Serializer & /*serializer*/) = 0;
+                /// \brief
+                /// Write the serializable to the given serializer.
+                /// \param[out] serializer Serializer to write the serializable to.
+                virtual void Write (Serializer & /*serializer*/) = 0;
 
                 // BufferedFile::TransactionParticipant
                 /// \brief
@@ -204,43 +216,6 @@ namespace thekogans {
                 virtual void Free () override;
                 virtual void Flush () override;
                 virtual void Reload () override;
-
-            private:
-                // Serializable
-                /// \brief
-                /// Read the Serializable from an XML DOM.
-                /// \param[in] header \see{Serializable::Header}.
-                /// \param[in] node XML DOM representation of a Serializable.
-                virtual void ReadXML (
-                        const Header & /*header*/,
-                        const pugi::xml_node &node) override {
-                    // FIXME: implement?
-                    assert (0);
-                }
-                /// \brief
-                /// Write the Serializable to the XML DOM.
-                /// \param[out] node Parent node.
-                virtual void WriteXML (pugi::xml_node &node) const override {
-                    // FIXME: implement?
-                    assert (0);
-                }
-
-                /// \brief
-                /// Read the Serializable from an JSON DOM.
-                /// \param[in] node JSON DOM representation of a Serializable.
-                virtual void ReadJSON (
-                        const Header & /*header*/,
-                        const JSON::Object &object) override {
-                    // FIXME: implement?
-                    assert (0);
-                }
-                /// \brief
-                /// Write the Serializable to the JSON DOM.
-                /// \param[out] node Parent node.
-                virtual void WriteJSON (JSON::Object &object) const override {
-                    // FIXME: implement?
-                    assert (0);
-                }
 
                 /// \brief
                 /// Object is neither copy constructable, nor assignable.

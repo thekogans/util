@@ -22,20 +22,10 @@
 namespace thekogans {
     namespace util {
 
-        FileAllocator::Object::SharedPtr FileAllocator::Object::Load (
-                FileAllocator &fileAllocator,
-                FileAllocator::PtrType offset) {
-            FileAllocator::BlockBuffer objectBuffer (fileAllocator, offset);
-            objectBuffer.BlockRead ();
-            SharedPtr object;
-            objectBuffer >> object;
-            return object;
-        }
-
         void FileAllocator::Object::Alloc () {
             if (!IsFixedSize () || offset == 0) {
                 FileAllocator::PtrType newOffset =
-                    fileAllocator->Realloc (offset, GetSize (), false);
+                    fileAllocator->Realloc (offset, Size (), false);
                 if (offset != newOffset) {
                     if (offset != 0) {
                         Produce (
@@ -70,7 +60,7 @@ namespace thekogans {
             assert (IsDirty ());
             assert (GetOffset () != 0);
             FileAllocator::BlockBuffer buffer (*fileAllocator, GetOffset ());
-            buffer << *this;
+            Write (buffer);
             if (fileAllocator->IsSecure ()) {
                 buffer.AdvanceWriteOffset (
                     SecureZeroMemory (
@@ -85,7 +75,7 @@ namespace thekogans {
             if (GetOffset () != 0) {
                 FileAllocator::BlockBuffer buffer (*fileAllocator, GetOffset ());
                 buffer.BlockRead ();
-                buffer >> *this;
+                Read (buffer);
             }
         }
 
@@ -461,7 +451,7 @@ namespace thekogans {
                     if (moveData) {
                         BlockBuffer oldBuffer (*this, offset);
                         oldBuffer.BlockRead ();
-                        BlockBuffer newBuffer (*this, newOffset);
+                        BlockBuffer newBuffer (*this, offset);
                         newBuffer.AdvanceWriteOffset (
                             oldBuffer.Write (
                                 newBuffer.GetWritePtr (),
