@@ -449,7 +449,7 @@ namespace thekogans {
                     FileAllocator::PtrType oldOffset = offset;
                     offset = Alloc (newSize);
                     if (moveData) {
-                        BlockBuffer oldBuffer (*this, offset);
+                        BlockBuffer oldBuffer (*this, oldOffset);
                         oldBuffer.BlockRead ();
                         BlockBuffer newBuffer (*this, offset);
                         newBuffer.AdvanceWriteOffset (

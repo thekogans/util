@@ -214,7 +214,11 @@ namespace thekogans {
                 /// blocks you will need to implement this method and
                 /// properly free the containing blocks.
                 virtual void Free () override;
+                /// \brief
+                /// Flush the internal cache to file.
                 virtual void Flush () override;
+                /// \brief
+                /// Reload the internal cache from file.
                 virtual void Reload () override;
 
                 /// \brief
