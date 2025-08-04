@@ -435,6 +435,9 @@ namespace thekogans {
                         value (value_),
                         rightOffset (0),
                         rightNode (nullptr) {}
+
+                    static const std::size_t SIZE =
+                        FileAllocator::PTR_TYPE_SIZE; // rightOffset;
                 };
                 /// \brief
                 /// Entry array. Allocated when the node is allocated.
@@ -451,11 +454,6 @@ namespace thekogans {
                 /// dtor.
                 virtual ~Node ();
 
-                /// \brief
-                /// Given the number of entries, return the node file size in bytes.
-                /// \param[in] entriesPerNode Entries per node.
-                /// \return Size of node on disk.
-                static std::size_t FileSize (std::size_t entriesPerNode);
                 /// \brief
                 /// Given the number of entries, return the node size in bytes.
                 /// \param[in] entriesPerNode Entries per node.
@@ -485,7 +483,7 @@ namespace thekogans {
                 /// GetChild (node->count). If you find yourself with an entry
                 /// index and you need its right child, call GetChild (index + 1).
                 /// \param[in] index Index of entry whose left child to retrieve
-                /// (0 == leftNode, !0 == entries[index-1].rightNode).
+                /// (0 == leftNode, !0 == entries[index - 1].rightNode).
                 /// \return Left child node at the given index. nullptr if no child
                 /// at that index exists.
                 Node *GetChild (ui32 index);
@@ -665,10 +663,15 @@ namespace thekogans {
 
                 // FileAllocator::Object
                 /// \brief
-                /// Return the node size.
+                /// Return the node size on disk.
                 /// \return Node size.
                 virtual std::size_t Size () const noexcept override {
-                    return FileSize (btree.header.entriesPerNode);
+                    return
+                        UI32_SIZE + // magic
+                        UI32_SIZE + // count
+                        FileAllocator::PTR_TYPE_SIZE + // leftOffset
+                        FileAllocator::PTR_TYPE_SIZE + // keyValueOffset
+                        btree.header.entriesPerNode * Entry::SIZE;   // entries
                 }
                 /// \brief
                 /// Read the key from the given serializer.

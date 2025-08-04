@@ -190,17 +190,6 @@ namespace thekogans {
             Reset ();
         }
 
-        std::size_t BTree::Node::FileSize (std::size_t entriesPerNode) {
-            const std::size_t ENTRY_SIZE =
-                FileAllocator::PTR_TYPE_SIZE; // rightOffset
-            return
-                UI32_SIZE + // magic
-                UI32_SIZE + // count
-                FileAllocator::PTR_TYPE_SIZE + // leftOffset
-                FileAllocator::PTR_TYPE_SIZE + // keyValueOffset
-                entriesPerNode * ENTRY_SIZE;   // entries
-        }
-
         std::size_t BTree::Node::Size (std::size_t entriesPerNode) {
             return sizeof (Node) + entriesPerNode * sizeof (Entry);
         }
