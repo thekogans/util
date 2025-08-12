@@ -49,6 +49,8 @@
 namespace thekogans {
     namespace util {
 
+        /// \brief
+        /// Forward declaration of \see{Serializer}.
         struct Serializer;
 
         /// \struct Exception Exception.h thekogans/util/Exception.h

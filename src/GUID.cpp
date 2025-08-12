@@ -23,6 +23,7 @@
 #include "thekogans/util/Constants.h"
 #include "thekogans/util/Exception.h"
 #include "thekogans/util/SecureAllocator.h"
+#include "thekogans/util/Serializer.h"
 #include "thekogans/util/GUID.h"
 
 namespace thekogans {
@@ -214,6 +215,32 @@ namespace thekogans {
                 md5.FromRandom (length, MD5::DIGEST_SIZE_128, digest);
             }
             return GUID (digest.data ());
+        }
+
+        _LIB_THEKOGANS_UTIL_DECL Serializer & _LIB_THEKOGANS_UTIL_API operator << (
+                Serializer &serializer,
+                const GUID &guid) {
+            if (serializer.Write (guid.data, GUID::SIZE) != GUID::SIZE) {
+                THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
+                    "Write (guid.data, "
+                    THEKOGANS_UTIL_SIZE_T_FORMAT ") != " THEKOGANS_UTIL_SIZE_T_FORMAT,
+                    GUID::SIZE,
+                    GUID::SIZE);
+            }
+            return serializer;
+        }
+
+        _LIB_THEKOGANS_UTIL_DECL Serializer & _LIB_THEKOGANS_UTIL_API operator >> (
+                Serializer &serializer,
+                GUID &guid) {
+            if (serializer.Read (guid.data, GUID::SIZE) != GUID::SIZE) {
+                THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
+                    "Read (guid.data, "
+                    THEKOGANS_UTIL_SIZE_T_FORMAT ") != " THEKOGANS_UTIL_SIZE_T_FORMAT,
+                    GUID::SIZE,
+                    GUID::SIZE);
+            }
+            return serializer;
         }
 
     } // namespace util

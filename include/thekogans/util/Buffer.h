@@ -462,7 +462,6 @@ namespace thekogans {
         /// Wraps a \see{SecureAllocator}. SecureBuffers are very useful
         /// in cryptographic contexts as well as times when you need to
         /// ensure buffer data stays away from prying eyes.
-
         struct _LIB_THEKOGANS_UTIL_DECL SecureBuffer : public Buffer {
             /// \brief
             /// SecureBuffer has a private heap to help with memory

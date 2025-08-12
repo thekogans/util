@@ -68,7 +68,7 @@ namespace thekogans {
             /// \param[in] header \see{Serializable::Header}.
             /// \param[in] serializer \see{Serializer} to read the value from.
             virtual void Read (
-                    const Header & /*header*/,
+                    const SerializableHeader & /*header*/,
                     Serializer &serializer) override {
                 serializer >> value;
             }
@@ -117,10 +117,10 @@ namespace thekogans {
 
             /// \brief
             /// Read the value from the given serializer.
-            /// \param[in] header \see{Serializable::Header}.
+            /// \param[in] header \see{SerializableHeader}.
             /// \param[in] serializer \see{Serializer} to read the value from.
             virtual void Read (
-                    const Header & /*header*/,
+                    const SerializableHeader & /*header*/,
                     Serializer &serializer) override {
                 serializer >> value;
             }
@@ -200,10 +200,10 @@ namespace thekogans {
 
             /// \brief
             /// Read the value from the given serializer.
-            /// \param[in] header \see{Serializable::Header}.
+            /// \param[in] header \see{SerializableHeader}.
             /// \param[in] serializer \see{Serializer} to read the value from.
             virtual void Read (
-                    const Header & /*header*/,
+                    const SerializableHeader & /*header*/,
                     Serializer &serializer) override {
                 serializer >> value;
             }

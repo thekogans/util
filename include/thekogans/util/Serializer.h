@@ -28,6 +28,7 @@
 #include "thekogans/util/ByteSwap.h"
 #include "thekogans/util/SizeT.h"
 #include "thekogans/util/DynamicCreatable.h"
+#include "thekogans/util/SerializableHeader.h"
 #include "thekogans/util/SecureAllocator.h"
 #include "thekogans/util/XMLUtils.h"
 
@@ -45,7 +46,7 @@ namespace thekogans {
         /// in memory byte order.
         ///
         /// PRO TIP: If you want your code to be endianess agnostic, use signature (magic)
-        /// bytes to deduce Serializer endianess. Ex:
+        /// bytes to deduce Serializer endianness. Ex:
         ///
         /// \code{.cpp}
         /// using namespace thekogans;
@@ -69,7 +70,6 @@ namespace thekogans {
         ///         path.c_str ());
         /// }
         /// \endcode
-
         struct _LIB_THEKOGANS_UTIL_DECL Serializer : public DynamicCreatable {
             /// \brief
             /// Serializer is a \see{util::DynamicCreatable} abstract base.
@@ -88,6 +88,13 @@ namespace thekogans {
             /// \brief
             /// Serializer endianness (LittleEndian or BigEndian).
             Endianness endianness;
+            /// \brief
+            /// Current governing \see{SerializableHeader} for
+            /// \see{Serializable} insertion/extraction.
+            SerializableHeader context;
+            /// \brief
+            /// Default \see{Serializable} factory.
+            DynamicCreatable::FactoryType factory;
 
             /// \brief
             /// ctor.

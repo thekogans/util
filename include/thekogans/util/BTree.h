@@ -88,45 +88,8 @@ namespace thekogans {
                 /// type is other than string you should convert it to
                 /// string in the ctor and use it as a return value. This
                 /// design has two advantages; 1. Conversion is done once and
-                /// 2. Returning a reference negates the need for object copying.
+                /// 2. Returning a const reference negates the need for object copying.
                 virtual const std::string &ToString () const = 0;
-
-            private:
-                // Serializable
-                /// \brief
-                /// Read the Serializable from an XML DOM.
-                /// \param[in] header \see{Serializable::Header}.
-                /// \param[in] node XML DOM representation of a Serializable.
-                virtual void ReadXML (
-                        const Header & /*header*/,
-                        const pugi::xml_node &node) override {
-                    // FIXME: implement?
-                    assert (0);
-                }
-                /// \brief
-                /// Write the Serializable to the XML DOM.
-                /// \param[out] node Parent node.
-                virtual void WriteXML (pugi::xml_node &node) const override {
-                    // FIXME: implement?
-                    assert (0);
-                }
-
-                /// \brief
-                /// Read the Serializable from an JSON DOM.
-                /// \param[in] node JSON DOM representation of a Serializable.
-                virtual void ReadJSON (
-                        const Header & /*header*/,
-                        const JSON::Object &object) override {
-                    // FIXME: implement?
-                    assert (0);
-                }
-                /// \brief
-                /// Write the Serializable to the JSON DOM.
-                /// \param[out] node Parent node.
-                virtual void WriteJSON (JSON::Object &object) const override {
-                    // FIXME: implement?
-                    assert (0);
-                }
             };
 
             /// \struct Value BTree.h thekogans/util/BTree.h
@@ -154,42 +117,6 @@ namespace thekogans {
                 /// This method is only used in Dump for debugging purposes.
                 /// \return String representation of the value.
                 virtual std::string ToString () const = 0;
-
-                // Serializable
-                /// \brief
-                /// Read the Serializable from an XML DOM.
-                /// \param[in] header \see{Serializable::Header}.
-                /// \param[in] node XML DOM representation of a Serializable.
-                virtual void ReadXML (
-                        const Header & /*header*/,
-                        const pugi::xml_node &node) override {
-                    // FIXME: implement?
-                    assert (0);
-                }
-                /// \brief
-                /// Write the Serializable to the XML DOM.
-                /// \param[out] node Parent node.
-                virtual void WriteXML (pugi::xml_node &node) const override {
-                    // FIXME: implement?
-                    assert (0);
-                }
-
-                /// \brief
-                /// Read the Serializable from an JSON DOM.
-                /// \param[in] node JSON DOM representation of a Serializable.
-                virtual void ReadJSON (
-                        const Header & /*header*/,
-                        const JSON::Object &object) override {
-                    // FIXME: implement?
-                    assert (0);
-                }
-                /// \brief
-                /// Write the Serializable to the JSON DOM.
-                /// \param[out] node Parent node.
-                virtual void WriteJSON (JSON::Object &object) const override {
-                    // FIXME: implement?
-                    assert (0);
-                }
             };
 
         protected:
@@ -287,8 +214,8 @@ namespace thekogans {
                 /// \brief
                 /// Step to the next entry in the range.
                 /// \return true == Iterator is now pointing at the next entry.
-                /// Use GetKey and GetValue to examine it's contents. false ==
-                /// the iterator is finished through the range.
+                /// Use GetKey and GetValue to examine it's contents.
+                /// false == the iterator is finished through the range.
                 bool Next ();
 
                 /// \brief
@@ -307,9 +234,11 @@ namespace thekogans {
             private:
                 /// \brief
                 /// Clear the internal state and reset the iterator.
+                /// Used by \see{BTree} to manage passed in iterators.
                 void Clear ();
                 /// \brief
                 /// Reset the iterator to the given \see{Node::Entry}.
+                /// Used by \see{BTree} to manage passed in iterators.
                 /// \param[in] node_ \see{Node}.
                 /// \param[in] index Node entry index.
                 void Reset (
@@ -398,7 +327,7 @@ namespace thekogans {
                 FileAllocator::PtrType leftOffset;
                 /// \brief
                 /// Left most child node.
-                Node *leftNode;
+                Node *left;
                 /// \brief
                 /// Key/value array offset.
                 FileAllocator::PtrType keyValueOffset;
@@ -418,7 +347,7 @@ namespace thekogans {
                     FileAllocator::PtrType rightOffset;
                     /// \brief
                     /// Right child node.
-                    Node *rightNode;
+                    Node *right;
 
                     /// \brief
                     /// ctor.
@@ -434,7 +363,7 @@ namespace thekogans {
                         key (key_),
                         value (value_),
                         rightOffset (0),
-                        rightNode (nullptr) {}
+                        right (nullptr) {}
 
                     static const std::size_t SIZE =
                         FileAllocator::PTR_TYPE_SIZE; // rightOffset;
@@ -479,11 +408,11 @@ namespace thekogans {
                     Value::SharedPtr value);
                 /// \brief
                 /// Return the left child of an entry at the given index.
-                /// NOTE: If you need the very last (rightNode) child, call
+                /// NOTE: If you need the very last (right) child, call
                 /// GetChild (node->count). If you find yourself with an entry
                 /// index and you need its right child, call GetChild (index + 1).
                 /// \param[in] index Index of entry whose left child to retrieve
-                /// (0 == leftNode, !0 == entries[index - 1].rightNode).
+                /// (0 == left, !0 == entries[index - 1].right).
                 /// \return Left child node at the given index. nullptr if no child
                 /// at that index exists.
                 Node *GetChild (ui32 index);
@@ -648,6 +577,15 @@ namespace thekogans {
                 void Dump ();
 
             protected:
+                // RefCounted
+                virtual void Harakiri () override;
+
+                // BufferedFile::TransactionParticipant
+                /// \brief
+                /// Compulsory implementation of \see{BufferedFile::TransactionParticipant::Reset}.
+                /// Every leaf class must have one.
+                virtual void Reset () override;
+
                 // FileAllocator::Object
                 /// \brief
                 /// Node is fixed size.
@@ -655,13 +593,6 @@ namespace thekogans {
                 virtual bool IsFixedSize () const override {
                     return true;
                 }
-
-                // BufferedFile::TransactionParticipant
-                /// \brief
-                /// .
-                virtual void Reset () override;
-
-                // FileAllocator::Object
                 /// \brief
                 /// Return the node size on disk.
                 /// \return Node size.
@@ -671,7 +602,7 @@ namespace thekogans {
                         UI32_SIZE + // count
                         FileAllocator::PTR_TYPE_SIZE + // leftOffset
                         FileAllocator::PTR_TYPE_SIZE + // keyValueOffset
-                        btree.header.entriesPerNode * Entry::SIZE;   // entries
+                        btree.header.entriesPerNode * Entry::SIZE; // entries
                 }
                 /// \brief
                 /// Read the key from the given serializer.
@@ -681,10 +612,7 @@ namespace thekogans {
                 /// Write the key to the given serializer.
                 /// \param[out] serializer \see{Serializer} to write the key to.
                 virtual void Write (Serializer &serializer) override;
-
-                // RefCounted
-                virtual void Harakiri () override;
-            } *rootNode;
+            } *root;
             /// \brief
             /// An instance of \see{BlockAllocator} to allocate \see{Node}s.
             BlockAllocator::SharedPtr nodeAllocator;
@@ -780,10 +708,18 @@ namespace thekogans {
             /// \brief
             /// Use for debugging. Dump the btree nodes to stdout.
             inline void Dump () {
-                rootNode->Dump ();
+                root->Dump ();
             }
 
         protected:
+            // BufferedFile::TransactionParticipant
+            /// \brief
+            /// We have a pointer to root we need to dispose of.
+            virtual void Free () override;
+            /// \brief
+            /// .
+            virtual void Reset () override;
+
             // FileAllocator::Object
             /// \brief
             /// \see{Header} is fixed size.
@@ -791,15 +727,6 @@ namespace thekogans {
             virtual bool IsFixedSize () const override {
                 return true;
             }
-
-            // BufferedFile::TransactionParticipant
-            /// \brief
-            /// .
-            virtual void Free () override;
-            /// \brief
-            /// .
-            virtual void Reset () override;
-
             /// \brief
             /// Return the \see{Header} size.
             /// \return \see{Header} size.

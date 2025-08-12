@@ -31,9 +31,6 @@ namespace thekogans {
 
         THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_ABSTRACT_BASE (thekogans::util::Serializable)
 
-        const char * const Serializable::Header::ATTR_TYPE = "Type";
-        const char * const Serializable::Header::ATTR_VERSION = "Version";
-
     #if defined (THEKOGANS_UTIL_TYPE_Static)
         void Serializable::StaticInit () {
             Directory::Entry::StaticInit ();
@@ -48,8 +45,23 @@ namespace thekogans {
         }
     #endif // defined (THEKOGANS_UTIL_TYPE_Static)
 
-        std::size_t Serializable::GetSize () const noexcept {
-            Header header (Type (), Version (), Size ());
+        SerializableHeader Serializable::GetHeader (
+                const SerializableHeader &context) const noexcept {
+            SerializableHeader header;
+            if (context.NeedType ()) {
+                header.type = Type ();
+            }
+            if (context.NeedVersion ()) {
+                header.version = Version ();
+            }
+            if (context.NeedSize ()) {
+                header.size = Size ();
+            }
+            return header;
+        }
+
+        std::size_t Serializable::GetSize (const SerializableHeader &context) const noexcept {
+            SerializableHeader header = GetHeader (context);
             return header.Size () + header.size;
         }
 
@@ -72,7 +84,7 @@ namespace thekogans {
         }
 
         void Blob::Read (
-                const Header &header_,
+                const SerializableHeader &header_,
                 Serializer &serializer) {
             header = header_;
             buffer.Resize (header.size);
@@ -90,7 +102,7 @@ namespace thekogans {
         }
 
         void Blob::ReadXML (
-                const Header &header_,
+                const SerializableHeader &header_,
                 const pugi::xml_node &node_) {
             header = header_;
             for (pugi::xml_attribute attribute = node_.first_attribute ();
@@ -115,7 +127,7 @@ namespace thekogans {
         }
 
         void Blob::ReadJSON (
-                const Header &header_,
+                const SerializableHeader &header_,
                 const JSON::Object &object_) {
             header = header_;
             object = object_;
@@ -125,10 +137,40 @@ namespace thekogans {
             object_ = object;
         }
 
+        _LIB_THEKOGANS_UTIL_DECL Serializer & _LIB_THEKOGANS_UTIL_API operator << (
+                Serializer &serializer,
+                const Serializable &serializable) {
+            serializer << serializable.GetHeader (serializer.context);
+            serializable.Write (serializer);
+            return serializer;
+        }
+
+        _LIB_THEKOGANS_UTIL_DECL pugi::xml_node & _LIB_THEKOGANS_UTIL_API operator << (
+                pugi::xml_node &node,
+                const Serializable &serializable) {
+            node <<
+                SerializableHeader (
+                    serializable.Type (),
+                    serializable.Version ());
+            serializable.WriteXML (node);
+            return node;
+        }
+
+        _LIB_THEKOGANS_UTIL_DECL JSON::Object & _LIB_THEKOGANS_UTIL_API operator << (
+                JSON::Object &object,
+                const Serializable &serializable) {
+            object <<
+                SerializableHeader (
+                    serializable.Type (),
+                    serializable.Version ());
+            serializable.WriteJSON (object);
+            return object;
+        }
+
         _LIB_THEKOGANS_UTIL_DECL Serializer & _LIB_THEKOGANS_UTIL_API operator >> (
                 Serializer &serializer,
                 Serializable &serializable) {
-            Serializable::Header header;
+            SerializableHeader header;
             serializer >> header;
             if (header.type == serializable.Type ()) {
                 serializable.Read (header, serializer);
@@ -146,7 +188,7 @@ namespace thekogans {
         _LIB_THEKOGANS_UTIL_DECL const pugi::xml_node & _LIB_THEKOGANS_UTIL_API operator >> (
                 const pugi::xml_node &node,
                 Serializable &serializable) {
-            Serializable::Header header;
+            SerializableHeader header;
             node >> header;
             if (header.type == serializable.Type ()) {
                 serializable.ReadXML (header, node);
@@ -164,7 +206,7 @@ namespace thekogans {
         _LIB_THEKOGANS_UTIL_DECL const JSON::Object & _LIB_THEKOGANS_UTIL_API operator >> (
                 const JSON::Object &object,
                 Serializable &serializable) {
-            Serializable::Header header;
+            SerializableHeader header;
             object >> header;
             if (header.type == serializable.Type ()) {
                 serializable.ReadJSON (header, object);
@@ -182,9 +224,11 @@ namespace thekogans {
         _LIB_THEKOGANS_UTIL_DECL Serializer & _LIB_THEKOGANS_UTIL_API operator >> (
                 Serializer &serializer,
                 Serializable::SharedPtr &serializable) {
-            Serializable::Header header;
+            SerializableHeader header;
             serializer >> header;
-            serializable = Serializable::CreateType (header.type.c_str ());
+            serializable = serializer.factory ?
+                serializer.factory (nullptr) :
+                Serializable::CreateType (header.type.c_str ());
             if (serializable != nullptr) {
                 serializable->Read (header, serializer);
                 serializable->Init ();
@@ -200,7 +244,7 @@ namespace thekogans {
         _LIB_THEKOGANS_UTIL_DECL const pugi::xml_node & _LIB_THEKOGANS_UTIL_API operator >> (
                 const pugi::xml_node &node,
                 Serializable::SharedPtr &serializable) {
-            Serializable::Header header;
+            SerializableHeader header;
             node >> header;
             serializable = Serializable::CreateType (header.type.c_str ());
             if (serializable != nullptr) {
@@ -218,7 +262,7 @@ namespace thekogans {
         _LIB_THEKOGANS_UTIL_DECL const JSON::Object & _LIB_THEKOGANS_UTIL_API operator >> (
                 const JSON::Object &object,
                 Serializable::SharedPtr &serializable) {
-            Serializable::Header header;
+            SerializableHeader header;
             object >> header;
             serializable = Serializable::CreateType (header.type.c_str ());
             if (serializable == nullptr) {
@@ -233,62 +277,14 @@ namespace thekogans {
             }
         }
 
-        void ValueParser<Serializable::Header>::Reset () {
-            magic = 0;
-            magicParser.Reset ();
-            typeParser.Reset ();
-            versionParser.Reset ();
-            sizeParser.Reset ();
-            state = STATE_MAGIC;
-        }
-
-        bool ValueParser<Serializable::Header>::ParseValue (Serializer &serializer) {
-            if (state == STATE_MAGIC) {
-                if (magicParser.ParseValue (serializer)) {
-                    if (magic == MAGIC32) {
-                        state = STATE_TYPE;
-                    }
-                    else {
-                        THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                            "Corrupt serializable header: %u.",
-                            magic);
-                    }
-                }
-            }
-            if (state == STATE_TYPE) {
-                if (typeParser.ParseValue (serializer)) {
-                    if (Serializable::IsType (value.type.c_str ())) {
-                        state = STATE_VERSION;
-                    }
-                    else {
-                        THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                            "Unknown serializable type: %s.",
-                            value.type.c_str ());
-                    }
-                }
-            }
-            if (state == STATE_VERSION) {
-                if (versionParser.ParseValue (serializer)) {
-                    state = STATE_SIZE;
-                }
-            }
-            if (state == STATE_SIZE) {
-                if (sizeParser.ParseValue (serializer)) {
-                    Reset ();
-                    return true;
-                }
-            }
-            return false;
-        }
-
-        void ValueParser<Serializable>::Reset () {
+        void ValueParser<Serializable>::Reset (Serializer &serializer) {
             payload.Resize (0);
-            headerParser.Reset ();
-            state = STATE_BIN_HEADER;
+            headerParser.Reset (serializer);
+            state = STATE_HEADER;
         }
 
         bool ValueParser<Serializable>::ParseValue (Serializer &serializer) {
-            if (state == STATE_BIN_HEADER) {
+            if (state == STATE_HEADER) {
                 if (headerParser.ParseValue (serializer)) {
                     if (header.type == value.Type ()) {
                         if (header.size > 0 && header.size <= maxSerializableSize) {
@@ -297,19 +293,19 @@ namespace thekogans {
                                 state = STATE_SERIALIZABLE;
                             }
                             THEKOGANS_UTIL_CATCH (Exception) {
-                                Reset ();
+                                Reset (serializer);
                                 THEKOGANS_UTIL_RETHROW_EXCEPTION (exception);
                             }
                         }
                         else {
-                            Reset ();
+                            Reset (serializer);
                             THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
                                 "Invalid serializable length: %u.",
                                 header.size);
                         }
                     }
                     else {
-                        Reset ();
+                        Reset (serializer);
                         THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
                             "Header type (%s) is not the same as Serializable type (%s).",
                             header.type.c_str (),
@@ -325,21 +321,21 @@ namespace thekogans {
                 if (payload.IsFull ()) {
                     value.Read (header, payload);
                     value.Init ();
-                    Reset ();
+                    Reset (serializer);
                     return true;
                 }
             }
             return false;
         }
 
-        void ValueParser<Serializable::SharedPtr>::Reset () {
+        void ValueParser<Serializable::SharedPtr>::Reset (Serializer &serializer) {
             payload.Resize (0);
-            headerParser.Reset ();
-            state = STATE_BIN_HEADER;
+            headerParser.Reset (serializer);
+            state = STATE_HEADER;
         }
 
         bool ValueParser<Serializable::SharedPtr>::ParseValue (Serializer &serializer) {
-            if (state == STATE_BIN_HEADER) {
+            if (state == STATE_HEADER) {
                 if (headerParser.ParseValue (serializer)) {
                     if (header.size > 0 && header.size <= maxSerializableSize) {
                         THEKOGANS_UTIL_TRY {
@@ -347,12 +343,12 @@ namespace thekogans {
                             state = STATE_SERIALIZABLE;
                         }
                         THEKOGANS_UTIL_CATCH (Exception) {
-                            Reset ();
+                            Reset (serializer);
                             THEKOGANS_UTIL_RETHROW_EXCEPTION (exception);
                         }
                     }
                     else {
-                        Reset ();
+                        Reset (serializer);
                         THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
                             "Invalid serializable length: %u.",
                             header.size);
@@ -369,11 +365,11 @@ namespace thekogans {
                     if (value != nullptr) {
                         value->Read (header, payload);
                         value->Init ();
-                        Reset ();
+                        Reset (serializer);
                         return true;
                     }
                     else {
-                        Reset ();
+                        Reset (serializer);
                         THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
                             "Unable to create s Serializable of type: %s.",
                             header.type.c_str ());

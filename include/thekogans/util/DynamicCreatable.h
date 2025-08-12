@@ -594,7 +594,7 @@ namespace thekogans {
 
             /// \brief
             /// Return the reference to the base map.
-            /// \return Reference to  the base map.
+            /// \return Reference to the base map.
             static BaseMapType &GetBases ();
 
             /// \brief

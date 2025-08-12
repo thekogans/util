@@ -18,15 +18,12 @@
 #include <cstdlib>
 #include <cmath>
 #include <sstream>
-#include "thekogans/util/Environment.h"
-#if defined (TOOLCHAIN_OS_Windows)
-    #include "thekogans/util/os/windows/WindowsUtils.h"
-#endif // defined (TOOLCHAIN_OS_Windows)
 #include "thekogans/util/Config.h"
-#include "thekogans/util/Variant.h"
 #include "thekogans/util/StringUtils.h"
 #include "thekogans/util/Hash.h"
 #include "thekogans/util/XMLUtils.h"
+#include "thekogans/util/Serializer.h"
+#include "thekogans/util/Variant.h"
 
 namespace thekogans {
     namespace util {
@@ -55,49 +52,49 @@ namespace thekogans {
         Variant::Variant (const Variant &variant) :
                 type (variant.type) {
             switch (variant.type) {
-                case Variant::TYPE_Invalid:
+                case TYPE_Invalid:
                     break;
-                case Variant::TYPE_bool:
+                case TYPE_bool:
                     value._bool = variant.value._bool;
                     break;
-                case Variant::TYPE_i8:
+                case TYPE_i8:
                     value._i8 = variant.value._i8;
                     break;
-                case Variant::TYPE_ui8:
+                case TYPE_ui8:
                     value._ui8 = variant.value._ui8;
                     break;
-                case Variant::TYPE_i16:
+                case TYPE_i16:
                     value._i16 = variant.value._i16;
                     break;
-                case Variant::TYPE_ui16:
+                case TYPE_ui16:
                     value._ui16 = variant.value._ui16;
                     break;
-                case Variant::TYPE_i32:
+                case TYPE_i32:
                     value._i32 = variant.value._i32;
                     break;
-                case Variant::TYPE_ui32:
+                case TYPE_ui32:
                     value._ui32 = variant.value._ui32;
                     break;
-                case Variant::TYPE_i64:
+                case TYPE_i64:
                     value._i64 = variant.value._i64;
                     break;
-                case Variant::TYPE_ui64:
+                case TYPE_ui64:
                     value._ui64 = variant.value._ui64;
                     break;
-                case Variant::TYPE_f32:
+                case TYPE_f32:
                     value._f32 = variant.value._f32;
                     break;
-                case Variant::TYPE_f64:
+                case TYPE_f64:
                     value._f64 = variant.value._f64;
                     break;
-                case Variant::TYPE_SizeT:
+                case TYPE_SizeT:
                     value._SizeT = new SizeT (*variant.value._SizeT);
                     break;
-                case Variant::TYPE_string: {
+                case TYPE_string: {
                     value._string = new std::string (*variant.value._string);
                     break;
                 }
-                case Variant::TYPE_GUID: {
+                case TYPE_GUID: {
                     value._guid = new GUID (*variant.value._guid);
                     break;
                 }
@@ -109,49 +106,49 @@ namespace thekogans {
                 Clear ();
                 type = variant.type;
                 switch (variant.type) {
-                    case Variant::TYPE_Invalid:
+                    case TYPE_Invalid:
                         break;
-                    case Variant::TYPE_bool:
+                    case TYPE_bool:
                         value._bool = variant.value._bool;
                         break;
-                    case Variant::TYPE_i8:
+                    case TYPE_i8:
                         value._i8 = variant.value._i8;
                         break;
-                    case Variant::TYPE_ui8:
+                    case TYPE_ui8:
                         value._ui8 = variant.value._ui8;
                         break;
-                    case Variant::TYPE_i16:
+                    case TYPE_i16:
                         value._i16 = variant.value._i16;
                         break;
-                    case Variant::TYPE_ui16:
+                    case TYPE_ui16:
                         value._ui16 = variant.value._ui16;
                         break;
-                    case Variant::TYPE_i32:
+                    case TYPE_i32:
                         value._i32 = variant.value._i32;
                         break;
-                    case Variant::TYPE_ui32:
+                    case TYPE_ui32:
                         value._ui32 = variant.value._ui32;
                         break;
-                    case Variant::TYPE_i64:
+                    case TYPE_i64:
                         value._i64 = variant.value._i64;
                         break;
-                    case Variant::TYPE_ui64:
+                    case TYPE_ui64:
                         value._ui64 = variant.value._ui64;
                         break;
-                    case Variant::TYPE_f32:
+                    case TYPE_f32:
                         value._f32 = variant.value._f32;
                         break;
-                    case Variant::TYPE_f64:
+                    case TYPE_f64:
                         value._f64 = variant.value._f64;
                         break;
-                    case Variant::TYPE_SizeT:
+                    case TYPE_SizeT:
                         value._SizeT = new SizeT (*variant.value._SizeT);
                         break;
-                    case Variant::TYPE_string: {
+                    case TYPE_string: {
                         value._string = new std::string (*variant.value._string);
                         break;
                     }
-                    case Variant::TYPE_GUID: {
+                    case TYPE_GUID: {
                         value._guid = new GUID (*variant.value._guid);
                         break;
                     }
@@ -199,51 +196,51 @@ namespace thekogans {
         std::size_t Variant::Size () const {
             std::size_t size = UI32_SIZE;
             switch (type) {
-                case Variant::TYPE_Invalid:
+                case TYPE_Invalid:
                     break;
-                case Variant::TYPE_bool:
+                case TYPE_bool:
                     size += UI8_SIZE;
                     break;
-                case Variant::TYPE_i8:
+                case TYPE_i8:
                     size += I8_SIZE;
                     break;
-                case Variant::TYPE_ui8:
+                case TYPE_ui8:
                     size += UI8_SIZE;
                     break;
-                case Variant::TYPE_i16:
+                case TYPE_i16:
                     size += I16_SIZE;
                     break;
-                case Variant::TYPE_ui16:
+                case TYPE_ui16:
                     size += UI16_SIZE;
                     break;
-                case Variant::TYPE_i32:
+                case TYPE_i32:
                     size += I32_SIZE;
                     break;
-                case Variant::TYPE_ui32:
+                case TYPE_ui32:
                     size += UI32_SIZE;
                     break;
-                case Variant::TYPE_i64:
+                case TYPE_i64:
                     size += I64_SIZE;
                     break;
-                case Variant::TYPE_ui64:
+                case TYPE_ui64:
                     size += UI64_SIZE;
                     break;
-                case Variant::TYPE_f32:
+                case TYPE_f32:
                     size += F32_SIZE;
                     break;
-                case Variant::TYPE_f64:
+                case TYPE_f64:
                     size += F64_SIZE;
                     break;
-                case Variant::TYPE_SizeT:
+                case TYPE_SizeT:
                     assert (value._SizeT != nullptr);
                     size += Serializer::Size (*value._SizeT);
                     break;
-                case Variant::TYPE_string: {
+                case TYPE_string: {
                     assert (value._string != nullptr);
                     size += Serializer::Size (*value._string);
                     break;
                 }
-                case Variant::TYPE_GUID: {
+                case TYPE_GUID: {
                     size += GUID::SIZE;
                     break;
                 }
@@ -270,48 +267,48 @@ namespace thekogans {
         int Variant::Compare (const Variant &variant) const {
             assert (type == variant.type);
             switch (type) {
-                case Variant::TYPE_Invalid:
+                case TYPE_Invalid:
                     return 0;
-                case Variant::TYPE_bool:
+                case TYPE_bool:
                     return !value._bool && variant.value._bool ?
                         -1 : value._bool && !variant.value._bool ? 1 : 0;
-                case Variant::TYPE_i8:
+                case TYPE_i8:
                     return value._i8 < variant.value._i8 ?
                         -1 : value._i8 > variant.value._i8 ? 1 : 0;
-                case Variant::TYPE_ui8:
+                case TYPE_ui8:
                     return value._ui8 < variant.value._ui8 ?
                         -1 : value._ui8 > variant.value._ui8 ? 1 : 0;
-                case Variant::TYPE_i16:
+                case TYPE_i16:
                     return value._i16 < variant.value._i16 ?
                         -1 : value._i16 > variant.value._i16 ? 1 : 0;
-                case Variant::TYPE_ui16:
+                case TYPE_ui16:
                     return value._ui16 < variant.value._ui16 ?
                         -1 : value._ui16 > variant.value._ui16 ? 1 : 0;
-                case Variant::TYPE_i32:
+                case TYPE_i32:
                     return value._i32 < variant.value._i32 ?
                         -1 : value._i32 > variant.value._i32 ? 1 : 0;
-                case Variant::TYPE_ui32:
+                case TYPE_ui32:
                     return value._ui32 < variant.value._ui32 ?
                         -1 : value._ui32 > variant.value._ui32 ? 1 : 0;
-                case Variant::TYPE_i64:
+                case TYPE_i64:
                     return value._i64 < variant.value._i64 ?
                         -1 : value._i64 > variant.value._i64 ? 1 : 0;
-                case Variant::TYPE_ui64:
+                case TYPE_ui64:
                     return value._ui64 < variant.value._ui64 ?
                         -1 : value._ui64 > variant.value._ui64 ? 1 : 0;
-                case Variant::TYPE_f32:
+                case TYPE_f32:
                     return value._f32 < variant.value._f32 ?
                         -1 : value._f32 > variant.value._f32 ? 1 : 0;
-                case Variant::TYPE_f64:
+                case TYPE_f64:
                     return value._f64 < variant.value._f64 ?
                         -1 : value._f64 > variant.value._f64 ? 1 : 0;
-                case Variant::TYPE_SizeT:
+                case TYPE_SizeT:
                     return *value._SizeT < *variant.value._SizeT ?
                         -1 : *value._SizeT > *variant.value._SizeT ? 1 : 0;
-                case Variant::TYPE_string:
+                case TYPE_string:
                     return StringCompareIgnoreCase (value._string->c_str (),
                         variant.value._string->c_str ());
-                case Variant::TYPE_GUID:
+                case TYPE_GUID:
                     return *value._guid < *variant.value._guid ?
                         -1 : *value._guid > *variant.value._guid ? 1 : 0;
             }
@@ -322,48 +319,48 @@ namespace thekogans {
         int Variant::PrefixCompare (const Variant &variant) const {
             assert (type == variant.type);
             switch (type) {
-                case Variant::TYPE_Invalid:
+                case TYPE_Invalid:
                     return 0;
-                case Variant::TYPE_bool:
+                case TYPE_bool:
                     return !value._bool && variant.value._bool ?
                         -1 : value._bool && !variant.value._bool ? 1 : 0;
-                case Variant::TYPE_i8:
+                case TYPE_i8:
                     return value._i8 < variant.value._i8 ?
                         -1 : value._i8 > variant.value._i8 ? 1 : 0;
-                case Variant::TYPE_ui8:
+                case TYPE_ui8:
                     return value._ui8 < variant.value._ui8 ?
                         -1 : value._ui8 > variant.value._ui8 ? 1 : 0;
-                case Variant::TYPE_i16:
+                case TYPE_i16:
                     return value._i16 < variant.value._i16 ?
                         -1 : value._i16 > variant.value._i16 ? 1 : 0;
-                case Variant::TYPE_ui16:
+                case TYPE_ui16:
                     return value._ui16 < variant.value._ui16 ?
                         -1 : value._ui16 > variant.value._ui16 ? 1 : 0;
-                case Variant::TYPE_i32:
+                case TYPE_i32:
                     return value._i32 < variant.value._i32 ?
                         -1 : value._i32 > variant.value._i32 ? 1 : 0;
-                case Variant::TYPE_ui32:
+                case TYPE_ui32:
                     return value._ui32 < variant.value._ui32 ?
                         -1 : value._ui32 > variant.value._ui32 ? 1 : 0;
-                case Variant::TYPE_i64:
+                case TYPE_i64:
                     return value._i64 < variant.value._i64 ?
                         -1 : value._i64 > variant.value._i64 ? 1 : 0;
-                case Variant::TYPE_ui64:
+                case TYPE_ui64:
                     return value._ui64 < variant.value._ui64 ?
                         -1 : value._ui64 > variant.value._ui64 ? 1 : 0;
-                case Variant::TYPE_f32:
+                case TYPE_f32:
                     return value._f32 < variant.value._f32 ?
                         -1 : value._f32 > variant.value._f32 ? 1 : 0;
-                case Variant::TYPE_f64:
+                case TYPE_f64:
                     return value._f64 < variant.value._f64 ?
                         -1 : value._f64 > variant.value._f64 ? 1 : 0;
-                case Variant::TYPE_SizeT:
+                case TYPE_SizeT:
                     return *value._SizeT < *variant.value._SizeT ?
                         -1 : *value._SizeT > *variant.value._SizeT ? 1 : 0;
-                case Variant::TYPE_string:
+                case TYPE_string:
                     return StringCompareIgnoreCase (value._string->c_str (),
                         variant.value._string->c_str (), value._string->size ());
-                case Variant::TYPE_GUID:
+                case TYPE_GUID:
                     return *value._guid < *variant.value._guid ?
                         -1 : *value._guid > *variant.value._guid ? 1 : 0;
             }
@@ -375,48 +372,48 @@ namespace thekogans {
             Clear ();
             type = stringToType (node.attribute (ATTR_TYPE).value ());
             switch (type) {
-                case Variant::TYPE_Invalid:
+                case TYPE_Invalid:
                     break;
-                case Variant::TYPE_bool:
+                case TYPE_bool:
                     value._bool = std::string (node.attribute (ATTR_VALUE).value ()) == XML_TRUE;
                     break;
-                case Variant::TYPE_i8:
+                case TYPE_i8:
                     value._i8 = stringToi8 (node.attribute (ATTR_VALUE).value ());
                     break;
-                case Variant::TYPE_ui8:
+                case TYPE_ui8:
                     value._ui8 = stringToui8 (node.attribute (ATTR_VALUE).value ());
                     break;
-                case Variant::TYPE_i16:
+                case TYPE_i16:
                     value._i16 = stringToi16 (node.attribute (ATTR_VALUE).value ());
                     break;
-                case Variant::TYPE_ui16:
+                case TYPE_ui16:
                     value._ui16 = stringToui16 (node.attribute (ATTR_VALUE).value ());
                     break;
-                case Variant::TYPE_i32:
+                case TYPE_i32:
                     value._i32 = stringToi32 (node.attribute (ATTR_VALUE).value ());
                     break;
-                case Variant::TYPE_ui32:
+                case TYPE_ui32:
                     value._ui32 = stringToui32 (node.attribute (ATTR_VALUE).value ());
                     break;
-                case Variant::TYPE_i64:
+                case TYPE_i64:
                     value._i64 = stringToi64 (node.attribute (ATTR_VALUE).value ());
                     break;
-                case Variant::TYPE_ui64:
+                case TYPE_ui64:
                     value._ui64 = stringToui64 (node.attribute (ATTR_VALUE).value ());
                     break;
-                case Variant::TYPE_f32:
+                case TYPE_f32:
                     value._f32 = stringTof32 (node.attribute (ATTR_VALUE).value ());
                     break;
-                case Variant::TYPE_f64:
+                case TYPE_f64:
                     value._f64 = stringTof64 (node.attribute (ATTR_VALUE).value ());
                     break;
-                case Variant::TYPE_SizeT:
+                case TYPE_SizeT:
                     value._SizeT = new SizeT (stringTosize_t (node.attribute (ATTR_VALUE).value ()));
                     break;
-                case Variant::TYPE_string:
+                case TYPE_string:
                     value._string = new std::string (node.attribute (ATTR_VALUE).value ());
                     break;
-                case Variant::TYPE_GUID:
+                case TYPE_GUID:
                     value._guid = new GUID (
                         GUID::FromHexString (node.attribute (ATTR_VALUE).value ()));
                     break;
@@ -429,48 +426,48 @@ namespace thekogans {
                 std::size_t indentationWidth) const {
             std::string str;
             switch (type) {
-                case Variant::TYPE_Invalid:
+                case TYPE_Invalid:
                     break;
-                case Variant::TYPE_bool:
+                case TYPE_bool:
                     str = value._bool ? XML_TRUE : XML_FALSE;
                     break;
-                case Variant::TYPE_i8:
+                case TYPE_i8:
                     str = i32Tostring (value._i8);
                     break;
-                case Variant::TYPE_ui8:
+                case TYPE_ui8:
                     str = ui32Tostring (value._ui8);
                     break;
-                case Variant::TYPE_i16:
+                case TYPE_i16:
                     str = i32Tostring (value._i16);
                     break;
-                case Variant::TYPE_ui16:
+                case TYPE_ui16:
                     str = ui32Tostring (value._ui16);
                     break;
-                case Variant::TYPE_i32:
+                case TYPE_i32:
                     str = i32Tostring (value._i32);
                     break;
-                case Variant::TYPE_ui32:
+                case TYPE_ui32:
                     str = ui32Tostring (value._ui32);
                     break;
-                case Variant::TYPE_i64:
+                case TYPE_i64:
                     str = i64Tostring (value._i64);
                     break;
-                case Variant::TYPE_ui64:
+                case TYPE_ui64:
                     str = ui64Tostring (value._ui64);
                     break;
-                case Variant::TYPE_f32:
+                case TYPE_f32:
                     str = f32Tostring (value._f32);
                     break;
-                case Variant::TYPE_f64:
+                case TYPE_f64:
                     str = f64Tostring (value._f64);
                     break;
-                case Variant::TYPE_SizeT:
+                case TYPE_SizeT:
                     str = size_tTostring (*value._SizeT);
                     break;
-                case Variant::TYPE_string:
+                case TYPE_string:
                     str = Encodestring (*value._string);
                     break;
-                case Variant::TYPE_GUID:
+                case TYPE_GUID:
                     str = value._guid->ToHexString ();
                     break;
             }

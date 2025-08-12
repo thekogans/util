@@ -91,7 +91,7 @@ namespace thekogans {
             /// \param[in] header \see{Serializable::Header}.
             /// \param[in] serializer \see{Serializer} to read the key from.
             virtual void Read (
-                    const Header & /*header*/,
+                    const SerializableHeader & /*header*/,
                     Serializer &serializer) override {
                 serializer >> key;
             }
@@ -165,10 +165,10 @@ namespace thekogans {
 
             /// \brief
             /// Read the key from the given serializer.
-            /// \param[in] header \see{Serializable::Header}.
+            /// \param[in] header \see{SerializableHeader}.
             /// \param[in] serializer \see{Serializer} to read the key from.
             virtual void Read (
-                    const Header & /*header*/,
+                    const SerializableHeader & /*header*/,
                     Serializer &serializer) override {
                 serializer >> key;
                 length = GUID::SIZE;

@@ -26,11 +26,13 @@
 #include "thekogans/util/Config.h"
 #include "thekogans/util/Types.h"
 #include "thekogans/util/MD5.h"
-#include "thekogans/util/Serializer.h"
-#include "thekogans/util/Exception.h"
 
 namespace thekogans {
     namespace util {
+
+        /// \brief
+        /// Forward declaration of \see{Serializer}.
+        struct Serializer;
 
         /// \struct GUID GUID.h thekogans/util/GUID.h
         ///
@@ -47,7 +49,6 @@ namespace thekogans {
         /// PRO TIP: For crypto work I highly recommend \see{crypto::ID}.
         /// It has practically identical interface as GUID and uses SHA2_256
         /// to generate the hash.
-
         struct _LIB_THEKOGANS_UTIL_DECL GUID {
             /// \brief
             /// GUID size.
@@ -167,36 +168,17 @@ namespace thekogans {
         /// \param[in] serializer Where to write the given guid.
         /// \param[in] guid GUID to write.
         /// \return serializer.
-        inline Serializer & _LIB_THEKOGANS_UTIL_API operator << (
-                Serializer &serializer,
-                const GUID &guid) {
-            if (serializer.Write (guid.data, GUID::SIZE) != GUID::SIZE) {
-                THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                    "Write (guid.data, "
-                    THEKOGANS_UTIL_SIZE_T_FORMAT ") != " THEKOGANS_UTIL_SIZE_T_FORMAT,
-                    GUID::SIZE,
-                    GUID::SIZE);
-            }
-            return serializer;
-        }
-
+        _LIB_THEKOGANS_UTIL_DECL Serializer & _LIB_THEKOGANS_UTIL_API operator << (
+            Serializer &serializer,
+            const GUID &guid);
         /// \brief
         /// Read an guid from the given serializer.
         /// \param[in] serializer Where to read the guid from.
         /// \param[out] guid GUID to read.
         /// \return serializer.
-        inline Serializer & _LIB_THEKOGANS_UTIL_API operator >> (
-                Serializer &serializer,
-                GUID &guid) {
-            if (serializer.Read (guid.data, GUID::SIZE) != GUID::SIZE) {
-                THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                    "Read (guid.data, "
-                    THEKOGANS_UTIL_SIZE_T_FORMAT ") != " THEKOGANS_UTIL_SIZE_T_FORMAT,
-                    GUID::SIZE,
-                    GUID::SIZE);
-            }
-            return serializer;
-        }
+        _LIB_THEKOGANS_UTIL_DECL Serializer & _LIB_THEKOGANS_UTIL_API operator >> (
+            Serializer &serializer,
+            GUID &guid);
 
     } // namespace util
 } // namespace thekogans
@@ -207,7 +189,6 @@ namespace std {
     ///
     /// \brief
     /// Implementation of std::hash for thekogans::util::GUID.
-
     template <>
     struct hash<thekogans::util::GUID> {
         size_t operator () (const thekogans::util::GUID &guid) const {

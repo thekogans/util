@@ -22,14 +22,19 @@
 #include <functional>
 #include <string>
 #include "pugixml/pugixml.hpp"
+#include "thekogans/util/Environment.h"
 #include "thekogans/util/Config.h"
 #include "thekogans/util/Types.h"
+#include "thekogans/util/SizeT.h"
 #include "thekogans/util/GUID.h"
 #include "thekogans/util/Exception.h"
-#include "thekogans/util/Serializer.h"
 
 namespace thekogans {
     namespace util {
+
+        /// \brief
+        /// Forward declaration of \see{Serializer}.
+        struct Serializer;
 
         /// \struct Variant Variant.h thekogans/util/Variant.h
         ///
@@ -37,7 +42,6 @@ namespace thekogans {
         /// Variant is a convenient union type representing most types
         /// supported by util. Use this class to parametarize
         /// functions/algorithms where templates are not a good fit.
-
         struct _LIB_THEKOGANS_UTIL_DECL Variant {
             /// \brief
             /// "Variant"
@@ -384,27 +388,27 @@ namespace thekogans {
             template<typename T>
             T To () const {
                 switch (type) {
-                    case Variant::TYPE_i8:
+                    case TYPE_i8:
                         return static_cast<T> (value._i8);
-                    case Variant::TYPE_ui8:
+                    case TYPE_ui8:
                         return static_cast<T> (value._ui8);
-                    case Variant::TYPE_i16:
+                    case TYPE_i16:
                         return static_cast<T> (value._i16);
-                    case Variant::TYPE_ui16:
+                    case TYPE_ui16:
                         return static_cast<T> (value._ui16);
-                    case Variant::TYPE_i32:
+                    case TYPE_i32:
                         return static_cast<T> (value._i32);
-                    case Variant::TYPE_ui32:
+                    case TYPE_ui32:
                         return static_cast<T> (value._ui32);
-                    case Variant::TYPE_i64:
+                    case TYPE_i64:
                         return static_cast<T> (value._i64);
-                    case Variant::TYPE_ui64:
+                    case TYPE_ui64:
                         return static_cast<T> (value._ui64);
-                    case Variant::TYPE_f32:
+                    case TYPE_f32:
                         return static_cast<T> (value._f32);
-                    case Variant::TYPE_f64:
+                    case TYPE_f64:
                         return static_cast<T> (value._f64);
-                    case Variant::TYPE_SizeT:
+                    case TYPE_SizeT:
                         return static_cast<T> (*value._SizeT);
                     default:
                         THEKOGANS_UTIL_THROW_STRING_EXCEPTION (

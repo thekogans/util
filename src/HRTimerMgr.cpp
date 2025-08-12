@@ -36,7 +36,7 @@ namespace thekogans {
         }
 
         void HRTimerMgr::TimerInfoBase::Read (
-                const Header & /*header*/,
+                const SerializableHeader & /*header*/,
                 Serializer &serializer) {
             serializer >> name >> attributes;
         }
@@ -53,7 +53,7 @@ namespace thekogans {
         }
 
         void HRTimerMgr::TimerInfoBase::ReadXML (
-                const Header & /*header*/,
+                const SerializableHeader & /*header*/,
                 const pugi::xml_node &node) {
             name = node.attribute (ATTR_NAME).value ();
             attributes.clear ();
@@ -83,7 +83,7 @@ namespace thekogans {
         }
 
         void HRTimerMgr::TimerInfoBase::ReadJSON (
-                const Header & /*header*/,
+                const SerializableHeader & /*header*/,
                 const JSON::Object &object) {
             name = object.Get<JSON::String> (ATTR_NAME)->value;
             util::JSON::Array::SharedPtr attributesArray = object.Get<JSON::Array> (TAG_ATTRIBUTES);
@@ -187,7 +187,7 @@ namespace thekogans {
         }
 
         void HRTimerMgr::TimerInfo::Read (
-                const Header &header,
+                const SerializableHeader &header,
                 Serializer &serializer) {
             TimerInfoBase::Read (header, serializer);
             serializer >> start >> stop;
@@ -199,7 +199,7 @@ namespace thekogans {
         }
 
         void HRTimerMgr::TimerInfo::ReadXML (
-                const Header &header,
+                const SerializableHeader &header,
                 const pugi::xml_node &node) {
             TimerInfoBase::ReadXML (header, node);
             start = stringToui64 (node.attribute (ATTR_START).value ());
@@ -213,7 +213,7 @@ namespace thekogans {
         }
 
         void HRTimerMgr::TimerInfo::ReadJSON (
-                const Header &header,
+                const SerializableHeader &header,
                 const JSON::Object &object) {
             TimerInfoBase::ReadJSON (header, object);
             start = object.Get<JSON::Number> (ATTR_START)->To<ui64> ();
@@ -385,7 +385,7 @@ namespace thekogans {
         }
 
         void HRTimerMgr::ScopeInfo::Read (
-                const Header &header,
+                const SerializableHeader &header,
                 Serializer &serializer) {
             TimerInfoBase::Read (header, serializer);
             {
@@ -429,7 +429,7 @@ namespace thekogans {
         }
 
         void HRTimerMgr::ScopeInfo::ReadXML (
-                const Header &header,
+                const SerializableHeader &header,
                 const pugi::xml_node &node) {
             TimerInfoBase::ReadXML (header, node);
             {
@@ -485,7 +485,7 @@ namespace thekogans {
         }
 
         void HRTimerMgr::ScopeInfo::ReadJSON (
-                const Header &header,
+                const SerializableHeader &header,
                 const JSON::Object &object) {
             TimerInfoBase::ReadJSON (header, object);
             {
@@ -569,7 +569,7 @@ namespace thekogans {
         }
 
         void HRTimerMgr::Read (
-                const Header & /*header*/,
+                const SerializableHeader & /*header*/,
                 Serializer &serializer) {
             serializer >> root;
         }
@@ -579,7 +579,7 @@ namespace thekogans {
         }
 
         void HRTimerMgr::ReadXML (
-                const Header & /*header*/,
+                const SerializableHeader & /*header*/,
                 const pugi::xml_node &node) {
             node >> root;
         }
@@ -589,7 +589,7 @@ namespace thekogans {
         }
 
         void HRTimerMgr::ReadJSON (
-                const Header & /*header*/,
+                const SerializableHeader & /*header*/,
                 const JSON::Object &object) {
             object >> root;
         }

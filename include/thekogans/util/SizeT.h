@@ -30,6 +30,8 @@
 namespace thekogans {
     namespace util {
 
+        /// \brief
+        /// Forward declaration of \see{Serializer}.
         struct Serializer;
 
         /// \struct SizeT SizeT.h thekogans/util/SizeT.h
