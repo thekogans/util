@@ -61,8 +61,10 @@ namespace thekogans {
         #endif // defined (THEKOGANS_UTIL_TYPE_Static)
 
             /// \brief
-            /// Given a context, return the header needed to insert this serializable.
-            /// \return \see{SerializableHeader} header containing the missing context pieces.
+            /// Given a context, return the header needed to insert this
+            /// serializable in to a \see{Serializer}.
+            /// \return \see{SerializableHeader} header containing the
+            /// missing \see{Serializer::context} pieces.
             SerializableHeader GetHeader (
                 const SerializableHeader &context = SerializableHeader ()) const noexcept;
             /// \brief
@@ -92,7 +94,6 @@ namespace thekogans {
             /// Return the serializable binary size.
             /// \return Serializable binary size.
             virtual std::size_t Size () const noexcept = 0;
-
             /// \brief
             /// Write the serializable from the given serializer.
             /// \param[in] header
@@ -105,6 +106,14 @@ namespace thekogans {
             /// \param[out] serializer Serializer to write the serializable to.
             virtual void Write (Serializer & /*serializer*/) const = 0;
 
+            /// \brief
+            /// Return the serializable XML size.
+            /// \return Serializable XML size.
+            virtual std::size_t SizeXML () const noexcept {
+                assert (0);
+                THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
+                    "SizeXML is unimplemented for: %s.", Type ());
+            }
             /// \brief
             /// Read the Serializable from an XML DOM.
             /// \param[in] node XML DOM representation of a Serializable.
@@ -124,6 +133,14 @@ namespace thekogans {
                     "WriteXML is unimplemented for: %s.", Type ());
             }
 
+            /// \brief
+            /// Return the serializable JSON size.
+            /// \return Serializable JSON size.
+            virtual std::size_t SizeJSON () const noexcept {
+                assert (0);
+                THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
+                    "SizeJSON is unimplemented for: %s.", Type ());
+            }
             /// \brief
             /// Read the Serializable from an JSON DOM.
             /// \param[in] node JSON DOM representation of a Serializable.

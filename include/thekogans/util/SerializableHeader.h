@@ -37,23 +37,29 @@ namespace thekogans {
         /// \brief
         /// SerializableHeader is a variable size header containing the metadata
         /// needed to extract a \see{Serializable} instance from a \see{Serializer}
-        /// without knowing it's concrete type.
+        /// without knowing it's concrete type. It's variable size because the members
+        /// inserted in to or extracted out of a \see{Serializer} depend on the current
+        /// context. This context commes in the form of \see{Serializer::context} which
+        /// tells operators << and >> whats missing and needs to be inserted or extracted.
+        /// The more members the contet has filled in, the fewer the header will need
+        /// to insert or extract. This design allows for aggregation of like \see{Serializable}
+        /// types and saves space (not to mention insertion/extraction time).
         struct _LIB_THEKOGANS_UTIL_DECL SerializableHeader {
             /// \brief
-            /// Serializable type (it's class name).
+            /// Serializable type (see \see{DynamicCreatable::Type}).
             std::string type;
             /// \brief
-            /// Serializable version.
+            /// \see{Serializable} version.
             ui16 version;
             /// \brief
-            /// Serializable size in bytes (not including the header).
+            /// \see{Serializable} size in bytes (not including the header).
             SizeT size;
 
             /// \brief
             /// ctor.
-            /// \param[in] type_ Serializable type (it's class name).
-            /// \param[in] version_ Serializable version.
-            /// \param[in] size_ Serializable size in bytes (not including the header).
+            /// \param[in] type_ \see{Serializable} type (see \see{DynamicCreatable::Type}).
+            /// \param[in] version_ \see{Serializable} version.
+            /// \param[in] size_ \see{Serializable} size in bytes (not including the header).
             SerializableHeader (
                 const std::string &type_ = std::string (),
                 ui16 version_ = 0,
@@ -68,6 +74,9 @@ namespace thekogans {
             /// \brief
             /// "Version"
             static const char * const ATTR_VERSION;
+            /// \brief
+            /// "Size"
+            static const char * const ATTR_SIZE;
 
             inline bool NeedType () const {
                 return type.empty ();
@@ -126,9 +135,19 @@ namespace thekogans {
             const pugi::xml_node &node,
             SerializableHeader &header);
 
+        /// \brief
+        /// SerializableHeader insertion operator.
+        /// \param[in] object Where to serialize the serializable header.
+        /// \param[in] header SerializableHeader to serialize.
+        /// \return object.
         _LIB_THEKOGANS_UTIL_DECL JSON::Object & _LIB_THEKOGANS_UTIL_API operator << (
             JSON::Object &object,
             const SerializableHeader &header);
+        /// \brief
+        /// SerializableHeader extraction operator.
+        /// \param[in] object \see{JSON::Object} containing the serializable header.
+        /// \param[in] header SerializableHeader to deserialize.
+        /// \return object.
         _LIB_THEKOGANS_UTIL_DECL const JSON::Object & _LIB_THEKOGANS_UTIL_API operator >> (
             const JSON::Object &object,
             SerializableHeader &header);

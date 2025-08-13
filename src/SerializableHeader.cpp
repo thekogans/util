@@ -25,6 +25,7 @@ namespace thekogans {
 
         const char * const SerializableHeader::ATTR_TYPE = "Type";
         const char * const SerializableHeader::ATTR_VERSION = "Version";
+        const char * const SerializableHeader::ATTR_SIZE = "Size";
 
         std::size_t SerializableHeader::Size () const {
             std::size_t totalSize = 0;
@@ -87,6 +88,9 @@ namespace thekogans {
             node.append_attribute (
                 SerializableHeader::ATTR_VERSION).set_value (
                     ui32Tostring (header.version).c_str ());
+            node.append_attribute (
+                SerializableHeader::ATTR_SIZE).set_value (
+                    ui64Tostring (header.size).c_str ());
             return node;
         }
 
@@ -96,18 +100,17 @@ namespace thekogans {
             header.type = node.attribute (SerializableHeader::ATTR_TYPE).value ();
             header.version = stringToui16 (
                 node.attribute (SerializableHeader::ATTR_VERSION).value ());
+            header.size = stringToui64 (
+                node.attribute (SerializableHeader::ATTR_SIZE).value ());
             return node;
         }
 
         _LIB_THEKOGANS_UTIL_DECL JSON::Object & _LIB_THEKOGANS_UTIL_API operator << (
                 JSON::Object &object,
                 const SerializableHeader &header) {
-            object.Add<const std::string &> (
-                SerializableHeader::ATTR_TYPE,
-                header.type);
-            object.Add (
-                SerializableHeader::ATTR_VERSION,
-                header.version);
+            object.Add<const std::string &> (SerializableHeader::ATTR_TYPE, header.type);
+            object.Add (SerializableHeader::ATTR_VERSION, header.version);
+            object.Add (SerializableHeader::ATTR_SIZE, header.size);
             return object;
         }
 
@@ -118,6 +121,8 @@ namespace thekogans {
                 SerializableHeader::ATTR_TYPE)->value;
             header.version = object.Get<JSON::Number> (
                 SerializableHeader::ATTR_VERSION)->To<ui16> ();
+            header.size = object.Get<JSON::Number> (
+                SerializableHeader::ATTR_SIZE)->To<ui64> ();
             return object;
         }
 

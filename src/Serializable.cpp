@@ -151,7 +151,8 @@ namespace thekogans {
             node <<
                 SerializableHeader (
                     serializable.Type (),
-                    serializable.Version ());
+                    serializable.Version (),
+                    serializable.SizeXML ());
             serializable.WriteXML (node);
             return node;
         }
@@ -162,7 +163,8 @@ namespace thekogans {
             object <<
                 SerializableHeader (
                     serializable.Type (),
-                    serializable.Version ());
+                    serializable.Version (),
+                    serializable.SizeJSON ());
             serializable.WriteJSON (object);
             return object;
         }
@@ -361,7 +363,9 @@ namespace thekogans {
                         payload.GetWritePtr (),
                         payload.GetDataAvailableForWriting ()));
                 if (payload.IsFull ()) {
-                    value = Serializable::CreateType (header.type.c_str ());
+                    value = serializer.factory ?
+                        serializer.factory (nullptr) :
+                        Serializable::CreateType (header.type.c_str ());
                     if (value != nullptr) {
                         value->Read (header, payload);
                         value->Init ();
