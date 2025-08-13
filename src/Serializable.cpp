@@ -101,6 +101,10 @@ namespace thekogans {
                 buffer.GetDataAvailableForReading ());
         }
 
+        std::size_t Blob::SizeXML () const noexcept {
+            return header.size;
+        }
+
         void Blob::ReadXML (
                 const SerializableHeader &header_,
                 const pugi::xml_node &node_) {
@@ -124,6 +128,10 @@ namespace thekogans {
                     child; child = child.next_sibling ()) {
                 node_.append_copy (child);
             }
+        }
+
+        std::size_t Blob::SizeJSON () const noexcept {
+            return header.size;
         }
 
         void Blob::ReadJSON (

@@ -110,9 +110,7 @@ namespace thekogans {
             /// Return the serializable XML size.
             /// \return Serializable XML size.
             virtual std::size_t SizeXML () const noexcept {
-                assert (0);
-                THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                    "SizeXML is unimplemented for: %s.", Type ());
+                return 0;
             }
             /// \brief
             /// Read the Serializable from an XML DOM.
@@ -137,9 +135,7 @@ namespace thekogans {
             /// Return the serializable JSON size.
             /// \return Serializable JSON size.
             virtual std::size_t SizeJSON () const noexcept {
-                assert (0);
-                THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                    "SizeJSON is unimplemented for: %s.", Type ());
+                return 0;
             }
             /// \brief
             /// Read the Serializable from an JSON DOM.
@@ -312,7 +308,6 @@ namespace thekogans {
             /// Return the serializable size (not including the header).
             /// \return Serializable size.
             virtual std::size_t Size () const noexcept override;
-
             /// \brief
             /// Write the serializable from the given serializer.
             /// \param[in] header_ SerializableHeader to deserialize.
@@ -326,6 +321,10 @@ namespace thekogans {
             virtual void Write (Serializer &serializer) const override;
 
             /// \brief
+            /// Return the serializable XML size.
+            /// \return Serializable XML size.
+            virtual std::size_t SizeXML () const noexcept override;
+            /// \brief
             /// Read the Serializable from an XML DOM.
             /// \param[in] header_ SerializableHeader to deserialize.
             /// \param[in] node XML DOM representation of a Serializable.
@@ -337,6 +336,10 @@ namespace thekogans {
             /// \param[out] node_ Parent node.
             virtual void WriteXML (pugi::xml_node &node_) const override;
 
+            /// \brief
+            /// Return the serializable JSON size.
+            /// \return Serializable JSON size.
+            virtual std::size_t SizeJSON () const noexcept override;
             /// \brief
             /// Read the Serializable from an JSON DOM.
             /// \param[in] header_ SerializableHeader to deserialize.

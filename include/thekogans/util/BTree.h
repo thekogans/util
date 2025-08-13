@@ -365,6 +365,8 @@ namespace thekogans {
                         rightOffset (0),
                         right (nullptr) {}
 
+                    /// \brief
+                    /// Entry size on disk.
                     static const std::size_t SIZE =
                         FileAllocator::PTR_TYPE_SIZE; // rightOffset;
                 };
@@ -375,7 +377,7 @@ namespace thekogans {
                 /// \brief
                 /// ctor.
                 /// \param[in] btree_ BTree to which this node belongs.
-                /// \param[in] offset Node offset.
+                /// \param[in] offset Node offset on disk.
                 Node (
                     BTree &btree_,
                     FileAllocator::PtrType offset = 0);
@@ -391,7 +393,7 @@ namespace thekogans {
                 /// \brief
                 /// Allocate a node.
                 /// \param[in] btree BTree to which this node belongs.
-                /// \param[in] offset Node offset.
+                /// \param[in] offset Node offset on disk.
                 static Node *Alloc (
                     BTree &btree,
                     FileAllocator::PtrType offset = 0);
@@ -403,6 +405,10 @@ namespace thekogans {
                     FileAllocator &fileAllocator,
                     FileAllocator::PtrType offset);
 
+                /// \brief
+                /// Set value at the given \see{Entry} index.
+                /// \param[in] index \see{Entry} index to set the new value at.
+                /// \param[in] value New \see{Value} to set.
                 void SetValue (
                     ui32 index,
                     Value::SharedPtr value);
@@ -578,6 +584,8 @@ namespace thekogans {
 
             protected:
                 // RefCounted
+                /// \brief
+                /// Undo what Alloc does.
                 virtual void Harakiri () override;
 
                 // BufferedFile::TransactionParticipant
@@ -717,7 +725,7 @@ namespace thekogans {
             /// We have a pointer to root we need to dispose of.
             virtual void Free () override;
             /// \brief
-            /// .
+            /// Reset needs to be implemented by all concrete classes.
             virtual void Reset () override;
 
             // FileAllocator::Object

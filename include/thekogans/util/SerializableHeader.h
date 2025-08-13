@@ -38,12 +38,12 @@ namespace thekogans {
         /// SerializableHeader is a variable size header containing the metadata
         /// needed to extract a \see{Serializable} instance from a \see{Serializer}
         /// without knowing it's concrete type. It's variable size because the members
-        /// inserted in to or extracted out of a \see{Serializer} depend on the current
+        /// inserted in to or extracted out of the \see{Serializer} depend on the current
         /// context. This context commes in the form of \see{Serializer::context} which
         /// tells operators << and >> whats missing and needs to be inserted or extracted.
-        /// The more members the contet has filled in, the fewer the header will need
-        /// to insert or extract. This design allows for aggregation of like \see{Serializable}
-        /// types and saves space (not to mention insertion/extraction time).
+        /// The more members the context has filled in, the fewer the header will need
+        /// to insert or extract. This design allows for creation of containers aggregating
+        /// like \see{Serializable} types saving space and insertion/extraction time.
         struct _LIB_THEKOGANS_UTIL_DECL SerializableHeader {
             /// \brief
             /// Serializable type (see \see{DynamicCreatable::Type}).
@@ -69,28 +69,33 @@ namespace thekogans {
                 size (size_) {}
 
             /// \brief
-            /// "Type"
-            static const char * const ATTR_TYPE;
-            /// \brief
-            /// "Version"
-            static const char * const ATTR_VERSION;
-            /// \brief
-            /// "Size"
-            static const char * const ATTR_SIZE;
-
+            /// Return true if type is empty.
+            /// \return type.empty ().
             inline bool NeedType () const {
                 return type.empty ();
             }
+            /// \brief
+            /// Return true if version is 0.
+            /// \return version == 0.
             inline bool NeedVersion () const {
                 return version == 0;
             }
+            /// \brief
+            /// Return true if size is 0.
+            /// \return size == 0.
             inline bool NeedSize () const {
                 return size == 0;
             }
 
+            /// \brief
+            /// Return true if all members are empty or 0.
+            /// \return NeedType () && NeedVersion () && NeedSize ().
             inline bool IsEmpty () const {
                 return NeedType () && NeedVersion () && NeedSize ();
             }
+            /// \brief
+            /// Return true if all members are filled in.
+            /// \return !NeedType () && !NeedVersion () && !NeedSize ().
             inline bool IsFull () const {
                 return !NeedType () && !NeedVersion () && !NeedSize ();
             }
@@ -112,7 +117,7 @@ namespace thekogans {
         /// \brief
         /// SerializableHeader extraction operator.
         /// \param[in] serializer Where to deserialize the serializable header.
-        /// \param[in] header SerializableHeader to deserialize.
+        /// \param[in] header SerializableHeader to extract in to.
         /// \return serializer.
         _LIB_THEKOGANS_UTIL_DECL Serializer & _LIB_THEKOGANS_UTIL_API operator >> (
             Serializer &serializer,
@@ -129,7 +134,7 @@ namespace thekogans {
         /// \brief
         /// SerializableHeader extraction operator.
         /// \param[in] node Where to deserialize the serializable header.
-        /// \param[in] header SerializableHeader to deserialize.
+        /// \param[in] header SerializableHeader to extract in to.
         /// \return node.
         _LIB_THEKOGANS_UTIL_DECL const pugi::xml_node & _LIB_THEKOGANS_UTIL_API operator >> (
             const pugi::xml_node &node,
@@ -137,8 +142,8 @@ namespace thekogans {
 
         /// \brief
         /// SerializableHeader insertion operator.
-        /// \param[in] object Where to serialize the serializable header.
-        /// \param[in] header SerializableHeader to serialize.
+        /// \param[in] object \see{JSON::Object} that will contain the serializable header.
+        /// \param[in] header SerializableHeader to insert.
         /// \return object.
         _LIB_THEKOGANS_UTIL_DECL JSON::Object & _LIB_THEKOGANS_UTIL_API operator << (
             JSON::Object &object,
@@ -146,7 +151,7 @@ namespace thekogans {
         /// \brief
         /// SerializableHeader extraction operator.
         /// \param[in] object \see{JSON::Object} containing the serializable header.
-        /// \param[in] header SerializableHeader to deserialize.
+        /// \param[in] header SerializableHeader to extract in to.
         /// \return object.
         _LIB_THEKOGANS_UTIL_DECL const JSON::Object & _LIB_THEKOGANS_UTIL_API operator >> (
             const JSON::Object &object,

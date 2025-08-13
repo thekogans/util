@@ -23,10 +23,6 @@
 namespace thekogans {
     namespace util {
 
-        const char * const SerializableHeader::ATTR_TYPE = "Type";
-        const char * const SerializableHeader::ATTR_VERSION = "Version";
-        const char * const SerializableHeader::ATTR_SIZE = "Size";
-
         std::size_t SerializableHeader::Size () const {
             std::size_t totalSize = 0;
             if (!NeedType ()) {
@@ -80,49 +76,45 @@ namespace thekogans {
             return serializer;
         }
 
+        namespace {
+            const char * const ATTR_TYPE = "Type";
+            const char * const ATTR_VERSION = "Version";
+            const char * const ATTR_SIZE = "Size";
+        }
+
         _LIB_THEKOGANS_UTIL_DECL pugi::xml_node & _LIB_THEKOGANS_UTIL_API operator << (
                 pugi::xml_node &node,
                 const SerializableHeader &header) {
-            node.append_attribute (
-                SerializableHeader::ATTR_TYPE).set_value (header.type.c_str ());
-            node.append_attribute (
-                SerializableHeader::ATTR_VERSION).set_value (
-                    ui32Tostring (header.version).c_str ());
-            node.append_attribute (
-                SerializableHeader::ATTR_SIZE).set_value (
-                    ui64Tostring (header.size).c_str ());
+            node.append_attribute (ATTR_TYPE).set_value (header.type.c_str ());
+            node.append_attribute (ATTR_VERSION).set_value (ui32Tostring (header.version).c_str ());
+            node.append_attribute (ATTR_SIZE).set_value (ui64Tostring (header.size).c_str ());
             return node;
         }
 
         _LIB_THEKOGANS_UTIL_DECL const pugi::xml_node & _LIB_THEKOGANS_UTIL_API operator >> (
                 const pugi::xml_node &node,
                 SerializableHeader &header) {
-            header.type = node.attribute (SerializableHeader::ATTR_TYPE).value ();
-            header.version = stringToui16 (
-                node.attribute (SerializableHeader::ATTR_VERSION).value ());
-            header.size = stringToui64 (
-                node.attribute (SerializableHeader::ATTR_SIZE).value ());
+            header.type = node.attribute (ATTR_TYPE).value ();
+            header.version = stringToui16 (node.attribute (ATTR_VERSION).value ());
+            header.size = stringToui64 (node.attribute (ATTR_SIZE).value ());
             return node;
         }
 
         _LIB_THEKOGANS_UTIL_DECL JSON::Object & _LIB_THEKOGANS_UTIL_API operator << (
                 JSON::Object &object,
                 const SerializableHeader &header) {
-            object.Add<const std::string &> (SerializableHeader::ATTR_TYPE, header.type);
-            object.Add (SerializableHeader::ATTR_VERSION, header.version);
-            object.Add (SerializableHeader::ATTR_SIZE, header.size);
+            object.Add<const std::string &> (ATTR_TYPE, header.type);
+            object.Add<ui16> (ATTR_VERSION, header.version);
+            object.Add<ui64> (ATTR_SIZE, header.size);
             return object;
         }
 
         _LIB_THEKOGANS_UTIL_DECL const JSON::Object & _LIB_THEKOGANS_UTIL_API operator >> (
                 const JSON::Object &object,
                 SerializableHeader &header) {
-            header.type = object.Get<JSON::String> (
-                SerializableHeader::ATTR_TYPE)->value;
-            header.version = object.Get<JSON::Number> (
-                SerializableHeader::ATTR_VERSION)->To<ui16> ();
-            header.size = object.Get<JSON::Number> (
-                SerializableHeader::ATTR_SIZE)->To<ui64> ();
+            header.type = object.Get<JSON::String> (ATTR_TYPE)->value;
+            header.version = object.Get<JSON::Number> (ATTR_VERSION)->To<ui16> ();
+            header.size = object.Get<JSON::Number> (ATTR_SIZE)->To<ui64> ();
             return object;
         }
 
